@@ -1,0 +1,21 @@
+# --- Инструкция: подпись релиза для Google Play ---
+#
+# Шаг 1. В терминале, из папки android/ (Java 17+: -genkeypair и -alias):
+#   export JAVA_HOME="/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
+#   export PATH="$JAVA_HOME/bin:$PATH"
+#   keytool -genkeypair -v -keystore upload-keystore.jks -storetype JKS \
+#     -alias upload -keyalg RSA -keysize 2048 -validity 10000
+#
+# Шаг 2. Скопируйте этот файл в key.properties и заполните значения:
+#
+#   storeFile=upload-keystore.jks
+#   storePassword=
+#   keyAlias=upload
+#   keyPassword=
+#
+# Шаг 3. Из корня проекта:
+#   flutter build appbundle --release
+#
+# Готовый файл: build/app/outputs/bundle/release/app-release.aab
+#
+# key.properties и *.jks не коммитить (уже в .gitignore).

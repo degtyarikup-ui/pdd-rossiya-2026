@@ -1,0 +1,46 @@
+name: pdd_app
+description: "ПДД Россия 2026 — билеты и экзамен"
+publish_to: 'none'
+version: 1.0.0+11
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  shared_preferences: ^2.5.5
+  intl: ^0.20.2
+  flutter_svg: ^2.2.4
+  path_provider: ^2.1.5
+  supabase_flutter: ^2.8.0
+  google_sign_in: ^6.2.1
+  flutter_tts: ^4.2.3
+  url_launcher: ^6.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/images/app_icon.png
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: assets/images/app_icon.png
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/questions/
+    - assets/images/category_icons/
+    - assets/images/questions_ab/
+    - assets/images/questions_cd/
+    - assets/images/signs/
+    - assets/images/markup/
+    - assets/images/
