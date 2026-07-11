@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
@@ -41,7 +42,7 @@ List<Map<String, dynamic>> buildQuestions(int n) {
   });
 }
 
-Future<void> pumpExam(WidgetTester tester) async {
+Future<void> pumpExam(WidgetTester tester, {ExamRules? rules}) async {
   SharedPreferences.setMockInitialValues({});
   final dataSource = ProgressDataSource();
   await dataSource.init();
@@ -53,7 +54,7 @@ Future<void> pumpExam(WidgetTester tester) async {
         ttsServiceProvider.overrideWithValue(_SilentTts()),
       ],
       child: MaterialApp(
-        home: ExamScreen(allQuestions: buildQuestions(60)),
+        home: ExamScreen(allQuestions: buildQuestions(60), rules: rules),
       ),
     ),
   );
@@ -274,5 +275,67 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Прервать экзамен?'), findsNothing);
     expect(find.byType(ExamScreen), findsOneWidget);
+  });
+
+  // ---------------------------------------------------------------------
+  // Правила Беларуси (ГАИ РБ): 10 вопросов, 15 минут, максимум 1 ошибка,
+  // механики дополнительных вопросов нет.
+  // ---------------------------------------------------------------------
+  group('Беларусь (10 вопросов / 1 ошибка / без доп. фазы)', () {
+    final byRules = CountryConfig.belarus.examRules;
+
+    testWidgets('без ошибок: сдан после 10 ответов', (tester) async {
+      await pumpExam(tester, rules: byRules);
+
+      for (var i = 0; i < 10; i++) {
+        await answerCurrent(tester, correct: true);
+      }
+
+      expect(find.text('Экзамен сдан!'), findsOneWidget);
+    });
+
+    testWidgets('1 ошибка: доп. фаза НЕ начинается, экзамен сдан',
+        (tester) async {
+      await pumpExam(tester, rules: byRules);
+
+      await answerCurrent(tester, correct: false);
+      for (var i = 1; i < 10; i++) {
+        await answerCurrent(tester, correct: true);
+      }
+
+      expect(find.text('Дополнительные вопросы'), findsNothing);
+      expect(find.text('Экзамен сдан!'), findsOneWidget);
+    });
+
+    testWidgets('2 ошибки: провал сразу после второй ошибки', (tester) async {
+      await pumpExam(tester, rules: byRules);
+
+      await answerCurrent(tester, correct: false);
+      await answerCurrent(tester, correct: false);
+
+      expect(find.text('Экзамен не сдан'), findsOneWidget);
+      // 8 вопросов остались без ответа.
+      expect(find.text('Без ответа'), findsOneWidget);
+      expect(find.text('8'), findsOneWidget);
+    });
+
+    testWidgets('таймер стартует с 15 минут', (tester) async {
+      await pumpExam(tester, rules: byRules);
+
+      final timerText = tester
+          .widgetList<Text>(find.textContaining(':'))
+          .map((t) => t.data ?? '')
+          .firstWhere((s) => RegExp(r'^\d{2}:\d{2}$').hasMatch(s));
+      final minutes = int.parse(timerText.split(':').first);
+      expect(minutes, lessThanOrEqualTo(15));
+      expect(minutes, greaterThanOrEqualTo(14));
+    });
+
+    testWidgets('заголовок использует размер билета страны: «Вопрос 1 из 10»',
+        (tester) async {
+      await pumpExam(tester, rules: byRules);
+
+      expect(find.text('Вопрос 1 из 10'), findsOneWidget);
+    });
   });
 }

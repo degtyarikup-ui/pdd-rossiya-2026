@@ -36,6 +36,22 @@ android {
         versionName = flutter.versionName
     }
 
+    // Страны: одно приложение на страну, один общий код.
+    // Сборка: flutter build appbundle --flavor ru --dart-define=COUNTRY=ru
+    flavorDimensions += "country"
+    productFlavors {
+        create("ru") {
+            dimension = "country"
+            applicationId = "ru.pdd.pdd_app"
+            resValue("string", "app_name", "ПДД Россия 2026")
+        }
+        create("by") {
+            dimension = "country"
+            applicationId = "by.pdd.pdd_app"
+            resValue("string", "app_name", "ПДД Беларусь 2026")
+        }
+    }
+
     signingConfigs {
         create("release") {
             if (keystorePropertiesFile.exists()) {

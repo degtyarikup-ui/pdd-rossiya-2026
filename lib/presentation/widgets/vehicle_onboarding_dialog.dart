@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
@@ -7,6 +8,9 @@ import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 
 /// Показывает онбординг выбора категории билетов при первом запуске.
+///
+/// В странах без раздельных наборов C/D (например, Беларусь) выбор
+/// не показывается — категория A/B назначается молча.
 Future<void> showVehicleOnboardingIfNeeded(
   BuildContext context,
   WidgetRef ref,
@@ -14,6 +18,13 @@ Future<void> showVehicleOnboardingIfNeeded(
   await ref.read(appSettingsProvider.notifier).ready;
   if (!context.mounted) return;
   if (ref.read(appSettingsProvider).vehicleOnboardingCompleted) return;
+
+  if (!CountryConfig.current.hasCdCategory) {
+    await ref
+        .read(appSettingsProvider.notifier)
+        .finishVehicleOnboarding(TicketCategory.ab);
+    return;
+  }
 
   await showDialog<void>(
     context: context,

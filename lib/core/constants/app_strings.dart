@@ -1,7 +1,9 @@
+import 'package:pdd_app/core/config/country_config.dart';
+
 class AppStrings {
   AppStrings._();
 
-  static const String appName = 'ПДД Россия 2026';
+  static String get appName => CountryConfig.current.appTitle;
   static const String exam = 'Экзамен';
   static const String topics = 'Темы';
   static const String tickets = 'Билеты';

@@ -1,0 +1,1511 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head><title>
+	Глава 1. Общие положения
+</title><meta charset="UTF-8" /><meta name="keywords" content="Правила дорожного движения 2026 ПДД онлайн тесты тестирование экзамен ГАИ теоретический конспект безопасность автомобильный белорусский интерактивный электронный мультимедийный Запоминалки Группировки виртуальная автошкола экспресс вопросы задачи зачет автокнига" /><meta name="description" content="Глава 1. Общие положения" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta http-equiv="X-UA-Compatible" content="IE=edge" /><link rel="stylesheet" href="/CSS/bootstrap.min.css" type="text/css" /><link rel="stylesheet" href="/CSS/bootstrap-theme.min.css" type="text/css" /><link rel="stylesheet" href="/CSS/main.css" type="text/css" /><link rel="stylesheet" href="/CSS/chat.css" type="text/css" /><link rel="apple-touch-icon" sizes="180x180" href="/Images/apple-touch-icon.png" /><link rel="manifest" href="/Images/site.webmanifest" /><link rel="mask-icon" href="/Images/safari-pinned-tab.svg" color="#2d8af0" /><link rel="shortcut icon" type="image/x-icon" href="/Images/favicon.ico" /><meta name="apple-mobile-web-app-title" content="ADrive" /><meta name="application-name" content="ADrive" /><meta name="msapplication-TileColor" content="#2D89EF" /><meta name="msapplication-config" content="/Images/browserconfig.xml" /><meta name="theme-color" content="#1B5EAB" />
+
+    <script type="text/javascript">
+        var baseurl = '../';
+        var appurl = '/';
+    </script>
+
+    <script src="/js/jquery-1.12.4.min.js" type="text/javascript"></script>
+    <script src="/js/querystring.js" type="text/javascript"></script>
+    <script src="/js/main.js" type="text/javascript"></script>
+
+    
+    
+
+    <link rel="stylesheet" href="/CSS/jquery.cluetip.css" type="text/css" />
+    <link rel="stylesheet" href="/CSS/jquery.tree.css" type="text/css" />
+    <link rel="stylesheet" href="/CSS/pdd.css" type="text/css" />
+    
+    <script src="/js/jquery.tree.js" type="text/javascript"></script> 
+    <script src="/js/jquery.hoverIntent.min.js" type="text/javascript"></script>
+    <script src="/js/jquery.cluetip.min.js" type="text/javascript"></script>
+    <script src="/js/audio.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+        $(function () {
+            $(window).on('hashchange', HighlightHashItem);
+
+            HighlightHashItem();
+
+            $('#branchtree').Tree().show().find('a.ajaxlink').click(function () {
+                $(this).parent().prev().click();
+                return false;
+            });
+
+            $('#branchtree ul:has(a.currchapter)').attr('rel', '1').parents('label').prevAll('span').click();
+
+            $('#content a.ajaxlink.collapsed').before('<i class="glyphicon glyphicon-menu-down small" style="margin-right: 5px;" aria-hidden="true"></i>');
+
+            $('#content a.ajaxlink.collapsed:contains("Изменения")').click();
+
+            $('.tglChange:not([onclick])').click(function () {
+                $.merge($('#content').find('ins,del'), $(this)).toggleClass('bg-success').toggleClass('text-success');
+            }).click();
+
+            $('#content a').not('#content .pdd-toc a, #pdd_doclist a, a.tglChange').each(function () {
+                AssignTooltip(this);
+            });
+
+            $(document).click(function () {
+                $(document).trigger('hideCluetip');
+                $('#content .bg-info').removeClass('bg-info');
+            });
+
+            // Audio
+            if (window.HTMLAudioElement) {
+                InitAudio('/WebFiles/Study/PDD/BY/MP3/');
+            }
+            else {
+                $('#content .audio').remove();
+            }
+
+            $('.full-pdd' + ($('.full-pdd').length ? ', #cluetip' : '')).on('click', 'a[href*="#"]:not(#pdd_doclist a)', function (event) {
+                event.preventDefault();
+
+                var hash = $(this).attr('href').split('#').pop();
+
+                $('html, body').animate({
+                    scrollTop: $('.full-pdd [id="' + hash + '"]').first().offset().top - $(window).height() / 2 // To the center of the page
+                }, 300, function () {
+                    history.pushState({}, '', "#" + hash);
+                    HighlightHashItem();
+                });
+
+                return false;
+            });
+        });
+
+        function HighlightHashItem() {
+            var sel = $('[id="' + window.location.hash.slice(1) + '"]').first();
+
+            if (sel.length && !sel.is($('#content > div').first())) {
+                $('#content .bg-info').removeClass('bg-info');
+                sel.addClass('bg-info');
+            }
+        }
+    </script>
+
+    <style type="text/css">
+        .themesEnum li::before
+        {
+            display: none;
+        }
+
+        form[action*='fulltext'] + div#cluetip a,
+        .full-pdd a:not([href^='http']):not(#pdd_doclist a)
+        {
+            text-decoration-style: dotted;
+        }
+    </style>
+</head>
+<body>
+    <form method="post" action="./by?chap=ch1" id="aspnetForm">
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="flwREaHQWnqCrIcsoX10RFisfn20V8nDINeWv6mK4iv6lUUOSj+etA2cQQ3GYZMBjv6e6B5YMa6m4rfLl10p29Ye0bmrgiXJBlMgpKJspHwSJ7yyR0/4xD+n+/Cs47UFF8al40Yg/th3xbaU13KkyqRC6D/gINsXNlfs/kd9R6KwK2Q+cI5OAAD3DhdFaMi5+wXW93lzDwyU7J24LRq/PyU+7co=" />
+
+
+<script src="../js/js.cookie.min.js" type="text/javascript"></script>
+<script src="../js/jquery.signalR-2.4.3.min.js" type="text/javascript"></script>
+<script src="../signalr/hubs" type="text/javascript"></script>
+<script src="../js/chat.js" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=YJCxcK2hI-bLBJXUFvzl1_IF0w0EApPkUeIifmC_BDqCn64D0MlgA3nebYoXwAv2k57pKuRxxApDWfZUL807lcdz3bVex4CycbfXAfoKOfbIMDhyGot0VO6DKO8a4LgtKCwC_Q2&amp;t=ffffffffc2a6ae8f" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=uHIkleVeDJf4xS50Krz-yBJ9UaXO_c3R9TzfyPv0r3Ayug6NtOUQqIV8TVVGbn_7vD4iJnl4H7sXWQXXs0uFrg20kQoSeUWdJoqit5s670xbz5Wz8PtHIoFqm1K_GJ96VNZBH9iRaPgANfHIVXdgE97fM_81&amp;t=74a40145" type="text/javascript"></script>
+<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="AB300280" />
+<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="MO0VMz84bhw//qnKAwCcYuZbqV1ydACYeAtjf+WM1T9qT/Xzixqo9Z1bDko9Ia6JlLPe3E1q48OS+fls8PlSxclKKf5IonA7FOwtRrrfMED0tDKdXaSSrd0+S8uP9pXiLKb3wSsf8d62kcZf4fJnQ+5DLNo1Jde2ZxtMPOCCDMmGBvKF" />
+    
+
+    <header class="navbar navbar-default navbar-static-top semitransparent">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle visible-xs" style="padding-bottom: 5px;" data-toggle="row-offcanvas-right" title="Профиль пользователя">
+                    <i class="glyphicon glyphicon-user" aria-hidden="true" style="vertical-align: top;"></i>
+                </button>
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" style="padding-bottom: 5px;" data-target="#navbar" aria-expanded="false" aria-controls="navbar" title="Меню">
+                    <i class="glyphicon glyphicon-triangle-bottom" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="navbar-toggle pull-left visible-xs" style="margin-left: 10px;" data-toggle="row-offcanvas-left" title="Разделы сайта">
+                    <span class="icon-bar line-one"></span>
+                    <span class="icon-bar line-two"></span>
+                    <span class="icon-bar line-three"></span>
+                </button>
+                <a title="Перейти на главную страницу" class="navbar-brand logo" href="../"><img title="Перейти на главную страницу" src="../Images/ADrive.svg" alt="" /></a>
+            </div>
+            <nav id="navbar" class="collapse navbar-collapse">
+                <div id="ctl00_MainMenu_MenuLeft">
+	<ul class="level1 nav navbar-nav">
+		<li><a title="Онлайн-курсы по ПДД" class="level1" href="../study"><i class='glyphicon glyphicon-education' aria-hidden='true' ></i>Все курсы по ПДД</a></li><li><a title="Тесты по ПДД для подготовки к экзамену в ГАИ" class="level1" href="../products/tests"><img src="../Images/TestsDisk.png" alt="Тесты по ПДД для подготовки к экзамену в ГАИ" title="Тесты по ПДД для подготовки к экзамену в ГАИ" class="icon" />ПДД-Тесты 2026</a></li><li><a title="Иллюстрированное издание Правил дорожного движения Республики Беларусь комментариями" class="level1" href="../products/conspect"><img src="../Images/Conspect.png" alt="Иллюстрированное издание Правил дорожного движения Республики Беларусь комментариями" title="Иллюстрированное издание Правил дорожного движения Республики Беларусь комментариями" class="icon" />Конспект по ПДД</a></li><li><a title="Программа для изучения правил проезда перекрестков" class="level1" href="../products/crossroads"><img src="../Images/Crossroads.png" alt="Программа для изучения правил проезда перекрестков" title="Программа для изучения правил проезда перекрестков" class="icon" />Проезд перекрестков</a></li><li><a title="Основы безопасного поведения на дорогах Республики Беларусь для школьников" class="level1" href="../products/school"><img src="../WebFiles/Study/Pictures/Courses/11.png" alt="Основы безопасного поведения на дорогах Республики Беларусь для школьников" title="Основы безопасного поведения на дорогах Республики Беларусь для школьников" class="icon" />ПДД для школьников</a></li><li><a title="Все программы ADrive" class="level1" href="../products"><i class='glyphicon glyphicon-th' aria-hidden='true' ></i>Все программы</a></li><li><a title="Техническая поддержка" class="level1" href="../support"><i class='glyphicon glyphicon-question-sign' aria-hidden='true' ></i>Техподдержка</a></li>
+	</ul>
+</div>
+
+
+            </nav>
+        </div>
+    </header>
+
+    <div class="container-fluid" style="margin-top: -10px">
+        <div class="row row-offcanvas">
+            <div id="ctl00_LeftPane" class="col-xs-12 col-sm-3 col-md-3 col-lg-offset-1 col-lg-2 sidebar-offcanvas hidden-xs">
+	
+                <br />
+                <aside class="leftPanel">
+                    
+                    <div id="ctl00_LeftMenu_MenuLeft">
+		<ul class="level1 LeftMenu">
+			<li><a title="Изучение ПДД Респулики Беларусь" class="level1" href="../study">ПДД-Smart 3.0</a><img src="/Images/Seperator.png" alt="" class="separator" /></li><li><a title="Автошколы Республики Беларусь" class="level1" href="../schools/">Автошколы РБ</a><img src="/Images/Seperator.png" alt="" class="separator" /></li><li><a title="Правила дорожного движения Республики Беларусь" class="level1 selected" href="by">ПДД Беларуси</a></li>
+		</ul>
+	</div>
+
+
+                    <br />
+                    
+    <ul id="branchtree" class="testsEnum alert alert-info box-shadow"><li><label><a href="#" class="ajaxlink" title="Подготовка водителей механических транспортных средств в Республике Беларусь">Подготовка водителей</a><ul rel="0" class="themesEnum" data-code="0">
+      <li><a href="?chap=cat_b">Подготовка водителей категории «B»</a></li>
+    </ul></label></li>
+<li><label><a href="#" class="ajaxlink" title="Главы Правил дорожного движения Республики Беларусь">Главы ПДД</a><ul rel="0" class="themesEnum" data-code="2">
+      <li><a href="?chap=pdd">Введение в Правила дорожного движения Республики Беларусь (ПДД РБ)</a></li>
+      <li><a class="currchapter">Глава 1. Общие положения</a></li>
+      <li><a href="?chap=ch2">Глава 2. Общие права и обязанности участников дорожного движения</a></li>
+      <li><a href="?chap=ch3">Глава 3. Права и обязанности водителей</a></li>
+      <li><a href="?chap=ch4">Глава 4. Права и обязанности пешеходов</a></li>
+      <li><a href="?chap=ch5">Глава 5. Обязанности пассажиров</a></li>
+      <li><a href="?chap=ch6">Глава 6. Права и обязанности водителей и других лиц в особых случаях</a></li>
+      <li><a href="?chap=ch7">Глава 7. Сигналы регулировщика и светофоров</a></li>
+      <li><a href="?chap=ch8">Глава 8. Применение аварийной световой сигнализации, знака аварийной остановки, фонаря с мигающим красным светом</a></li>
+      <li><a href="?chap=ch9">Глава 9. Маневрирование</a></li>
+      <li><a href="?chap=ch10">Глава 10. Расположение транспортных средств на проезжей части дороги</a></li>
+      <li><a href="?chap=ch11">Глава 11. Скорость движения транспортных средств</a></li>
+      <li><a href="?chap=ch12">Глава 12. Обгон, встречный разъезд</a></li>
+      <li><a href="?chap=ch13">Глава 13. Проезд перекрёстков</a></li>
+      <li><a href="?chap=ch14">Глава 14. Пешеходные переходы, велосипедные переезды и остановочные пункты маршрутных транспортных средств</a></li>
+      <li><a href="?chap=ch15">Глава 15. Преимущество маршрутных транспортных средств</a></li>
+      <li><a href="?chap=ch16">Глава 16. Железнодорожные переезды</a></li>
+      <li><a href="?chap=ch17">Глава 17. Движение по автомагистрали</a></li>
+      <li><a href="?chap=ch18">Глава 18. Движение в жилой и пешеходной зонах, на прилегающей территории</a></li>
+      <li><a href="?chap=ch19">Глава 19. Остановка и стоянка транспортных средств</a></li>
+      <li><a href="?chap=ch20">Глава 20. Движение на велосипедах, средствах персональной мобильности и мопедах</a></li>
+      <li><a href="?chap=ch21">Глава 21. Движение гужевых транспортных средств, всадников и прогон скота</a></li>
+      <li><a href="?chap=ch22">Глава 22. Пользование внешними световыми приборами и звуковыми сигналами транспортных средств</a></li>
+      <li><a href="?chap=ch23">Глава 23. Перевозка пассажиров</a></li>
+      <li><a href="?chap=ch24">Глава 24. Перевозка грузов</a></li>
+      <li><a href="?chap=ch25">Глава 25. Буксировка механических транспортных средств</a></li>
+      <li><a href="?chap=ch26">Глава 26. Основные положения о допуске транспортных средств к участию в дорожном движении, их техническое состояние, оборудование</a></li>
+      <li><a href="?chap=ch27">Глава 27. Обязанности должностных и иных лиц по обеспечению безопасности дорожного движения</a></li>
+    </ul></label></li>
+<li><label><a href="#" class="ajaxlink" title="ПДД РБ. Приложение 1. Дорожные светофоры">Дорожные светофоры</a><ul rel="0" class="themesEnum" data-code="3">
+      <li><a href="?chap=ap1">Виды дорожных светофоров</a></li>
+    </ul></label></li>
+<li><label><a href="#" class="ajaxlink" title="ПДД РБ. Приложение 2. Дорожные знаки">Дорожные знаки</a><ul rel="0" class="themesEnum" data-code="4">
+      <li><a href="?chap=ap2_ch1">Описание дорожных знаков</a></li>
+      <li><a href="?chap=ap2_ch1_pr1">§ 1. Предупреждающие знаки</a></li>
+      <li><a href="?chap=ap2_ch1_pr2">§ 2. Знаки приоритета</a></li>
+      <li><a href="?chap=ap2_ch1_pr3">§ 3. Запрещающие знаки</a></li>
+      <li><a href="?chap=ap2_ch1_pr4">§ 4. Предписывающие знаки</a></li>
+      <li><a href="?chap=ap2_ch1_pr5">§ 5. Информационно-указательные знаки</a></li>
+      <li><a href="?chap=ap2_ch1_pr6">§ 6. Знаки сервиса</a></li>
+      <li><a href="?chap=ap2_ch1_pr7">§ 7. Знаки дополнительной информации (таблички)</a></li>
+      <li><a href="?chap=ap2_ch2_pr0">Глава 2. Изображение дорожных знаков</a></li>
+      <li><a href="?chap=ap2_ch2_pr1">§ 1. Предупреждающие знаки (изображения)</a></li>
+      <li><a href="?chap=ap2_ch2_pr2">§ 2. Знаки приоритета (изображения)</a></li>
+      <li><a href="?chap=ap2_ch2_pr3">§ 3. Запрещающие знаки (изображения)</a></li>
+      <li><a href="?chap=ap2_ch2_pr4">§ 4. Предписывающие знаки (изображения)</a></li>
+      <li><a href="?chap=ap2_ch2_pr5">§ 5. Информационно-указательные знаки (изображения)</a></li>
+      <li><a href="?chap=ap2_ch2_pr6">§ 6. Знаки сервиса (изображения)</a></li>
+      <li><a href="?chap=ap2_ch2_pr7">§ 7. Знаки дополнительной информации (изображения)</a></li>
+    </ul></label></li>
+<li><label><a href="#" class="ajaxlink" title="ПДД РБ. Приложение 3. Дорожная разметка">Дорожная разметка</a><ul rel="0" class="themesEnum" data-code="5">
+      <li><a href="?chap=ap3_ch1">Глава 1. Общие положения о дорожной разметке</a></li>
+      <li><a href="?chap=ap3_ch2">Глава 2. Горизонтальная дорожная разметка</a></li>
+      <li><a href="?chap=ap3_ch3">Глава 3. Вертикальная дорожная разметка</a></li>
+    </ul></label></li>
+<li><label><a href="#" class="ajaxlink" title="ПДД РБ. Приложение 4. Перечень неисправностей транспортных средств и условий, при которых запрещается их участие в дорожном движении">Неисправности</a><ul rel="0" class="themesEnum" data-code="6">
+      <li><a href="?chap=ap4_ch0">Введение</a></li>
+      <li><a href="?chap=ap4_ch1">Глава 1. Тормозные системы</a></li>
+      <li><a href="?chap=ap4_ch2">Глава 2. Рулевое управление</a></li>
+      <li><a href="?chap=ap4_ch3">Глава 3. Внешние световые приборы</a></li>
+      <li><a href="?chap=ap4_ch4">Глава 4. Стеклоочистители и стеклоомыватели ветрового стекла</a></li>
+      <li><a href="?chap=ap4_ch5">Глава 5. Колёса и шины</a></li>
+      <li><a href="?chap=ap4_ch6">Глава 6. Двигатель</a></li>
+      <li><a href="?chap=ap4_ch7">Глава 7. Прочие элементы конструкции транспортного средства</a></li>
+    </ul></label></li>
+<li><label><a href="#" class="ajaxlink" title="ПДД РБ. Приложение 5. Опознавательные знаки транспортных средств">Опознавательные знаки</a><ul rel="0" class="themesEnum" data-code="7">
+      <li><a href="?chap=ap5">Опознавательные знаки транспортных средств</a></li>
+    </ul></label></li>
+<li><label><a href="#" class="ajaxlink" title="Основы управления транспортным средством и безопасность движения">Безопасность движения</a><ul rel="0" class="themesEnum" data-code="11">
+      <li><a href="?chap=drs">Безопасность дорожного движения. Оглавление</a></li>
+      <li><a href="?chap=drs_ch1">Глава 1. Классификация и причины ДТП</a></li>
+      <li><a href="?chap=drs_ch2">Глава 2. Основы использования органов управления автомобилем</a></li>
+      <li><a href="?chap=drs_ch3">Глава 3. Эксплуатационные свойства автомобиля</a></li>
+      <li><a href="?chap=drs_ch4">Глава 4. Основы маневрирования автомобилем</a></li>
+      <li><a href="?chap=drs_ch5">Глава 5. Основы психофизиологии труда водителя</a></li>
+      <li><a href="?chap=drs_ch6">Глава 6. Этика поведения водителя автомобиля</a></li>
+      <li><a href="?chap=drs_ch7">Глава 7. Дорожные условия</a></li>
+      <li><a href="?chap=drs_ch8">Глава 8. Движение на перекрёстках, пешеходных переходах, железнодорожных переездах</a></li>
+      <li><a href="?chap=drs_ch9">Глава 9. Управление автомобилем в транспортном потоке</a></li>
+      <li><a href="?chap=drs_ch10">Глава 10. Управление автомобилем в особых условиях</a></li>
+      <li><a href="?chap=drs_ch11">Глава 11. Действия в опасных для перевозки пассажиров и грузов ситуациях</a></li>
+    </ul></label></li>
+<li><label><a href="#" class="ajaxlink" title="Первая помощь пострадавшим при дорожно-транспортных происшествиях">Первая помощь при ДТП</a><ul rel="0" class="themesEnum" data-code="8">
+      <li><a href="?chap=med">Первая помощь пострадавшим при ДТП. Оглавление</a></li>
+      <li><a href="?chap=med_ch1">Глава 1. Наружные кровотечения</a></li>
+      <li><a href="?chap=med_ch2">Глава 2. Обморок, травматический шок, клиническая смерть, сотрясение головного мозга</a></li>
+      <li><a href="?chap=med_ch3">Глава 3. Оживление или реанимация</a></li>
+      <li><a href="?chap=med_ch4">Глава 4. Термические и химические ожоги</a></li>
+      <li><a href="?chap=med_ch5">Глава 5. Вывихи и ушибы</a></li>
+      <li><a href="?chap=med_ch6">Глава 6. Раны и переломы</a></li>
+      <li><a href="?chap=med_ch7">Глава 7. Отравление бензином или выхлопными газами</a></li>
+      <li><a href="?chap=med_ch8">Глава 8. Травма живота</a></li>
+      <li><a href="?chap=med_ch9">Глава 9. Повязки</a></li>
+      <li><a href="?chap=med_ch10">Глава 10. Транспортировка пострадавших</a></li>
+      <li><a href="?chap=med_ch11">Глава 11. Обморожение</a></li>
+      <li><a href="?chap=med_ch12">Глава 12. Общие вопросы</a></li>
+    </ul></label></li>
+<li><label><a href="#" class="ajaxlink" title="Правовые основы дорожного движения. Штрафы и ответственность за нарушения ПДД РБ">Правовые основы дорожного движения</a><ul rel="0" class="themesEnum" data-code="9">
+      <li><a href="?chap=pr_zdd">Закон О дорожном движении</a></li>
+      <li><a href="?chap=pr_koap">Административная ответственность</a></li>
+      <li><a href="?chap=pr_gk">Гражданская ответственность</a></li>
+      <li><a href="?chap=pr_uk">Уголовная ответственность</a></li>
+    </ul></label></li>
+<li><label><a href="#" class="ajaxlink" title="Законодательная база по Правилам дорожного движения Республики Беларусь">Указы по ПДД</a><ul rel="0" class="themesEnum" data-code="1">
+      <li><a href="?chap=dc2005_nb551">Указ № 551 от 28.10.2005</a></li>
+      <li><a href="?chap=dc2014_nb483">Указ № 483 от 13.10.2014</a></li>
+      <li><a href="?chap=dc2015_nb349">Указ № 349 от 10.09.2015</a></li>
+      <li><a href="?chap=dc2019_nb492">Указ № 492 от 31.12.2019</a></li>
+      <li><a href="?chap=p32200145">Указ № 145 от 18.04.2022</a></li>
+      <li><a href="?chap=p32500295">Указ № 295 от 04.08.2025</a></li>
+    </ul></label></li></ul>
+    <br />
+    <p class="text-center">
+        <a id="ctl00_ContentLeftPlaceHolder_FullTextLink" title="Текст ПДД на одной странице" href="/pdd/by?chap=fulltext">
+            <i class="glyphicon glyphicon-book" aria-hidden="true" style="margin-right: 5px;"></i>Полный текст ПДД
+        </a>
+    </p>
+    <p class="text-center">
+        <a id="ctl00_ContentLeftPlaceHolder_ChangesLink" title="Описание изменений в Правила дорожного движения Республики Беларусь" href="../changes">
+            <i class="glyphicon glyphicon-text-size" aria-hidden="true" style="margin-right: 5px;"></i>Изменения в ПДД
+        </a>
+    </p>
+
+                </aside>
+            
+</div>
+            <div id="ctl00_CenterPane" class="col-xs-12 col-sm-6 col-md-6 col-lg-6">
+	
+                <main class="contentPanel castable">
+                    
+    
+    <div id="content"><div id="ch1" ><div class="pdd-header"><p><small>УТВЕРЖДЕНО<br />Указ Президента Республики Беларусь<br />28.11.2005 № 551<br />
+     «О мерах по повышению безопасности дорожного движения»<em class="partially"> (извлечение)</em></small></p><p><small>(с изменениями и дополнениями, внесёнными Указами Президента Республики Беларусь:<br /><a class="tglChange" title="Сменить стиль выделения двух последних изменений ПДД">от 18 марта 2025 г. № 108, вступившими в силу с 23.04.2025;<br />
+     от 4 августа 2025 года № 295, вступившими в силу с 01.09.2025</a>)</small></p></div><h1>Правила дорожного движения</h1><h3>Глава 1<br />Общие положения</h3><div class="pdd-item" id="chs_it1"><div class="text"><span class="pdd-num">1.</span> <span class="pdd-text">Настоящими Правилами определяется порядок <a href="?chap=ch1#chs_it2.17">движения на дорогах</a> Республики Беларусь.</span></div></div><div class="pdd-item" id="chs_it2"><div class="text"><span class="pdd-num">2.</span> <span class="pdd-text">В настоящих Правилах применяются следующие основные термины и понятия:</span></div><div class="pdd-item" id="chs_it2.1"><div class="text"><span class="pdd-num">2.1.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">автобус</strong> — <a href="?chap=ch1#chs_it2.2">автомобиль</a> с числом мест для сидения более девяти, включая место <a href="?chap=ch1#chs_it2.8">водителя</a>;</span></div></div><div class="pdd-item" id="chs_it2.2"><div class="text"><span class="pdd-num">2.2.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">автомобиль</strong> — <a href="?chap=ch1#chs_it2.26">механическое транспортное средство</a>, имеющее не менее четырёх колёс, расположенных не менее чем на двух осях, за исключением <a href="?chap=ch1#chs_it2.22">колёсных тракторов</a> и <a href="?chap=ch1#chs_it2.60">самоходных машин</a>. К автомобилям приравниваются квадрициклы (мотоколяски) — четырёхколёсные механические транспортные средства, имеющие приводы управления автомобильного типа и массу в снаряжённом состоянии не более 550 килограммов;</span></div></div><div class="pdd-item" id="chs_it2.3"><div class="text"><span class="pdd-num">2.3.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">автопоезд</strong> — состав <a href="?chap=ch1#chs_it2.69">транспортных средств</a>, состоящий из <a href="?chap=ch1#chs_it2.2">автомобиля</a> (<a href="?chap=ch1#chs_it2.22">колёсного трактора</a>) и буксируемого им прицепа, прицепа-роспуска, полуприцепа (если не указано иное, далее — <a href="?chap=ch1#chs_it2.54">прицеп</a>);</span></div></div><div class="pdd-item" id="chs_it2.4"><div class="text"><span class="pdd-num">2.4.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">безопасность дорожного движения</strong> — состояние <a href="?chap=ch1#chs_it2.17">дорожного движения</a>, обеспечивающее минимальную вероятность возникновения <a href="?chap=ch1#chs_it2.37">опасности для движения</a> и <a href="?chap=ch1#chs_it2.18">дорожно-транспортного происшествия</a>;</span></div></div><div class="pdd-item" id="chs_it2.5"><div class="text"><span class="pdd-num">2.5.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">велосипед, веломобиль</strong> (далее — велосипед) — <a href="?chap=ch1#chs_it2.69">транспортное средство</a>, за исключением инвалидных колясок, которое имеет не менее двух колёс и приводится в движение мускульной силой человека (людей), находящегося на (в) нём, в частности при помощи педалей или рукояток. К велосипеду приравниваются аналогичные по конструкции транспортные средства, имеющие электродвигатель номинальной максимальной мощностью в режиме длительной нагрузки, не превышающей 0,25 кВт, и <ins>(или) </ins>максимальную конструктивную скорость движения, определённую его технической характеристикой, не более 25 км/ч либо иной двигатель с аналогичной характеристикой;</span></div></div><div class="pdd-item" id="chs_it2.6"><div class="text"><span class="pdd-num">2.6.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">велосипедная дорожка</strong> — обособленная <a href="?chap=ch1#chs_it2.15">дорога</a> либо выделенный конструктивно или с помощью линий горизонтальной дорожной разметки <a href="?chap=ch1#chs_it2.78">элемент дороги</a>, предназначенные для движения <a href="?chap=ch1#chs_it2.8">водителей</a> <a href="?chap=ch1#chs_it2.5">велосипедов</a> (далее — велосипедисты) и <ins>водителей </ins><a href="?chap=ch1#chs_it2.60_1">средств персональной мобильности</a>, обозначенные <a href="?chap=ap2_ch2_pr4#ap2_ch2_it4.5.1g" class="pdd-permalink">дорожными знаками «Велосипедная дорожка»</a>, <a href="?chap=ap2_ch2_pr4#ap2_ch2_it4.11.1g" class="pdd-permalink">«Велосипедная и пешеходная дорожка»</a> и (или) <a href="?chap=ap3_ch2#ap3_ch2_it1.29g" class="pdd-permalink">дорожной разметкой 1.29</a> либо <a href="?chap=ap3_ch2#ap3_ch2_it1.31g" class="pdd-permalink">1.31</a> соответственно. Велосипедная дорожка может обозначаться зелёным цветом;</span></div></div><div class="pdd-item" id="chs_it2.6_1"><div class="text"><span class="pdd-num">2.6<sup>1</sup>.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">велосипедный переезд</strong> — <ins>элемент велосипедной дорожки</ins>, предназначенный для движения <a href="?chap=ch1#chs_it2.5">велосипедистов</a><ins> и водителей <a href="?chap=ch1#chs_it2.60_1">средств персональной мобильности</a></ins> через проезжую часть <a href="?chap=ch1#chs_it2.15">дороги</a> и обозначенный <a href="?chap=ap2_ch2_pr5#ap2_ch2_it5.16.3g" class="pdd-permalink">дорожным знаком «Велосипедный переезд»</a> и (или) горизонтальной дорожной разметкой;</span></div></div><div class="pdd-item" id="chs_it2.7"><div class="text"><span class="pdd-num">2.7.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">видимость дороги</strong> — максимальное расстояние в направлении движения, на котором с места <a href="?chap=ch1#chs_it2.8">водителя</a> можно распознать <a href="?chap=ch1#chs_it2.78">элементы дороги</a> и <a href="?chap=ch1#chs_it2.65">технические средства организации дорожного движения</a> перед <a href="?chap=ch1#chs_it2.69">транспортным средством</a> и правильно ориентироваться при <a href="?chap=ch1#chs_it2.74">управлении им</a>;</span></div></div><div class="pdd-item" id="chs_it2.8"><div class="text"><span class="pdd-num">2.8.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">водитель</strong> — физическое лицо, <a href="?chap=ch1#chs_it2.74">управляющее транспортным средством</a>, <a href="?chap=ch1#chs_it2.60">самоходной машиной</a>, за исключением лица, обучаемого управлению механическим <a href="?chap=ch1#chs_it2.69">транспортным средством</a>, самоходной машиной (сдающего квалификационный практический экзамен на право управления <a href="?chap=ch1#chs_it2.26">механическим транспортным средством</a>, самоходной машиной). К водителю приравниваются лицо, обучающее управлению механическим транспортным средством, самоходной машиной (принимающее квалификационный практический экзамен на право управления механическим транспортным средством, самоходной машиной) и при этом находящееся в нём (ней), а также всадник, погонщик скота;</span></div></div><div class="pdd-item" id="chs_it2.9"><div class="text"><span class="pdd-num">2.9.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">вынужденная остановка транспортного средства</strong> — прекращение движения <a href="?chap=ch1#chs_it2.69">транспортного средства</a> из-за его технической неисправности или <a href="?chap=ch1#chs_it2.37">опасности</a>, создаваемой <a href="?chap=ch1#chs_it2.77">участниками дорожного движения</a>, перевозимым грузом, состоянием <a href="?chap=ch1#chs_it2.8">водителя</a> (<a href="?chap=ch1#chs_it2.44">пассажира</a>), появлением объекта, <a href="?chap=ch1#chs_it2.52">препятствующего дорожному движению</a>;</span></div></div><div class="pdd-item" id="chs_it2.10"><div class="text"><span class="pdd-num">2.10.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">газон</strong> — участок земли с естественным или искусственно созданным растительным, преимущественно травяным, покровом;</span></div></div><div class="pdd-item" id="chs_it2.11"><div class="text"><span class="pdd-num">2.11.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">главная дорога</strong> — <a href="?chap=ch1#chs_it2.15">дорога</a>, обозначенная <a href="?chap=ap2_ch2_pr2#ap2_ch2_it2.1g" class="pdd-permalink">дорожными знаками «Главная дорога»</a>, <a href="?chap=ap2_ch2_pr2#ap2_ch2_it2.3.1g" class="pdd-permalink">«Пересечение со второстепенной дорогой»</a>, <a href="?chap=ap2_ch2_pr2#ap2_ch2_it2.3.2g" class="pdd-permalink">«Примыкание второстепенной дороги»</a>, <a href="?chap=ap2_ch2_pr5#ap2_ch2_it5.1g" class="pdd-permalink">«Автомагистраль»</a> или <a href="?chap=ap2_ch2_pr5#ap2_ch2_it5.3g" class="pdd-permalink">«Дорога для автомобилей»</a>, по отношению к пересекаемой (примыкающей), дорога с <a href="?chap=ch1#chs_it2.75">усовершенствованным покрытием</a> по отношению к дороге без такого покрытия, дорога с гравийным покрытием по отношению к грунтовой, любая дорога по отношению к выездам с <a href="?chap=ch1#chs_it2.53">прилегающих территорий</a> или <a href="?chap=ch1#chs_it2.21">жилых зон</a>. Наличие на второстепенной дороге непосредственно перед <a href="?chap=ch1#chs_it2.45">перекрёстком</a> участка с покрытием (усовершенствованным или гравийным) не делает её равной по значению с пересекаемой;</span></div></div><div class="pdd-item" id="chs_it2.12"><div class="text"><span class="pdd-num">2.12.</span> <span class="pdd-text">исключён;</span></div></div><div class="pdd-item" id="chs_it2.13"><div class="text"><span class="pdd-num">2.13.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">гужевое транспортное средство</strong> — <a href="?chap=ch1#chs_it2.69">транспортное средство</a>, приводимое в движение мускульной силой животного (животных);</span></div></div><div class="pdd-item" id="chs_it2.14"><div class="text"><span class="pdd-num">2.14.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">дети</strong> — несовершеннолетние <a href="?chap=ch1#chs_it2.77">участники дорожного движения</a>, возраст которых известен либо очевиден по внешним признакам другим участникам <a href="?chap=ch1#chs_it2.17">дорожного движения</a>;</span></div></div><div class="pdd-item" id="chs_it2.15"><div class="text"><span class="pdd-num">2.15.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">дорога</strong> — комплекс инженерных сооружений либо полоса земли, предназначенные и используемые для движения в установленном порядке <a href="?chap=ch1#chs_it2.69">транспортных средств</a> и <a href="?chap=ch1#chs_it2.46">пешеходов</a>;</span></div></div><div class="pdd-item" id="chs_it2.16"><div class="text"><span class="pdd-num">2.16.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">дорожка для всадников</strong> — полоса земли, предназначенная для движения в установленном порядке всадников, обозначенная <a href="?chap=ap2_ch2_pr4#ap2_ch2_it4.10.1g" class="pdd-permalink">дорожным знаком «Дорожка для всадников»</a>;</span></div></div><div class="pdd-item" id="chs_it2.17"><div class="text"><span class="pdd-num">2.17.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">дорожное движение</strong> — движение <a href="?chap=ch1#chs_it2.46">пешеходов</a> и (или) <a href="?chap=ch1#chs_it2.69">транспортных средств</a> по <a href="?chap=ch1#chs_it2.15">дороге</a>, в том числе <a href="?chap=ch1#chs_it2.61">стоянка</a> и <a href="?chap=ch1#chs_it2.41">остановка</a> в пределах <a href="?chap=ch1#chs_it2.15">дороги</a>, и связанные с ним общественные отношения;</span></div></div><div class="pdd-item" id="chs_it2.18"><div class="text"><span class="pdd-num">2.18.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">дорожно-транспортное происшествие</strong> — происшествие, совершённое с участием хотя бы одного находившегося в движении <a href="?chap=ch1#chs_it2.26">механического транспортного средства</a>, в результате которого причинён вред жизни или здоровью физического лица, его имуществу либо имуществу юридического лица;</span></div></div><div class="pdd-item" id="chs_it2.19"><div class="text"><span class="pdd-num">2.19.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">железнодорожное транспортное средство</strong> — локомотив, электропоезд, дизель-поезд, автомотриса, иное <a href="?chap=ch1#chs_it2.69">транспортное средство</a>, предназначенное для перевозки <a href="?chap=ch1#chs_it2.44">пассажиров</a> и грузов по железнодорожному пути;</span></div></div><div class="pdd-item" id="chs_it2.20"><div class="text"><span class="pdd-num">2.20.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">железнодорожный переезд</strong> — пересечение <a href="?chap=ch1#chs_it2.15">дороги</a> с железнодорожными путями на одном уровне;</span></div></div><div class="pdd-item" id="chs_it2.21"><div class="text"><span class="pdd-num">2.21.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">жилая зона</strong> — территория, въезды на которую и выезды с которой обозначены <a href="?chap=ap2_ch2_pr5#ap2_ch2_it5.38g" class="pdd-permalink">дорожными знаками «Жилая зона»</a> и <a href="?chap=ap2_ch2_pr5#ap2_ch2_it5.39g" class="pdd-permalink">«Конец жилой зоны»</a>, а также дворовая территория, прилегающая к жилой застройке<ins>, территория садоводческого товарищества или дачного кооператива</ins>;</span></div></div><div class="pdd-item" id="chs_it2.21_1"><div class="text"><span class="pdd-num">2.21<sup>1</sup>.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">зона с ограничением максимальной скорости</strong> — территория, въезды на которую и выезды с которой обозначены <a href="?chap=ap2_ch2_pr3#ap2_ch2_it3.33g" class="pdd-permalink">дорожными знаками «Зона с ограничением максимальной скорости движения»</a> и <a href="?chap=ap2_ch2_pr3#ap2_ch2_it3.34g" class="pdd-permalink">«Конец зоны с ограничением максимальной скорости движения»</a>;</span></div></div><div class="pdd-item" id="chs_it2.22"><div class="text"><span class="pdd-num">2.22.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">колёсный трактор</strong> — <a href="?chap=ch1#chs_it2.26">механическое транспортное средство</a> для выполнения разнообразных технологических операций с помощью навесных, полунавесных и прицепных машин или орудий, а также для привода стационарных машин или движения в составе с <a href="?chap=ch1#chs_it2.54">прицепом</a>;</span></div></div><div class="pdd-item" id="chs_it2.22_1"><div class="text"><span class="pdd-num">2.22<sup>1</sup>.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">комбинированное транспортное средство</strong> — состав <a href="?chap=ch1#chs_it2.69">транспортных средств</a>, состоящий из грузового <a href="?chap=ch1#chs_it2.2">автомобиля</a>, автомобиля-тягача, седельного тягача, <a href="?chap=ch1#chs_it2.22">колёсного трактора</a> и буксируемого <a href="?chap=ch1#chs_it2.26">механического транспортного средства</a>;</span></div></div><div class="pdd-item" id="chs_it2.23"><div class="text"><span class="pdd-num">2.23.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">крайнее правое (левое) положение на проезжей части дороги</strong> — положение <a href="?chap=ch1#chs_it2.69">транспортного средства</a> на <a href="?chap=ch1#chs_it2.55">проезжей части дороги</a>, предназначенной для движения в данном направлении, не дающее возможности движения даже <a href="?chap=ch1#chs_it2.36">одноколейных транспортных средств</a> соответственно правее (левее) в попутном направлении;</span></div></div><div class="pdd-item" id="chs_it2.24"><div class="text"><span class="pdd-num">2.24.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">маневрирование (манёвр)</strong> — начало движения, перестроение <a href="?chap=ch1#chs_it2.69">транспортного средства</a> в движении из одной <a href="?chap=ch1#chs_it2.50">полосы движения</a> в другую (далее — перестроение), выезд транспортного средства на трамвайные пути, съезд с них, а также его поворот направо или налево, разворот, съезд с <a href="?chap=ch1#chs_it2.55">проезжей части дороги</a>, движение задним ходом;</span></div></div><div class="pdd-item" id="chs_it2.25"><div class="text"><span class="pdd-num">2.25.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">маршрутное транспортное средство</strong> — <a href="?chap=ch1#chs_it2.26">механическое транспортное средство</a> (<a href="?chap=ch1#chs_it2.1">автобус</a>, <a href="?chap=ch1#chs_it2.71">троллейбус</a>, <a href="?chap=ch1#chs_it2.67">трамвай</a>, иное <a href="?chap=ch1#chs_it2.69">транспортное средство</a>, осуществляющее движение в регулярном обычном, скоростном сообщении, в том числе экспрессном), движущееся по установленному маршруту с обозначенными остановочными пунктами;</span></div></div><div class="pdd-item" id="chs_it2.26"><div class="text"><span class="pdd-num">2.26.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">механическое транспортное средство</strong> — <a href="?chap=ch1#chs_it2.69">транспортное средство</a>, приводимое в движение двигателем<ins>.</ins></span></div><div class="pdd-item" id="chs_it2.26-1"><div class="text"><span class="pdd-text"><ins>К механическим транспортным средствам не относятся:</ins></span></div><div class="pdd-item" id="chs_it2.26-1.1"><div class="text"><span class="pdd-text"><ins>средства персональной мобильности;</ins></span></div></div><div class="pdd-item" id="chs_it2.26-1.2"><div class="text"><span class="pdd-text"><ins>велосипеды, имеющие электродвигатель номинальной максимальной мощностью в режиме длительной нагрузки, не превышающей 0,25 кВт, или максимальную конструктивную скорость движения, определенную его технической характеристикой, не более 25 км/ч либо иной двигатель с аналогичной характеристикой;</ins></span></div></div><div class="pdd-item" id="chs_it2.26-1.3"><div class="text"><span class="pdd-text"><ins>транспортные средства, приводимые в движение двигателем, максимальная конструктивная скорость движения которых превышает 25 км/ч, имеющие массу менее 35 кг и на которых отсутствуют сиденье и рулевое управление;</ins></span></div></div></div></div><div class="pdd-item" id="chs_it2.27"><div class="text"><span class="pdd-num">2.27.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">мопед</strong> — двух- или трёхколёсное <a href="?chap=ch1#chs_it2.26">механическое транспортное средство</a>, приводимое в движение двигателем с рабочим объёмом до 50 куб. сантиметров (в случае двигателя внутреннего сгорания) или электродвигателем номинальной максимальной мощностью в режиме длительной нагрузки более 0,25 кВт и не более 4 кВт и имеющее максимальную конструктивную скорость движения, определённую его техническими характеристиками, не более 50 км/ч<ins>;</ins></span></div></div><div class="pdd-item" id="chs_it2.28"><div class="text"><span class="pdd-num">2.28.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">мотоцикл</strong> — двухколёсное <a href="?chap=ch1#chs_it2.26">механическое транспортное средство</a> с боковым <a href="?chap=ch1#chs_it2.54">прицепом</a> или без него, приводимое в движение двигателем с рабочим объёмом 50 куб. сантиметров и более (в случае двигателя внутреннего сгорания) или максимальная конструктивная скорость которого (при любом двигателе) превышает 50 км/ч. К мотоциклам приравниваются трёх- и четырёхколёсные механические <a href="?chap=ch1#chs_it2.69">транспортные средства</a> с приводами управления мотоциклетного типа, имеющие массу в снаряжённом состоянии не более 550 килограммов (без учёта массы аккумуляторов электрических транспортных средств) и максимальную эффективную мощность двигателя, не превышающую 15 кВт;</span></div></div><div class="pdd-item" id="chs_it2.29"><div class="text"><span class="pdd-num">2.29.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">населённый пункт</strong> — территория, въезды на которую и выезды с которой обозначены <a href="?chap=ap2_ch2_pr5#ap2_ch2_it5.22.1g" class="pdd-permalink">дорожными знаками «Начало населённого пункта»</a> и<a href="?chap=ap2_ch2_pr5#ap2_ch2_it5.23.1g" class="pdd-permalink"> «Конец населённого пункта»</a> или <a href="?chap=ap2_ch2_pr5#ap2_ch2_it5.24g" class="pdd-permalink">дорожными знаками «Начало границы населённого пункта»</a> и <a href="?chap=ap2_ch2_pr5#ap2_ch2_it5.25g" class="pdd-permalink">«Конец границы населённого пункта»</a>;</span></div></div><div class="pdd-item" id="chs_it2.30"><div class="text"><span class="pdd-num">2.30.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">недостаточная видимость дороги</strong> — видимость <a href="?chap=ch1#chs_it2.15">дороги</a> в направлении движения менее 300 метров, обусловленная погодными (метеорологическими) условиями (дождь, снег и иные атмосферные осадки) и другими факторами, снижающими прозрачность атмосферы (пыль, дым, туман, смог);</span></div></div><div class="pdd-item" id="chs_it2.31"><div class="text"><span class="pdd-num">2.31.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">обгон</strong> — опережение одного или нескольких движущихся <a href="?chap=ch1#chs_it2.69">транспортных средств</a>, связанное с выездом на встречную <a href="?chap=ch1#chs_it2.50">полосу движения</a> (сторону <a href="?chap=ch1#chs_it2.55">проезжей части дороги</a>);</span></div></div><div class="pdd-item" id="chs_it2.32"><div class="text"><span class="pdd-num">2.32.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">обзорность дороги</strong> — объективная возможность видеть дорожную обстановку с места <a href="?chap=ch1#chs_it2.8">водителя</a>;</span></div></div><div class="pdd-item" id="chs_it2.33"><div class="text"><span class="pdd-num">2.33.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">обозначенный перекрёсток</strong> — <a href="?chap=ch1#chs_it2.45">перекрёсток</a>, перед которым на данной <a href="?chap=ch1#chs_it2.15">дороге</a> установлен дорожный знак (знаки) приоритета;</span></div></div><div class="pdd-item" id="chs_it2.34"><div class="text"><span class="pdd-num">2.34.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">обочина</strong> — выделенный конструктивно или сплошной линией горизонтальной дорожной разметки <a href="?chap=ch1#chs_it2.78">элемент дороги</a>, примыкающий непосредственно к внешнему краю <a href="?chap=ch1#chs_it2.55">проезжей части</a>, расположенный с ней на одном уровне и не предназначенный для движения <a href="?chap=ch1#chs_it2.69">транспортных средств</a>, кроме случаев, предусмотренных настоящими Правилами;</span></div></div><div class="pdd-item" id="chs_it2.35"><div class="text"><span class="pdd-num">2.35.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">ограниченная обзорность дороги</strong> — <a href="?chap=ch1#chs_it2.32">обзорность дороги</a>, ограниченная геометрическими параметрами <a href="?chap=ch1#chs_it2.15">дороги</a>, придорожными инженерными сооружениями, насаждениями и прочими объектами, а также <a href="?chap=ch1#chs_it2.69">транспортными средствами</a>;</span></div></div><div class="pdd-item" id="chs_it2.36"><div class="text"><span class="pdd-num">2.36.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">одноколейное транспортное средство</strong> — <a href="?chap=ch1#chs_it2.69">транспортное средство</a> на колёсах, которые размещены на одной линии одно за другим;</span></div></div><div class="pdd-item" id="chs_it2.37"><div class="text"><span class="pdd-num">2.37.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">опасность для движения</strong> — изменение условий <a href="?chap=ch1#chs_it2.17">дорожного движения</a> или технического состояния <a href="?chap=ch1#chs_it2.69">транспортного средства</a>, угрожающее <a href="?chap=ch1#chs_it2.4">безопасности</a> <a href="?chap=ch1#chs_it2.77">участников дорожного движения</a>, вынуждающее <a href="?chap=ch1#chs_it2.8">водителя</a> снизить скорость движения или <a href="?chap=ch1#chs_it2.9">остановиться</a>;</span></div></div><div class="pdd-item" id="chs_it2.38"><div class="text"><span class="pdd-num">2.38.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">опережение</strong> — движение <a href="?chap=ch1#chs_it2.69">транспортного средства</a> со скоростью, превышающей скорость попутно движущегося транспортного средства (транспортных средств);</span></div></div><div class="pdd-item" id="chs_it2.39"><div class="text"><span class="pdd-num">2.39.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">организованная пешеходная колонна</strong> — группа <a href="?chap=ch1#chs_it2.46">пешеходов</a>, обозначенная в соответствии с настоящими Правилами, имеющая руководителя и передвигающаяся по определённому маршруту;</span></div></div><div class="pdd-item" id="chs_it2.40"><div class="text"><span class="pdd-num">2.40.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">организованная транспортная колонна</strong> — <a href="?chap=ch1#chs_it2.69">транспортное средство</a> или <a href="?chap=ch1#chs_it2.68">транспортная колонна</a>, движущиеся с постоянно включённым ближним светом фар в сопровождении <a href="?chap=ch1#chs_it2.70">транспортного средства (транспортных средств) оперативного назначения</a> с включёнными проблесковыми сигналами (маячками) (далее — маячки) синего или синего и красного цветов;</span></div></div><div class="pdd-item" id="chs_it2.40_1"><div class="text"><span class="pdd-num">2.40<sup>1</sup>.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">оставление места дорожно-транспортного происшествия</strong> — действия участника <a href="?chap=ch1#chs_it2.18">дорожно-транспортного происшествия</a>, направленные на сокрытие факта такого происшествия или обстоятельств его совершения, повлёкшие необходимость проведения сотрудниками Государственной автомобильной инспекции Министерства внутренних дел (далее — ГАИ) мероприятий по установлению (розыску) данного участника и (или) розыску <a href="?chap=ch1#chs_it2.69">транспортного средства</a>;</span></div></div><div class="pdd-item" id="chs_it2.41"><div class="text"><span class="pdd-num">2.41.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">остановка транспортного средства</strong> — преднамеренное прекращение движения <a href="?chap=ch1#chs_it2.69">транспортного средства</a> на время до 5 минут или более чем на 5 минут, если это необходимо для посадки (высадки) <a href="?chap=ch1#chs_it2.44">пассажиров</a> либо загрузки (разгрузки) транспортного средства, а также зарядки <a href="?chap=ch1#chs_it2.77_2">электромобиля</a><ins> или иного транспортного средства, имеющего возможность зарядки от внешнего источника</ins>;</span></div></div><div class="pdd-item" id="chs_it2.42"><div class="text"><span class="pdd-num">2.42.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">островок безопасности</strong> — <a href="?chap=ch1#chs_it2.65">техническое средство организации дорожного движения</a> на наземных пешеходных переходах (если не определено иное, далее — <a href="?chap=ch1#chs_it2.49">пешеходный переход</a>), защитные элементы которого обеспечивают конструктивное выделение места для безопасной остановки <a href="?chap=ch1#chs_it2.46">пешеходов</a> при переходе <a href="?chap=ch1#chs_it2.55">проезжей части дороги</a>. К островку безопасности относится участок <a href="?chap=ch1#chs_it2.58">разделительной полосы</a>, через которую проходит пешеходный переход;</span></div></div><div class="pdd-item" id="chs_it2.43"><div class="text"><span class="pdd-num">2.43.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">очевидец дорожно-транспортного происшествия</strong> — физическое лицо, непосредственно наблюдавшее <a href="?chap=ch1#chs_it2.18">дорожно-транспортное происшествие</a>, которое располагает соответствующей информацией и может её предоставить;</span></div></div><div class="pdd-item" id="chs_it2.44"><div class="text"><span class="pdd-num">2.44.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">пассажир</strong> — непричастное к <a href="?chap=ch1#chs_it2.74">управлению транспортным средством</a> физическое лицо, находящееся в (на) <a href="?chap=ch1#chs_it2.69">транспортном средстве</a>, а также входящее (садящееся) в (на) транспортное средство или сходящее (высаживающееся) с транспортного средства;</span></div></div><div class="pdd-item" id="chs_it2.45"><div class="text"><span class="pdd-num">2.45.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">перекрёсток</strong> — место пересечения, примыкания или разветвления <a href="?chap=ch1#chs_it2.15">дорог</a> на одном уровне. Граница перекрёстка определяется воображаемыми линиями, соединяющими соответственно противоположные, наиболее удалённые от центра перекрёстка начала закруглений <a href="?chap=ch1#chs_it2.55">проезжих частей дорог</a>. Не являются перекрёстками пересечения с <a href="?chap=ch1#chs_it2.6">велосипедными</a>, <a href="?chap=ch1#chs_it2.47">пешеходными дорожками</a> и <a href="?chap=ch1#chs_it2.16">дорожками для всадников</a>;</span></div></div><div class="pdd-item" id="chs_it2.46"><div class="text"><span class="pdd-num">2.46.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">пешеход</strong> — физическое лицо, участвующее в <a href="?chap=ch1#chs_it2.17">дорожном движении</a> вне <a href="?chap=ch1#chs_it2.69">транспортного средства</a>, в том числе передвигающееся в инвалидной коляске, на самокате, роликовых коньках, лыжах, другом спортивном инвентаре, ведущее <a href="?chap=ch1#chs_it2.5">велосипед</a>, <ins><a href="?chap=ch1#chs_it2.60_1">средство персональной мобильности</a>, мотоблок, </ins><a href="?chap=ch1#chs_it2.27">мопед</a> или <a href="?chap=ch1#chs_it2.28">мотоцикл</a>, везущее санки или коляску (тележку) и не выполняющее в установленном порядке на <a href="?chap=ch1#chs_it2.15">дороге</a> ремонтные и другие работы<ins>;</ins></span></div></div><div class="pdd-item" id="chs_it2.47"><div class="text"><span class="pdd-num">2.47.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">пешеходная дорожка</strong> — выделенный конструктивно или с помощью линий <a href="?chap=ap3_ch2#ap3_ch2">горизонтальной дорожной разметки</a> <a href="?chap=ch1#chs_it2.78">элемент дороги</a>, предназначенный для движения <a href="?chap=ch1#chs_it2.46">пешеходов</a>, обозначенный <a href="?chap=ap2_ch2_pr4#ap2_ch2_it4.6.1g" class="pdd-permalink">дорожными знаками «Пешеходная дорожка»</a>, <a href="?chap=ap2_ch2_pr4#ap2_ch2_it4.11.1g" class="pdd-permalink">«Велосипедная и пешеходная дорожка»</a> и (или) дорожной <a href="?chap=ap3_ch2#ap3_ch2_it1.30g" class="pdd-permalink">разметкой 1.30</a> либо <a href="?chap=ap3_ch2#ap3_ch2_it1.31g" class="pdd-permalink">1.31</a> соответственно;</span></div></div><div class="pdd-item" id="chs_it2.48"><div class="text"><span class="pdd-num">2.48.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">пешеходная зона</strong> — территория, предназначенная для движения <a href="?chap=ch1#chs_it2.46">пешеходов</a> и велосипедистов, въезды на которую и выезды с которой обозначены <a href="?chap=ap2_ch2_pr5#ap2_ch2_it5.40g" class="pdd-permalink">дорожными знаками «Пешеходная зона»</a> и <a href="?chap=ap2_ch2_pr5#ap2_ch2_it5.41g" class="pdd-permalink">«Конец пешеходной зоны»</a>;</span></div></div><div class="pdd-item" id="chs_it2.49"><div class="text"><span class="pdd-num">2.49.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">пешеходный переход</strong> — участок проезжей части, предназначенный для движения <a href="?chap=ch1#chs_it2.46">пешеходов</a> через <a href="?chap=ch1#chs_it2.55">проезжую часть дороги</a> и обозначенный <a href="?chap=ap2_ch2_pr5#ap2_ch2_it5.16.1g" class="pdd-permalink">дорожными знаками «Пешеходный переход»</a> и (или) <a href="?chap=ap3_ch2#ap3_ch2">горизонтальной дорожной разметкой</a>;</span></div></div><div class="pdd-item" id="chs_it2.50"><div class="text"><span class="pdd-num">2.50.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">полоса движения</strong> — любая из продольных полос <a href="?chap=ch1#chs_it2.55">проезжей части дороги</a>, обозначенная или не обозначенная <a href="?chap=ap3_ch2#ap3_ch2">горизонтальной дорожной разметкой</a> и имеющая ширину, достаточную для движения <a href="?chap=ch1#chs_it2.69">транспортных средств</a> (за исключением <a href="?chap=ch1#chs_it2.36">одноколейных</a>) в один ряд;</span></div></div><div class="pdd-item" id="chs_it2.51"><div class="text"><span class="pdd-num">2.51.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">преимущество</strong> — право на первоочередное движение в намеченном направлении по отношению к другим <a href="?chap=ch1#chs_it2.77">участникам дорожного движения</a>. Преимущество <a href="?chap=ch1#chs_it2.46">пешеходу</a> считается предоставленным, если расстояние между <a href="?chap=ch1#chs_it2.69">транспортным средством</a> и приближающимся пешеходом (в момент пересечения транспортным средством траектории движения пешехода) составило не менее двух <a href="?chap=ch1#chs_it2.50">полос движения</a> транспортного средства (в том числе одну полосу и трамвайные пути попутного направления, одну полосу и <a href="?chap=ch1#chs_it2.58">разделительную полосу</a> или <a href="?chap=ch1#chs_it2.57">зону</a>, одну полосу и <a href="?chap=ch1#chs_it2.42">островок безопасности</a>). В таком случае <a href="?chap=ch1#chs_it2.8">водитель</a> вправе не принимать мер, предусмотренных в <a href="?chap=ch1#chs_it2.76">подпункте 2.76</a> настоящего пункта;</span></div></div><div class="pdd-item" id="chs_it2.52"><div class="text"><span class="pdd-num">2.52.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">препятствие для дорожного движения</strong> — объект, который находится на пути <a href="?chap=ch1#chs_it2.77">участника дорожного движения</a> и вынуждает его снизить скорость движения, совершить объезд или <a href="?chap=ch1#chs_it2.9">остановиться</a>;</span></div></div><div class="pdd-item" id="chs_it2.53"><div class="text"><span class="pdd-num">2.53.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">прилегающая территория</strong> — территория, непосредственно прилегающая к <a href="?chap=ch1#chs_it2.55">проезжей части дороги</a>, не предназначенная для сквозного проезда, на которой расположены дворы, площадки, специально отведённые для <a href="?chap=ch1#chs_it2.61">стоянки транспортных средств</a>, автозаправочные станции, строительные площадки и иные объекты;</span></div></div><div class="pdd-item" id="chs_it2.54"><div class="text"><span class="pdd-num">2.54.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">прицеп</strong> — <a href="?chap=ch1#chs_it2.69">транспортное средство</a>, предназначенное для движения в составе с <a href="?chap=ch1#chs_it2.26">механическим транспортным средством</a>;</span></div></div><div class="pdd-item" id="chs_it2.55"><div class="text"><span class="pdd-num">2.55.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">проезжая часть дороги</strong> — <a href="?chap=ch1#chs_it2.78">элемент дороги</a>, предназначенный для движения <a href="?chap=ch1#chs_it2.69">транспортных средств</a> и в случаях, предусмотренных настоящими Правилами, — для движения <a href="?chap=ch1#chs_it2.46">пешеходов</a>;</span></div></div><div class="pdd-item" id="chs_it2.56"><div class="text"><span class="pdd-num">2.56.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">путепровод</strong> — инженерное сооружение, устраиваемое в местах пересечения <a href="?chap=ch1#chs_it2.15">дорог</a> или дороги с железнодорожными путями для обеспечения беспрепятственного движения в разных уровнях;</span></div></div><div class="pdd-item" id="chs_it2.57"><div class="text"><span class="pdd-num">2.57.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">разделительная зона</strong> — выделенный горизонтальной дорожной разметкой <a href="?chap=ch1#chs_it2.78">элемент дороги</a>, разделяющий смежные <a href="?chap=ch1#chs_it2.55">проезжие части</a> и не предназначенный для движения или <a href="?chap=ch1#chs_it2.41">остановки транспортных средств</a> и <a href="?chap=ch1#chs_it2.46">пешеходов</a> вне специально обозначенных мест;</span></div></div><div class="pdd-item" id="chs_it2.58"><div class="text"><span class="pdd-num">2.58.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">разделительная полоса</strong> — выделенный конструктивно <a href="?chap=ch1#chs_it2.78">элемент дороги</a>, разделяющий смежные <a href="?chap=ch1#chs_it2.55">проезжие части</a> и не предназначенный для движения или <a href="?chap=ch1#chs_it2.41">остановки транспортных средств</a> и <a href="?chap=ch1#chs_it2.46">пешеходов</a> вне специально оборудованных и обозначенных мест;</span></div></div><div class="pdd-item" id="chs_it2.59"><div class="text"><span class="pdd-num">2.59.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">регулировщик</strong> — сотрудник ГАИ, осуществляющий регулирование <a href="?chap=ch1#chs_it2.17">дорожного движения</a> в экипировке (форменной одежде повышенной видимости с элементами из световозвращающего материала, с жезлом и свистком). К регулировщику приравниваются:</span></div><div class="pdd-item" id="chs_it2.59-1"><div class="text"><span class="pdd-text">сотрудник Военной автомобильной инспекции Вооружённых Сил, органов пограничной службы, органов государственной безопасности и подчинённых им воинских частей в экипировке (форменной одежде повышенной видимости с элементами из световозвращающего материала, с диском с красным сигналом (световозвращателем) и свистком) при обеспечении движения организованных транспортных колонн, в состав которых входят транспортные средства, принадлежащие Министерству обороны, Министерству внутренних дел, органам государственной безопасности, Государственному пограничному комитету, другим войскам и воинским формированиям;</span></div></div><div class="pdd-item" id="chs_it2.59-2"><div class="text"><span class="pdd-text">работники дорожно-строительных и эксплуатационных организаций, дежурные на <a href="?chap=ch1#chs_it2.20">железнодорожных переездах</a> и паромных переправах в одежде из световозвращающего материала, с диском с красным сигналом (световозвращателем) при исполнении ими своих служебных обязанностей;</span></div></div></div><div class="pdd-item" id="chs_it2.60"><div class="text"><span class="pdd-num">2.60.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">самоходная машина</strong> — гусеничный трактор, сельскохозяйственная, дорожная, строительная, иная машина, которые без дополнительных мер обеспечения <a href="?chap=ch1#chs_it2.4">безопасности дорожного движения</a>, предусмотренных изготовителем, не предназначены для участия в <a href="?chap=ch1#chs_it2.17">дорожном движении</a>. При участии в дорожном движении самоходные машины приравниваются к <a href="?chap=ch1#chs_it2.69">транспортным средствам</a>, а их движение по <a href="?chap=ch1#chs_it2.15">дорогам</a> должно осуществляться в соответствии с требованиями настоящих Правил, предъявляемыми к транспортным средствам, если этими Правилами не установлено иное в отношении самоходных машин;</span></div></div><div class="pdd-item" id="chs_it2.60_1"><div class="text"><span class="pdd-num">2.60<sup>1</sup>.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">средство персональной мобильности</strong> — <ins>транспортное средство, имеющее одно или несколько колес (роликов) и максимальную конструктивную скорость движения не более 25 км/ч, предназначенное для передвижения одного человека посредством использования электродвигателя (электродвигателей). Лица, передвигающиеся на средствах персональной мобильности, приравниваются к велосипедистам с учетом особенностей, предусмотренных настоящими Правилами</ins>;</span></div></div><div class="pdd-item" id="chs_it2.61"><div class="text"><span class="pdd-num">2.61.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">стоянка транспортного средства</strong> — преднамеренное прекращение движения <a href="?chap=ch1#chs_it2.69">транспортного средства</a> более чем на 5 минут по причинам, не связанным с посадкой (высадкой) <a href="?chap=ch1#chs_it2.44">пассажиров</a> либо загрузкой (разгрузкой) транспортного средства, а также зарядкой <a href="?chap=ch1#chs_it2.77_2">электромобиля</a><ins> или иного транспортного средства, имеющего возможность зарядки от внешнего источника</ins>;</span></div></div><div class="pdd-item" id="chs_it2.62"><div class="text"><span class="pdd-num">2.62.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">тахограф</strong> — оборудование, предназначенное для установки на <a href="?chap=ch1#chs_it2.69">транспортных средствах</a> в целях показания или регистрации в автоматическом или полуавтоматическом режиме данных о движении этих транспортных средств или об определённых периодах работы их <a href="?chap=ch1#chs_it2.8">водителей</a>;</span></div></div><div class="pdd-item" id="chs_it2.63"><div class="text"><span class="pdd-num">2.63.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">тёмное время суток</strong> — промежуток времени, который начинается после захода солнца и заканчивается с восходом солнца;</span></div></div><div class="pdd-item" id="chs_it2.64"><div class="text"><span class="pdd-num">2.64.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">технически допустимая общая масса</strong> — максимальная масса <a href="?chap=ch1#chs_it2.69">транспортного средства</a>, установленная изготовителем (с грузом, <a href="?chap=ch1#chs_it2.8">водителем</a> и <a href="?chap=ch1#chs_it2.44">пассажирами</a>). Технически допустимой общей массой <a href="?chap=ch1#chs_it2.3">автопоезда</a> является сумма технически допустимых общих масс <a href="?chap=ch1#chs_it2.2">автомобиля</a> (<a href="?chap=ch1#chs_it2.22">колёсного трактора</a>) и <a href="?chap=ch1#chs_it2.54">прицепа</a>;</span></div></div><div class="pdd-item" id="chs_it2.65"><div class="text"><span class="pdd-num">2.65.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">технические средства организации дорожного движения</strong> — устройства, конструкции и изображения, применяемые на <a href="?chap=ch1#chs_it2.15">дорогах</a> для регулирования <a href="?chap=ch1#chs_it2.17">дорожного движения</a>, обеспечения его <a href="?chap=ch1#chs_it2.4">безопасности</a> и повышения пропускной способности дорог;</span></div></div><div class="pdd-item" id="chs_it2.66"><div class="text"><span class="pdd-num">2.66.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">тихоходное транспортное средство</strong> — <a href="?chap=ch1#chs_it2.26">механическое транспортное средство</a>, которое по своей конструкции или по условиям обеспечения <a href="?chap=ch1#chs_it2.4">безопасности</a> при перевозке груза не может двигаться со скоростью, превышающей 30 км/ч, обозначенное <a href="?chap=ap5#ap5_it8g" class="pdd-permalink">опознавательным знаком «Тихоходное транспортное средство»</a>;</span></div></div><div class="pdd-item" id="chs_it2.67"><div class="text"><span class="pdd-num">2.67.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">трамвай</strong> — <a href="?chap=ch1#chs_it2.26">механическое транспортное средство</a>, предназначенное для движения по рельсам, участвующее в <a href="?chap=ch1#chs_it2.17">дорожном движении</a> и не являющееся <a href="?chap=ch1#chs_it2.19">железнодорожным транспортным средством</a>;</span></div></div><div class="pdd-item" id="chs_it2.68"><div class="text"><span class="pdd-num">2.68.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">транспортная колонна</strong> — группа из двух и более <a href="?chap=ch1#chs_it2.26">механических транспортных средств</a>, следующих друг за другом по одной <a href="?chap=ch1#chs_it2.50">полосе движения</a> с постоянно включённым ближним светом фар, обозначенная <a href="?chap=ap5#ap5_it7g" class="pdd-permalink">опознавательными знаками «Колонна»</a>, если иное не определено <a href="?chap=ch26#chs_it201.7" class="pdd-permalink">подпунктом 201.7</a> <a href="?chap=ch26#chs_it201" class="pdd-permalink">пункта 201</a> настоящих Правил;</span></div></div><div class="pdd-item" id="chs_it2.68_1"><div class="text"><span class="pdd-num">2.68<sup>1</sup>.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">транспортная развязка в разных уровнях</strong> — инженерное сооружение, включающее <a href="?chap=ch1#chs_it2.56">путепровод</a> и съезды, обеспечивающие перемещение <a href="?chap=ch1#chs_it2.69">транспортных средств</a> с одной <a href="?chap=ch1#chs_it2.15">дороги</a> на другую;</span></div></div><div class="pdd-item" id="chs_it2.69"><div class="text"><span class="pdd-num">2.69.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">транспортное средство</strong> — устройство, предназначенное для движения по <a href="?chap=ch1#chs_it2.15">дороге</a> и для перевозки <a href="?chap=ch1#chs_it2.44">пассажиров</a>, грузов или установленного на нём оборудования;</span></div></div><div class="pdd-item" id="chs_it2.70"><div class="text"><span class="pdd-num">2.70.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">транспортное средство оперативного назначения</strong> — <a href="?chap=ch1#chs_it2.69">транспортное средство</a>, имеющее специальную цветографическую окраску и (или) световую и звуковую сигнализацию;</span></div></div><div class="pdd-item" id="chs_it2.71"><div class="text"><span class="pdd-num">2.71.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">троллейбус</strong> — <a href="?chap=ch1#chs_it2.26">механическое транспортное средство</a>, приводимое в движение электродвигателем, питание которого обеспечивается по подвесной контактной сети от внешнего источника электрического тока;</span></div></div><div class="pdd-item" id="chs_it2.72"><div class="text"><span class="pdd-num">2.72.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">тротуар</strong> — <a href="?chap=ch1#chs_it2.78">элемент дороги</a>, примыкающий к <a href="?chap=ch1#chs_it2.55">проезжей части</a> или отделённый от неё газоном, предназначенный для движения <a href="?chap=ch1#chs_it2.46">пешеходов</a> и велосипедистов в соответствии с настоящими Правилами;</span></div></div><div class="pdd-item" id="chs_it2.73"><div class="text"><span class="pdd-num">2.73.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">тяжеловесное и (или) крупногабаритное транспортное средство</strong> — <a href="?chap=ch1#chs_it2.69">транспортное средство</a>, максимальные весовые и (или) габаритные размеры которого превышают допустимые параметры, установленные для проезда по автомобильным <a href="?chap=ch1#chs_it2.15">дорогам</a> общего пользования;</span></div></div><div class="pdd-item" id="chs_it2.74"><div class="text"><span class="pdd-num">2.74.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">управление транспортным средством</strong> — воздействие на органы управления <a href="?chap=ch1#chs_it2.69">транспортного средства</a>, приведшее к изменению его положения относительно первоначального;</span></div></div><div class="pdd-item" id="chs_it2.75"><div class="text"><span class="pdd-num">2.75.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">усовершенствованное покрытие</strong> — покрытие <a href="?chap=ch1#chs_it2.15">дороги</a> из асфальтобетонных или цементобетонных смесей, из щебёночных, гравийных, шлаковых или других минеральных материалов, обработанных органическими или минеральными вяжущими материалами, а также из штучных материалов: брусчатки, булыжника, клинкера, мозаики и т.п.;</span></div></div><div class="pdd-item" id="chs_it2.76"><div class="text"><span class="pdd-num">2.76.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">уступить дорогу (предоставить <a href="?chap=ch1#chs_it2.51">преимущество</a>)</strong> — требование, означающее не возобновлять движение, снизить скорость движения вплоть до остановки <a href="?chap=ch1#chs_it2.69">транспортного средства</a> или не осуществлять какой-либо манёвр (за исключением требования освободить занимаемую <a href="?chap=ch1#chs_it2.50">полосу движения</a>, подаваемого <a href="?chap=ch1#chs_it2.59">регулировщиком</a> или <a href="?chap=ch1#chs_it2.8">водителем</a> <a href="?chap=ch1#chs_it2.70">транспортного средства оперативного назначения</a>), если это может вынудить другого <a href="?chap=ch1#chs_it2.77">участника (других участников) дорожного движения</a> изменить направление и (или) скорость движения;</span></div></div><div class="pdd-item" id="chs_it2.77"><div class="text"><span class="pdd-num">2.77.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">участник дорожного движения</strong> — физическое лицо, находящееся в пределах <a href="?chap=ch1#chs_it2.15">дороги</a> в (на) <a href="?chap=ch1#chs_it2.69">транспортном средстве</a> или вне его, за исключением <a href="?chap=ch1#chs_it2.59">регулировщика</a> и работника, выполняющего в установленном порядке на дороге ремонтные и другие работы;</span></div></div><div class="pdd-item" id="chs_it2.77_1"><div class="text"><span class="pdd-num">2.77<sup>1</sup>.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">шасси транспортного средства</strong> — составная часть грузового <a href="?chap=ch1#chs_it2.2">автомобиля</a>, <a href="?chap=ch1#chs_it2.54">прицепа</a> к нему, грузопассажирского автомобиля, тягача, предназначенная для последующего изготовления <a href="?chap=ch1#chs_it2.69">транспортного средства</a>, не имеющая составляющих частей для перевозки <a href="?chap=ch1#chs_it2.44">пассажиров</a> и (или) грузов и установленного оборудования. Участие в <a href="?chap=ch1#chs_it2.17">дорожном движении</a> шасси транспортных средств должно осуществляться в соответствии с требованиями настоящих Правил, предъявляемыми к транспортным средствам, если этими Правилами не установлено иное в отношении шасси транспортных средств;</span></div></div><div class="pdd-item" id="chs_it2.77_2"><div class="text"><span class="pdd-num">2.77<sup>2</sup>.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">электромобиль</strong> — <a href="?chap=ch1#chs_it2.69">транспортное средство</a>, приводимое в движение только электродвигателем от внутреннего перезаряжаемого источника электроэнергии;</span></div></div><div class="pdd-item" id="chs_it2.78"><div class="text"><span class="pdd-num">2.78.</span> <span class="pdd-text"><strong class="pdd-keyword pdd-phrase">элементы дороги</strong> — одна или несколько <a href="?chap=ch1#chs_it2.55">проезжих частей дороги</a>, <a href="?chap=ch1#chs_it2.67">трамвайные</a> пути, <a href="?chap=ch1#chs_it2.72">тротуары</a>, <a href="?chap=ch1#chs_it2.47">пешеходные</a> и <a href="?chap=ch1#chs_it2.6">велосипедные дорожки</a> (за исключением велосипедных дорожек, расположенных обособленно от <a href="?chap=ch1#chs_it2.15">дороги</a>), посадочные площадки, расположенные на проезжей части дороги и предназначенные для посадки (высадки) <a href="?chap=ch1#chs_it2.44">пассажиров</a> в <a href="?chap=ch1#chs_it2.25">маршрутное транспортное средство</a>, <a href="?chap=ch1#chs_it2.42">островки безопасности</a>, выделенные конструктивно или линиями горизонтальной дорожной разметки, <a href="?chap=ch1#chs_it2.57">разделительные зоны</a>, <a href="?chap=ch1#chs_it2.58">разделительные полосы</a>, настилы <a href="?chap=ch1#chs_it2.20">железнодорожных переездов</a> и <a href="?chap=ch1#chs_it2.34">обочины</a>.</span></div></div></div><div class="pdd-item" id="chs_it3"><div class="text"><span class="pdd-num">3.</span> <span class="pdd-text">На <a href="?chap=ch1#chs_it2.15">дорогах</a> Республики Беларусь установлено правостороннее движение <a href="?chap=ch1#chs_it2.69">транспортных средств</a>.</span></div><div class="pdd-item" id="chs_it3-2"><div class="text"><span class="pdd-text">На <a href="?chap=ch1#chs_it2.15">дорогах</a> Республики Беларусь запрещается участие в дорожном движении <a href="?chap=ch1#chs_it2.69">транспортных средств</a>, устройств, приспособлений, машин и механизмов, не подлежащих регистрации в порядке, установленном Советом Министров Республики Беларусь, за исключением случаев их участия в <a href="?chap=ch1#chs_it2.17">дорожном движении</a> по дорогам без усовершенствованного покрытия, а также в иных случаях, предусмотренных настоящими Правилами. При участии в дорожном движении такие транспортные средства, устройства, приспособления, машины и механизмы приравниваются к транспортным средствам, а их движение по дорогам должно осуществляться в соответствии с требованиями настоящих Правил, предъявляемыми к транспортным средствам, если этими Правилами не установлено иное в отношении данных транспортных средств, устройств, приспособлений, машин и механизмов.</span></div></div><div class="pdd-item" id="chs_it3-3"><div class="text"><span class="pdd-text">Снегоболотоходы колёсные малогабаритные (квадроциклы – ATV) типа I категорий G, S и типа II, снегоходы, мотовездеходы UTV с автомобильной посадкой допускаются к участию в <a href="?chap=ch1#chs_it2.17">дорожном движении</a> только по <a href="?chap=ch1#chs_it2.15">дорогам</a> без усовершенствованного покрытия.</span></div></div><div class="pdd-item" id="chs_it3-4"><div class="text"><span class="pdd-text"><ins>Движение на мотоблоке с прицепом разрешается только в светлое время суток по обочине дороги, установленная скорость движения по которой не должна превышать 90 км/ч, а при отсутствии обочины – по проезжей части дороги не далее 1 метра от ее правого края.</ins></span></div></div></div><div class="pdd-item" id="chs_it4"><div class="text"><span class="pdd-num">4.</span> <span class="pdd-text">ГАИ осуществляется согласование <a href="?chap=ch1#chs_it2.17">дорожного движения</a> в случаях, не оговоренных настоящими Правилами, а также при применении в экспериментальных целях <a href="?chap=ch1#chs_it2.65">технических средств организации дорожного движения</a>, не предусмотренных настоящими Правилами и техническими нормативными правовыми актами. Своевременное доведение в доступных формах до сведения физических и юридических лиц технических нормативных правовых актов в сфере дорожного движения и обеспечения его <a href="?chap=ch1#chs_it2.4">безопасности</a> возлагается на республиканский орган государственного управления по стандартизации, метрологии и сертификации.</span></div><div class="pdd-item"><div class="text"><span class="pdd-text">Формы и методы контроля за выполнением <a href="?chap=ch1#chs_it2.77">участниками дорожного движения</a> требований настоящих Правил определяются Министерством внутренних дел.</span></div></div></div><div class="pdd-item" id="chs_it5"><div class="text"><span class="pdd-num">5.</span> <span class="pdd-text">Нарушение настоящих Правил влечёт ответственность, установленную законодательными актами.</span></div></div></div></div>
+        <br />
+        <br />
+        <table class="table">
+		<tr class="active">
+			<td id="ctl00_ContentPlaceHolder1_PrevChpter"><i class="glyphicon glyphicon-triangle-left text-muted" aria-hidden="true" style="top: 2px;"></i>&nbsp;<a href="?chap=pdd">Введение в Правила дорожного движения Республики Беларусь (ПДД РБ)</a></td>
+			<td id="ctl00_ContentPlaceHolder1_NextChpter" class="text-right"><a href="?chap=ch2">Глава 2. Общие права и обязанности участников дорожного движения</a>&nbsp;<i class="glyphicon glyphicon-triangle-right text-muted" aria-hidden="true" style="top: 3px;"></i></td>
+		</tr>
+	</table>
+	
+        <audio id="player">
+        </audio>
+    
+
+                </main>
+            
+</div>
+            <div id="ctl00_RightPane" class="col-xs-12 col-sm-3 col-md-3 col-lg-2 sidebar-offcanvas hidden-xs">
+	
+                <br />
+                <div class="rightpane" align="center">
+                    <div class="text-nowrap" style="padding-bottom: 5px;">
+                        <a id="ctl00_Navigation_SearchLink" title="Поиск" class="navigation text-muted" AlternateText="" href="../search">
+    <i class="glyphicon glyphicon-search"></i></a>
+<a id="ctl00_Navigation_SiteMapLink" title="Карта сайта" class="navigation text-muted" AlternateText="" href="../sitemap">
+    <i class="glyphicon glyphicon-screenshot"></i></a>
+<a id="ctl00_Navigation_SupportLink" title="Обратная связь" class="navigation text-muted" AlternateText="" href="../support">
+    <i class="glyphicon glyphicon-envelope"></i></a>
+<a title="ТикТок" class="navigation" href="https://www.tiktok.com/@pdd.adrive" target="_blank"><img title="ТикТок" src="../Images/tiktok.svg" alt="" /></a>
+<a title="Группа в «Одноклассниках»" class="navigation" href="https://ok.ru/pddadrive" target="_blank"><img title="Группа в «Одноклассниках»" src="../Images/ok.svg" alt="" /></a>
+<a title="Канал на YouTube" class="navigation" href="https://www.youtube.com/@pdd.adrive" target="_blank"><img title="Канал на YouTube" src="../Images/youtube.svg" alt="" height="23" width="23" /></a>
+<a title="Группа «ВКонтакте»" class="navigation" href="https://vk.com/pddadrive" target="_blank"><img title="Группа «ВКонтакте»" src="../Images/vk.svg" alt="" /></a>
+                    </div>
+                    <div class="alert alert-info box-shadow login">
+                        <div>
+                            
+        <div>
+		
+            <table id="loginfield">
+                <tr>
+                    <td>
+                        <input name="ctl00$LoginPanel$Login1$UserName" type="text" maxlength="60" id="ctl00_LoginPanel_Login1_UserName" tabindex="1" title="Имя пользователя" class="form-control input-sm login-textbox" placeholder="логин" autocomplete="username" />
+                        
+                        
+                    </td>
+                    <td rowspan="2">
+                        <input type="submit" name="ctl00$LoginPanel$Login1$LoginLinkButton" value="Войти" onclick="return ValidateClick(&#39;LoginGroup&#39;);WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$LoginPanel$Login1$LoginLinkButton&quot;, &quot;&quot;, true, &quot;LoginGroup&quot;, &quot;&quot;, false, false))" id="ctl00_LoginPanel_Login1_LoginLinkButton" tabindex="4" class="btn btn-primary btn-xs" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input name="ctl00$LoginPanel$Login1$Password" type="password" maxlength="32" id="ctl00_LoginPanel_Login1_Password" tabindex="2" title="Пароль для входа" class="form-control input-sm login-textbox" placeholder="пароль" autocomplete="current-password" />
+                        
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div class="checkbox text-muted text-left" style="margin: 0">
+                            <label>
+                                <input id="ctl00_LoginPanel_Login1_RememberMe" type="checkbox" name="ctl00$LoginPanel$Login1$RememberMe" checked="checked" tabindex="3" /> Запомнить меня.
+                            </label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="small">
+                        <a href="../register">Регистрация</a> |
+                        <a href="../recovery">Напомнить пароль</a>
+                    </td>
+                </tr>
+            </table>
+            <div class="small wrap">
+                <span id="ctl00_LoginPanel_Login1_FailureText" class="text-danger"></span>
+            </div>
+        
+	</div>
+    
+
+                        </div>
+                    </div>
+                    <br />
+                    
+                    
+        <h1 class="text-nowrap">
+            <i class="glyphicon glyphicon-check" aria-hidden="true"></i> Тестируются
+            <span id="ctl00__ctrl_0_RepeaterUsers_ctl00_UsersCount" title="Количество пользователей онлайн" class="badge" style="margin-top: -3px;">142</span>
+        </h1>
+        <dl class="text-left center-block onlinelist" data-nosnippet="true">
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl01_GroupName" title="МЧС" href="/schools/10007575" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>МЧС</a></dt>
+        <dd>
+            <a title="mingorup194
+Зарегистрирован 11 месяцев назад (23.07.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Полуян Николай Николаевич</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован год назад (20.06.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>rosnZubr26</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован год назад (09.06.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>gomobup346</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="mogobup212
+Зарегистрирован год назад (20.06.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Белоштентов Сергей Михайлович</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован год назад (30.06.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>minskob275</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="mingorup210
+Зарегистрирован 11 месяцев назад (23.07.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Сенькевич Александр Николаевич</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован год назад (30.06.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>minskob493</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован год назад (30.06.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>minskob494</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован год назад (09.06.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>gomobup209</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован год назад (10.07.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>grdobup262</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован год назад (10.07.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>grdobup263</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 10 месяцев назад (02.09.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>vitobup651</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован год назад (09.06.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>gomobup371</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован год назад (30.06.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>minskob1022</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl15_GroupName" title="Уровень" href="/schools/10007571" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Уровень</a></dt>
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (25.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Vik86</a>
+        </dd>
+        <a title="142 пользователя онлайн" class="ajaxlink" role="button" onclick="$(this).remove(); return false;">
+            Показать всех <span aria-hidden="true" class="caret">​</span>
+        </a>
+    
+        
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (30.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Алексей 92616</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (24.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Irawwsq0</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (21.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>nastaloburenko</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (19.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>БракоренкоАВ</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (30.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Протас Святослав</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl21_GroupName" title="Лидско-Березовская РОС ДОСААФ" href="/schools/10007326" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Лидско-Березовская РОС ДОСААФ<i class="glyphicon glyphicon-ok-sign small text-success" title="Ключевой партнёр"></i></a></dt>
+        <dd>
+            <a title="aleninvladislav7@gmail.com
+Зарегистрирован 2 месяца назад (23.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Аленин Владислав</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 14 дней назад (27.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Анастасия Кучуро</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="26В.Хованская Елизавета
+Зарегистрирован 3 месяца назад (06.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Хованская Елизавета</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 16 дней назад (25.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Зорина Виктория</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (07.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>duzern</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl26_GroupName" title="Мозырская РОС ДОСААФ" href="/schools/10007203" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Мозырская РОС ДОСААФ<i class="glyphicon glyphicon-ok-sign small text-success" title="Ключевой партнёр"></i></a></dt>
+        <dd>
+            <a title="Зарегистрирован 12 дней назад (29.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>PikuzaViktoria</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 11 дней назад (29.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Змушко Полина</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (16.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Daniil911</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (17.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>harunomiryok910100e</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl30_GroupName" title="АВТОтраст-Мастер" href="/schools/10007304" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>АВТОтраст-Мастер</a></dt>
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (07.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>ТкачёваЛюбовьАндреевна</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 12 дней назад (29.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>m0tilek</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 4 месяца назад (11.02.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>богдан кандидатов</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl33_GroupName" title="Азбука вождения" href="/schools/7001" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Азбука вождения</a></dt>
+        <dd>
+            <a title="Зарегистрирован 13 дней назад (28.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>smhd</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 14 минут назад (11.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>typ3r</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 6 дней назад (05.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>melcev</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl36_GroupName" title="Автошкола" href="/schools/10007195" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Автошкола</a></dt>
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (26.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Леоненко Александр</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (23.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Данила Сухаруков</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl38_GroupName" title="ДОСААФ Заводского района г. Минска" href="/schools/10007513" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>ДОСААФ Заводского района г. Минска</a></dt>
+        <dd>
+            <a title="Зарегистрирован 26 дней назад (14.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Nataliya M</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 4 месяца назад (02.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Анна Ермак1998</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl40_GroupName" title="Зебра" href="/schools/10007604" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Зебра</a></dt>
+        <dd>
+            <a title="Зарегистрирован 4 месяца назад (03.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Мельянец Роман</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 23 дня назад (18.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>evrazia</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl42_GroupName" title="Могилёвская ООС ДОСААФ" href="/schools/10007266" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Могилёвская ООС ДОСААФ<i class="glyphicon glyphicon-ok-sign small text-success" title="Ключевой партнёр"></i></a></dt>
+        <dd>
+            <a title="Зарегистрирован 2 дня назад (09.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Пшеничная_ЕА</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (03.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Гернеза_ВБ</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl44_GroupName" title="Профессионал" href="/schools/10007622" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Профессионал<i class="glyphicon glyphicon-ok-sign small text-success" title="Ключевой партнёр"></i></a></dt>
+        <dd>
+            <a title="Зарегистрирован 5 месяцев назад (21.01.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Леньков</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (30.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Илья Трацевский</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl46_GroupName" title="Светофор" href="/schools/10007610" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Светофор</a></dt>
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (21.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>qwertyanassty</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 4 дня назад (06.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Нина Васильева</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl48_GroupName" title="Солигорский ДОСААФ" href="/schools/7151" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Солигорский ДОСААФ<i class="glyphicon glyphicon-ok-sign small text-success" title="Ключевой партнёр"></i></a></dt>
+        <dd>
+            <a title="Зарегистрирован 7 месяцев назад (23.11.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Касач Екатерина</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (21.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Павленко Богдан</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl50_GroupName" title="Автодебют ОО БОАМЛ" href="/schools/10007130" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Автодебют ОО БОАМЛ</a></dt>
+        <dd>
+            <a title="Зарегистрирован 27 дней назад (14.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Живолковская</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl51_GroupName" title="Автошкола «Автобусный парк № 1» (г. Солигорск)" href="/schools/7152" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Автошкола «Автобусный парк № 1» (г. Солигорск)<i class="glyphicon glyphicon-ok-sign small text-success" title="Ключевой партнёр"></i></a></dt>
+        <dd>
+            <a title="Зарегистрирован 4 месяца назад (12.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Прима_СА</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl52_GroupName" title="Автошкола безопасности вождения" href="/schools/10007357" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Автошкола безопасности вождения</a></dt>
+        <dd>
+            <a title="Зарегистрирован месяц назад (03.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Романович Лилия</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl53_GroupName" title="Альянс" href="/schools/10007566" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Альянс</a></dt>
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (01.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Мирфазы Юлия</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl54_GroupName" title="АМОК" href="/schools/7946" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>АМОК</a></dt>
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (06.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>N_Che</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl55_GroupName" title="Аристотель" href="/schools/10007549" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Аристотель</a></dt>
+        <dd>
+            <a title="Зарегистрирован 6 дней назад (05.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>santabremor</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl56_GroupName" title="БелТрансСпецАвто" href="/schools/7044" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>БелТрансСпецАвто<i class="glyphicon glyphicon-ok-sign small text-success" title="Ключевой партнёр"></i></a></dt>
+        <dd>
+            <a title="Зарегистрирован 4 месяца назад (10.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Липик_ИА</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl57_GroupName" title="Брестская РОС ДОСААФ" href="/schools/10007632" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Брестская РОС ДОСААФ</a></dt>
+        <dd>
+            <a title="Зарегистрирован 9 дней назад (02.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Анна Юшкевич</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl58_GroupName" title="Воложинский ДОСААФ" href="/schools/10007509" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Воложинский ДОСААФ</a></dt>
+        <dd>
+            <a title="Зарегистрирован 18 дней назад (22.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Inna Zenkodylebo</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl59_GroupName" title="Далягляд" href="/schools/7086" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Далягляд</a></dt>
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (04.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Понкрашова</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl60_GroupName" title="ДОСААФ Ленинского района г. Минска" href="/schools/7105" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>ДОСААФ Ленинского района г. Минска</a></dt>
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (12.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>СветикPz</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl61_GroupName" title="ДОСААФ Советского района г. Минска" href="/schools/7108" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>ДОСААФ Советского района г. Минска<i class="glyphicon glyphicon-ok-sign small text-success" title="Ключевой партнёр"></i></a></dt>
+        <dd>
+            <a title="Зарегистрирован месяц назад (19.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Судиловский_РА</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl62_GroupName" title="ДрайвКласс" href="/schools/7061" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>ДрайвКласс</a></dt>
+        <dd>
+            <a title="Зарегистрирован 6 месяцев назад (01.01.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Егор Белоусов</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl63_GroupName" title="Инфинити" href="/schools/10007641" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Инфинити</a></dt>
+        <dd>
+            <a title="Зарегистрирован 2 дня назад (08.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Kata17</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl64_GroupName" title="Лельчицкая РОС ДОСААФ" href="/schools/10007202" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Лельчицкая РОС ДОСААФ</a></dt>
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (03.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Prana</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl65_GroupName" title="Лидер" href="/schools/10007068" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Лидер</a></dt>
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (01.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Громыко Ульяна</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl66_GroupName" title="Минская РОС ДОСААФ" href="/schools/10007557" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Минская РОС ДОСААФ</a></dt>
+        <dd>
+            <a title="Зарегистрирован месяц назад (09.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>DinaChura</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl67_GroupName" title="Молодечненский ДОСААФ" href="/schools/7948" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Молодечненский ДОСААФ<i class="glyphicon glyphicon-ok-sign small text-success" title="Ключевой партнёр"></i></a></dt>
+        <dd>
+            <a title="Зарегистрирован 10 дней назад (30.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>ЕленаПротасевич</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl68_GroupName" title="Оршанская ГОС ДОСААФ" href="/schools/10007393" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Оршанская ГОС ДОСААФ</a></dt>
+        <dd>
+            <a title="Зарегистрирован 14 дней назад (27.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Стас Гончаров</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl69_GroupName" title="Пора за руль" href="/schools/7071" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Пора за руль</a></dt>
+        <dd>
+            <a title="Зарегистрирован 5 месяцев назад (04.02.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>lobzik</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl70_GroupName" title="ПрофиДрайв" href="/schools/10007626" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>ПрофиДрайв<i class="glyphicon glyphicon-ok-sign small text-success" title="Ключевой партнёр"></i></a></dt>
+        <dd>
+            <a title="10В.Ананьева_ОС
+Зарегистрирован 2 месяца назад (15.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Ананьева Оксана Сергеевна</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl71_GroupName" title="Путеводитель" href="/schools/10007498" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Путеводитель</a></dt>
+        <dd>
+            <a title="Зарегистрирован месяц назад (06.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Антон Щербин</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl72_GroupName" title="Пуховичский РОС ДОСААФ" href="/schools/10007147" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Пуховичский РОС ДОСААФ</a></dt>
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (17.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Инга Серченя</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl73_GroupName" title="Речицкая ГОС ДОСААФ" href="/schools/10007236" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Речицкая ГОС ДОСААФ</a></dt>
+        <dd>
+            <a title="Филипкова Анастаси
+Зарегистрирован 3 месяца назад (11.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Филипкова Анастасия</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl74_GroupName" title="РУСЦ ДОСААФ" href="/schools/7103" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>РУСЦ ДОСААФ</a></dt>
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (03.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>Карина Сеньковец</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl75_GroupName" title="Учебный центр ДОСААФ" href="/schools/7104" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Учебный центр ДОСААФ<i class="glyphicon glyphicon-ok-sign small text-success" title="Ключевой партнёр"></i></a></dt>
+        <dd>
+            <a title="Зарегистрирован 4 месяца назад (09.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>к2026</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl76_GroupName" title="Брестский учебный комбинат подготовки, переподготовки, повышения квалификации кадров «Большая Медведица»" href="/schools/10007428" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>Брестский учебный комбинат подготовки, переподготовки, повышения квалификации кадров «Большая Медведица»</a></dt>
+        <dd>
+            <a title="Зарегистрирован 4 дня назад (07.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-danger' aria-hidden="true"></i>максим козуля</a>
+        </dd>
+        
+    
+        <dt><a id="ctl00__ctrl_0_RepeaterUsers_ctl77_GroupName" title="«ADrive» (виртуальная автошкола)" class="aspNetDisabled" target="_blank"><i class="glyphicon glyphicon-education text-muted"></i>«ADrive» (виртуальная автошкола)</a></dt>
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (19.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Al_makhorkina</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 6 дней назад (05.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Ангелина477</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 5 месяцев назад (23.01.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Владислав Бержанин</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 41 минута назад (11.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>gipper</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 11 месяцев назад (16.07.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Avtofaktor</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 23 дня назад (18.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Данила04</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (05.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Alina Lazutina</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 4 дня назад (07.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Ульяна Косовец</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 29 дней назад (11.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Митяййййй</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 29 дней назад (11.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Илья Приступа</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 23 часа назад (10.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>maximsid</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 20 дней назад (20.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Yulia Griniuk</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (18.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>1983vodonosov</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (26.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Дарья!!!</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (10.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Evakiseleva</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 4 месяца назад (02.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Андрей Пищинский</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 11 дней назад (29.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Наталья хололеенко</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 4 месяца назад (09.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Jikels</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 2 дня назад (08.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Антоненко Ольга</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 24 дня назад (16.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>NIKONCHUK</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (16.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>lancelotta</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (16.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Бабко</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 4 месяца назад (12.02.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Крупиневич Валентина</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="jhonn078
+Зарегистрирован 3 года назад (16.10.2022)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>jhonny gonzalez monroy</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 5 месяцев назад (12.01.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Милан Король</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (29.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Aleksand</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 22 дня назад (18.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Слуцкая Мария</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 16 дней назад (24.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>ОколотТ</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 24 дня назад (16.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>_Nastya_</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 4 месяца назад (10.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Панкова Татьяна</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (24.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Соловьев</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (31.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>korsvet31</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (26.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>arinkaproshka228@gmail.com</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (26.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Anna11drive</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (02.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Sokolovaanas</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 23 часа назад (10.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Kingkoxx</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (11.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>YuliyaEfimovich</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (30.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>andron2005</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (11.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>olegwolkav2002@gmail.com</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 20 часов назад (10.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Карпенко Анна</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (16.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Anna Zaitsava</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (30.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Юревич Роман Иванович</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 7 дней назад (04.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Olga1977</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (16.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Anton93</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 5 часов назад (11.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>german0</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 11 дней назад (30.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>DimTim</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 4 месяца назад (13.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>VeraYrickoe</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (21.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Прокопович Дина</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован год назад (13.05.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Капельчик Анастасия</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 4 месяца назад (20.02.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Дмитрий Дыба</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (10.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Кривоносова Елизавета</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (30.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>СергейНауменко</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (02.06.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Евгений324</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 6 месяцев назад (03.01.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>dpobdeka</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 11 месяцев назад (15.08.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Мирослава Трухан</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (26.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>aleksanderhvitko</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 3 месяца назад (11.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Жук Иринасергеевна</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 24 часа назад (10.07.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Sksnnshuskn</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (22.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>ксения вербицкая</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (21.04.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Земляник Алина</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (27.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>эльф</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="lyba_92.92@mail.ru
+Зарегистрирован год назад (07.07.2025)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Дмитрий</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 2 месяца назад (09.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>таня ммм</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован месяц назад (21.05.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Siri</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 4 месяца назад (10.03.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Каравацкий Владислав</a>
+        </dd>
+        
+    
+        
+        <dd>
+            <a title="Зарегистрирован 5 месяцев назад (10.02.2026)" class="sc_name ajaxlink">
+                <i class='glyphicon glyphicon-user text-primary' aria-hidden="true"></i>Евгений Абрамович</a>
+        </dd>
+        
+    
+        </ol>
+    
+
+
+
+
+
+
+                        <br />
+                        <p class="text-center">
+                            <a id="ctl00_ShowRating" title="Статистика тестирования по всем пользователям" href="../study/rating">
+                                <i class="glyphicon glyphicon-signal" aria-hidden="true" style="margin-right: 5px;"></i>Посмотреть рейтинг
+                            </a>
+                        </p>
+                    
+                </div>
+            
+</div>
+        </div>
+        <br />
+        <footer class="row well">
+            <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+                <a class="btn btn-default btn-sm go-top" href="#" role="button" title="Наверх"><i class="glyphicon glyphicon-arrow-up" aria-hidden="true"></i><span class="hidden-xs">Наверх</span></a>
+                <a class="btn btn-default btn-sm chat-btn" href="#" role="button" title="ПДД-чат"><i class="glyphicon glyphicon-comment" aria-hidden="true"></i></a>
+                <article class="pageblock text-center">
+    
+    <p class="text-center site-footer" style="width: 100%; margin-bottom: 0; margin-top: 15px;"><a href="/partners" title="Партнеры проекта">Партнеры</a>&nbsp;| <a href="/terms" title="Правовая информация">Правовая информация</a>&nbsp;| <a href="/contacts" title="Контактная информация">Контакты</a><br />
+<span class="small">&copy;&nbsp;2009&ndash;2026</span> <a class="ajaxlink text-muted collapsed small" href="#" rel="extrainfo">Частное предприятие &laquo;Аркитек Мультима&raquo;<span aria-hidden="true" class="caret">​</span></a></p>
+
+<div class="text-muted small" id="extrainfo" style="display: none;"><strong>Юридический адрес:</strong> ул. Солнечная, 4, а/г Ждановичи, Минский район, 223028, Республика Беларусь<br />
+Зарегистрировано решением Минского районного исполнительного комитета от&nbsp;26.09.2008&nbsp;в Едином государственном регистре юридических лиц и&nbsp;индивидуальных предпринимателей за №&nbsp;690569426<br />
+<strong>Дата регистрации</strong> в&nbsp;Торговом реестре: 27.11.2018<br />
+<strong>УНП:</strong> 690569426</div>
+
+<p class="text-center" style="margin-top: 15px"><img alt="Провайдер электронных платежей" src="/Images/Banners/assist2.svg" style="height: 31px;" /> <img alt="ЕРИП" src="/Images/Banners/erip.svg" style="height: 31px;" /> <img alt="" src="/Images/Banners/VisaSecure.svg" style="height: 30px;" /> <img alt="" src="/Images/Banners/Visa.svg" style="height: 30px;" /> <img alt="" src="/Images/Banners/Mastercard.svg" style="height: 30px;" /> <img alt="" src="/Images/Banners/MastercardIDCheck.svg" style="height: 30px;" /> <img alt="" src="/Images/Banners/UnionPay.svg" style="height: 30px;" /> <img alt="" src="/Images/Banners/BelcardPassword.svg" style="height: 30px;" /> <script defer src="https://stats.ruli.online/script.js" data-website-id="5ed00aa8-cccf-4a2a-9ab7-67f26864f221"></script> <img alt="" src="/Images/Banners/Belcard.svg" style="height: 30px;" /></p>
+
+</article>
+
+
+
+            </div>
+        </footer>
+    </div>
+    <div class="panel panel-primary box-shadow chat-window">
+        <div class="panel-heading"><i class="glyphicon glyphicon-send" aria-hidden="true"></i> <strong>ПДД-чат</strong>
+            <a href="#hidechat" title="Закрыть"><i class="glyphicon glyphicon-remove-circle pull-right" style="margin-top: 2px; color: white" aria-hidden="true"></i></a>
+            <a href="#popoutchat" class="hidden-xs" title="Открыть в отдельном окне" onclick="window.open('../chat', '', 'top=' + $(this).get(0).getBoundingClientRect().top +',left=' + $(this).get(0).getBoundingClientRect().left + ',height=460,width=300,resizable=1'); $(this).prev().click(); return false;"><i class="glyphicon glyphicon-new-window pull-right" style="margin-top: 2px; margin-right: 10px; color: white" aria-hidden="true"></i></a>
+            <a href="#mutechat" title="Включить звук уведомлений" onclick="$(this).attr('title', ($('i', this).hasClass('glyphicon-volume-up') ? 'Включить' : 'Выключить') + ' звук уведомлений'); $('i', this).toggleClass('glyphicon-volume-off glyphicon-volume-up'); return false;"><i class="glyphicon glyphicon-volume-off pull-right" style="margin-top: 2px; margin-right: 10px; color: white" aria-hidden="true"></i></a>
+        </div>
+        <div class="panel-body">
+            
+
+<div class="sc_chat_container">
+    <button id="prevmsg" title='Показать более ранние сообщения' data-days="1" class="btn btn-xs btn-default" style="width: 100%; margin-bottom: 2px; height: 18px; padding: 0;"><i class="glyphicon glyphicon-chevron-up" aria-hidden="true"></i></button>
+    <div id="chat" class="sc_chat_box" data-ring=''>
+        <img src="../Images/progress.svg" alt="" width="32" style="position: relative; top: calc(50% - 16px); left: calc(50% - 16px);" />
+    </div>
+    <div class="sc_options_box">
+        
+                
+                <span id="ctl00_ChatGrande_ctl01_ctl00_LoginHint" class="text-muted">Чтобы написать в чат необходимо</span>&nbsp;
+                    <a id="ctl00_ChatGrande_ctl01_ctl00_HyperLinkLogin" title="Авторизоваться на сайте" href="../login/pdd/by">войти</a>.
+                
+            
+        
+    </div>
+</div>
+        </div>
+    </div>
+    
+<script type='text/javascript'>new Sys.WebForms.Menu({ element: 'ctl00_MainMenu_MenuLeft', disappearAfter: 500, orientation: 'vertical', tabIndex: 0, disabled: false });</script><script type='text/javascript'>new Sys.WebForms.Menu({ element: 'ctl00_LeftMenu_MenuLeft', disappearAfter: 500, orientation: 'vertical', tabIndex: 0, disabled: false });</script></form>
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5RJ0Q3V3FQ"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-5RJ0Q3V3FQ');
+    </script>
+    <!-- Yandex.Metrika counter -->
+    <script type="text/javascript">
+        (function (d, w, c) {
+            (w[c] = w[c] || []).push(function () {
+                try {
+                    w.yaCounter36685160 = new Ya.Metrika({
+                        id: 36685160,
+                        clickmap: true,
+                        trackLinks: true,
+                        accurateTrackBounce: true
+                    });
+                } catch (e) { }
+            });
+
+            var n = d.getElementsByTagName("script")[0],
+                s = d.createElement("script"),
+                f = function () { n.parentNode.insertBefore(s, n); };
+            s.type = "text/javascript";
+            s.async = true;
+            s.src = "https://mc.yandex.ru/metrika/watch.js";
+
+            if (w.opera == "[object Opera]") {
+                d.addEventListener("DOMContentLoaded", f, false);
+            } else { f(); }
+        })(document, window, "yandex_metrika_callbacks");
+    </script>
+    <noscript>
+        <div>
+            <img src="https://mc.yandex.ru/watch/36685160" style="position: absolute; left: -9999px;" alt="" />
+        </div>
+    </noscript>
+    <!-- /Yandex.Metrika counter -->
+
+</body>
+</html>

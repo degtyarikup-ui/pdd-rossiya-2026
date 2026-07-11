@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/constants/question_swipe_motion.dart';
@@ -17,15 +18,22 @@ import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 class ExamScreen extends ConsumerStatefulWidget {
   final List<Map<String, dynamic>> allQuestions;
 
-  const ExamScreen({super.key, required this.allQuestions});
+  /// Правила экзамена. По умолчанию — правила страны сборки;
+  /// параметр нужен тестам, чтобы проверять RU и BY на одном коде.
+  final ExamRules? rules;
+
+  const ExamScreen({super.key, required this.allQuestions, this.rules});
 
   @override
   ConsumerState<ExamScreen> createState() => _ExamScreenState();
 }
 
 class _ExamScreenState extends ConsumerState<ExamScreen> {
-  /// Размер основного блока экзамена (регламент ГИБДД: 20 вопросов).
-  static const int _mainCount = 20;
+  late final ExamRules _rules =
+      widget.rules ?? CountryConfig.current.examRules;
+
+  /// Размер основного блока экзамена (страно-зависимый).
+  int get _mainCount => _rules.mainCount;
 
   late List<Map<String, dynamic>> _examQuestions;
   late List<int?> _savedAnswers;
@@ -35,8 +43,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   final List<int> _wrongAnswers = [];
   final List<int> _correctAnswers = [];
   int _unansweredTotal = 0;
-  int _remainingTime = 20 * 60;
-  int _totalTimeSeconds = 20 * 60;
+  late int _remainingTime = _rules.totalSeconds;
+  late int _totalTimeSeconds = _rules.totalSeconds;
   Timer? _timer;
   bool _examFinished = false;
   bool _examPassed = false;
@@ -279,28 +287,29 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   /// поэтому переход к доп. вопросам и завершение экзамена не зависят от того,
   /// на какой странице находится пользователь и в каком порядке он отвечал.
   ///
-  /// Правила (регламент ГИБДД):
-  /// - 3 ошибки в основном блоке — экзамен прекращается, не сдан;
-  /// - 1 ошибка → +5 доп. вопросов, 2 ошибки → +10 (и +5 минут за блок);
-  /// - любая ошибка в доп. блоке — экзамен прекращается, не сдан;
-  /// - все доп. вопросы отвечены верно — сдан.
+  /// Правила задаются [ExamRules] страны:
+  /// - ошибок больше [ExamRules.maxMistakes] — экзамен прекращается, не сдан;
+  /// - РФ: за каждую ошибку +[ExamRules.additionalPerMistake] доп. вопросов
+  ///   (и добавка времени); любая ошибка в доп. блоке — не сдан;
+  /// - РБ: механики доп. вопросов нет — при допустимом числе ошибок
+  ///   экзамен просто завершается сдачей.
   void _evaluateExamState({required bool advance}) {
     if (_examFinished || !mounted) return;
 
     if (!_additionalPhase) {
       final mainWrong = _mainAnsweredWrongCount();
-      if (mainWrong >= 3) {
+      if (mainWrong > _rules.maxMistakes) {
         _finishExam();
         return;
       }
 
       final pending = _firstUnansweredMainIndex(from: _currentIndex);
       if (pending == null) {
-        if (mainWrong == 0) {
+        if (mainWrong == 0 || !_rules.hasAdditionalPhase) {
           _finishExam();
           return;
         }
-        _startAdditionalPhase(mainWrong * 5);
+        _startAdditionalPhase(mainWrong * _rules.additionalPerMistake);
         return;
       }
 
@@ -338,9 +347,10 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       return;
     }
 
-    // Регламент: каждый доп. блок из 5 вопросов добавляет 5 минут
-    // (эквивалент — минута на вопрос).
-    final extraSeconds = additional.length * 60;
+    // Каждый доп. блок добавляет фиксированное время (РФ: 5 минут за блок из 5).
+    final per = _rules.additionalPerMistake;
+    final blocks = (additional.length + per - 1) ~/ per;
+    final extraSeconds = blocks * _rules.additionalSecondsPerBlock;
 
     setState(() {
       _initialWrongCount = _mainAnsweredWrongCount();
@@ -371,14 +381,17 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     _timer?.cancel();
 
     _recomputeScoreLists();
-    // Сдан, если: не вышло время И в завершённой фазе нет ни ошибок,
-    // ни неотвеченных вопросов (неотвеченные считаются ошибками — досрочное
-    // завершение не может дать «сдал»). 1-2 ошибки основного блока при
-    // безошибочном доп. блоке — сдан, как в ГИБДД.
+    // Сдан, если не вышло время И:
+    // - в доп. фазе (РФ) — ни одной ошибки/неотвеченного в доп. блоке;
+    // - в основном блоке — не больше допуска. При наличии механики доп.
+    //   вопросов чистый финал основного блока возможен только с 0 ошибок
+    //   (1-2 уводят в доп. фазу); без механики (РБ) допуск = maxMistakes.
+    // Неотвеченные считаются ошибками — досрочный выход не даёт «сдал».
+    final mainAllowed = _rules.hasAdditionalPhase ? 0 : _rules.maxMistakes;
     final passed = !_timedOut &&
         (_additionalPhase
             ? _additionalWrongTotal() == 0
-            : _mainWrongTotal() == 0);
+            : _mainWrongTotal() <= mainAllowed);
     _examPassed = passed;
 
     final dataSource = ref.read(progressDataSourceProvider);

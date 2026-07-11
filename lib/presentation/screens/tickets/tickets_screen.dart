@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/constants/app_strings.dart';
@@ -124,7 +125,10 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
                       final answeredCount = progressSnapshot.answered;
                       final correctCount = progressSnapshot.correct;
                       final isCompleted = answeredCount == questions.length;
-                      final isPassed = isCompleted && correctCount >= 18;
+                      final isPassed = isCompleted &&
+                          correctCount >=
+                              CountryConfig.current.examRules
+                                  .passThreshold(questions.length);
                       return _buildTicketCard(
                         context: context,
                         number: ticketNum,

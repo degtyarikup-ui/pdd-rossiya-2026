@@ -36,10 +36,16 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/questions/
-    - assets/images/category_icons/
-    - assets/images/questions_ab/
-    - assets/images/questions_cd/
-    - assets/images/signs/
-    - assets/images/markup/
+    # Общие (страно-независимые) ресурсы.
     - assets/images/
+    - assets/images/category_icons/
+    # Контент страны текущей сборки: flavors подключают только нужную страну
+    # на уровне Android; для web/тестов бандлятся обе, выбирается конфигом.
+    - assets/countries/ru/questions/
+    - assets/countries/ru/images/questions_ab/
+    - assets/countries/ru/images/questions_cd/
+    - assets/countries/ru/images/signs/
+    - assets/countries/ru/images/markup/
+    - assets/countries/by/questions/
+    - assets/countries/by/images/questions_ab/
+    - assets/countries/by/images/signs/

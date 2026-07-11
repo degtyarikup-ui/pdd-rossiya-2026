@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/navigation/route_observer.dart';
@@ -191,8 +192,8 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                   'answeredQuestions': 0,
                   'passedTickets': 0,
                   'wrongQuestions': 0,
-                  'totalQuestions': 800,
-                  'totalTickets': 40,
+                  'totalQuestions': 0,
+                  'totalTickets': 0,
                 }),
               ),
               const SizedBox(height: AppDimensions.spacingL),
@@ -358,8 +359,12 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                               spacing: AppDimensions.spacingS,
                               runSpacing: 6,
                               children: [
-                                _buildHeroBadge('20 вопросов'),
-                                _buildHeroBadge('20 минут'),
+                                _buildHeroBadge(
+                                  '${CountryConfig.current.examRules.mainCount} вопросов',
+                                ),
+                                _buildHeroBadge(
+                                  '${CountryConfig.current.examRules.totalMinutes} минут',
+                                ),
                               ],
                             ),
                             const Text(
@@ -466,8 +471,8 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
     final answeredQuestions = stats['answeredQuestions'] ?? 0;
     final wrongQuestions = stats['wrongQuestions'] ?? 0;
     final passedTickets = stats['passedTickets'] ?? 0;
-    final totalQuestions = stats['totalQuestions'] ?? 800;
-    final totalTickets = stats['totalTickets'] ?? 40;
+    final totalQuestions = stats['totalQuestions'] ?? 0;
+    final totalTickets = stats['totalTickets'] ?? 0;
     final readiness = totalQuestions > 0
         ? (correctAnswers / totalQuestions * 100).round()
         : 0;

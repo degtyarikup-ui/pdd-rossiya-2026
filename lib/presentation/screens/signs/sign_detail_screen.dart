@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pdd_app/core/config/country_config.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -90,12 +91,12 @@ class SignDetailScreen extends StatelessWidget {
                       child: signImage != null
                           ? (signImage!.endsWith('.svg')
                                 ? SvgPicture.asset(
-                                    'assets/images/signs/$signImage',
+                                    '${CountryConfig.current.signImagesDir}/$signImage',
                                     fit: BoxFit.contain,
                                     height: 180,
                                   )
                                 : Image.asset(
-                                    'assets/images/signs/$signImage',
+                                    '${CountryConfig.current.signImagesDir}/$signImage',
                                     fit: BoxFit.contain,
                                     height: 180,
                                     errorBuilder: (_, __, ___) => const Icon(

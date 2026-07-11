@@ -1,17 +1,22 @@
 import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/models/question.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 
+/// Загрузка контента страны (вопросы, темы, знаки) из ассетов.
+/// Все пути строятся от [CountryConfig.assetsRoot] — контент каждой страны
+/// лежит в assets/countries/{code}/.
 class QuestionsDataSource {
-  Future<List<Question>> loadTickets(TicketCategory category) async {
-    final path = category == TicketCategory.ab
-        ? 'assets/questions/questions_ab.json'
-        : 'assets/questions/questions_cd.json';
-    final imageDir =
-        category == TicketCategory.ab ? 'questions_ab' : 'questions_cd';
+  static const CountryConfig _config = CountryConfig.current;
 
-    final String content = await rootBundle.loadString(path);
+  String _cat(TicketCategory category) =>
+      category == TicketCategory.ab ? 'ab' : 'cd';
+
+  Future<List<Question>> loadTickets(TicketCategory category) async {
+    final cat = _cat(category);
+    final String content =
+        await rootBundle.loadString(_config.questionsJson(cat));
     final Map<String, dynamic> data = json.decode(content);
     final List<dynamic> tickets = data['tickets'];
 
@@ -24,7 +29,7 @@ class QuestionsDataSource {
         if (q['image'] == null || q['image'] == 'no_image') {
           q['image'] = null;
         } else {
-          q['image'] = 'assets/images/$imageDir/${q['image']}.jpg';
+          q['image'] = '${_config.questionImagesDir(cat)}/${q['image']}.jpg';
         }
         allQuestions.add(Question.fromJson(q));
       }
@@ -33,13 +38,9 @@ class QuestionsDataSource {
   }
 
   Future<List<Map<String, dynamic>>> loadTopics(TicketCategory category) async {
-    final path = category == TicketCategory.ab
-        ? 'assets/questions/topics_ab.json'
-        : 'assets/questions/topics_cd.json';
-    final imageDir =
-        category == TicketCategory.ab ? 'questions_ab' : 'questions_cd';
-
-    final String content = await rootBundle.loadString(path);
+    final cat = _cat(category);
+    final String content =
+        await rootBundle.loadString(_config.topicsJson(cat));
     final Map<String, dynamic> data = json.decode(content);
     final List<dynamic> topics = data['topics'];
 
@@ -53,7 +54,7 @@ class QuestionsDataSource {
         if (q['image'] == null || q['image'] == 'no_image') {
           q['image'] = null;
         } else {
-          q['image'] = 'assets/images/$imageDir/${q['image']}.jpg';
+          q['image'] = '${_config.questionImagesDir(cat)}/${q['image']}.jpg';
         }
         parsedQuestions.add(Question.fromJson(q));
       }
@@ -67,7 +68,20 @@ class QuestionsDataSource {
   }
 
   Future<Map<String, dynamic>> loadSigns() async {
-    final String content = await rootBundle.loadString('assets/questions/signs.json');
+    final String content = await rootBundle.loadString(_config.signsJson);
     return json.decode(content) as Map<String, dynamic>;
+  }
+
+  /// Разделы текста ПДД для вкладки «ПДД»: [{'title':…, 'content':…}, …].
+  Future<List<Map<String, String>>> loadPddSections() async {
+    final String content =
+        await rootBundle.loadString(_config.pddSectionsJson);
+    final List<dynamic> sections = json.decode(content) as List<dynamic>;
+    return sections
+        .map((s) => {
+              'title': s['title'] as String,
+              'content': s['content'] as String,
+            })
+        .toList();
   }
 }

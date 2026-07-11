@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/layout/app_max_width_frame.dart';
 import 'package:pdd_app/core/navigation/route_observer.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
@@ -41,7 +42,7 @@ class PddApp extends ConsumerWidget {
     HapticFeedbackHelper.setEnabled(appSettings.hapticsEnabled);
 
     return MaterialApp(
-      title: 'ПДД Россия 2026',
+      title: CountryConfig.current.appTitle,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       navigatorObservers: [appRouteObserver],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
@@ -131,15 +132,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     },
                   ),
                 ),
-                _buildDivider(),
-                _buildSettingItem(
-                  icon: Icons.badge_outlined,
-                  title: 'Категория билетов',
-                  subtitle:
-                      'A/B – легковые и мото, C/D – грузовые и автобусы',
-                  trailing: _buildTicketCategoryBadge(settings),
-                  onTap: _toggleTicketCategory,
-                ),
+                if (CountryConfig.current.hasCdCategory) ...[
+                  _buildDivider(),
+                  _buildSettingItem(
+                    icon: Icons.badge_outlined,
+                    title: 'Категория билетов',
+                    subtitle:
+                        'A/B – легковые и мото, C/D – грузовые и автобусы',
+                    trailing: _buildTicketCategoryBadge(settings),
+                    onTap: _toggleTicketCategory,
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: AppDimensions.spacingXL),

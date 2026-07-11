@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
@@ -83,12 +84,15 @@ final ticketsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dataSource = ref.watch(questionsDataSourceProvider);
   final allQuestions = await dataSource.loadTickets(category);
 
+  // Количество билетов определяется данными, а не константой:
+  // у разных стран разный объём базы.
+  final ticketNumbers = allQuestions.map((q) => q.ticketNumber).toSet().toList()
+    ..sort();
   final List<Map<String, dynamic>> tickets = [];
-  for (int i = 1; i <= 40; i++) {
-    final ticketQuestions = allQuestions
-        .where((q) => q.ticketNumber == i)
-        .toList();
-    tickets.add({'number': i, 'questions': ticketQuestions});
+  for (final n in ticketNumbers) {
+    final ticketQuestions =
+        allQuestions.where((q) => q.ticketNumber == n).toList();
+    tickets.add({'number': n, 'questions': ticketQuestions});
   }
   return tickets;
 });
@@ -130,10 +134,17 @@ final statsProvider = FutureProvider<Map<String, int>>((ref) async {
       }
     }
 
-    if (answeredCount == questions.length && correctCount >= 18) {
+    if (answeredCount == questions.length &&
+        correctCount >=
+            CountryConfig.current.examRules.passThreshold(questions.length)) {
       passedTickets++;
     }
   }
+
+  final totalQuestions = tickets.fold<int>(
+    0,
+    (sum, t) => sum + (t['questions'] as List).length,
+  );
 
   return {
     'correctAnswers': correct,
@@ -142,7 +153,7 @@ final statsProvider = FutureProvider<Map<String, int>>((ref) async {
       return value is Map<String, dynamic> && value['isCorrect'] == false;
     }).length,
     'passedTickets': passedTickets,
-    'totalQuestions': 800,
+    'totalQuestions': totalQuestions,
     'totalTickets': tickets.length,
   };
 });

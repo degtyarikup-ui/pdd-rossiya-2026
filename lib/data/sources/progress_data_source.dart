@@ -174,15 +174,6 @@ class ProgressDataSource {
     return count;
   }
 
-  Future<int> getPassedTicketsCount(TicketCategory category) async {
-    final ticketProgress = _loadMap(_ticketProgressKey(category));
-    int count = 0;
-    ticketProgress.forEach((key, value) {
-      if (value is Map && (value['correctAnswers'] as num) >= 18) count++;
-    });
-    return count;
-  }
-
   Future<void> saveTicketProgress({
     required int ticketNumber,
     required int correctAnswers,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pdd_app/core/config/country_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -406,11 +407,11 @@ class SignCategoryScreen extends StatelessWidget {
                                                   child:
                                                       signImage.endsWith('.svg')
                                                       ? SvgPicture.asset(
-                                                          'assets/images/signs/$signImage',
+                                                          '${CountryConfig.current.signImagesDir}/$signImage',
                                                           fit: BoxFit.contain,
                                                         )
                                                       : Image.asset(
-                                                          'assets/images/signs/$signImage',
+                                                          '${CountryConfig.current.signImagesDir}/$signImage',
                                                           fit: BoxFit.contain,
                                                           errorBuilder:
                                                               (
