@@ -10,6 +10,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/utils/question_number_strip_scroll.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_review_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 
@@ -23,6 +24,9 @@ class ExamScreen extends ConsumerStatefulWidget {
 }
 
 class _ExamScreenState extends ConsumerState<ExamScreen> {
+  /// Размер основного блока экзамена (регламент ГИБДД: 20 вопросов).
+  static const int _mainCount = 20;
+
   late List<Map<String, dynamic>> _examQuestions;
   late List<int?> _savedAnswers;
   int _currentIndex = 0;
@@ -30,9 +34,12 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   bool _isAnswerSubmitted = false;
   final List<int> _wrongAnswers = [];
   final List<int> _correctAnswers = [];
+  int _unansweredTotal = 0;
   int _remainingTime = 20 * 60;
+  int _totalTimeSeconds = 20 * 60;
   Timer? _timer;
   bool _examFinished = false;
+  bool _examPassed = false;
   bool _additionalPhase = false;
   int _additionalQuestionsCount = 0;
   int _initialWrongCount = 0;
@@ -42,9 +49,14 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   PageController? _pageController;
   final ScrollController _questionStripController = ScrollController();
 
+  /// Кэш сервиса озвучки: ref нельзя использовать в dispose,
+  /// а озвучку там нужно останавливать.
+  late final TtsService _ttsService;
+
   @override
   void initState() {
     super.initState();
+    _ttsService = ref.read(ttsServiceProvider);
     _prepareExam();
     if (_examQuestions.isNotEmpty) {
       _pageController = PageController();
@@ -69,42 +81,71 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       controller: _questionStripController,
       currentIndex: _currentIndex,
     );
+    // Страховка от «зависших» состояний: если к этому моменту фаза уже
+    // завершена по правилам (всё отвечено / лимит ошибок), доводим экзамен
+    // до перехода или результатов. Без advance — навигацией управляет юзер.
+    _evaluateExamState(advance: false);
   }
 
   void _prepareExam() {
     final random = Random();
     final shuffled = List<Map<String, dynamic>>.from(widget.allQuestions)
       ..shuffle(random);
-    _examQuestions = shuffled.take(20).toList();
-    _savedAnswers = List<int?>.filled(_examQuestions.length, null);
+    _examQuestions = shuffled.take(_mainCount).toList();
+    // ВАЖНО: growable — при переходе к доп. вопросам список расширяется.
+    // List.filled по умолчанию фиксированной длины, addAll на нём бросает
+    // UnsupportedError и оставляет экзамен в полусломанном состоянии.
+    _savedAnswers =
+        List<int?>.filled(_examQuestions.length, null, growable: true);
     _startTimer();
   }
 
+  bool _isAnswerWrongAt(int i) {
+    final s = _savedAnswers[i];
+    if (s == null) return false;
+    return !((_examQuestions[i]['answers'] as List)[s]['correct'] as bool);
+  }
+
+  /// Ошибки основного блока; неотвеченные вопросы считаются ошибками.
+  /// Используется только при подведении итогов (таймаут / досрочное завершение).
   int _mainWrongTotal() {
-    final end = _examQuestions.length < 20 ? _examQuestions.length : 20;
+    final end = _examQuestions.length < _mainCount
+        ? _examQuestions.length
+        : _mainCount;
     var w = 0;
     for (var i = 0; i < end; i++) {
-      final s = _savedAnswers[i];
-      if (s == null) {
-        w++;
-        continue;
-      }
-      final ok = (_examQuestions[i]['answers'] as List)[s]['correct'] as bool;
-      if (!ok) w++;
+      if (_savedAnswers[i] == null || _isAnswerWrongAt(i)) w++;
     }
     return w;
   }
 
+  /// Ошибки доп. блока; неотвеченные считаются ошибками (для итогов).
   int _additionalWrongTotal() {
     var w = 0;
-    for (var i = 20; i < _examQuestions.length; i++) {
-      final s = _savedAnswers[i];
-      if (s == null) {
-        w++;
-        continue;
-      }
-      final ok = (_examQuestions[i]['answers'] as List)[s]['correct'] as bool;
-      if (!ok) w++;
+    for (var i = _mainCount; i < _examQuestions.length; i++) {
+      if (_savedAnswers[i] == null || _isAnswerWrongAt(i)) w++;
+    }
+    return w;
+  }
+
+  /// Ошибки среди уже отвеченных вопросов основного блока.
+  /// Используется по ходу экзамена (правило «3 ошибки — не сдал»).
+  int _mainAnsweredWrongCount() {
+    final end = _examQuestions.length < _mainCount
+        ? _examQuestions.length
+        : _mainCount;
+    var w = 0;
+    for (var i = 0; i < end; i++) {
+      if (_isAnswerWrongAt(i)) w++;
+    }
+    return w;
+  }
+
+  /// Ошибки среди отвеченных доп. вопросов (правило «ошибка в доп. блоке — не сдал»).
+  int _additionalAnsweredWrongCount() {
+    var w = 0;
+    for (var i = _mainCount; i < _examQuestions.length; i++) {
+      if (_isAnswerWrongAt(i)) w++;
     }
     return w;
   }
@@ -112,10 +153,11 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   void _recomputeScoreLists() {
     _correctAnswers.clear();
     _wrongAnswers.clear();
+    _unansweredTotal = 0;
     for (var i = 0; i < _examQuestions.length; i++) {
       final s = _savedAnswers[i];
       if (s == null) {
-        _wrongAnswers.add(i);
+        _unansweredTotal++;
         continue;
       }
       final ok = (_examQuestions[i]['answers'] as List)[s]['correct'] as bool;
@@ -127,21 +169,29 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     }
   }
 
-  /// Первый неотвеченный вопрос основного блока (0..19), если есть.
-  int? _firstUnansweredMainIndex() {
-    final end = _examQuestions.length < 20 ? _examQuestions.length : 20;
-    for (var i = 0; i < end; i++) {
+  /// Ближайший неотвеченный вопрос в диапазоне [start, end): сначала вперёд
+  /// от [from]+1, затем с начала диапазона (обход по кругу). Так автопереход
+  /// работает при ответах в любом порядке.
+  int? _firstUnansweredInRange(int start, int end, {required int from}) {
+    for (var i = from + 1; i < end; i++) {
+      if (i >= start && _savedAnswers[i] == null) return i;
+    }
+    for (var i = start; i <= from && i < end; i++) {
       if (_savedAnswers[i] == null) return i;
     }
     return null;
   }
 
-  /// Первый неотвеченный в дополнительной фазе (индексы с 20).
-  int? _firstUnansweredAdditionalIndex() {
-    for (var i = 20; i < _examQuestions.length; i++) {
-      if (_savedAnswers[i] == null) return i;
-    }
-    return null;
+  int? _firstUnansweredMainIndex({required int from}) {
+    final end = _examQuestions.length < _mainCount
+        ? _examQuestions.length
+        : _mainCount;
+    return _firstUnansweredInRange(0, end, from: from);
+  }
+
+  int? _firstUnansweredAdditionalIndex({required int from}) {
+    return _firstUnansweredInRange(_mainCount, _examQuestions.length,
+        from: from);
   }
 
   void _goToQuestion(int index) {
@@ -149,6 +199,15 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     if (index == _currentIndex) return;
     final c = _pageController;
     if (c == null) return;
+    if (!c.hasClients) {
+      // PageView ещё не приаттачен (например, сразу после ребилда со сменой
+      // количества страниц) — повторяем попытку в следующем кадре.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _examFinished) return;
+        _goToQuestion(index);
+      });
+      return;
+    }
     HapticFeedbackHelper.tap();
     _lastSpokenQuestionId = null;
     _invalidateVoicePlayback();
@@ -178,10 +237,10 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     if (_isAnswerSubmitted) return;
 
     HapticFeedbackHelper.tap();
-    _submitAnswer(index, advanceToNextAfterSubmit: true);
+    _submitAnswer(index);
   }
 
-  void _submitAnswer(int index, {bool advanceToNextAfterSubmit = false}) {
+  void _submitAnswer(int index) {
     final question = _examQuestions[_currentIndex];
     final answers = question['answers'] as List;
     final isCorrect = answers[index]['correct'] as bool;
@@ -208,74 +267,64 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       _wrongAnswers.add(_currentIndex);
     }
 
-    if (advanceToNextAfterSubmit) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _nextQuestion();
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _evaluateExamState(advance: true);
+    });
   }
 
-  void _moveToNextQuestion() {
-    final c = _pageController;
-    if (c == null) return;
-    final next = _currentIndex + 1;
-    c.animateToPage(
-      next,
-      duration: QuestionSwipeMotion.duration,
-      curve: QuestionSwipeMotion.curve,
-    );
-  }
+  /// Центральная точка принятия решений по ходу экзамена.
+  ///
+  /// Вызывается после каждого ответа (и как страховка — при смене страницы),
+  /// поэтому переход к доп. вопросам и завершение экзамена не зависят от того,
+  /// на какой странице находится пользователь и в каком порядке он отвечал.
+  ///
+  /// Правила (регламент ГИБДД):
+  /// - 3 ошибки в основном блоке — экзамен прекращается, не сдан;
+  /// - 1 ошибка → +5 доп. вопросов, 2 ошибки → +10 (и +5 минут за блок);
+  /// - любая ошибка в доп. блоке — экзамен прекращается, не сдан;
+  /// - все доп. вопросы отвечены верно — сдан.
+  void _evaluateExamState({required bool advance}) {
+    if (_examFinished || !mounted) return;
 
-  void _nextQuestion() {
     if (!_additionalPhase) {
-      final mainLast = _examQuestions.length - 1;
-      if (mainLast >= 0 && _currentIndex >= mainLast) {
-        final pending = _firstUnansweredMainIndex();
-        if (pending != null) {
-          _goToQuestion(pending);
-          return;
-        }
-
-        final mainWrong = _mainWrongTotal();
-        if (mainWrong == 0) {
-          _finishExam();
-          return;
-        }
-
-        if (mainWrong == 1) {
-          _startAdditionalPhase(5);
-          return;
-        }
-
-        if (mainWrong == 2) {
-          _startAdditionalPhase(10);
-          return;
-        }
-
+      final mainWrong = _mainAnsweredWrongCount();
+      if (mainWrong >= 3) {
         _finishExam();
         return;
       }
 
-      _moveToNextQuestion();
+      final pending = _firstUnansweredMainIndex(from: _currentIndex);
+      if (pending == null) {
+        if (mainWrong == 0) {
+          _finishExam();
+          return;
+        }
+        _startAdditionalPhase(mainWrong * 5);
+        return;
+      }
+
+      if (advance) _goToQuestion(pending);
       return;
     }
 
-    if (_currentIndex < _examQuestions.length - 1) {
-      _moveToNextQuestion();
+    if (_additionalAnsweredWrongCount() > 0) {
+      _finishExam();
       return;
     }
 
-    final pendingAdd = _firstUnansweredAdditionalIndex();
-    if (pendingAdd != null) {
-      _goToQuestion(pendingAdd);
+    final pendingAdd = _firstUnansweredAdditionalIndex(from: _currentIndex);
+    if (pendingAdd == null) {
+      _finishExam();
       return;
     }
 
-    _finishExam();
+    if (advance) _goToQuestion(pendingAdd);
   }
 
   void _startAdditionalPhase(int count) {
+    if (_additionalPhase) return;
+
     final random = Random();
     final usedIds = _examQuestions.map((q) => q['id'] as String).toSet();
     final available =
@@ -283,26 +332,33 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
           ..shuffle(random);
     final additional = available.take(count).toList();
 
+    // Вырожденный случай: в базе не нашлось доп. вопросов — завершаем как есть.
+    if (additional.isEmpty) {
+      _finishExam();
+      return;
+    }
+
+    // Регламент: каждый доп. блок из 5 вопросов добавляет 5 минут
+    // (эквивалент — минута на вопрос).
+    final extraSeconds = additional.length * 60;
+
     setState(() {
-      _initialWrongCount = _mainWrongTotal();
+      _initialWrongCount = _mainAnsweredWrongCount();
+      // Сначала расширяем ответы, затем вопросы: если что-то бросит исключение,
+      // не останется состояния «вопросов больше, чем слотов под ответы».
+      _savedAnswers.addAll(List<int?>.filled(additional.length, null));
       _examQuestions.addAll(additional);
-      _savedAnswers.addAll(List<int?>.filled(count, null));
       _additionalPhase = true;
-      _additionalQuestionsCount = count;
-      _currentIndex++;
-      _selectedAnswerIndex = _savedAnswers[_currentIndex];
-      _isAnswerSubmitted = _savedAnswers[_currentIndex] != null;
+      _additionalQuestionsCount = additional.length;
+      _remainingTime += extraSeconds;
+      _totalTimeSeconds += extraSeconds;
     });
+
+    // Навигацию к первому доп. вопросу выполняем после ребилда PageView
+    // с новым количеством страниц; _currentIndex обновит _onExamPageChanged.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final c = _pageController;
-      if (c != null && c.hasClients) {
-        c.jumpToPage(_currentIndex);
-      }
-      scheduleScrollQuestionStripToCurrent(
-        controller: _questionStripController,
-        currentIndex: _currentIndex,
-      );
+      if (!mounted || _examFinished) return;
+      _goToQuestion(_mainCount);
     });
   }
 
@@ -315,18 +371,22 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     _timer?.cancel();
 
     _recomputeScoreLists();
-    final totalWrong = _wrongAnswers.length;
+    // Сдан, если: не вышло время И в завершённой фазе нет ни ошибок,
+    // ни неотвеченных вопросов (неотвеченные считаются ошибками — досрочное
+    // завершение не может дать «сдал»). 1-2 ошибки основного блока при
+    // безошибочном доп. блоке — сдан, как в ГИБДД.
     final passed = !_timedOut &&
         (_additionalPhase
             ? _additionalWrongTotal() == 0
-            : _mainWrongTotal() <= 2);
+            : _mainWrongTotal() == 0);
+    _examPassed = passed;
 
     final dataSource = ref.read(progressDataSourceProvider);
     final TicketCategory category = ref.read(appSettingsProvider).ticketCategory;
     dataSource.saveExamResult(
       ticketNumber: 0,
       correctAnswers: _correctAnswers.length,
-      wrongAnswers: totalWrong,
+      wrongAnswers: _wrongAnswers.length,
       passed: passed,
       category: category,
     );
@@ -343,9 +403,51 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     }
   }
 
+  /// Крестик во время экзамена: подтверждение с выбором — продолжить или
+  /// завершить с показом результатов (и доступным разбором ошибок).
+  /// Если ни одного ответа ещё нет — просто выходим без записи результата.
+  Future<void> _confirmLeaveExam() async {
+    HapticFeedbackHelper.tap();
+
+    final answeredCount = _savedAnswers.where((s) => s != null).length;
+    if (answeredCount == 0) {
+      _timer?.cancel();
+      Navigator.pop(context);
+      return;
+    }
+
+    final finish = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Прервать экзамен?'),
+        content: const Text(
+          'Экзамен будет завершён, неотвеченные вопросы засчитаются как ошибки. '
+          'После завершения можно посмотреть разбор ответов.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Продолжить'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Завершить',
+              style: TextStyle(color: AppColors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (finish == true && mounted) {
+      _finishExam();
+    }
+  }
+
   void _invalidateVoicePlayback() {
     _voiceScheduleGen++;
-    ref.read(ttsServiceProvider).stop();
+    _ttsService.stop();
   }
 
   void _syncVoicePlayback({
@@ -354,7 +456,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     required List answers,
     required bool enabled,
   }) {
-    final ttsService = ref.read(ttsServiceProvider);
+    final ttsService = _ttsService;
 
     if (!enabled) {
       _lastSpokenQuestionId = null;
@@ -421,7 +523,16 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       enabled: voiceShouldPlay,
     );
 
-    return Scaffold(
+    // Системный «назад» (кнопка/жест Android, свайп iOS, back браузера) идёт
+    // через тот же диалог подтверждения, что и крестик, — иначе экзамен
+    // молча пропадает без результатов и разбора ошибок.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (didPop) return;
+        _confirmLeaveExam();
+      },
+      child: Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
@@ -435,11 +546,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                 children: [
                   AppChromeIconButton(
                     icon: Icons.close_rounded,
-                    onTap: () {
-                      HapticFeedbackHelper.tap();
-                      _timer?.cancel();
-                      Navigator.pop(context);
-                    },
+                    onTap: _confirmLeaveExam,
                   ),
                   const SizedBox(width: AppDimensions.spacingM),
                   Expanded(
@@ -457,7 +564,9 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                           ),
                         ),
                         Text(
-                          'Вопрос ${_currentIndex + 1} из ${_examQuestions.length}',
+                          _currentIndex >= _mainCount
+                              ? 'Доп. вопрос ${_currentIndex - _mainCount + 1} из $_additionalQuestionsCount'
+                              : 'Вопрос ${_currentIndex + 1} из ${_examQuestions.length}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.secondaryText,
@@ -523,6 +632,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -598,11 +708,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   Widget _buildResultsScreen() {
     final totalWrong = _wrongAnswers.length;
     final totalQuestions = _examQuestions.length;
-    final passed = !_timedOut &&
-        (_additionalPhase
-            ? _additionalWrongTotal() == 0
-            : _mainWrongTotal() <= 2);
-    final timeSpent = 20 * 60 - _remainingTime;
+    final passed = _examPassed;
+    final timeSpent = _totalTimeSeconds - _remainingTime;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -679,13 +786,22 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                       value: '$totalWrong',
                       color: AppColors.red,
                     ),
+                    if (_unansweredTotal > 0) ...[
+                      const SizedBox(height: AppDimensions.spacingM),
+                      _buildResultCard(
+                        icon: Icons.remove_circle_outline,
+                        label: 'Без ответа',
+                        value: '$_unansweredTotal',
+                        color: AppColors.secondaryText,
+                      ),
+                    ],
                     if (_additionalPhase) ...[
                       const SizedBox(height: AppDimensions.spacingM),
                       _buildResultCard(
                         icon: Icons.help_outline,
                         label: 'Дополнительный блок',
                         value:
-                            '$_additionalQuestionsCount вопросов, ошибок: ${_additionalWrongTotal()}',
+                            '$_additionalQuestionsCount вопросов, ошибок: ${_additionalAnsweredWrongCount()}',
                         color: AppColors.gold,
                       ),
                     ],
@@ -801,11 +917,14 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       itemBuilder: (context, index) {
         final isCurrent = index == _currentIndex;
         final answered = _savedAnswers[index] != null;
+        final isAdditional = index >= _mainCount;
         final backgroundColor = isCurrent
             ? AppColors.accent
             : answered
-                ? AppColors.accent.withOpacity(0.42)
-                : AppColors.gray;
+                ? AppColors.accent.withValues(alpha: 0.42)
+                : isAdditional
+                    ? AppColors.gold.withValues(alpha: 0.5)
+                    : AppColors.gray;
 
         return Padding(
           padding: const EdgeInsets.only(right: 4),

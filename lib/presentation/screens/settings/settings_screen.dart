@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -6,10 +5,7 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
-import 'package:pdd_app/data/repositories/auth_repository.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
-import 'package:pdd_app/presentation/screens/auth/login_screen.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -27,35 +23,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   static final Uri _telegramSupportUri = Uri.parse(
     'https://t.me/sergei_degtyarik',
   );
-
-  static bool _detailsMentionInvalidJwt(Object? details) {
-    final s = details?.toString().toLowerCase() ?? '';
-    return s.contains('invalid jwt') || s.contains('invalid_token');
-  }
-
-  /// Укоротить ответ Edge Function, чтобы в SnackBar не утекали простыни JSON/стека.
-  static String _sanitizeEdgeFunctionMessage(String raw) {
-    var t = raw.trim();
-    final nl = t.indexOf('\n');
-    if (nl != -1) {
-      t = t.substring(0, nl).trim();
-    }
-    if (t.length > 200) {
-      return '${t.substring(0, 197)}…';
-    }
-    return t;
-  }
-
-  /// Почта для подзаголовка «Выйти из аккаунта».
-  String _accountEmailForSubtitle(User? user) {
-    final direct = user?.email?.trim();
-    if (direct != null && direct.isNotEmpty) return direct;
-    final meta = user?.userMetadata;
-    if (meta == null) return '';
-    final fromMeta = meta['email'] as String?;
-    final t = fromMeta?.trim();
-    return (t != null && t.isNotEmpty) ? t : '';
-  }
 
   Future<void> _openSupportFund() async {
     HapticFeedbackHelper.tap();
@@ -87,10 +54,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final settings = ref.watch(appSettingsProvider);
     final settingsController = ref.read(appSettingsProvider.notifier);
-    final isGuestMode = ref.watch(guestModeProvider);
-    final currentUser = ref.watch(currentUserProvider);
-    final isAuthorized = !isGuestMode && currentUser != null;
-    final signOutEmailSubtitle = _accountEmailForSubtitle(currentUser);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -180,7 +143,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
             ),
             const SizedBox(height: AppDimensions.spacingXL),
-            _buildSectionTitle(isAuthorized ? 'Данные' : 'Аккаунт'),
+            _buildSectionTitle('Данные'),
             _buildSectionCard(
               children: [
                 _buildSettingItem(
@@ -192,44 +155,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   onTap: _confirmReset,
                 ),
-                _buildDivider(),
-                if (isAuthorized) ...[
-                  _buildSettingItem(
-                    icon: Icons.logout_rounded,
-                    title: 'Выйти из аккаунта',
-                    subtitle: signOutEmailSubtitle,
-                    titleColor: AppColors.red,
-                    iconColor: AppColors.red,
-                    trailing: const Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.secondaryText,
-                    ),
-                    onTap: _confirmSignOut,
-                  ),
-                  _buildDivider(),
-                  _buildSettingItem(
-                    icon: Icons.delete_forever_outlined,
-                    title: 'Удалить аккаунт',
-                    titleColor: AppColors.red,
-                    iconColor: AppColors.red,
-                    trailing: const Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.secondaryText,
-                    ),
-                    onTap: _confirmDeleteAccount,
-                  ),
-                ] else
-                  _buildSettingItem(
-                    icon: Icons.login_rounded,
-                    title: 'Войти или зарегистрироваться',
-                    titleColor: AppColors.accent,
-                    iconColor: AppColors.accent,
-                    trailing: const Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.secondaryText,
-                    ),
-                    onTap: _openAuthScreen,
-                  ),
               ],
             ),
           ],
@@ -418,160 +343,5 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Статистика сброшена')));
-  }
-
-  Future<void> _confirmSignOut() async {
-    HapticFeedbackHelper.warning();
-    final shouldSignOut = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Выйти из аккаунта'),
-        content: const Text('Вы уверены, что хотите завершить текущую сессию?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Отмена'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Выйти'),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldSignOut != true) return;
-
-    await ref.read(supabaseClientProvider).auth.signOut();
-    ref.read(authLoadingProvider.notifier).state = false;
-    final progress = ref.read(progressDataSourceProvider);
-    await progress.clearAllProgressForAccountSwitch();
-    await progress.setStoredProgressOwnerId(null);
-    ref.read(appDataRefreshProvider.notifier).state++;
-    ref.invalidate(statsProvider);
-    ref.invalidate(ticketProgressProvider);
-    ref.invalidate(favoriteQuestionsProvider);
-    ref.invalidate(wrongQuestionIdsProvider);
-  }
-
-  /// Удаление учётной записи через Edge Function `delete-account` (admin API на сервере).
-  Future<void> _confirmDeleteAccount() async {
-    HapticFeedbackHelper.warning();
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Удалить аккаунт'),
-        content: const Text(
-          'Аккаунт и связанные данные в сервисе авторизации будут удалены без возможности восстановления. Продолжить?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Отмена'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.red,
-              foregroundColor: AppColors.white,
-            ),
-            child: const Text('Удалить'),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldDelete != true) return;
-
-    if (!ref.read(supabaseAvailableProvider)) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Сервис авторизации недоступен')),
-      );
-      return;
-    }
-
-    final client = ref.read(supabaseClientProvider);
-    if (client.auth.currentSession == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Сессия недействительна. Войдите снова.')),
-      );
-      return;
-    }
-
-    try {
-      // Не передаём Authorization вручную: AuthHttpClient подставит access token
-      // (и при необходимости обновит сессию). Ручной заголовок блокирует это и
-      // часто приводит к «Invalid JWT» на Edge Functions при свежем входе.
-      await client.functions.invoke(
-        'delete-account',
-        method: HttpMethod.post,
-        body: const <String, dynamic>{},
-      );
-
-      await client.auth.signOut();
-      ref.read(authLoadingProvider.notifier).state = false;
-      final progress = ref.read(progressDataSourceProvider);
-      await progress.clearAllProgressForAccountSwitch();
-      await progress.setStoredProgressOwnerId(null);
-      ref.read(appDataRefreshProvider.notifier).state++;
-      ref.invalidate(statsProvider);
-      ref.invalidate(ticketProgressProvider);
-      ref.invalidate(favoriteQuestionsProvider);
-      ref.invalidate(wrongQuestionIdsProvider);
-      if (!mounted) return;
-      HapticFeedbackHelper.success();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Аккаунт удалён')),
-      );
-    } on FunctionException catch (e) {
-      var message = 'Не удалось удалить аккаунт';
-      if (e.status == 404) {
-        message =
-            'Функция delete-account не развёрнута. Выполните: supabase functions deploy delete-account';
-      } else if (e.status == 401 ||
-          _detailsMentionInvalidJwt(e.details)) {
-        message =
-            'Сессия устарела или недействительна. Выйдите из аккаунта, войдите снова и повторите удаление.';
-      } else if (e.details is Map) {
-        final map = e.details as Map;
-        final m = map['msg'] ?? map['message'] ?? map['error'];
-        if (m != null && m.toString().isNotEmpty) {
-          message = _sanitizeEdgeFunctionMessage(m.toString());
-        }
-      } else if (e.details is String && (e.details as String).isNotEmpty) {
-        message = _sanitizeEdgeFunctionMessage(e.details as String);
-      }
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      if (kDebugMode) {
-        debugPrint('Delete account unexpected error: $e');
-      }
-      final raw = e.toString();
-      final text = raw.toLowerCase().contains('invalid jwt')
-          ? 'Сессия устарела или недействительна. Выйдите из аккаунта, войдите снова и повторите удаление.'
-          : 'Не удалось удалить аккаунт. Попробуйте позже.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(text)),
-      );
-    }
-  }
-
-  void _openAuthScreen() {
-    HapticFeedbackHelper.tap();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (loginContext) =>
-            LoginScreen(onClose: () => Navigator.of(loginContext).pop()),
-      ),
-    );
   }
 }

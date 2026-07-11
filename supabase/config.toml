@@ -1,5 +1,0 @@
-# Локальная конфигурация CLI. После изменений: supabase functions deploy delete-account
-[functions.delete-account]
-# Проверка JWT на шлюзе иногда даёт "Invalid JWT" при уже просроченном access_token;
-# сама функция проверяет Bearer через auth.getUser(jwt).
-verify_jwt = false

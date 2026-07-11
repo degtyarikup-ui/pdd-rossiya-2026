@@ -1,11 +1,11 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:pdd_app/data/models/app_settings.dart';
+import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Локальный кэш прогресса + опциональная синхронизация с Supabase (см. [configureCloudSync]).
+/// Локальный кэш прогресса в [SharedPreferences].
 class ProgressDataSource {
   static const String _legacyProgress = 'question_progress';
   static const String _legacyTicketProgress = 'ticket_progress';
@@ -21,48 +21,31 @@ class ProgressDataSource {
   static const String _keyExamResultsAb = 'exam_results_ab';
   static const String _keyExamResultsCd = 'exam_results_cd';
   static const String _keySettings = 'app_settings';
-  static const String _keyGuestMode = 'guest_mode';
 
-  static const String _keyProgressOwnerId = 'progress_cloud_owner_id';
-  static const String _keyLocalProgressUpdatedMs = 'progress_local_updated_ms';
+  // --- Серия (стрик) ---
+  static const String _keyStreakCurrent = 'streak_current';
+  static const String _keyStreakLongest = 'streak_longest';
+  static const String _keyStreakLastActive = 'streak_last_active';
+  static const String _keyStreakStartDate = 'streak_start_date';
+  static const String _keyStreakActiveDays = 'streak_active_days';
+  static const String _keyStreakCelebrationPending = 'streak_celebration_pending';
+
+  /// Максимум хранимых дней активности в локальном кэше.
+  static const int _maxStoredActiveDays = 30;
+
+  /// Ключи прежней облачной синхронизации — чистим один раз при апгрейде.
+  static const List<String> _obsoleteCloudKeys = [
+    'guest_mode',
+    'progress_cloud_owner_id',
+    'progress_local_updated_ms',
+  ];
 
   late SharedPreferences _prefs;
-
-  /// Вызывается после локальных изменений (не при импорте из облака).
-  void Function()? onAfterLocalMutation;
-
-  bool _suppressMutationCallbacks = false;
-  Timer? _cloudPushTimer;
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
     _migrateLegacyIfNeeded();
-    _seedLocalUpdatedMsIfNeeded();
-  }
-
-  void _seedLocalUpdatedMsIfNeeded() {
-    if (_prefs.getInt(_keyLocalProgressUpdatedMs) != null) return;
-    if (!_hasAnyProgressPayload()) return;
-    _bumpLocalUpdatedMs();
-  }
-
-  bool _hasAnyProgressPayload() {
-    for (final key in [
-      _keyProgressAb,
-      _keyProgressCd,
-      _keyTicketProgressAb,
-      _keyTicketProgressCd,
-      _keyFavoritesAb,
-      _keyFavoritesCd,
-      _keyExamResultsAb,
-      _keyExamResultsCd,
-    ]) {
-      final s = _prefs.getString(key);
-      if (s != null && s.isNotEmpty && s != '{}' && s != '[]') {
-        return true;
-      }
-    }
-    return false;
+    _purgeObsoleteCloudKeys();
   }
 
   void _migrateLegacyIfNeeded() {
@@ -82,6 +65,14 @@ class ProgressDataSource {
     migrateString(_legacyTicketProgress, _keyTicketProgressAb);
     migrateString(_legacyFavorites, _keyFavoritesAb);
     migrateString(_legacyExamResults, _keyExamResultsAb);
+  }
+
+  void _purgeObsoleteCloudKeys() {
+    for (final key in _obsoleteCloudKeys) {
+      if (_prefs.containsKey(key)) {
+        _prefs.remove(key);
+      }
+    }
   }
 
   String _progressKey(TicketCategory c) =>
@@ -106,13 +97,8 @@ class ProgressDataSource {
     }
   }
 
-  void _putMap(String key, Map<String, dynamic> data) {
-    _prefs.setString(key, json.encode(data));
-  }
-
   void _saveMap(String key, Map<String, dynamic> data) {
-    _putMap(key, data);
-    _afterMutation();
+    _prefs.setString(key, json.encode(data));
   }
 
   List<String> _loadList(String key) {
@@ -125,164 +111,8 @@ class ProgressDataSource {
     }
   }
 
-  void _putList(String key, List<String> data) {
-    _prefs.setString(key, json.encode(data));
-  }
-
   void _saveList(String key, List<String> data) {
-    _putList(key, data);
-    _afterMutation();
-  }
-
-  void _bumpLocalUpdatedMs() {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    _prefs.setInt(_keyLocalProgressUpdatedMs, now);
-  }
-
-  void _afterMutation() {
-    if (_suppressMutationCallbacks) return;
-    _bumpLocalUpdatedMs();
-    onAfterLocalMutation?.call();
-  }
-
-  int get localProgressUpdatedMs =>
-      _prefs.getInt(_keyLocalProgressUpdatedMs) ?? 0;
-
-  /// Гарантирует ненулевую метку времени перед первой отправкой в облако.
-  void ensureProgressTimestamp() {
-    if (localProgressUpdatedMs == 0) {
-      _bumpLocalUpdatedMs();
-    }
-  }
-
-  String? get storedProgressOwnerId => _prefs.getString(_keyProgressOwnerId);
-
-  Future<void> setStoredProgressOwnerId(String? userId) async {
-    if (userId == null || userId.isEmpty) {
-      await _prefs.remove(_keyProgressOwnerId);
-    } else {
-      await _prefs.setString(_keyProgressOwnerId, userId);
-    }
-  }
-
-  /// Строка для upsert в `user_progress`.
-  Map<String, dynamic> buildCloudUpsertRow(String userId) {
-    return {
-      'user_id': userId,
-      'question_progress_ab': _loadMap(_keyProgressAb),
-      'question_progress_cd': _loadMap(_keyProgressCd),
-      'ticket_progress_ab': _loadMap(_keyTicketProgressAb),
-      'ticket_progress_cd': _loadMap(_keyTicketProgressCd),
-      'favorites_ab': _loadList(_keyFavoritesAb),
-      'favorites_cd': _loadList(_keyFavoritesCd),
-      'exam_results_ab': _decodeExamResultsList(_keyExamResultsAb),
-      'exam_results_cd': _decodeExamResultsList(_keyExamResultsCd),
-      'app_settings': _loadMap(_keySettings),
-      'updated_at_ms': localProgressUpdatedMs,
-    };
-  }
-
-  List<dynamic> _decodeExamResultsList(String key) {
-    final raw = _prefs.getString(key);
-    if (raw == null) return [];
-    try {
-      final list = json.decode(raw) as List;
-      return List<dynamic>.from(list);
-    } catch (_) {
-      return [];
-    }
-  }
-
-  /// Заменить локальные данные из облака (без триггера push).
-  Future<void> importFromCloudRow(Map<String, dynamic> row) async {
-    _suppressMutationCallbacks = true;
-    try {
-      _putMap(
-        _keyProgressAb,
-        _asStringKeyMap(row['question_progress_ab']),
-      );
-      _putMap(
-        _keyProgressCd,
-        _asStringKeyMap(row['question_progress_cd']),
-      );
-      _putMap(
-        _keyTicketProgressAb,
-        _asStringKeyMap(row['ticket_progress_ab']),
-      );
-      _putMap(
-        _keyTicketProgressCd,
-        _asStringKeyMap(row['ticket_progress_cd']),
-      );
-      _putList(
-        _keyFavoritesAb,
-        _asStringList(row['favorites_ab']),
-      );
-      _putList(
-        _keyFavoritesCd,
-        _asStringList(row['favorites_cd']),
-      );
-      _putList(
-        _keyExamResultsAb,
-        _examResultsToPrefsStrings(row['exam_results_ab']),
-      );
-      _putList(
-        _keyExamResultsCd,
-        _examResultsToPrefsStrings(row['exam_results_cd']),
-      );
-      _putMap(_keySettings, _asStringKeyMap(row['app_settings']));
-      final ms = row['updated_at_ms'];
-      final msInt = ms is num ? ms.toInt() : int.tryParse('$ms') ?? 0;
-      await _prefs.setInt(_keyLocalProgressUpdatedMs, msInt);
-    } finally {
-      _suppressMutationCallbacks = false;
-    }
-  }
-
-  Map<String, dynamic> _asStringKeyMap(dynamic value) {
-    if (value == null) return {};
-    if (value is! Map) return {};
-    return value.map((k, v) => MapEntry(k.toString(), v));
-  }
-
-  List<String> _asStringList(dynamic value) {
-    if (value == null) return [];
-    if (value is! List) return [];
-    return value.map((e) => e.toString()).toList();
-  }
-
-  /// В БД exam_results — jsonb-массив строк или объектов; в prefs — JSON-строки.
-  List<String> _examResultsToPrefsStrings(dynamic value) {
-    if (value == null) return [];
-    if (value is! List) return [];
-    return value.map((e) {
-      if (e is String) return e;
-      return json.encode(e);
-    }).toList();
-  }
-
-  void configureCloudSync({
-    required bool enabled,
-    required Future<void> Function() pushNow,
-  }) {
-    _cloudPushTimer?.cancel();
-    _cloudPushTimer = null;
-    onAfterLocalMutation = null;
-
-    if (!enabled) {
-      return;
-    }
-
-    onAfterLocalMutation = () {
-      _cloudPushTimer?.cancel();
-      _cloudPushTimer = Timer(const Duration(seconds: 1), () {
-        unawaited(pushNow());
-      });
-    };
-  }
-
-  void cancelCloudDebounce() {
-    _cloudPushTimer?.cancel();
-    _cloudPushTimer = null;
+    _prefs.setString(key, json.encode(data));
   }
 
   Future<bool> isQuestionAnswered(
@@ -332,6 +162,7 @@ class ProgressDataSource {
       'wrongAttempts': wrongAttempts + (isCorrect ? 0 : 1),
     };
     _saveMap(key, progress);
+    _markStreakActivityToday();
   }
 
   Future<int> getCorrectAnswersCount(TicketCategory category) async {
@@ -422,14 +253,6 @@ class ProgressDataSource {
     _saveMap(_keySettings, settings.toJson());
   }
 
-  bool getGuestMode() {
-    return _prefs.getBool(_keyGuestMode) ?? false;
-  }
-
-  Future<void> setGuestMode(bool enabled) async {
-    await _prefs.setBool(_keyGuestMode, enabled);
-  }
-
   Future<void> resetAllProgress() async {
     await _prefs.remove(_keyProgressAb);
     await _prefs.remove(_keyProgressCd);
@@ -443,29 +266,136 @@ class ProgressDataSource {
     await _prefs.remove(_legacyTicketProgress);
     await _prefs.remove(_legacyFavorites);
     await _prefs.remove(_legacyExamResults);
-    _afterMutation();
+    // Стрик — часть прогресса, чистим вместе со всем.
+    await _prefs.remove(_keyStreakCurrent);
+    await _prefs.remove(_keyStreakLongest);
+    await _prefs.remove(_keyStreakLastActive);
+    await _prefs.remove(_keyStreakStartDate);
+    await _prefs.remove(_keyStreakActiveDays);
+    await _prefs.remove(_keyStreakCelebrationPending);
   }
 
-  /// Сброс прогресса при смене аккаунта: не обновляет `updated_ms`, не вызывает push.
-  Future<void> clearAllProgressForAccountSwitch() async {
-    _suppressMutationCallbacks = true;
-    try {
-      await _prefs.remove(_keyProgressAb);
-      await _prefs.remove(_keyProgressCd);
-      await _prefs.remove(_keyTicketProgressAb);
-      await _prefs.remove(_keyTicketProgressCd);
-      await _prefs.remove(_keyFavoritesAb);
-      await _prefs.remove(_keyFavoritesCd);
-      await _prefs.remove(_keyExamResultsAb);
-      await _prefs.remove(_keyExamResultsCd);
-      await _prefs.remove(_legacyProgress);
-      await _prefs.remove(_legacyTicketProgress);
-      await _prefs.remove(_legacyFavorites);
-      await _prefs.remove(_legacyExamResults);
-      await _prefs.remove(_keyLocalProgressUpdatedMs);
-    } finally {
-      _suppressMutationCallbacks = false;
+  // --- Стрик: служебные методы ---
+
+  /// Привести дату к началу календарного дня (локальное время устройства).
+  DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
+
+  /// Сериализация даты в формат `yyyy-MM-dd` (стабильный, парсится DateTime.parse).
+  String _isoDate(DateTime dt) {
+    final y = dt.year.toString().padLeft(4, '0');
+    final m = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  /// Записать активность за сегодня. Вызывается из [saveAnswer].
+  ///
+  /// Логика:
+  /// - Если последняя активность была сегодня — ничего не делаем.
+  /// - Если вчера — увеличиваем серию на 1.
+  /// - Иначе — серия начинается заново (1).
+  /// - Обновляем longest, сегодняшний день добавляем в список активных,
+  ///   ставим флаг pendingCelebration, чтобы UI смог показать поздравление.
+  void _markStreakActivityToday() {
+    final today = _dateOnly(DateTime.now());
+    final lastIso = _prefs.getString(_keyStreakLastActive);
+    final last = lastIso != null ? DateTime.tryParse(lastIso) : null;
+    final lastDay = last != null ? _dateOnly(last) : null;
+
+    if (lastDay != null && lastDay.isAtSameMomentAs(today)) {
+      // День уже зачтён — стрик и так растёт корректно.
+      return;
     }
+
+    final yesterday = today.subtract(const Duration(days: 1));
+    final stored = _prefs.getInt(_keyStreakCurrent) ?? 0;
+    final isConsecutive =
+        lastDay != null && lastDay.isAtSameMomentAs(yesterday);
+    final nextCurrent = isConsecutive ? stored + 1 : 1;
+
+    final storedLongest = _prefs.getInt(_keyStreakLongest) ?? 0;
+    final nextLongest =
+        nextCurrent > storedLongest ? nextCurrent : storedLongest;
+
+    // Дата старта серии. Не трогаем, если серия продолжается; перезаписываем
+    // на сегодня, если серия начинается заново (новая или после перерыва).
+    if (!isConsecutive) {
+      _prefs.setString(_keyStreakStartDate, _isoDate(today));
+    }
+
+    // Поддерживаем компактный список активных дней (последние 30 уникальных).
+    final activeRaw = _prefs.getStringList(_keyStreakActiveDays) ?? <String>[];
+    final activeSet = activeRaw.toSet()..add(_isoDate(today));
+    final activeSorted = activeSet.toList()..sort();
+    if (activeSorted.length > _maxStoredActiveDays) {
+      activeSorted.removeRange(0, activeSorted.length - _maxStoredActiveDays);
+    }
+
+    _prefs.setInt(_keyStreakCurrent, nextCurrent);
+    _prefs.setInt(_keyStreakLongest, nextLongest);
+    _prefs.setString(_keyStreakLastActive, _isoDate(today));
+    _prefs.setStringList(_keyStreakActiveDays, activeSorted);
+    _prefs.setBool(_keyStreakCelebrationPending, true);
+  }
+
+  /// Прочитать текущее состояние серии.
+  ///
+  /// Логика возврата `current`:
+  /// - Никогда не тренировался → 0
+  /// - Последняя активность сегодня или вчера → сохранённое значение
+  /// - Перерыв больше суток → 0 (серия прервана, но UI узнаёт об этом)
+  ///
+  /// Сохранённое значение не меняем — оно будет перезаписано на следующей
+  /// тренировке в [_markStreakActivityToday] корректно.
+  Future<Streak> loadStreak() async {
+    final storedCurrent = _prefs.getInt(_keyStreakCurrent) ?? 0;
+    final storedLongest = _prefs.getInt(_keyStreakLongest) ?? 0;
+    final lastIso = _prefs.getString(_keyStreakLastActive);
+    final last = lastIso != null ? DateTime.tryParse(lastIso) : null;
+    final lastDay = last != null ? _dateOnly(last) : null;
+    final startIso = _prefs.getString(_keyStreakStartDate);
+    final start = startIso != null ? DateTime.tryParse(startIso) : null;
+    final startDay = start != null ? _dateOnly(start) : null;
+
+    final today = _dateOnly(DateTime.now());
+    int actualCurrent = storedCurrent;
+    DateTime? effectiveStart = startDay;
+    if (lastDay == null) {
+      actualCurrent = 0;
+      effectiveStart = null;
+    } else {
+      final diff = today.difference(lastDay).inDays;
+      if (diff > 1) {
+        // Серия прервана — стартовая дата уже не актуальна.
+        actualCurrent = 0;
+        effectiveStart = null;
+      }
+    }
+
+    final activeRaw = _prefs.getStringList(_keyStreakActiveDays) ?? <String>[];
+    final activeDays = activeRaw
+        .map(DateTime.tryParse)
+        .whereType<DateTime>()
+        .map(_dateOnly)
+        .toSet();
+
+    return Streak(
+      current: actualCurrent,
+      longest: storedLongest,
+      lastActiveDate: lastDay,
+      startDate: effectiveStart,
+      activeDays: activeDays,
+    );
+  }
+
+  /// Проверить и сбросить флаг «нужно показать поздравление».
+  /// Возвращает `true`, если флаг был выставлен (и теперь снят).
+  Future<bool> consumePendingStreakCelebration() async {
+    final pending = _prefs.getBool(_keyStreakCelebrationPending) ?? false;
+    if (pending) {
+      await _prefs.setBool(_keyStreakCelebrationPending, false);
+    }
+    return pending;
   }
 
   Future<void> saveExamResult({

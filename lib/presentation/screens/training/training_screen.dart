@@ -88,20 +88,23 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   void _selectAnswer(int index, {required bool requireConfirmation}) {
     if (_isAnswerSubmitted) return;
 
-    HapticFeedbackHelper.tap();
-
     if (requireConfirmation) {
+      // Только выбор варианта — лёгкий отклик выбора. Подтверждение придёт
+      // отдельным действием.
+      HapticFeedbackHelper.tap();
       setState(() => _selectedAnswerIndex = index);
       return;
     }
 
+    // Прямая отправка: единственный отклик даёт _submitAnswer (success/error).
+    // Дополнительный tap() здесь ощущался как «двойная вибрация».
     _submitAnswer(index);
   }
 
   void _submitSelectedAnswer() {
     if (_selectedAnswerIndex == null || _isAnswerSubmitted) return;
 
-    HapticFeedbackHelper.tap();
+    // Отклик даёт _submitAnswer по результату; свой tap() убран, иначе двойной.
     _submitAnswer(_selectedAnswerIndex!);
   }
 

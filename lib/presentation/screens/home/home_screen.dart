@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
+import 'package:pdd_app/core/navigation/route_observer.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
@@ -12,6 +13,8 @@ import 'package:pdd_app/presentation/screens/settings/settings_screen.dart';
 import 'package:pdd_app/presentation/screens/signs/signs_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/screens/topics/topics_screen.dart';
+import 'package:pdd_app/presentation/widgets/streak_celebration_dialog.dart';
+import 'package:pdd_app/presentation/widgets/streak_week_card.dart';
 import 'package:pdd_app/presentation/widgets/vehicle_onboarding_dialog.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -82,12 +85,71 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-class _HomeTab extends ConsumerWidget {
+class _HomeTab extends ConsumerStatefulWidget {
   const _HomeTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
+  bool _routeSubscribed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Случай «пользователь закрыл приложение сразу после ответа, не дождавшись
+    // поздравления» — проверим флаг при первом фрейме после монтирования.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeShowStreakCelebration();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_routeSubscribed) return;
+    final route = ModalRoute.of(context);
+    if (route is PageRoute<dynamic>) {
+      appRouteObserver.subscribe(this, route);
+      _routeSubscribed = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_routeSubscribed) {
+      appRouteObserver.unsubscribe(this);
+    }
+    super.dispose();
+  }
+
+  /// Когда пользователь возвращается с тренировки (любой экран pop'ается
+  /// поверх HomeScreen) — это надёжный момент для показа поздравления.
+  /// Не зависит от того, какой именно экран был сверху.
+  @override
+  void didPopNext() {
+    _maybeShowStreakCelebration();
+  }
+
+  /// Проверяет флаг pending celebration и показывает диалог, если он стоит.
+  /// Идемпотентно: сбрасывает флаг сразу после прочтения.
+  Future<void> _maybeShowStreakCelebration() async {
+    if (!mounted) return;
+    final dataSource = ref.read(progressDataSourceProvider);
+    final hasPending = await dataSource.consumePendingStreakCelebration();
+    if (!hasPending || !mounted) return;
+    // Принудительно обновим streakProvider, чтобы получить актуальные данные.
+    ref.invalidate(streakProvider);
+    final streak = await ref.read(streakProvider.future);
+    if (!mounted || streak.current == 0) return;
+    await showStreakCelebrationDialog(context: context, streak: streak);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final statsAsync = ref.watch(statsProvider);
+    final streakAsync = ref.watch(streakProvider);
 
     return Scaffold(
       backgroundColor: AppColors.homeScreenBackground,
@@ -95,6 +157,7 @@ class _HomeTab extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(statsProvider);
+            ref.invalidate(streakProvider);
             await ref.read(statsProvider.future);
           },
           child: ListView(
@@ -105,6 +168,12 @@ class _HomeTab extends ConsumerWidget {
               24,
             ),
             children: [
+              streakAsync.when(
+                data: (streak) => StreakWeekCard(streak: streak),
+                loading: () => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
+              ),
+              const SizedBox(height: AppDimensions.spacingL),
               statsAsync.when(
                 data: (stats) => _buildStatisticsCard(
                   context,
@@ -264,7 +333,7 @@ class _HomeTab extends ConsumerWidget {
                   child: ColoredBox(color: AppColors.accent),
                 ),
                 Positioned(
-                  right: -28,
+                  right: -60,
                   bottom: -6,
                   child: Image.asset(
                     'assets/images/home_exam_car.png',
@@ -278,17 +347,18 @@ class _HomeTab extends ConsumerWidget {
                     builder: (context, constraints) {
                       // Резервируем справа место под фото; машина сдвинута правее, чтобы «Экзамен» не заходил на капот.
                       final reserveRight = (constraints.maxWidth * 0.54)
-                          .clamp(142.0, 204.0);
+                          .clamp(155.0, 210.0);
                       return Padding(
                         padding: EdgeInsets.fromLTRB(18, 14, reserveRight, 14),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
+                            Wrap(
+                              spacing: AppDimensions.spacingS,
+                              runSpacing: 6,
                               children: [
                                 _buildHeroBadge('20 вопросов'),
-                                const SizedBox(width: AppDimensions.spacingS),
                                 _buildHeroBadge('20 минут'),
                               ],
                             ),

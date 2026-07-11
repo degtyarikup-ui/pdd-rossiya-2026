@@ -76,12 +76,14 @@ class VehicleOnboardingDialog extends StatelessWidget {
             _OnboardingOptionCard(
               title: 'A/B',
               subtitle: 'Автомобиль, мотоцикл',
+              icon: Icons.directions_car_rounded,
               onTap: () => _choose(context, TicketCategory.ab),
             ),
             const SizedBox(height: AppDimensions.spacingM),
             _OnboardingOptionCard(
               title: 'C/D',
               subtitle: 'Грузовик, автобус',
+              icon: Icons.local_shipping_rounded,
               onTap: () => _choose(context, TicketCategory.cd),
             ),
           ],
@@ -95,11 +97,13 @@ class _OnboardingOptionCard extends StatelessWidget {
   const _OnboardingOptionCard({
     required this.title,
     required this.subtitle,
+    required this.icon,
     required this.onTap,
   });
 
   final String title;
   final String subtitle;
+  final IconData icon;
   final VoidCallback onTap;
 
   @override
@@ -118,32 +122,46 @@ class _OnboardingOptionCard extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 alignment: Alignment.center,
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.accent,
-                  ),
+                child: Icon(
+                  icon,
+                  size: 28,
+                  color: AppColors.accent,
                 ),
               ),
               const SizedBox(width: AppDimensions.spacingM),
               Expanded(
-                child: Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primaryText,
-                    height: 1.25,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.4,
+                        color: AppColors.accent,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryText,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const Icon(

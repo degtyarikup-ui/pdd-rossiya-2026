@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/data/models/app_settings.dart';
+import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/sources/questions_data_source.dart';
@@ -190,6 +191,12 @@ final favoriteQuestionsProvider = FutureProvider<List<String>>((ref) async {
       ref.watch(appSettingsProvider.select((s) => s.ticketCategory));
   final dataSource = ref.watch(progressDataSourceProvider);
   return await dataSource.getFavoriteQuestionIds(category);
+});
+
+final streakProvider = FutureProvider<Streak>((ref) async {
+  ref.watch(appDataRefreshProvider);
+  final dataSource = ref.watch(progressDataSourceProvider);
+  return await dataSource.loadStreak();
 });
 
 final wrongQuestionIdsProvider = FutureProvider<List<String>>((ref) async {

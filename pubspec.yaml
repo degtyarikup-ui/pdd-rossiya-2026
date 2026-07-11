@@ -1,7 +1,7 @@
 name: pdd_app
 description: "ПДД Россия 2026 — билеты и экзамен"
 publish_to: 'none'
-version: 1.0.0+11
+version: 1.0.5+16
 
 environment:
   sdk: ^3.11.4
@@ -15,8 +15,6 @@ dependencies:
   intl: ^0.20.2
   flutter_svg: ^2.2.4
   path_provider: ^2.1.5
-  supabase_flutter: ^2.8.0
-  google_sign_in: ^6.2.1
   flutter_tts: ^4.2.3
   url_launcher: ^6.3.1
 
@@ -30,6 +28,7 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: assets/images/app_icon.png
+  remove_alpha_ios: true
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: assets/images/app_icon.png
 

@@ -1,11 +1,11 @@
 {
-    "name": "pdd_app",
-    "short_name": "pdd_app",
+    "name": "ПДД Россия 2026 — билеты и экзамен",
+    "short_name": "ПДД 2026",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#0574F8",
+    "description": "ПДД Россия 2026 — билеты, темы, экзамен. 800 вопросов и 40 билетов, категории A/B и C/D.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
