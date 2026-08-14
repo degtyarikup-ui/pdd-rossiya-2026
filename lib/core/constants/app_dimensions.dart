@@ -6,7 +6,8 @@ class AppDimensions {
   static const double smallRadius = 8.0;
   static const double buttonRadius = 12.0;
   static const double examButtonHeight = 120.0;
-  static const double topicButtonHeight = 120.0;
+  /// Высота плиток режимов на главной («Темы», «Билеты», …).
+  static const double topicButtonHeight = 92.0;
   static const double bottomNavHeight = 100.0;
   static const double questionNumberSize = 32.0;
   static const double questionNumberSmallSize = 24.0;

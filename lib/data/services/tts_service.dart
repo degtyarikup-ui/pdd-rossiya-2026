@@ -1,4 +1,6 @@
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:pdd_app/core/config/country_config.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 
 class TtsService {
   TtsService._();
@@ -30,7 +32,12 @@ class TtsService {
   Future<void> _ensureConfigured() async {
     if (_configured) return;
 
-    await _tts.setLanguage('ru-RU');
+    // Голос под язык контента страны (сербский текст ≠ русский голос).
+    // Если движок не поддерживает локаль (голос не установлен) — не роняем
+    // конфигурацию, платформа подберёт ближайший/дефолтный голос.
+    try {
+      await _tts.setLanguage(CountryConfig.current.ttsLocale);
+    } catch (_) {}
     await _tts.setSpeechRate(_speechRate);
     await _tts.setPitch(1.0);
     await _tts.setVolume(1.0);
@@ -53,11 +60,11 @@ class TtsService {
 
     final buffer = StringBuffer()
       ..write(stripForSpeech(question))
-      ..write(' Варианты ответов ');
+      ..write(appL10n.ttsAnswerOptions);
 
     for (var i = 0; i < answers.length; i++) {
       buffer
-        ..write('Ответ ')
+        ..write(appL10n.ttsAnswer)
         ..write(i + 1)
         ..write(' ')
         ..write(stripForSpeech(answers[i]))

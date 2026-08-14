@@ -1,52 +1,53 @@
 import 'package:pdd_app/core/config/country_config.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 
+/// Тонкая обёртка над локализацией: строки берутся из ARB текущего языка
+/// сборки (см. [appL10n]). Существующие call-sites `AppStrings.*` не менялись —
+/// теперь они автоматически переводятся под язык страны.
 class AppStrings {
   AppStrings._();
 
   static String get appName => CountryConfig.current.appTitle;
-  static const String exam = 'Экзамен';
-  static const String topics = 'Темы';
-  static const String tickets = 'Билеты';
-  static const String passedQuestions = 'пройдено вопросов';
-  static const String passedTickets = 'билетов пройдено';
-  static const String examReadiness = 'Готовность к экзамену';
-  static const String training = 'Обучение';
-  static const String pdd = 'ПДД';
-  static const String signs = 'Знаки';
-  static const String settings = 'Настройки';
-  static const String showHint = 'Показать подсказку';
-  static const String comment = 'Комментарий';
-  static const String pddPoints = 'Пункты ПДД';
-  static const String myAnswers = 'Мои ответы';
-  static const String favorites = 'Избранное';
-  static const String questionAddedToFavorites = 'Вопрос добавлен в Избранное';
-  static const String correctAnswer = 'Правильный ответ';
-  static const String yourAnswer = 'Ваш ответ';
-  static const String ticket = 'билет';
-  static const String question = 'вопрос';
-  static const String goalText =
-      'По мере обучения ваш прогресс будет заполняться. Ваша цель – все билеты должны быть заполнены!';
-  static const String goalTextTopics =
-      'По мере обучения ваш прогресс будет заполняться. Ваша цель – все темы должны быть заполнены!';
-  static const String confirmAnswer = 'Ответить';
-  static const String nextQuestion = 'Следующий вопрос';
-  static const String resetStats = 'Сбросить статистику';
-  static const String resetStatsConfirm =
-      'Вы уверены, что хотите сбросить всю статистику?';
-  static const String yes = 'Да';
-  static const String no = 'Нет';
-  static const String cancel = 'Отмена';
-  static const String back = 'Назад';
-  static const String category = 'Категория';
-  static const String categoryAB = 'AB';
-  static const String categoryCD = 'CD';
-  static const String sound = 'Звук';
-  static const String examPassed = 'Экзамен сдан!';
-  static const String examFailed = 'Экзамен не сдан';
-  static const String correctAnswers = 'Правильных ответов';
-  static const String wrongAnswers = 'Неправильных ответов';
-  static const String timeLeft = 'Осталось времени';
-  static const String minutes = 'мин';
-  static const String search = 'Поиск';
-  static const String noImage = 'Без картинки';
+  static String get exam => appL10n.exam;
+  static String get topics => appL10n.topics;
+  static String get tickets => appL10n.tickets;
+  static String get passedQuestions => appL10n.passedQuestions;
+  static String get passedTickets => appL10n.passedTickets;
+  static String get examReadiness => appL10n.examReadiness;
+  static String get training => appL10n.training;
+  static String get pdd => appL10n.pdd;
+  static String get signs => appL10n.signs;
+  static String get settings => appL10n.settings;
+  static String get showHint => appL10n.showHint;
+  static String get comment => appL10n.comment;
+  static String get pddPoints => appL10n.pddPoints;
+  static String get myAnswers => appL10n.myAnswers;
+  static String get favorites => appL10n.favorites;
+  static String get questionAddedToFavorites => appL10n.questionAddedToFavorites;
+  static String get correctAnswer => appL10n.correctAnswer;
+  static String get yourAnswer => appL10n.yourAnswer;
+  static String get ticket => appL10n.ticket;
+  static String get question => appL10n.question;
+  static String get goalText => appL10n.goalText;
+  static String get goalTextTopics => appL10n.goalTextTopics;
+  static String get confirmAnswer => appL10n.confirmAnswer;
+  static String get nextQuestion => appL10n.nextQuestion;
+  static String get resetStats => appL10n.resetStats;
+  static String get resetStatsConfirm => appL10n.resetStatsConfirm;
+  static String get yes => appL10n.yes;
+  static String get no => appL10n.no;
+  static String get cancel => appL10n.cancel;
+  static String get back => appL10n.back;
+  static String get category => appL10n.category;
+  static String get categoryAB => appL10n.categoryAB;
+  static String get categoryCD => appL10n.categoryCD;
+  static String get sound => appL10n.sound;
+  static String get examPassed => appL10n.examPassed;
+  static String get examFailed => appL10n.examFailed;
+  static String get correctAnswers => appL10n.correctAnswers;
+  static String get wrongAnswers => appL10n.wrongAnswers;
+  static String get timeLeft => appL10n.timeLeft;
+  static String get minutes => appL10n.minutes;
+  static String get search => appL10n.search;
+  static String get noImage => appL10n.noImage;
 }

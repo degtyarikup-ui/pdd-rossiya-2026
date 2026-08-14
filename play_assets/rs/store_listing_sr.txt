@@ -1,0 +1,29 @@
+SHORT_DESCRIPTION:
+Zvanična MUP pitanja za vozački ispit: testovi, ispit i znakovi. Bez naloga.
+
+FULL_DESCRIPTION:
+Aplikacija nije proizvod MUP-a Republike Srbije niti drugog državnog organa. Napravio ju je nezavisni programer u obrazovne svrhe. Pitanja su zasnovana na zvaničnoj bazi pitanja Ministarstva unutrašnjih poslova (MUP) za vozački ispit.
+
+🚗 SPREMATE SE ZA VOZAČKI ISPIT?
+1763 zvanična pitanja MUP-a podeljena u 43 testa po 41 pitanje — potpuno isto kao na pravom ispitu. Učite svojim tempom i proverite znanje pre polaganja.
+
+📋 ŠTA SADRŽI APLIKACIJA
+• 1763 zvanična pitanja MUP-a, 43 testa (kategorija A i B — automobili i motocikli)
+• Ispit uživo: 41 pitanje, 45 minuta, bodovanje po pravilima MUP-a (prag 85%)
+• 101 saobraćajni znak sa objašnjenjima, podeljen u 3 zvanične kategorije
+• Napredak i statistika po pitanjima, testovima i oblastima
+• Omiljeno — sačuvajte teška pitanja za brzo ponavljanje
+• Rad na greškama — ponovite samo pitanja na koja ste pogrešno odgovorili
+• Izgovaranje pitanja naglas — učite i bez gledanja u ekran
+• Bez naloga, bez registracije i bez oglasa — sve radi lokalno na vašem telefonu
+
+🎯 ZA KOGA JE NAMENJENA
+• Prvi put polažete vozački ispit
+• Želite da proverite znanje pre zvaničnog testiranja u MUP-u
+• Ponavljate saobraćajne propise i znakove pred obnovu dozvole
+
+📚 IZVOR PITANJA
+Sva pitanja potiču iz zvanične baze za vozački ispit koju je objavilo Ministarstvo unutrašnjih poslova Republike Srbije.
+
+❗ VAŽNA NAPOMENA
+Aplikacija je napravljena isključivo u obrazovne svrhe. Uspeh na ispitu zavisi od vaše pripreme i važećih propisa u trenutku polaganja.

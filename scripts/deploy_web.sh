@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Деплой веб-версии страны на её GitHub Pages:
-#   ./scripts/deploy_web.sh {ru|by} ["commit message"]
+#   ./scripts/deploy_web.sh {ru|by|rs} ["commit message"]
 #
-# ru → репо pdd (этот), ветка gh-pages, домен pdd-drive.ru
+# ru → репо pdd-rossiya-app, ветка gh-pages, поддомен app.pdd-drive.ru
+#     (главный домен pdd-drive.ru занят лендингом — scripts/deploy_landing.sh)
 # by → репо pdd-belarus,  ветка gh-pages, домен pdd-drive.online
 #     (локальный клон: /Users/sergei/Documents/pdd-belarus)
+# rs → репо pdd-serbia,   ветка gh-pages, поддомен rs.pdd-drive.online
 set -euo pipefail
 
-COUNTRY="${1:?usage: deploy_web.sh ru|by [message]}"
+COUNTRY="${1:?usage: deploy_web.sh ru|by|rs [message]}"
 MSG="${2:-Deploy $COUNTRY web}"
 
 cd "$(dirname "$0")/.."
@@ -15,8 +17,8 @@ ROOT="$(pwd)"
 
 case "$COUNTRY" in
   ru)
-    REMOTE_REPO="https://github.com/degtyarikup-ui/pdd-rossiya-2026.git"
-    CNAME_DOMAIN="pdd-drive.ru"
+    REMOTE_REPO="https://github.com/degtyarikup-ui/pdd-rossiya-app.git"
+    CNAME_DOMAIN="app.pdd-drive.ru"
     TITLE="ПДД Россия 2026 — билеты и экзамен"
     DESC="ПДД Россия 2026 — билеты, темы, экзамен. 800 вопросов, 40 билетов, категории A/B и C/D."
     SHORT="ПДД 2026"
@@ -27,6 +29,13 @@ case "$COUNTRY" in
     TITLE="ПДД Беларусь 2026 — билеты и экзамен ГАИ"
     DESC="ПДД Беларусь 2026 — билеты, темы, экзамен как в ГАИ РБ: 10 вопросов за 15 минут."
     SHORT="ПДД РБ 2026"
+    ;;
+  rs)
+    REMOTE_REPO="https://github.com/degtyarikup-ui/pdd-serbia.git"
+    CNAME_DOMAIN="rs.pdd-drive.online"
+    TITLE="Auto testovi Srbija 2026 — testovi i vozački ispit"
+    DESC="Auto testovi Srbija 2026 — testovi, oblasti, ispit kao na MUP-u: 41 pitanje za 45 minuta, bodovanje i prag 85%."
+    SHORT="Auto testovi 2026"
     ;;
   *) echo "unknown country: $COUNTRY"; exit 1 ;;
 esac
@@ -63,8 +72,21 @@ WORKTREE="/tmp/pdd-deploy-$COUNTRY"
 rm -rf "$WORKTREE"
 mkdir -p "$WORKTREE"
 (cd "$ROOT/build/web" && find . -mindepth 1 -maxdepth 1 -exec cp -R {} "$WORKTREE/" \;)
+
+# Статические страницы страны (политика конфиденциальности и т.п.), не часть
+# Flutter-сборки — просто лежат рядом и копируются поверх при каждом деплое.
+if [ -d "$ROOT/web_static/$COUNTRY" ]; then
+  cp -R "$ROOT/web_static/$COUNTRY/." "$WORKTREE/"
+fi
+
 touch "$WORKTREE/.nojekyll"
 printf '%s' "$CNAME_DOMAIN" > "$WORKTREE/CNAME"
+
+# RU-приложение живёт на поддомене app.* — из поиска его прячем, чтобы не
+# конкурировало с лендингом pdd-drive.ru (SEO живёт на главном домене).
+if [ "$COUNTRY" = "ru" ]; then
+  printf 'User-agent: *\nDisallow: /\n' > "$WORKTREE/robots.txt"
+fi
 
 git -C "$WORKTREE" init >/dev/null
 git -C "$WORKTREE" checkout -b gh-pages >/dev/null 2>&1 || git -C "$WORKTREE" branch -m gh-pages

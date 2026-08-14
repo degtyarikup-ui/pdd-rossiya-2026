@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -34,9 +35,9 @@ class MistakesScreen extends ConsumerWidget {
                     },
                   ),
                   const SizedBox(width: AppDimensions.spacingM),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Работа над ошибками',
+                      appL10n.mistakesTitle,
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w700,
@@ -137,8 +138,8 @@ class MistakesScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AppDimensions.spacingL),
-            const Text(
-              'Ошибок пока нет',
+            Text(
+              appL10n.noMistakesYet,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -146,8 +147,8 @@ class MistakesScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AppDimensions.spacingS),
-            const Text(
-              'Когда появятся неверные ответы, здесь можно будет быстро повторить только слабые вопросы.',
+            Text(
+              appL10n.mistakesEmptyHint,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -230,12 +231,12 @@ class MistakesScreen extends ConsumerWidget {
                     MaterialPageRoute(
                       builder: (_) => TrainingScreen(
                         questions: questions,
-                        title: 'Работа над ошибками',
+                        title: appL10n.mistakesTitle,
                       ),
                     ),
                   );
                 },
-                child: const Text('Повторить все ошибки'),
+                child: Text(appL10n.repeatAllMistakes),
               ),
             ),
           ),
@@ -249,7 +250,7 @@ class MistakesScreen extends ConsumerWidget {
     Map<String, dynamic> question,
   ) {
     final topics = (question['topic'] as List?)?.cast<String>() ?? const [];
-    final topicLabel = topics.isNotEmpty ? topics.first : 'Без темы';
+    final topicLabel = topics.isNotEmpty ? topics.first : appL10n.noTopic;
 
     return Material(
       color: Colors.transparent,
@@ -261,7 +262,7 @@ class MistakesScreen extends ConsumerWidget {
             context,
             MaterialPageRoute(
               builder: (_) =>
-                  TrainingScreen(questions: [question], title: 'Разбор ошибки'),
+                  TrainingScreen(questions: [question], title: appL10n.mistakeReview),
             ),
           );
         },
@@ -285,8 +286,8 @@ class MistakesScreen extends ConsumerWidget {
                       color: AppColors.redLight,
                       borderRadius: BorderRadius.circular(999),
                     ),
-                    child: const Text(
-                      'Ошибка',
+                    child: Text(
+                      appL10n.mistakeLabel,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -296,7 +297,7 @@ class MistakesScreen extends ConsumerWidget {
                   ),
                   const Spacer(),
                   Text(
-                    'Билет ${question['ticketNumber']}',
+                    appL10n.ticketNumber(question['ticketNumber']),
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "rs-web",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "build/web"],
+      "port": 8765
+    },
+    {
+      "name": "landing-ru",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-c", "import os,http.server;os.chdir('/Users/sergei/Documents/pdd/web_landing/ru');http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,port=8901,bind='127.0.0.1')"],
+      "port": 8901
+    },
+    {
+      "name": "blog-admin",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["/Users/sergei/Documents/pdd/tools/blog_admin/server.py"],
+      "port": 8930
+    }
+  ]
+}

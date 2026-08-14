@@ -1,0 +1,507 @@
+[
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-1",
+  "english": "Curve to left"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-1.1",
+  "english": "Curve to right"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-2",
+  "english": "Double curve, first to left"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-2.1",
+  "english": "Double curve, first to right"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-3",
+  "english": "Steep uphill"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-4",
+  "english": "Steep downhill"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-5.1",
+  "english": "Road narrows on right side"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-5.2",
+  "english": "Road narrows on left side"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-7",
+  "english": "Quayside or riverbank"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-8",
+  "english": "Uneven road"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-9",
+  "english": "Dip"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-10",
+  "english": "Bump"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-11",
+  "english": "Slippery road"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-12",
+  "english": "Loose gravel"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-13",
+  "english": "Falling rocks from the left"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-13.1",
+  "english": "Falling rocks from the right"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-14",
+  "english": "Pedestrian crossing"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-15",
+  "english": "Children"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-16",
+  "english": "Cyclists"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-17",
+  "english": "Cattle"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-18",
+  "english": "Deer / wild animals"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-19",
+  "english": "Roadworks"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-22",
+  "english": "Crosswinds from left"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-23",
+  "english": "Two-way traffic"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-24",
+  "english": "Tunnel"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-25",
+  "english": "Other dangers"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-26",
+  "english": "Intersection with right-priority rule"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-27",
+  "english": "Intersection on priority road"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-30",
+  "english": "Roundabout ahead"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-31",
+  "english": "Tramway"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-32",
+  "english": "Level crossing with barriers ahead"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-33",
+  "english": "Level crossing without barriers"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-34",
+  "english": "Single track level crossing"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-34.1",
+  "english": "Multi-track level crossing"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-37",
+  "english": "Soft verges"
+ },
+ {
+  "category": "Znakovi opasnosti",
+  "code": "I-38",
+  "english": "Traffic queues"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-1",
+  "english": "Give way"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-2",
+  "english": "Stop"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-3",
+  "english": "All vehicles prohibited both directions"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-4",
+  "english": "No entry"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-5",
+  "english": "No motor vehicles except motorcycles"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-6",
+  "english": "No buses"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-7",
+  "english": "No trucks"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-12",
+  "english": "No motorcycles"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-13",
+  "english": "No mopeds"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-14",
+  "english": "No bicycles"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-17",
+  "english": "No pedestrians"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-20",
+  "english": "Maximum width"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-21",
+  "english": "Maximum height"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-22",
+  "english": "Maximum weight"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-23",
+  "english": "Maximum weight per axle"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-24",
+  "english": "Maximum length"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-25",
+  "english": "Minimum following distance"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-26",
+  "english": "No left turn"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-26.1",
+  "english": "No right turn"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-27",
+  "english": "No U-turn"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-28",
+  "english": "No overtaking"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-29",
+  "english": "No overtaking by trucks"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-30",
+  "english": "Maximum speed limit"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-31",
+  "english": "No horns"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-33",
+  "english": "Give way to oncoming traffic"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-34",
+  "english": "No stopping"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-35",
+  "english": "No parking"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-38",
+  "english": "Minimum speed limit"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-39",
+  "english": "Snow chains mandatory"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-40",
+  "english": "Bike path"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-41",
+  "english": "Pedestrian path"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-43",
+  "english": "Proceed straight"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-43.1",
+  "english": "Turn right"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-43.2",
+  "english": "Turn left"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-44",
+  "english": "Proceed straight or turn left"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-44.1",
+  "english": "Proceed straight or turn right"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-45",
+  "english": "Pass onto right"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-45.1",
+  "english": "Pass onto left"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-45.2",
+  "english": "Roundabout (mandatory)"
+ },
+ {
+  "category": "Znakovi izričitih naredbi",
+  "code": "II-46",
+  "english": "U-turn"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-1",
+  "english": "Priority over oncoming traffic"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-2",
+  "english": "One-way street"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-3",
+  "english": "Priority road"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-4",
+  "english": "End of priority road"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-5",
+  "english": "Cyclist crossing"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-6",
+  "english": "Pedestrian crossing"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-9",
+  "english": "Dead end"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-25",
+  "english": "End of overtaking prohibition"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-30",
+  "english": "Parking"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-31",
+  "english": "Parking garage"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-34",
+  "english": "Hospital"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-35",
+  "english": "First aid"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-37",
+  "english": "Telephone"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-38",
+  "english": "Petrol station"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-39",
+  "english": "Hotel or motel"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-40",
+  "english": "Restaurant"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-49",
+  "english": "Bus stop"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-50",
+  "english": "Tram stop"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-53",
+  "english": "Information"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-68",
+  "english": "Motorway"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-68.1",
+  "english": "End of motorway"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-21",
+  "english": "Expressway"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-22",
+  "english": "End of expressway"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-23.1",
+  "english": "Built-up area"
+ },
+ {
+  "category": "Znakovi obaveštenja",
+  "code": "III-24.1",
+  "english": "End of built-up area"
+ }
+]

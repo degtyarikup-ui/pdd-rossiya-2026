@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -12,6 +13,30 @@ import 'package:pdd_app/presentation/screens/signs/markup_category_screen.dart';
 import 'package:pdd_app/presentation/screens/signs/sign_detail_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_pill_search_field.dart';
+
+/// Иконка для категории знаков по её названию. Названия отличаются по странам
+/// (РФ: «Знаки особых предписаний»/«Информационные знаки»; РБ:
+/// «Информационно-указательные знаки»/«Дополнительные таблички»), поэтому
+/// маппинг покрывает оба набора; для неизвестной категории — запасная иконка.
+const Map<String, String> _kSignCategoryIcons = {
+  'Предупреждающие знаки': 'warning.svg',
+  'Знаки приоритета': 'priority.svg',
+  'Запрещающие знаки': 'prohibitory.svg',
+  'Предписывающие знаки': 'mandatory.svg',
+  'Знаки особых предписаний': 'special_prescriptions.svg',
+  'Информационные знаки': 'information.svg',
+  'Информационно-указательные знаки': 'information.svg',
+  'Знаки сервиса': 'service.svg',
+  'Знаки дополнительной информации (таблички)': 'additional_info.svg',
+  'Дополнительные таблички': 'additional_info.svg',
+  // Сербия (латиница): категории MUP.
+  'Znakovi opasnosti': 'warning.svg',
+  'Znakovi izričitih naredbi': 'prohibitory.svg',
+  'Znakovi obaveštenja': 'information.svg',
+  'Dopunske table': 'additional_info.svg',
+};
+
+const String _kSignCategoryFallbackIcon = 'information.svg';
 
 class SignsScreen extends ConsumerStatefulWidget {
   const SignsScreen({super.key});
@@ -30,9 +55,21 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
     super.dispose();
   }
 
+  static const Map<String, String> _markupIcons = {
+    'Горизонтальная разметка': 'markup_horizontal.svg',
+    'Вертикальная разметка': 'markup_vertical.svg',
+    // Сербия (латиница).
+    'Horizontalna signalizacija': 'markup_horizontal.svg',
+    'Vertikalna signalizacija': 'markup_vertical.svg',
+  };
+
   @override
   Widget build(BuildContext context) {
     final signsAsync = ref.watch(signsProvider);
+    // Разметка страно-зависимая; грузится параллельно. Пока нет — просто
+    // не показываем её разделы (знаки отрисуются сразу).
+    final markup = ref.watch(markupProvider).valueOrNull ??
+        const <String, List<Map<String, String>>>{};
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -49,7 +86,7 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(
+                  SizedBox(
                     width: double.infinity,
                     child: Text(
                       AppStrings.signs,
@@ -73,63 +110,45 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
             Expanded(
               child: signsAsync.when(
                 data: (signs) {
-                  final categories = [
-                    _SignCategoryMeta(
-                      title: 'Предупреждающие знаки',
-                      assetPath: 'assets/images/category_icons/warning.svg',
-                      signs: signs['Предупреждающие знаки'],
-                    ),
-                    _SignCategoryMeta(
-                      title: 'Знаки приоритета',
-                      assetPath: 'assets/images/category_icons/priority.svg',
-                      signs: signs['Знаки приоритета'],
-                    ),
-                    _SignCategoryMeta(
-                      title: 'Запрещающие знаки',
-                      assetPath: 'assets/images/category_icons/prohibitory.svg',
-                      signs: signs['Запрещающие знаки'],
-                    ),
-                    _SignCategoryMeta(
-                      title: 'Предписывающие знаки',
-                      assetPath: 'assets/images/category_icons/mandatory.svg',
-                      signs: signs['Предписывающие знаки'],
-                    ),
-                    _SignCategoryMeta(
-                      title: 'Знаки особых предписаний',
-                      assetPath:
-                          'assets/images/category_icons/special_prescriptions.svg',
-                      signs: signs['Знаки особых предписаний'],
-                    ),
-                    _SignCategoryMeta(
-                      title: 'Информационные знаки',
-                      assetPath: 'assets/images/category_icons/information.svg',
-                      signs: signs['Информационные знаки'],
-                    ),
-                    _SignCategoryMeta(
-                      title: 'Знаки сервиса',
-                      assetPath: 'assets/images/category_icons/service.svg',
-                      signs: signs['Знаки сервиса'],
-                    ),
-                    _SignCategoryMeta(
-                      title: 'Знаки дополнительной информации',
-                      assetPath:
-                          'assets/images/category_icons/additional_info.svg',
-                      signs:
-                          signs['Знаки дополнительной информации (таблички)'],
-                    ),
-                    const _SignCategoryMeta(
-                      title: 'Горизонтальная разметка',
-                      assetPath:
-                          'assets/images/category_icons/markup_horizontal.svg',
-                      markupEntries: horizontalMarkupEntries,
-                    ),
-                    const _SignCategoryMeta(
-                      title: 'Вертикальная разметка',
-                      assetPath:
-                          'assets/images/category_icons/markup_vertical.svg',
-                      markupEntries: verticalMarkupEntries,
-                    ),
-                  ];
+                  // Категории строим из данных страны: показываем только те,
+                  // что реально присутствуют и непустые (правило «нет данных —
+                  // не показываем раздел»). Порядок — как в JSON.
+                  final signCategories = <_SignCategoryMeta>[];
+                  signs.forEach((title, value) {
+                    if (value is Map && value.isNotEmpty) {
+                      final icon = _kSignCategoryIcons[title] ??
+                          _kSignCategoryFallbackIcon;
+                      signCategories.add(
+                        _SignCategoryMeta(
+                          title: title,
+                          assetPath: 'assets/images/category_icons/$icon',
+                          signs: Map<String, dynamic>.from(value),
+                        ),
+                      );
+                    }
+                  });
+
+                  // Разделы разметки — из контента страны, пустые скрываем.
+                  final markupCategories = <_SignCategoryMeta>[];
+                  markup.forEach((group, entries) {
+                    if (entries.isNotEmpty) {
+                      final icon = _markupIcons[group] ?? 'markup_horizontal.svg';
+                      markupCategories.add(
+                        _SignCategoryMeta(
+                          title: group,
+                          assetPath: 'assets/images/category_icons/$icon',
+                          markupEntries: entries
+                              .map((e) => MarkupEntry(
+                                    title: e['title'] ?? '',
+                                    description: e['description'] ?? '',
+                                  ))
+                              .toList(),
+                        ),
+                      );
+                    }
+                  });
+
+                  final categories = [...signCategories, ...markupCategories];
 
                   final normalizedQuery = _query.trim().toLowerCase();
                   final filteredCategories = normalizedQuery.isEmpty
@@ -149,7 +168,7 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
                           AppDimensions.screenPadding,
                         ),
                         child: Text(
-                          'Ничего не найдено. Попробуйте другое слово.',
+                          appL10n.nothingFoundTryAnother,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 14,
@@ -242,10 +261,10 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
               Expanded(
                 child: Text(
                   category.title,
+                  // Как строки на экране настроек — см. pdd_screen.dart.
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    height: 1.0,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.primaryText,
                   ),
                 ),
@@ -382,6 +401,8 @@ class SignCategoryScreen extends StatelessWidget {
                                         signImage: signImage,
                                         signDescription:
                                             signData['description'] as String?,
+                                        signFolkName:
+                                            signData['folkName'] as String?,
                                       ),
                                     ),
                                   );

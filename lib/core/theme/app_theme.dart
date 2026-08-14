@@ -3,10 +3,19 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 
 class AppTheme {
+  /// Фирменный шрифт приложения (см. секцию fonts в pubspec.yaml).
+  ///
+  /// Задан один раз здесь: до этого `fontFamily` не был указан нигде, и
+  /// приложение бралo системный шрифт платформы — Roboto на Android и
+  /// San Francisco на iOS. Из-за этого один и тот же экран выглядел
+  /// по-разному на двух платформах.
+  static const String fontFamily = 'Onest';
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      fontFamily: fontFamily,
       scaffoldBackgroundColor: AppColors.background,
       primaryColor: AppColors.accent,
       colorScheme: const ColorScheme.light(

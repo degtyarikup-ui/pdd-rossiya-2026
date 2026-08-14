@@ -139,9 +139,9 @@ class _TopicsScreenState extends ConsumerState<TopicsScreen> {
             },
           ),
           const SizedBox(width: AppDimensions.spacingM),
-          const Text(
+          Text(
             AppStrings.topics,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w600,
               color: AppColors.primaryText,

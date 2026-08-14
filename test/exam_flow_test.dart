@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
+import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,7 +25,8 @@ class _SilentTts implements TtsService {
 }
 
 /// Вопросы с фиксированными текстами ответов: «Верный ответ» всегда первый.
-List<Map<String, dynamic>> buildQuestions(int n) {
+/// [points] — вес каждого вопроса в балльной модели (по умолчанию 1).
+List<Map<String, dynamic>> buildQuestions(int n, {int points = 1}) {
   return List.generate(n, (i) {
     return <String, dynamic>{
       'id': 'q$i',
@@ -38,11 +40,17 @@ List<Map<String, dynamic>> buildQuestions(int n) {
       'image': null,
       'topic': <String>[],
       'ticketNumber': 1,
+      'points': points,
     };
   });
 }
 
-Future<void> pumpExam(WidgetTester tester, {ExamRules? rules}) async {
+Future<ProgressDataSource> pumpExam(
+  WidgetTester tester, {
+  ExamRules? rules,
+  List<Map<String, dynamic>>? questions,
+  Map<String, dynamic>? resume,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final dataSource = ProgressDataSource();
   await dataSource.init();
@@ -54,11 +62,16 @@ Future<void> pumpExam(WidgetTester tester, {ExamRules? rules}) async {
         ttsServiceProvider.overrideWithValue(_SilentTts()),
       ],
       child: MaterialApp(
-        home: ExamScreen(allQuestions: buildQuestions(60), rules: rules),
+        home: ExamScreen(
+          allQuestions: questions ?? buildQuestions(60),
+          rules: rules,
+          resume: resume,
+        ),
       ),
     ),
   );
   await tester.pumpAndSettle();
+  return dataSource;
 }
 
 /// Отвечает на текущий вопрос (верно или неверно) и ждёт все анимации.
@@ -117,13 +130,19 @@ void main() {
     expect(find.text('Экзамен сдан!'), findsOneWidget);
   });
 
-  testWidgets('2 ошибки: +10 доп. вопросов и сдача при верных доп.',
+  testWidgets(
+      '2 ошибки в РАЗНЫХ блоках: +10 доп. вопросов и сдача при верных доп.',
       (tester) async {
     await pumpExam(tester);
 
+    // Ошибки в вопросах 1 и 6 — это блоки 0 (вопросы 1-5) и 1 (6-10).
+    // В одном блоке две ошибки валят экзамен сразу (см. отдельный тест).
     await answerCurrent(tester, correct: false);
+    for (var i = 1; i < 5; i++) {
+      await answerCurrent(tester, correct: true);
+    }
     await answerCurrent(tester, correct: false);
-    for (var i = 2; i < 20; i++) {
+    for (var i = 6; i < 20; i++) {
       await answerCurrent(tester, correct: true);
     }
 
@@ -151,10 +170,14 @@ void main() {
     await tapStripCell(tester, 6);
     expect(find.text('Вопрос 6 из 20'), findsOneWidget);
 
-    // Отвечаем на 6..20 (две ошибки — на 6-м и 7-м).
+    // Отвечаем на 6..20. Ошибки — на 6-м и 11-м вопросе: это РАЗНЫЕ блоки
+    // (1 и 2), иначе сработало бы правило «две ошибки в одном блоке — провал».
     await answerCurrent(tester, correct: false);
+    for (var i = 6; i < 10; i++) {
+      await answerCurrent(tester, correct: true);
+    }
     await answerCurrent(tester, correct: false);
-    for (var i = 7; i < 20; i++) {
+    for (var i = 11; i < 20; i++) {
       await answerCurrent(tester, correct: true);
     }
 
@@ -196,18 +219,87 @@ void main() {
     expect(find.text('Экзамен сдан!'), findsOneWidget);
   });
 
-  testWidgets('3 ошибки в основном блоке: экзамен сразу завершается провалом',
+  testWidgets(
+      '3 ошибки в РАЗНЫХ блоках: экзамен сразу завершается провалом',
+      (tester) async {
+    await pumpExam(tester);
+
+    // Ошибки в вопросах 1, 6 и 11 — по одной в блоках 0, 1 и 2. Блочное
+    // правило не срабатывает, валит общий лимит «не больше двух ошибок».
+    await answerCurrent(tester, correct: false);
+    for (var i = 1; i < 5; i++) {
+      await answerCurrent(tester, correct: true);
+    }
+    await answerCurrent(tester, correct: false);
+    for (var i = 6; i < 10; i++) {
+      await answerCurrent(tester, correct: true);
+    }
+    await answerCurrent(tester, correct: false);
+
+    expect(find.text('Экзамен не сдан'), findsOneWidget);
+    // Неотвеченные отдельной строкой не показываем: они уже учтены в
+    // «неправильных», а лишняя карточка удлиняла экран результата.
+    expect(find.text('Без ответа'), findsNothing);
+  });
+
+  // --- Блочное правило ГИБДД -------------------------------------------
+  // Билет из 20 вопросов делится на 4 тематических блока по 5 вопросов
+  // (по позиции: 1-5, 6-10, 11-15, 16-20). Две ошибки допускаются ТОЛЬКО
+  // в разных блоках; две ошибки внутри одного блока — провал немедленно,
+  // хотя суммарно ошибок всего две и общий лимит ещё не превышен.
+
+  testWidgets(
+      'две ошибки в ОДНОМ блоке: провал сразу, хотя ошибок всего две',
+      (tester) async {
+    await pumpExam(tester);
+
+    // Вопросы 1 и 2 — оба в первом блоке.
+    await answerCurrent(tester, correct: false);
+    await answerCurrent(tester, correct: false);
+
+    expect(find.text('Экзамен не сдан'), findsOneWidget);
+    expect(find.text('Без ответа'), findsNothing);
+  });
+
+  testWidgets(
+      'провал по блоку объясняется по кнопке-иконке, а не полотном текста',
       (tester) async {
     await pumpExam(tester);
 
     await answerCurrent(tester, correct: false);
     await answerCurrent(tester, correct: false);
-    await answerCurrent(tester, correct: false);
 
-    expect(find.text('Экзамен не сдан'), findsOneWidget);
-    // 17 вопросов остались без ответа и показаны отдельной строкой.
-    expect(find.text('Без ответа'), findsOneWidget);
-    expect(find.text('17'), findsOneWidget);
+    // Экран результата остаётся коротким: длинного объяснения на нём нет.
+    expect(find.textContaining('4 тематических блоков'), findsNothing);
+
+    // Но объяснение доступно — иначе «две ошибки, и не сдал» читается как баг.
+    await tester.tap(find.byIcon(Icons.info_outline_rounded));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('4 тематических блоков'),
+      findsOneWidget,
+      reason: 'кнопка есть, а объяснения по ней нет — хуже, чем ничего',
+    );
+  });
+
+  testWidgets(
+      'две ошибки на границе блоков (5-й и 6-й вопрос) — это РАЗНЫЕ блоки',
+      (tester) async {
+    await pumpExam(tester);
+
+    // Граничный случай: вопрос 5 — конец первого блока, вопрос 6 — начало
+    // второго. Экзамен продолжается и уходит в доп. фазу.
+    for (var i = 0; i < 4; i++) {
+      await answerCurrent(tester, correct: true);
+    }
+    await answerCurrent(tester, correct: false);
+    await answerCurrent(tester, correct: false);
+    for (var i = 6; i < 20; i++) {
+      await answerCurrent(tester, correct: true);
+    }
+
+    expect(find.text('Дополнительные вопросы'), findsOneWidget);
+    expect(find.text('Доп. вопрос 1 из 10'), findsOneWidget);
   });
 
   testWidgets('ошибка в доп. вопросе: экзамен сразу завершается провалом',
@@ -225,7 +317,7 @@ void main() {
     expect(find.text('Экзамен не сдан'), findsOneWidget);
   });
 
-  testWidgets('крестик: диалог позволяет завершить экзамен и увидеть разбор',
+  testWidgets('крестик: выходим без результата, не объявляя провал',
       (tester) async {
     await pumpExam(tester);
 
@@ -234,29 +326,24 @@ void main() {
     await tester.tap(find.byIcon(Icons.close_rounded).hitTestable());
     await tester.pumpAndSettle();
 
-    expect(find.text('Прервать экзамен?'), findsOneWidget);
-
-    await tester.tap(find.text('Завершить'));
-    await tester.pumpAndSettle();
-
-    // Результаты показаны, разбор доступен, досрочное завершение = не сдан.
-    expect(find.text('Экзамен не сдан'), findsOneWidget);
-    expect(find.text('Мои ошибки'), findsOneWidget);
+    // Ни диалога, ни итогов: человек отвлёкся, а не провалил экзамен.
+    // Недорешённый билет ждёт его на главной кнопкой «Продолжить».
+    expect(find.text('Прервать экзамен?'), findsNothing);
+    expect(find.text('Экзамен не сдан'), findsNothing);
+    expect(find.byType(ExamScreen), findsNothing);
   });
 
-  testWidgets('крестик без единого ответа: молча выходим без результатов',
+  testWidgets('крестик без единого ответа: так же молча выходим',
       (tester) async {
     await pumpExam(tester);
 
     await tester.tap(find.byIcon(Icons.close_rounded).hitTestable());
     await tester.pumpAndSettle();
 
-    expect(find.text('Прервать экзамен?'), findsNothing);
     expect(find.byType(ExamScreen), findsNothing);
   });
 
-  testWidgets('системный «назад» показывает тот же диалог, а не гасит экзамен',
-      (tester) async {
+  testWidgets('системный «назад» выходит так же, как крестик', (tester) async {
     await pumpExam(tester);
 
     await answerCurrent(tester, correct: true);
@@ -266,15 +353,8 @@ void main() {
     await widgetsAppState.didPopRoute();
     await tester.pumpAndSettle();
 
-    // Экзамен на месте, диалог показан.
-    expect(find.byType(ExamScreen), findsOneWidget);
-    expect(find.text('Прервать экзамен?'), findsOneWidget);
-
-    // «Продолжить» возвращает к экзамену.
-    await tester.tap(find.text('Продолжить'));
-    await tester.pumpAndSettle();
-    expect(find.text('Прервать экзамен?'), findsNothing);
-    expect(find.byType(ExamScreen), findsOneWidget);
+    expect(find.byType(ExamScreen), findsNothing);
+    expect(find.text('Экзамен не сдан'), findsNothing);
   });
 
   // ---------------------------------------------------------------------
@@ -314,9 +394,7 @@ void main() {
       await answerCurrent(tester, correct: false);
 
       expect(find.text('Экзамен не сдан'), findsOneWidget);
-      // 8 вопросов остались без ответа.
-      expect(find.text('Без ответа'), findsOneWidget);
-      expect(find.text('8'), findsOneWidget);
+      expect(find.text('Без ответа'), findsNothing);
     });
 
     testWidgets('таймер стартует с 15 минут', (tester) async {
@@ -337,5 +415,192 @@ void main() {
 
       expect(find.text('Вопрос 1 из 10'), findsOneWidget);
     });
+  });
+
+  // ---------------------------------------------------------------------
+  // Балльная модель (Сербия, MUP): вопрос весит 1/2/3 балла, сдал при
+  // наборе ≥ passPercent% от максимума. Доп. фазы и досрочного провала нет —
+  // отвечаешь на все вопросы, затем итог по сумме баллов.
+  // На тестах берём билет из 10 вопросов и порог 85%.
+  // ---------------------------------------------------------------------
+  group('Балльная модель (баллы / порог 85% / без доп. фазы)', () {
+    const pointsRules = ExamRules(
+      mainCount: 10,
+      totalSeconds: 45 * 60,
+      maxMistakes: 0,
+      additionalPerMistake: 0,
+      additionalSecondsPerBlock: 0,
+      scoring: ExamScoring.points,
+      passPercent: 85,
+    );
+
+    testWidgets('9/10 верных (90% ≥ 85%) — сдан, без доп. фазы',
+        (tester) async {
+      await pumpExam(tester, rules: pointsRules);
+
+      await answerCurrent(tester, correct: false);
+      for (var i = 1; i < 10; i++) {
+        await answerCurrent(tester, correct: true);
+      }
+
+      expect(find.text('Дополнительные вопросы'), findsNothing);
+      expect(find.text('Экзамен сдан!'), findsOneWidget);
+      expect(find.text('Набрано баллов'), findsOneWidget);
+      expect(find.text('90%'), findsOneWidget);
+    });
+
+    testWidgets('8/10 верных (80% < 85%) — не сдан', (tester) async {
+      await pumpExam(tester, rules: pointsRules);
+
+      await answerCurrent(tester, correct: false);
+      await answerCurrent(tester, correct: false);
+      for (var i = 2; i < 10; i++) {
+        await answerCurrent(tester, correct: true);
+      }
+
+      expect(find.text('Дополнительные вопросы'), findsNothing);
+      expect(find.text('Экзамен не сдан'), findsOneWidget);
+      expect(find.text('80%'), findsOneWidget);
+    });
+
+    testWidgets('веса вопросов суммируются: 9×2 из 20 = 90% — сдан',
+        (tester) async {
+      await pumpExam(
+        tester,
+        rules: pointsRules,
+        questions: buildQuestions(60, points: 2),
+      );
+
+      await answerCurrent(tester, correct: false);
+      for (var i = 1; i < 10; i++) {
+        await answerCurrent(tester, correct: true);
+      }
+
+      // 9 верных × 2 балла = 18 из 20 = 90% → сдан.
+      expect(find.text('Экзамен сдан!'), findsOneWidget);
+      expect(find.text('18 из 20'), findsOneWidget);
+      expect(find.text('90%'), findsOneWidget);
+    });
+
+    testWidgets(
+        'таймаут при наборе ≥85%: сдан (баллы), а не автоматический провал',
+        (tester) async {
+      await pumpExam(
+        tester,
+        rules: pointsRules,
+        questions: buildQuestions(60, points: 2), // макс билета = 10×2 = 20
+      );
+
+      // Отвечаем верно на 9 из 10 (18 баллов), 10-й НЕ трогаем — экзамен сам
+      // не завершится, пока не выйдет время.
+      for (var i = 0; i < 9; i++) {
+        await answerCurrent(tester, correct: true);
+      }
+
+      // Прокручиваем таймер до истечения лимита (45 мин).
+      await tester.pump(const Duration(seconds: 45 * 60 + 2));
+      await tester.pumpAndSettle();
+
+      // 18 из 20 = 90% ≥ 85%: на реальном тесте MUP это сдача, несмотря на
+      // истёкшее время (неотвеченный вопрос просто = 0 баллов).
+      expect(find.text('Экзамен сдан!'), findsOneWidget);
+      expect(find.text('Экзамен не сдан'), findsNothing);
+      expect(find.text('18 из 20'), findsOneWidget);
+    });
+  });
+
+  // --- Прерванный экзамен ------------------------------------------------
+  // Выход с экзамена больше не подводит итог: билет сохраняется целиком и
+  // ждёт на главном экране. Иначе отвлёкшийся человек получал «не сдан».
+
+  testWidgets('выход сохраняет экзамен: ответы, позиция и остаток времени',
+      (tester) async {
+    final data = await pumpExam(tester);
+
+    await answerCurrent(tester, correct: true);
+    await answerCurrent(tester, correct: false);
+
+    await tester.tap(find.byIcon(Icons.close_rounded).hitTestable());
+    await tester.pumpAndSettle();
+
+    final saved = data.loadUnfinishedSession(TicketCategory.ab);
+    expect(saved, isNotNull, reason: 'иначе продолжать будет нечего');
+    expect(saved!['kind'], 'exam');
+    expect((saved['questionIds'] as List).length, 20);
+    expect((saved['answers'] as List).take(2).toList(), [0, 1]);
+    expect(saved['index'], 2);
+    // Остаток времени сохраняется: иначе выход обнулял бы таймер, и экзамен
+    // можно было бы растянуть на сколько угодно.
+    expect(saved['remainingSeconds'], lessThan(20 * 60));
+    expect(saved['remainingSeconds'], greaterThan(0));
+  });
+
+  testWidgets('возврат восстанавливает ответы и позицию, а не начинает заново',
+      (tester) async {
+    final questions = buildQuestions(20);
+    await pumpExam(
+      tester,
+      questions: questions,
+      resume: {
+        'questions': questions,
+        'answers': <int?>[0, 1, ...List<int?>.filled(18, null)],
+        'index': 2,
+        'remainingSeconds': 600,
+        'totalSeconds': 20 * 60,
+        'additionalPhase': false,
+        'additionalQuestionsCount': 0,
+        'initialWrongCount': 0,
+      },
+    );
+
+    // Продолжаем с третьего вопроса, а не с первого.
+    expect(find.text('Вопрос 3 из 20'), findsOneWidget);
+    // Таймер продолжает прежний отсчёт, а не стартует с 20:00.
+    expect(find.text('10:00'), findsOneWidget);
+
+    // Прежние ответы учтены: одна ошибка уже есть, добьём до провала по блоку.
+    await answerCurrent(tester, correct: false);
+    expect(find.text('Экзамен не сдан'), findsOneWidget);
+  });
+
+  testWidgets('битая запись игнорируется: экзамен начинается заново',
+      (tester) async {
+    final questions = buildQuestions(20);
+    await pumpExam(
+      tester,
+      questions: questions,
+      resume: {
+        'questions': questions,
+        // Ответов меньше, чем вопросов: позиции разъехались, и «ответ на
+        // вопрос 5» на деле относился бы к другому вопросу. Лучше начать
+        // заново, чем показать человеку чужие ответы как его собственные.
+        'answers': <int?>[0, 1],
+        'index': 2,
+        'remainingSeconds': 600,
+        'totalSeconds': 20 * 60,
+        'additionalPhase': false,
+        'additionalQuestionsCount': 0,
+        'initialWrongCount': 0,
+      },
+    );
+
+    expect(find.text('Вопрос 1 из 20'), findsOneWidget);
+    expect(find.text('20:00'), findsOneWidget);
+  });
+
+  testWidgets('доведённый до результата экзамен из «продолжить» исчезает',
+      (tester) async {
+    final data = await pumpExam(tester);
+
+    for (var i = 0; i < 20; i++) {
+      await answerCurrent(tester, correct: true);
+    }
+    expect(find.text('Экзамен сдан!'), findsOneWidget);
+
+    expect(
+      data.loadUnfinishedSession(TicketCategory.ab),
+      isNull,
+      reason: 'предлагать продолжить сданный экзамен бессмысленно',
+    );
   });
 }

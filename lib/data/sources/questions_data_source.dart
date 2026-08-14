@@ -72,6 +72,22 @@ class QuestionsDataSource {
     return json.decode(content) as Map<String, dynamic>;
   }
 
+  /// Дорожная разметка по группам: { «Горизонтальная разметка»: [{title,
+  /// description}, …], «Вертикальная разметка»: […] }. Страно-зависимая.
+  Future<Map<String, List<Map<String, String>>>> loadMarkup() async {
+    final String content = await rootBundle.loadString(_config.markupJson);
+    final Map<String, dynamic> data = json.decode(content) as Map<String, dynamic>;
+    return data.map((group, entries) {
+      final list = (entries as List<dynamic>)
+          .map((e) => {
+                'title': (e as Map)['title'] as String,
+                'description': e['description'] as String,
+              })
+          .toList();
+      return MapEntry(group, list);
+    });
+  }
+
   /// Разделы текста ПДД для вкладки «ПДД»: [{'title':…, 'content':…}, …].
   Future<List<Map<String, String>>> loadPddSections() async {
     final String content =

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -12,17 +13,23 @@ class SignDetailScreen extends StatelessWidget {
   final String? signImage;
   final String? signDescription;
 
+  /// Разговорное имя знака («кирпич», «лежачий полицейский»). Есть далеко
+  /// не у всех — показывается только когда оно действительно в ходу.
+  final String? signFolkName;
+
   const SignDetailScreen({
     super.key,
     required this.signNumber,
     required this.signName,
     this.signImage,
     this.signDescription,
+    this.signFolkName,
   });
 
   @override
   Widget build(BuildContext context) {
     final description = signDescription?.trim();
+    final folkName = signFolkName?.trim();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -112,6 +119,59 @@ class SignDetailScreen extends StatelessWidget {
                             ),
                     ),
                   ),
+                  // Народное имя — отдельной плашкой и с явной подписью, а не
+                  // рядом с официальным названием: человек должен видеть, что
+                  // на экзамене так знак не называют.
+                  if (folkName != null && folkName.isNotEmpty) ...[
+                    const SizedBox(height: AppDimensions.spacingL),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppDimensions.spacingL,
+                        vertical: AppDimensions.spacingM,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBackground,
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.cardRadius,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.forum_outlined,
+                            size: 20,
+                            color: AppColors.secondaryText,
+                          ),
+                          const SizedBox(width: AppDimensions.spacingM),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  appL10n.folkNameLabel,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.secondaryText,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '«$folkName»',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.2,
+                                    color: AppColors.primaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   if (description != null && description.isNotEmpty) ...[
                     const SizedBox(height: AppDimensions.spacingL),
                     Container(
@@ -125,9 +185,9 @@ class SignDetailScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Описание',
-                            style: TextStyle(
+                          Text(
+                            appL10n.description,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               height: 1.0,

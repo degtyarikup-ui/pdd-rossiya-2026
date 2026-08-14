@@ -5,7 +5,9 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/streak.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/flame_icon.dart';
+import 'package:pdd_app/core/utils/weekday_labels.dart';
 
 /// Поздравление за зажжённый сегодня огонёк.
 ///
@@ -21,7 +23,7 @@ Future<void> showStreakCelebrationDialog({
     context: context,
     barrierColor: Colors.black.withValues(alpha: 0.55),
     barrierDismissible: true,
-    barrierLabel: 'Серия',
+    barrierLabel: appL10n.streakBarrierLabel,
     transitionDuration: const Duration(milliseconds: 280),
     pageBuilder: (ctx, _, _) => _StreakCelebrationDialog(streak: streak),
     transitionBuilder: (ctx, anim, _, child) {
@@ -47,10 +49,6 @@ class _StreakCelebrationDialog extends StatefulWidget {
 }
 
 class _StreakCelebrationDialogState extends State<_StreakCelebrationDialog> {
-  static const List<String> _dayLabelsRu = [
-    'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс',
-  ];
-
   @override
   Widget build(BuildContext context) {
     final s = widget.streak;
@@ -86,7 +84,7 @@ class _StreakCelebrationDialogState extends State<_StreakCelebrationDialog> {
             ),
             const SizedBox(height: 4),
             Text(
-              _daysWord(s.current),
+              appL10n.streakDaysWord(s.current),
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -116,7 +114,7 @@ class _StreakCelebrationDialogState extends State<_StreakCelebrationDialog> {
               days: days,
               today: today,
               isActive: s.isActiveOn,
-              labels: _dayLabelsRu,
+              labels: weekdayShortLabels(),
             ),
             const SizedBox(height: AppDimensions.spacingXL),
             SizedBox(
@@ -136,9 +134,9 @@ class _StreakCelebrationDialogState extends State<_StreakCelebrationDialog> {
                   HapticFeedbackHelper.tap();
                   Navigator.of(context).pop();
                 },
-                child: const Text(
-                  'Продолжить',
-                  style: TextStyle(
+                child: Text(
+                  appL10n.continueButton,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -152,34 +150,11 @@ class _StreakCelebrationDialogState extends State<_StreakCelebrationDialog> {
   }
 
   String _motivationText(int n, {required bool isNewRecord}) {
-    if (isNewRecord && n > 1) {
-      return 'Новый личный рекорд! Так держать.';
-    }
-    if (n == 1) {
-      return 'Огонёк зажжён. Возвращайтесь завтра, чтобы серия росла.';
-    }
-    if (n < 7) {
-      return 'Отличный темп. Ещё чуть-чуть и наберётся целая неделя.';
-    }
-    if (n < 30) {
-      return 'Целая неделя за плечами. Привычка формируется именно так.';
-    }
-    return 'Месяц без перерыва — это уровень настоящего студента автошколы.';
-  }
-
-  String _daysWord(int n) {
-    final mod100 = n % 100;
-    if (mod100 >= 11 && mod100 <= 14) return 'дней подряд';
-    switch (n % 10) {
-      case 1:
-        return 'день подряд';
-      case 2:
-      case 3:
-      case 4:
-        return 'дня подряд';
-      default:
-        return 'дней подряд';
-    }
+    if (isNewRecord && n > 1) return appL10n.streakMotivationRecord;
+    if (n == 1) return appL10n.streakMotivationFirst;
+    if (n < 7) return appL10n.streakMotivationWeek;
+    if (n < 30) return appL10n.streakMotivationHabit;
+    return appL10n.streakMotivationMonth;
   }
 }
 
@@ -423,14 +398,14 @@ class _RecordChip extends StatelessWidget {
         color: AppColors.goldLightSurface,
         borderRadius: BorderRadius.circular(999),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.emoji_events_rounded, size: 14, color: AppColors.gold),
-          SizedBox(width: 6),
+          const Icon(Icons.emoji_events_rounded, size: 14, color: AppColors.gold),
+          const SizedBox(width: 6),
           Text(
-            'Личный рекорд',
-            style: TextStyle(
+            appL10n.personalRecord,
+            style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: AppColors.gold,

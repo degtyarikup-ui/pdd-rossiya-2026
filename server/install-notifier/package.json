@@ -1,0 +1,9 @@
+{
+  "name": "pdd-install-notifier",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node test-local.mjs",
+    "deploy": "wrangler deploy"
+  }
+}

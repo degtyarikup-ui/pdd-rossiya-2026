@@ -1,0 +1,507 @@
+[
+ {
+  "code": "I-1",
+  "naziv": "Krivina nalevo",
+  "opis": "Najavljuje nailazak na opasnu krivinu nalevo, pa treba smanjiti brzinu i prilagoditi vožnju."
+ },
+ {
+  "code": "I-1.1",
+  "naziv": "Krivina nadesno",
+  "opis": "Najavljuje nailazak na opasnu krivinu nadesno, pa treba smanjiti brzinu i prilagoditi vožnju."
+ },
+ {
+  "code": "I-2",
+  "naziv": "Dvostruka krivina ili više uzastopnih krivina od kojih je prva nalevo",
+  "opis": "Najavljuje dvostruku ili niz uzastopnih krivina od kojih je prva nalevo, pa treba smanjiti brzinu."
+ },
+ {
+  "code": "I-2.1",
+  "naziv": "Dvostruka krivina ili više uzastopnih krivina od kojih je prva nadesno",
+  "opis": "Najavljuje dvostruku ili niz uzastopnih krivina od kojih je prva nadesno, pa treba smanjiti brzinu."
+ },
+ {
+  "code": "I-3",
+  "naziv": "Opasan uspon",
+  "opis": "Označava deo puta sa opasnim usponom (strmim nagibom naviše), pa treba prilagoditi brzinu i izbor stepena prenosa."
+ },
+ {
+  "code": "I-4",
+  "naziv": "Opasna nizbrdica",
+  "opis": "Označava deo puta sa opasnom nizbrdicom (strmim padom), pa treba smanjiti brzinu i kočiti motorom."
+ },
+ {
+  "code": "I-5.1",
+  "naziv": "Suženje puta s desne strane",
+  "opis": "Najavljuje suženje kolovoza sa desne strane, pa treba voziti opreznije i po potrebi propustiti druga vozila."
+ },
+ {
+  "code": "I-5.2",
+  "naziv": "Suženje puta s leve strane",
+  "opis": "Najavljuje suženje kolovoza sa leve strane, pa treba voziti opreznije i po potrebi propustiti druga vozila."
+ },
+ {
+  "code": "I-7",
+  "naziv": "Blizina obale",
+  "opis": "Upozorava na blizinu obale reke, jezera ili nasipa, pa treba voziti krajnje oprezno."
+ },
+ {
+  "code": "I-8",
+  "naziv": "Neravan kolovoz",
+  "opis": "Najavljuje deo puta sa neravnim kolovozom (opasne izbočine i ulegnuća), pa treba smanjiti brzinu."
+ },
+ {
+  "code": "I-9",
+  "naziv": "Neravan kolovoz — opasno ulegnuće",
+  "opis": "Najavljuje opasno ulegnuće (udubljenje) na kolovozu, pa treba smanjiti brzinu."
+ },
+ {
+  "code": "I-10",
+  "naziv": "Neravan kolovoz — opasna izbočina",
+  "opis": "Najavljuje opasnu izbočinu na kolovozu, pa treba smanjiti brzinu."
+ },
+ {
+  "code": "I-11",
+  "naziv": "Klizav kolovoz",
+  "opis": "Označava deo puta na kome je kolovoz u određenim uslovima klizav, pa treba smanjiti brzinu i izbegavati nagle radnje."
+ },
+ {
+  "code": "I-12",
+  "naziv": "Kamenje pršti",
+  "opis": "Upozorava da sa kolovoza može da prsne sitno kamenje ili nasuti agregat, pa treba smanjiti brzinu i povećati odstojanje."
+ },
+ {
+  "code": "I-13",
+  "naziv": "Odronjavanje kamenja",
+  "opis": "Upozorava na opasnost od odrona kamenja i prisustva kamenja na kolovozu sa leve strane, pa treba voziti oprezno."
+ },
+ {
+  "code": "I-13.1",
+  "naziv": "Odroni sa desne strane",
+  "opis": "Najavljuje deo puta na kome su mogući odroni kamenja sa desne strane i kamenje na kolovozu; smanjite brzinu i budite oprezni."
+ },
+ {
+  "code": "I-14",
+  "naziv": "Obeleženi pešački prelaz",
+  "opis": "Najavljuje obeleženi pešački prelaz; smanjite brzinu i propustite pešake koji prelaze ili stupaju na kolovoz."
+ },
+ {
+  "code": "I-15",
+  "naziv": "Deca na putu",
+  "opis": "Blizina škole, vrtića ili igrališta gde je moguć nagli izlazak dece na kolovoz; vozite izuzetno oprezno."
+ },
+ {
+  "code": "I-16",
+  "naziv": "Biciklisti na putu",
+  "opis": "Deo puta kojim se kreću ili na koji izlaze biciklisti; prilagodite brzinu i vozite opreznije."
+ },
+ {
+  "code": "I-17",
+  "naziv": "Stoka na putu",
+  "opis": "Deo puta na kome se na kolovozu može naći stoka (domaće životinje); smanjite brzinu i budite spremni da se zaustavite."
+ },
+ {
+  "code": "I-18",
+  "naziv": "Divljač na putu",
+  "opis": "Deo puta na kome divljač može iznenada izaći na kolovoz; smanjite brzinu, naročito u zoru i sumrak."
+ },
+ {
+  "code": "I-19",
+  "naziv": "Radovi na putu",
+  "opis": "Deo puta na kome se izvode radovi, uz moguće prisustvo ljudi, mašina i prepreka; vozite sporije i oprezno."
+ },
+ {
+  "code": "I-22",
+  "naziv": "Bočni vetar sa leve strane",
+  "opis": "Deo puta izložen jakom bočnom vetru sa leve strane; čvrsto držite volan i prilagodite brzinu."
+ },
+ {
+  "code": "I-23",
+  "naziv": "Saobraćaj u oba smera",
+  "opis": "Najavljuje deo puta na kome se, posle jednosmernog saobraćaja, ponovo odvija saobraćaj u oba smera; držite se desne strane."
+ },
+ {
+  "code": "I-24",
+  "naziv": "Tunel",
+  "opis": "Najavljuje približavanje tunelu; upalite propisana svetla, ne zaustavljajte se i ne pretičite u tunelu."
+ },
+ {
+  "code": "I-25",
+  "naziv": "Opasnost na putu",
+  "opis": "Upozorava na opasnost na putu koja se ne može označiti drugim znakom (ostale opasnosti); smanjite brzinu i budite oprezni."
+ },
+ {
+  "code": "I-26",
+  "naziv": "Raskrsnica puteva iste važnosti",
+  "opis": "Približavanje raskrsnici puteva jednake važnosti na kojoj prvenstvo prolaza ima vozilo koje nailazi sa desne strane (pravilo desne strane)."
+ },
+ {
+  "code": "I-27",
+  "naziv": "Raskrsnica sa sporednim putem",
+  "opis": "Najavljuje raskrsnicu na kojoj se putu sa prvenstvom prolaza priključuje sporedni put; pazite na vozila koja mogu naići sa sporednog puta."
+ },
+ {
+  "code": "I-30",
+  "naziv": "Kružni tok saobraćaja",
+  "opis": "Najavljuje približavanje raskrsnici sa kružnim tokom saobraćaja; prilagodite brzinu i propustite vozila koja se već kreću u krugu."
+ },
+ {
+  "code": "I-31",
+  "naziv": "Tramvajska pruga",
+  "opis": "Najavljuje mesto na kome put u istom nivou prelazi preko tramvajske pruge; obratite pažnju na tramvaje i po potrebi se zaustavite."
+ },
+ {
+  "code": "I-32",
+  "naziv": "Prelaz puta preko železničke pruge sa branicima ili polubranicima",
+  "opis": "Najavljuje približavanje prelazu puta preko železničke pruge koji je obezbeđen branicima ili polubranicima, pa vozač mora smanjiti brzinu i biti spreman da se zaustavi."
+ },
+ {
+  "code": "I-33",
+  "naziv": "Prelaz puta preko železničke pruge bez branika ili polubranika",
+  "opis": "Upozorava na približavanje prelazu preko železničke pruge koji nije obezbeđen branicima ni polubranicima, pa vozač mora naročito oprezno prići i propustiti voz."
+ },
+ {
+  "code": "I-34",
+  "naziv": "Približavanje prelazu puta preko železničke pruge sa jednim kolosekom",
+  "opis": "Označava blizinu prelaza preko železničke pruge sa jednim kolosekom, uz obavezu vozača da smanji brzinu i uveri se da ne nailazi voz."
+ },
+ {
+  "code": "I-34.1",
+  "naziv": "Približavanje prelazu puta preko železničke pruge sa dva ili više koloseka",
+  "opis": "Označava blizinu prelaza preko železničke pruge sa dva ili više koloseka, pa vozač mora biti naročito oprezan jer voz može naići sa više strana."
+ },
+ {
+  "code": "I-37",
+  "naziv": "Nestabilna bankina",
+  "opis": "Upozorava na deo puta sa mekom ili nestabilnom bankinom, pa vozač ne sme zalaziti na ivicu kolovoza zbog opasnosti od proklizavanja ili prevrtanja."
+ },
+ {
+  "code": "I-38",
+  "naziv": "Kolona zaustavljenih vozila",
+  "opis": "Upozorava na deo puta na kome se često stvaraju kolone zaustavljenih ili usporenih vozila, pa vozač mora smanjiti brzinu i prilagoditi vožnju."
+ },
+ {
+  "code": "II-1",
+  "naziv": "Ustupanje prvenstva prolaza",
+  "opis": "Obavezuje vozača da ustupi prvenstvo prolaza vozilima koja se kreću putem na koji nailazi."
+ },
+ {
+  "code": "II-2",
+  "naziv": "Obavezno zaustavljanje",
+  "opis": "Obavezuje vozača da se zaustavi i ustupi prvenstvo prolaza svim vozilima na putu sa prvenstvom pre nego što nastavi kretanje."
+ },
+ {
+  "code": "II-3",
+  "naziv": "Zabrana saobraćaja u oba smera",
+  "opis": "Zabranjuje saobraćaj svim vozilima u oba smera na tom putu."
+ },
+ {
+  "code": "II-4",
+  "naziv": "Zabrana saobraćaja u jednom smeru",
+  "opis": "Zabranjuje ulazak i saobraćaj svih vozila u smeru u kome je znak postavljen."
+ },
+ {
+  "code": "II-5",
+  "naziv": "Zabrana saobraćaja za sva motorna vozila osim za motocikle bez prikolice",
+  "opis": "Zabranjuje saobraćaj svim motornim vozilima, izuzev motocikala bez bočne prikolice."
+ },
+ {
+  "code": "II-6",
+  "naziv": "Zabrana saobraćaja za autobuse",
+  "opis": "Zabranjuje saobraćaj autobusima na tom delu puta."
+ },
+ {
+  "code": "II-7",
+  "naziv": "Zabrana saobraćaja za teretna vozila",
+  "opis": "Zabranjuje saobraćaj teretnim vozilima čija najveća dozvoljena masa prelazi propisanu ili na znaku označenu vrednost."
+ },
+ {
+  "code": "II-12",
+  "naziv": "Zabrana saobraćaja za motocikle",
+  "opis": "Zabranjuje saobraćaj motociklima na tom delu puta."
+ },
+ {
+  "code": "II-13",
+  "naziv": "Zabrana saobraćaja za mopede",
+  "opis": "Zabranjuje saobraćaj mopedima na tom delu puta."
+ },
+ {
+  "code": "II-14",
+  "naziv": "Zabrana saobraćaja za bicikle",
+  "opis": "Zabranjen je saobraćaj za bicikliste, koji ovim putem ne smeju da voze bicikl."
+ },
+ {
+  "code": "II-17",
+  "naziv": "Zabrana saobraćaja za pešake",
+  "opis": "Zabranjeno je kretanje pešaka na delu puta na koji se znak odnosi."
+ },
+ {
+  "code": "II-20",
+  "naziv": "Zabrana saobraćaja za vozila čija ukupna širina prelazi određenu širinu",
+  "opis": "Zabranjen je saobraćaj vozilima čija je ukupna širina veća od vrednosti označene na znaku."
+ },
+ {
+  "code": "II-21",
+  "naziv": "Zabrana saobraćaja za vozila čija ukupna visina prelazi određenu visinu",
+  "opis": "Zabranjen je saobraćaj vozilima čija je ukupna visina veća od vrednosti označene na znaku."
+ },
+ {
+  "code": "II-22",
+  "naziv": "Zabrana saobraćaja za vozila čija ukupna masa prelazi određenu masu",
+  "opis": "Zabranjen je saobraćaj vozilima čija ukupna masa prelazi vrednost označenu na znaku."
+ },
+ {
+  "code": "II-23",
+  "naziv": "Zabrana saobraćaja za vozila čije osovinsko opterećenje prelazi određenu masu",
+  "opis": "Zabranjen je saobraćaj vozilima čije osovinsko opterećenje prelazi vrednost označenu na znaku."
+ },
+ {
+  "code": "II-24",
+  "naziv": "Zabrana saobraćaja za vozila čija ukupna dužina prelazi određenu dužinu",
+  "opis": "Zabranjen je saobraćaj vozilima čija je ukupna dužina veća od vrednosti označene na znaku."
+ },
+ {
+  "code": "II-25",
+  "naziv": "Najmanje odstojanje između vozila",
+  "opis": "Vozač mora da održava odstojanje između svog i vozila ispred najmanje onoliko koliko je označeno na znaku."
+ },
+ {
+  "code": "II-26",
+  "naziv": "Zabrana skretanja ulevo",
+  "opis": "Na raskrsnici ili mestu na koje se znak odnosi zabranjeno je skretanje ulevo."
+ },
+ {
+  "code": "II-26.1",
+  "naziv": "Zabrana skretanja udesno",
+  "opis": "Na raskrsnici ili mestu na koje se znak odnosi zabranjeno je skretanje udesno."
+ },
+ {
+  "code": "II-27",
+  "naziv": "Zabrana polukružnog okretanja",
+  "opis": "Zabranjeno je polukružno okretanje vozila na delu puta na koji se znak odnosi."
+ },
+ {
+  "code": "II-28",
+  "naziv": "Zabrana preticanja svih motornih vozila osim motocikala bez prikolice",
+  "opis": "Zabranjeno je preticanje drugih motornih vozila, osim jednotračnih vozila (motocikala i mopeda)."
+ },
+ {
+  "code": "II-29",
+  "naziv": "Zabrana preticanja za teretna vozila",
+  "opis": "Zabranjeno je da teretno vozilo čija najveća dozvoljena masa prelazi 3,5 tone pretiče druga motorna vozila."
+ },
+ {
+  "code": "II-30",
+  "naziv": "Ograničenje brzine",
+  "opis": "Vozač ne sme voziti brzinom većom od one koja je označena na znaku."
+ },
+ {
+  "code": "II-31",
+  "naziv": "Zabrana davanja zvučnih znakova",
+  "opis": "Zabranjeno je davanje zvučnih znakova (upotreba sirene), osim radi izbegavanja neposredne opasnosti."
+ },
+ {
+  "code": "II-33",
+  "naziv": "Prvenstvo prolaza za vozila iz suprotnog smera",
+  "opis": "Vozač mora da propusti vozila koja nailaze iz suprotnog smera pre ulaska u suženi deo puta."
+ },
+ {
+  "code": "II-34",
+  "naziv": "Zabrana zaustavljanja i parkiranja",
+  "opis": "Zabranjeno je zaustavljanje i parkiranje vozila na delu puta na koji se znak odnosi."
+ },
+ {
+  "code": "II-35",
+  "naziv": "Zabrana parkiranja",
+  "opis": "Zabranjeno je parkiranje vozila, dok je zaustavljanje dozvoljeno."
+ },
+ {
+  "code": "II-38",
+  "naziv": "Najmanja dozvoljena brzina",
+  "opis": "Vozač mora da se kreće brzinom koja nije manja od vrednosti u km/h označene na znaku."
+ },
+ {
+  "code": "II-39",
+  "naziv": "Obavezni lanci za sneg",
+  "opis": "Obavezna je upotreba lanaca za sneg na najmanje dva pogonska točka."
+ },
+ {
+  "code": "II-40",
+  "naziv": "Obavezna biciklistička staza",
+  "opis": "Staza je namenjena isključivo biciklistima, koji su dužni da je koriste."
+ },
+ {
+  "code": "II-41",
+  "naziv": "Obavezna pešačka staza",
+  "opis": "Staza je namenjena isključivo pešacima, koji su dužni da je koriste."
+ },
+ {
+  "code": "II-43",
+  "naziv": "Obavezan smer",
+  "opis": "Vozač je dužan da nastavi kretanje pravo u smeru koji pokazuje strelica."
+ },
+ {
+  "code": "II-43.1",
+  "naziv": "Obavezan smer",
+  "opis": "Vozač je dužan da skrene desno u smeru koji pokazuje strelica."
+ },
+ {
+  "code": "II-43.2",
+  "naziv": "Obavezan smer",
+  "opis": "Vozač je dužan da skrene levo u smeru koji pokazuje strelica."
+ },
+ {
+  "code": "II-44",
+  "naziv": "Dozvoljeni smerovi",
+  "opis": "Dozvoljeno je kretanje pravo ili skretanje levo u smerovima koje pokazuju strelice."
+ },
+ {
+  "code": "II-44.1",
+  "naziv": "Dozvoljeni smerovi",
+  "opis": "Dozvoljeno je kretanje pravo ili skretanje desno u smerovima koje pokazuju strelice."
+ },
+ {
+  "code": "II-45",
+  "naziv": "Obavezno obilaženje sa desne strane",
+  "opis": "Vozač je dužan da prepreku ili saobraćajno ostrvo obiđe sa desne strane."
+ },
+ {
+  "code": "II-45.1",
+  "naziv": "Obavezno obilaženje sa leve strane",
+  "opis": "Vozač je dužan da prepreku ili saobraćajno ostrvo obiđe sa leve strane."
+ },
+ {
+  "code": "II-45.2",
+  "naziv": "Kružni tok saobraćaja",
+  "opis": "Obavezno je kretanje u kružnom toku saobraćaja u smeru koji pokazuju strelice."
+ },
+ {
+  "code": "II-46",
+  "naziv": "Obavezno polukružno okretanje",
+  "opis": "Označava mesto na kome je vozač dužan da izvrši polukružno okretanje (okretanje za 180 stepeni) u smeru koji pokazuje strelica."
+ },
+ {
+  "code": "III-1",
+  "naziv": "Prvenstvo prolaza u odnosu na vozila iz suprotnog smera",
+  "opis": "Obaveštava vozača da na suženom delu puta ima prvenstvo prolaza u odnosu na vozila koja dolaze iz suprotnog smera."
+ },
+ {
+  "code": "III-2",
+  "naziv": "Put sa jednosmernim saobraćajem",
+  "opis": "Obaveštava da se saobraćaj na tom putu odvija samo u jednom smeru, u pravcu koji pokazuje strelica."
+ },
+ {
+  "code": "III-3",
+  "naziv": "Put sa prvenstvom prolaza",
+  "opis": "Obaveštava vozača da se nalazi na putu sa prvenstvom prolaza u odnosu na vozila sa puteva koji ga preseca."
+ },
+ {
+  "code": "III-4",
+  "naziv": "Prestanak puta sa prvenstvom prolaza",
+  "opis": "Obaveštava vozača da se završava deo puta sa prvenstvom prolaza, pa dalje mora poštovati opšta pravila prvenstva."
+ },
+ {
+  "code": "III-5",
+  "naziv": "Prelaz biciklističke staze preko kolovoza",
+  "opis": "Obaveštava vozača da se približava mestu na kome biciklistička staza prelazi preko kolovoza, gde treba propustiti bicikliste."
+ },
+ {
+  "code": "III-6",
+  "naziv": "Pešački prelaz",
+  "opis": "Obeležava mesto na kome pešaci prelaze kolovoz; vozač je dužan da propusti pešake koji su na prelazu ili stupaju na njega."
+ },
+ {
+  "code": "III-9",
+  "naziv": "Slepi put",
+  "opis": "Obaveštava vozača da put kojim namerava da se kreće nema izlaz, odnosno da je bez prolaza."
+ },
+ {
+  "code": "III-25",
+  "naziv": "Prestanak zabrane preticanja",
+  "opis": "Obaveštava vozača o mestu na kome prestaje da važi zabrana preticanja svih motornih vozila."
+ },
+ {
+  "code": "III-30",
+  "naziv": "Parkiralište",
+  "opis": "Označava prostor određen i uređen za parkiranje vozila, uz eventualne dopunske oznake o načinu parkiranja i vrsti vozila."
+ },
+ {
+  "code": "III-31",
+  "naziv": "Parking garaža",
+  "opis": "Obaveštava vozača o javnoj (natkrivenoj) garaži namenjenoj za parkiranje vozila."
+ },
+ {
+  "code": "III-34",
+  "naziv": "Bolnica",
+  "opis": "Obaveštava vozača o blizini bolnice, zbog čega treba da smanji buku i ne upotrebljava zvučne signale."
+ },
+ {
+  "code": "III-35",
+  "naziv": "Stanica za prvu pomoć",
+  "opis": "Obaveštava vozača o mestu ili blizini stanice na kojoj se može dobiti prva pomoć."
+ },
+ {
+  "code": "III-37",
+  "naziv": "Telefon",
+  "opis": "Obaveštava vozača o mestu na kome se nalazi telefon (telefonska govornica)."
+ },
+ {
+  "code": "III-38",
+  "naziv": "Benzinska stanica",
+  "opis": "Obaveštava vozača o mestu ili blizini benzinske stanice za snabdevanje vozila gorivom."
+ },
+ {
+  "code": "III-39",
+  "naziv": "Hotel ili motel",
+  "opis": "Obaveštava vozače da se u blizini, u naznačenom pravcu, nalazi hotel ili motel gde mogu naći smeštaj."
+ },
+ {
+  "code": "III-40",
+  "naziv": "Restoran",
+  "opis": "Obaveštava vozače da se u blizini, u naznačenom pravcu, nalazi restoran u kojem se mogu poslužiti hranom."
+ },
+ {
+  "code": "III-49",
+  "naziv": "Autobusko stajalište",
+  "opis": "Obeležava mesto na kome se zaustavljaju autobusi radi ulaska i izlaska putnika."
+ },
+ {
+  "code": "III-50",
+  "naziv": "Tramvajsko stajalište",
+  "opis": "Obeležava mesto na kome se zaustavljaju tramvaji radi ulaska i izlaska putnika."
+ },
+ {
+  "code": "III-53",
+  "naziv": "Informacije",
+  "opis": "Obaveštava vozače i učesnike u saobraćaju o mestu gde se mogu dobiti turističke ili druge korisne informacije."
+ },
+ {
+  "code": "III-68",
+  "naziv": "Autoput",
+  "opis": "Označava mesto od koga počinje autoput i deo puta na kome važe posebna pravila saobraćaja koja se odnose na autoput."
+ },
+ {
+  "code": "III-68.1",
+  "naziv": "Završetak autoputa",
+  "opis": "Označava mesto na kome se završava autoput i prestaju da važe posebna pravila saobraćaja koja važe za autoput."
+ },
+ {
+  "code": "III-21",
+  "naziv": "Motoput",
+  "opis": "Označava mesto od koga počinje motoput (put rezervisan za saobraćaj motornih vozila) i deo puta na kome važe posebna pravila saobraćaja."
+ },
+ {
+  "code": "III-22",
+  "naziv": "Završetak motoputa",
+  "opis": "Označava mesto na kome se završava motoput i prestaju da važe posebna pravila saobraćaja koja važe za motoput."
+ },
+ {
+  "code": "III-23.1",
+  "naziv": "Naseljeno mesto",
+  "opis": "Označava mesto od koga počinje naselje i od koga važe pravila saobraćaja koja se primenjuju u naselju."
+ },
+ {
+  "code": "III-24.1",
+  "naziv": "Završetak naseljenog mesta",
+  "opis": "Označava mesto na kome se završava naselje i prestaju da važe pravila saobraćaja koja se primenjuju u naselju."
+ }
+]

@@ -1,7 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -11,9 +17,13 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/utils/question_number_strip_scroll.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/services/share_card_renderer.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_review_screen.dart';
+import 'package:pdd_app/presentation/widgets/share_result_card.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/question_image.dart';
+import 'package:pdd_app/presentation/widgets/question_number_chip.dart';
 
 class ExamScreen extends ConsumerStatefulWidget {
   final List<Map<String, dynamic>> allQuestions;
@@ -22,7 +32,16 @@ class ExamScreen extends ConsumerStatefulWidget {
   /// параметр нужен тестам, чтобы проверять RU и BY на одном коде.
   final ExamRules? rules;
 
-  const ExamScreen({super.key, required this.allQuestions, this.rules});
+  /// Состояние прерванного экзамена (из [unfinishedSessionProvider]): набор
+  /// вопросов, ответы, остаток времени, доп. фаза. null — новый экзамен.
+  final Map<String, dynamic>? resume;
+
+  const ExamScreen({
+    super.key,
+    required this.allQuestions,
+    this.rules,
+    this.resume,
+  });
 
   @override
   ConsumerState<ExamScreen> createState() => _ExamScreenState();
@@ -34,6 +53,41 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
 
   /// Размер основного блока экзамена (страно-зависимый).
   int get _mainCount => _rules.mainCount;
+
+  /// Балльная модель подсчёта (Сербия): вопрос весит 1/2/3, доп. фазы нет.
+  bool get _isPointsScoring => _rules.scoring == ExamScoring.points;
+
+  /// Вес вопроса в баллах (по умолчанию 1). Для моделей «по ошибкам» не важен.
+  int _questionPoints(int i) => _examQuestions[i]['points'] as int? ?? 1;
+
+  /// Максимум баллов за весь билет.
+  int _maxPoints() {
+    var sum = 0;
+    for (var i = 0; i < _examQuestions.length; i++) {
+      sum += _questionPoints(i);
+    }
+    return sum;
+  }
+
+  /// Набранные баллы: сумма весов верно отвеченных вопросов.
+  int _earnedPoints() {
+    var sum = 0;
+    for (var i = 0; i < _examQuestions.length; i++) {
+      final s = _savedAnswers[i];
+      if (s == null) continue;
+      if ((_examQuestions[i]['answers'] as List)[s]['correct'] as bool) {
+        sum += _questionPoints(i);
+      }
+    }
+    return sum;
+  }
+
+  /// Процент набранных баллов (0..100), округление вниз.
+  int _scorePercent() {
+    final max = _maxPoints();
+    if (max == 0) return 0;
+    return _earnedPoints() * 100 ~/ max;
+  }
 
   late List<Map<String, dynamic>> _examQuestions;
   late List<int?> _savedAnswers;
@@ -49,6 +103,10 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   bool _examFinished = false;
   bool _examPassed = false;
   bool _additionalPhase = false;
+  /// Экзамен провален именно по блочному правилу (две ошибки в одном
+  /// тематическом блоке). Нужен, чтобы на экране результата объяснить причину:
+  /// без объяснения «две ошибки, но не сдал» читается как баг приложения.
+  bool _failedByBlock = false;
   int _additionalQuestionsCount = 0;
   int _initialWrongCount = 0;
   bool _timedOut = false;
@@ -67,7 +125,10 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     _ttsService = ref.read(ttsServiceProvider);
     _prepareExam();
     if (_examQuestions.isNotEmpty) {
-      _pageController = PageController();
+      // initialPage обязателен: при возврате к прерванному экзамену индекс
+      // уже восстановлен, а PageView без него открылся бы на первом вопросе
+      // и тут же сбросил позицию через onPageChanged.
+      _pageController = PageController(initialPage: _currentIndex);
     }
     scheduleScrollQuestionStripToCurrent(
       controller: _questionStripController,
@@ -96,6 +157,9 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   }
 
   void _prepareExam() {
+    final resume = widget.resume;
+    if (resume != null && _restoreExam(resume)) return;
+
     final random = Random();
     final shuffled = List<Map<String, dynamic>>.from(widget.allQuestions)
       ..shuffle(random);
@@ -106,6 +170,51 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     _savedAnswers =
         List<int?>.filled(_examQuestions.length, null, growable: true);
     _startTimer();
+  }
+
+  /// Разворачивает сохранённый экзамен. false — запись не подошла
+  /// (например, вопросов меньше, чем ответов), тогда начинаем заново.
+  bool _restoreExam(Map<String, dynamic> resume) {
+    final questions =
+        (resume['questions'] as List?)?.cast<Map<String, dynamic>>();
+    final answers = (resume['answers'] as List?)?.map((e) => e as int?).toList();
+    if (questions == null || answers == null) return false;
+    if (questions.isEmpty || questions.length != answers.length) return false;
+
+    _examQuestions = List<Map<String, dynamic>>.from(questions);
+    _savedAnswers = List<int?>.from(answers, growable: true);
+    _currentIndex =
+        (resume['index'] as int? ?? 0).clamp(0, _examQuestions.length - 1);
+    _selectedAnswerIndex = _savedAnswers[_currentIndex];
+    _isAnswerSubmitted = _selectedAnswerIndex != null;
+    _additionalPhase = resume['additionalPhase'] as bool? ?? false;
+    _additionalQuestionsCount = resume['additionalQuestionsCount'] as int? ?? 0;
+    _initialWrongCount = resume['initialWrongCount'] as int? ?? 0;
+    _totalTimeSeconds = resume['totalSeconds'] as int? ?? _rules.totalSeconds;
+    _remainingTime = resume['remainingSeconds'] as int? ?? _totalTimeSeconds;
+    // Нулевой остаток означал бы мгновенный провал сразу после возврата —
+    // такую запись считаем негодной и начинаем экзамен заново.
+    if (_remainingTime <= 0) return false;
+
+    _startTimer();
+    return true;
+  }
+
+  /// Сохраняет прерванный экзамен, чтобы вернуться к нему с главного экрана.
+  Future<void> _saveUnfinishedExam() {
+    return ref.read(progressDataSourceProvider).saveUnfinishedExam(
+          questionIds: _examQuestions
+              .map((q) => q['id'] as String? ?? '')
+              .toList(),
+          answers: _savedAnswers,
+          index: _currentIndex,
+          remainingSeconds: _remainingTime,
+          totalSeconds: _totalTimeSeconds,
+          additionalPhase: _additionalPhase,
+          additionalQuestionsCount: _additionalQuestionsCount,
+          initialWrongCount: _initialWrongCount,
+          category: ref.read(appSettingsProvider).ticketCategory,
+        );
   }
 
   bool _isAnswerWrongAt(int i) {
@@ -147,6 +256,40 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       if (_isAnswerWrongAt(i)) w++;
     }
     return w;
+  }
+
+  /// Ошибки основной части, разложенные по тематическим блокам:
+  /// номер блока → сколько в нём ошибок.
+  ///
+  /// [countUnanswered] — считать ли неотвеченные вопросы ошибками. По ходу
+  /// экзамена false (человек ещё может ответить), при подведении итогов true.
+  Map<int, int> _mistakesByBlock({bool countUnanswered = false}) {
+    final end = _examQuestions.length < _mainCount
+        ? _examQuestions.length
+        : _mainCount;
+    final byBlock = <int, int>{};
+    for (var i = 0; i < end; i++) {
+      final isMistake = countUnanswered
+          ? (_savedAnswers[i] == null || _isAnswerWrongAt(i))
+          : _isAnswerWrongAt(i);
+      if (!isMistake) continue;
+      final block = _rules.blockIndexOf(i);
+      byBlock[block] = (byBlock[block] ?? 0) + 1;
+    }
+    return byBlock;
+  }
+
+  /// Провал по блочному правилу: набралось [ExamRules.maxMistakesPerBlock]
+  /// ошибок внутри одного тематического блока (РФ: две ошибки в одном блоке).
+  ///
+  /// Срабатывает РАНЬШЕ общего лимита ошибок: на реальном экзамене две ошибки
+  /// в одном блоке валят сразу, хотя суммарно ошибок всего две и по общему
+  /// лимиту экзамен ещё продолжался бы.
+  bool _failedByBlockRule({bool countUnanswered = false}) {
+    if (!_rules.hasBlockRule) return false;
+    return _mistakesByBlock(countUnanswered: countUnanswered).values.any(
+      (count) => count >= _rules.maxMistakesPerBlock,
+    );
   }
 
   /// Ошибки среди отвеченных доп. вопросов (правило «ошибка в доп. блоке — не сдал»).
@@ -202,7 +345,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
         from: from);
   }
 
-  void _goToQuestion(int index) {
+  void _goToQuestion(int index, {bool withHaptic = true}) {
     if (index < 0 || index >= _examQuestions.length) return;
     if (index == _currentIndex) return;
     final c = _pageController;
@@ -212,11 +355,13 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       // количества страниц) — повторяем попытку в следующем кадре.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || _examFinished) return;
-        _goToQuestion(index);
+        _goToQuestion(index, withHaptic: withHaptic);
       });
       return;
     }
-    HapticFeedbackHelper.tap();
+    // Вибрируем только при ручной навигации (тап по номеру сверху). При
+    // авто-переходе после ответа отклик уже дал _selectAnswer — иначе «двойная».
+    if (withHaptic) HapticFeedbackHelper.tap();
     _lastSpokenQuestionId = null;
     _invalidateVoicePlayback();
     c.animateToPage(
@@ -296,7 +441,27 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   void _evaluateExamState({required bool advance}) {
     if (_examFinished || !mounted) return;
 
+    // Балльная модель (Сербия): досрочного провала и доп. фазы нет —
+    // отвечаем на все вопросы, затем подводим итог по сумме баллов.
+    if (_isPointsScoring) {
+      final pending = _firstUnansweredMainIndex(from: _currentIndex);
+      if (pending == null) {
+        _finishExam();
+        return;
+      }
+      if (advance) _goToQuestion(pending, withHaptic: false);
+      return;
+    }
+
     if (!_additionalPhase) {
+      // Блочное правило проверяем ПЕРВЫМ: две ошибки в одном тематическом
+      // блоке валят экзамен сразу, хотя по общему лимиту ошибок он ещё
+      // продолжался бы.
+      if (_failedByBlockRule()) {
+        _finishExam();
+        return;
+      }
+
       final mainWrong = _mainAnsweredWrongCount();
       if (mainWrong > _rules.maxMistakes) {
         _finishExam();
@@ -313,7 +478,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
         return;
       }
 
-      if (advance) _goToQuestion(pending);
+      if (advance) _goToQuestion(pending, withHaptic: false);
       return;
     }
 
@@ -328,7 +493,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       return;
     }
 
-    if (advance) _goToQuestion(pendingAdd);
+    if (advance) _goToQuestion(pendingAdd, withHaptic: false);
   }
 
   void _startAdditionalPhase(int count) {
@@ -368,12 +533,15 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     // с новым количеством страниц; _currentIndex обновит _onExamPageChanged.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _examFinished) return;
-      _goToQuestion(_mainCount);
+      _goToQuestion(_mainCount, withHaptic: false);
     });
   }
 
   void _finishExam() {
     if (_examFinished) return;
+
+    // Экзамен дошёл до результата — предлагать «продолжить» его больше нельзя.
+    ref.read(progressDataSourceProvider).clearUnfinishedSession();
 
     _lastSpokenQuestionId = null;
     _invalidateVoicePlayback();
@@ -382,16 +550,31 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
 
     _recomputeScoreLists();
     // Сдан, если не вышло время И:
+    // - балльная модель (Сербия) — набрано ≥ passPercent% от максимума баллов;
     // - в доп. фазе (РФ) — ни одной ошибки/неотвеченного в доп. блоке;
     // - в основном блоке — не больше допуска. При наличии механики доп.
     //   вопросов чистый финал основного блока возможен только с 0 ошибок
     //   (1-2 уводят в доп. фазу); без механики (РБ) допуск = maxMistakes.
     // Неотвеченные считаются ошибками — досрочный выход не даёт «сдал».
-    final mainAllowed = _rules.hasAdditionalPhase ? 0 : _rules.maxMistakes;
-    final passed = !_timedOut &&
-        (_additionalPhase
-            ? _additionalWrongTotal() == 0
-            : _mainWrongTotal() <= mainAllowed);
+    final bool passed;
+    if (_isPointsScoring) {
+      // Балльная модель (Сербия): время лишь ограничивает длительность.
+      // При истечении экзамен НЕ проваливается автоматически — оценивается
+      // по набранным баллам (неотвеченные = 0), как на реальном тесте MUP.
+      // Иначе «ответил верно на 40 из 41, но не успел последний» = провал,
+      // хотя баллов уже сильно выше порога.
+      passed = _earnedPoints() * 100 >= _rules.passPercent * _maxPoints();
+    } else {
+      final mainAllowed = _rules.hasAdditionalPhase ? 0 : _rules.maxMistakes;
+      // Блочное правило считаем и здесь: экзамен мог закончиться досрочным
+      // выходом или таймаутом, а не через _evaluateExamState.
+      _failedByBlock = _failedByBlockRule(countUnanswered: true);
+      passed = !_timedOut &&
+          !_failedByBlock &&
+          (_additionalPhase
+              ? _additionalWrongTotal() == 0
+              : _mainWrongTotal() <= mainAllowed);
+    }
     _examPassed = passed;
 
     final dataSource = ref.read(progressDataSourceProvider);
@@ -421,41 +604,19 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   /// Если ни одного ответа ещё нет — просто выходим без записи результата.
   Future<void> _confirmLeaveExam() async {
     HapticFeedbackHelper.tap();
+    _timer?.cancel();
 
+    // Выход больше не подводит итог. Экзамен запоминается целиком и ждёт
+    // на главном экране кнопкой «Продолжить»: показывать результат за
+    // недорешённый билет — значит сообщать провал там, где человек всего
+    // лишь отвлёкся.
     final answeredCount = _savedAnswers.where((s) => s != null).length;
-    if (answeredCount == 0) {
-      _timer?.cancel();
-      Navigator.pop(context);
-      return;
+    if (answeredCount > 0) {
+      await _saveUnfinishedExam();
     }
-
-    final finish = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Прервать экзамен?'),
-        content: const Text(
-          'Экзамен будет завершён, неотвеченные вопросы засчитаются как ошибки. '
-          'После завершения можно посмотреть разбор ответов.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Продолжить'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Завершить',
-              style: TextStyle(color: AppColors.red),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (finish == true && mounted) {
-      _finishExam();
-    }
+    if (!mounted) return;
+    ref.read(appDataRefreshProvider.notifier).state++;
+    Navigator.pop(context);
   }
 
   void _invalidateVoicePlayback() {
@@ -568,8 +729,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                       children: [
                         Text(
                           _additionalPhase
-                              ? 'Дополнительные вопросы'
-                              : 'Экзамен',
+                              ? appL10n.examAdditionalTitle
+                              : appL10n.exam,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -578,8 +739,14 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                         ),
                         Text(
                           _currentIndex >= _mainCount
-                              ? 'Доп. вопрос ${_currentIndex - _mainCount + 1} из $_additionalQuestionsCount'
-                              : 'Вопрос ${_currentIndex + 1} из ${_examQuestions.length}',
+                              ? appL10n.examAdditionalQuestionOfTotal(
+                                  _currentIndex - _mainCount + 1,
+                                  _additionalQuestionsCount,
+                                )
+                              : appL10n.questionOfTotal(
+                                  _currentIndex + 1,
+                                  _examQuestions.length,
+                                ),
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.secondaryText,
@@ -670,21 +837,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
               borderRadius: BorderRadius.circular(
                 AppDimensions.smallRadius,
               ),
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 200,
-                  color: AppColors.gray,
-                  child: const Center(
-                    child: Icon(
-                      Icons.image,
-                      size: 48,
-                      color: AppColors.secondaryText,
-                    ),
-                  ),
-                ),
-              ),
+              child: QuestionImage(assetPath: imagePath),
             ),
           ],
           const SizedBox(height: AppDimensions.spacingL),
@@ -718,37 +871,128 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     );
   }
 
+  /// Делится результатом экзамена системным диалогом «Поделиться»
+  /// (share_plus: Android/iOS — нативный лист, web — Web Share API).
+  /// Собирает картинку результата и кладёт во временный файл.
+  ///
+  /// Возвращает null на вебе (там нет файловой системы под share_plus и
+  /// картинку всё равно не приложить) и при любой ошибке рендера — тогда
+  /// вызывающий код делится обычным текстом.
+  Future<XFile?> _buildShareImage() async {
+    if (kIsWeb) return null;
+    try {
+      // Готовность — тот же показатель, что на главной: доля верно решённых
+      // вопросов от всей базы категории.
+      final stats = await ref.read(statsProvider.future);
+      final correctTotal = stats['correctAnswers'] ?? 0;
+      final totalQuestions = stats['totalQuestions'] ?? 0;
+      final readiness = totalQuestions > 0
+          ? (correctTotal / totalQuestions * 100).round()
+          : 0;
+
+      final correctCount = _correctAnswers.length;
+      final wrongCount = _wrongAnswers.length + _unansweredTotal;
+
+      final png = await ShareCardRenderer.renderToPng(
+        size: const Size(ShareResultCard.side, ShareResultCard.side),
+        widget: ShareResultCard(
+          passed: _examPassed,
+          correct: correctCount,
+          wrong: wrongCount,
+          readinessPercent: readiness,
+          title: _examPassed ? appL10n.examPassed : appL10n.examFailed,
+          // Короткие формы со склонением: на карточке подпись стоит прямо
+          // под числом, и «6 ошибка» из обычного ярлыка выглядело бы
+          // безграмотно — а картинку увидят посторонние люди.
+          correctLabel: appL10n.shareCardCorrectWord(correctCount),
+          wrongLabel: appL10n.shareCardWrongWord(wrongCount),
+          readinessLabel: appL10n.examReadiness,
+          siteUrl: CountryConfig.current.webUrl
+              .replaceFirst(RegExp(r'^https?://'), ''),
+        ),
+      );
+      if (png == null) return null;
+
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/exam_result.png');
+      await file.writeAsBytes(png, flush: true);
+      return XFile(file.path, mimeType: 'image/png');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _shareResult() async {
+    final config = CountryConfig.current;
+    final resultLine = _examPassed ? appL10n.examPassed : appL10n.examFailed;
+    final text = appL10n.examShareText(
+      resultLine,
+      _correctAnswers.length,
+      _examQuestions.length,
+      config.appTitle,
+      config.webUrl,
+    );
+
+    // Сначала пробуем поделиться картинкой: текстом никто не делится, а
+    // квадрат 1080×1080 уходит в сторис и чаты автошкол. Если рендер или
+    // сохранение не удались — молча откатываемся на прежний текстовый путь.
+    final imageFile = await _buildShareImage();
+    if (imageFile != null) {
+      try {
+        final result = await SharePlus.instance.share(
+          ShareParams(text: text, files: [imageFile]),
+        );
+        if (result.status != ShareResultStatus.unavailable) return;
+      } catch (_) {
+        // Ниже — обычный текстовый шеринг.
+      }
+    }
+
+    try {
+      final result = await SharePlus.instance.share(ShareParams(text: text));
+      // На web системный «Поделиться» (navigator.share) есть не везде — на
+      // десктопе/без HTTPS он недоступен, и share_plus вернёт unavailable.
+      // Тогда — запасной путь: копируем текст в буфер и уведомляем.
+      if (result.status != ShareResultStatus.unavailable) return;
+    } catch (_) {
+      // navigator.share бросил (нет Web Share API) — идём в запасной путь.
+    }
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(appL10n.copiedToClipboard)),
+    );
+  }
+
   Widget _buildResultsScreen() {
     final totalWrong = _wrongAnswers.length;
     final totalQuestions = _examQuestions.length;
     final passed = _examPassed;
     final timeSpent = _totalTimeSeconds - _remainingTime;
 
+    // Верхняя панель ЗАКРЕПЛЕНА, но под ней не сплошная полоса, а градиент
+    // «фон → прозрачность»: контент прокручивается под панелью и плавно
+    // растворяется в фоне, а не обрезается резкой границей.
+    const double kBarTop = AppDimensions.screenPadding;
+    const double kBarHeight = 40;
+    // Затухание тянется на всю подложку: непрозрачный фон только за кнопками,
+    // дальше — длинный (80px) плавный уход в прозрачность, без резкой границы.
+    const double kFadeHeight = kBarTop + kBarHeight + 80;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(AppDimensions.screenPadding),
-              child: Row(
-                children: [
-                  AppChromeIconButton(
-                    icon: Icons.close_rounded,
-                    onTap: () {
-                      HapticFeedbackHelper.tap();
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(
+                AppDimensions.screenPadding,
+                kFadeHeight,
+                AppDimensions.screenPadding,
+                AppDimensions.screenPadding,
               ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppDimensions.screenPadding),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
+              child: Column(
+                children: [
                     Container(
                       width: 100,
                       height: 100,
@@ -764,7 +1008,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                     ),
                     const SizedBox(height: AppDimensions.spacingL),
                     Text(
-                      passed ? 'Экзамен сдан!' : 'Экзамен не сдан',
+                      passed ? appL10n.examPassed : appL10n.examFailed,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
@@ -773,11 +1017,14 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                     ),
                     const SizedBox(height: AppDimensions.spacingS),
                     Text(
-                      _timedOut
-                          ? 'Время вышло. Попробуйте снова в спокойном темпе.'
+                      // «Время вышло» показываем только когда таймаут привёл к
+                      // провалу. В балльной модели можно набрать проходной балл
+                      // и при истечении времени — тогда это сдача, не таймаут.
+                      (_timedOut && !passed)
+                          ? appL10n.examResultTimeout
                           : passed
-                          ? 'Отличный результат. Можно закрепить его билетами.'
-                          : 'Разберите ошибки и повторите слабые места.',
+                          ? appL10n.examResultPassed
+                          : appL10n.examResultFailed,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 16,
@@ -786,42 +1033,57 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                       ),
                     ),
                     const SizedBox(height: AppDimensions.spacingXXL),
+                    if (_isPointsScoring) ...[
+                      _buildResultCard(
+                        icon: Icons.stars_outlined,
+                        label: appL10n.examPointsLabel,
+                        value: appL10n.valueOfTotal(
+                          _earnedPoints(),
+                          _maxPoints(),
+                        ),
+                        color: AppColors.accent,
+                      ),
+                      const SizedBox(height: AppDimensions.spacingM),
+                      _buildResultCard(
+                        icon: Icons.percent_rounded,
+                        label: appL10n.examScoreLabel,
+                        value: appL10n.examScorePercent(_scorePercent()),
+                        color: passed ? AppColors.green : AppColors.red,
+                      ),
+                      const SizedBox(height: AppDimensions.spacingM),
+                    ],
                     _buildResultCard(
                       icon: Icons.check_circle_outline,
-                      label: 'Правильных ответов',
-                      value: '${_correctAnswers.length} из $totalQuestions',
+                      label: appL10n.correctAnswers,
+                      value: appL10n.valueOfTotal(
+                        _correctAnswers.length,
+                        totalQuestions,
+                      ),
                       color: AppColors.green,
                     ),
                     const SizedBox(height: AppDimensions.spacingM),
                     _buildResultCard(
                       icon: Icons.cancel_outlined,
-                      label: 'Неправильных ответов',
+                      label: appL10n.wrongAnswers,
                       value: '$totalWrong',
                       color: AppColors.red,
                     ),
-                    if (_unansweredTotal > 0) ...[
-                      const SizedBox(height: AppDimensions.spacingM),
-                      _buildResultCard(
-                        icon: Icons.remove_circle_outline,
-                        label: 'Без ответа',
-                        value: '$_unansweredTotal',
-                        color: AppColors.secondaryText,
-                      ),
-                    ],
                     if (_additionalPhase) ...[
                       const SizedBox(height: AppDimensions.spacingM),
                       _buildResultCard(
                         icon: Icons.help_outline,
-                        label: 'Дополнительный блок',
-                        value:
-                            '$_additionalQuestionsCount вопросов, ошибок: ${_additionalAnsweredWrongCount()}',
+                        label: appL10n.examAdditionalBlock,
+                        value: appL10n.examAdditionalBlockValue(
+                          _additionalQuestionsCount,
+                          _additionalAnsweredWrongCount(),
+                        ),
                         color: AppColors.gold,
                       ),
                     ],
                     const SizedBox(height: AppDimensions.spacingM),
                     _buildResultCard(
                       icon: Icons.timer_outlined,
-                      label: 'Затраченное время',
+                      label: appL10n.examTimeSpent,
                       value: _formatTime(timeSpent),
                       color: AppColors.accent,
                     ),
@@ -829,7 +1091,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                       const SizedBox(height: AppDimensions.spacingM),
                       _buildResultCard(
                         icon: Icons.rule_folder_outlined,
-                        label: 'Ошибок в основном блоке',
+                        label: appL10n.examMainBlockErrors,
                         value: '$_initialWrongCount',
                         color: AppColors.primaryText,
                       ),
@@ -853,7 +1115,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                             ),
                           );
                         },
-                        child: const Text('Мои ошибки'),
+                        child: Text(appL10n.myMistakes),
                       ),
                     ),
                     const SizedBox(height: AppDimensions.spacingM),
@@ -865,16 +1127,125 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                           HapticFeedbackHelper.tap();
                           Navigator.pop(context);
                         },
-                        child: const Text('Вернуться к обучению'),
+                        child: Text(appL10n.backToTraining),
                       ),
                     ),
                     const SizedBox(height: 100),
-                  ],
+                ],
+              ),
+            ),
+            // Градиент затухания: фон (непрозрачный под кнопками) → прозрачный.
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                child: Container(
+                  height: kFadeHeight,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        AppColors.background,
+                        AppColors.background,
+                        AppColors.background.withValues(alpha: 0.0),
+                      ],
+                      stops: const [
+                        0.0,
+                        (kBarTop + kBarHeight) / kFadeHeight,
+                        1.0,
+                      ],
+                    ),
+                  ),
                 ),
+              ),
+            ),
+            // Закреплённая панель: закрыть + поделиться.
+            Positioned(
+              top: kBarTop,
+              left: AppDimensions.screenPadding,
+              right: AppDimensions.screenPadding,
+              child: Row(
+                children: [
+                  AppChromeIconButton(
+                    icon: Icons.close_rounded,
+                    onTap: () {
+                      HapticFeedbackHelper.tap();
+                      Navigator.pop(context);
+                    },
+                  ),
+                  const Spacer(),
+                  // Провал по блочному правилу выглядит нелогично («всего две
+                  // ошибки — и не сдал»), поэтому объяснение под рукой. Но
+                  // текст длинный и на экране результата занимал бы полполотна,
+                  // поэтому он спрятан за иконкой: нужен один раз, тем, кто
+                  // не понял, почему не сдал.
+                  if (_failedByBlock) ...[
+                    AppChromeIconButton(
+                      icon: Icons.info_outline_rounded,
+                      onTap: () {
+                        HapticFeedbackHelper.tap();
+                        _showBlockRuleExplanation();
+                      },
+                    ),
+                    const SizedBox(width: AppDimensions.spacingM),
+                  ],
+                  AppChromeIconButton(
+                    icon: Icons.ios_share_rounded,
+                    backgroundColor: AppColors.accent,
+                    iconColor: AppColors.white,
+                    onTap: () {
+                      HapticFeedbackHelper.tap();
+                      _shareResult();
+                    },
+                  ),
+                ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Почему экзамен не сдан при двух ошибках — по кнопке-иконке, а не полотном
+  /// на экране результата.
+  Future<void> _showBlockRuleExplanation() {
+    return showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+        ),
+        icon: const Icon(
+          Icons.info_outline_rounded,
+          color: AppColors.red,
+          size: 28,
+        ),
+        title: Text(
+          appL10n.examFailed,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: AppColors.primaryText,
+          ),
+        ),
+        content: Text(
+          appL10n.examFailedByBlock(_rules.maxMistakesPerBlock),
+          style: const TextStyle(
+            fontSize: 14,
+            height: 1.45,
+            color: AppColors.primaryText,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(appL10n.close),
+          ),
+        ],
       ),
     );
   }
@@ -939,32 +1310,13 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                     ? AppColors.gold.withValues(alpha: 0.5)
                     : AppColors.gray;
 
-        return Padding(
-          padding: const EdgeInsets.only(right: 4),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _goToQuestion(index),
-              borderRadius: BorderRadius.circular(6),
-              child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: backgroundColor,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '${index + 1}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.white,
-                  ),
-                ),
-              ),
-            ),
-          ),
+        // Предстоящие (не текущие, не отвеченные, не доп.) — приглушённая цифра
+        // на серой плашке; на цветных плашках — белая. Правило в QuestionNumberChip.
+        return QuestionNumberChip(
+          number: index + 1,
+          backgroundColor: backgroundColor,
+          muted: !isCurrent && !answered && !isAdditional,
+          onTap: () => _goToQuestion(index),
         );
       },
     );

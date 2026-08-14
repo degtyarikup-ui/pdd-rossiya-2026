@@ -8,6 +8,10 @@ class Question {
   final List<String> topic;
   final int ticketNumber;
 
+  /// Вес вопроса в балльной модели экзамена (Сербия: 1/2/3).
+  /// В моделях «по ошибкам» (РФ/РБ) не используется, по умолчанию 1.
+  final int points;
+
   Question({
     required this.id,
     required this.question,
@@ -17,6 +21,7 @@ class Question {
     this.image,
     this.topic = const [],
     this.ticketNumber = 0,
+    this.points = 1,
   });
 
   factory Question.fromJson(Map<String, dynamic> json) {
@@ -38,7 +43,29 @@ class Question {
               .toList() ??
           [],
       ticketNumber: json['ticketNumber'] as int? ?? 0,
+      points: json['points'] as int? ?? 1,
     );
+  }
+
+  /// Словарь в том виде, в каком вопросы принимает [TrainingScreen].
+  ///
+  /// Экраны билетов/тем/ошибок собирают такой же словарь у себя вручную —
+  /// это исторический дубль. Новый код должен пользоваться этим методом,
+  /// чтобы набор полей не разъезжался.
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'question': question,
+      'answers': answers
+          .map((a) => {'text': a.text, 'correct': a.isCorrect})
+          .toList(),
+      'comment': comment ?? '',
+      'pddPoints': pddPoints,
+      'image': image,
+      'topic': topic,
+      'ticketNumber': ticketNumber,
+      'points': points,
+    };
   }
 
   int get correctAnswerIndex {

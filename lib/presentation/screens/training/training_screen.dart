@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -8,20 +9,30 @@ import 'package:pdd_app/core/constants/question_swipe_motion.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/utils/question_number_strip_scroll.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/presentation/widgets/report_question_dialog.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/question_image.dart';
+import 'package:pdd_app/presentation/widgets/question_number_chip.dart';
+import 'package:pdd_app/presentation/widgets/pdd_comment_text.dart';
+import 'package:pdd_app/presentation/screens/training/training_result_screen.dart';
 
 class TrainingScreen extends ConsumerStatefulWidget {
   final List<Map<String, dynamic>> questions;
   final String title;
   final bool isExam;
 
+  /// С какого вопроса открыть. Используется при возврате к незаконченной
+  /// тренировке с главного экрана.
+  final int startIndex;
+
   const TrainingScreen({
     super.key,
     required this.questions,
     required this.title,
     this.isExam = false,
+    this.startIndex = 0,
   });
 
   @override
@@ -46,11 +57,35 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   void initState() {
     super.initState();
     _savedChoices = List<int?>.filled(widget.questions.length, null);
-    _pageController = PageController();
+    _currentIndex = widget.startIndex.clamp(0, widget.questions.length - 1);
+    _pageController = PageController(initialPage: _currentIndex);
     _checkFavorite();
+    _rememberPosition();
     scheduleScrollQuestionStripToCurrent(
       controller: _questionStripController,
       currentIndex: _currentIndex,
+    );
+  }
+
+  /// Запоминает, на каком вопросе человек сейчас — чтобы главный экран мог
+  /// предложить «Продолжить». Экзамен не запоминаем: там своя логика с
+  /// таймером, и вернуться в середину экзамена нельзя.
+  void _rememberPosition() {
+    if (widget.isExam) return;
+    final ids = widget.questions
+        .map((q) => q['id'] as String? ?? '')
+        .where((id) => id.isNotEmpty)
+        .toList();
+    if (ids.isEmpty) return;
+    // Запуск новой тренировки затирает прошлую сессию сам собой — отдельная
+    // кнопка «сбросить старую» не нужна.
+    unawaited(
+      ref.read(progressDataSourceProvider).saveUnfinishedSession(
+            title: widget.title,
+            questionIds: ids,
+            index: _currentIndex,
+            category: ref.read(appSettingsProvider).ticketCategory,
+          ),
     );
   }
 
@@ -65,6 +100,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
       _showHint = false;
     });
     _checkFavorite();
+    _rememberPosition();
     scheduleScrollQuestionStripToCurrent(
       controller: _questionStripController,
       currentIndex: _currentIndex,
@@ -132,11 +168,22 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     if (isCorrect) {
       setState(() => _correctIndices.add(_currentIndex));
       HapticFeedbackHelper.success();
+      _clearSessionIfComplete();
       return;
     }
 
     setState(() => _wrongIndices.add(_currentIndex));
     HapticFeedbackHelper.error();
+    _clearSessionIfComplete();
+  }
+
+  /// Когда отвечены все вопросы, тренировка больше не «незаконченная» —
+  /// убираем карточку «Продолжить» с главной, чтобы она не звала обратно
+  /// в уже пройденный набор.
+  void _clearSessionIfComplete() {
+    if (widget.isExam) return;
+    if (_savedChoices.any((c) => c == null)) return;
+    unawaited(ref.read(progressDataSourceProvider).clearUnfinishedSession());
   }
 
   void _advanceQuestion() {
@@ -161,6 +208,42 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     );
   }
 
+  /// Завершение набора: показываем итог.
+  ///
+  /// Экран результата — только для набора из нескольких вопросов. Разбор
+  /// одной ошибки из «Работы над ошибками» — это один вопрос, и подводить
+  /// по нему итог было бы издевательством.
+  void _finishSession() {
+    _voiceScheduleGen++;
+    // Озвучку останавливаем, но НЕ ждём: это обращение к плагину, и если он
+    // не ответит, человек останется на последнем вопросе с нажатой кнопкой.
+    // Прекращение речи — вспомогательное действие, переход от него зависеть
+    // не должен.
+    unawaited(TtsService.instance.stop());
+
+    if (widget.questions.length < 2) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    final wrongQuestions = [
+      for (final i in _wrongIndices) widget.questions[i],
+    ];
+
+    // pushReplacement: возвращаться из итога обратно в пройденные вопросы
+    // незачем — «назад» должно вести к списку билетов или тем.
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => TrainingResultScreen(
+          title: widget.title,
+          total: widget.questions.length,
+          correct: _correctIndices.length,
+          wrongQuestions: wrongQuestions,
+        ),
+      ),
+    );
+  }
+
   void _nextQuestion() {
     HapticFeedbackHelper.tap();
     _advanceQuestion();
@@ -178,6 +261,20 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     if (mounted) {
       setState(() => _isFavorite = !_isFavorite);
     }
+  }
+
+  /// Открывает форму жалобы на вопрос. Данные вопроса подставляются сами.
+  Future<void> _reportQuestion(Map<String, dynamic> question) async {
+    HapticFeedbackHelper.tap();
+    final topics = question['topic'];
+    await showReportQuestionDialog(
+      context: context,
+      questionId: question['id'] as String? ?? '',
+      questionText: question['question'] as String?,
+      ticketNumber: question['ticketNumber'] as int?,
+      topic: topics is List && topics.isNotEmpty ? '${topics.first}' : null,
+      mode: widget.title,
+    );
   }
 
   void _toggleHint() {
@@ -254,7 +351,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
         },
         child: Scaffold(
           appBar: AppBar(title: Text(widget.title)),
-          body: const Center(child: Text('Нет вопросов')),
+          body: Center(child: Text(appL10n.noQuestions)),
         ),
       );
     }
@@ -354,21 +451,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
               borderRadius: BorderRadius.circular(
                 AppDimensions.smallRadius,
               ),
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 200,
-                  color: AppColors.gray,
-                  child: const Center(
-                    child: Icon(
-                      Icons.image,
-                      size: 48,
-                      color: AppColors.secondaryText,
-                    ),
-                  ),
-                ),
-              ),
+              child: QuestionImage(assetPath: imagePath),
             ),
           ],
           const SizedBox(height: AppDimensions.spacingL),
@@ -401,7 +484,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           if (showHintBlock) ...[
             const SizedBox(height: AppDimensions.spacingL),
             _buildCommentCard(
-              title: 'Подсказка',
+              title: appL10n.hint,
               icon: Icons.lightbulb_outline,
               accentColor: AppColors.gold,
               comment: comment,
@@ -411,7 +494,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           if (showCommentAfterAnswer) ...[
             const SizedBox(height: AppDimensions.spacingL),
             _buildCommentCard(
-              title: 'Комментарий',
+              title: appL10n.comment,
               icon: Icons.lightbulb,
               accentColor: AppColors.gold,
               comment: comment,
@@ -453,7 +536,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                   ),
                 ),
                 Text(
-                  'Вопрос ${_currentIndex + 1} из ${widget.questions.length}',
+                  appL10n.questionOfTotal(
+                    _currentIndex + 1,
+                    widget.questions.length,
+                  ),
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.secondaryText,
@@ -490,32 +576,13 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
               ? AppColors.red
               : AppColors.gray;
 
-          return Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _goToQuestion(index),
-                borderRadius: BorderRadius.circular(6),
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: backgroundColor,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '${index + 1}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          // Предстоящие (не текущие, не верные, не ошибочные) — приглушённая
+          // цифра на серой плашке, единообразно с экзаменом.
+          return QuestionNumberChip(
+            number: index + 1,
+            backgroundColor: backgroundColor,
+            muted: !isCurrent && !isCorrect && !isWrong,
+            onTap: () => _goToQuestion(index),
           );
         },
     );
@@ -674,19 +741,12 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
             ],
           ),
           const SizedBox(height: AppDimensions.spacingS),
-          Text(
-            comment,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.primaryText,
-              height: 1.45,
-            ),
-          ),
+          PddCommentText(comment),
           if (pddPoints.isNotEmpty) ...[
             const SizedBox(height: AppDimensions.spacingM),
-            const Text(
-              'Пункты ПДД',
-              style: TextStyle(
+            Text(
+              appL10n.pddPoints,
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: AppColors.secondaryText,
@@ -745,10 +805,12 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                   onPressed: isLast
                       ? () {
                           HapticFeedbackHelper.tap();
-                          _stopVoiceAndPop();
+                          _finishSession();
                         }
                       : _nextQuestion,
-                  child: Text(isLast ? 'Завершить' : 'Следующий вопрос'),
+                  child: Text(
+                    isLast ? appL10n.finishButton : appL10n.nextQuestion,
+                  ),
                 ),
               )
             : Column(
@@ -784,9 +846,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                             color: AppColors.gold,
                           ),
                           label: Text(
-                            _showHint
-                                ? 'Скрыть подсказку'
-                                : 'Показать подсказку',
+                            _showHint ? appL10n.hideHint : appL10n.showHint,
                             style: const TextStyle(color: AppColors.gold),
                           ),
                         ),
@@ -803,7 +863,20 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                                 : AppColors.secondaryText,
                           ),
                         ),
-                        tooltip: 'Избранное',
+                        tooltip: appL10n.favorites,
+                      ),
+                      // Жалоба на вопрос — намеренно скромная иконка рядом с
+                      // избранным: она нужна редко и не должна конкурировать
+                      // с ответом на вопрос. В экзамене её нет — там не место
+                      // отвлекаться на переписку.
+                      IconButton(
+                        onPressed: () =>
+                            _reportQuestion(widget.questions[_currentIndex]),
+                        icon: const Icon(
+                          Icons.flag_outlined,
+                          color: AppColors.secondaryText,
+                        ),
+                        tooltip: appL10n.reportQuestionTooltip,
                       ),
                     ],
                   ),
@@ -814,7 +887,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                       height: 56,
                       child: ElevatedButton(
                         onPressed: canConfirm ? _submitSelectedAnswer : null,
-                        child: const Text('Подтвердить ответ'),
+                        child: Text(appL10n.confirmAnswerButton),
                       ),
                     ),
                   ],

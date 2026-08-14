@@ -12,76 +12,6 @@ class MarkupEntry {
   final String description;
 }
 
-const List<MarkupEntry> horizontalMarkupEntries = [
-  MarkupEntry(
-    title: 'Сплошные линии',
-    description:
-        'Разделяют потоки противоположных направлений, обозначают край проезжей части и ограничивают пересечение.',
-  ),
-  MarkupEntry(
-    title: 'Прерывистые линии',
-    description:
-        'Разрешают перестроение и помогают ориентироваться по полосам движения.',
-  ),
-  MarkupEntry(
-    title: 'Желтая разметка',
-    description: 'Используется для зон, где запрещены остановка или стоянка.',
-  ),
-  MarkupEntry(
-    title: 'Комбинированные линии',
-    description:
-        'Правила пересечения зависят от стороны, с которой водитель подъезжает к линии.',
-  ),
-  MarkupEntry(
-    title: 'Пешеходные переходы',
-    description:
-        'Выделяют место перехода и усиливают внимание водителя при приближении к пешеходам.',
-  ),
-  MarkupEntry(
-    title: 'Стоп-линии',
-    description:
-        'Показывают точку обязательной остановки перед перекрестком, светофором или знаком STOP.',
-  ),
-  MarkupEntry(
-    title: 'Направления по полосам',
-    description:
-        'Стрелы и надписи подсказывают, в каком направлении разрешено движение с каждой полосы.',
-  ),
-  MarkupEntry(
-    title: 'Специальные полосы и остановки',
-    description:
-        'Обозначают полосы для маршрутного транспорта, велосипедистов и места остановки общественного транспорта.',
-  ),
-];
-
-const List<MarkupEntry> verticalMarkupEntries = [
-  MarkupEntry(
-    title: 'Опоры и выступающие элементы',
-    description:
-        'Помогают заранее заметить опоры мостов, путепроводов и другие массивные препятствия у дороги.',
-  ),
-  MarkupEntry(
-    title: 'Нижний габарит сооружений',
-    description:
-        'Подчеркивают нижний край тоннелей, мостов и путепроводов, где важно контролировать высоту транспорта.',
-  ),
-  MarkupEntry(
-    title: 'Ограждения на опасных участках',
-    description:
-        'Используются на закруглениях, крутых спусках и в местах, где особенно важна визуальная ориентация.',
-  ),
-  MarkupEntry(
-    title: 'Ограждения на обычных участках',
-    description:
-        'Выделяют боковые поверхности дорожных ограждений там, где требуется дополнительная заметность.',
-  ),
-  MarkupEntry(
-    title: 'Бордюры и направляющие элементы',
-    description:
-        'Подсказывают контур островков безопасности, бордюров и направляющих сооружений в темное время суток.',
-  ),
-];
-
 class MarkupCategoryScreen extends StatelessWidget {
   const MarkupCategoryScreen({
     super.key,
@@ -113,14 +43,9 @@ class MarkupCategoryScreen extends StatelessWidget {
                     },
                   ),
                   const SizedBox(width: AppDimensions.spacingM),
-                  Container(
-                    width: 40,
-                    height: 40,
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppColors.lightAccent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                  SizedBox(
+                    width: 34,
+                    height: 34,
                     child: SvgPicture.asset(iconAssetPath),
                   ),
                   const SizedBox(width: AppDimensions.spacingM),

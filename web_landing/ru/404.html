@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Страница не найдена — ПДД Россия 2026</title>
+  <meta name="description" content="Такой страницы нет. Вернитесь на главную или откройте веб-версию приложения ПДД Россия 2026.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
+  <style>.hero-badges { justify-content: center; }</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="logo" href="/">
+      <img src="/assets/icon-192.png" alt="ПДД Россия 2026 — логотип" width="32" height="32" loading="eager">
+      ПДД Россия 2026
+    </a>
+    <nav class="site-nav">
+      <a href="/#features">Возможности</a>
+      <a href="/proverit-znaniya/">Проверить себя</a>
+      <a href="/blog/">Блог</a>
+      <a href="/#exam">Экзамен</a>
+      <a class="nav-cta" href="https://app.pdd-drive.ru/">Веб-версия приложения</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="section">
+    <div class="container">
+      <h1 class="section-title">404 — такой страницы нет</h1>
+      <p class="section-lead">Возможно, ссылка устарела или в адресе опечатка.</p>
+      <div class="hero-badges">
+        <a class="btn btn-primary" href="/">На главную</a>
+        <a class="btn btn-primary" href="https://app.pdd-drive.ru/">Веб-версия приложения</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <nav>
+      <a href="/blog/">Блог</a>
+      <a href="/about/">О проекте</a>
+      <a href="/slovar-pdd/">Словарь терминов</a>
+      <a href="/privacy.html">Политика конфиденциальности</a>
+      <a href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">Google Play</a>
+      <a href="https://apps.apple.com/ru/app/id6792369533" rel="noopener">App Store</a>
+      <a href="https://app.pdd-drive.ru/">Веб-версия</a>
+      <a href="mailto:degtyarik.up@gmail.com">Поддержка</a>
+    </nav>
+    <div class="copy">© 2026 ПДД Россия 2026 · <a href="https://pdd-drive.online" rel="noopener">ПДД Беларусь</a> · <a href="https://rs.pdd-drive.online" rel="noopener">Auto testovi Srbija</a></div>
+  </div>
+</footer>
+
+<script>
+// Пока поддомен app.pdd-drive.ru не ожил (DNS), ведём на временную копию /app/.
+(function () {
+  var degrade = function () {
+    document.querySelectorAll('a[href^="https://app.pdd-drive.ru"]').forEach(function (a) { a.href = '/app/'; });
+  };
+  var ctl = new AbortController();
+  var t = setTimeout(function () { ctl.abort(); }, 2500);
+  fetch('https://app.pdd-drive.ru/flutter.js', {mode: 'no-cors', signal: ctl.signal})
+    .then(function () { clearTimeout(t); }, function () { clearTimeout(t); degrade(); });
+})();
+</script>
+</body>
+</html>

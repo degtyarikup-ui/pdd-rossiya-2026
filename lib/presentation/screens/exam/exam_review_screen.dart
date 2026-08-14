@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -6,6 +7,8 @@ import 'package:pdd_app/core/constants/question_swipe_motion.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/utils/question_number_strip_scroll.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/question_image.dart';
+import 'package:pdd_app/presentation/widgets/pdd_comment_text.dart';
 
 /// Разбор после экзамена: все вопросы по порядку, верность ответов и комментарий.
 class ExamReviewScreen extends ConsumerStatefulWidget {
@@ -79,12 +82,12 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
             icon: Icons.close_rounded,
             onTap: () => Navigator.pop(context),
           ),
-          title: const Text('Мои ошибки'),
+          title: Text(appL10n.myMistakes),
         ),
-        body: const Center(
+        body: Center(
           child: Text(
-            'Нет вопросов для разбора',
-            style: TextStyle(color: AppColors.secondaryText),
+            appL10n.noQuestionsToReview,
+            style: const TextStyle(color: AppColors.secondaryText),
           ),
         ),
       );
@@ -115,16 +118,19 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Разбор экзамена',
-                          style: TextStyle(
+                        Text(
+                          appL10n.examReview,
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: AppColors.primaryText,
                           ),
                         ),
                         Text(
-                          'Вопрос ${_currentPos + 1} из ${_order.length}',
+                          appL10n.questionOfTotal(
+                            _currentPos + 1,
+                            _order.length,
+                          ),
                           key: ValueKey<int>(_currentPos),
                           style: const TextStyle(
                             fontSize: 12,
@@ -232,7 +238,9 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                       );
                     },
               child: Text(
-                _currentPos >= _order.length - 1 ? 'Закрыть' : 'Следующий',
+                _currentPos >= _order.length - 1
+                    ? appL10n.close
+                    : appL10n.next,
               ),
             ),
           ),
@@ -271,9 +279,9 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                   AppDimensions.smallRadius,
                 ),
               ),
-              child: const Text(
-                'Вы не ответили на этот вопрос',
-                style: TextStyle(
+              child: Text(
+                appL10n.notAnsweredThisQuestion,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppColors.red,
@@ -285,21 +293,7 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
               borderRadius: BorderRadius.circular(
                 AppDimensions.smallRadius,
               ),
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 200,
-                  color: AppColors.gray,
-                  child: const Center(
-                    child: Icon(
-                      Icons.image,
-                      size: 48,
-                      color: AppColors.secondaryText,
-                    ),
-                  ),
-                ),
-              ),
+              child: QuestionImage(assetPath: imagePath),
             ),
             const SizedBox(height: AppDimensions.spacingL),
           ],
@@ -397,9 +391,9 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
             children: [
               const Icon(Icons.lightbulb, color: AppColors.gold, size: 20),
               const SizedBox(width: 8),
-              const Text(
-                'Комментарий',
-                style: TextStyle(
+              Text(
+                appL10n.comment,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppColors.primaryText,
@@ -408,19 +402,12 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
             ],
           ),
           const SizedBox(height: AppDimensions.spacingS),
-          Text(
-            comment,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.primaryText,
-              height: 1.45,
-            ),
-          ),
+          PddCommentText(comment),
           if (pddPoints.isNotEmpty) ...[
             const SizedBox(height: AppDimensions.spacingM),
-            const Text(
-              'Пункты ПДД',
-              style: TextStyle(
+            Text(
+              appL10n.pddPoints,
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: AppColors.secondaryText,

@@ -1,4 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Локальные напоминания о серии (flutter_local_notifications). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- Уведомление о новой установке (InstallReporter). ОБЯЗАТЕЛЬНО здесь:
+         Flutter кладёт INTERNET только в debug/profile-манифесты, поэтому в
+         release-сборке (Google Play/RuStore) сети без этой строки НЕТ —
+         запрос молча падает, и пинги об установках не приходят. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"
@@ -30,6 +38,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Статическая ссылка на иконку уведомления: flutter_local_notifications
+             резолвит её по имени из нативного кода (getIdentifier), поэтому AGP
+             (optimizeReleaseResources) считает ресурс неиспользуемым и вырезает.
+             Эта meta-data даёт компайл-тайм ссылку — ресурс остаётся в APK. -->
+        <meta-data
+            android:name="com.dexterous.flutterlocalnotifications.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

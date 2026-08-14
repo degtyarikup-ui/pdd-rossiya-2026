@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 
 /// iOS-style pill search field (same look on Signs / PDD main screens).
@@ -7,12 +8,12 @@ class AppPillSearchField extends StatefulWidget {
     super.key,
     required this.controller,
     required this.onChanged,
-    this.hintText = 'Поиск',
+    this.hintText,
   });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
-  final String hintText;
+  final String? hintText;
 
   @override
   State<AppPillSearchField> createState() => _AppPillSearchFieldState();
@@ -64,7 +65,7 @@ class _AppPillSearchFieldState extends State<AppPillSearchField> {
       cursorColor: AppColors.accent,
       decoration: InputDecoration(
         isDense: true,
-        hintText: widget.hintText,
+        hintText: widget.hintText ?? appL10n.search,
         hintStyle: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w400,

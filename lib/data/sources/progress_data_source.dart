@@ -30,6 +30,9 @@ class ProgressDataSource {
   static const String _keyStreakActiveDays = 'streak_active_days';
   static const String _keyStreakCelebrationPending = 'streak_celebration_pending';
 
+  /// Незаконченная тренировка: куда вернуться одним нажатием с главной.
+  static const String _keyUnfinishedSession = 'unfinished_session';
+
   /// Максимум хранимых дней активности в локальном кэше.
   static const int _maxStoredActiveDays = 30;
 
@@ -257,6 +260,9 @@ class ProgressDataSource {
     await _prefs.remove(_legacyTicketProgress);
     await _prefs.remove(_legacyFavorites);
     await _prefs.remove(_legacyExamResults);
+    // Незаконченная тренировка тоже часть прогресса: после сброса
+    // возвращать человека в старую сессию было бы странно.
+    await _prefs.remove(_keyUnfinishedSession);
     // Стрик — часть прогресса, чистим вместе со всем.
     await _prefs.remove(_keyStreakCurrent);
     await _prefs.remove(_keyStreakLongest);
@@ -381,6 +387,89 @@ class ProgressDataSource {
 
   /// Проверить и сбросить флаг «нужно показать поздравление».
   /// Возвращает `true`, если флаг был выставлен (и теперь снят).
+  // --- Незаконченная тренировка ------------------------------------------
+  // Хранятся не сами вопросы, а их id: список восстанавливается из базы при
+  // возврате. Так запись остаётся крошечной, а если вопрос из базы исчез
+  // (пересобрали контент) — он просто выпадет из восстановленного набора,
+  // вместо того чтобы тянуть за собой устаревшую копию текста.
+
+  /// Запоминает, где человек остановился. Вызывается по ходу тренировки,
+  /// поэтому пишем без await-цепочек на каждый ответ.
+  Future<void> saveUnfinishedSession({
+    required String title,
+    required List<String> questionIds,
+    required int index,
+    required TicketCategory category,
+  }) async {
+    await _prefs.setString(
+      _keyUnfinishedSession,
+      jsonEncode({
+        'title': title,
+        'questionIds': questionIds,
+        'index': index,
+        'category': category.name,
+        'savedAt': DateTime.now().millisecondsSinceEpoch,
+      }),
+    );
+  }
+
+  /// Запоминает прерванный экзамен целиком: кроме набора вопросов нужны
+  /// ответы, остаток времени и состояние доп. фазы — без них возврат
+  /// означал бы новый экзамен, а не продолжение прежнего.
+  ///
+  /// Остаток времени сохраняется намеренно: продолжить с полным таймером
+  /// значило бы дать способ обнулять время выходом на главный экран.
+  Future<void> saveUnfinishedExam({
+    required List<String> questionIds,
+    required List<int?> answers,
+    required int index,
+    required int remainingSeconds,
+    required int totalSeconds,
+    required bool additionalPhase,
+    required int additionalQuestionsCount,
+    required int initialWrongCount,
+    required TicketCategory category,
+  }) async {
+    await _prefs.setString(
+      _keyUnfinishedSession,
+      jsonEncode({
+        'kind': 'exam',
+        'questionIds': questionIds,
+        'answers': answers,
+        'index': index,
+        'remainingSeconds': remainingSeconds,
+        'totalSeconds': totalSeconds,
+        'additionalPhase': additionalPhase,
+        'additionalQuestionsCount': additionalQuestionsCount,
+        'initialWrongCount': initialWrongCount,
+        'category': category.name,
+        'savedAt': DateTime.now().millisecondsSinceEpoch,
+      }),
+    );
+  }
+
+  /// Возвращает сохранённую сессию или null, если её нет либо она относится
+  /// к другой категории билетов (человек переключил A/B ↔ C/D — набор
+  /// вопросов там другой, возвращать в него бессмысленно).
+  Map<String, dynamic>? loadUnfinishedSession(TicketCategory category) {
+    final raw = _prefs.getString(_keyUnfinishedSession);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      if (map['category'] != category.name) return null;
+      final ids = (map['questionIds'] as List?)?.cast<String>() ?? const [];
+      if (ids.isEmpty) return null;
+      return map;
+    } catch (_) {
+      // Битая запись — молча забываем, это всего лишь удобство.
+      return null;
+    }
+  }
+
+  Future<void> clearUnfinishedSession() async {
+    await _prefs.remove(_keyUnfinishedSession);
+  }
+
   Future<bool> consumePendingStreakCelebration() async {
     final pending = _prefs.getBool(_keyStreakCelebrationPending) ?? false;
     if (pending) {

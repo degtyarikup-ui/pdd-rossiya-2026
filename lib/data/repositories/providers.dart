@@ -52,19 +52,11 @@ class AppSettingsController extends StateNotifier<AppSettings> {
     await _dataSource.saveAppSettings(state);
   }
 
-  Future<void> setVehicleOnboardingCompleted(bool value) async {
-    state = state.copyWith(vehicleOnboardingCompleted: value);
-    await _dataSource.saveAppSettings(state);
-  }
-
-  /// Онбординг: категория билетов + больше не показывать окно.
-  Future<void> finishVehicleOnboarding(TicketCategory category) async {
-    state = state.copyWith(
-      ticketCategory: category,
-      vehicleOnboardingCompleted: true,
-    );
-    await _dataSource.saveAppSettings(state);
-  }
+  // Методы онбординга категории удалены вместе с модальным окном «На чём
+  // планируешь ездить?»: категория теперь по умолчанию A/B и меняется в
+  // настройках. Само поле vehicleOnboardingCompleted в AppSettings оставлено —
+  // оно уже записано в SharedPreferences у существующих пользователей, и
+  // выкидывать его из схемы значило бы ломать разбор их настроек.
 }
 
 final appSettingsProvider =
@@ -76,6 +68,69 @@ final ttsServiceProvider = Provider<TtsService>((ref) {
   final service = TtsService.instance;
   ref.onDispose(service.dispose);
   return service;
+});
+
+/// Незаконченная тренировка для карточки «Продолжить» на главной.
+///
+/// Возвращает null, если сессии нет, она из другой категории или её вопросы
+/// уже не находятся в базе (контент пересобрали). Восстанавливаем именно те
+/// вопросы и в том же порядке, что были у человека.
+final unfinishedSessionProvider =
+    FutureProvider<Map<String, dynamic>?>((ref) async {
+  ref.watch(appDataRefreshProvider);
+  final category =
+      ref.watch(appSettingsProvider.select((s) => s.ticketCategory));
+  final progress = ref.watch(progressDataSourceProvider);
+  final saved = progress.loadUnfinishedSession(category);
+  if (saved == null) return null;
+
+  final ids = (saved['questionIds'] as List).cast<String>();
+  final all = await ref.watch(questionsDataSourceProvider).loadTickets(category);
+  final byId = {for (final q in all) q.id: q};
+
+  final questions = <Map<String, dynamic>>[];
+  for (final id in ids) {
+    final q = byId[id];
+    if (q != null) questions.add(q.toMap());
+  }
+  // Половина вопросов потерялась — набор уже не тот, что был; лучше не
+  // предлагать возврат, чем вернуть человека в поломанную сессию.
+  if (questions.length < ids.length / 2) return null;
+
+  final index = (saved['index'] as int? ?? 0).clamp(0, questions.length - 1);
+
+  // Прерванный экзамен возвращается со всем своим состоянием: ответами,
+  // остатком времени и доп. фазой. Если хоть один вопрос выпал из базы,
+  // ответы перестают соответствовать позициям — тогда возвращать нельзя.
+  if (saved['kind'] == 'exam') {
+    if (questions.length != ids.length) return null;
+    final answers = (saved['answers'] as List?)
+            ?.map((e) => e as int?)
+            .toList() ??
+        List<int?>.filled(questions.length, null);
+    if (answers.length != questions.length) return null;
+    return {
+      'kind': 'exam',
+      'questions': questions,
+      'index': index,
+      'total': questions.length,
+      'answers': answers,
+      'remainingSeconds': saved['remainingSeconds'] as int? ?? 0,
+      'totalSeconds': saved['totalSeconds'] as int? ?? 0,
+      'additionalPhase': saved['additionalPhase'] as bool? ?? false,
+      'additionalQuestionsCount':
+          saved['additionalQuestionsCount'] as int? ?? 0,
+      'initialWrongCount': saved['initialWrongCount'] as int? ?? 0,
+    };
+  }
+
+  return {
+    'kind': 'training',
+    'title': saved['title'] as String? ?? '',
+    'questions': questions,
+    'index': index,
+    'total': questions.length,
+  };
 });
 
 final ticketsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
@@ -107,6 +162,12 @@ final topicsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
 final signsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dataSource = ref.watch(questionsDataSourceProvider);
   return await dataSource.loadSigns();
+});
+
+final markupProvider =
+    FutureProvider<Map<String, List<Map<String, String>>>>((ref) async {
+  final dataSource = ref.watch(questionsDataSourceProvider);
+  return await dataSource.loadMarkup();
 });
 
 final statsProvider = FutureProvider<Map<String, int>>((ref) async {

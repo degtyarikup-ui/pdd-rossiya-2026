@@ -5,7 +5,10 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/navigation/route_observer.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
+import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/review_prompt_service.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
 import 'package:pdd_app/presentation/screens/favorites/favorites_screen.dart';
 import 'package:pdd_app/presentation/screens/mistakes/mistakes_screen.dart';
@@ -14,9 +17,10 @@ import 'package:pdd_app/presentation/screens/settings/settings_screen.dart';
 import 'package:pdd_app/presentation/screens/signs/signs_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/screens/topics/topics_screen.dart';
+import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/streak_celebration_dialog.dart';
-import 'package:pdd_app/presentation/widgets/streak_week_card.dart';
-import 'package:pdd_app/presentation/widgets/vehicle_onboarding_dialog.dart';
+import 'package:pdd_app/presentation/widgets/continue_session_card.dart';
+import 'package:pdd_app/presentation/widgets/progress_panel_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -35,13 +39,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     SettingsScreen(),
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      showVehicleOnboardingIfNeeded(context, ref);
-    });
-  }
+  // Раньше здесь на первом запуске открывалось модальное окно «На чём
+  // планируешь ездить?». Убрано: первое, что видел человек, — вопрос о
+  // категории до того, как приложение показало хоть какую-то пользу. По
+  // умолчанию берётся A/B (подавляющее большинство), а кому нужны C/D —
+  // переключат в настройках.
 
   @override
   Widget build(BuildContext context) {
@@ -57,26 +59,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               HapticFeedbackHelper.select();
               setState(() => _currentIndex = index);
             },
-            destinations: const [
+            destinations: [
               NavigationDestination(
-                icon: Icon(Icons.menu_book_outlined),
-                selectedIcon: Icon(Icons.menu_book),
-                label: 'Обучение',
+                icon: const Icon(Icons.menu_book_outlined),
+                selectedIcon: const Icon(Icons.menu_book),
+                label: appL10n.training,
               ),
               NavigationDestination(
-                icon: Icon(Icons.gavel_outlined),
-                selectedIcon: Icon(Icons.gavel),
-                label: 'ПДД',
+                icon: const Icon(Icons.gavel_outlined),
+                selectedIcon: const Icon(Icons.gavel),
+                label: appL10n.pdd,
               ),
               NavigationDestination(
-                icon: Icon(Icons.signpost_outlined),
-                selectedIcon: Icon(Icons.signpost),
-                label: 'Знаки',
+                icon: const Icon(Icons.signpost_outlined),
+                selectedIcon: const Icon(Icons.signpost),
+                label: appL10n.signs,
               ),
               NavigationDestination(
-                icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings),
-                label: 'Настройки',
+                icon: const Icon(Icons.settings_outlined),
+                selectedIcon: const Icon(Icons.settings),
+                label: appL10n.settings,
               ),
             ],
           ),
@@ -86,6 +88,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
+/// Карточка «Продолжить» — возврат к незаконченной тренировке одним нажатием.
+///
+/// Раньше вернуться к недорешанному билету стоило четырёх шагов: главная →
+/// Билеты → прокрутка списка → свайпы до нужного вопроса. Основной сценарий
+/// приложения — короткие сессии в транспорте, и каждый лишний шаг на возврате
+/// стоит самого возврата.
 class _HomeTab extends ConsumerStatefulWidget {
   const _HomeTab();
 
@@ -145,12 +153,17 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
     final streak = await ref.read(streakProvider.future);
     if (!mounted || streak.current == 0) return;
     await showStreakCelebrationDialog(context: context, streak: streak);
+    // Сразу после поздравления — момент, когда пользователь доволен. Сервис
+    // сам решит, показывать ли (серия ≥ 3 дней и просим только один раз).
+    await ReviewPromptService.maybeRequest(currentStreak: streak.current);
   }
 
   @override
   Widget build(BuildContext context) {
     final statsAsync = ref.watch(statsProvider);
     final streakAsync = ref.watch(streakProvider);
+    final unfinishedSession = ref.watch(unfinishedSessionProvider);
+    final hasContinueCard = unfinishedSession.valueOrNull != null;
 
     return Scaffold(
       backgroundColor: AppColors.homeScreenBackground,
@@ -161,79 +174,132 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
             ref.invalidate(streakProvider);
             await ref.read(statsProvider.future);
           },
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AppDimensions.screenPadding,
-              16,
-              AppDimensions.screenPadding,
-              24,
-            ),
-            children: [
-              streakAsync.when(
-                data: (streak) => StreakWeekCard(streak: streak),
-                loading: () => const SizedBox.shrink(),
-                error: (_, _) => const SizedBox.shrink(),
-              ),
-              const SizedBox(height: AppDimensions.spacingL),
-              statsAsync.when(
-                data: (stats) => _buildStatisticsCard(
-                  context,
-                  ref,
-                  stats,
+          // Воздух между блоками зависит от высоты экрана: на высоком даём
+          // разделам разойтись, на низком схлопываем в ноль — там каждый
+          // пиксель нужен под содержимое.
+          //
+          // Считаем явно, а не через Spacer: Spacer требует ограниченной
+          // высоты, а IntrinsicHeight, который её даёт, учитывает натуральный
+          // размер распорок — и на невысоком экране они не схлопывались,
+          // добавляя мёртвое место, которое приходилось пролистывать.
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Высота содержимого без распорок: панель + карточка экзамена +
+              // два ряда плиток + постоянные отступы и поля. Оценка, а не
+              // точный расчёт — ошибка в пару десятков пикселей даёт лишь
+              // чуть больший отступ снизу.
+              const contentHeight = 648.0;
+              // Карточка «Продолжить» появляется и исчезает, и её высоту надо
+              // вычесть — иначе распорки остаются прежними, содержимое
+              // перестаёт помещаться и появляется паразитный скролл.
+              const continueCardHeight = 92.0;
+              final slack = constraints.maxHeight -
+                  contentHeight -
+                  (hasContinueCard ? continueCardHeight : 0);
+
+              final sectionGap = (slack * 0.6).clamp(0.0, 56.0);
+              // Внутри группы действий отступ меньше: экзамен и плитки должны
+              // читаться вместе, а не как два разных раздела.
+              final groupGap = (slack * 0.27).clamp(0.0, 25.0);
+
+              return SingleChildScrollView(
+                // Иначе «потянуть для обновления» перестаёт работать, когда
+                // содержимое умещается на экран целиком.
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(
+                  AppDimensions.screenPadding,
+                  16,
+                  AppDimensions.screenPadding,
+                  24,
                 ),
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 48),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-                error: (error, _) => _buildStatisticsCard(context, ref, const {
-                  'correctAnswers': 0,
-                  'answeredQuestions': 0,
-                  'passedTickets': 0,
-                  'wrongQuestions': 0,
-                  'totalQuestions': 0,
-                  'totalTickets': 0,
-                }),
-              ),
-              const SizedBox(height: AppDimensions.spacingL),
-              _buildExamHero(context, ref),
-              const SizedBox(height: AppDimensions.spacingL),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildModeCard(
-                      context: context,
-                      iconAsset: 'assets/images/home_icon_topics.png',
-                      label: 'Темы',
-                      onTap: () {
-                        HapticFeedbackHelper.tap();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TopicsScreen(),
-                          ),
-                        );
-                      },
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                    // Готовность, четыре числа и серия — одной карточкой.
+                    // Серия ждёт статистику, а не показывается отдельно: две
+                    // карточки одинакового веса не давали экрану иерархии.
+                    statsAsync.when(
+                      data: (stats) => ProgressPanelCard(
+                        stats: stats,
+                        streak: streakAsync.valueOrNull,
+                      ),
+                      loading: () => const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 48),
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                      error: (error, _) => ProgressPanelCard(
+                        stats: const {
+                          'correctAnswers': 0,
+                          'answeredQuestions': 0,
+                          'passedTickets': 0,
+                          'wrongQuestions': 0,
+                          'totalQuestions': 0,
+                          'totalTickets': 0,
+                        },
+                        streak: streakAsync.valueOrNull,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: AppDimensions.spacingM),
-                  Expanded(
-                    child: _buildModeCard(
-                      context: context,
-                      iconAsset: 'assets/images/home_icon_tickets.png',
-                      label: 'Билеты',
-                      onTap: () {
-                        HapticFeedbackHelper.tap();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TicketsScreen(),
+                    // Граница между сводкой и действиями.
+                    //
+                    // Анимированная: когда карточку «Продолжить» убирают, она
+                    // схлопывается плавно, а отступы пересчитываются мгновенно
+                    // — и карточка экзамена, доехав вверх, дёргалась вниз.
+                    // Обе анимации теперь одной длительности.
+                    _AnimatedGap(height: sectionGap),
+                    const SizedBox(height: AppDimensions.spacingL),
+                    // Возврат к незаконченной тренировке или прерванному экзамену.
+                    unfinishedSession.maybeWhen(
+                          data: (session) => session == null
+                              ? const SizedBox.shrink()
+                              // Ключ по набору вопросов: при смене сессии нужен
+                              // новый State, иначе карточка осталась бы свёрнутой
+                              // после предыдущего скрытия.
+                              : ContinueSessionCard(
+                                  key: ValueKey(session['questions'].hashCode),
+                                  session: session,
+                                ),
+                          orElse: () => const SizedBox.shrink(),
+                        ),
+                    _buildExamHero(context, ref),
+                    _AnimatedGap(height: groupGap),
+                    const SizedBox(height: AppDimensions.spacingL),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildModeCard(
+                            context: context,
+                            iconAsset: 'assets/images/home_icon_topics.png',
+                            label: appL10n.topics,
+                            onTap: () {
+                              HapticFeedbackHelper.tap();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const TopicsScreen(),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
-                  ),
+                        ),
+                        const SizedBox(width: AppDimensions.spacingM),
+                        Expanded(
+                          child: _buildModeCard(
+                            context: context,
+                            iconAsset: 'assets/images/home_icon_tickets.png',
+                            label: appL10n.tickets,
+                            onTap: () {
+                              HapticFeedbackHelper.tap();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const TicketsScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                 ],
               ),
               const SizedBox(height: AppDimensions.spacingM),
@@ -243,7 +309,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                     child: _buildModeCard(
                       context: context,
                       iconAsset: 'assets/images/home_icon_errors.png',
-                      label: 'Ошибки',
+                      label: appL10n.mistakes,
                       onTap: () {
                         HapticFeedbackHelper.tap();
                         Navigator.push(
@@ -260,7 +326,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                     child: _buildModeCard(
                       context: context,
                       iconAsset: 'assets/images/home_icon_favorites.png',
-                      label: 'Избранное',
+                      label: appL10n.favorites,
                       onTap: () {
                         HapticFeedbackHelper.tap();
                         Navigator.push(
@@ -274,7 +340,10 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                   ),
                 ],
               ),
-            ],
+                    ],
+                  ),
+              );
+            },
           ),
         ),
       ),
@@ -282,10 +351,20 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
   }
 
   static const double _examTitleFontSize = 26;
-  static const double _homeNavLabelFontSize = 26;
+  /// Подпись плитки режима. 26 pt выбивались из шкалы: это крупнее
+  /// заголовков карточек (16) и почти как заголовок экрана (28) — именно
+  /// из-за них плитки приходилось делать высотой 128.
+  static const double _homeNavLabelFontSize = 18;
 
   Widget _buildExamHero(BuildContext context, WidgetRef ref) {
     const double bannerHeight = 160;
+
+    // Картинка на кнопке экзамена зависит от выбранной категории и реактивно
+    // обновляется при её смене (в т.ч. из настроек).
+    final vehicleAsset =
+        ref.watch(appSettingsProvider).ticketCategory == TicketCategory.cd
+            ? 'assets/images/onboarding_truck.png'
+            : 'assets/images/onboarding_car.png';
 
     return Material(
       color: Colors.transparent,
@@ -310,6 +389,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                 'image': q.image,
                 'topic': q.topic ?? [],
                 'ticketNumber': q.ticketNumber,
+                'points': q.points,
               });
             }
           }
@@ -327,63 +407,68 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
           borderRadius: BorderRadius.circular(20),
           child: SizedBox(
             height: bannerHeight,
-            child: Stack(
-              clipBehavior: Clip.hardEdge,
-              children: [
-                const Positioned.fill(
-                  child: ColoredBox(color: AppColors.accent),
-                ),
-                Positioned(
-                  right: -60,
-                  bottom: -6,
-                  child: Image.asset(
-                    'assets/images/home_exam_car.png',
-                    height: 148,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.high,
-                  ),
-                ),
-                Positioned.fill(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      // Резервируем справа место под фото; машина сдвинута правее, чтобы «Экзамен» не заходил на капот.
-                      final reserveRight = (constraints.maxWidth * 0.54)
-                          .clamp(155.0, 210.0);
-                      return Padding(
-                        padding: EdgeInsets.fromLTRB(18, 14, reserveRight, 14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Wrap(
-                              spacing: AppDimensions.spacingS,
-                              runSpacing: 6,
-                              children: [
-                                _buildHeroBadge(
-                                  '${CountryConfig.current.examRules.mainCount} вопросов',
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final bw = constraints.maxWidth;
+                // Готовый обрезанный файл (как в онбординге): машина крупная,
+                // прижата к правому краю и уходит за него. Слева остаётся место
+                // под бейджи и «Экзамен» — текст на машину не заходит.
+                final imageW = (bw * 0.50).clamp(170.0, 225.0);
+                final reserveRight = imageW + 6;
+                return Stack(
+                  clipBehavior: Clip.hardEdge,
+                  children: [
+                    const Positioned.fill(
+                      child: ColoredBox(color: AppColors.accent),
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Image.asset(
+                        vehicleAsset,
+                        width: imageW,
+                        fit: BoxFit.fitWidth,
+                        filterQuality: FilterQuality.high,
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(18, 14, reserveRight, 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Wrap(
+                            spacing: AppDimensions.spacingS,
+                            runSpacing: 6,
+                            children: [
+                              _buildHeroBadge(
+                                appL10n.examQuestionsBadge(
+                                  CountryConfig.current.examRules.mainCount,
                                 ),
-                                _buildHeroBadge(
-                                  '${CountryConfig.current.examRules.totalMinutes} минут',
-                                ),
-                              ],
-                            ),
-                            const Text(
-                              'Экзамен',
-                              style: TextStyle(
-                                fontSize: _examTitleFontSize,
-                                fontWeight: FontWeight.w600,
-                                height: 1.1,
-                                letterSpacing: -0.3,
-                                color: AppColors.white,
                               ),
+                              _buildHeroBadge(
+                                appL10n.examMinutesBadge(
+                                  CountryConfig.current.examRules.totalMinutes,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            appL10n.exam,
+                            style: const TextStyle(
+                              fontSize: _examTitleFontSize,
+                              fontWeight: FontWeight.w600,
+                              height: 1.1,
+                              letterSpacing: -0.3,
+                              color: AppColors.white,
                             ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -422,8 +507,8 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
         onTap: onTap,
         child: Container(
-          height: 128,
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+          height: AppDimensions.topicButtonHeight,
+          padding: const EdgeInsets.all(AppDimensions.spacingL),
           decoration: BoxDecoration(
             color: AppColors.accentSurface10,
             borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
@@ -433,8 +518,8 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
             children: [
               Image.asset(
                 iconAsset,
-                width: 32,
-                height: 32,
+                width: AppDimensions.iconSize,
+                height: AppDimensions.iconSize,
                 fit: BoxFit.contain,
                 filterQuality: FilterQuality.high,
                 gaplessPlayback: true,
@@ -448,9 +533,8 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                   maxLines: 1,
                   style: const TextStyle(
                     fontSize: _homeNavLabelFontSize,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     height: 1.1,
-                    letterSpacing: -0.3,
                     color: AppColors.accent,
                   ),
                 ),
@@ -462,149 +546,23 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
     );
   }
 
-  Widget _buildStatisticsCard(
-    BuildContext context,
-    WidgetRef ref,
-    Map<String, int> stats,
-  ) {
-    final correctAnswers = stats['correctAnswers'] ?? 0;
-    final answeredQuestions = stats['answeredQuestions'] ?? 0;
-    final wrongQuestions = stats['wrongQuestions'] ?? 0;
-    final passedTickets = stats['passedTickets'] ?? 0;
-    final totalQuestions = stats['totalQuestions'] ?? 0;
-    final totalTickets = stats['totalTickets'] ?? 0;
-    final readiness = totalQuestions > 0
-        ? (correctAnswers / totalQuestions * 100).round()
-        : 0;
+}
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _buildStatMetricCell(
-                  backgroundColor: AppColors.homeStatGraySurface,
-                  valueColor: AppColors.primaryText,
-                  labelColor: AppColors.secondaryText,
-                  value: '$answeredQuestions/$totalQuestions',
-                  label: 'Пройдено вопросов',
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spacingM),
-              Expanded(
-                child: _buildStatMetricCell(
-                  backgroundColor: AppColors.accentSurface10,
-                  valueColor: AppColors.accent,
-                  labelColor: AppColors.accent,
-                  value: '$correctAnswers/$totalQuestions',
-                  label: 'Верно решено',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.spacingM),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _buildStatMetricCell(
-                  backgroundColor: AppColors.homeRedSurface,
-                  valueColor: AppColors.red,
-                  labelColor: AppColors.red,
-                  value: '$wrongQuestions/$totalQuestions',
-                  label: 'Ошибки',
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spacingM),
-              Expanded(
-                child: _buildStatMetricCell(
-                  backgroundColor: AppColors.homeGreenSurface,
-                  valueColor: AppColors.green,
-                  labelColor: AppColors.green,
-                  value: '$passedTickets/$totalTickets',
-                  label: 'Сдано билетов',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Text(
-            '$readiness% Готовность к экзамену',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              height: 1.25,
-              color: AppColors.primaryText,
-            ),
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: readiness / 100,
-              minHeight: 10,
-              backgroundColor: AppColors.gray,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.green,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+/// Отступ, который меняет высоту плавно.
+///
+/// Длительность совпадает с анимацией скрытия карточки «Продолжить»
+/// ([ContinueSessionCard]): иначе один элемент едет, а второй прыгает.
+class _AnimatedGap extends StatelessWidget {
+  const _AnimatedGap({required this.height});
 
-  /// Ячейка сетки статистики: крупная дробь сверху, подпись снизу, тонированный фон.
-  Widget _buildStatMetricCell({
-    required Color backgroundColor,
-    required Color valueColor,
-    required Color labelColor,
-    required String value,
-    required String label,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            value,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              height: 1.1,
-              color: valueColor,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              height: 1.3,
-              color: labelColor,
-            ),
-          ),
-        ],
-      ),
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeInOutCubic,
+      height: height,
     );
   }
 }

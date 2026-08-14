@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
@@ -44,10 +45,10 @@ class _PddScreenState extends State<PddScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(
+                  SizedBox(
                     width: double.infinity,
                     child: Text(
-                      'ПДД',
+                      appL10n.pdd,
                       textAlign: TextAlign.left,
                       style: TextStyle(
                         fontSize: 28,
@@ -61,7 +62,7 @@ class _PddScreenState extends State<PddScreen> {
                   AppPillSearchField(
                     controller: _searchController,
                     onChanged: (value) => setState(() => _query = value),
-                    hintText: 'Поиск',
+                    hintText: appL10n.search,
                   ),
                 ],
               ),
@@ -86,11 +87,11 @@ class _PddScreenState extends State<PddScreen> {
                   }).toList();
 
                   if (filteredSections.isEmpty) {
-                    return const Center(
+                    return Center(
                       child: Padding(
                         padding: EdgeInsets.all(AppDimensions.screenPadding),
                         child: Text(
-                          'Ничего не найдено. Попробуйте номер раздела или ключевое слово.',
+                          appL10n.pddSearchEmpty,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14,
@@ -156,11 +157,16 @@ class _PddScreenState extends State<PddScreen> {
               Expanded(
                 child: Text(
                   title,
+                  // Тот же кегль и начертание, что у строк на экране настроек:
+                  // это одинаковые по смыслу элементы — строка списка со
+                  // стрелкой, — и выглядеть они должны одинаково.
+                  // Межстрочный интервал не задаём: у настроек его нет, а
+                  // здесь заголовки переносятся на 2–3 строки, и height: 1.0
+                  // слепляла их.
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.primaryText,
-                    height: 1.0,
                   ),
                 ),
               ),
@@ -178,19 +184,70 @@ class _PddScreenState extends State<PddScreen> {
   }
 }
 
-class PddDetailScreen extends StatelessWidget {
+class PddDetailScreen extends StatefulWidget {
   final String title;
   final String content;
+
+  /// Номер пункта, к которому нужно прокрутить и который надо выделить —
+  /// когда экран открыт по ссылке из разбора вопроса. null — обычный вход
+  /// из списка разделов, тогда открываем с начала.
+  final String? highlightPoint;
 
   const PddDetailScreen({
     super.key,
     required this.title,
     required this.content,
+    this.highlightPoint,
   });
 
   @override
+  State<PddDetailScreen> createState() => _PddDetailScreenState();
+}
+
+class _PddDetailScreenState extends State<PddDetailScreen> {
+  final GlobalKey _highlightKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.highlightPoint != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ctx = _highlightKey.currentContext;
+        if (ctx == null) return;
+        Scrollable.ensureVisible(
+          ctx,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOutCubic,
+          // Ровно 0: ставим начало пункта к верхней кромке. Любой отступ
+          // сверху ломается на пунктах выше экрана — например, 1.2 занимает
+          // несколько экранов (там весь список терминов), и прокрутка
+          // проскакивала мимо его начала, в середину текста.
+          alignment: 0,
+        );
+      });
+    }
+  }
+
+  /// Номер пункта в начале блока: «13.11.» → 13.11, «13.11.1.» → 13.11.1.
+  static final RegExp _leadingPoint = RegExp(
+    r'^(\d{1,2}(?:\.\d{1,2}){1,3})[.\s]',
+  );
+
+  /// Тот ли это пункт, ради которого открыли экран.
+  ///
+  /// Сравниваем номер целиком, а не по началу строки: пункт 13.11.1 тоже
+  /// начинается с «13.11.», и проверка на префикс пометила бы сразу два блока
+  /// (а GlobalKey на двух виджетах — это падение, а не просто лишняя рамка).
+  bool _isTarget(String block) {
+    final point = widget.highlightPoint;
+    if (point == null) return false;
+    return _leadingPoint.firstMatch(block)?.group(1) == point;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final blocks = content
+    final title = widget.title;
+    final blocks = widget.content
         .split('\n\n')
         .map((block) => block.trim())
         .where((block) => block.isNotEmpty)
@@ -235,9 +292,14 @@ class PddDetailScreen extends StatelessWidget {
                   AppDimensions.screenPadding,
                   24,
                 ),
+                // Все карточки должны быть разложены, иначе прокрутка к
+                // пункту за пределами экрана не найдёт его render-объект.
+                cacheExtent: 100000,
                 children: [
                   ...blocks.map((block) {
+                    final target = _isTarget(block);
                     return Padding(
+                      key: target ? _highlightKey : null,
                       padding: const EdgeInsets.only(
                         bottom: AppDimensions.spacingM,
                       ),
@@ -248,6 +310,12 @@ class PddDetailScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(
                             AppDimensions.cardRadius,
                           ),
+                          // Пункт, ради которого пришли, помечен рамкой:
+                          // человек попал сюда по ссылке и должен сразу
+                          // видеть, какой именно абзац искал.
+                          border: target
+                              ? Border.all(color: AppColors.accent, width: 2)
+                              : null,
                         ),
                         child: Text(
                           block,

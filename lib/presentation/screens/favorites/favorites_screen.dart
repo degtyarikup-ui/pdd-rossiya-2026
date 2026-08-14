@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -29,116 +30,123 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   Widget build(BuildContext context) {
     final favoriteIdsAsync = ref.watch(favoriteQuestionsProvider);
 
+    // Структура как на экране «Работа над ошибками»: шапка → список карточек →
+    // закреплённая внизу кнопка «Пройти всё избранное».
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppDimensions.screenPadding,
-                16,
-                AppDimensions.screenPadding,
-                0,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.all(AppDimensions.screenPadding),
+              child: Row(
+                children: [
+                  AppChromeIconButton(
+                    icon: Icons.arrow_back_ios_new_rounded,
+                    onTap: () {
+                      HapticFeedbackHelper.tap();
+                      Navigator.pop(context);
+                    },
+                  ),
+                  const SizedBox(width: AppDimensions.spacingM),
+                  Expanded(
+                    child: Text(
+                      appL10n.favorites,
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryText,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              child: _buildHeader(),
             ),
-            Expanded(
-              child: favoriteIdsAsync.when(
-                data: (favoriteIds) {
-                  if (favoriteIds.isEmpty) {
-                    return _buildEmptyState();
-                  }
+          ),
+          Expanded(
+            child: favoriteIdsAsync.when(
+              data: (favoriteIds) {
+                if (favoriteIds.isEmpty) {
+                  return _buildEmptyState();
+                }
 
-                  return FutureBuilder<List<Map<String, dynamic>>>(
-                    future: _loadFavoriteQuestions(ref, favoriteIds),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      }
+                return FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _loadFavoriteQuestions(ref, favoriteIds),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                      final allQuestions = snapshot.data!;
-                      final filteredQuestions = _filterQuestions(
-                        allQuestions,
-                      );
+                    final allQuestions = snapshot.data!;
+                    final filteredQuestions = _filterQuestions(allQuestions);
 
-                      return ListView(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppDimensions.screenPadding,
-                          AppDimensions.spacingL,
-                          AppDimensions.screenPadding,
-                          24,
-                        ),
-                        children: [
-                          _buildIntroCard(context, allQuestions),
-                          const SizedBox(height: AppDimensions.spacingL),
-                          TextField(
+                    final bottomInset = MediaQuery.paddingOf(context).bottom;
+                    const barVerticalPad = 12.0;
+                    const buttonHeight = 52.0;
+                    final listBottomPad =
+                        barVerticalPad * 2 + buttonHeight + bottomInset + 8;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppDimensions.screenPadding,
+                            0,
+                            AppDimensions.screenPadding,
+                            AppDimensions.spacingM,
+                          ),
+                          child: TextField(
                             controller: _searchController,
                             onChanged: (value) {
                               setState(
                                 () => _query = value.trim().toLowerCase(),
                               );
                             },
-                            decoration: const InputDecoration(
-                              hintText: 'Поиск по вопросу или теме',
-                              prefixIcon: Icon(Icons.search_rounded),
+                            decoration: InputDecoration(
+                              hintText: appL10n.searchByQuestionOrTopic,
+                              prefixIcon: const Icon(Icons.search_rounded),
                             ),
                           ),
-                          const SizedBox(height: AppDimensions.spacingL),
-                          if (filteredQuestions.isEmpty)
-                            _buildNoSearchResults()
-                          else
-                            ...filteredQuestions.map((question) {
-                              return Padding(
-                                padding: const EdgeInsets.only(
-                                  bottom: AppDimensions.spacingM,
-                                ),
-                                child: _buildFavoriteCard(
-                                  context,
-                                  question,
-                                ),
-                              );
-                            }),
-                        ],
-                      );
-                    },
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, _) =>
-                    Center(child: Text(dataLoadErrorMessage(error))),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      children: [
-        AppChromeIconButton(
-          icon: Icons.arrow_back_ios_new_rounded,
-          onTap: () {
-            HapticFeedbackHelper.tap();
-            Navigator.pop(context);
-          },
-        ),
-        const SizedBox(width: AppDimensions.spacingM),
-        const Expanded(
-          child: Text(
-            'Избранное',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primaryText,
+                        ),
+                        Expanded(
+                          child: ListView(
+                            padding: EdgeInsets.fromLTRB(
+                              AppDimensions.screenPadding,
+                              0,
+                              AppDimensions.screenPadding,
+                              listBottomPad,
+                            ),
+                            children: [
+                              if (filteredQuestions.isEmpty)
+                                _buildNoSearchResults()
+                              else
+                                ...filteredQuestions.map((question) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(
+                                      bottom: AppDimensions.spacingM,
+                                    ),
+                                    child: _buildFavoriteCard(context, question),
+                                  );
+                                }),
+                            ],
+                          ),
+                        ),
+                        _buildBottomPassAllBar(context, allQuestions),
+                      ],
+                    );
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) =>
+                  Center(child: Text(dataLoadErrorMessage(error))),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -163,8 +171,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
               ),
             ),
             const SizedBox(height: AppDimensions.spacingL),
-            const Text(
-              'Пока здесь пусто',
+            Text(
+              appL10n.emptyHere,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -172,8 +180,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
               ),
             ),
             const SizedBox(height: AppDimensions.spacingS),
-            const Text(
-              'Отмечай сложные вопросы звёздочкой, и они будут собираться в одном месте для быстрого повторения.',
+            Text(
+              appL10n.favoritesEmptyHint,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -194,8 +202,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
       ),
-      child: const Text(
-        'По этому запросу ничего не найдено. Попробуй часть формулировки вопроса или название темы.',
+      child: Text(
+        appL10n.favoritesSearchEmpty,
         style: TextStyle(
           fontSize: 14,
           height: 1.4,
@@ -255,56 +263,53 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         .toList();
   }
 
-  Widget _buildIntroCard(
+  /// Плашка на всю ширину, закреплена у нижнего края (над home indicator) —
+  /// как кнопка «Повторить все» на экране ошибок.
+  Widget _buildBottomPassAllBar(
     BuildContext context,
     List<Map<String, dynamic>> questions,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.spacingL),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Личные сложные вопросы',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primaryText,
-            ),
-          ),
-          const SizedBox(height: AppDimensions.spacingS),
-          Text(
-            'Сейчас в избранном ${questions.length} ${_questionWord(questions.length)}. Используй этот режим как персональную подборку перед экзаменом.',
-            style: const TextStyle(
-              fontSize: 14,
-              height: 1.4,
-              color: AppColors.secondaryText,
-            ),
-          ),
-          const SizedBox(height: AppDimensions.spacingL),
-          SizedBox(
+    return ColoredBox(
+      color: AppColors.white,
+      child: SafeArea(
+        top: false,
+        child: Material(
+          color: AppColors.white,
+          child: Container(
             width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                HapticFeedbackHelper.tap();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => TrainingScreen(
-                      questions: questions,
-                      title: 'Избранное',
+            decoration: const BoxDecoration(
+              color: AppColors.white,
+              border: Border(
+                top: BorderSide(color: AppColors.divider, width: 1),
+              ),
+            ),
+            padding: const EdgeInsets.fromLTRB(
+              AppDimensions.screenPadding,
+              12,
+              AppDimensions.screenPadding,
+              12,
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () {
+                  HapticFeedbackHelper.tap();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TrainingScreen(
+                        questions: questions,
+                        title: appL10n.favorites,
+                      ),
                     ),
-                  ),
-                );
-              },
-              child: const Text('Пройти всё избранное'),
+                  );
+                },
+                child: Text(appL10n.practiceAllFavorites),
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -314,7 +319,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     Map<String, dynamic> question,
   ) {
     final topics = ((question['topic'] as List?) ?? const []).cast<String>();
-    final topicLabel = topics.isNotEmpty ? topics.first : 'Без темы';
+    final topicLabel = topics.isNotEmpty ? topics.first : appL10n.noTopic;
 
     return Material(
       color: Colors.transparent,
@@ -327,7 +332,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
             MaterialPageRoute(
               builder: (_) => TrainingScreen(
                 questions: [question],
-                title: 'Избранный вопрос',
+                title: appL10n.favoriteQuestion,
               ),
             ),
           );
@@ -349,21 +354,21 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.gold.withOpacity(0.14),
+                      color: AppColors.goldLightSurface,
                       borderRadius: BorderRadius.circular(999),
                     ),
-                    child: const Text(
-                      'Избранное',
+                    child: Text(
+                      appL10n.favorites,
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.gold,
                       ),
                     ),
                   ),
                   const Spacer(),
                   Text(
-                    'Билет ${question['ticketNumber']}',
+                    appL10n.ticketNumber(question['ticketNumber']),
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -397,8 +402,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                     ),
                   ),
                   const Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 18,
+                    Icons.chevron_right_rounded,
                     color: AppColors.secondaryText,
                   ),
                 ],
@@ -408,20 +412,5 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         ),
       ),
     );
-  }
-
-  String _questionWord(int count) {
-    final mod10 = count % 10;
-    final mod100 = count % 100;
-
-    if (mod10 == 1 && mod100 != 11) {
-      return 'вопрос';
-    }
-
-    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
-      return 'вопроса';
-    }
-
-    return 'вопросов';
   }
 }

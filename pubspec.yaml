@@ -1,13 +1,15 @@
 name: pdd_app
 description: "ПДД Россия 2026 — билеты и экзамен"
 publish_to: 'none'
-version: 1.0.5+16
+version: 1.0.9+27
 
 environment:
   sdk: ^3.11.4
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^2.6.1
@@ -17,6 +19,16 @@ dependencies:
   path_provider: ^2.1.5
   flutter_tts: ^4.2.3
   url_launcher: ^6.3.1
+  http: ^1.6.0
+  device_info_plus: ^13.2.0
+  package_info_plus: ^10.2.0
+  web: ^1.1.1
+  share_plus: ^13.2.1
+  qr_flutter: ^4.1.0
+  flutter_local_notifications: ^19.4.2
+  timezone: ^0.10.1
+  flutter_timezone: ^4.1.1
+  in_app_review: ^2.0.12
 
 dev_dependencies:
   flutter_test:
@@ -34,18 +46,42 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  generate: true
+
+  # Фирменный шрифт приложения. Onest — свободная лицензия SIL OFL 1.1
+  # (текст лицензии лежит рядом: assets/fonts/Onest-OFL.txt), поддерживает
+  # кириллицу и латиницу с сербскими диакритиками — то есть все три страны.
+  #
+  # Начертания получены из вариативного Onest[wght].ttf инстансированием
+  # (fontTools varLib.instancer): в репозитории Google Fonts статических
+  # файлов нет, а вариативный шрифт Flutter не умеет корректно раскладывать
+  # по fontWeight без fontVariations.
+  fonts:
+    - family: Onest
+      fonts:
+        - asset: assets/fonts/Onest-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Onest-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Onest-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Onest-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Onest-ExtraBold.ttf
+          weight: 800
 
   assets:
     # Общие (страно-независимые) ресурсы.
     - assets/images/
     - assets/images/category_icons/
-    # Контент страны текущей сборки: flavors подключают только нужную страну
-    # на уровне Android; для web/тестов бандлятся обе, выбирается конфигом.
+    # Контент ВСЕХ стран. Android-flavor сам по себе ассеты НЕ фильтрует
+    # (flavor решает только applicationId/иконку/нативные ресурсы), поэтому
+    # здесь перечислены все страны — иначе `flutter run`/тесты/IDE не найдут
+    # контент. Лишний вес срезает scripts/build.sh: перед релизной сборкой он
+    # временно оставляет здесь только страну сборки (см. COUNTRY_ASSETS там).
     - assets/countries/ru/questions/
     - assets/countries/ru/images/questions_ab/
     - assets/countries/ru/images/questions_cd/
     - assets/countries/ru/images/signs/
     - assets/countries/ru/images/markup/
-    - assets/countries/by/questions/
-    - assets/countries/by/images/questions_ab/
-    - assets/countries/by/images/signs/
+    # Сербия (латиница, балльная модель).

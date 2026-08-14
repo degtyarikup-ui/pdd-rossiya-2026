@@ -186,9 +186,9 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
             },
           ),
           const SizedBox(width: AppDimensions.spacingM),
-          const Text(
+          Text(
             AppStrings.tickets,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w600,
               color: AppColors.primaryText,

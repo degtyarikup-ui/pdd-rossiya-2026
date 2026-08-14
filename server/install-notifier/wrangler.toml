@@ -1,0 +1,22 @@
+name = "pdd-install-notifier"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Секреты (BOT_TOKEN, CHAT_ID, SHARED_SECRET) в этот файл НЕ пишем —
+# они задаются командой `wrangler secret put <ИМЯ>` и хранятся в Cloudflare.
+
+# Порядковый номер пользователя (#1, #2, …) требует хранилища KV.
+#   1) создать:  wrangler kv namespace create INSTALLS
+#   2) вставить выданный id ниже и раскомментировать блок:
+# [[kv_namespaces]]
+# binding = "INSTALLS"
+# id = "<сюда id из шага 1>"
+
+[[kv_namespaces]]
+binding = "INSTALLS"
+id = "2c854aacc0b7483f9cb271c19a79ba5a"
+
+# Ежемесячная сводка: 1-го числа в 06:00 UTC (09:00 МСК).
+# Проверка новых отзывов в сторах: каждый час.
+[triggers]
+crons = ["0 6 1 * *", "0 * * * *"]
