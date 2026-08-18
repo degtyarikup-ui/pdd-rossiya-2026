@@ -62,6 +62,7 @@ FOOTER = """<footer class="site-footer">
     <nav>
       <a href="/blog/">Блог</a>
       <a href="/about/">О проекте</a>
+      <a href="/links/">Соцсети</a>
       <a href="/slovar-pdd/">Словарь терминов</a>
       <a href="/privacy.html">Политика конфиденциальности</a>
       <a href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">Google Play</a>
@@ -645,6 +646,7 @@ def render_sitemap(arts=None):
         if c in by_cluster:
             rows.append((_cluster_url(c), latest, "weekly", "0.75"))
     rows.append(("%s/about/" % BASE, "2026-07-21", "monthly", "0.5"))
+    rows.append(("%s/links/" % BASE, "2026-08-15", "monthly", "0.4"))
     if os.path.isdir(GLOSSARY_DIR):
         rows.append((GLOSSARY_URL, "2026-07-22", "monthly", "0.6"))
     rows.append(("%s/privacy.html" % BASE, "2026-07-19", "yearly", "0.3"))

@@ -10,7 +10,7 @@
     {
       "name": "landing-ru",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-c", "import os,http.server;os.chdir('/Users/sergei/Documents/pdd/web_landing/ru');http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,port=8901,bind='127.0.0.1')"],
+      "runtimeArgs": ["/private/tmp/claude-501/-Users-sergei-Documents-pdd/425ea125-8dfb-4dda-8cf9-2bb7f0c534ec/scratchpad/serve_landing.py"],
       "port": 8901
     },
     {

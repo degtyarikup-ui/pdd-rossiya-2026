@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
@@ -106,6 +107,14 @@ class _PddScreenState extends State<PddScreen> {
                   return ListView(
                     padding: const EdgeInsets.all(AppDimensions.screenPadding),
                     children: [
+                      // Дисклеймер источника: где текст правил — авторский
+                      // пересказ, человек должен видеть это на самом экране,
+                      // а не только в настройках (требование Google Play к
+                      // приложениям с гос-информацией). Страны без заметки
+                      // (RU/BY — там дословный официальный текст) её не
+                      // показывают.
+                      if (CountryConfig.current.notAffiliatedNote.isNotEmpty)
+                        const _SourceNote(),
                       ...filteredSections.map((section) {
                         return Padding(
                           padding: const EdgeInsets.only(
@@ -179,6 +188,45 @@ class _PddScreenState extends State<PddScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Заметка об источнике текста правил (показывается только там, где она
+/// задана в конфиге страны — сейчас это Сербия).
+class _SourceNote extends StatelessWidget {
+  const _SourceNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppDimensions.spacingM),
+      padding: const EdgeInsets.all(AppDimensions.spacingL),
+      decoration: BoxDecoration(
+        color: AppColors.gray,
+        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline_rounded,
+            size: 18,
+            color: AppColors.secondaryText,
+          ),
+          const SizedBox(width: AppDimensions.spacingM),
+          Expanded(
+            child: Text(
+              CountryConfig.current.notAffiliatedNote,
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.45,
+                color: AppColors.secondaryText,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
