@@ -1,7 +1,7 @@
 name: pdd_app
 description: "ПДД Россия 2026 — билеты и экзамен"
 publish_to: 'none'
-version: 1.0.10+28
+version: 1.0.11+29
 
 environment:
   sdk: ^3.11.4
@@ -85,3 +85,10 @@ flutter:
     - assets/countries/ru/images/signs/
     - assets/countries/ru/images/markup/
     # Сербия (латиница, балльная модель).
+    - assets/countries/rs/questions/
+    - assets/countries/rs/images/questions_ab/
+    - assets/countries/rs/images/signs/
+    # Беларусь.
+    - assets/countries/by/questions/
+    - assets/countries/by/images/questions_ab/
+    - assets/countries/by/images/signs/

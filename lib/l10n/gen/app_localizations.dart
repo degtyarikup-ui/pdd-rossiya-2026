@@ -1201,6 +1201,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Чтобы вы не теряли серию тренировок'**
   String get notifChannelDesc;
+
+  /// No description provided for @dataLoadError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить данные. Проверьте подключение и попробуйте снова.'**
+  String get dataLoadError;
 }
 
 class _AppLocalizationsDelegate

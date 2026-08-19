@@ -189,5 +189,6 @@
   "notifStreakTitle6": "Ispit je bliži nego što mislite",
   "notifStreakBody6": "Vežbajte danas",
   "notifChannelName": "Podsetnici o nizu",
-  "notifChannelDesc": "Da ne izgubite niz vežbanja"
+  "notifChannelDesc": "Da ne izgubite niz vežbanja",
+  "dataLoadError": "Učitavanje podataka nije uspelo. Proverite vezu i pokušajte ponovo."
 }

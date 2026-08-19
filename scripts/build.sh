@@ -42,16 +42,25 @@ country = sys.argv[1]
 lines = open('pubspec.yaml').read().split('\n')
 asset_re = re.compile(r'^\s*-\s*assets/countries/(\w+)/')
 
-kept, dropped = [], []
+kept, dropped, mine = [], [], []
 for line in lines:
     m = asset_re.match(line)
     if m and m.group(1) != country:
         dropped.append(line.strip())
         continue
+    if m:
+        mine.append(line.strip())
     kept.append(line)
 
+# Раз уже был случай, когда прерванная сборка оставила pubspec без своих
+# стран, и в стор уехал AAB вообще без контента: без ассетов страны собирать
+# нечего, падаем сразу.
+if not mine:
+    sys.exit(f'pubspec.yaml: нет ни одной строки assets/countries/{country}/ '
+             '— контент страны не попадёт в сборку. Почини pubspec.yaml.')
+
 open('pubspec.yaml', 'w').write('\n'.join(kept))
-print(f'pubspec: assets -> only "{country}" (dropped {len(dropped)} other-country entries)')
+print(f'pubspec: assets -> only "{country}" ({len(mine)} entries, dropped {len(dropped)} other-country)')
 PYEOF
 
 # Опциональное уведомление о новой установке (Telegram). Параметры берутся из
@@ -74,6 +83,22 @@ if [[ -n "${EXTRA_DEFINES:-}" ]]; then
   EXTRA_DEFINES_ARR=($EXTRA_DEFINES)
 fi
 
+# Контент страны обязан лежать внутри артефакта. Проверка дешёвая, а цена
+# ошибки — релиз, где все экраны пишут «не удалось загрузить данные».
+verify_archive() {
+  local archive="$1"
+  local needle="assets/countries/$COUNTRY/questions/questions_ab.json"
+  # Список файлов сначала в переменную: при `grep -q` в конвейере unzip
+  # получает SIGPIPE, а из-за pipefail это выглядит как «не нашли».
+  local listing
+  listing="$(unzip -l "$archive")"
+  if ! printf '%s' "$listing" | grep -q -- "$needle"; then
+    echo "СБОРКА БРАКОВАННАЯ: в $archive нет $needle" >&2
+    exit 1
+  fi
+  echo "проверка: контент страны $COUNTRY в артефакте есть"
+}
+
 case "$TARGET" in
   aab)
     flutter build appbundle --release \
@@ -81,6 +106,7 @@ case "$TARGET" in
       --dart-define=COUNTRY="$COUNTRY" \
       ${NOTIFY_DEFINES[@]+"${NOTIFY_DEFINES[@]}"} \
       ${EXTRA_DEFINES_ARR[@]+"${EXTRA_DEFINES_ARR[@]}"}
+    verify_archive "build/app/outputs/bundle/${COUNTRY}Release/app-${COUNTRY}-release.aab"
     echo "AAB: build/app/outputs/bundle/${COUNTRY}Release/app-${COUNTRY}-release.aab"
     ;;
   apk)
@@ -92,6 +118,7 @@ case "$TARGET" in
       --dart-define=COUNTRY="$COUNTRY" \
       ${NOTIFY_DEFINES[@]+"${NOTIFY_DEFINES[@]}"} \
       ${EXTRA_DEFINES_ARR[@]+"${EXTRA_DEFINES_ARR[@]}"}
+    verify_archive "build/app/outputs/flutter-apk/app-${COUNTRY}-release.apk"
     echo "APK: build/app/outputs/flutter-apk/app-${COUNTRY}-release.apk"
     ;;
   web)

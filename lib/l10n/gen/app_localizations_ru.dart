@@ -668,4 +668,8 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get notifChannelDesc => 'Чтобы вы не теряли серию тренировок';
+
+  @override
+  String get dataLoadError =>
+      'Не удалось загрузить данные. Проверьте подключение и попробуйте снова.';
 }

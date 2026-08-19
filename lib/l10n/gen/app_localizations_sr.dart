@@ -672,4 +672,8 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get notifChannelDesc => 'Da ne izgubite niz vežbanja';
+
+  @override
+  String get dataLoadError =>
+      'Učitavanje podataka nije uspelo. Proverite vezu i pokušajte ponovo.';
 }
