@@ -1,0 +1,42 @@
+name: Scheduled Blog Deploy
+
+on:
+  schedule:
+    # Запуск каждый день в 06:00 UTC (09:00 по МСК)
+    - cron: '0 6 * * *'
+  workflow_dispatch: # возможность ручного запуска кнопкой в GitHub Actions
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install Pillow
+
+      - name: Regenerate blog static files
+        run: |
+          python3 tools/blog_admin/generator.py regen
+
+      - name: Run SEO audit
+        run: |
+          python3 tools/seo/audit.py --quiet
+
+      - name: Deploy to GitHub Pages (gh-pages branch)
+        run: |
+          bash scripts/deploy_landing.sh ru "Scheduled auto-publish blog posts [skip ci]"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

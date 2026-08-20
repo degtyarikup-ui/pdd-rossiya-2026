@@ -38,6 +38,7 @@ wrangler login
 cd server/install-notifier
 wrangler secret put BOT_TOKEN       # вставить токен от @BotFather
 wrangler secret put CHAT_ID         # id чата (напр. -1001234567890)
+wrangler secret put ADMIN_PASSWORD  # пароль для входа в веб-админку /admin
 wrangler secret put SHARED_SECRET   # опц.: придумать любую строку-пароль
 
 # 4. (для номера «Пользователь #N») создать KV-хранилище
@@ -49,6 +50,19 @@ wrangler kv namespace create INSTALLS
 # 5. Задеплоить
 wrangler deploy
 ```
+
+## Веб-админка и аналитика соцсетей
+
+После деплоя доступна панель аналитики:
+```
+https://pdd-install-notifier.<твой-субдомен>.workers.dev/admin
+```
+
+- **Пароль**: значение из `ADMIN_PASSWORD` (по умолчанию `pdd2026admin`, если секрет ещё не задан).
+- **Метрики**: Просмотры сайта, клики по кнопкам сторов (RuStore, Google Play, App Store, Веб), новые установки и CTR / CR конверсии.
+- **Соцсети**: Статистика по YouTube, TikTok, Instagram, Telegram, VK и кампаниям.
+- **Генератор ссылок**: Встроен в админку — создание размеченных ссылок для Shorts, Reels, Bio в 1 клик.
+- **Live Feed**: Лента переходов и установок в реальном времени.
 
 Команда `wrangler deploy` в конце напечатает URL вида:
 
