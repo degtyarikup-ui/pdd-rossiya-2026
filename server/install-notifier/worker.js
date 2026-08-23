@@ -1374,7 +1374,7 @@ async function loadBlogArticles() {
       return;
     }
     container.innerHTML = cachedBlogArticles.map(function(a, idx) {
-      var coverUrl = a.cover ? 'https://pdd-drive.ru/blog/' + a.slug + '/' + a.cover + '?v=20260823' : 'https://pdd-drive.ru/assets/og-image.png';
+      var coverUrl = a.cover ? 'https://pdd-drive.ru/blog/' + a.slug + '/' + a.cover + '?v=20260823_v3' : 'https://pdd-drive.ru/assets/og-image.png';
       var isFirst = idx === 0;
       var isLast = idx === cachedBlogArticles.length - 1;
       var upDisabled = isFirst ? ' disabled style="opacity:0.3;cursor:not-allowed;width:32px;height:32px;"' : '';
