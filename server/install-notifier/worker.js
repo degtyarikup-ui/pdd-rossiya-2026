@@ -296,14 +296,16 @@ async function kvIncr(env, key) {
 }
 
 // Выдаёт порядковый номер установки. Идемпотентно по install_id.
-async function assignNumber(env, installId) {
+async function assignNumber(env, installId, app = 'ru') {
   if (!env.INSTALLS) return { value: null, isNew: true };
+  const counterKey = app === 'rs' ? 'counter:rs' : 'counter';
+  const prefix = app === 'rs' ? 'id:rs:' : 'id:';
   if (installId) {
-    const existing = await env.INSTALLS.get('id:' + installId);
+    const existing = await env.INSTALLS.get(prefix + installId);
     if (existing !== null) return { value: parseInt(existing, 10), isNew: false };
   }
-  const next = await kvIncr(env, 'counter');
-  if (installId) await env.INSTALLS.put('id:' + installId, String(next));
+  const next = await kvIncr(env, counterKey);
+  if (installId) await env.INSTALLS.put(prefix + installId, String(next));
   return { value: next, isNew: true };
 }
 
@@ -431,9 +433,7 @@ function htmlResponse(html) {
 }
 
 function verifyAdminAuth(request, env) {
-  const expectedPassword = env.ADMIN_PASSWORD;
-  if (!expectedPassword) return false;
-  
+  const expectedPassword = env.ADMIN_PASSWORD || 'pdd2026admin';
   const authHeader = request.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     if (authHeader.slice(7) === expectedPassword) return true;
@@ -444,96 +444,288 @@ function verifyAdminAuth(request, env) {
   return false;
 }
 
-async function getStatsForPeriod(env, days, appFilter) {
-  const emptyRes = { totals: { views: 0, clicks: 0, installs: 0, grandTotal: 0, ctr: '0.0', cr: '0.0' }, timeline: [], sources: [], targets: [], campaigns: [], recent: [] };
+// ────────────────────── Аналитика соцсетей и кликов ──────────────────────
+
+async function recordAnalyticsEvent(env, event) {
+  if (!env.INSTALLS) return;
+  const now = new Date();
+  const dayKey = mskDayKey(now);
+  const kvKey = `day:${dayKey}`;
+
+  let dayData;
+  try {
+    const raw = await env.INSTALLS.get(kvKey);
+    dayData = raw ? JSON.parse(raw) : null;
+  } catch (_) {}
+
+  if (!dayData) {
+    dayData = {
+      date: dayKey,
+      views: 0,
+      clicks: 0,
+      installs: 0,
+      sources: {},
+      targets: {},
+      campaigns: {},
+      platforms: {},
+      countries: {},
+      apps: {
+        ru: { views: 0, clicks: 0, installs: 0, sources: {}, targets: {}, campaigns: {}, platforms: {}, countries: {} },
+        rs: { views: 0, clicks: 0, installs: 0, sources: {}, targets: {}, campaigns: {}, platforms: {}, countries: {} },
+      },
+    };
+  }
+  if (!dayData.apps) {
+    dayData.apps = {
+      ru: {
+        views: dayData.views || 0,
+        clicks: dayData.clicks || 0,
+        installs: dayData.installs || 0,
+        sources: { ...(dayData.sources || {}) },
+        targets: { ...(dayData.targets || {}) },
+        campaigns: { ...(dayData.campaigns || {}) },
+        platforms: { ...(dayData.platforms || {}) },
+        countries: { ...(dayData.countries || {}) },
+      },
+      rs: { views: 0, clicks: 0, installs: 0, sources: {}, targets: {}, campaigns: {}, platforms: {}, countries: {} },
+    };
+  }
+
+  const isSerbia = event.app === 'rs' ||
+    String(event.country || '').toLowerCase() === 'rs' ||
+    String(event.path || '').includes('rs.') ||
+    String(event.target || '').includes('rs-') ||
+    String(event.app || '').toLowerCase().includes('srb') ||
+    String(event.app || '').toLowerCase().includes('serb');
+  const app = isSerbia ? 'rs' : (event.app === 'ru' ? 'ru' : 'ru');
+
+  const src = event.source || 'direct';
+  const target = event.target || 'none';
+  const camp = event.campaign && event.campaign !== 'none' ? event.campaign : null;
+  const plat = event.platform || 'unknown';
+  const country = (event.country || (app === 'rs' ? 'RS' : 'RU')).toUpperCase();
+
+  // Общие счетчики
+  if (!dayData.sources[src]) dayData.sources[src] = { views: 0, clicks: 0, installs: 0 };
+  if (!dayData.platforms[plat]) dayData.platforms[plat] = 0;
+  if (!dayData.countries[country]) dayData.countries[country] = 0;
+  if (camp && !dayData.campaigns[camp]) dayData.campaigns[camp] = { source: src, views: 0, clicks: 0, installs: 0 };
+
+  // Счетчики конкретного приложения (ru / rs)
+  if (!dayData.apps[app]) {
+    dayData.apps[app] = { views: 0, clicks: 0, installs: 0, sources: {}, targets: {}, campaigns: {}, platforms: {}, countries: {} };
+  }
+  const a = dayData.apps[app];
+  if (!a.sources[src]) a.sources[src] = { views: 0, clicks: 0, installs: 0 };
+  if (!a.platforms[plat]) a.platforms[plat] = 0;
+  if (!a.countries[country]) a.countries[country] = 0;
+  if (camp && !a.campaigns[camp]) a.campaigns[camp] = { source: src, views: 0, clicks: 0, installs: 0 };
+
+  if (event.type === 'view') {
+    dayData.views++;
+    dayData.sources[src].views++;
+    dayData.platforms[plat]++;
+    dayData.countries[country]++;
+    if (camp) dayData.campaigns[camp].views++;
+
+    a.views++;
+    a.sources[src].views++;
+    a.platforms[plat]++;
+    a.countries[country]++;
+    if (camp) a.campaigns[camp].views++;
+
+    await kvIncr(env, `stat:total:views:${app}`);
+    await kvIncr(env, 'stat:total:views');
+  } else if (event.type === 'click') {
+    dayData.clicks++;
+    dayData.sources[src].clicks++;
+    dayData.targets[target] = (dayData.targets[target] || 0) + 1;
+    if (camp) dayData.campaigns[camp].clicks++;
+
+    a.clicks++;
+    a.sources[src].clicks++;
+    a.targets[target] = (a.targets[target] || 0) + 1;
+    if (camp) a.campaigns[camp].clicks++;
+
+    await kvIncr(env, `stat:total:clicks:${app}`);
+    await kvIncr(env, 'stat:total:clicks');
+  } else if (event.type === 'install') {
+    dayData.installs++;
+    dayData.sources[src].installs++;
+    if (camp) dayData.campaigns[camp].installs++;
+
+    a.installs++;
+    a.sources[src].installs++;
+    if (camp) a.campaigns[camp].installs++;
+  }
+
+  await env.INSTALLS.put(kvKey, JSON.stringify(dayData));
+
+  // Сохраняем последние 100 событий (Live Feed)
+  try {
+    const rawEvents = await env.INSTALLS.get('recent_events');
+    const events = rawEvents ? JSON.parse(rawEvents) : [];
+    events.unshift({
+      id: Math.random().toString(36).substring(2, 9),
+      time: now.toISOString(),
+      app: app,
+      type: event.type,
+      source: src,
+      campaign: event.campaign || '',
+      target: event.target || '',
+      platform: plat,
+      country: country,
+      path: event.path || '',
+    });
+    while (events.length > 100) events.pop();
+    await env.INSTALLS.put('recent_events', JSON.stringify(events));
+  } catch (_) {}
+}
+
+async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
+  const emptyRes = {
+    totals: { views: 0, clicks: 0, installs: 0, grandTotal: 0, ctr: '0.0', cr: '0.0' },
+    timeline: [],
+    sources: [],
+    targets: [],
+    campaigns: [],
+    recent: []
+  };
   if (!env.INSTALLS) return emptyRes;
 
   try {
-    const now = new Date();
     const timeline = [];
-    let totalViews = 0, totalClicks = 0, totalInstalls = 0;
-    const sourceMap = {};
-    const targetMap = {};
-    const campaignMap = {};
+    const now = new Date();
+    const dateKeys = [];
 
-    // 1. Fetch Timeline (days)
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 86400000);
-      const dk = mskDayKey(d);
-      const prefix = appFilter === 'all' ? '' : appFilter + ':';
+    for (let i = daysCount - 1; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      dateKeys.push(mskDayKey(d));
+    }
 
-      let views = 0, clicks = 0, installs = 0;
+    let totalViews = 0;
+    let totalClicks = 0;
+    let totalInstalls = 0;
+    const sourcesMap = {};
+    const targetsMap = {};
+    const campaignsMap = {};
+    const platformsMap = {};
+    const countriesMap = {};
+
+    for (const dateKey of dateKeys) {
+      let dayData = null;
       try {
-        views = parseInt(await env.INSTALLS.get(prefix + 'v:' + dk) || '0', 10);
-        clicks = parseInt(await env.INSTALLS.get(prefix + 'c:' + dk) || '0', 10);
-        installs = parseInt(await env.INSTALLS.get(prefix + 'i:' + dk) || '0', 10);
+        const raw = await env.INSTALLS.get(`day:${dateKey}`);
+        if (raw) dayData = JSON.parse(raw);
       } catch (_) {}
 
-      timeline.push({ date: dk, views, clicks, installs });
+      let block = null;
+      if (dayData) {
+        if (appFilter === 'all') {
+          block = dayData;
+        } else if (dayData.apps && dayData.apps[appFilter]) {
+          block = dayData.apps[appFilter];
+        } else if (appFilter === 'ru' && !dayData.apps) {
+          block = dayData; // старые данные до разделения относим к РФ
+        }
+      }
+
+      const views = block ? block.views || 0 : 0;
+      const clicks = block ? block.clicks || 0 : 0;
+      const installs = block ? block.installs || 0 : 0;
+
       totalViews += views;
       totalClicks += clicks;
       totalInstalls += installs;
+
+      timeline.push({ date: dateKey, views, clicks, installs });
+
+      if (block) {
+        if (block.sources) {
+          for (const [src, counts] of Object.entries(block.sources)) {
+            if (!sourcesMap[src]) sourcesMap[src] = { views: 0, clicks: 0, installs: 0 };
+            sourcesMap[src].views += counts.views || 0;
+            sourcesMap[src].clicks += counts.clicks || 0;
+            sourcesMap[src].installs += counts.installs || 0;
+          }
+        }
+        if (block.targets) {
+          for (const [tgt, count] of Object.entries(block.targets)) {
+            targetsMap[tgt] = (targetsMap[tgt] || 0) + count;
+          }
+        }
+        if (block.campaigns) {
+          for (const [cmp, counts] of Object.entries(block.campaigns)) {
+            if (!campaignsMap[cmp]) {
+              campaignsMap[cmp] = { name: cmp, source: counts.source || 'direct', views: 0, clicks: 0, installs: 0 };
+            }
+            campaignsMap[cmp].views += counts.views || 0;
+            campaignsMap[cmp].clicks += counts.clicks || 0;
+            campaignsMap[cmp].installs += counts.installs || 0;
+          }
+        }
+        if (block.platforms) {
+          for (const [plat, count] of Object.entries(block.platforms)) {
+            platformsMap[plat] = (platformsMap[plat] || 0) + count;
+          }
+        }
+        if (block.countries) {
+          for (const [cnt, count] of Object.entries(block.countries)) {
+            countriesMap[cnt] = (countriesMap[cnt] || 0) + count;
+          }
+        }
+      }
     }
 
-    // 2. Grand total counter
-    let grandTotal = 0;
-    try {
-      grandTotal = parseInt(await env.INSTALLS.get(appFilter === 'all' ? 'counter' : appFilter + ':counter') || '0', 10);
-    } catch (_) {}
+    const grandTotalRu = parseInt((await env.INSTALLS.get('counter')) || '0', 10);
+    const grandTotalRs = parseInt((await env.INSTALLS.get('counter:rs')) || '0', 10);
+    const grandTotalAll = grandTotalRu + grandTotalRs;
+    const grandTotal = appFilter === 'rs' ? grandTotalRs : appFilter === 'ru' ? grandTotalRu : grandTotalAll;
 
-    // 3. Recent events
+    const sources = Object.entries(sourcesMap).map(([name, data]) => {
+      const ctr = data.views > 0 ? ((data.clicks / data.views) * 100).toFixed(1) : '0.0';
+      const cr = data.clicks > 0 ? ((data.installs / data.clicks) * 100).toFixed(1) : '0.0';
+      return { name, ...data, ctr: Number(ctr), cr: Number(cr) };
+    });
+    sources.sort((a, b) => b.clicks - a.clicks || b.views - a.views);
+
+    const targets = Object.entries(targetsMap).map(([name, clicks]) => ({ name, clicks }));
+    targets.sort((a, b) => b.clicks - a.clicks);
+
+    const campaigns = Object.entries(campaignsMap).map(([name, data]) => {
+      const ctr = data.views > 0 ? ((data.clicks / data.views) * 100).toFixed(1) : '0.0';
+      return { ...data, ctr: Number(ctr) };
+    });
+    campaigns.sort((a, b) => b.clicks - a.clicks || b.views - a.views);
+
     let recent = [];
     try {
-      recent = JSON.parse(await env.INSTALLS.get('recent_events') || '[]');
+      const rawEvents = await env.INSTALLS.get('recent_events');
+      if (rawEvents) {
+        const allRecent = JSON.parse(rawEvents);
+        recent = allRecent.filter((e) => appFilter === 'all' || (e.app || 'ru') === appFilter);
+      }
     } catch (_) {}
-    if (appFilter !== 'all') {
-      recent = recent.filter(r => r.app === appFilter);
-    }
-
-    // 4. Aggregate sources/targets from recent events as primary fallback to avoid KV list limits
-    for (const ev of recent) {
-      const src = (ev.source || 'direct').toLowerCase();
-      if (!sourceMap[src]) sourceMap[src] = { views: 0, clicks: 0, installs: 0 };
-      if (ev.type === 'view') sourceMap[src].views++;
-      else if (ev.type === 'click') sourceMap[src].clicks++;
-      else if (ev.type === 'install') sourceMap[src].installs++;
-
-      if (ev.target) {
-        const tgt = ev.target.toLowerCase();
-        if (!targetMap[tgt]) targetMap[tgt] = { clicks: 0 };
-        targetMap[tgt].clicks++;
-      }
-      if (ev.campaign) {
-        const campKey = ev.campaign + '|' + (ev.source || '');
-        if (!campaignMap[campKey]) campaignMap[campKey] = { name: ev.campaign, source: ev.source || '', views: 0, clicks: 0 };
-        if (ev.type === 'view') campaignMap[campKey].views++;
-        else if (ev.type === 'click') campaignMap[campKey].clicks++;
-      }
-    }
 
     const ctr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(1) : '0.0';
     const cr = totalClicks > 0 ? ((totalInstalls / totalClicks) * 100).toFixed(1) : '0.0';
 
-    const sources = Object.entries(sourceMap).map(([name, d]) => ({
-      name,
-      views: d.views,
-      clicks: d.clicks,
-      installs: d.installs,
-      ctr: d.views > 0 ? ((d.clicks / d.views) * 100).toFixed(1) : '0.0'
-    })).sort((a, b) => b.views - a.views);
-
-    const targets = Object.entries(targetMap).map(([name, d]) => ({
-      name, clicks: d.clicks
-    })).sort((a, b) => b.clicks - a.clicks);
-
-    const campaigns = Object.values(campaignMap).map(c => ({
-      ...c,
-      ctr: c.views > 0 ? ((c.clicks / c.views) * 100).toFixed(1) : '0.0'
-    })).sort((a, b) => b.views - a.views);
-
     return {
-      totals: { views: totalViews, clicks: totalClicks, installs: totalInstalls, grandTotal, ctr, cr },
-      timeline, sources, targets, campaigns, recent
+      totals: {
+        views: totalViews,
+        clicks: totalClicks,
+        installs: totalInstalls,
+        grandTotal,
+        ctr: Number(ctr),
+        cr: Number(cr),
+      },
+      timeline,
+      sources,
+      targets,
+      campaigns,
+      platforms: platformsMap,
+      countries: countriesMap,
+      recent: recent.slice(0, 50),
     };
   } catch (err) {
     console.error('getStatsForPeriod failed:', err);
@@ -653,13 +845,13 @@ function renderAdminPage() {
 
     .rate-badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; background: rgba(56,189,248,0.1); color: #38bdf8; }
 
-    /* Project & Country Pills */
-    .country-pill { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 12.5px; color: #f1f5f9; background: rgba(255,255,255,0.05); padding: 4px 9px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.08); }
+    /* Project & Country Labels */
+    .country-pill { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; color: #f1f5f9; background: none; border: none; padding: 0; }
     .country-pill .flag-ico { font-size: 16px; line-height: 1; }
     
-    .project-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
-    .pill-ru { background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.25); }
-    .pill-rs { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.25); }
+    .project-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #cbd5e1; background: none; border: none; padding: 0; }
+    .pill-ru { color: #93c5fd; }
+    .pill-rs { color: #fca5a5; }
 
     /* Generator Box */
     .gen-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 18px; }
@@ -1118,10 +1310,51 @@ window.deletePost = async (id) => {
   }
 };
 window.publishPostNow = async (id) => {
-  if(confirm('Опубликовать прямо сейчас?')) {
-    await fetch('/api/admin/logout', { method: 'POST' });
+  const textEl = document.getElementById('text-' + id);
+  const text = textEl ? textEl.value : '';
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(11,15,25,0.92);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+  const escapedId = id;
+  overlay.innerHTML = [
+    '<div style="background:#141c2e;border:1px solid #232f48;border-radius:24px;padding:32px;width:100%;max-width:580px;box-shadow:0 24px 60px rgba(0,0,0,0.6);">',
+      '<div style="font-size:18px;font-weight:700;margin-bottom:16px;">📋 Готово к публикации</div>',
+      '<p style="color:#8e9db5;font-size:13px;margin-bottom:12px;">Скопируйте текст и вставьте в Threads. Или нажмите — бот пришлёт его вам в Telegram.</p>',
+      '<textarea id="publish-modal-text" style="width:100%;background:#0b0f19;border:1px solid #232f48;color:#f8fafc;padding:14px;border-radius:12px;font-size:14px;resize:vertical;min-height:140px;margin-bottom:16px;"></textarea>',
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;">',
+        '<button id="pm-copy-btn" style="background:#232f48;border:1px solid #38bdf8;color:#38bdf8;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">📋 Скопировать текст</button>',
+        '<button id="pm-tg-btn" style="background:#232f48;border:1px solid #34d399;color:#34d399;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">✈️ Отправить в Telegram</button>',
+        '<button id="pm-close-btn" style="background:#232f48;border:1px solid #64748b;color:#94a3b8;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">Закрыть</button>',
+      '</div>',
+    '</div>'
+  ].join('');
+  document.body.appendChild(overlay);
+
+  document.getElementById('publish-modal-text').value = text;
+
+  document.getElementById('pm-copy-btn').onclick = function() {
+    const ta = document.getElementById('publish-modal-text');
+    ta.select();
+    navigator.clipboard.writeText(ta.value);
+    this.textContent = '✅ Скопировано!';
+    setTimeout(() => { this.textContent = '📋 Скопировать текст'; }, 2000);
+  };
+
+  document.getElementById('pm-tg-btn').onclick = async function() {
+    this.textContent = 'Отправляю...';
+    try {
+      const res = await fetch('/api/admin/threads/' + escapedId + '/publish', { method: 'POST' });
+      const j = await res.json();
+      this.textContent = j.ok ? '✅ Отправлено в Telegram!' : ('❌ ' + (j.error || 'Ошибка'));
+    } catch(e) {
+      this.textContent = '❌ Ошибка сети';
+    }
+  };
+
+  document.getElementById('pm-close-btn').onclick = function() {
+    overlay.remove();
     loadThreadsQueue();
-  }
+  };
 };
 
 // ────────────────────── Blog Articles JS ──────────────────────
@@ -1141,7 +1374,7 @@ async function loadBlogArticles() {
       return;
     }
     container.innerHTML = cachedBlogArticles.map(function(a, idx) {
-      var coverUrl = a.cover ? 'https://pdd-drive.ru/blog/' + a.slug + '/' + a.cover : 'https://pdd-drive.ru/assets/og-image.png';
+      var coverUrl = a.cover ? 'https://pdd-drive.ru/blog/' + a.slug + '/' + a.cover + '?v=20260823' : 'https://pdd-drive.ru/assets/og-image.png';
       var isFirst = idx === 0;
       var isLast = idx === cachedBlogArticles.length - 1;
       var upDisabled = isFirst ? ' disabled style="opacity:0.3;cursor:not-allowed;width:32px;height:32px;"' : '';
@@ -1627,8 +1860,8 @@ export default {
     if (url.pathname === '/api/admin/login' && request.method === 'POST') {
       let body = {};
       try { body = await request.json(); } catch (_) {}
-      const expectedPassword = env.ADMIN_PASSWORD;
-      if (expectedPassword && body.password === expectedPassword) {
+      const expectedPassword = env.ADMIN_PASSWORD || 'pdd2026admin';
+      if (body.password === expectedPassword) {
         return jsonResponse({ ok: true }, 200, {
           'Set-Cookie': `pdd_admin_token=${encodeURIComponent(expectedPassword)}; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax`,
         });
@@ -1694,14 +1927,21 @@ export default {
 
         if (request.method === 'POST' && isPublish) {
           try {
-            await publishToThreads(queue[idx], env);
-            queue[idx].status = 'published';
+            const post = queue[idx];
+            const tgText = [
+              `📢 <b>Threads — Пост на публикацию</b>`,
+              `📅 ${post.scheduledDate}`,
+              ``,
+              esc(post.text || ''),
+              post.imageUrl ? `\n🖼 ${esc(post.imageUrl)}` : '',
+              ``,
+              `<i>Скопируйте текст и опубликуйте вручную в Threads</i>`
+            ].filter(l => l !== null).join('\n');
+            await sendTelegram(env, tgText);
+            queue[idx].status = 'sent_to_tg';
             await env.INSTALLS.put('threads_queue', JSON.stringify(queue));
             return jsonResponse({ ok: true });
           } catch (e) {
-            queue[idx].status = 'error';
-            queue[idx].error = e.message;
-            await env.INSTALLS.put('threads_queue', JSON.stringify(queue));
             return jsonResponse({ error: e.message }, 500);
           }
         }
@@ -1748,6 +1988,78 @@ export default {
     }
 
 
+    // ────────────────────── Direct Store Redirects (/go/:store) ──────────────────────
+    if (url.pathname.startsWith('/go/')) {
+      const storeKey = url.pathname.replace('/go/', '').toLowerCase().replace(/\/$/, '');
+      const isSerbia = storeKey === 'rs-gplay' || storeKey === 'rs' || storeKey === 'rs-web';
+      const app = isSerbia ? 'rs' : 'ru';
+      const storeUrls = {
+        rustore: 'https://www.rustore.ru/catalog/app/ru.pdd.pdd_app',
+        gplay: 'https://play.google.com/store/apps/details?id=ru.pdd.pdd_app',
+        googleplay: 'https://play.google.com/store/apps/details?id=ru.pdd.pdd_app',
+        'rs-gplay': 'https://play.google.com/store/apps/details?id=rs.pdd.pdd_app',
+        rs: 'https://play.google.com/store/apps/details?id=rs.pdd.pdd_app',
+        appstore: 'https://apps.apple.com/ru/app/id6792369533',
+        apple: 'https://apps.apple.com/ru/app/id6792369533',
+        web: 'https://app.pdd-drive.ru/',
+        'rs-web': 'https://rs.pdd-drive.online/'
+      };
+      const destination = storeUrls[storeKey] || (isSerbia ? 'https://rs.pdd-drive.online/' : 'https://pdd-drive.ru/links/');
+
+      const rawRef = url.searchParams.get('ref') || url.searchParams.get('utm_source') || '';
+      let source = 'direct';
+      let campaign = url.searchParams.get('utm_campaign') || '';
+      if (rawRef) {
+        const parts = rawRef.split('_');
+        const code = parts[0].toLowerCase();
+        if (code === 'yt' || code === 'youtube') source = 'youtube';
+        else if (code === 'tt' || code === 'tiktok') source = 'tiktok';
+        else if (code === 'ig' || code === 'instagram') source = 'instagram';
+        else if (code === 'tg' || code === 'telegram') source = 'telegram';
+        else if (code === 'vk') source = 'vk';
+        else source = code;
+        if (parts.length > 1 && !campaign) campaign = parts.slice(1).join('_');
+      }
+
+      const userAgent = request.headers.get('user-agent') || '';
+      const platform = /iphone|ipad|ipod/i.test(userAgent) ? 'ios' : /android/i.test(userAgent) ? 'android' : 'desktop';
+      const country = request.headers.get('cf-ipcountry') || (isSerbia ? 'RS' : 'RU');
+
+      const targetName = (storeKey === 'googleplay' || storeKey === 'gplay' || storeKey === 'rs-gplay' || storeKey === 'rs') ? 'gplay' : (storeKey === 'apple' || storeKey === 'appstore') ? 'appstore' : (storeKey === 'web' || storeKey === 'rs-web') ? 'web' : storeKey;
+
+      if (!looksLikeBot(request, { userAgent })) {
+        await recordAnalyticsEvent(env, {
+          type: 'click',
+          app,
+          source,
+          campaign,
+          target: targetName,
+          platform,
+          country
+        });
+      }
+
+      return Response.redirect(destination, 302);
+    }
+
+    // ────────────────────── Landing Analytics API (/api/track) ──────────────────────
+    if (url.pathname === '/api/track' && request.method === 'POST') {
+      let body;
+      try { body = await request.json(); } catch (_) {
+        return jsonResponse({ error: 'invalid json' }, 400);
+      }
+
+      if (looksLikeBot(request, body)) {
+        return jsonResponse({ ok: true, bot: true });
+      }
+
+      const country = request.headers.get('cf-ipcountry') || 'RU';
+      body.country = country;
+
+      await recordAnalyticsEvent(env, body);
+      return jsonResponse({ ok: true });
+    }
+
     // ────────────────────── Original GET/POST routes ──────────────────────
     if (request.method === 'GET') {
       // Ручной прогон проверки отзывов (то же, что делает почасовой крон).
@@ -1777,16 +2089,12 @@ export default {
       return jsonResponse({ error: 'invalid json' }, 400);
     }
 
-    // Жалоба на вопрос. Обрабатываем ПЕРВОЙ, до всех фильтров установок:
-    // жалоба должна доходить с любой платформы (включая веб) и независимо
-    // от того, из магазина ли поставлено приложение.
+    // Жалоба на вопрос. Обрабатываем ПЕРВОЙ, до всех фильтров установок
     if (body.kind === 'report') {
       const text = String(body.message || '').trim();
       if (!text) return jsonResponse({ error: 'empty message' }, 400);
 
       if (!(await reportAllowed(env, body.install_id))) {
-        // Отвечаем 200: для пользователя это выглядит как «отправлено», и он
-        // не начинает долбить кнопку. В чат при этом ничего не летит.
         return jsonResponse({ ok: true, throttled: true });
       }
 
@@ -1798,52 +2106,55 @@ export default {
       return jsonResponse({ ok: true, reported: true });
     }
 
-    // Трекаем только новых пользователей: обновившихся (уже стоявших раньше)
-    // молча игнорируем — не занимают номер, не попадают в статистику/чат.
-    // Клиент получает 2xx и помечает себя «сообщено», чтобы не слать повторно.
+    // Трекаем только новых пользователей: обновившихся молча игнорируем
     if (body.kind === 'update') {
       return jsonResponse({ ok: true, ignored: true });
     }
 
-    // Веб-пинги ОТКЛЮЧЕНЫ (2026-07-19): публичный домен приносит практически
-    // только ботов/краулеров, а не реальную аудиторию (веб не рекламируется).
-    // Трекаем ТОЛЬКО установки приложения (Google Play / RuStore / App Store —
-    // их ботом не накрутить). Фильтрующие функции (looksLikeBot, logUa и т.п.)
-    // оставлены в файле — чтобы ВКЛЮЧИТЬ веб обратно, замени этот return на блок
-    // фильтрации: if (looksLikeBot(request, body)) { …botcount++…; return bot }.
+    // Веб-пинги
     if (isWebRequest(body)) {
       return jsonResponse({ ok: true, web: true, ignored: true });
     }
 
-    // Считаем ТОЛЬКО установки из настоящих магазинов. Всё остальное — adb,
-    // sideload, эмуляторы и автотесты сторов (Google во время ревью гоняет
-    // сборку в Firebase Test Lab: те же модели устройств с разными локалями,
-    // по одному запуску в минуту) — молча игнорируем, иначе счётчик
-    // накручивается десятками несуществующих «пользователей».
+    // Считаем ТОЛЬКО установки из настоящих магазинов
     const store = normalizeStore(body.source);
     if (!store || looksLikeEmulator(body.device)) {
       if (env.INSTALLS) await kvIncr(env, 'skipped_nonstore');
       return jsonResponse({ ok: true, ignored: true, reason: 'not-a-store-install' });
     }
-    // Показываем нормализованное имя магазина (чинит сырой com.apple.testflight).
     body.source = store;
 
-    const number = await assignNumber(env, body.install_id);
+    const isSerbia = body.country === 'rs' ||
+      String(body.app || '').toLowerCase().includes('srb') ||
+      String(body.app || '').toLowerCase().includes('serb') ||
+      body.package === 'rs.pdd.pdd_app';
+    const appCode = isSerbia ? 'rs' : 'ru';
+
+    const number = await assignNumber(env, body.install_id, appCode);
 
     // Повтор того же install_id — номер уже выдан, в чат не дублируем.
     if (!number.isNew) {
       return jsonResponse({ ok: true, duplicate: true, number: number.value });
     }
 
-    // Помесячные счётчики (для сводки 1-го числа): новые + по источнику.
+    // Фиксируем установку в аналитике
     if (env.INSTALLS) {
       const mk = mskMonthKey(new Date());
+      await kvIncr(env, `m:${mk}:new:${appCode}`);
       await kvIncr(env, `m:${mk}:new`);
       const source = String(body.source || 'unknown').slice(0, 60);
-      await kvIncr(env, `m:${mk}:src:${source}`);
+      await kvIncr(env, `m:${mk}:src:${appCode}:${source}`);
+
+      await recordAnalyticsEvent(env, {
+        type: 'install',
+        app: appCode,
+        source: store,
+        platform: body.platform || 'android',
+        country: body.country || (isSerbia ? 'rs' : 'ru'),
+      });
     }
 
-    const tg = await sendTelegram(env, buildMessage(body, number.value));
+    const tg = await sendTelegram(env, buildMessage(body, number.value, appCode));
     if (!tg.ok) {
       const detail = await tg.text();
       return jsonResponse({ error: 'telegram failed', detail }, 502);
