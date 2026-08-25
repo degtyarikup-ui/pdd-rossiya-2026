@@ -304,20 +304,20 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
       <h2 class="section-title">Из блога</h2>
       <p class="section-lead">Разборы правил и практические планы подготовки к экзамену.</p>
       <div class="post-grid">
-        <a class="post-card" href="/blog/avariynaya-signalizatsiya-specsignaly/">
-          <img class="post-card-cover" src="/blog/avariynaya-signalizatsiya-specsignaly/cover.jpg" alt="Автомобиль на обочине со знаком аварийной остановки позади" width="1200" height="630" loading="lazy">
-          <time datetime="2026-07-23">23 июля 2026</time>
-          <h3>Аварийная сигнализация и спецсигналы: когда включать и кому уступать</h3>
+        <a class="post-card" href="/blog/vydelennaya-polosa-dlya-avtobusov-pdd/">
+          <img class="post-card-cover" src="/blog/vydelennaya-polosa-dlya-avtobusov-pdd/cover.jpg" alt="Выделенная полоса для общественного транспорта с буквой А на асфальте" width="1200" height="630" loading="lazy">
+          <time datetime="2026-11-27">27 ноября 2026</time>
+          <h3>Выделенная полоса для автобусов в 2026 году: когда можно ехать и штрафы</h3>
         </a>
-        <a class="post-card" href="/blog/avtomagistral-i-zhilaya-zona/">
-          <img class="post-card-cover" src="/blog/avtomagistral-i-zhilaya-zona/cover.jpg" alt="Автомобили на широкой автомагистрали за городом" width="1200" height="630" loading="lazy">
-          <time datetime="2026-07-23">23 июля 2026</time>
-          <h3>Автомагистраль и жилая зона: два противоположных режима</h3>
+        <a class="post-card" href="/blog/ustupit-dorogu-peshehodu-na-zebre-pdd/">
+          <img class="post-card-cover" src="/blog/ustupit-dorogu-peshehodu-na-zebre-pdd/cover.jpg" alt="Пешеход переходит многополосную дорогу по нерегулируемому пешеходному переходу" width="1200" height="630" loading="lazy">
+          <time datetime="2026-11-25">25 ноября 2026</time>
+          <h3>Пешеход на зебре в 2026 году: пункт 14.1 ПДД и штрафы с камер</h3>
         </a>
-        <a class="post-card" href="/blog/bezopasnost-i-tehnika-vozhdeniya/">
-          <img class="post-card-cover" src="/blog/bezopasnost-i-tehnika-vozhdeniya/cover.jpg" alt="Руки водителя на руле во время дождя, дворники в движении" width="1200" height="630" loading="lazy">
-          <time datetime="2026-07-23">23 июля 2026</time>
-          <h3>Безопасность движения и техника управления автомобилем: что проверяют билеты</h3>
+        <a class="post-card" href="/blog/shtraf-za-ezdu-bez-prav-2026-tablitsa/">
+          <img class="post-card-cover" src="/blog/shtraf-za-ezdu-bez-prav-2026-tablitsa/cover.jpg" alt="Сотрудник Госавтоинспекции проверяет водительские документы водителя" width="1200" height="630" loading="lazy">
+          <time datetime="2026-11-23">23 ноября 2026</time>
+          <h3>Штраф за езду без прав в 2026 году: забыл дома, лишен, просрочены, никогда не получал</h3>
         </a>
       </div>
       <div class="blog-all-link"><a class="btn btn-primary" href="/blog/">Все статьи</a></div>
@@ -387,12 +387,17 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
       <a href="/links/">Соцсети</a>
       <a href="/slovar-pdd/">Словарь терминов</a>
       <a href="/privacy.html">Политика конфиденциальности</a>
+      <a href="/terms.html">Пользовательское соглашение</a>
       <a href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">Google Play</a>
       <a href="https://apps.apple.com/ru/app/id6792369533" rel="noopener">App Store</a>
       <a href="https://app.pdd-drive.ru/">Веб-версия</a>
       <a href="mailto:degtyarik.up@gmail.com">Поддержка</a>
     </nav>
-    <div class="copy">© 2026 ПДД Россия 2026 · <a href="https://pdd-drive.online" rel="noopener">ПДД Беларусь</a> · <a href="https://rs.pdd-drive.online" rel="noopener">Auto testovi Srbija</a></div>
+    <div class="copy">
+      <span class="age-badge">16+</span> © 2026 ПДД Россия 2026 · <a href="https://pdd-drive.online" rel="noopener">ПДД Беларусь</a> · <a href="https://rs.pdd-drive.online" rel="noopener">Auto testovi Srbija</a></div>
+    <div class="footer-disclaimer">
+      Сайт pdd-drive.ru носит исключительно информационно-справочный и образовательный характер и не является официальным сайтом ГУОБДД МВД России или портала Госуслуг. Официальная информация и первоисточники нормативно-правовых актов РФ публикуются на гибдд.рф и pravo.gov.ru.
+    </div>
   </div>
 </footer>
 
@@ -408,5 +413,6 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
     .then(function () { clearTimeout(t); }, function () { clearTimeout(t); degrade(); });
 })();
 </script>
+<script src="/assets/tracker.js" defer></script>
 </body>
 </html>

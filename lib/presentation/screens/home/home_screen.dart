@@ -8,56 +8,65 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/review_prompt_service.dart';
+import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
 import 'package:pdd_app/presentation/screens/favorites/favorites_screen.dart';
 import 'package:pdd_app/presentation/screens/mistakes/mistakes_screen.dart';
 import 'package:pdd_app/presentation/screens/pdd/pdd_screen.dart';
+import 'package:pdd_app/presentation/screens/feed/feed_screen.dart';
 import 'package:pdd_app/presentation/screens/settings/settings_screen.dart';
-import 'package:pdd_app/presentation/screens/signs/signs_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/screens/topics/topics_screen.dart';
-import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/streak_celebration_dialog.dart';
 import 'package:pdd_app/presentation/widgets/continue_session_card.dart';
 import 'package:pdd_app/presentation/widgets/progress_panel_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+  final int initialIndex;
+  const HomeScreen({super.key, this.initialIndex = 0});
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
 
   final List<Widget> _screens = const [
     _HomeTab(),
+    FeedScreen(),
     PddScreen(),
-    SignsScreen(),
     SettingsScreen(),
   ];
 
-  // Раньше здесь на первом запуске открывалось модальное окно «На чём
-  // планируешь ездить?». Убрано: первое, что видел человек, — вопрос о
-  // категории до того, как приложение показало хоть какую-то пользу. По
-  // умолчанию берётся A/B (подавляющее большинство), а кому нужны C/D —
-  // переключат в настройках.
-
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Scaffold(
+      backgroundColor: colors.homeScreenBackground,
       body: _screens[_currentIndex],
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(height: 1, color: AppColors.divider),
+          Container(
+            height: 1,
+            color: colors.divider,
+          ),
           NavigationBar(
             selectedIndex: _currentIndex,
             onDestinationSelected: (index) {
-              HapticFeedbackHelper.select();
-              setState(() => _currentIndex = index);
+              if (index != _currentIndex) {
+                TtsService.instance.stop();
+                HapticFeedbackHelper.select();
+                setState(() => _currentIndex = index);
+              }
             },
             destinations: [
               NavigationDestination(
@@ -66,14 +75,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 label: appL10n.training,
               ),
               NavigationDestination(
+                icon: const Icon(Icons.style_outlined),
+                selectedIcon: const Icon(Icons.style_rounded),
+                label: appL10n.video,
+              ),
+              NavigationDestination(
                 icon: const Icon(Icons.gavel_outlined),
                 selectedIcon: const Icon(Icons.gavel),
                 label: appL10n.pdd,
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.signpost_outlined),
-                selectedIcon: const Icon(Icons.signpost),
-                label: appL10n.signs,
               ),
               NavigationDestination(
                 icon: const Icon(Icons.settings_outlined),
@@ -164,9 +173,10 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
     final streakAsync = ref.watch(streakProvider);
     final unfinishedSession = ref.watch(unfinishedSessionProvider);
     final hasContinueCard = unfinishedSession.valueOrNull != null;
+    final colors = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.homeScreenBackground,
+      backgroundColor: colors.homeScreenBackground,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -357,6 +367,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
   static const double _homeNavLabelFontSize = 18;
 
   Widget _buildExamHero(BuildContext context, WidgetRef ref) {
+    final colors = AppColors.of(context);
     const double bannerHeight = 160;
 
     // Картинка на кнопке экзамена зависит от выбранной категории и реактивно
@@ -410,16 +421,13 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final bw = constraints.maxWidth;
-                // Готовый обрезанный файл (как в онбординге): машина крупная,
-                // прижата к правому краю и уходит за него. Слева остаётся место
-                // под бейджи и «Экзамен» — текст на машину не заходит.
                 final imageW = (bw * 0.50).clamp(170.0, 225.0);
                 final reserveRight = imageW + 6;
                 return Stack(
                   clipBehavior: Clip.hardEdge,
                   children: [
-                    const Positioned.fill(
-                      child: ColoredBox(color: AppColors.accent),
+                    Positioned.fill(
+                      child: ColoredBox(color: colors.accent),
                     ),
                     Positioned(
                       right: 0,
@@ -501,6 +509,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
     required String label,
     required VoidCallback onTap,
   }) {
+    final colors = AppColors.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -510,7 +519,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
           height: AppDimensions.topicButtonHeight,
           padding: const EdgeInsets.all(AppDimensions.spacingL),
           decoration: BoxDecoration(
-            color: AppColors.accentSurface10,
+            color: colors.accentSurface10,
             borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
           ),
           child: Column(
@@ -531,11 +540,11 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                 child: Text(
                   label,
                   maxLines: 1,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: _homeNavLabelFontSize,
                     fontWeight: FontWeight.w600,
                     height: 1.1,
-                    color: AppColors.accent,
+                    color: colors.accent,
                   ),
                 ),
               ),

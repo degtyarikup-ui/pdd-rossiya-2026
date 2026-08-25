@@ -28,11 +28,12 @@ class SignDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final description = signDescription?.trim();
     final folkName = signFolkName?.trim();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -54,20 +55,20 @@ class SignDetailScreen extends StatelessWidget {
                       children: [
                         Text(
                           signNumber,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.accent,
+                            color: colors.accent,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           signName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                             height: 1.0,
-                            color: AppColors.primaryText,
+                            color: colors.primaryText,
                           ),
                         ),
                       ],
@@ -89,7 +90,7 @@ class SignDetailScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 260,
                     decoration: BoxDecoration(
-                      color: AppColors.cardBackground,
+                      color: colors.cardBackground,
                       borderRadius: BorderRadius.circular(
                         AppDimensions.cardRadius,
                       ),
@@ -106,16 +107,16 @@ class SignDetailScreen extends StatelessWidget {
                                     '${CountryConfig.current.signImagesDir}/$signImage',
                                     fit: BoxFit.contain,
                                     height: 180,
-                                    errorBuilder: (_, __, ___) => const Icon(
+                                    errorBuilder: (_, __, ___) => Icon(
                                       Icons.signpost,
                                       size: 88,
-                                      color: AppColors.secondaryText,
+                                      color: colors.secondaryText,
                                     ),
                                   ))
-                          : const Icon(
+                          : Icon(
                               Icons.signpost,
                               size: 88,
-                              color: AppColors.secondaryText,
+                              color: colors.secondaryText,
                             ),
                     ),
                   ),
@@ -130,17 +131,17 @@ class SignDetailScreen extends StatelessWidget {
                         vertical: AppDimensions.spacingM,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.cardBackground,
+                        color: colors.cardBackground,
                         borderRadius: BorderRadius.circular(
                           AppDimensions.cardRadius,
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.forum_outlined,
                             size: 20,
-                            color: AppColors.secondaryText,
+                            color: colors.secondaryText,
                           ),
                           const SizedBox(width: AppDimensions.spacingM),
                           Expanded(
@@ -149,20 +150,20 @@ class SignDetailScreen extends StatelessWidget {
                               children: [
                                 Text(
                                   appL10n.folkNameLabel,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.secondaryText,
+                                    color: colors.secondaryText,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '«$folkName»',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                     height: 1.2,
-                                    color: AppColors.primaryText,
+                                    color: colors.primaryText,
                                   ),
                                 ),
                               ],
@@ -177,7 +178,7 @@ class SignDetailScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(AppDimensions.spacingL),
                       decoration: BoxDecoration(
-                        color: AppColors.cardBackground,
+                        color: colors.cardBackground,
                         borderRadius: BorderRadius.circular(
                           AppDimensions.cardRadius,
                         ),
@@ -187,20 +188,20 @@ class SignDetailScreen extends StatelessWidget {
                         children: [
                           Text(
                             appL10n.description,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               height: 1.0,
-                              color: AppColors.primaryText,
+                              color: colors.primaryText,
                             ),
                           ),
                           const SizedBox(height: AppDimensions.spacingS),
                           Text(
                             description,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               height: 1.6,
-                              color: AppColors.primaryText,
+                              color: colors.primaryText,
                             ),
                           ),
                         ],

@@ -657,7 +657,11 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       final answerTexts = answers
           .map((answer) => (answer as Map)['text'] as String)
           .toList();
-      ttsService.speakQuestion(question: questionText, answers: answerTexts);
+      ttsService.speakQuestion(
+        rawQuestionId: questionId,
+        question: questionText,
+        answers: answerTexts,
+      );
     });
   }
 
@@ -697,9 +701,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       enabled: voiceShouldPlay,
     );
 
-    // Системный «назад» (кнопка/жест Android, свайп iOS, back браузера) идёт
-    // через тот же диалог подтверждения, что и крестик, — иначе экзамен
-    // молча пропадает без результатов и разбора ошибок.
+    final colors = AppColors.of(context);
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? result) {
@@ -707,7 +709,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
         _confirmLeaveExam();
       },
       child: Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -731,10 +733,10 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                           _additionalPhase
                               ? appL10n.examAdditionalTitle
                               : appL10n.exam,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.primaryText,
+                            color: colors.primaryText,
                           ),
                         ),
                         Text(
@@ -747,9 +749,9 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                                   _currentIndex + 1,
                                   _examQuestions.length,
                                 ),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.secondaryText,
+                            color: colors.secondaryText,
                           ),
                         ),
                       ],
@@ -762,8 +764,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: _remainingTime < 120
-                          ? AppColors.redLight
-                          : AppColors.lightAccent,
+                          ? colors.redLight
+                          : colors.accentSurface10,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -773,8 +775,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                           Icons.timer_outlined,
                           size: 18,
                           color: _remainingTime < 120
-                              ? AppColors.red
-                              : AppColors.accent,
+                              ? colors.red
+                              : colors.accent,
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -783,8 +785,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: _remainingTime < 120
-                                ? AppColors.red
-                                : AppColors.accent,
+                                ? colors.red
+                                : colors.accent,
                           ),
                         ),
                       ],
@@ -818,6 +820,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   }
 
   Widget _buildExamQuestionPage(int pageIndex) {
+    final colors = AppColors.of(context);
     final question = _examQuestions[pageIndex];
     final answers = question['answers'] as List;
     final questionText = question['question'] as String;
@@ -843,10 +846,10 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
           const SizedBox(height: AppDimensions.spacingL),
           Text(
             questionText,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: AppColors.primaryText,
+              color: colors.primaryText,
               height: 1.35,
             ),
           ),
@@ -965,22 +968,18 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   }
 
   Widget _buildResultsScreen() {
+    final colors = AppColors.of(context);
     final totalWrong = _wrongAnswers.length;
     final totalQuestions = _examQuestions.length;
     final passed = _examPassed;
     final timeSpent = _totalTimeSeconds - _remainingTime;
 
-    // Верхняя панель ЗАКРЕПЛЕНА, но под ней не сплошная полоса, а градиент
-    // «фон → прозрачность»: контент прокручивается под панелью и плавно
-    // растворяется в фоне, а не обрезается резкой границей.
     const double kBarTop = AppDimensions.screenPadding;
     const double kBarHeight = 40;
-    // Затухание тянется на всю подложку: непрозрачный фон только за кнопками,
-    // дальше — длинный (80px) плавный уход в прозрачность, без резкой границы.
     const double kFadeHeight = kBarTop + kBarHeight + 80;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Stack(
           children: [
@@ -997,7 +996,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: passed ? AppColors.green : AppColors.red,
+                        color: passed ? colors.green : colors.red,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -1012,7 +1011,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
-                        color: passed ? AppColors.green : AppColors.red,
+                        color: passed ? colors.green : colors.red,
                       ),
                     ),
                     const SizedBox(height: AppDimensions.spacingS),
@@ -1026,9 +1025,9 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                           ? appL10n.examResultPassed
                           : appL10n.examResultFailed,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
-                        color: AppColors.secondaryText,
+                        color: colors.secondaryText,
                         height: 1.4,
                       ),
                     ),
@@ -1041,14 +1040,14 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                           _earnedPoints(),
                           _maxPoints(),
                         ),
-                        color: AppColors.accent,
+                        color: colors.accent,
                       ),
                       const SizedBox(height: AppDimensions.spacingM),
                       _buildResultCard(
                         icon: Icons.percent_rounded,
                         label: appL10n.examScoreLabel,
                         value: appL10n.examScorePercent(_scorePercent()),
-                        color: passed ? AppColors.green : AppColors.red,
+                        color: passed ? colors.green : colors.red,
                       ),
                       const SizedBox(height: AppDimensions.spacingM),
                     ],
@@ -1059,14 +1058,14 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                         _correctAnswers.length,
                         totalQuestions,
                       ),
-                      color: AppColors.green,
+                      color: colors.green,
                     ),
                     const SizedBox(height: AppDimensions.spacingM),
                     _buildResultCard(
                       icon: Icons.cancel_outlined,
                       label: appL10n.wrongAnswers,
                       value: '$totalWrong',
-                      color: AppColors.red,
+                      color: colors.red,
                     ),
                     if (_additionalPhase) ...[
                       const SizedBox(height: AppDimensions.spacingM),
@@ -1077,7 +1076,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                           _additionalQuestionsCount,
                           _additionalAnsweredWrongCount(),
                         ),
-                        color: AppColors.gold,
+                        color: colors.gold,
                       ),
                     ],
                     const SizedBox(height: AppDimensions.spacingM),
@@ -1085,7 +1084,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                       icon: Icons.timer_outlined,
                       label: appL10n.examTimeSpent,
                       value: _formatTime(timeSpent),
-                      color: AppColors.accent,
+                      color: colors.accent,
                     ),
                     if (_additionalPhase) ...[
                       const SizedBox(height: AppDimensions.spacingM),
@@ -1093,7 +1092,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                         icon: Icons.rule_folder_outlined,
                         label: appL10n.examMainBlockErrors,
                         value: '$_initialWrongCount',
-                        color: AppColors.primaryText,
+                        color: colors.primaryText,
                       ),
                     ],
                     const SizedBox(height: AppDimensions.spacingXXL),
@@ -1147,9 +1146,9 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        AppColors.background,
-                        AppColors.background,
-                        AppColors.background.withValues(alpha: 0.0),
+                        colors.background,
+                        colors.background,
+                        colors.background.withValues(alpha: 0.0),
                       ],
                       stops: const [
                         0.0,
@@ -1176,11 +1175,6 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                     },
                   ),
                   const Spacer(),
-                  // Провал по блочному правилу выглядит нелогично («всего две
-                  // ошибки — и не сдал»), поэтому объяснение под рукой. Но
-                  // текст длинный и на экране результата занимал бы полполотна,
-                  // поэтому он спрятан за иконкой: нужен один раз, тем, кто
-                  // не понял, почему не сдал.
                   if (_failedByBlock) ...[
                     AppChromeIconButton(
                       icon: Icons.info_outline_rounded,
@@ -1193,7 +1187,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                   ],
                   AppChromeIconButton(
                     icon: Icons.ios_share_rounded,
-                    backgroundColor: AppColors.accent,
+                    backgroundColor: colors.accent,
                     iconColor: AppColors.white,
                     onTap: () {
                       HapticFeedbackHelper.tap();
@@ -1212,32 +1206,33 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   /// Почему экзамен не сдан при двух ошибках — по кнопке-иконке, а не полотном
   /// на экране результата.
   Future<void> _showBlockRuleExplanation() {
+    final colors = AppColors.of(context);
     return showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
+        backgroundColor: colors.cardBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
         ),
-        icon: const Icon(
+        icon: Icon(
           Icons.info_outline_rounded,
-          color: AppColors.red,
+          color: colors.red,
           size: 28,
         ),
         title: Text(
           appL10n.examFailed,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: AppColors.primaryText,
+            color: colors.primaryText,
           ),
         ),
         content: Text(
           appL10n.examFailedByBlock(_rules.maxMistakesPerBlock),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             height: 1.45,
-            color: AppColors.primaryText,
+            color: colors.primaryText,
           ),
         ),
         actions: [
@@ -1256,10 +1251,11 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     required String value,
     required Color color,
   }) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spacingL),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
       ),
       child: Row(
@@ -1269,9 +1265,9 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: AppColors.secondaryText,
+                color: colors.secondaryText,
               ),
             ),
           ),
@@ -1289,6 +1285,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   }
 
   Widget _buildQuestionNumbers() {
+    final colors = AppColors.of(context);
     return ListView.builder(
       controller: _questionStripController,
       scrollDirection: Axis.horizontal,
@@ -1303,15 +1300,13 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
         final answered = _savedAnswers[index] != null;
         final isAdditional = index >= _mainCount;
         final backgroundColor = isCurrent
-            ? AppColors.accent
+            ? colors.accent
             : answered
-                ? AppColors.accent.withValues(alpha: 0.42)
+                ? colors.accent.withValues(alpha: 0.42)
                 : isAdditional
-                    ? AppColors.gold.withValues(alpha: 0.5)
-                    : AppColors.gray;
+                    ? colors.gold.withValues(alpha: 0.5)
+                    : colors.gray;
 
-        // Предстоящие (не текущие, не отвеченные, не доп.) — приглушённая цифра
-        // на серой плашке; на цветных плашках — белая. Правило в QuestionNumberChip.
         return QuestionNumberChip(
           number: index + 1,
           backgroundColor: backgroundColor,
@@ -1328,6 +1323,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     required int index,
     required String text,
   }) {
+    final colors = AppColors.of(context);
     final saved = _savedAnswers[questionIndex];
     final isAnswered = saved != null;
     final isSelected = isAnswered
@@ -1339,18 +1335,18 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
 
     if (isAnswered) {
       if (isSelected) {
-        backgroundColor = AppColors.lightAccent;
-        textColor = AppColors.primaryText;
+        backgroundColor = colors.accentSurface10;
+        textColor = colors.primaryText;
       } else {
-        backgroundColor = AppColors.cardBackground;
-        textColor = AppColors.secondaryText;
+        backgroundColor = colors.cardBackground;
+        textColor = colors.secondaryText;
       }
     } else if (isSelected) {
-      backgroundColor = AppColors.lightAccent;
-      textColor = AppColors.primaryText;
+      backgroundColor = colors.accentSurface10;
+      textColor = colors.primaryText;
     } else {
-      backgroundColor = AppColors.cardBackground;
-      textColor = AppColors.primaryText;
+      backgroundColor = colors.cardBackground;
+      textColor = colors.primaryText;
     }
 
     final canTap =
@@ -1377,11 +1373,11 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                 decoration: BoxDecoration(
                   color: isAnswered
                       ? (isSelected
-                            ? AppColors.accent.withOpacity(0.2)
-                            : AppColors.gray)
+                            ? colors.accent.withValues(alpha: 0.2)
+                            : colors.gray)
                       : isSelected
-                          ? AppColors.accent.withOpacity(0.12)
-                          : AppColors.gray,
+                          ? colors.accent.withValues(alpha: 0.12)
+                          : colors.gray,
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -1392,11 +1388,11 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                       fontWeight: FontWeight.w600,
                       color: isAnswered
                           ? (isSelected
-                                ? AppColors.accent
-                                : AppColors.secondaryText)
+                                ? colors.accent
+                                : colors.secondaryText)
                           : isSelected
-                              ? AppColors.accent
-                              : AppColors.secondaryText,
+                              ? colors.accent
+                              : colors.secondaryText,
                     ),
                   ),
                 ),

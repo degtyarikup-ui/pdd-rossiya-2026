@@ -36,6 +36,15 @@ class AppLocalizationsSr extends AppLocalizations {
   String get signs => 'Znakovi';
 
   @override
+  String get video => 'Traka';
+
+  @override
+  String get rules => 'Pravila';
+
+  @override
+  String get signsAndMarkup => 'Znakovi i oznake';
+
+  @override
   String get settings => 'Podešavanja';
 
   @override
@@ -676,4 +685,19 @@ class AppLocalizationsSr extends AppLocalizations {
   @override
   String get dataLoadError =>
       'Učitavanje podataka nije uspelo. Proverite vezu i pokušajte ponovo.';
+
+  @override
+  String get themeSetting => 'Tema';
+
+  @override
+  String get themeSystem => 'Kao na uređaju';
+
+  @override
+  String get themeLight => 'Svetla';
+
+  @override
+  String get themeDark => 'Tamna';
+
+  @override
+  String get themeChoose => 'Izbor teme';
 }

@@ -9,6 +9,9 @@
   "training": "Učenje",
   "pdd": "Propisi",
   "signs": "Znakovi",
+  "video": "Traka",
+  "rules": "Pravila",
+  "signsAndMarkup": "Znakovi i oznake",
   "settings": "Podešavanja",
   "showHint": "Prikaži savet",
   "comment": "Objašnjenje",
@@ -190,5 +193,10 @@
   "notifStreakBody6": "Vežbajte danas",
   "notifChannelName": "Podsetnici o nizu",
   "notifChannelDesc": "Da ne izgubite niz vežbanja",
-  "dataLoadError": "Učitavanje podataka nije uspelo. Proverite vezu i pokušajte ponovo."
+  "dataLoadError": "Učitavanje podataka nije uspelo. Proverite vezu i pokušajte ponovo.",
+  "themeSetting": "Tema",
+  "themeSystem": "Kao na uređaju",
+  "themeLight": "Svetla",
+  "themeDark": "Tamna",
+  "themeChoose": "Izbor teme"
 }

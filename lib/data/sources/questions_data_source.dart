@@ -72,6 +72,17 @@ class QuestionsDataSource {
     return json.decode(content) as Map<String, dynamic>;
   }
 
+  Future<List<Map<String, dynamic>>> loadSignsFeedManifest() async {
+    try {
+      final String content =
+          await rootBundle.loadString('assets/countries/ru/questions/signs_feed_manifest.json');
+      final List<dynamic> list = json.decode(content);
+      return list.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
   /// Дорожная разметка по группам: { «Горизонтальная разметка»: [{title,
   /// description}, …], «Вертикальная разметка»: […] }. Страно-зависимая.
   Future<Map<String, List<Map<String, String>>>> loadMarkup() async {

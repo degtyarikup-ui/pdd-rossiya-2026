@@ -88,8 +88,9 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
       });
     });
     final ticketsAsync = ref.watch(ticketsProvider);
+    final colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -174,6 +175,7 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
   }
 
   Widget _buildAppBar(BuildContext context) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.all(AppDimensions.screenPadding),
       child: Row(
@@ -188,10 +190,10 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
           const SizedBox(width: AppDimensions.spacingM),
           Text(
             AppStrings.tickets,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w600,
-              color: AppColors.primaryText,
+              color: colors.primaryText,
             ),
           ),
         ],
@@ -208,21 +210,22 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
     required bool isPassed,
     required List<Map<String, dynamic>> questions,
   }) {
+    final colors = AppColors.of(context);
     final isFailed = isCompleted && !isPassed;
     final hasCorrectProgress = correctCount > 0 && !isCompleted;
 
     final backgroundColor = isPassed
-        ? AppColors.greenLight
+        ? colors.greenLight
         : isFailed
-        ? AppColors.redLight
-        : AppColors.cardBackground;
+        ? colors.redLight
+        : colors.cardBackground;
     final accentColor = isPassed
-        ? AppColors.green
+        ? colors.green
         : isFailed
-        ? AppColors.red
+        ? colors.red
         : hasCorrectProgress
-        ? AppColors.accent
-        : AppColors.secondaryText;
+        ? colors.accent
+        : colors.secondaryText;
     final progressPillLabel = '$correctCount/$totalQuestions';
 
     return GestureDetector(
@@ -255,10 +258,10 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
             children: [
               Text(
                 '№$number',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primaryText,
+                  color: colors.primaryText,
                 ),
               ),
               const Spacer(),

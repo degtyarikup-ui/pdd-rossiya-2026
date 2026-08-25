@@ -13,9 +13,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _SilentTts implements TtsService {
   @override
   Future<void> speakQuestion({
+    String? rawQuestionId,
     required String question,
     required List<String> answers,
   }) async {}
+
+  @override
+  Future<Duration?> speakOrPlayFeedItem({
+    required String? rawQuestionId,
+    required String question,
+    required List<String> answers,
+  }) async {
+    return null;
+  }
 
   @override
   Future<void> stop() async {}

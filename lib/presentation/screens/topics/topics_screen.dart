@@ -60,9 +60,10 @@ class _TopicsScreenState extends ConsumerState<TopicsScreen> {
         });
       });
     });
+    final colors = AppColors.of(context);
     final topicsAsync = ref.watch(topicsProvider);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -127,6 +128,7 @@ class _TopicsScreenState extends ConsumerState<TopicsScreen> {
   }
 
   Widget _buildAppBar(BuildContext context) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.all(AppDimensions.screenPadding),
       child: Row(
@@ -141,10 +143,10 @@ class _TopicsScreenState extends ConsumerState<TopicsScreen> {
           const SizedBox(width: AppDimensions.spacingM),
           Text(
             AppStrings.topics,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w600,
-              color: AppColors.primaryText,
+              color: colors.primaryText,
             ),
           ),
         ],
@@ -159,6 +161,7 @@ class _TopicsScreenState extends ConsumerState<TopicsScreen> {
     required int correctCount,
     required List<Map<String, dynamic>> questions,
   }) {
+    final colors = AppColors.of(context);
     final notStarted = totalQuestions == 0 || correctCount == 0;
     final completed = !notStarted && correctCount >= totalQuestions;
 
@@ -167,14 +170,14 @@ class _TopicsScreenState extends ConsumerState<TopicsScreen> {
     late final String progressLabel;
 
     if (notStarted) {
-      pillBg = AppColors.secondaryText.withOpacity(0.12);
-      pillTextColor = AppColors.secondaryText;
+      pillBg = colors.secondaryText.withValues(alpha: 0.12);
+      pillTextColor = colors.secondaryText;
     } else if (completed) {
-      pillBg = AppColors.green.withOpacity(0.12);
-      pillTextColor = AppColors.green;
+      pillBg = colors.greenLight;
+      pillTextColor = colors.green;
     } else {
-      pillBg = AppColors.accent.withOpacity(0.12);
-      pillTextColor = AppColors.accent;
+      pillBg = colors.accentSurface10;
+      pillTextColor = colors.accent;
     }
     progressLabel = '$correctCount/$totalQuestions';
 
@@ -196,7 +199,7 @@ class _TopicsScreenState extends ConsumerState<TopicsScreen> {
       child: Container(
         padding: const EdgeInsets.all(AppDimensions.spacingL),
         decoration: BoxDecoration(
-          color: AppColors.cardBackground,
+          color: colors.cardBackground,
           borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
         ),
         child: Row(
@@ -204,10 +207,10 @@ class _TopicsScreenState extends ConsumerState<TopicsScreen> {
             Expanded(
               child: Text(
                 name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.primaryText,
+                  color: colors.primaryText,
                 ),
               ),
             ),

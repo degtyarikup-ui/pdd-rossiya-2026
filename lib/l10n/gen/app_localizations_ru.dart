@@ -36,6 +36,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get signs => 'Знаки';
 
   @override
+  String get video => 'Лента';
+
+  @override
+  String get rules => 'Правила';
+
+  @override
+  String get signsAndMarkup => 'Знаки и разметка';
+
+  @override
   String get settings => 'Настройки';
 
   @override
@@ -672,4 +681,19 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get dataLoadError =>
       'Не удалось загрузить данные. Проверьте подключение и попробуйте снова.';
+
+  @override
+  String get themeSetting => 'Тема оформления';
+
+  @override
+  String get themeSystem => 'Как на устройстве';
+
+  @override
+  String get themeLight => 'Светлая';
+
+  @override
+  String get themeDark => 'Тёмная';
+
+  @override
+  String get themeChoose => 'Тема оформления';
 }

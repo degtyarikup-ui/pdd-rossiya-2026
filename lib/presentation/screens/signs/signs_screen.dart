@@ -39,7 +39,8 @@ const Map<String, String> _kSignCategoryIcons = {
 const String _kSignCategoryFallbackIcon = 'information.svg';
 
 class SignsScreen extends ConsumerStatefulWidget {
-  const SignsScreen({super.key});
+  final bool showHeader;
+  const SignsScreen({super.key, this.showHeader = true});
 
   @override
   ConsumerState<SignsScreen> createState() => _SignsScreenState();
@@ -66,53 +67,48 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
   @override
   Widget build(BuildContext context) {
     final signsAsync = ref.watch(signsProvider);
-    // Разметка страно-зависимая; грузится параллельно. Пока нет — просто
-    // не показываем её разделы (знаки отрисуются сразу).
     final markup = ref.watch(markupProvider).valueOrNull ??
         const <String, List<Map<String, String>>>{};
+    final colors = AppColors.of(context);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppDimensions.screenPadding,
-                16,
-                AppDimensions.screenPadding,
-                0,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: Text(
-                      AppStrings.signs,
-                      textAlign: TextAlign.left,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        height: 1.0,
-                        color: AppColors.primaryText,
-                      ),
+    final content = Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppDimensions.screenPadding,
+            widget.showHeader ? 16 : 0,
+            AppDimensions.screenPadding,
+            0,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.showHeader) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: Text(
+                    AppStrings.signs,
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      height: 1.0,
+                      color: colors.primaryText,
                     ),
                   ),
-                  const SizedBox(height: AppDimensions.spacingS),
-                  AppPillSearchField(
-                    controller: _searchController,
-                    onChanged: (value) => setState(() => _query = value),
-                  ),
-                ],
+                ),
+                const SizedBox(height: AppDimensions.spacingS),
+              ],
+              AppPillSearchField(
+                controller: _searchController,
+                onChanged: (value) => setState(() => _query = value),
               ),
-            ),
+            ],
+          ),
+        ),
             Expanded(
               child: signsAsync.when(
                 data: (signs) {
-                  // Категории строим из данных страны: показываем только те,
-                  // что реально присутствуют и непустые (правило «нет данных —
-                  // не показываем раздел»). Порядок — как в JSON.
                   final signCategories = <_SignCategoryMeta>[];
                   signs.forEach((title, value) {
                     if (value is Map && value.isNotEmpty) {
@@ -128,7 +124,6 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
                     }
                   });
 
-                  // Разделы разметки — из контента страны, пустые скрываем.
                   final markupCategories = <_SignCategoryMeta>[];
                   markup.forEach((group, entries) {
                     if (entries.isNotEmpty) {
@@ -170,10 +165,10 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
                         child: Text(
                           appL10n.nothingFoundTryAnother,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             height: 1.4,
-                            color: AppColors.secondaryText,
+                            color: colors.secondaryText,
                           ),
                         ),
                       ),
@@ -199,12 +194,22 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
               ),
             ),
           ],
-        ),
+        );
+
+    if (!widget.showHeader) {
+      return content;
+    }
+
+    return Scaffold(
+      backgroundColor: colors.background,
+      body: SafeArea(
+        child: content,
       ),
     );
   }
 
   Widget _buildSignCategory(BuildContext context, _SignCategoryMeta category) {
+    final colors = AppColors.of(context);
     final signsMap = category.signs is Map<String, dynamic>
         ? category.signs as Map<String, dynamic>
         : <String, dynamic>{};
@@ -243,7 +248,7 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
         child: Container(
           padding: const EdgeInsets.all(AppDimensions.spacingL),
           decoration: BoxDecoration(
-            color: AppColors.cardBackground,
+            color: colors.cardBackground,
             borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
           ),
           child: Row(
@@ -261,11 +266,10 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
               Expanded(
                 child: Text(
                   category.title,
-                  // Как строки на экране настроек — см. pdd_screen.dart.
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primaryText,
+                    color: colors.primaryText,
                   ),
                 ),
               ),
@@ -276,22 +280,22 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.gray,
+                  color: colors.gray,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   '$itemCount',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.secondaryText,
+                    color: colors.secondaryText,
                   ),
                 ),
               ),
               const SizedBox(width: AppDimensions.spacingS),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
-                color: AppColors.secondaryText,
+                color: colors.secondaryText,
               ),
             ],
           ),
@@ -313,10 +317,11 @@ class SignCategoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final entries = signs.entries.toList();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -335,11 +340,11 @@ class SignCategoryScreen extends StatelessWidget {
                   Expanded(
                     child: Text(
                       categoryName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                         height: 1.0,
-                        color: AppColors.primaryText,
+                        color: colors.primaryText,
                       ),
                     ),
                   ),
@@ -412,7 +417,7 @@ class SignCategoryScreen extends StatelessWidget {
                                     AppDimensions.spacingM,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.cardBackground,
+                                    color: colors.cardBackground,
                                     borderRadius: BorderRadius.circular(
                                       AppDimensions.cardRadius,
                                     ),
@@ -439,19 +444,19 @@ class SignCategoryScreen extends StatelessWidget {
                                                                 _,
                                                                 __,
                                                                 ___,
-                                                              ) => const Icon(
+                                                              ) => Icon(
                                                                 Icons.signpost,
                                                                 size: 48,
-                                                                color: AppColors
+                                                                color: colors
                                                                     .secondaryText,
                                                               ),
                                                         ),
                                                 )
-                                              : const Icon(
+                                              : Icon(
                                                   Icons.signpost,
                                                   size: 48,
                                                   color:
-                                                      AppColors.secondaryText,
+                                                      colors.secondaryText,
                                                 ),
                                         ),
                                       ),
@@ -460,10 +465,10 @@ class SignCategoryScreen extends StatelessWidget {
                                       ),
                                       Text(
                                         signNumber,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,
-                                          color: AppColors.accent,
+                                          color: colors.accent,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -472,10 +477,10 @@ class SignCategoryScreen extends StatelessWidget {
                                         textAlign: TextAlign.center,
                                         maxLines: 3,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 12,
                                           height: 1.3,
-                                          color: AppColors.primaryText,
+                                          color: colors.primaryText,
                                         ),
                                       ),
                                     ],

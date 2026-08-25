@@ -212,18 +212,26 @@ section[id] { scroll-margin-top: 76px; }
 /* ---------- Блог: сетка карточек (общая для /blog/ и блока «Из блога» на главной) ---------- */
 .post-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .post-card {
-  display: block; background: var(--card);
+  display: flex; flex-direction: column; background: var(--card);
   border: 1px solid var(--divider); border-radius: var(--radius-card);
-  padding: 20px 22px; color: var(--text);
+  padding: 16px 18px 20px; color: var(--text);
+  transition: border-color .15s ease, transform .15s ease;
 }
-.post-card:hover { text-decoration: none; border-color: var(--accent); }
-.post-card time { font-size: 13.5px; color: var(--muted); }
-.post-card h2, .post-card h3 { font-size: 18px; margin: 6px 0 0; letter-spacing: -.2px; }
+.post-card:hover { text-decoration: none; border-color: var(--accent); transform: translateY(-2px); }
+.post-card time { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
+.post-card h2, .post-card h3, .prose .post-card h2, .prose .post-card h3 {
+  font-size: 16px !important;
+  line-height: 1.35 !important;
+  margin: 4px 0 0 !important;
+  letter-spacing: -.15px !important;
+  font-weight: 600 !important;
+  color: var(--text) !important;
+}
 .post-card-cover {
-  width: 100%; height: 140px; object-fit: cover; object-position: center;
+  width: 100%; height: 130px; object-fit: cover; object-position: center;
   border-radius: var(--radius-s);
   border: 1px solid var(--divider);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .blog-all-link { text-align: center; margin-top: 28px; }
 @media (max-width: 900px) { .post-grid { grid-template-columns: 1fr; } }
@@ -392,6 +400,11 @@ section[id] { scroll-margin-top: 76px; }
 /* Брендовые цвета сервисов — узнаваемость важнее единообразия плашек. */
 .tap-rustore   { --brand: #0077FF; }
 .tap-gplay     { --brand: #01875F; }
+.tap-gplay .tap-ico {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
 .tap-appstore  { --brand: #0D96F6; }
 .tap-web       { --brand: var(--accent); }
 .tap-youtube   { --brand: #FF0000; }
@@ -411,3 +424,140 @@ section[id] { scroll-margin-top: 76px; }
   .tap { padding: 36px 0 44px; }
   .tap-head h1 { font-size: 24px; }
 }
+
+/* ---------- Просмотры статей и иконка глаза ---------- */
+.post-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.post-views {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #38bdf8;
+  font-weight: 500;
+  font-size: 13.5px;
+}
+.post-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.post-card-views {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  color: #38bdf8;
+  font-weight: 500;
+}
+.icon-eye {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+  opacity: 0.9;
+  vertical-align: -2px;
+}
+
+/* ---------- Юридический дисклеймер и 16+ ---------- */
+.footer-disclaimer {
+  width: 100%;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  line-height: 1.5;
+  color: #838d9e;
+}
+.age-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #64748b;
+  color: #94a3b8;
+  border-radius: 4px;
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 6px;
+  vertical-align: middle;
+  line-height: 16px;
+}
+
+/* ---------- Cookie Notice Banner ---------- */
+.cookie-banner {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 680px;
+  width: calc(100% - 32px);
+  background: rgba(14, 20, 36, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  z-index: 9999;
+  font-size: 13px;
+  color: #cbd5e1;
+  line-height: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.cookie-banner.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.cookie-banner a {
+  color: #38bdf8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.cookie-banner button {
+  background: #38bdf8;
+  color: #0b0f19;
+  font-weight: 700;
+  border: none;
+  padding: 7px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 13px;
+  transition: background 0.15s ease, transform 0.1s ease;
+  flex-shrink: 0;
+}
+.cookie-banner button:hover {
+  background: #7dd3fc;
+  transform: scale(1.02);
+}
+@media (max-width: 580px) {
+  .cookie-banner {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+    bottom: 12px;
+  }
+  .cookie-banner button {
+    text-align: center;
+  }
+}
+

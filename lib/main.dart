@@ -13,8 +13,11 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/install_reporter.dart';
 import 'package:pdd_app/data/services/notification_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
+import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
 import 'package:pdd_app/presentation/screens/home/home_screen.dart';
+import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -108,17 +111,33 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     final appSettings = ref.watch(appSettingsProvider);
     HapticFeedbackHelper.setEnabled(appSettings.hapticsEnabled);
 
+    final String initialScreen = const String.fromEnvironment('SCREEN', defaultValue: 'home');
+    Widget getInitialWidget() {
+      switch (initialScreen) {
+        case 'feed':
+          return const HomeScreen(initialIndex: 1);
+        case 'pdd':
+          return const HomeScreen(initialIndex: 2);
+        case 'tickets':
+          return const TicketsScreen();
+        default:
+          return const HomeScreen(initialIndex: 0);
+      }
+    }
+
     return MaterialApp(
       title: CountryConfig.current.appTitle,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: appSettings.themeMode,
       navigatorObservers: [appRouteObserver],
       // Язык фиксирован конфигом страны (рантайм-переключателя нет).
       locale: Locale(CountryConfig.current.language),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => AppMaxWidthFrame(child: child),
-      home: const HomeScreen(),
+      home: getInitialWidget(),
     );
   }
 }

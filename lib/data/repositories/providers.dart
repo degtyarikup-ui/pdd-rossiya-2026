@@ -1,8 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/models/app_settings.dart';
+import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/repositories/feed_repository.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/sources/questions_data_source.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
@@ -49,6 +52,11 @@ class AppSettingsController extends StateNotifier<AppSettings> {
 
   Future<void> setTicketCategory(TicketCategory value) async {
     state = state.copyWith(ticketCategory: value);
+    await _dataSource.saveAppSettings(state);
+  }
+
+  Future<void> setThemeMode(ThemeMode value) async {
+    state = state.copyWith(themeMode: value);
     await _dataSource.saveAppSettings(state);
   }
 
@@ -286,4 +294,16 @@ final wrongQuestionIdsProvider = FutureProvider<List<String>>((ref) async {
       )
       .map((entry) => entry.key)
       .toList();
+});
+
+final feedRepositoryProvider = Provider<FeedRepository>((ref) {
+  final dataSource = ref.watch(questionsDataSourceProvider);
+  return FeedRepository(dataSource);
+});
+
+final feedItemsProvider = FutureProvider<List<FeedItem>>((ref) async {
+  final category =
+      ref.watch(appSettingsProvider.select((s) => s.ticketCategory));
+  final repo = ref.watch(feedRepositoryProvider);
+  return repo.generateFeedItems(category: category, count: 60);
 });

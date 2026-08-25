@@ -52,29 +52,30 @@ class _AppPillSearchFieldState extends State<AppPillSearchField> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final hasText = widget.controller.text.isNotEmpty;
     return TextField(
       controller: widget.controller,
       onChanged: widget.onChanged,
       textInputAction: TextInputAction.search,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w400,
-        color: AppColors.primaryText,
+        color: colors.primaryText,
       ),
-      cursorColor: AppColors.accent,
+      cursorColor: colors.accent,
       decoration: InputDecoration(
         isDense: true,
         hintText: widget.hintText ?? appL10n.search,
         hintStyle: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w400,
-          color: AppColors.secondaryText.withValues(alpha: 0.85),
+          color: colors.secondaryText.withValues(alpha: 0.85),
         ),
         prefixIcon: Icon(
           Icons.search_rounded,
           size: 22,
-          color: AppColors.secondaryText.withValues(alpha: 0.75),
+          color: colors.secondaryText.withValues(alpha: 0.75),
         ),
         prefixIconConstraints: const BoxConstraints(
           minWidth: 48,
@@ -90,7 +91,7 @@ class _AppPillSearchFieldState extends State<AppPillSearchField> {
                 icon: Icon(
                   Icons.close_rounded,
                   size: 20,
-                  color: AppColors.secondaryText.withValues(alpha: 0.75),
+                  color: colors.secondaryText.withValues(alpha: 0.75),
                 ),
                 visualDensity: VisualDensity.compact,
                 style: IconButton.styleFrom(
@@ -98,7 +99,7 @@ class _AppPillSearchFieldState extends State<AppPillSearchField> {
                 ),
               ),
         filled: true,
-        fillColor: AppColors.searchFieldFill,
+        fillColor: colors.searchFieldFill,
         border: _shape,
         enabledBorder: _shape,
         focusedBorder: _shape,

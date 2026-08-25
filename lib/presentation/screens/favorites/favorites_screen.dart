@@ -28,12 +28,13 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final favoriteIdsAsync = ref.watch(favoriteQuestionsProvider);
 
     // Структура как на экране «Работа над ошибками»: шапка → список карточек →
     // закреплённая внизу кнопка «Пройти всё избранное».
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -57,7 +58,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.primaryText,
+                        color: colors.primaryText,
                       ),
                     ),
                   ),
@@ -100,6 +101,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                           ),
                           child: TextField(
                             controller: _searchController,
+                            style: TextStyle(color: colors.primaryText),
                             onChanged: (value) {
                               setState(
                                 () => _query = value.trim().toLowerCase(),
@@ -107,7 +109,19 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                             },
                             decoration: InputDecoration(
                               hintText: appL10n.searchByQuestionOrTopic,
-                              prefixIcon: const Icon(Icons.search_rounded),
+                              hintStyle: TextStyle(color: colors.secondaryText),
+                              prefixIcon: Icon(
+                                Icons.search_rounded,
+                                color: colors.secondaryText,
+                              ),
+                              filled: true,
+                              fillColor: colors.searchFieldFill,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.smallRadius,
+                                ),
+                                borderSide: BorderSide.none,
+                              ),
                             ),
                           ),
                         ),
@@ -151,6 +165,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   }
 
   Widget _buildEmptyState() {
+    final colors = AppColors.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppDimensions.screenPadding),
@@ -161,13 +176,13 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: AppColors.lightAccent,
+                color: colors.accentSurface10,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.star_border_rounded,
                 size: 36,
-                color: AppColors.accent,
+                color: colors.accent,
               ),
             ),
             const SizedBox(height: AppDimensions.spacingL),
@@ -176,7 +191,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: AppColors.primaryText,
+                color: colors.primaryText,
               ),
             ),
             const SizedBox(height: AppDimensions.spacingS),
@@ -186,7 +201,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
               style: TextStyle(
                 fontSize: 14,
                 height: 1.4,
-                color: AppColors.secondaryText,
+                color: colors.secondaryText,
               ),
             ),
           ],
@@ -196,10 +211,11 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   }
 
   Widget _buildNoSearchResults() {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spacingL),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
       ),
       child: Text(
@@ -207,7 +223,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         style: TextStyle(
           fontSize: 14,
           height: 1.4,
-          color: AppColors.secondaryText,
+          color: colors.secondaryText,
         ),
       ),
     );
@@ -269,18 +285,19 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     BuildContext context,
     List<Map<String, dynamic>> questions,
   ) {
+    final colors = AppColors.of(context);
     return ColoredBox(
-      color: AppColors.white,
+      color: colors.cardBackground,
       child: SafeArea(
         top: false,
         child: Material(
-          color: AppColors.white,
+          color: colors.cardBackground,
           child: Container(
             width: double.infinity,
-            decoration: const BoxDecoration(
-              color: AppColors.white,
+            decoration: BoxDecoration(
+              color: colors.cardBackground,
               border: Border(
-                top: BorderSide(color: AppColors.divider, width: 1),
+                top: BorderSide(color: colors.divider, width: 1),
               ),
             ),
             padding: const EdgeInsets.fromLTRB(
@@ -318,6 +335,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     BuildContext context,
     Map<String, dynamic> question,
   ) {
+    final colors = AppColors.of(context);
     final topics = ((question['topic'] as List?) ?? const []).cast<String>();
     final topicLabel = topics.isNotEmpty ? topics.first : appL10n.noTopic;
 
@@ -340,7 +358,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         child: Container(
           padding: const EdgeInsets.all(AppDimensions.spacingL),
           decoration: BoxDecoration(
-            color: AppColors.cardBackground,
+            color: colors.cardBackground,
             borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
           ),
           child: Column(
@@ -354,7 +372,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.goldLightSurface,
+                      color: colors.goldLightSurface,
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
@@ -362,17 +380,17 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.gold,
+                        color: colors.gold,
                       ),
                     ),
                   ),
                   const Spacer(),
                   Text(
                     appL10n.ticketNumber(question['ticketNumber']),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.secondaryText,
+                      color: colors.secondaryText,
                     ),
                   ),
                 ],
@@ -382,10 +400,10 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                 question['question'] as String,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primaryText,
+                  color: colors.primaryText,
                   height: 1.35,
                 ),
               ),
@@ -395,15 +413,15 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                   Expanded(
                     child: Text(
                       topicLabel,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.secondaryText,
+                        color: colors.secondaryText,
                       ),
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
-                    color: AppColors.secondaryText,
+                    color: colors.secondaryText,
                   ),
                 ],
               ),

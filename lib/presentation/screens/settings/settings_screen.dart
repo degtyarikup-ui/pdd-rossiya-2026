@@ -44,9 +44,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _openSupportOptions() async {
     HapticFeedbackHelper.tap();
     if (!mounted) return;
+    final colors = AppColors.of(context);
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.cardBackground,
+      backgroundColor: colors.cardBackground,
       showDragHandle: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -70,10 +71,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: Text(
                   appL10n.supportChooseMethod,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primaryText,
+                    color: colors.primaryText,
                   ),
                 ),
               ),
@@ -101,31 +102,112 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Future<void> _showThemePicker(
+    AppSettings settings,
+    AppSettingsController controller,
+  ) async {
+    HapticFeedbackHelper.tap();
+    if (!mounted) return;
+    final colors = AppColors.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: colors.cardBackground,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppDimensions.screenPadding,
+            0,
+            AppDimensions.screenPadding,
+            AppDimensions.spacingL,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: AppDimensions.spacingM,
+                ),
+                child: Text(
+                  appL10n.themeChoose,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: colors.primaryText,
+                  ),
+                ),
+              ),
+              _ThemeOptionTile(
+                icon: Icons.brightness_auto_rounded,
+                label: appL10n.themeSystem,
+                selected: settings.themeMode == ThemeMode.system,
+                onTap: () {
+                  HapticFeedbackHelper.select();
+                  controller.setThemeMode(ThemeMode.system);
+                  Navigator.pop(sheetCtx);
+                },
+              ),
+              const SizedBox(height: AppDimensions.spacingS),
+              _ThemeOptionTile(
+                icon: Icons.light_mode_outlined,
+                label: appL10n.themeLight,
+                selected: settings.themeMode == ThemeMode.light,
+                onTap: () {
+                  HapticFeedbackHelper.select();
+                  controller.setThemeMode(ThemeMode.light);
+                  Navigator.pop(sheetCtx);
+                },
+              ),
+              const SizedBox(height: AppDimensions.spacingS),
+              _ThemeOptionTile(
+                icon: Icons.dark_mode_outlined,
+                label: appL10n.themeDark,
+                selected: settings.themeMode == ThemeMode.dark,
+                onTap: () {
+                  HapticFeedbackHelper.select();
+                  controller.setThemeMode(ThemeMode.dark);
+                  Navigator.pop(sheetCtx);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Открыть сбор на ЮMoney во внешнем браузере.
   Future<void> _openSupportFund() async {
+    HapticFeedbackHelper.tap();
     final ok = await launchUrl(
       _supportFundUri,
       mode: LaunchMode.externalApplication,
     );
     if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(appL10n.linkOpenFailed)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appL10n.linkOpenFailed)));
     }
   }
 
-  /// Показывает USDT-адрес: QR для сканирования + тап-для-копирования.
+  /// Показать bottom sheet с USDT-адресом и QR-кодом.
   Future<void> _showUsdtSheet() async {
     HapticFeedbackHelper.tap();
     if (!mounted) return;
+    final colors = AppColors.of(context);
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.cardBackground,
+      backgroundColor: colors.cardBackground,
       showDragHandle: true,
-      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => const _UsdtSheetContent(address: _usdtTrc20),
+      builder: (sheetCtx) => const _UsdtSheetContent(address: _usdtTrc20),
     );
   }
 
@@ -136,15 +218,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       mode: LaunchMode.externalApplication,
     );
     if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(appL10n.telegramOpenFailed)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appL10n.linkOpenFailed)));
     }
   }
 
-  /// Политика конфиденциальности. Ссылка обязана быть доступна прямо из
-  /// приложения (App Store Guideline 5.1.1(i), Google Play — аналогично),
-  /// а не только в метаданных стора. Адрес страны берётся из CountryConfig.
   Future<void> _openPrivacyPolicy() async {
     HapticFeedbackHelper.tap();
     final ok = await launchUrl(
@@ -174,11 +253,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final settings = ref.watch(appSettingsProvider);
     final settingsController = ref.read(appSettingsProvider.notifier);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -194,9 +274,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _buildSettingItem(
                     icon: Icons.volunteer_activism_rounded,
                     title: appL10n.supportDeveloper,
-                    trailing: const Icon(
+                    trailing: Icon(
                       Icons.chevron_right_rounded,
-                      color: AppColors.secondaryText,
+                      color: colors.secondaryText,
                     ),
                     onTap: _openSupportOptions,
                   ),
@@ -206,9 +286,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.support_agent_outlined,
                   title: appL10n.techSupport,
                   subtitle: 'Telegram: @sergei_degtyarik',
-                  trailing: const Icon(
+                  trailing: Icon(
                     Icons.chevron_right_rounded,
-                    color: AppColors.secondaryText,
+                    color: colors.secondaryText,
                   ),
                   onTap: _openTelegramSupport,
                 ),
@@ -217,9 +297,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _buildSettingItem(
                     icon: Icons.privacy_tip_outlined,
                     title: appL10n.privacyPolicy,
-                    trailing: const Icon(
+                    trailing: Icon(
                       Icons.chevron_right_rounded,
-                      color: AppColors.secondaryText,
+                      color: colors.secondaryText,
                     ),
                     onTap: _openPrivacyPolicy,
                   ),
@@ -230,6 +310,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _buildSectionTitle(appL10n.preparation),
             _buildSectionCard(
               children: [
+                _buildSettingItem(
+                  icon: Icons.palette_outlined,
+                  title: appL10n.themeSetting,
+                  trailing: _buildThemeBadge(settings),
+                  onTap: () => _showThemePicker(settings, settingsController),
+                ),
+                _buildDivider(),
                 _buildSettingItem(
                   icon: Icons.check_circle_outline,
                   title: appL10n.confirmAnswerSetting,
@@ -287,9 +374,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _buildSettingItem(
                   icon: Icons.restart_alt_rounded,
                   title: appL10n.resetStats,
-                  trailing: const Icon(
+                  trailing: Icon(
                     Icons.chevron_right_rounded,
-                    color: AppColors.secondaryText,
+                    color: colors.secondaryText,
                   ),
                   onTap: _confirmReset,
                 ),
@@ -309,10 +396,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       icon: Icons.link_rounded,
                       title: src.label,
                       subtitle: appL10n.dataSourceTitle,
-                      trailing: const Icon(
+                      trailing: Icon(
                         Icons.open_in_new_rounded,
                         size: 18,
-                        color: AppColors.secondaryText,
+                        color: colors.secondaryText,
                       ),
                       onTap: () => _openExternalUrl(src.url),
                     ),
@@ -323,10 +410,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
                       child: Text(
                         CountryConfig.current.notAffiliatedNote,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           height: 1.4,
-                          color: AppColors.secondaryText,
+                          color: colors.secondaryText,
                         ),
                       ),
                     ),
@@ -344,9 +431,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _buildSettingItem(
                     icon: Icons.notifications_active_outlined,
                     title: 'Показать уведомление сейчас',
-                    trailing: const Icon(
+                    trailing: Icon(
                       Icons.chevron_right_rounded,
-                      color: AppColors.secondaryText,
+                      color: colors.secondaryText,
                     ),
                     onTap: () async {
                       HapticFeedbackHelper.select();
@@ -372,9 +459,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _buildSettingItem(
                     icon: Icons.timer_outlined,
                     title: 'Через 5 сек (сверни, увидишь в шторке)',
-                    trailing: const Icon(
+                    trailing: Icon(
                       Icons.chevron_right_rounded,
-                      color: AppColors.secondaryText,
+                      color: colors.secondaryText,
                     ),
                     onTap: () {
                       HapticFeedbackHelper.select();
@@ -395,23 +482,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildSectionTitle(String title) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDimensions.spacingM),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w700,
-          color: AppColors.primaryText,
+          color: colors.primaryText,
         ),
       ),
     );
   }
 
   Widget _buildSectionCard({required List<Widget> children}) {
+    final colors = AppColors.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
       ),
       child: Column(children: children),
@@ -424,10 +513,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     String subtitle = '',
     required Widget trailing,
     VoidCallback? onTap,
-    Color iconColor = AppColors.primaryText,
-    Color titleColor = AppColors.primaryText,
+    Color? iconColor,
+    Color? titleColor,
   }) {
+    final colors = AppColors.of(context);
     final hasSubtitle = subtitle.isNotEmpty;
+    final effectiveIconColor = iconColor ?? colors.primaryText;
+    final effectiveTitleColor = titleColor ?? colors.primaryText;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -443,10 +536,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.background,
+                  color: colors.background,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, size: 20, color: iconColor),
+                child: Icon(icon, size: 20, color: effectiveIconColor),
               ),
               const SizedBox(width: AppDimensions.spacingM),
               Expanded(
@@ -459,17 +552,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: titleColor,
+                        color: effectiveTitleColor,
                       ),
                     ),
                     if (hasSubtitle) ...[
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           height: 1.35,
-                          color: AppColors.secondaryText,
+                          color: colors.secondaryText,
                         ),
                       ),
                     ],
@@ -507,12 +600,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Widget _buildThemeBadge(AppSettings settings) {
+    final colors = AppColors.of(context);
+    final String label;
+    switch (settings.themeMode) {
+      case ThemeMode.system:
+        label = appL10n.themeSystem;
+        break;
+      case ThemeMode.light:
+        label = appL10n.themeLight;
+        break;
+      case ThemeMode.dark:
+        label = appL10n.themeDark;
+        break;
+    }
+    return _buildPill(
+      label: label,
+      textColor: colors.accent,
+      backgroundColor: colors.accentSurface10,
+    );
+  }
+
   Widget _buildTicketCategoryBadge(AppSettings settings) {
+    final colors = AppColors.of(context);
     final isAb = settings.ticketCategory == TicketCategory.ab;
     return _buildPill(
       label: isAb ? 'A/B' : 'C/D',
-      textColor: AppColors.accent,
-      backgroundColor: AppColors.lightAccent,
+      textColor: colors.accent,
+      backgroundColor: colors.accentSurface10,
     );
   }
 
@@ -532,17 +647,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildDivider() {
-    return const Divider(height: 1, thickness: 1, color: AppColors.divider);
+    final colors = AppColors.of(context);
+    return Divider(height: 1, thickness: 1, color: colors.divider);
   }
 
   Future<void> _confirmReset() async {
     HapticFeedbackHelper.warning();
+    final colors = AppColors.of(context);
     final shouldReset = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(appL10n.resetStats),
+        backgroundColor: colors.cardBackground,
+        title: Text(
+          appL10n.resetStats,
+          style: TextStyle(color: colors.primaryText),
+        ),
         content: Text(
           appL10n.resetStatsDetail,
+          style: TextStyle(color: colors.secondaryText),
         ),
         actions: [
           TextButton(
@@ -553,7 +675,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
               appL10n.reset,
-              style: TextStyle(color: AppColors.red),
+              style: TextStyle(color: colors.red),
             ),
           ),
         ],
@@ -579,6 +701,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 }
 
+class _ThemeOptionTile extends StatelessWidget {
+  const _ThemeOptionTile({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Material(
+      color: selected ? colors.accentSurface10 : colors.background,
+      borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDimensions.spacingM,
+            vertical: 16,
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: selected ? colors.accent : colors.secondaryText),
+              const SizedBox(width: AppDimensions.spacingM),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    color: selected ? colors.accent : colors.primaryText,
+                  ),
+                ),
+              ),
+              if (selected)
+                Icon(Icons.check_rounded, color: colors.accent, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Высокая кнопка выбора способа доната (в bottom sheet).
 class _SupportOptionTile extends StatelessWidget {
   const _SupportOptionTile({
@@ -593,8 +766,9 @@ class _SupportOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Material(
-      color: AppColors.background,
+      color: colors.background,
       borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
@@ -606,19 +780,19 @@ class _SupportOptionTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(icon, color: AppColors.accent),
+              Icon(icon, color: colors.accent),
               const SizedBox(width: AppDimensions.spacingM),
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
-                    color: AppColors.primaryText,
+                    color: colors.primaryText,
                   ),
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded,
-                  color: AppColors.secondaryText),
+              Icon(Icons.chevron_right_rounded,
+                  color: colors.secondaryText),
             ],
           ),
         ),
@@ -662,6 +836,7 @@ class _UsdtSheetContentState extends State<_UsdtSheetContent> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -681,10 +856,10 @@ class _UsdtSheetContentState extends State<_UsdtSheetContent> {
               child: Text(
                 appL10n.supportUsdt,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primaryText,
+                  color: colors.primaryText,
                 ),
               ),
             ),
@@ -710,7 +885,7 @@ class _UsdtSheetContentState extends State<_UsdtSheetContent> {
               child: Container(
                 padding: const EdgeInsets.all(AppDimensions.spacingM),
                 decoration: BoxDecoration(
-                  color: AppColors.background,
+                  color: colors.background,
                   borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
                 ),
                 child: Row(
@@ -718,9 +893,9 @@ class _UsdtSheetContentState extends State<_UsdtSheetContent> {
                     Expanded(
                       child: Text(
                         widget.address,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.primaryText,
+                          color: colors.primaryText,
                         ),
                       ),
                     ),
@@ -728,7 +903,7 @@ class _UsdtSheetContentState extends State<_UsdtSheetContent> {
                     Icon(
                       _copied ? Icons.check_rounded : Icons.copy_rounded,
                       size: 18,
-                      color: _copied ? AppColors.green : AppColors.accent,
+                      color: _copied ? colors.green : colors.accent,
                     ),
                   ],
                 ),
@@ -746,14 +921,14 @@ class _UsdtSheetContentState extends State<_UsdtSheetContent> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.check_circle_rounded,
-                              size: 16, color: AppColors.green),
+                          Icon(Icons.check_circle_rounded,
+                              size: 16, color: colors.green),
                           const SizedBox(width: 6),
                           Text(
                             appL10n.copiedToClipboard,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.green,
+                              color: colors.green,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -765,9 +940,9 @@ class _UsdtSheetContentState extends State<_UsdtSheetContent> {
             const SizedBox(height: AppDimensions.spacingM),
             Text(
               appL10n.supportUsdtWarning,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.secondaryText,
+                color: colors.secondaryText,
                 height: 1.4,
               ),
             ),

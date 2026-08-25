@@ -68,6 +68,7 @@ class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final session = widget.session;
     final isExam = session['kind'] == 'exam';
     final index = session['index'] as int;
@@ -79,7 +80,6 @@ class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
 
     return SizeTransition(
       sizeFactor: _collapse,
-      axisAlignment: -1,
       child: FadeTransition(
         opacity: _fade,
         child: Padding(
@@ -91,7 +91,7 @@ class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
               // Тот же синий, что у карточки экзамена: белая карточка терялась
               // между белой статистикой и белым фоном, а это главное действие
               // на экране — вернуться туда, где человек остановился.
-              color: AppColors.accent,
+              color: colors.accent,
               borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
             ),
             child: Material(

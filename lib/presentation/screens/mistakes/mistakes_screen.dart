@@ -15,9 +15,10 @@ class MistakesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wrongIdsAsync = ref.watch(wrongQuestionIdsProvider);
+    final colors = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -41,7 +42,7 @@ class MistakesScreen extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.primaryText,
+                        color: colors.primaryText,
                       ),
                     ),
                   ),
@@ -53,7 +54,7 @@ class MistakesScreen extends ConsumerWidget {
             child: wrongIdsAsync.when(
               data: (wrongIds) {
                 if (wrongIds.isEmpty) {
-                  return _buildEmptyState();
+                  return _buildEmptyState(context);
                 }
 
                 return FutureBuilder<List<Map<String, dynamic>>>(
@@ -66,7 +67,7 @@ class MistakesScreen extends ConsumerWidget {
                     final questions = snapshot.data!;
 
                     if (questions.isEmpty) {
-                      return _buildEmptyState();
+                      return _buildEmptyState(context);
                     }
 
                     final bottomInset = MediaQuery.paddingOf(context).bottom;
@@ -117,7 +118,8 @@ class MistakesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
+    final colors = AppColors.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppDimensions.screenPadding),
@@ -128,22 +130,22 @@ class MistakesScreen extends ConsumerWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: AppColors.greenLight,
+                color: colors.greenLight,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.check_circle_outline,
                 size: 36,
-                color: AppColors.green,
+                color: colors.green,
               ),
             ),
             const SizedBox(height: AppDimensions.spacingL),
             Text(
               appL10n.noMistakesYet,
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryText,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: colors.primaryText,
               ),
             ),
             const SizedBox(height: AppDimensions.spacingS),
@@ -153,7 +155,7 @@ class MistakesScreen extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 14,
                 height: 1.4,
-                color: AppColors.secondaryText,
+                color: colors.secondaryText,
               ),
             ),
           ],
@@ -200,18 +202,19 @@ class MistakesScreen extends ConsumerWidget {
     BuildContext context,
     List<Map<String, dynamic>> questions,
   ) {
+    final colors = AppColors.of(context);
     return ColoredBox(
-      color: AppColors.white,
+      color: colors.cardBackground,
       child: SafeArea(
         top: false,
         child: Material(
-          color: AppColors.white,
+          color: colors.cardBackground,
           child: Container(
             width: double.infinity,
-            decoration: const BoxDecoration(
-              color: AppColors.white,
+            decoration: BoxDecoration(
+              color: colors.cardBackground,
               border: Border(
-                top: BorderSide(color: AppColors.divider, width: 1),
+                top: BorderSide(color: colors.divider, width: 1),
               ),
             ),
             padding: const EdgeInsets.fromLTRB(
@@ -249,6 +252,7 @@ class MistakesScreen extends ConsumerWidget {
     BuildContext context,
     Map<String, dynamic> question,
   ) {
+    final colors = AppColors.of(context);
     final topics = (question['topic'] as List?)?.cast<String>() ?? const [];
     final topicLabel = topics.isNotEmpty ? topics.first : appL10n.noTopic;
 
@@ -269,7 +273,7 @@ class MistakesScreen extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.all(AppDimensions.spacingL),
           decoration: BoxDecoration(
-            color: AppColors.cardBackground,
+            color: colors.cardBackground,
             borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
           ),
           child: Column(
@@ -283,7 +287,7 @@ class MistakesScreen extends ConsumerWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.redLight,
+                      color: colors.redLight,
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
@@ -291,17 +295,17 @@ class MistakesScreen extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.red,
+                        color: colors.red,
                       ),
                     ),
                   ),
                   const Spacer(),
                   Text(
                     appL10n.ticketNumber(question['ticketNumber']),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.secondaryText,
+                      color: colors.secondaryText,
                     ),
                   ),
                 ],
@@ -311,10 +315,10 @@ class MistakesScreen extends ConsumerWidget {
                 question['question'] as String,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primaryText,
+                  color: colors.primaryText,
                   height: 1.35,
                 ),
               ),
@@ -324,15 +328,15 @@ class MistakesScreen extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       topicLabel,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.secondaryText,
+                        color: colors.secondaryText,
                       ),
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
-                    color: AppColors.secondaryText,
+                    color: colors.secondaryText,
                   ),
                 ],
               ),

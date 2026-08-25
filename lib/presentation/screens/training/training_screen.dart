@@ -186,14 +186,28 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     unawaited(ref.read(progressDataSourceProvider).clearUnfinishedSession());
   }
 
+  bool get _isAllAnswered => !_savedChoices.contains(null);
+
+  /// Ищет следующий неотвеченный вопрос по кругу начиная от fromIndex
+  int? _findNextUnansweredIndex([int? fromIndex]) {
+    if (_isAllAnswered) return null;
+    final start = fromIndex ?? _currentIndex;
+    for (int i = 1; i <= widget.questions.length; i++) {
+      final next = (start + i) % widget.questions.length;
+      if (_savedChoices[next] == null) {
+        return next;
+      }
+    }
+    return null;
+  }
+
   void _advanceQuestion() {
-    if (_currentIndex >= widget.questions.length - 1) return;
-    final next = _currentIndex + 1;
-    _pageController.animateToPage(
-      next,
-      duration: QuestionSwipeMotion.duration,
-      curve: QuestionSwipeMotion.curve,
-    );
+    final next = _findNextUnansweredIndex(_currentIndex);
+    if (next != null) {
+      _goToQuestion(next);
+    } else if (_isAllAnswered) {
+      _finishSession();
+    }
   }
 
   void _goToQuestion(int index) {
@@ -325,6 +339,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           .map((answer) => (answer as Map)['text'] as String)
           .toList();
       TtsService.instance.speakQuestion(
+        rawQuestionId: questionId,
         question: questionText,
         answers: answerTexts,
       );
@@ -356,6 +371,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
       );
     }
 
+    final colors = AppColors.of(context);
     final appSettings = ref.watch(appSettingsProvider);
     final question = widget.questions[_currentIndex];
     final questionId = question['id'] as String;
@@ -382,39 +398,40 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
         await _stopVoiceAndPop(result);
       },
       child: Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildAppBar(),
-            SizedBox(
-              height: 36,
-              width: double.infinity,
-              child: ClipRect(
-                child: _buildQuestionNumbers(),
+        backgroundColor: colors.background,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildAppBar(context),
+              SizedBox(
+                height: 36,
+                width: double.infinity,
+                child: ClipRect(
+                  child: _buildQuestionNumbers(context),
+                ),
               ),
-            ),
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: widget.questions.length,
-                onPageChanged: _onQuestionPageChanged,
-                itemBuilder: (context, pageIndex) {
-                  return _buildTrainingQuestionPage(
-                    context,
-                    pageIndex,
-                    requireConfirmation: appSettings.confirmAnswerEnabled,
-                  );
-                },
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: widget.questions.length,
+                  onPageChanged: _onQuestionPageChanged,
+                  itemBuilder: (context, pageIndex) {
+                    return _buildTrainingQuestionPage(
+                      context,
+                      pageIndex,
+                      requireConfirmation: appSettings.confirmAnswerEnabled,
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: _buildBottomBar(
-        requireConfirmation: appSettings.confirmAnswerEnabled,
-        hasHint: hasHint,
-      ),
+        bottomNavigationBar: _buildBottomBar(
+          context,
+          requireConfirmation: appSettings.confirmAnswerEnabled,
+          hasHint: hasHint,
+        ),
       ),
     );
   }
@@ -424,6 +441,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     int pageIndex, {
     required bool requireConfirmation,
   }) {
+    final colors = AppColors.of(context);
     final question = widget.questions[pageIndex];
     final answers = question['answers'] as List;
     final questionText = question['question'] as String;
@@ -457,10 +475,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           const SizedBox(height: AppDimensions.spacingL),
           Text(
             questionText,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: AppColors.primaryText,
+              color: colors.primaryText,
               height: 1.35,
             ),
           ),
@@ -473,6 +491,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                 bottom: AppDimensions.spacingM,
               ),
               child: _buildAnswerOption(
+                context,
                 questionIndex: pageIndex,
                 index: index,
                 text: answer['text'] as String,
@@ -484,9 +503,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           if (showHintBlock) ...[
             const SizedBox(height: AppDimensions.spacingL),
             _buildCommentCard(
+              context,
               title: appL10n.hint,
               icon: Icons.lightbulb_outline,
-              accentColor: AppColors.gold,
+              accentColor: colors.gold,
               comment: comment,
               pddPoints: pddPoints,
             ),
@@ -494,9 +514,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           if (showCommentAfterAnswer) ...[
             const SizedBox(height: AppDimensions.spacingL),
             _buildCommentCard(
+              context,
               title: appL10n.comment,
               icon: Icons.lightbulb,
-              accentColor: AppColors.gold,
+              accentColor: colors.gold,
               comment: comment,
               pddPoints: pddPoints,
             ),
@@ -507,7 +528,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(BuildContext context) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimensions.screenPadding,
@@ -529,10 +551,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
               children: [
                 Text(
                   widget.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primaryText,
+                    color: colors.primaryText,
                   ),
                 ),
                 Text(
@@ -540,9 +562,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                     _currentIndex + 1,
                     widget.questions.length,
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.secondaryText,
+                    color: colors.secondaryText,
                   ),
                 ),
               ],
@@ -553,7 +575,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     );
   }
 
-  Widget _buildQuestionNumbers() {
+  Widget _buildQuestionNumbers(BuildContext context) {
+    final colors = AppColors.of(context);
     return ListView.builder(
         controller: _questionStripController,
         scrollDirection: Axis.horizontal,
@@ -569,15 +592,13 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           final isWrong = _wrongIndices.contains(index);
 
           final backgroundColor = isCurrent
-              ? AppColors.accent
+              ? colors.accent
               : isCorrect
-              ? AppColors.green
+              ? colors.green
               : isWrong
-              ? AppColors.red
-              : AppColors.gray;
+              ? colors.red
+              : colors.gray;
 
-          // Предстоящие (не текущие, не верные, не ошибочные) — приглушённая
-          // цифра на серой плашке, единообразно с экзаменом.
           return QuestionNumberChip(
             number: index + 1,
             backgroundColor: backgroundColor,
@@ -588,13 +609,15 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     );
   }
 
-  Widget _buildAnswerOption({
+  Widget _buildAnswerOption(
+    BuildContext context, {
     required int questionIndex,
     required int index,
     required String text,
     required bool isCorrect,
     required bool requireConfirmation,
   }) {
+    final colors = AppColors.of(context);
     final saved = _savedChoices[questionIndex];
     final isAnswered = saved != null;
     final isSelected = isAnswered
@@ -607,7 +630,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
 
     if (isAnswered) {
       if (isCorrect) {
-        backgroundColor = AppColors.green;
+        backgroundColor = colors.green;
         textColor = AppColors.white;
         trailingIcon = const Icon(
           Icons.check,
@@ -615,7 +638,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           size: 20,
         );
       } else if (isSelected) {
-        backgroundColor = AppColors.red;
+        backgroundColor = colors.red;
         textColor = AppColors.white;
         trailingIcon = const Icon(
           Icons.close,
@@ -623,15 +646,15 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           size: 20,
         );
       } else {
-        backgroundColor = AppColors.gray;
-        textColor = AppColors.secondaryText;
+        backgroundColor = colors.gray;
+        textColor = colors.secondaryText;
       }
     } else if (requireConfirmation && isSelected) {
-      backgroundColor = AppColors.lightAccent;
-      textColor = AppColors.primaryText;
+      backgroundColor = colors.accentSurface10;
+      textColor = colors.primaryText;
     } else {
-      backgroundColor = AppColors.cardBackground;
-      textColor = AppColors.primaryText;
+      backgroundColor = colors.cardBackground;
+      textColor = colors.primaryText;
     }
 
     final canTap =
@@ -663,11 +686,11 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                 decoration: BoxDecoration(
                   color: isAnswered
                       ? (isCorrect || isSelected
-                            ? AppColors.white.withOpacity(0.3)
-                            : AppColors.gray)
+                            ? AppColors.white.withValues(alpha: 0.3)
+                            : colors.gray)
                       : isSelected
-                      ? AppColors.accent.withOpacity(0.12)
-                      : AppColors.gray,
+                      ? colors.accent.withValues(alpha: 0.12)
+                      : colors.gray,
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -679,10 +702,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                       color: isAnswered
                           ? (isCorrect || isSelected
                                 ? AppColors.white
-                                : AppColors.secondaryText)
+                                : colors.secondaryText)
                           : isSelected
-                          ? AppColors.accent
-                          : AppColors.secondaryText,
+                          ? colors.accent
+                          : colors.secondaryText,
                     ),
                   ),
                 ),
@@ -710,17 +733,19 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     );
   }
 
-  Widget _buildCommentCard({
+  Widget _buildCommentCard(
+    BuildContext context, {
     required String title,
     required IconData icon,
     required Color accentColor,
     required String comment,
     required List<dynamic> pddPoints,
   }) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spacingL),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
       ),
       child: Column(
@@ -732,10 +757,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primaryText,
+                  color: colors.primaryText,
                 ),
               ),
             ],
@@ -746,10 +771,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
             const SizedBox(height: AppDimensions.spacingM),
             Text(
               appL10n.pddPoints,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: AppColors.secondaryText,
+                color: colors.secondaryText,
               ),
             ),
             const SizedBox(height: AppDimensions.spacingXS),
@@ -763,15 +788,15 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.gold.withOpacity(0.1),
+                    color: colors.goldLightSurface,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     point.toString(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.gold,
+                      color: colors.gold,
                     ),
                   ),
                 );
@@ -783,18 +808,20 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     );
   }
 
-  Widget _buildBottomBar({
+  Widget _buildBottomBar(
+    BuildContext context, {
     required bool requireConfirmation,
     required bool hasHint,
   }) {
+    final colors = AppColors.of(context);
     final isAnswered = _isAnswerSubmitted;
-    final isLast = _currentIndex >= widget.questions.length - 1;
+    final isAllComplete = _isAllAnswered;
     final canConfirm =
         requireConfirmation && _selectedAnswerIndex != null && !isAnswered;
 
     return Container(
       padding: const EdgeInsets.all(AppDimensions.screenPadding),
-      color: AppColors.white,
+      color: colors.cardBackground,
       child: SafeArea(
         top: false,
         child: isAnswered
@@ -802,14 +829,14 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: isLast
+                  onPressed: isAllComplete
                       ? () {
                           HapticFeedbackHelper.tap();
                           _finishSession();
                         }
                       : _nextQuestion,
                   child: Text(
-                    isLast ? appL10n.finishButton : appL10n.nextQuestion,
+                    isAllComplete ? appL10n.finishButton : appL10n.nextQuestion,
                   ),
                 ),
               )
@@ -823,13 +850,13 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                           onPressed: hasHint ? _toggleHint : null,
                           style: ButtonStyle(
                             foregroundColor:
-                                WidgetStateProperty.all(AppColors.gold),
+                                WidgetStateProperty.all(colors.gold),
                             overlayColor:
                                 WidgetStateProperty.resolveWith((states) {
                               if (states.contains(WidgetState.pressed) ||
                                   states.contains(WidgetState.hovered) ||
                                   states.contains(WidgetState.focused)) {
-                                return AppColors.goldLightSurface;
+                                return colors.goldLightSurface;
                               }
                               return Colors.transparent;
                             }),
@@ -843,11 +870,11 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                             _showHint
                                 ? Icons.lightbulb
                                 : Icons.lightbulb_outline,
-                            color: AppColors.gold,
+                            color: colors.gold,
                           ),
                           label: Text(
                             _showHint ? appL10n.hideHint : appL10n.showHint,
-                            style: const TextStyle(color: AppColors.gold),
+                            style: TextStyle(color: colors.gold),
                           ),
                         ),
                       ),
@@ -859,22 +886,18 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                             _isFavorite ? Icons.star : Icons.star_border,
                             key: ValueKey(_isFavorite),
                             color: _isFavorite
-                                ? AppColors.gold
-                                : AppColors.secondaryText,
+                                ? colors.gold
+                                : colors.secondaryText,
                           ),
                         ),
                         tooltip: appL10n.favorites,
                       ),
-                      // Жалоба на вопрос — намеренно скромная иконка рядом с
-                      // избранным: она нужна редко и не должна конкурировать
-                      // с ответом на вопрос. В экзамене её нет — там не место
-                      // отвлекаться на переписку.
                       IconButton(
                         onPressed: () =>
                             _reportQuestion(widget.questions[_currentIndex]),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.flag_outlined,
-                          color: AppColors.secondaryText,
+                          color: colors.secondaryText,
                         ),
                         tooltip: appL10n.reportQuestionTooltip,
                       ),

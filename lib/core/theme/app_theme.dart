@@ -1,87 +1,116 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 
 class AppTheme {
   /// Фирменный шрифт приложения (см. секцию fonts в pubspec.yaml).
-  ///
-  /// Задан один раз здесь: до этого `fontFamily` не был указан нигде, и
-  /// приложение бралo системный шрифт платформы — Roboto на Android и
-  /// San Francisco на iOS. Из-за этого один и тот же экран выглядел
-  /// по-разному на двух платформах.
   static const String fontFamily = 'Onest';
 
-  static ThemeData get lightTheme {
+  static ThemeData get lightTheme => _buildTheme(AppThemeColors.light);
+
+  static ThemeData get darkTheme => _buildTheme(AppThemeColors.dark);
+
+  static ThemeData _buildTheme(AppThemeColors c) {
+    final isDark = c.isDark;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
+    final overlayStyle = isDark
+        ? const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+          )
+        : const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.light,
+          );
+
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
+      brightness: brightness,
       fontFamily: fontFamily,
-      scaffoldBackgroundColor: AppColors.background,
-      primaryColor: AppColors.accent,
-      colorScheme: const ColorScheme.light(
-        primary: AppColors.accent,
-        secondary: AppColors.accent,
-        surface: AppColors.cardBackground,
-        onPrimary: AppColors.white,
-        onSecondary: AppColors.white,
-        onSurface: AppColors.primaryText,
+      scaffoldBackgroundColor: c.background,
+      primaryColor: c.accent,
+      extensions: [c],
+      colorScheme: ColorScheme(
+        brightness: brightness,
+        primary: c.accent,
+        onPrimary: c.white,
+        secondary: c.accent,
+        onSecondary: c.white,
+        error: c.red,
+        onError: c.white,
+        surface: c.cardBackground,
+        onSurface: c.primaryText,
+        outline: c.divider,
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.background,
+      appBarTheme: AppBarTheme(
+        backgroundColor: c.background,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
+        systemOverlayStyle: overlayStyle,
         titleTextStyle: TextStyle(
-          color: AppColors.primaryText,
+          fontFamily: fontFamily,
+          color: c.primaryText,
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
-        iconTheme: IconThemeData(color: AppColors.accent),
+        iconTheme: IconThemeData(color: c.accent),
       ),
-      textTheme: const TextTheme(
+      textTheme: TextTheme(
         displayLarge: TextStyle(
+          fontFamily: fontFamily,
           fontSize: 28,
           fontWeight: FontWeight.w600,
-          color: AppColors.primaryText,
+          color: c.primaryText,
         ),
         headlineMedium: TextStyle(
+          fontFamily: fontFamily,
           fontSize: 20,
           fontWeight: FontWeight.w400,
-          color: AppColors.primaryText,
+          color: c.primaryText,
         ),
         titleMedium: TextStyle(
+          fontFamily: fontFamily,
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: AppColors.accent,
+          color: c.accent,
         ),
         bodyLarge: TextStyle(
+          fontFamily: fontFamily,
           fontSize: 16,
           fontWeight: FontWeight.w400,
-          color: AppColors.primaryText,
+          color: c.primaryText,
         ),
         bodyMedium: TextStyle(
+          fontFamily: fontFamily,
           fontSize: 14,
           fontWeight: FontWeight.w400,
-          color: AppColors.primaryText,
+          color: c.primaryText,
         ),
         bodySmall: TextStyle(
+          fontFamily: fontFamily,
           fontSize: 12,
           fontWeight: FontWeight.w400,
-          color: AppColors.secondaryText,
+          color: c.secondaryText,
         ),
         labelLarge: TextStyle(
+          fontFamily: fontFamily,
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: AppColors.accent,
+          color: c.accent,
         ),
         labelSmall: TextStyle(
+          fontFamily: fontFamily,
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: AppColors.primaryText,
+          color: c.primaryText,
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.cardBackground,
+        color: c.cardBackground,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
@@ -90,14 +119,15 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.white,
+          backgroundColor: c.accent,
+          foregroundColor: c.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
           ),
           textStyle: const TextStyle(
+            fontFamily: fontFamily,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -105,53 +135,56 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.accent,
-          side: const BorderSide(color: AppColors.accent),
+          foregroundColor: c.accent,
+          side: BorderSide(color: c.accent),
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
           ),
           textStyle: const TextStyle(
+            fontFamily: fontFamily,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
         ),
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.white,
-        selectedItemColor: AppColors.accent,
-        unselectedItemColor: AppColors.secondaryText,
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: c.cardBackground,
+        selectedItemColor: c.accent,
+        unselectedItemColor: c.secondaryText,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: AppColors.white,
-        indicatorColor: AppColors.lightAccent,
+        backgroundColor: c.cardBackground,
+        indicatorColor: c.lightAccent,
         elevation: 0,
         height: 76,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           return TextStyle(
+            fontFamily: fontFamily,
             fontSize: 12,
             fontWeight: FontWeight.w600,
             color: states.contains(WidgetState.selected)
-                ? AppColors.accent
-                : AppColors.secondaryText,
+                ? c.accent
+                : c.secondaryText,
           );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           return IconThemeData(
             color: states.contains(WidgetState.selected)
-                ? AppColors.accent
-                : AppColors.secondaryText,
+                ? c.accent
+                : c.secondaryText,
           );
         }),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.gray,
-        hintStyle: const TextStyle(
+        fillColor: c.searchFieldFill,
+        hintStyle: TextStyle(
+          fontFamily: fontFamily,
           fontSize: 14,
-          color: AppColors.secondaryText,
+          color: c.secondaryText,
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -167,18 +200,19 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
-          borderSide: const BorderSide(
-            color: AppColors.accent,
+          borderSide: BorderSide(
+            color: c.accent,
             width: 1.2,
           ),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.primaryText,
-        contentTextStyle: const TextStyle(
+        backgroundColor: isDark ? c.cardBackground : c.primaryText,
+        contentTextStyle: TextStyle(
+          fontFamily: fontFamily,
           fontSize: 14,
-          color: AppColors.white,
+          color: isDark ? c.primaryText : c.white,
         ),
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -186,19 +220,26 @@ class AppTheme {
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.white,
+        backgroundColor: c.cardBackground,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
         ),
       ),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.accent,
-        linearTrackColor: AppColors.gray,
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: c.cardBackground,
+        surfaceTintColor: Colors.transparent,
+        modalBackgroundColor: c.cardBackground,
       ),
-      dividerTheme: const DividerThemeData(
-        color: AppColors.divider,
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: c.accent,
+        linearTrackColor: c.gray,
+      ),
+      dividerTheme: DividerThemeData(
+        color: c.divider,
         thickness: AppDimensions.dividerHeight,
       ),
     );
   }
 }
+

@@ -23,6 +23,7 @@ class AppChromeIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -33,11 +34,11 @@ class AppChromeIconButton extends StatelessWidget {
           height: 40,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: backgroundColor ?? AppColors.cardBackground,
+            color: backgroundColor ?? colors.cardBackground,
             borderRadius: BorderRadius.circular(12),
           ),
           child:
-              Icon(icon, size: 18, color: iconColor ?? AppColors.primaryText),
+              Icon(icon, size: 18, color: iconColor ?? colors.primaryText),
         ),
       ),
     );

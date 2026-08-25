@@ -33,6 +33,7 @@ class QuestionNumberChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.only(right: 4),
       child: Material(
@@ -53,7 +54,7 @@ class QuestionNumberChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: muted ? AppColors.secondaryText : AppColors.white,
+                color: muted ? colors.secondaryText : colors.white,
               ),
             ),
           ),

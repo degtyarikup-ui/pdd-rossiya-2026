@@ -28,6 +28,7 @@ class ProgressPanelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final correct = stats['correctAnswers'] ?? 0;
     final answered = stats['answeredQuestions'] ?? 0;
     final wrong = stats['wrongQuestions'] ?? 0;
@@ -42,7 +43,7 @@ class ProgressPanelCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spacingL),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
       ),
       child: Column(
@@ -57,19 +58,19 @@ class ProgressPanelCard extends StatelessWidget {
                   remaining > 0
                       ? appL10n.progressRemaining(remaining)
                       : appL10n.progressAllDone,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     height: 1.25,
                     letterSpacing: -0.1,
-                    color: AppColors.primaryText,
+                    color: colors.primaryText,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: AppDimensions.spacingL),
-          const Divider(height: 1, thickness: 1, color: AppColors.divider),
+          Divider(height: 1, thickness: 1, color: colors.divider),
           const SizedBox(height: AppDimensions.spacingM),
           Row(
             children: [
@@ -78,13 +79,13 @@ class ProgressPanelCard extends StatelessWidget {
               _Micro(
                 value: '$correct',
                 label: appL10n.progressCorrect,
-                color: AppColors.green,
+                color: colors.green,
               ),
               const _MicroDivider(),
               _Micro(
                 value: '$wrong',
                 label: appL10n.progressWrong,
-                color: AppColors.red,
+                color: colors.red,
               ),
               const _MicroDivider(),
               _Micro(
@@ -95,7 +96,7 @@ class ProgressPanelCard extends StatelessWidget {
           ),
           if (streak != null) ...[
             const SizedBox(height: AppDimensions.spacingM),
-            const Divider(height: 1, thickness: 1, color: AppColors.divider),
+            Divider(height: 1, thickness: 1, color: colors.divider),
             const SizedBox(height: AppDimensions.spacingM),
             _StreakLine(streak: streak!),
           ],
@@ -118,6 +119,7 @@ class _ReadinessGauge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return SizedBox(
       width: _width,
       height: _totalHeight,
@@ -131,7 +133,11 @@ class _ReadinessGauge extends StatelessWidget {
             right: 0,
             child: CustomPaint(
               size: const Size(_width, _arcHeight),
-              painter: _GaugePainter(percent / 100),
+              painter: _GaugePainter(
+                percent / 100,
+                trackColor: colors.divider,
+                fillColor: colors.accent,
+              ),
             ),
           ),
           // Число — внутри полукруга. FittedBox страхует «100%»: оно шире
@@ -160,21 +166,21 @@ class _ReadinessGauge extends StatelessWidget {
                   children: [
                     TextSpan(
                       text: '$percent',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 30,
                         fontWeight: FontWeight.w700,
                         height: 1,
                         letterSpacing: -0.8,
-                        color: AppColors.primaryText,
+                        color: colors.primaryText,
                       ),
                     ),
-                    const TextSpan(
+                    TextSpan(
                       text: '%',
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
                         height: 1,
-                        color: AppColors.primaryText,
+                        color: colors.primaryText,
                       ),
                     ),
                   ],
@@ -191,10 +197,16 @@ class _ReadinessGauge extends StatelessWidget {
 }
 
 class _GaugePainter extends CustomPainter {
-  _GaugePainter(this.progress);
+  _GaugePainter(
+    this.progress, {
+    required this.trackColor,
+    required this.fillColor,
+  });
 
   /// 0..1 — доля заполнения дуги.
   final double progress;
+  final Color trackColor;
+  final Color fillColor;
 
   static const double _stroke = 10;
 
@@ -205,7 +217,7 @@ class _GaugePainter extends CustomPainter {
     final rect = Rect.fromCircle(center: center, radius: radius);
 
     final track = Paint()
-      ..color = AppColors.divider
+      ..color = trackColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = _stroke
       ..strokeCap = StrokeCap.round;
@@ -216,7 +228,7 @@ class _GaugePainter extends CustomPainter {
     if (progress <= 0) return;
 
     final fill = Paint()
-      ..color = AppColors.accent
+      ..color = fillColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = _stroke
       ..strokeCap = StrokeCap.round;
@@ -225,7 +237,10 @@ class _GaugePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_GaugePainter old) => old.progress != progress;
+  bool shouldRepaint(_GaugePainter old) =>
+      old.progress != progress ||
+      old.trackColor != trackColor ||
+      old.fillColor != fillColor;
 }
 
 class _Micro extends StatelessWidget {
@@ -237,6 +252,7 @@ class _Micro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Expanded(
       child: Column(
         children: [
@@ -250,7 +266,7 @@ class _Micro extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 height: 1.1,
                 letterSpacing: -0.3,
-                color: color ?? AppColors.primaryText,
+                color: color ?? colors.primaryText,
               ),
             ),
           ),
@@ -259,10 +275,10 @@ class _Micro extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               height: 1.1,
-              color: AppColors.secondaryText,
+              color: colors.secondaryText,
             ),
           ),
         ],
@@ -275,11 +291,14 @@ class _MicroDivider extends StatelessWidget {
   const _MicroDivider();
 
   @override
-  Widget build(BuildContext context) => Container(
-        width: 1,
-        height: 26,
-        color: AppColors.divider,
-      );
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      width: 1,
+      height: 26,
+      color: colors.divider,
+    );
+  }
 }
 
 /// Серия одной строкой: слева текущая (горящий огонёк), справа рекорд
@@ -293,6 +312,7 @@ class _StreakLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final hasStreak = streak.current > 0;
 
     return Row(
@@ -300,7 +320,7 @@ class _StreakLine extends StatelessWidget {
         Icon(
           Icons.local_fire_department_rounded,
           size: 17,
-          color: hasStreak ? AppColors.gold : AppColors.secondaryText,
+          color: hasStreak ? colors.gold : colors.secondaryText,
         ),
         const SizedBox(width: 6),
         Expanded(
@@ -310,19 +330,19 @@ class _StreakLine extends StatelessWidget {
                 : appL10n.streakStart,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.primaryText,
+              color: colors.primaryText,
             ),
           ),
         ),
         if (streak.longest > 0) ...[
           const SizedBox(width: AppDimensions.spacingM),
-          const Icon(
+          Icon(
             Icons.local_fire_department_rounded,
             size: 17,
-            color: AppColors.secondaryText,
+            color: colors.secondaryText,
           ),
           const SizedBox(width: 6),
           Text(
@@ -331,10 +351,10 @@ class _StreakLine extends StatelessWidget {
             // Тот же кегль и начертание, что у текущей серии: это парные
             // величины, и разное начертание читалось бы как разная важность.
             // Отличаются только цветом — рекорд приглушён.
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.secondaryText,
+              color: colors.secondaryText,
             ),
           ),
         ],

@@ -167,11 +167,6 @@ class InstallReporter {
       'ru.vk.store': 'RuStore',
       'com.apple.AppStore': 'App Store',
       'com.apple.TestFlight': 'TestFlight',
-      'com.amazon.venezia': 'Amazon',
-      'com.huawei.appmarket': 'AppGallery',
-      'com.sec.android.app.samsungapps': 'Galaxy Store',
-      'com.xiaomi.mipicks': 'Xiaomi GetApps',
-      'com.xiaomi.market': 'Xiaomi GetApps',
     };
     return map[installer] ?? installer;
   }

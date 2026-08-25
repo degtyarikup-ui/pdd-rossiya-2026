@@ -358,7 +358,7 @@ class ZoomHintBadge extends StatelessWidget {
       child: const Icon(
         Icons.zoom_in_rounded,
         size: 18,
-        color: AppColors.cardBackground,
+        color: Colors.white,
       ),
     );
   }

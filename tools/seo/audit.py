@@ -27,8 +27,9 @@ SITE = os.path.join(REPO, "web_landing", "ru")
 BASE = "https://pdd-drive.ru"
 
 # /app/ — временная копия Flutter-приложения (в .gitignore, закрыта в robots),
-# её содержимое генерирует сборщик Flutter, аудитом не проверяем.
-SKIP_DIRS = {"app", "assets", "glossary_data"}
+# /go/ — технические страницы быстрых редиректов в сторы с трекингом
+# её содержимое генерирует сборщик Flutter/редиректы, аудитом не проверяем.
+SKIP_DIRS = {"app", "assets", "glossary_data", "go"}
 
 # Файлы подтверждения прав в поисковых панелях: это не страницы сайта, а
 # технические заглушки фиксированного формата — у них не должно быть ни title,
@@ -82,6 +83,7 @@ def is_utility_url(u):
     name = u.lstrip("/")
     return (name in ("404.html", "404/")
             or u.startswith("/app/")
+            or u.startswith("/go/")
             or VERIFICATION_RE.match(name) is not None)
 
 

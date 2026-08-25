@@ -26,14 +26,15 @@ class AppMaxWidthFrame extends StatelessWidget {
       return child ?? const SizedBox.shrink();
     }
 
+    final colors = AppColors.of(context);
     return ColoredBox(
-      color: AppColors.divider,
+      color: colors.isDark ? Colors.black : colors.divider,
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: maxContentWidth),
           child: ClipRect(
             child: Material(
-              color: AppColors.background,
+              color: colors.background,
               child: child,
             ),
           ),

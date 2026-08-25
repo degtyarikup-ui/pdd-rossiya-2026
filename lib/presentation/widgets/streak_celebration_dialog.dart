@@ -51,6 +51,7 @@ class _StreakCelebrationDialog extends StatefulWidget {
 class _StreakCelebrationDialogState extends State<_StreakCelebrationDialog> {
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final s = widget.streak;
     // «Личный рекорд» — только если уже была серия выше единицы. На первый
     // день current=1==longest, но это не повод хвалить за «рекорд».
@@ -60,7 +61,7 @@ class _StreakCelebrationDialogState extends State<_StreakCelebrationDialog> {
     final days = s.weekStripDays(today: today);
 
     return Dialog(
-      backgroundColor: AppColors.cardBackground,
+      backgroundColor: colors.cardBackground,
       insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(28),
@@ -74,21 +75,21 @@ class _StreakCelebrationDialogState extends State<_StreakCelebrationDialog> {
             const SizedBox(height: AppDimensions.spacingL),
             Text(
               '${s.current}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 56,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -1.6,
                 height: 1.0,
-                color: AppColors.primaryText,
+                color: colors.primaryText,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               appL10n.streakDaysWord(s.current),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppColors.primaryText,
+                color: colors.primaryText,
                 height: 1.2,
               ),
             ),
@@ -102,10 +103,10 @@ class _StreakCelebrationDialogState extends State<_StreakCelebrationDialog> {
               child: Text(
                 _motivationText(s.current, isNewRecord: isNewRecord),
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   height: 1.4,
-                  color: AppColors.secondaryText,
+                  color: colors.secondaryText,
                 ),
               ),
             ),
@@ -122,7 +123,7 @@ class _StreakCelebrationDialogState extends State<_StreakCelebrationDialog> {
               height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accent,
+                  backgroundColor: colors.accent,
                   foregroundColor: AppColors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius:
@@ -392,23 +393,24 @@ class _SunburstPainter extends CustomPainter {
 class _RecordChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.goldLightSurface,
+        color: colors.goldLightSurface,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.emoji_events_rounded, size: 14, color: AppColors.gold),
+          Icon(Icons.emoji_events_rounded, size: 14, color: colors.gold),
           const SizedBox(width: 6),
           Text(
             appL10n.personalRecord,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: AppColors.gold,
+              color: colors.gold,
               height: 1.0,
             ),
           ),
@@ -433,6 +435,7 @@ class _WeekStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: List.generate(7, (i) {
@@ -448,26 +451,23 @@ class _WeekStrip extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 // Единый стиль с карточкой на главной: активный день —
-                // сплошной оранжевый, сегодняшний пустой — белый с контуром.
+                // сплошной оранжевый, сегодняшний пустой — фон карточки с контуром.
                 color: active
-                    ? AppColors.gold
-                    : (isToday ? AppColors.white : Colors.transparent),
+                    ? colors.gold
+                    : (isToday ? colors.cardBackground : Colors.transparent),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  // Сегодняшний без тренировки — чёрный контур, толщина как у всех.
                   color: active
-                      ? AppColors.gold
-                      : (isToday ? AppColors.primaryText : AppColors.divider),
+                      ? colors.gold
+                      : (isToday ? colors.primaryText : colors.divider),
                   width: 1.2,
                 ),
               ),
               child: FlameIcon(
                 size: 13,
-                // Активный — белый; сегодня без тренировки — чёрный (в цвет
-                // обводки); прочие пустые — светло-серый.
                 color: active
                     ? AppColors.white
-                    : (isToday ? AppColors.primaryText : AppColors.divider),
+                    : (isToday ? colors.primaryText : colors.divider),
               ),
             ),
             const SizedBox(height: 6),
@@ -477,8 +477,8 @@ class _WeekStrip extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
                 color: isToday
-                    ? AppColors.primaryText
-                    : AppColors.secondaryText,
+                    ? colors.primaryText
+                    : colors.secondaryText,
                 height: 1.0,
               ),
             ),

@@ -32,9 +32,10 @@ class TrainingResultScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final wrong = wrongQuestions.length;
     final perfect = wrong == 0;
+    final colors = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppDimensions.screenPadding),
@@ -45,7 +46,7 @@ class TrainingResultScreen extends StatelessWidget {
                 width: 96,
                 height: 96,
                 decoration: BoxDecoration(
-                  color: perfect ? AppColors.green : AppColors.gold,
+                  color: perfect ? colors.green : colors.gold,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -60,11 +61,11 @@ class TrainingResultScreen extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.3,
-                  color: AppColors.primaryText,
+                  color: colors.primaryText,
                 ),
               ),
               const SizedBox(height: AppDimensions.spacingS),
@@ -73,10 +74,10 @@ class TrainingResultScreen extends StatelessWidget {
                     ? appL10n.trainingResultPerfect
                     : appL10n.trainingResultWithMistakes,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   height: 1.4,
-                  color: AppColors.secondaryText,
+                  color: colors.secondaryText,
                 ),
               ),
               const SizedBox(height: AppDimensions.spacingXXL),
@@ -86,7 +87,7 @@ class TrainingResultScreen extends StatelessWidget {
                     child: _ResultCell(
                       value: '$correct',
                       label: appL10n.progressCorrect,
-                      color: AppColors.green,
+                      color: colors.green,
                     ),
                   ),
                   const SizedBox(width: AppDimensions.spacingM),
@@ -95,8 +96,8 @@ class TrainingResultScreen extends StatelessWidget {
                       value: '$wrong',
                       label: appL10n.progressWrong,
                       color: wrong > 0
-                          ? AppColors.red
-                          : AppColors.secondaryText,
+                          ? colors.red
+                          : colors.secondaryText,
                     ),
                   ),
                   const SizedBox(width: AppDimensions.spacingM),
@@ -104,7 +105,7 @@ class TrainingResultScreen extends StatelessWidget {
                     child: _ResultCell(
                       value: '$total',
                       label: appL10n.progressDone,
-                      color: AppColors.primaryText,
+                      color: colors.primaryText,
                     ),
                   ),
                 ],
@@ -166,10 +167,11 @@ class _ResultCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppDimensions.spacingL),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
       ),
       child: Column(
@@ -187,9 +189,9 @@ class _ResultCell extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.secondaryText,
+              color: colors.secondaryText,
             ),
           ),
         ],

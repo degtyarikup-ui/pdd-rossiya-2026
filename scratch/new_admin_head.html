@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ПДД Аналитика — Панель управления</title>
+  <link rel="icon" href="https://pdd-drive.ru/assets/favicon.png">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --sidebar-bg: #ffffff;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --card-border-subtle: #f1f5f9;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --text-light: #475569;
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --primary-subtle: #f0f9ff;
+      --success: #10b981;
+      --success-subtle: #ecfdf5;
+      --danger: #ef4444;
+      --danger-subtle: #fef2f2;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; display: flex; }
+
+    /* Layout structure */
+    .admin-wrapper { display: flex; width: 100vw; min-height: 100vh; }
+    
+    /* Sidebar */
+    .sidebar {
+      width: 250px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      z-index: 50;
+      box-shadow: 1px 0 10px rgba(0,0,0,0.02);
+    }
+    .sidebar-brand {
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .sidebar-brand img { width: 32px; height: 32px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    .brand-text { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; }
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #059669;
+      background: #ecfdf5;
+      padding: 2px 7px;
+      border-radius: 6px;
+      border: 1px solid #a7f3d0;
+      margin-left: auto;
+    }
+    .live-dot { width: 5px; height: 5px; background: #10b981; border-radius: 50%; }
+
+    .sidebar-menu { padding: 16px 12px; flex: 1; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      color: var(--text-light);
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+    .nav-item:hover { color: var(--text); background: #f1f5f9; }
+    .nav-item.active {
+      color: var(--primary);
+      background: #f0f9ff;
+      border-color: #bae6fd;
+      font-weight: 600;
+    }
+    .nav-item svg { color: var(--text-muted); transition: color 0.15s; flex-shrink: 0; }
+    .nav-item.active svg { color: var(--primary); }
+    .nav-item:hover svg { color: var(--text); }
+
+    .sidebar-footer {
+      padding: 16px 14px;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #fafbfc;
+    }
+    .project-select-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 2px; }
+    .sidebar-select {
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      outline: none;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .btn-logout {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      color: var(--text-muted);
+      background: transparent;
+      border: 1px solid transparent;
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-logout:hover { color: var(--danger); background: var(--danger-subtle); border-color: #fecaca; }
+
+    /* Main Content */
+    .main-area {
+      flex: 1;
+      min-width: 0;
+      padding: 24px 32px 48px;
+      overflow-y: auto;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .view-title { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+
+    /* Segmented Control (Pills) */
+    .segmented { display: inline-flex; background: #e2e8f0; padding: 3px; border-radius: 8px; }
+    .segmented button { background: transparent; border: none; color: var(--text-muted); padding: 5px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .segmented button:hover { color: var(--text); }
+    .segmented button.active { background: #ffffff; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+    .btn-icon { background: #ffffff; border: 1px solid var(--card-border); color: var(--text-muted); width: 34px; height: 34px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+    .btn-icon:hover { color: var(--text); border-color: #cbd5e1; background: #f8fafc; }
+
+    .btn-action { background: #ffffff; border: 1px solid var(--card-border); color: var(--text-light); padding: 7px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+    .btn-action:hover { background: #f8fafc; border-color: #cbd5e1; color: var(--text); }
+    .btn-primary { background: var(--primary); color: #ffffff; border: none; font-weight: 600; box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3); }
+    .btn-primary:hover { background: var(--primary-hover); color: #ffffff; }
+
+    /* KPI Grid */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 22px; }
+    .kpi-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .kpi-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .kpi-label { font-size: 11.5px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.4px; }
+    .kpi-value { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); margin-bottom: 4px; }
+    .kpi-footer { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+    .kpi-badge { display: inline-flex; padding: 2px 7px; border-radius: 5px; font-weight: 600; font-size: 11px; }
+    .badge-blue { background: var(--primary-subtle); color: var(--primary); border: 1px solid #bae6fd; }
+    .badge-green { background: var(--success-subtle); color: #059669; border: 1px solid #a7f3d0; }
+
+    /* Chart Cards */
+    .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; margin-bottom: 22px; }
+    .grid-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+    @media (max-width: 1000px) { .grid-2-1, .grid-1-1 { grid-template-columns: 1fr; } }
+
+    .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .card-title { font-size: 14.5px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .chart-box { position: relative; height: 260px; width: 100%; }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th { color: var(--text-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; padding: 10px 12px; border-bottom: 1px solid var(--card-border); background: #fafbfc; }
+    td { padding: 11px 12px; border-bottom: 1px solid var(--card-border-subtle); color: var(--text); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+
+    .code-badge { font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--primary); background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #bae6fd; }
+    .tag-badge { display: inline-flex; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #f1f5f9; color: var(--text-light); border: 1px solid #e2e8f0; }
+
+    /* Login Modal */
+    #login-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
+    .login-box { background: #ffffff; border: 1px solid var(--card-border); border-radius: 16px; padding: 36px 32px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 20px 30px rgba(0,0,0,0.08); }
+    .login-box img { width: 56px; height: 56px; border-radius: 14px; margin-bottom: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+    .login-box h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+    .login-box p { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+    .login-box input { width: 100%; background: #f8fafc; border: 1px solid var(--card-border); color: var(--text); padding: 12px; border-radius: 8px; font-size: 15px; margin-bottom: 14px; text-align: center; letter-spacing: 2px; }
+    .login-box input:focus { outline: none; border-color: var(--primary); background: #ffffff; }
+    .login-box button { width: 100%; padding: 12px; font-size: 13.5px; font-weight: 600; border-radius: 8px; }
+    .login-err-msg { color: var(--danger); font-size: 12px; margin-top: 10px; display: none; }
+  </style>
+</head>
+<body>
+
+<!-- Login Modal -->
+<div id="login-overlay">
+  <div class="login-box">
+    <img src="https://pdd-drive.ru/assets/icon-192.png" alt="PDD Logo">
+    <h2>Вход в панель</h2>
+    <p>Введите ключ доступа к аналитике</p>
+    <div>
+      <input type="text" id="login-pwd" placeholder="••••••••••••" autofocus autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="-webkit-text-security: disc; text-security: disc;">
+      <button type="button" id="login-submit-btn" class="btn-action btn-primary" style="width:100%; justify-content:center;">Войти</button>
+      <div id="login-err" class="login-err-msg">Неверный ключ доступа</div>
+    </div>
+  </div>
+</div>
+
+<!-- Main App Wrapper -->
+<div class="admin-wrapper" id="app" style="display:none;">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img src="https://pdd-drive.ru/assets/icon-192.png" alt="PDD">
+      <div>
+        <div class="brand-text">ПДД Аналитика</div>
+      </div>
+      <span class="brand-badge"><span class="live-dot"></span>LIVE</span>
+    </div>
+
+    <nav class="sidebar-menu">
+      <button class="nav-item active" data-feature="analytics">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Аналитика</span>
+      </button>
+      <button class="nav-item" data-feature="links">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span>Генератор ссылок</span>
+      </button>
+      <button class="nav-item" data-feature="blog">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span>Статьи блога</span>
+      </button>
+      <button class="nav-item" data-feature="threads">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <span>Threads постер</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div>
+        <div class="project-select-label">Проект</div>
+        <select id="sidebar-app-select" class="sidebar-select">
+          <option value="all">Все проекты</option>
+          <option value="ru">Россия (RU)</option>
+          <option value="rs">Сербия (RS)</option>
+        </select>
+      </div>
+      <button class="btn-logout" id="logout-btn">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span>Выйти</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Area -->
+  <main class="main-area">
+
+    <!-- Top bar -->
+    <header class="top-bar">
+      <h1 class="view-title" id="current-view-title">Аналитика продукта</h1>
+      <div class="top-actions">
+        <div class="segmented" id="period-buttons">
+          <button class="active" data-days="7">7 дней</button>
+          <button data-days="1">Сегодня</button>
+          <button data-days="30">30 дней</button>
+          <button data-days="90">90 дней</button>
+        </div>
+        <button class="btn-icon" id="refresh-btn" title="Обновить">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 1. ANALYTICS VIEW -->
+    <div id="analytics-view">
+      <!-- KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-head">
+            <span class="kpi-label">Установки приложения</span>
+          </div>
+          <div class="kpi-value" id="m-installs">0</div>
+          <div class="kpi-footer">
+            <span>За всё время: <b id="m-grand" style="color:var(--text);font-weight:700;">0</b></span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-head">
+            <span class="kpi-label">Визиты лендинга</span>
+          </div>
+          <div class="kpi-value" id="m-views">0</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-head">
+            <span class="kpi-label">Клики в сторы</span>
+            <span class="kpi-badge badge-blue" id="m-ctr">CTR: 0%</span>
+          </div>
+          <div class="kpi-value" id="m-clicks">0</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-head">
+            <span class="kpi-label">Конверсия лендинга</span>
+            <span class="kpi-badge badge-green">CR %</span>
+          </div>
+          <div class="kpi-value" id="m-cr">0.0%</div>
+        </div>
+      </div>
+
+      <!-- Charts Row 1: App Growth & Store Distribution -->
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              <span>Динамика установок приложения</span>
+            </div>
+          </div>
+          <div class="chart-box">
+            <canvas id="chart-installs"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">
+              <span>Платформы и магазины</span>
+            </div>
+          </div>
+          <div class="chart-box">
+            <canvas id="chart-targets"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row 2: Web Marketing Funnel & Traffic Sources -->
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              <span>Воронка веб-маркетинга (Визиты и Клики)</span>
+            </div>
+          </div>
+          <div class="chart-box">
+            <canvas id="chart-web-funnel"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">
+              <span>Источники трафика</span>
+            </div>
+          </div>
+          <div class="chart-box">
+            <canvas id="chart-sources"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tables: Social channels & Live feed -->
+      <div class="grid-1-1">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">
+              <span>Эффективность каналов и соцсетей</span>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Источник</th>
+                <th>Визиты</th>
+                <th>Клики</th>
+                <th>CTR</th>
+                <th>Установки</th>
+              </tr>
+            </thead>
+            <tbody id="table-sources">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Загрузка...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">
+              <span>Живая лента событий</span>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Время</th>
+                <th>Событие</th>
+                <th>Источник</th>
+                <th>Кампания</th>
+                <th>Страна</th>
+              </tr>
+            </thead>
+            <tbody id="table-live">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Ожидание событий...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. LINKS GENERATOR VIEW -->
+    <div id="links-view" style="display:none;">
+      <div class="card" style="margin-bottom: 22px;">
+        <div class="card-head">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span>Генератор UTM-ссылок для соцсетей и кампаний</span>
+          </div>
+        </div>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:18px; line-height:1.5;">
+          Создавайте отслеживаемые ссылки для шапок профиля (bio), описаний видео, Shorts и постов. Переходы будут точно атрибутированы в аналитике.
+        </p>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:16px;">
+          <div>
+            <label style="display:block; font-size:11.5px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px;">Целевая страница</label>
+            <select id="gen-page" class="sidebar-select">
+              <optgroup label="Россия (RU)">
+                <option value="https://pdd-drive.ru/links/">Таплинк со всеми кнопками (/links/)</option>
+                <option value="https://pdd-drive.ru/">Главный сайт (/)</option>
+                <option value="https://pdd-drive.ru/go/rustore/">RuStore</option>
+                <option value="https://pdd-drive.ru/go/gplay/">Google Play</option>
+                <option value="https://pdd-drive.ru/go/appstore/">App Store</option>
+                <option value="https://pdd-drive.ru/go/web/">Веб-версия</option>
+              </optgroup>
+              <optgroup label="Сербия (RS)">
+                <option value="https://pdd-drive.ru/go/rs-gplay/">Google Play (Сербия)</option>
+                <option value="https://rs.pdd-drive.online/">Лендинг Сербии (rs.pdd-drive.online)</option>
+              </optgroup>
+            </select>
+          </div>
+          <div>
+            <label style="display:block; font-size:11.5px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px;">Соцсеть / Канал</label>
+            <select id="gen-source" class="sidebar-select">
+              <option value="yt">YouTube (Shorts / Видео)</option>
+              <option value="tt">TikTok</option>
+              <option value="ig">Instagram (Reels / Bio)</option>
+              <option value="tg">Telegram</option>
+              <option value="vk">ВКонтакте</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block; font-size:11.5px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px;">Название кампании</label>
+            <input type="text" id="gen-camp" placeholder="напр: bio, quiz_promo, post12" style="width:100%; background:#ffffff; border:1px solid var(--card-border); border-radius:8px; color:var(--text); padding:8px 12px; font-size:13px;" />
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px; background:#f8fafc; border:1px solid var(--card-border); padding:10px 14px; border-radius:10px;">
+          <div id="gen-output" class="code-badge" style="flex:1; font-size:13px; padding:4px 8px; word-break:break-all;">https://pdd-drive.ru/links/?ref=yt</div>
+          <button id="copy-link-btn" class="btn-action btn-primary">
+            <span>Скопировать</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Campaign details table -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">
+            <span>Кампании и источники</span>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Кампания</th>
+              <th>Соцсеть</th>
+              <th>Визиты</th>
+              <th>Клики</th>
+              <th>CTR</th>
+            </tr>
+          </thead>
+          <tbody id="table-campaigns">
+            <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Нет данных по кампаниям</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 3. BLOG VIEW -->
+    <div id="blog-view" style="display:none;">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span>Запланированные публикации статей (<span id="blog-count">0</span>)</span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-action" id="reset-blog-btn" style="color:var(--danger); border-color:#fecaca;">Сбросить</button>
+            <button class="btn-action" id="refresh-blog-btn">Обновить</button>
+          </div>
+        </div>
+        <div id="blog-articles-container" style="display:grid; gap:12px;">
+          <div style="color:var(--text-muted);text-align:center;padding:20px;">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. THREADS VIEW -->
+    <div id="threads-view" style="display:none;">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            <span>Очередь постов в Threads</span>
+          </div>
+          <button class="btn-action" id="refresh-threads-btn">Обновить</button>
+        </div>
+        <div id="threads-queue-container" style="display:grid; gap:14px;">
+          <div style="color:var(--text-muted);text-align:center;padding:20px;">Загрузка очереди...</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>

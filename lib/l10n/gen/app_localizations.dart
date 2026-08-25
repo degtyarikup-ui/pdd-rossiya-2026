@@ -152,6 +152,24 @@ abstract class AppLocalizations {
   /// **'Знаки'**
   String get signs;
 
+  /// No description provided for @video.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лента'**
+  String get video;
+
+  /// No description provided for @rules.
+  ///
+  /// In ru, this message translates to:
+  /// **'Правила'**
+  String get rules;
+
+  /// No description provided for @signsAndMarkup.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знаки и разметка'**
+  String get signsAndMarkup;
+
   /// No description provided for @settings.
   ///
   /// In ru, this message translates to:
@@ -1207,6 +1225,36 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не удалось загрузить данные. Проверьте подключение и попробуйте снова.'**
   String get dataLoadError;
+
+  /// No description provided for @themeSetting.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тема оформления'**
+  String get themeSetting;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как на устройстве'**
+  String get themeSystem;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Светлая'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тёмная'**
+  String get themeDark;
+
+  /// No description provided for @themeChoose.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тема оформления'**
+  String get themeChoose;
 }
 
 class _AppLocalizationsDelegate

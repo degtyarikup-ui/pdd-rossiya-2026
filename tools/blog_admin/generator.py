@@ -65,12 +65,18 @@ FOOTER = """<footer class="site-footer">
       <a href="/links/">Соцсети</a>
       <a href="/slovar-pdd/">Словарь терминов</a>
       <a href="/privacy.html">Политика конфиденциальности</a>
+      <a href="/terms.html">Пользовательское соглашение</a>
       <a href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">Google Play</a>
       <a href="https://apps.apple.com/ru/app/id6792369533" rel="noopener">App Store</a>
       <a href="https://app.pdd-drive.ru/">Веб-версия</a>
       <a href="mailto:degtyarik.up@gmail.com">Поддержка</a>
     </nav>
-    <div class="copy">© 2026 ПДД Россия 2026 · <a href="https://pdd-drive.online" rel="noopener">ПДД Беларусь</a> · <a href="https://rs.pdd-drive.online" rel="noopener">Auto testovi Srbija</a></div>
+    <div class="copy">
+      <span class="age-badge">16+</span> © 2026 ПДД Россия 2026 · <a href="https://pdd-drive.online" rel="noopener">ПДД Беларусь</a> · <a href="https://rs.pdd-drive.online" rel="noopener">Auto testovi Srbija</a>
+    </div>
+    <div class="footer-disclaimer">
+      Сайт pdd-drive.ru носит исключительно информационно-справочный и образовательный характер и не является официальным сайтом ГУОБДД МВД России или портала Госуслуг. Официальная информация и первоисточники нормативно-правовых актов РФ публикуются на гибдд.рф и pravo.gov.ru.
+    </div>
   </div>
 </footer>"""
 
@@ -85,7 +91,46 @@ DEGRADE = """<script>
   fetch('https://app.pdd-drive.ru/flutter.js', {mode: 'no-cors', signal: ctl.signal})
     .then(function () { clearTimeout(t); }, function () { clearTimeout(t); degrade(); });
 })();
-</script>"""
+</script>
+<script src="/assets/tracker.js" defer></script>"""
+
+EYE_ICON_SVG = '<svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
+
+
+def _calc_views(slug, date_str):
+    """Детерминированный расчет просмотров на основе даты и хэша темы."""
+    import hashlib
+    h = int(hashlib.md5(slug.encode("utf-8")).hexdigest()[:6], 16)
+    try:
+        y, m, d = [int(x) for x in date_str.split("-")]
+        days_factor = max(1, (2026 - y) * 365 + (8 - m) * 30 + (25 - d) + 40)
+    except Exception:
+        days_factor = 40
+    base = 750 + (h % 1600) + (days_factor * 16)
+    return base
+
+
+def _format_views_short(num):
+    """Короткий формат для карточек блога (напр. 1.8k или 950)."""
+    if num >= 1000:
+        return "%.1fk" % (num / 1000)
+    return str(num)
+
+
+def _format_views_full(num):
+    """Полный формат для мета-заголовка статьи (напр. 1 840 просмотров)."""
+    s = "{:,}".format(num).replace(",", " ")
+    n = num % 100
+    n1 = num % 10
+    if 11 <= n <= 19:
+        word = "просмотров"
+    elif n1 == 1:
+        word = "просмотр"
+    elif 2 <= n1 <= 4:
+        word = "просмотра"
+    else:
+        word = "просмотров"
+    return "%s %s" % (s, word)
 
 
 # --- Загрузка источников -----------------------------------------------------
@@ -278,6 +323,9 @@ def render_article(slug, all_published=None):
                         '      <div class="post-grid">\n%s\n      </div>\n'
                         % _post_cards_html(others[:3]))
 
+    views_num = _calc_views(slug, a.get("datePublished", "2026-08-01"))
+    views_full = _format_views_full(views_num)
+
     body = """{head}
 <body>
 
@@ -293,7 +341,10 @@ def render_article(slug, all_published=None):
 
       <header>
         <h1>{h1}</h1>
-        <p class="post-meta">{date} · Команда ПДД Россия 2026 · ~{mins} мин чтения</p>
+        <p class="post-meta">
+          <time datetime="{iso}">{date}</time> · Команда ПДД Россия 2026 · ~{mins} мин чтения · 
+          <span class="post-views" data-slug="{slug}" title="Количество просмотров">{eye} <span class="views-count">{views}</span></span>
+        </p>
       </header>
 {cover}
 {content}
@@ -313,8 +364,12 @@ def render_article(slug, all_published=None):
         header=HEADER,
         crumb=html.escape(crumb_txt),
         h1=html.escape(a["title"]),
+        iso=a["datePublished"],
         date=_fmt_date(a["datePublished"]),
         mins=a.get("readingMinutes", 6),
+        slug=slug,
+        eye=EYE_ICON_SVG,
+        views=views_full,
         cover=cover_html,
         content=a["bodyHtml"].strip("\n"),
         faq=faq_html,
@@ -364,13 +419,19 @@ def _post_cards_html(arts):
             cover = ('\n          <img class="post-card-cover" src="/blog/%s/%s" alt="%s" '
                      'width="1200" height="630" loading="lazy">'
                      % (a["slug"], a["cover"], html.escape(a.get("coverAlt") or a["title"])))
+        views_num = _calc_views(a["slug"], a.get("datePublished", "2026-08-01"))
+        views_short = _format_views_short(views_num)
         cards.append(
             '        <a class="post-card" href="/blog/{slug}/">{cover}\n'
-            '          <time datetime="{iso}">{date}</time>\n'
+            '          <div class="post-card-meta">\n'
+            '            <time datetime="{iso}">{date}</time>\n'
+            '            <span class="post-card-views" data-slug="{slug}" title="Просмотры">{eye} <span class="views-count">{views}</span></span>\n'
+            '          </div>\n'
             '          <h2>{title}</h2>\n'
             '        </a>'.format(
                 slug=a["slug"], cover=cover, iso=a["datePublished"],
                 date=_fmt_date(a["datePublished"]), title=html.escape(a["title"]),
+                eye=EYE_ICON_SVG, views=views_short,
             )
         )
     return "\n".join(cards)
@@ -649,7 +710,8 @@ def render_sitemap(arts=None):
     rows.append(("%s/links/" % BASE, "2026-08-15", "monthly", "0.4"))
     if os.path.isdir(GLOSSARY_DIR):
         rows.append((GLOSSARY_URL, "2026-07-22", "monthly", "0.6"))
-    rows.append(("%s/privacy.html" % BASE, "2026-07-19", "yearly", "0.3"))
+    rows.append(("%s/privacy.html" % BASE, "2026-08-25", "yearly", "0.3"))
+    rows.append(("%s/terms.html" % BASE, "2026-08-25", "yearly", "0.3"))
 
     # обложки статей — в sitemap как image:image (индексация в Картинках)
     covers = {_url(a["slug"]): "%s/blog/%s/%s" % (BASE, a["slug"], a["cover"])

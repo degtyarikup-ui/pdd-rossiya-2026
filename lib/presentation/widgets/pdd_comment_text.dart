@@ -21,19 +21,6 @@ class PddCommentText extends StatefulWidget {
 }
 
 class _PddCommentTextState extends State<PddCommentText> {
-  static const TextStyle _base = TextStyle(
-    fontSize: 14,
-    color: AppColors.primaryText,
-    height: 1.45,
-  );
-
-  static const TextStyle _link = TextStyle(
-    color: AppColors.accent,
-    fontWeight: FontWeight.w600,
-    decoration: TextDecoration.underline,
-    decorationColor: AppColors.accent,
-  );
-
   /// Распознаватели живут ровно столько же, сколько построенные с ними спаны.
   /// Пересоздавать их в build() нельзя: перерисовка (хоть от setState
   /// родителя, хоть от hot reload) уничтожала бы распознаватель, который
@@ -41,7 +28,6 @@ class _PddCommentTextState extends State<PddCommentText> {
   final List<TapGestureRecognizer> _recognizers = [];
 
   PddPointIndex? _index;
-  InlineSpan? _span;
 
   @override
   void initState() {
@@ -54,17 +40,9 @@ class _PddCommentTextState extends State<PddCommentText> {
         if (!mounted) return;
         setState(() {
           _index = value;
-          _rebuildSpan();
         });
       });
     }
-    _rebuildSpan();
-  }
-
-  @override
-  void didUpdateWidget(PddCommentText oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.comment != widget.comment) _rebuildSpan();
   }
 
   @override
@@ -80,11 +58,24 @@ class _PddCommentTextState extends State<PddCommentText> {
     _recognizers.clear();
   }
 
-  void _rebuildSpan() {
+  InlineSpan? _buildSpan(AppThemeColors colors) {
     _clearRecognizers();
 
     final index = _index;
     final text = widget.comment;
+
+    final baseStyle = TextStyle(
+      fontSize: 14,
+      color: colors.primaryText,
+      height: 1.45,
+    );
+
+    final linkStyle = TextStyle(
+      color: colors.accent,
+      fontWeight: FontWeight.w600,
+      decoration: TextDecoration.underline,
+      decorationColor: colors.accent,
+    );
 
     // Ссылка живая, только если пункт действительно есть в тексте Правил.
     // Часть разборов ссылается на «Перечень неисправностей» — это отдельный
@@ -94,8 +85,7 @@ class _PddCommentTextState extends State<PddCommentText> {
         : findPddPointRefs(text).where((r) => index.contains(r.point)).toList();
 
     if (refs.isEmpty) {
-      _span = null;
-      return;
+      return null;
     }
 
     final spans = <InlineSpan>[];
@@ -111,7 +101,7 @@ class _PddCommentTextState extends State<PddCommentText> {
       spans.add(
         TextSpan(
           text: text.substring(ref.start, ref.end),
-          style: _link,
+          style: linkStyle,
           recognizer: recognizer,
         ),
       );
@@ -121,7 +111,7 @@ class _PddCommentTextState extends State<PddCommentText> {
       spans.add(TextSpan(text: text.substring(cursor)));
     }
 
-    _span = TextSpan(style: _base, children: spans);
+    return TextSpan(style: baseStyle, children: spans);
   }
 
   void _open(String point) {
@@ -142,8 +132,14 @@ class _PddCommentTextState extends State<PddCommentText> {
 
   @override
   Widget build(BuildContext context) {
-    final span = _span;
-    if (span == null) return Text(widget.comment, style: _base);
+    final colors = AppColors.of(context);
+    final span = _buildSpan(colors);
+    final baseStyle = TextStyle(
+      fontSize: 14,
+      color: colors.primaryText,
+      height: 1.45,
+    );
+    if (span == null) return Text(widget.comment, style: baseStyle);
     return Text.rich(span);
   }
 }

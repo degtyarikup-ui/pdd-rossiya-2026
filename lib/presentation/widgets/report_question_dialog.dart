@@ -89,17 +89,18 @@ class _ReportQuestionDialogState extends State<_ReportQuestionDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return AlertDialog(
-      backgroundColor: AppColors.cardBackground,
+      backgroundColor: colors.cardBackground,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
       ),
       title: Text(
         appL10n.reportQuestionTooltip,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
-          color: AppColors.primaryText,
+          color: colors.primaryText,
         ),
       ),
       content: Column(
@@ -108,9 +109,9 @@ class _ReportQuestionDialogState extends State<_ReportQuestionDialog> {
         children: [
           Text(
             appL10n.reportQuestionBody,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: AppColors.secondaryText,
+              color: colors.secondaryText,
               height: 1.35,
             ),
           ),
@@ -122,10 +123,12 @@ class _ReportQuestionDialogState extends State<_ReportQuestionDialog> {
             maxLength: QuestionReportService.maxMessageLength,
             enabled: !_sending,
             textCapitalization: TextCapitalization.sentences,
+            style: TextStyle(color: colors.primaryText),
             decoration: InputDecoration(
               hintText: appL10n.reportQuestionHint,
+              hintStyle: TextStyle(color: colors.secondaryText),
               filled: true,
-              fillColor: AppColors.searchFieldFill,
+              fillColor: colors.searchFieldFill,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
                 borderSide: BorderSide.none,

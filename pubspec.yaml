@@ -1,7 +1,7 @@
 name: pdd_app
 description: "ПДД Россия 2026 — билеты и экзамен"
 publish_to: 'none'
-version: 1.0.11+29
+version: 1.1.0+30
 
 environment:
   sdk: ^3.11.4
@@ -29,6 +29,7 @@ dependencies:
   timezone: ^0.10.1
   flutter_timezone: ^4.1.1
   in_app_review: ^2.0.12
+  audioplayers: ^6.8.1
 
 dev_dependencies:
   flutter_test:
@@ -74,6 +75,7 @@ flutter:
     # Общие (страно-независимые) ресурсы.
     - assets/images/
     - assets/images/category_icons/
+    - assets/audio/feed/
     # Контент ВСЕХ стран. Android-flavor сам по себе ассеты НЕ фильтрует
     # (flavor решает только applicationId/иконку/нативные ресурсы), поэтому
     # здесь перечислены все страны — иначе `flutter run`/тесты/IDE не найдут

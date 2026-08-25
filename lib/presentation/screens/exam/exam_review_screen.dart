@@ -72,11 +72,12 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     if (widget.questions.isEmpty || _order.isEmpty) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.background,
         appBar: AppBar(
-          backgroundColor: AppColors.background,
+          backgroundColor: colors.background,
           elevation: 0,
           leading: AppChromeIconButton(
             icon: Icons.close_rounded,
@@ -87,14 +88,14 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
         body: Center(
           child: Text(
             appL10n.noQuestionsToReview,
-            style: const TextStyle(color: AppColors.secondaryText),
+            style: TextStyle(color: colors.secondaryText),
           ),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -120,10 +121,10 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                       children: [
                         Text(
                           appL10n.examReview,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.primaryText,
+                            color: colors.primaryText,
                           ),
                         ),
                         Text(
@@ -132,9 +133,9 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                             _order.length,
                           ),
                           key: ValueKey<int>(_currentPos),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.secondaryText,
+                            color: colors.secondaryText,
                           ),
                         ),
                       ],
@@ -165,13 +166,13 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
 
                   Color bg;
                   if (isCurrent) {
-                    bg = AppColors.accent;
+                    bg = colors.accent;
                   } else if (selI == null) {
-                    bg = AppColors.red;
+                    bg = colors.red;
                   } else if (correct) {
-                    bg = AppColors.green;
+                    bg = colors.green;
                   } else {
-                    bg = AppColors.red;
+                    bg = colors.red;
                   }
 
                   return Padding(
@@ -209,7 +210,7 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                 controller: _pageController,
                 itemCount: _order.length,
                 onPageChanged: _onReviewPageChanged,
-                itemBuilder: (context, pos) => _buildReviewPage(pos),
+                itemBuilder: (context, pos) => _buildReviewPage(context, pos),
               ),
             ),
           ],
@@ -217,7 +218,7 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(AppDimensions.screenPadding),
-        color: AppColors.white,
+        color: colors.cardBackground,
         child: SafeArea(
           top: false,
           child: SizedBox(
@@ -249,7 +250,8 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
     );
   }
 
-  Widget _buildReviewPage(int pos) {
+  Widget _buildReviewPage(BuildContext context, int pos) {
+    final colors = AppColors.of(context);
     final idx = _order[pos];
     final q = widget.questions[idx];
     final answers = q['answers'] as List;
@@ -274,17 +276,17 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
               padding: const EdgeInsets.all(AppDimensions.spacingM),
               margin: const EdgeInsets.only(bottom: AppDimensions.spacingM),
               decoration: BoxDecoration(
-                color: AppColors.redLight,
+                color: colors.redLight,
                 borderRadius: BorderRadius.circular(
                   AppDimensions.smallRadius,
                 ),
               ),
               child: Text(
                 appL10n.notAnsweredThisQuestion,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.red,
+                  color: colors.red,
                 ),
               ),
             ),
@@ -299,10 +301,10 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
           ],
           Text(
             questionText,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: AppColors.primaryText,
+              color: colors.primaryText,
               height: 1.35,
             ),
           ),
@@ -316,16 +318,16 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
             Color tc;
             Widget? icon;
             if (isCorrect) {
-              bg = AppColors.green;
+              bg = colors.green;
               tc = AppColors.white;
               icon = const Icon(Icons.check, color: AppColors.white, size: 20);
             } else if (isSelected) {
-              bg = AppColors.red;
+              bg = colors.red;
               tc = AppColors.white;
               icon = const Icon(Icons.close, color: AppColors.white, size: 20);
             } else {
-              bg = AppColors.gray;
-              tc = AppColors.secondaryText;
+              bg = colors.gray;
+              tc = colors.secondaryText;
             }
             return Padding(
               padding: const EdgeInsets.only(
@@ -361,7 +363,7 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                         ),
                       ),
                     ),
-                    if (icon != null) icon,
+                    ?icon,
                   ],
                 ),
               ),
@@ -369,7 +371,7 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
           }),
           if (comment.isNotEmpty) ...[
             const SizedBox(height: AppDimensions.spacingL),
-            _commentBlock(comment, pddPoints),
+            _commentBlock(context, comment, pddPoints),
           ],
           const SizedBox(height: 100),
         ],
@@ -377,11 +379,12 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
     );
   }
 
-  Widget _commentBlock(String comment, List<dynamic> pddPoints) {
+  Widget _commentBlock(BuildContext context, String comment, List<dynamic> pddPoints) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spacingL),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
       ),
       child: Column(
@@ -389,14 +392,14 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.lightbulb, color: AppColors.gold, size: 20),
+              Icon(Icons.lightbulb, color: colors.gold, size: 20),
               const SizedBox(width: 8),
               Text(
                 appL10n.comment,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primaryText,
+                  color: colors.primaryText,
                 ),
               ),
             ],
@@ -407,10 +410,10 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
             const SizedBox(height: AppDimensions.spacingM),
             Text(
               appL10n.pddPoints,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: AppColors.secondaryText,
+                color: colors.secondaryText,
               ),
             ),
             const SizedBox(height: AppDimensions.spacingXS),
@@ -421,15 +424,15 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.gold.withOpacity(0.1),
+                    color: colors.gold.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     point.toString(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.gold,
+                      color: colors.gold,
                     ),
                   ),
                 );

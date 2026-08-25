@@ -26,8 +26,9 @@ class MarkupCategoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -52,11 +53,11 @@ class MarkupCategoryScreen extends StatelessWidget {
                   Expanded(
                     child: Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                         height: 1.0,
-                        color: AppColors.primaryText,
+                        color: colors.primaryText,
                       ),
                     ),
                   ),
@@ -83,7 +84,7 @@ class MarkupCategoryScreen extends StatelessWidget {
                         AppDimensions.spacingL,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.cardBackground,
+                        color: colors.cardBackground,
                         borderRadius: BorderRadius.circular(
                           AppDimensions.cardRadius,
                         ),
@@ -93,20 +94,20 @@ class MarkupCategoryScreen extends StatelessWidget {
                         children: [
                           Text(
                             entry.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               height: 1.0,
-                              color: AppColors.primaryText,
+                              color: colors.primaryText,
                             ),
                           ),
                           const SizedBox(height: AppDimensions.spacingS),
                           Text(
                             entry.description,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               height: 1.45,
-                              color: AppColors.secondaryText,
+                              color: colors.secondaryText,
                             ),
                           ),
                         ],
