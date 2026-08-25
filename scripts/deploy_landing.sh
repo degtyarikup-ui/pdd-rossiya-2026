@@ -51,6 +51,18 @@ git -C "$WORKTREE" checkout -b gh-pages >/dev/null 2>&1 || git -C "$WORKTREE" br
 git -C "$WORKTREE" add -A
 git -C "$WORKTREE" -c user.email="degtyarik.up@gmail.com" -c user.name="degtyarikup-ui" \
   commit -m "$MSG" >/dev/null
-git -C "$WORKTREE" push --force "$REMOTE_REPO" gh-pages:gh-pages
+
+TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
+if [ -z "$TOKEN" ] && command -v gh >/dev/null 2>&1; then
+  TOKEN="$(gh auth token 2>/dev/null || true)"
+fi
+
+if [ -n "$TOKEN" ]; then
+  REMOTE_AUTH="https://x-access-token:${TOKEN}@github.com/degtyarikup-ui/pdd-rossiya-2026.git"
+else
+  REMOTE_AUTH="$REMOTE_REPO"
+fi
+
+git -C "$WORKTREE" push --force "$REMOTE_AUTH" gh-pages:gh-pages
 rm -rf "$WORKTREE"
 echo "Deployed $COUNTRY landing → https://$CNAME_DOMAIN"
