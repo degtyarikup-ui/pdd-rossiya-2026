@@ -283,278 +283,282 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
 
     final feedAsync = ref.watch(feedItemsProvider);
 
-    // Initialize _items when data is first received
-    if (_items.isEmpty && feedAsync.hasValue && feedAsync.value!.isNotEmpty) {
-      _items.addAll(feedAsync.value!);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _checkCurrentFavorite();
-      });
-    }
-
-    if (_items.isEmpty) {
-      if (feedAsync.isLoading) {
-        return Scaffold(
-          backgroundColor: colors.homeScreenBackground,
-          body: Center(
-            child: CircularProgressIndicator(color: colors.accent),
-          ),
-        );
-      }
-      if (feedAsync.hasError) {
-        return Scaffold(
-          backgroundColor: colors.homeScreenBackground,
-          body: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Не удалось загрузить вопросы',
-                  style: TextStyle(color: colors.secondaryText, fontSize: 16),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () => ref.refresh(feedItemsProvider),
-                  child: const Text('Повторить'),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
-      return Scaffold(
+    return feedAsync.when(
+      loading: () => Scaffold(
         backgroundColor: colors.homeScreenBackground,
         body: Center(
           child: CircularProgressIndicator(color: colors.accent),
         ),
-      );
-    }
+      ),
+      error: (err, stack) => Scaffold(
+        backgroundColor: colors.homeScreenBackground,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Ошибка загрузки ленты: $err',
+                style: TextStyle(color: colors.secondaryText),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () => ref.refresh(feedItemsProvider),
+                child: const Text('Повторить'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      data: (initialItems) {
+        if (_items.isEmpty && initialItems.isNotEmpty) {
+          _items.addAll(initialItems);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _checkCurrentFavorite();
+          });
+        }
 
-    final currentItem = _currentIndex < _items.length
-        ? _items[_currentIndex]
-        : _items.first;
+        final displayItems = _items.isNotEmpty ? _items : initialItems;
 
-    return Scaffold(
-      backgroundColor: colors.homeScreenBackground,
-      body: Stack(
-        children: [
-          // 1. Full-screen PageView with top padding to clear the fixed header
-          Positioned.fill(
-            child: Padding(
-              padding: EdgeInsets.only(top: topHeaderHeight),
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  if (_currentIndex == 0 && !_isRefreshing) {
-                    if (notification is OverscrollNotification &&
-                        notification.overscroll < -15) {
-                      _refreshFeed();
-                      return true;
-                    }
-                  }
-                  return false;
-                },
-                child: PageView.builder(
-                  controller: _pageController,
-                  scrollDirection: Axis.vertical,
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
-                  ),
-                  onPageChanged: _onPageChanged,
-                  itemCount: _items.length,
-                  itemBuilder: (context, index) {
-                    final item = _items[index];
-                    if (item.isAd) {
-                      return AdFeedCard(
-                        key: ValueKey('${item.id}_$index'),
-                        item: item,
-                        isCurrent: index == _currentIndex,
-                        onAutoNext: _autoNext,
-                        onPrevious: _previousPage,
-                        onFailed: _onAdLoadFailed,
-                      );
-                    }
-                    if (item.isTip) {
-                      return TipFeedCard(
-                        key: ValueKey('${item.id}_$index'),
-                        item: item,
-                        isCurrent: index == _currentIndex,
-                        onAutoNext: _autoNext,
-                        onPrevious: _previousPage,
-                      );
-                    }
-                    return FeedCard(
-                      key: ValueKey('${item.id}_$index'),
-                      item: item,
-                      isCurrent: index == _currentIndex,
-                      isSoundEnabled: _isSoundEnabled,
-                      initialSelectedAnswerIndex: _answeredChoices[item.id],
-                      onAnswerRecorded: (selectedIdx) {
-                        _answeredChoices[item.id] = selectedIdx;
-                      },
-                      onToggleSound: _toggleSound,
-                      onAutoNext: _autoNext,
-                      onPrevious: _previousPage,
-                      onTimerTick: (progress, remainingSec) {
-                        _timerProgressNotifier.value = progress;
-                        _remainingSecondsNotifier.value = remainingSec;
-                      },
-                      onAnswerStateChanged: (isAnswered, isCorrect) {
-                        _isCurrentAnsweredNotifier.value = isAnswered;
-                        _isCurrentCorrectNotifier.value = isCorrect;
-                      },
-                      onFavoriteChanged: (isFav) {
-                        _isCurrentFavoriteNotifier.value = isFav;
-                      },
-                    );
-                  },
-                ),
+        if (displayItems.isEmpty) {
+          return Scaffold(
+            backgroundColor: colors.homeScreenBackground,
+            body: Center(
+              child: Text(
+                'Вопросы пока не загружены',
+                style: TextStyle(color: colors.secondaryText),
               ),
             ),
-          ),
+          );
+        }
 
-          // 2. Top Smooth Gradient Dissolve Mask (Questions gracefully fade into background color as they fly away)
-          Positioned(
-            top: topHeaderHeight,
-            left: 0,
-            right: 0,
-            height: 28,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      colors.homeScreenBackground,
-                      colors.homeScreenBackground.withValues(alpha: 0.0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
+        final currentItem = _currentIndex < displayItems.length
+            ? displayItems[_currentIndex]
+            : displayItems.first;
 
-          // 3. Bottom Smooth Gradient Dissolve Mask (New questions smoothly fade in from bottom)
-          Positioned(
-            bottom: 4,
-            left: 0,
-            right: 0,
-            height: 28,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      colors.homeScreenBackground,
-                      colors.homeScreenBackground.withValues(alpha: 0.0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // 4. Fixed Top Header Bar (Controls stay firmly in place; contents update smoothly)
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              bottom: false,
-              child: Container(
-                color: colors.homeScreenBackground,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.screenPadding,
-                  vertical: 8,
-                ),
-                child: _buildTopHeader(context, currentItem, colors),
-              ),
-            ),
-          ),
-
-          // 5. Fixed Bottom Countdown Timing Line (Firmly pinned at bottom)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildBottomTimingBar(colors, currentItem),
-          ),
-
-          // 6. Floating "Свайпай ↑" Hint (Shown maximum 3 times)
-          ValueListenableBuilder<bool>(
-            valueListenable: _isCurrentAnsweredNotifier,
-            builder: (context, isAnswered, _) {
-              return ValueListenableBuilder<bool>(
-                valueListenable: _isCurrentCorrectNotifier,
-                builder: (context, isCorrect, _) {
-                  final shouldShowHint =
-                      _swipeHintCount < 3 && isAnswered && !isCorrect;
-                  if (!shouldShowHint) return const SizedBox.shrink();
-
-                  return Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 16,
-                    child: Center(
-                      child: AnimatedBuilder(
-                        animation: _bounceAnimation,
-                        builder: (context, child) {
-                          return Transform.translate(
-                            offset: Offset(0, _bounceAnimation.value),
-                            child: child,
+        return Scaffold(
+          backgroundColor: colors.homeScreenBackground,
+          body: Stack(
+            children: [
+              // 1. Full-screen PageView with top padding to clear the fixed header
+              Positioned.fill(
+                child: Padding(
+                  padding: EdgeInsets.only(top: topHeaderHeight),
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (notification) {
+                      if (_currentIndex == 0 && !_isRefreshing) {
+                        if (notification is OverscrollNotification &&
+                            notification.overscroll < -15) {
+                          _refreshFeed();
+                          return true;
+                        }
+                      }
+                      return false;
+                    },
+                    child: PageView.builder(
+                      controller: _pageController,
+                      scrollDirection: Axis.vertical,
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
+                      onPageChanged: _onPageChanged,
+                      itemCount: displayItems.length,
+                      itemBuilder: (context, index) {
+                        final item = displayItems[index];
+                        if (item.isAd) {
+                          return AdFeedCard(
+                            key: ValueKey('${item.id}_$index'),
+                            item: item,
+                            isCurrent: index == _currentIndex,
+                            onAutoNext: _autoNext,
+                            onPrevious: _previousPage,
+                            onFailed: _onAdLoadFailed,
                           );
-                        },
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              HapticFeedbackHelper.tap();
-                              _incrementSwipeHintCount();
-                              _autoNext();
+                        }
+                        if (item.isTip) {
+                          return TipFeedCard(
+                            key: ValueKey('${item.id}_$index'),
+                            item: item,
+                            isCurrent: index == _currentIndex,
+                            onAutoNext: _autoNext,
+                            onPrevious: _previousPage,
+                          );
+                        }
+                        return FeedCard(
+                          key: ValueKey('${item.id}_$index'),
+                          item: item,
+                          isCurrent: index == _currentIndex,
+                          isSoundEnabled: _isSoundEnabled,
+                          initialSelectedAnswerIndex: _answeredChoices[item.id],
+                          onAnswerRecorded: (selectedIdx) {
+                            _answeredChoices[item.id] = selectedIdx;
+                          },
+                          onToggleSound: _toggleSound,
+                          onAutoNext: _autoNext,
+                          onPrevious: _previousPage,
+                          onTimerTick: (progress, remainingSec) {
+                            _timerProgressNotifier.value = progress;
+                            _remainingSecondsNotifier.value = remainingSec;
+                          },
+                          onAnswerStateChanged: (isAnswered, isCorrect) {
+                            _isCurrentAnsweredNotifier.value = isAnswered;
+                            _isCurrentCorrectNotifier.value = isCorrect;
+                          },
+                          onFavoriteChanged: (isFav) {
+                            _isCurrentFavoriteNotifier.value = isFav;
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+
+              // 2. Top Smooth Gradient Dissolve Mask (Questions gracefully fade into background color as they fly away)
+              Positioned(
+                top: topHeaderHeight,
+                left: 0,
+                right: 0,
+                height: 28,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          colors.homeScreenBackground,
+                          colors.homeScreenBackground.withValues(alpha: 0.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // 3. Bottom Smooth Gradient Dissolve Mask (New questions smoothly fade in from bottom)
+              Positioned(
+                bottom: 4,
+                left: 0,
+                right: 0,
+                height: 28,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          colors.homeScreenBackground,
+                          colors.homeScreenBackground.withValues(alpha: 0.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // 4. Fixed Top Header Bar (Controls stay firmly in place; contents update smoothly)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  bottom: false,
+                  child: Container(
+                    color: colors.homeScreenBackground,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppDimensions.screenPadding,
+                      vertical: 8,
+                    ),
+                    child: _buildTopHeader(context, currentItem, colors),
+                  ),
+                ),
+              ),
+
+              // 5. Fixed Bottom Countdown Timing Line (Firmly pinned at bottom)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _buildBottomTimingBar(colors, currentItem),
+              ),
+
+              // 6. Floating "Свайпай ↑" Hint (Shown maximum 3 times)
+              ValueListenableBuilder<bool>(
+                valueListenable: _isCurrentAnsweredNotifier,
+                builder: (context, isAnswered, _) {
+                  return ValueListenableBuilder<bool>(
+                    valueListenable: _isCurrentCorrectNotifier,
+                    builder: (context, isCorrect, _) {
+                      final shouldShowHint =
+                          _swipeHintCount < 3 && isAnswered && !isCorrect;
+                      if (!shouldShowHint) return const SizedBox.shrink();
+
+                      return Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 16,
+                        child: Center(
+                          child: AnimatedBuilder(
+                            animation: _bounceAnimation,
+                            builder: (context, child) {
+                              return Transform.translate(
+                                offset: Offset(0, _bounceAnimation.value),
+                                child: child,
+                              );
                             },
-                            borderRadius: BorderRadius.circular(24),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.accent,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  HapticFeedbackHelper.tap();
+                                  _incrementSwipeHintCount();
+                                  _autoNext();
+                                },
                                 borderRadius: BorderRadius.circular(24),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'Свайпай',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.3,
-                                    ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 10,
                                   ),
-                                  SizedBox(width: 6),
-                                  Icon(
-                                    Icons.arrow_upward_rounded,
-                                    color: Colors.white,
-                                    size: 18,
+                                  decoration: BoxDecoration(
+                                    color: colors.accent,
+                                    borderRadius: BorderRadius.circular(24),
                                   ),
-                                ],
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Свайпай',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.3,
+                                        ),
+                                      ),
+                                      SizedBox(width: 6),
+                                      Icon(
+                                        Icons.arrow_upward_rounded,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   );
                 },
-              );
-            },
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
