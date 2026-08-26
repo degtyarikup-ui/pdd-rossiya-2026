@@ -5,6 +5,7 @@ import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/repositories/ads_repository.dart';
 import 'package:pdd_app/data/repositories/feed_repository.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/sources/questions_data_source.dart';
@@ -296,9 +297,16 @@ final wrongQuestionIdsProvider = FutureProvider<List<String>>((ref) async {
       .toList();
 });
 
+final adsRepositoryProvider = Provider<AdsRepository>((ref) {
+  final repo = AdsRepository();
+  repo.init();
+  return repo;
+});
+
 final feedRepositoryProvider = Provider<FeedRepository>((ref) {
   final dataSource = ref.watch(questionsDataSourceProvider);
-  return FeedRepository(dataSource);
+  final adsRepo = ref.watch(adsRepositoryProvider);
+  return FeedRepository(dataSource, adsRepo);
 });
 
 final feedItemsProvider = FutureProvider<List<FeedItem>>((ref) async {

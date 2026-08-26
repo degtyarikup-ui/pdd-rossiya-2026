@@ -4,12 +4,14 @@ import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/models/question.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/repositories/ads_repository.dart';
 import 'package:pdd_app/data/sources/questions_data_source.dart';
 
 class FeedRepository {
   final QuestionsDataSource _questionsDataSource;
+  final AdsRepository? _adsRepository;
 
-  FeedRepository(this._questionsDataSource);
+  FeedRepository(this._questionsDataSource, [this._adsRepository]);
 
   /// Builds a randomized batch of FeedItem cards (70% ticket questions, 30% signs quiz).
   Future<List<FeedItem>> generateFeedItems({
@@ -74,7 +76,7 @@ class FeedRepository {
             answers: (s['answers'] as List).cast<String>(),
             correctAnswerIndex: s['correctAnswerIndex'] as int? ?? 0,
             explanation: (s['description'] as String?)?.isNotEmpty == true ? s['description'] as String : null,
-            badgeText: '${s['category']} · № ${s['number']}',
+            badgeText: 'Знак № ${s['number']}',
             signNumber: s['number'] as String?,
             rawQuestionId: signId,
           ),
@@ -105,6 +107,31 @@ class FeedRepository {
       combined.addAll(ticketFeedItems);
       combined.addAll(signFeedItems);
       combined.shuffle(random);
+    }
+
+    final adsRepo = _adsRepository;
+    if (adsRepo != null && adsRepo.currentConfig.isEnabled) {
+      final freq = adsRepo.currentConfig.frequency.clamp(3, 50);
+      final List<FeedItem> withAds = [];
+      int counter = 0;
+      for (final item in combined) {
+        withAds.add(item);
+        counter++;
+        if (counter % freq == 0) {
+          if (adsRepo.currentConfig.mode == 'yandex') {
+            withAds.add(FeedItem.yandexAd(
+              index: counter,
+              adUnitId: adsRepo.currentConfig.yandexAdUnitId,
+            ));
+          } else {
+            final promo = adsRepo.getNextPromoCard();
+            if (promo != null) {
+              withAds.add(FeedItem.fromAdPromo(promo, index: counter));
+            }
+          }
+        }
+      }
+      return withAds;
     }
 
     return combined;

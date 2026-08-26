@@ -30,6 +30,7 @@ dependencies:
   flutter_timezone: ^4.1.1
   in_app_review: ^2.0.12
   audioplayers: ^6.8.1
+  yandex_mobileads: ^8.3.0
 
 dev_dependencies:
   flutter_test:

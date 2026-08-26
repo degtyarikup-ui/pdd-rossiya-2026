@@ -5,6 +5,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
+import 'package:pdd_app/presentation/screens/feed/widgets/ad_feed_card.dart';
 import 'package:pdd_app/presentation/screens/feed/widgets/feed_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -103,6 +104,15 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     }
   }
 
+  void _previousPage() {
+    if (_currentIndex > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.fastOutSlowIn,
+      );
+    }
+  }
+
   Future<void> _toggleSound() async {
     HapticFeedbackHelper.tap();
     final newVal = !_isSoundEnabled;
@@ -143,6 +153,15 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
             itemCount: _items.length,
             itemBuilder: (context, index) {
               final item = _items[index];
+              if (item.isAd) {
+                return AdFeedCard(
+                  key: ValueKey('${item.id}_$index'),
+                  item: item,
+                  isCurrent: index == _currentIndex,
+                  onAutoNext: _autoNext,
+                  onPrevious: _previousPage,
+                );
+              }
               return FeedCard(
                 key: ValueKey('${item.id}_$index'),
                 item: item,
@@ -154,6 +173,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                 },
                 onToggleSound: _toggleSound,
                 onAutoNext: _autoNext,
+                onPrevious: _previousPage,
               );
             },
           );

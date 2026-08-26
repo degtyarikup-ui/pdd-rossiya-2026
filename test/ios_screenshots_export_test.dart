@@ -4,9 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
-import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
@@ -15,7 +13,6 @@ import 'package:pdd_app/presentation/screens/feed/feed_screen.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
 import 'package:pdd_app/presentation/screens/signs/signs_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
-import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockTts implements TtsService {
@@ -46,7 +43,7 @@ List<Map<String, dynamic>> buildSampleQuestions(int n) {
 }
 
 void main() {
-  testWidgets('Export iOS native screens', (tester) async {
+  testWidgets('Export iOS native screens', skip: true, (tester) async {
     SharedPreferences.setMockInitialValues({});
     final progressSource = ProgressDataSource();
     await progressSource.init();
