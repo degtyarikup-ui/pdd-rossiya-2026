@@ -9,6 +9,7 @@ import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/sources/driver_tips_data.dart';
 import 'package:pdd_app/presentation/screens/feed/widgets/ad_feed_card.dart';
 import 'package:pdd_app/presentation/screens/feed/widgets/feed_card.dart';
+import 'package:pdd_app/presentation/screens/feed/widgets/feed_streak_dialog.dart';
 import 'package:pdd_app/presentation/screens/feed/widgets/tip_feed_card.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,6 +33,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   int _currentIndex = 0;
   bool _isSoundEnabled = true;
   int _swipeHintCount = 0;
+  int _correctStreak = 0;
   final List<FeedItem> _items = [];
   final Map<String, int> _answeredChoices = {};
   bool _isLoadingMore = false;
@@ -59,6 +61,24 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     );
 
     _loadPreferences();
+    _initFeed();
+  }
+
+  Future<void> _initFeed() async {
+    try {
+      final category = ref.read(appSettingsProvider).ticketCategory;
+      final repo = ref.read(feedRepositoryProvider);
+      final initial = await repo.generateFeedItems(category: category, count: 60);
+      if (mounted) {
+        setState(() {
+          _items.clear();
+          _items.addAll(initial);
+        });
+        _checkCurrentFavorite();
+      }
+    } catch (e) {
+      debugPrint('Feed initialization failed: $e');
+    }
   }
 
   Future<void> _loadPreferences() async {
@@ -265,6 +285,17 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     }
   }
 
+  void _checkStreakMilestone(int streak) {
+    final milestone = FeedStreakMilestone.forCount(streak);
+    if (milestone != null && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          FeedStreakDialog.show(context, milestone);
+        }
+      });
+    }
+  }
+
   Future<void> _toggleSound() async {
     HapticFeedbackHelper.tap();
     final newVal = !_isSoundEnabled;
@@ -283,135 +314,131 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
 
     final feedAsync = ref.watch(feedItemsProvider);
 
-    return feedAsync.when(
-      loading: () => Scaffold(
+    // Sync _items from provider when available
+    if (_items.isEmpty && feedAsync.hasValue && feedAsync.value != null && feedAsync.value!.isNotEmpty) {
+      _items.addAll(feedAsync.value!);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkCurrentFavorite();
+      });
+    }
+
+    if (_items.isEmpty) {
+      if (feedAsync.hasError) {
+        return Scaffold(
+          backgroundColor: colors.homeScreenBackground,
+          body: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Не удалось загрузить вопросы',
+                  style: TextStyle(color: colors.secondaryText, fontSize: 16),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () => ref.refresh(feedItemsProvider),
+                  child: const Text('Повторить'),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      return Scaffold(
         backgroundColor: colors.homeScreenBackground,
         body: Center(
           child: CircularProgressIndicator(color: colors.accent),
         ),
-      ),
-      error: (err, stack) => Scaffold(
-        backgroundColor: colors.homeScreenBackground,
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Ошибка загрузки ленты: $err',
-                style: TextStyle(color: colors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () => ref.refresh(feedItemsProvider),
-                child: const Text('Повторить'),
-              ),
-            ],
-          ),
-        ),
-      ),
-      data: (initialItems) {
-        if (_items.isEmpty && initialItems.isNotEmpty) {
-          _items.addAll(initialItems);
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _checkCurrentFavorite();
-          });
-        }
+      );
+    }
 
-        final displayItems = _items.isNotEmpty ? _items : initialItems;
+    final currentItem = _currentIndex < _items.length
+        ? _items[_currentIndex]
+        : _items.first;
 
-        if (displayItems.isEmpty) {
-          return Scaffold(
-            backgroundColor: colors.homeScreenBackground,
-            body: Center(
-              child: Text(
-                'Вопросы пока не загружены',
-                style: TextStyle(color: colors.secondaryText),
-              ),
-            ),
-          );
-        }
-
-        final currentItem = _currentIndex < displayItems.length
-            ? displayItems[_currentIndex]
-            : displayItems.first;
-
-        return Scaffold(
-          backgroundColor: colors.homeScreenBackground,
-          body: Stack(
-            children: [
-              // 1. Full-screen PageView with top padding to clear the fixed header
-              Positioned.fill(
-                child: Padding(
-                  padding: EdgeInsets.only(top: topHeaderHeight),
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: (notification) {
-                      if (_currentIndex == 0 && !_isRefreshing) {
-                        if (notification is OverscrollNotification &&
-                            notification.overscroll < -15) {
-                          _refreshFeed();
-                          return true;
-                        }
-                      }
-                      return false;
-                    },
-                    child: PageView.builder(
-                      controller: _pageController,
-                      scrollDirection: Axis.vertical,
-                      physics: const BouncingScrollPhysics(
-                        parent: AlwaysScrollableScrollPhysics(),
-                      ),
-                      onPageChanged: _onPageChanged,
-                      itemCount: displayItems.length,
-                      itemBuilder: (context, index) {
-                        final item = displayItems[index];
-                        if (item.isAd) {
-                          return AdFeedCard(
-                            key: ValueKey('${item.id}_$index'),
-                            item: item,
-                            isCurrent: index == _currentIndex,
-                            onAutoNext: _autoNext,
-                            onPrevious: _previousPage,
-                            onFailed: _onAdLoadFailed,
-                          );
-                        }
-                        if (item.isTip) {
-                          return TipFeedCard(
-                            key: ValueKey('${item.id}_$index'),
-                            item: item,
-                            isCurrent: index == _currentIndex,
-                            onAutoNext: _autoNext,
-                            onPrevious: _previousPage,
-                          );
-                        }
-                        return FeedCard(
-                          key: ValueKey('${item.id}_$index'),
-                          item: item,
-                          isCurrent: index == _currentIndex,
-                          isSoundEnabled: _isSoundEnabled,
-                          initialSelectedAnswerIndex: _answeredChoices[item.id],
-                          onAnswerRecorded: (selectedIdx) {
-                            _answeredChoices[item.id] = selectedIdx;
-                          },
-                          onToggleSound: _toggleSound,
-                          onAutoNext: _autoNext,
-                          onPrevious: _previousPage,
-                          onTimerTick: (progress, remainingSec) {
-                            _timerProgressNotifier.value = progress;
-                            _remainingSecondsNotifier.value = remainingSec;
-                          },
-                          onAnswerStateChanged: (isAnswered, isCorrect) {
-                            _isCurrentAnsweredNotifier.value = isAnswered;
-                            _isCurrentCorrectNotifier.value = isCorrect;
-                          },
-                          onFavoriteChanged: (isFav) {
-                            _isCurrentFavoriteNotifier.value = isFav;
-                          },
-                        );
-                      },
-                    ),
+    return Scaffold(
+      backgroundColor: colors.homeScreenBackground,
+      body: Stack(
+        children: [
+          // 1. Full-screen PageView with top padding to clear the fixed header
+          Positioned.fill(
+            child: Padding(
+              padding: EdgeInsets.only(top: topHeaderHeight),
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (_currentIndex == 0 && !_isRefreshing) {
+                    if (notification is OverscrollNotification &&
+                        notification.overscroll < -15) {
+                      _refreshFeed();
+                      return true;
+                    }
+                  }
+                  return false;
+                },
+                child: PageView.builder(
+                  controller: _pageController,
+                  scrollDirection: Axis.vertical,
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
                   ),
+                  onPageChanged: _onPageChanged,
+                  itemCount: _items.length,
+                  itemBuilder: (context, index) {
+                    final item = _items[index];
+                    if (item.isAd) {
+                      return AdFeedCard(
+                        key: ValueKey('${item.id}_$index'),
+                        item: item,
+                        isCurrent: index == _currentIndex,
+                        onAutoNext: _autoNext,
+                        onPrevious: _previousPage,
+                        onFailed: _onAdLoadFailed,
+                      );
+                    }
+                    if (item.isTip) {
+                      return TipFeedCard(
+                        key: ValueKey('${item.id}_$index'),
+                        item: item,
+                        isCurrent: index == _currentIndex,
+                        onAutoNext: _autoNext,
+                        onPrevious: _previousPage,
+                      );
+                    }
+                    return FeedCard(
+                      key: ValueKey('${item.id}_$index'),
+                      item: item,
+                      isCurrent: index == _currentIndex,
+                      isSoundEnabled: _isSoundEnabled,
+                      initialSelectedAnswerIndex: _answeredChoices[item.id],
+                      onAnswerRecorded: (selectedIdx) {
+                        _answeredChoices[item.id] = selectedIdx;
+                        if (selectedIdx == item.correctAnswerIndex) {
+                          _correctStreak++;
+                          _checkStreakMilestone(_correctStreak);
+                        } else {
+                          _correctStreak = 0;
+                        }
+                      },
+                      onToggleSound: _toggleSound,
+                      onAutoNext: _autoNext,
+                      onPrevious: _previousPage,
+                      onTimerTick: (progress, remainingSec) {
+                        _timerProgressNotifier.value = progress;
+                        _remainingSecondsNotifier.value = remainingSec;
+                      },
+                      onAnswerStateChanged: (isAnswered, isCorrect) {
+                        _isCurrentAnsweredNotifier.value = isAnswered;
+                        _isCurrentCorrectNotifier.value = isCorrect;
+                      },
+                      onFavoriteChanged: (isFav) {
+                        _isCurrentFavoriteNotifier.value = isFav;
+                      },
+                    );
+                  },
                 ),
               ),
+            ),
+          ),
 
               // 2. Top Smooth Gradient Dissolve Mask (Questions gracefully fade into background color as they fly away)
               Positioned(
@@ -558,8 +585,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
             ],
           ),
         );
-      },
-    );
   }
 
   Widget _buildTopHeader(
