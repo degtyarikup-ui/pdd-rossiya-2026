@@ -281,23 +281,50 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     final topPadding = MediaQuery.paddingOf(context).top;
     final topHeaderHeight = topPadding + 52.0;
 
-    if (_isLoading && _items.isEmpty) {
+    final feedAsync = ref.watch(feedItemsProvider);
+
+    // Initialize _items when data is first received
+    if (_items.isEmpty && feedAsync.hasValue && feedAsync.value!.isNotEmpty) {
+      _items.addAll(feedAsync.value!);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkCurrentFavorite();
+      });
+    }
+
+    if (_items.isEmpty) {
+      if (feedAsync.isLoading) {
+        return Scaffold(
+          backgroundColor: colors.homeScreenBackground,
+          body: Center(
+            child: CircularProgressIndicator(color: colors.accent),
+          ),
+        );
+      }
+      if (feedAsync.hasError) {
+        return Scaffold(
+          backgroundColor: colors.homeScreenBackground,
+          body: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Не удалось загрузить вопросы',
+                  style: TextStyle(color: colors.secondaryText, fontSize: 16),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () => ref.refresh(feedItemsProvider),
+                  child: const Text('Повторить'),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
       return Scaffold(
         backgroundColor: colors.homeScreenBackground,
         body: Center(
           child: CircularProgressIndicator(color: colors.accent),
-        ),
-      );
-    }
-
-    if (_items.isEmpty) {
-      return Scaffold(
-        backgroundColor: colors.homeScreenBackground,
-        body: Center(
-          child: Text(
-            'Вопросы пока не загружены',
-            style: TextStyle(color: colors.secondaryText),
-          ),
         ),
       );
     }
