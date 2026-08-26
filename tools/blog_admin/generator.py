@@ -99,7 +99,7 @@ EYE_ICON_SVG = '<svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15"
 
 APP_CTA_BOX_HTML = """<div class="article-app-cta">
   <div class="article-app-cta-header">
-    <img class="article-app-cta-icon" src="/assets/icon-192.png" alt="Приложение ПДД Россия 2026" width="64" height="64" loading="lazy">
+    <img class="article-app-cta-icon" src="/assets/icon-192.png" alt="Приложение ПДД Россия 2026" width="64" height="64" style="width:64px;height:64px;min-width:64px;max-width:64px;border-radius:16px;object-fit:cover;margin:0;display:block;flex-shrink:0;box-shadow:0 6px 20px rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.15);" loading="lazy">
     <div>
       <div class="article-app-cta-title">Тренируйте билеты ПДД 2026 бесплатно</div>
       <div class="article-app-cta-desc">Официальные экзаменационные билеты ГИБДД (категории A/B и C/D) с подсказками к каждому вопросу. Без рекламы и регистрации.</div>
@@ -125,13 +125,6 @@ APP_CTA_BOX_HTML = """<div class="article-app-cta">
       <div class="btn-text">
         <small>Скачать в</small>
         <span>RuStore</span>
-      </div>
-    </a>
-    <a class="article-app-cta-btn btn-primary-cta" href="/app/" aria-label="Открыть веб-версию тренажера онлайн">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9S14.5 18.4 12 21M12 3C9.5 5.6 8.2 8.7 8.2 12s1.3 6.4 3.8 9"/></svg>
-      <div class="btn-text">
-        <small>Без установки</small>
-        <span>Веб-версия</span>
       </div>
     </a>
   </div>
@@ -318,7 +311,7 @@ def render_article(slug, all_published=None):
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/assets/favicon.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/style.css?v=3">
   <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
 {ld}
 </head>""".format(
@@ -542,7 +535,7 @@ def render_cluster_hubs(arts=None):
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/assets/favicon.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/style.css?v=3">
   <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
 {ld}
 </head>
@@ -648,7 +641,7 @@ def render_blog_index(arts=None):
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/assets/favicon.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/style.css?v=3">
   <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
 {ld}
 </head>
@@ -1127,7 +1120,7 @@ def render_glossary():
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/assets/favicon.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/style.css?v=3">
   <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
 {ld1}
 {ld2}

@@ -179,293 +179,210 @@ class _AdFeedCardState extends ConsumerState<AdFeedCard>
 
     final iconData = _resolveIcon(promo.icon);
 
-    return Container(
-      color: colors.homeScreenBackground,
-      child: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                // Top Bar with Badge
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimensions.screenPadding,
-                    vertical: AppDimensions.spacingM,
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is OverscrollNotification) {
+          if (notification.overscroll > 10 && widget.isCurrent) {
+            widget.onAutoNext();
+            return true;
+          }
+          if (notification.overscroll < -10 && widget.isCurrent) {
+            widget.onPrevious();
+            return true;
+          }
+        } else if (notification is ScrollUpdateNotification) {
+          if (_scrollController.hasClients &&
+              _scrollController.position.pixels >=
+                  _scrollController.position.maxScrollExtent &&
+              notification.scrollDelta != null &&
+              notification.scrollDelta! > 14 &&
+              widget.isCurrent) {
+            widget.onAutoNext();
+            return true;
+          }
+          if (_scrollController.hasClients &&
+              _scrollController.position.pixels <=
+                  _scrollController.position.minScrollExtent &&
+              notification.scrollDelta != null &&
+              notification.scrollDelta! < -14 &&
+              widget.isCurrent) {
+            widget.onPrevious();
+            return true;
+          }
+        }
+        return false;
+      },
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        physics: const ClampingScrollPhysics(),
+        padding: const EdgeInsets.only(
+          left: AppDimensions.screenPadding,
+          right: AppDimensions.screenPadding,
+          top: 14,
+          bottom: 84,
+        ),
+        child: (_yandexBanner != null && !_isYandexError)
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 16),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Center(
+                          child: AdWidget(bannerAd: _yandexBanner!),
+                        ),
+                        if (!_isYandexLoaded)
+                          Container(
+                            width: double.infinity,
+                            constraints: const BoxConstraints(minHeight: 180),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 48,
+                              horizontal: 24,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.cardBackground,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 28,
+                                  height: 28,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: colors.accent,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Загрузка рекламы Яндекс...',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: colors.secondaryText,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                  child: Row(
+                  const SizedBox(height: 32),
+                ],
+              )
+            : (widget.item.adPromo != null)
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.lightAccent,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          _isYandexLoaded
-                              ? 'РЕКЛАМА'
-                              : (_isYandexError
-                                  ? (promo.badge.isNotEmpty ? promo.badge : 'СОВЕТ')
-                                  : 'РЕКЛАМА'),
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
+                      const SizedBox(height: 16),
+
+                      // Large Hero Icon Graphic
+                      Center(
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: colors.lightAccent,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            iconData,
+                            size: 52,
                             color: colors.accent,
                           ),
                         ),
                       ),
-                      const Spacer(),
+
+                      const SizedBox(height: 28),
+
+                      // Custom Promo Card Container
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
+                        padding: const EdgeInsets.all(AppDimensions.spacingXL),
                         decoration: BoxDecoration(
                           color: colors.cardBackground,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.cardRadius,
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.info_outline_rounded,
-                              size: 14,
-                              color: colors.secondaryText,
-                            ),
-                            const SizedBox(width: 4),
                             Text(
-                              _isYandexLoaded
-                                  ? 'Яндекс Директ'
-                                  : (_isYandexError ? 'ПДД 2026' : 'Партнёр'),
+                              widget.item.adPromo!.title,
                               style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: colors.primaryText,
+                                height: 1.3,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              widget.item.adPromo!.description,
+                              style: TextStyle(
+                                fontSize: 15,
                                 color: colors.secondaryText,
+                                height: 1.45,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Action Button
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  if (widget.item.adPromo!.buttonUrl.isNotEmpty) {
+                                    _handleCtaTap(widget.item.adPromo!.buttonUrl);
+                                  } else {
+                                    HapticFeedbackHelper.tap();
+                                    widget.onAutoNext();
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: colors.accent,
+                                  foregroundColor: AppColors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      widget.item.adPromo!.buttonText,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      widget.item.adPromo!.buttonUrl.isNotEmpty
+                                          ? Icons.open_in_new_rounded
+                                          : Icons.arrow_forward_rounded,
+                                      size: 18,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
+                      const SizedBox(height: 32),
                     ],
-                  ),
-                ),
-
-                // Main Promo / Yandex Body
-                Expanded(
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: (notification) {
-                      if (notification is OverscrollNotification) {
-                        if (notification.overscroll > 10 && widget.isCurrent) {
-                          widget.onAutoNext();
-                          return true;
-                        }
-                        if (notification.overscroll < -10 && widget.isCurrent) {
-                          widget.onPrevious();
-                          return true;
-                        }
-                      } else if (notification is ScrollUpdateNotification) {
-                        if (_scrollController.hasClients &&
-                            _scrollController.position.pixels >=
-                                _scrollController.position.maxScrollExtent &&
-                            notification.scrollDelta != null &&
-                            notification.scrollDelta! > 14 &&
-                            widget.isCurrent) {
-                          widget.onAutoNext();
-                          return true;
-                        }
-                        if (_scrollController.hasClients &&
-                            _scrollController.position.pixels <=
-                                _scrollController.position.minScrollExtent &&
-                            notification.scrollDelta != null &&
-                            notification.scrollDelta! < -14 &&
-                            widget.isCurrent) {
-                          widget.onPrevious();
-                          return true;
-                        }
-                      }
-                      return false;
-                    },
-                    child: SingleChildScrollView(
-                      controller: _scrollController,
-                      physics: const ClampingScrollPhysics(),
-                      padding: const EdgeInsets.only(
-                        left: AppDimensions.screenPadding,
-                        right: AppDimensions.screenPadding,
-                        bottom: 84,
-                      ),
-                      child: (_yandexBanner != null && !_isYandexError)
-                          ? Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                const SizedBox(height: 16),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Center(
-                                        child: AdWidget(bannerAd: _yandexBanner!),
-                                      ),
-                                      if (!_isYandexLoaded)
-                                        Container(
-                                          width: double.infinity,
-                                          constraints: const BoxConstraints(minHeight: 180),
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 48,
-                                            horizontal: 24,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: colors.cardBackground,
-                                            borderRadius: BorderRadius.circular(16),
-                                          ),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              SizedBox(
-                                                width: 28,
-                                                height: 28,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2.5,
-                                                  color: colors.accent,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 16),
-                                              Text(
-                                                'Загрузка рекламы Яндекс...',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: colors.secondaryText,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 32),
-                              ],
-                            )
-                          : (widget.item.adPromo != null)
-                              ? Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    const SizedBox(height: 16),
-
-                                    // Large Hero Icon Graphic
-                                    Center(
-                                      child: Container(
-                                        width: 100,
-                                        height: 100,
-                                        decoration: BoxDecoration(
-                                          color: colors.lightAccent,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          iconData,
-                                          size: 52,
-                                          color: colors.accent,
-                                        ),
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 28),
-
-                                    // Custom Promo Card Container
-                                    Container(
-                                      padding: const EdgeInsets.all(AppDimensions.spacingXL),
-                                      decoration: BoxDecoration(
-                                        color: colors.cardBackground,
-                                        borderRadius: BorderRadius.circular(
-                                          AppDimensions.cardRadius,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            widget.item.adPromo!.title,
-                                            style: TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.w700,
-                                              color: colors.primaryText,
-                                              height: 1.3,
-                                              letterSpacing: -0.2,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 12),
-                                          Text(
-                                            widget.item.adPromo!.description,
-                                            style: TextStyle(
-                                              fontSize: 15,
-                                              color: colors.secondaryText,
-                                              height: 1.45,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 24),
-
-                                          // Action Button
-                                          SizedBox(
-                                            width: double.infinity,
-                                            height: 52,
-                                            child: ElevatedButton(
-                                              onPressed: () {
-                                                if (widget.item.adPromo!.buttonUrl.isNotEmpty) {
-                                                  _handleCtaTap(widget.item.adPromo!.buttonUrl);
-                                                } else {
-                                                  HapticFeedbackHelper.tap();
-                                                  widget.onAutoNext();
-                                                }
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: colors.accent,
-                                                foregroundColor: AppColors.white,
-                                                elevation: 0,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.circular(14),
-                                                ),
-                                              ),
-                                              child: Row(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                children: [
-                                                  Text(
-                                                    widget.item.adPromo!.buttonText,
-                                                    style: const TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight: FontWeight.w700,
-                                                      letterSpacing: 0.2,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Icon(
-                                                    widget.item.adPromo!.buttonUrl.isNotEmpty
-                                                        ? Icons.open_in_new_rounded
-                                                        : Icons.arrow_forward_rounded,
-                                                    size: 18,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 32),
-                                  ],
-                                )
-                              : const SizedBox.shrink(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+                  )
+                : const SizedBox.shrink(),
       ),
     );
   }

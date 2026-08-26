@@ -167,11 +167,12 @@ def check_links(rep, pages, page_urls):
         where = rel(path)
         for href in re.findall(r'href="(/[^"]*)"', text):
             target, _, frag = href.partition("#")
-            if not target or target.startswith("/app/"):
+            clean_target, _, _ = target.partition("?")
+            if not clean_target or clean_target.startswith("/app/"):
                 continue
-            # файлы (privacy.html, *.xml, *.txt) — проверяем существование на диске
-            if not target.endswith("/"):
-                if not os.path.isfile(os.path.join(SITE, target.lstrip("/"))):
+            # файлы (privacy.html, *.xml, *.txt, *.css) — проверяем существование на диске
+            if not clean_target.endswith("/"):
+                if not os.path.isfile(os.path.join(SITE, clean_target.lstrip("/"))):
                     rep.error(where, "битая ссылка на файл: %s" % href)
                 continue
             if target not in page_urls:

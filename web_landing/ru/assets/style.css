@@ -502,13 +502,22 @@ section[id] { scroll-margin-top: 76px; }
   position: relative;
   z-index: 1;
 }
+.prose .article-app-cta img,
+.prose img.article-app-cta-icon,
 .article-app-cta-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
-  flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  width: 64px !important;
+  min-width: 64px !important;
+  max-width: 64px !important;
+  height: 64px !important;
+  min-height: 64px !important;
+  max-height: 64px !important;
+  border-radius: 16px !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35) !important;
+  flex-shrink: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  margin: 0 !important;
+  display: block !important;
+  object-fit: cover !important;
 }
 .article-app-cta-title {
   font-size: 20px;
@@ -589,11 +598,11 @@ section[id] { scroll-margin-top: 76px; }
   .article-app-cta-icon { width: 52px; height: 52px; border-radius: 13px; }
   .article-app-cta-title { font-size: 17px; }
   .article-app-cta-desc { font-size: 13px; }
-  .article-app-cta-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .article-app-cta-btn { padding: 8px 10px; gap: 8px; }
-  .article-app-cta-btn svg { width: 18px; height: 18px; }
-  .article-app-cta-btn span { font-size: 12.5px; }
-  .article-app-cta-btn small { font-size: 9.5px; }
+  .article-app-cta-buttons { display: flex; flex-direction: column; gap: 8px; }
+  .article-app-cta-btn { padding: 10px 14px; gap: 10px; justify-content: center; }
+  .article-app-cta-btn svg { width: 20px; height: 20px; }
+  .article-app-cta-btn span { font-size: 13px; }
+  .article-app-cta-btn small { font-size: 10px; }
 }
 
 /* ---------- Юридический дисклеймер и 16+ ---------- */
