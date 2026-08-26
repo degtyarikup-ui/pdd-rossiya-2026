@@ -71,26 +71,34 @@ class FeedRepository {
     final List<FeedItem> signFeedItems = [];
     if (signsManifest.isNotEmpty) {
       for (final s in signsManifest) {
-        final signImg = s['image'] as String? ?? '';
-        final isSvg = signImg.toLowerCase().endsWith('.svg');
-        final fullImgPath = '${CountryConfig.current.signImagesDir}/$signImg';
-        final signId = s['id'] as String;
+        try {
+          final signImg = s['image'] as String? ?? '';
+          final isSvg = signImg.toLowerCase().endsWith('.svg');
+          final fullImgPath = '${CountryConfig.current.signImagesDir}/$signImg';
+          final signId = s['id']?.toString() ?? 'sign_${signFeedItems.length}';
+          final rawAnswers = s['answers'];
+          final List<String> answersList = rawAnswers is List
+              ? rawAnswers.map((e) => e.toString()).toList()
+              : <String>[];
 
-        signFeedItems.add(
-          FeedItem(
-            id: signId,
-            type: FeedItemType.roadSign,
-            questionText: s['questionText'] as String? ?? 'Что означает этот дорожный знак?',
-            imagePath: fullImgPath,
-            isSvgImage: isSvg,
-            answers: (s['answers'] as List).cast<String>(),
-            correctAnswerIndex: s['correctAnswerIndex'] as int? ?? 0,
-            explanation: (s['description'] as String?)?.isNotEmpty == true ? s['description'] as String : null,
-            badgeText: 'Знак № ${s['number']}',
-            signNumber: s['number'] as String?,
-            rawQuestionId: signId,
-          ),
-        );
+          if (answersList.isEmpty) continue;
+
+          signFeedItems.add(
+            FeedItem(
+              id: signId,
+              type: FeedItemType.roadSign,
+              questionText: s['questionText'] as String? ?? 'Что означает этот дорожный знак?',
+              imagePath: fullImgPath,
+              isSvgImage: isSvg,
+              answers: answersList,
+              correctAnswerIndex: (s['correctAnswerIndex'] as num?)?.toInt() ?? 0,
+              explanation: (s['description'] as String?)?.isNotEmpty == true ? s['description'] as String : null,
+              badgeText: 'Знак № ${s['number'] ?? ''}',
+              signNumber: s['number']?.toString(),
+              rawQuestionId: signId,
+            ),
+          );
+        } catch (_) {}
       }
     }
 

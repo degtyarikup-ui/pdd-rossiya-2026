@@ -2,6 +2,12 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <script>
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+    }
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Реверсивное движение по ПДД 2026</title>
   <meta name="description" content="Как правильно двигаться по полосе реверсивного движения по ПДД РФ: разметка 1.9, реверсивный светофор, что делать если светофор погас, штрафы.">

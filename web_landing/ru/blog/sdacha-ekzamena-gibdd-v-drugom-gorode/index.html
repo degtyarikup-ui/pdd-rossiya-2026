@@ -2,6 +2,12 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <script>
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+    }
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Экзамен ГИБДД в другом городе не по прописке</title>
   <meta name="description" content="Как сдать экзамен на права в ГИБДД в другом городе или регионе РФ в 2026 году: законность по ПП РФ № 1097, документы, открепление от автошколы и госпошлина.">

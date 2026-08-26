@@ -97,6 +97,13 @@ DEGRADE = """<script src="/assets/tracker.js" defer></script>
 
 EYE_ICON_SVG = '<svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
 
+HTTPS_ENFORCE_SNIPPET = """  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <script>
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+    }
+  </script>"""
+
 APP_CTA_BOX_HTML = """<div class="article-app-cta">
   <div class="article-app-cta-header">
     <img class="article-app-cta-icon" src="/assets/icon-192.png" alt="Приложение ПДД Россия 2026" width="56" height="56" style="width:56px;height:56px;min-width:56px;max-width:56px;border-radius:12px;object-fit:cover;margin:0;display:block;flex-shrink:0;" loading="lazy">
@@ -299,6 +306,7 @@ def render_article(slug, all_published=None):
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+{https}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{title}</title>
   <meta name="description" content="{desc}">
@@ -321,6 +329,7 @@ def render_article(slug, all_published=None):
   <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
 {ld}
 </head>""".format(
+        https=HTTPS_ENFORCE_SNIPPET,
         title=html.escape(short),
         desc=html.escape(desc),
         url=url,
@@ -525,6 +534,7 @@ def render_cluster_hubs(arts=None):
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+{https}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{title} — блог ПДД Россия 2026</title>
   <meta name="description" content="{desc}">
@@ -567,7 +577,7 @@ def render_cluster_hubs(arts=None):
 {degrade}
 </body>
 </html>
-""".format(title=html.escape(title), desc=html.escape(lead), url=url, base=BASE,
+""".format(https=HTTPS_ENFORCE_SNIPPET, title=html.escape(title), desc=html.escape(lead), url=url, base=BASE,
            ld=_jsonld(graph), header=HEADER, cards=_post_cards_html(members),
            footer=FOOTER, degrade=DEGRADE)
 
@@ -631,6 +641,7 @@ def render_blog_index(arts=None):
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+{https}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Блог о ПДД и экзамене в ГИБДД — ПДД Россия 2026</title>
   <meta name="description" content="Статьи о подготовке к теоретическому экзамену в ГИБДД: разборы правил дорожного движения, изменения законодательства и советы по обучению в автошколе.">
@@ -672,7 +683,7 @@ def render_blog_index(arts=None):
 {degrade}
 </body>
 </html>
-""".format(ld=_jsonld(graph), header=HEADER, cards=cards_html, cat_nav=cat_nav,
+""".format(https=HTTPS_ENFORCE_SNIPPET, ld=_jsonld(graph), header=HEADER, cards=cards_html, cat_nav=cat_nav,
            footer=FOOTER, degrade=DEGRADE)
 
     out = os.path.join(BLOG, "index.html")
@@ -1110,6 +1121,7 @@ def render_glossary():
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+{https}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{title}</title>
   <meta name="description" content="{desc}">
@@ -1158,6 +1170,7 @@ def render_glossary():
 </body>
 </html>
 """.format(
+        https=HTTPS_ENFORCE_SNIPPET,
         title=html.escape(title), desc=html.escape(desc), url=GLOSSARY_URL, base=BASE,
         ld1=_jsonld(term_set), ld2=_jsonld(breadcrumb),
         header=HEADER, count=len(all_terms), nav=nav_items,

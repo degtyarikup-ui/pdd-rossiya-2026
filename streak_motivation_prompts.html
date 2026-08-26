@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Промпты для Google Flow — Серии Верных Ответов (Стрики)</title>
+  <style>
+    :root {
+      --bg: #0F172A;
+      --card-bg: #1E293B;
+      --card-border: #334155;
+      --text: #F8FAFC;
+      --text-sec: #94A3B8;
+      --accent: #3B82F6;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      padding: 32px 20px 60px;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    header {
+      margin-bottom: 32px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    p.subtitle {
+      color: var(--text-sec);
+      font-size: 15px;
+    }
+    .grid {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      transition: border-color 0.2s ease;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+    .b-5 { background: rgba(249, 115, 22, 0.18); color: #FB923C; border: 1px solid rgba(249, 115, 22, 0.4); }
+    .b-10 { background: rgba(234, 179, 8, 0.18); color: #FACC15; border: 1px solid rgba(234, 179, 8, 0.4); }
+    .b-20 { background: rgba(239, 68, 68, 0.18); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .b-50 { background: rgba(139, 92, 246, 0.18); color: #A78BFA; border: 1px solid rgba(139, 92, 246, 0.4); }
+    .b-100 { background: rgba(6, 182, 212, 0.18); color: #38BDF8; border: 1px solid rgba(6, 182, 212, 0.4); }
+
+    .motivational-phrase {
+      font-size: 19px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 6px;
+    }
+    .motivational-sub {
+      color: var(--text-sec);
+      font-size: 14px;
+      margin-bottom: 18px;
+    }
+    .prompt-box {
+      background: #0B1120;
+      border: 1px solid #1E293B;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+    .prompt-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-sec);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .prompt-text {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      color: #E2E8F0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      user-select: all;
+    }
+    .copy-btn {
+      background: #334155;
+      color: #F8FAFC;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .copy-btn:hover { background: #475569; }
+    .copy-btn.copied { background: #16A34A; }
+    .visual-idea {
+      font-size: 13px;
+      color: #CBD5E1;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🔥 Промпты для Google Flow — Стрики в Ленте</h1>
+      <p class="subtitle">5 уровней эволюции: от бодрого учебного старта до гиперпространства в открытом космосе</p>
+    </header>
+
+    <div class="grid">
+      <!-- 5 подряд -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge b-5">5 ПОДРЯД! 🔥</span>
+          <span style="color: var(--text-sec); font-size: 13px;">Уровень 1: Старт</span>
+        </div>
+        <div class="motivational-phrase">«Старт идеальный! Мотор прогрет, жми дальше!»</div>
+        <div class="motivational-sub">Пять верных ответов подряд. Первое ускорение.</div>
+
+        <div class="prompt-box">
+          <div class="prompt-label">
+            <span>Промпт для Google Flow / Imagen (English)</span>
+            <button class="copy-btn" onclick="copyText('p1', this)">Скопировать</button>
+          </div>
+          <div class="prompt-text" id="p1">3D icon style, a modern red compact car launching swiftly from a road intersection, light white smoke from the rear tires, glowing speedometer gauge at 60 km/h, illuminated road lane markings, clean dark vibrant gradient background, isometric view, cute dynamic render, high detail, volumetric lighting, unreal engine 5, octane render, 8k --no text</div>
+        </div>
+        <div class="visual-idea">
+          💡 <strong>Визуальная идея:</strong> Яркий компактный хэтчбек энергично стартует со светофора. Колёса с лёгким дымком, оживающий спидометр.
+        </div>
+      </div>
+
+      <!-- 10 подряд -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge b-10">10 ПОДРЯД! ⚡</span>
+          <span style="color: var(--text-sec); font-size: 13px;">Уровень 2: В Потоке</span>
+        </div>
+        <div class="motivational-phrase">«В потоке без ошибок! Ты чувствуешь дорогу!»</div>
+        <div class="motivational-sub">Десять правильных ответов. Уверенная езда на высокой скорости.</div>
+
+        <div class="prompt-box">
+          <div class="prompt-label">
+            <span>Промпт для Google Flow / Imagen (English)</span>
+            <button class="copy-btn" onclick="copyText('p2', this)">Скопировать</button>
+          </div>
+          <div class="prompt-text" id="p2">3D icon style, a sleek aerodynamic red sports coupe speeding smoothly along a modern night highway at sunset, bright yellow glowing light trails, electric sparks around wheels, motion blur road reflections, speedometer glowing at 120 km/h, vibrant clean render, volumetric neon glow, octane render, unreal engine 5, 8k --no text</div>
+        </div>
+        <div class="visual-idea">
+          💡 <strong>Визуальная идея:</strong> Та же машина переходит в стремительный спорткар на вечернем шоссе. Электрические искры, световые следы от фар.
+        </div>
+      </div>
+
+      <!-- 20 подряд -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge b-20">20 ПОДРЯД! 🏎️</span>
+          <span style="color: var(--text-sec); font-size: 13px;">Уровень 3: Форсаж</span>
+        </div>
+        <div class="motivational-phrase">«Огненный форсаж! Билет за билетом — инспектор в шоке!»</div>
+        <div class="motivational-sub">Двадцать правильных ответов подряд. Скорость запредельная.</div>
+
+        <div class="prompt-box">
+          <div class="prompt-label">
+            <span>Промпт для Google Flow / Imagen (English)</span>
+            <button class="copy-btn" onclick="copyText('p3', this)">Скопировать</button>
+          </div>
+          <div class="prompt-text" id="p3">3D icon style, a fast red racing supercar with intense blue and orange nitro flames bursting from exhaust pipes, glowing fiery asphalt tire tracks, sparks flying, speed lines, aggressive aerodynamic body, dark contrast background with neon red glow, cinematic 3D icon render, octane render, 8k --no text</div>
+        </div>
+        <div class="visual-idea">
+          💡 <strong>Визуальная идея:</strong> Гоночный суперкар на форсаже: синее нитро-пламя из выхлопных труб, огненные следы на асфальте.
+        </div>
+      </div>
+
+      <!-- 50 подряд -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge b-50">50 ПОДРЯД! 💥</span>
+          <span style="color: var(--text-sec); font-size: 13px;">Уровень 4: Легенда</span>
+        </div>
+        <div class="motivational-phrase">«Легенда автошколы! Тебя уже ничто не остановит!»</div>
+        <div class="motivational-sub">Пятьдесят верных ответов. Сверхзвуковой режим, дорога плавится.</div>
+
+        <div class="prompt-box">
+          <div class="prompt-label">
+            <span>Промпт для Google Flow / Imagen (English)</span>
+            <button class="copy-btn" onclick="copyText('p4', this)">Скопировать</button>
+          </div>
+          <div class="prompt-text" id="p4">3D icon style, a futuristic hypersonic red bolide tearing through sound barrier, shockwaves around body, massive blazing fire comet trail, glowing molten road, lightning aura around the car, purple and crimson energy effects, hyper realistic 3D game asset render, octane render, 8k --no text</div>
+        </div>
+        <div class="visual-idea">
+          💡 <strong>Визуальная идея:</strong> Футуристический огненный болид рассекает звуковой барьер. Ударные волны, плавящаяся трасса, аура молний.
+        </div>
+      </div>
+
+      <!-- 100 подряд -->
+      <div class="card">
+        <div class="card-header">
+          <span class="badge b-100">100 ПОДРЯД! 🌌</span>
+          <span style="color: var(--text-sec); font-size: 13px;">Уровень 5: Космос</span>
+        </div>
+        <div class="motivational-phrase">«Космический уровень! Экзамен сдашь даже с закрытыми глазами!»</div>
+        <div class="motivational-sub">Сто правильных ответов. Гипердрайв в открытом космосе.</div>
+
+        <div class="prompt-box">
+          <div class="prompt-label">
+            <span>Промпт для Google Flow / Imagen (English)</span>
+            <button class="copy-btn" onclick="copyText('p5', this)">Скопировать</button>
+          </div>
+          <div class="prompt-text" id="p5">3D icon style, a cosmic futuristic red hypercar flying through deep outer space along a glowing neon interstellar starlight highway, planets, nebulas, Saturn rings and Earth in background, warp speed light distortion, celestial aura, golden master trophy crown hovering above, breathtaking 3D render, octane render, 8k --no text</div>
+        </div>
+        <div class="visual-idea">
+          💡 <strong>Визуальная идея:</strong> Космический гиперкар летит сквозь галактику по межзвёздному хайвею среди планет и туманностей.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function copyText(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.innerText = 'Скопировано! ✓';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.innerText = 'Скопировать';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

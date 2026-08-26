@@ -2,6 +2,12 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <script>
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+    }
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Приоритет общественного транспорта</title>
   <meta name="description" content="Когда уступать дорогу трамваю, автобусу и троллейбусу по ПДД: пункты 18.1, 18.3, 14.6 и 14.7, посадка и высадка пассажиров, штрафы по КоАП РФ.">

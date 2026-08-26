@@ -2,6 +2,12 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <script>
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+    }
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Экзамен ГИБДД 2026: новый регламент</title>
   <meta name="description" content="Все изменения в регламенте сдачи экзамена в ГИБДД в 2026 году: увеличение лимита штрафных баллов до 7, новые сроки пересдач и ужесточение допуска.">

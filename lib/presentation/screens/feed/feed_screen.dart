@@ -322,7 +322,11 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
       });
     }
 
-    if (_items.isEmpty) {
+    final List<FeedItem> currentItems = _items.isNotEmpty
+        ? _items
+        : (feedAsync.valueOrNull ?? const []);
+
+    if (currentItems.isEmpty) {
       if (feedAsync.hasError) {
         return Scaffold(
           backgroundColor: colors.homeScreenBackground,
@@ -352,9 +356,9 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
       );
     }
 
-    final currentItem = _currentIndex < _items.length
-        ? _items[_currentIndex]
-        : _items.first;
+    final currentItem = _currentIndex < currentItems.length
+        ? currentItems[_currentIndex]
+        : currentItems.first;
 
     return Scaffold(
       backgroundColor: colors.homeScreenBackground,
@@ -382,9 +386,9 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                     parent: AlwaysScrollableScrollPhysics(),
                   ),
                   onPageChanged: _onPageChanged,
-                  itemCount: _items.length,
+                  itemCount: currentItems.length,
                   itemBuilder: (context, index) {
-                    final item = _items[index];
+                    final item = currentItems[index];
                     if (item.isAd) {
                       return AdFeedCard(
                         key: ValueKey('${item.id}_$index'),

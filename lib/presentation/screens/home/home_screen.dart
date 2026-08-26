@@ -51,7 +51,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final colors = AppColors.of(context);
     return Scaffold(
       backgroundColor: colors.homeScreenBackground,
-      body: _screens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

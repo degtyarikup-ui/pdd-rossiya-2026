@@ -2,6 +2,12 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <script>
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+    }
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Обгон тихохода через сплошную по ПДД</title>
   <meta name="description" content="Разрешен ли обгон тихоходного транспортного средства через сплошную линию разметки в зоне знака Обгон запрещен по ПДД 2026, судебная практика и ст. 12.15 КоАП.">

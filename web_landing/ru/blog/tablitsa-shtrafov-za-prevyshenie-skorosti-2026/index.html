@@ -2,6 +2,12 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <script>
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+    }
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Штрафы за превышение скорости 2026: таблица</title>
   <meta name="description" content="Актуальная таблица штрафов за превышение скорости по ст. 12.9 КоАП РФ в 2026 году: нештрафуемый порог +20 км/ч, повторные нарушения, камеры и лишение прав.">
