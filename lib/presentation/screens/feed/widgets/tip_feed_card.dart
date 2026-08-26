@@ -184,275 +184,127 @@ class _TipFeedCardState extends State<TipFeedCard>
     final yellowBadgeBg = isDark ? const Color(0xFF422006) : const Color(0xFFFEF08A);
     final yellowBadgeText = isDark ? const Color(0xFFFACC15) : const Color(0xFFCA8A04);
 
-    return Container(
-      color: colors.homeScreenBackground,
-      child: SafeArea(
-        bottom: false,
-        child: Stack(
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is OverscrollNotification) {
+          if (notification.overscroll > 10 && widget.isCurrent) {
+            widget.onAutoNext();
+            return true;
+          }
+          if (notification.overscroll < -10 && widget.isCurrent) {
+            widget.onPrevious();
+            return true;
+          }
+        } else if (notification is ScrollUpdateNotification) {
+          if (_scrollController.hasClients &&
+              _scrollController.position.pixels >=
+                  _scrollController.position.maxScrollExtent &&
+              notification.scrollDelta != null &&
+              notification.scrollDelta! > 14 &&
+              widget.isCurrent) {
+            widget.onAutoNext();
+            return true;
+          }
+          if (_scrollController.hasClients &&
+              _scrollController.position.pixels <=
+                  _scrollController.position.minScrollExtent &&
+              notification.scrollDelta != null &&
+              notification.scrollDelta! < -14 &&
+              widget.isCurrent) {
+            widget.onPrevious();
+            return true;
+          }
+        }
+        return false;
+      },
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        physics: const ClampingScrollPhysics(),
+        padding: const EdgeInsets.only(
+          left: AppDimensions.screenPadding,
+          right: AppDimensions.screenPadding,
+          top: 14,
+          bottom: 84,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Column(
-              children: [
-                // Top Bar with Brighter Yellow "СОВЕТ" Badge and Category
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimensions.screenPadding,
-                    vertical: AppDimensions.spacingM,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: yellowBadgeBg,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.lightbulb_rounded,
-                              size: 14,
-                              color: yellowBadgeText,
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              'СОВЕТ',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                color: yellowBadgeText,
-                                letterSpacing: 0.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.cardBackground,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.info_outline_rounded,
-                              size: 14,
-                              color: colors.secondaryText,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              categoryName,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: colors.secondaryText,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Main Tip Body
-                Expanded(
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: (notification) {
-                      if (notification is OverscrollNotification) {
-                        if (notification.overscroll > 10 && widget.isCurrent) {
-                          widget.onAutoNext();
-                          return true;
-                        }
-                        if (notification.overscroll < -10 && widget.isCurrent) {
-                          widget.onPrevious();
-                          return true;
-                        }
-                      } else if (notification is ScrollUpdateNotification) {
-                        if (_scrollController.hasClients &&
-                            _scrollController.position.pixels >=
-                                _scrollController.position.maxScrollExtent &&
-                            notification.scrollDelta != null &&
-                            notification.scrollDelta! > 14 &&
-                            widget.isCurrent) {
-                          widget.onAutoNext();
-                          return true;
-                        }
-                        if (_scrollController.hasClients &&
-                            _scrollController.position.pixels <=
-                                _scrollController.position.minScrollExtent &&
-                            notification.scrollDelta != null &&
-                            notification.scrollDelta! < -14 &&
-                            widget.isCurrent) {
-                          widget.onPrevious();
-                          return true;
-                        }
-                      }
-                      return false;
-                    },
-                    child: SingleChildScrollView(
-                      controller: _scrollController,
-                      physics: const ClampingScrollPhysics(),
-                      padding: const EdgeInsets.only(
-                        left: AppDimensions.screenPadding,
-                        right: AppDimensions.screenPadding,
-                        bottom: 96,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const SizedBox(height: 12),
-
-                          // Single Unified Card Container (No shadows, image + text combined on one card)
-                          Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: colors.cardBackground,
-                              borderRadius: BorderRadius.circular(
-                                AppDimensions.cardRadius,
-                              ),
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Full-Width Hero Graphic Image Container
-                                if (tip.imagePath.isNotEmpty)
-                                  AspectRatio(
-                                    aspectRatio: 1.0,
-                                    child: Image.asset(
-                                      tip.imagePath,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 40),
-                                        child: _buildFallbackCircleIcon(
-                                          tipIcon,
-                                          yellowBadgeBg,
-                                          yellowBadgeText,
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 40),
-                                    child: _buildFallbackCircleIcon(
-                                      tipIcon,
-                                      yellowBadgeBg,
-                                      yellowBadgeText,
-                                    ),
-                                  ),
-
-                                // Tip Text Details inside the same card
-                                Padding(
-                                  padding: const EdgeInsets.all(AppDimensions.spacingXL),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // Title is the punchy tip directly
-                                      Text(
-                                        tip.title,
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w700,
-                                          color: colors.primaryText,
-                                          height: 1.3,
-                                          letterSpacing: -0.2,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 14),
-                                      // Short 1-2 sentence description
-                                      Text(
-                                        tip.description,
-                                        style: TextStyle(
-                                          fontSize: 15.5,
-                                          color: colors.secondaryText,
-                                          height: 1.5,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 32),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            // Fixed Bottom Floating "Свайпай ↑" Pill
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 16,
-              child: Center(
-                child: AnimatedBuilder(
-                  animation: _bounceAnimation,
-                  builder: (context, child) {
-                    return Transform.translate(
-                      offset: Offset(0, _bounceAnimation.value),
-                      child: child,
-                    );
-                  },
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        HapticFeedbackHelper.tap();
-                        widget.onAutoNext();
-                      },
-                      borderRadius: BorderRadius.circular(24),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.accent,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Свайпай',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                            SizedBox(width: 6),
-                            Icon(
-                              Icons.arrow_upward_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+            // Single Unified Card Container (No shadows, image + text combined on one card)
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: colors.cardBackground,
+                borderRadius: BorderRadius.circular(
+                  AppDimensions.cardRadius,
                 ),
               ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Full-Width Hero Graphic Image Container
+                  if (tip.imagePath.isNotEmpty)
+                    AspectRatio(
+                      aspectRatio: 1.0,
+                      child: Image.asset(
+                        tip.imagePath,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: _buildFallbackCircleIcon(
+                            tipIcon,
+                            yellowBadgeBg,
+                            yellowBadgeText,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: _buildFallbackCircleIcon(
+                        tipIcon,
+                        yellowBadgeBg,
+                        yellowBadgeText,
+                      ),
+                    ),
+
+                  // Tip Text Details inside the same card
+                  Padding(
+                    padding: const EdgeInsets.all(AppDimensions.spacingXL),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title is the punchy tip directly
+                        Text(
+                          tip.title,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: colors.primaryText,
+                            height: 1.3,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        // Short 1-2 sentence description
+                        Text(
+                          tip.description,
+                          style: TextStyle(
+                            fontSize: 15.5,
+                            color: colors.secondaryText,
+                            height: 1.5,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
+
+            const SizedBox(height: 32),
           ],
         ),
       ),

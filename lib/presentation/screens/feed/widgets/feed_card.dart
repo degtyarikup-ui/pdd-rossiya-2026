@@ -22,6 +22,9 @@ class FeedCard extends ConsumerStatefulWidget {
   final VoidCallback onToggleSound;
   final VoidCallback onAutoNext;
   final VoidCallback onPrevious;
+  final void Function(double progress, int remainingSeconds)? onTimerTick;
+  final void Function(bool isAnswered, bool isCorrect)? onAnswerStateChanged;
+  final ValueChanged<bool>? onFavoriteChanged;
 
   const FeedCard({
     super.key,
@@ -33,6 +36,9 @@ class FeedCard extends ConsumerStatefulWidget {
     required this.onToggleSound,
     required this.onAutoNext,
     required this.onPrevious,
+    this.onTimerTick,
+    this.onAnswerStateChanged,
+    this.onFavoriteChanged,
   });
 
   @override
@@ -45,8 +51,6 @@ class _FeedCardState extends ConsumerState<FeedCard>
   bool get wantKeepAlive => true;
 
   late AnimationController _timerController;
-  late AnimationController _bounceController;
-  late Animation<double> _bounceAnimation;
   final ScrollController _scrollController = ScrollController();
   int? _selectedAnswerIndex;
   bool _isAnswered = false;
@@ -71,14 +75,15 @@ class _FeedCardState extends ConsumerState<FeedCard>
       duration: _calculatedDuration,
     );
 
-    _bounceController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    )..repeat(reverse: true);
-
-    _bounceAnimation = Tween<double>(begin: 0.0, end: -7.0).animate(
-      CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
-    );
+    _timerController.addListener(() {
+      if (widget.isCurrent) {
+        final progress = (1.0 - _timerController.value).clamp(0.0, 1.0);
+        final remainingSec = (_timerController.duration != null)
+            ? (progress * _timerController.duration!.inMilliseconds / 1000).ceil()
+            : 0;
+        widget.onTimerTick?.call(progress, remainingSec);
+      }
+    });
 
     if (widget.initialSelectedAnswerIndex != null) {
       _selectedAnswerIndex = widget.initialSelectedAnswerIndex;
@@ -93,8 +98,15 @@ class _FeedCardState extends ConsumerState<FeedCard>
 
     _checkFavorite();
 
-    if (widget.isCurrent && !_isAnswered) {
-      _startCard();
+    if (widget.isCurrent) {
+      if (!_isAnswered) {
+        _startCard();
+      } else {
+        widget.onAnswerStateChanged?.call(
+          true,
+          _selectedAnswerIndex == widget.item.correctAnswerIndex,
+        );
+      }
     }
   }
 
@@ -110,7 +122,13 @@ class _FeedCardState extends ConsumerState<FeedCard>
     if (!oldWidget.isCurrent && widget.isCurrent) {
       if (!_isAnswered) {
         _startCard();
+      } else {
+        widget.onAnswerStateChanged?.call(
+          true,
+          _selectedAnswerIndex == widget.item.correctAnswerIndex,
+        );
       }
+      widget.onFavoriteChanged?.call(_isFavorite);
     } else if (oldWidget.isCurrent && !widget.isCurrent) {
       _stopCard();
     }
@@ -167,7 +185,12 @@ class _FeedCardState extends ConsumerState<FeedCard>
       final category = ref.read(appSettingsProvider).ticketCategory;
       final ds = ref.read(progressDataSourceProvider);
       final isFav = await ds.isFavorite(rawId, category);
-      if (mounted) setState(() => _isFavorite = isFav);
+      if (mounted) {
+        setState(() => _isFavorite = isFav);
+        if (widget.isCurrent) {
+          widget.onFavoriteChanged?.call(isFav);
+        }
+      }
     } catch (_) {}
   }
 
@@ -176,6 +199,7 @@ class _FeedCardState extends ConsumerState<FeedCard>
     if (rawId == null) {
       HapticFeedbackHelper.tap();
       setState(() => _isFavorite = !_isFavorite);
+      widget.onFavoriteChanged?.call(_isFavorite);
       return;
     }
     HapticFeedbackHelper.success();
@@ -183,7 +207,10 @@ class _FeedCardState extends ConsumerState<FeedCard>
     final ds = ref.read(progressDataSourceProvider);
     await ds.toggleFavorite(rawId, category);
     final isFav = await ds.isFavorite(rawId, category);
-    if (mounted) setState(() => _isFavorite = isFav);
+    if (mounted) {
+      setState(() => _isFavorite = isFav);
+      widget.onFavoriteChanged?.call(isFav);
+    }
   }
 
   void _handleTimeExpired() {
@@ -196,6 +223,7 @@ class _FeedCardState extends ConsumerState<FeedCard>
       _selectedAnswerIndex = -1; // timed out
     });
     widget.onAnswerRecorded?.call(-1);
+    widget.onAnswerStateChanged?.call(true, false);
     _saveProgress(isCorrect: false, selectedIndex: -1);
   }
 
@@ -219,6 +247,7 @@ class _FeedCardState extends ConsumerState<FeedCard>
     });
 
     widget.onAnswerRecorded?.call(index);
+    widget.onAnswerStateChanged?.call(true, isCorrect);
     _saveProgress(isCorrect: isCorrect, selectedIndex: index);
 
     if (isCorrect) {
@@ -248,9 +277,8 @@ class _FeedCardState extends ConsumerState<FeedCard>
   @override
   void dispose() {
     _timerController.dispose();
-    _bounceController.dispose();
-    _autoAdvanceTimer?.cancel();
     _scrollController.dispose();
+    _autoAdvanceTimer?.cancel();
     super.dispose();
   }
 
@@ -259,318 +287,141 @@ class _FeedCardState extends ConsumerState<FeedCard>
     super.build(context);
     final colors = AppColors.of(context);
 
-    return Container(
-      color: colors.homeScreenBackground,
-      child: SafeArea(
-        bottom: false,
-        child: Stack(
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is OverscrollNotification) {
+          // User dragged past bottom edge -> Next
+          if (notification.overscroll > 10 && widget.isCurrent) {
+            widget.onAutoNext();
+            return true;
+          }
+          // User dragged past top edge -> Previous
+          if (notification.overscroll < -10 && widget.isCurrent) {
+            widget.onPrevious();
+            return true;
+          }
+        } else if (notification is ScrollUpdateNotification) {
+          // Scrolled to bottom and pulling upward -> Next
+          if (_scrollController.hasClients &&
+              _scrollController.position.pixels >=
+                  _scrollController.position.maxScrollExtent &&
+              notification.scrollDelta != null &&
+              notification.scrollDelta! > 14 &&
+              widget.isCurrent) {
+            widget.onAutoNext();
+            return true;
+          }
+          // Scrolled to top and pulling downward -> Previous
+          if (_scrollController.hasClients &&
+              _scrollController.position.pixels <=
+                  _scrollController.position.minScrollExtent &&
+              notification.scrollDelta != null &&
+              notification.scrollDelta! < -14 &&
+              widget.isCurrent) {
+            widget.onPrevious();
+            return true;
+          }
+        }
+        return false;
+      },
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        physics: const ClampingScrollPhysics(),
+        padding: const EdgeInsets.only(
+          left: AppDimensions.screenPadding,
+          right: AppDimensions.screenPadding,
+          top: 14,
+          bottom: 84,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Column(
-              children: [
-                // 1. Top Bar (Badge, Timer Pill, Sound & Favorite Buttons)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimensions.screenPadding,
-                    vertical: AppDimensions.spacingM,
-                  ),
-                  child: Row(
-                    children: [
-                      if (widget.item.badgeText != null) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.lightAccent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            widget.item.badgeText!,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: colors.accent,
-                            ),
-                          ),
+            // Question / Sign Image (Clean, no card background)
+            if (widget.item.imagePath != null) ...[
+              Center(
+                child: widget.item.isSvgImage
+                    ? SvgPicture.asset(
+                        widget.item.imagePath!,
+                        height: 160,
+                        fit: BoxFit.contain,
+                      )
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.smallRadius,
                         ),
-                        const SizedBox(width: 8),
-                      ],
-                      // Digital Countdown Timer Pill
-                      _buildDigitalTimerPill(colors),
-                      const Spacer(),
-                      // Sound Button
-                      AppChromeIconButton(
-                        icon: widget.isSoundEnabled
-                            ? Icons.volume_up_rounded
-                            : Icons.volume_off_rounded,
-                        backgroundColor: widget.isSoundEnabled
-                            ? colors.lightAccent
-                            : colors.cardBackground,
-                        iconColor: widget.isSoundEnabled
-                            ? colors.accent
-                            : colors.primaryText.withValues(alpha: 0.65),
-                        onTap: widget.onToggleSound,
-                      ),
-                      const SizedBox(width: 8),
-                      // Favorite Star Button
-                      AppChromeIconButton(
-                        icon: _isFavorite
-                            ? Icons.star_rounded
-                            : Icons.star_outline_rounded,
-                        backgroundColor: _isFavorite
-                            ? colors.goldLightSurface
-                            : colors.cardBackground,
-                        iconColor: _isFavorite
-                            ? colors.gold
-                            : colors.primaryText.withValues(alpha: 0.65),
-                        onTap: _toggleFavorite,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // 2. Question Card Body
-                Expanded(
-                  child: Stack(
-                    children: [
-                      NotificationListener<ScrollNotification>(
-                        onNotification: (notification) {
-                          if (notification is OverscrollNotification) {
-                            // User dragged past bottom edge -> Next
-                            if (notification.overscroll > 10 && widget.isCurrent) {
-                              widget.onAutoNext();
-                              return true;
-                            }
-                            // User dragged past top edge -> Previous
-                            if (notification.overscroll < -10 && widget.isCurrent) {
-                              widget.onPrevious();
-                              return true;
-                            }
-                          } else if (notification is ScrollUpdateNotification) {
-                            // Scrolled to bottom and pulling upward -> Next
-                            if (_scrollController.hasClients &&
-                                _scrollController.position.pixels >=
-                                    _scrollController.position.maxScrollExtent &&
-                                notification.scrollDelta != null &&
-                                notification.scrollDelta! > 14 &&
-                                widget.isCurrent) {
-                              widget.onAutoNext();
-                              return true;
-                            }
-                            // Scrolled to top and pulling downward -> Previous
-                            if (_scrollController.hasClients &&
-                                _scrollController.position.pixels <=
-                                    _scrollController.position.minScrollExtent &&
-                                notification.scrollDelta != null &&
-                                notification.scrollDelta! < -14 &&
-                                widget.isCurrent) {
-                              widget.onPrevious();
-                              return true;
-                            }
-                          }
-                          return false;
-                        },
-                        child: SingleChildScrollView(
-                          controller: _scrollController,
-                          physics: const ClampingScrollPhysics(),
-                          padding: const EdgeInsets.only(
-                            left: AppDimensions.screenPadding,
-                            right: AppDimensions.screenPadding,
-                            bottom: 72,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Question / Sign Image (Clean, no card background)
-                              if (widget.item.imagePath != null) ...[
-                                Center(
-                                  child: widget.item.isSvgImage
-                                      ? SvgPicture.asset(
-                                          widget.item.imagePath!,
-                                          height: 160,
-                                          fit: BoxFit.contain,
-                                        )
-                                      : ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            AppDimensions.smallRadius,
-                                          ),
-                                          child: QuestionImage(
-                                            assetPath: widget.item.imagePath!,
-                                            height: 190,
-                                            fit: BoxFit.contain,
-                                            zoomable: true,
-                                          ),
-                                        ),
-                                ),
-                                const SizedBox(height: AppDimensions.spacingM),
-                              ],
-
-                              // Question Text
-                              Text(
-                                widget.item.questionText,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: colors.primaryText,
-                                  height: 1.35,
-                                ),
-                              ),
-                              const SizedBox(height: AppDimensions.spacingL),
-
-                              // Answer Options (Exact Training Screen Clean Flat Style)
-                              ...List.generate(widget.item.answers.length, (idx) {
-                                final answerText = widget.item.answers[idx];
-                                return _buildTrainingStyleAnswerOption(idx, answerText, colors);
-                              }),
-
-                              // Explanation Card (Clean without duplicate hint)
-                              if (_isAnswered &&
-                                  _selectedAnswerIndex != widget.item.correctAnswerIndex &&
-                                  widget.item.explanation != null &&
-                                  widget.item.explanation!.isNotEmpty) ...[
-                                const SizedBox(height: AppDimensions.spacingL),
-                                Container(
-                                  padding: const EdgeInsets.all(AppDimensions.spacingL),
-                                  decoration: BoxDecoration(
-                                    color: colors.cardBackground,
-                                    borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(Icons.lightbulb, color: colors.gold, size: 20),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Комментарий',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: colors.primaryText,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: AppDimensions.spacingM),
-                                      Text(
-                                        widget.item.explanation!,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: colors.secondaryText,
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-
-                              const SizedBox(height: 24),
-                            ],
-                          ),
+                        child: QuestionImage(
+                          assetPath: widget.item.imagePath!,
+                          height: 190,
+                          fit: BoxFit.contain,
+                          zoomable: true,
                         ),
                       ),
-                      // Fixed Bottom Countdown Progress Bar (Non-scrollable, Non-draggable)
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: IgnorePointer(
-                          child: AnimatedBuilder(
-                            animation: _timerController,
-                            builder: (context, child) {
-                              final progress = (1.0 - _timerController.value).clamp(0.0, 1.0);
-                              Color barColor;
-                              if (_isAnswered) {
-                                final isCorrect = _selectedAnswerIndex == widget.item.correctAnswerIndex;
-                                barColor = isCorrect ? colors.green : colors.red;
-                              } else if (progress > 0.3) {
-                                barColor = colors.accent;
-                              } else if (progress > 0.15) {
-                                barColor = colors.gold;
-                              } else {
-                                barColor = colors.red;
-                              }
+              ),
+              const SizedBox(height: AppDimensions.spacingM),
+            ],
 
-                              return SizedBox(
-                                height: 3.5,
-                                child: LinearProgressIndicator(
-                                  value: _isAnswered ? 1.0 : progress,
-                                  backgroundColor: colors.cardBackground.withValues(alpha: 0.5),
-                                  valueColor: AlwaysStoppedAnimation<Color>(barColor),
-                                  minHeight: 3.5,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            // Question Text
+            Text(
+              widget.item.questionText,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: colors.primaryText,
+                height: 1.35,
+              ),
             ),
+            const SizedBox(height: AppDimensions.spacingL),
 
-            // Fixed Bottom Floating "Свайпай ↑" Pill with Twitch / Bob Animation
-            if (_isAnswered && _selectedAnswerIndex != widget.item.correctAnswerIndex)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 16,
-                child: Center(
-                  child: AnimatedBuilder(
-                    animation: _bounceAnimation,
-                    builder: (context, child) {
-                      return Transform.translate(
-                        offset: Offset(0, _bounceAnimation.value),
-                        child: child,
-                      );
-                    },
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          HapticFeedbackHelper.tap();
-                          widget.onAutoNext();
-                        },
-                        borderRadius: BorderRadius.circular(24),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.accent,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Свайпай',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
-                              SizedBox(width: 6),
-                              Icon(
-                                Icons.arrow_upward_rounded,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                            ],
+            // Answer Options (Exact Training Screen Clean Flat Style)
+            ...List.generate(widget.item.answers.length, (idx) {
+              final answerText = widget.item.answers[idx];
+              return _buildTrainingStyleAnswerOption(idx, answerText, colors);
+            }),
+
+            // Explanation Card (Clean without duplicate hint)
+            if (_isAnswered &&
+                _selectedAnswerIndex != widget.item.correctAnswerIndex &&
+                widget.item.explanation != null &&
+                widget.item.explanation!.isNotEmpty) ...[
+              const SizedBox(height: AppDimensions.spacingL),
+              Container(
+                padding: const EdgeInsets.all(AppDimensions.spacingL),
+                decoration: BoxDecoration(
+                  color: colors.cardBackground,
+                  borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.lightbulb, color: colors.gold, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Комментарий',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: colors.primaryText,
                           ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: AppDimensions.spacingM),
+                    Text(
+                      widget.item.explanation!,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colors.secondaryText,
+                        height: 1.4,
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
+            ],
+
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -680,83 +531,6 @@ class _FeedCardState extends ConsumerState<FeedCard>
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildDigitalTimerPill(AppThemeColors colors) {
-    return AnimatedBuilder(
-      animation: _timerController,
-      builder: (context, _) {
-        final totalSec =
-            (_timerController.duration?.inMilliseconds ?? 10000) / 1000.0;
-        final remainingSec =
-            ((1.0 - _timerController.value) * totalSec).ceil().clamp(0, 99);
-
-        Color timerBg;
-        Color timerTextColor;
-        String timerText;
-        IconData timerIcon;
-
-        if (_isAnswered) {
-          final isCorrect =
-              _selectedAnswerIndex == widget.item.correctAnswerIndex;
-          if (isCorrect) {
-            timerBg = colors.greenLight;
-            timerTextColor = colors.green;
-            timerText = 'Верно';
-            timerIcon = Icons.check_circle_rounded;
-          } else if (_selectedAnswerIndex == -1) {
-            timerBg = colors.redLight;
-            timerTextColor = colors.red;
-            timerText = 'Время вышло';
-            timerIcon = Icons.timer_off_rounded;
-          } else {
-            timerBg = colors.redLight;
-            timerTextColor = colors.red;
-            timerText = 'Ошибка';
-            timerIcon = Icons.cancel_rounded;
-          }
-        } else {
-          if (remainingSec > 5) {
-            timerBg = colors.lightAccent;
-            timerTextColor = colors.accent;
-            timerIcon = Icons.timer_outlined;
-          } else if (remainingSec > 2) {
-            timerBg = colors.goldLightSurface;
-            timerTextColor = colors.gold;
-            timerIcon = Icons.timer_outlined;
-          } else {
-            timerBg = colors.redLight;
-            timerTextColor = colors.red;
-            timerIcon = Icons.timer_outlined;
-          }
-          timerText = '$remainingSec с';
-        }
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: timerBg,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(timerIcon, size: 14, color: timerTextColor),
-              const SizedBox(width: 5),
-              Text(
-                timerText,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: timerTextColor,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }
