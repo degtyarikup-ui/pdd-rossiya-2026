@@ -33,6 +33,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   int _swipeHintCount = 0;
   final List<FeedItem> _items = [];
   final Map<String, int> _answeredChoices = {};
+  bool _isLoading = true;
   bool _isLoadingMore = false;
   bool _isRefreshing = false;
 
@@ -58,6 +59,25 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     );
 
     _loadPreferences();
+    _initFeed();
+  }
+
+  Future<void> _initFeed() async {
+    try {
+      final category = ref.read(appSettingsProvider).ticketCategory;
+      final repo = ref.read(feedRepositoryProvider);
+      final initialItems = await repo.generateFeedItems(category: category, count: 60);
+      if (mounted) {
+        setState(() {
+          _items.clear();
+          _items.addAll(initialItems);
+          _isLoading = false;
+        });
+        _checkCurrentFavorite();
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _loadPreferences() async {
@@ -277,264 +297,255 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final initialAsync = ref.watch(feedItemsProvider);
     final topPadding = MediaQuery.paddingOf(context).top;
     final topHeaderHeight = topPadding + 52.0;
 
+    if (_isLoading && _items.isEmpty) {
+      return Scaffold(
+        backgroundColor: colors.homeScreenBackground,
+        body: Center(
+          child: CircularProgressIndicator(color: colors.accent),
+        ),
+      );
+    }
+
+    if (_items.isEmpty) {
+      return Scaffold(
+        backgroundColor: colors.homeScreenBackground,
+        body: Center(
+          child: Text(
+            'Вопросы пока не загружены',
+            style: TextStyle(color: colors.secondaryText),
+          ),
+        ),
+      );
+    }
+
+    final currentItem = _currentIndex < _items.length
+        ? _items[_currentIndex]
+        : _items.first;
+
     return Scaffold(
       backgroundColor: colors.homeScreenBackground,
-      body: initialAsync.when(
-        data: (initialItems) {
-          if (_items.isEmpty && initialItems.isNotEmpty) {
-            _items.addAll(initialItems);
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _checkCurrentFavorite();
-            });
-          }
-
-          if (_items.isEmpty) {
-            return Center(
-              child: Text(
-                'Вопросы пока не загружены',
-                style: TextStyle(color: colors.secondaryText),
-              ),
-            );
-          }
-
-          final currentItem = _currentIndex < _items.length
-              ? _items[_currentIndex]
-              : _items.first;
-
-          return Stack(
-            children: [
-              // 1. Full-screen PageView with top padding to clear the fixed header
-              Positioned.fill(
-                child: Padding(
-                  padding: EdgeInsets.only(top: topHeaderHeight),
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: (notification) {
-                      if (_currentIndex == 0 && !_isRefreshing) {
-                        if (notification is OverscrollNotification &&
-                            notification.overscroll < -15) {
-                          _refreshFeed();
-                          return true;
-                        }
-                      }
-                      return false;
-                    },
-                    child: PageView.builder(
-                      controller: _pageController,
-                      scrollDirection: Axis.vertical,
-                      physics: const BouncingScrollPhysics(
-                        parent: AlwaysScrollableScrollPhysics(),
-                      ),
-                      onPageChanged: _onPageChanged,
-                      itemCount: _items.length,
-                      itemBuilder: (context, index) {
-                        final item = _items[index];
-                        if (item.isAd) {
-                          return AdFeedCard(
-                            key: ValueKey('${item.id}_$index'),
-                            item: item,
-                            isCurrent: index == _currentIndex,
-                            onAutoNext: _autoNext,
-                            onPrevious: _previousPage,
-                            onFailed: _onAdLoadFailed,
-                          );
-                        }
-                        if (item.isTip) {
-                          return TipFeedCard(
-                            key: ValueKey('${item.id}_$index'),
-                            item: item,
-                            isCurrent: index == _currentIndex,
-                            onAutoNext: _autoNext,
-                            onPrevious: _previousPage,
-                          );
-                        }
-                        return FeedCard(
-                          key: ValueKey('${item.id}_$index'),
-                          item: item,
-                          isCurrent: index == _currentIndex,
-                          isSoundEnabled: _isSoundEnabled,
-                          initialSelectedAnswerIndex: _answeredChoices[item.id],
-                          onAnswerRecorded: (selectedIdx) {
-                            _answeredChoices[item.id] = selectedIdx;
-                          },
-                          onToggleSound: _toggleSound,
-                          onAutoNext: _autoNext,
-                          onPrevious: _previousPage,
-                          onTimerTick: (progress, remainingSec) {
-                            _timerProgressNotifier.value = progress;
-                            _remainingSecondsNotifier.value = remainingSec;
-                          },
-                          onAnswerStateChanged: (isAnswered, isCorrect) {
-                            _isCurrentAnsweredNotifier.value = isAnswered;
-                            _isCurrentCorrectNotifier.value = isCorrect;
-                          },
-                          onFavoriteChanged: (isFav) {
-                            _isCurrentFavoriteNotifier.value = isFav;
-                          },
-                        );
+      body: Stack(
+        children: [
+          // 1. Full-screen PageView with top padding to clear the fixed header
+          Positioned.fill(
+            child: Padding(
+              padding: EdgeInsets.only(top: topHeaderHeight),
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (_currentIndex == 0 && !_isRefreshing) {
+                    if (notification is OverscrollNotification &&
+                        notification.overscroll < -15) {
+                      _refreshFeed();
+                      return true;
+                    }
+                  }
+                  return false;
+                },
+                child: PageView.builder(
+                  controller: _pageController,
+                  scrollDirection: Axis.vertical,
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  onPageChanged: _onPageChanged,
+                  itemCount: _items.length,
+                  itemBuilder: (context, index) {
+                    final item = _items[index];
+                    if (item.isAd) {
+                      return AdFeedCard(
+                        key: ValueKey('${item.id}_$index'),
+                        item: item,
+                        isCurrent: index == _currentIndex,
+                        onAutoNext: _autoNext,
+                        onPrevious: _previousPage,
+                        onFailed: _onAdLoadFailed,
+                      );
+                    }
+                    if (item.isTip) {
+                      return TipFeedCard(
+                        key: ValueKey('${item.id}_$index'),
+                        item: item,
+                        isCurrent: index == _currentIndex,
+                        onAutoNext: _autoNext,
+                        onPrevious: _previousPage,
+                      );
+                    }
+                    return FeedCard(
+                      key: ValueKey('${item.id}_$index'),
+                      item: item,
+                      isCurrent: index == _currentIndex,
+                      isSoundEnabled: _isSoundEnabled,
+                      initialSelectedAnswerIndex: _answeredChoices[item.id],
+                      onAnswerRecorded: (selectedIdx) {
+                        _answeredChoices[item.id] = selectedIdx;
                       },
-                    ),
+                      onToggleSound: _toggleSound,
+                      onAutoNext: _autoNext,
+                      onPrevious: _previousPage,
+                      onTimerTick: (progress, remainingSec) {
+                        _timerProgressNotifier.value = progress;
+                        _remainingSecondsNotifier.value = remainingSec;
+                      },
+                      onAnswerStateChanged: (isAnswered, isCorrect) {
+                        _isCurrentAnsweredNotifier.value = isAnswered;
+                        _isCurrentCorrectNotifier.value = isCorrect;
+                      },
+                      onFavoriteChanged: (isFav) {
+                        _isCurrentFavoriteNotifier.value = isFav;
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+
+          // 2. Top Smooth Gradient Dissolve Mask (Questions gracefully fade into background color as they fly away)
+          Positioned(
+            top: topHeaderHeight,
+            left: 0,
+            right: 0,
+            height: 28,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      colors.homeScreenBackground,
+                      colors.homeScreenBackground.withValues(alpha: 0.0),
+                    ],
                   ),
                 ),
               ),
+            ),
+          ),
 
-              // 2. Top Smooth Gradient Dissolve Mask (Questions gracefully fade into background color as they fly away)
-              Positioned(
-                top: topHeaderHeight,
-                left: 0,
-                right: 0,
-                height: 28,
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          colors.homeScreenBackground,
-                          colors.homeScreenBackground.withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
+          // 3. Bottom Smooth Gradient Dissolve Mask (New questions smoothly fade in from bottom)
+          Positioned(
+            bottom: 4,
+            left: 0,
+            right: 0,
+            height: 28,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      colors.homeScreenBackground,
+                      colors.homeScreenBackground.withValues(alpha: 0.0),
+                    ],
                   ),
                 ),
               ),
+            ),
+          ),
 
-              // 3. Bottom Smooth Gradient Dissolve Mask (New questions smoothly fade in from bottom)
-              Positioned(
-                bottom: 4,
-                left: 0,
-                right: 0,
-                height: 28,
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        colors: [
-                          colors.homeScreenBackground,
-                          colors.homeScreenBackground.withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                  ),
+          // 4. Fixed Top Header Bar (Controls stay firmly in place; contents update smoothly)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Container(
+                color: colors.homeScreenBackground,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimensions.screenPadding,
+                  vertical: 8,
                 ),
+                child: _buildTopHeader(context, currentItem, colors),
               ),
+            ),
+          ),
 
-              // 4. Fixed Top Header Bar (Controls stay firmly in place; contents update smoothly)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: SafeArea(
-                  bottom: false,
-                  child: Container(
-                    color: colors.homeScreenBackground,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimensions.screenPadding,
-                      vertical: 8,
-                    ),
-                    child: _buildTopHeader(context, currentItem, colors),
-                  ),
-                ),
-              ),
+          // 5. Fixed Bottom Countdown Timing Line (Firmly pinned at bottom)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _buildBottomTimingBar(colors, currentItem),
+          ),
 
-              // 5. Fixed Bottom Countdown Timing Line (Firmly pinned at bottom)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: _buildBottomTimingBar(colors, currentItem),
-              ),
+          // 6. Floating "Свайпай ↑" Hint (Shown maximum 3 times)
+          ValueListenableBuilder<bool>(
+            valueListenable: _isCurrentAnsweredNotifier,
+            builder: (context, isAnswered, _) {
+              return ValueListenableBuilder<bool>(
+                valueListenable: _isCurrentCorrectNotifier,
+                builder: (context, isCorrect, _) {
+                  final shouldShowHint =
+                      _swipeHintCount < 3 && isAnswered && !isCorrect;
+                  if (!shouldShowHint) return const SizedBox.shrink();
 
-              // 6. Floating "Свайпай ↑" Hint (Shown maximum 3 times)
-              ValueListenableBuilder<bool>(
-                valueListenable: _isCurrentAnsweredNotifier,
-                builder: (context, isAnswered, _) {
-                  return ValueListenableBuilder<bool>(
-                    valueListenable: _isCurrentCorrectNotifier,
-                    builder: (context, isCorrect, _) {
-                      final shouldShowHint =
-                          _swipeHintCount < 3 && isAnswered && !isCorrect;
-                      if (!shouldShowHint) return const SizedBox.shrink();
-
-                      return Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 16,
-                        child: Center(
-                          child: AnimatedBuilder(
-                            animation: _bounceAnimation,
-                            builder: (context, child) {
-                              return Transform.translate(
-                                offset: Offset(0, _bounceAnimation.value),
-                                child: child,
-                              );
+                  return Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 16,
+                    child: Center(
+                      child: AnimatedBuilder(
+                        animation: _bounceAnimation,
+                        builder: (context, child) {
+                          return Transform.translate(
+                            offset: Offset(0, _bounceAnimation.value),
+                            child: child,
+                          );
+                        },
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              HapticFeedbackHelper.tap();
+                              _incrementSwipeHintCount();
+                              _autoNext();
                             },
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () {
-                                  HapticFeedbackHelper.tap();
-                                  _incrementSwipeHintCount();
-                                  _autoNext();
-                                },
+                            borderRadius: BorderRadius.circular(24),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.accent,
                                 borderRadius: BorderRadius.circular(24),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 10,
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Свайпай',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.3,
+                                    ),
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: colors.accent,
-                                    borderRadius: BorderRadius.circular(24),
+                                  SizedBox(width: 6),
+                                  Icon(
+                                    Icons.arrow_upward_rounded,
+                                    color: Colors.white,
+                                    size: 18,
                                   ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        'Свайпай',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.3,
-                                        ),
-                                      ),
-                                      SizedBox(width: 6),
-                                      Icon(
-                                        Icons.arrow_upward_rounded,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                ],
                               ),
                             ),
                           ),
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   );
                 },
-              ),
-            ],
-          );
-        },
-        loading: () => Center(
-          child: CircularProgressIndicator(color: colors.accent),
-        ),
-        error: (err, _) => Center(
-          child: Text(
-            'Ошибка загрузки ленты: $err',
-            style: TextStyle(color: colors.secondaryText),
+              );
+            },
           ),
-        ),
+        ],
       ),
     );
   }
