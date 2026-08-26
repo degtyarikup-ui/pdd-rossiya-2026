@@ -10,7 +10,6 @@ import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
-import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/question_image.dart';
 
 class FeedCard extends ConsumerStatefulWidget {
@@ -54,7 +53,6 @@ class _FeedCardState extends ConsumerState<FeedCard>
   final ScrollController _scrollController = ScrollController();
   int? _selectedAnswerIndex;
   bool _isAnswered = false;
-  bool _isFavorite = false;
   Timer? _autoAdvanceTimer;
 
   Duration get _calculatedDuration {
@@ -96,8 +94,6 @@ class _FeedCardState extends ConsumerState<FeedCard>
       }
     });
 
-    _checkFavorite();
-
     if (widget.isCurrent) {
       if (!_isAnswered) {
         _startCard();
@@ -128,7 +124,6 @@ class _FeedCardState extends ConsumerState<FeedCard>
           _selectedAnswerIndex == widget.item.correctAnswerIndex,
         );
       }
-      widget.onFavoriteChanged?.call(_isFavorite);
     } else if (oldWidget.isCurrent && !widget.isCurrent) {
       _stopCard();
     }
@@ -178,40 +173,7 @@ class _FeedCardState extends ConsumerState<FeedCard>
     }
   }
 
-  Future<void> _checkFavorite() async {
-    final rawId = widget.item.rawQuestionId;
-    if (rawId == null) return;
-    try {
-      final category = ref.read(appSettingsProvider).ticketCategory;
-      final ds = ref.read(progressDataSourceProvider);
-      final isFav = await ds.isFavorite(rawId, category);
-      if (mounted) {
-        setState(() => _isFavorite = isFav);
-        if (widget.isCurrent) {
-          widget.onFavoriteChanged?.call(isFav);
-        }
-      }
-    } catch (_) {}
-  }
 
-  Future<void> _toggleFavorite() async {
-    final rawId = widget.item.rawQuestionId;
-    if (rawId == null) {
-      HapticFeedbackHelper.tap();
-      setState(() => _isFavorite = !_isFavorite);
-      widget.onFavoriteChanged?.call(_isFavorite);
-      return;
-    }
-    HapticFeedbackHelper.success();
-    final category = ref.read(appSettingsProvider).ticketCategory;
-    final ds = ref.read(progressDataSourceProvider);
-    await ds.toggleFavorite(rawId, category);
-    final isFav = await ds.isFavorite(rawId, category);
-    if (mounted) {
-      setState(() => _isFavorite = isFav);
-      widget.onFavoriteChanged?.call(isFav);
-    }
-  }
 
   void _handleTimeExpired() {
     if (_isAnswered) return;

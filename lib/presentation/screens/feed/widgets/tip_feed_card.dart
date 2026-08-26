@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
-import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/sources/driver_tips_data.dart';
@@ -25,12 +24,10 @@ class TipFeedCard extends StatefulWidget {
 }
 
 class _TipFeedCardState extends State<TipFeedCard>
-    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 
-  late AnimationController _bounceController;
-  late Animation<double> _bounceAnimation;
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -39,14 +36,6 @@ class _TipFeedCardState extends State<TipFeedCard>
     if (widget.isCurrent) {
       TtsService.instance.stop().ignore();
     }
-    _bounceController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    )..repeat(reverse: true);
-
-    _bounceAnimation = Tween<double>(begin: 0.0, end: -7.0).animate(
-      CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
-    );
   }
 
   @override
@@ -59,7 +48,6 @@ class _TipFeedCardState extends State<TipFeedCard>
 
   @override
   void dispose() {
-    _bounceController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
