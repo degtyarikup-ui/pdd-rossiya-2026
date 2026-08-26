@@ -422,7 +422,6 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
               builder: (context, constraints) {
                 final bw = constraints.maxWidth;
                 final imageW = (bw * 0.50).clamp(170.0, 225.0);
-                final reserveRight = imageW + 6;
                 return Stack(
                   clipBehavior: Clip.hardEdge,
                   children: [

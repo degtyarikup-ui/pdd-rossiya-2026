@@ -99,30 +99,6 @@ class _TipFeedCardState extends State<TipFeedCard>
     }
   }
 
-  String _resolveCategoryName(String category) {
-    switch (category) {
-      case 'safety':
-        return 'Безопасность';
-      case 'weather':
-        return 'Погода';
-      case 'winter':
-        return 'Зимняя езда';
-      case 'rules':
-        return 'ПДД';
-      case 'highway':
-        return 'Трасса';
-      case 'maneuver':
-        return 'Маневры';
-      case 'mirrors':
-        return 'Обзор';
-      case 'comfort':
-        return 'Комфорт';
-      case 'parking':
-        return 'Парковка';
-      default:
-        return 'ПДД 2026';
-    }
-  }
 
   Widget _buildFallbackCircleIcon(
     IconData tipIcon,
@@ -166,7 +142,6 @@ class _TipFeedCardState extends State<TipFeedCard>
         );
 
     final tipIcon = _resolveTipIcon(tip.iconKey);
-    final categoryName = _resolveCategoryName(tip.category);
 
     // Rich, vibrant brighter Yellow / Amber palette for the Tip badge
     final yellowBadgeBg = isDark ? const Color(0xFF422006) : const Color(0xFFFEF08A);
@@ -237,7 +212,7 @@ class _TipFeedCardState extends State<TipFeedCard>
                       child: Image.asset(
                         tip.imagePath,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Padding(
+                        errorBuilder: (context, error, stackTrace) => Padding(
                           padding: const EdgeInsets.symmetric(vertical: 40),
                           child: _buildFallbackCircleIcon(
                             tipIcon,

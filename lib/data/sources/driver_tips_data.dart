@@ -176,7 +176,29 @@ class DriverTipsData {
       description: 'Тяжелые веки и частая зевота — верный сигнал микросна. Остановитесь, выпейте воды и сделайте легкую разминку.',
       category: 'safety',
       iconKey: 'rest',
-      imagePath: 'assets/images/tips/tip_20.png',
     ),
   ];
+
+  static String resolveCategoryTitle(String category) {
+    switch (category.toLowerCase()) {
+      case 'safety':
+        return 'Безопасность';
+      case 'weather':
+        return 'Погода';
+      case 'winter':
+        return 'Зимняя езда';
+      case 'rules':
+        return 'ПДД';
+      case 'highway':
+        return 'Трасса';
+      case 'maneuver':
+        return 'Маневры';
+      case 'parking':
+        return 'Парковка';
+      case 'fuel':
+        return 'Экономия';
+      default:
+        return 'Советы';
+    }
+  }
 }

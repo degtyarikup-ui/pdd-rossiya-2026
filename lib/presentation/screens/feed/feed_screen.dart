@@ -6,6 +6,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
+import 'package:pdd_app/data/sources/driver_tips_data.dart';
 import 'package:pdd_app/presentation/screens/feed/widgets/ad_feed_card.dart';
 import 'package:pdd_app/presentation/screens/feed/widgets/feed_card.dart';
 import 'package:pdd_app/presentation/screens/feed/widgets/tip_feed_card.dart';
@@ -33,7 +34,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   int _swipeHintCount = 0;
   final List<FeedItem> _items = [];
   final Map<String, int> _answeredChoices = {};
-  bool _isLoading = true;
   bool _isLoadingMore = false;
   bool _isRefreshing = false;
 
@@ -59,25 +59,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     );
 
     _loadPreferences();
-    _initFeed();
-  }
-
-  Future<void> _initFeed() async {
-    try {
-      final category = ref.read(appSettingsProvider).ticketCategory;
-      final repo = ref.read(feedRepositoryProvider);
-      final initialItems = await repo.generateFeedItems(category: category, count: 60);
-      if (mounted) {
-        setState(() {
-          _items.clear();
-          _items.addAll(initialItems);
-          _isLoading = false;
-        });
-        _checkCurrentFavorite();
-      }
-    } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
-    }
   }
 
   Future<void> _loadPreferences() async {
@@ -562,7 +543,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
       final yellowBadgeText =
           isDark ? const Color(0xFFFACC15) : const Color(0xFFCA8A04);
       final tip = currentItem.driverTip;
-      final categoryName = tip != null ? tip.category : 'СОВЕТЫ';
+      final categoryName = tip != null ? DriverTipsData.resolveCategoryTitle(tip.category) : 'СОВЕТЫ';
 
       return Row(
         key: ValueKey('tip_header_${currentItem.id}'),

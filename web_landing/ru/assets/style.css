@@ -471,12 +471,12 @@ section[id] { scroll-margin-top: 76px; }
   vertical-align: -2px;
 }
 
-/* ---------- Яркий универсальный блок привлечения в приложение (CTA в статьях) ---------- */
+/* ---------- Универсальный блок привлечения в приложение (CTA в статьях) ---------- */
 .article-app-cta {
   background: #121212;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 22px;
-  padding: 28px 30px;
+  border-radius: 24px;
+  padding: 28px 32px;
   margin: 40px 0 32px;
   color: #fff;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
@@ -486,32 +486,20 @@ section[id] { scroll-margin-top: 76px; }
 .article-app-cta::before {
   content: "";
   position: absolute;
-  top: -120px;
-  right: -90px;
-  width: 420px;
-  height: 420px;
-  background: radial-gradient(circle, rgba(5, 116, 248, 0.85) 0%, rgba(56, 189, 248, 0.5) 35%, rgba(30, 64, 175, 0.2) 60%, transparent 75%);
+  top: -140px;
+  right: -160px;
+  width: 580px;
+  height: 580px;
+  background: radial-gradient(circle, rgba(5, 116, 248, 0.55) 0%, rgba(5, 116, 248, 0.25) 40%, rgba(5, 116, 248, 0.06) 65%, transparent 75%);
   border-radius: 50%;
   pointer-events: none;
-  filter: blur(20px);
-}
-.article-app-cta::after {
-  content: "";
-  position: absolute;
-  bottom: -90px;
-  right: 60px;
-  width: 280px;
-  height: 280px;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.45) 0%, transparent 70%);
-  border-radius: 50%;
-  pointer-events: none;
-  filter: blur(30px);
+  filter: blur(40px);
 }
 .article-app-cta-header {
   display: flex;
   align-items: center;
   gap: 18px;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   position: relative;
   z-index: 1;
 }
@@ -525,7 +513,7 @@ section[id] { scroll-margin-top: 76px; }
   min-height: 64px !important;
   max-height: 64px !important;
   border-radius: 16px !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
   flex-shrink: 0 !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
   margin: 0 !important;
@@ -541,29 +529,29 @@ section[id] { scroll-margin-top: 76px; }
 .article-app-cta-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   position: relative;
   z-index: 1;
 }
 .article-app-cta-btn {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  background: rgba(255, 255, 255, 0.08);
+  gap: 12px;
+  background: #ffffff;
   border: none;
-  color: #ffffff !important;
+  color: #121212 !important;
   padding: 10px 18px;
   border-radius: 14px;
   font-size: 13.5px;
   font-weight: 600;
   text-decoration: none !important;
   transition: all 0.2s ease;
-  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
 }
 .article-app-cta-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: #f4f6f8;
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   text-decoration: none !important;
 }
 .article-app-cta-btn svg {
@@ -579,33 +567,23 @@ section[id] { scroll-margin-top: 76px; }
 .article-app-cta-btn small {
   display: block;
   font-size: 10px;
-  font-weight: 400;
-  color: #94a3b8;
+  font-weight: 500;
+  color: #64748b;
   line-height: 1.1;
 }
 .article-app-cta-btn span {
   display: block;
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   line-height: 1.2;
-  color: #fff;
-}
-.article-app-cta-btn.btn-primary-cta {
-  background: #0574F8;
-  border-color: #0574F8;
-}
-.article-app-cta-btn.btn-primary-cta:hover {
-  background: #0462d1;
-  border-color: #0462d1;
+  color: #0f172a;
 }
 @media (max-width: 640px) {
-  .article-app-cta { padding: 20px 18px; margin: 32px 0 24px; }
+  .article-app-cta { padding: 22px 18px; margin: 32px 0 24px; }
   .article-app-cta-header { gap: 14px; margin-bottom: 16px; }
   .article-app-cta-icon { width: 52px; height: 52px; border-radius: 13px; }
   .article-app-cta-title { font-size: 17px; }
-  .article-app-cta-desc { font-size: 13px; }
   .article-app-cta-buttons { display: flex; flex-direction: column; gap: 8px; }
-  .article-app-cta-btn { padding: 10px 14px; gap: 10px; justify-content: center; }
   .article-app-cta-btn svg { width: 20px; height: 20px; }
   .article-app-cta-btn span { font-size: 13px; }
   .article-app-cta-btn small { font-size: 10px; }
