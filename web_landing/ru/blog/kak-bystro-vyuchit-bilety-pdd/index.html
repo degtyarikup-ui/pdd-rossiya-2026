@@ -124,7 +124,7 @@
       <a href="/proverit-znaniya/">Проверить себя</a>
       <a href="/blog/">Блог</a>
       <a href="/#exam">Экзамен</a>
-      <a class="nav-cta" href="https://app.pdd-drive.ru/">Веб-версия приложения</a>
+      <a class="nav-cta" href="/app/">Веб-версия приложения</a>
     </nav>
   </div>
 </header>
@@ -204,7 +204,7 @@
 </ul>
 
 <div class="note">
-  Все эти методики удобно применять в бесплатном приложении «<a href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">ПДД Россия 2026</a>»: 26 тем для обучения по темам, 40 билетов A/B и 40 билетов C/D с пояснением к каждому вопросу, режим работы над ошибками и режим экзамена по регламенту ГИБДД. Работает офлайн и без регистрации; <a href="https://app.pdd-drive.ru/">веб-версия</a> открывается в любом браузере.
+  Все эти методики удобно применять в бесплатном приложении «<a href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">ПДД Россия 2026</a>»: 26 тем для обучения по темам, 40 билетов A/B и 40 билетов C/D с пояснением к каждому вопросу, режим работы над ошибками и режим экзамена по регламенту ГИБДД. Работает офлайн и без регистрации; <a href="/app/">веб-версия</a> открывается в любом браузере.
 </div>
 
 <h2>Типичный график на 3 недели</h2>
@@ -279,7 +279,7 @@
       <a href="/terms.html">Пользовательское соглашение</a>
       <a href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">Google Play</a>
       <a href="https://apps.apple.com/ru/app/id6792369533" rel="noopener">App Store</a>
-      <a href="https://app.pdd-drive.ru/">Веб-версия</a>
+      <a href="/app/">Веб-версия</a>
       <a href="mailto:degtyarik.up@gmail.com">Поддержка</a>
     </nav>
     <div class="copy">
@@ -291,18 +291,6 @@
   </div>
 </footer>
 
-<script>
-// Пока поддомен app.pdd-drive.ru не ожил (DNS), ведём на временную копию /app/.
-(function () {
-  var degrade = function () {
-    document.querySelectorAll('a[href^="https://app.pdd-drive.ru"]').forEach(function (a) { a.href = '/app/'; });
-  };
-  var ctl = new AbortController();
-  var t = setTimeout(function () { ctl.abort(); }, 2500);
-  fetch('https://app.pdd-drive.ru/flutter.js', {mode: 'no-cors', signal: ctl.signal})
-    .then(function () { clearTimeout(t); }, function () { clearTimeout(t); degrade(); });
-})();
-</script>
 <script src="/assets/tracker.js" defer></script>
 <!-- Yandex.Metrika counter -->
 <script type="text/javascript">
