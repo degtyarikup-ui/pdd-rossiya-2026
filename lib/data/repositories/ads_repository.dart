@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdd_app/data/models/ad_promo_item.dart';
+import 'package:pdd_app/data/services/yandex_ad_preloader.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AdsRepository {
@@ -19,6 +20,9 @@ class AdsRepository {
 
   Future<void> init() async {
     await _loadFromLocalCache();
+    if (_currentConfig.mode == 'yandex' && _currentConfig.yandexAdUnitId.isNotEmpty) {
+      YandexAdPreloader.instance.preloadNext(_currentConfig.yandexAdUnitId).ignore();
+    }
     // Fire and forget or background refresh from remote
     fetchRemoteConfig().ignore();
   }
@@ -61,6 +65,10 @@ class AdsRepository {
         final newConfig = AdPromoConfig.fromJson(jsonMap);
         _currentConfig = newConfig;
         _isLoaded = true;
+
+        if (newConfig.mode == 'yandex' && newConfig.yandexAdUnitId.isNotEmpty) {
+          YandexAdPreloader.instance.preloadNext(newConfig.yandexAdUnitId).ignore();
+        }
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_cacheKey, res.body);

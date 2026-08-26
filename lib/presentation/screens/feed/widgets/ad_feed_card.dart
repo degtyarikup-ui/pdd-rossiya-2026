@@ -16,6 +16,7 @@ class AdFeedCard extends ConsumerStatefulWidget {
   final bool isCurrent;
   final VoidCallback onAutoNext;
   final VoidCallback onPrevious;
+  final ValueChanged<String>? onFailed;
 
   const AdFeedCard({
     super.key,
@@ -23,6 +24,7 @@ class AdFeedCard extends ConsumerStatefulWidget {
     required this.isCurrent,
     required this.onAutoNext,
     required this.onPrevious,
+    this.onFailed,
   });
 
   @override
@@ -30,34 +32,41 @@ class AdFeedCard extends ConsumerStatefulWidget {
 }
 
 class _AdFeedCardState extends ConsumerState<AdFeedCard>
-    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 
-  late AnimationController _bounceController;
-  late Animation<double> _bounceAnimation;
   final ScrollController _scrollController = ScrollController();
 
   BannerAd? _yandexBanner;
   bool _isYandexLoaded = false;
+  bool _isYandexError = false;
+  int _calculatedWidth = 340;
 
   @override
   void initState() {
     super.initState();
-    _bounceController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    )..repeat(reverse: true);
+    if (widget.item.preloadedBanner != null &&
+        widget.item.preloadedBanner is BannerAd) {
+      _yandexBanner = widget.item.preloadedBanner as BannerAd;
+      _isYandexLoaded = true;
+    }
+  }
 
-    _bounceAnimation = Tween<double>(begin: 0.0, end: -7.0).animate(
-      CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
-    );
-
-    _initYandexAdIfNeeded();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final screenW = MediaQuery.sizeOf(context).width;
+    final w = (screenW - (AppDimensions.screenPadding * 2)).toInt().clamp(300, 500);
+    _calculatedWidth = w;
+    if (_yandexBanner == null) {
+      _initYandexAdIfNeeded();
+    }
   }
 
   void _initYandexAdIfNeeded() {
     if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
+    if (_yandexBanner != null) return;
 
     final adsRepo = ref.read(adsRepositoryProvider);
     final config = adsRepo.currentConfig;
@@ -68,21 +77,44 @@ class _AdFeedCardState extends ConsumerState<AdFeedCard>
     if (config.mode == 'yandex' && adUnitId.isNotEmpty) {
       try {
         final banner = BannerAd(
-          adSize: const BannerAdSize.inline(width: 320, maxHeight: 300),
+          adSize: BannerAdSize.inline(width: _calculatedWidth, maxHeight: 360),
         );
 
         banner.loadStateStream.listen((state) {
           if (!mounted) return;
           if (state is BannerAdLoadStateLoaded) {
+            debugPrint('AdFeedCard: Yandex Banner loaded successfully (${state.width}x${state.height})');
             setState(() {
               _isYandexLoaded = true;
+              _isYandexError = false;
             });
+          } else if (state is BannerAdLoadStateError) {
+            debugPrint('AdFeedCard: Yandex Banner load error: ${state.error.description} (code: ${state.error.code})');
+            setState(() {
+              _isYandexError = true;
+            });
+            if (widget.item.adPromo == null) {
+              widget.onFailed?.call(widget.item.id);
+            }
           }
         });
 
         banner.load(
           AdRequest(
             adUnitId: adUnitId,
+            targeting: const AdTargeting(
+              contextQuery: 'ПДД билеты автошкола вождение',
+              contextTags: [
+                'авто',
+                'пдд',
+                'автошкола',
+                'осаго',
+                'автострахование',
+                'вождение',
+                'гибдд',
+                'автомобили',
+              ],
+            ),
           ),
         ).ignore();
 
@@ -95,7 +127,6 @@ class _AdFeedCardState extends ConsumerState<AdFeedCard>
 
   @override
   void dispose() {
-    _bounceController.dispose();
     _scrollController.dispose();
     _yandexBanner?.destroy();
     super.dispose();
@@ -174,7 +205,11 @@ class _AdFeedCardState extends ConsumerState<AdFeedCard>
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
-                          _isYandexLoaded ? 'РЕКЛАМА' : (promo.badge.isNotEmpty ? promo.badge : 'ПРОМО'),
+                          _isYandexLoaded
+                              ? 'РЕКЛАМА'
+                              : (_isYandexError
+                                  ? (promo.badge.isNotEmpty ? promo.badge : 'СОВЕТ')
+                                  : 'РЕКЛАМА'),
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
@@ -202,7 +237,9 @@ class _AdFeedCardState extends ConsumerState<AdFeedCard>
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              _isYandexLoaded ? 'Яндекс Директ' : 'Партнёр',
+                              _isYandexLoaded
+                                  ? 'Яндекс Директ'
+                                  : (_isYandexError ? 'ПДД 2026' : 'Партнёр'),
                               style: TextStyle(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w600,
@@ -259,248 +296,173 @@ class _AdFeedCardState extends ConsumerState<AdFeedCard>
                         right: AppDimensions.screenPadding,
                         bottom: 84,
                       ),
-                      child: _isYandexLoaded && _yandexBanner != null
+                      child: (_yandexBanner != null && !_isYandexError)
                           ? Column(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                const SizedBox(height: 24),
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: colors.cardBackground,
-                                    borderRadius: BorderRadius.circular(14),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: colors.black.withValues(alpha: 0.04),
-                                        blurRadius: 16,
-                                        offset: const Offset(0, 4),
+                                const SizedBox(height: 16),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Center(
+                                        child: AdWidget(bannerAd: _yandexBanner!),
                                       ),
+                                      if (!_isYandexLoaded)
+                                        Container(
+                                          width: double.infinity,
+                                          constraints: const BoxConstraints(minHeight: 180),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 48,
+                                            horizontal: 24,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colors.cardBackground,
+                                            borderRadius: BorderRadius.circular(16),
+                                          ),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              SizedBox(
+                                                width: 28,
+                                                height: 28,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2.5,
+                                                  color: colors.accent,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Text(
+                                                'Загрузка рекламы Яндекс...',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: colors.secondaryText,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                     ],
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: AdWidget(bannerAd: _yandexBanner!),
                                   ),
                                 ),
                                 const SizedBox(height: 32),
                               ],
                             )
-                          : (widget.item.adPromo == null
+                          : (widget.item.adPromo != null)
                               ? Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    const SizedBox(height: 48),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-                                      decoration: BoxDecoration(
-                                        color: colors.cardBackground,
-                                        borderRadius: BorderRadius.circular(16),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: colors.black.withValues(alpha: 0.04),
-                                            blurRadius: 16,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          SizedBox(
-                                            width: 28,
-                                            height: 28,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2.5,
-                                              color: colors.accent,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            'Загрузка рекламы...',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: colors.secondaryText,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Column(
                                   crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
                                     const SizedBox(height: 16),
 
-                                // Large Hero Icon Graphic
-                                Center(
-                                  child: Container(
-                                    width: 100,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      color: colors.lightAccent,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: colors.accent.withValues(alpha: 0.15),
-                                          blurRadius: 24,
-                                          offset: const Offset(0, 8),
+                                    // Large Hero Icon Graphic
+                                    Center(
+                                      child: Container(
+                                        width: 100,
+                                        height: 100,
+                                        decoration: BoxDecoration(
+                                          color: colors.lightAccent,
+                                          shape: BoxShape.circle,
                                         ),
-                                      ],
-                                    ),
-                                    child: Icon(
-                                      iconData,
-                                      size: 52,
-                                      color: colors.accent,
-                                    ),
-                                  ),
-                                ),
-
-                                const SizedBox(height: 28),
-
-                                // Promo Card Container
-                                Container(
-                                  padding: const EdgeInsets.all(AppDimensions.spacingXL),
-                                  decoration: BoxDecoration(
-                                    color: colors.cardBackground,
-                                    borderRadius: BorderRadius.circular(
-                                      AppDimensions.cardRadius,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: colors.black.withValues(alpha: 0.04),
-                                        blurRadius: 16,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        promo.title,
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w700,
-                                          color: colors.primaryText,
-                                          height: 1.3,
-                                          letterSpacing: -0.2,
+                                        child: Icon(
+                                          iconData,
+                                          size: 52,
+                                          color: colors.accent,
                                         ),
                                       ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        promo.description,
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          color: colors.secondaryText,
-                                          height: 1.45,
+                                    ),
+
+                                    const SizedBox(height: 28),
+
+                                    // Custom Promo Card Container
+                                    Container(
+                                      padding: const EdgeInsets.all(AppDimensions.spacingXL),
+                                      decoration: BoxDecoration(
+                                        color: colors.cardBackground,
+                                        borderRadius: BorderRadius.circular(
+                                          AppDimensions.cardRadius,
                                         ),
                                       ),
-                                      const SizedBox(height: 24),
-
-                                      // Action Button
-                                      SizedBox(
-                                        width: double.infinity,
-                                        height: 52,
-                                        child: ElevatedButton(
-                                          onPressed: () => _handleCtaTap(promo.buttonUrl),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: colors.accent,
-                                            foregroundColor: AppColors.white,
-                                            elevation: 0,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(14),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            widget.item.adPromo!.title,
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.w700,
+                                              color: colors.primaryText,
+                                              height: 1.3,
+                                              letterSpacing: -0.2,
                                             ),
                                           ),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                promo.buttonText,
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w700,
-                                                  letterSpacing: 0.2,
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            widget.item.adPromo!.description,
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              color: colors.secondaryText,
+                                              height: 1.45,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 24),
+
+                                          // Action Button
+                                          SizedBox(
+                                            width: double.infinity,
+                                            height: 52,
+                                            child: ElevatedButton(
+                                              onPressed: () {
+                                                if (widget.item.adPromo!.buttonUrl.isNotEmpty) {
+                                                  _handleCtaTap(widget.item.adPromo!.buttonUrl);
+                                                } else {
+                                                  HapticFeedbackHelper.tap();
+                                                  widget.onAutoNext();
+                                                }
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: colors.accent,
+                                                foregroundColor: AppColors.white,
+                                                elevation: 0,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(14),
                                                 ),
                                               ),
-                                              const SizedBox(width: 8),
-                                              const Icon(
-                                                Icons.open_in_new_rounded,
-                                                size: 18,
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Text(
+                                                    widget.item.adPromo!.buttonText,
+                                                    style: const TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.w700,
+                                                      letterSpacing: 0.2,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Icon(
+                                                    widget.item.adPromo!.buttonUrl.isNotEmpty
+                                                        ? Icons.open_in_new_rounded
+                                                        : Icons.arrow_forward_rounded,
+                                                    size: 18,
+                                                  ),
+                                                ],
                                               ),
-                                            ],
+                                            ),
                                           ),
-                                        ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                ),
+                                    ),
 
-                                const SizedBox(height: 32),
-                              ],
-                            )),
+                                    const SizedBox(height: 32),
+                                  ],
+                                )
+                              : const SizedBox.shrink(),
                     ),
                   ),
                 ),
               ],
-            ),
-
-            // Fixed Bottom Floating "Свайпай ↑" Pill
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 16,
-              child: Center(
-                child: AnimatedBuilder(
-                  animation: _bounceAnimation,
-                  builder: (context, child) {
-                    return Transform.translate(
-                      offset: Offset(0, _bounceAnimation.value),
-                      child: child,
-                    );
-                  },
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        HapticFeedbackHelper.tap();
-                        widget.onAutoNext();
-                      },
-                      borderRadius: BorderRadius.circular(24),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.accent,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Свайпай',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                            SizedBox(width: 6),
-                            Icon(
-                              Icons.arrow_upward_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
             ),
           ],
         ),

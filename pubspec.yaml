@@ -76,6 +76,8 @@ flutter:
     # Общие (страно-независимые) ресурсы.
     - assets/images/
     - assets/images/category_icons/
+    - assets/images/tips/
+    - assets/audio/
     - assets/audio/feed/
     # Контент ВСЕХ стран. Android-flavor сам по себе ассеты НЕ фильтрует
     # (flavor решает только applicationId/иконку/нативные ресурсы), поэтому

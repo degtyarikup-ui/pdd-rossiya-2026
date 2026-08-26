@@ -438,8 +438,8 @@ section[id] { scroll-margin-top: 76px; }
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: #38bdf8;
-  font-weight: 500;
+  color: var(--muted);
+  font-weight: 400;
   font-size: 13.5px;
 }
 .post-card-meta {
@@ -455,8 +455,8 @@ section[id] { scroll-margin-top: 76px; }
   align-items: center;
   gap: 4px;
   font-size: 12.5px;
-  color: #38bdf8;
-  font-weight: 500;
+  color: var(--muted);
+  font-weight: 400;
 }
 .icon-eye {
   width: 15px;
@@ -467,7 +467,7 @@ section[id] { scroll-margin-top: 76px; }
   stroke-linecap: round;
   stroke-linejoin: round;
   flex-shrink: 0;
-  opacity: 0.9;
+  opacity: 0.8;
   vertical-align: -2px;
 }
 

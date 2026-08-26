@@ -440,26 +440,36 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                       ),
                     ),
                     Padding(
-                      padding: EdgeInsets.fromLTRB(18, 14, reserveRight, 14),
+                      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Wrap(
-                            spacing: AppDimensions.spacingS,
-                            runSpacing: 6,
-                            children: [
-                              _buildHeroBadge(
-                                appL10n.examQuestionsBadge(
-                                  CountryConfig.current.examRules.mainCount,
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            child: Row(
+                              children: [
+                                _buildHeroBadge(
+                                  appL10n.examQuestionsBadge(
+                                    CountryConfig.current.examRules.mainCount,
+                                  ),
                                 ),
-                              ),
-                              _buildHeroBadge(
-                                appL10n.examMinutesBadge(
-                                  CountryConfig.current.examRules.totalMinutes,
+                                const SizedBox(width: 6),
+                                _buildHeroBadge(
+                                  appL10n.examMinutesBadge(
+                                    CountryConfig.current.examRules.totalMinutes,
+                                  ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 6),
+                                _buildHeroBadge(
+                                  ref.watch(appSettingsProvider).ticketCategory ==
+                                          TicketCategory.cd
+                                      ? 'C/D'
+                                      : 'A/B',
+                                ),
+                              ],
+                            ),
                           ),
                           Text(
                             appL10n.exam,

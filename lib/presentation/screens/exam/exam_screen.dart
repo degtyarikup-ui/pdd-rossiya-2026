@@ -18,6 +18,7 @@ import 'package:pdd_app/core/utils/question_number_strip_scroll.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/services/share_card_renderer.dart';
+import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_review_screen.dart';
 import 'package:pdd_app/presentation/widgets/share_result_card.dart';

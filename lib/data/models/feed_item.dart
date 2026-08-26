@@ -1,8 +1,10 @@
 import 'package:pdd_app/data/models/ad_promo_item.dart';
+import 'package:pdd_app/data/sources/driver_tips_data.dart';
 
 enum FeedItemType {
   ticketQuestion,
   roadSign,
+  driverTip,
   ad,
 }
 
@@ -19,6 +21,8 @@ class FeedItem {
   final String? rawQuestionId;
   final String? signNumber;
   final AdPromoItem? adPromo;
+  final DriverTip? driverTip;
+  final dynamic preloadedBanner;
 
   const FeedItem({
     required this.id,
@@ -33,9 +37,23 @@ class FeedItem {
     this.rawQuestionId,
     this.signNumber,
     this.adPromo,
+    this.driverTip,
+    this.preloadedBanner,
   });
 
   bool get isAd => type == FeedItemType.ad;
+  bool get isTip => type == FeedItemType.driverTip;
+
+  factory FeedItem.fromDriverTip(DriverTip tip) {
+    return FeedItem(
+      id: 'tip_${tip.id}',
+      type: FeedItemType.driverTip,
+      questionText: tip.title,
+      explanation: tip.description,
+      badgeText: 'СОВЕТ',
+      driverTip: tip,
+    );
+  }
 
   factory FeedItem.fromAdPromo(AdPromoItem promo, {required int index}) {
     return FeedItem(
@@ -49,7 +67,11 @@ class FeedItem {
     );
   }
 
-  factory FeedItem.yandexAd({required int index, String? adUnitId}) {
+  factory FeedItem.yandexAd({
+    required int index,
+    String? adUnitId,
+    dynamic preloadedBanner,
+  }) {
     return FeedItem(
       id: 'ad_yandex_$index',
       type: FeedItemType.ad,
@@ -58,6 +80,7 @@ class FeedItem {
       answers: const [],
       correctAnswerIndex: -1,
       adPromo: null,
+      preloadedBanner: preloadedBanner,
     );
   }
 }

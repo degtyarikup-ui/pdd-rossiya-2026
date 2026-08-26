@@ -292,18 +292,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   onTap: _openTelegramSupport,
                 ),
-                if (CountryConfig.current.privacyUrl.isNotEmpty) ...[
-                  _buildDivider(),
-                  _buildSettingItem(
-                    icon: Icons.privacy_tip_outlined,
-                    title: appL10n.privacyPolicy,
-                    trailing: Icon(
-                      Icons.chevron_right_rounded,
-                      color: colors.secondaryText,
-                    ),
-                    onTap: _openPrivacyPolicy,
-                  ),
-                ],
               ],
             ),
             const SizedBox(height: AppDimensions.spacingXL),
@@ -316,12 +304,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   trailing: _buildThemeBadge(settings),
                   onTap: () => _showThemePicker(settings, settingsController),
                 ),
+                if (CountryConfig.current.hasCdCategory) ...[
+                  _buildDivider(),
+                  _buildSettingItem(
+                    icon: Icons.badge_outlined,
+                    title: appL10n.ticketCategorySetting,
+                    trailing: _buildTicketCategoryBadge(settings),
+                    onTap: _toggleTicketCategory,
+                  ),
+                ],
                 _buildDivider(),
                 _buildSettingItem(
                   icon: Icons.check_circle_outline,
                   title: appL10n.confirmAnswerSetting,
-                  subtitle:
-                      appL10n.confirmAnswerHint,
+                  subtitle: appL10n.confirmAnswerHint,
                   trailing: Switch(
                     value: settings.confirmAnswerEnabled,
                     onChanged: (value) {
@@ -330,7 +326,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     },
                   ),
                 ),
-                _buildDivider(),
+              ],
+            ),
+            const SizedBox(height: AppDimensions.spacingXL),
+            _buildSectionTitle(appL10n.feedbackSection),
+            _buildSectionCard(
+              children: [
                 _buildSettingItem(
                   icon: Icons.vibration_rounded,
                   title: appL10n.hapticFeedback,
@@ -339,6 +340,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     onChanged: (value) {
                       HapticFeedbackHelper.select();
                       settingsController.setHapticsEnabled(value);
+                    },
+                  ),
+                ),
+                _buildDivider(),
+                _buildSettingItem(
+                  icon: Icons.volume_up_outlined,
+                  title: appL10n.soundEffects,
+                  trailing: Switch(
+                    value: settings.soundEffectsEnabled,
+                    onChanged: (value) {
+                      HapticFeedbackHelper.select();
+                      settingsController.setSoundEffectsEnabled(value);
                     },
                   ),
                 ),
@@ -354,17 +367,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     },
                   ),
                 ),
-                if (CountryConfig.current.hasCdCategory) ...[
-                  _buildDivider(),
-                  _buildSettingItem(
-                    icon: Icons.badge_outlined,
-                    title: appL10n.ticketCategorySetting,
-                    subtitle:
-                        appL10n.ticketCategoryHint,
-                    trailing: _buildTicketCategoryBadge(settings),
-                    onTap: _toggleTicketCategory,
-                  ),
-                ],
               ],
             ),
             const SizedBox(height: AppDimensions.spacingXL),
@@ -418,6 +420,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                 ],
+              ),
+            ],
+            if (CountryConfig.current.privacyUrl.isNotEmpty) ...[
+              const SizedBox(height: AppDimensions.spacingXXL),
+              Center(
+                child: GestureDetector(
+                  onTap: _openPrivacyPolicy,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppDimensions.spacingM,
+                      vertical: AppDimensions.spacingS,
+                    ),
+                    child: Text(
+                      appL10n.privacyPolicy,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colors.secondaryText,
+                        decoration: TextDecoration.underline,
+                        decorationColor: colors.secondaryText.withOpacity(0.4),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
             // Debug-секция: только в сборке с --dart-define=NOTIF_TEST=true.

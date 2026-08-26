@@ -316,15 +316,12 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
             final isSelected = selected == i;
             Color bg;
             Color tc;
-            Widget? icon;
             if (isCorrect) {
               bg = colors.green;
               tc = AppColors.white;
-              icon = const Icon(Icons.check, color: AppColors.white, size: 20);
             } else if (isSelected) {
               bg = colors.red;
               tc = AppColors.white;
-              icon = const Icon(Icons.close, color: AppColors.white, size: 20);
             } else {
               bg = colors.gray;
               tc = colors.secondaryText;
@@ -343,12 +340,36 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                 ),
                 child: Row(
                   children: [
-                    Text(
-                      '${i + 1}.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: tc,
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: isCorrect || isSelected
+                            ? AppColors.white.withValues(alpha: 0.28)
+                            : colors.gray,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: isCorrect
+                            ? const Icon(
+                                Icons.check_rounded,
+                                color: AppColors.white,
+                                size: 16,
+                              )
+                            : isSelected
+                                ? const Icon(
+                                    Icons.close_rounded,
+                                    color: AppColors.white,
+                                    size: 16,
+                                  )
+                                : Text(
+                                    '${i + 1}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: colors.secondaryText,
+                                    ),
+                                  ),
                       ),
                     ),
                     const SizedBox(width: AppDimensions.spacingM),
@@ -363,7 +384,6 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                         ),
                       ),
                     ),
-                    ?icon,
                   ],
                 ),
               ),

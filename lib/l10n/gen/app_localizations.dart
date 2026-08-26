@@ -680,6 +680,12 @@ abstract class AppLocalizations {
   /// **'Подготовка'**
   String get preparation;
 
+  /// No description provided for @feedbackSection.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отклики и звуки'**
+  String get feedbackSection;
+
   /// No description provided for @confirmAnswerSetting.
   ///
   /// In ru, this message translates to:
@@ -697,6 +703,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Тактильный отклик'**
   String get hapticFeedback;
+
+  /// No description provided for @soundEffects.
+  ///
+  /// In ru, this message translates to:
+  /// **'Звуки'**
+  String get soundEffects;
 
   /// No description provided for @voiceOverQuestions.
   ///

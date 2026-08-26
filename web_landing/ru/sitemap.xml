@@ -3,13 +3,13 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://pdd-drive.ru/</loc>
-    <lastmod>2026-11-27</lastmod>
+    <lastmod>2026-08-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/</loc>
-    <lastmod>2026-11-27</lastmod>
+    <lastmod>2026-08-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -21,437 +21,444 @@
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/vydelennaya-polosa-dlya-avtobusov-pdd/</loc>
-    <lastmod>2026-11-27</lastmod>
+    <lastmod>2026-08-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/vydelennaya-polosa-dlya-avtobusov-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/ustupit-dorogu-peshehodu-na-zebre-pdd/</loc>
-    <lastmod>2026-11-25</lastmod>
+    <lastmod>2026-08-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/ustupit-dorogu-peshehodu-na-zebre-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
-    <loc>https://pdd-drive.ru/blog/shtraf-za-ezdu-bez-prav-2026-tablitsa/</loc>
-    <lastmod>2026-11-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/shtraf-za-ezdu-bez-prav-2026-tablitsa/cover.jpg</image:loc></image:image>
-  </url>
-  <url>
     <loc>https://pdd-drive.ru/blog/otkaz-ot-medosvidestvovaniya-nakazanie-2026/</loc>
-    <lastmod>2026-11-20</lastmod>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/otkaz-ot-medosvidestvovaniya-nakazanie-2026/cover.jpg</image:loc></image:image>
   </url>
   <url>
+    <loc>https://pdd-drive.ru/blog/shtraf-za-ezdu-bez-prav-2026-tablitsa/</loc>
+    <lastmod>2026-08-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.ru/blog/shtraf-za-ezdu-bez-prav-2026-tablitsa/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
     <loc>https://pdd-drive.ru/blog/aptechka-ognetushitel-znak-v-mashine-2026/</loc>
-    <lastmod>2026-11-18</lastmod>
+    <lastmod>2026-08-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/aptechka-ognetushitel-znak-v-mashine-2026/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/zimnyaya-rezina-zakon-sroki-shtraf-2026/</loc>
-    <lastmod>2026-11-16</lastmod>
+    <lastmod>2026-08-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/zimnyaya-rezina-zakon-sroki-shtraf-2026/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/nuzhny-li-prava-na-elektrosamokat-2026/</loc>
-    <lastmod>2026-11-13</lastmod>
+    <lastmod>2026-08-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/nuzhny-li-prava-na-elektrosamokat-2026/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/pravila-dlya-elektrosamokatov-sim-2026/</loc>
-    <lastmod>2026-11-11</lastmod>
+    <lastmod>2026-08-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/pravila-dlya-elektrosamokatov-sim-2026/cover.jpg</image:loc></image:image>
   </url>
   <url>
-    <loc>https://pdd-drive.ru/blog/vyezd-na-vstrechnuyu-polosu-lishenie-ili-shtraf/</loc>
-    <lastmod>2026-11-09</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/vyezd-na-vstrechnuyu-polosu-lishenie-ili-shtraf/cover.jpg</image:loc></image:image>
-  </url>
-  <url>
     <loc>https://pdd-drive.ru/blog/skidka-na-shtrafy-gibdd-25-protsentov-2026/</loc>
-    <lastmod>2026-11-06</lastmod>
+    <lastmod>2026-08-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/skidka-na-shtrafy-gibdd-25-protsentov-2026/cover.jpg</image:loc></image:image>
   </url>
   <url>
-    <loc>https://pdd-drive.ru/blog/tablitsa-shtrafov-za-prevyshenie-skorosti-2026/</loc>
-    <lastmod>2026-11-04</lastmod>
+    <loc>https://pdd-drive.ru/blog/vyezd-na-vstrechnuyu-polosu-lishenie-ili-shtraf/</loc>
+    <lastmod>2026-08-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/tablitsa-shtrafov-za-prevyshenie-skorosti-2026/cover.jpg</image:loc></image:image>
+    <image:image><image:loc>https://pdd-drive.ru/blog/vyezd-na-vstrechnuyu-polosu-lishenie-ili-shtraf/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/mehanika-ili-avtomat-na-chem-sdavat-na-prava/</loc>
-    <lastmod>2026-11-02</lastmod>
+    <lastmod>2026-08-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/mehanika-ili-avtomat-na-chem-sdavat-na-prava/cover.jpg</image:loc></image:image>
   </url>
   <url>
+    <loc>https://pdd-drive.ru/blog/tablitsa-shtrafov-za-prevyshenie-skorosti-2026/</loc>
+    <lastmod>2026-08-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.ru/blog/tablitsa-shtrafov-za-prevyshenie-skorosti-2026/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
     <loc>https://pdd-drive.ru/blog/zaezd-v-boks-garazh-zadnim-hodom-ekzamen/</loc>
-    <lastmod>2026-10-30</lastmod>
+    <lastmod>2026-08-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/zaezd-v-boks-garazh-zadnim-hodom-ekzamen/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/parallelnaya-parkovka-zadnim-hodom-orientiry/</loc>
-    <lastmod>2026-10-28</lastmod>
+    <lastmod>2026-08-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/parallelnaya-parkovka-zadnim-hodom-orientiry/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/razvorot-v-ogranichennom-prostranstve-ekzamen/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-08-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/razvorot-v-ogranichennom-prostranstve-ekzamen/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/mnemoniki-dlya-pdd-kak-bystro-zapomnit/</loc>
-    <lastmod>2026-10-23</lastmod>
+    <lastmod>2026-08-17</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/mnemoniki-dlya-pdd-kak-bystro-zapomnit/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/reversivnoe-dvizhenie-polosa-pdd/</loc>
-    <lastmod>2026-10-21</lastmod>
+    <lastmod>2026-08-17</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/reversivnoe-dvizhenie-polosa-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/dvizhenie-po-tramvaynym-putyam-pdd/</loc>
-    <lastmod>2026-10-19</lastmod>
+    <lastmod>2026-08-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/dvizhenie-po-tramvaynym-putyam-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/signaly-regulirovshchika-prostymi-slovami-stih/</loc>
-    <lastmod>2026-10-16</lastmod>
+    <lastmod>2026-08-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/signaly-regulirovshchika-prostymi-slovami-stih/cover.jpg</image:loc></image:image>
   </url>
   <url>
-    <loc>https://pdd-drive.ru/blog/vafelnaya-razmetka-1-26-shtraf-pdd/</loc>
-    <lastmod>2026-10-14</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/vafelnaya-razmetka-1-26-shtraf-pdd/cover.jpg</image:loc></image:image>
-  </url>
-  <url>
     <loc>https://pdd-drive.ru/blog/proezd-na-zheltyy-signal-svetofora-pdd/</loc>
-    <lastmod>2026-10-12</lastmod>
+    <lastmod>2026-08-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/proezd-na-zheltyy-signal-svetofora-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
-    <loc>https://pdd-drive.ru/blog/pomeha-sprava-odnovremennoe-perestroenie/</loc>
-    <lastmod>2026-10-09</lastmod>
+    <loc>https://pdd-drive.ru/blog/vafelnaya-razmetka-1-26-shtraf-pdd/</loc>
+    <lastmod>2026-08-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/pomeha-sprava-odnovremennoe-perestroenie/cover.jpg</image:loc></image:image>
+    <image:image><image:loc>https://pdd-drive.ru/blog/vafelnaya-razmetka-1-26-shtraf-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/obgon-tihohoda-cherez-sploshnuyu-pdd/</loc>
-    <lastmod>2026-10-07</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/obgon-tihohoda-cherez-sploshnuyu-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
+    <loc>https://pdd-drive.ru/blog/pomeha-sprava-odnovremennoe-perestroenie/</loc>
+    <lastmod>2026-08-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.ru/blog/pomeha-sprava-odnovremennoe-perestroenie/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
     <loc>https://pdd-drive.ru/blog/tramvay-i-avtomobil-kogda-tramvay-ustupaet/</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-08-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/tramvay-i-avtomobil-kogda-tramvay-ustupaet/cover.jpg</image:loc></image:image>
   </url>
   <url>
-    <loc>https://pdd-drive.ru/blog/strelka-svetofora-dop-sektsiya-prioritet/</loc>
-    <lastmod>2026-10-02</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/strelka-svetofora-dop-sektsiya-prioritet/cover.jpg</image:loc></image:image>
-  </url>
-  <url>
     <loc>https://pdd-drive.ru/blog/povorot-nalevo-razvorot-traektoriya-pdd/</loc>
-    <lastmod>2026-09-30</lastmod>
+    <lastmod>2026-08-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/povorot-nalevo-razvorot-traektoriya-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
-    <loc>https://pdd-drive.ru/blog/krugovoe-dvizhenie-pravila-2026/</loc>
-    <lastmod>2026-09-28</lastmod>
+    <loc>https://pdd-drive.ru/blog/strelka-svetofora-dop-sektsiya-prioritet/</loc>
+    <lastmod>2026-08-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/krugovoe-dvizhenie-pravila-2026/cover.jpg</image:loc></image:image>
+    <image:image><image:loc>https://pdd-drive.ru/blog/strelka-svetofora-dop-sektsiya-prioritet/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/apellyatsiya-na-ekzamen-gibdd-videozapis/</loc>
-    <lastmod>2026-09-23</lastmod>
+    <lastmod>2026-08-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/apellyatsiya-na-ekzamen-gibdd-videozapis/cover.jpg</image:loc></image:image>
   </url>
   <url>
+    <loc>https://pdd-drive.ru/blog/krugovoe-dvizhenie-pravila-2026/</loc>
+    <lastmod>2026-08-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.ru/blog/krugovoe-dvizhenie-pravila-2026/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
     <loc>https://pdd-drive.ru/blog/provokatsii-inspektora-na-ekzamene-gibdd/</loc>
-    <lastmod>2026-09-21</lastmod>
+    <lastmod>2026-08-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/provokatsii-inspektora-na-ekzamene-gibdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/skolko-deystvuet-sdannaya-teoriya-gibdd/</loc>
-    <lastmod>2026-09-18</lastmod>
+    <lastmod>2026-08-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/skolko-deystvuet-sdannaya-teoriya-gibdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/peresdacha-ekzamena-gibdd-sroki-2026/</loc>
-    <lastmod>2026-09-16</lastmod>
+    <lastmod>2026-08-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/peresdacha-ekzamena-gibdd-sroki-2026/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/sdacha-ekzamena-gibdd-v-drugom-gorode/</loc>
-    <lastmod>2026-09-14</lastmod>
+    <lastmod>2026-08-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/sdacha-ekzamena-gibdd-v-drugom-gorode/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/shtrafnye-bally-ekzamen-gibdd-gorod/</loc>
-    <lastmod>2026-09-11</lastmod>
+    <lastmod>2026-08-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/shtrafnye-bally-ekzamen-gibdd-gorod/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/skolko-oshibok-mozhno-na-teorii-pdd/</loc>
-    <lastmod>2026-09-09</lastmod>
+    <lastmod>2026-08-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/skolko-oshibok-mozhno-na-teorii-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/ekzamen-gibdd-novyy-reglament-2026/</loc>
-    <lastmod>2026-09-07</lastmod>
+    <lastmod>2026-08-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/ekzamen-gibdd-novyy-reglament-2026/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/mezhdunarodnoe-voditelskoe-udostoverenie-mvu/</loc>
-    <lastmod>2026-09-04</lastmod>
+    <lastmod>2026-08-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/mezhdunarodnoe-voditelskoe-udostoverenie-mvu/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/elektronnye-prava-gosuslugi-avto/</loc>
-    <lastmod>2026-09-02</lastmod>
+    <lastmod>2026-08-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/elektronnye-prava-gosuslugi-avto/cover.jpg</image:loc></image:image>
   </url>
   <url>
-    <loc>https://pdd-drive.ru/blog/gosposhlina-za-prava-2026/</loc>
-    <lastmod>2026-08-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/gosposhlina-za-prava-2026/cover.jpg</image:loc></image:image>
-  </url>
-  <url>
     <loc>https://pdd-drive.ru/blog/dokumenty-dlya-avtoshkoly-i-gibdd-2026/</loc>
-    <lastmod>2026-08-28</lastmod>
+    <lastmod>2026-08-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/dokumenty-dlya-avtoshkoly-i-gibdd-2026/cover.jpg</image:loc></image:image>
   </url>
   <url>
-    <loc>https://pdd-drive.ru/blog/so-skolki-let-mozhno-uchitsya-na-prava/</loc>
-    <lastmod>2026-08-26</lastmod>
+    <loc>https://pdd-drive.ru/blog/gosposhlina-za-prava-2026/</loc>
+    <lastmod>2026-08-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/so-skolki-let-mozhno-uchitsya-na-prava/cover.jpg</image:loc></image:image>
+    <image:image><image:loc>https://pdd-drive.ru/blog/gosposhlina-za-prava-2026/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/kak-vybrat-avtoshkolu-2026/</loc>
-    <lastmod>2026-08-24</lastmod>
+    <lastmod>2026-08-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/kak-vybrat-avtoshkolu-2026/cover.jpg</image:loc></image:image>
   </url>
   <url>
-    <loc>https://pdd-drive.ru/blog/skolko-stoit-sdat-na-prava-2026/</loc>
-    <lastmod>2026-08-21</lastmod>
+    <loc>https://pdd-drive.ru/blog/so-skolki-let-mozhno-uchitsya-na-prava/</loc>
+    <lastmod>2026-08-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/skolko-stoit-sdat-na-prava-2026/cover.jpg</image:loc></image:image>
-  </url>
-  <url>
-    <loc>https://pdd-drive.ru/blog/avariynaya-signalizatsiya-specsignaly/</loc>
-    <lastmod>2026-07-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/avariynaya-signalizatsiya-specsignaly/cover.jpg</image:loc></image:image>
-  </url>
-  <url>
-    <loc>https://pdd-drive.ru/blog/avtomagistral-i-zhilaya-zona/</loc>
-    <lastmod>2026-07-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/avtomagistral-i-zhilaya-zona/cover.jpg</image:loc></image:image>
-  </url>
-  <url>
-    <loc>https://pdd-drive.ru/blog/bezopasnost-i-tehnika-vozhdeniya/</loc>
-    <lastmod>2026-07-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/bezopasnost-i-tehnika-vozhdeniya/cover.jpg</image:loc></image:image>
-  </url>
-  <url>
-    <loc>https://pdd-drive.ru/blog/buksirovka-i-perevozka-gruzov/</loc>
-    <lastmod>2026-07-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/buksirovka-i-perevozka-gruzov/cover.jpg</image:loc></image:image>
-  </url>
-  <url>
-    <loc>https://pdd-drive.ru/blog/manevrirovanie-pdd/</loc>
-    <lastmod>2026-07-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/manevrirovanie-pdd/cover.jpg</image:loc></image:image>
-  </url>
-  <url>
-    <loc>https://pdd-drive.ru/blog/neispravnosti-dopusk-ekspluatatsii/</loc>
-    <lastmod>2026-07-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/neispravnosti-dopusk-ekspluatatsii/cover.jpg</image:loc></image:image>
-  </url>
-  <url>
-    <loc>https://pdd-drive.ru/blog/obgon-i-operezhenie-pdd/</loc>
-    <lastmod>2026-07-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/obgon-i-operezhenie-pdd/cover.jpg</image:loc></image:image>
-  </url>
-  <url>
-    <loc>https://pdd-drive.ru/blog/obyazannosti-voditeley-pdd/</loc>
-    <lastmod>2026-07-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/obyazannosti-voditeley-pdd/cover.jpg</image:loc></image:image>
+    <image:image><image:loc>https://pdd-drive.ru/blog/so-skolki-let-mozhno-uchitsya-na-prava/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/ostanovka-i-stoyanka-pdd/</loc>
-    <lastmod>2026-07-23</lastmod>
+    <lastmod>2026-08-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/ostanovka-i-stoyanka-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
-    <loc>https://pdd-drive.ru/blog/otvetstvennost-voditelya-pdd/</loc>
-    <lastmod>2026-07-23</lastmod>
+    <loc>https://pdd-drive.ru/blog/skolko-stoit-sdat-na-prava-2026/</loc>
+    <lastmod>2026-08-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/otvetstvennost-voditelya-pdd/cover.jpg</image:loc></image:image>
+    <image:image><image:loc>https://pdd-drive.ru/blog/skolko-stoit-sdat-na-prava-2026/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://pdd-drive.ru/blog/buksirovka-i-perevozka-gruzov/</loc>
+    <lastmod>2026-08-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.ru/blog/buksirovka-i-perevozka-gruzov/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/peresdacha-teorii-pdd/</loc>
-    <lastmod>2026-07-23</lastmod>
+    <lastmod>2026-08-02</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/peresdacha-teorii-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
+    <loc>https://pdd-drive.ru/blog/otvetstvennost-voditelya-pdd/</loc>
+    <lastmod>2026-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.ru/blog/otvetstvennost-voditelya-pdd/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
     <loc>https://pdd-drive.ru/blog/pervaya-pomosch-pri-dtp/</loc>
-    <lastmod>2026-07-23</lastmod>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/pervaya-pomosch-pri-dtp/cover.jpg</image:loc></image:image>
   </url>
   <url>
-    <loc>https://pdd-drive.ru/blog/prioritet-obschestvennogo-transporta/</loc>
-    <lastmod>2026-07-23</lastmod>
+    <loc>https://pdd-drive.ru/blog/bezopasnost-i-tehnika-vozhdeniya/</loc>
+    <lastmod>2026-07-31</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/prioritet-obschestvennogo-transporta/cover.jpg</image:loc></image:image>
+    <image:image><image:loc>https://pdd-drive.ru/blog/bezopasnost-i-tehnika-vozhdeniya/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://pdd-drive.ru/blog/obyazannosti-voditeley-pdd/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.ru/blog/obyazannosti-voditeley-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/raspolozhenie-tc-na-doroge/</loc>
-    <lastmod>2026-07-23</lastmod>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/raspolozhenie-tc-na-doroge/cover.jpg</image:loc></image:image>
   </url>
   <url>
+    <loc>https://pdd-drive.ru/blog/avariynaya-signalizatsiya-specsignaly/</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.ru/blog/avariynaya-signalizatsiya-specsignaly/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
     <loc>https://pdd-drive.ru/blog/skorostnye-rezhimy-pdd/</loc>
-    <lastmod>2026-07-23</lastmod>
+    <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/skorostnye-rezhimy-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
+    <loc>https://pdd-drive.ru/blog/neispravnosti-dopusk-ekspluatatsii/</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.ru/blog/neispravnosti-dopusk-ekspluatatsii/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://pdd-drive.ru/blog/prioritet-obschestvennogo-transporta/</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.ru/blog/prioritet-obschestvennogo-transporta/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://pdd-drive.ru/blog/avtomagistral-i-zhilaya-zona/</loc>
+    <lastmod>2026-07-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.ru/blog/avtomagistral-i-zhilaya-zona/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://pdd-drive.ru/blog/manevrirovanie-pdd/</loc>
+    <lastmod>2026-07-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.ru/blog/manevrirovanie-pdd/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://pdd-drive.ru/blog/obgon-i-operezhenie-pdd/</loc>
+    <lastmod>2026-07-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.ru/blog/obgon-i-operezhenie-pdd/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
     <loc>https://pdd-drive.ru/blog/svetovye-pribory-i-signaly/</loc>
-    <lastmod>2026-07-23</lastmod>
+    <lastmod>2026-07-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/svetovye-pribory-i-signaly/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/uchebnaya-ezda-i-velosipedisty/</loc>
-    <lastmod>2026-07-23</lastmod>
+    <lastmod>2026-07-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/uchebnaya-ezda-i-velosipedisty/cover.jpg</image:loc></image:image>
   </url>
   <url>
+    <loc>https://pdd-drive.ru/blog/prakticheskiy-ekzamen-gibdd/</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.ru/blog/prakticheskiy-ekzamen-gibdd/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
     <loc>https://pdd-drive.ru/blog/zheleznodorozhnye-perezdy-pdd/</loc>
-    <lastmod>2026-07-23</lastmod>
+    <lastmod>2026-07-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/zheleznodorozhnye-perezdy-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/podgotovka-za-nedelyu-pdd/</loc>
-    <lastmod>2026-07-22</lastmod>
+    <lastmod>2026-07-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/podgotovka-za-nedelyu-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
-    <loc>https://pdd-drive.ru/blog/prakticheskiy-ekzamen-gibdd/</loc>
-    <lastmod>2026-07-22</lastmod>
+    <loc>https://pdd-drive.ru/blog/slozhnye-temy-bileotv-pdd/</loc>
+    <lastmod>2026-07-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/prakticheskiy-ekzamen-gibdd/cover.jpg</image:loc></image:image>
+    <image:image><image:loc>https://pdd-drive.ru/blog/slozhnye-temy-bileotv-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/proezd-perekrestkov-pdd/</loc>
@@ -461,18 +468,11 @@
     <image:image><image:loc>https://pdd-drive.ru/blog/proezd-perekrestkov-pdd/cover.jpg</image:loc></image:image>
   </url>
   <url>
-    <loc>https://pdd-drive.ru/blog/slozhnye-temy-bileotv-pdd/</loc>
+    <loc>https://pdd-drive.ru/blog/signaly-svetofora-regulirovshchik/</loc>
     <lastmod>2026-07-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/slozhnye-temy-bileotv-pdd/cover.jpg</image:loc></image:image>
-  </url>
-  <url>
-    <loc>https://pdd-drive.ru/blog/dorozhnaya-razmetka-2026/</loc>
-    <lastmod>2026-07-21</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/dorozhnaya-razmetka-2026/cover.jpg</image:loc></image:image>
+    <image:image><image:loc>https://pdd-drive.ru/blog/signaly-svetofora-regulirovshchik/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/dorozhnye-znaki-2026/</loc>
@@ -489,18 +489,18 @@
     <image:image><image:loc>https://pdd-drive.ru/blog/kak-poluchit-voditelskie-prava/cover.jpg</image:loc></image:image>
   </url>
   <url>
+    <loc>https://pdd-drive.ru/blog/dorozhnaya-razmetka-2026/</loc>
+    <lastmod>2026-07-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.ru/blog/dorozhnaya-razmetka-2026/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
     <loc>https://pdd-drive.ru/blog/medspravka-voditelskaya-2026/</loc>
-    <lastmod>2026-07-21</lastmod>
+    <lastmod>2026-07-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image><image:loc>https://pdd-drive.ru/blog/medspravka-voditelskaya-2026/cover.jpg</image:loc></image:image>
-  </url>
-  <url>
-    <loc>https://pdd-drive.ru/blog/signaly-svetofora-regulirovshchik/</loc>
-    <lastmod>2026-07-21</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <image:image><image:loc>https://pdd-drive.ru/blog/signaly-svetofora-regulirovshchik/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/kak-bystro-vyuchit-bilety-pdd/</loc>
@@ -518,19 +518,19 @@
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/ekzamen-i-prava/</loc>
-    <lastmod>2026-11-27</lastmod>
+    <lastmod>2026-08-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/spravochnik-pdd/</loc>
-    <lastmod>2026-11-27</lastmod>
+    <lastmod>2026-08-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://pdd-drive.ru/blog/podgotovka-k-ekzamenu/</loc>
-    <lastmod>2026-11-27</lastmod>
+    <lastmod>2026-08-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>

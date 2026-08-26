@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -31,6 +32,7 @@ class TtsService {
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _configured = false;
   bool _isPlayingAudio = false;
+  int _activeRequestId = 0;
 
   Future<void> _ensureConfigured() async {
     if (_configured) return;
@@ -61,6 +63,7 @@ class TtsService {
     required List<String> answers,
   }) async {
     await stop();
+    final currentId = ++_activeRequestId;
 
     if (rawQuestionId != null) {
       final fileName = rawQuestionId.startsWith('sign_')
@@ -69,9 +72,23 @@ class TtsService {
       final assetPath = 'audio/feed/$fileName';
       try {
         await rootBundle.load('assets/$assetPath');
+        if (currentId != _activeRequestId) return null;
+
         _isPlayingAudio = true;
         await _audioPlayer.setSource(AssetSource(assetPath));
+        if (currentId != _activeRequestId) {
+          await _audioPlayer.stop();
+          _isPlayingAudio = false;
+          return null;
+        }
+
         final duration = await _audioPlayer.getDuration();
+        if (currentId != _activeRequestId) {
+          await _audioPlayer.stop();
+          _isPlayingAudio = false;
+          return null;
+        }
+
         await _audioPlayer.resume();
         return duration;
       } catch (_) {
@@ -79,7 +96,13 @@ class TtsService {
       }
     }
 
-    await speakQuestion(rawQuestionId: rawQuestionId, question: question, answers: answers);
+    if (currentId != _activeRequestId) return null;
+    await speakQuestion(
+      rawQuestionId: rawQuestionId,
+      question: question,
+      answers: answers,
+    );
+
     // Approximate duration: ~15.5 characters per second
     final totalChars = question.length + answers.join('').length + answers.length * 6;
     return Duration(milliseconds: (totalChars / 15.5 * 1000).round());
@@ -90,8 +113,9 @@ class TtsService {
     required String question,
     required List<String> answers,
   }) async {
+    final currentId = ++_activeRequestId;
     await _ensureConfigured();
-    await stop();
+    if (currentId != _activeRequestId) return;
 
     if (rawQuestionId != null) {
       final fileName = rawQuestionId.startsWith('sign_')
@@ -100,14 +124,24 @@ class TtsService {
       final assetPath = 'audio/feed/$fileName';
       try {
         await rootBundle.load('assets/$assetPath');
+        if (currentId != _activeRequestId) return;
+
         _isPlayingAudio = true;
         await _audioPlayer.setSource(AssetSource(assetPath));
+        if (currentId != _activeRequestId) {
+          await _audioPlayer.stop();
+          _isPlayingAudio = false;
+          return;
+        }
+
         await _audioPlayer.resume();
         return;
       } catch (_) {
         // Fall back to system TTS
       }
     }
+
+    if (currentId != _activeRequestId) return;
 
     const numberWords = ['Один', 'Два', 'Три', 'Четыре', 'Пять', 'Шесть'];
     final buffer = StringBuffer()
@@ -123,17 +157,21 @@ class TtsService {
         ..write('. ');
     }
 
+    if (currentId != _activeRequestId) return;
     await _tts.speak(buffer.toString().trim());
   }
 
   Future<void> stop() async {
+    _activeRequestId++;
     if (_isPlayingAudio) {
       try {
         await _audioPlayer.stop();
       } catch (_) {}
       _isPlayingAudio = false;
     }
-    await _tts.stop();
+    try {
+      await _tts.stop();
+    } catch (_) {}
   }
 
   Future<void> dispose() async {

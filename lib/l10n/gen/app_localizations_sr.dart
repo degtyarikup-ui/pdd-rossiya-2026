@@ -373,6 +373,9 @@ class AppLocalizationsSr extends AppLocalizations {
   String get preparation => 'Priprema';
 
   @override
+  String get feedbackSection => 'Odziv i zvuci';
+
+  @override
   String get confirmAnswerSetting => 'Potvrda odgovora';
 
   @override
@@ -381,6 +384,9 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get hapticFeedback => 'Vibracija';
+
+  @override
+  String get soundEffects => 'Zvučni efekti';
 
   @override
   String get voiceOverQuestions => 'Izgovaranje pitanja';

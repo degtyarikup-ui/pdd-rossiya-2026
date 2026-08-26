@@ -369,6 +369,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get preparation => 'Подготовка';
 
   @override
+  String get feedbackSection => 'Отклики и звуки';
+
+  @override
   String get confirmAnswerSetting => 'Подтверждать ответ';
 
   @override
@@ -377,6 +380,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get hapticFeedback => 'Тактильный отклик';
+
+  @override
+  String get soundEffects => 'Звуки';
 
   @override
   String get voiceOverQuestions => 'Озвучка вопросов';

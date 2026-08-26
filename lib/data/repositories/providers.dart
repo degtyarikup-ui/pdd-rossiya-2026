@@ -7,6 +7,7 @@ import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/ads_repository.dart';
 import 'package:pdd_app/data/repositories/feed_repository.dart';
+import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/sources/questions_data_source.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
@@ -34,10 +35,17 @@ class AppSettingsController extends StateNotifier<AppSettings> {
 
   Future<void> _load() async {
     state = await _dataSource.loadAppSettings();
+    SoundEffectsService.instance.setEnabled(state.soundEffectsEnabled);
   }
 
   Future<void> setHapticsEnabled(bool value) async {
     state = state.copyWith(hapticsEnabled: value);
+    await _dataSource.saveAppSettings(state);
+  }
+
+  Future<void> setSoundEffectsEnabled(bool value) async {
+    state = state.copyWith(soundEffectsEnabled: value);
+    SoundEffectsService.instance.setEnabled(value);
     await _dataSource.saveAppSettings(state);
   }
 

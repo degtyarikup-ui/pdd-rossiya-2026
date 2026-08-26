@@ -64,7 +64,7 @@ class AdPromoConfig {
 
   const AdPromoConfig({
     this.isEnabled = true,
-    this.frequency = 15,
+    this.frequency = 12,
     this.mode = 'custom_cards',
     this.yandexAdUnitId = '',
     this.cards = const [],
@@ -73,7 +73,7 @@ class AdPromoConfig {
   factory AdPromoConfig.fromJson(Map<String, dynamic> json) {
     return AdPromoConfig(
       isEnabled: json['enabled'] as bool? ?? true,
-      frequency: json['frequency'] as int? ?? 15,
+      frequency: json['frequency'] as int? ?? 12,
       mode: json['mode'] as String? ?? 'custom_cards',
       yandexAdUnitId: json['yandexAdUnitId'] as String? ?? '',
       cards: (json['cards'] as List<dynamic>?)
@@ -85,7 +85,7 @@ class AdPromoConfig {
 
   static const defaultFallback = AdPromoConfig(
     isEnabled: true,
-    frequency: 15,
+    frequency: 12,
     mode: 'yandex',
     yandexAdUnitId: 'R-M-19816566-1',
     cards: [],

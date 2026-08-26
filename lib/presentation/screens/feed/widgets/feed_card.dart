@@ -8,6 +8,7 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/question_image.dart';
@@ -140,13 +141,19 @@ class _FeedCardState extends ConsumerState<FeedCard>
   }
 
   Future<void> _playTts() async {
+    if (!widget.isCurrent || _isAnswered || !widget.isSoundEnabled) return;
     final audioDuration = await TtsService.instance.speakOrPlayFeedItem(
       rawQuestionId: widget.item.rawQuestionId,
       question: widget.item.questionText,
       answers: widget.item.answers,
     );
 
-    if (audioDuration != null && !_isAnswered && mounted && widget.isCurrent) {
+    if (!widget.isCurrent || _isAnswered || !mounted) {
+      TtsService.instance.stop().ignore();
+      return;
+    }
+
+    if (audioDuration != null) {
       final dynamicTotal = audioDuration + const Duration(milliseconds: 5000);
       _timerController.duration = dynamicTotal;
       _timerController.forward(from: 0.0);
@@ -182,6 +189,8 @@ class _FeedCardState extends ConsumerState<FeedCard>
   void _handleTimeExpired() {
     if (_isAnswered) return;
     HapticFeedbackHelper.error();
+    SoundEffectsService.instance.playIncorrect();
+
     setState(() {
       _isAnswered = true;
       _selectedAnswerIndex = -1; // timed out
@@ -198,8 +207,10 @@ class _FeedCardState extends ConsumerState<FeedCard>
     final isCorrect = index == widget.item.correctAnswerIndex;
     if (isCorrect) {
       HapticFeedbackHelper.success();
+      SoundEffectsService.instance.playCorrect();
     } else {
       HapticFeedbackHelper.error();
+      SoundEffectsService.instance.playIncorrect();
     }
 
     setState(() {
@@ -211,7 +222,7 @@ class _FeedCardState extends ConsumerState<FeedCard>
     _saveProgress(isCorrect: isCorrect, selectedIndex: index);
 
     if (isCorrect) {
-      _autoAdvanceTimer = Timer(const Duration(milliseconds: 450), () {
+      _autoAdvanceTimer = Timer(const Duration(milliseconds: 650), () {
         if (mounted && widget.isCurrent) {
           widget.onAutoNext();
         }
@@ -321,145 +332,184 @@ class _FeedCardState extends ConsumerState<FeedCard>
 
                 // 2. Question Card Body
                 Expanded(
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: (notification) {
-                      if (notification is OverscrollNotification) {
-                        // User dragged past bottom edge -> Next
-                        if (notification.overscroll > 10 && widget.isCurrent) {
-                          widget.onAutoNext();
-                          return true;
-                        }
-                        // User dragged past top edge -> Previous
-                        if (notification.overscroll < -10 && widget.isCurrent) {
-                          widget.onPrevious();
-                          return true;
-                        }
-                      } else if (notification is ScrollUpdateNotification) {
-                        // Scrolled to bottom and pulling upward -> Next
-                        if (_scrollController.hasClients &&
-                            _scrollController.position.pixels >=
-                                _scrollController.position.maxScrollExtent &&
-                            notification.scrollDelta != null &&
-                            notification.scrollDelta! > 14 &&
-                            widget.isCurrent) {
-                          widget.onAutoNext();
-                          return true;
-                        }
-                        // Scrolled to top and pulling downward -> Previous
-                        if (_scrollController.hasClients &&
-                            _scrollController.position.pixels <=
-                                _scrollController.position.minScrollExtent &&
-                            notification.scrollDelta != null &&
-                            notification.scrollDelta! < -14 &&
-                            widget.isCurrent) {
-                          widget.onPrevious();
-                          return true;
-                        }
-                      }
-                      return false;
-                    },
-                    child: SingleChildScrollView(
-                      controller: _scrollController,
-                      physics: const ClampingScrollPhysics(),
-                      padding: const EdgeInsets.only(
-                        left: AppDimensions.screenPadding,
-                        right: AppDimensions.screenPadding,
-                        bottom: 72,
+                  child: Stack(
+                    children: [
+                      NotificationListener<ScrollNotification>(
+                        onNotification: (notification) {
+                          if (notification is OverscrollNotification) {
+                            // User dragged past bottom edge -> Next
+                            if (notification.overscroll > 10 && widget.isCurrent) {
+                              widget.onAutoNext();
+                              return true;
+                            }
+                            // User dragged past top edge -> Previous
+                            if (notification.overscroll < -10 && widget.isCurrent) {
+                              widget.onPrevious();
+                              return true;
+                            }
+                          } else if (notification is ScrollUpdateNotification) {
+                            // Scrolled to bottom and pulling upward -> Next
+                            if (_scrollController.hasClients &&
+                                _scrollController.position.pixels >=
+                                    _scrollController.position.maxScrollExtent &&
+                                notification.scrollDelta != null &&
+                                notification.scrollDelta! > 14 &&
+                                widget.isCurrent) {
+                              widget.onAutoNext();
+                              return true;
+                            }
+                            // Scrolled to top and pulling downward -> Previous
+                            if (_scrollController.hasClients &&
+                                _scrollController.position.pixels <=
+                                    _scrollController.position.minScrollExtent &&
+                                notification.scrollDelta != null &&
+                                notification.scrollDelta! < -14 &&
+                                widget.isCurrent) {
+                              widget.onPrevious();
+                              return true;
+                            }
+                          }
+                          return false;
+                        },
+                        child: SingleChildScrollView(
+                          controller: _scrollController,
+                          physics: const ClampingScrollPhysics(),
+                          padding: const EdgeInsets.only(
+                            left: AppDimensions.screenPadding,
+                            right: AppDimensions.screenPadding,
+                            bottom: 72,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Question / Sign Image (Clean, no card background)
+                              if (widget.item.imagePath != null) ...[
+                                Center(
+                                  child: widget.item.isSvgImage
+                                      ? SvgPicture.asset(
+                                          widget.item.imagePath!,
+                                          height: 160,
+                                          fit: BoxFit.contain,
+                                        )
+                                      : ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            AppDimensions.smallRadius,
+                                          ),
+                                          child: QuestionImage(
+                                            assetPath: widget.item.imagePath!,
+                                            height: 190,
+                                            fit: BoxFit.contain,
+                                            zoomable: true,
+                                          ),
+                                        ),
+                                ),
+                                const SizedBox(height: AppDimensions.spacingM),
+                              ],
+
+                              // Question Text
+                              Text(
+                                widget.item.questionText,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: colors.primaryText,
+                                  height: 1.35,
+                                ),
+                              ),
+                              const SizedBox(height: AppDimensions.spacingL),
+
+                              // Answer Options (Exact Training Screen Clean Flat Style)
+                              ...List.generate(widget.item.answers.length, (idx) {
+                                final answerText = widget.item.answers[idx];
+                                return _buildTrainingStyleAnswerOption(idx, answerText, colors);
+                              }),
+
+                              // Explanation Card (Clean without duplicate hint)
+                              if (_isAnswered &&
+                                  _selectedAnswerIndex != widget.item.correctAnswerIndex &&
+                                  widget.item.explanation != null &&
+                                  widget.item.explanation!.isNotEmpty) ...[
+                                const SizedBox(height: AppDimensions.spacingL),
+                                Container(
+                                  padding: const EdgeInsets.all(AppDimensions.spacingL),
+                                  decoration: BoxDecoration(
+                                    color: colors.cardBackground,
+                                    borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(Icons.lightbulb, color: colors.gold, size: 20),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Комментарий',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: colors.primaryText,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: AppDimensions.spacingM),
+                                      Text(
+                                        widget.item.explanation!,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: colors.secondaryText,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+
+                              const SizedBox(height: 24),
+                            ],
+                          ),
+                        ),
                       ),
-                      child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Question / Sign Image (Clean, no card background)
-                        if (widget.item.imagePath != null) ...[
-                          Center(
-                            child: widget.item.isSvgImage
-                                ? SvgPicture.asset(
-                                    widget.item.imagePath!,
-                                    height: 160,
-                                    fit: BoxFit.contain,
-                                  )
-                                : ClipRRect(
-                                    borderRadius: BorderRadius.circular(
-                                       AppDimensions.smallRadius,
-                                     ),
-                                     child: QuestionImage(
-                                       assetPath: widget.item.imagePath!,
-                                       height: 190,
-                                       fit: BoxFit.contain,
-                                       zoomable: true,
-                                     ),
-                                   ),
-                           ),
-                           const SizedBox(height: AppDimensions.spacingM),
-                         ],
+                      // Fixed Bottom Countdown Progress Bar (Non-scrollable, Non-draggable)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: IgnorePointer(
+                          child: AnimatedBuilder(
+                            animation: _timerController,
+                            builder: (context, child) {
+                              final progress = (1.0 - _timerController.value).clamp(0.0, 1.0);
+                              Color barColor;
+                              if (_isAnswered) {
+                                final isCorrect = _selectedAnswerIndex == widget.item.correctAnswerIndex;
+                                barColor = isCorrect ? colors.green : colors.red;
+                              } else if (progress > 0.3) {
+                                barColor = colors.accent;
+                              } else if (progress > 0.15) {
+                                barColor = colors.gold;
+                              } else {
+                                barColor = colors.red;
+                              }
 
-                         // Question Text
-                         Text(
-                           widget.item.questionText,
-                           style: TextStyle(
-                             fontSize: 18,
-                             fontWeight: FontWeight.w600,
-                             color: colors.primaryText,
-                             height: 1.35,
-                           ),
-                         ),
-                         const SizedBox(height: AppDimensions.spacingL),
-
-                         // Answer Options (Exact Training Screen Clean Flat Style)
-                         ...List.generate(widget.item.answers.length, (idx) {
-                           final answerText = widget.item.answers[idx];
-                           return _buildTrainingStyleAnswerOption(idx, answerText, colors);
-                         }),
-
-                         // Explanation Card (Clean without duplicate hint)
-                         if (_isAnswered &&
-                             _selectedAnswerIndex != widget.item.correctAnswerIndex &&
-                             widget.item.explanation != null &&
-                             widget.item.explanation!.isNotEmpty) ...[
-                           const SizedBox(height: AppDimensions.spacingL),
-                           Container(
-                             padding: const EdgeInsets.all(AppDimensions.spacingL),
-                             decoration: BoxDecoration(
-                               color: colors.cardBackground,
-                               borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
-                             ),
-                             child: Column(
-                               crossAxisAlignment: CrossAxisAlignment.start,
-                               children: [
-                                 Row(
-                                   children: [
-                                     Icon(Icons.lightbulb, color: colors.gold, size: 20),
-                                     const SizedBox(width: 8),
-                                     Text(
-                                       'Комментарий',
-                                       style: TextStyle(
-                                         fontSize: 14,
-                                         fontWeight: FontWeight.w600,
-                                         color: colors.primaryText,
-                                       ),
-                                     ),
-                                   ],
-                                 ),
-                                 const SizedBox(height: AppDimensions.spacingM),
-                                 Text(
-                                   widget.item.explanation!,
-                                   style: TextStyle(
-                                     fontSize: 14,
-                                     color: colors.secondaryText,
-                                     height: 1.4,
-                                   ),
-                                 ),
-                               ],
-                             ),
-                           ),
-                         ],
-
-                         const SizedBox(height: 24),
-                       ],
-                     ),
-                   ),
-                 ),
-               ),
+                              return SizedBox(
+                                height: 3.5,
+                                child: LinearProgressIndicator(
+                                  value: _isAnswered ? 1.0 : progress,
+                                  backgroundColor: colors.cardBackground.withValues(alpha: 0.5),
+                                  valueColor: AlwaysStoppedAnimation<Color>(barColor),
+                                  minHeight: 3.5,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
 
@@ -534,7 +584,6 @@ class _FeedCardState extends ConsumerState<FeedCard>
   ) {
     Color backgroundColor;
     Color textColor;
-    Widget? trailingIcon;
     final isCorrect = index == widget.item.correctAnswerIndex;
     final isSelected = index == _selectedAnswerIndex;
 
@@ -542,19 +591,9 @@ class _FeedCardState extends ConsumerState<FeedCard>
       if (isCorrect) {
         backgroundColor = colors.green;
         textColor = AppColors.white;
-        trailingIcon = const Icon(
-          Icons.check,
-          color: AppColors.white,
-          size: 20,
-        );
       } else if (isSelected) {
         backgroundColor = colors.red;
         textColor = AppColors.white;
-        trailingIcon = const Icon(
-          Icons.close,
-          color: AppColors.white,
-          size: 20,
-        );
       } else {
         backgroundColor = colors.gray;
         textColor = colors.secondaryText;
@@ -579,29 +618,48 @@ class _FeedCardState extends ConsumerState<FeedCard>
             ),
             child: Row(
               children: [
-                Container(
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
                     color: _isAnswered
                         ? (isCorrect || isSelected
-                            ? AppColors.white.withValues(alpha: 0.3)
+                            ? AppColors.white.withValues(alpha: 0.28)
                             : colors.gray)
                         : colors.gray,
                     shape: BoxShape.circle,
                   ),
                   child: Center(
-                    child: Text(
-                      '${index + 1}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: _isAnswered
-                            ? (isCorrect || isSelected
-                                ? AppColors.white
-                                : colors.secondaryText)
-                            : colors.secondaryText,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      transitionBuilder: (child, anim) => ScaleTransition(
+                        scale: anim,
+                        child: FadeTransition(opacity: anim, child: child),
                       ),
+                      child: _isAnswered && isCorrect
+                          ? const Icon(
+                              Icons.check_rounded,
+                              key: ValueKey('feed_answer_check'),
+                              color: AppColors.white,
+                              size: 16,
+                            )
+                          : _isAnswered && isSelected
+                              ? const Icon(
+                                  Icons.close_rounded,
+                                  key: ValueKey('feed_answer_close'),
+                                  color: AppColors.white,
+                                  size: 16,
+                                )
+                              : Text(
+                                  '${index + 1}',
+                                  key: ValueKey('feed_answer_num_${index + 1}'),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: colors.secondaryText,
+                                  ),
+                                ),
                     ),
                   ),
                 ),
@@ -617,10 +675,6 @@ class _FeedCardState extends ConsumerState<FeedCard>
                     ),
                   ),
                 ),
-                if (trailingIcon != null) ...[
-                  const SizedBox(width: 8),
-                  trailingIcon,
-                ],
               ],
             ),
           ),

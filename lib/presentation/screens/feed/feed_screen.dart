@@ -7,6 +7,7 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/presentation/screens/feed/widgets/ad_feed_card.dart';
 import 'package:pdd_app/presentation/screens/feed/widgets/feed_card.dart';
+import 'package:pdd_app/presentation/screens/feed/widgets/tip_feed_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FeedScreen extends ConsumerStatefulWidget {
@@ -71,6 +72,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
 
   void _onPageChanged(int index) {
     HapticFeedbackHelper.select();
+    TtsService.instance.stop().ignore();
     setState(() => _currentIndex = index);
 
     // Auto-load more items when near end of list
@@ -95,6 +97,54 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     }
   }
 
+  bool _isRefreshing = false;
+
+  void _onAdLoadFailed(String itemId) {
+    if (!mounted) return;
+    final itemIndex = _items.indexWhere((it) => it.id == itemId);
+    if (itemIndex == -1) return;
+
+    setState(() {
+      _items.removeAt(itemIndex);
+      if (_currentIndex >= _items.length && _items.isNotEmpty) {
+        _currentIndex = _items.length - 1;
+      }
+    });
+  }
+
+  Future<void> _refreshFeed() async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    HapticFeedbackHelper.success();
+
+    try {
+      final category = ref.read(appSettingsProvider).ticketCategory;
+      final repo = ref.read(feedRepositoryProvider);
+      final newItems = await repo.generateFeedItems(category: category, count: 50);
+
+      if (mounted) {
+        setState(() {
+          _items.clear();
+          _answeredChoices.clear();
+          _items.addAll(newItems);
+          _currentIndex = 0;
+        });
+
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(0);
+        }
+      }
+    } catch (e) {
+      debugPrint('FeedScreen: refresh error: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
+  }
+
   void _autoNext() {
     if (_currentIndex < _items.length - 1) {
       _pageController.nextPage(
@@ -110,6 +160,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
         duration: const Duration(milliseconds: 280),
         curve: Curves.fastOutSlowIn,
       );
+    } else if (_currentIndex == 0) {
+      _refreshFeed();
     }
   }
 
@@ -145,37 +197,61 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
             );
           }
 
-          return PageView.builder(
-            controller: _pageController,
-            scrollDirection: Axis.vertical,
-            physics: const BouncingScrollPhysics(),
-            onPageChanged: _onPageChanged,
-            itemCount: _items.length,
-            itemBuilder: (context, index) {
-              final item = _items[index];
-              if (item.isAd) {
-                return AdFeedCard(
+          return NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (_currentIndex == 0 && !_isRefreshing) {
+                if (notification is OverscrollNotification &&
+                    notification.overscroll < -15) {
+                  _refreshFeed();
+                  return true;
+                }
+              }
+              return false;
+            },
+            child: PageView.builder(
+              controller: _pageController,
+              scrollDirection: Axis.vertical,
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              onPageChanged: _onPageChanged,
+              itemCount: _items.length,
+              itemBuilder: (context, index) {
+                final item = _items[index];
+                if (item.isAd) {
+                  return AdFeedCard(
+                    key: ValueKey('${item.id}_$index'),
+                    item: item,
+                    isCurrent: index == _currentIndex,
+                    onAutoNext: _autoNext,
+                    onPrevious: _previousPage,
+                    onFailed: _onAdLoadFailed,
+                  );
+                }
+                if (item.isTip) {
+                  return TipFeedCard(
+                    key: ValueKey('${item.id}_$index'),
+                    item: item,
+                    isCurrent: index == _currentIndex,
+                    onAutoNext: _autoNext,
+                    onPrevious: _previousPage,
+                  );
+                }
+                return FeedCard(
                   key: ValueKey('${item.id}_$index'),
                   item: item,
                   isCurrent: index == _currentIndex,
+                  isSoundEnabled: _isSoundEnabled,
+                  initialSelectedAnswerIndex: _answeredChoices[item.id],
+                  onAnswerRecorded: (selectedIdx) {
+                    _answeredChoices[item.id] = selectedIdx;
+                  },
+                  onToggleSound: _toggleSound,
                   onAutoNext: _autoNext,
                   onPrevious: _previousPage,
                 );
-              }
-              return FeedCard(
-                key: ValueKey('${item.id}_$index'),
-                item: item,
-                isCurrent: index == _currentIndex,
-                isSoundEnabled: _isSoundEnabled,
-                initialSelectedAnswerIndex: _answeredChoices[item.id],
-                onAnswerRecorded: (selectedIdx) {
-                  _answeredChoices[item.id] = selectedIdx;
-                },
-                onToggleSound: _toggleSound,
-                onAutoNext: _autoNext,
-                onPrevious: _previousPage,
-              );
-            },
+              },
+            ),
           );
         },
         loading: () => Center(

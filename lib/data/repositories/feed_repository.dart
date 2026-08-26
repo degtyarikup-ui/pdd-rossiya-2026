@@ -5,13 +5,23 @@ import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/models/question.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/ads_repository.dart';
+import 'package:pdd_app/data/services/yandex_ad_preloader.dart';
+import 'package:pdd_app/data/sources/driver_tips_data.dart';
 import 'package:pdd_app/data/sources/questions_data_source.dart';
 
 class FeedRepository {
   final QuestionsDataSource _questionsDataSource;
   final AdsRepository? _adsRepository;
+  final List<DriverTip> _tipPool = [];
 
   FeedRepository(this._questionsDataSource, [this._adsRepository]);
+
+  DriverTip _getNextRandomTip(Random random) {
+    if (_tipPool.isEmpty) {
+      _tipPool.addAll(List.of(DriverTipsData.tips)..shuffle(random));
+    }
+    return _tipPool.removeAt(0);
+  }
 
   /// Builds a randomized batch of FeedItem cards (70% ticket questions, 30% signs quiz).
   Future<List<FeedItem>> generateFeedItems({
@@ -109,31 +119,55 @@ class FeedRepository {
       combined.shuffle(random);
     }
 
+    final List<FeedItem> resultFeed = [];
+    int questionCounter = 0;
+
     final adsRepo = _adsRepository;
-    if (adsRepo != null && adsRepo.currentConfig.isEnabled) {
-      final freq = adsRepo.currentConfig.frequency.clamp(3, 50);
-      final List<FeedItem> withAds = [];
-      int counter = 0;
-      for (final item in combined) {
-        withAds.add(item);
-        counter++;
-        if (counter % freq == 0) {
-          if (adsRepo.currentConfig.mode == 'yandex') {
-            withAds.add(FeedItem.yandexAd(
-              index: counter,
-              adUnitId: adsRepo.currentConfig.yandexAdUnitId,
+    final adsEnabled = adsRepo != null && adsRepo.currentConfig.isEnabled;
+    final adFreq = adsRepo?.currentConfig.frequency.clamp(3, 50) ?? 12;
+
+    for (final item in combined) {
+      resultFeed.add(item);
+      questionCounter++;
+
+      // Every 6 questions -> insert Driver Tip (uniformly shuffled pool)
+      if (questionCounter % 6 == 0) {
+        final tip = _getNextRandomTip(random);
+        resultFeed.add(FeedItem.fromDriverTip(tip));
+      }
+
+      // Ad insertion every 12 questions (only if verified/ready)
+      if (adsEnabled && questionCounter % adFreq == 0) {
+        if (adsRepo.currentConfig.mode == 'yandex') {
+          final adUnitId = adsRepo.currentConfig.yandexAdUnitId;
+          if (YandexAdPreloader.instance.hasReadyAd) {
+            final preloaded = YandexAdPreloader.instance.consumeReadyBanner();
+            resultFeed.add(FeedItem.yandexAd(
+              index: questionCounter,
+              adUnitId: adUnitId,
+              preloadedBanner: preloaded,
             ));
           } else {
+            // Trigger preload in background for future questions
+            if (adUnitId.isNotEmpty) {
+              YandexAdPreloader.instance.preloadNext(adUnitId).ignore();
+            }
+            // Fallback to custom promo card if available
             final promo = adsRepo.getNextPromoCard();
             if (promo != null) {
-              withAds.add(FeedItem.fromAdPromo(promo, index: counter));
+              resultFeed.add(FeedItem.fromAdPromo(promo, index: questionCounter));
             }
+            // If neither is ready, no ad item is inserted -> zero visual glitch!
+          }
+        } else {
+          final promo = adsRepo.getNextPromoCard();
+          if (promo != null) {
+            resultFeed.add(FeedItem.fromAdPromo(promo, index: questionCounter));
           }
         }
       }
-      return withAds;
     }
 
-    return combined;
+    return resultFeed;
   }
 }

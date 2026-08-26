@@ -11,6 +11,7 @@ import 'package:pdd_app/core/utils/question_number_strip_scroll.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/presentation/widgets/report_question_dialog.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/question_image.dart';
@@ -168,12 +169,14 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     if (isCorrect) {
       setState(() => _correctIndices.add(_currentIndex));
       HapticFeedbackHelper.success();
+      SoundEffectsService.instance.playCorrect();
       _clearSessionIfComplete();
       return;
     }
 
     setState(() => _wrongIndices.add(_currentIndex));
     HapticFeedbackHelper.error();
+    SoundEffectsService.instance.playIncorrect();
     _clearSessionIfComplete();
   }
 
@@ -626,25 +629,14 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
 
     Color backgroundColor;
     Color textColor;
-    Widget? trailingIcon;
 
     if (isAnswered) {
       if (isCorrect) {
         backgroundColor = colors.green;
         textColor = AppColors.white;
-        trailingIcon = const Icon(
-          Icons.check,
-          color: AppColors.white,
-          size: 20,
-        );
       } else if (isSelected) {
         backgroundColor = colors.red;
         textColor = AppColors.white;
-        trailingIcon = const Icon(
-          Icons.close,
-          color: AppColors.white,
-          size: 20,
-        );
       } else {
         backgroundColor = colors.gray;
         textColor = colors.secondaryText;
@@ -680,13 +672,14 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           ),
           child: Row(
             children: [
-              Container(
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
                   color: isAnswered
                       ? (isCorrect || isSelected
-                            ? AppColors.white.withValues(alpha: 0.3)
+                            ? AppColors.white.withValues(alpha: 0.28)
                             : colors.gray)
                       : isSelected
                       ? colors.accent.withValues(alpha: 0.12)
@@ -694,19 +687,37 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                   shape: BoxShape.circle,
                 ),
                 child: Center(
-                  child: Text(
-                    '${index + 1}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isAnswered
-                          ? (isCorrect || isSelected
-                                ? AppColors.white
-                                : colors.secondaryText)
-                          : isSelected
-                          ? colors.accent
-                          : colors.secondaryText,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    transitionBuilder: (child, anim) => ScaleTransition(
+                      scale: anim,
+                      child: FadeTransition(opacity: anim, child: child),
                     ),
+                    child: isAnswered && isCorrect
+                        ? const Icon(
+                            Icons.check_rounded,
+                            key: ValueKey('training_answer_check'),
+                            color: AppColors.white,
+                            size: 16,
+                          )
+                        : isAnswered && isSelected
+                            ? const Icon(
+                                Icons.close_rounded,
+                                key: ValueKey('training_answer_close'),
+                                color: AppColors.white,
+                                size: 16,
+                              )
+                            : Text(
+                                '${index + 1}',
+                                key: ValueKey('training_answer_num_${index + 1}'),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isSelected
+                                      ? colors.accent
+                                      : colors.secondaryText,
+                                ),
+                              ),
                   ),
                 ),
               ),
@@ -722,10 +733,6 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                   ),
                 ),
               ),
-              if (trailingIcon != null) ...[
-                const SizedBox(width: 8),
-                trailingIcon,
-              ],
             ],
           ),
         ),

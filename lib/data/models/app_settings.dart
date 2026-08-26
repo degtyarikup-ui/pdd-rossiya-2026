@@ -3,6 +3,7 @@ import 'package:pdd_app/data/models/ticket_category.dart';
 
 class AppSettings {
   final bool hapticsEnabled;
+  final bool soundEffectsEnabled;
   final bool confirmAnswerEnabled;
   final bool voiceEnabled;
   final TicketCategory ticketCategory;
@@ -12,6 +13,7 @@ class AppSettings {
 
   const AppSettings({
     this.hapticsEnabled = true,
+    this.soundEffectsEnabled = true,
     this.confirmAnswerEnabled = false,
     this.voiceEnabled = false,
     this.ticketCategory = TicketCategory.ab,
@@ -21,6 +23,7 @@ class AppSettings {
 
   AppSettings copyWith({
     bool? hapticsEnabled,
+    bool? soundEffectsEnabled,
     bool? confirmAnswerEnabled,
     bool? voiceEnabled,
     TicketCategory? ticketCategory,
@@ -29,6 +32,7 @@ class AppSettings {
   }) {
     return AppSettings(
       hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
+      soundEffectsEnabled: soundEffectsEnabled ?? this.soundEffectsEnabled,
       confirmAnswerEnabled: confirmAnswerEnabled ?? this.confirmAnswerEnabled,
       voiceEnabled: voiceEnabled ?? this.voiceEnabled,
       ticketCategory: ticketCategory ?? this.ticketCategory,
@@ -57,6 +61,7 @@ class AppSettings {
 
     return AppSettings(
       hapticsEnabled: map['hapticsEnabled'] as bool? ?? true,
+      soundEffectsEnabled: map['soundEffectsEnabled'] as bool? ?? true,
       confirmAnswerEnabled: map['confirmAnswerEnabled'] as bool? ?? false,
       voiceEnabled: map['voiceEnabled'] as bool? ?? false,
       ticketCategory: TicketCategory.parse(map['ticketCategory'] as String?),
@@ -68,6 +73,7 @@ class AppSettings {
   Map<String, dynamic> toJson() {
     return {
       'hapticsEnabled': hapticsEnabled,
+      'soundEffectsEnabled': soundEffectsEnabled,
       'confirmAnswerEnabled': confirmAnswerEnabled,
       'voiceEnabled': voiceEnabled,
       'ticketCategory': ticketCategory.name,

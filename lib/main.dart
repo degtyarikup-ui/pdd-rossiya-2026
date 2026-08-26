@@ -13,6 +13,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/install_reporter.dart';
 import 'package:pdd_app/data/services/notification_service.dart';
+import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/home/home_screen.dart';
@@ -38,9 +39,14 @@ void main() async {
   // Уведомление о новой установке в Telegram (fire-and-forget, не блокирует старт).
   unawaited(InstallReporter.reportIfNeeded());
 
+  // Инициализация сервиса звуковых эффектов (правильный/неправильный ответ)
+  unawaited(SoundEffectsService.instance.init());
+
   // Инициализация Яндекс Рекламы (Mobile Ads SDK)
   if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-    unawaited(YandexAds.initialize().catchError((e) {
+    unawaited(YandexAds.initialize().then((_) {
+      YandexAds.setLogging(true);
+    }).catchError((e) {
       debugPrint('YandexAds.initialize failed: $e');
     }));
   }

@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Концепты кнопки «Экзамен» — ПДД 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0F1117;
+      --card-bg: #1A1D26;
+      --text: #F1F5F9;
+      --text-muted: #94A3B8;
+      --accent: #2563EB;
+      --accent-hover: #1D4ED8;
+      --accent-light: rgba(37, 99, 235, 0.15);
+      --border: #2E3646;
+      --badge-bg: rgba(255, 255, 255, 0.18);
+      --badge-text: #FFFFFF;
+      --gold: #F59E0B;
+      --green: #10B981;
+    }
+
+    [data-theme="light"] {
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --text: #0F172A;
+      --text-muted: #64748B;
+      --border: #E2E8F0;
+      --accent: #2563EB;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 32px 20px 80px;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header-tag {
+      display: inline-block;
+      padding: 6px 14px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 40px;
+      padding: 14px 20px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .control-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .control-btn.active, .control-btn:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #FFFFFF;
+    }
+
+    /* Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 28px;
+    }
+
+    .concept-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+
+    .concept-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .concept-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-light);
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+
+    .concept-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-top: 4px;
+    }
+
+    .concept-desc {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* Target UI Mobile Card Preview */
+    .preview-wrapper {
+      width: 100%;
+      background: #000000;
+      padding: 12px;
+      border-radius: 22px;
+      box-shadow: inset 0 2px 6px rgba(255,255,255,0.05);
+    }
+
+    .exam-hero-button {
+      height: 160px;
+      width: 100%;
+      background: #2563EB;
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 14px 18px;
+      color: #FFFFFF;
+      user-select: none;
+      cursor: pointer;
+    }
+
+    .exam-badges-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 2;
+      position: relative;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .exam-badges-row::-webkit-scrollbar { display: none; }
+
+    .exam-badge {
+      padding: 5px 9px;
+      background: rgba(255, 255, 255, 0.22);
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      color: #FFFFFF;
+      backdrop-filter: blur(4px);
+    }
+
+    .exam-title-text {
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      line-height: 1.1;
+      z-index: 2;
+      position: relative;
+    }
+
+    .hero-art-slot {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 190px;
+      height: 150px;
+      z-index: 1;
+      pointer-events: none;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+    }
+
+    /* Advantages list */
+    .pros-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 12.5px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+    }
+
+    .pros-list li {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pros-list li::before {
+      content: "✦";
+      color: var(--gold);
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-tag">Дизайн-концепты</div>
+      <h1>Варианты оформления кнопки «Экзамен»</h1>
+      <p class="subtitle">
+        10 универсальных, современных и легко адаптируемых концептов на замену стандартной машине. 
+        Все варианты рассчитаны под 3 таба в одну линию: <b>[20 вопросов] [20 минут] [A/B]</b>.
+      </p>
+    </header>
+
+    <div class="controls-bar">
+      <span style="font-size: 13px; font-weight: 700; color: var(--text-muted);">Размер карточки:</span>
+      <button class="control-btn active" onclick="setCardWidth('100%')">Адаптивный (100%)</button>
+      <button class="control-btn" onclick="setCardWidth('360px')">Pixel / iPhone (360px)</button>
+      <button class="control-btn" onclick="setCardWidth('320px')">Компакт (320px)</button>
+      <div style="flex: 1;"></div>
+      <button class="control-btn" onclick="toggleTheme()">🌗 Переключить тему</button>
+    </div>
+
+    <div class="grid" id="conceptsGrid">
+
+      <!-- 1. Знак "У" (Neo-Sign Isometric) -->
+      <div class="concept-card">
+        <div class="card-meta">
+          <span class="concept-number">КОНЦЕПТ 01</span>
+          <span style="font-size: 12px; color: var(--gold); font-weight: 600;">★ Классика автошколы</span>
+        </div>
+        <div>
+          <div class="concept-title">Нео-знак «У» в изометрии</div>
+          <div class="concept-desc">Глянцевый 3D-треугольник с красной неоновой гранью, парящей белой буквой «У» и дорожной сеткой. Выглядит свежо и премиально, а не как обычная плоская наклейка.</div>
+        </div>
+        <div class="preview-wrapper">
+          <div class="exam-hero-button">
+            <div class="exam-badges-row">
+              <div class="exam-badge">20 вопросов</div>
+              <div class="exam-badge">20 минут</div>
+              <div class="exam-badge">A/B</div>
+            </div>
+            <div class="hero-art-slot">
+              <svg width="180" height="150" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="signGrad" x1="20" y1="20" x2="160" y2="140" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#EF4444"/>
+                    <stop offset="1" stop-color="#B91C1C"/>
+                  </linearGradient>
+                  <linearGradient id="innerWhite" x1="40" y1="40" x2="140" y2="130" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#FFFFFF"/>
+                    <stop offset="1" stop-color="#F1F5F9"/>
+                  </linearGradient>
+                  <filter id="glowU" x="0" y="0" width="180" height="150" filterUnits="userSpaceOnUse">
+                    <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.35"/>
+                  </filter>
+                </defs>
+                <!-- Ground road rays -->
+                <path d="M70 145 L150 145 L170 110 L100 110 Z" fill="rgba(255,255,255,0.08)"/>
+                <path d="M120 110 L110 145" stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-dasharray="4 4"/>
+                <!-- 3D Sign Triangle -->
+                <g filter="url(#glowU)" transform="rotate(-8 110 80)">
+                  <polygon points="110,20 170,125 50,125" fill="url(#signGrad)" rx="16"/>
+                  <polygon points="110,38 154,115 66,115" fill="url(#innerWhite)" rx="10"/>
+                  <text x="110" y="98" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="52" fill="#1E293B" text-anchor="middle">У</text>
+                </g>
+              </svg>
+            </div>
+            <div class="exam-title-text">Экзамен</div>
+          </div>
+        </div>
+        <ul class="pros-list">
+          <li>100% ассоциация с подготовкой и сдачей в автошколе</li>
+          <li>В изометрии не выглядит плоско или старомодно</li>
+          <li>Идеально садится в угол на экранах от 300px до планшетов</li>
+        </ul>
+      </div>
+
+      <!-- 2. Водительское удостоверение / Права -->
+      <div class="concept-card">
+        <div class="card-meta">
+          <span class="concept-number">КОНЦЕПТ 02</span>
+          <span style="font-size: 12px; color: var(--green); font-weight: 600;">✦ Главная цель</span>
+        </div>
+        <div>
+          <div class="concept-title">Водительские права (License Card)</div>
+          <div class="concept-desc">Голографическая пластиковая карточка водительского удостоверения с золотистым гербом и категорией. Метафора желанного результата.</div>
+        </div>
+        <div class="preview-wrapper">
+          <div class="exam-hero-button">
+            <div class="exam-badges-row">
+              <div class="exam-badge">20 вопросов</div>
+              <div class="exam-badge">20 минут</div>
+              <div class="exam-badge">A/B</div>
+            </div>
+            <div class="hero-art-slot">
+              <svg width="190" height="150" viewBox="0 0 190 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="cardGrad" x1="10" y1="10" x2="170" y2="130" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#F8FAFC"/>
+                    <stop offset="0.5" stop-color="#E2E8F0"/>
+                    <stop offset="1" stop-color="#CBD5E1"/>
+                  </linearGradient>
+                  <linearGradient id="holoLine" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#EC4899" stop-opacity="0.6"/>
+                    <stop offset="0.5" stop-color="#3B82F6" stop-opacity="0.6"/>
+                    <stop offset="1" stop-color="#10B981" stop-opacity="0.6"/>
+                  </linearGradient>
+                  <filter id="cardShadow">
+                    <feDropShadow dx="-4" dy="10" stdDeviation="10" flood-color="#000000" flood-opacity="0.4"/>
+                  </filter>
+                </defs>
+                <g transform="rotate(-12 120 85)" filter="url(#cardShadow)">
+                  <rect x="50" y="30" width="130" height="84" rx="10" fill="url(#cardGrad)"/>
+                  <rect x="58" y="40" width="30" height="38" rx="6" fill="#94A3B8" opacity="0.6"/>
+                  <!-- Mini avatar outline -->
+                  <circle cx="73" cy="52" r="7" fill="#64748B"/>
+                  <path d="M63 72 C63 64 83 64 83 72" fill="#64748B"/>
+                  <!-- Text lines -->
+                  <rect x="96" y="42" width="68" height="5" rx="2" fill="#475569"/>
+                  <rect x="96" y="52" width="48" height="4" rx="2" fill="#64748B"/>
+                  <rect x="96" y="61" width="56" height="4" rx="2" fill="#64748B"/>
+                  <!-- Holo stripe -->
+                  <rect x="50" y="86" width="130" height="12" fill="url(#holoLine)"/>
+                  <text x="162" y="106" font-family="'Plus Jakarta Sans'" font-size="11" font-weight="900" fill="#1E293B">RUS</text>
+                  <circle cx="62" cy="92" r="3" fill="#F59E0B"/>
+                </g>
+              </svg>
+            </div>
+            <div class="exam-title-text">Экзамен</div>
+          </div>
+        </div>
+        <ul class="pros-list">
+          <li>Мощный эмоциональный триггер («Сдай экзамен и получи права»)</li>
+          <li>Независим от типа ТС (подходит и для A, B, C, D)</li>
+          <li>Премиальный и современный вид</li>
+        </ul>
+      </div>
+
+      <!-- 3. Спидометр & Финишная разметка -->
+      <div class="concept-card">
+        <div class="card-meta">
+          <span class="concept-number">КОНЦЕПТ 03</span>
+        </div>
+        <div>
+          <div class="concept-title">Спидометр & Финишная черта</div>
+          <div class="concept-desc">3D-циферблат спидометра со стрелкой на максимуме (100%), золотыми акцентами и финишной шахматной дорожкой.</div>
+        </div>
+        <div class="preview-wrapper">
+          <div class="exam-hero-button">
+            <div class="exam-badges-row">
+              <div class="exam-badge">20 вопросов</div>
+              <div class="exam-badge">20 минут</div>
+              <div class="exam-badge">A/B</div>
+            </div>
+            <div class="hero-art-slot">
+              <svg width="180" height="150" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <filter id="glowGauge">
+                    <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.3"/>
+                  </filter>
+                </defs>
+                <!-- Chequered flag arc -->
+                <path d="M70 140 Q110 110 160 120" stroke="rgba(255,255,255,0.2)" stroke-width="12" stroke-dasharray="6 6"/>
+                <!-- Gauge Circle -->
+                <g filter="url(#glowGauge)" transform="translate(45, 10)">
+                  <circle cx="80" cy="70" r="54" fill="#1E293B" stroke="rgba(255,255,255,0.15)" stroke-width="4"/>
+                  <path d="M40 85 A42 42 0 1 1 120 85" stroke="rgba(255,255,255,0.2)" stroke-width="6" fill="none" stroke-linecap="round"/>
+                  <path d="M40 85 A42 42 0 1 1 108 42" stroke="#10B981" stroke-width="6" fill="none" stroke-linecap="round"/>
+                  <!-- Needle -->
+                  <line x1="80" y1="70" x2="108" y2="42" stroke="#F59E0B" stroke-width="4" stroke-linecap="round"/>
+                  <circle cx="80" cy="70" r="8" fill="#F8FAFC"/>
+                  <circle cx="80" cy="70" r="4" fill="#0F172A"/>
+                  <text x="80" y="105" font-family="'JetBrains Mono'" font-size="11" font-weight="700" fill="#94A3B8" text-anchor="middle">100%</text>
+                </g>
+              </svg>
+            </div>
+            <div class="exam-title-text">Экзамен</div>
+          </div>
+        </div>
+        <ul class="pros-list">
+          <li>Динамичный автомобильный дух</li>
+          <li>Символ максимальной готовности (100% / сдача)</li>
+          <li>Отлично смотрится в плоском и темном интерфейсе</li>
+        </ul>
+      </div>
+
+      <!-- 4. Светофор с горящим зеленым -->
+      <div class="concept-card">
+        <div class="card-meta">
+          <span class="concept-number">КОНЦЕПТ 04</span>
+        </div>
+        <div>
+          <div class="concept-title">3D Светофор (Зеленый свет)</div>
+          <div class="concept-desc">Матовый объемный светофор с ярким светящимся зеленым сигналом и легким конусом света — символ допуска на дорогу.</div>
+        </div>
+        <div class="preview-wrapper">
+          <div class="exam-hero-button">
+            <div class="exam-badges-row">
+              <div class="exam-badge">20 вопросов</div>
+              <div class="exam-badge">20 минут</div>
+              <div class="exam-badge">A/B</div>
+            </div>
+            <div class="hero-art-slot">
+              <svg width="180" height="150" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="greenGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#34D399" stop-opacity="0.8"/>
+                    <stop offset="100%" stop-color="#10B981" stop-opacity="0"/>
+                  </radialGradient>
+                  <filter id="lightShadow">
+                    <feDropShadow dx="-2" dy="8" stdDeviation="8" flood-color="#000" flood-opacity="0.35"/>
+                  </filter>
+                </defs>
+                <!-- Light cone glow -->
+                <circle cx="120" cy="100" r="45" fill="url(#greenGlow)"/>
+                <!-- Traffic Light Body -->
+                <g filter="url(#lightShadow)" transform="rotate(-6 120 70)">
+                  <rect x="98" y="15" width="46" height="110" rx="14" fill="#0F172A" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+                  <!-- Red -->
+                  <circle cx="121" cy="36" r="12" fill="#334155"/>
+                  <!-- Yellow -->
+                  <circle cx="121" cy="68" r="12" fill="#334155"/>
+                  <!-- Green Active -->
+                  <circle cx="121" cy="100" r="13" fill="#10B981"/>
+                  <circle cx="121" cy="100" r="8" fill="#6EE7B7"/>
+                </g>
+              </svg>
+            </div>
+            <div class="exam-title-text">Экзамен</div>
+          </div>
+        </div>
+        <ul class="pros-list">
+          <li>Универсальный дорожный символ для любой страны и категории</li>
+          <li>Зеленый свет создает позитивный настрой на победу</li>
+          <li>Очень четкая геометрия, идеальная читаемость на любых экранах</li>
+        </ul>
+      </div>
+
+      <!-- 5. Золотой кубок отличника & Дорожная лента -->
+      <div class="concept-card">
+        <div class="card-meta">
+          <span class="concept-number">КОНЦЕПТ 05</span>
+        </div>
+        <div>
+          <div class="concept-title">Кубок победы & Дорожная лента</div>
+          <div class="concept-desc">Золотой объемный кубок с гравировкой «20/20» и обвивающей лентой асфальта. Мотивация сдать экзамен с первого раза.</div>
+        </div>
+        <div class="preview-wrapper">
+          <div class="exam-hero-button">
+            <div class="exam-badges-row">
+              <div class="exam-badge">20 вопросов</div>
+              <div class="exam-badge">20 минут</div>
+              <div class="exam-badge">A/B</div>
+            </div>
+            <div class="hero-art-slot">
+              <svg width="180" height="150" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="goldCup" x1="80" y1="10" x2="160" y2="130" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#FDE68A"/>
+                    <stop offset="0.4" stop-color="#F59E0B"/>
+                    <stop offset="1" stop-color="#D97706"/>
+                  </linearGradient>
+                  <filter id="cupShadow">
+                    <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000" flood-opacity="0.3"/>
+                  </filter>
+                </defs>
+                <!-- Road Ribbon -->
+                <path d="M60 140 C100 130 110 90 150 110 C170 120 180 140 180 145" stroke="#1E293B" stroke-width="12" fill="none" stroke-linecap="round"/>
+                <path d="M60 140 C100 130 110 90 150 110 C170 120 180 140 180 145" stroke="#F8FAFC" stroke-width="2" stroke-dasharray="3 3" fill="none"/>
+                <!-- Trophy -->
+                <g filter="url(#cupShadow)" transform="translate(25, 0)">
+                  <path d="M75 35 C75 35 75 75 105 75 C135 75 135 35 135 35 Z" fill="url(#goldCup)"/>
+                  <path d="M75 42 C60 42 60 62 75 66" stroke="#F59E0B" stroke-width="5" fill="none" stroke-linecap="round"/>
+                  <path d="M135 42 C150 42 150 62 135 66" stroke="#F59E0B" stroke-width="5" fill="none" stroke-linecap="round"/>
+                  <rect x="99" y="75" width="12" height="24" fill="url(#goldCup)"/>
+                  <path d="M85 99 L125 99 L130 122 L80 122 Z" fill="#0F172A" rx="4"/>
+                  <circle cx="105" cy="52" r="10" fill="#F8FAFC" opacity="0.25"/>
+                  <text x="105" y="56" font-family="'Plus Jakarta Sans'" font-weight="900" font-size="10" fill="#78350F" text-anchor="middle">20</text>
+                </g>
+              </svg>
+            </div>
+            <div class="exam-title-text">Экзамен</div>
+          </div>
+        </div>
+        <ul class="pros-list">
+          <li>Геймификация и ощущение награды</li>
+          <li>Отлично ассоциируется с успешной сдачей</li>
+          <li>Золотой цвет превосходно контрастирует с синим фоном кнопки</li>
+        </ul>
+      </div>
+
+      <!-- 6. Смарт-ключ зажигания (Start Engine) -->
+      <div class="concept-card">
+        <div class="card-meta">
+          <span class="concept-number">КОНЦЕПТ 06</span>
+        </div>
+        <div>
+          <div class="concept-title">Ключ зажигания (Smart Key)</div>
+          <div class="concept-desc">3D-брелок автомобильного смарт-ключа с кнопкой «START ENGINE» и металлическими акцентами — ощущение владения своим авто.</div>
+        </div>
+        <div class="preview-wrapper">
+          <div class="exam-hero-button">
+            <div class="exam-badges-row">
+              <div class="exam-badge">20 вопросов</div>
+              <div class="exam-badge">20 минут</div>
+              <div class="exam-badge">A/B</div>
+            </div>
+            <div class="hero-art-slot">
+              <svg width="180" height="150" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="keyBody" x1="60" y1="20" x2="160" y2="130" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#334155"/>
+                    <stop offset="1" stop-color="#0F172A"/>
+                  </linearGradient>
+                  <filter id="keyGlow">
+                    <feDropShadow dx="-2" dy="8" stdDeviation="8" flood-color="#000" flood-opacity="0.4"/>
+                  </filter>
+                </defs>
+                <g filter="url(#keyGlow)" transform="rotate(-15 110 70)">
+                  <rect x="75" y="25" width="68" height="100" rx="20" fill="url(#keyBody)" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+                  <rect x="80" y="30" width="58" height="90" rx="16" stroke="rgba(255,255,255,0.1)" fill="none"/>
+                  <circle cx="109" cy="65" r="18" fill="#1E293B" stroke="#3B82F6" stroke-width="2"/>
+                  <text x="109" y="63" font-family="'Plus Jakarta Sans'" font-size="6.5" font-weight="800" fill="#93C5FD" text-anchor="middle">ENGINE</text>
+                  <text x="109" y="72" font-family="'Plus Jakarta Sans'" font-size="7.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">START</text>
+                  <circle cx="95" cy="102" r="6" fill="#334155"/>
+                  <circle cx="123" cy="102" r="6" fill="#334155"/>
+                </g>
+              </svg>
+            </div>
+            <div class="exam-title-text">Экзамен</div>
+          </div>
+        </div>
+        <ul class="pros-list">
+          <li>Стильный атрибут водительской жизни</li>
+          <li>Символизирует финальный шаг к управлению машиной</li>
+          <li>Аккуратная и технологичная форма</li>
+        </ul>
+      </div>
+
+      <!-- 7. Официальный щит аттестации (ГИБДД / Успех) -->
+      <div class="concept-card">
+        <div class="card-meta">
+          <span class="concept-number">КОНЦЕПТ 07</span>
+        </div>
+        <div>
+          <div class="concept-title">Щит аттестации & Звезда</div>
+          <div class="concept-desc">Объемный металлический щит с галочкой проверки и золотой окантовкой — символ официального государственного экзамена.</div>
+        </div>
+        <div class="preview-wrapper">
+          <div class="exam-hero-button">
+            <div class="exam-badges-row">
+              <div class="exam-badge">20 вопросов</div>
+              <div class="exam-badge">20 минут</div>
+              <div class="exam-badge">A/B</div>
+            </div>
+            <div class="hero-art-slot">
+              <svg width="180" height="150" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="shieldGrad" x1="70" y1="20" x2="160" y2="130" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#1E293B"/>
+                    <stop offset="1" stop-color="#0F172A"/>
+                  </linearGradient>
+                  <filter id="shieldShadow">
+                    <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000" flood-opacity="0.35"/>
+                  </filter>
+                </defs>
+                <g filter="url(#shieldShadow)" transform="translate(20, 5)">
+                  <path d="M105 18 L152 35 C152 75 132 110 105 125 C78 110 58 75 58 35 Z" fill="url(#shieldGrad)" stroke="#F59E0B" stroke-width="3"/>
+                  <path d="M105 28 L142 42 C142 74 126 102 105 114 C84 102 68 74 68 42 Z" fill="rgba(245, 158, 11, 0.08)" stroke="rgba(255,255,255,0.15)"/>
+                  <path d="M90 68 L101 79 L122 56" stroke="#10B981" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                </g>
+              </svg>
+            </div>
+            <div class="exam-title-text">Экзамен</div>
+          </div>
+        </div>
+        <ul class="pros-list">
+          <li>Подчеркивает официальный статус экзамена ГИБДД</li>
+          <li>Вызывает чувство надежности и уверенности в знаниях</li>
+          <li>Строгий и чистый дизайн без лишних деталей</li>
+        </ul>
+      </div>
+
+      <!-- 8. Руль & Перспектива дороги -->
+      <div class="concept-card">
+        <div class="card-meta">
+          <span class="concept-number">КОНЦЕПТ 08</span>
+        </div>
+        <div>
+          <div class="concept-title">Нео-руль & Дорожная разметка</div>
+          <div class="concept-desc">Стилизованный спортивный руль в перспективе с расходящимися лучами дорожной разметки.</div>
+        </div>
+        <div class="preview-wrapper">
+          <div class="exam-hero-button">
+            <div class="exam-badges-row">
+              <div class="exam-badge">20 вопросов</div>
+              <div class="exam-badge">20 минут</div>
+              <div class="exam-badge">A/B</div>
+            </div>
+            <div class="hero-art-slot">
+              <svg width="180" height="150" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <filter id="wheelShadow">
+                    <feDropShadow dx="-2" dy="8" stdDeviation="8" flood-color="#000" flood-opacity="0.35"/>
+                  </filter>
+                </defs>
+                <path d="M70 145 L150 145 L130 90 L100 90 Z" fill="rgba(255,255,255,0.06)"/>
+                <g filter="url(#wheelShadow)" transform="rotate(-10 115 75)">
+                  <ellipse cx="115" cy="75" rx="46" ry="46" stroke="#0F172A" stroke-width="12" fill="none"/>
+                  <ellipse cx="115" cy="75" rx="46" ry="46" stroke="#334155" stroke-width="8" fill="none"/>
+                  <ellipse cx="115" cy="75" rx="46" ry="46" stroke="rgba(255,255,255,0.2)" stroke-width="1" fill="none"/>
+                  <circle cx="115" cy="75" r="14" fill="#0F172A" stroke="#475569" stroke-width="2"/>
+                  <path d="M115 75 L75 75 M115 75 L155 75 M115 75 L115 115" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+                  <rect x="112" y="27" width="6" height="6" rx="1" fill="#EF4444"/>
+                </g>
+              </svg>
+            </div>
+            <div class="exam-title-text">Экзамен</div>
+          </div>
+        </div>
+        <ul class="pros-list">
+          <li>Универсальнее целой машины (руль есть у всех ТС)</li>
+          <li>Передает ощущение контроля над дорогой</li>
+          <li>Красивая динамичная композиция</li>
+        </ul>
+      </div>
+
+      <!-- 9. Таймер & Дорожные знаки -->
+      <div class="concept-card">
+        <div class="card-meta">
+          <span class="concept-number">КОНЦЕПТ 09</span>
+        </div>
+        <div>
+          <div class="concept-title">Хронометр & Кластер знаков</div>
+          <div class="concept-desc">Секундомер с делениями на 20 минут и вылетающими миниатюрными знаками ПДД («Главная дорога», «Круг»).</div>
+        </div>
+        <div class="preview-wrapper">
+          <div class="exam-hero-button">
+            <div class="exam-badges-row">
+              <div class="exam-badge">20 вопросов</div>
+              <div class="exam-badge">20 минут</div>
+              <div class="exam-badge">A/B</div>
+            </div>
+            <div class="hero-art-slot">
+              <svg width="180" height="150" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <filter id="timeShadow">
+                    <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.3"/>
+                  </filter>
+                </defs>
+                <g transform="translate(60, 30) rotate(-15)">
+                  <rect x="0" y="0" width="22" height="22" rx="3" fill="#F8FAFC" stroke="#000" stroke-width="1.5" transform="rotate(45 11 11)"/>
+                  <rect x="3" y="3" width="16" height="16" rx="2" fill="#F59E0B" transform="rotate(45 11 11)"/>
+                </g>
+                <g transform="translate(150, 45) rotate(12)">
+                  <polygon points="12,2 22,20 2,20" fill="#EF4444"/>
+                  <polygon points="12,6 18,17 6,17" fill="#FFFFFF"/>
+                </g>
+                <g filter="url(#timeShadow)" transform="translate(45, 20)">
+                  <circle cx="80" cy="70" r="44" fill="#0F172A" stroke="rgba(255,255,255,0.2)" stroke-width="4"/>
+                  <rect x="74" y="20" width="12" height="8" rx="2" fill="#94A3B8"/>
+                  <circle cx="80" cy="70" r="34" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="3 6" fill="none"/>
+                  <line x1="80" y1="70" x2="98" y2="48" stroke="#38BDF8" stroke-width="3.5" stroke-linecap="round"/>
+                  <circle cx="80" cy="70" r="5" fill="#38BDF8"/>
+                </g>
+              </svg>
+            </div>
+            <div class="exam-title-text">Экзамен</div>
+          </div>
+        </div>
+        <ul class="pros-list">
+          <li>Прямая связь со смыслом билета по времени</li>
+          <li>Знаки ПДД сразу дают понять предмет экзамена</li>
+          <li>Легкий и ненавязчивый визуал</li>
+        </ul>
+      </div>
+
+      <!-- 10. Дорожная развязка в перспективе -->
+      <div class="concept-card">
+        <div class="card-meta">
+          <span class="concept-number">КОНЦЕПТ 10</span>
+        </div>
+        <div>
+          <div class="concept-title">Парящая эстакада (Overpass Ribbon)</div>
+          <div class="concept-desc">Абстрактная трехмерная многоуровневая лента шоссе с золотистой ночной разметкой. Минимализм и масштаб.</div>
+        </div>
+        <div class="preview-wrapper">
+          <div class="exam-hero-button">
+            <div class="exam-badges-row">
+              <div class="exam-badge">20 вопросов</div>
+              <div class="exam-badge">20 минут</div>
+              <div class="exam-badge">A/B</div>
+            </div>
+            <div class="hero-art-slot">
+              <svg width="180" height="150" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="roadRibbon" x1="40" y1="140" x2="160" y2="20" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#0F172A"/>
+                    <stop offset="1" stop-color="#334155"/>
+                  </linearGradient>
+                  <filter id="ribbonGlow">
+                    <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity="0.35"/>
+                  </filter>
+                </defs>
+                <path d="M40 145 C80 145 100 110 130 90 C160 70 180 60 190 55" stroke="url(#roadRibbon)" stroke-width="26" fill="none" filter="url(#ribbonGlow)"/>
+                <path d="M40 145 C80 145 100 110 130 90 C160 70 180 60 190 55" stroke="#F59E0B" stroke-width="2" stroke-dasharray="6 4" fill="none"/>
+                <path d="M80 60 C110 50 140 70 160 110 C170 130 180 145 180 150" stroke="#0F172A" stroke-width="18" fill="none" opacity="0.7"/>
+                <path d="M80 60 C110 50 140 70 160 110 C170 130 180 145 180 150" stroke="#FFFFFF" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+                <g transform="translate(142, 38)">
+                  <circle cx="8" cy="8" r="7" fill="#EF4444"/>
+                  <circle cx="8" cy="8" r="3" fill="#FFFFFF"/>
+                </g>
+              </svg>
+            </div>
+            <div class="exam-title-text">Экзамен</div>
+          </div>
+        </div>
+        <ul class="pros-list">
+          <li>Ультрасовременный абстрактный стиль как у премиальных навигаторов</li>
+          <li>Никаких устаревающих моделей машин</li>
+          <li>Отлично масштабируется в SVG</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function setCardWidth(w) {
+      document.querySelectorAll('.control-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      document.querySelectorAll('.preview-wrapper').forEach(el => {
+        el.style.maxWidth = w;
+        el.style.margin = '0 auto';
+      });
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      document.documentElement.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+    }
+  </script>
+</body>
+</html>
