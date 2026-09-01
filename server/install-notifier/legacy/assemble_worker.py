@@ -324,7 +324,7 @@ new_router = '''    const url = new URL(request.url);
     if (url.pathname === '/api/admin/login' && request.method === 'POST') {
       let body = {};
       try { body = await request.json(); } catch (_) {}
-      const expectedPassword = env.ADMIN_PASSWORD || 'pdd2026admin';
+      const expectedPassword = env.ADMIN_PASSWORD;
       if (body.password === expectedPassword) {
         return jsonResponse({ ok: true }, 200, {
           'Set-Cookie': `pdd_admin_token=${encodeURIComponent(expectedPassword)}; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax`,
@@ -456,7 +456,7 @@ extra_functions = ''
 if not has_verify_auth:
     extra_functions += '''
 function verifyAdminAuth(request, env) {
-  const expectedPassword = env.ADMIN_PASSWORD || 'pdd2026admin';
+  const expectedPassword = env.ADMIN_PASSWORD;
   const authHeader = request.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     if (authHeader.slice(7) === expectedPassword) return true;

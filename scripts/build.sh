@@ -14,7 +14,7 @@ case "$COUNTRY" in
   *) echo "unknown country: $COUNTRY (expected ru|by|rs)"; exit 1 ;;
 esac
 
-export PATH="$HOME/flutter/bin:$PATH"
+export PATH="/opt/homebrew/bin:$HOME/flutter/bin:$PATH"
 export JAVA_HOME="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home}"
 export PATH="$JAVA_HOME/bin:$PATH"
 
@@ -71,8 +71,17 @@ NOTIFY_DEFINES=()
 if [[ -n "${INSTALL_NOTIFY_URL:-}" ]]; then
   NOTIFY_DEFINES+=(--dart-define=INSTALL_NOTIFY_URL="$INSTALL_NOTIFY_URL")
 fi
+# Ключ приложения: без него воркер не пускает сборку к платным функциям
+# (разбор от ИИ идёт через наш ключ Gemini). Лежит в secrets/ — папка в
+# .gitignore, потому что репозиторий проекта публичный.
+if [[ -z "${INSTALL_NOTIFY_SECRET:-}" && -f "secrets/install_notify_secret.txt" ]]; then
+  INSTALL_NOTIFY_SECRET="$(cat "secrets/install_notify_secret.txt")"
+fi
 if [[ -n "${INSTALL_NOTIFY_SECRET:-}" ]]; then
   NOTIFY_DEFINES+=(--dart-define=INSTALL_NOTIFY_SECRET="$INSTALL_NOTIFY_SECRET")
+else
+  echo "⚠️  secrets/install_notify_secret.txt не найден — сборка пойдёт без ключа приложения,"
+  echo "    и разбор вопросов от ИИ на ней работать не будет."
 fi
 
 # Доп. --dart-define через окружение (напр. тестовая сборка с дебаг-меню:

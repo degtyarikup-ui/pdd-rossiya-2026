@@ -11,6 +11,9 @@ class MockKV {
   async put(key, val) {
     this.store.set(key, String(val));
   }
+  async delete(key) {
+    this.store.delete(key);
+  }
   async list({ prefix }) {
     const keys = [];
     for (const k of this.store.keys()) {

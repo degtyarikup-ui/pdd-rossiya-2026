@@ -156,6 +156,13 @@ flutter test                           # тесты всех моделей (exa
       batch-*.json` (6 тематических JSON, схема `{batch, terms:[{term,slug,
       definition,seeAlso}]}`), рендерит `render_glossary()` в generator.py —
       DefinedTermSet-разметка, авто-подключён в sitemap/llms.txt/llms-full.txt.
+    - **Админка воркера** (`server/install-notifier/`, Cloudflare Worker +
+      KV): аналитика установок, блог, пользователи, ИИ и **автопостинг**
+      роликов в Instagram Reels + YouTube Shorts (`social.js` — логика,
+      `social_ui.js` — раздел панели, крон `5 * * * *`; источник роликов —
+      папка Google Диска, инструкция по доступам — `SOCIAL_SETUP.md`).
+      HTML/JS панели лежат в worker.js экранированными строками — правки
+      вносятся не руками, а через отдельные модули/скрипты.
   - **Приложение**: `deploy_web.sh ru` → репо `pdd-rossiya-app` gh-pages →
     app.pdd-drive.ru (robots.txt Disallow: SEO живёт на лендинге; DNS: CNAME
     `app` → degtyarikup-ui.github.io на reg.ru).
@@ -201,6 +208,28 @@ flutter test                           # тесты всех моделей (exa
 5. Кейс в `scripts/build.sh` и `scripts/deploy_web.sh` (репо/домен/титулы).
 6. Тесты правил экзамена в `test/exam_flow_test.dart` (BY — образец для
    `mistakes`, RS — для `points`).
+
+## Секреты
+
+Репозиторий **публичный** — паролей и ключей в коде быть не должно, значений
+по умолчанию тоже (без секрета доступ закрывается, а не открывается).
+
+- Воркер (`wrangler secret put`): `ADMIN_PASSWORD` (вход в админку),
+  `BOT_TOKEN`, `CHAT_ID`, `GEMINI_API_KEY`, `SHARED_SECRET` (ключ приложения).
+- `secrets/install_notify_secret.txt` (в .gitignore) — тот же ключ приложения
+  для сборок; `scripts/build.sh` подставляет его автоматически.
+- Разбор от ИИ и пинги установок принимаются только с этим ключом; временный
+  проход для старых сборок выключается галочкой в админке (раздел «ИИ»).
+
+Защита от случайной утечки — хук `tools/git-hooks/pre-commit`: не даёт
+закоммитить `secrets/`, `.env`, keystore, локальное состояние `.wrangler/`,
+строки, похожие на ключи и токены, и файлы тяжелее 50 МБ. Ставится один раз:
+
+```bash
+git config core.hooksPath tools/git-hooks   # уже включено на этой машине
+```
+
+Обойти в исключительном случае — `git commit --no-verify`.
 
 ## Окружение сборки
 

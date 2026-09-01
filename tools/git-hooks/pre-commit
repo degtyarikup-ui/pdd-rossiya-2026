@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────────
+# Проверка перед коммитом: репозиторий проекта ПУБЛИЧНЫЙ, поэтому всё, что
+# попадёт в коммит, тут же становится доступно кому угодно.
+#
+# Хук останавливает коммит, если в него попали:
+#   1) файлы, которых в публичном репозитории быть не должно (ключи, .env,
+#      локальное состояние wrangler, keystore);
+#   2) строки, похожие на ключи и токены;
+#   3) файлы тяжелее 50 МБ (GitHub такие отвергает).
+#
+# Ставится один раз командой:  git config core.hooksPath tools/git-hooks
+# Обойти в исключительном случае:  git commit --no-verify
+# ─────────────────────────────────────────────────────────────────────────────
+set -uo pipefail
+
+RED=$'\033[31m'; YELLOW=$'\033[33m'; RESET=$'\033[0m'
+fail=0
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[[ -z "$staged" ]] && exit 0
+
+# ── 1. Запрещённые пути ──
+forbidden_re='(^|/)secrets/|(^|/)\.wrangler/|(^|/)\.env($|\.)|\.jks$|\.keystore$|\.pem$|\.p12$|\.p8$|(^|/)key\.properties$|service[_-]?account.*\.json$|credentials.*\.json$'
+while IFS= read -r file; do
+  [[ -z "$file" ]] && continue
+  if [[ "$file" =~ $forbidden_re ]]; then
+    echo "${RED}✕ нельзя коммитить:${RESET} $file"
+    fail=1
+  fi
+done <<< "$staged"
+
+# ── 2. Похожее на ключи в самом тексте изменений ──
+# Ищем только в добавленных строках, чтобы не спотыкаться о старый код.
+patterns=(
+  'AIza[0-9A-Za-z_-]{30,}'                    # ключ Google API
+  'GOCSPX-[0-9A-Za-z_-]{15,}'                 # Google OAuth client secret
+  '1//[0-9A-Za-z_-]{30,}'                     # Google refresh token
+  '[0-9]{8,10}:AA[0-9A-Za-z_-]{30,}'          # токен Telegram-бота
+  'EAA[0-9A-Za-z]{40,}'                       # токен Meta/Instagram
+  'IGQ[A-Za-z0-9_-]{40,}'                     # токен Instagram
+  'ya29\.[0-9A-Za-z_-]{30,}'                  # access token Google
+  'sk-[A-Za-z0-9]{30,}'                       # ключ OpenAI
+  'AKIA[0-9A-Z]{16}'                          # ключ AWS
+  'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY'     # приватный ключ
+)
+added=$(git diff --cached -U0 --diff-filter=ACM | grep '^+' | grep -v '^+++')
+for pattern in "${patterns[@]}"; do
+  if hit=$(echo "$added" | grep -nE "$pattern" | head -3); [[ -n "$hit" ]]; then
+    echo "${RED}✕ похоже на ключ или токен в изменениях:${RESET}"
+    echo "$hit" | cut -c1-120 | sed 's/^/    /'
+    fail=1
+  fi
+done
+
+# Пароль/секрет, записанный строкой прямо в коде.
+if hit=$(echo "$added" | grep -inE "(password|passwd|api_?key|secret|access_token)\s*[:=]\s*['\"][A-Za-z0-9_.\-]{8,}['\"]" \
+         | grep -viE "example|placeholder|your_|process\.env|String\.fromEnvironment|os\.environ|getenv|dart-define|env\." | head -3); [[ -n "$hit" ]]; then
+  echo "${RED}✕ пароль или ключ строкой в коде:${RESET}"
+  echo "$hit" | cut -c1-120 | sed 's/^/    /'
+  echo "    ${YELLOW}секреты берём из окружения: wrangler secret / --dart-define / secrets/${RESET}"
+  fail=1
+fi
+
+# ── 3. Тяжёлые файлы ──
+while IFS= read -r file; do
+  [[ -f "$file" ]] || continue
+  size=$(wc -c < "$file" 2>/dev/null || echo 0)
+  if (( size > 50 * 1024 * 1024 )); then
+    echo "${RED}✕ файл тяжелее 50 МБ:${RESET} $file ($((size / 1048576)) МБ) — GitHub его не примет"
+    fail=1
+  fi
+done <<< "$staged"
+
+if (( fail )); then
+  echo
+  echo "${YELLOW}Коммит остановлен. Репозиторий публичный — проверь список выше.${RESET}"
+  echo "${YELLOW}Если это ложная тревога: git commit --no-verify${RESET}"
+  exit 1
+fi
+
+exit 0
