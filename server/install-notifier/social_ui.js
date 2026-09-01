@@ -280,6 +280,9 @@ function renderSocialQueue() {
       + '<button class="btn-action" onclick="socialSavePost(\\'' + p.id + '\\')">Сохранить текст</button>'
       + '<button class="btn-action btn-primary" onclick="socialPublishNow(\\'' + p.id + '\\')">'
       + (p.status === 'failed' ? 'Повторить' : 'Опубликовать сейчас') + '</button>'
+      + (p.status === 'published'
+          ? '<button class="btn-action" onclick="socialMarkPost(\\'' + p.id + '\\', \\'queued\\')">Вернуть в очередь</button>'
+          : '<button class="btn-action" onclick="socialMarkPost(\\'' + p.id + '\\', \\'published\\')" title="Ролик уже выложен вручную — не публиковать">Уже выложено</button>')
       + '<button class="btn-action" style="color:var(--danger);border-color:#fecaca;margin-left:auto;" onclick="socialDeletePost(\\'' + p.id + '\\')">Убрать из очереди</button>'
       + '</div></div>';
   }).join('');
@@ -366,6 +369,12 @@ window.socialSavePost = async function (id) {
     caption: document.getElementById('sp-caption-' + id).value
   });
   socialToast('Сохранено');
+};
+
+window.socialMarkPost = async function (id, status) {
+  await socialApi('posts/mark', { id: id, status: status });
+  socialToast(status === 'published' ? 'Помечен как выложенный' : 'Возвращён в очередь');
+  await loadSocial();
 };
 
 window.socialDeletePost = async function (id) {

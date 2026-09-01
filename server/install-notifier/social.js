@@ -348,12 +348,35 @@ async function driveReadText(env, fileId) {
  * Рядом с «name.mp4» можно положить «name.txt» — его содержимое станет
  * подписью к посту (так же, как в Meerno).
  */
+/**
+ * Собрать файлы из папки и её подпапок.
+ *
+ * Ролики удобно раскладывать по форматам («вопрос из билета», «узнай знак»),
+ * поэтому указывать в настройках одну папку, а видео держать во вложенных —
+ * нормальный сценарий. Глубина ограничена, чтобы случайно указанный «Мой диск»
+ * не превратился в обход всего хранилища.
+ */
+async function driveCollectVideos(env, folderId, depth = 0, prefix = '') {
+  const entries = await driveListFolder(env, folderId);
+  let result = entries
+    .filter((f) => f.mimeType !== 'application/vnd.google-apps.folder')
+    .map((f) => ({ ...f, folderPath: prefix }));
+
+  if (depth < 2) {
+    const subfolders = entries.filter((f) => f.mimeType === 'application/vnd.google-apps.folder');
+    for (const sub of subfolders) {
+      result = result.concat(await driveCollectVideos(env, sub.id, depth + 1, prefix + sub.name + '/'));
+    }
+  }
+  return result;
+}
+
 export async function syncAccountVideos(env, account) {
   if (!account.driveFolderId) {
     return { status: 'error', message: 'У аккаунта не указана папка Google Диска' };
   }
 
-  const files = await driveListFolder(env, account.driveFolderId);
+  const files = await driveCollectVideos(env, account.driveFolderId);
   const videos = files.filter((f) => VIDEO_EXT.includes(extOf(f.name)));
   const captions = {};
   files
@@ -1068,6 +1091,30 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     if (Array.isArray(body.targets)) patch.targets = body.targets;
     if (body.scheduledAt !== undefined) patch.scheduledAt = body.scheduledAt || null;
     const updated = await patchPost(env, body.id, patch);
+    return jsonResponse(updated ? { ok: true } : { error: 'not found' }, updated ? 200 : 404);
+  }
+
+  // Пометить ролик выложенным, не публикуя его.
+  //
+  // Нужно, когда часть роликов уже ушла в соцсети руками: удалять файлы с
+  // Диска ради этого не хочется, а публиковать их повторно нельзя.
+  if (path === '/api/admin/social/posts/mark' && request.method === 'POST') {
+    const asPublished = body.status !== 'queued';
+    const updated = await patchPost(env, body.id, asPublished ? {
+      status: 'published',
+      instagramStatus: 'published',
+      youtubeStatus: 'published',
+      publishedAt: new Date().toISOString(),
+      error: null,
+      markedManually: true,
+    } : {
+      status: 'queued',
+      instagramStatus: 'queued',
+      youtubeStatus: 'queued',
+      publishedAt: null,
+      error: null,
+      markedManually: false,
+    });
     return jsonResponse(updated ? { ok: true } : { error: 'not found' }, updated ? 200 : 404);
   }
 
