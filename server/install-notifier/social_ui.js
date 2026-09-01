@@ -41,7 +41,13 @@ export const SOCIAL_VIEW_HTML = `
         <label class="form-label">Refresh token</label>
         <input type="password" id="social-refresh-token" class="sidebar-select" placeholder="оставь пустым, чтобы не менять">
       </div>
+      <div class="form-group">
+        <label class="form-label">API-ключ (упрощённый режим)</label>
+        <input type="password" id="social-api-key" class="sidebar-select" placeholder="оставь пустым, чтобы не менять">
+        <span style="font-size:11.5px;color:var(--text-muted);">Только для чтения папки, открытой «по ссылке». YouTube с ним работать не будет.</span>
+      </div>
     </div>
+    <div id="social-mode-line" style="margin-top:12px;font-size:12.5px;"></div>
     <div id="social-settings-hint" style="margin-top:12px; font-size:12.5px; color:var(--text-muted);">
       Где взять эти три значения — в инструкции <b>server/install-notifier/SOCIAL_SETUP.md</b>. Одного доступа хватает и на чтение папки с роликами, и на заливку видео на канал.
     </div>
@@ -141,6 +147,16 @@ async function loadSocial() {
     if (document.activeElement !== clientIdInput) clientIdInput.value = s.googleClientId || '';
     document.getElementById('social-client-secret').placeholder = s.hasGoogleClientSecret ? (s.googleClientSecretMask + ' — оставь пустым, чтобы не менять') : 'не задан';
     document.getElementById('social-refresh-token').placeholder = s.hasGoogleRefreshToken ? (s.googleRefreshTokenMask + ' — оставь пустым, чтобы не менять') : 'не задан';
+    document.getElementById('social-api-key').placeholder = s.hasGoogleApiKey ? (s.googleApiKeyMask + ' — оставь пустым, чтобы не менять') : 'не задан';
+    var modeLine = document.getElementById('social-mode-line');
+    if (s.driveMode === 'oauth') {
+      modeLine.innerHTML = '<span style="color:var(--success);font-weight:600;">Полный доступ:</span> читаем любую папку Диска, заливаем на YouTube.';
+    } else if (s.driveMode === 'apikey') {
+      modeLine.innerHTML = '<span style="color:#B45309;font-weight:600;">Упрощённый режим:</span> Диск по API-ключу — папка должна быть открыта «Доступ по ссылке». '
+        + 'Instagram работает, <b>YouTube отключён</b>: для заливки на канал нужен Refresh token.';
+    } else {
+      modeLine.innerHTML = '<span style="color:var(--danger);font-weight:600;">Доступ к Google не настроен.</span> Заполни Refresh token (полный доступ) или API-ключ (только Диск).';
+    }
     renderSocialAccounts();
     renderSocialQueue();
     renderSocialLog();
@@ -390,10 +406,12 @@ document.getElementById('social-save-settings-btn').addEventListener('click', as
     await socialApi('settings', {
       googleClientId: document.getElementById('social-client-id').value,
       googleClientSecret: document.getElementById('social-client-secret').value,
-      googleRefreshToken: document.getElementById('social-refresh-token').value
+      googleRefreshToken: document.getElementById('social-refresh-token').value,
+      googleApiKey: document.getElementById('social-api-key').value
     });
     document.getElementById('social-client-secret').value = '';
     document.getElementById('social-refresh-token').value = '';
+    document.getElementById('social-api-key').value = '';
     socialToast('Настройки сохранены');
     await loadSocial();
   } catch (e) { socialToast('Ошибка: ' + e.message, true); }

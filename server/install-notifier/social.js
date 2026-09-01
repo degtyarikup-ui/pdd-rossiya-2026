@@ -124,6 +124,7 @@ export async function socialLog(env, level, message, extra = {}) {
 // ────────────────────────────── настройки и аккаунты ──────────────────────────────
 
 const EMPTY_SETTINGS = {
+  googleApiKey: '',
   googleClientId: '',
   googleClientSecret: '',
   googleRefreshToken: '',
@@ -139,6 +140,7 @@ async function getSettings(env) {
     googleClientId: env.GOOGLE_CLIENT_ID || stored.googleClientId || '',
     googleClientSecret: env.GOOGLE_CLIENT_SECRET || stored.googleClientSecret || '',
     googleRefreshToken: env.GOOGLE_REFRESH_TOKEN || stored.googleRefreshToken || '',
+    googleApiKey: env.GOOGLE_API_KEY || stored.googleApiKey || '',
   };
 }
 
@@ -152,6 +154,11 @@ function maskSecret(value) {
 function publicSettings(settings) {
   return {
     googleClientId: settings.googleClientId,
+    googleApiKeyMask: maskSecret(settings.googleApiKey),
+    hasGoogleApiKey: Boolean(settings.googleApiKey),
+    // Диску хватает API-ключа, YouTube без OAuth заливать не даёт.
+    driveMode: settings.googleRefreshToken ? 'oauth' : (settings.googleApiKey ? 'apikey' : 'none'),
+    youtubeReady: Boolean(settings.googleRefreshToken),
     googleClientSecretMask: maskSecret(settings.googleClientSecret),
     googleRefreshTokenMask: maskSecret(settings.googleRefreshToken),
     hasGoogleClientSecret: Boolean(settings.googleClientSecret),
@@ -260,33 +267,74 @@ async function googleAccessToken(env, refreshTokenOverride = null) {
 
 // ────────────────────────────── Google Диск ──────────────────────────────
 
+/**
+ * Как ходим на Диск.
+ *
+ * OAuth (refresh token) читает и закрытые папки и он же нужен YouTube.
+ * Если OAuth не настроен, но задан API-ключ — читаем папку, открытую «по
+ * ссылке»: ключ получается в Cloud Console за пару минут, без экрана согласия.
+ */
+async function driveAuth(env) {
+  const settings = await getSettings(env);
+  if (settings.googleRefreshToken) {
+    return { mode: 'oauth', token: await googleAccessToken(env) };
+  }
+  if (settings.googleApiKey) {
+    return { mode: 'apikey', key: settings.googleApiKey };
+  }
+  throw new Error(
+    'Доступ к Google Диску не настроен: заполни либо Refresh token (нужен и для YouTube), ' +
+    'либо API-ключ — тогда папку надо открыть «Доступ по ссылке».'
+  );
+}
+
 async function driveListFolder(env, folderId) {
-  const token = await googleAccessToken(env);
+  const auth = await driveAuth(env);
   const params = new URLSearchParams({
     q: `'${folderId}' in parents and trashed = false`,
     fields: 'files(id, name, mimeType, size)',
     pageSize: '200',
     orderBy: 'name_natural',
   });
+  if (auth.mode === 'apikey') params.set('key', auth.key);
   const res = await fetch('https://www.googleapis.com/drive/v3/files?' + params, {
-    headers: { authorization: 'Bearer ' + token },
+    headers: auth.mode === 'oauth' ? { authorization: 'Bearer ' + auth.token } : {},
   });
   if (!res.ok) {
     const body = await res.text();
-    throw new Error('Google Диск не отдал список файлов (HTTP ' + res.status + '): ' + limit(body, 200));
+    const hint = auth.mode === 'apikey' && (res.status === 403 || res.status === 404)
+      ? ' — с API-ключом видны только папки, открытые «Доступ по ссылке»'
+      : '';
+    throw new Error('Google Диск не отдал список файлов (HTTP ' + res.status + ')' + hint + ': ' + limit(body, 200));
   }
   const data = await res.json();
   return data.files || [];
 }
 
 async function driveDownloadResponse(env, fileId, rangeHeader = null) {
-  const token = await googleAccessToken(env);
-  const headers = { authorization: 'Bearer ' + token };
+  const auth = await driveAuth(env);
+  const headers = {};
+  if (auth.mode === 'oauth') headers.authorization = 'Bearer ' + auth.token;
   if (rangeHeader) headers.range = rangeHeader;
-  return await fetch(
-    'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(fileId) + '?alt=media&supportsAllDrives=true',
-    { headers }
-  );
+
+  let url = 'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(fileId) +
+            '?alt=media&supportsAllDrives=true';
+  if (auth.mode === 'apikey') url += '&key=' + encodeURIComponent(auth.key);
+
+  const res = await fetch(url, { headers });
+
+  // Открытая ссылка на большой файл отдаёт не видео, а страницу «не удалось
+  // проверить на вирусы». Молча отправить её в Instagram нельзя — он упадёт
+  // на невнятной ошибке.
+  const type = res.headers.get('content-type') || '';
+  if (res.ok && type.includes('text/html')) {
+    throw new Error(
+      'Google Диск вернул страницу подтверждения вместо файла. Обычно так бывает с крупными ' +
+      'роликами при доступе по ссылке — сожми видео или настрой доступ через Refresh token.'
+    );
+  }
+
+  return res;
 }
 
 async function driveReadText(env, fileId) {
@@ -761,11 +809,22 @@ async function runDiagnostics(env) {
   const checks = [];
   const settings = await getSettings(env);
 
-  try {
-    await googleAccessToken(env);
-    checks.push({ name: 'Google (Диск и YouTube)', ok: true, message: 'Токен обновляется' });
-  } catch (e) {
-    checks.push({ name: 'Google (Диск и YouTube)', ok: false, message: e.message });
+  if (settings.googleRefreshToken) {
+    try {
+      await googleAccessToken(env);
+      checks.push({ name: 'Google (Диск и YouTube)', ok: true, message: 'полный доступ, токен обновляется' });
+    } catch (e) {
+      checks.push({ name: 'Google (Диск и YouTube)', ok: false, message: e.message });
+    }
+  } else if (settings.googleApiKey) {
+    checks.push({
+      name: 'Google',
+      ok: true,
+      message: 'только Диск по API-ключу (папка должна быть открыта по ссылке). ' +
+               'Для заливки на YouTube нужен Refresh token — без него YouTube отключён.',
+    });
+  } else {
+    checks.push({ name: 'Google', ok: false, message: 'не настроен ни Refresh token, ни API-ключ' });
   }
 
   const accounts = await getAccounts(env);
@@ -909,7 +968,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     const stored = await kvJson(env, KV_SETTINGS, {});
     const next = { ...stored, workerOrigin: origin };
     // Пустое поле = «не меняем»: в форму секреты приходят замаскированными.
-    ['googleClientId', 'googleClientSecret', 'googleRefreshToken'].forEach((key) => {
+    ['googleClientId', 'googleClientSecret', 'googleRefreshToken', 'googleApiKey'].forEach((key) => {
       if (typeof body[key] === 'string' && body[key].trim()) next[key] = body[key].trim();
     });
     await kvPut(env, KV_SETTINGS, next);

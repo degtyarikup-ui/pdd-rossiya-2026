@@ -31,18 +31,19 @@ Cloudflare Worker: у него нет диска, поэтому Instagram ск�
      аккаунте просто пропускается.
 4. **APIs & Services → Credentials → Create credentials → OAuth client ID**,
    тип **Desktop app**. Скопируй **Client ID** и **Client Secret**.
-5. Получи refresh token — в Терминале одной строкой:
+5. Скачай файл ключа кнопкой «Download JSON» — он попадёт в `~/Downloads`.
+6. Одна команда — она подхватит этот файл, откроет вход в Google, получит
+   доступ и сама впишет его в админку:
 
    ```bash
-   python3 /Users/sergei/Documents/pdd/server/install-notifier/get_google_token.py
+   python3 /Users/sergei/Documents/pdd/server/install-notifier/setup_google.py
    ```
 
-   Скрипт спросит Client ID и Secret, откроет браузер (войди в тот
-   Google-аккаунт, где лежит папка с роликами и заведён YouTube-канал)
-   и напечатает refresh token.
+   В браузере выбери аккаунт с папкой роликов и каналом; на «приложение не
+   проверено» — «Дополнительные настройки» → «Перейти».
 
-6. В админке → **Автопостинг → Шаг 1**: вставь Client ID, Client Secret,
-   Refresh token → **Сохранить** → **Проверить подключение**.
+7. Если что-то пошло не так, значения всегда можно вписать руками:
+   админка → **Автопостинг → Шаг 1** → **Сохранить** → **Проверить подключение**.
 
 **Квота YouTube:** одна заливка стоит 1600 единиц из 10 000 в сутки — это
 до 6 роликов в день. Нам хватает: публикуем один.
