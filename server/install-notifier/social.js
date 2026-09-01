@@ -792,8 +792,18 @@ export async function runAutoPost(env, origin, notify = null) {
     if (!account.active) continue;
     if (account.lastPostedDay === today) continue;
 
-    const slot = parseTimeToMinutes(account.postTime);
-    if (minutesNow < slot || minutesNow > slot + 180) continue;
+    const nowIso = new Date().toISOString();
+    const allPosts = await getPosts(env);
+    // Ролик с назначенной датой публикуется по ней, а не по общему слоту:
+    // расписание, выставленное руками, важнее «одного в день в 19:00».
+    const hasDueScheduled = allPosts.some((p) => p.accountId === account.id
+      && (p.status === 'queued' || p.status === 'failed')
+      && p.scheduledAt && p.scheduledAt <= nowIso);
+
+    if (!hasDueScheduled) {
+      const slot = parseTimeToMinutes(account.postTime);
+      if (minutesNow < slot || minutesNow > slot + 180) continue;
+    }
 
     try {
       await syncAccountVideos(env, account);
@@ -854,12 +864,12 @@ async function runDiagnostics(env) {
   for (const account of accounts) {
     if (account.driveFolderId) {
       try {
-        const files = await driveListFolder(env, account.driveFolderId);
+        const files = await driveCollectVideos(env, account.driveFolderId);
         const videos = files.filter((f) => VIDEO_EXT.includes(extOf(f.name)));
         checks.push({
           name: `Папка Диска — ${account.name}`,
           ok: true,
-          message: `видно файлов: ${files.length}, из них роликов: ${videos.length}`,
+          message: `роликов видно: ${videos.length}`,
         });
       } catch (e) {
         checks.push({ name: `Папка Диска — ${account.name}`, ok: false, message: e.message });
@@ -1098,6 +1108,54 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
   //
   // Нужно, когда часть роликов уже ушла в соцсети руками: удалять файлы с
   // Диска ради этого не хочется, а публиковать их повторно нельзя.
+  // Массовые операции: расставить даты, заменить подпись, сменить площадки,
+  // пометить выложенными, убрать из очереди. Иначе тридцать роликов пришлось бы
+  // править по одному.
+  if (path === '/api/admin/social/posts/bulk' && request.method === 'POST') {
+    const ids = Array.isArray(body.ids) ? body.ids : [];
+    const posts = await getPosts(env);
+    const targetPosts = posts.filter((p) => ids.includes(p.id));
+    let changed = 0;
+
+    if (body.action === 'schedule') {
+      // Дата и время приходят по МСК, храним в UTC.
+      const startMsk = new Date(String(body.startAt) + ':00.000Z');
+      if (isNaN(startMsk.getTime())) return jsonResponse({ error: 'bad date' }, 400);
+      const stepDays = Math.max(1, parseInt(body.everyDays, 10) || 1);
+      const ordered = targetPosts.slice().sort((a, b) =>
+        String(a.fileName).localeCompare(String(b.fileName), 'ru', { numeric: true }));
+      ordered.forEach((post, i) => {
+        const when = new Date(startMsk.getTime() + i * stepDays * 86400000 - 3 * 3600000);
+        const idx = posts.findIndex((p) => p.id === post.id);
+        posts[idx] = { ...posts[idx], scheduledAt: when.toISOString() };
+        changed += 1;
+      });
+    } else {
+      targetPosts.forEach((post) => {
+        const idx = posts.findIndex((p) => p.id === post.id);
+        if (body.action === 'caption' && typeof body.caption === 'string') {
+          posts[idx] = { ...posts[idx], caption: body.caption.replace(/\{title\}/g, posts[idx].title || '') };
+        } else if (body.action === 'targets' && Array.isArray(body.targets)) {
+          posts[idx] = { ...posts[idx], targets: body.targets };
+        } else if (body.action === 'mark') {
+          posts[idx] = { ...posts[idx], status: 'published', instagramStatus: 'published',
+                         youtubeStatus: 'published', publishedAt: new Date().toISOString(),
+                         error: null, markedManually: true };
+        } else if (body.action === 'requeue') {
+          posts[idx] = { ...posts[idx], status: 'queued', instagramStatus: 'queued',
+                         youtubeStatus: 'queued', publishedAt: null, error: null, markedManually: false };
+        } else if (body.action === 'unschedule') {
+          posts[idx] = { ...posts[idx], scheduledAt: null };
+        }
+        changed += 1;
+      });
+    }
+
+    const kept = body.action === 'delete' ? posts.filter((p) => !ids.includes(p.id)) : posts;
+    await kvPut(env, KV_POSTS, kept);
+    return jsonResponse({ ok: true, changed: body.action === 'delete' ? ids.length : changed });
+  }
+
   if (path === '/api/admin/social/posts/mark' && request.method === 'POST') {
     const asPublished = body.status !== 'queued';
     const updated = await patchPost(env, body.id, asPublished ? {
