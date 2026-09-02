@@ -33,6 +33,10 @@ const MAX_UPLOAD_BYTES = 90 * 1024 * 1024;
 // Instagram занимает минуты, и очередь из тридцати растянулась бы на часы.
 const MAX_MANUAL_BATCH = 5;
 
+// Дольше этого времени публикация идти не может: Instagram отдаёт готовое
+// видео максимум за несколько минут, YouTube — быстрее.
+const STALE_PROCESSING_MS = 30 * 60 * 1000;
+
 const IG_POLL_ATTEMPTS = 40;
 const IG_POLL_INTERVAL_MS = 5000;
 
@@ -502,6 +506,19 @@ async function publishToInstagram(env, post, account, origin) {
   }
 
   const containerId = created.data.id;
+  // Cloudflare может оборвать фоновую задачу в любой момент — тогда контейнер
+  // уже создан, и повтор обязан продолжить с него, а не залить второй раз.
+  await patchPost(env, post.id, { instagramContainerId: containerId });
+
+  return await finishInstagram(env, post, account, containerId);
+}
+
+/**
+ * Дождаться готовности контейнера и опубликовать его.
+ * Вынесено отдельно, чтобы повтор мог продолжить уже начатую публикацию.
+ */
+async function finishInstagram(env, post, account, containerId) {
+  const api = `https://graph.instagram.com/${GRAPH_VERSION}`;
 
   // Meta кодирует ролик у себя и параллельно скачивает его по нашей ссылке.
   let ready = false;
@@ -688,7 +705,11 @@ async function publishToYouTube(env, post, account) {
  * Площадку, куда ролик уже ушёл, пропускаем — поэтому «Повторить» после
  * частичной ошибки дозаливает только недостающее, а не дублирует пост.
  */
-export async function publishPost(env, postId, origin, notify = null) {
+/**
+ * @param {string[]} only Площадки, которые нужно обработать в этот заход.
+ *                        Пустой список = все, куда ролик ещё не ушёл.
+ */
+export async function publishPost(env, postId, origin, notify = null, only = ['instagram', 'youtube']) {
   const posts = await getPosts(env);
   const post = posts.find((p) => p.id === postId);
   if (!post) return { status: 'error', message: 'Ролик не найден' };
@@ -708,10 +729,12 @@ export async function publishPost(env, postId, origin, notify = null) {
   let igResult = null;
   let ytResult = null;
 
-  if (targets.includes('instagram') && post.instagramStatus !== 'published') {
+  if (only.includes('instagram') && targets.includes('instagram') && post.instagramStatus !== 'published') {
     try {
       await patchPost(env, postId, { instagramStatus: 'processing' });
-      igResult = await publishToInstagram(env, post, account, origin);
+      igResult = post.instagramContainerId
+        ? await finishInstagram(env, post, account, post.instagramContainerId)
+        : await publishToInstagram(env, post, account, origin);
       await patchPost(env, postId, {
         instagramStatus: 'published',
         instagramMediaId: igResult.mediaId,
@@ -725,7 +748,7 @@ export async function publishPost(env, postId, origin, notify = null) {
     }
   }
 
-  if (targets.includes('youtube') && post.youtubeStatus !== 'published') {
+  if (only.includes('youtube') && targets.includes('youtube') && post.youtubeStatus !== 'published') {
     try {
       await patchPost(env, postId, { youtubeStatus: 'processing' });
       ytResult = await publishToYouTube(env, post, account);
@@ -788,7 +811,64 @@ export async function publishPost(env, postId, origin, notify = null) {
  * Публикуем не больше одного ролика в день на аккаунт; окно опоздания — 3 часа,
  * чтобы пропущенный из-за сбоя слот подхватился следующим запуском, а не ночью.
  */
+/**
+ * Расклинить ролики, зависшие в «публикуется».
+ *
+ * Публикация идёт фоном на стороне воркера: браузер можно закрыть, это ей не
+ * мешает. Но если фоновую задачу оборвёт сам Cloudflare (перезапуск, лимит
+ * времени), ролик останется в «публикуется» навсегда: крон такие не берёт, и
+ * очередь встанет молча. Через полчаса считаем, что публикация не состоялась,
+ * и возвращаем ролик в работу — площадку, куда он уже ушёл, повтор пропустит.
+ */
+async function recoverStalePosts(env) {
+  const posts = await getPosts(env);
+  const cutoff = Date.now() - STALE_PROCESSING_MS;
+  let changed = false;
+
+  posts.forEach((post, i) => {
+    if (post.status !== 'processing') return;
+    const startedAt = Date.parse(post.processingSince || post.createdAt || '') || 0;
+    if (startedAt && startedAt > cutoff) return;
+    posts[i] = {
+      ...post,
+      status: 'failed',
+      instagramStatus: post.instagramStatus === 'processing' ? 'failed' : post.instagramStatus,
+      youtubeStatus: post.youtubeStatus === 'processing' ? 'failed' : post.youtubeStatus,
+      error: 'Публикация оборвалась на стороне сервера — ролик снова можно опубликовать',
+    };
+    changed = true;
+  });
+
+  if (changed) {
+    await kvPut(env, KV_POSTS, posts);
+    await socialLog(env, 'error', 'Зависшие публикации возвращены в работу');
+  }
+}
+
+/**
+ * Доделать публикации, которые оборвались на полпути.
+ *
+ * Публикация запускается фоновой задачей воркера, а её время жизни Cloudflare
+ * может урезать: у Instagram уходит несколько минут только на кодирование.
+ * Поэтому каждые пять минут проверяем «зависшие» и продолжаем с того места,
+ * где остановились — контейнер Instagram и уже залитое видео не потеряются.
+ */
+async function resumeInFlight(env, origin, notify) {
+  const posts = await getPosts(env);
+  const stuck = posts.filter((p) => p.status === 'processing');
+
+  for (const post of stuck) {
+    const startedAt = Date.parse(post.processingSince || '') || 0;
+    // Совсем свежие не трогаем: скорее всего публикация прямо сейчас идёт.
+    if (startedAt && Date.now() - startedAt < 3 * 60 * 1000) continue;
+    await socialLog(env, 'info', `Продолжаю публикацию: ${post.fileName}`);
+    await publishPost(env, post.id, origin, notify);
+  }
+}
+
 export async function runAutoPost(env, origin, notify = null) {
+  await resumeInFlight(env, origin, notify);
+  await recoverStalePosts(env);
   await refreshInstagramTokens(env);
 
   const accounts = await getAccounts(env);
@@ -836,7 +916,7 @@ export async function runAutoPost(env, origin, notify = null) {
       continue;
     }
 
-    await patchPost(env, next.id, { status: 'processing', error: null });
+    await patchPost(env, next.id, { status: 'processing', error: null, processingSince: new Date().toISOString() });
     const res = await publishPost(env, next.id, origin, notify);
     results.push({ account: account.name, file: next.fileName, ...res });
   }
@@ -1156,6 +1236,38 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
   //
   // Нужно, когда часть роликов уже ушла в соцсети руками: удалять файлы с
   // Диска ради этого не хочется, а публиковать их повторно нельзя.
+  // Проставить статус одной площадки вручную.
+  //
+  // Нужно, когда ролик на площадку ушёл, а до записи об этом дело не дошло —
+  // например, публикацию оборвало на полпути. Без этого повтор залил бы дубль.
+  if (path === '/api/admin/social/posts/platform-status' && request.method === 'POST') {
+    const platform = body.platform === 'youtube' ? 'youtube' : 'instagram';
+    const value = ['published', 'queued', 'failed'].includes(body.status) ? body.status : 'queued';
+    const patch = { [platform === 'youtube' ? 'youtubeStatus' : 'instagramStatus']: value };
+    if (platform === 'instagram' && body.permalink) patch.instagramPermalink = String(body.permalink);
+    if (platform === 'youtube' && body.permalink) patch.youtubePermalink = String(body.permalink);
+    if (body.postStatus) patch.status = String(body.postStatus);
+    const updated = await patchPost(env, body.id, patch);
+    return jsonResponse(updated ? { ok: true } : { error: 'not found' }, updated ? 200 : 404);
+  }
+
+  // Повторить публикацию только в одну площадку — вторую не трогаем.
+  if (path === '/api/admin/social/posts/publish-platform' && request.method === 'POST') {
+    const posts = await getPosts(env);
+    const post = posts.find((p) => p.id === body.id);
+    const platform = body.platform === 'youtube' ? 'youtube' : 'instagram';
+    if (!post) return jsonResponse({ error: 'not found' }, 404);
+
+    await patchPost(env, post.id, {
+      status: 'processing',
+      error: null,
+      processingSince: new Date().toISOString(),
+      [platform === 'youtube' ? 'youtubeStatus' : 'instagramStatus']: 'queued',
+    });
+    ctx.waitUntil(publishPost(env, post.id, origin, notify, [platform]));
+    return jsonResponse({ ok: true, message: platform === 'youtube' ? 'Заливаю на YouTube' : 'Публикую в Instagram' });
+  }
+
   // Опубликовать выбранные прямо сейчас, минуя расписание.
   //
   // Публикуем по очереди, а не разом: Instagram кодирует каждый ролик минуты,
@@ -1170,7 +1282,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     if (!take.length) return jsonResponse({ ok: false, message: 'Нечего публиковать' });
 
     for (const post of take) {
-      await patchPost(env, post.id, { status: 'processing', error: null, scheduledAt: null });
+      await patchPost(env, post.id, { status: 'processing', error: null, scheduledAt: null, processingSince: new Date().toISOString() });
     }
 
     ctx.waitUntil((async () => {
@@ -1282,7 +1394,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     if (post.status === 'processing') {
       return jsonResponse({ ok: false, message: 'Этот ролик уже публикуется' });
     }
-    await patchPost(env, post.id, { status: 'processing', error: null });
+    await patchPost(env, post.id, { status: 'processing', error: null, processingSince: new Date().toISOString() });
     // Instagram кодирует видео минуты — ответ ждать нельзя, публикуем в фоне,
     // а панель подтягивает статус опросом.
     ctx.waitUntil(publishPost(env, post.id, origin, notify));

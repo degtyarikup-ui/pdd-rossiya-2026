@@ -80,6 +80,11 @@ export const SOCIAL_VIEW_HTML = `
     .sc-ico { width:15px; height:15px; flex-shrink:0; }
     #social-view .btn-action { display:inline-flex; align-items:center; gap:6px; }
     #social-view .card-title svg { color:var(--primary); }
+    .sc-err { margin-top:7px; font-size:10.5px; line-height:1.35; color:var(--danger);
+              background:var(--danger-subtle); border-radius:7px; padding:5px 7px;
+              display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+    .sc-retries { display:flex; gap:5px; margin-top:8px; }
+    .sc-retries .btn-action { height:26px; padding:0 8px; font-size:11px; flex:1; justify-content:center; }
     .sc-empty { color:var(--text-muted); text-align:center; padding:34px; background:#F8F9FB; border-radius:14px; }
   </style>
 
@@ -268,11 +273,17 @@ function scSetToggle(id, on) {
 }
 
 function scPosts() {
+  // Наверх — то, что прямо сейчас публикуется, следом неудачи: именно за ними
+  // и следят после нажатия «Опубликовать сейчас».
+  var weight = { processing: 0, failed: 1, queued: 2, published: 3 };
   return (scState.posts || []).filter(function (p) {
     if (scFilter === 'queued') return p.status === 'queued' || p.status === 'processing';
     if (scFilter === 'published') return p.status === 'published';
     return p.status === 'failed';
   }).sort(function (a, b) {
+    var wa = weight[a.status] != null ? weight[a.status] : 4;
+    var wb = weight[b.status] != null ? weight[b.status] : 4;
+    if (wa !== wb) return wa - wb;
     if (a.scheduledAt && b.scheduledAt) return a.scheduledAt.localeCompare(b.scheduledAt);
     return String(a.fileName).localeCompare(String(b.fileName), 'ru', { numeric: true });
   });
@@ -292,6 +303,40 @@ var SC_ICONS = {
 function scPrettyName(fileName) {
   return String(fileName || '').replace(/\.[^.]+$/, '').replace(/^\d+_/, '').replace(/[_-]+/g, ' ');
 }
+
+// Кнопка повтора рисуется отдельно для каждой площадки: если ролик ушёл в
+// Instagram, но не на YouTube, повторять нужно только YouTube — иначе в ленте
+// появится дубль.
+function scRetryButtons(p) {
+  if (p.status === 'published' || p.status === 'processing') return '';
+  var targets = p.targets || [];
+  var out = [];
+  if (targets.indexOf('instagram') !== -1 && p.instagramStatus !== 'published' && p.instagramStatus !== 'processing') {
+    out.push('<button class="btn-action sc-retry" onclick="scRetry(event, \\'' + p.id + '\\', \\'instagram\\')">'
+      + SC_ICONS.ig + 'Повторить</button>');
+  }
+  if (targets.indexOf('youtube') !== -1 && p.youtubeStatus !== 'published' && p.youtubeStatus !== 'processing') {
+    out.push('<button class="btn-action sc-retry" onclick="scRetry(event, \\'' + p.id + '\\', \\'youtube\\')">'
+      + SC_ICONS.yt + 'Повторить</button>');
+  }
+  // Пока ролик просто ждёт очереди, кнопки повтора не нужны — только при сбое.
+  if (p.status !== 'failed') return '';
+  return '<div class="sc-retries">' + out.join('') + '</div>';
+}
+
+window.scRetry = async function (ev, id, platform) {
+  ev.stopPropagation();
+  var res = await scApi('posts/publish-platform', { id: id, platform: platform });
+  scToast(res.message || 'Запустил');
+  await loadSocial();
+  var ticks = 0;
+  var timer = setInterval(async function () {
+    ticks += 1;
+    await loadSocial();
+    var post = (scState.posts || []).find(function (x) { return x.id === id; });
+    if (ticks > 40 || !post || post.status !== 'processing') clearInterval(timer);
+  }, 15000);
+};
 
 function scRenderList() {
   var all = scState.posts || [];
@@ -337,7 +382,10 @@ function scRenderList() {
       + badge + '</div>'
       + '<div class="sc-body"><div class="sc-title" title="' + scEsc(p.fileName) + '">'
       + scEsc(p.title || scPrettyName(p.fileName)) + '</div>'
-      + '<div class="sc-meta">' + pills + '</div></div></div>';
+      + '<div class="sc-meta">' + pills + '</div>'
+      + (p.error ? '<div class="sc-err" title="' + scEsc(p.error) + '">' + scEsc(p.error) + '</div>' : '')
+      + scRetryButtons(p)
+      + '</div></div>';
   }).join('');
 
   box.querySelectorAll('[data-pick]').forEach(function (cb) {
@@ -543,8 +591,13 @@ window.scPreview = function (id) {
     +   '<div class="form-group" style="margin-top:10px;"><label class="form-label">Публикация (МСК)</label>'
     +   '<input type="datetime-local" id="sc-m-when" class="sc-input" value="' + when + '"></div>'
     +   '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">'
-    +   '<button class="btn-action btn-primary" onclick="scPublishNow(\\'' + p.id + '\\')">'
-    +   (p.status === 'failed' ? 'Повторить' : 'Опубликовать сейчас') + '</button>'
+    +   (p.status === 'published' ? '' :
+          '<button class="btn-action btn-primary" onclick="scPublishNow(\\'' + p.id + '\\')">'
+          + (p.status === 'failed' ? 'Повторить всё' : 'Опубликовать сейчас') + '</button>')
+    +   ((p.targets || []).indexOf('instagram') !== -1 && p.instagramStatus !== 'published'
+          ? '<button class="btn-action" onclick="scRetry(event, \\'' + p.id + '\\', \\'instagram\\')">' + SC_ICONS.ig + ' в Instagram</button>' : '')
+    +   ((p.targets || []).indexOf('youtube') !== -1 && p.youtubeStatus !== 'published'
+          ? '<button class="btn-action" onclick="scRetry(event, \\'' + p.id + '\\', \\'youtube\\')">' + SC_ICONS.yt + ' на YouTube</button>' : '')
     +   (p.status === 'published'
         ? '<button class="btn-action" onclick="scOne(\\'' + p.id + '\\',\\'requeue\\')">Вернуть в очередь</button>'
         : '<button class="btn-action" onclick="scOne(\\'' + p.id + '\\',\\'mark\\')">Выложено вручную</button>')
