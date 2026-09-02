@@ -10,6 +10,10 @@
 export const THREADS_VIEW_HTML = `
 <div id="threads-view" style="display:none;">
 
+  <style>
+    .th-del { width:32px; padding:0 !important; justify-content:center; flex-shrink:0; }
+  </style>
+
   <div class="card">
     <div class="card-head" style="margin-bottom:14px;">
       <div class="card-title">
@@ -181,8 +185,14 @@ function thRenderList() {
       + '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">'
       + '<input type="datetime-local" class="sc-input" style="width:180px;font-size:12px;" data-th-date="' + p.id + '"'
       + ' value="' + (p.scheduledAt ? scMsk(p.scheduledAt).replace(' ', 'T') : '') + '" onchange="thSetDate(this)">'
+      + '<div style="display:flex;gap:6px;">'
       + (p.status === 'published' ? '' : '<button class="btn-action" onclick="thPublishOne(\\'' + p.id + '\\')">'
           + (p.status === 'failed' ? 'Повторить' : 'Опубликовать') + '</button>')
+      + '<button class="btn-action sc-danger th-del" title="Удалить пост" onclick="thDeleteOne(\\'' + p.id + '\\')">'
+      + '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+      + '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'
+      + '<path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>'
+      + '</div>'
       + '</div></div>';
   }).join('');
 
@@ -274,6 +284,15 @@ window.thSaveText = async function (el) {
 window.thSetDate = async function (el) {
   var v = el.value ? new Date(new Date(el.value + ':00.000Z').getTime() - 3 * 3600000).toISOString() : null;
   await thApi('update', { id: el.dataset.thDate, scheduledAt: v });
+  await loadThreads();
+};
+
+// Быстрое удаление одного поста: кнопка-корзина рядом с «Опубликовать».
+window.thDeleteOne = async function (id) {
+  if (!confirm('Удалить пост?')) return;
+  await thApi('bulk', { ids: [id], action: 'delete' });
+  delete thSelected[id];
+  scToast('Пост удалён');
   await loadThreads();
 };
 
