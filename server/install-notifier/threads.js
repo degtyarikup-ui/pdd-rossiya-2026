@@ -16,12 +16,37 @@ const KV_LOG = 'threads:log';
 const API = 'https://graph.threads.net/v1.0';
 const LOG_LIMIT = 60;
 
-// Между созданием контейнера и публикацией Meta просит подождать: сразу после
-// создания контейнер ещё не готов и публикация падает.
-const CONTAINER_WAIT_MS = 30000;
+// Контейнеру нужно время «дозреть». Из админки ждём коротко, чтобы уложиться
+// в отпущенное фоновой задаче время; крон ждёт столько, сколько нужно.
+const POLL_INTERVAL_MS = 5000;
+const QUICK_ATTEMPTS = 4;    // ~20 секунд
+const SLOW_ATTEMPTS = 24;    // ~2 минуты
 const MAX_TEXT = 500;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Дождаться готовности контейнера.
+ *
+ * Раньше здесь стояла слепая пауза в 30 секунд, и публикация из админки не
+ * доживала до конца: фоновую задачу, запущенную из запроса браузера, Cloudflare
+ * обрывает раньше. Теперь спрашиваем у Meta статус: из запроса — коротко
+ * (обычно этого хватает), из крона — сколько нужно.
+ */
+async function waitForContainer(settings, containerId, attempts, intervalMs) {
+  for (let i = 0; i < attempts; i += 1) {
+    const res = await fetch(
+      `${API}/${containerId}?fields=status,error_message&access_token=${encodeURIComponent(settings.token)}`
+    );
+    const data = await res.json().catch(() => ({}));
+    if (data.status === 'FINISHED') return true;
+    if (data.status === 'ERROR' || data.status === 'EXPIRED') {
+      throw new Error(limit(data.error_message || ('контейнер ' + data.status), 200));
+    }
+    await sleep(intervalMs);
+  }
+  return false;
+}
 
 function nowMsk(d = new Date()) {
   return new Date(d.getTime() + 3 * 3600 * 1000);
@@ -127,7 +152,11 @@ async function patchPost(env, id, patch) {
 
 // ────────────────────────────── публикация ──────────────────────────────
 
-export async function publishThreadsPost(env, postId, notify = null) {
+/**
+ * @param {boolean} quick Короткое ожидание — для нажатия кнопки в админке.
+ *                        Если контейнер не успел, публикацию доведёт крон.
+ */
+export async function publishThreadsPost(env, postId, notify = null, quick = false) {
   const settings = await getSettings(env);
   const queue = await getQueue(env);
   const post = queue.find((p) => p.id === postId);
@@ -177,7 +206,18 @@ export async function publishThreadsPost(env, postId, notify = null) {
       // повтор опубликует уже созданный, а не сделает второй пост.
       containerId = created.id;
       await patchPost(env, postId, { containerId });
-      await sleep(CONTAINER_WAIT_MS);
+    }
+
+    const ready = await waitForContainer(
+      settings, containerId,
+      quick ? QUICK_ATTEMPTS : SLOW_ATTEMPTS,
+      POLL_INTERVAL_MS
+    );
+    if (!ready) {
+      // Пост остаётся «публикуется»: через несколько минут крон вернётся и
+      // доведёт дело до конца по уже созданному контейнеру.
+      await threadsLog(env, 'info', 'Контейнер ещё готовится, допубликую позже');
+      return { status: 'pending' };
     }
 
     const pubRes = await fetch(`${API}/${settings.userId}/threads_publish`, {
@@ -261,7 +301,7 @@ async function resumeThreads(env, notify) {
   const queue = await getQueue(env);
   for (const post of queue.filter((p) => p.status === 'processing')) {
     const started = Date.parse(post.processingSince || '') || 0;
-    if (started && Date.now() - started < 2 * 60 * 1000) continue;
+    if (started && Date.now() - started < 60 * 1000) continue;
     if (started && Date.now() - started > 30 * 60 * 1000) {
       await patchPost(env, post.id, {
         status: 'failed',
@@ -425,7 +465,7 @@ export async function handleThreadsAdmin(request, env, ctx, url, helpers) {
 
     ctx.waitUntil((async () => {
       for (const post of take) {
-        await publishThreadsPost(env, post.id, notify);
+        await publishThreadsPost(env, post.id, notify, true);
       }
     })());
 
