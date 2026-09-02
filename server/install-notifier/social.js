@@ -872,26 +872,19 @@ export async function runAutoPost(env, origin, notify = null) {
   await refreshInstagramTokens(env);
 
   const accounts = await getAccounts(env);
-  const today = mskDay();
   const minutesNow = mskMinutes();
   const results = [];
 
   for (const account of accounts) {
     if (!account.active) continue;
-    if (account.lastPostedDay === today) continue;
 
-    const nowIso = new Date().toISOString();
-    const allPosts = await getPosts(env);
-    // Ролик с назначенной датой публикуется по ней, а не по общему слоту:
-    // расписание, выставленное руками, важнее «одного в день в 19:00».
-    const hasDueScheduled = allPosts.some((p) => p.accountId === account.id
-      && (p.status === 'queued' || p.status === 'failed')
-      && p.scheduledAt && p.scheduledAt <= nowIso);
-
-    if (!hasDueScheduled) {
-      const slot = parseTimeToMinutes(account.postTime);
-      if (minutesNow < slot || minutesNow > slot + 180) continue;
-    }
+    // Без дневного лимита: публикуем всё, что подошло по времени, сколько бы
+    // роликов это ни было. У роликов без даты остаётся слот постТайм — просто
+    // как момент, когда очередь начинает разбираться, а не как лимит «раз в
+    // сутки»: пока идёт крон (каждые 5 минут) внутри окна слота, уходит вся
+    // такая очередь целиком, а не один ролик в день.
+    const slot = parseTimeToMinutes(account.postTime);
+    const withinSlot = minutesNow >= slot && minutesNow <= slot + 180;
 
     try {
       await syncAccountVideos(env, account);
@@ -899,10 +892,11 @@ export async function runAutoPost(env, origin, notify = null) {
       await socialLog(env, 'error', `Синхронизация «${account.name}»: ${e.message}`);
     }
 
+    const nowIso = new Date().toISOString();
     const posts = await getPosts(env);
     const due = posts
       .filter((p) => p.accountId === account.id && (p.status === 'queued' || p.status === 'failed'))
-      .filter((p) => !p.scheduledAt || p.scheduledAt <= new Date().toISOString())
+      .filter((p) => (p.scheduledAt ? p.scheduledAt <= nowIso : withinSlot))
       .sort((a, b) => {
         if (a.scheduledAt && b.scheduledAt) return a.scheduledAt.localeCompare(b.scheduledAt);
         if (a.scheduledAt) return -1;
@@ -910,15 +904,18 @@ export async function runAutoPost(env, origin, notify = null) {
         return String(a.fileName).localeCompare(String(b.fileName), 'ru', { numeric: true });
       });
 
-    const next = due[0];
-    if (!next) {
-      await socialLog(env, 'info', `«${account.name}»: очередь пуста, публиковать нечего`);
+    if (!due.length) {
+      await socialLog(env, 'info', `«${account.name}»: публиковать нечего`);
       continue;
     }
 
-    await patchPost(env, next.id, { status: 'processing', error: null, processingSince: new Date().toISOString() });
-    const res = await publishPost(env, next.id, origin, notify);
-    results.push({ account: account.name, file: next.fileName, ...res });
+    // Публикуем по очереди, не параллельно: Instagram кодирует каждый ролик
+    // минуты, и параллельные заливки на один аккаунт площадки не любят.
+    for (const post of due) {
+      await patchPost(env, post.id, { status: 'processing', error: null, processingSince: new Date().toISOString() });
+      const res = await publishPost(env, post.id, origin, notify);
+      results.push({ account: account.name, file: post.fileName, ...res });
+    }
   }
 
   return results;
