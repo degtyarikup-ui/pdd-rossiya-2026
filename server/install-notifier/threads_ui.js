@@ -131,9 +131,9 @@ function thRenderStatus() {
 }
 
 function thPosts() {
-  var weight = { failed: 0, queued: 1, published: 2 };
+  var weight = { processing: 0, failed: 1, queued: 2, published: 3 };
   return (thState.posts || []).filter(function (p) {
-    if (thFilter === 'queued') return p.status === 'queued';
+    if (thFilter === 'queued') return p.status === 'queued' || p.status === 'processing';
     if (thFilter === 'published') return p.status === 'published';
     return p.status === 'failed';
   }).sort(function (a, b) {
@@ -149,7 +149,7 @@ function thPosts() {
 
 function thRenderList() {
   var all = thState.posts || [];
-  document.getElementById('th-n-q').textContent = all.filter(function (p) { return p.status === 'queued'; }).length;
+  document.getElementById('th-n-q').textContent = all.filter(function (p) { return p.status === 'queued' || p.status === 'processing'; }).length;
   document.getElementById('th-n-p').textContent = all.filter(function (p) { return p.status === 'published'; }).length;
   document.getElementById('th-n-f').textContent = all.filter(function (p) { return p.status === 'failed'; }).length;
 
@@ -166,9 +166,16 @@ function thRenderList() {
     var when = p.scheduledAt
       ? '<span class="sc-pill">' + SC_ICONS.clock + scMskShort(p.scheduledAt) + '</span>'
       : '<span class="sc-pill">без даты</span>';
-    var state = p.status === 'published'
-      ? '<span class="sc-pill ok">' + SC_ICONS.check + (p.publishedAt ? scMskShort(p.publishedAt) : 'опубликован') + '</span>'
-      : (p.status === 'failed' ? '<span class="sc-pill bad">' + SC_ICONS.alert + 'ошибка</span>' : when);
+    var state;
+    if (p.status === 'published') {
+      state = '<span class="sc-pill ok">' + SC_ICONS.check + (p.publishedAt ? scMskShort(p.publishedAt) : 'опубликован') + '</span>';
+    } else if (p.status === 'processing') {
+      state = '<span class="sc-pill" style="background:#FEF3C7;color:#B45309;">' + SC_ICONS.clock + 'публикуется…</span>';
+    } else if (p.status === 'failed') {
+      state = '<span class="sc-pill bad">' + SC_ICONS.alert + 'ошибка</span>';
+    } else {
+      state = when;
+    }
     var link = p.permalink
       ? '<a href="' + scEsc(p.permalink) + '" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:none;font-size:12px;">открыть ↗</a>'
       : '';
@@ -186,8 +193,9 @@ function thRenderList() {
       + '<input type="datetime-local" class="sc-input" style="width:180px;font-size:12px;" data-th-date="' + p.id + '"'
       + ' value="' + (p.scheduledAt ? scMsk(p.scheduledAt).replace(' ', 'T') : '') + '" onchange="thSetDate(this)">'
       + '<div style="display:flex;gap:6px;">'
-      + (p.status === 'published' ? '' : '<button class="btn-action" onclick="thPublishOne(\\'' + p.id + '\\')">'
-          + (p.status === 'failed' ? 'Повторить' : 'Опубликовать') + '</button>')
+      + (p.status === 'published' || p.status === 'processing' ? ''
+          : '<button class="btn-action" onclick="thPublishOne(\\'' + p.id + '\\')">'
+            + (p.status === 'failed' ? 'Повторить' : 'Опубликовать') + '</button>')
       + '<button class="btn-action sc-danger th-del" title="Удалить пост" onclick="thDeleteOne(\\'' + p.id + '\\')">'
       + '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
       + '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'

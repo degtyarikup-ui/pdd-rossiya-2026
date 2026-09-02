@@ -101,7 +101,9 @@ function normalize(post) {
     scheduledAt: post.scheduledAt || null,
     // Старые записи хранили только дату — считаем её временем публикации.
     scheduledDate: post.scheduledDate || null,
-    status: post.status === 'published' ? 'published' : (post.status === 'failed' ? 'failed' : 'queued'),
+    status: ['published', 'failed', 'processing'].includes(post.status) ? post.status : 'queued',
+    containerId: post.containerId || null,
+    processingSince: post.processingSince || null,
     permalink: post.permalink || null,
     publishedAt: post.publishedAt || null,
     error: post.error || null,
@@ -142,33 +144,46 @@ export async function publishThreadsPost(env, postId, notify = null) {
     return { status: 'error', message: 'Пустой текст' };
   }
 
+  // Пока идёт публикация, пост виден как «публикуется»: она занимает около
+  // минуты, и без статуса кажется, что кнопка не сработала.
+  await patchPost(env, postId, {
+    status: 'processing',
+    error: null,
+    processingSince: new Date().toISOString(),
+  });
+
   try {
-    const form = {
-      media_type: post.imageUrl ? 'IMAGE' : 'TEXT',
-      text: limit(text, MAX_TEXT),
-      access_token: settings.token,
-    };
-    if (post.imageUrl) form.image_url = post.imageUrl;
+    let containerId = post.containerId || null;
 
-    const createRes = await fetch(`${API}/${settings.userId}/threads`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams(form),
-    });
-    const created = await createRes.json().catch(() => ({}));
-    if (!createRes.ok || !created.id) {
-      throw new Error(limit(created?.error?.message || 'HTTP ' + createRes.status, 250));
+    if (!containerId) {
+      const form = {
+        media_type: post.imageUrl ? 'IMAGE' : 'TEXT',
+        text: limit(text, MAX_TEXT),
+        access_token: settings.token,
+      };
+      if (post.imageUrl) form.image_url = post.imageUrl;
+
+      const createRes = await fetch(`${API}/${settings.userId}/threads`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(form),
+      });
+      const created = await createRes.json().catch(() => ({}));
+      if (!createRes.ok || !created.id) {
+        throw new Error(limit(created?.error?.message || 'HTTP ' + createRes.status, 250));
+      }
+
+      // Контейнер сохраняем сразу: если фоновую задачу оборвёт Cloudflare,
+      // повтор опубликует уже созданный, а не сделает второй пост.
+      containerId = created.id;
+      await patchPost(env, postId, { containerId });
+      await sleep(CONTAINER_WAIT_MS);
     }
-
-    // Контейнер сохраняем сразу: если фоновую задачу оборвёт Cloudflare,
-    // повтор опубликует уже созданный, а не сделает второй пост.
-    await patchPost(env, postId, { containerId: created.id });
-    await sleep(CONTAINER_WAIT_MS);
 
     const pubRes = await fetch(`${API}/${settings.userId}/threads_publish`, {
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ creation_id: created.id, access_token: settings.token }),
+      body: new URLSearchParams({ creation_id: containerId, access_token: settings.token }),
     });
     const published = await pubRes.json().catch(() => ({}));
     if (!pubRes.ok || !published.id) {
@@ -188,6 +203,7 @@ export async function publishThreadsPost(env, postId, notify = null) {
       permalink,
       error: null,
       containerId: null,
+      processingSince: null,
     });
     await threadsLog(env, 'ok', 'Опубликовано: ' + limit(text, 60));
     return { status: 'ok', permalink };
@@ -234,10 +250,34 @@ async function refreshToken(env) {
  * За один заход — один пост: Threads не любит очередей подряд, да и растянуть
  * ленту во времени полезнее, чем вывалить всё сразу.
  */
+/**
+ * Доделать посты, зависшие в «публикуется».
+ *
+ * Cloudflare может оборвать фоновую задачу, а между созданием контейнера и
+ * публикацией у нас пауза в полминуты. Контейнер сохранён, поэтому продолжаем
+ * с него — второго поста не появится. Совсем застрявшие помечаем ошибкой.
+ */
+async function resumeThreads(env, notify) {
+  const queue = await getQueue(env);
+  for (const post of queue.filter((p) => p.status === 'processing')) {
+    const started = Date.parse(post.processingSince || '') || 0;
+    if (started && Date.now() - started < 2 * 60 * 1000) continue;
+    if (started && Date.now() - started > 30 * 60 * 1000) {
+      await patchPost(env, post.id, {
+        status: 'failed',
+        error: 'Публикация оборвалась на стороне сервера — можно повторить',
+      });
+      continue;
+    }
+    await publishThreadsPost(env, post.id, notify);
+  }
+}
+
 export async function runThreadsSchedule(env, notify = null) {
   const settings = await getSettings(env);
   if (!settings.token || !settings.userId) return;
 
+  await resumeThreads(env, notify);
   await refreshToken(env);
 
   const nowIso = new Date().toISOString();
