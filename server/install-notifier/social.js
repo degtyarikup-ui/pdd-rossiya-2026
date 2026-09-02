@@ -185,6 +185,7 @@ const DEFAULT_ACCOUNT = {
   targets: ['instagram', 'youtube'],
   driveFolderId: '',
   captionTemplate: '',
+  titleTemplate: '{title}',
   postTime: '19:00',
   instagramAccountId: '',
   instagramToken: '',
@@ -401,13 +402,16 @@ export async function syncAccountVideos(env, account) {
       caption = String(account.captionTemplate || '').replace(/\{title\}/g, humanTitle(file.name));
     }
 
+    const humanName = humanTitle(file.name);
+    const title = String(account.titleTemplate || '{title}').replace(/\{title\}/g, humanName) || humanName;
+
     posts.push({
       id: newId('sp'),
       accountId: account.id,
       driveFileId: file.id,
       fileName: file.name,
       sizeBytes: file.size ? parseInt(file.size, 10) : null,
-      title: humanTitle(file.name),
+      title,
       caption,
       streamToken: randomToken(),
       targets: Array.isArray(account.targets) ? [...account.targets] : ['instagram', 'youtube'],
@@ -933,6 +937,45 @@ async function runDiagnostics(env) {
  * видео. Токен случайный и живёт вместе с роликом в очереди, поэтому папка
  * Диска остаётся закрытой.
  */
+/**
+ * Обложка ролика для админки.
+ *
+ * Диск сам делает превью видео и отдаёт ссылку на него; ссылка живёт недолго и
+ * привязана к доступу, поэтому картинку проксируем через воркер — иначе она бы
+ * не открылась в браузере.
+ */
+export async function handleVideoThumb(env, request, streamToken) {
+  const posts = await getPosts(env);
+  const post = posts.find((p) => p.streamToken === streamToken);
+  if (!post) return new Response('Not found', { status: 404 });
+
+  try {
+    const auth = await driveAuth(env);
+    let url = 'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(post.driveFileId) +
+              '?fields=thumbnailLink';
+    if (auth.mode === 'apikey') url += '&key=' + encodeURIComponent(auth.key);
+    const metaRes = await fetch(url, {
+      headers: auth.mode === 'oauth' ? { authorization: 'Bearer ' + auth.token } : {},
+    });
+    const meta = await metaRes.json().catch(() => ({}));
+    if (!meta.thumbnailLink) return new Response('No thumbnail', { status: 404 });
+
+    // Просим картинку покрупнее: по умолчанию Диск отдаёт совсем мелкую.
+    const imgRes = await fetch(meta.thumbnailLink.replace(/=s\d+$/, '=s400'));
+    if (!imgRes.ok) return new Response('Upstream error', { status: 502 });
+
+    return new Response(imgRes.body, {
+      status: 200,
+      headers: {
+        'content-type': imgRes.headers.get('content-type') || 'image/jpeg',
+        'cache-control': 'private, max-age=3600',
+      },
+    });
+  } catch (e) {
+    return new Response('Error: ' + e.message, { status: 500 });
+  }
+}
+
 export async function handleVideoStream(env, request, streamToken) {
   const posts = await getPosts(env);
   const post = posts.find((p) => p.streamToken === streamToken);
@@ -1022,6 +1065,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
       targets: Array.isArray(incoming.targets) && incoming.targets.length ? incoming.targets : base.targets,
       driveFolderId: incoming.driveFolderId != null ? String(incoming.driveFolderId).trim() : base.driveFolderId,
       captionTemplate: incoming.captionTemplate != null ? String(incoming.captionTemplate) : base.captionTemplate,
+      titleTemplate: incoming.titleTemplate != null ? String(incoming.titleTemplate) : base.titleTemplate,
       postTime: incoming.postTime != null ? String(incoming.postTime) : base.postTime,
       instagramAccountId: incoming.instagramAccountId != null ? String(incoming.instagramAccountId).trim() : base.instagramAccountId,
       youtubeTags: incoming.youtubeTags != null ? String(incoming.youtubeTags) : base.youtubeTags,
@@ -1133,8 +1177,20 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     } else {
       targetPosts.forEach((post) => {
         const idx = posts.findIndex((p) => p.id === post.id);
-        if (body.action === 'caption' && typeof body.caption === 'string') {
-          posts[idx] = { ...posts[idx], caption: body.caption.replace(/\{title\}/g, posts[idx].title || '') };
+        if (body.action === 'caption') {
+          // {title} подставляем от «человеческого» имени файла, а не от текущего
+          // заголовка: иначе при второй правке подставился бы уже собранный текст.
+          const humanName = humanTitle(posts[idx].fileName);
+          const patch = { ...posts[idx] };
+          if (typeof body.caption === 'string') {
+            // Одно и то же описание уходит в подпись Instagram и в описание
+            // YouTube — редактировать их порознь незачем.
+            patch.caption = body.caption.replace(/\{title\}/g, humanName);
+          }
+          if (typeof body.titleTemplate === 'string' && body.titleTemplate.trim()) {
+            patch.title = body.titleTemplate.replace(/\{title\}/g, humanName);
+          }
+          posts[idx] = patch;
         } else if (body.action === 'targets' && Array.isArray(body.targets)) {
           posts[idx] = { ...posts[idx], targets: body.targets };
         } else if (body.action === 'mark') {
