@@ -37,8 +37,14 @@ export const SOCIAL_VIEW_HTML = `
     .sc-tab { padding:6px 13px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;
               border:none; background:var(--surface-gray); color:var(--text-muted); }
     .sc-tab.active { background:var(--primary-subtle); color:var(--primary); }
-    .sc-bulk { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:11px 14px;
-               background:var(--primary-subtle); border-radius:12px; margin-bottom:12px; }
+    .sc-bulk { display:flex; gap:7px; align-items:center; flex-wrap:wrap; row-gap:7px;
+               padding:9px 11px; border-radius:12px; margin-bottom:14px; }
+    .sc-bulk .btn-action { height:32px; padding:0 11px; font-size:12.5px; white-space:nowrap; }
+    .sc-count { display:inline-flex; align-items:center; height:32px; padding:0 12px; border-radius:8px;
+                background:var(--primary); color:#fff; font-size:12.5px; font-weight:700; white-space:nowrap; }
+    .sc-sep { width:1px; height:20px; background:#D7DDE6; margin:0 3px; flex-shrink:0; }
+    .sc-bulk .sc-danger { color:var(--danger); border-color:#FBD5CC; }
+    .sc-bulk .sc-danger:hover { background:var(--danger-subtle); color:var(--danger); }
     .sc-hint { font-size:12px; color:var(--text-muted); }
     .sc-modal-bg { position:fixed; inset:0; background:rgba(15,23,42,0.5); z-index:9999;
                    display:flex; align-items:center; justify-content:center; padding:20px; }
@@ -354,28 +360,77 @@ function scPicked() {
   return Object.keys(scSelected).filter(function (k) { return scSelected[k]; });
 }
 
+// Иконки кнопок панели — рядом с текстом, одного размера с ним.
+function scBtnIcon(path) {
+  return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"'
+    + ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>';
+}
+var SC_BTN = {
+  send: '<polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+  cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  text: '<line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="14" y2="17"/>',
+  done: '<polyline points="20 6 9 17 4 12"/>',
+  back: '<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>',
+  clear: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>',
+  pick: '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'
+};
+
 function scRenderBulk() {
   var ids = scPicked();
   var bar = document.getElementById('sc-bulk');
   var total = scPosts().length;
+
   if (!ids.length) {
     bar.style.display = total ? 'flex' : 'none';
-    bar.style.background = 'transparent';
-    bar.innerHTML = '<button class="btn-action" onclick="scSelectAll(true)">Выбрать все (' + total + ')</button>'
-      + '<span class="sc-hint">или отметь нужные на карточках</span>';
+    bar.style.background = '#F6F7F9';
+    bar.innerHTML = '<button class="btn-action" onclick="scSelectAll(true)">'
+      + scBtnIcon(SC_BTN.pick) + 'Выбрать все (' + total + ')</button>'
+      + '<span class="sc-hint">или отметь нужные галочкой на карточке</span>';
     return;
   }
+
+  var published = scFilter === 'published';
   bar.style.display = 'flex';
   bar.style.background = 'var(--primary-subtle)';
-  bar.innerHTML = '<b style="font-size:13px;">Выбрано: ' + ids.length + '</b>'
-    + '<button class="btn-action" onclick="scBulkDate()">Дата и время…</button>'
-    + '<button class="btn-action" onclick="scBulkCaption()">Описание…</button>'
-    + '<button class="btn-action" onclick="scBulk(\\'mark\\')">Выложено вручную</button>'
-    + '<button class="btn-action" onclick="scBulk(\\'requeue\\')">Вернуть в очередь</button>'
-    + '<button class="btn-action" onclick="scBulk(\\'unschedule\\')">Снять даты</button>'
+  bar.innerHTML = '<span class="sc-count">Выбрано: ' + ids.length + '</span>'
+    + (published ? '' : '<button class="btn-action btn-primary" onclick="scPublishSelected()">'
+        + scBtnIcon(SC_BTN.send) + 'Опубликовать сейчас</button>')
+    + '<span class="sc-sep"></span>'
+    + '<button class="btn-action" onclick="scBulkDate()">' + scBtnIcon(SC_BTN.cal) + 'Дата и время</button>'
+    + '<button class="btn-action" onclick="scBulkCaption()">' + scBtnIcon(SC_BTN.text) + 'Описание</button>'
+    + (published
+        ? '<button class="btn-action" onclick="scBulk(\\'requeue\\')">' + scBtnIcon(SC_BTN.back) + 'Вернуть в очередь</button>'
+        : '<button class="btn-action" onclick="scBulk(\\'mark\\')">' + scBtnIcon(SC_BTN.done) + 'Уже выложено</button>'
+          + '<button class="btn-action" onclick="scBulk(\\'unschedule\\')">' + scBtnIcon(SC_BTN.clear) + 'Снять даты</button>')
+    + '<span class="sc-sep"></span>'
     + '<button class="btn-action" onclick="scSelectAll(false)">Снять выбор</button>'
-    + '<button class="btn-action" style="color:var(--danger);border-color:#fecaca;margin-left:auto;" onclick="scBulk(\\'delete\\')">Убрать</button>';
+    + '<button class="btn-action sc-danger" onclick="scBulk(\\'delete\\')">' + scBtnIcon(SC_BTN.trash) + 'Убрать</button>';
 }
+
+// Публикация выбранных без расписания — по очереди, пачками до пяти.
+window.scPublishSelected = async function () {
+  var ids = scPicked();
+  if (!ids.length) return;
+  if (!confirm(ids.length === 1
+      ? 'Опубликовать ролик прямо сейчас?'
+      : 'Опубликовать ' + ids.length + ' роликов? Уйдут по очереди, не больше пяти за раз.')) return;
+
+  var res = await scApi('posts/publish-now', { ids: ids });
+  if (!res.ok) { scToast(res.message || 'Не получилось', true); return; }
+  scToast(res.message + (res.skipped ? ' (остальные ' + res.skipped + ' — следующим заходом)' : ''));
+  scSelected = {};
+  await loadSocial();
+
+  // Instagram кодирует каждый ролик минуты — подтягиваем статусы сами.
+  var ticks = 0;
+  var timer = setInterval(async function () {
+    ticks += 1;
+    await loadSocial();
+    var busy = (scState.posts || []).some(function (p) { return p.status === 'processing'; });
+    if (!busy || ticks > 60) clearInterval(timer);
+  }, 15000);
+};
 
 window.scBulk = async function (action) {
   var ids = scPicked();

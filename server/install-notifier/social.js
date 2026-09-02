@@ -29,6 +29,10 @@ const LOG_LIMIT = 120;
 const MAX_UPLOAD_BYTES = 90 * 1024 * 1024;
 
 // Meta кодирует видео на своей стороне; ждём столько же, сколько Meerno.
+// За раз вручную публикуем не больше стольких роликов: каждая публикация в
+// Instagram занимает минуты, и очередь из тридцати растянулась бы на часы.
+const MAX_MANUAL_BATCH = 5;
+
 const IG_POLL_ATTEMPTS = 40;
 const IG_POLL_INTERVAL_MS = 5000;
 
@@ -1152,6 +1156,39 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
   //
   // Нужно, когда часть роликов уже ушла в соцсети руками: удалять файлы с
   // Диска ради этого не хочется, а публиковать их повторно нельзя.
+  // Опубликовать выбранные прямо сейчас, минуя расписание.
+  //
+  // Публикуем по очереди, а не разом: Instagram кодирует каждый ролик минуты,
+  // и параллельные заливки на один аккаунт площадки не любят. Ограничение
+  // сверху — чтобы случайно выбранная «вся очередь» не ушла в эфир целиком.
+  if (path === '/api/admin/social/posts/publish-now' && request.method === 'POST') {
+    const ids = Array.isArray(body.ids) ? body.ids : [];
+    const posts = await getPosts(env);
+    const ready = posts.filter((p) => ids.includes(p.id) && p.status !== 'processing');
+    const take = ready.slice(0, MAX_MANUAL_BATCH);
+
+    if (!take.length) return jsonResponse({ ok: false, message: 'Нечего публиковать' });
+
+    for (const post of take) {
+      await patchPost(env, post.id, { status: 'processing', error: null, scheduledAt: null });
+    }
+
+    ctx.waitUntil((async () => {
+      for (const post of take) {
+        await publishPost(env, post.id, origin, notify);
+      }
+    })());
+
+    return jsonResponse({
+      ok: true,
+      started: take.length,
+      skipped: ready.length - take.length,
+      message: take.length === 1
+        ? 'Публикую ролик'
+        : `Публикую ${take.length} роликов по очереди`,
+    });
+  }
+
   // Массовые операции: расставить даты, заменить подпись, сменить площадки,
   // пометить выложенными, убрать из очереди. Иначе тридцать роликов пришлось бы
   // править по одному.
