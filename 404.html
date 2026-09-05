@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <script>
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+    }
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Страница не найдена — ПДД Россия 2026</title>
+  <meta name="description" content="Такой страницы нет. Вернитесь на главную или откройте веб-версию приложения ПДД Россия 2026.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
+  <style>.hero-badges { justify-content: center; }</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="logo" href="/">
+      <img src="/assets/icon-192.png" alt="ПДД Россия 2026 — логотип" width="32" height="32" loading="eager">
+      ПДД Россия 2026
+    </a>
+    <nav class="site-nav">
+      <a href="/#features">Возможности</a>
+      <a href="/proverit-znaniya/">Проверить себя</a>
+      <a href="/blog/">Блог</a>
+      <a href="/#exam">Экзамен</a>
+      <a class="nav-cta" href="/app/">Веб-версия приложения</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="section">
+    <div class="container">
+      <h1 class="section-title">404 — такой страницы нет</h1>
+      <p class="section-lead">Возможно, ссылка устарела или в адресе опечатка.</p>
+      <div class="hero-badges">
+        <a class="btn btn-primary" href="/">На главную</a>
+        <a class="btn btn-primary" href="/app/">Веб-версия приложения</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <nav>
+      <a href="/blog/">Блог</a>
+      <a href="/about/">О проекте</a>
+      <a href="/links/">Соцсети</a>
+      <a href="/slovar-pdd/">Словарь терминов</a>
+      <a href="/privacy.html">Политика конфиденциальности</a>
+      <a href="/terms.html">Пользовательское соглашение</a>
+      <a href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">Google Play</a>
+      <a href="https://apps.apple.com/ru/app/id6792369533" rel="noopener">App Store</a>
+      <a href="/app/">Веб-версия</a>
+      <a href="mailto:degtyarik.up@gmail.com">Поддержка</a>
+    </nav>
+    <div class="copy">
+      <span class="age-badge">16+</span> © 2026 ПДД Россия 2026 · <a href="https://pdd-drive.online" rel="noopener">ПДД Беларусь</a> · <a href="https://rs.pdd-drive.online" rel="noopener">Auto testovi Srbija</a></div>
+    <div class="footer-disclaimer">
+      Сайт pdd-drive.ru носит исключительно информационно-справочный и образовательный характер и не является официальным сайтом ГУОБДД МВД России или портала Госуслуг. Официальная информация и первоисточники нормативно-правовых актов РФ публикуются на гибдд.рф и pravo.gov.ru.
+    </div>
+  </div>
+</footer>
+
+<script>
+// Пока поддомен app.pdd-drive.ru не ожил (DNS), ведём на временную копию /app/.
+(function () {
+  var degrade = function () {
+    document.querySelectorAll('a[href^="/app/"]').forEach(function (a) { a.href = '/app/'; });
+  };
+  var ctl = new AbortController();
+  var t = setTimeout(function () { ctl.abort(); }, 2500);
+  fetch('/app/flutter.js', {mode: 'no-cors', signal: ctl.signal})
+    .then(function () { clearTimeout(t); }, function () { clearTimeout(t); degrade(); });
+})();
+</script>
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=111960332', 'ym');
+
+    ym(111960332, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/111960332" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+</body>
+</html>
