@@ -8,8 +8,10 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
+import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:pdd_app/presentation/widgets/question_image.dart';
 
 class FeedCard extends ConsumerStatefulWidget {
@@ -23,6 +25,7 @@ class FeedCard extends ConsumerStatefulWidget {
   final VoidCallback onPrevious;
   final void Function(double progress, int remainingSeconds)? onTimerTick;
   final void Function(bool isAnswered, bool isCorrect)? onAnswerStateChanged;
+  final bool isPaused;
   final ValueChanged<bool>? onFavoriteChanged;
 
   const FeedCard({
@@ -30,6 +33,7 @@ class FeedCard extends ConsumerStatefulWidget {
     required this.item,
     required this.isCurrent,
     required this.isSoundEnabled,
+    this.isPaused = false,
     this.initialSelectedAnswerIndex,
     this.onAnswerRecorded,
     required this.onToggleSound,
@@ -54,6 +58,7 @@ class _FeedCardState extends ConsumerState<FeedCard>
   int? _selectedAnswerIndex;
   bool _isAnswered = false;
   Timer? _autoAdvanceTimer;
+  int? _lastTickedSecond;
 
   Duration get _calculatedDuration {
     final textLen = widget.item.questionText.length +
@@ -74,12 +79,21 @@ class _FeedCardState extends ConsumerState<FeedCard>
     );
 
     _timerController.addListener(() {
-      if (widget.isCurrent) {
+      if (widget.isCurrent && !_isAnswered && !widget.isPaused) {
         final progress = (1.0 - _timerController.value).clamp(0.0, 1.0);
         final remainingSec = (_timerController.duration != null)
             ? (progress * _timerController.duration!.inMilliseconds / 1000).ceil()
             : 0;
         widget.onTimerTick?.call(progress, remainingSec);
+
+        // Тиканье таймера только в последние 5 секунд (5, 4, 3, 2, 1)
+        // Управляется настройкой "Звуки" в настройках, независимо от озвучки
+        if (_lastTickedSecond != remainingSec) {
+          _lastTickedSecond = remainingSec;
+          if (remainingSec > 0 && remainingSec <= 5) {
+            SoundEffectsService.instance.playTick();
+          }
+        }
       }
     });
 
@@ -128,6 +142,15 @@ class _FeedCardState extends ConsumerState<FeedCard>
       _stopCard();
     }
 
+    if (oldWidget.isPaused != widget.isPaused) {
+      if (widget.isPaused) {
+        _timerController.stop();
+        TtsService.instance.stop();
+      } else if (widget.isCurrent && !_isAnswered) {
+        _timerController.forward();
+      }
+    }
+
     if (oldWidget.isSoundEnabled != widget.isSoundEnabled && widget.isCurrent) {
       if (widget.isSoundEnabled && !_isAnswered) {
         _playTts();
@@ -139,6 +162,7 @@ class _FeedCardState extends ConsumerState<FeedCard>
 
   void _startCard() {
     if (!_isAnswered) {
+      _lastTickedSecond = null;
       _timerController.duration = _calculatedDuration;
       _timerController.forward(from: 0.0);
       if (widget.isSoundEnabled) {
@@ -155,22 +179,11 @@ class _FeedCardState extends ConsumerState<FeedCard>
 
   Future<void> _playTts() async {
     if (!widget.isCurrent || _isAnswered || !widget.isSoundEnabled) return;
-    final audioDuration = await TtsService.instance.speakOrPlayFeedItem(
+    await TtsService.instance.speakOrPlayFeedItem(
       rawQuestionId: widget.item.rawQuestionId,
       question: widget.item.questionText,
       answers: widget.item.answers,
     );
-
-    if (!widget.isCurrent || _isAnswered || !mounted) {
-      TtsService.instance.stop().ignore();
-      return;
-    }
-
-    if (audioDuration != null) {
-      final dynamicTotal = audioDuration + const Duration(milliseconds: 5000);
-      _timerController.duration = dynamicTotal;
-      _timerController.forward(from: 0.0);
-    }
   }
 
 
@@ -187,6 +200,12 @@ class _FeedCardState extends ConsumerState<FeedCard>
     widget.onAnswerRecorded?.call(-1);
     widget.onAnswerStateChanged?.call(true, false);
     _saveProgress(isCorrect: false, selectedIndex: -1);
+
+    _autoAdvanceTimer = Timer(const Duration(milliseconds: 700), () {
+      if (mounted && widget.isCurrent) {
+        widget.onAutoNext();
+      }
+    });
   }
 
   void _onAnswerSelected(int index) {
@@ -211,14 +230,17 @@ class _FeedCardState extends ConsumerState<FeedCard>
     widget.onAnswerRecorded?.call(index);
     widget.onAnswerStateChanged?.call(true, isCorrect);
     _saveProgress(isCorrect: isCorrect, selectedIndex: index);
+    unawaited(PremiumService.instance.recordCardCompleted());
 
-    if (isCorrect) {
-      _autoAdvanceTimer = Timer(const Duration(milliseconds: 650), () {
-        if (mounted && widget.isCurrent) {
-          widget.onAutoNext();
-        }
-      });
-    }
+    final delay = isCorrect
+        ? const Duration(milliseconds: 650)
+        : const Duration(milliseconds: 700);
+
+    _autoAdvanceTimer = Timer(delay, () {
+      if (mounted && widget.isCurrent) {
+        widget.onAutoNext();
+      }
+    });
   }
 
   Future<void> _saveProgress({required bool isCorrect, required int selectedIndex}) async {
@@ -238,9 +260,10 @@ class _FeedCardState extends ConsumerState<FeedCard>
 
   @override
   void dispose() {
+    _timerController.stop();
+    _autoAdvanceTimer?.cancel();
     _timerController.dispose();
     _scrollController.dispose();
-    _autoAdvanceTimer?.cancel();
     super.dispose();
   }
 
@@ -289,16 +312,20 @@ class _FeedCardState extends ConsumerState<FeedCard>
       child: SingleChildScrollView(
         controller: _scrollController,
         physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.only(
+        padding: EdgeInsets.only(
           left: AppDimensions.screenPadding,
           right: AppDimensions.screenPadding,
-          top: 14,
+          top: MediaQuery.paddingOf(context).top + 10,
           bottom: 84,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Question / Sign Image (Clean, no card background)
+            // 1. Top Controls Header Row (Swipes with the card)
+            _buildTopHeaderRow(colors),
+            const SizedBox(height: AppDimensions.spacingM),
+
+            // 2. Question / Sign Image (Clean, no card background)
             if (widget.item.imagePath != null) ...[
               Center(
                 child: widget.item.isSvgImage
@@ -340,53 +367,184 @@ class _FeedCardState extends ConsumerState<FeedCard>
               return _buildTrainingStyleAnswerOption(idx, answerText, colors);
             }),
 
-            // Explanation Card (Clean without duplicate hint)
-            if (_isAnswered &&
-                _selectedAnswerIndex != widget.item.correctAnswerIndex &&
-                widget.item.explanation != null &&
-                widget.item.explanation!.isNotEmpty) ...[
-              const SizedBox(height: AppDimensions.spacingL),
-              Container(
-                padding: const EdgeInsets.all(AppDimensions.spacingL),
-                decoration: BoxDecoration(
-                  color: colors.cardBackground,
-                  borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.lightbulb, color: colors.gold, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Комментарий',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: colors.primaryText,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppDimensions.spacingM),
-                    Text(
-                      widget.item.explanation!,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: colors.secondaryText,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
             const SizedBox(height: 24),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTopHeaderRow(AppThemeColors colors) {
+    return Row(
+      children: [
+        if (widget.item.badgeText != null) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: widget.item.isAiSmart
+                  ? colors.cardBackground
+                  : colors.lightAccent,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.item.isAiSmart) ...[
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 13,
+                    color: colors.premiumAmber,
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                Text(
+                  widget.item.badgeText!,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: widget.item.isAiSmart
+                        ? colors.premiumAmber
+                        : colors.accent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+
+        if (_isAnswered) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: _selectedAnswerIndex == widget.item.correctAnswerIndex
+                  ? colors.greenLight
+                  : colors.redLight,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _selectedAnswerIndex == widget.item.correctAnswerIndex
+                      ? Icons.check_circle_rounded
+                      : Icons.cancel_rounded,
+                  size: 13,
+                  color: _selectedAnswerIndex == widget.item.correctAnswerIndex
+                      ? colors.green
+                      : colors.red,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _selectedAnswerIndex == widget.item.correctAnswerIndex
+                      ? 'Верно'
+                      : 'Ошибка',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _selectedAnswerIndex == widget.item.correctAnswerIndex
+                        ? colors.green
+                        : colors.red,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ] else ...[
+          AnimatedBuilder(
+            animation: _timerController,
+            builder: (context, _) {
+              final progress = (1.0 - _timerController.value).clamp(0.0, 1.0);
+              final remaining = (_timerController.duration != null)
+                  ? (progress * _timerController.duration!.inMilliseconds / 1000).ceil()
+                  : 0;
+              final isUrgent = remaining <= 3;
+              final bg = isUrgent ? colors.redLight : colors.lightAccent;
+              final fg = isUrgent ? colors.red : colors.accent;
+              return CustomPaint(
+                foregroundPainter: _RRectProgressBorderPainter(
+                  progress: progress,
+                  color: fg,
+                  strokeWidth: 2.0,
+                  radius: 10.0,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: bg,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.timer_outlined, size: 13, color: fg),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$remaining с',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: fg,
+                          fontFamily: 'Onest',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+
+        const Spacer(),
+
+        ListenableBuilder(
+          listenable: PremiumService.instance,
+          builder: (context, _) {
+            final isPrem = PremiumService.instance.isPremium;
+            final remaining = PremiumService.instance.remainingFreeCards;
+            final limit = PremiumService.instance.dailyFreeLimit;
+
+            final Color badgeBg;
+            final Color badgeTextColor;
+            final String badgeText;
+
+            if (isPrem) {
+              badgeBg = const Color(0xFF2BC280);
+              badgeTextColor = Colors.white;
+              badgeText = 'PRO';
+            } else if (remaining > 0) {
+              badgeBg = const Color(0xFFFFA53C);
+              badgeTextColor = Colors.white;
+              badgeText = '$remaining из $limit';
+            } else {
+              badgeBg = const Color(0xFFED4621);
+              badgeTextColor = Colors.white;
+              badgeText = '0 из $limit';
+            }
+
+            return GestureDetector(
+              onTap: () => PremiumPaywallSheet.show(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: badgeBg,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Text(
+                  badgeText,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: badgeTextColor,
+                    fontFamily: 'Onest',
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -494,5 +652,84 @@ class _FeedCardState extends ConsumerState<FeedCard>
         ),
       ),
     );
+  }
+}
+
+class _RRectProgressBorderPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final double strokeWidth;
+  final double radius;
+
+  _RRectProgressBorderPainter({
+    required this.progress,
+    required this.color,
+    this.strokeWidth = 2.0,
+    this.radius = 10.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0) return;
+
+    final rect = Offset.zero & size;
+    final insetRect = rect.deflate(strokeWidth / 2);
+    final r = (radius - strokeWidth / 2).clamp(2.0, radius);
+
+    // Движущаяся по контуру обводка по часовой стрелке от верхнего центра
+    final progressPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = strokeWidth;
+
+    final path = Path();
+    final topCenter = Offset(insetRect.center.dx, insetRect.top);
+    path.moveTo(topCenter.dx, topCenter.dy);
+    // Верхняя правая часть
+    path.lineTo(insetRect.right - r, insetRect.top);
+    path.arcToPoint(
+      Offset(insetRect.right, insetRect.top + r),
+      radius: Radius.circular(r),
+      clockwise: true,
+    );
+    // Правая сторона
+    path.lineTo(insetRect.right, insetRect.bottom - r);
+    path.arcToPoint(
+      Offset(insetRect.right - r, insetRect.bottom),
+      radius: Radius.circular(r),
+      clockwise: true,
+    );
+    // Нижняя сторона
+    path.lineTo(insetRect.left + r, insetRect.bottom);
+    path.arcToPoint(
+      Offset(insetRect.left, insetRect.bottom - r),
+      radius: Radius.circular(r),
+      clockwise: true,
+    );
+    // Левая сторона
+    path.lineTo(insetRect.left, insetRect.top + r);
+    path.arcToPoint(
+      Offset(insetRect.left + r, insetRect.top),
+      radius: Radius.circular(r),
+      clockwise: true,
+    );
+    // Замыкание в верхний центр
+    path.lineTo(topCenter.dx, topCenter.dy);
+
+    for (final metric in path.computeMetrics()) {
+      final totalLength = metric.length;
+      final activeLength = (totalLength * progress.clamp(0.0, 1.0));
+      final extractPath = metric.extractPath(0, activeLength);
+      canvas.drawPath(extractPath, progressPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RRectProgressBorderPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.color != color ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.radius != radius;
   }
 }

@@ -139,7 +139,12 @@ class InstallReporter {
     try {
       final info = await PackageInfo.fromPlatform();
       result['version'] = '${info.version}+${info.buildNumber}';
-      result['source'] = _sourceFromInstaller(info.installerStore);
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        final installer = info.installerStore?.toLowerCase() ?? '';
+        result['source'] = installer.contains('testflight') ? 'TestFlight' : 'App Store';
+      } else {
+        result['source'] = _sourceFromInstaller(info.installerStore);
+      }
     } catch (_) {}
 
     try {

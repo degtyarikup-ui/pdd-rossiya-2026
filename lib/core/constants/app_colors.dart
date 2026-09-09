@@ -17,6 +17,8 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
   final Color searchFieldFill;
   final Color gold;
   final Color goldLightSurface;
+  final Color premiumAmber;
+  final Color premiumAmberSurface;
   final Color divider;
   final Color homeScreenBackground;
   final Color homeStatGraySurface;
@@ -43,6 +45,8 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
     required this.searchFieldFill,
     required this.gold,
     required this.goldLightSurface,
+    required this.premiumAmber,
+    required this.premiumAmberSurface,
     required this.divider,
     required this.homeScreenBackground,
     required this.homeStatGraySurface,
@@ -61,21 +65,23 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
     secondaryText: Color(0xFFA1A6B7),
     background: Color(0xFFF8F8FA),
     cardBackground: Color(0xFFFFFFFF),
-    green: Color(0xFF34A853),
-    greenLight: Color(0xFFE6F7DE),
-    red: Color(0xFFEA4335),
-    redLight: Color(0xFFFFE6E6),
+    green: Color(0xFF2BC280),
+    greenLight: Color(0xFFE8F8F0),
+    red: Color(0xFFED4621),
+    redLight: Color(0xFFFFECE8),
     gray: Color(0xFFEFF0F4),
     lightBlueGray: Color(0xFFEFF0F4),
     searchFieldFill: Color(0xFFF2F2F7),
     gold: Color(0xFFFFA53C),
-    goldLightSurface: Color(0xFFFFF1E6),
+    goldLightSurface: Color(0xFFFFF7ED),
+    premiumAmber: Color(0xFFFFA53C),
+    premiumAmberSurface: Color(0xFFFFF7ED),
     divider: Color(0xFFE8E8E8),
     homeScreenBackground: Color(0xFFF8F9FA),
     homeStatGraySurface: Color(0xFFF5F5F5),
     accentSurface10: Color(0x1A0574F8),
-    homeRedSurface: Color(0xFFFFEBEE),
-    homeGreenSurface: Color(0xFFE8F5E9),
+    homeRedSurface: Color(0xFFFFECE8),
+    homeGreenSurface: Color(0xFFE8F8F0),
     white: Color(0xFFFFFFFF),
     black: Color(0xFF000000),
     isDark: false,
@@ -88,15 +94,17 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
     secondaryText: Color(0xFF8A90A2),
     background: Color(0xFF121214),
     cardBackground: Color(0xFF1C1D22),
-    green: Color(0xFF34C759),
+    green: Color(0xFF2BC280),
     greenLight: Color(0xFF162B1D),
-    red: Color(0xFFFF453A),
+    red: Color(0xFFED4621),
     redLight: Color(0xFF341717),
     gray: Color(0xFF25272E),
     lightBlueGray: Color(0xFF25272E),
     searchFieldFill: Color(0xFF202229),
     gold: Color(0xFFFFA53C),
     goldLightSurface: Color(0xFF2E2215),
+    premiumAmber: Color(0xFFFFA53C),
+    premiumAmberSurface: Color(0xFF2C1F0A),
     divider: Color(0xFF22242B),
     homeScreenBackground: Color(0xFF121214),
     homeStatGraySurface: Color(0xFF1C1D22),
@@ -125,6 +133,8 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
     Color? searchFieldFill,
     Color? gold,
     Color? goldLightSurface,
+    Color? premiumAmber,
+    Color? premiumAmberSurface,
     Color? divider,
     Color? homeScreenBackground,
     Color? homeStatGraySurface,
@@ -151,6 +161,8 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
       searchFieldFill: searchFieldFill ?? this.searchFieldFill,
       gold: gold ?? this.gold,
       goldLightSurface: goldLightSurface ?? this.goldLightSurface,
+      premiumAmber: premiumAmber ?? this.premiumAmber,
+      premiumAmberSurface: premiumAmberSurface ?? this.premiumAmberSurface,
       divider: divider ?? this.divider,
       homeScreenBackground:
           homeScreenBackground ?? this.homeScreenBackground,
@@ -183,6 +195,8 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
       searchFieldFill: Color.lerp(searchFieldFill, other.searchFieldFill, t)!,
       gold: Color.lerp(gold, other.gold, t)!,
       goldLightSurface: Color.lerp(goldLightSurface, other.goldLightSurface, t)!,
+      premiumAmber: Color.lerp(premiumAmber, other.premiumAmber, t)!,
+      premiumAmberSurface: Color.lerp(premiumAmberSurface, other.premiumAmberSurface, t)!,
       divider: Color.lerp(divider, other.divider, t)!,
       homeScreenBackground:
           Color.lerp(homeScreenBackground, other.homeScreenBackground, t)!,
@@ -210,7 +224,7 @@ class AppColors {
         : AppThemeColors.light;
   }
 
-  // --- Static fallback & constant tokens (backward compatibility) ---
+  // --- Static fallback & constant tokens (unified brand palette) ---
   static const Color accent = Color(0xFF0574F8);
   static const Color lightAccent = Color(0xFFE8F2FE);
   static const Color primaryText = Color(0xFF121212);
@@ -218,26 +232,25 @@ class AppColors {
   static const Color background = Color(0xFFF8F8FA);
   static const Color white = Color(0xFFFFFFFF);
   static const Color cardBackground = Color(0xFFFFFFFF);
-  static const Color green = Color(0xFF34A853);
-  static const Color greenLight = Color(0xFFE6F7DE);
-  static const Color red = Color(0xFFEA4335);
-  static const Color redLight = Color(0xFFFFE6E6);
+  static const Color green = Color(0xFF2BC280);
+  static const Color greenLight = Color(0xFFE8F8F0);
+  static const Color red = Color(0xFFED4621);
+  static const Color redLight = Color(0xFFFFECE8);
   static const Color gray = Color(0xFFEFF0F4);
   static const Color lightBlueGray = Color(0xFFEFF0F4);
   static const Color searchFieldFill = Color(0xFFF2F2F7);
   static const Color gold = Color(0xFFFFA53C);
-  static const Color goldLightSurface = Color(0xFFFFF1E6);
+  static const Color goldLightSurface = Color(0xFFFFF7ED);
   static const Color divider = Color(0xFFE8E8E8);
   static const Color black = Color(0xFF000000);
 
   static const Color homeScreenBackground = Color(0xFFF8F9FA);
   static const Color homeStatGraySurface = Color(0xFFF5F5F5);
   static const Color accentSurface10 = Color(0x1A0574F8);
-  static const Color homeRedSurface = Color(0xFFFFEBEE);
-  static const Color homeGreenSurface = Color(0xFFE8F5E9);
+  static const Color homeRedSurface = Color(0xFFFFECE8);
+  static const Color homeGreenSurface = Color(0xFFE8F8F0);
 }
 
 extension AppColorsBuildContextExtension on BuildContext {
   AppThemeColors get colors => AppColors.of(this);
 }
-

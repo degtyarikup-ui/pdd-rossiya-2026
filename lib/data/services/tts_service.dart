@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:pdd_app/core/config/country_config.dart';
+import 'package:pdd_app/data/services/premium_service.dart';
 
 class TtsService {
   TtsService._();
@@ -31,7 +34,6 @@ class TtsService {
   final FlutterTts _tts = FlutterTts();
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _configured = false;
-  bool _isPlayingAudio = false;
   int _activeRequestId = 0;
 
   Future<void> _ensureConfigured() async {
@@ -44,18 +46,50 @@ class TtsService {
     await _tts.setPitch(1.0);
     await _tts.setVolume(1.0);
 
-    try {
-      await _tts.awaitSpeakCompletion(true);
-    } catch (_) {}
+    if (!kIsWeb && Platform.isIOS) {
+      try {
+        await _tts.setIosAudioCategory(
+          IosTextToSpeechAudioCategory.playback,
+          [
+            IosTextToSpeechAudioCategoryOptions.mixWithOthers,
+            IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
+          ],
+          IosTextToSpeechAudioMode.defaultMode,
+        );
+      } catch (_) {}
+    }
 
-    _audioPlayer.onPlayerComplete.listen((_) {
-      _isPlayingAudio = false;
-    });
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      try {
+        await _audioPlayer.setAudioContext(
+          AudioContext(
+            android: const AudioContextAndroid(
+              isSpeakerphoneOn: false,
+              stayAwake: false,
+              contentType: AndroidContentType.speech,
+              usageType: AndroidUsageType.media,
+              audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+            ),
+            iOS: AudioContextIOS(
+              category: AVAudioSessionCategory.playback,
+              options: const {
+                AVAudioSessionOptions.mixWithOthers,
+              },
+            ),
+          ),
+        );
+      } catch (_) {}
+    }
+
+    try {
+      await _tts.awaitSpeakCompletion(false);
+    } catch (_) {}
 
     _configured = true;
   }
 
-  /// Plays studio-quality pre-rendered neural voice if available, otherwise falls back to system TTS.
+  /// Plays studio-quality pre-rendered neural voice if PRO is active and audio exists,
+  /// otherwise falls back to phone system TTS.
   /// Returns the Duration of the audio track for dynamic countdown timer synchronization.
   Future<Duration?> speakOrPlayFeedItem({
     required String? rawQuestionId,
@@ -63,36 +97,44 @@ class TtsService {
     required List<String> answers,
   }) async {
     await stop();
-    final currentId = ++_activeRequestId;
+    final currentId = _activeRequestId;
+    await _ensureConfigured();
+    if (currentId != _activeRequestId) return null;
 
-    if (rawQuestionId != null) {
-      final fileName = rawQuestionId.startsWith('sign_')
-          ? '$rawQuestionId.mp3'
-          : 'q_$rawQuestionId.mp3';
-      final assetPath = 'audio/feed/$fileName';
-      try {
-        await rootBundle.load('assets/$assetPath');
-        if (currentId != _activeRequestId) return null;
+    final isPremium = PremiumService.instance.isPremium;
+    if (isPremium && rawQuestionId != null) {
+      final candidates = [
+        rawQuestionId.startsWith('sign_')
+            ? '$rawQuestionId.opus'
+            : 'q_$rawQuestionId.opus',
+        '$rawQuestionId.opus',
+        rawQuestionId.startsWith('sign_')
+            ? '$rawQuestionId.mp3'
+            : 'q_$rawQuestionId.mp3',
+      ];
+      for (final fileName in candidates) {
+        final assetPath = 'audio/feed/$fileName';
+        try {
+          await rootBundle.load('assets/$assetPath');
+          if (currentId != _activeRequestId) return null;
 
-        _isPlayingAudio = true;
-        await _audioPlayer.setSource(AssetSource(assetPath));
-        if (currentId != _activeRequestId) {
-          await _audioPlayer.stop();
-          _isPlayingAudio = false;
-          return null;
+          await _audioPlayer.setSource(AssetSource(assetPath));
+          if (currentId != _activeRequestId) {
+            await _audioPlayer.stop();
+            return null;
+          }
+
+          final duration = await _audioPlayer.getDuration();
+          if (currentId != _activeRequestId) {
+            await _audioPlayer.stop();
+            return null;
+          }
+
+          await _audioPlayer.resume();
+          return duration;
+        } catch (_) {
+          // Pre-rendered audio not found for this candidate
         }
-
-        final duration = await _audioPlayer.getDuration();
-        if (currentId != _activeRequestId) {
-          await _audioPlayer.stop();
-          _isPlayingAudio = false;
-          return null;
-        }
-
-        await _audioPlayer.resume();
-        return duration;
-      } catch (_) {
-        // Pre-rendered audio not found, fall back to TTS
       }
     }
 
@@ -113,31 +155,40 @@ class TtsService {
     required String question,
     required List<String> answers,
   }) async {
-    final currentId = ++_activeRequestId;
+    await stop();
+    final currentId = _activeRequestId;
     await _ensureConfigured();
     if (currentId != _activeRequestId) return;
 
-    if (rawQuestionId != null) {
-      final fileName = rawQuestionId.startsWith('sign_')
-          ? '$rawQuestionId.mp3'
-          : 'q_$rawQuestionId.mp3';
-      final assetPath = 'audio/feed/$fileName';
-      try {
-        await rootBundle.load('assets/$assetPath');
-        if (currentId != _activeRequestId) return;
+    // Free users get device system TTS in training modes; Premium gets studio neural voice (.opus)
+    final isPremium = PremiumService.instance.isPremium;
+    if (isPremium && rawQuestionId != null) {
+      final candidates = [
+        rawQuestionId.startsWith('sign_')
+            ? '$rawQuestionId.opus'
+            : 'q_$rawQuestionId.opus',
+        '$rawQuestionId.opus',
+        rawQuestionId.startsWith('sign_')
+            ? '$rawQuestionId.mp3'
+            : 'q_$rawQuestionId.mp3',
+      ];
+      for (final fileName in candidates) {
+        final assetPath = 'audio/feed/$fileName';
+        try {
+          await rootBundle.load('assets/$assetPath');
+          if (currentId != _activeRequestId) return;
 
-        _isPlayingAudio = true;
-        await _audioPlayer.setSource(AssetSource(assetPath));
-        if (currentId != _activeRequestId) {
-          await _audioPlayer.stop();
-          _isPlayingAudio = false;
+          await _audioPlayer.setSource(AssetSource(assetPath));
+          if (currentId != _activeRequestId) {
+            await _audioPlayer.stop();
+            return;
+          }
+
+          await _audioPlayer.resume();
           return;
+        } catch (_) {
+          // Fall back to next candidate or system TTS
         }
-
-        await _audioPlayer.resume();
-        return;
-      } catch (_) {
-        // Fall back to system TTS
       }
     }
 
@@ -158,17 +209,21 @@ class TtsService {
     }
 
     if (currentId != _activeRequestId) return;
-    await _tts.speak(buffer.toString().trim());
+    try {
+      await _tts.speak(buffer.toString().trim(), focus: true);
+    } catch (_) {}
+    if (currentId != _activeRequestId) {
+      try {
+        await _tts.stop();
+      } catch (_) {}
+    }
   }
 
   Future<void> stop() async {
     _activeRequestId++;
-    if (_isPlayingAudio) {
-      try {
-        await _audioPlayer.stop();
-      } catch (_) {}
-      _isPlayingAudio = false;
-    }
+    try {
+      await _audioPlayer.stop();
+    } catch (_) {}
     try {
       await _tts.stop();
     } catch (_) {}

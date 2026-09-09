@@ -361,6 +361,9 @@ class AppLocalizationsSr extends AppLocalizations {
   String get techSupport => 'Tehnička podrška';
 
   @override
+  String get termsOfUse => 'Uslovi korišćenja';
+
+  @override
   String get privacyPolicy => 'Politika privatnosti';
 
   @override
@@ -706,4 +709,10 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get themeChoose => 'Izbor teme';
+
+  @override
+  String get notificationsSetting => 'Podsetnici za niz';
+
+  @override
+  String get notificationsHint => 'Svakog dana u 20:00 ako niz nije zatvoren';
 }

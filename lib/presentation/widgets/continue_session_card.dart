@@ -12,9 +12,14 @@ import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 /// экзамену. Вынесена из home_screen, чтобы её поведение можно было
 /// проверять тестами отдельно от всего главного экрана.
 class ContinueSessionCard extends ConsumerStatefulWidget {
-  const ContinueSessionCard({super.key, required this.session});
+  const ContinueSessionCard({
+    super.key,
+    required this.session,
+    this.onDismissStart,
+  });
 
   final Map<String, dynamic> session;
+  final VoidCallback? onDismissStart;
 
   @override
   ConsumerState<ContinueSessionCard> createState() =>
@@ -23,21 +28,16 @@ class ContinueSessionCard extends ConsumerStatefulWidget {
 
 class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
     with SingleTickerProviderStateMixin {
-  /// 1 — карточка на месте, 0 — свёрнута. Порядок важен: сначала карточка
-  /// уезжает, и только потом чистится хранилище и перечитываются данные.
-  /// Раньше было наоборот — перезагрузка всего экрана шла первой, и карточка
-  /// пропадала рывком уже после неё.
+  /// 1 — карточка на месте, 0 — свёрнута.
   late final AnimationController _dismiss = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 260),
+    duration: const Duration(milliseconds: 300),
     value: 1,
   );
 
   late final Animation<double> _fade = CurvedAnimation(
     parent: _dismiss,
-    // Прозрачность уходит раньше высоты: к моменту схлопывания карточки
-    // её уже не видно, и соседние блоки не «прыгают» под полупрозрачным.
-    curve: const Interval(0.35, 1, curve: Curves.easeOut),
+    curve: const Interval(0.2, 1.0, curve: Curves.easeOut),
   );
 
   late final Animation<double> _collapse = CurvedAnimation(
@@ -52,17 +52,14 @@ class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
   }
 
   Future<void> _onDismiss() async {
-    // Отклик — сразу по нажатию, до анимации: он подтверждает нажатие,
-    // а не сообщает о завершении.
     HapticFeedbackHelper.select();
+    widget.onDismissStart?.call();
 
     await _dismiss.reverse();
     if (!mounted) return;
 
     await ref.read(progressDataSourceProvider).clearUnfinishedSession();
     if (!mounted) return;
-    // Точечно, а не общим appDataRefreshProvider: перечитывать заодно
-    // статистику и серию незачем — они не менялись.
     ref.invalidate(unfinishedSessionProvider);
   }
 
@@ -85,7 +82,7 @@ class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
         child: Padding(
           // Отступ снизу внутри анимируемой части: иначе при схлопывании
           // карточки он остался бы висеть пустой полосой.
-          padding: const EdgeInsets.only(bottom: AppDimensions.spacingL),
+          padding: const EdgeInsets.only(bottom: 12.0),
           child: Container(
             decoration: BoxDecoration(
               // Тот же синий, что у карточки экзамена: белая карточка терялась
@@ -121,18 +118,22 @@ class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
                   ref.read(appDataRefreshProvider.notifier).state++;
                 },
                 child: Padding(
-                  padding: const EdgeInsets.all(AppDimensions.spacingL),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimensions.spacingM,
+                    vertical: 10,
+                  ),
                   child: Row(
                     children: [
                       Container(
-                        width: 44,
-                        height: 44,
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
                           color: AppColors.white.withValues(alpha: 0.22),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.play_arrow_rounded,
+                          size: 22,
                           color: AppColors.white,
                         ),
                       ),
@@ -144,12 +145,12 @@ class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
                             Text(
                               appL10n.continueSession,
                               style: const TextStyle(
-                                fontSize: 16,
+                                fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.white,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 1),
                             Text(
                               appL10n.continueSessionSubtitle(
                                 title,
@@ -159,7 +160,7 @@ class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
                                 color: AppColors.white.withValues(alpha: 0.75),
                               ),
                             ),
@@ -171,7 +172,7 @@ class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
                       IconButton(
                         icon: Icon(
                           Icons.close_rounded,
-                          size: 20,
+                          size: 18,
                           color: AppColors.white.withValues(alpha: 0.75),
                         ),
                         tooltip: appL10n.continueSessionDismiss,

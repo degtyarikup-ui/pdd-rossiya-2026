@@ -6,6 +6,7 @@ class AppSettings {
   final bool soundEffectsEnabled;
   final bool confirmAnswerEnabled;
   final bool voiceEnabled;
+  final bool notificationsEnabled;
   final TicketCategory ticketCategory;
   final ThemeMode themeMode;
   /// `false` — показать онбординг выбора A/B vs C/D. До загрузки из хранилища держим `true`.
@@ -16,6 +17,7 @@ class AppSettings {
     this.soundEffectsEnabled = true,
     this.confirmAnswerEnabled = false,
     this.voiceEnabled = false,
+    this.notificationsEnabled = true,
     this.ticketCategory = TicketCategory.ab,
     this.themeMode = ThemeMode.system,
     this.vehicleOnboardingCompleted = true,
@@ -26,6 +28,7 @@ class AppSettings {
     bool? soundEffectsEnabled,
     bool? confirmAnswerEnabled,
     bool? voiceEnabled,
+    bool? notificationsEnabled,
     TicketCategory? ticketCategory,
     ThemeMode? themeMode,
     bool? vehicleOnboardingCompleted,
@@ -35,6 +38,7 @@ class AppSettings {
       soundEffectsEnabled: soundEffectsEnabled ?? this.soundEffectsEnabled,
       confirmAnswerEnabled: confirmAnswerEnabled ?? this.confirmAnswerEnabled,
       voiceEnabled: voiceEnabled ?? this.voiceEnabled,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       ticketCategory: ticketCategory ?? this.ticketCategory,
       themeMode: themeMode ?? this.themeMode,
       vehicleOnboardingCompleted:
@@ -64,6 +68,7 @@ class AppSettings {
       soundEffectsEnabled: map['soundEffectsEnabled'] as bool? ?? true,
       confirmAnswerEnabled: map['confirmAnswerEnabled'] as bool? ?? false,
       voiceEnabled: map['voiceEnabled'] as bool? ?? false,
+      notificationsEnabled: map['notificationsEnabled'] as bool? ?? true,
       ticketCategory: TicketCategory.parse(map['ticketCategory'] as String?),
       themeMode: parseThemeMode(map['themeMode'] as String?),
       vehicleOnboardingCompleted: migratedOnboarding,
@@ -76,6 +81,7 @@ class AppSettings {
       'soundEffectsEnabled': soundEffectsEnabled,
       'confirmAnswerEnabled': confirmAnswerEnabled,
       'voiceEnabled': voiceEnabled,
+      'notificationsEnabled': notificationsEnabled,
       'ticketCategory': ticketCategory.name,
       'themeMode': themeMode.name,
       'vehicleOnboardingCompleted': vehicleOnboardingCompleted,

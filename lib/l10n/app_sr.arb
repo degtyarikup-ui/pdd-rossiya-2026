@@ -99,6 +99,7 @@
   "telegramOpenFailed": "Nije moguće otvoriti Telegram",
   "supportDeveloper": "Podržite programera",
   "techSupport": "Tehnička podrška",
+  "termsOfUse": "Uslovi korišćenja",
   "privacyPolicy": "Politika privatnosti",
   "aboutSection": "O aplikaciji",
   "dataSourceTitle": "Izvori podataka",
@@ -200,5 +201,7 @@
   "themeSystem": "Kao na uređaju",
   "themeLight": "Svetla",
   "themeDark": "Tamna",
-  "themeChoose": "Izbor teme"
+  "themeChoose": "Izbor teme",
+  "notificationsSetting": "Podsetnici za niz",
+  "notificationsHint": "Svakog dana u 20:00 ako niz nije zatvoren"
 }

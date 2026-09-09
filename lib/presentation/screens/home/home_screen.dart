@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -7,6 +11,7 @@ import 'package:pdd_app/core/navigation/route_observer.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/review_prompt_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -18,8 +23,10 @@ import 'package:pdd_app/presentation/screens/feed/feed_screen.dart';
 import 'package:pdd_app/presentation/screens/settings/settings_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/screens/topics/topics_screen.dart';
+import 'package:pdd_app/presentation/widgets/premium_granted_dialog.dart';
 import 'package:pdd_app/presentation/widgets/streak_celebration_dialog.dart';
 import 'package:pdd_app/presentation/widgets/continue_session_card.dart';
+import 'package:pdd_app/presentation/widgets/exam_hero_card.dart';
 import 'package:pdd_app/presentation/widgets/progress_panel_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -32,11 +39,39 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   late int _currentIndex;
+  StreamSubscription<DateTime?>? _premiumGrantSub;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _subscribePremiumGrant();
+  }
+
+  void _subscribePremiumGrant() {
+    _premiumGrantSub = PremiumService.instance.onPremiumGrantedStream.listen((expiresAt) {
+      if (!mounted) return;
+      _showPremiumGrantedDialog(expiresAt);
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final pendingExp = PremiumService.instance.pendingGrantNotificationExpiresAt;
+      if (pendingExp != null) {
+        PremiumService.instance.consumePendingGrantNotification();
+        _showPremiumGrantedDialog(pendingExp);
+      }
+    });
+  }
+
+  void _showPremiumGrantedDialog(DateTime? expiresAt) {
+    PremiumGrantedDialog.show(context, expiresAt: expiresAt);
+  }
+
+  @override
+  void dispose() {
+    _premiumGrantSub?.cancel();
+    super.dispose();
   }
 
   final List<Widget> _screens = const [
@@ -49,52 +84,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return Scaffold(
-      backgroundColor: colors.homeScreenBackground,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        systemStatusBarContrastEnforced: false,
+        systemNavigationBarColor: colors.cardBackground,
+        systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarContrastEnforced: false,
       ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            height: 1,
-            color: colors.divider,
-          ),
-          NavigationBar(
-            selectedIndex: _currentIndex,
-            onDestinationSelected: (index) {
-              if (index != _currentIndex) {
-                TtsService.instance.stop();
-                HapticFeedbackHelper.select();
-                setState(() => _currentIndex = index);
-              }
-            },
-            destinations: [
-              NavigationDestination(
-                icon: const Icon(Icons.menu_book_outlined),
-                selectedIcon: const Icon(Icons.menu_book),
-                label: appL10n.training,
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.style_outlined),
-                selectedIcon: const Icon(Icons.style_rounded),
-                label: appL10n.video,
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.gavel_outlined),
-                selectedIcon: const Icon(Icons.gavel),
-                label: appL10n.pdd,
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.settings_outlined),
-                selectedIcon: const Icon(Icons.settings),
-                label: appL10n.settings,
-              ),
-            ],
-          ),
-        ],
+      child: Scaffold(
+        backgroundColor: colors.homeScreenBackground,
+        body: _screens[_currentIndex],
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              height: 1,
+              color: colors.divider,
+            ),
+            NavigationBar(
+              selectedIndex: _currentIndex,
+              onDestinationSelected: (index) {
+                if (index != _currentIndex) {
+                  TtsService.instance.stop();
+                  HapticFeedbackHelper.select();
+                  setState(() => _currentIndex = index);
+                }
+              },
+              destinations: [
+                NavigationDestination(
+                  icon: const Icon(Icons.menu_book_outlined),
+                  selectedIcon: const Icon(Icons.menu_book),
+                  label: appL10n.training,
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.style_outlined),
+                  selectedIcon: const Icon(Icons.style_rounded),
+                  label: appL10n.video,
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.gavel_outlined),
+                  selectedIcon: const Icon(Icons.gavel),
+                  label: appL10n.pdd,
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.settings_outlined),
+                  selectedIcon: const Icon(Icons.settings),
+                  label: appL10n.settings,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -150,6 +196,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
   /// Не зависит от того, какой именно экран был сверху.
   @override
   void didPopNext() {
+    ref.read(appDataRefreshProvider.notifier).state++;
     _maybeShowStreakCelebration();
   }
 
@@ -175,147 +222,122 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
     final statsAsync = ref.watch(statsProvider);
     final streakAsync = ref.watch(streakProvider);
     final unfinishedSession = ref.watch(unfinishedSessionProvider);
-    final hasContinueCard = unfinishedSession.valueOrNull != null;
-    final colors = AppColors.of(context);
+    final sessionData = unfinishedSession.valueOrNull;
+    final hasContinueCard = sessionData != null;
 
-    return Scaffold(
-      backgroundColor: colors.homeScreenBackground,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(statsProvider);
-            ref.invalidate(streakProvider);
-            await ref.read(statsProvider.future);
-          },
-          // Воздух между блоками зависит от высоты экрана: на высоком даём
-          // разделам разойтись, на низком схлопываем в ноль — там каждый
-          // пиксель нужен под содержимое.
-          //
-          // Считаем явно, а не через Spacer: Spacer требует ограниченной
-          // высоты, а IntrinsicHeight, который её даёт, учитывает натуральный
-          // размер распорок — и на невысоком экране они не схлопывались,
-          // добавляя мёртвое место, которое приходилось пролистывать.
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              // Высота содержимого без распорок: панель + карточка экзамена +
-              // два ряда плиток + постоянные отступы и поля. Оценка, а не
-              // точный расчёт — ошибка в пару десятков пикселей даёт лишь
-              // чуть больший отступ снизу.
-              const contentHeight = 648.0;
-              // Карточка «Продолжить» появляется и исчезает, и её высоту надо
-              // вычесть — иначе распорки остаются прежними, содержимое
-              // перестаёт помещаться и появляется паразитный скролл.
-              const continueCardHeight = 92.0;
-              final slack = constraints.maxHeight -
-                  contentHeight -
-                  (hasContinueCard ? continueCardHeight : 0);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalH = constraints.maxHeight;
+        final double topInset = MediaQuery.paddingOf(context).top;
+        const double topPadding = 12.0;
+        const double bottomPadding = AppDimensions.screenPadding; // 16.0
+        const double gap = 12.0;
 
-              final sectionGap = (slack * 0.6).clamp(0.0, 56.0);
-              // Внутри группы действий отступ меньше: экзамен и плитки должны
-              // читаться вместе, а не как два разных раздела.
-              final groupGap = (slack * 0.27).clamp(0.0, 25.0);
+        // Top progress panel height is ~206.0
+        const double topPanelHeight = 206.0;
+        final double continueCardH = hasContinueCard ? 56.0 : 0.0;
+        final double totalGaps = gap * (hasContinueCard ? 4 : 3);
 
-              return SingleChildScrollView(
-                // Иначе «потянуть для обновления» перестаёт работать, когда
-                // содержимое умещается на экран целиком.
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(
-                  AppDimensions.screenPadding,
-                  16,
-                  AppDimensions.screenPadding,
-                  24,
+        final double availableH = totalH - topInset - topPadding - bottomPadding - topPanelHeight - continueCardH - totalGaps;
+
+        final double examHeight;
+        final double buttonHeight;
+
+        if (availableH > 260) {
+          examHeight = (availableH * 0.40).clamp(130.0, 220.0);
+          final double remainingForButtons = availableH - examHeight - gap;
+          buttonHeight = math.max(100.0, remainingForButtons / 2);
+        } else {
+          examHeight = 140.0;
+          buttonHeight = AppDimensions.topicButtonHeight;
+        }
+
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(
+            AppDimensions.screenPadding,
+            topInset + topPadding,
+            AppDimensions.screenPadding,
+            bottomPadding,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              statsAsync.when(
+                data: (stats) => ProgressPanelCard(
+                  stats: stats,
+                  streak: streakAsync.valueOrNull,
                 ),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                    // Готовность, четыре числа и серия — одной карточкой.
-                    // Серия ждёт статистику, а не показывается отдельно: две
-                    // карточки одинакового веса не давали экрану иерархии.
-                    statsAsync.when(
-                      data: (stats) => ProgressPanelCard(
-                        stats: stats,
-                        streak: streakAsync.valueOrNull,
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 48),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+                error: (error, _) => ProgressPanelCard(
+                  stats: const {
+                    'correctAnswers': 0,
+                    'answeredQuestions': 0,
+                    'passedTickets': 0,
+                    'wrongQuestions': 0,
+                    'totalQuestions': 0,
+                    'totalTickets': 0,
+                  },
+                  streak: streakAsync.valueOrNull,
+                ),
+              ),
+              const SizedBox(height: gap),
+              unfinishedSession.maybeWhen(
+                data: (session) => session == null
+                    ? const SizedBox.shrink()
+                    : ContinueSessionCard(
+                        key: ValueKey(session['questions'].hashCode),
+                        session: session,
                       ),
-                      loading: () => const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 48),
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                      error: (error, _) => ProgressPanelCard(
-                        stats: const {
-                          'correctAnswers': 0,
-                          'answeredQuestions': 0,
-                          'passedTickets': 0,
-                          'wrongQuestions': 0,
-                          'totalQuestions': 0,
-                          'totalTickets': 0,
-                        },
-                        streak: streakAsync.valueOrNull,
-                      ),
+                orElse: () => const SizedBox.shrink(),
+              ),
+              _buildExamHero(context, ref, height: examHeight),
+              const SizedBox(height: gap),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildModeCard(
+                      context: context,
+                      iconAsset: 'assets/images/home_icon_topics.png',
+                      label: appL10n.topics,
+                      height: buttonHeight,
+                      onTap: () {
+                        HapticFeedbackHelper.tap();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TopicsScreen(),
+                          ),
+                        );
+                      },
                     ),
-                    // Граница между сводкой и действиями.
-                    //
-                    // Анимированная: когда карточку «Продолжить» убирают, она
-                    // схлопывается плавно, а отступы пересчитываются мгновенно
-                    // — и карточка экзамена, доехав вверх, дёргалась вниз.
-                    // Обе анимации теперь одной длительности.
-                    _AnimatedGap(height: sectionGap),
-                    const SizedBox(height: AppDimensions.spacingL),
-                    // Возврат к незаконченной тренировке или прерванному экзамену.
-                    unfinishedSession.maybeWhen(
-                          data: (session) => session == null
-                              ? const SizedBox.shrink()
-                              // Ключ по набору вопросов: при смене сессии нужен
-                              // новый State, иначе карточка осталась бы свёрнутой
-                              // после предыдущего скрытия.
-                              : ContinueSessionCard(
-                                  key: ValueKey(session['questions'].hashCode),
-                                  session: session,
-                                ),
-                          orElse: () => const SizedBox.shrink(),
-                        ),
-                    _buildExamHero(context, ref),
-                    _AnimatedGap(height: groupGap),
-                    const SizedBox(height: AppDimensions.spacingL),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildModeCard(
-                            context: context,
-                            iconAsset: 'assets/images/home_icon_topics.png',
-                            label: appL10n.topics,
-                            onTap: () {
-                              HapticFeedbackHelper.tap();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const TopicsScreen(),
-                                ),
-                              );
-                            },
+                  ),
+                  const SizedBox(width: gap),
+                  Expanded(
+                    child: _buildModeCard(
+                      context: context,
+                      iconAsset: 'assets/images/home_icon_tickets.png',
+                      label: appL10n.tickets,
+                      height: buttonHeight,
+                      onTap: () {
+                        HapticFeedbackHelper.tap();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TicketsScreen(),
                           ),
-                        ),
-                        const SizedBox(width: AppDimensions.spacingM),
-                        Expanded(
-                          child: _buildModeCard(
-                            context: context,
-                            iconAsset: 'assets/images/home_icon_tickets.png',
-                            label: appL10n.tickets,
-                            onTap: () {
-                              HapticFeedbackHelper.tap();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const TicketsScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
+                        );
+                      },
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: AppDimensions.spacingM),
+              const SizedBox(height: gap),
               Row(
                 children: [
                   Expanded(
@@ -323,6 +345,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                       context: context,
                       iconAsset: 'assets/images/home_icon_errors.png',
                       label: appL10n.mistakes,
+                      height: buttonHeight,
                       onTap: () {
                         HapticFeedbackHelper.tap();
                         Navigator.push(
@@ -334,12 +357,13 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                       },
                     ),
                   ),
-                  const SizedBox(width: AppDimensions.spacingM),
+                  const SizedBox(width: gap),
                   Expanded(
                     child: _buildModeCard(
                       context: context,
                       iconAsset: 'assets/images/home_icon_favorites.png',
                       label: appL10n.favorites,
+                      height: buttonHeight,
                       onTap: () {
                         HapticFeedbackHelper.tap();
                         Navigator.push(
@@ -353,165 +377,62 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                   ),
                 ],
               ),
-                    ],
-                  ),
-              );
-            },
+            ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  static const double _examTitleFontSize = 26;
-  /// Подпись плитки режима. 26 pt выбивались из шкалы: это крупнее
-  /// заголовков карточек (16) и почти как заголовок экрана (28) — именно
-  /// из-за них плитки приходилось делать высотой 128.
   static const double _homeNavLabelFontSize = 18;
 
-  Widget _buildExamHero(BuildContext context, WidgetRef ref) {
-    final colors = AppColors.of(context);
-    const double bannerHeight = 160;
+  Widget _buildExamHero(BuildContext context, WidgetRef ref, {required double height}) {
+    final settings = ref.watch(appSettingsProvider);
+    final categoryLabel =
+        settings.ticketCategory == TicketCategory.cd ? 'C/D' : 'A/B';
 
-    // Картинка на кнопке экзамена зависит от выбранной категории и реактивно
-    // обновляется при её смене (в т.ч. из настроек).
-    final vehicleAsset =
-        ref.watch(appSettingsProvider).ticketCategory == TicketCategory.cd
-            ? 'assets/images/onboarding_truck.png'
-            : 'assets/images/onboarding_car.png';
+    return ExamHeroCard(
+      height: height,
+      questionsBadge: appL10n.examQuestionsBadge(
+        CountryConfig.current.examRules.mainCount,
+      ),
+      timeBadge: appL10n.examMinutesBadge(
+        CountryConfig.current.examRules.totalMinutes,
+      ),
+      categoryBadge: categoryLabel,
+      onTap: () async {
+        HapticFeedbackHelper.tap();
+        final tickets = await ref.read(ticketsProvider.future);
+        final allQuestions = <Map<String, dynamic>>[];
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () async {
-          HapticFeedbackHelper.tap();
-          final tickets = await ref.read(ticketsProvider.future);
-          final allQuestions = <Map<String, dynamic>>[];
-
-          for (final ticket in tickets) {
-            final questions = ticket['questions'] as List;
-            for (final q in questions) {
-              allQuestions.add({
-                'id': q.id,
-                'question': q.question,
-                'answers': q.answers
-                    .map((a) => {'text': a.text, 'correct': a.isCorrect})
-                    .toList(),
-                'comment': q.comment ?? '',
-                'pddPoints': q.pddPoints ?? [],
-                'image': q.image,
-                'topic': q.topic ?? [],
-                'ticketNumber': q.ticketNumber,
-                'points': q.points,
-              });
-            }
+        for (final ticket in tickets) {
+          final questions = ticket['questions'] as List;
+          for (final q in questions) {
+            allQuestions.add({
+              'id': q.id,
+              'question': q.question,
+              'answers': q.answers
+                  .map((a) => {'text': a.text, 'correct': a.isCorrect})
+                  .toList(),
+              'comment': q.comment ?? '',
+              'pddPoints': q.pddPoints ?? [],
+              'image': q.image,
+              'topic': q.topic ?? [],
+              'ticketNumber': q.ticketNumber,
+              'points': q.points,
+            });
           }
+        }
 
-          if (!context.mounted) return;
+        if (!context.mounted) return;
 
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ExamScreen(allQuestions: allQuestions),
-            ),
-          );
-        },
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: SizedBox(
-            height: bannerHeight,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final bw = constraints.maxWidth;
-                final imageW = (bw * 0.50).clamp(170.0, 225.0);
-                return Stack(
-                  clipBehavior: Clip.hardEdge,
-                  children: [
-                    Positioned.fill(
-                      child: ColoredBox(color: colors.accent),
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Image.asset(
-                        vehicleAsset,
-                        width: imageW,
-                        fit: BoxFit.fitWidth,
-                        filterQuality: FilterQuality.high,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            child: Row(
-                              children: [
-                                _buildHeroBadge(
-                                  appL10n.examQuestionsBadge(
-                                    CountryConfig.current.examRules.mainCount,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                _buildHeroBadge(
-                                  appL10n.examMinutesBadge(
-                                    CountryConfig.current.examRules.totalMinutes,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                _buildHeroBadge(
-                                  ref.watch(appSettingsProvider).ticketCategory ==
-                                          TicketCategory.cd
-                                      ? 'C/D'
-                                      : 'A/B',
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            appL10n.exam,
-                            style: const TextStyle(
-                              fontSize: _examTitleFontSize,
-                              fontWeight: FontWeight.w600,
-                              height: 1.1,
-                              letterSpacing: -0.3,
-                              color: AppColors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ExamScreen(allQuestions: allQuestions),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeroBadge(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.white.withValues(alpha: 0.22),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          height: 1.2,
-          color: AppColors.white,
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -519,6 +440,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
     required BuildContext context,
     required String iconAsset,
     required String label,
+    required double height,
     required VoidCallback onTap,
   }) {
     final colors = AppColors.of(context);
@@ -528,7 +450,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
         onTap: onTap,
         child: Container(
-          height: AppDimensions.topicButtonHeight,
+          height: height,
           padding: const EdgeInsets.all(AppDimensions.spacingL),
           decoration: BoxDecoration(
             color: colors.accentSurface10,
@@ -564,26 +486,6 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
           ),
         ),
       ),
-    );
-  }
-
-}
-
-/// Отступ, который меняет высоту плавно.
-///
-/// Длительность совпадает с анимацией скрытия карточки «Продолжить»
-/// ([ContinueSessionCard]): иначе один элемент едет, а второй прыгает.
-class _AnimatedGap extends StatelessWidget {
-  const _AnimatedGap({required this.height});
-
-  final double height;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 260),
-      curve: Curves.easeInOutCubic,
-      height: height,
     );
   }
 }

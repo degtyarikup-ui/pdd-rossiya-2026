@@ -1,7 +1,7 @@
 name: pdd_app
 description: "ПДД Россия 2026 — билеты и экзамен"
 publish_to: 'none'
-version: 1.1.0+30
+version: 2.0.2+36
 
 environment:
   sdk: ^3.11.4
@@ -30,7 +30,10 @@ dependencies:
   flutter_timezone: ^4.1.1
   in_app_review: ^2.0.12
   audioplayers: ^6.8.1
-  yandex_mobileads: ^8.3.0
+  google_sign_in: ^6.2.2
+  sign_in_with_apple: ^6.1.4
+  webview_flutter: ^4.10.0
+  in_app_purchase: ^3.2.0
 
 dev_dependencies:
   flutter_test:
@@ -77,6 +80,8 @@ flutter:
     - assets/images/
     - assets/images/category_icons/
     - assets/images/tips/
+    - assets/images/streaks/
+    - assets/icons/auth/
     - assets/audio/
     - assets/audio/feed/
     # Контент ВСЕХ стран. Android-flavor сам по себе ассеты НЕ фильтрует

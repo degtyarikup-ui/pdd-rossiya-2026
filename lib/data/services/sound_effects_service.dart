@@ -9,6 +9,8 @@ class SoundEffectsService {
 
   AudioPlayer? _correctPlayer;
   AudioPlayer? _incorrectPlayer;
+  AudioPlayer? _streakPlayer;
+  AudioPlayer? _tickPlayer;
 
   bool _initialized = false;
   bool _enabled = true;
@@ -21,6 +23,8 @@ class SoundEffectsService {
 
   AudioPlayer _getCorrectPlayer() => _correctPlayer ??= AudioPlayer();
   AudioPlayer _getIncorrectPlayer() => _incorrectPlayer ??= AudioPlayer();
+  AudioPlayer _getStreakPlayer() => _streakPlayer ??= AudioPlayer();
+  AudioPlayer _getTickPlayer() => _tickPlayer ??= AudioPlayer();
 
   Future<void> init() async {
     if (_initialized) return;
@@ -31,12 +35,12 @@ class SoundEffectsService {
             android: const AudioContextAndroid(
               isSpeakerphoneOn: false,
               stayAwake: false,
-              contentType: AndroidContentType.sonification,
-              usageType: AndroidUsageType.assistanceSonification,
+              contentType: AndroidContentType.music,
+              usageType: AndroidUsageType.media,
               audioFocus: AndroidAudioFocus.none,
             ),
             iOS: AudioContextIOS(
-              category: AVAudioSessionCategory.ambient,
+              category: AVAudioSessionCategory.playback,
               options: const {
                 AVAudioSessionOptions.mixWithOthers,
               },
@@ -55,9 +59,35 @@ class SoundEffectsService {
       await incorrect.setSource(AssetSource('audio/incorrect.wav'));
       await incorrect.setVolume(0.45);
 
+      final streak = _getStreakPlayer();
+      await streak.setReleaseMode(ReleaseMode.stop);
+      await streak.setSource(AssetSource('audio/streak.wav'));
+      await streak.setVolume(0.70);
+
+      final tick = _getTickPlayer();
+      await tick.setReleaseMode(ReleaseMode.stop);
+      await tick.setSource(AssetSource('audio/tick.wav'));
+      await tick.setVolume(0.35);
+
       _initialized = true;
     } catch (e) {
       debugPrint('SoundEffectsService: init error: $e');
+    }
+  }
+
+  /// Plays a subtle, gentle mechanical clock tick.
+  Future<void> playTick({double volume = 0.35}) async {
+    if (!_enabled) return;
+    try {
+      final player = _getTickPlayer();
+      await player.stop();
+      await player.setVolume(volume);
+      await player.play(
+        AssetSource('audio/tick.wav'),
+        mode: PlayerMode.lowLatency,
+      );
+    } catch (e) {
+      debugPrint('SoundEffectsService: playTick error: $e');
     }
   }
 
@@ -93,8 +123,26 @@ class SoundEffectsService {
     }
   }
 
+  /// Plays a golden, triumphant celebration fanfare for streak ignition.
+  Future<void> playStreak({double volume = 0.70}) async {
+    if (!_enabled) return;
+    try {
+      final player = _getStreakPlayer();
+      await player.stop();
+      await player.setVolume(volume);
+      await player.play(
+        AssetSource('audio/streak.wav'),
+        mode: PlayerMode.lowLatency,
+      );
+    } catch (e) {
+      debugPrint('SoundEffectsService: playStreak error: $e');
+    }
+  }
+
   void dispose() {
     _correctPlayer?.dispose().ignore();
     _incorrectPlayer?.dispose().ignore();
+    _streakPlayer?.dispose().ignore();
+    _tickPlayer?.dispose().ignore();
   }
 }

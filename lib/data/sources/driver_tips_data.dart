@@ -24,7 +24,7 @@ class DriverTipsData {
       description: 'Засеките ориентир, мимо которого проехало переднее авто. Вы должны проехать его не раньше счета «раз-два-три».',
       category: 'safety',
       iconKey: 'timer',
-      imagePath: 'assets/images/tips/tip_1.png',
+      imagePath: 'assets/images/tips/tip_1.webp',
     ),
     DriverTip(
       id: 'tip_2',
@@ -32,7 +32,7 @@ class DriverTipsData {
       description: 'Если авто начало «всплывать» (аквапланирование), не крутите руль и плавно отпустите газ до восстановления сцепления.',
       category: 'weather',
       iconKey: 'water',
-      imagePath: 'assets/images/tips/tip_2.png',
+      imagePath: 'assets/images/tips/tip_2.webp',
     ),
     DriverTip(
       id: 'tip_3',
@@ -40,7 +40,7 @@ class DriverTipsData {
       description: 'В боковых зеркалах должен быть виден лишь краешек заднего крыла своего авто, а остальное пространство — дорога.',
       category: 'mirrors',
       iconKey: 'visibility',
-      imagePath: 'assets/images/tips/tip_3.png',
+      imagePath: 'assets/images/tips/tip_3.webp',
     ),
     DriverTip(
       id: 'tip_4',
@@ -48,7 +48,7 @@ class DriverTipsData {
       description: 'При въезде на перекресток с круговым движением включается только правый указатель поворота, а не левый.',
       category: 'rules',
       iconKey: 'roundabout',
-      imagePath: 'assets/images/tips/tip_4.png',
+      imagePath: 'assets/images/tips/tip_4.webp',
     ),
     DriverTip(
       id: 'tip_5',
@@ -56,7 +56,7 @@ class DriverTipsData {
       description: 'Если заднюю ось начало сносить, плавно прибавьте тягу и направьте руль в сторону заноса. Не жмите на тормоз!',
       category: 'winter',
       iconKey: 'car_drive',
-      imagePath: 'assets/images/tips/tip_5.png',
+      imagePath: 'assets/images/tips/tip_5.webp',
     ),
     DriverTip(
       id: 'tip_6',
@@ -64,7 +64,7 @@ class DriverTipsData {
       description: 'При заносе заднеприводного авто немедленно отпустите педаль газа и мягко скорректируйте траекторию рулем.',
       category: 'winter',
       iconKey: 'car_skid',
-      imagePath: 'assets/images/tips/tip_6.png',
+      imagePath: 'assets/images/tips/tip_6.webp',
     ),
     DriverTip(
       id: 'tip_7',
@@ -72,7 +72,7 @@ class DriverTipsData {
       description: 'Знак 6.16 «Стоп-линия» и разметка определяют границу. Наезд бампером фиксируется камерой как проезд на красный.',
       category: 'rules',
       iconKey: 'stop_sign',
-      imagePath: 'assets/images/tips/tip_7.png',
+      imagePath: 'assets/images/tips/tip_7.webp',
     ),
     DriverTip(
       id: 'tip_8',
@@ -80,7 +80,7 @@ class DriverTipsData {
       description: 'Держитесь в 25–30 метрах позади грузовика, чтобы заранее хорошо просматривать встречную полосу.',
       category: 'highway',
       iconKey: 'truck',
-      imagePath: 'assets/images/tips/tip_8.png',
+      imagePath: 'assets/images/tips/tip_8.webp',
     ),
     DriverTip(
       id: 'tip_9',
@@ -88,7 +88,7 @@ class DriverTipsData {
       description: 'На крутых спусках и подъемах со знаками 1.13 и 1.14 приоритет имеет автомобиль, поднимающийся в гору.',
       category: 'rules',
       iconKey: 'slope',
-      imagePath: 'assets/images/tips/tip_9.png',
+      imagePath: 'assets/images/tips/tip_9.webp',
     ),
     DriverTip(
       id: 'tip_10',
@@ -96,7 +96,7 @@ class DriverTipsData {
       description: 'Выезжая на разрешающий сигнал, убедитесь, что все автомобили с поперечного направления завершили проезд.',
       category: 'safety',
       iconKey: 'traffic_light',
-      imagePath: 'assets/images/tips/tip_10.png',
+      imagePath: 'assets/images/tips/tip_10.webp',
     ),
     DriverTip(
       id: 'tip_11',
@@ -104,7 +104,7 @@ class DriverTipsData {
       description: 'Переходите на пониженные передачи заблаговременно. Это предотвращает блокировку колес и снос машины.',
       category: 'winter',
       iconKey: 'ice',
-      imagePath: 'assets/images/tips/tip_11.png',
+      imagePath: 'assets/images/tips/tip_11.webp',
     ),
     DriverTip(
       id: 'tip_12',
@@ -112,7 +112,7 @@ class DriverTipsData {
       description: 'Ожидая окна во встречном потоке, держите колеса прямо. При ударе сзади авто не вылетит на встречку.',
       category: 'safety',
       iconKey: 'turn_left',
-      imagePath: 'assets/images/tips/tip_12.png',
+      imagePath: 'assets/images/tips/tip_12.webp',
     ),
     DriverTip(
       id: 'tip_13',
@@ -120,7 +120,7 @@ class DriverTipsData {
       description: 'У большегрузов огромные мертвые зоны справа и прямо под кабиной. Не задерживайтесь рядом с ними.',
       category: 'highway',
       iconKey: 'blind_spot',
-      imagePath: 'assets/images/tips/tip_13.png',
+      imagePath: 'assets/images/tips/tip_13.webp',
     ),
     DriverTip(
       id: 'tip_14',
@@ -128,7 +128,7 @@ class DriverTipsData {
       description: 'Если попутная машина снижает скорость перед пешеходным переходом, за ней наверняка идет пешеход.',
       category: 'safety',
       iconKey: 'pedestrian',
-      imagePath: 'assets/images/tips/tip_14.png',
+      imagePath: 'assets/images/tips/tip_14.webp',
     ),
     DriverTip(
       id: 'tip_15',
@@ -136,7 +136,7 @@ class DriverTipsData {
       description: 'Длинномерам нужен радиус для заноса прицепа. Никогда не пытайтесь проскочить в открывшийся карман справа.',
       category: 'maneuver',
       iconKey: 'turn_right',
-      imagePath: 'assets/images/tips/tip_15.png',
+      imagePath: 'assets/images/tips/tip_15.webp',
     ),
     DriverTip(
       id: 'tip_16',
@@ -144,7 +144,7 @@ class DriverTipsData {
       description: 'Кондиционер быстро осушает воздух в салоне. Направьте поток на лобовое стекло и отключите рециркуляцию.',
       category: 'comfort',
       iconKey: 'wind',
-      imagePath: 'assets/images/tips/tip_16.png',
+      imagePath: 'assets/images/tips/tip_16.webp',
     ),
     DriverTip(
       id: 'tip_17',
@@ -152,7 +152,7 @@ class DriverTipsData {
       description: 'При парковке на спуске направьте колеса вправо (в бордюр), на подъеме с бордюром — влево от него.',
       category: 'parking',
       iconKey: 'parking_icon',
-      imagePath: 'assets/images/tips/tip_17.png',
+      imagePath: 'assets/images/tips/tip_17.webp',
     ),
     DriverTip(
       id: 'tip_18',
@@ -160,7 +160,7 @@ class DriverTipsData {
       description: 'Дальний свет создает ослепляющую белую стену из капель воды. Снижайте скорость и держите дистанцию.',
       category: 'weather',
       iconKey: 'fog',
-      imagePath: 'assets/images/tips/tip_18.png',
+      imagePath: 'assets/images/tips/tip_18.webp',
     ),
     DriverTip(
       id: 'tip_19',
@@ -168,7 +168,7 @@ class DriverTipsData {
       description: 'Выставляйте знак заблаговременно, чтобы у других водителей было достаточно времени для перестроения.',
       category: 'rules',
       iconKey: 'hazard_triangle',
-      imagePath: 'assets/images/tips/tip_19.png',
+      imagePath: 'assets/images/tips/tip_19.webp',
     ),
     DriverTip(
       id: 'tip_20',

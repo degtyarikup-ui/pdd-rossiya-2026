@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
+import 'package:pdd_app/core/utils/weekday_labels.dart';
 import 'package:pdd_app/data/models/streak.dart';
+import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/flame_icon.dart';
-import 'package:pdd_app/core/utils/weekday_labels.dart';
 
 /// Поздравление за зажжённый сегодня огонёк.
 ///
@@ -19,6 +20,7 @@ Future<void> showStreakCelebrationDialog({
   required Streak streak,
 }) async {
   HapticFeedbackHelper.success();
+  SoundEffectsService.instance.playStreak();
   await showGeneralDialog<void>(
     context: context,
     barrierColor: Colors.black.withValues(alpha: 0.55),
@@ -159,9 +161,9 @@ class _StreakCelebrationDialogState extends State<_StreakCelebrationDialog> {
   }
 }
 
-/// Эпичное появление огонька: вспышка-бурст → лучи-солнце наезжают и медленно
-/// вращаются → пламя выскакивает с пружинистым overshoot → взлетают искры →
-/// далее непрерывное мерцание и покачивание. Всё в фирменном золотом стиле.
+/// Эпичное появление огонька: взрывная вспышка-бурст → двойные вращающиеся
+/// золотые лучи → многослойное пламя с градиентным огнём и раскалённым ядром
+/// → взлетающие мерцающие искры и сияющие 4-конечные звёзды.
 class _StreakFlameBurst extends StatefulWidget {
   const _StreakFlameBurst();
 
@@ -171,28 +173,31 @@ class _StreakFlameBurst extends StatefulWidget {
 
 class _StreakFlameBurstState extends State<_StreakFlameBurst>
     with TickerProviderStateMixin {
-  // Появление (проигрывается один раз), «живое горение» (цикл) и медленное
-  // вращение лучей (отдельный длинный цикл, чтобы не было рывка).
   late final AnimationController _entrance;
   late final AnimationController _ambient;
   late final AnimationController _spin;
+  late final AnimationController _sparkle;
 
-  static const double _area = 150;
+  static const double _area = 180;
 
   @override
   void initState() {
     super.initState();
     _entrance = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1100),
+      duration: const Duration(milliseconds: 1200),
     )..forward();
     _ambient = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1400),
     )..repeat();
     _spin = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 9000),
+      duration: const Duration(milliseconds: 12000),
+    )..repeat();
+    _sparkle = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
     )..repeat();
   }
 
@@ -201,6 +206,7 @@ class _StreakFlameBurstState extends State<_StreakFlameBurst>
     _entrance.dispose();
     _ambient.dispose();
     _spin.dispose();
+    _sparkle.dispose();
     super.dispose();
   }
 
@@ -212,101 +218,227 @@ class _StreakFlameBurstState extends State<_StreakFlameBurst>
       width: _area,
       height: _area,
       child: AnimatedBuilder(
-        animation: Listenable.merge([_entrance, _ambient, _spin]),
+        animation: Listenable.merge([_entrance, _ambient, _spin, _sparkle]),
         builder: (context, _) {
           final e = _entrance.value; // появление 0..1
           final a = _ambient.value; // цикл горения 0..1
+          final sp = _sparkle.value; // цикл мерцания звёзд 0..1
           final angle = a * 2 * math.pi;
 
-          // Подпрогрессы появления.
-          final flamePop = Curves.easeOutBack.transform(_clamp01(e / 0.9));
-          final flameOpacity = _clamp01(e * 5);
-          final raysGrow = Curves.easeOutBack.transform(_clamp01(e / 0.8));
-          final raysOpacity = _clamp01(e / 0.6);
-          final flashT = _clamp01(e / 0.4); // вспышка в первые 40%
+          // Подпрогрессы появления
+          final flamePop = Curves.elasticOut.transform(_clamp01(e / 0.85));
+          final flameOpacity = _clamp01(e * 4);
+          final raysGrow = Curves.easeOutBack.transform(_clamp01(e / 0.7));
+          final raysOpacity = _clamp01(e / 0.5);
+          final flashT = _clamp01(e / 0.35); // вспышка в первые 35%
 
-          // Живое мерцание: сумма синусоид с целыми частотами — бесшовный цикл.
-          final flicker = math.sin(angle) * 0.55 +
-              math.sin(angle * 3 + 1.3) * 0.3 +
-              math.sin(angle * 2 + 0.6) * 0.15; // ≈ -1..1
+          // Органическое мерцание пламени: сумма синусоид
+          final flicker = math.sin(angle) * 0.50 +
+              math.sin(angle * 3 + 1.2) * 0.30 +
+              math.sin(angle * 2 + 0.5) * 0.20; // ≈ -1..1
           final f = (flicker + 1) / 2; // 0..1
-          final scaleY = 1.0 + f * 0.14;
+          final scaleY = 1.0 + f * 0.12;
           final scaleX = 1.0 - f * 0.05;
-          final sway = math.sin(angle * 2) * 0.038; // ±~2.2°
-          final coreOpacity = _clamp01(0.28 + f * 0.5);
+          final swayOuter = math.sin(angle * 2) * 0.042; // ±2.4°
+          final swayInner = math.sin(angle * 2 + 0.8) * -0.028;
+          final corePulse = 0.40 + f * 0.60;
 
-          Widget flame(Color color, double size) => Transform.rotate(
-                angle: sway,
-                child: Transform(
-                  alignment: Alignment.bottomCenter,
-                  transform: Matrix4.diagonal3Values(
-                    scaleX * flamePop,
-                    scaleY * flamePop,
-                    1.0,
-                  ),
-                  child: FlameIcon(size: size, color: color),
+          // Отрисовка слоя пламени с градиентной заливкой
+          Widget gradientFlame({
+            required double size,
+            required List<Color> colors,
+            required double swayAngle,
+            required double sX,
+            required double sY,
+          }) {
+            return Transform.rotate(
+              angle: swayAngle,
+              child: Transform(
+                alignment: Alignment.bottomCenter,
+                transform: Matrix4.diagonal3Values(
+                  sX * flamePop,
+                  sY * flamePop,
+                  1.0,
                 ),
-              );
+                child: ShaderMask(
+                  blendMode: BlendMode.srcIn,
+                  shaderCallback: (bounds) => LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: colors,
+                  ).createShader(bounds),
+                  child: FlameIcon(size: size, color: Colors.white),
+                ),
+              ),
+            );
+          }
 
           return Stack(
             alignment: Alignment.center,
+            clipBehavior: Clip.none,
             children: [
-              // Лучи-солнце: наезжают и медленно вращаются.
+              // Мягкая фоновая аура тепла
+              Opacity(
+                opacity: _clamp01(raysOpacity * (0.25 + f * 0.15)),
+                child: Transform.scale(
+                  scale: 0.85 + f * 0.20,
+                  child: Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          const Color(0xFFFF9100).withValues(alpha: 0.35),
+                          const Color(0xFFFFD600).withValues(alpha: 0.10),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.55, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Вращающиеся лучи-«солнце» (внешний золотой ярус)
               Opacity(
                 opacity: raysOpacity,
                 child: Transform.rotate(
                   angle: _spin.value * 2 * math.pi,
                   child: Transform.scale(
                     scale: raysGrow,
-                    child: CustomPaint(
-                      size: const Size(_area, _area),
+                    child: const CustomPaint(
+                      size: Size(_area, _area),
                       painter: _SunburstPainter(
-                        color: AppColors.gold,
-                        opacity: 0.16,
-                        rayCount: 12,
+                        color: Color(0xFFFFB300),
+                        opacity: 0.18,
+                        rayCount: 16,
                       ),
                     ),
                   ),
                 ),
               ),
-              // Вспышка появления: заливка + расходящееся кольцо.
-              if (flashT < 1) ...[
-                Opacity(
-                  opacity: (1 - flashT) * 0.5,
+
+              // Внутренний ярус лучей (вращается в обратную сторону)
+              Opacity(
+                opacity: raysOpacity * 0.7,
+                child: Transform.rotate(
+                  angle: -_spin.value * 2 * math.pi * 0.6,
                   child: Transform.scale(
-                    scale: 0.2 + flashT * 1.6,
-                    child: const DecoratedBox(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.gold,
+                    scale: raysGrow * 0.75,
+                    child: const CustomPaint(
+                      size: Size(_area, _area),
+                      painter: _SunburstPainter(
+                        color: Color(0xFFFFD54F),
+                        opacity: 0.22,
+                        rayCount: 8,
                       ),
-                      child: SizedBox(width: 70, height: 70),
                     ),
                   ),
                 ),
+              ),
+
+              // Взрывная вспышка и расширяющиеся кольца при появлении
+              if (flashT < 1) ...[
+                // Яркое белое ядро вспышки
+                Opacity(
+                  opacity: (1 - flashT) * 0.7,
+                  child: Transform.scale(
+                    scale: 0.3 + flashT * 1.8,
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFFFFF9C4),
+                      ),
+                    ),
+                  ),
+                ),
+                // Внутреннее золотое кольцо
                 Transform.scale(
-                  scale: 0.2 + flashT * 2.2,
+                  scale: 0.2 + flashT * 2.0,
                   child: Container(
                     width: 90,
                     height: 90,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: AppColors.gold
-                            .withValues(alpha: (1 - flashT) * 0.6),
-                        width: 3,
+                        color: const Color(0xFFFFD600)
+                            .withValues(alpha: (1 - flashT) * 0.8),
+                        width: 3.5,
+                      ),
+                    ),
+                  ),
+                ),
+                // Внешнее кольцо ударной волны
+                Transform.scale(
+                  scale: 0.4 + flashT * 2.6,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFFF6D00)
+                            .withValues(alpha: (1 - flashT) * 0.5),
+                        width: 2.0,
                       ),
                     ),
                   ),
                 ),
               ],
-              // Искры, взлетающие вверх (по фазе цикла, со сдвигом).
+
+              // Восходящие частицы-искры
               ..._buildEmbers(a),
-              // Пламя: основной силуэт + светлое мерцающее ядро.
-              Opacity(opacity: flameOpacity, child: flame(AppColors.gold, 64)),
+
+              // Сияющие 4-конечные звёздочки вокруг пламени
+              ..._buildSparkles(sp),
+
+              // 1. Внешний слой: насыщенный градиентный огонь
               Opacity(
-                opacity: flameOpacity * coreOpacity,
-                child: flame(const Color(0xFFFFE0B2), 40),
+                opacity: flameOpacity,
+                child: gradientFlame(
+                  size: 86,
+                  colors: const [
+                    Color(0xFFFF2A00),
+                    Color(0xFFFF6D00),
+                    Color(0xFFFFD600),
+                  ],
+                  swayAngle: swayOuter,
+                  sX: scaleX,
+                  sY: scaleY,
+                ),
+              ),
+
+              // 2. Средний слой: золотисто-янтарный лепесток
+              Opacity(
+                opacity: flameOpacity * 0.95,
+                child: gradientFlame(
+                  size: 64,
+                  colors: const [
+                    Color(0xFFFF8F00),
+                    Color(0xFFFFEE58),
+                  ],
+                  swayAngle: swayInner,
+                  sX: scaleX * 0.96,
+                  sY: scaleY * 0.98,
+                ),
+              ),
+
+              // 3. Внутреннее раскалённое бело-жёлтое ядро
+              Opacity(
+                opacity: flameOpacity * corePulse,
+                child: gradientFlame(
+                  size: 44,
+                  colors: const [
+                    Color(0xFFFFE082),
+                    Color(0xFFFFFFFF),
+                  ],
+                  swayAngle: swayInner * 0.5,
+                  sX: scaleX * 0.92,
+                  sY: scaleY * 1.02,
+                ),
               ),
             ],
           );
@@ -316,36 +448,136 @@ class _StreakFlameBurstState extends State<_StreakFlameBurst>
   }
 
   List<Widget> _buildEmbers(double a) {
-    // Небольшие искры у пламени: восходят и гаснут, с разными фазами и сдвигом.
+    // 6 восходящих искр с гармоническими синусными траекториями
     const configs = <List<double>>[
-      [0.0, -14],
-      [0.33, 10],
-      [0.66, -4],
+      [0.00, -18.0, 6.0, 50.0],
+      [0.18, 14.0, 5.0, 58.0],
+      [0.36, -8.0, 6.5, 66.0],
+      [0.54, 18.0, 5.5, 52.0],
+      [0.72, -22.0, 4.5, 62.0],
+      [0.88, 8.0, 6.0, 70.0],
     ];
+
     return configs.map((c) {
-      final p = (a + c[0]) % 1.0;
-      // Прозрачность ~0 на краях цикла — стык подъёма незаметен.
-      final op = p < 0.15 ? p / 0.15 : (1 - (p - 0.15) / 0.85);
-      final dy = 8 - p * 46;
-      final scale = 1.0 - p * 0.65;
+      final phaseOffset = c[0];
+      final baseX = c[1];
+      final size = c[2];
+      final maxDistance = c[3];
+
+      final p = (a + phaseOffset) % 1.0;
+      final op = p < 0.15 ? p / 0.15 : (1.0 - (p - 0.15) / 0.85);
+      final dy = 12.0 - p * maxDistance;
+      final dx = baseX + math.sin(p * math.pi * 2) * 5.0;
+      final scale = 1.0 - p * 0.60;
+
       return Transform.translate(
-        offset: Offset(c[1], dy),
+        offset: Offset(dx, dy),
         child: Opacity(
           opacity: _clamp01(op),
           child: Transform.scale(
             scale: scale,
-            child: const DecoratedBox(
+            child: Container(
+              width: size,
+              height: size,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.gold,
+                gradient: const RadialGradient(
+                  colors: [
+                    Color(0xFFFFF9C4),
+                    Color(0xFFFFB300),
+                    Color(0xFFFF6D00),
+                  ],
+                ),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  width: 0.5,
+                ),
               ),
-              child: SizedBox(width: 7, height: 7),
             ),
           ),
         ),
       );
     }).toList();
   }
+
+  List<Widget> _buildSparkles(double sp) {
+    // 4 мерцающие 4-конечные звёздочки
+    const sparkles = <List<double>>[
+      [-48.0, -28.0, 16.0, 0.00],
+      [46.0, -32.0, 18.0, 0.35],
+      [-38.0, 24.0, 13.0, 0.65],
+      [42.0, 18.0, 14.0, 0.85],
+    ];
+
+    return sparkles.map((s) {
+      final x = s[0];
+      final y = s[1];
+      final starSize = s[2];
+      final phase = s[3];
+
+      final p = (sp + phase) % 1.0;
+      // Синусоидальное сияние: 0 → 1 → 0
+      final glow = math.sin(p * math.pi);
+      final scale = 0.4 + glow * 0.7;
+      final rot = p * math.pi * 0.5;
+
+      return Positioned(
+        left: _area / 2 + x - starSize / 2,
+        top: _area / 2 + y - starSize / 2,
+        child: Opacity(
+          opacity: _clamp01(glow),
+          child: Transform.rotate(
+            angle: rot,
+            child: Transform.scale(
+              scale: scale,
+              child: CustomPaint(
+                size: Size(starSize, starSize),
+                painter: const _SparkleStarPainter(color: Color(0xFFFFE082)),
+              ),
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+}
+
+/// 4-конечная сияющая бриллиантовая звёздочка
+class _SparkleStarPainter extends CustomPainter {
+  final Color color;
+
+  const _SparkleStarPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final r = size.width / 2;
+    final inner = r * 0.22;
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path()
+      ..moveTo(cx, cy - r)
+      ..quadraticBezierTo(cx, cy, cx + r, cy)
+      ..quadraticBezierTo(cx, cy, cx, cy + r)
+      ..quadraticBezierTo(cx, cy, cx - r, cy)
+      ..quadraticBezierTo(cx, cy, cx, cy - r)
+      ..close();
+
+    canvas.drawPath(path, paint);
+
+    // Белое яркое ядрышко
+    final centerPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(cx, cy), inner * 0.8, centerPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SparkleStarPainter old) => old.color != color;
 }
 
 /// Лучи-«солнце» за пламенем: [rayCount] тонких треугольников от центра.
@@ -364,11 +596,11 @@ class _SunburstPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final outer = size.width / 2;
-    final inner = outer * 0.46;
+    final inner = outer * 0.42;
     final paint = Paint()
       ..color = color.withValues(alpha: opacity)
       ..style = PaintingStyle.fill;
-    final half = (math.pi / rayCount) * 0.32;
+    final half = (math.pi / rayCount) * 0.30;
     for (var i = 0; i < rayCount; i++) {
       final ang = (2 * math.pi / rayCount) * i - math.pi / 2;
       Offset at(double r, double da) =>

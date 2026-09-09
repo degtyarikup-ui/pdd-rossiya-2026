@@ -26,10 +26,11 @@ class Question {
 
   factory Question.fromJson(Map<String, dynamic> json) {
     return Question(
-      id: json['id'] as String? ?? '',
-      question: json['question'] as String? ?? '',
+      id: json['id']?.toString() ?? '',
+      question: json['question']?.toString() ?? '',
       answers: (json['answers'] as List<dynamic>?)
-              ?.map((a) => Answer.fromJson(a as Map<String, dynamic>))
+              ?.map((a) => Answer.fromJson(
+                  a is Map ? Map<String, dynamic>.from(a) : <String, dynamic>{}))
               .toList() ??
           [],
       comment: json['comment'] as String?,
@@ -42,8 +43,8 @@ class Question {
               ?.map((e) => e.toString())
               .toList() ??
           [],
-      ticketNumber: json['ticketNumber'] as int? ?? 0,
-      points: json['points'] as int? ?? 1,
+      ticketNumber: (json['ticketNumber'] as num?)?.toInt() ?? 0,
+      points: (json['points'] as num?)?.toInt() ?? 1,
     );
   }
 

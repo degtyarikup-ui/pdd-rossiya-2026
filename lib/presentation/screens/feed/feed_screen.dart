@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -5,13 +7,13 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
-import 'package:pdd_app/data/sources/driver_tips_data.dart';
-import 'package:pdd_app/presentation/screens/feed/widgets/ad_feed_card.dart';
 import 'package:pdd_app/presentation/screens/feed/widgets/feed_card.dart';
 import 'package:pdd_app/presentation/screens/feed/widgets/feed_streak_dialog.dart';
 import 'package:pdd_app/presentation/screens/feed/widgets/tip_feed_card.dart';
-import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/ai_explanation_sheet.dart';
+import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FeedScreen extends ConsumerStatefulWidget {
@@ -30,12 +32,16 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   late AnimationController _bounceController;
   late Animation<double> _bounceAnimation;
 
+  static bool? _cachedSoundEnabled;
+
   int _currentIndex = 0;
   bool _isSoundEnabled = true;
+  bool _isAiSheetOpen = false;
   int _swipeHintCount = 0;
   int _correctStreak = 0;
   final List<FeedItem> _items = [];
   final Map<String, int> _answeredChoices = {};
+  final Set<int> _viewedIndices = {0};
   bool _isLoadingMore = false;
   bool _isRefreshing = false;
 
@@ -43,11 +49,13 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   final ValueNotifier<int> _remainingSecondsNotifier = ValueNotifier<int>(0);
   final ValueNotifier<bool> _isCurrentAnsweredNotifier = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _isCurrentCorrectNotifier = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> _isCurrentFavoriteNotifier = ValueNotifier<bool>(false);
 
   @override
   void initState() {
     super.initState();
+    if (_cachedSoundEnabled != null) {
+      _isSoundEnabled = _cachedSoundEnabled!;
+    }
     WidgetsBinding.instance.addObserver(this);
     _pageController = PageController();
 
@@ -68,16 +76,17 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     try {
       final category = ref.read(appSettingsProvider).ticketCategory;
       final repo = ref.read(feedRepositoryProvider);
+      debugPrint('FEED_DEBUG: _initFeed starting for category $category');
       final initial = await repo.generateFeedItems(category: category, count: 60);
+      debugPrint('FEED_DEBUG: _initFeed generated ${initial.length} items');
       if (mounted) {
         setState(() {
           _items.clear();
           _items.addAll(initial);
         });
-        _checkCurrentFavorite();
       }
-    } catch (e) {
-      debugPrint('Feed initialization failed: $e');
+    } catch (e, stack) {
+      debugPrint('FEED_DEBUG: Feed initialization failed: $e\n$stack');
     }
   }
 
@@ -88,7 +97,10 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
       final swipeCount = prefs.getInt(_prefKeySwipeHintCount) ?? 0;
       if (mounted) {
         setState(() {
-          if (sound != null) _isSoundEnabled = sound;
+          if (sound != null) {
+            _cachedSoundEnabled = sound;
+            _isSoundEnabled = sound;
+          }
           _swipeHintCount = swipeCount;
         });
       }
@@ -132,13 +144,21 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     _remainingSecondsNotifier.dispose();
     _isCurrentAnsweredNotifier.dispose();
     _isCurrentCorrectNotifier.dispose();
-    _isCurrentFavoriteNotifier.dispose();
     super.dispose();
   }
 
   void _onPageChanged(int index) {
     HapticFeedbackHelper.select();
     TtsService.instance.stop().ignore();
+
+    if (index > _currentIndex && !_viewedIndices.contains(index)) {
+      if (!PremiumService.instance.canAccessFeed) {
+        _pageController.jumpToPage(_currentIndex);
+        PremiumPaywallSheet.show(context);
+        return;
+      }
+      _viewedIndices.add(index);
+    }
 
     if (_isCurrentAnsweredNotifier.value && !_isCurrentCorrectNotifier.value) {
       _incrementSwipeHintCount();
@@ -158,7 +178,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
         _isCurrentCorrectNotifier.value = false;
         _timerProgressNotifier.value = 1.0;
       }
-      _checkCurrentFavorite();
     }
 
     if (index >= _items.length - 4 && !_isLoadingMore) {
@@ -166,42 +185,21 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     }
   }
 
-  Future<void> _checkCurrentFavorite() async {
-    if (_currentIndex >= _items.length) return;
-    final item = _items[_currentIndex];
-    final rawId = item.rawQuestionId;
-    if (rawId == null) {
-      _isCurrentFavoriteNotifier.value = false;
-      return;
-    }
-    try {
-      final category = ref.read(appSettingsProvider).ticketCategory;
-      final ds = ref.read(progressDataSourceProvider);
-      final isFav = await ds.isFavorite(rawId, category);
-      if (mounted) _isCurrentFavoriteNotifier.value = isFav;
-    } catch (_) {}
-  }
-
-  Future<void> _toggleCurrentFavorite() async {
-    if (_currentIndex >= _items.length) return;
-    final item = _items[_currentIndex];
-    final rawId = item.rawQuestionId;
-    if (rawId == null) return;
-    HapticFeedbackHelper.success();
-    final category = ref.read(appSettingsProvider).ticketCategory;
-    final ds = ref.read(progressDataSourceProvider);
-    await ds.toggleFavorite(rawId, category);
-    final isFav = await ds.isFavorite(rawId, category);
-    if (mounted) _isCurrentFavoriteNotifier.value = isFav;
-  }
-
   Future<void> _loadMoreItems() async {
     _isLoadingMore = true;
     try {
       final category = ref.read(appSettingsProvider).ticketCategory;
       final repo = ref.read(feedRepositoryProvider);
-      final newItems = await repo.generateFeedItems(category: category, count: 40);
-      if (mounted) {
+      final currentIds = _items
+          .map((i) => i.rawQuestionId ?? i.id)
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      final newItems = await repo.generateFeedItems(
+        category: category,
+        count: 40,
+        excludeQuestionIds: currentIds,
+      );
+      if (mounted && newItems.isNotEmpty) {
         setState(() {
           _items.addAll(newItems);
         });
@@ -209,19 +207,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     } catch (_) {} finally {
       _isLoadingMore = false;
     }
-  }
-
-  void _onAdLoadFailed(String itemId) {
-    if (!mounted) return;
-    final itemIndex = _items.indexWhere((it) => it.id == itemId);
-    if (itemIndex == -1) return;
-
-    setState(() {
-      _items.removeAt(itemIndex);
-      if (_currentIndex >= _items.length && _items.isNotEmpty) {
-        _currentIndex = _items.length - 1;
-      }
-    });
   }
 
   Future<void> _refreshFeed() async {
@@ -245,7 +230,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
         _isCurrentAnsweredNotifier.value = false;
         _isCurrentCorrectNotifier.value = false;
         _timerProgressNotifier.value = 1.0;
-        _checkCurrentFavorite();
 
         if (_pageController.hasClients) {
           _pageController.jumpToPage(0);
@@ -265,6 +249,10 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   void _autoNext() {
     if (_isCurrentAnsweredNotifier.value && !_isCurrentCorrectNotifier.value) {
       _incrementSwipeHintCount();
+    }
+    if (!PremiumService.instance.canAccessFeed) {
+      PremiumPaywallSheet.show(context);
+      return;
     }
     if (_currentIndex < _items.length - 1) {
       _pageController.nextPage(
@@ -299,6 +287,10 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   Future<void> _toggleSound() async {
     HapticFeedbackHelper.tap();
     final newVal = !_isSoundEnabled;
+    _cachedSoundEnabled = newVal;
+    if (!newVal) {
+      TtsService.instance.stop().ignore();
+    }
     setState(() => _isSoundEnabled = newVal);
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -306,29 +298,44 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     } catch (_) {}
   }
 
+  Future<void> _openAiChatForCurrentItem(FeedItem currentItem) async {
+    HapticFeedbackHelper.tap();
+    TtsService.instance.stop();
+    setState(() {
+      _isAiSheetOpen = true;
+    });
+
+    final qId = currentItem.rawQuestionId ?? currentItem.id;
+    await AiExplanationSheet.show(
+      context: context,
+      questionId: qId,
+      questionText: currentItem.questionText,
+      answers: currentItem.answers,
+      correctAnswerIndex: currentItem.correctAnswerIndex,
+      officialExplanation: currentItem.explanation,
+    );
+
+    if (mounted) {
+      setState(() {
+        _isAiSheetOpen = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final topPadding = MediaQuery.paddingOf(context).top;
-    final topHeaderHeight = topPadding + 52.0;
-
     final feedAsync = ref.watch(feedItemsProvider);
 
-    // Sync _items from provider when available
-    if (_items.isEmpty && feedAsync.hasValue && feedAsync.value != null && feedAsync.value!.isNotEmpty) {
-      _items.addAll(feedAsync.value!);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _checkCurrentFavorite();
-      });
-    }
-
-    final List<FeedItem> currentItems = _items.isNotEmpty
-        ? _items
-        : (feedAsync.valueOrNull ?? const []);
-
-    if (currentItems.isEmpty) {
-      if (feedAsync.hasError) {
-        return Scaffold(
+    if (_items.isEmpty) {
+      return feedAsync.when(
+        loading: () => Scaffold(
+          backgroundColor: colors.homeScreenBackground,
+          body: Center(
+            child: CircularProgressIndicator(color: colors.accent),
+          ),
+        ),
+        error: (err, stack) => Scaffold(
           backgroundColor: colors.homeScreenBackground,
           body: Center(
             child: Column(
@@ -340,531 +347,306 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: () => ref.refresh(feedItemsProvider),
+                  onPressed: () {
+                    _initFeed();
+                    final _ = ref.refresh(feedItemsProvider);
+                  },
                   child: const Text('Повторить'),
                 ),
               ],
             ),
           ),
-        );
-      }
-      return Scaffold(
-        backgroundColor: colors.homeScreenBackground,
-        body: Center(
-          child: CircularProgressIndicator(color: colors.accent),
         ),
+        data: (items) {
+          if (items.isEmpty) {
+            return Scaffold(
+              backgroundColor: colors.homeScreenBackground,
+              body: Center(
+                child: Text(
+                  'Нет вопросов для отображения',
+                  style: TextStyle(color: colors.secondaryText),
+                ),
+              ),
+            );
+          }
+          if (_items.isEmpty) {
+            _items.addAll(items);
+          }
+          return _buildFeedContent(context, _items, colors);
+        },
       );
     }
 
-    final currentItem = _currentIndex < currentItems.length
-        ? currentItems[_currentIndex]
-        : currentItems.first;
+    return _buildFeedContent(context, _items, colors);
+  }
+
+  Widget _buildFeedContent(
+    BuildContext context,
+    List<FeedItem> displayItems,
+    AppThemeColors colors,
+  ) {
+    final currentItem = _currentIndex < displayItems.length
+        ? displayItems[_currentIndex]
+        : displayItems.first;
 
     return Scaffold(
       backgroundColor: colors.homeScreenBackground,
       body: Stack(
         children: [
-          // 1. Full-screen PageView with top padding to clear the fixed header
+          // 1. Full-screen PageView (Cards and their top controls swipe together)
           Positioned.fill(
-            child: Padding(
-              padding: EdgeInsets.only(top: topHeaderHeight),
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  if (_currentIndex == 0 && !_isRefreshing) {
-                    if (notification is OverscrollNotification &&
-                        notification.overscroll < -15) {
-                      _refreshFeed();
-                      return true;
-                    }
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (_currentIndex == 0 && !_isRefreshing) {
+                  if (notification is OverscrollNotification &&
+                      notification.overscroll < -15) {
+                    _refreshFeed();
+                    return true;
                   }
-                  return false;
-                },
-                child: PageView.builder(
-                  controller: _pageController,
-                  scrollDirection: Axis.vertical,
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
-                  ),
-                  onPageChanged: _onPageChanged,
-                  itemCount: currentItems.length,
-                  itemBuilder: (context, index) {
-                    final item = currentItems[index];
-                    if (item.isAd) {
-                      return AdFeedCard(
-                        key: ValueKey('${item.id}_$index'),
-                        item: item,
-                        isCurrent: index == _currentIndex,
-                        onAutoNext: _autoNext,
-                        onPrevious: _previousPage,
-                        onFailed: _onAdLoadFailed,
-                      );
-                    }
-                    if (item.isTip) {
-                      return TipFeedCard(
-                        key: ValueKey('${item.id}_$index'),
-                        item: item,
-                        isCurrent: index == _currentIndex,
-                        onAutoNext: _autoNext,
-                        onPrevious: _previousPage,
-                      );
-                    }
-                    return FeedCard(
+                }
+                return false;
+              },
+              child: PageView.builder(
+                controller: _pageController,
+                scrollDirection: Axis.vertical,
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                onPageChanged: _onPageChanged,
+                itemCount: displayItems.length,
+                itemBuilder: (context, index) {
+                  final item = displayItems[index];
+                  if (item.isTip) {
+                    return TipFeedCard(
                       key: ValueKey('${item.id}_$index'),
                       item: item,
                       isCurrent: index == _currentIndex,
-                      isSoundEnabled: _isSoundEnabled,
-                      initialSelectedAnswerIndex: _answeredChoices[item.id],
-                      onAnswerRecorded: (selectedIdx) {
-                        _answeredChoices[item.id] = selectedIdx;
-                        if (selectedIdx == item.correctAnswerIndex) {
-                          _correctStreak++;
-                          _checkStreakMilestone(_correctStreak);
-                        } else {
-                          _correctStreak = 0;
-                        }
-                      },
-                      onToggleSound: _toggleSound,
                       onAutoNext: _autoNext,
                       onPrevious: _previousPage,
                       onTimerTick: (progress, remainingSec) {
                         _timerProgressNotifier.value = progress;
                         _remainingSecondsNotifier.value = remainingSec;
                       },
-                      onAnswerStateChanged: (isAnswered, isCorrect) {
-                        _isCurrentAnsweredNotifier.value = isAnswered;
-                        _isCurrentCorrectNotifier.value = isCorrect;
-                      },
-                      onFavoriteChanged: (isFav) {
-                        _isCurrentFavoriteNotifier.value = isFav;
-                      },
                     );
-                  },
-                ),
-              ),
-            ),
-          ),
-
-              // 2. Top Smooth Gradient Dissolve Mask (Questions gracefully fade into background color as they fly away)
-              Positioned(
-                top: topHeaderHeight,
-                left: 0,
-                right: 0,
-                height: 28,
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          colors.homeScreenBackground,
-                          colors.homeScreenBackground.withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // 3. Bottom Smooth Gradient Dissolve Mask (New questions smoothly fade in from bottom)
-              Positioned(
-                bottom: 4,
-                left: 0,
-                right: 0,
-                height: 28,
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        colors: [
-                          colors.homeScreenBackground,
-                          colors.homeScreenBackground.withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // 4. Fixed Top Header Bar (Controls stay firmly in place; contents update smoothly)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: SafeArea(
-                  bottom: false,
-                  child: Container(
-                    color: colors.homeScreenBackground,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimensions.screenPadding,
-                      vertical: 8,
-                    ),
-                    child: _buildTopHeader(context, currentItem, colors),
-                  ),
-                ),
-              ),
-
-              // 5. Fixed Bottom Countdown Timing Line (Firmly pinned at bottom)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: _buildBottomTimingBar(colors, currentItem),
-              ),
-
-              // 6. Floating "Свайпай ↑" Hint (Shown maximum 3 times)
-              ValueListenableBuilder<bool>(
-                valueListenable: _isCurrentAnsweredNotifier,
-                builder: (context, isAnswered, _) {
-                  return ValueListenableBuilder<bool>(
-                    valueListenable: _isCurrentCorrectNotifier,
-                    builder: (context, isCorrect, _) {
-                      final shouldShowHint =
-                          _swipeHintCount < 3 && isAnswered && !isCorrect;
-                      if (!shouldShowHint) return const SizedBox.shrink();
-
-                      return Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 16,
-                        child: Center(
-                          child: AnimatedBuilder(
-                            animation: _bounceAnimation,
-                            builder: (context, child) {
-                              return Transform.translate(
-                                offset: Offset(0, _bounceAnimation.value),
-                                child: child,
-                              );
-                            },
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () {
-                                  HapticFeedbackHelper.tap();
-                                  _incrementSwipeHintCount();
-                                  _autoNext();
-                                },
-                                borderRadius: BorderRadius.circular(24),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: colors.accent,
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        'Свайпай',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.3,
-                                        ),
-                                      ),
-                                      SizedBox(width: 6),
-                                      Icon(
-                                        Icons.arrow_upward_rounded,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
+                  }
+                  return FeedCard(
+                    key: ValueKey('${item.id}_$index'),
+                    item: item,
+                    isCurrent: index == _currentIndex,
+                    isSoundEnabled: _isSoundEnabled,
+                    isPaused: _isAiSheetOpen,
+                    initialSelectedAnswerIndex: _answeredChoices[item.id],
+                    onAnswerRecorded: (selectedIdx) {
+                      _answeredChoices[item.id] = selectedIdx;
+                      if (selectedIdx == item.correctAnswerIndex) {
+                        _correctStreak++;
+                        _checkStreakMilestone(_correctStreak);
+                      } else {
+                        _correctStreak = 0;
+                      }
+                    },
+                    onToggleSound: _toggleSound,
+                    onAutoNext: _autoNext,
+                    onPrevious: _previousPage,
+                    onTimerTick: (progress, remainingSec) {
+                      _timerProgressNotifier.value = progress;
+                      _remainingSecondsNotifier.value = remainingSec;
+                    },
+                    onAnswerStateChanged: (isAnswered, isCorrect) {
+                      _isCurrentAnsweredNotifier.value = isAnswered;
+                      _isCurrentCorrectNotifier.value = isCorrect;
                     },
                   );
                 },
               ),
-            ],
+            ),
           ),
-        );
-  }
 
-  Widget _buildTopHeader(
-    BuildContext context,
-    FeedItem currentItem,
-    AppThemeColors colors,
-  ) {
-    if (currentItem.isTip) {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      final yellowBadgeBg =
-          isDark ? const Color(0xFF422006) : const Color(0xFFFEF08A);
-      final yellowBadgeText =
-          isDark ? const Color(0xFFFACC15) : const Color(0xFFCA8A04);
-      final tip = currentItem.driverTip;
-      final categoryName = tip != null ? DriverTipsData.resolveCategoryTitle(tip.category) : 'СОВЕТЫ';
+          // 2. Fixed Bottom Countdown Timing Line (Firmly pinned to bottom)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _buildBottomTimingBar(colors, currentItem),
+          ),
 
-      return Row(
-        key: ValueKey('tip_header_${currentItem.id}'),
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: yellowBadgeBg,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.lightbulb_rounded,
-                  size: 14,
-                  color: yellowBadgeText,
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  'СОВЕТ',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: yellowBadgeText,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: colors.cardBackground,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  size: 14,
-                  color: colors.secondaryText,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  categoryName,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: colors.secondaryText,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
+          // 3. Floating "Свайпай ↑" Hint (Shown maximum 3 times)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 16,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: _isCurrentAnsweredNotifier,
+              builder: (context, isAnswered, _) {
+                return ValueListenableBuilder<bool>(
+                  valueListenable: _isCurrentCorrectNotifier,
+                  builder: (context, isCorrect, _) {
+                    final shouldShowHint =
+                        _swipeHintCount < 3 && isAnswered && !isCorrect;
+                    if (!shouldShowHint) return const SizedBox.shrink();
 
-    if (currentItem.isAd) {
-      return Row(
-        key: ValueKey('ad_header_${currentItem.id}'),
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: colors.lightAccent,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              'РЕКЛАМА',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: colors.accent,
-              ),
-            ),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: colors.cardBackground,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  size: 14,
-                  color: colors.secondaryText,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Яндекс Директ',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: colors.secondaryText,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-
-    // Standard Question Header
-    return Row(
-      key: ValueKey('question_header_${currentItem.id}'),
-      children: [
-        if (currentItem.badgeText != null) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: colors.lightAccent,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              currentItem.badgeText!,
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: colors.accent,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
-
-        // Digital countdown badge (shows remaining seconds or completion status)
-        ValueListenableBuilder<bool>(
-          valueListenable: _isCurrentAnsweredNotifier,
-          builder: (context, isAnswered, _) {
-            if (isAnswered) {
-              return ValueListenableBuilder<bool>(
-                valueListenable: _isCurrentCorrectNotifier,
-                builder: (context, isCorrect, _) {
-                  final badgeBg = isCorrect ? colors.greenLight : colors.redLight;
-                  final badgeText = isCorrect ? colors.green : colors.red;
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: badgeBg,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                          size: 14,
-                          color: badgeText,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          isCorrect ? 'Верно' : 'Ошибка',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: badgeText,
-                            letterSpacing: 0.2,
+                    return Center(
+                      child: AnimatedBuilder(
+                        animation: _bounceAnimation,
+                        builder: (context, child) {
+                          return Transform.translate(
+                            offset: Offset(0, _bounceAnimation.value),
+                            child: child,
+                          );
+                        },
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              HapticFeedbackHelper.tap();
+                              _incrementSwipeHintCount();
+                              _autoNext();
+                            },
+                            borderRadius: BorderRadius.circular(24),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.accent,
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Свайпай',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                  SizedBox(width: 6),
+                                  Icon(
+                                    Icons.arrow_upward_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            }
-
-            return ValueListenableBuilder<int>(
-              valueListenable: _remainingSecondsNotifier,
-              builder: (context, remainingSec, _) {
-                final isUrgent = remainingSec <= 4 && remainingSec > 0;
-                final timerBg = isUrgent
-                    ? colors.redLight
-                    : (remainingSec > 5 ? colors.lightAccent : colors.goldLightSurface);
-                final timerText = isUrgent
-                    ? colors.red
-                    : (remainingSec > 5 ? colors.accent : colors.gold);
-
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: timerBg,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.timer_outlined,
-                        size: 14,
-                        color: timerText,
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        '$remainingSec с',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: timerText,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
-            );
-          },
-        ),
+            ),
+          ),
 
-        const Spacer(),
+          // 4. Floating AI, Sound & Favorite controls (bottom right corner, above bottom nav bar)
+          Positioned(
+            right: AppDimensions.screenPadding,
+            bottom: 24,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 1. AI Chat Button (Brand Green #10B981, visible even before answering)
+                _buildFloatingActionButton(
+                  icon: Icons.auto_awesome_rounded,
+                  iconColor: Colors.white,
+                  backgroundColor: colors.green,
+                  onTap: () {
+                    final currentItem = _currentIndex < displayItems.length
+                        ? displayItems[_currentIndex]
+                        : null;
+                    if (currentItem != null && !currentItem.isTip) {
+                      _openAiChatForCurrentItem(currentItem);
+                    }
+                  },
+                  colors: colors,
+                ),
+                const SizedBox(height: 10),
 
-        // Sound Voiceover Toggle Button
-        AppChromeIconButton(
-          icon: _isSoundEnabled
-              ? Icons.volume_up_rounded
-              : Icons.volume_off_rounded,
-          backgroundColor: _isSoundEnabled
-              ? colors.lightAccent
-              : colors.cardBackground,
-          iconColor: _isSoundEnabled
-              ? colors.accent
-              : colors.primaryText.withValues(alpha: 0.65),
-          onTap: _toggleSound,
-        ),
-        const SizedBox(width: 8),
+                // 2. Sound Toggle Button
+                _buildFloatingActionButton(
+                  icon: _isSoundEnabled
+                      ? Icons.volume_up_rounded
+                      : Icons.volume_off_rounded,
+                  iconColor: _isSoundEnabled
+                      ? colors.primaryText
+                      : colors.secondaryText,
+                  onTap: _toggleSound,
+                  colors: colors,
+                ),
+                const SizedBox(height: 10),
 
-        // Favorite Star Button
-        ValueListenableBuilder<bool>(
-          valueListenable: _isCurrentFavoriteNotifier,
-          builder: (context, isFav, _) {
-            return AppChromeIconButton(
-              icon: isFav ? Icons.star_rounded : Icons.star_outline_rounded,
-              backgroundColor: isFav
-                  ? colors.goldLightSurface
-                  : colors.cardBackground,
-              iconColor: isFav
-                  ? colors.gold
-                  : colors.primaryText.withValues(alpha: 0.65),
-              onTap: _toggleCurrentFavorite,
-            );
-          },
+                // 3. Favorite Toggle Button
+                Consumer(
+                  builder: (context, ref, _) {
+                    final currentItem = _currentIndex < displayItems.length
+                        ? displayItems[_currentIndex]
+                        : null;
+                    final qId = currentItem?.rawQuestionId;
+                    if (qId == null) return const SizedBox.shrink();
+
+                    final isFavAsync =
+                        ref.watch(favoriteQuestionProvider(qId));
+                    final isFav = isFavAsync.value ?? false;
+
+                    return _buildFloatingActionButton(
+                      icon: isFav
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
+                      iconColor: isFav ? Colors.white : colors.primaryText,
+                      backgroundColor: isFav ? colors.gold : null,
+                      onTap: () async {
+                        HapticFeedbackHelper.tap();
+                        final category =
+                            ref.read(appSettingsProvider).ticketCategory;
+                        final ds = ref.read(progressDataSourceProvider);
+                        await ds.toggleFavorite(qId, category);
+                        ref.read(appDataRefreshProvider.notifier).state++;
+                      },
+                      colors: colors,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingActionButton({
+    required IconData icon,
+    required Color iconColor,
+    Color? backgroundColor,
+    required VoidCallback onTap,
+    required AppThemeColors colors,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: backgroundColor ?? colors.cardBackground,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: backgroundColor != null ? Colors.transparent : colors.divider,
+            width: 1,
+          ),
         ),
-      ],
+        child: Center(
+          child: Icon(icon, color: iconColor, size: 20),
+        ),
+      ),
     );
   }
 
   Widget _buildBottomTimingBar(AppThemeColors colors, FeedItem currentItem) {
-    if (currentItem.isTip || currentItem.isAd) {
-      return const SizedBox.shrink();
-    }
-
     return IgnorePointer(
       child: ValueListenableBuilder<bool>(
         valueListenable: _isCurrentAnsweredNotifier,
@@ -876,7 +658,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                 valueListenable: _timerProgressNotifier,
                 builder: (context, progress, _) {
                   Color barColor;
-                  if (isAnswered) {
+                  if (!currentItem.isTip && isAnswered) {
                     barColor = isCorrect ? colors.green : colors.red;
                   } else if (progress > 0.3) {
                     barColor = colors.accent;
@@ -889,7 +671,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                   return SizedBox(
                     height: 3.5,
                     child: LinearProgressIndicator(
-                      value: isAnswered ? 1.0 : progress,
+                      value: (!currentItem.isTip && isAnswered) ? 1.0 : progress,
                       backgroundColor:
                           colors.cardBackground.withValues(alpha: 0.5),
                       valueColor: AlwaysStoppedAnimation<Color>(barColor),

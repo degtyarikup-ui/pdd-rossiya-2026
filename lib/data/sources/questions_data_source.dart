@@ -14,70 +14,99 @@ class QuestionsDataSource {
       category == TicketCategory.ab ? 'ab' : 'cd';
 
   Future<List<Question>> loadTickets(TicketCategory category) async {
-    final cat = _cat(category);
-    final String content =
-        await rootBundle.loadString(_config.questionsJson(cat));
-    final Map<String, dynamic> data = json.decode(content);
-    final List<dynamic> tickets = data['tickets'];
+    try {
+      final cat = _cat(category);
+      final String content =
+          await rootBundle.loadString(_config.questionsJson(cat));
+      final dynamic data = json.decode(content);
+      final List<dynamic> tickets =
+          data is Map ? (data['tickets'] as List<dynamic>? ?? []) : [];
 
-    final List<Question> allQuestions = [];
-    for (final ticket in tickets) {
-      final int ticketNumber = ticket['number'];
-      final List<dynamic> questions = ticket['questions'];
-      for (final q in questions) {
-        q['ticketNumber'] = ticketNumber;
-        if (q['image'] == null || q['image'] == 'no_image') {
-          q['image'] = null;
-        } else {
-          q['image'] = '${_config.questionImagesDir(cat)}/${q['image']}.jpg';
+      final List<Question> allQuestions = [];
+      for (final ticket in tickets) {
+        if (ticket is! Map) continue;
+        final int ticketNumber = (ticket['number'] as num?)?.toInt() ?? 0;
+        final List<dynamic> questions =
+            ticket['questions'] as List<dynamic>? ?? [];
+        for (final q in questions) {
+          if (q is! Map) continue;
+          final map = Map<String, dynamic>.from(q);
+          map['ticketNumber'] = ticketNumber;
+          if (map['image'] == null || map['image'] == 'no_image') {
+            map['image'] = null;
+          } else {
+            map['image'] = '${_config.questionImagesDir(cat)}/${map['image']}.webp';
+          }
+          allQuestions.add(Question.fromJson(map));
         }
-        allQuestions.add(Question.fromJson(q));
       }
+      return allQuestions;
+    } catch (e) {
+      return [];
     }
-    return allQuestions;
   }
 
   Future<List<Map<String, dynamic>>> loadTopics(TicketCategory category) async {
-    final cat = _cat(category);
-    final String content =
-        await rootBundle.loadString(_config.topicsJson(cat));
-    final Map<String, dynamic> data = json.decode(content);
-    final List<dynamic> topics = data['topics'];
+    try {
+      final cat = _cat(category);
+      final String content =
+          await rootBundle.loadString(_config.topicsJson(cat));
+      final dynamic data = json.decode(content);
+      final List<dynamic> topics =
+          data is Map ? (data['topics'] as List<dynamic>? ?? []) : [];
 
-    final List<Map<String, dynamic>> result = [];
-    for (final topic in topics) {
-      final String name = topic['name'];
-      final List<dynamic> questions = topic['questions'];
-      final List<Question> parsedQuestions = [];
+      final List<Map<String, dynamic>> result = [];
+      for (final topic in topics) {
+        if (topic is! Map) continue;
+        final String name = topic['name']?.toString() ?? '';
+        final List<dynamic> questions =
+            topic['questions'] as List<dynamic>? ?? [];
+        final List<Question> parsedQuestions = [];
 
-      for (final q in questions) {
-        if (q['image'] == null || q['image'] == 'no_image') {
-          q['image'] = null;
-        } else {
-          q['image'] = '${_config.questionImagesDir(cat)}/${q['image']}.jpg';
+        for (final q in questions) {
+          if (q is! Map) continue;
+          final map = Map<String, dynamic>.from(q);
+          if (map['image'] == null || map['image'] == 'no_image') {
+            map['image'] = null;
+          } else {
+            map['image'] = '${_config.questionImagesDir(cat)}/${map['image']}.webp';
+          }
+          parsedQuestions.add(Question.fromJson(map));
         }
-        parsedQuestions.add(Question.fromJson(q));
-      }
 
-      result.add({
-        'name': name,
-        'questions': parsedQuestions,
-      });
+        result.add({
+          'name': name,
+          'questions': parsedQuestions,
+        });
+      }
+      return result;
+    } catch (e) {
+      return [];
     }
-    return result;
   }
 
   Future<Map<String, dynamic>> loadSigns() async {
-    final String content = await rootBundle.loadString(_config.signsJson);
-    return json.decode(content) as Map<String, dynamic>;
+    try {
+      final String content = await rootBundle.loadString(_config.signsJson);
+      final dynamic decoded = json.decode(content);
+      return decoded is Map ? Map<String, dynamic>.from(decoded) : {};
+    } catch (_) {
+      return {};
+    }
   }
 
   Future<List<Map<String, dynamic>>> loadSignsFeedManifest() async {
     try {
       final String content =
           await rootBundle.loadString('assets/countries/ru/questions/signs_feed_manifest.json');
-      final List<dynamic> list = json.decode(content);
-      return list.cast<Map<String, dynamic>>();
+      final dynamic decoded = json.decode(content);
+      if (decoded is List) {
+        return decoded
+            .whereType<Map>()
+            .map((m) => Map<String, dynamic>.from(m))
+            .toList();
+      }
+      return [];
     } catch (_) {
       return [];
     }

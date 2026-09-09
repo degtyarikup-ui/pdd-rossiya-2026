@@ -32,7 +32,7 @@ class FeedStreakMilestone {
           subtitle: 'Мотор прогрет, жми дальше!',
           imagePath: 'assets/images/streaks/streak_5.png',
           fallbackIcon: Icons.local_fire_department_rounded,
-          accentColor: Color(0xFFF97316),
+          accentColor: Color(0xFFFFA53C),
         );
       case 10:
         return const FeedStreakMilestone(
@@ -42,7 +42,7 @@ class FeedStreakMilestone {
           subtitle: 'Ты отлично чувствуешь дорогу!',
           imagePath: 'assets/images/streaks/streak_10.png',
           fallbackIcon: Icons.bolt_rounded,
-          accentColor: Color(0xFFEAB308),
+          accentColor: Color(0xFFFFA53C),
         );
       case 20:
         return const FeedStreakMilestone(
@@ -52,7 +52,7 @@ class FeedStreakMilestone {
           subtitle: 'Билет за билетом! Инспектор в шоке!',
           imagePath: 'assets/images/streaks/streak_20.png',
           fallbackIcon: Icons.speed_rounded,
-          accentColor: Color(0xFFEF4444),
+          accentColor: Color(0xFFED4621),
         );
       case 50:
         return const FeedStreakMilestone(
@@ -173,7 +173,7 @@ class FeedStreakDialog extends StatelessWidget {
                           width: 80,
                           height: 80,
                           fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => Icon(
+                          errorBuilder: (context, error, stackTrace) => Icon(
                             milestone.fallbackIcon,
                             size: 48,
                             color: milestone.accentColor,

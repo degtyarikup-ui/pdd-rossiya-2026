@@ -439,17 +439,17 @@ class SignCategoryScreen extends StatelessWidget {
                                                       : Image.asset(
                                                           '${CountryConfig.current.signImagesDir}/$signImage',
                                                           fit: BoxFit.contain,
-                                                          errorBuilder:
-                                                              (
-                                                                _,
-                                                                __,
-                                                                ___,
-                                                              ) => Icon(
-                                                                Icons.signpost,
-                                                                size: 48,
-                                                                color: colors
-                                                                    .secondaryText,
-                                                              ),
+                                                           errorBuilder:
+                                                               (
+                                                                 context,
+                                                                 error,
+                                                                 stackTrace,
+                                                               ) => Icon(
+                                                                 Icons.signpost,
+                                                                 size: 48,
+                                                                 color: colors
+                                                                     .secondaryText,
+                                                               ),
                                                         ),
                                                 )
                                               : Icon(

@@ -6,7 +6,9 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/constants/question_swipe_motion.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/utils/question_number_strip_scroll.dart';
+import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/ai_explanation_sheet.dart';
 import 'package:pdd_app/presentation/widgets/question_image.dart';
 import 'package:pdd_app/presentation/widgets/pdd_comment_text.dart';
 
@@ -206,11 +208,21 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
               ),
             ),
             Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: _order.length,
-                onPageChanged: _onReviewPageChanged,
-                itemBuilder: (context, pos) => _buildReviewPage(context, pos),
+              child: Stack(
+                children: [
+                  PageView.builder(
+                    controller: _pageController,
+                    itemCount: _order.length,
+                    onPageChanged: _onReviewPageChanged,
+                    itemBuilder: (context, pos) => _buildReviewPage(context, pos),
+                  ),
+                  if (ref.watch(isPremiumProvider))
+                    Positioned(
+                      right: AppDimensions.screenPadding,
+                      bottom: AppDimensions.screenPadding,
+                      child: _buildAiFloatingButton(context, colors),
+                    ),
+                ],
               ),
             ),
           ],
@@ -391,7 +403,7 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
           }),
           if (comment.isNotEmpty) ...[
             const SizedBox(height: AppDimensions.spacingL),
-            _commentBlock(context, comment, pddPoints),
+            _commentBlock(context, q, comment, pddPoints),
           ],
           const SizedBox(height: 100),
         ],
@@ -399,7 +411,12 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
     );
   }
 
-  Widget _commentBlock(BuildContext context, String comment, List<dynamic> pddPoints) {
+  Widget _commentBlock(
+    BuildContext context,
+    Map<String, dynamic> q,
+    String comment,
+    List<dynamic> pddPoints,
+  ) {
     final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spacingL),
@@ -460,6 +477,60 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildAiFloatingButton(BuildContext context, AppThemeColors colors) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedbackHelper.tap();
+          final idx = _order[_currentPos];
+          final q = widget.questions[idx];
+          final rawAnswers = q['answers'] as List? ?? [];
+          final answers = rawAnswers
+              .map((a) => (a as Map)['text']?.toString() ?? '')
+              .toList();
+          final correctIdx = rawAnswers.indexWhere(
+            (a) =>
+                a is Map &&
+                (a['correct'] == true || a['is_correct'] == true),
+          );
+          final comment = q['comment']?.toString() ?? '';
+          AiExplanationSheet.show(
+            context: context,
+            questionId: q['id']?.toString() ?? 'exam_q_$idx',
+            questionText: q['question']?.toString() ?? '',
+            answers: answers,
+            correctAnswerIndex: correctIdx >= 0 ? correctIdx : 0,
+            officialExplanation: comment,
+          );
+        },
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: colors.green,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: colors.green.withValues(alpha: 0.38),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Center(
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+        ),
       ),
     );
   }

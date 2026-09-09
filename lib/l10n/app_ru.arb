@@ -103,6 +103,7 @@
   "telegramOpenFailed": "Не удалось открыть Telegram",
   "supportDeveloper": "Поддержать разработчика",
   "techSupport": "Тех. поддержка",
+  "termsOfUse": "Условия использования",
   "privacyPolicy": "Политика конфиденциальности",
   "aboutSection": "О приложении",
   "dataSourceTitle": "Источники данных",
@@ -220,5 +221,7 @@
   "themeSystem": "Как на устройстве",
   "themeLight": "Светлая",
   "themeDark": "Тёмная",
-  "themeChoose": "Тема оформления"
+  "themeChoose": "Тема оформления",
+  "notificationsSetting": "Напоминания о серии",
+  "notificationsHint": "Каждый день в 20:00, если серия не закрыта"
 }

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -11,27 +10,65 @@ import 'package:pdd_app/core/navigation/route_observer.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/data/services/install_reporter.dart';
 import 'package:pdd_app/data/services/notification_service.dart';
+import 'package:pdd_app/data/services/premium_service.dart';
+import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
+import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/home/home_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
-import 'package:yandex_mobileads/mobile_ads.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-    ),
-  );
+  try {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemStatusBarContrastEnforced: false,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarContrastEnforced: false,
+      ),
+    );
+  } catch (e) {
+    debugPrint('SystemChrome config error: $e');
+  }
 
   final progressDataSource = ProgressDataSource();
-  await progressDataSource.init();
+  try {
+    await progressDataSource.init().timeout(const Duration(seconds: 2));
+  } catch (e) {
+    debugPrint('ProgressDataSource init error: $e');
+  }
+
+  try {
+    await PremiumService.instance.init().timeout(const Duration(seconds: 2));
+  } catch (e) {
+    debugPrint('PremiumService init error: $e');
+  }
+
+  try {
+    await AuthService.instance.init().timeout(const Duration(seconds: 2));
+  } catch (e) {
+    debugPrint('AuthService init error: $e');
+  }
+
+  // Инициализация облачной синхронизации прогресса
+  ProgressSyncService.instance.init(progressDataSource);
+  if (AuthService.instance.isAuthenticated) {
+    unawaited(ProgressSyncService.instance.syncWithServer());
+  }
+
+  unawaited(IapService.instance.init());
 
   // Локальные напоминания о серии (fire-and-forget, не блокируют старт).
   unawaited(_initStreakNotifications(progressDataSource));
@@ -41,15 +78,6 @@ void main() async {
 
   // Инициализация сервиса звуковых эффектов (правильный/неправильный ответ)
   unawaited(SoundEffectsService.instance.init());
-
-  // Инициализация Яндекс Рекламы (Mobile Ads SDK)
-  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-    unawaited(YandexAds.initialize().then((_) {
-      YandexAds.setLogging(true);
-    }).catchError((e) {
-      debugPrint('YandexAds.initialize failed: $e');
-    }));
-  }
 
   runApp(
     ProviderScope(
@@ -101,6 +129,10 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      TtsService.instance.stop().ignore();
+    }
     // Пересчитываем напоминание при уходе в фон (учитывает сегодняшнюю
     // тренировку) и при возврате (держит расписание свежим).
     if (kIsWeb) return;

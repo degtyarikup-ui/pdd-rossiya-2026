@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/config/country_config.dart';
@@ -5,8 +6,11 @@ import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
-import 'package:pdd_app/data/repositories/ads_repository.dart';
+import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/repositories/feed_repository.dart';
+import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/notification_service.dart';
+import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/sources/questions_data_source.dart';
@@ -56,6 +60,18 @@ class AppSettingsController extends StateNotifier<AppSettings> {
 
   Future<void> setVoiceEnabled(bool value) async {
     state = state.copyWith(voiceEnabled: value);
+    await _dataSource.saveAppSettings(state);
+  }
+
+  Future<void> setNotificationsEnabled(bool value) async {
+    state = state.copyWith(notificationsEnabled: value);
+    if (value) {
+      await StreakNotifier.instance.requestPermission();
+      final streak = await _dataSource.loadStreak();
+      await StreakNotifier.instance.refreshStreakReminder(streak);
+    } else {
+      await StreakNotifier.instance.cancelStreakReminder();
+    }
     await _dataSource.saveAppSettings(state);
   }
 
@@ -305,16 +321,67 @@ final wrongQuestionIdsProvider = FutureProvider<List<String>>((ref) async {
       .toList();
 });
 
-final adsRepositoryProvider = Provider<AdsRepository>((ref) {
-  final repo = AdsRepository();
-  repo.init();
-  return repo;
+final authAndPremiumStreamProvider = StreamProvider<int>((ref) async* {
+  var count = 0;
+  yield count;
+  final controller = StreamController<int>();
+  void listener() {
+    if (!controller.isClosed) {
+      count++;
+      controller.add(count);
+    }
+  }
+
+  AuthService.instance.addListener(listener);
+  PremiumService.instance.addListener(listener);
+
+  ref.onDispose(() {
+    AuthService.instance.removeListener(listener);
+    PremiumService.instance.removeListener(listener);
+    controller.close();
+  });
+
+  yield* controller.stream;
+});
+
+final premiumServiceProvider = Provider<PremiumService>((ref) {
+  return PremiumService.instance;
+});
+
+final isPremiumProvider = Provider<bool>((ref) {
+  ref.watch(appDataRefreshProvider);
+  ref.watch(authAndPremiumStreamProvider);
+  return PremiumService.instance.isPremium;
+});
+
+final dailyCardsRemainingProvider = Provider<int>((ref) {
+  ref.watch(appDataRefreshProvider);
+  ref.watch(authAndPremiumStreamProvider);
+  return PremiumService.instance.remainingFreeCards;
+});
+
+final dailyFreeLimitProvider = Provider<int>((ref) {
+  ref.watch(appDataRefreshProvider);
+  ref.watch(authAndPremiumStreamProvider);
+  return PremiumService.instance.dailyFreeLimit;
+});
+
+final aiMessagesRemainingProvider = Provider<int>((ref) {
+  ref.watch(appDataRefreshProvider);
+  ref.watch(authAndPremiumStreamProvider);
+  return PremiumService.instance.remainingAiMessages;
+});
+
+final aiMessagesLimitProvider = Provider<int>((ref) {
+  ref.watch(appDataRefreshProvider);
+  ref.watch(authAndPremiumStreamProvider);
+  return PremiumService.instance.aiFreeLimit;
 });
 
 final feedRepositoryProvider = Provider<FeedRepository>((ref) {
   final dataSource = ref.watch(questionsDataSourceProvider);
-  final adsRepo = ref.watch(adsRepositoryProvider);
-  return FeedRepository(dataSource, adsRepo);
+  final progressSource = ref.watch(progressDataSourceProvider);
+  return FeedRepository(dataSource, progressSource);
 });
 
 final feedItemsProvider = FutureProvider<List<FeedItem>>((ref) async {
@@ -322,4 +389,18 @@ final feedItemsProvider = FutureProvider<List<FeedItem>>((ref) async {
       ref.watch(appSettingsProvider.select((s) => s.ticketCategory));
   final repo = ref.watch(feedRepositoryProvider);
   return repo.generateFeedItems(category: category, count: 60);
+});
+
+final authServiceProvider = ChangeNotifierProvider<AuthService>((ref) {
+  return AuthService.instance;
+});
+
+final currentUserProvider = Provider<UserProfile?>((ref) {
+  final auth = ref.watch(authServiceProvider);
+  return auth.currentUser;
+});
+
+final isAuthenticatedProvider = Provider<bool>((ref) {
+  final auth = ref.watch(authServiceProvider);
+  return auth.isAuthenticated;
 });

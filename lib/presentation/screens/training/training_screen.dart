@@ -16,6 +16,7 @@ import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/question_image.dart';
 import 'package:pdd_app/presentation/widgets/question_number_chip.dart';
+import 'package:pdd_app/presentation/widgets/ai_explanation_sheet.dart';
 import 'package:pdd_app/presentation/widgets/pdd_comment_text.dart';
 import 'package:pdd_app/presentation/screens/training/training_result_screen.dart';
 
@@ -414,17 +415,27 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                 ),
               ),
               Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: widget.questions.length,
-                  onPageChanged: _onQuestionPageChanged,
-                  itemBuilder: (context, pageIndex) {
-                    return _buildTrainingQuestionPage(
-                      context,
-                      pageIndex,
-                      requireConfirmation: appSettings.confirmAnswerEnabled,
-                    );
-                  },
+                child: Stack(
+                  children: [
+                    PageView.builder(
+                      controller: _pageController,
+                      itemCount: widget.questions.length,
+                      onPageChanged: _onQuestionPageChanged,
+                      itemBuilder: (context, pageIndex) {
+                        return _buildTrainingQuestionPage(
+                          context,
+                          pageIndex,
+                          requireConfirmation: appSettings.confirmAnswerEnabled,
+                        );
+                      },
+                    ),
+                    if (ref.watch(isPremiumProvider))
+                      Positioned(
+                        right: AppDimensions.screenPadding,
+                        bottom: AppDimensions.screenPadding,
+                        child: _buildAiFloatingButton(context, colors),
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -811,6 +822,59 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildAiFloatingButton(BuildContext context, AppThemeColors colors) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedbackHelper.tap();
+          final q = widget.questions[_currentIndex];
+          final rawAnswers = q['answers'] as List? ?? [];
+          final answers = rawAnswers
+              .map((a) => (a as Map)['text']?.toString() ?? '')
+              .toList();
+          final correctIdx = rawAnswers.indexWhere(
+            (a) =>
+                a is Map &&
+                (a['correct'] == true || a['is_correct'] == true),
+          );
+          final comment = q['comment']?.toString() ?? '';
+          AiExplanationSheet.show(
+            context: context,
+            questionId: q['id']?.toString() ?? 'q_$_currentIndex',
+            questionText: q['question']?.toString() ?? '',
+            answers: answers,
+            correctAnswerIndex: correctIdx >= 0 ? correctIdx : 0,
+            officialExplanation: comment,
+          );
+        },
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: colors.green,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: colors.green.withValues(alpha: 0.38),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Center(
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+        ),
       ),
     );
   }

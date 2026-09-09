@@ -129,6 +129,10 @@ class CountryConfig {
   /// Пусто → пункт в настройках скрыт (BY: страницы ещё нет, страна на паузе).
   final String privacyUrl;
 
+  /// Страница пользовательского соглашения (Terms of Use / EULA).
+  /// Требуется Apple (Guideline 3.1.2) и Google Play для платных подписок.
+  final String termsUrl;
+
   /// Ссылки на официальные источники гос-данных (вопросы, закон) для секции
   /// «О приложении». Google Play/App Store требуют указывать источник для
   /// приложений с государственной информацией. Пусто → секция скрыта.
@@ -156,6 +160,7 @@ class CountryConfig {
     required this.examRules,
     required this.webUrl,
     this.privacyUrl = '',
+    this.termsUrl = '',
     this.dataSources = const [],
     this.notAffiliatedNote = '',
     this.pddPointMarker,
@@ -196,6 +201,7 @@ class CountryConfig {
     hasCdCategory: true,
     webUrl: 'https://pdd-drive.ru',
     privacyUrl: 'https://pdd-drive.ru/privacy.html',
+    termsUrl: 'https://pdd-drive.ru/terms.html',
     pddPointMarker: _pddPointMarkerRu,
     // Регламент ГИБДД (пост. Правительства РФ № 1097, приказ МВД № 80):
     // 20 вопросов / 20 минут, 4 тематических блока по 5 вопросов.
@@ -221,6 +227,8 @@ class CountryConfig {
     assetsRoot: 'assets/countries/by',
     hasCdCategory: false,
     webUrl: 'https://pdd-drive.online',
+    privacyUrl: 'https://pdd-drive.online/privacy.html',
+    termsUrl: 'https://pdd-drive.online/terms.html',
     pddPointMarker: _pddPointMarkerRu,
     // ГАИ РБ: 10 вопросов, 15 минут, максимум 1 ошибка, доп. вопросов нет.
     examRules: ExamRules(
@@ -243,6 +251,7 @@ class CountryConfig {
     hasCdCategory: false,
     webUrl: 'https://rs.pdd-drive.online',
     privacyUrl: 'https://rs.pdd-drive.online/privacy.html',
+    termsUrl: 'https://rs.pdd-drive.online/terms.html',
     dataSources: [
       (
         label: 'Ispitna pitanja — MUP Republike Srbije',

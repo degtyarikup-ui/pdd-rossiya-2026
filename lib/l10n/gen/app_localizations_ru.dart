@@ -357,6 +357,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get techSupport => 'Тех. поддержка';
 
   @override
+  String get termsOfUse => 'Условия использования';
+
+  @override
   String get privacyPolicy => 'Политика конфиденциальности';
 
   @override
@@ -702,4 +705,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get themeChoose => 'Тема оформления';
+
+  @override
+  String get notificationsSetting => 'Напоминания о серии';
+
+  @override
+  String get notificationsHint => 'Каждый день в 20:00, если серия не закрыта';
 }

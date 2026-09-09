@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
+import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/sources/driver_tips_data.dart';
 
@@ -10,6 +11,7 @@ class TipFeedCard extends StatefulWidget {
   final bool isCurrent;
   final VoidCallback onAutoNext;
   final VoidCallback onPrevious;
+  final void Function(double progress, int remainingSeconds)? onTimerTick;
 
   const TipFeedCard({
     super.key,
@@ -17,6 +19,7 @@ class TipFeedCard extends StatefulWidget {
     required this.isCurrent,
     required this.onAutoNext,
     required this.onPrevious,
+    this.onTimerTick,
   });
 
   @override
@@ -24,18 +27,57 @@ class TipFeedCard extends StatefulWidget {
 }
 
 class _TipFeedCardState extends State<TipFeedCard>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   @override
   bool get wantKeepAlive => true;
 
   final ScrollController _scrollController = ScrollController();
+  late AnimationController _timerController;
+  int? _lastTickedSecond;
+
+  static const Duration _tipDuration = Duration(seconds: 15);
 
   @override
   void initState() {
     super.initState();
+    _timerController = AnimationController(
+      vsync: this,
+      duration: _tipDuration,
+    );
+
+    _timerController.addListener(() {
+      if (widget.isCurrent) {
+        final progress = (1.0 - _timerController.value).clamp(0.0, 1.0);
+        final remainingSec = (progress * 15).ceil();
+        widget.onTimerTick?.call(progress, remainingSec);
+
+        // Sound effect tick during the last 5 seconds (5, 4, 3, 2, 1)
+        if (remainingSec > 0 && remainingSec <= 5 && _lastTickedSecond != remainingSec) {
+          _lastTickedSecond = remainingSec;
+          SoundEffectsService.instance.playTick();
+        }
+      }
+    });
+
+    _timerController.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted && widget.isCurrent) {
+        widget.onAutoNext();
+      }
+    });
+
     if (widget.isCurrent) {
       TtsService.instance.stop().ignore();
+      _startTimer();
     }
+  }
+
+  void _startTimer() {
+    _lastTickedSecond = null;
+    _timerController.forward(from: 0.0);
+  }
+
+  void _stopTimer() {
+    _timerController.stop();
   }
 
   @override
@@ -43,11 +85,16 @@ class _TipFeedCardState extends State<TipFeedCard>
     super.didUpdateWidget(oldWidget);
     if (!oldWidget.isCurrent && widget.isCurrent) {
       TtsService.instance.stop().ignore();
+      _startTimer();
+    } else if (oldWidget.isCurrent && !widget.isCurrent) {
+      _stopTimer();
     }
   }
 
   @override
   void dispose() {
+    _timerController.stop();
+    _timerController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -102,17 +149,17 @@ class _TipFeedCardState extends State<TipFeedCard>
 
   Widget _buildFallbackCircleIcon(
     IconData tipIcon,
-    Color yellowBadgeBg,
-    Color yellowBadgeText,
+    Color bg,
+    Color fg,
   ) {
     return Container(
       width: 104,
       height: 104,
       decoration: BoxDecoration(
-        color: yellowBadgeBg,
+        color: bg,
         shape: BoxShape.circle,
         border: Border.all(
-          color: yellowBadgeText.withValues(alpha: 0.25),
+          color: fg.withValues(alpha: 0.25),
           width: 2,
         ),
       ),
@@ -120,7 +167,7 @@ class _TipFeedCardState extends State<TipFeedCard>
         child: Icon(
           tipIcon,
           size: 50,
-          color: yellowBadgeText,
+          color: fg,
         ),
       ),
     );
@@ -130,7 +177,6 @@ class _TipFeedCardState extends State<TipFeedCard>
   Widget build(BuildContext context) {
     super.build(context);
     final colors = AppColors.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final tip = widget.item.driverTip ??
         DriverTip(
@@ -142,10 +188,6 @@ class _TipFeedCardState extends State<TipFeedCard>
         );
 
     final tipIcon = _resolveTipIcon(tip.iconKey);
-
-    // Rich, vibrant brighter Yellow / Amber palette for the Tip badge
-    final yellowBadgeBg = isDark ? const Color(0xFF422006) : const Color(0xFFFEF08A);
-    final yellowBadgeText = isDark ? const Color(0xFFFACC15) : const Color(0xFFCA8A04);
 
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
@@ -183,15 +225,91 @@ class _TipFeedCardState extends State<TipFeedCard>
       child: SingleChildScrollView(
         controller: _scrollController,
         physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.only(
+        padding: EdgeInsets.only(
           left: AppDimensions.screenPadding,
           right: AppDimensions.screenPadding,
-          top: 14,
+          top: MediaQuery.paddingOf(context).top + 10,
           bottom: 84,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Top Header Row (Swipes with the card)
+            Row(
+              children: [
+                AnimatedBuilder(
+                  animation: _timerController,
+                  builder: (context, _) {
+                    final progress = (1.0 - _timerController.value).clamp(0.0, 1.0);
+                    final remaining = (progress * 15).ceil();
+                    final isUrgent = remaining <= 3;
+                    final bg = isUrgent ? colors.redLight : colors.lightAccent;
+                    final fg = isUrgent ? colors.red : colors.accent;
+                    return CustomPaint(
+                      foregroundPainter: _RRectProgressBorderPainter(
+                        progress: progress,
+                        color: fg,
+                        strokeWidth: 2.0,
+                        radius: 10.0,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: bg,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.timer_outlined, size: 13, color: fg),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$remaining с',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: fg,
+                                fontFamily: 'Onest',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: colors.accent,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.lightbulb_rounded,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                      SizedBox(width: 5),
+                      Text(
+                        'Совет',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimensions.spacingM),
+
             // Single Unified Card Container (No shadows, image + text combined on one card)
             Container(
               width: double.infinity,
@@ -216,8 +334,8 @@ class _TipFeedCardState extends State<TipFeedCard>
                           padding: const EdgeInsets.symmetric(vertical: 40),
                           child: _buildFallbackCircleIcon(
                             tipIcon,
-                            yellowBadgeBg,
-                            yellowBadgeText,
+                            colors.lightAccent,
+                            colors.accent,
                           ),
                         ),
                       ),
@@ -227,8 +345,8 @@ class _TipFeedCardState extends State<TipFeedCard>
                       padding: const EdgeInsets.symmetric(vertical: 40),
                       child: _buildFallbackCircleIcon(
                         tipIcon,
-                        yellowBadgeBg,
-                        yellowBadgeText,
+                        colors.lightAccent,
+                        colors.accent,
                       ),
                     ),
 
@@ -272,5 +390,83 @@ class _TipFeedCardState extends State<TipFeedCard>
         ),
       ),
     );
+  }
+}
+
+class _RRectProgressBorderPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final double strokeWidth;
+  final double radius;
+
+  _RRectProgressBorderPainter({
+    required this.progress,
+    required this.color,
+    this.strokeWidth = 2.0,
+    this.radius = 10.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0) return;
+
+    final rect = Offset.zero & size;
+    final insetRect = rect.deflate(strokeWidth / 2);
+    final r = (radius - strokeWidth / 2).clamp(2.0, radius);
+
+    final progressPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = strokeWidth;
+
+    final path = Path();
+    final topCenter = Offset(insetRect.center.dx, insetRect.top);
+    path.moveTo(topCenter.dx, topCenter.dy);
+    // Верхняя правая часть
+    path.lineTo(insetRect.right - r, insetRect.top);
+    path.arcToPoint(
+      Offset(insetRect.right, insetRect.top + r),
+      radius: Radius.circular(r),
+      clockwise: true,
+    );
+    // Правая сторона
+    path.lineTo(insetRect.right, insetRect.bottom - r);
+    path.arcToPoint(
+      Offset(insetRect.right - r, insetRect.bottom),
+      radius: Radius.circular(r),
+      clockwise: true,
+    );
+    // Нижняя сторона
+    path.lineTo(insetRect.left + r, insetRect.bottom);
+    path.arcToPoint(
+      Offset(insetRect.left, insetRect.bottom - r),
+      radius: Radius.circular(r),
+      clockwise: true,
+    );
+    // Левая сторона
+    path.lineTo(insetRect.left, insetRect.top + r);
+    path.arcToPoint(
+      Offset(insetRect.left + r, insetRect.top),
+      radius: Radius.circular(r),
+      clockwise: true,
+    );
+    // Замыкание в верхний центр
+    path.lineTo(topCenter.dx, topCenter.dy);
+
+    for (final metric in path.computeMetrics()) {
+      final totalLength = metric.length;
+      final activeLength = (totalLength * progress.clamp(0.0, 1.0));
+      final extractPath = metric.extractPath(0, activeLength);
+      canvas.drawPath(extractPath, progressPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RRectProgressBorderPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.color != color ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.radius != radius;
   }
 }

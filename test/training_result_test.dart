@@ -62,13 +62,20 @@ void main() {
     final data = ProgressDataSource();
     await data.init();
 
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+    });
+
     await tester.pumpWidget(
       ProviderScope(
+        key: UniqueKey(),
         overrides: [
           progressDataSourceProvider.overrideWithValue(data),
           ttsServiceProvider.overrideWithValue(_SilentTts()),
         ],
         child: MaterialApp(
+          key: UniqueKey(),
           home: TrainingScreen(
             questions: buildQuestions(questions),
             title: 'Билет 1',
@@ -80,8 +87,12 @@ void main() {
   }
 
   Future<void> answer(WidgetTester tester, {required bool correct}) async {
+    final text = correct ? 'Верный ответ' : 'Неверный ответ';
     await tester.tap(
-      find.text(correct ? 'Верный ответ' : 'Неверный ответ').hitTestable(),
+      find.ancestor(
+        of: find.text(text),
+        matching: find.byType(InkWell),
+      ).last,
       warnIfMissed: false,
     );
     await tester.pumpAndSettle();

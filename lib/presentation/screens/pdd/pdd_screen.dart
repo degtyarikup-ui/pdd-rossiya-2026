@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -34,18 +35,30 @@ class _PddScreenState extends State<PddScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppDimensions.screenPadding,
-                16,
-                AppDimensions.screenPadding,
-                8,
-              ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final double topInset = MediaQuery.paddingOf(context).top;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        systemStatusBarContrastEnforced: false,
+        systemNavigationBarColor: colors.cardBackground,
+        systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarContrastEnforced: false,
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              AppDimensions.screenPadding,
+              topInset + 16,
+              AppDimensions.screenPadding,
+              8,
+            ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -105,8 +118,7 @@ class _PddScreenState extends State<PddScreen> {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildSubTabButton({required int index, required String title}) {
@@ -122,15 +134,6 @@ class _PddScreenState extends State<PddScreen> {
         decoration: BoxDecoration(
           color: isSelected ? colors.cardBackground : Colors.transparent,
           borderRadius: BorderRadius.circular(9),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ]
-              : null,
         ),
         child: Text(
           title,
@@ -395,7 +398,8 @@ class _PddDetailScreenState extends State<PddDetailScreen> {
                   AppDimensions.screenPadding,
                   24,
                 ),
-                cacheExtent: 100000,
+                // ignore: deprecated_member_use
+                cacheExtent: 100000.0,
                 children: [
                   ...blocks.map((block) {
                     final target = _isTarget(block);

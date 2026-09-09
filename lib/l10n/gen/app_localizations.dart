@@ -656,6 +656,12 @@ abstract class AppLocalizations {
   /// **'Тех. поддержка'**
   String get techSupport;
 
+  /// No description provided for @termsOfUse.
+  ///
+  /// In ru, this message translates to:
+  /// **'Условия использования'**
+  String get termsOfUse;
+
   /// No description provided for @privacyPolicy.
   ///
   /// In ru, this message translates to:
@@ -1267,6 +1273,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Тема оформления'**
   String get themeChoose;
+
+  /// No description provided for @notificationsSetting.
+  ///
+  /// In ru, this message translates to:
+  /// **'Напоминания о серии'**
+  String get notificationsSetting;
+
+  /// No description provided for @notificationsHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Каждый день в 20:00, если серия не закрыта'**
+  String get notificationsHint;
 }
 
 class _AppLocalizationsDelegate

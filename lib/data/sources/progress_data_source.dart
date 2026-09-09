@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Локальный кэш прогресса в [SharedPreferences].
@@ -166,6 +167,7 @@ class ProgressDataSource {
     };
     _saveMap(key, progress);
     _markStreakActivityToday();
+    ProgressSyncService.instance.scheduleSync();
   }
 
   Future<int> getCorrectAnswersCount(TicketCategory category) async {
@@ -190,6 +192,7 @@ class ProgressDataSource {
       'totalAnswered': totalAnswered,
     };
     _saveMap(tkey, ticketProgress);
+    ProgressSyncService.instance.scheduleSync();
   }
 
   Future<int?> getTicketCorrectAnswers(
@@ -230,6 +233,7 @@ class ProgressDataSource {
       favs.add(questionId);
     }
     _saveList(fkey, favs);
+    ProgressSyncService.instance.scheduleSync();
   }
 
   Future<List<String>> getFavoriteQuestionIds(
@@ -245,6 +249,7 @@ class ProgressDataSource {
 
   Future<void> saveAppSettings(AppSettings settings) async {
     _saveMap(_keySettings, settings.toJson());
+    ProgressSyncService.instance.scheduleSync();
   }
 
   Future<void> resetAllProgress() async {
@@ -270,6 +275,7 @@ class ProgressDataSource {
     await _prefs.remove(_keyStreakStartDate);
     await _prefs.remove(_keyStreakActiveDays);
     await _prefs.remove(_keyStreakCelebrationPending);
+    ProgressSyncService.instance.scheduleSync();
   }
 
   // --- Стрик: служебные методы ---
@@ -497,5 +503,83 @@ class ProgressDataSource {
       }),
     );
     _saveList(ekey, results);
+    ProgressSyncService.instance.scheduleSync();
+  }
+
+  /// Экспорт полного слепка прогресса пользователя для облачной синхронизации.
+  Map<String, dynamic> exportProgressSnapshot() {
+    return {
+      'questionProgressAb': _loadMap(_keyProgressAb),
+      'questionProgressCd': _loadMap(_keyProgressCd),
+      'ticketProgressAb': _loadMap(_keyTicketProgressAb),
+      'ticketProgressCd': _loadMap(_keyTicketProgressCd),
+      'favoritesAb': _loadList(_keyFavoritesAb),
+      'favoritesCd': _loadList(_keyFavoritesCd),
+      'examResultsAb': _loadList(_keyExamResultsAb),
+      'examResultsCd': _loadList(_keyExamResultsCd),
+      'streak': {
+        'current': _prefs.getInt(_keyStreakCurrent) ?? 0,
+        'longest': _prefs.getInt(_keyStreakLongest) ?? 0,
+        'lastActiveDate': _prefs.getString(_keyStreakLastActive),
+        'startDate': _prefs.getString(_keyStreakStartDate),
+        'activeDays': _prefs.getStringList(_keyStreakActiveDays) ?? <String>[],
+      },
+      'settings': _loadMap(_keySettings),
+    };
+  }
+
+  /// Импорт и сохранение слепка прогресса из облака.
+  Future<void> importProgressSnapshot(Map<String, dynamic> data) async {
+    if (data.isEmpty) return;
+    if (data['questionProgressAb'] is Map) {
+      _saveMap(_keyProgressAb, Map<String, dynamic>.from(data['questionProgressAb'] as Map));
+    }
+    if (data['questionProgressCd'] is Map) {
+      _saveMap(_keyProgressCd, Map<String, dynamic>.from(data['questionProgressCd'] as Map));
+    }
+    if (data['ticketProgressAb'] is Map) {
+      _saveMap(_keyTicketProgressAb, Map<String, dynamic>.from(data['ticketProgressAb'] as Map));
+    }
+    if (data['ticketProgressCd'] is Map) {
+      _saveMap(_keyTicketProgressCd, Map<String, dynamic>.from(data['ticketProgressCd'] as Map));
+    }
+    if (data['favoritesAb'] is List) {
+      _saveList(_keyFavoritesAb, (data['favoritesAb'] as List).cast<String>());
+    }
+    if (data['favoritesCd'] is List) {
+      _saveList(_keyFavoritesCd, (data['favoritesCd'] as List).cast<String>());
+    }
+    if (data['examResultsAb'] is List) {
+      _saveList(_keyExamResultsAb, (data['examResultsAb'] as List).cast<String>());
+    }
+    if (data['examResultsCd'] is List) {
+      _saveList(_keyExamResultsCd, (data['examResultsCd'] as List).cast<String>());
+    }
+    if (data['streak'] is Map) {
+      final s = data['streak'] as Map;
+      final cur = s['current'] as int? ?? 0;
+      final lon = s['longest'] as int? ?? 0;
+      final last = s['lastActiveDate'] as String?;
+      final start = s['startDate'] as String?;
+      final active = (s['activeDays'] as List?)?.cast<String>() ?? <String>[];
+
+      if (cur > (_prefs.getInt(_keyStreakCurrent) ?? 0)) {
+        await _prefs.setInt(_keyStreakCurrent, cur);
+      }
+      if (lon > (_prefs.getInt(_keyStreakLongest) ?? 0)) {
+        await _prefs.setInt(_keyStreakLongest, lon);
+      }
+      if (last != null && last.isNotEmpty) {
+        await _prefs.setString(_keyStreakLastActive, last);
+      }
+      if (start != null && start.isNotEmpty) {
+        await _prefs.setString(_keyStreakStartDate, start);
+      }
+      if (active.isNotEmpty) {
+        final existingActive = _prefs.getStringList(_keyStreakActiveDays) ?? <String>[];
+        final union = {...existingActive, ...active}.toList()..sort();
+        await _prefs.setStringList(_keyStreakActiveDays, union);
+      }
+    }
   }
 }

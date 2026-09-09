@@ -1,61 +1,149 @@
 // Локальный прогон рендера сообщений — БЕЗ деплоя и без реального Telegram.
 // Запуск:  node server/install-notifier/test-local.mjs
-import { buildMessage, buildMonthlyMessage } from './worker.js';
+import {
+  buildSlotReportMessage,
+  buildReportMessage,
+  buildUserRegistrationMessage,
+  buildPremiumPurchaseMessage,
+} from './worker.js';
 
-const samples = [
-  {
-    label: 'Android-приложение из RuStore',
-    num: 102,
-    data: {
-      platform: 'android', country: 'ru', source: 'RuStore',
-      device: 'Samsung SM-A536B', os: 'Android 14 (SDK 34)',
-      version: '1.0.6+20', locale: 'ru-RU', install_id: 'deadbeefcafe1234',
+console.log('========================================');
+console.log('1. УТРЕННИЙ ОТЧЕТ (10:00 МСК)');
+console.log('========================================');
+const morningSample = buildSlotReportMessage({
+  slotType: 'night',
+  slotData: {
+    installs: 12,
+    installsByStore: {
+      'RuStore': 7,
+      'Google Play': 4,
+      'App Store': 1,
     },
-  },
-  {
-    label: 'Android dev-установка (adb → com.android.shell скрыт)',
-    num: 66,
-    data: {
-      platform: 'android', country: 'ru', source: 'com.android.shell',
-      device: 'Google Pixel 7', os: 'Android 17 (SDK 37)',
-      version: '1.0.6+20', locale: 'pl-PL', install_id: 'a1b2c3d4e5f6a7b8',
+    views: 84,
+    viewsBySource: {
+      yandex: 46,
+      google: 24,
+      social_other: 14,
     },
-  },
-  {
-    label: 'iOS нативное приложение (TestFlight → com.apple.testflight скрыт)',
-    num: 70,
-    data: {
-      platform: 'iOS', country: 'ru', source: 'com.apple.testflight',
-      device: 'iPhone12,1', os: 'iOS 26.5',
-      version: '1.0.6+20', locale: 'be-BY', install_id: '0011223344556677',
+    clicks: 19,
+    clicksByStore: {
+      'RuStore': 11,
+      'Google Play': 6,
+      'App Store': 2,
     },
+    aiRequests: 14,
+    aiCostUsd: 0.0018,
   },
-  {
-    label: 'Веб-версия на айфоне (Safari)',
-    num: 67,
-    data: {
-      platform: 'web', country: 'by', source: 'Web',
-      device: 'Safari', os: 'iPhone',
-      version: '1.0.6+17', locale: 'en-US', install_id: 'e184bf1a35dc47ce',
-    },
-  },
-];
+  grandTotal: 1428,
+});
+console.log(morningSample);
 
-for (const s of samples) {
-  console.log(`--- ${s.label} ---`);
-  console.log(buildMessage(s.data, s.num));
-  console.log();
-}
+console.log('\n========================================');
+console.log('2. ВЕЧЕРНИЙ ОТЧЕТ (22:00 МСК)');
+console.log('========================================');
+const eveningSample = buildSlotReportMessage({
+  slotType: 'day',
+  slotData: {
+    installs: 28,
+    installsByStore: {
+      'RuStore': 16,
+      'Google Play': 9,
+      'App Store': 3,
+    },
+    views: 210,
+    viewsBySource: {
+      yandex: 118,
+      google: 64,
+      social_other: 28,
+    },
+    clicks: 48,
+    clicksByStore: {
+      'RuStore': 27,
+      'Google Play': 15,
+      'App Store': 6,
+    },
+    aiRequests: 32,
+    aiCostUsd: 0.0041,
+  },
+  dayTotals: {
+    installs: 40,
+    views: 294,
+    clicks: 67,
+    aiRequests: 46,
+    aiCostUsd: 0.0059,
+  },
+  grandTotal: 1456,
+});
+console.log(eveningSample);
 
-console.log('--- ежемесячная сводка ---');
-console.log(
-  buildMonthlyMessage('2026-07', {
-    fresh: 42,
-    grandTotal: 101,
-    sources: [
-      { name: 'Google Play', count: 25 },
-      { name: 'RuStore', count: 10 },
-      { name: 'Web', count: 5 },
-    ],
-  }),
-);
+console.log('\n========================================');
+console.log('3. НОВАЯ РЕГИСТРАЦИЯ ПОЛЬЗОВАТЕЛЯ (Мгновенная)');
+console.log('========================================');
+console.log(buildUserRegistrationMessage({
+  id: 'yandex_98127341',
+  name: 'Сергей Иванов',
+  email: 'sergei.ivanov@yandex.ru',
+  provider: 'yandex',
+  country: 'ru',
+  app: 'ru',
+  platform: 'android',
+  appVersion: '1.0.6+20',
+}, 42));
+
+console.log('\n--- Регистрация Apple ID ---');
+console.log(buildUserRegistrationMessage({
+  id: 'apple_001239.abc',
+  name: 'Алексей',
+  email: '',
+  provider: 'apple',
+  country: 'ru',
+  app: 'ru',
+  platform: 'ios',
+  appVersion: '1.0.6+20',
+}, 43));
+
+console.log('\n========================================');
+console.log('4. ПОКУПКА PREMIUM-ДОСТУПА (Мгновенная)');
+console.log('========================================');
+console.log(buildPremiumPurchaseMessage({
+  name: 'Сергей Иванов',
+  email: 'sergei.ivanov@yandex.ru',
+  tier: 'threeMonths',
+  tierName: '3 месяца',
+  price: '290 ₽',
+  store: 'rustore',
+  expiresAt: '2026-11-30T19:00:00.000Z',
+  platform: 'android',
+  appVersion: '1.0.6+20',
+  country: 'ru',
+}));
+
+console.log('\n--- Покупка в App Store ---');
+console.log(buildPremiumPurchaseMessage({
+  name: 'Елена',
+  email: 'elena@gmail.com',
+  tier: 'weekly',
+  tierName: '1 неделя',
+  price: '99 ₽',
+  store: 'appstore',
+  expiresAt: '2026-09-06T19:00:00.000Z',
+  platform: 'ios',
+  appVersion: '1.0.6+20',
+  country: 'ru',
+}));
+
+console.log('\n========================================');
+console.log('5. ЖАЛОБА НА ВОПРОС (Мгновенная)');
+console.log('========================================');
+console.log(buildReportMessage({
+  country: 'ru',
+  ticket: 1,
+  topic: 'Общие положения',
+  mode: 'exam',
+  question_id: 'q_01_03',
+  question_text: 'Разрешен ли вам обгон...',
+  message: 'В пояснении опечатка в номере пункта ПДД',
+  version: '1.0.6+20',
+  platform: 'android',
+}));
+
