@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <script>
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+    }
+  </script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Политика конфиденциальности — ПДД Россия 2026</title>
+<meta name="description" content="Политика обработки персональных данных и конфиденциальности сервиса и приложения «ПДД Россия 2026» в соответствии с Федеральным законом № 152-ФЗ.">
+<link rel="canonical" href="https://pdd-drive.ru/privacy.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ПДД Россия 2026">
+<meta property="og:title" content="Политика конфиденциальности — ПДД Россия 2026">
+<meta property="og:description" content="Политика обработки персональных данных и конфиденциальности сервиса «ПДД Россия 2026» (152-ФЗ).">
+<meta property="og:url" content="https://pdd-drive.ru/privacy.html">
+<meta property="og:image" content="https://pdd-drive.ru/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="stylesheet" href="/assets/style.css">
+<style>
+  .legal-content { max-width: 800px; margin: 0 auto; padding: 40px 20px 80px; }
+  .legal-content h1 { font-size: 32px; line-height: 1.25; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .legal-content .updated { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+  .legal-content h2 { font-size: 22px; margin: 36px 0 14px; color: var(--text); }
+  .legal-content p, .legal-content li { font-size: 16px; line-height: 1.65; color: var(--text-secondary); }
+  .legal-content ul { margin: 12px 0 20px 24px; }
+  .legal-content li { margin-bottom: 8px; }
+  .legal-box {
+    background: var(--card);
+    border: 1px solid var(--divider);
+    border-left: 4px solid var(--accent);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin: 24px 0;
+  }
+  .legal-box p { margin: 0; color: var(--text); font-size: 15px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="logo" href="/">
+      <img src="/assets/icon-192.png" alt="ПДД Россия 2026 — логотип" width="32" height="32" loading="eager">
+      ПДД Россия 2026
+    </a>
+    <nav class="site-nav">
+      <a href="/#features">Возможности</a>
+      <a href="/proverit-znaniya/">Проверить себя</a>
+      <a href="/blog/">Блог</a>
+      <a href="/#exam">Экзамен</a>
+      <a class="nav-cta" href="/app/">Веб-версия приложения</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+    <div class="legal-content">
+      <nav class="breadcrumbs">
+        <a href="/">Главная</a> / Политика конфиденциальности
+      </nav>
+
+      <h1>Политика конфиденциальности и обработки персональных данных</h1>
+      <p class="updated">Редакция от 25 августа 2026 г. · В соответствии с Федеральным законом РФ № 152-ФЗ «О персональных данных»</p>
+
+      <div class="legal-box">
+        <p><strong>Главный принцип нашей политики:</strong> Мы не собираем ваши ФИО, паспортные данные, номера телефонов и пароли. Сервис и приложение работают <strong>полностью без регистрации</strong>, а данные о вашем обучении хранятся исключительно на вашем устройстве.</p>
+      </div>
+
+      <h2>1. Оператор персональных данных</h2>
+      <p>Оператором обработки данных является физическое лицо: <strong>Сергей Дегтярик (Sergei Degtyarik)</strong>.<br>
+      Адрес электронной почты для связи и запросов субъектов персональных данных: <a href="mailto:degtyarik.up@gmail.com">degtyarik.up@gmail.com</a>.</p>
+
+      <h2>2. Какие данные обрабатываются</h2>
+      <p><strong>2.1. В мобильном и веб-приложении:</strong></p>
+      <ul>
+        <li><strong>Прогресс обучения и настройки:</strong> ответы на вопросы, результаты тестирования, избранные билеты, серия занятий. Хранятся <strong>исключительно локально на вашем устройстве</strong> (SharedPreferences / IndexedDB / LocalStorage) и не передаются на внешние серверы.</li>
+        <li><strong>Обезличенный сигнал об установке:</strong> при первом запуске передается случайный анонимный UUID устройства, платформа (iOS/Android/Web), версия ОС и язык. Не содержит персональных данных и используется только для общего подсчета количества пользователей.</li>
+        <li><strong>Сообщения об ошибках в билетах:</strong> отправляются только по прямому нажатию кнопки «Сообщить об ошибке» и содержат текст вашего обращения и технический номер вопроса.</li>
+      </ul>
+
+      <p><strong>2.2. На веб-сайте pdd-drive.ru:</strong></p>
+      <ul>
+        <li><strong>Технические файлы Cookie и LocalStorage:</strong> используются для сохранения пользовательских настроек (тема оформления, закрытие информационных баннеров) и обеспечения быстрой загрузки страниц.</li>
+        <li><strong>Обезличенные данные веб-аналитики:</strong> техническая информация об источнике перехода (UTM-метки, referrer), тип устройства, просмотренные страницы и счетчик просмотров статей. Эти данные являются статистическими и не позволяют идентифицировать личность пользователя.</li>
+      </ul>
+
+      <h2>3. Цели и правовые основания обработки</h2>
+      <p>Обработка данных осуществляется на основании ст. 6 Федерального закона № 152-ФЗ исключительно в следующих целях:</p>
+      <ul>
+        <li>Обеспечение функционирования сайта и сервиса тренировки билетов ПДД;</li>
+        <li>Анализ посещаемости и улучшение качества обучающих материалов блога;</li>
+        <li>Устранение ошибок в экзаменационных вопросах по обращениям пользователей.</li>
+      </ul>
+
+      <h2>4. Файлы Cookie и аналитика</h2>
+      <p>При посещении сайта на ваше устройство могут сохраняться файлы cookie. Вы можете в любой момент отключить сохранение cookie в настройках вашего браузера. Отключение cookie не блокирует доступ к материалам сайта и тестам ПДД.</p>
+
+      <h2>5. Безопасность и третьи лица</h2>
+      <p>5.1. Все соединения с сайтом и API защищены современным протоколом шифрования <strong>HTTPS / TLS</strong>.</p>
+      <p>5.2. Мы <strong>никогда не продаем, не передаем и не предоставляем</strong> данные третьим лицам или рекламным сетям. Для доставки контента используется защищенная инфраструктура Cloudflare (Cloudflare Workers / Pages).</p>
+
+      <h2>6. Права субъектов персональных данных</h2>
+      <p>В соответствии с Федеральным законом № 152-ФЗ вы имеете право на получение информации об обработке ваших данных, их уточнение или отзыв согласия. Поскольку мы не храним идентифицирующие персональные данные, для полного удаления всей локальной истории обучения достаточно очистить кэш/хранилище браузера или удалить приложение с устройства.</p>
+      <p>По любым вопросам направляйте обращения на <a href="mailto:degtyarik.up@gmail.com">degtyarik.up@gmail.com</a>.</p>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <nav>
+      <a href="/blog/">Блог</a>
+      <a href="/about/">О проекте</a>
+      <a href="/links/">Соцсети</a>
+      <a href="/slovar-pdd/">Словарь терминов</a>
+      <a href="/privacy.html">Политика конфиденциальности</a>
+      <a href="/terms.html">Пользовательское соглашение</a>
+      <a href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">Google Play</a>
+      <a href="https://apps.apple.com/ru/app/id6792369533" rel="noopener">App Store</a>
+      <a href="/app/">Веб-версия</a>
+      <a href="mailto:degtyarik.up@gmail.com">Поддержка</a>
+    </nav>
+    <div class="copy">
+      <span class="age-badge">16+</span> © 2026 ПДД Россия 2026 · <a href="https://pdd-drive.online" rel="noopener">ПДД Беларусь</a> · <a href="https://rs.pdd-drive.online" rel="noopener">Auto testovi Srbija</a>
+    </div>
+    <div class="footer-disclaimer">
+      Сайт pdd-drive.ru носит исключительно информационно-справочный и образовательный характер и не является официальным сайтом ГУОБДД МВД России или портала Госуслуг. Официальная информация и первоисточники нормативно-правовых актов РФ публикуются на гибдд.рф и pravo.gov.ru.
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/tracker.js" defer></script>
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=111960332', 'ym');
+
+    ym(111960332, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/111960332" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+</body>
+</html>
