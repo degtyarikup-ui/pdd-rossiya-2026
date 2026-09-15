@@ -102,6 +102,10 @@ HTTPS_ENFORCE_SNIPPET = """  <meta http-equiv="Content-Security-Policy" content=
     if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
       location.replace('https://' + location.host + location.pathname + location.search + location.hash);
     }
+    // GitHub Pages отдаёт /index.html как отдельный адрес — сводим к каноническому /.
+    if (/\/index\.html$/.test(location.pathname)) {
+      location.replace(location.pathname.replace(/index\.html$/, '') + location.search + location.hash);
+    }
   </script>"""
 
 APP_CTA_BOX_HTML = """<div class="article-app-cta">
