@@ -105,13 +105,12 @@ a:hover { text-decoration: underline; }
 .hero-stage {
   position: relative; align-self: stretch;
   display: flex; align-items: flex-end; justify-content: center;
-  background: var(--light-accent); border-radius: 32px 32px 0 0;
-  padding: 40px 32px 0;
+  padding: 24px 0 0;
 }
 
 /* ---------- Мокап телефона (тонкая минималистичная рамка вокруг реального скриншота) ---------- */
 .phone {
-  width: 290px; margin: 0 auto;
+  width: 300px; margin: 0 auto;
   background: var(--text);
   border-radius: 44px 44px 0 0;
   padding: 9px 9px 0;
@@ -421,7 +420,7 @@ section[id] { scroll-margin-top: 76px; }
   .hero { padding: 40px 0 0; }
   .hero-copy { padding-bottom: 40px; }
   .hero h1 { font-size: 38px; }
-  .hero-stage { padding: 32px 24px 0; }
+  .hero-stage { padding: 8px 0 0; }
   .hero .phone-screen { max-height: 380px; }
   .cards { grid-template-columns: 1fr 1fr; }
   .exam-facts { grid-template-columns: 1fr 1fr; }
