@@ -52,7 +52,7 @@ HEADER = """<header class="site-header">
       <a href="/proverit-znaniya/">Проверить себя</a>
       <a href="/blog/">Блог</a>
       <a href="/#exam">Экзамен</a>
-      <a class="nav-cta" href="/app/">Веб-версия приложения</a>
+      <a class="nav-cta" href="/app/">Веб-версия<span class="nav-cta-tail"> приложения</span></a>
     </nav>
   </div>
 </header>"""
@@ -142,42 +142,6 @@ APP_CTA_BOX_HTML = """<div class="article-app-cta">
     </a>
   </div>
 </div>"""
-
-
-def _calc_views(slug, date_str):
-    """Детерминированный расчет просмотров на основе даты и хэша темы."""
-    import hashlib
-    h = int(hashlib.md5(slug.encode("utf-8")).hexdigest()[:6], 16)
-    try:
-        y, m, d = [int(x) for x in date_str.split("-")]
-        days_factor = max(1, (2026 - y) * 365 + (8 - m) * 30 + (25 - d) + 40)
-    except Exception:
-        days_factor = 40
-    base = 750 + (h % 1600) + (days_factor * 16)
-    return base
-
-
-def _format_views_short(num):
-    """Короткий формат для карточек блога (напр. 1.8k или 950)."""
-    if num >= 1000:
-        return "%.1fk" % (num / 1000)
-    return str(num)
-
-
-def _format_views_full(num):
-    """Полный формат для мета-заголовка статьи (напр. 1 840 просмотров)."""
-    s = "{:,}".format(num).replace(",", " ")
-    n = num % 100
-    n1 = num % 10
-    if 11 <= n <= 19:
-        word = "просмотров"
-    elif n1 == 1:
-        word = "просмотр"
-    elif 2 <= n1 <= 4:
-        word = "просмотра"
-    else:
-        word = "просмотров"
-    return "%s %s" % (s, word)
 
 
 # --- Загрузка источников -----------------------------------------------------
@@ -372,9 +336,6 @@ def render_article(slug, all_published=None):
                         '      <div class="post-grid">\n%s\n      </div>\n'
                         % _post_cards_html(others[:3]))
 
-    views_num = _calc_views(slug, a.get("datePublished", "2026-08-01"))
-    views_full = _format_views_full(views_num)
-
     body = """{head}
 <body>
 
@@ -391,8 +352,8 @@ def render_article(slug, all_published=None):
       <header>
         <h1>{h1}</h1>
         <p class="post-meta">
-          <time datetime="{iso}">{date}</time> · Команда ПДД Россия 2026 · ~{mins} мин чтения · 
-          <span class="post-views" data-slug="{slug}" title="Количество просмотров">{eye} <span class="views-count">{views}</span></span>
+          <time datetime="{iso}">{date}</time> · Команда ПДД Россия 2026 · ~{mins} мин чтения
+          <span class="post-views" data-slug="{slug}" hidden>· {eye} <span class="views-count"></span></span>
         </p>
       </header>
 {cover}
@@ -419,7 +380,6 @@ def render_article(slug, all_published=None):
         mins=a.get("readingMinutes", 6),
         slug=slug,
         eye=EYE_ICON_SVG,
-        views=views_full,
         cover=cover_html,
         content=re.sub(r'<div class="note">\s*(?:Уверенность|Тренируйте|Готовьтесь|Изучайте|Решайте|Закрепляйте|Сдавайте|Повторяйте).*?</div>', '', a["bodyHtml"], flags=re.S).strip("\n"),
         cta=APP_CTA_BOX_HTML,
@@ -470,19 +430,17 @@ def _post_cards_html(arts):
             cover = ('\n          <img class="post-card-cover" src="/blog/%s/%s" alt="%s" '
                      'width="1200" height="630" loading="lazy">'
                      % (a["slug"], a["cover"], html.escape(a.get("coverAlt") or a["title"])))
-        views_num = _calc_views(a["slug"], a.get("datePublished", "2026-08-01"))
-        views_short = _format_views_short(views_num)
         cards.append(
             '        <a class="post-card" href="/blog/{slug}/">{cover}\n'
             '          <div class="post-card-meta">\n'
             '            <time datetime="{iso}">{date}</time>\n'
-            '            <span class="post-card-views" data-slug="{slug}" title="Просмотры">{eye} <span class="views-count">{views}</span></span>\n'
+            '            <span class="post-card-views" data-slug="{slug}" hidden>{eye} <span class="views-count"></span></span>\n'
             '          </div>\n'
             '          <h2>{title}</h2>\n'
             '        </a>'.format(
                 slug=a["slug"], cover=cover, iso=a["datePublished"],
                 date=_fmt_date(a["datePublished"]), title=html.escape(a["title"]),
-                eye=EYE_ICON_SVG, views=views_short,
+                eye=EYE_ICON_SVG,
             )
         )
     return "\n".join(cards)
@@ -705,20 +663,7 @@ def render_home_blog(arts=None):
     if "<!-- BLOG:START -->" not in s or "<!-- BLOG:END -->" not in s:
         return None
 
-    cards = []
-    for a in arts[:3]:
-        cover = ""
-        if a.get("cover"):
-            cover = ('\n          <img class="post-card-cover" src="/blog/%s/%s" alt="%s" '
-                     'width="1200" height="630" loading="lazy">'
-                     % (a["slug"], a["cover"], html.escape(a.get("coverAlt") or a["title"])))
-        cards.append(
-            '        <a class="post-card" href="/blog/{slug}/">{cover}\n'
-            '          <time datetime="{iso}">{date}</time>\n'
-            '          <h3>{title}</h3>\n'
-            '        </a>'.format(
-                slug=a["slug"], cover=cover, iso=a["datePublished"],
-                date=_fmt_date(a["datePublished"]), title=html.escape(a["title"])))
+    cards = _post_cards_html(arts[:3]).replace("<h2>", "<h3>").replace("</h2>", "</h3>")
 
     block = ""
     if cards:
@@ -733,7 +678,7 @@ def render_home_blog(arts=None):
       <div class="blog-all-link"><a class="btn btn-primary" href="/blog/">Все статьи</a></div>
     </div>
   </section>
-""".format(cards="\n".join(cards))
+""".format(cards=cards)
 
     new = re.sub(r"<!-- BLOG:START -->.*?<!-- BLOG:END -->",
                  "<!-- BLOG:START -->%s  <!-- BLOG:END -->" % block, s, flags=re.S)

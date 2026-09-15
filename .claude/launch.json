@@ -10,13 +10,13 @@
     {
       "name": "landing-ru",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["/private/tmp/claude-501/-Users-sergei-Documents-pdd/425ea125-8dfb-4dda-8cf9-2bb7f0c534ec/scratchpad/serve_landing.py"],
+      "runtimeArgs": ["-m", "http.server", "8901", "--directory", "web_landing/ru"],
       "port": 8901
     },
     {
       "name": "blog-admin",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["/Users/sergei/Documents/pdd/tools/blog_admin/server.py"],
+      "runtimeArgs": ["tools/blog_admin/server.py"],
       "port": 8930
     }
   ]

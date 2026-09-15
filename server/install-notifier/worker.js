@@ -1733,6 +1733,21 @@ async function verifyAdminAuth(request, env) {
 
 // ────────────────────── Аналитика соцсетей и кликов ──────────────────────
 
+const ARTICLE_SLUG_RE = /^[a-z0-9][a-z0-9-]{1,120}$/;
+
+// Реальные просмотры статей блога: один счётчик на slug. KV не атомарен,
+// при одновременных заходах единицы могут потеряться — для блога это допустимо.
+async function bumpArticleViews(env, path) {
+  if (!env.INSTALLS) return;
+  const m = /^\/blog\/([^/]+)\/?$/.exec(String(path || ''));
+  if (!m || !ARTICLE_SLUG_RE.test(m[1])) return;
+  const key = `views:${m[1]}`;
+  try {
+    const cur = parseInt(await env.INSTALLS.get(key), 10) || 0;
+    await env.INSTALLS.put(key, String(cur + 1));
+  } catch (_) {}
+}
+
 async function recordAnalyticsEvent(env, event) {
   if (!env.INSTALLS) return;
   const now = new Date();
@@ -3255,7 +3270,22 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
       body.country = country;
 
       await recordAnalyticsEvent(env, body);
+      if (body.type === 'view') await bumpArticleViews(env, body.path);
       return jsonResponse({ ok: true });
+    }
+
+    if (url.pathname === '/api/views' && request.method === 'GET') {
+      const slugs = String(url.searchParams.get('slugs') || '')
+        .split(',').map(s => s.trim()).filter(s => ARTICLE_SLUG_RE.test(s)).slice(0, 50);
+      const out = {};
+      if (env.INSTALLS && slugs.length) {
+        const vals = await Promise.all(slugs.map(s => env.INSTALLS.get(`views:${s}`)));
+        slugs.forEach((s, i) => { out[s] = parseInt(vals[i], 10) || 0; });
+      }
+      return jsonResponse(out, 200, {
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Cache-Control': 'public, max-age=60',
+      });
     }
 
     // ────────────────────── Original GET/POST routes ──────────────────────

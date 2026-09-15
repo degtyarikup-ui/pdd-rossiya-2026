@@ -193,36 +193,47 @@
     } catch (_) {}
   }
 
-  // 4. Live View Counter increment in Article
+  // 4. Реальные просмотры статей: числа приходят с воркера (/api/views),
+  //    до ответа элементы скрыты, чтобы не показывать пустой глаз.
+  function pluralViews(num) {
+    var n = num % 100, n1 = num % 10;
+    if (n >= 11 && n <= 19) return 'просмотров';
+    if (n1 === 1) return 'просмотр';
+    if (n1 >= 2 && n1 <= 4) return 'просмотра';
+    return 'просмотров';
+  }
+  function fmtShort(num) {
+    if (num >= 10000) return Math.round(num / 1000) + 'k';
+    if (num >= 1000) return (Math.floor(num / 100) / 10).toFixed(1).replace('.0', '') + 'k';
+    return String(num);
+  }
+  function fmtFull(num) {
+    return String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' ' + pluralViews(num);
+  }
   function initViewCounter() {
     try {
-      var path = window.location.pathname || '';
-      var m = path.match(/\/blog\/([a-z0-9-]+)\/?$/);
-      if (!m) return;
-      var slug = m[1];
-      if (slug === 'spravochnik-pdd' || slug === 'ekzamen-i-prava' || slug === 'podgotovka-k-ekzamenu') return;
-      
-      var key = 'pdd_view_' + slug;
-      var visited = sessionStorage.getItem(key);
-      if (!visited) {
-        sessionStorage.setItem(key, '1');
-        var countEl = document.querySelector('.post-views .views-count');
-        if (countEl) {
-          var txt = countEl.innerText || '';
-          var num = parseInt(txt.replace(/\D/g, ''), 10);
-          if (!isNaN(num)) {
-            num += 1;
-            var s = String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-            var n = num % 100, n1 = num % 10;
-            var word = 'просмотров';
-            if (n < 11 || n > 19) {
-              if (n1 === 1) word = 'просмотр';
-              else if (n1 >= 2 && n1 <= 4) word = 'просмотра';
-            }
-            countEl.innerText = s + ' ' + word;
+      var els = document.querySelectorAll('[data-slug] .views-count');
+      if (!els.length) return;
+      var slugs = {};
+      for (var i = 0; i < els.length; i++) slugs[els[i].parentNode.getAttribute('data-slug')] = 1;
+      var list = Object.keys(slugs).join(',');
+      var m = (window.location.pathname || '').match(/^\/blog\/([a-z0-9-]+)\/?$/);
+      var here = m ? m[1] : null;
+      fetch(ENDPOINT.replace('/api/track', '/api/views') + '?slugs=' + encodeURIComponent(list))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          for (var j = 0; j < els.length; j++) {
+            var wrap = els[j].parentNode;
+            var slug = wrap.getAttribute('data-slug');
+            var num = data[slug];
+            if (typeof num !== 'number') continue;
+            if (slug === here && num === 0) num = 1;
+            if (num === 0) continue;
+            els[j].textContent = wrap.classList.contains('post-views') ? fmtFull(num) : fmtShort(num);
+            wrap.hidden = false;
           }
-        }
-      }
+        })
+        .catch(function () {});
     } catch (_) {}
   }
 
