@@ -1758,6 +1758,18 @@ const ARTICLE_SLUG_RE = /^[a-z0-9][a-z0-9-]{1,120}$/;
 
 // Проверка ключа приложения: прислали — обязан совпасть; не прислали —
 // пускаем только пока в админке («ИИ») открыт проход для старых сборок.
+// Признаки накрутки регистраций: синтетический gmail вида имяфамилия.12345@,
+// или UA не приложения (curl/python/браузерные скрипты) без ключа.
+// Такие профили сохраняются с пометкой suspect, но не считаются и не шлются в Telegram.
+const SYNTHETIC_EMAIL_RE = /^[a-z]+\.\d{5}@gmail\.com$/i;
+function isSuspectRegistration(request, user) {
+  const ua = request.headers.get('user-agent') || '';
+  const hasKey = !!request.headers.get('x-install-secret');
+  if (SYNTHETIC_EMAIL_RE.test(String(user.email || '').trim())) return true;
+  if (!hasKey && (ua.length < 10 || /python|curl\/|wget|go-http|axios|node-fetch|httpx|java\//i.test(ua))) return true;
+  return false;
+}
+
 async function appKeyAllowed(request, env) {
   if (!env.SHARED_SECRET) return true;
   const got = request.headers.get('x-install-secret');
@@ -2376,6 +2388,7 @@ async function saveUserProfile(env, user) {
     pushToken: user.pushToken !== undefined ? user.pushToken : (existing ? existing.pushToken : null),
     ipCountry: user.ipCountry || (existing ? existing.ipCountry : null),
     userAgent: user.userAgent || (existing ? existing.userAgent : null),
+    suspect: user.suspect === true || (existing ? existing.suspect === true : false),
   };
 
   await env.INSTALLS.put(kvKey, JSON.stringify(merged));
@@ -2396,7 +2409,7 @@ async function saveUserProfile(env, user) {
   }
 
   // Trigger instant Telegram notification for registered users (provider !== 'guest')
-  if (merged.provider && merged.provider !== 'guest') {
+  if (merged.provider && merged.provider !== 'guest' && !merged.suspect) {
     const notifKey = 'notified_reg:' + merged.id;
     try {
       const alreadyNotified = await env.INSTALLS.get(notifKey);
@@ -2859,6 +2872,7 @@ export default {
       }
       body.ipCountry = request.headers.get('cf-ipcountry') || null;
       body.userAgent = String(request.headers.get('user-agent') || '').slice(0, 200);
+      body.suspect = isSuspectRegistration(request, body);
       const updatedUser = await saveUserProfile(env, body);
       return jsonResponse({
         ok: true,
