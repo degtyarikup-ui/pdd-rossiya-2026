@@ -67,13 +67,15 @@ class ProfileModalSheet extends StatelessWidget {
     );
 
     if (confirmed == true) {
-      await AuthService.instance.deleteAccount();
+      final deleted = await AuthService.instance.deleteAccount();
       if (context.mounted) {
         Navigator.of(context).pop();
         AppToast.show(
           context,
-          'Аккаунт успешно удален',
-          type: AppToastType.normal,
+          deleted
+              ? 'Аккаунт и данные удалены'
+              : 'Вы вышли из аккаунта. Сервер недоступен — данные будут удалены по запросу на degtyarik.up@gmail.com',
+          type: deleted ? AppToastType.normal : AppToastType.error,
         );
       }
     }

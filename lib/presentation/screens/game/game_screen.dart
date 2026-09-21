@@ -153,7 +153,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     ]);
     _send('setPaused', [_enginePaused]);
     _send('selectVehicle', [_vehicleId, _vehiclePaint]);
-    _send('setAttract', [_locked]);
+    _send('setAttract', [_locked || _outOfFuel]);
     if (_weatherOverride != null) _send('setWeather', [_weatherOverride]);
     if (_seasonOverride != null) _send('setSeason', [_seasonOverride]);
   }
@@ -237,6 +237,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   @override
   void dispose() {
     _disposing = true;
+    if (_reveal != null) ref.read(fullscreenProvider.notifier).state = false;
     _readyTimer?.cancel();
     _fuelTimer?.cancel();
     _burstTimer?.cancel();
@@ -563,6 +564,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
       _revealShown = false;
     });
     _game.setPaused(true);
+    ref.read(fullscreenProvider.notifier).state = true;
     _send('setGas', [false]);
     _send('setBrake', [false]);
     _send('showReveal', [car.id, car.paint]);
@@ -576,6 +578,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
       _revealShown = false;
     });
     _send('hideReveal', []);
+    ref.read(fullscreenProvider.notifier).state = false;
     if (choose) _selectCar(car);
     _game.setPaused(
       !_active ||
@@ -594,7 +597,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
       !_active ||
       _failed ||
       _garageOpen ||
-      _outOfFuel ||
       ref.read(gameControllerProvider).phase == GamePhase.gameOver;
 
   Future<void> _handleRestart() async {
@@ -813,7 +815,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _game.setPaused(outOfFuel || locked || !_active);
-        _send('setPaused', [outOfFuel || !_active]);
+        _send('setAttract', [outOfFuel || locked]);
+        _send('setPaused', [!_active]);
       });
     }
     if (locked != _locked) {
@@ -821,7 +824,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _game.setPaused(locked || !_active);
-        _send('setAttract', [locked]);
+        _send('setAttract', [locked || _outOfFuel]);
         _send('setPaused', [!_active]);
       });
     }
@@ -892,6 +895,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     thumbnail: _thumbnail,
                     thumbnailCache: _thumbnails,
                     onGarage: gameState.controlsEnabled ? _openGarage : null,
+                    showGarage:
+                        GameGarageService.instance.cars.length > 1 || premium,
                     onGarageLongPress: _openDebug,
                     onLeaderboard: gameState.controlsEnabled
                         ? _openLeaderboard

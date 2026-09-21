@@ -105,43 +105,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Scaffold(
         backgroundColor: colors.homeScreenBackground,
         body: _screens[_currentIndex],
-        bottomNavigationBar: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(height: 1, color: colors.divider),
-            NavigationBar(
-              selectedIndex: _currentIndex,
-              onDestinationSelected: (index) {
-                if (index == _currentIndex) return;
-                TtsService.instance.stop();
-                HapticFeedbackHelper.select();
-                setState(() => _currentIndex = index);
-              },
-              destinations: [
-                NavigationDestination(
-                  icon: const Icon(Icons.menu_book_outlined),
-                  selectedIcon: const Icon(Icons.menu_book),
-                  label: appL10n.training,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.sports_esports_outlined),
-                  selectedIcon: const Icon(Icons.sports_esports_rounded),
-                  label: appL10n.game,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.style_outlined),
-                  selectedIcon: const Icon(Icons.style_rounded),
-                  label: appL10n.video,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.settings_outlined),
-                  selectedIcon: const Icon(Icons.settings),
-                  label: appL10n.settings,
-                ),
-              ],
-            ),
-          ],
-        ),
+        bottomNavigationBar: ref.watch(fullscreenProvider)
+            ? null
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(height: 1, color: colors.divider),
+                  NavigationBar(
+                    selectedIndex: _currentIndex,
+                    onDestinationSelected: (index) {
+                      if (index == _currentIndex) return;
+                      TtsService.instance.stop();
+                      HapticFeedbackHelper.select();
+                      setState(() => _currentIndex = index);
+                    },
+                    destinations: [
+                      NavigationDestination(
+                        icon: const Icon(Icons.menu_book_outlined),
+                        selectedIcon: const Icon(Icons.menu_book),
+                        label: appL10n.training,
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.sports_esports_outlined),
+                        selectedIcon: const Icon(Icons.sports_esports_rounded),
+                        label: appL10n.game,
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.style_outlined),
+                        selectedIcon: const Icon(Icons.style_rounded),
+                        label: appL10n.video,
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.settings_outlined),
+                        selectedIcon: const Icon(Icons.settings),
+                        label: appL10n.settings,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
       ),
     );
   }

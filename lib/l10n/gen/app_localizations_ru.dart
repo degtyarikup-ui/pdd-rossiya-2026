@@ -864,9 +864,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameRevealTap => 'Нажмите на ворота';
 
   @override
-  String get gameRevealSpin => 'Покрутите пальцем';
-
-  @override
   String get gameRevealChoose => 'Выбрать';
 
   @override
@@ -921,7 +918,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameOncoming => 'Встречная полоса! Вернитесь вправо';
 
   @override
-  String get gameCorrectAnswers => 'Правильных ответов';
+  String get gameCorrectAnswers => 'Верных ответов';
 
   @override
   String gameAnswersOf(int correct, int total) {
@@ -1033,17 +1030,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameFuelEmptyTitle => 'Бензин закончился';
 
   @override
-  String get gameFuelEmptyHint =>
-      'Каждая ошибка сжигает деление. Бак наполняется сам: одно деление за 20 минут.';
-
-  @override
   String gameFuelRefillIn(String time) {
-    return 'Одно деление через $time';
+    return 'Бак пополнится через $time';
   }
 
   @override
-  String get gameFuelPremiumPitch =>
-      'С Премиумом бак бесконечный — играйте сколько хотите, без ожидания.';
+  String get gameFuelPremiumPitch => 'С подпиской бензин не заканчивается';
 
   @override
   String get gameFuelBuyPremium => 'Подключить Премиум';

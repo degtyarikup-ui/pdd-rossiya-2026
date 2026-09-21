@@ -2989,6 +2989,39 @@ export default {
     }
 
     // ────────────────────── User Profile & Sync API ──────────────────────
+    // ────────────────────── User self-deletion ──────────────────────
+    // "Удалить аккаунт и данные" in the app: profile, synced progress and
+    // the current week's game score are removed at once (Play data-deletion
+    // requirement). Only the app key is required — the id comes from the
+    // signed-in session on the device.
+    if (url.pathname === '/api/user/delete' && request.method === 'POST') {
+      let body;
+      try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }
+      const userId = String(body?.userId || '').trim();
+      if (!userId || !env.INSTALLS) return jsonResponse({ error: 'missing userId' }, 400);
+      let email = null;
+      try {
+        const raw = await env.INSTALLS.get('user:' + userId);
+        if (raw) email = JSON.parse(raw).email || null;
+      } catch (_) {}
+      await env.INSTALLS.delete('user:' + userId);
+      await env.INSTALLS.delete('user_progress:' + userId);
+      if (email) await env.INSTALLS.delete('user_email:' + email.toLowerCase().trim());
+      try {
+        const week = gameWeekKey();
+        const board = await readGameBoard(env, week);
+        if (board[userId]) { delete board[userId]; await env.INSTALLS.put('game_lb:' + week, JSON.stringify(board)); }
+      } catch (_) {}
+      try {
+        const rawList = await env.INSTALLS.get('users_list');
+        const userIds = rawList ? JSON.parse(rawList) : null;
+        if (Array.isArray(userIds) && userIds.includes(userId)) {
+          await env.INSTALLS.put('users_list', JSON.stringify(userIds.filter(id => id !== userId)));
+        }
+      } catch (_) {}
+      return jsonResponse({ ok: true, deleted: userId });
+    }
+
     if (url.pathname === '/api/user/sync' && request.method === 'POST') {
       let body;
       try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }

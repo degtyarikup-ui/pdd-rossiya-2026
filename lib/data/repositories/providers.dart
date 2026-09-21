@@ -26,6 +26,10 @@ final progressDataSourceProvider = Provider<ProgressDataSource>((ref) {
 
 final appDataRefreshProvider = StateProvider<int>((ref) => 0);
 
+/// True while a screen takes the whole window (the game's garage reveal):
+/// the home shell hides its bottom navigation.
+final fullscreenProvider = StateProvider<bool>((ref) => false);
+
 class AppSettingsController extends StateNotifier<AppSettings> {
   AppSettingsController(this._dataSource) : super(const AppSettings()) {
     _loadFuture = _load();

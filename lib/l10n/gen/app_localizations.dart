@@ -1562,12 +1562,6 @@ abstract class AppLocalizations {
   /// **'Нажмите на ворота'**
   String get gameRevealTap;
 
-  /// No description provided for @gameRevealSpin.
-  ///
-  /// In ru, this message translates to:
-  /// **'Покрутите пальцем'**
-  String get gameRevealSpin;
-
   /// No description provided for @gameRevealChoose.
   ///
   /// In ru, this message translates to:
@@ -1679,7 +1673,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameCorrectAnswers.
   ///
   /// In ru, this message translates to:
-  /// **'Правильных ответов'**
+  /// **'Верных ответов'**
   String get gameCorrectAnswers;
 
   /// No description provided for @gameAnswersOf.
@@ -1850,22 +1844,16 @@ abstract class AppLocalizations {
   /// **'Бензин закончился'**
   String get gameFuelEmptyTitle;
 
-  /// No description provided for @gameFuelEmptyHint.
-  ///
-  /// In ru, this message translates to:
-  /// **'Каждая ошибка сжигает деление. Бак наполняется сам: одно деление за 20 минут.'**
-  String get gameFuelEmptyHint;
-
   /// No description provided for @gameFuelRefillIn.
   ///
   /// In ru, this message translates to:
-  /// **'Одно деление через {time}'**
+  /// **'Бак пополнится через {time}'**
   String gameFuelRefillIn(String time);
 
   /// No description provided for @gameFuelPremiumPitch.
   ///
   /// In ru, this message translates to:
-  /// **'С Премиумом бак бесконечный — играйте сколько хотите, без ожидания.'**
+  /// **'С подпиской бензин не заканчивается'**
   String get gameFuelPremiumPitch;
 
   /// No description provided for @gameFuelBuyPremium.

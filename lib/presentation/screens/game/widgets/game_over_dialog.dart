@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:pdd_app/l10n/l10n.dart';
@@ -11,7 +12,7 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 
-class GameOverDialog extends StatelessWidget {
+class GameOverDialog extends StatefulWidget {
   final GameState state;
   final String vehicleId;
   final String vehiclePaint;
@@ -55,8 +56,39 @@ class GameOverDialog extends StatelessWidget {
   });
 
   @override
+  State<GameOverDialog> createState() => _GameOverDialogState();
+}
+
+class _GameOverDialogState extends State<GameOverDialog> {
+  Timer? _timer;
+
+  GameState get state => widget.state;
+  bool get fuelEmpty => state.fuel <= 0 && !state.fuelUnlimited;
+
+  @override
+  void initState() {
+    super.initState();
+    if (fuelEmpty) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final vehicleId = widget.vehicleId, vehiclePaint = widget.vehiclePaint;
+    final thumbnail = widget.thumbnail, thumbnailCache = widget.thumbnailCache;
+    final onLeaderboard = widget.onLeaderboard,
+        onBuyPremium = widget.onBuyPremium;
+    final bestScore = widget.bestScore, isNewRecord = widget.isNewRecord;
     final distance = state.distanceM >= 1000
         ? '${(state.distanceM / 1000).toStringAsFixed(1)} ${appL10n.gameKilometers}'
         : '${state.distanceM} ${appL10n.gameMeters}';
@@ -78,22 +110,26 @@ class GameOverDialog extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // The car the player drove — the same model as in the scene.
-                  Semantics(
-                    label: appL10n.gameYourCar,
-                    image: true,
-                    child: SizedBox(
-                      height: 118,
-                      child: GameCarThumbnail(
-                        car: GameCar(vehicleId, vehiclePaint),
-                        loader: thumbnail,
-                        cache: thumbnailCache,
+                  // Out of fuel: the pump instead of the car, and the
+                  // countdown in the header. Otherwise the car that was driven.
+                  if (fuelEmpty)
+                    const Center(child: GameFuelEmptyIcon(size: 72))
+                  else
+                    Semantics(
+                      label: appL10n.gameYourCar,
+                      image: true,
+                      child: SizedBox(
+                        height: 118,
+                        child: GameCarThumbnail(
+                          car: GameCar(vehicleId, vehiclePaint),
+                          loader: thumbnail,
+                          cache: thumbnailCache,
+                        ),
                       ),
                     ),
-                  ),
                   const SizedBox(height: 10),
                   Text(
-                    appL10n.gameOver,
+                    fuelEmpty ? appL10n.gameFuelEmptyTitle : appL10n.gameOver,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Onest',
@@ -104,15 +140,17 @@ class GameOverDialog extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    state.fuel <= 0 && !state.fuelUnlimited
-                        ? appL10n.gameFuelEmptyTitle
+                    fuelEmpty
+                        ? appL10n.gameFuelRefillIn(
+                            gameFuelCountdown(widget.fuelRefillAt),
+                          )
                         : appL10n.gameOverDescription,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Onest',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: colors.secondaryText,
+                      fontSize: fuelEmpty ? 14 : 13,
+                      fontWeight: fuelEmpty ? FontWeight.w700 : FontWeight.w500,
+                      color: fuelEmpty ? colors.red : colors.secondaryText,
                       height: 1.35,
                     ),
                   ),
@@ -150,14 +188,13 @@ class GameOverDialog extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
-                        if (isNewRecord)
-                          _RecordBadge(color: colors.gold)
-                        else
+                        if (isNewRecord) ...[
+                          const SizedBox(height: 6),
+                          _RecordBadge(color: colors.gold),
+                        ] else if (bestScore != null && bestScore > 0) ...[
+                          const SizedBox(height: 6),
                           Text(
-                            bestScore != null && bestScore! > 0
-                                ? '${appL10n.gameScore} · ${appL10n.gameBestScore(bestScore!)}'
-                                : appL10n.gameScore,
+                            appL10n.gameBestScore(bestScore),
                             style: TextStyle(
                               fontFamily: 'Onest',
                               fontSize: 12,
@@ -165,42 +202,47 @@ class GameOverDialog extends StatelessWidget {
                               color: colors.secondaryText,
                             ),
                           ),
+                        ],
                       ],
                     ),
                   ),
                   const SizedBox(height: 18),
 
-                  // Violations lead the list: they are the key learning signal.
-                  _StatRow(
-                    icon: hasViolations
-                        ? Icons.warning_amber_rounded
-                        : Icons.verified_rounded,
-                    color: hasViolations ? colors.red : colors.green,
-                    label: appL10n.gameViolations,
-                    value: hasViolations
-                        ? '${state.violationCount}'
-                        : appL10n.gameNoViolations,
-                    valueColor: hasViolations ? colors.red : colors.green,
-                    emphasized: true,
+                  // Three compact tiles; violations are tinted red when any.
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatTile(
+                          icon: hasViolations
+                              ? Icons.warning_amber_rounded
+                              : Icons.verified_rounded,
+                          color: hasViolations ? colors.red : colors.green,
+                          label: appL10n.gameViolations,
+                          value: '${state.violationCount}',
+                          emphasized: hasViolations,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _StatTile(
+                          icon: Icons.check_circle_rounded,
+                          color: colors.accent,
+                          label: appL10n.gameCorrectAnswers,
+                          value: '${state.totalCorrect}',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _StatTile(
+                          icon: Icons.route_rounded,
+                          color: colors.accent,
+                          label: appL10n.gameDistance,
+                          value: distance,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  _StatRow(
-                    icon: Icons.check_circle_rounded,
-                    color: colors.accent,
-                    label: appL10n.gameCorrectAnswers,
-                    value: appL10n.gameAnswersOf(
-                      state.totalCorrect,
-                      state.totalAnswered,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _StatRow(
-                    icon: Icons.route_rounded,
-                    color: colors.accent,
-                    label: appL10n.gameDistance,
-                    value: distance,
-                  ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
 
                   if (onLeaderboard != null) ...[
                     OutlinedButton.icon(
@@ -229,18 +271,12 @@ class GameOverDialog extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                   ],
-                  if (state.fuel <= 0 &&
-                      !state.fuelUnlimited &&
-                      onBuyPremium != null) ...[
-                    GameFuelEmptyPanel(
-                      refillAt: fuelRefillAt,
-                      onBuyPremium: onBuyPremium!,
-                      compact: true,
-                    ),
+                  if (fuelEmpty && onBuyPremium != null) ...[
+                    GameFuelPremiumPitch(onBuyPremium: onBuyPremium),
                     const SizedBox(height: 8),
                   ] else
                     ElevatedButton(
-                      onPressed: onRestart,
+                      onPressed: widget.onRestart,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colors.accent,
                         foregroundColor: Colors.white,
@@ -508,20 +544,18 @@ class _ConfettiPainter extends CustomPainter {
   bool shouldRepaint(_ConfettiPainter old) => old.progress != progress;
 }
 
-class _StatRow extends StatelessWidget {
+class _StatTile extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String label;
   final String value;
-  final Color? valueColor;
   final bool emphasized;
 
-  const _StatRow({
+  const _StatTile({
     required this.icon,
     required this.color,
     required this.label,
     required this.value,
-    this.valueColor,
     this.emphasized = false,
   });
 
@@ -532,46 +566,41 @@ class _StatRow extends StatelessWidget {
       label: '$label: $value',
       excludeSemantics: true,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
           color: emphasized
               ? color.withValues(alpha: 0.10)
               : colors.searchFieldFill,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
         ),
-        child: Row(
+        child: Column(
           children: [
-            Icon(icon, size: 22, color: color),
-            const SizedBox(width: 12),
-            Expanded(
+            Icon(icon, size: 20, color: color),
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
               child: Text(
-                label,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                value,
                 style: TextStyle(
                   fontFamily: 'Onest',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: colors.primaryText,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: emphasized ? color : colors.primaryText,
                 ),
               ),
             ),
-            const SizedBox(width: 10),
-            // Long values (large text scale, narrow phones) shrink, never overflow.
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerRight,
-                child: Text(
-                  value,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontFamily: 'Onest',
-                    fontSize: emphasized ? 18 : 16,
-                    fontWeight: FontWeight.w800,
-                    color: valueColor ?? colors.primaryText,
-                  ),
-                ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: 'Onest',
+                fontSize: 11,
+                height: 1.15,
+                fontWeight: FontWeight.w600,
+                color: colors.secondaryText,
               ),
             ),
           ],

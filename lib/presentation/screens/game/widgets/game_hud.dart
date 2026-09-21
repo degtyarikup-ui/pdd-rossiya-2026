@@ -12,6 +12,10 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart
 class GameHud extends StatelessWidget {
   final GameState state;
   final VoidCallback? onGarage;
+
+  /// Hidden until the player has earned a second car: with one car there is
+  /// nothing to choose.
+  final bool showGarage;
   final VoidCallback? onGarageLongPress;
   final VoidCallback? onLeaderboard;
   final String vehicleId;
@@ -22,6 +26,7 @@ class GameHud extends StatelessWidget {
     super.key,
     required this.state,
     this.onGarage,
+    this.showGarage = true,
     this.onGarageLongPress,
     this.onLeaderboard,
     this.vehicleId = 'hatch',
@@ -76,46 +81,53 @@ class GameHud extends StatelessWidget {
               children: [
                 Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GameFuelGauge(
-                      fuel: state.fuel,
-                      maxFuel: GameState.maxFuel,
-                      unlimited: state.fuelUnlimited,
+                    // Long-press on the gauge opens the weather/season sheet
+                    // (the garage button may be hidden).
+                    GestureDetector(
+                      onLongPress: onGarageLongPress,
+                      child: GameFuelGauge(
+                        fuel: state.fuel,
+                        maxFuel: GameState.maxFuel,
+                        unlimited: state.fuelUnlimited,
+                      ),
                     ),
-                    const SizedBox(height: 8),
+                    if (showGarage) const SizedBox(height: 8),
                     // The button shows the car being driven: choosing a
                     // different model in the garage changes it here too. It is
-                    // always present (greyed while controls are locked) so the
-                    // HUD never jumps; Tooltip is avoided because it swallows
-                    // the long-press used by the debug sheet.
-                    Opacity(
-                      opacity: onGarage != null ? 1 : 0.55,
-                      child: Material(
-                        color: colors.cardBackground,
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.smallRadius,
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: InkWell(
-                          onTap: onGarage,
-                          onLongPress: onGarageLongPress,
-                          child: Semantics(
-                            button: true,
-                            enabled: onGarage != null,
-                            label: appL10n.gameGarage,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 2,
-                              ),
-                              child: SizedBox(
-                                width: 60,
-                                height: 42,
-                                child: ExcludeSemantics(
-                                  child: GameCarThumbnail(
-                                    car: GameCar(vehicleId, vehiclePaint),
-                                    loader: thumbnail,
-                                    cache: thumbnailCache,
+                    // greyed while controls are locked so the HUD never jumps;
+                    // Tooltip is avoided because it swallows the long-press.
+                    if (showGarage)
+                      Opacity(
+                        opacity: onGarage != null ? 1 : 0.55,
+                        child: Material(
+                          color: colors.cardBackground,
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.smallRadius,
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
+                            onTap: onGarage,
+                            onLongPress: onGarageLongPress,
+                            child: Semantics(
+                              button: true,
+                              enabled: onGarage != null,
+                              label: appL10n.gameGarage,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
+                                child: SizedBox(
+                                  width: 78,
+                                  height: 54,
+                                  child: ExcludeSemantics(
+                                    child: GameCarThumbnail(
+                                      car: GameCar(vehicleId, vehiclePaint),
+                                      loader: thumbnail,
+                                      cache: thumbnailCache,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -123,7 +135,6 @@ class GameHud extends StatelessWidget {
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(width: 16),

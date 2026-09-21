@@ -74,8 +74,9 @@ class GameFuelGauge extends StatelessWidget {
   }
 }
 
-/// "Out of fuel": countdown to the next unit and the premium pitch. Used
-/// both as the bottom card on the game screen and inside the results dialog.
+/// "Out of fuel": the countdown to the next unit and the premium pitch.
+/// On the game screen it is the bottom card; in the results dialog
+/// (`compact`) only the pitch is shown, the countdown lives in the header.
 class GameFuelEmptyPanel extends StatefulWidget {
   final DateTime? refillAt;
   final VoidCallback onBuyPremium;
@@ -98,9 +99,11 @@ class _GameFuelEmptyPanelState extends State<GameFuelEmptyPanel> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
+    if (!widget.compact) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    }
   }
 
   @override
@@ -109,20 +112,13 @@ class _GameFuelEmptyPanelState extends State<GameFuelEmptyPanel> {
     super.dispose();
   }
 
-  String _countdown() {
-    final at = widget.refillAt;
-    if (at == null) return '0:00';
-    final left = at.difference(DateTime.now());
-    if (left.isNegative) return '0:00';
-    final m = left.inMinutes, s = left.inSeconds % 60;
-    return '$m:${s.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final pitch = GameFuelPremiumPitch(onBuyPremium: widget.onBuyPremium);
+    if (widget.compact) return pitch;
     return Container(
-      padding: EdgeInsets.all(widget.compact ? 14 : 18),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: colors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
@@ -133,15 +129,7 @@ class _GameFuelEmptyPanelState extends State<GameFuelEmptyPanel> {
         children: [
           Row(
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: colors.red.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.local_gas_station_rounded, color: colors.red),
-              ),
+              GameFuelEmptyIcon(size: 40),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -158,7 +146,9 @@ class _GameFuelEmptyPanelState extends State<GameFuelEmptyPanel> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      appL10n.gameFuelRefillIn(_countdown()),
+                      appL10n.gameFuelRefillIn(
+                        gameFuelCountdown(widget.refillAt),
+                      ),
                       style: TextStyle(
                         fontFamily: 'Onest',
                         fontSize: 13,
@@ -171,83 +161,114 @@ class _GameFuelEmptyPanelState extends State<GameFuelEmptyPanel> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            appL10n.gameFuelEmptyHint,
-            style: TextStyle(
-              fontFamily: 'Onest',
-              fontSize: 13,
-              height: 1.35,
-              color: colors.secondaryText,
-            ),
-          ),
-          const SizedBox(height: 12),
-          // The pitch: a warm gold panel, the infinity sign and one button.
-          Container(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  colors.gold.withValues(alpha: 0.22),
-                  colors.gold.withValues(alpha: 0.08),
-                ],
+          const SizedBox(height: 14),
+          pitch,
+        ],
+      ),
+    );
+  }
+}
+
+/// "M:SS" until [at]; "0:00" when it has passed or is unknown.
+String gameFuelCountdown(DateTime? at) {
+  if (at == null) return '0:00';
+  final left = at.difference(DateTime.now());
+  if (left.isNegative) return '0:00';
+  final m = left.inMinutes, s = left.inSeconds % 60;
+  return '$m:${s.toString().padLeft(2, '0')}';
+}
+
+/// The red pump in a tinted circle, used wherever the tank is empty.
+class GameFuelEmptyIcon extends StatelessWidget {
+  final double size;
+  const GameFuelEmptyIcon({super.key, this.size = 40});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: colors.red.withValues(alpha: 0.12),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        Icons.local_gas_station_rounded,
+        color: colors.red,
+        size: size * 0.55,
+      ),
+    );
+  }
+}
+
+/// The pitch: a warm gold panel, the infinity sign and one button.
+class GameFuelPremiumPitch extends StatelessWidget {
+  final VoidCallback onBuyPremium;
+  const GameFuelPremiumPitch({super.key, required this.onBuyPremium});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            colors.gold.withValues(alpha: 0.22),
+            colors.gold.withValues(alpha: 0.08),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Text(
+                '∞',
+                style: TextStyle(
+                  fontSize: 28,
+                  height: 1,
+                  fontWeight: FontWeight.w800,
+                  color: colors.gold,
+                ),
               ),
-              borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  appL10n.gameFuelPremiumPitch,
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 14,
+                    height: 1.3,
+                    fontWeight: FontWeight.w700,
+                    color: colors.primaryText,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: onBuyPremium,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.gold,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              minimumSize: const Size.fromHeight(46),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      '∞',
-                      style: TextStyle(
-                        fontSize: 28,
-                        height: 1,
-                        fontWeight: FontWeight.w800,
-                        color: colors.gold,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        appL10n.gameFuelPremiumPitch,
-                        style: TextStyle(
-                          fontFamily: 'Onest',
-                          fontSize: 13,
-                          height: 1.3,
-                          fontWeight: FontWeight.w600,
-                          color: colors.primaryText,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                ElevatedButton.icon(
-                  onPressed: widget.onBuyPremium,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colors.gold,
-                    foregroundColor: const Color(0xFF2A1F08),
-                    elevation: 0,
-                    minimumSize: const Size.fromHeight(46),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusMedium,
-                      ),
-                    ),
-                  ),
-                  icon: const Icon(Icons.workspace_premium_rounded, size: 20),
-                  label: Text(
-                    appL10n.gameFuelBuyPremium,
-                    style: const TextStyle(
-                      fontFamily: 'Onest',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
+            child: Text(
+              appL10n.gameFuelBuyPremium,
+              style: const TextStyle(
+                fontFamily: 'Onest',
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],

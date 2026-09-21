@@ -866,9 +866,6 @@ class AppLocalizationsSr extends AppLocalizations {
   String get gameRevealTap => 'Dodirnite vrata garaže';
 
   @override
-  String get gameRevealSpin => 'Okrenite prstom';
-
-  @override
   String get gameRevealChoose => 'Izaberi';
 
   @override
@@ -1033,17 +1030,12 @@ class AppLocalizationsSr extends AppLocalizations {
   String get gameFuelEmptyTitle => 'Nestalo je goriva';
 
   @override
-  String get gameFuelEmptyHint =>
-      'Svaka greška troši jedan podeok. Rezervoar se puni sam: jedan podeok za 20 minuta.';
-
-  @override
   String gameFuelRefillIn(String time) {
-    return 'Jedan podeok za $time';
+    return 'Rezervoar se puni za $time';
   }
 
   @override
-  String get gameFuelPremiumPitch =>
-      'Uz Premium rezervoar je beskonačan — igrajte koliko želite, bez čekanja.';
+  String get gameFuelPremiumPitch => 'Uz pretplatu gorivo se ne troši';
 
   @override
   String get gameFuelBuyPremium => 'Uključi Premium';

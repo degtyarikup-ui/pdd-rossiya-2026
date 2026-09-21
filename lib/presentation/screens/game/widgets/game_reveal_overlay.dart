@@ -78,18 +78,6 @@ class GameRevealOverlay extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      IgnorePointer(
-                        child: Text(
-                          appL10n.gameRevealSpin,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontFamily: 'Onest',
-                            fontSize: 13,
-                            color: Color(0xB3FFFFFF),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: onChoose,
                         style: ElevatedButton.styleFrom(

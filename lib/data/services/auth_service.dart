@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
@@ -265,12 +267,35 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteAccount() async {
+  /// Removes the account on the server (profile, synced progress, game
+  /// score) and signs out locally. Returns whether the server confirmed.
+  Future<bool> deleteAccount() async {
+    var deleted = false;
+    final user = _currentUser;
     try {
-      await signOut();
+      if (user != null && BackendConfig.hasNotifier) {
+        final resp = await http
+            .post(
+              Uri.parse('${BackendConfig.notifierUrl}/api/user/delete'),
+              headers: {
+                'content-type': 'application/json',
+                if (BackendConfig.notifierSecret.isNotEmpty)
+                  'x-install-secret': BackendConfig.notifierSecret,
+              },
+              body: jsonEncode({'userId': user.id}),
+            )
+            .timeout(const Duration(seconds: 10));
+        deleted = resp.statusCode == 200;
+      }
     } catch (e) {
       debugPrint('AuthService: delete account error: $e');
     }
+    try {
+      await signOut();
+    } catch (e) {
+      debugPrint('AuthService: sign out after delete error: $e');
+    }
+    return deleted;
   }
 
   Future<void> _saveUser() async {

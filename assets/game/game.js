@@ -8154,44 +8154,63 @@
   // Rendered in its own scene while active; the main scene is paused.
   let reveal = null;
   function buildRevealScene(id, paint) {
+    const sn = season(), dark = state.isDarkTheme;
     const rs = new THREE.Scene();
-    rs.background = new THREE.Color(0x151A22);
-    rs.fog = new THREE.FogExp2(0x151A22, 0.012);
-    rs.add(new THREE.AmbientLight(0xFFFFFF, 0.42));
-    const key = new THREE.DirectionalLight(0xFFF4E0, 0.8); key.position.set(-6, 12, -14); rs.add(key);
-    const rim = new THREE.DirectionalLight(0xBFD4FF, 0.3); rim.position.set(8, 6, 8); rs.add(rim);
-    // A warm pool of light on the driveway where the car stops.
-    const spot = new THREE.SpotLight(0xFFE6C0, 0.9, 30, 0.55, 0.6); spot.position.set(0, 10, -7); spot.target.position.set(0, 0, -6.5); rs.add(spot); rs.add(spot.target);
+    rs.background = new THREE.Color(dark ? sn.skyDark : sn.sky);
+    rs.fog = new THREE.FogExp2(dark ? sn.skyDark : sn.sky, 0.012);
+    rs.add(new THREE.AmbientLight(0xFFFFFF, sn.ambient));
+    const sun = new THREE.DirectionalLight(sn.sun, sn.sunIntensity + 0.2); sun.position.set(-8, 14, -10); rs.add(sun);
     const mat = c => new THREE.MeshLambertMaterial({ color: c });
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), mat(0x2A3038)); floor.rotation.x = -Math.PI / 2; rs.add(floor);
-    // Driveway in front of the door, slightly lighter than the yard.
-    const drive = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 30), mat(0x343B44)); drive.rotation.x = -Math.PI / 2; drive.position.set(0, 0.005, -15.5); rs.add(drive);
-    // Garage: a wide facade with the door opening, side walls, back wall, roof.
-    const wall = mat(0x4A525B), trim = mat(0x343C45);
-    const back = new THREE.Mesh(new THREE.BoxGeometry(9, 4.2, 0.3), mat(0x5A626B)); back.position.set(0, 2.1, 6.2); rs.add(back);
+    // The player's neighbourhood in the current season: lawn, a driveway,
+    // a pavement strip with the road, trees, bushes, houses and a fence.
+    const lawn = new THREE.Mesh(new THREE.PlaneGeometry(140, 140), mat(sn.ground)); lawn.rotation.x = -Math.PI / 2; rs.add(lawn);
+    const drive = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 26), mat(sn.sidewalk)); drive.rotation.x = -Math.PI / 2; drive.position.set(0, 0.01, -13.6); rs.add(drive);
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(90, 8), mat(BRAND.asphalt)); road.rotation.x = -Math.PI / 2; road.position.set(0, 0.012, -30); rs.add(road);
+    const kerb = new THREE.Mesh(new THREE.PlaneGeometry(90, 2.4), mat(sn.sidewalk)); kerb.rotation.x = -Math.PI / 2; kerb.position.set(0, 0.011, -24.8); rs.add(kerb);
+    for (let x = -42; x <= 42; x += 6) { const dash = new THREE.Mesh(new THREE.PlaneGeometry(3, 0.16), mat(BRAND.asphaltMarking)); dash.rotation.x = -Math.PI / 2; dash.position.set(x, 0.013, -30); rs.add(dash); }
+    [[-12, -6], [-15, 4], [13, -5], [16, 6], [-9, 10], [11, 12], [-20, -14], [21, -14]].forEach(([x, z]) => { const t = createTree(); t.position.set(x, 0, z); rs.add(t); });
+    [[6.2, -16], [-7, -4], [7, -8], [9, -14]].forEach(([x, z]) => { const b = createBush(); b.position.set(x, 0, z); rs.add(b); });
+    [[-19, 10, 1], [19, 10, 1]].forEach(([x, z, style]) => { const h = createBuilding(9, 6, 8, style); h.position.set(x, 0, z); rs.add(h); });
+    [[-24, 2], [24, 2]].forEach(([x, z]) => { const f = createFence(30); f.position.set(x, 0, z); f.rotation.y = Math.PI / 2; rs.add(f); });
+    const lamp = createLampPost(); lamp.position.set(-6.5, 0, -22.5); rs.add(lamp);
+    // The garage: an open-fronted box the camera looks into from the side,
+    // with a tool wall, shelves, a tyre stack and a strip light.
+    const wall = mat(0x8F969E), inside = mat(0x6E757D), trim = mat(0x5A626A);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(9, 4.2, 0.3), inside); back.position.set(0, 2.1, 6.2); rs.add(back);
     [-1, 1].forEach(sx => {
-      const side = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.2, 7), wall); side.position.set(sx * 4.5, 2.1, 2.7); rs.add(side);
-      const pier = new THREE.Mesh(new THREE.BoxGeometry(3.2, 5.2, 0.5), wall); pier.position.set(sx * 5.8, 2.6, -0.6); rs.add(pier);
-      const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.5, 0.25), mat(0xFFE2B0)); lamp.position.set(sx * 4.9, 3.4, -0.95); rs.add(lamp);
-      const glow = new THREE.PointLight(0xFFD9A0, 0.35, 10); glow.position.set(sx * 4.9, 3.2, -1.6); rs.add(glow);
+      const side = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.2, 7), sx < 0 ? inside : wall); side.position.set(sx * 4.5, 2.1, 2.7); rs.add(side);
+      const pier = new THREE.Mesh(new THREE.BoxGeometry(1.4, 4.6, 0.5), wall); pier.position.set(sx * 5.0, 2.3, -0.6); rs.add(pier);
     });
-    const roof = new THREE.Mesh(new THREE.BoxGeometry(14.8, 0.35, 7.8), trim); roof.position.set(0, 5.2, 2.9); rs.add(roof);
-    const lintel = new THREE.Mesh(new THREE.BoxGeometry(9, 1.0, 0.5), wall); lintel.position.set(0, 4.7, -0.6); rs.add(lintel);
-    const inner = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 6.6), mat(0x3B424B)); inner.rotation.x = -Math.PI / 2; inner.position.set(0, 0.01, 2.7); rs.add(inner);
+    const roofGeo = new THREE.ConeGeometry(Math.SQRT2 / 2, 1, 4); roofGeo.rotateY(Math.PI / 4);
+    const roof = new THREE.Mesh(roofGeo, mat(sn.roof || 0x8C4A3C)); roof.scale.set(11.4, 2.2, 8.6); roof.position.set(0, 5.5, 2.7); rs.add(roof);
+    const eave = new THREE.Mesh(new THREE.BoxGeometry(11.2, 0.35, 8.4), trim); eave.position.set(0, 4.55, 2.7); rs.add(eave);
+    const lintel = new THREE.Mesh(new THREE.BoxGeometry(9, 0.7, 0.5), wall); lintel.position.set(0, 4.05, -0.6); rs.add(lintel);
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 6.6), mat(0x4B525A)); floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0.014, 2.7); rs.add(floor);
+    // Furnishings along the back and the far wall.
+    const shelf = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.08, 0.5), mat(0xB0895C)); [1.3, 2.2, 3.1].forEach(y => { const m = shelf.clone(); m.position.set(-2.4, y, 5.8); rs.add(m); });
+    const cans = [0xF08A24, 0x317ED4, 0xE8C547, 0xF2F3F5, 0x2FA3A0];
+    for (let i = 0; i < 9; i++) { const can = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.4, 0.3), mat(cans[i % cans.length])); can.position.set(-3.8 + (i % 5) * 0.7, (i < 5 ? 1.3 : 2.2) + 0.24, 5.78); rs.add(can); }
+    const board = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.6, 0.06), mat(0x9E7A4E)); board.position.set(2.4, 2.4, 6.0); rs.add(board);
+    [[-0.8, 0.4], [-0.3, 0.5], [0.3, 0.4], [0.8, 0.5], [0, -0.3]].forEach(([x, y]) => { const tool = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.7, 0.05), mat(0x3B4148)); tool.position.set(2.4 + x, 2.4 + y, 5.94); rs.add(tool); });
+    for (let i = 0; i < 4; i++) { const tyre = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.16, 8, 14), mat(0x24282C)); tyre.rotation.x = Math.PI / 2; tyre.position.set(3.6, 0.18 + i * 0.34, 4.6); rs.add(tyre); }
+    const bench = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 2.2), mat(0x5B6169)); bench.position.set(-3.9, 0.45, 2.4); rs.add(bench);
+    const benchTop = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.08, 2.3), mat(0xB0895C)); benchTop.position.set(-3.9, 0.94, 2.4); rs.add(benchTop);
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.08, 0.2), mat(0xFFF4D6)); strip.position.set(0, 4.0, 2.6); rs.add(strip);
+    const glow = new THREE.PointLight(0xFFE2B0, 0.7, 14); glow.position.set(0, 3.7, 2.6); rs.add(glow);
     // Door: a slatted panel that rolls up under the lintel.
     const door = new THREE.Group();
     for (let i = 0; i < 8; i++) {
-      const slat = new THREE.Mesh(new THREE.BoxGeometry(8.4, 0.5, 0.12), mat(i % 2 ? 0x7E8790 : 0x6F7881));
+      const slat = new THREE.Mesh(new THREE.BoxGeometry(8.4, 0.5, 0.12), mat(i % 2 ? 0xC9CFD4 : 0xBAC1C7));
       slat.position.y = 0.28 + i * 0.52; door.add(slat);
     }
     door.position.set(0, 0, -0.7); rs.add(door);
-    const lamp = new THREE.PointLight(0xFFE2B0, 0.5, 14); lamp.position.set(0, 3.8, 2.5); rs.add(lamp);
     const car = window.PDD_VEHICLES.create(id, paint);
     car.position.set(0, 0, 2.6); car.rotation.y = Math.PI; // nose towards the door
     rs.add(car);
-    // Portrait framing: far enough back that the whole garage front fits.
-    const cam = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
-    cam.position.set(0, 4.6, -19); cam.lookAt(0, 1.2, -3);
+    // Three-quarter view from the driveway: the whole garage front and the
+    // spot where the car stops are in frame on a portrait screen.
+    const cam = new THREE.PerspectiveCamera(50, 1, 0.1, 160);
+    cam.position.set(-12, 5.6, -20); cam.lookAt(0.2, 1.0, -3);
     return { scene: rs, camera: cam, door, car, phase: 'closed', t: 0, yaw: 0, spin: 0 };
   }
   function updateReveal(dt) {
@@ -8201,7 +8220,7 @@
     if (r.phase === 'opening') {
       r.t += dt; const u = Math.min(1, r.t / 1.3);
       r.door.position.y = 4.3 * (1 - Math.pow(1 - u, 3));
-      r.door.children.forEach(slat => { slat.visible = slat.position.y + r.door.position.y < 4.25; });
+      r.door.children.forEach(slat => { slat.visible = slat.position.y + r.door.position.y < 3.75; });
       if (u >= 1) { r.phase = 'driving'; r.t = 0; }
     } else if (r.phase === 'driving') {
       r.t += dt; const u = Math.min(1, r.t / 2.2), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
@@ -8210,7 +8229,7 @@
       if (u >= 1) { r.phase = 'turning'; r.t = 0; }
     } else if (r.phase === 'turning') {
       r.t += dt; const u = Math.min(1, r.t / 1.1), e = 1 - Math.pow(1 - u, 3);
-      r.car.rotation.y = Math.PI + (Math.PI / 2) * e;
+      r.car.rotation.y = Math.PI + (Math.PI / 2) * e; // nose towards the viewer
       if (u >= 1) { r.phase = 'shown'; r.yaw = r.car.rotation.y; sendToFlutter({ event: 'reveal_shown' }); }
     } else if (r.phase === 'shown') {
       // Free spin by finger; drifts slowly when idle.
