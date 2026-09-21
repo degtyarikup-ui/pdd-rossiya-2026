@@ -163,6 +163,15 @@ flutter test                           # тесты всех моделей (exa
       папка Google Диска, инструкция по доступам — `SOCIAL_SETUP.md`).
       HTML/JS панели лежат в worker.js экранированными строками — правки
       вносятся не руками, а через отдельные модули/скрипты.
+      **Статистика пишется в KV пачкой**: события (`/api/track`, клики по
+      ссылкам, установки, ИИ-запросы) идут через `trackStats()` в Durable
+      Object `StatsBuffer` (`stats_buffer.js`) и раз в 10 минут применяются
+      к KV одним `flushBufferedStats()` — бесплатный KV даёт 1000 put/сутки.
+      Ключи KV (`day:*`, `slot:*`, `views:*`, `recent_events`, `ai_stats_*`)
+      не менялись; цифры в админке отстают до 10 минут, перед Telegram-отчётом
+      буфер сбрасывается принудительно. Новые счётчики — только через
+      `trackStats`, никаких `put` на каждый запрос.
+
   - **Приложение**: `deploy_web.sh ru` → репо `pdd-rossiya-app` gh-pages →
     app.pdd-drive.ru (robots.txt Disallow: SEO живёт на лендинге; DNS: CNAME
     `app` → degtyarikup-ui.github.io на reg.ru).

@@ -21,3 +21,12 @@ id = "2c854aacc0b7483f9cb271c19a79ba5a"
 # Ежечасный триггер (5 минут каждого часа) — автопостинг в Instagram/YouTube:
 # у каждого аккаунта своё время публикации по МСК.
 crons = ["0 7 * * *", "0 19 * * *", "*/5 * * * *"]
+
+# Буфер статистики (stats_buffer.js): копит события аналитики и пишет их в KV
+# пачкой раз в 10 минут, чтобы не выходить за бесплатный лимит записей KV.
+[durable_objects]
+bindings = [{ name = "STATS", class_name = "StatsBuffer" }]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["StatsBuffer"]
