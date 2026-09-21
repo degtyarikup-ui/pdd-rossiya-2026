@@ -1786,8 +1786,10 @@ function rankGameBoard(doc) {
 async function appKeyAllowed(request, env) {
   if (!env.SHARED_SECRET) return true;
   const got = request.headers.get('x-install-secret');
-  if (got) return safeEquals(got, env.SHARED_SECRET);
-  if (!env.INSTALLS) return true;
+  if (got && safeEquals(got, env.SHARED_SECRET)) return true;
+  // Переходный режим (галочка в админке, раздел «ИИ»): сборки без ключа или
+  // с прежним ключом (после его смены) пропускаются, пока галочка включена.
+  if (!env.INSTALLS) return !got;
   return (await env.INSTALLS.get('ai_legacy_open')) !== 'off';
 }
 
