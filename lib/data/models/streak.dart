@@ -33,12 +33,12 @@ class Streak {
   });
 
   factory Streak.empty() => const Streak(
-        current: 0,
-        longest: 0,
-        lastActiveDate: null,
-        startDate: null,
-        activeDays: <DateTime>{},
-      );
+    current: 0,
+    longest: 0,
+    lastActiveDate: null,
+    startDate: null,
+    activeDays: <DateTime>{},
+  );
 
   /// Проверка, есть ли активность на указанную дату (учитывается только день).
   bool isActiveOn(DateTime date) {

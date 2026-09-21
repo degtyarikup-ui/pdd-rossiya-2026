@@ -36,13 +36,16 @@ void main() {
       expect(AppSettings.fromJson(jsonSystem).themeMode, ThemeMode.system);
     });
 
-    test('fromJson handles invalid or missing themeMode by falling back to system', () {
-      final jsonEmpty = <String, dynamic>{};
-      expect(AppSettings.fromJson(jsonEmpty).themeMode, ThemeMode.system);
+    test(
+      'fromJson handles invalid or missing themeMode by falling back to system',
+      () {
+        final jsonEmpty = <String, dynamic>{};
+        expect(AppSettings.fromJson(jsonEmpty).themeMode, ThemeMode.system);
 
-      final jsonInvalid = <String, dynamic>{'themeMode': 'unknown_value'};
-      expect(AppSettings.fromJson(jsonInvalid).themeMode, ThemeMode.system);
-    });
+        final jsonInvalid = <String, dynamic>{'themeMode': 'unknown_value'};
+        expect(AppSettings.fromJson(jsonInvalid).themeMode, ThemeMode.system);
+      },
+    );
 
     test('copyWith updates themeMode', () {
       const settings = AppSettings();
@@ -79,78 +82,81 @@ void main() {
       await data.init();
 
       final container = ProviderContainer(
-        overrides: [
-          progressDataSourceProvider.overrideWithValue(data),
-        ],
+        overrides: [progressDataSourceProvider.overrideWithValue(data)],
       );
       addTearDown(container.dispose);
 
       await container.read(appSettingsProvider.notifier).ready;
       expect(container.read(appSettingsProvider).themeMode, ThemeMode.system);
 
-      await container.read(appSettingsProvider.notifier).setThemeMode(ThemeMode.dark);
+      await container
+          .read(appSettingsProvider.notifier)
+          .setThemeMode(ThemeMode.dark);
       expect(container.read(appSettingsProvider).themeMode, ThemeMode.dark);
 
-      await container.read(appSettingsProvider.notifier).setThemeMode(ThemeMode.light);
+      await container
+          .read(appSettingsProvider.notifier)
+          .setThemeMode(ThemeMode.light);
       expect(container.read(appSettingsProvider).themeMode, ThemeMode.light);
     });
   });
 
   group('SettingsScreen theme selector UI', () {
-    testWidgets('shows theme tile and allows changing theme mode via bottom sheet', (tester) async {
-      tester.view.physicalSize = const Size(1080, 2400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+    testWidgets(
+      'shows theme tile and allows changing theme mode via bottom sheet',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
 
-      SharedPreferences.setMockInitialValues({});
-      final data = ProgressDataSource();
-      await data.init();
+        SharedPreferences.setMockInitialValues({});
+        final data = ProgressDataSource();
+        await data.init();
 
-      final container = ProviderContainer(
-        overrides: [
-          progressDataSourceProvider.overrideWithValue(data),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [progressDataSourceProvider.overrideWithValue(data)],
+        );
+        addTearDown(container.dispose);
 
-      await container.read(appSettingsProvider.notifier).ready;
+        await container.read(appSettingsProvider.notifier).ready;
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: container.read(appSettingsProvider).themeMode,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: const SettingsScreen(),
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: container.read(appSettingsProvider).themeMode,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: const SettingsScreen(),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Theme tile is present with default "Как на устройстве"
-      expect(find.text(appL10n.themeSetting), findsOneWidget);
-      expect(find.text(appL10n.themeSystem), findsOneWidget);
+        // Theme tile is present with default "Как на устройстве"
+        expect(find.text(appL10n.themeSetting), findsOneWidget);
+        expect(find.text(appL10n.themeSystem), findsOneWidget);
 
-      // Tap theme tile to open modal sheet
-      await tester.tap(find.text(appL10n.themeSetting));
-      await tester.pumpAndSettle();
+        // Tap theme tile to open modal sheet
+        await tester.tap(find.text(appL10n.themeSetting));
+        await tester.pumpAndSettle();
 
-      // Modal bottom sheet is opened with 3 options
-      expect(find.text(appL10n.themeLight), findsOneWidget);
-      expect(find.text(appL10n.themeDark), findsOneWidget);
+        // Modal bottom sheet is opened with 3 options
+        expect(find.text(appL10n.themeLight), findsOneWidget);
+        expect(find.text(appL10n.themeDark), findsOneWidget);
 
-      // Select Dark Theme
-      await tester.tap(find.text(appL10n.themeDark));
-      await tester.pumpAndSettle();
+        // Select Dark Theme
+        await tester.tap(find.text(appL10n.themeDark));
+        await tester.pumpAndSettle();
 
-      // Check that themeMode is updated
-      expect(container.read(appSettingsProvider).themeMode, ThemeMode.dark);
-    });
+        // Check that themeMode is updated
+        expect(container.read(appSettingsProvider).themeMode, ThemeMode.dark);
+      },
+    );
   });
 }

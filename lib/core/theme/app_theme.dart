@@ -200,10 +200,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
-          borderSide: BorderSide(
-            color: c.accent,
-            width: 1.2,
-          ),
+          borderSide: BorderSide(color: c.accent, width: 1.2),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
@@ -242,4 +239,3 @@ class AppTheme {
     );
   }
 }
-

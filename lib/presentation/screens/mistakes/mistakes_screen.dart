@@ -93,10 +93,7 @@ class MistakesScreen extends ConsumerWidget {
                                   padding: const EdgeInsets.only(
                                     bottom: AppDimensions.spacingM,
                                   ),
-                                  child: _buildQuestionCard(
-                                    context,
-                                    question,
-                                  ),
+                                  child: _buildQuestionCard(context, question),
                                 );
                               }),
                             ],
@@ -213,9 +210,7 @@ class MistakesScreen extends ConsumerWidget {
             width: double.infinity,
             decoration: BoxDecoration(
               color: colors.cardBackground,
-              border: Border(
-                top: BorderSide(color: colors.divider, width: 1),
-              ),
+              border: Border(top: BorderSide(color: colors.divider, width: 1)),
             ),
             padding: const EdgeInsets.fromLTRB(
               AppDimensions.screenPadding,
@@ -265,8 +260,10 @@ class MistakesScreen extends ConsumerWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  TrainingScreen(questions: [question], title: appL10n.mistakeReview),
+              builder: (_) => TrainingScreen(
+                questions: [question],
+                title: appL10n.mistakeReview,
+              ),
             ),
           );
         },

@@ -122,7 +122,8 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                   svgAsset: 'assets/icons/auth/apple.svg',
                   svgColor: colors.primaryText,
                   label: 'Продолжить с Apple ID',
-                  onTap: () => _handleAuth(AuthService.instance.signInWithApple),
+                  onTap: () =>
+                      _handleAuth(AuthService.instance.signInWithApple),
                   colors: colors,
                   isDark: isDark,
                 ),
@@ -141,10 +142,21 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
               _buildAuthButton(
                 svgAsset: 'assets/icons/auth/yandex.svg',
                 label: 'Продолжить с Яндекс ID',
-                onTap: () => _handleAuth(() => AuthService.instance.signInWithYandex(context)),
+                onTap: () => _handleAuth(
+                  () => AuthService.instance.signInWithYandex(context),
+                ),
                 colors: colors,
                 isDark: isDark,
               ),
+              if (AuthService.debugSignInAvailable) ...[
+                const SizedBox(height: 10),
+                TextButton.icon(
+                  onPressed: () =>
+                      _handleAuth(AuthService.instance.signInDebug),
+                  icon: const Icon(Icons.bug_report_outlined),
+                  label: const Text('Тестовый вход (dev-сборка)'),
+                ),
+              ],
               const SizedBox(height: 12),
             ],
           ),

@@ -70,8 +70,8 @@ class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
     final isExam = session['kind'] == 'exam';
     final index = session['index'] as int;
     final total = session['total'] as int;
-    final questions =
-        (session['questions'] as List).cast<Map<String, dynamic>>();
+    final questions = (session['questions'] as List)
+        .cast<Map<String, dynamic>>();
     // У экзамена своего названия нет — он один, в отличие от билетов и тем.
     final title = isExam ? appL10n.exam : session['title'] as String;
 

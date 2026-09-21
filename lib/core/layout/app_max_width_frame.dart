@@ -33,10 +33,7 @@ class AppMaxWidthFrame extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: maxContentWidth),
           child: ClipRect(
-            child: Material(
-              color: colors.background,
-              child: child,
-            ),
+            child: Material(color: colors.background, child: child),
           ),
         ),
       ),

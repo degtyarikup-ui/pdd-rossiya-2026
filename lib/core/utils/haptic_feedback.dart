@@ -29,6 +29,30 @@ class HapticFeedbackHelper {
     HapticFeedback.heavyImpact();
   }
 
+  /// A gentle double tick for a correct answer: pleasant, not a thump.
+  static void softSuccess() {
+    if (!_enabled) return;
+    HapticFeedback.lightImpact();
+    Future<void>.delayed(
+      const Duration(milliseconds: 90),
+      HapticFeedback.lightImpact,
+    );
+  }
+
+  /// A crash: an uneven medium-then-light hit, unpleasant but not violent.
+  static void collision() {
+    if (!_enabled) return;
+    HapticFeedback.mediumImpact();
+    Future<void>.delayed(
+      const Duration(milliseconds: 70),
+      HapticFeedback.lightImpact,
+    );
+    Future<void>.delayed(
+      const Duration(milliseconds: 160),
+      HapticFeedback.lightImpact,
+    );
+  }
+
   static void warning() {
     if (!_enabled) return;
     HapticFeedback.mediumImpact();

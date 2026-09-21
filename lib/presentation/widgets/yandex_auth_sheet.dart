@@ -103,30 +103,39 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final id = data['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString();
-        
+        final id =
+            data['id']?.toString() ??
+            DateTime.now().millisecondsSinceEpoch.toString();
+
         final realName = data['real_name'] as String?;
         final displayName = data['display_name'] as String?;
         final firstName = data['first_name'] as String?;
         final lastName = data['last_name'] as String?;
-        
+
         String name = 'Пользователь Яндекс';
         if (realName != null && realName.isNotEmpty) {
           name = realName;
         } else if (displayName != null && displayName.isNotEmpty) {
           name = displayName;
         } else if (firstName != null && firstName.isNotEmpty) {
-          name = [firstName, lastName].where((s) => s != null && s.isNotEmpty).join(' ');
+          name = [
+            firstName,
+            lastName,
+          ].where((s) => s != null && s.isNotEmpty).join(' ');
         }
 
-        final email = data['default_email'] as String? ?? 
+        final email =
+            data['default_email'] as String? ??
             (data['emails'] is List && (data['emails'] as List).isNotEmpty
                 ? (data['emails'] as List).first.toString()
                 : 'user@yandex.ru');
 
         final defaultAvatarId = data['default_avatar_id'] as String?;
         final isAvatarEmpty = data['is_avatar_empty'] == true;
-        final avatarUrl = (!isAvatarEmpty && defaultAvatarId != null && defaultAvatarId.isNotEmpty)
+        final avatarUrl =
+            (!isAvatarEmpty &&
+                defaultAvatarId != null &&
+                defaultAvatarId.isNotEmpty)
             ? 'https://avatars.yandex.net/get-yapic/$defaultAvatarId/islands-200'
             : null;
 
@@ -204,7 +213,10 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
                     ],
                   ),
                   IconButton(
-                    icon: Icon(Icons.close_rounded, color: colors.secondaryText),
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: colors.secondaryText,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -218,7 +230,9 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
               ),
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
                 child: WebViewWidget(controller: _controller),
               ),
             ),

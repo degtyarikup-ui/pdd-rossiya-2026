@@ -124,7 +124,8 @@ void main() {
         const MaterialApp(
           home: PddDetailScreen(
             title: '13. Проезд перекрестков',
-            content: '13.10. Первый пункт.\n\n'
+            content:
+                '13.10. Первый пункт.\n\n'
                 '13.11. Нужный пункт.\n\n'
                 '13.12. Третий пункт.',
             highlightPoint: '13.11',
@@ -152,7 +153,8 @@ void main() {
         const MaterialApp(
           home: PddDetailScreen(
             title: '13. Проезд перекрестков',
-            content: '13.11. Правило правой руки.\n\n'
+            content:
+                '13.11. Правило правой руки.\n\n'
                 '13.11.1. Круговое движение.',
             highlightPoint: '13.11',
           ),

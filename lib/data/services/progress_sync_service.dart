@@ -51,7 +51,9 @@ class ProgressSyncService {
     _isSyncing = true;
     try {
       final localSnapshot = ds.exportProgressSnapshot();
-      final url = Uri.parse('${BackendConfig.notifierUrl}/api/user/progress/sync');
+      final url = Uri.parse(
+        '${BackendConfig.notifierUrl}/api/user/progress/sync',
+      );
 
       // Получаем версию приложения и платформу для отображения в админке
       String appVersion = '';
@@ -90,7 +92,9 @@ class ProgressSyncService {
       if (resp.statusCode == 200) {
         final body = jsonDecode(resp.body) as Map<String, dynamic>;
         if (body['ok'] == true && body['progress'] is Map) {
-          final mergedProgress = Map<String, dynamic>.from(body['progress'] as Map);
+          final mergedProgress = Map<String, dynamic>.from(
+            body['progress'] as Map,
+          );
           await ds.importProgressSnapshot(mergedProgress);
         }
       }
@@ -124,7 +128,9 @@ class ProgressSyncService {
       if (resp.statusCode == 200) {
         final body = jsonDecode(resp.body) as Map<String, dynamic>;
         if (body['ok'] == true && body['progress'] is Map) {
-          final serverProgress = Map<String, dynamic>.from(body['progress'] as Map);
+          final serverProgress = Map<String, dynamic>.from(
+            body['progress'] as Map,
+          );
           if (serverProgress.isNotEmpty) {
             await ds.importProgressSnapshot(serverProgress);
           }

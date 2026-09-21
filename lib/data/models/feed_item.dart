@@ -1,10 +1,6 @@
 import 'package:pdd_app/data/sources/driver_tips_data.dart';
 
-enum FeedItemType {
-  ticketQuestion,
-  roadSign,
-  driverTip,
-}
+enum FeedItemType { ticketQuestion, roadSign, driverTip }
 
 class FeedItem {
   final String id;

@@ -51,7 +51,8 @@ class InstallReporter {
   /// «not used for tracking» (ATT-запрос при этом не нужен). Иначе апдейт
   /// рискует отлететь на модерации за расхождение с декларацией.
   static Future<void> reportIfNeeded() async {
-    if (!_endpoint.startsWith('https://')) return; // не настроено — тихо выходим
+    if (!_endpoint.startsWith('https://'))
+      return; // не настроено — тихо выходим
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -63,9 +64,9 @@ class InstallReporter {
       // Свежая установка или обновившийся существующий пользователь — определяем
       // по наличию данных приложения (прогресс/настройки/стрик) на момент
       // первого отчёта. Считаем и тех, и других, но помечаем по-разному.
-      final isExisting = prefs
-          .getKeys()
-          .any((k) => k != _keyReported && k != _keyInstallId);
+      final isExisting = prefs.getKeys().any(
+        (k) => k != _keyReported && k != _keyInstallId,
+      );
 
       var installId = prefs.getString(_keyInstallId);
       if (installId == null) {
@@ -141,7 +142,9 @@ class InstallReporter {
       result['version'] = '${info.version}+${info.buildNumber}';
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         final installer = info.installerStore?.toLowerCase() ?? '';
-        result['source'] = installer.contains('testflight') ? 'TestFlight' : 'App Store';
+        result['source'] = installer.contains('testflight')
+            ? 'TestFlight'
+            : 'App Store';
       } else {
         result['source'] = _sourceFromInstaller(info.installerStore);
       }

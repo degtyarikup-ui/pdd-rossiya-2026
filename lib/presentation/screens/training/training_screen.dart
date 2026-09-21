@@ -82,7 +82,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     // Запуск новой тренировки затирает прошлую сессию сам собой — отдельная
     // кнопка «сбросить старую» не нужна.
     unawaited(
-      ref.read(progressDataSourceProvider).saveUnfinishedSession(
+      ref
+          .read(progressDataSourceProvider)
+          .saveUnfinishedSession(
             title: widget.title,
             questionIds: ids,
             index: _currentIndex,
@@ -114,9 +116,13 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
 
     final question = widget.questions[_currentIndex];
     final dataSource = ref.read(progressDataSourceProvider);
-    final TicketCategory category = ref.read(appSettingsProvider).ticketCategory;
-    final favorite =
-        await dataSource.isFavorite(question['id'] as String, category);
+    final TicketCategory category = ref
+        .read(appSettingsProvider)
+        .ticketCategory;
+    final favorite = await dataSource.isFavorite(
+      question['id'] as String,
+      category,
+    );
 
     if (mounted) {
       setState(() => _isFavorite = favorite);
@@ -151,7 +157,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     final answers = question['answers'] as List;
     final isCorrect = answers[index]['correct'] as bool;
     final dataSource = ref.read(progressDataSourceProvider);
-    final TicketCategory category = ref.read(appSettingsProvider).ticketCategory;
+    final TicketCategory category = ref
+        .read(appSettingsProvider)
+        .ticketCategory;
 
     setState(() {
       _selectedAnswerIndex = index;
@@ -244,9 +252,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
       return;
     }
 
-    final wrongQuestions = [
-      for (final i in _wrongIndices) widget.questions[i],
-    ];
+    final wrongQuestions = [for (final i in _wrongIndices) widget.questions[i]];
 
     // pushReplacement: возвращаться из итога обратно в пройденные вопросы
     // незачем — «назад» должно вести к списку билетов или тем.
@@ -271,7 +277,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     HapticFeedbackHelper.select();
     final question = widget.questions[_currentIndex];
     final dataSource = ref.read(progressDataSourceProvider);
-    final TicketCategory category = ref.read(appSettingsProvider).ticketCategory;
+    final TicketCategory category = ref
+        .read(appSettingsProvider)
+        .ticketCategory;
 
     await dataSource.toggleFavorite(question['id'] as String, category);
     ref.read(appDataRefreshProvider.notifier).state++;
@@ -410,9 +418,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
               SizedBox(
                 height: 36,
                 width: double.infinity,
-                child: ClipRect(
-                  child: _buildQuestionNumbers(context),
-                ),
+                child: ClipRect(child: _buildQuestionNumbers(context)),
               ),
               Expanded(
                 child: Stack(
@@ -480,9 +486,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           if (hasImage) ...[
             const SizedBox(height: AppDimensions.spacingM),
             ClipRRect(
-              borderRadius: BorderRadius.circular(
-                AppDimensions.smallRadius,
-              ),
+              borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
               child: QuestionImage(assetPath: imagePath),
             ),
           ],
@@ -501,9 +505,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
             final index = entry.key;
             final answer = entry.value as Map;
             return Padding(
-              padding: const EdgeInsets.only(
-                bottom: AppDimensions.spacingM,
-              ),
+              padding: const EdgeInsets.only(bottom: AppDimensions.spacingM),
               child: _buildAnswerOption(
                 context,
                 questionIndex: pageIndex,
@@ -576,10 +578,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                     _currentIndex + 1,
                     widget.questions.length,
                   ),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colors.secondaryText,
-                  ),
+                  style: TextStyle(fontSize: 12, color: colors.secondaryText),
                 ),
               ],
             ),
@@ -592,34 +591,34 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   Widget _buildQuestionNumbers(BuildContext context) {
     final colors = AppColors.of(context);
     return ListView.builder(
-        controller: _questionStripController,
-        scrollDirection: Axis.horizontal,
-        primary: false,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppDimensions.screenPadding,
-        ),
-        itemCount: widget.questions.length,
-        itemBuilder: (context, index) {
-          final isCurrent = index == _currentIndex;
-          final isCorrect = _correctIndices.contains(index);
-          final isWrong = _wrongIndices.contains(index);
+      controller: _questionStripController,
+      scrollDirection: Axis.horizontal,
+      primary: false,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.screenPadding,
+      ),
+      itemCount: widget.questions.length,
+      itemBuilder: (context, index) {
+        final isCurrent = index == _currentIndex;
+        final isCorrect = _correctIndices.contains(index);
+        final isWrong = _wrongIndices.contains(index);
 
-          final backgroundColor = isCurrent
-              ? colors.accent
-              : isCorrect
-              ? colors.green
-              : isWrong
-              ? colors.red
-              : colors.gray;
+        final backgroundColor = isCurrent
+            ? colors.accent
+            : isCorrect
+            ? colors.green
+            : isWrong
+            ? colors.red
+            : colors.gray;
 
-          return QuestionNumberChip(
-            number: index + 1,
-            backgroundColor: backgroundColor,
-            muted: !isCurrent && !isCorrect && !isWrong,
-            onTap: () => _goToQuestion(index),
-          );
-        },
+        return QuestionNumberChip(
+          number: index + 1,
+          backgroundColor: backgroundColor,
+          muted: !isCurrent && !isCorrect && !isWrong,
+          onTap: () => _goToQuestion(index),
+        );
+      },
     );
   }
 
@@ -660,17 +659,14 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
       textColor = colors.primaryText;
     }
 
-    final canTap =
-        !isAnswered && questionIndex == _currentIndex;
+    final canTap = !isAnswered && questionIndex == _currentIndex;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: canTap
-            ? () => _selectAnswer(
-                index,
-                requireConfirmation: requireConfirmation,
-              )
+            ? () =>
+                  _selectAnswer(index, requireConfirmation: requireConfirmation)
             : null,
         borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
         child: AnimatedContainer(
@@ -712,23 +708,23 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                             size: 16,
                           )
                         : isAnswered && isSelected
-                            ? const Icon(
-                                Icons.close_rounded,
-                                key: ValueKey('training_answer_close'),
-                                color: AppColors.white,
-                                size: 16,
-                              )
-                            : Text(
-                                '${index + 1}',
-                                key: ValueKey('training_answer_num_${index + 1}'),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: isSelected
-                                      ? colors.accent
-                                      : colors.secondaryText,
-                                ),
-                              ),
+                        ? const Icon(
+                            Icons.close_rounded,
+                            key: ValueKey('training_answer_close'),
+                            color: AppColors.white,
+                            size: 16,
+                          )
+                        : Text(
+                            '${index + 1}',
+                            key: ValueKey('training_answer_num_${index + 1}'),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected
+                                  ? colors.accent
+                                  : colors.secondaryText,
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -839,8 +835,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
               .toList();
           final correctIdx = rawAnswers.indexWhere(
             (a) =>
-                a is Map &&
-                (a['correct'] == true || a['is_correct'] == true),
+                a is Map && (a['correct'] == true || a['is_correct'] == true),
           );
           final comment = q['comment']?.toString() ?? '';
           AiExplanationSheet.show(
@@ -920,10 +915,12 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                         child: TextButton.icon(
                           onPressed: hasHint ? _toggleHint : null,
                           style: ButtonStyle(
-                            foregroundColor:
-                                WidgetStateProperty.all(colors.gold),
-                            overlayColor:
-                                WidgetStateProperty.resolveWith((states) {
+                            foregroundColor: WidgetStateProperty.all(
+                              colors.gold,
+                            ),
+                            overlayColor: WidgetStateProperty.resolveWith((
+                              states,
+                            ) {
                               if (states.contains(WidgetState.pressed) ||
                                   states.contains(WidgetState.hovered) ||
                                   states.contains(WidgetState.focused)) {

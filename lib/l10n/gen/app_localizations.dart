@@ -1285,6 +1285,636 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Каждый день в 20:00, если серия не закрыта'**
   String get notificationsHint;
+
+  /// No description provided for @game.
+  ///
+  /// In ru, this message translates to:
+  /// **'Игра'**
+  String get game;
+
+  /// No description provided for @gameSimulator.
+  ///
+  /// In ru, this message translates to:
+  /// **'3D Тренажёр'**
+  String get gameSimulator;
+
+  /// No description provided for @gameLeaderboard.
+  ///
+  /// In ru, this message translates to:
+  /// **'Таблица лидеров'**
+  String get gameLeaderboard;
+
+  /// No description provided for @gameScore.
+  ///
+  /// In ru, this message translates to:
+  /// **'Очки'**
+  String get gameScore;
+
+  /// No description provided for @gameDistance.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дистанция'**
+  String get gameDistance;
+
+  /// No description provided for @gameOver.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заезд завершён'**
+  String get gameOver;
+
+  /// No description provided for @gameRestart.
+  ///
+  /// In ru, this message translates to:
+  /// **'Попробовать снова'**
+  String get gameRestart;
+
+  /// No description provided for @gameExit.
+  ///
+  /// In ru, this message translates to:
+  /// **'В меню'**
+  String get gameExit;
+
+  /// No description provided for @gameUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сценарии тренажёра пока проверены только для ПДД России. Для этой страны игра станет доступна после проверки местных правил.'**
+  String get gameUnavailable;
+
+  /// No description provided for @gameMobileOnly.
+  ///
+  /// In ru, this message translates to:
+  /// **'3D-тренажёр доступен в мобильном приложении на iOS и Android.'**
+  String get gameMobileOnly;
+
+  /// No description provided for @gameLeft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Левее'**
+  String get gameLeft;
+
+  /// No description provided for @gameRight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Правее'**
+  String get gameRight;
+
+  /// No description provided for @gameGas.
+  ///
+  /// In ru, this message translates to:
+  /// **'ГАЗ'**
+  String get gameGas;
+
+  /// No description provided for @gameSpeedUnit.
+  ///
+  /// In ru, this message translates to:
+  /// **'км/ч'**
+  String get gameSpeedUnit;
+
+  /// No description provided for @gameMeters.
+  ///
+  /// In ru, this message translates to:
+  /// **'м'**
+  String get gameMeters;
+
+  /// No description provided for @gameKilometers.
+  ///
+  /// In ru, this message translates to:
+  /// **'км'**
+  String get gameKilometers;
+
+  /// No description provided for @gameSeconds.
+  ///
+  /// In ru, this message translates to:
+  /// **'с'**
+  String get gameSeconds;
+
+  /// No description provided for @gameMistake.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ошибка'**
+  String get gameMistake;
+
+  /// No description provided for @gameCorrect.
+  ///
+  /// In ru, this message translates to:
+  /// **'Верно'**
+  String get gameCorrect;
+
+  /// No description provided for @gameContinue.
+  ///
+  /// In ru, this message translates to:
+  /// **'Продолжить движение'**
+  String get gameContinue;
+
+  /// No description provided for @gameResolving.
+  ///
+  /// In ru, this message translates to:
+  /// **'Газ — ехать · стрелки — рулить'**
+  String get gameResolving;
+
+  /// No description provided for @gameGarage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбор машины'**
+  String get gameGarage;
+
+  /// No description provided for @gameCarHatch.
+  ///
+  /// In ru, this message translates to:
+  /// **'Хэтчбек'**
+  String get gameCarHatch;
+
+  /// No description provided for @gameCarSedan.
+  ///
+  /// In ru, this message translates to:
+  /// **'Седан'**
+  String get gameCarSedan;
+
+  /// No description provided for @gameCarSuv.
+  ///
+  /// In ru, this message translates to:
+  /// **'Внедорожник'**
+  String get gameCarSuv;
+
+  /// No description provided for @gameCarPickup.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пикап'**
+  String get gameCarPickup;
+
+  /// No description provided for @gameCarCoupe.
+  ///
+  /// In ru, this message translates to:
+  /// **'Купе'**
+  String get gameCarCoupe;
+
+  /// No description provided for @gameCarWagon.
+  ///
+  /// In ru, this message translates to:
+  /// **'Универсал'**
+  String get gameCarWagon;
+
+  /// No description provided for @gameCarCyber.
+  ///
+  /// In ru, this message translates to:
+  /// **'Кибертрак'**
+  String get gameCarCyber;
+
+  /// No description provided for @gamePaintRed.
+  ///
+  /// In ru, this message translates to:
+  /// **'красный'**
+  String get gamePaintRed;
+
+  /// No description provided for @gamePaintBlue.
+  ///
+  /// In ru, this message translates to:
+  /// **'синий'**
+  String get gamePaintBlue;
+
+  /// No description provided for @gamePaintGreen.
+  ///
+  /// In ru, this message translates to:
+  /// **'зелёный'**
+  String get gamePaintGreen;
+
+  /// No description provided for @gamePaintSand.
+  ///
+  /// In ru, this message translates to:
+  /// **'песочный'**
+  String get gamePaintSand;
+
+  /// No description provided for @gamePaintWhite.
+  ///
+  /// In ru, this message translates to:
+  /// **'белый'**
+  String get gamePaintWhite;
+
+  /// No description provided for @gamePaintBlack.
+  ///
+  /// In ru, this message translates to:
+  /// **'чёрный'**
+  String get gamePaintBlack;
+
+  /// No description provided for @gamePaintSilver.
+  ///
+  /// In ru, this message translates to:
+  /// **'серебристый'**
+  String get gamePaintSilver;
+
+  /// No description provided for @gamePaintOrange.
+  ///
+  /// In ru, this message translates to:
+  /// **'оранжевый'**
+  String get gamePaintOrange;
+
+  /// No description provided for @gamePaintPurple.
+  ///
+  /// In ru, this message translates to:
+  /// **'фиолетовый'**
+  String get gamePaintPurple;
+
+  /// No description provided for @gamePaintTeal.
+  ///
+  /// In ru, this message translates to:
+  /// **'бирюзовый'**
+  String get gamePaintTeal;
+
+  /// No description provided for @gamePaintYellow.
+  ///
+  /// In ru, this message translates to:
+  /// **'жёлтый'**
+  String get gamePaintYellow;
+
+  /// No description provided for @gamePaintWine.
+  ///
+  /// In ru, this message translates to:
+  /// **'бордовый'**
+  String get gamePaintWine;
+
+  /// No description provided for @gamePaintGold.
+  ///
+  /// In ru, this message translates to:
+  /// **'золотой'**
+  String get gamePaintGold;
+
+  /// No description provided for @gameGarageNextCar.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{Следующая машина через {count} правильный ответ} few{Следующая машина через {count} правильных ответа} many{Следующая машина через {count} правильных ответов} other{Следующая машина через {count} правильных ответов}}'**
+  String gameGarageNextCar(int count);
+
+  /// No description provided for @gameGaragePremiumCar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Золотой кибертрак — для премиум-водителей'**
+  String get gameGaragePremiumCar;
+
+  /// No description provided for @gameRevealTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новая машина!'**
+  String get gameRevealTitle;
+
+  /// No description provided for @gameRevealTap.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нажмите на ворота'**
+  String get gameRevealTap;
+
+  /// No description provided for @gameRevealSpin.
+  ///
+  /// In ru, this message translates to:
+  /// **'Покрутите пальцем'**
+  String get gameRevealSpin;
+
+  /// No description provided for @gameRevealChoose.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать'**
+  String get gameRevealChoose;
+
+  /// No description provided for @gameRevealClose.
+  ///
+  /// In ru, this message translates to:
+  /// **'Закрыть'**
+  String get gameRevealClose;
+
+  /// No description provided for @gameSceneTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Погода и сезон'**
+  String get gameSceneTitle;
+
+  /// No description provided for @gameSceneWeather.
+  ///
+  /// In ru, this message translates to:
+  /// **'Погода'**
+  String get gameSceneWeather;
+
+  /// No description provided for @gameSceneSeason.
+  ///
+  /// In ru, this message translates to:
+  /// **'Время года'**
+  String get gameSceneSeason;
+
+  /// No description provided for @gameSceneAuto.
+  ///
+  /// In ru, this message translates to:
+  /// **'Авто'**
+  String get gameSceneAuto;
+
+  /// No description provided for @gameSceneClear.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ясно'**
+  String get gameSceneClear;
+
+  /// No description provided for @gameSceneOvercast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пасмурно'**
+  String get gameSceneOvercast;
+
+  /// No description provided for @gameScenePrecip.
+  ///
+  /// In ru, this message translates to:
+  /// **'Осадки'**
+  String get gameScenePrecip;
+
+  /// No description provided for @gameSceneCalendar.
+  ///
+  /// In ru, this message translates to:
+  /// **'По календарю'**
+  String get gameSceneCalendar;
+
+  /// No description provided for @gameSceneSummer.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лето'**
+  String get gameSceneSummer;
+
+  /// No description provided for @gameSceneAutumn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Осень'**
+  String get gameSceneAutumn;
+
+  /// No description provided for @gameSceneWinter.
+  ///
+  /// In ru, this message translates to:
+  /// **'Зима'**
+  String get gameSceneWinter;
+
+  /// No description provided for @gameCollision.
+  ///
+  /// In ru, this message translates to:
+  /// **'Столкновение · отпустите газ'**
+  String get gameCollision;
+
+  /// No description provided for @gameOffroad.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бордюр · поверните к дороге'**
+  String get gameOffroad;
+
+  /// No description provided for @gamePriorityViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы не уступили дорогу'**
+  String get gamePriorityViolation;
+
+  /// No description provided for @gameWrongManeuver.
+  ///
+  /// In ru, this message translates to:
+  /// **'Манёвр не соответствует заданию'**
+  String get gameWrongManeuver;
+
+  /// No description provided for @gameOncoming.
+  ///
+  /// In ru, this message translates to:
+  /// **'Встречная полоса! Вернитесь вправо'**
+  String get gameOncoming;
+
+  /// No description provided for @gameCorrectAnswers.
+  ///
+  /// In ru, this message translates to:
+  /// **'Правильных ответов'**
+  String get gameCorrectAnswers;
+
+  /// No description provided for @gameAnswersOf.
+  ///
+  /// In ru, this message translates to:
+  /// **'{correct} из {total}'**
+  String gameAnswersOf(int correct, int total);
+
+  /// No description provided for @gameNoViolations.
+  ///
+  /// In ru, this message translates to:
+  /// **'Без нарушений'**
+  String get gameNoViolations;
+
+  /// No description provided for @gameYourCar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваш автомобиль'**
+  String get gameYourCar;
+
+  /// No description provided for @gameSpeeding.
+  ///
+  /// In ru, this message translates to:
+  /// **'Превышение скорости'**
+  String get gameSpeeding;
+
+  /// No description provided for @gameOvertakingProhibited.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обгон здесь запрещён'**
+  String get gameOvertakingProhibited;
+
+  /// No description provided for @gamePedestrianYield.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уступите дорогу пешеходу'**
+  String get gamePedestrianYield;
+
+  /// No description provided for @gameSpeedLimitLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ограничение {limit} км/ч'**
+  String gameSpeedLimitLabel(int limit);
+
+  /// No description provided for @gameBrake.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тормоз · назад при остановке'**
+  String get gameBrake;
+
+  /// No description provided for @gameNewRecord.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новый рекорд!'**
+  String get gameNewRecord;
+
+  /// No description provided for @gameBestScore.
+  ///
+  /// In ru, this message translates to:
+  /// **'Рекорд {score}'**
+  String gameBestScore(int score);
+
+  /// No description provided for @gameGasHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Зажмите и держите — это газ'**
+  String get gameGasHint;
+
+  /// No description provided for @gameWeeklyRating.
+  ///
+  /// In ru, this message translates to:
+  /// **'Рейтинг недели'**
+  String get gameWeeklyRating;
+
+  /// No description provided for @gameRatingHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Очки всех заездов за неделю. В таблице — лучшие 100.'**
+  String get gameRatingHint;
+
+  /// No description provided for @gameRatingEmpty.
+  ///
+  /// In ru, this message translates to:
+  /// **'На этой неделе ещё никто не проехал. Будьте первым!'**
+  String get gameRatingEmpty;
+
+  /// No description provided for @gameRatingUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить рейтинг. Проверьте интернет.'**
+  String get gameRatingUnavailable;
+
+  /// No description provided for @gameRatingYou.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы'**
+  String get gameRatingYou;
+
+  /// No description provided for @gameRatingRuns.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{{count} заезд} few{{count} заезда} many{{count} заездов} other{{count} заезда}}'**
+  String gameRatingRuns(int count);
+
+  /// No description provided for @gameRatingEndsIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'До конца недели: {days} дн.'**
+  String gameRatingEndsIn(int days);
+
+  /// No description provided for @gameAuthRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Игра доступна после входа'**
+  String get gameAuthRequired;
+
+  /// No description provided for @gameAuthRequiredHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Войдите, чтобы копить очки и участвовать в рейтинге недели.'**
+  String get gameAuthRequiredHint;
+
+  /// No description provided for @gameSignIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Войти и поехать'**
+  String get gameSignIn;
+
+  /// No description provided for @gamePenaltyHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нарушение: −{points} очков'**
+  String gamePenaltyHint(int points);
+
+  /// No description provided for @pddSettingsItem.
+  ///
+  /// In ru, this message translates to:
+  /// **'Правила, знаки и разметка'**
+  String get pddSettingsItem;
+
+  /// No description provided for @gameLockedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Готовы сесть за руль?'**
+  String get gameLockedTitle;
+
+  /// No description provided for @gameLockedHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Живой город, билеты ГИБДД прямо на дороге и рейтинг недели. Войдите — и поехали.'**
+  String get gameLockedHint;
+
+  /// No description provided for @gameFuel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Топливо'**
+  String get gameFuel;
+
+  /// No description provided for @gameFuelUnlimited.
+  ///
+  /// In ru, this message translates to:
+  /// **'Безлимитное топливо'**
+  String get gameFuelUnlimited;
+
+  /// No description provided for @gameFuelEmptyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бензин закончился'**
+  String get gameFuelEmptyTitle;
+
+  /// No description provided for @gameFuelEmptyHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Каждая ошибка сжигает деление. Бак наполняется сам: одно деление за 20 минут.'**
+  String get gameFuelEmptyHint;
+
+  /// No description provided for @gameFuelRefillIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Одно деление через {time}'**
+  String gameFuelRefillIn(String time);
+
+  /// No description provided for @gameFuelPremiumPitch.
+  ///
+  /// In ru, this message translates to:
+  /// **'С Премиумом бак бесконечный — играйте сколько хотите, без ожидания.'**
+  String get gameFuelPremiumPitch;
+
+  /// No description provided for @gameFuelBuyPremium.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подключить Премиум'**
+  String get gameFuelBuyPremium;
+
+  /// No description provided for @gameFuelWait.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подождать'**
+  String get gameFuelWait;
+
+  /// No description provided for @gameViolations.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нарушения'**
+  String get gameViolations;
+
+  /// No description provided for @gameOverDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Жизни закончились. Разберите ошибки и попробуйте снова.'**
+  String get gameOverDescription;
+
+  /// No description provided for @gameYou.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы'**
+  String get gameYou;
+
+  /// No description provided for @gameStop.
+  ///
+  /// In ru, this message translates to:
+  /// **'СТОП'**
+  String get gameStop;
+
+  /// No description provided for @gameLoading.
+  ///
+  /// In ru, this message translates to:
+  /// **'Загрузка игры'**
+  String get gameLoading;
+
+  /// No description provided for @gameLoadError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось продолжить заезд. Перезапустите тренажёр или вернитесь в меню.'**
+  String get gameLoadError;
 }
 
 class _AppLocalizationsDelegate

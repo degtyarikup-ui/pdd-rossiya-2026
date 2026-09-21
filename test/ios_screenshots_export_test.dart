@@ -16,10 +16,22 @@ import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockTts implements TtsService {
-  @override Future<void> speakQuestion({String? rawQuestionId, required String question, required List<String> answers}) async {}
-  @override Future<Duration?> speakOrPlayFeedItem({required String? rawQuestionId, required String question, required List<String> answers}) async => null;
-  @override Future<void> stop() async {}
-  @override Future<void> dispose() async {}
+  @override
+  Future<void> speakQuestion({
+    String? rawQuestionId,
+    required String question,
+    required List<String> answers,
+  }) async {}
+  @override
+  Future<Duration?> speakOrPlayFeedItem({
+    required String? rawQuestionId,
+    required String question,
+    required List<String> answers,
+  }) async => null;
+  @override
+  Future<void> stop() async {}
+  @override
+  Future<void> dispose() async {}
 }
 
 List<Map<String, dynamic>> buildSampleQuestions(int n) {
@@ -32,7 +44,8 @@ List<Map<String, dynamic>> buildSampleQuestions(int n) {
         {'text': 'Разрешен по любой траектории', 'correct': false},
         {'text': 'Запрещен', 'correct': false},
       ],
-      'comment': 'Согласно пункту 8.11 ПДД РФ разворот запрещен в местах с видимостью дороги менее 100 м.',
+      'comment':
+          'Согласно пункту 8.11 ПДД РФ разворот запрещен в местах с видимостью дороги менее 100 м.',
       'pddPoints': <String>['8.11'],
       'image': null,
       'topic': <String>['Маневрирование'],
@@ -53,7 +66,9 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final outDir = Directory('/Users/sergei/Documents/pdd/store_assets/ios_raw_screenshots');
+    final outDir = Directory(
+      '/Users/sergei/Documents/pdd/store_assets/ios_raw_screenshots',
+    );
     if (!outDir.existsSync()) outDir.createSync(recursive: true);
 
     final key = GlobalKey();
@@ -73,17 +88,15 @@ void main() {
               scaffoldBackgroundColor: const Color(0xFFF8F8FA),
               extensions: const [AppThemeColors.light],
             ),
-            home: RepaintBoundary(
-              key: key,
-              child: widget,
-            ),
+            home: RepaintBoundary(key: key, child: widget),
           ),
         ),
       );
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pump(const Duration(milliseconds: 500));
 
-      final boundary = key.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final boundary =
+          key.currentContext!.findRenderObject() as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 1.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = byteData!.buffer.asUint8List();
@@ -93,7 +106,10 @@ void main() {
 
     await saveScreen('01_home', const HomeScreen());
     await saveScreen('02_feed', const FeedScreen());
-    await saveScreen('03_exam', ExamScreen(allQuestions: buildSampleQuestions(20)));
+    await saveScreen(
+      '03_exam',
+      ExamScreen(allQuestions: buildSampleQuestions(20)),
+    );
     await saveScreen('04_tickets', const TicketsScreen());
     await saveScreen('05_signs', const SignsScreen());
   });

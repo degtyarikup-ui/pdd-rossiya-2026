@@ -711,4 +711,363 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get notificationsHint => 'Каждый день в 20:00, если серия не закрыта';
+
+  @override
+  String get game => 'Игра';
+
+  @override
+  String get gameSimulator => '3D Тренажёр';
+
+  @override
+  String get gameLeaderboard => 'Таблица лидеров';
+
+  @override
+  String get gameScore => 'Очки';
+
+  @override
+  String get gameDistance => 'Дистанция';
+
+  @override
+  String get gameOver => 'Заезд завершён';
+
+  @override
+  String get gameRestart => 'Попробовать снова';
+
+  @override
+  String get gameExit => 'В меню';
+
+  @override
+  String get gameUnavailable =>
+      'Сценарии тренажёра пока проверены только для ПДД России. Для этой страны игра станет доступна после проверки местных правил.';
+
+  @override
+  String get gameMobileOnly =>
+      '3D-тренажёр доступен в мобильном приложении на iOS и Android.';
+
+  @override
+  String get gameLeft => 'Левее';
+
+  @override
+  String get gameRight => 'Правее';
+
+  @override
+  String get gameGas => 'ГАЗ';
+
+  @override
+  String get gameSpeedUnit => 'км/ч';
+
+  @override
+  String get gameMeters => 'м';
+
+  @override
+  String get gameKilometers => 'км';
+
+  @override
+  String get gameSeconds => 'с';
+
+  @override
+  String get gameMistake => 'Ошибка';
+
+  @override
+  String get gameCorrect => 'Верно';
+
+  @override
+  String get gameContinue => 'Продолжить движение';
+
+  @override
+  String get gameResolving => 'Газ — ехать · стрелки — рулить';
+
+  @override
+  String get gameGarage => 'Выбор машины';
+
+  @override
+  String get gameCarHatch => 'Хэтчбек';
+
+  @override
+  String get gameCarSedan => 'Седан';
+
+  @override
+  String get gameCarSuv => 'Внедорожник';
+
+  @override
+  String get gameCarPickup => 'Пикап';
+
+  @override
+  String get gameCarCoupe => 'Купе';
+
+  @override
+  String get gameCarWagon => 'Универсал';
+
+  @override
+  String get gameCarCyber => 'Кибертрак';
+
+  @override
+  String get gamePaintRed => 'красный';
+
+  @override
+  String get gamePaintBlue => 'синий';
+
+  @override
+  String get gamePaintGreen => 'зелёный';
+
+  @override
+  String get gamePaintSand => 'песочный';
+
+  @override
+  String get gamePaintWhite => 'белый';
+
+  @override
+  String get gamePaintBlack => 'чёрный';
+
+  @override
+  String get gamePaintSilver => 'серебристый';
+
+  @override
+  String get gamePaintOrange => 'оранжевый';
+
+  @override
+  String get gamePaintPurple => 'фиолетовый';
+
+  @override
+  String get gamePaintTeal => 'бирюзовый';
+
+  @override
+  String get gamePaintYellow => 'жёлтый';
+
+  @override
+  String get gamePaintWine => 'бордовый';
+
+  @override
+  String get gamePaintGold => 'золотой';
+
+  @override
+  String gameGarageNextCar(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Следующая машина через $count правильных ответов',
+      many: 'Следующая машина через $count правильных ответов',
+      few: 'Следующая машина через $count правильных ответа',
+      one: 'Следующая машина через $count правильный ответ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gameGaragePremiumCar =>
+      'Золотой кибертрак — для премиум-водителей';
+
+  @override
+  String get gameRevealTitle => 'Новая машина!';
+
+  @override
+  String get gameRevealTap => 'Нажмите на ворота';
+
+  @override
+  String get gameRevealSpin => 'Покрутите пальцем';
+
+  @override
+  String get gameRevealChoose => 'Выбрать';
+
+  @override
+  String get gameRevealClose => 'Закрыть';
+
+  @override
+  String get gameSceneTitle => 'Погода и сезон';
+
+  @override
+  String get gameSceneWeather => 'Погода';
+
+  @override
+  String get gameSceneSeason => 'Время года';
+
+  @override
+  String get gameSceneAuto => 'Авто';
+
+  @override
+  String get gameSceneClear => 'Ясно';
+
+  @override
+  String get gameSceneOvercast => 'Пасмурно';
+
+  @override
+  String get gameScenePrecip => 'Осадки';
+
+  @override
+  String get gameSceneCalendar => 'По календарю';
+
+  @override
+  String get gameSceneSummer => 'Лето';
+
+  @override
+  String get gameSceneAutumn => 'Осень';
+
+  @override
+  String get gameSceneWinter => 'Зима';
+
+  @override
+  String get gameCollision => 'Столкновение · отпустите газ';
+
+  @override
+  String get gameOffroad => 'Бордюр · поверните к дороге';
+
+  @override
+  String get gamePriorityViolation => 'Вы не уступили дорогу';
+
+  @override
+  String get gameWrongManeuver => 'Манёвр не соответствует заданию';
+
+  @override
+  String get gameOncoming => 'Встречная полоса! Вернитесь вправо';
+
+  @override
+  String get gameCorrectAnswers => 'Правильных ответов';
+
+  @override
+  String gameAnswersOf(int correct, int total) {
+    return '$correct из $total';
+  }
+
+  @override
+  String get gameNoViolations => 'Без нарушений';
+
+  @override
+  String get gameYourCar => 'Ваш автомобиль';
+
+  @override
+  String get gameSpeeding => 'Превышение скорости';
+
+  @override
+  String get gameOvertakingProhibited => 'Обгон здесь запрещён';
+
+  @override
+  String get gamePedestrianYield => 'Уступите дорогу пешеходу';
+
+  @override
+  String gameSpeedLimitLabel(int limit) {
+    return 'Ограничение $limit км/ч';
+  }
+
+  @override
+  String get gameBrake => 'Тормоз · назад при остановке';
+
+  @override
+  String get gameNewRecord => 'Новый рекорд!';
+
+  @override
+  String gameBestScore(int score) {
+    return 'Рекорд $score';
+  }
+
+  @override
+  String get gameGasHint => 'Зажмите и держите — это газ';
+
+  @override
+  String get gameWeeklyRating => 'Рейтинг недели';
+
+  @override
+  String get gameRatingHint =>
+      'Очки всех заездов за неделю. В таблице — лучшие 100.';
+
+  @override
+  String get gameRatingEmpty =>
+      'На этой неделе ещё никто не проехал. Будьте первым!';
+
+  @override
+  String get gameRatingUnavailable =>
+      'Не удалось загрузить рейтинг. Проверьте интернет.';
+
+  @override
+  String get gameRatingYou => 'Вы';
+
+  @override
+  String gameRatingRuns(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count заезда',
+      many: '$count заездов',
+      few: '$count заезда',
+      one: '$count заезд',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gameRatingEndsIn(int days) {
+    return 'До конца недели: $days дн.';
+  }
+
+  @override
+  String get gameAuthRequired => 'Игра доступна после входа';
+
+  @override
+  String get gameAuthRequiredHint =>
+      'Войдите, чтобы копить очки и участвовать в рейтинге недели.';
+
+  @override
+  String get gameSignIn => 'Войти и поехать';
+
+  @override
+  String gamePenaltyHint(int points) {
+    return 'Нарушение: −$points очков';
+  }
+
+  @override
+  String get pddSettingsItem => 'Правила, знаки и разметка';
+
+  @override
+  String get gameLockedTitle => 'Готовы сесть за руль?';
+
+  @override
+  String get gameLockedHint =>
+      'Живой город, билеты ГИБДД прямо на дороге и рейтинг недели. Войдите — и поехали.';
+
+  @override
+  String get gameFuel => 'Топливо';
+
+  @override
+  String get gameFuelUnlimited => 'Безлимитное топливо';
+
+  @override
+  String get gameFuelEmptyTitle => 'Бензин закончился';
+
+  @override
+  String get gameFuelEmptyHint =>
+      'Каждая ошибка сжигает деление. Бак наполняется сам: одно деление за 20 минут.';
+
+  @override
+  String gameFuelRefillIn(String time) {
+    return 'Одно деление через $time';
+  }
+
+  @override
+  String get gameFuelPremiumPitch =>
+      'С Премиумом бак бесконечный — играйте сколько хотите, без ожидания.';
+
+  @override
+  String get gameFuelBuyPremium => 'Подключить Премиум';
+
+  @override
+  String get gameFuelWait => 'Подождать';
+
+  @override
+  String get gameViolations => 'Нарушения';
+
+  @override
+  String get gameOverDescription =>
+      'Жизни закончились. Разберите ошибки и попробуйте снова.';
+
+  @override
+  String get gameYou => 'Вы';
+
+  @override
+  String get gameStop => 'СТОП';
+
+  @override
+  String get gameLoading => 'Загрузка игры';
+
+  @override
+  String get gameLoadError =>
+      'Не удалось продолжить заезд. Перезапустите тренажёр или вернитесь в меню.';
 }

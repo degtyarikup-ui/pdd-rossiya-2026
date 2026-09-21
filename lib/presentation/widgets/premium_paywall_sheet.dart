@@ -200,7 +200,10 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
               // 2. Clean Accent Header Badge
               Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: surfaceColor,
                     borderRadius: BorderRadius.circular(16),
@@ -208,11 +211,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        badgeIcon,
-                        size: 14,
-                        color: accentColor,
-                      ),
+                      Icon(badgeIcon, size: 14, color: accentColor),
                       const SizedBox(width: 5),
                       Text(
                         badgeText,
@@ -265,7 +264,8 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
               _buildFeatureItem(
                 icon: Icons.record_voice_over_rounded,
                 title: 'Студийная озвучка',
-                description: 'Красивый профессиональный голос для всех вопросов и билетов',
+                description:
+                    'Красивый профессиональный голос для всех вопросов и билетов',
                 accentColor: accentColor,
                 surfaceColor: surfaceColor,
                 colors: colors,
@@ -303,7 +303,10 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                     backgroundColor: accentColor,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 0,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -369,7 +372,13 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                         ),
                       ),
                     ),
-                    Text('•', style: TextStyle(color: colors.secondaryText, fontSize: 10)),
+                    Text(
+                      '•',
+                      style: TextStyle(
+                        color: colors.secondaryText,
+                        fontSize: 10,
+                      ),
+                    ),
                   ],
                   if (CountryConfig.current.termsUrl.isNotEmpty) ...[
                     GestureDetector(
@@ -386,7 +395,13 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                         ),
                       ),
                     ),
-                    Text('•', style: TextStyle(color: colors.secondaryText, fontSize: 10)),
+                    Text(
+                      '•',
+                      style: TextStyle(
+                        color: colors.secondaryText,
+                        fontSize: 10,
+                      ),
+                    ),
                   ],
                   if (CountryConfig.current.privacyUrl.isNotEmpty) ...[
                     GestureDetector(
@@ -403,7 +418,13 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                         ),
                       ),
                     ),
-                    Text('•', style: TextStyle(color: colors.secondaryText, fontSize: 10)),
+                    Text(
+                      '•',
+                      style: TextStyle(
+                        color: colors.secondaryText,
+                        fontSize: 10,
+                      ),
+                    ),
                   ],
                   GestureDetector(
                     onTap: _handleRestore,
@@ -495,12 +516,12 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
         decoration: BoxDecoration(
-          color: isSelected
-              ? surfaceColor
-              : colors.cardBackground,
+          color: isSelected ? surfaceColor : colors.cardBackground,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? accentColor : colors.divider.withValues(alpha: 0.5),
+            color: isSelected
+                ? accentColor
+                : colors.divider.withValues(alpha: 0.5),
             width: isSelected ? 1.5 : 1.0,
           ),
         ),

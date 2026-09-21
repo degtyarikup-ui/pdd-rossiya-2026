@@ -715,4 +715,359 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get notificationsHint => 'Svakog dana u 20:00 ako niz nije zatvoren';
+
+  @override
+  String get game => 'Igra';
+
+  @override
+  String get gameSimulator => '3D Simulator';
+
+  @override
+  String get gameLeaderboard => 'Tabela lidera';
+
+  @override
+  String get gameScore => 'Poeni';
+
+  @override
+  String get gameDistance => 'Udaljenost';
+
+  @override
+  String get gameOver => 'Vožnja završena';
+
+  @override
+  String get gameRestart => 'Pokušaj ponovo';
+
+  @override
+  String get gameExit => 'U meni';
+
+  @override
+  String get gameUnavailable =>
+      'Situacije u simulatoru su za sada proverene samo prema pravilima Rusije. Igra će biti dostupna nakon provere lokalnih pravila.';
+
+  @override
+  String get gameMobileOnly =>
+      '3D simulator je dostupan u mobilnoj aplikaciji za iOS i Android.';
+
+  @override
+  String get gameLeft => 'Ulevo';
+
+  @override
+  String get gameRight => 'Udesno';
+
+  @override
+  String get gameGas => 'GAS';
+
+  @override
+  String get gameSpeedUnit => 'km/h';
+
+  @override
+  String get gameMeters => 'm';
+
+  @override
+  String get gameKilometers => 'km';
+
+  @override
+  String get gameSeconds => 's';
+
+  @override
+  String get gameMistake => 'Greška';
+
+  @override
+  String get gameCorrect => 'Tačno';
+
+  @override
+  String get gameContinue => 'Nastavi vožnju';
+
+  @override
+  String get gameResolving => 'Gas — vožnja · strelice — skretanje';
+
+  @override
+  String get gameGarage => 'Izbor automobila';
+
+  @override
+  String get gameCarHatch => 'Hečbek';
+
+  @override
+  String get gameCarSedan => 'Limuzina';
+
+  @override
+  String get gameCarSuv => 'Terenac';
+
+  @override
+  String get gameCarPickup => 'Pikap';
+
+  @override
+  String get gameCarCoupe => 'Kupe';
+
+  @override
+  String get gameCarWagon => 'Karavan';
+
+  @override
+  String get gameCarCyber => 'Sajbertrak';
+
+  @override
+  String get gamePaintRed => 'crvena';
+
+  @override
+  String get gamePaintBlue => 'plava';
+
+  @override
+  String get gamePaintGreen => 'zelena';
+
+  @override
+  String get gamePaintSand => 'peščana';
+
+  @override
+  String get gamePaintWhite => 'bela';
+
+  @override
+  String get gamePaintBlack => 'crna';
+
+  @override
+  String get gamePaintSilver => 'srebrna';
+
+  @override
+  String get gamePaintOrange => 'narandžasta';
+
+  @override
+  String get gamePaintPurple => 'ljubičasta';
+
+  @override
+  String get gamePaintTeal => 'tirkizna';
+
+  @override
+  String get gamePaintYellow => 'žuta';
+
+  @override
+  String get gamePaintWine => 'bordo';
+
+  @override
+  String get gamePaintGold => 'zlatna';
+
+  @override
+  String gameGarageNextCar(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Sledeći auto za $count tačnih odgovora',
+      few: 'Sledeći auto za $count tačna odgovora',
+      one: 'Sledeći auto za $count tačan odgovor',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gameGaragePremiumCar => 'Zlatni sajbertrak — za premium vozače';
+
+  @override
+  String get gameRevealTitle => 'Novi auto!';
+
+  @override
+  String get gameRevealTap => 'Dodirnite vrata garaže';
+
+  @override
+  String get gameRevealSpin => 'Okrenite prstom';
+
+  @override
+  String get gameRevealChoose => 'Izaberi';
+
+  @override
+  String get gameRevealClose => 'Zatvori';
+
+  @override
+  String get gameSceneTitle => 'Vreme i godišnje doba';
+
+  @override
+  String get gameSceneWeather => 'Vreme';
+
+  @override
+  String get gameSceneSeason => 'Godišnje doba';
+
+  @override
+  String get gameSceneAuto => 'Automatski';
+
+  @override
+  String get gameSceneClear => 'Vedro';
+
+  @override
+  String get gameSceneOvercast => 'Oblačno';
+
+  @override
+  String get gameScenePrecip => 'Padavine';
+
+  @override
+  String get gameSceneCalendar => 'Po kalendaru';
+
+  @override
+  String get gameSceneSummer => 'Leto';
+
+  @override
+  String get gameSceneAutumn => 'Jesen';
+
+  @override
+  String get gameSceneWinter => 'Zima';
+
+  @override
+  String get gameCollision => 'Sudar · pustite gas';
+
+  @override
+  String get gameOffroad => 'Ivičnjak · skrenite ka kolovozu';
+
+  @override
+  String get gamePriorityViolation => 'Niste ustupili prvenstvo prolaza';
+
+  @override
+  String get gameWrongManeuver => 'Manevar ne odgovara zadatku';
+
+  @override
+  String get gameOncoming => 'Suprotna traka! Vratite se udesno';
+
+  @override
+  String get gameCorrectAnswers => 'Tačnih odgovora';
+
+  @override
+  String gameAnswersOf(int correct, int total) {
+    return '$correct od $total';
+  }
+
+  @override
+  String get gameNoViolations => 'Bez prekršaja';
+
+  @override
+  String get gameYourCar => 'Vaš automobil';
+
+  @override
+  String get gameSpeeding => 'Prekoračenje brzine';
+
+  @override
+  String get gameOvertakingProhibited => 'Preticanje je ovde zabranjeno';
+
+  @override
+  String get gamePedestrianYield => 'Propustite pešaka';
+
+  @override
+  String gameSpeedLimitLabel(int limit) {
+    return 'Ograničenje $limit km/h';
+  }
+
+  @override
+  String get gameBrake => 'Kočnica · unazad kad stojite';
+
+  @override
+  String get gameNewRecord => 'Novi rekord!';
+
+  @override
+  String gameBestScore(int score) {
+    return 'Rekord $score';
+  }
+
+  @override
+  String get gameGasHint => 'Pritisnite i držite — to je gas';
+
+  @override
+  String get gameWeeklyRating => 'Rang lista nedelje';
+
+  @override
+  String get gameRatingHint =>
+      'Poeni svih vožnji za nedelju. U tabeli su najboljih 100.';
+
+  @override
+  String get gameRatingEmpty => 'Ove nedelje još niko nije vozio. Budite prvi!';
+
+  @override
+  String get gameRatingUnavailable =>
+      'Rang lista nije učitana. Proverite internet.';
+
+  @override
+  String get gameRatingYou => 'Vi';
+
+  @override
+  String gameRatingRuns(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vožnji',
+      few: '$count vožnje',
+      one: '$count vožnja',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gameRatingEndsIn(int days) {
+    return 'Do kraja nedelje: $days d.';
+  }
+
+  @override
+  String get gameAuthRequired => 'Igra je dostupna posle prijave';
+
+  @override
+  String get gameAuthRequiredHint =>
+      'Prijavite se da skupljate poene i učestvujete u rang listi nedelje.';
+
+  @override
+  String get gameSignIn => 'Prijavi se i vozi';
+
+  @override
+  String gamePenaltyHint(int points) {
+    return 'Prekršaj: −$points poena';
+  }
+
+  @override
+  String get pddSettingsItem => 'Propisi, znakovi i oznake';
+
+  @override
+  String get gameLockedTitle => 'Spremni za volan?';
+
+  @override
+  String get gameLockedHint =>
+      'Živi grad, ispitna pitanja na putu i rang lista nedelje. Prijavite se — i krećemo.';
+
+  @override
+  String get gameFuel => 'Gorivo';
+
+  @override
+  String get gameFuelUnlimited => 'Neograničeno gorivo';
+
+  @override
+  String get gameFuelEmptyTitle => 'Nestalo je goriva';
+
+  @override
+  String get gameFuelEmptyHint =>
+      'Svaka greška troši jedan podeok. Rezervoar se puni sam: jedan podeok za 20 minuta.';
+
+  @override
+  String gameFuelRefillIn(String time) {
+    return 'Jedan podeok za $time';
+  }
+
+  @override
+  String get gameFuelPremiumPitch =>
+      'Uz Premium rezervoar je beskonačan — igrajte koliko želite, bez čekanja.';
+
+  @override
+  String get gameFuelBuyPremium => 'Uključi Premium';
+
+  @override
+  String get gameFuelWait => 'Sačekati';
+
+  @override
+  String get gameViolations => 'Prekršaji';
+
+  @override
+  String get gameOverDescription =>
+      'Nema više života. Pogledajte greške i pokušajte ponovo.';
+
+  @override
+  String get gameYou => 'Vi';
+
+  @override
+  String get gameStop => 'STOP';
+
+  @override
+  String get gameLoading => 'Učitavanje igre';
+
+  @override
+  String get gameLoadError =>
+      'Vožnja ne može da se nastavi. Ponovo pokrenite simulator ili se vratite u meni.';
 }

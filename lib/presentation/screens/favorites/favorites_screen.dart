@@ -142,7 +142,10 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                                     padding: const EdgeInsets.only(
                                       bottom: AppDimensions.spacingM,
                                     ),
-                                    child: _buildFavoriteCard(context, question),
+                                    child: _buildFavoriteCard(
+                                      context,
+                                      question,
+                                    ),
                                   );
                                 }),
                             ],
@@ -296,9 +299,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
             width: double.infinity,
             decoration: BoxDecoration(
               color: colors.cardBackground,
-              border: Border(
-                top: BorderSide(color: colors.divider, width: 1),
-              ),
+              border: Border(top: BorderSide(color: colors.divider, width: 1)),
             ),
             padding: const EdgeInsets.fromLTRB(
               AppDimensions.screenPadding,

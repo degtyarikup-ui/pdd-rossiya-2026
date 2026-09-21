@@ -108,17 +108,21 @@ final ttsServiceProvider = Provider<TtsService>((ref) {
 /// Возвращает null, если сессии нет, она из другой категории или её вопросы
 /// уже не находятся в базе (контент пересобрали). Восстанавливаем именно те
 /// вопросы и в том же порядке, что были у человека.
-final unfinishedSessionProvider =
-    FutureProvider<Map<String, dynamic>?>((ref) async {
+final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
+  ref,
+) async {
   ref.watch(appDataRefreshProvider);
-  final category =
-      ref.watch(appSettingsProvider.select((s) => s.ticketCategory));
+  final category = ref.watch(
+    appSettingsProvider.select((s) => s.ticketCategory),
+  );
   final progress = ref.watch(progressDataSourceProvider);
   final saved = progress.loadUnfinishedSession(category);
   if (saved == null) return null;
 
   final ids = (saved['questionIds'] as List).cast<String>();
-  final all = await ref.watch(questionsDataSourceProvider).loadTickets(category);
+  final all = await ref
+      .watch(questionsDataSourceProvider)
+      .loadTickets(category);
   final byId = {for (final q in all) q.id: q};
 
   final questions = <Map<String, dynamic>>[];
@@ -137,9 +141,8 @@ final unfinishedSessionProvider =
   // ответы перестают соответствовать позициям — тогда возвращать нельзя.
   if (saved['kind'] == 'exam') {
     if (questions.length != ids.length) return null;
-    final answers = (saved['answers'] as List?)
-            ?.map((e) => e as int?)
-            .toList() ??
+    final answers =
+        (saved['answers'] as List?)?.map((e) => e as int?).toList() ??
         List<int?>.filled(questions.length, null);
     if (answers.length != questions.length) return null;
     return {
@@ -167,8 +170,9 @@ final unfinishedSessionProvider =
 });
 
 final ticketsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final category =
-      ref.watch(appSettingsProvider.select((s) => s.ticketCategory));
+  final category = ref.watch(
+    appSettingsProvider.select((s) => s.ticketCategory),
+  );
   final dataSource = ref.watch(questionsDataSourceProvider);
   final allQuestions = await dataSource.loadTickets(category);
 
@@ -178,16 +182,18 @@ final ticketsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
     ..sort();
   final List<Map<String, dynamic>> tickets = [];
   for (final n in ticketNumbers) {
-    final ticketQuestions =
-        allQuestions.where((q) => q.ticketNumber == n).toList();
+    final ticketQuestions = allQuestions
+        .where((q) => q.ticketNumber == n)
+        .toList();
     tickets.add({'number': n, 'questions': ticketQuestions});
   }
   return tickets;
 });
 
 final topicsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final category =
-      ref.watch(appSettingsProvider.select((s) => s.ticketCategory));
+  final category = ref.watch(
+    appSettingsProvider.select((s) => s.ticketCategory),
+  );
   final dataSource = ref.watch(questionsDataSourceProvider);
   return await dataSource.loadTopics(category);
 });
@@ -197,16 +203,18 @@ final signsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   return await dataSource.loadSigns();
 });
 
-final markupProvider =
-    FutureProvider<Map<String, List<Map<String, String>>>>((ref) async {
+final markupProvider = FutureProvider<Map<String, List<Map<String, String>>>>((
+  ref,
+) async {
   final dataSource = ref.watch(questionsDataSourceProvider);
   return await dataSource.loadMarkup();
 });
 
 final statsProvider = FutureProvider<Map<String, int>>((ref) async {
   ref.watch(appDataRefreshProvider);
-  final category =
-      ref.watch(appSettingsProvider.select((s) => s.ticketCategory));
+  final category = ref.watch(
+    appSettingsProvider.select((s) => s.ticketCategory),
+  );
   final dataSource = ref.watch(progressDataSourceProvider);
   final progress = await dataSource.getAllQuestionProgress(category);
   final tickets = await ref.watch(ticketsProvider.future);
@@ -254,8 +262,9 @@ final statsProvider = FutureProvider<Map<String, int>>((ref) async {
 
 final ticketProgressProvider = FutureProvider<Map<int, int>>((ref) async {
   ref.watch(appDataRefreshProvider);
-  final category =
-      ref.watch(appSettingsProvider.select((s) => s.ticketCategory));
+  final category = ref.watch(
+    appSettingsProvider.select((s) => s.ticketCategory),
+  );
   final dataSource = ref.watch(progressDataSourceProvider);
   final progress = await dataSource.getAllQuestionProgress(category);
   final tickets = await ref.watch(ticketsProvider.future);
@@ -284,16 +293,18 @@ final favoriteQuestionProvider = FutureProvider.family<bool, String>((
   questionId,
 ) async {
   ref.watch(appDataRefreshProvider);
-  final category =
-      ref.watch(appSettingsProvider.select((s) => s.ticketCategory));
+  final category = ref.watch(
+    appSettingsProvider.select((s) => s.ticketCategory),
+  );
   final dataSource = ref.watch(progressDataSourceProvider);
   return await dataSource.isFavorite(questionId, category);
 });
 
 final favoriteQuestionsProvider = FutureProvider<List<String>>((ref) async {
   ref.watch(appDataRefreshProvider);
-  final category =
-      ref.watch(appSettingsProvider.select((s) => s.ticketCategory));
+  final category = ref.watch(
+    appSettingsProvider.select((s) => s.ticketCategory),
+  );
   final dataSource = ref.watch(progressDataSourceProvider);
   return await dataSource.getFavoriteQuestionIds(category);
 });
@@ -306,8 +317,9 @@ final streakProvider = FutureProvider<Streak>((ref) async {
 
 final wrongQuestionIdsProvider = FutureProvider<List<String>>((ref) async {
   ref.watch(appDataRefreshProvider);
-  final category =
-      ref.watch(appSettingsProvider.select((s) => s.ticketCategory));
+  final category = ref.watch(
+    appSettingsProvider.select((s) => s.ticketCategory),
+  );
   final dataSource = ref.watch(progressDataSourceProvider);
   final progress = await dataSource.getAllQuestionProgress(category);
 
@@ -385,8 +397,9 @@ final feedRepositoryProvider = Provider<FeedRepository>((ref) {
 });
 
 final feedItemsProvider = FutureProvider<List<FeedItem>>((ref) async {
-  final category =
-      ref.watch(appSettingsProvider.select((s) => s.ticketCategory));
+  final category = ref.watch(
+    appSettingsProvider.select((s) => s.ticketCategory),
+  );
   final repo = ref.watch(feedRepositoryProvider);
   return repo.generateFeedItems(category: category, count: 60);
 });

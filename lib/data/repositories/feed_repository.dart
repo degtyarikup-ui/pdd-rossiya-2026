@@ -24,7 +24,7 @@ class FeedRepository {
 
   /// Builds a smart adaptive batch of FeedItem cards tailored to the user's
   /// actual mistakes, weak topics, and spaced repetition intervals.
-  /// 
+  ///
   /// Priority:
   /// 1. Unresolved Mistakes (questions with wrong answers)
   /// 2. Weak Areas (questions where mistakes occurred in the past)
@@ -37,16 +37,17 @@ class FeedRepository {
     Set<String>? excludeQuestionIds,
   }) async {
     final random = Random();
-    final List<Question> allQuestions =
-        await _questionsDataSource.loadTickets(category);
-    final List<Map<String, dynamic>> signsManifest =
-        await _questionsDataSource.loadSignsFeedManifest();
+    final List<Question> allQuestions = await _questionsDataSource.loadTickets(
+      category,
+    );
+    final List<Map<String, dynamic>> signsManifest = await _questionsDataSource
+        .loadSignsFeedManifest();
 
     final excluded = excludeQuestionIds ?? const <String>{};
 
     // 1. Fetch user progress & mistake history
-    final Map<String, dynamic> userProgress =
-        await _progressDataSource.getAllQuestionProgress(category);
+    final Map<String, dynamic> userProgress = await _progressDataSource
+        .getAllQuestionProgress(category);
 
     // 2. Parse ticket questions & categorize by mastery level
     final Map<int, List<Question>> ticketGroups = {};
@@ -69,8 +70,7 @@ class FeedRepository {
         final qNum = i + 1;
         final qProgress = userProgress[q.id] as Map<String, dynamic>?;
 
-        final badge =
-            tNum > 0 ? 'Билет $tNum · Вопрос $qNum' : 'Вопрос $qNum';
+        final badge = tNum > 0 ? 'Билет $tNum · Вопрос $qNum' : 'Вопрос $qNum';
 
         final item = FeedItem(
           id: 'q_${q.id}',
@@ -93,7 +93,9 @@ class FeedRepository {
           final isCorrect = qProgress['isCorrect'] == true;
           final wrongAttempts = qProgress['wrongAttempts'] as int? ?? 0;
           final answeredAtStr = qProgress['answeredAt'] as String?;
-          final answeredAt = answeredAtStr != null ? DateTime.tryParse(answeredAtStr) : null;
+          final answeredAt = answeredAtStr != null
+              ? DateTime.tryParse(answeredAtStr)
+              : null;
 
           if (!isCorrect) {
             // Unresolved mistake: highest priority
@@ -131,12 +133,17 @@ class FeedRepository {
             FeedItem(
               id: signId,
               type: FeedItemType.roadSign,
-              questionText: s['questionText'] as String? ?? 'Что означает этот дорожный знак?',
+              questionText:
+                  s['questionText'] as String? ??
+                  'Что означает этот дорожный знак?',
               imagePath: fullImgPath,
               isSvgImage: isSvg,
               answers: answersList,
-              correctAnswerIndex: (s['correctAnswerIndex'] as num?)?.toInt() ?? 0,
-              explanation: (s['description'] as String?)?.isNotEmpty == true ? s['description'] as String : null,
+              correctAnswerIndex:
+                  (s['correctAnswerIndex'] as num?)?.toInt() ?? 0,
+              explanation: (s['description'] as String?)?.isNotEmpty == true
+                  ? s['description'] as String
+                  : null,
               badgeText: 'Знак № ${s['number'] ?? ''}',
               signNumber: s['number']?.toString(),
               rawQuestionId: signId,
@@ -153,7 +160,9 @@ class FeedRepository {
       if (b.key == null) return 1;
       return a.key!.compareTo(b.key!);
     });
-    final List<FeedItem> sortedMastered = masteredItems.map((e) => e.value).toList();
+    final List<FeedItem> sortedMastered = masteredItems
+        .map((e) => e.value)
+        .toList();
 
     unresolvedMistakes.shuffle(random);
     weakSpotItems.shuffle(random);

@@ -36,7 +36,11 @@ class AuthService extends ChangeNotifier {
           final cachedName = prefs.getString('apple_name_$rawId');
           user = UserProfile(
             id: user.id,
-            name: cachedName ?? (cachedEmail.isNotEmpty ? cachedEmail.split('@').first : user.name),
+            name:
+                cachedName ??
+                (cachedEmail.isNotEmpty
+                    ? cachedEmail.split('@').first
+                    : user.name),
             email: cachedEmail,
             avatarUrl: user.avatarUrl,
             provider: user.provider,
@@ -56,6 +60,28 @@ class AuthService extends ChangeNotifier {
 
   static const String googleClientId =
       '513938972930-3lclc5epsnm12druv86ut2o89pj71cu9.apps.googleusercontent.com';
+
+  /// Test builds only (`--dart-define=GAME_DEBUG=true`): a local account
+  /// without an OAuth provider, so a dev-signed APK (its package and SHA-1
+  /// are not registered with Google/Yandex) can still exercise the
+  /// signed-in features. Never available in store builds.
+  static const bool debugSignInAvailable = bool.fromEnvironment('GAME_DEBUG');
+
+  Future<bool> signInDebug() async {
+    if (!debugSignInAvailable) return false;
+    _currentUser = UserProfile(
+      id: 'debug_tester',
+      name: 'Тестировщик',
+      email: 'tester@example.com',
+      avatarUrl: null,
+      provider: AuthProviderType.google,
+      createdAt: DateTime.now(),
+    );
+    await _saveUser();
+    notifyListeners();
+    await PremiumService.instance.onAuthChanged(_currentUser);
+    return true;
+  }
 
   Future<bool> signInWithGoogle() async {
     try {
@@ -131,7 +157,9 @@ class AuthService extends ChangeNotifier {
           ],
           webAuthenticationOptions: WebAuthenticationOptions(
             clientId: 'ru.pdd.pddapp.auth',
-            redirectUri: Uri.parse('https://pdd-russia.app/auth/apple/callback'),
+            redirectUri: Uri.parse(
+              'https://pdd-russia.app/auth/apple/callback',
+            ),
           ),
         );
       }
@@ -140,10 +168,10 @@ class AuthService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
 
       // 1. Имя пользователя (Apple возвращает fullName только при первом входе)
-      String? rawName = [credential.givenName, credential.familyName]
-          .where((s) => s != null && s.trim().isNotEmpty)
-          .join(' ')
-          .trim();
+      String? rawName = [
+        credential.givenName,
+        credential.familyName,
+      ].where((s) => s != null && s.trim().isNotEmpty).join(' ').trim();
       if (rawName.isNotEmpty && userIdentifier.isNotEmpty) {
         await prefs.setString('apple_name_$userIdentifier', rawName);
       } else if (rawName.isEmpty && userIdentifier.isNotEmpty) {
@@ -157,14 +185,17 @@ class AuthService extends ChangeNotifier {
       }
       if (email != null && email.isNotEmpty && userIdentifier.isNotEmpty) {
         await prefs.setString('apple_email_$userIdentifier', email);
-      } else if ((email == null || email.isEmpty) && userIdentifier.isNotEmpty) {
+      } else if ((email == null || email.isEmpty) &&
+          userIdentifier.isNotEmpty) {
         email = prefs.getString('apple_email_$userIdentifier') ?? '';
       }
 
       // 3. Формирование отображаемого имени
       String displayName = rawName.isNotEmpty ? rawName : '';
       if (displayName.isEmpty) {
-        if (email != null && email.isNotEmpty && !email.contains('privaterelay')) {
+        if (email != null &&
+            email.isNotEmpty &&
+            !email.contains('privaterelay')) {
           final prefix = email.split('@').first;
           displayName = prefix.isNotEmpty
               ? prefix[0].toUpperCase() + prefix.substring(1)

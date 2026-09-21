@@ -45,10 +45,16 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   bool _isLoadingMore = false;
   bool _isRefreshing = false;
 
-  final ValueNotifier<double> _timerProgressNotifier = ValueNotifier<double>(1.0);
+  final ValueNotifier<double> _timerProgressNotifier = ValueNotifier<double>(
+    1.0,
+  );
   final ValueNotifier<int> _remainingSecondsNotifier = ValueNotifier<int>(0);
-  final ValueNotifier<bool> _isCurrentAnsweredNotifier = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> _isCurrentCorrectNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _isCurrentAnsweredNotifier = ValueNotifier<bool>(
+    false,
+  );
+  final ValueNotifier<bool> _isCurrentCorrectNotifier = ValueNotifier<bool>(
+    false,
+  );
 
   @override
   void initState() {
@@ -77,7 +83,10 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
       final category = ref.read(appSettingsProvider).ticketCategory;
       final repo = ref.read(feedRepositoryProvider);
       debugPrint('FEED_DEBUG: _initFeed starting for category $category');
-      final initial = await repo.generateFeedItems(category: category, count: 60);
+      final initial = await repo.generateFeedItems(
+        category: category,
+        count: 60,
+      );
       debugPrint('FEED_DEBUG: _initFeed generated ${initial.length} items');
       if (mounted) {
         setState(() {
@@ -204,7 +213,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
           _items.addAll(newItems);
         });
       }
-    } catch (_) {} finally {
+    } catch (_) {
+    } finally {
       _isLoadingMore = false;
     }
   }
@@ -217,7 +227,10 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     try {
       final category = ref.read(appSettingsProvider).ticketCategory;
       final repo = ref.read(feedRepositoryProvider);
-      final newItems = await repo.generateFeedItems(category: category, count: 50);
+      final newItems = await repo.generateFeedItems(
+        category: category,
+        count: 50,
+      );
 
       if (mounted) {
         setState(() {
@@ -331,9 +344,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
       return feedAsync.when(
         loading: () => Scaffold(
           backgroundColor: colors.homeScreenBackground,
-          body: Center(
-            child: CircularProgressIndicator(color: colors.accent),
-          ),
+          body: Center(child: CircularProgressIndicator(color: colors.accent)),
         ),
         error: (err, stack) => Scaffold(
           backgroundColor: colors.homeScreenBackground,
@@ -589,8 +600,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                     final qId = currentItem?.rawQuestionId;
                     if (qId == null) return const SizedBox.shrink();
 
-                    final isFavAsync =
-                        ref.watch(favoriteQuestionProvider(qId));
+                    final isFavAsync = ref.watch(favoriteQuestionProvider(qId));
                     final isFav = isFavAsync.value ?? false;
 
                     return _buildFloatingActionButton(
@@ -601,8 +611,9 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                       backgroundColor: isFav ? colors.gold : null,
                       onTap: () async {
                         HapticFeedbackHelper.tap();
-                        final category =
-                            ref.read(appSettingsProvider).ticketCategory;
+                        final category = ref
+                            .read(appSettingsProvider)
+                            .ticketCategory;
                         final ds = ref.read(progressDataSourceProvider);
                         await ds.toggleFavorite(qId, category);
                         ref.read(appDataRefreshProvider.notifier).state++;
@@ -635,13 +646,13 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
           color: backgroundColor ?? colors.cardBackground,
           shape: BoxShape.circle,
           border: Border.all(
-            color: backgroundColor != null ? Colors.transparent : colors.divider,
+            color: backgroundColor != null
+                ? Colors.transparent
+                : colors.divider,
             width: 1,
           ),
         ),
-        child: Center(
-          child: Icon(icon, color: iconColor, size: 20),
-        ),
+        child: Center(child: Icon(icon, color: iconColor, size: 20)),
       ),
     );
   }
@@ -671,9 +682,12 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                   return SizedBox(
                     height: 3.5,
                     child: LinearProgressIndicator(
-                      value: (!currentItem.isTip && isAnswered) ? 1.0 : progress,
-                      backgroundColor:
-                          colors.cardBackground.withValues(alpha: 0.5),
+                      value: (!currentItem.isTip && isAnswered)
+                          ? 1.0
+                          : progress,
+                      backgroundColor: colors.cardBackground.withValues(
+                        alpha: 0.5,
+                      ),
                       valueColor: AlwaysStoppedAnimation<Color>(barColor),
                       minHeight: 3.5,
                     ),

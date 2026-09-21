@@ -65,9 +65,7 @@ class _StreakCelebrationDialogState extends State<_StreakCelebrationDialog> {
     return Dialog(
       backgroundColor: colors.cardBackground,
       insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
         child: Column(
@@ -128,8 +126,9 @@ class _StreakCelebrationDialogState extends State<_StreakCelebrationDialog> {
                   backgroundColor: colors.accent,
                   foregroundColor: AppColors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.buttonRadius),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.buttonRadius,
+                    ),
                   ),
                   elevation: 0,
                 ),
@@ -233,7 +232,8 @@ class _StreakFlameBurstState extends State<_StreakFlameBurst>
           final flashT = _clamp01(e / 0.35); // вспышка в первые 35%
 
           // Органическое мерцание пламени: сумма синусоид
-          final flicker = math.sin(angle) * 0.50 +
+          final flicker =
+              math.sin(angle) * 0.50 +
               math.sin(angle * 3 + 1.2) * 0.30 +
               math.sin(angle * 2 + 0.5) * 0.20; // ≈ -1..1
           final f = (flicker + 1) / 2; // 0..1
@@ -364,8 +364,9 @@ class _StreakFlameBurstState extends State<_StreakFlameBurst>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: const Color(0xFFFFD600)
-                            .withValues(alpha: (1 - flashT) * 0.8),
+                        color: const Color(
+                          0xFFFFD600,
+                        ).withValues(alpha: (1 - flashT) * 0.8),
                         width: 3.5,
                       ),
                     ),
@@ -380,8 +381,9 @@ class _StreakFlameBurstState extends State<_StreakFlameBurst>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: const Color(0xFFFF6D00)
-                            .withValues(alpha: (1 - flashT) * 0.5),
+                        color: const Color(
+                          0xFFFF6D00,
+                        ).withValues(alpha: (1 - flashT) * 0.5),
                         width: 2.0,
                       ),
                     ),
@@ -416,10 +418,7 @@ class _StreakFlameBurstState extends State<_StreakFlameBurst>
                 opacity: flameOpacity * 0.95,
                 child: gradientFlame(
                   size: 64,
-                  colors: const [
-                    Color(0xFFFF8F00),
-                    Color(0xFFFFEE58),
-                  ],
+                  colors: const [Color(0xFFFF8F00), Color(0xFFFFEE58)],
                   swayAngle: swayInner,
                   sX: scaleX * 0.96,
                   sY: scaleY * 0.98,
@@ -431,10 +430,7 @@ class _StreakFlameBurstState extends State<_StreakFlameBurst>
                 opacity: flameOpacity * corePulse,
                 child: gradientFlame(
                   size: 44,
-                  colors: const [
-                    Color(0xFFFFE082),
-                    Color(0xFFFFFFFF),
-                  ],
+                  colors: const [Color(0xFFFFE082), Color(0xFFFFFFFF)],
                   swayAngle: swayInner * 0.5,
                   sX: scaleX * 0.92,
                   sY: scaleY * 1.02,
@@ -708,9 +704,7 @@ class _WeekStrip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                color: isToday
-                    ? colors.primaryText
-                    : colors.secondaryText,
+                color: isToday ? colors.primaryText : colors.secondaryText,
                 height: 1.0,
               ),
             ),

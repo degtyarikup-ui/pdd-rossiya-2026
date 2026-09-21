@@ -23,9 +23,7 @@ void main() {
   Future<void> pump(WidgetTester tester, {Map<String, int> s = stats}) {
     return tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: ProgressPanelCard(stats: s, streak: null),
-        ),
+        home: Scaffold(body: ProgressPanelCard(stats: s, streak: null)),
       ),
     );
   }
@@ -40,8 +38,9 @@ void main() {
     return (text: span.text!, size: span.style!.fontSize!);
   }
 
-  testWidgets('готовность считается по верным ответам от всех вопросов',
-      (tester) async {
+  testWidgets('готовность считается по верным ответам от всех вопросов', (
+    tester,
+  ) async {
     await pump(tester);
     // 357 из 800 — 44.6%, округляется до 45.
     expect(gaugeValue(tester).text, '45');
@@ -61,41 +60,50 @@ void main() {
     expect(
       gaugeValue(tester).size,
       greaterThan(microSize),
-      reason: 'ради этого всё и затевалось: ответ на главный вопрос '
+      reason:
+          'ради этого всё и затевалось: ответ на главный вопрос '
           'должен доминировать, а не теряться среди прочих чисел',
     );
   });
 
   testWidgets('нулевой прогресс не ломает шкалу', (tester) async {
-    await pump(tester, s: const {
-      'correctAnswers': 0,
-      'answeredQuestions': 0,
-      'wrongQuestions': 0,
-      'passedTickets': 0,
-      'totalQuestions': 0,
-      'totalTickets': 0,
-    });
+    await pump(
+      tester,
+      s: const {
+        'correctAnswers': 0,
+        'answeredQuestions': 0,
+        'wrongQuestions': 0,
+        'passedTickets': 0,
+        'totalQuestions': 0,
+        'totalTickets': 0,
+      },
+    );
     // Деления на ноль нет, процент нулевой, а не NaN.
     expect(gaugeValue(tester).text, '0');
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('всё пройдено — вместо остатка похвала, а не «осталось 0»',
-      (tester) async {
-    await pump(tester, s: const {
-      'correctAnswers': 800,
-      'answeredQuestions': 800,
-      'wrongQuestions': 0,
-      'passedTickets': 40,
-      'totalQuestions': 800,
-      'totalTickets': 40,
-    });
+  testWidgets('всё пройдено — вместо остатка похвала, а не «осталось 0»', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      s: const {
+        'correctAnswers': 800,
+        'answeredQuestions': 800,
+        'wrongQuestions': 0,
+        'passedTickets': 40,
+        'totalQuestions': 800,
+        'totalTickets': 40,
+      },
+    );
     expect(gaugeValue(tester).text, '100');
     expect(find.textContaining('осталось 0'), findsNothing);
   });
 
-  testWidgets('серия показывается строкой внутри той же карточки',
-      (tester) async {
+  testWidgets('серия показывается строкой внутри той же карточки', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(

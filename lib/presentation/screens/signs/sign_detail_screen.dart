@@ -107,11 +107,12 @@ class SignDetailScreen extends StatelessWidget {
                                     '${CountryConfig.current.signImagesDir}/$signImage',
                                     fit: BoxFit.contain,
                                     height: 180,
-                                    errorBuilder: (context, error, stackTrace) => Icon(
-                                      Icons.signpost,
-                                      size: 88,
-                                      color: colors.secondaryText,
-                                    ),
+                                    errorBuilder:
+                                        (context, error, stackTrace) => Icon(
+                                          Icons.signpost,
+                                          size: 88,
+                                          color: colors.secondaryText,
+                                        ),
                                   ))
                           : Icon(
                               Icons.signpost,

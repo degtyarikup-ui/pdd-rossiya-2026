@@ -145,7 +145,9 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
   Future<void> _refreshStreakReminder() async {
     try {
       final ds = ref.read(progressDataSourceProvider);
-      await StreakNotifier.instance.refreshStreakReminder(await ds.loadStreak());
+      await StreakNotifier.instance.refreshStreakReminder(
+        await ds.loadStreak(),
+      );
     } catch (e) {
       debugPrint('streak reminder refresh failed: $e');
     }
@@ -156,13 +158,20 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     final appSettings = ref.watch(appSettingsProvider);
     HapticFeedbackHelper.setEnabled(appSettings.hapticsEnabled);
 
-    final String initialScreen = const String.fromEnvironment('SCREEN', defaultValue: 'home');
+    final String initialScreen = const String.fromEnvironment(
+      'SCREEN',
+      defaultValue: 'home',
+    );
     Widget getInitialWidget() {
       switch (initialScreen) {
-        case 'feed':
+        case 'game':
           return const HomeScreen(initialIndex: 1);
-        case 'pdd':
+        case 'feed':
           return const HomeScreen(initialIndex: 2);
+        case 'pdd':
+          return const HomeScreen(
+            initialIndex: 3,
+          ); // settings tab hosts the rules
         case 'tickets':
           return const TicketsScreen();
         default:

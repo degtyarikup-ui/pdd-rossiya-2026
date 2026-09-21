@@ -1,0 +1,1254 @@
+import 'dart:math' as math;
+import 'dart:convert';
+import 'dart:async';
+import 'package:pdd_app/core/config/country_config.dart';
+import 'package:pdd_app/l10n/l10n.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdd_app/core/constants/app_colors.dart';
+import 'package:pdd_app/core/constants/app_dimensions.dart';
+import 'package:pdd_app/core/utils/haptic_feedback.dart';
+import 'package:pdd_app/data/models/game_situation.dart';
+import 'package:pdd_app/data/services/sound_effects_service.dart';
+import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_controls_overlay.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_explanation_sheet.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_hud.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_over_dialog.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_question_card.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_reveal_overlay.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_debug_sheet.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_leaderboard_sheet.dart';
+import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
+import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/game_leaderboard_service.dart';
+import 'package:pdd_app/data/services/game_fuel_service.dart';
+import 'package:pdd_app/data/services/game_garage_service.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
+import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
+
+class GameScreen extends ConsumerStatefulWidget {
+  final VoidCallback? onExit;
+
+  const GameScreen({super.key, this.onExit});
+
+  @override
+  ConsumerState<GameScreen> createState() => _GameScreenState();
+}
+
+class _GameScreenState extends ConsumerState<GameScreen>
+    with WidgetsBindingObserver {
+  WebViewController? _webViewController;
+  late GameController _game;
+  bool _configured = false;
+  bool _active = true;
+  final _hudKey = GlobalKey();
+  final _bottomKey = GlobalKey();
+  String? _lastInsets;
+  bool _failed = false;
+  bool _disposing = false;
+  Timer? _readyTimer;
+  bool _restarting = false;
+  Future<void>? _initialization;
+  Future<void>? _cleanup;
+  String _vehicleId = 'hatch';
+  String _vehiclePaint = 'red';
+  bool _garageOpen = false;
+  // Engine-rendered car previews for the garage, per model+paint.
+  final _thumbnails = <String, Uint8List>{};
+  // A freshly unlocked car being shown in the 3D garage.
+  GameCar? _reveal;
+  bool _revealShown = false;
+  int? _bestScore;
+  bool _newRecord = false;
+  String? _weatherOverride;
+  String? _seasonOverride;
+  bool _locked = false;
+  bool _outOfFuel = false;
+  bool _fuelLoaded = false;
+  Timer? _fuelTimer;
+  int _correctBurst = 0;
+  Offset _burstOrigin = const Offset(0.5, 0.72);
+  Timer? _burstTimer;
+  // First session: clear weather in the engine and a "this is the gas" hint
+  // until the pedal is pressed for the first time.
+  bool _firstRun = false;
+  bool _showGasHint = false;
+  static const _seenKey = 'game_seen';
+  static const _bestScoreKey = 'game_best_score';
+
+  Future<void> _stopWebView() {
+    return _cleanup ??= _stopAndDetach(_webViewController, _initialization);
+  }
+
+  // Retain the native controller until its handler has been detached. Each
+  // operation is attempted even when the document or a previous command failed.
+  static Future<void> _stopAndDetach(
+    WebViewController? controller,
+    Future<void>? initialization,
+  ) async {
+    if (controller == null) return;
+    await initialization;
+    for (final command in [
+      'window.game?.setGas?.(false);',
+      'window.game?.setBrake?.(false);',
+      'window.game?.setPaused?.(true);',
+    ]) {
+      try {
+        await controller.runJavaScript(command);
+      } catch (_) {
+        /* Continue detaching. */
+      }
+    }
+    try {
+      await controller.removeJavaScriptChannel('FlutterChannel');
+    } catch (_) {
+      debugPrint('Game channel cleanup failed');
+    }
+  }
+
+  void _bridgeFailed(String sessionId) {
+    if (!mounted || _disposing || _failed || !_game.acceptsSession(sessionId)) {
+      return;
+    }
+    setState(() => _failed = true);
+    _readyTimer?.cancel();
+    _game.setPaused(true);
+    _send('setPaused', [true]);
+  }
+
+  void _send(String method, List<Object?> args) {
+    if (!_configured || _restarting || _disposing) return;
+    final sessionId = _game.sessionId;
+    _webViewController
+        ?.runJavaScript(
+          'if (!window.game || typeof window.game.$method !== "function") { throw new Error("Game API unavailable"); } window.game.$method(${args.map(jsonEncode).join(',')});',
+        )
+        .catchError((Object error) {
+          debugPrint('Game command failed: $method');
+          _bridgeFailed(sessionId);
+        });
+  }
+
+  void _configure() {
+    _send('configure', [
+      {
+        'country': CountryConfig.current.code,
+        'sessionId': _game.sessionId,
+        'soundEnabled': SoundEffectsService.instance.isEnabled,
+        'firstRun': _firstRun,
+        'labels': {
+          'player': appL10n.gameYou,
+          'stop': appL10n.gameStop,
+          'oncoming': appL10n.gameOncoming,
+          'resolving': appL10n.gameResolving,
+        },
+      },
+    ]);
+    _send('setPaused', [_enginePaused]);
+    _send('selectVehicle', [_vehicleId, _vehiclePaint]);
+    _send('setAttract', [_locked]);
+    if (_weatherOverride != null) _send('setWeather', [_weatherOverride]);
+    if (_seasonOverride != null) _send('setSeason', [_seasonOverride]);
+  }
+
+  // Regeneration happens on a clock: re-read the tank when a unit is due.
+  void _scheduleFuelTick() {
+    _fuelTimer?.cancel();
+    final at = GameFuelService.instance.nextRefillAt;
+    if (at == null) return;
+    _fuelTimer = Timer(
+      at.difference(DateTime.now()) + const Duration(seconds: 1),
+      () {
+        if (!mounted) return;
+        final fuel = GameFuelService.instance.refresh();
+        final s = ref.read(gameControllerProvider);
+        if (!s.fuelUnlimited && fuel > s.fuel) {
+          if (s.phase != GamePhase.gameOver) {
+            _game.configureFuel(fuel: fuel, unlimited: false);
+          } else {
+            setState(() {});
+          }
+        }
+        _scheduleFuelTick();
+      },
+    );
+  }
+
+  Future<void> _openLeaderboard() async {
+    if (_garageOpen) return;
+    _garageOpen = true; // reuse the pause bookkeeping of the garage
+    _game.setPaused(true);
+    _send('setPaused', [true]);
+    try {
+      await GameLeaderboardSheet.show(context);
+    } finally {
+      _garageOpen = false;
+      if (mounted && !_disposing) {
+        _game.setPaused(
+          !_active ||
+              _failed ||
+              _locked ||
+              ref.read(gameControllerProvider).phase == GamePhase.gameOver,
+        );
+        _send('setPaused', [_enginePaused]);
+      }
+    }
+  }
+
+  // Long-press on the garage button: weather and season (an unlisted extra).
+  Future<void> _openDebug() async {
+    if (!_configured) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => GameDebugSheet(
+        weatherOverride: _weatherOverride,
+        seasonOverride: _seasonOverride,
+        onWeatherChanged: (kind) {
+          _weatherOverride = kind;
+          _send('setWeather', [kind]);
+        },
+        onSeasonChanged: (kind) {
+          _seasonOverride = kind;
+          _send('setSeason', [kind]);
+        },
+      ),
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _active = state == AppLifecycleState.resumed;
+    _game.setPaused(
+      !_active || _failed || _garageOpen || _locked || _outOfFuel,
+    );
+    // JS pauses on document.hidden; Flutter explicitly resumes the renderer.
+    // A completed run must remain paused even after the app regains focus.
+    _send('setPaused', [_enginePaused]);
+  }
+
+  @override
+  void dispose() {
+    _disposing = true;
+    _readyTimer?.cancel();
+    _fuelTimer?.cancel();
+    _burstTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    unawaited(_stopWebView());
+    _game.onStopGas = null;
+    _game.onSituationResolvedToEngine = null;
+    _game.onTrafficReleaseToEngine = null;
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _active =
+        WidgetsBinding.instance.lifecycleState == null ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    WidgetsBinding.instance.addObserver(this);
+    _game = ref.read(gameControllerProvider.notifier);
+    _game.onStopGas = () {
+      _send('setGas', [false]);
+      _send('setBrake', [false]);
+    };
+    _initialization = _initWebView();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_configured) _syncTheme();
+  }
+
+  Future<void> _initWebView() async {
+    if (kIsWeb || !CountryConfig.current.hasVerifiedGame) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await GameGarageService.instance.load();
+      final saved = prefs.getString('game_vehicle');
+      final savedPaint = prefs.getString('game_vehicle_paint') ?? 'red';
+      if (saved != null &&
+          gameVehicleIds.contains(saved) &&
+          (saved != _vehicleId || savedPaint != _vehiclePaint) &&
+          mounted) {
+        setState(() {
+          _vehicleId = saved;
+          _vehiclePaint = savedPaint;
+        });
+      }
+      _bestScore ??= prefs.getInt(_bestScoreKey) ?? 0;
+      if (!_fuelLoaded) {
+        final fuel = await GameFuelService.instance.load();
+        _fuelLoaded = true;
+        if (mounted) {
+          _game.configureFuel(
+            fuel: fuel,
+            unlimited: ref.read(isPremiumProvider),
+          );
+          _scheduleFuelTick();
+        }
+      }
+      if (!prefs.containsKey(_seenKey) && mounted) {
+        setState(() {
+          _firstRun = true;
+          _showGasHint = true;
+        });
+      }
+    } catch (_) {
+      /* A unavailable preference store must not block the game. */
+    }
+    if (!mounted || _disposing) return;
+
+    final sessionId = _game.sessionId;
+    _readyTimer?.cancel();
+    var activeSeconds = 0;
+    // Count foreground time only; backgrounding must not fail a slow startup.
+    _readyTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted ||
+          !_game.acceptsSession(sessionId) ||
+          _configured ||
+          _failed) {
+        timer.cancel();
+        return;
+      }
+      if (_active && ++activeSeconds >= 30) {
+        timer.cancel();
+        _bridgeFailed(sessionId);
+      }
+    });
+    try {
+      final controller = WebViewController();
+      // Preferences load asynchronously: rebuild to mount the native view
+      // before the engine reports ready (not only after that report).
+      setState(() => _webViewController = controller);
+      await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
+      if (controller.platform is AndroidWebViewController) {
+        await (controller.platform as AndroidWebViewController)
+            .setMediaPlaybackRequiresUserGesture(false);
+      }
+      // Match the app theme so nothing flashes white behind the loader.
+      await controller.setBackgroundColor(
+        mounted && Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF252B30)
+            : const Color(0xFFF8F8FA),
+      );
+      await controller.setNavigationDelegate(
+        NavigationDelegate(
+          onWebResourceError: (error) {
+            if (error.isForMainFrame != false) _bridgeFailed(sessionId);
+          },
+        ),
+      );
+      await controller.addJavaScriptChannel(
+        'FlutterChannel',
+        onMessageReceived: (message) => _handleJsMessage(message, sessionId),
+      );
+      if (!mounted || !_game.acceptsSession(sessionId)) return;
+      await controller.loadFlutterAsset('assets/game/index.html');
+    } catch (_) {
+      _bridgeFailed(sessionId);
+    }
+
+    if (!mounted || !_game.acceptsSession(sessionId)) return;
+    // Connect controller callback for engine communication
+    ref.read(gameControllerProvider.notifier).onTrafficReleaseToEngine = (id) {
+      _send('releaseTraffic', [id]);
+    };
+    ref
+        .read(gameControllerProvider.notifier)
+        .onSituationResolvedToEngine = (isCorrect, situationId) {
+      _send('proceedAfterAnswer', [isCorrect, situationId]);
+    };
+  }
+
+  void _handleJsMessage(JavaScriptMessage message, String sourceSessionId) {
+    if (!mounted ||
+        _disposing ||
+        _restarting ||
+        _failed ||
+        !_game.acceptsSession(sourceSessionId)) {
+      return;
+    }
+    try {
+      final data = json.decode(message.message);
+      if (data is! Map) return;
+
+      final event = data['event'] as String?;
+      final gameNotifier = ref.read(gameControllerProvider.notifier);
+      if (data['sessionId'] != null &&
+          !gameNotifier.acceptsSession(data['sessionId'])) {
+        return;
+      }
+      if (event == 'engine_error') {
+        _bridgeFailed(sourceSessionId);
+        return;
+      }
+      if (event == 'ready' && !_configured) {
+        _readyTimer?.cancel();
+        _configured = true;
+        gameNotifier.setPaused(
+          !_active || _garageOpen || _locked || _outOfFuel,
+        );
+        _configure();
+      }
+
+      if (event == 'ready') {
+        _lastInsets = null;
+        gameNotifier.onEngineReady();
+        _syncTheme();
+      } else if (event == 'approach_situation') {
+        final sitMap = data['situation'] as Map<String, dynamic>?;
+        if (sitMap != null) {
+          final sit = GameSituation.fromJson(sitMap);
+          gameNotifier.onApproachSituation(sit);
+        }
+      } else if (event == 'telemetry') {
+        final speed = data['speedKmH'];
+        final dist = data['distanceM'];
+        final limit = data['limitKmH'];
+        if (speed is num && speed.isFinite && dist is num && dist.isFinite) {
+          gameNotifier.updateTelemetry(
+            speedKmH: speed.toInt(),
+            distanceM: dist.toInt(),
+            limitKmH: limit is num && limit > 0 ? limit.toInt() : null,
+          );
+        }
+      } else if (event == 'situation_cleared') {
+        if (data['situationId'] is String) {
+          gameNotifier.onSituationClearedFromEngine(data['situationId']);
+        }
+      } else if (event == 'lane_changed') {
+        if (data['lane'] is String && data['oncoming'] is bool) {
+          gameNotifier.updateLane(data['lane'], data['oncoming']);
+        }
+      } else if (event == 'violation') {
+        if (data['type'] is String && data['episode'] is int) {
+          gameNotifier.recordViolation(data['type'], data['episode']);
+        }
+      } else if (event == 'maneuver_reset') {
+        gameNotifier.setRecovering(true);
+        _send('setGas', [false]);
+        _send('setBrake', [false]);
+        _send('setSteering', [0]);
+      } else if (event == 'maneuver_ready') {
+        gameNotifier.setRecovering(false);
+      } else if (event == 'vehicle_selected') {
+        final id = data['vehicleId'];
+        if (id is String && gameVehicleIds.contains(id)) {
+          setState(() => _vehicleId = id);
+          unawaited(_saveVehicle(id, _vehiclePaint));
+        }
+      } else if (event == 'reveal_shown') {
+        if (_reveal != null) setState(() => _revealShown = true);
+      }
+    } catch (e) {
+      debugPrint('Game JS Message Error: $e');
+    }
+  }
+
+  void _syncTheme() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    _send('setTheme', [isDark]);
+  }
+
+  void _handleGas(bool isPressed) {
+    if (isPressed && !ref.read(gameControllerProvider).controlsEnabled) return;
+    if (isPressed && _showGasHint) {
+      setState(() => _showGasHint = false);
+      SharedPreferences.getInstance()
+          .then((prefs) => prefs.setBool(_seenKey, true))
+          .catchError((_) => false);
+    }
+    _send('setGas', [isPressed]);
+  }
+
+  void _handleSwitchLane(String direction) {
+    if (!ref.read(gameControllerProvider).controlsEnabled) return;
+    _send('switchLane', [direction]);
+  }
+
+  Future<void> _openGarage() async {
+    if (_garageOpen || !_configured || _failed) return;
+    _garageOpen = true;
+    _game.setPaused(true);
+    _send('setPaused', [true]);
+    _send('selectVehicle', [_vehicleId, _vehiclePaint]);
+    try {
+      final garage = GameGarageService.instance;
+      final selected = await showModalBottomSheet<GameCar>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (_) => GameGarage(
+          selected: GameCar(_vehicleId, _vehiclePaint),
+          cars: garage.cars,
+          premium: ref.read(isPremiumProvider),
+          correctUntilNext: garage.correctUntilNext,
+          thumbnail: _thumbnail,
+          thumbnailCache: _thumbnails,
+        ),
+      );
+      if (!mounted ||
+          selected == null ||
+          !gameVehicleIds.contains(selected.id)) {
+        return;
+      }
+      _selectCar(selected);
+    } finally {
+      _garageOpen = false;
+      if (mounted && !_disposing) {
+        final paused =
+            !_active ||
+            _failed ||
+            _locked ||
+            ref.read(gameControllerProvider).phase == GamePhase.gameOver;
+        _game.setPaused(paused);
+        _send('setPaused', [paused]);
+      }
+    }
+  }
+
+  void _selectCar(GameCar car) {
+    setState(() {
+      _vehicleId = car.id;
+      _vehiclePaint = car.paint;
+    });
+    _send('selectVehicle', [car.id, car.paint]);
+    unawaited(_saveVehicle(car.id, car.paint));
+  }
+
+  Future<void> _saveVehicle(String id, String paint) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('game_vehicle', id);
+      await prefs.setString('game_vehicle_paint', paint);
+    } catch (_) {
+      /* Keep the selected model for this session. */
+    }
+  }
+
+  /// Asks the engine for a PNG of the car (a data URL), for the garage list.
+  Future<String> _thumbnail(String id, String paint) async {
+    final controller = _webViewController;
+    if (controller == null || !_configured) return '';
+    final result = await controller.runJavaScriptReturningResult(
+      'window.game?.thumbnail?.(${jsonEncode(id)}, ${jsonEncode(paint)}) || ""',
+    );
+    var text = result.toString();
+    // Android returns the JS string JSON-quoted.
+    if (text.startsWith('"')) text = jsonDecode(text) as String;
+    return text;
+  }
+
+  /// A correct answer counts towards the next car; when it arrives, the
+  /// garage doors open over the paused scene.
+  Future<void> _countCorrect() async {
+    final unlocked = await GameGarageService.instance.recordCorrect();
+    if (unlocked == null || !mounted || _reveal != null) return;
+    _showReveal(unlocked);
+  }
+
+  void _showReveal(GameCar car) {
+    setState(() {
+      _reveal = car;
+      _revealShown = false;
+    });
+    _game.setPaused(true);
+    _send('setGas', [false]);
+    _send('setBrake', [false]);
+    _send('showReveal', [car.id, car.paint]);
+  }
+
+  void _closeReveal({required bool choose}) {
+    final car = _reveal;
+    if (car == null) return;
+    setState(() {
+      _reveal = null;
+      _revealShown = false;
+    });
+    _send('hideReveal', []);
+    if (choose) _selectCar(car);
+    _game.setPaused(
+      !_active ||
+          _failed ||
+          _garageOpen ||
+          _locked ||
+          _outOfFuel ||
+          ref.read(gameControllerProvider).phase == GamePhase.gameOver,
+    );
+    _send('setPaused', [_enginePaused]);
+  }
+
+  /// Whether the three.js loop should stop. A signed-out visitor keeps the
+  /// engine running: the street stays alive around the parked car.
+  bool get _enginePaused =>
+      !_active ||
+      _failed ||
+      _garageOpen ||
+      _outOfFuel ||
+      ref.read(gameControllerProvider).phase == GamePhase.gameOver;
+
+  Future<void> _handleRestart() async {
+    if (_restarting || _disposing) return;
+    final tank = GameFuelService.instance.refresh();
+    final premium = ref.read(isPremiumProvider);
+    if (!premium && tank <= 0) return;
+    _game.configureFuel(fuel: tank, unlimited: premium);
+    _restarting = true;
+    _readyTimer?.cancel();
+    _game.setPaused(true);
+    await _stopWebView();
+    if (!mounted || _disposing) return;
+    ref.read(gameControllerProvider.notifier).restartGame();
+    _newRecord = false;
+    // A fresh document isolates queued bridge events and resets all JS state.
+    _configured = false;
+    _restarting = false;
+    _cleanup = null;
+    setState(() => _failed = false);
+    _lastInsets = null;
+    _initialization = _initWebView();
+    _game.setPaused(!_active);
+  }
+
+  // A new personal best: remember it, celebrate with the fanfare; the dialog
+  // shows the badge and confetti while `_newRecord` is set.
+  void _finishRun(int score) {
+    final best = _bestScore ?? 0;
+    final record = score > best && score > 0;
+    setState(() {
+      _newRecord = record;
+      if (record) _bestScore = score;
+    });
+    // Every finished run counts towards the weekly rating.
+    GameLeaderboardService.instance.submitRun(score);
+    if (record) {
+      SoundEffectsService.instance.playStreak();
+      HapticFeedbackHelper.success();
+      SharedPreferences.getInstance()
+          .then((prefs) => prefs.setInt(_bestScoreKey, score))
+          .catchError((_) => false);
+    }
+  }
+
+  void _handleExit() {
+    _game.setPaused(true);
+    _send('setPaused', [true]);
+    if (widget.onExit != null) {
+      widget.onExit!();
+    } else if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final gameState = ref.watch(gameControllerProvider);
+    final gameNotifier = ref.read(gameControllerProvider.notifier);
+    if (_failed) {
+      return Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(appL10n.gameLoadError, textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _handleRestart,
+                    child: Text(appL10n.gameRestart),
+                  ),
+                  TextButton(
+                    onPressed: _handleExit,
+                    child: Text(appL10n.gameExit),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    ref.listen(gameControllerProvider, (previous, next) {
+      if (previous?.controlsEnabled == true && !next.controlsEnabled) {
+        _send('setGas', [false]);
+        _send('setBrake', [false]);
+        _send('setSteering', [0]);
+      }
+      if (previous != null &&
+          next.fuel != previous.fuel &&
+          !next.fuelUnlimited) {
+        GameFuelService.instance.setFuel(next.fuel);
+        _scheduleFuelTick();
+      }
+      if (previous?.phase == GamePhase.situation &&
+          next.phase == GamePhase.resolving &&
+          next.isLastAnswerCorrect == true) {
+        // A correct answer: confetti rises from the top edge of the question
+        // card as the card slides away.
+        final cardTop = _bottomKey.currentContext?.size?.height;
+        final screen = MediaQuery.sizeOf(context).height;
+        _burstOrigin = Offset(
+          0.5,
+          cardTop == null || screen <= 0
+              ? 0.72
+              : (1 - cardTop / screen).clamp(0.3, 0.95),
+        );
+        setState(() => _correctBurst++);
+        unawaited(_countCorrect());
+        _burstTimer?.cancel();
+        _burstTimer = Timer(const Duration(milliseconds: 2900), () {
+          if (mounted) setState(() => _correctBurst = 0);
+        });
+      }
+      if (next.lastViolation == 'collision' &&
+          next.violationCount != previous?.violationCount) {
+        HapticFeedbackHelper.collision();
+      }
+      if (previous?.phase != GamePhase.gameOver &&
+          next.phase == GamePhase.gameOver) {
+        _send('setPaused', [true]);
+        _finishRun(next.score);
+      }
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final padding = MediaQuery.paddingOf(context);
+      final insets = {
+        'top': _hudKey.currentContext?.size?.height ?? padding.top,
+        'bottom': (_bottomKey.currentContext?.size?.height ?? padding.bottom)
+            .clamp(padding.bottom, double.infinity),
+      };
+      final encoded = jsonEncode(insets);
+      if (encoded != _lastInsets) {
+        _lastInsets = encoded;
+        _send('setViewportInsets', [insets]);
+      }
+    });
+
+    if (kIsWeb || !CountryConfig.current.hasVerifiedGame) {
+      return Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            onPressed: _handleExit,
+            icon: const Icon(Icons.arrow_back),
+          ),
+        ),
+        backgroundColor: colors.homeScreenBackground,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.sports_esports_rounded,
+                  size: 64,
+                  color: colors.accent,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  appL10n.gameSimulator,
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: colors.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  CountryConfig.current.hasVerifiedGame
+                      ? appL10n.gameMobileOnly
+                      : appL10n.gameUnavailable,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 14,
+                    color: colors.secondaryText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Not signed in: the scene is visible (paused) but the car cannot be
+    // driven; a card at the bottom asks to sign in. Everything else stays.
+    final locked = !ref.watch(isAuthenticatedProvider);
+    final premium = ref.watch(isPremiumProvider);
+    if (_fuelLoaded && premium != gameState.fuelUnlimited) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _game.configureFuel(
+            fuel: GameFuelService.instance.refresh(),
+            unlimited: premium,
+          );
+        }
+      });
+    }
+    final outOfFuel =
+        !locked &&
+        !premium &&
+        _fuelLoaded &&
+        gameState.fuel <= 0 &&
+        gameState.phase != GamePhase.gameOver;
+    if (outOfFuel != _outOfFuel) {
+      _outOfFuel = outOfFuel;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _game.setPaused(outOfFuel || locked || !_active);
+        _send('setPaused', [outOfFuel || !_active]);
+      });
+    }
+    if (locked != _locked) {
+      _locked = locked;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _game.setPaused(locked || !_active);
+        _send('setAttract', [locked]);
+        _send('setPaused', [!_active]);
+      });
+    }
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: colors.cardBackground,
+        systemNavigationBarIconBrightness: isDark
+            ? Brightness.light
+            : Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: Stack(
+          children: [
+            // 3D Canvas
+            if (_webViewController != null)
+              Positioned.fill(
+                child: WebViewWidget(
+                  key: ValueKey(_game.sessionId),
+                  controller: _webViewController!,
+                ),
+              ),
+            // Opaque, theme-coloured loading cover with a spinning wheel: the
+            // WebView paints nothing useful until the engine reports ready.
+            if (gameState.phase == GamePhase.ready)
+              Positioned.fill(
+                child: Container(
+                  color: colors.background,
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _LoadingWheel(
+                          color: colors.accent,
+                          rim: colors.cardBackground,
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          appL10n.gameLoading,
+                          style: TextStyle(
+                            fontFamily: 'Onest',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: colors.primaryText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            // Top HUD
+            if (_reveal == null)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SizedBox(
+                  key: _hudKey,
+                  child: GameHud(
+                    state: gameState,
+                    vehicleId: _vehicleId,
+                    vehiclePaint: _vehiclePaint,
+                    thumbnail: _thumbnail,
+                    thumbnailCache: _thumbnails,
+                    onGarage: gameState.controlsEnabled ? _openGarage : null,
+                    onGarageLongPress: _openDebug,
+                    onLeaderboard: gameState.controlsEnabled
+                        ? _openLeaderboard
+                        : null,
+                  ),
+                ),
+              ),
+
+            if (locked)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: MediaQuery.paddingOf(context).bottom + 16,
+                child: _LockCard(onSignIn: () => AuthModalSheet.show(context)),
+              ),
+            if (outOfFuel)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: MediaQuery.paddingOf(context).bottom + 16,
+                child: GameFuelEmptyPanel(
+                  refillAt: GameFuelService.instance.firstUnitAt,
+                  onBuyPremium: () => PremiumPaywallSheet.show(context),
+                ),
+              ),
+            if (_correctBurst > 0)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: ConfettiBurst(
+                    key: ValueKey(_correctBurst),
+                    origin: _burstOrigin,
+                  ),
+                ),
+              ),
+            // Bottom Overlays depending on game phase
+            if (!locked &&
+                !outOfFuel &&
+                _reveal == null &&
+                gameState.phase != GamePhase.gameOver)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Column(
+                  key: _bottomKey,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // The card slides down out of view once answered.
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 380),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) => ClipRect(
+                        child: SlideTransition(
+                          position: Tween(
+                            begin: const Offset(0, 1),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      ),
+                      layoutBuilder: (current, previous) => Stack(
+                        alignment: Alignment.bottomCenter,
+                        children: [...previous, ?current],
+                      ),
+                      child: gameState.phase == GamePhase.situation
+                          ? GameQuestionCard(
+                              key: const ValueKey('question'),
+                              state: gameState,
+                              onSelectAnswer: gameNotifier.submitAnswer,
+                            )
+                          : const SizedBox.shrink(key: ValueKey('none')),
+                    ),
+                    if (gameState.phase == GamePhase.explanation &&
+                        gameState.currentSituation != null)
+                      GameExplanationSheet(
+                        situation: gameState.currentSituation!,
+                        onContinue: gameNotifier.continueAfterExplanation,
+                      ),
+                    if (gameState.phase == GamePhase.driving ||
+                        gameState.phase == GamePhase.resolving)
+                      GameControlsOverlay(
+                        state: gameState,
+                        onGasChanged: _handleGas,
+                        onSwitchLane: _handleSwitchLane,
+                        onSteering: (direction) =>
+                            _send('setSteering', [direction]),
+                        onBrake: (pressed) => _send('setBrake', [pressed]),
+                      ),
+                  ],
+                ),
+              ),
+
+            if (_showGasHint &&
+                gameState.phase == GamePhase.driving &&
+                gameState.speedKmH == 0)
+              // Beside the gas pedal (the brake sits above it), pointing at it.
+              Positioned(
+                right: 20 + 100 + 10,
+                bottom: MediaQuery.paddingOf(context).bottom + 20 + 28,
+                child: IgnorePointer(
+                  child: _GasHint(text: appL10n.gameGasHint),
+                ),
+              ),
+
+            if (_reveal != null)
+              Positioned.fill(
+                child: GameRevealOverlay(
+                  car: _reveal!,
+                  shown: _revealShown,
+                  onChoose: () => _closeReveal(choose: true),
+                  onClose: () => _closeReveal(choose: false),
+                ),
+              ),
+
+            // Game Over Dialog Modal
+            if (gameState.phase == GamePhase.gameOver && _reveal == null)
+              Positioned.fill(
+                child: Container(
+                  color: const Color(0x80000000),
+                  child: Center(
+                    child: GameOverDialog(
+                      state: gameState,
+                      vehicleId: _vehicleId,
+                      vehiclePaint: _vehiclePaint,
+                      thumbnail: _thumbnail,
+                      thumbnailCache: _thumbnails,
+                      onLeaderboard: () => GameLeaderboardSheet.show(context),
+                      fuelRefillAt: GameFuelService.instance.firstUnitAt,
+                      onBuyPremium: () => PremiumPaywallSheet.show(context),
+                      bestScore: _newRecord ? null : _bestScore,
+                      isNewRecord: _newRecord,
+                      onRestart: _handleRestart,
+                      onExit: _handleExit,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A gently bouncing callout above the gas pedal for the very first drive.
+class _GasHint extends StatefulWidget {
+  final String text;
+  const _GasHint({required this.text});
+
+  @override
+  State<_GasHint> createState() => _GasHintState();
+}
+
+class _GasHintState extends State<_GasHint>
+    with SingleTickerProviderStateMixin {
+  // Finite (nine bounces, then rest): keeps widget tests settling.
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 8),
+  )..forward();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) => Transform.translate(
+        offset: Offset(6 * math.sin(_controller.value * math.pi * 9).abs(), 0),
+        child: child,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 170),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                color: colors.accent,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+              ),
+              child: Text(
+                widget.text,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.white,
+                  fontFamily: 'Onest',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                ),
+              ),
+            ),
+          ),
+          Icon(Icons.arrow_forward_rounded, color: colors.accent, size: 26),
+        ],
+      ),
+    );
+  }
+}
+
+/// A rolling tyre with a rim and spokes — the game's loading indicator.
+class _LoadingWheel extends StatefulWidget {
+  final Color color;
+  final Color rim;
+  const _LoadingWheel({required this.color, required this.rim});
+
+  @override
+  State<_LoadingWheel> createState() => _LoadingWheelState();
+}
+
+class _LoadingWheelState extends State<_LoadingWheel>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RotationTransition(
+      turns: _controller,
+      child: CustomPaint(
+        size: const Size(72, 72),
+        painter: _WheelPainter(
+          tyre: const Color(0xFF23272C),
+          rim: widget.rim,
+          hub: widget.color,
+        ),
+      ),
+    );
+  }
+}
+
+class _WheelPainter extends CustomPainter {
+  final Color tyre;
+  final Color rim;
+  final Color hub;
+  const _WheelPainter({
+    required this.tyre,
+    required this.rim,
+    required this.hub,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = size.center(Offset.zero), r = size.width / 2;
+    canvas.drawCircle(c, r, Paint()..color = tyre);
+    canvas.drawCircle(c, r * 0.62, Paint()..color = rim);
+    final spoke = Paint()
+      ..color = tyre
+      ..strokeWidth = r * 0.14
+      ..strokeCap = StrokeCap.round;
+    for (var i = 0; i < 5; i++) {
+      final a = i * 2 * math.pi / 5;
+      canvas.drawLine(c, c + Offset(math.cos(a), math.sin(a)) * r * 0.5, spoke);
+    }
+    canvas.drawCircle(c, r * 0.2, Paint()..color = hub);
+    // Tread notches make the rotation visible.
+    final notch = Paint()
+      ..color = rim.withValues(alpha: 0.35)
+      ..strokeWidth = 3;
+    for (var i = 0; i < 12; i++) {
+      final a = i * 2 * math.pi / 12;
+      canvas.drawLine(
+        c + Offset(math.cos(a), math.sin(a)) * r * 0.86,
+        c + Offset(math.cos(a), math.sin(a)) * r * 0.98,
+        notch,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_WheelPainter old) => old.hub != hub || old.rim != rim;
+}
+
+/// Bottom card shown to signed-out visitors: they can look, not drive.
+class _LockCard extends StatelessWidget {
+  final VoidCallback onSignIn;
+  const _LockCard({required this.onSignIn});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      decoration: BoxDecoration(
+        color: colors.cardBackground,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lock_outline_rounded, color: colors.accent),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  appL10n.gameLockedTitle,
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: colors.primaryText,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            appL10n.gameLockedHint,
+            style: TextStyle(
+              fontFamily: 'Onest',
+              fontSize: 13,
+              height: 1.35,
+              color: colors.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 14),
+          ElevatedButton(
+            onPressed: onSignIn,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.accent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              minimumSize: const Size.fromHeight(48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+              ),
+            ),
+            child: Text(
+              appL10n.gameSignIn,
+              style: const TextStyle(
+                fontFamily: 'Onest',
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

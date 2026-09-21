@@ -80,13 +80,14 @@ class _ZoomableImageScreenState extends State<_ZoomableImageScreen>
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 220),
-    )..addListener(() {
-        final animation = _zoomAnimation;
-        if (animation != null) _controller.value = animation.value;
-      });
+    _animationController =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 220),
+        )..addListener(() {
+          final animation = _zoomAnimation;
+          if (animation != null) _controller.value = animation.value;
+        });
   }
 
   @override
@@ -286,11 +287,7 @@ class _ViewerButtons extends StatelessWidget {
       bottom: MediaQuery.of(context).padding.bottom + 24,
       child: Row(
         children: [
-          _RoundButton(
-            icon: zoomIcon,
-            tooltip: appL10n.zoomIn,
-            onTap: onZoom,
-          ),
+          _RoundButton(icon: zoomIcon, tooltip: appL10n.zoomIn, onTap: onZoom),
           const SizedBox(width: AppDimensions.spacingM),
           _RoundButton(
             icon: Icons.close_rounded,
@@ -357,11 +354,7 @@ class ZoomHintBadge extends StatelessWidget {
         color: Colors.black.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Icon(
-        Icons.zoom_in_rounded,
-        size: 18,
-        color: Colors.white,
-      ),
+      child: const Icon(Icons.zoom_in_rounded, size: 18, color: Colors.white),
     );
   }
 }

@@ -13,10 +13,7 @@ class PremiumGrantedDialog extends StatefulWidget {
     required this.onDismiss,
   });
 
-  static Future<void> show(
-    BuildContext context, {
-    DateTime? expiresAt,
-  }) {
+  static Future<void> show(BuildContext context, {DateTime? expiresAt}) {
     HapticFeedbackHelper.success();
     return showDialog<void>(
       context: context,
@@ -122,9 +119,7 @@ class _PremiumGrantedDialogState extends State<PremiumGrantedDialog>
                   animation: _confettiAnim,
                   builder: (context, _) {
                     return CustomPaint(
-                      painter: _ConfettiPainter(
-                        progress: _confettiAnim.value,
-                      ),
+                      painter: _ConfettiPainter(progress: _confettiAnim.value),
                     );
                   },
                 ),
@@ -143,7 +138,9 @@ class _PremiumGrantedDialogState extends State<PremiumGrantedDialog>
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.12),
+                      color: Colors.black.withValues(
+                        alpha: isDark ? 0.4 : 0.12,
+                      ),
                       blurRadius: 30,
                       offset: const Offset(0, 10),
                     ),
@@ -161,10 +158,7 @@ class _PremiumGrantedDialogState extends State<PremiumGrantedDialog>
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
-                      child: const Text(
-                        '🎉',
-                        style: TextStyle(fontSize: 38),
-                      ),
+                      child: const Text('🎉', style: TextStyle(fontSize: 38)),
                     ),
                     const SizedBox(height: 16),
 

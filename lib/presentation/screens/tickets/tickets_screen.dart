@@ -102,67 +102,72 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
                   return LayoutBuilder(
                     builder: (context, constraints) {
                       final gridWidth = constraints.maxWidth;
-                      final crossAxisCount = _ticketGridCrossAxisCount(gridWidth);
+                      final crossAxisCount = _ticketGridCrossAxisCount(
+                        gridWidth,
+                      );
                       final gridPad = gridWidth < 400
                           ? AppDimensions.spacingS
                           : AppDimensions.screenPadding;
                       return GridView.builder(
                         key: ValueKey(_refreshKey),
                         padding: EdgeInsets.all(gridPad),
-                        gridDelegate:
-                            SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: crossAxisCount,
                           mainAxisSpacing: AppDimensions.spacingM,
                           crossAxisSpacing: AppDimensions.spacingM,
-                          childAspectRatio: _ticketGridAspectRatio(crossAxisCount),
-                        ),
-                        itemCount: tickets.length,
-                    itemBuilder: (context, index) {
-                      final ticket = tickets[index];
-                      final ticketNum = ticket['number'] as int;
-                      final questions = ticket['questions'] as List;
-                      final progressSnapshot =
-                          progress[ticketNum] ?? (answered: 0, correct: 0);
-                      final answeredCount = progressSnapshot.answered;
-                      final correctCount = progressSnapshot.correct;
-                      final isCompleted = answeredCount == questions.length;
-                      final isPassed = isCompleted &&
-                          correctCount >=
-                              CountryConfig.current.examRules
-                                  .passThreshold(questions.length);
-                      return _buildTicketCard(
-                        context: context,
-                        number: ticketNum,
-                        totalQuestions: questions.length,
-                        correctCount: correctCount,
-                        isCompleted: isCompleted,
-                        isPassed: isPassed,
-                        questions: List<Map<String, dynamic>>.from(
-                          questions.map(
-                            (q) => {
-                              'id': q.id,
-                              'question': q.question,
-                              'answers': q.answers
-                                  .map(
-                                    (a) => {
-                                      'text': a.text,
-                                      'correct': a.isCorrect,
-                                    },
-                                  )
-                                  .toList(),
-                              'comment': q.comment ?? '',
-                              'pddPoints': q.pddPoints ?? [],
-                              'image': q.image,
-                              'topic': q.topic ?? [],
-                              'ticketNumber': q.ticketNumber,
-                            },
+                          childAspectRatio: _ticketGridAspectRatio(
+                            crossAxisCount,
                           ),
                         ),
+                        itemCount: tickets.length,
+                        itemBuilder: (context, index) {
+                          final ticket = tickets[index];
+                          final ticketNum = ticket['number'] as int;
+                          final questions = ticket['questions'] as List;
+                          final progressSnapshot =
+                              progress[ticketNum] ?? (answered: 0, correct: 0);
+                          final answeredCount = progressSnapshot.answered;
+                          final correctCount = progressSnapshot.correct;
+                          final isCompleted = answeredCount == questions.length;
+                          final isPassed =
+                              isCompleted &&
+                              correctCount >=
+                                  CountryConfig.current.examRules.passThreshold(
+                                    questions.length,
+                                  );
+                          return _buildTicketCard(
+                            context: context,
+                            number: ticketNum,
+                            totalQuestions: questions.length,
+                            correctCount: correctCount,
+                            isCompleted: isCompleted,
+                            isPassed: isPassed,
+                            questions: List<Map<String, dynamic>>.from(
+                              questions.map(
+                                (q) => {
+                                  'id': q.id,
+                                  'question': q.question,
+                                  'answers': q.answers
+                                      .map(
+                                        (a) => {
+                                          'text': a.text,
+                                          'correct': a.isCorrect,
+                                        },
+                                      )
+                                      .toList(),
+                                  'comment': q.comment ?? '',
+                                  'pddPoints': q.pddPoints ?? [],
+                                  'image': q.image,
+                                  'topic': q.topic ?? [],
+                                  'ticketNumber': q.ticketNumber,
+                                },
+                              ),
+                            ),
+                          );
+                        },
                       );
                     },
                   );
-                },
-              );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(child: Text(dataLoadErrorMessage(e))),

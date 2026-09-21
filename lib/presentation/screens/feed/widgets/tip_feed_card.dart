@@ -40,10 +40,7 @@ class _TipFeedCardState extends State<TipFeedCard>
   @override
   void initState() {
     super.initState();
-    _timerController = AnimationController(
-      vsync: this,
-      duration: _tipDuration,
-    );
+    _timerController = AnimationController(vsync: this, duration: _tipDuration);
 
     _timerController.addListener(() {
       if (widget.isCurrent) {
@@ -52,7 +49,9 @@ class _TipFeedCardState extends State<TipFeedCard>
         widget.onTimerTick?.call(progress, remainingSec);
 
         // Sound effect tick during the last 5 seconds (5, 4, 3, 2, 1)
-        if (remainingSec > 0 && remainingSec <= 5 && _lastTickedSecond != remainingSec) {
+        if (remainingSec > 0 &&
+            remainingSec <= 5 &&
+            _lastTickedSecond != remainingSec) {
           _lastTickedSecond = remainingSec;
           SoundEffectsService.instance.playTick();
         }
@@ -146,30 +145,16 @@ class _TipFeedCardState extends State<TipFeedCard>
     }
   }
 
-
-  Widget _buildFallbackCircleIcon(
-    IconData tipIcon,
-    Color bg,
-    Color fg,
-  ) {
+  Widget _buildFallbackCircleIcon(IconData tipIcon, Color bg, Color fg) {
     return Container(
       width: 104,
       height: 104,
       decoration: BoxDecoration(
         color: bg,
         shape: BoxShape.circle,
-        border: Border.all(
-          color: fg.withValues(alpha: 0.25),
-          width: 2,
-        ),
+        border: Border.all(color: fg.withValues(alpha: 0.25), width: 2),
       ),
-      child: Center(
-        child: Icon(
-          tipIcon,
-          size: 50,
-          color: fg,
-        ),
-      ),
+      child: Center(child: Icon(tipIcon, size: 50, color: fg)),
     );
   }
 
@@ -178,7 +163,8 @@ class _TipFeedCardState extends State<TipFeedCard>
     super.build(context);
     final colors = AppColors.of(context);
 
-    final tip = widget.item.driverTip ??
+    final tip =
+        widget.item.driverTip ??
         DriverTip(
           id: widget.item.id,
           title: widget.item.questionText,
@@ -240,7 +226,10 @@ class _TipFeedCardState extends State<TipFeedCard>
                 AnimatedBuilder(
                   animation: _timerController,
                   builder: (context, _) {
-                    final progress = (1.0 - _timerController.value).clamp(0.0, 1.0);
+                    final progress = (1.0 - _timerController.value).clamp(
+                      0.0,
+                      1.0,
+                    );
                     final remaining = (progress * 15).ceil();
                     final isUrgent = remaining <= 3;
                     final bg = isUrgent ? colors.redLight : colors.lightAccent;
@@ -253,7 +242,10 @@ class _TipFeedCardState extends State<TipFeedCard>
                         radius: 10.0,
                       ),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: bg,
                           borderRadius: BorderRadius.circular(10),
@@ -280,7 +272,10 @@ class _TipFeedCardState extends State<TipFeedCard>
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.accent,
                     borderRadius: BorderRadius.circular(10),
@@ -315,9 +310,7 @@ class _TipFeedCardState extends State<TipFeedCard>
               width: double.infinity,
               decoration: BoxDecoration(
                 color: colors.cardBackground,
-                borderRadius: BorderRadius.circular(
-                  AppDimensions.cardRadius,
-                ),
+                borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
               ),
               clipBehavior: Clip.antiAlias,
               child: Column(

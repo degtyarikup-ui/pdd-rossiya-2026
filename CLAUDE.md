@@ -117,6 +117,13 @@ flutter test                           # тесты всех моделей (exa
   подпись Google (Play App Signing), локальная сборка подписана upload-ключом,
   и Android считает их разными приложениями (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`).
   На обычные сборки флаг не влияет.
+  Установка на Pixel по Wi‑Fi одной командой: `./scripts/install_dev.sh`
+  (`--build` — пересобрать). Скрипт сам перезапускает adb-сервер (запущенный
+  в песочнице сети не видит), ищет телефон через mDNS → порт 5555 → последний
+  адрес из `.dev-device` → сканирование портов 30000–49999 на последнем IP
+  (~20 с), затем переводит телефон на фиксированный порт 5555. На телефоне
+  нужна только включённая «Отладка по Wi‑Fi» в той же сети; IP:PORT вручную —
+  только если сменился IP.
 - Android: flavors `ru` (ru.pdd.pdd_app) / `by` (by.pdd.pdd_app) /
   `rs` (rs.pdd.pdd_app), подпись одним ключом `android/upload-keystore.jks`
   (в .gitignore). AAB: `build/app/outputs/bundle/{flavor}Release/...`.
@@ -171,7 +178,6 @@ flutter test                           # тесты всех моделей (exa
       не менялись; цифры в админке отстают до 10 минут, перед Telegram-отчётом
       буфер сбрасывается принудительно. Новые счётчики — только через
       `trackStats`, никаких `put` на каждый запрос.
-
   - **Приложение**: `deploy_web.sh ru` → репо `pdd-rossiya-app` gh-pages →
     app.pdd-drive.ru (robots.txt Disallow: SEO живёт на лендинге; DNS: CNAME
     `app` → degtyarikup-ui.github.io на reg.ru).
@@ -227,7 +233,8 @@ flutter test                           # тесты всех моделей (exa
   `BOT_TOKEN`, `CHAT_ID`, `GEMINI_API_KEY`, `SHARED_SECRET` (ключ приложения).
 - `secrets/install_notify_secret.txt` (в .gitignore) — тот же ключ приложения
   для сборок; `scripts/build.sh` подставляет его автоматически.
-- Разбор от ИИ и пинги установок принимаются только с этим ключом; временный
+- Разбор от ИИ, пинги установок и очки игры (`/api/game/score`) принимаются
+  только с этим ключом; временный
   проход для старых сборок выключается галочкой в админке (раздел «ИИ»).
 
 Защита от случайной утечки — хук `tools/git-hooks/pre-commit`: не даёт

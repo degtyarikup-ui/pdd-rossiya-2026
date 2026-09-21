@@ -19,8 +19,8 @@ class _FlakyAssetBundle extends CachingAssetBundle {
   final Uint8List pngBytes;
   int imageLoadCalls = 0;
 
-  static final ByteData _emptyManifest =
-      const StandardMessageCodec().encodeMessage(<String, Object>{})!;
+  static final ByteData _emptyManifest = const StandardMessageCodec()
+      .encodeMessage(<String, Object>{})!;
 
   @override
   Future<ByteData> load(String key) async {
@@ -82,12 +82,16 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       // Даём реальному декодеру картинки доработать (не pumpAndSettle —
       // анимация скелета бесконечная и не даёт ему завершиться).
-      await tester
-          .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
       await tester.pump();
 
-      expect(bundle.imageLoadCalls, greaterThan(1),
-          reason: 'повторная загрузка должна была произойти');
+      expect(
+        bundle.imageLoadCalls,
+        greaterThan(1),
+        reason: 'повторная загрузка должна была произойти',
+      );
       expect(
         find.byKey(skeletonKey),
         findsNothing,
@@ -125,16 +129,18 @@ void main() {
   // --- Просмотр картинки с увеличением -----------------------------------
   // Повод: отзыв в RuStore «Картинки не увеличиваются при просмотре».
 
-  testWidgets('нажатие на картинку открывает полноэкранный просмотр с зумом',
-      (tester) async {
+  testWidgets('нажатие на картинку открывает полноэкранный просмотр с зумом', (
+    tester,
+  ) async {
     final bundle = _FlakyAssetBundle(failures: 0, pngBytes: png);
 
     await tester.pumpWidget(
       _host(const QuestionImage(assetPath: 'a/b/q.jpg'), bundle),
     );
     await tester.pump();
-    await tester
-        .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
     await tester.pump();
 
     // До нажатия просмотрщика нет, но подсказка-лупа видна: без неё
@@ -152,13 +158,17 @@ void main() {
     final viewer = tester.widget<InteractiveViewer>(
       find.byType(InteractiveViewer),
     );
-    expect(viewer.maxScale, greaterThanOrEqualTo(3.0),
-        reason: 'запаса увеличения должно хватать, чтобы рассмотреть детали');
+    expect(
+      viewer.maxScale,
+      greaterThanOrEqualTo(3.0),
+      reason: 'запаса увеличения должно хватать, чтобы рассмотреть детали',
+    );
     expect(viewer.minScale, 1.0);
   });
 
-  testWidgets('zoomable: false оставляет картинку без просмотрщика и лупы',
-      (tester) async {
+  testWidgets('zoomable: false оставляет картинку без просмотрщика и лупы', (
+    tester,
+  ) async {
     final bundle = _FlakyAssetBundle(failures: 0, pngBytes: png);
 
     await tester.pumpWidget(
@@ -168,8 +178,9 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester
-        .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
     await tester.pump();
 
     expect(find.byType(ZoomHintBadge), findsNothing);
@@ -180,52 +191,50 @@ void main() {
     expect(find.byType(InteractiveViewer), findsNothing);
   });
 
-  testWidgets(
-    'у двух картинок с ОДНИМ путём разные теги Hero',
-    (tester) async {
-      // Регрессия: экраны вопросов построены на PageView, который держит в
-      // дереве и соседние страницы. Если у двух вопросов подряд одна и та же
-      // картинка, тег Hero, собранный из пути к файлу, дал бы падение
-      // «multiple heroes share the same tag». Поэтому тег привязан к
-      // экземпляру виджета — этот тест и стережёт это свойство.
-      final bundle = _FlakyAssetBundle(failures: 0, pngBytes: png);
+  testWidgets('у двух картинок с ОДНИМ путём разные теги Hero', (tester) async {
+    // Регрессия: экраны вопросов построены на PageView, который держит в
+    // дереве и соседние страницы. Если у двух вопросов подряд одна и та же
+    // картинка, тег Hero, собранный из пути к файлу, дал бы падение
+    // «multiple heroes share the same tag». Поэтому тег привязан к
+    // экземпляру виджета — этот тест и стережёт это свойство.
+    final bundle = _FlakyAssetBundle(failures: 0, pngBytes: png);
 
-      await tester.pumpWidget(
-        _host(
-          const Column(
-            children: [
-              SizedBox(
-                width: 200,
-                height: 100,
-                child: QuestionImage(assetPath: 'a/b/q.jpg'),
-              ),
-              SizedBox(
-                width: 200,
-                height: 100,
-                child: QuestionImage(assetPath: 'a/b/q.jpg'),
-              ),
-            ],
-          ),
-          bundle,
+    await tester.pumpWidget(
+      _host(
+        const Column(
+          children: [
+            SizedBox(
+              width: 200,
+              height: 100,
+              child: QuestionImage(assetPath: 'a/b/q.jpg'),
+            ),
+            SizedBox(
+              width: 200,
+              height: 100,
+              child: QuestionImage(assetPath: 'a/b/q.jpg'),
+            ),
+          ],
         ),
-      );
-      await tester.pump();
-      await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 100)));
-      await tester.pump();
+        bundle,
+      ),
+    );
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pump();
 
-      final tags = tester
-          .widgetList<Hero>(find.byType(Hero))
-          .map((h) => h.tag)
-          .toList();
+    final tags = tester
+        .widgetList<Hero>(find.byType(Hero))
+        .map((h) => h.tag)
+        .toList();
 
-      expect(tags, hasLength(2));
-      expect(
-        tags.first,
-        isNot(equals(tags.last)),
-        reason: 'одинаковые теги уронили бы Hero при открытии просмотра',
-      );
-      expect(tester.takeException(), isNull);
-    },
-  );
+    expect(tags, hasLength(2));
+    expect(
+      tags.first,
+      isNot(equals(tags.last)),
+      reason: 'одинаковые теги уронили бы Hero при открытии просмотра',
+    );
+    expect(tester.takeException(), isNull);
+  });
 }

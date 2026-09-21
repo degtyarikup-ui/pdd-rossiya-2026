@@ -16,18 +16,18 @@ class AiChatMessage {
   });
 
   Map<String, dynamic> toJson() => {
-        'text': text,
-        'isUser': isUser,
-        'timestamp': timestamp.toIso8601String(),
-      };
+    'text': text,
+    'isUser': isUser,
+    'timestamp': timestamp.toIso8601String(),
+  };
 
   factory AiChatMessage.fromJson(Map<String, dynamic> json) => AiChatMessage(
-        text: json['text'] as String? ?? '',
-        isUser: json['isUser'] == true,
-        timestamp: json['timestamp'] != null
-            ? DateTime.tryParse(json['timestamp'] as String) ?? DateTime.now()
-            : DateTime.now(),
-      );
+    text: json['text'] as String? ?? '',
+    isUser: json['isUser'] == true,
+    timestamp: json['timestamp'] != null
+        ? DateTime.tryParse(json['timestamp'] as String) ?? DateTime.now()
+        : DateTime.now(),
+  );
 }
 
 class GeminiAiService {
@@ -66,8 +66,8 @@ class GeminiAiService {
 
     final correctAnswerText =
         (correctAnswerIndex >= 0 && correctAnswerIndex < answers.length)
-            ? answers[correctAnswerIndex]
-            : 'Вариант ${correctAnswerIndex + 1}';
+        ? answers[correctAnswerIndex]
+        : 'Вариант ${correctAnswerIndex + 1}';
 
     // 2. Запрос через Cloudflare Worker (/api/ai/chat)
     if (BackendConfig.hasNotifier) {
@@ -106,7 +106,8 @@ class GeminiAiService {
     }
 
     // 3. Прямой запрос в Gemini API при наличии ключа
-    final prompt = '''
+    final prompt =
+        '''
 Ты — преподаватель ПДД и персональный AI-автоинструктор.
 Твоя задача — кратко, по делу и простым языком объяснить дорожную ситуацию.
 
@@ -142,14 +143,11 @@ ${answers.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}
               'contents': [
                 {
                   'parts': [
-                    {'text': prompt}
-                  ]
-                }
+                    {'text': prompt},
+                  ],
+                },
               ],
-              'generationConfig': {
-                'temperature': 0.4,
-                'maxOutputTokens': 800,
-              }
+              'generationConfig': {'temperature': 0.4, 'maxOutputTokens': 800},
             }),
           )
           .timeout(const Duration(seconds: 10));
@@ -196,8 +194,8 @@ ${answers.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}
   }) async {
     final correctAnswerText =
         (correctAnswerIndex >= 0 && correctAnswerIndex < answers.length)
-            ? answers[correctAnswerIndex]
-            : 'Вариант ${correctAnswerIndex + 1}';
+        ? answers[correctAnswerIndex]
+        : 'Вариант ${correctAnswerIndex + 1}';
 
     // 1. Запрос через Cloudflare Worker
     if (BackendConfig.hasNotifier) {
@@ -245,7 +243,8 @@ ${answers.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}
 
     // 2. Прямой запрос в Gemini API с историей диалога
     try {
-      final systemPrompt = '''
+      final systemPrompt =
+          '''
 Ты — профессиональный преподаватель ПДД и персональный AI-автоинструктор.
 Твоя специализация СТРОГО ОГРАНИЧЕНА следующими темами:
 - Правила дорожного движения (ПДД РФ, Беларуси, Сербии)
@@ -274,33 +273,33 @@ ${answers.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}
       contents.add({
         'role': 'user',
         'parts': [
-          {'text': systemPrompt}
-        ]
+          {'text': systemPrompt},
+        ],
       });
       contents.add({
         'role': 'model',
         'parts': [
           {
             'text':
-                'Понял! Я готов просто и понятно ответить на любые вопросы по этой ситуации на дороге.'
-          }
-        ]
+                'Понял! Я готов просто и понятно ответить на любые вопросы по этой ситуации на дороге.',
+          },
+        ],
       });
 
       for (final msg in conversationHistory) {
         contents.add({
           'role': msg.isUser ? 'user' : 'model',
           'parts': [
-            {'text': msg.text}
-          ]
+            {'text': msg.text},
+          ],
         });
       }
 
       contents.add({
         'role': 'user',
         'parts': [
-          {'text': userMessage}
-        ]
+          {'text': userMessage},
+        ],
       });
 
       final url = Uri.parse(
@@ -313,10 +312,7 @@ ${answers.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'contents': contents,
-              'generationConfig': {
-                'temperature': 0.5,
-                'maxOutputTokens': 800,
-              }
+              'generationConfig': {'temperature': 0.5, 'maxOutputTokens': 800},
             }),
           )
           .timeout(const Duration(seconds: 12));
@@ -356,58 +352,79 @@ ${answers.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}
     final buffer = StringBuffer();
     buffer.writeln('🚗 **Суть на дороге:**');
     buffer.writeln(
-        'В данной дорожной ситуации верным решением является: **$correctAnswerText**.');
+      'В данной дорожной ситуации верным решением является: **$correctAnswerText**.',
+    );
     buffer.writeln();
     buffer.writeln('💡 **Правило ПДД:**');
 
     if (officialExplanation != null && officialExplanation.trim().isNotEmpty) {
       String cleaned = officialExplanation.trim().replaceAll(
-          RegExp(r'^(Комментарий|Объяснение|Правильный ответ):\s*',
-              caseSensitive: false),
-          '');
+        RegExp(
+          r'^(Комментарий|Объяснение|Правильный ответ):\s*',
+          caseSensitive: false,
+        ),
+        '',
+      );
 
       cleaned = cleaned
           .replaceAllMapped(
-              RegExp(r'(пункт\s+\d+(\.\d+)?|п\.\s*\d+(\.\d+)?)',
-                  caseSensitive: false),
-              (m) => '**${m[0]}**')
+            RegExp(
+              r'(пункт\s+\d+(\.\d+)?|п\.\s*\d+(\.\d+)?)',
+              caseSensitive: false,
+            ),
+            (m) => '**${m[0]}**',
+          )
           .replaceAllMapped(
-              RegExp(r'(знак\s+\d+\.\d+(\.\d+)?|знака\s+\d+\.\d+(\.\d+)?)',
-                  caseSensitive: false),
-              (m) => '**${m[0]}**')
-          .replaceAllMapped(RegExp(r'(помех[а-я]* справа)', caseSensitive: false),
-              (m) => '**${m[0]}**')
+            RegExp(
+              r'(знак\s+\d+\.\d+(\.\d+)?|знака\s+\d+\.\d+(\.\d+)?)',
+              caseSensitive: false,
+            ),
+            (m) => '**${m[0]}**',
+          )
           .replaceAllMapped(
-              RegExp(r'(главн[а-я]* дорог[а-я]*)', caseSensitive: false),
-              (m) => '**${m[0]}**')
+            RegExp(r'(помех[а-я]* справа)', caseSensitive: false),
+            (m) => '**${m[0]}**',
+          )
           .replaceAllMapped(
-              RegExp(r'(уступ[а-я]* дорогу)', caseSensitive: false),
-              (m) => '**${m[0]}**')
+            RegExp(r'(главн[а-я]* дорог[а-я]*)', caseSensitive: false),
+            (m) => '**${m[0]}**',
+          )
           .replaceAllMapped(
-              RegExp(r'(запрещен[а-я]*)', caseSensitive: false),
-              (m) => '**${m[0]}**')
+            RegExp(r'(уступ[а-я]* дорогу)', caseSensitive: false),
+            (m) => '**${m[0]}**',
+          )
           .replaceAllMapped(
-              RegExp(r'(разрешен[а-я]*)', caseSensitive: false),
-              (m) => '**${m[0]}**');
+            RegExp(r'(запрещен[а-я]*)', caseSensitive: false),
+            (m) => '**${m[0]}**',
+          )
+          .replaceAllMapped(
+            RegExp(r'(разрешен[а-я]*)', caseSensitive: false),
+            (m) => '**${m[0]}**',
+          );
 
       cleaned = cleaned.replaceAll('****', '**');
       buffer.writeln(cleaned);
     } else {
       buffer.writeln(
-          'Руководствуйтесь требованиями **дорожных знаков**, **разметки** и приоритета движения.');
+        'Руководствуйтесь требованиями **дорожных знаков**, **разметки** и приоритета движения.',
+      );
     }
 
     buffer.writeln();
     buffer.writeln('⚡ **Как легко запомнить:**');
-    buffer.writeln(_generateMnemonic(
-        questionText, correctAnswerText, officialExplanation));
+    buffer.writeln(
+      _generateMnemonic(questionText, correctAnswerText, officialExplanation),
+    );
 
     return buffer.toString();
   }
 
   /// Умная мнемоника и подсказка под конкретную тему вопроса
-  String _generateMnemonic(String questionText, String correctAnswerText,
-      String? officialExplanation) {
+  String _generateMnemonic(
+    String questionText,
+    String correctAnswerText,
+    String? officialExplanation,
+  ) {
     final q = questionText.toLowerCase();
     final exp = (officialExplanation ?? '').toLowerCase();
     final combined = '$q $exp';
@@ -466,8 +483,7 @@ ${answers.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}
         combined.contains('стрелк')) {
       suggestions.add('🚦 А если светофор сломан или мигает желтый?');
       suggestions.add('🟢 В чем разница стрелки и основного зеленого?');
-    } else if (combined.contains('регулировщик') ||
-        combined.contains('жезл')) {
+    } else if (combined.contains('регулировщик') || combined.contains('жезл')) {
       suggestions.add('👮 Как легко запомнить жесты регулировщика?');
       suggestions.add('🚦 Что главнее: светофор или регулировщик?');
     } else if (combined.contains('перекрест') ||
@@ -546,11 +562,42 @@ ${answers.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}
   }) {
     final lower = userMessage.toLowerCase();
     final pddKeywords = [
-      'пдд', 'правил', 'знак', 'дорог', 'светофор', 'разметк', 'перекрест',
-      'поворот', 'разворот', 'обгон', 'опережен', 'уступ', 'машин', 'авто',
-      'водитель', 'пешеход', 'штраф', 'коап', 'права', 'экзамен', 'гаи',
-      'гибдд', 'билет', 'скорост', 'парковк', 'стоян', 'останов', 'помощ',
-      'неисправн', 'почему', 'как', 'кто', 'где', 'запомн', 'траектор', 'лишен'
+      'пдд',
+      'правил',
+      'знак',
+      'дорог',
+      'светофор',
+      'разметк',
+      'перекрест',
+      'поворот',
+      'разворот',
+      'обгон',
+      'опережен',
+      'уступ',
+      'машин',
+      'авто',
+      'водитель',
+      'пешеход',
+      'штраф',
+      'коап',
+      'права',
+      'экзамен',
+      'гаи',
+      'гибдд',
+      'билет',
+      'скорост',
+      'парковк',
+      'стоян',
+      'останов',
+      'помощ',
+      'неисправн',
+      'почему',
+      'как',
+      'кто',
+      'где',
+      'запомн',
+      'траектор',
+      'лишен',
     ];
     final isRelevant =
         pddKeywords.any((k) => lower.contains(k)) || lower.length < 15;

@@ -41,9 +41,7 @@ class SoundEffectsService {
             ),
             iOS: AudioContextIOS(
               category: AVAudioSessionCategory.playback,
-              options: const {
-                AVAudioSessionOptions.mixWithOthers,
-              },
+              options: const {AVAudioSessionOptions.mixWithOthers},
             ),
           ),
         );

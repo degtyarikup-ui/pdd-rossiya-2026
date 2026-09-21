@@ -65,11 +65,13 @@ class StreakNotifier {
     if (kIsWeb || !_initialized) return;
     await _plugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.requestNotificationsPermission();
     await _plugin
         .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
+          IOSFlutterLocalNotificationsPlugin
+        >()
         ?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
@@ -107,8 +109,10 @@ class StreakNotifier {
       if (!_initialized) return 'init не завершился (без исключения)';
     }
 
-    final android = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     bool? enabled;
     if (android != null) {
       final req = await android.requestNotificationsPermission();
@@ -118,8 +122,10 @@ class StreakNotifier {
             'Включи вручную: Настройки → Приложения → это приложение → Уведомления.';
       }
     }
-    final ios = _plugin.resolvePlatformSpecificImplementation<
-        IOSFlutterLocalNotificationsPlugin>();
+    final ios = _plugin
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
     if (ios != null) {
       await ios.requestPermissions(alert: true, badge: true, sound: true);
     }
@@ -239,7 +245,8 @@ DateTime? computeStreakReminderTime(
 
   DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
   final today = dateOnly(now);
-  final trainedToday = streak.lastActiveDate != null &&
+  final trainedToday =
+      streak.lastActiveDate != null &&
       dateOnly(streak.lastActiveDate!) == today;
 
   var target = DateTime(now.year, now.month, now.day, hour);

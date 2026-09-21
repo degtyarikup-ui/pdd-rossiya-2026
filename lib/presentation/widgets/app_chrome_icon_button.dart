@@ -37,8 +37,7 @@ class AppChromeIconButton extends StatelessWidget {
             color: backgroundColor ?? colors.cardBackground,
             borderRadius: BorderRadius.circular(12),
           ),
-          child:
-              Icon(icon, size: 18, color: iconColor ?? colors.primaryText),
+          child: Icon(icon, size: 18, color: iconColor ?? colors.primaryText),
         ),
       ),
     );

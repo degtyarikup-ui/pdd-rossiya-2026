@@ -80,9 +80,7 @@ class MarkupCategoryScreen extends StatelessWidget {
                       bottom: AppDimensions.spacingM,
                     ),
                     child: Container(
-                      padding: const EdgeInsets.all(
-                        AppDimensions.spacingL,
-                      ),
+                      padding: const EdgeInsets.all(AppDimensions.spacingL),
                       decoration: BoxDecoration(
                         color: colors.cardBackground,
                         borderRadius: BorderRadius.circular(

@@ -40,13 +40,12 @@ void main() {
   InteractiveViewer viewerOf(WidgetTester tester) =>
       tester.widget<InteractiveViewer>(find.byType(InteractiveViewer));
 
-  double scaleOf(WidgetTester tester) => viewerOf(tester)
-      .transformationController!
-      .value
-      .getMaxScaleOnAxis();
+  double scaleOf(WidgetTester tester) =>
+      viewerOf(tester).transformationController!.value.getMaxScaleOnAxis();
 
-  testWidgets('кнопка закрытия — внизу справа, белая с тёмным крестиком',
-      (tester) async {
+  testWidgets('кнопка закрытия — внизу справа, белая с тёмным крестиком', (
+    tester,
+  ) async {
     await openViewer(tester);
 
     final positioned = tester.widget<Positioned>(
@@ -62,10 +61,12 @@ void main() {
     expect(positioned.top, isNull);
 
     final material = tester.widget<Material>(
-      find.ancestor(
-        of: find.byIcon(Icons.close_rounded),
-        matching: find.byType(Material),
-      ).first,
+      find
+          .ancestor(
+            of: find.byIcon(Icons.close_rounded),
+            matching: find.byType(Material),
+          )
+          .first,
     );
     // Белый круг с тёмным крестиком: под кнопкой произвольная картинка, и
     // полупрозрачный тёмный кружок терялся на тёмных снимках.
@@ -76,8 +77,9 @@ void main() {
     );
   });
 
-  testWidgets('щипок увеличивает, а после отпускания картинка возвращается',
-      (tester) async {
+  testWidgets('щипок увеличивает, а после отпускания картинка возвращается', (
+    tester,
+  ) async {
     await openViewer(tester);
     expect(scaleOf(tester), closeTo(1.0, 0.01));
 
@@ -103,8 +105,9 @@ void main() {
     );
   });
 
-  testWidgets('зум двойным нажатием остаётся — им рассматривают деталь',
-      (tester) async {
+  testWidgets('зум двойным нажатием остаётся — им рассматривают деталь', (
+    tester,
+  ) async {
     await openViewer(tester);
 
     final center = tester.getCenter(find.byType(InteractiveViewer));
@@ -116,13 +119,15 @@ void main() {
     expect(
       scaleOf(tester),
       greaterThan(2.0),
-      reason: 'иначе деталь нельзя спокойно разглядеть — а ради этого '
+      reason:
+          'иначе деталь нельзя спокойно разглядеть — а ради этого '
           'просмотр и открывают',
     );
   });
 
-  testWidgets('кнопка-лупа приближает примерно в 1,5 раза и не отпружинивает',
-      (tester) async {
+  testWidgets('кнопка-лупа приближает примерно в 1,5 раза и не отпружинивает', (
+    tester,
+  ) async {
     await openViewer(tester);
 
     await tester.tap(find.byIcon(Icons.zoom_in_rounded));
@@ -136,8 +141,9 @@ void main() {
     expect(scaleOf(tester), closeTo(1.5, 0.05));
   });
 
-  testWidgets('на предельном увеличении лупа возвращает в исходное',
-      (tester) async {
+  testWidgets('на предельном увеличении лупа возвращает в исходное', (
+    tester,
+  ) async {
     await openViewer(tester);
 
     // 1.5^4 ≈ 5.06 — упираемся в предел за четыре нажатия.
@@ -145,8 +151,11 @@ void main() {
       await tester.tap(find.byIcon(Icons.zoom_in_rounded));
       await tester.pumpAndSettle();
     }
-    expect(find.byIcon(Icons.zoom_out_rounded), findsOneWidget,
-        reason: 'иначе из предельного зума нечем выйти кнопкой');
+    expect(
+      find.byIcon(Icons.zoom_out_rounded),
+      findsOneWidget,
+      reason: 'иначе из предельного зума нечем выйти кнопкой',
+    );
 
     await tester.tap(find.byIcon(Icons.zoom_out_rounded));
     await tester.pumpAndSettle();

@@ -148,11 +148,7 @@ class _QuestionImageState extends State<QuestionImage> {
           Hero(tag: _heroTag, child: image),
           // Лупа в углу: без неё возможность зума незаметна — автор отзыва в
           // RuStore решил, что функции просто нет.
-          const Positioned(
-            right: 8,
-            bottom: 8,
-            child: ZoomHintBadge(),
-          ),
+          const Positioned(right: 8, bottom: 8, child: ZoomHintBadge()),
         ],
       ),
     );
@@ -226,8 +222,7 @@ class _ImageSkeletonState extends State<_ImageSkeleton>
                 colors: const [_base, _highlight, _base],
                 stops: const [0.25, 0.5, 0.75],
                 // Блик едет слева направо, зацикленно.
-                transform:
-                    _SlidingGradientTransform(controller.value * 2 - 1),
+                transform: _SlidingGradientTransform(controller.value * 2 - 1),
               ),
             ),
           );

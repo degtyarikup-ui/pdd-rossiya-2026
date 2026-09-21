@@ -81,9 +81,7 @@ class _ReportQuestionDialogState extends State<_ReportQuestionDialog> {
       HapticFeedbackHelper.error();
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok ? appL10n.reportSent : appL10n.reportFailed),
-      ),
+      SnackBar(content: Text(ok ? appL10n.reportSent : appL10n.reportFailed)),
     );
   }
 

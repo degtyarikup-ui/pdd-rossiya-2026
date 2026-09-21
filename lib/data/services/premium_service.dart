@@ -11,10 +11,7 @@ import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum PremiumTier {
-  weekly,
-  threeMonths,
-}
+enum PremiumTier { weekly, threeMonths }
 
 class PremiumService extends ChangeNotifier {
   static final PremiumService instance = PremiumService._internal();
@@ -76,19 +73,28 @@ class PremiumService extends ChangeNotifier {
 
   String _getDailyCardsKey([String? userId]) {
     final uid =
-        userId ?? _currentUserId ?? AuthService.instance.currentUser?.id ?? 'guest';
+        userId ??
+        _currentUserId ??
+        AuthService.instance.currentUser?.id ??
+        'guest';
     return 'premium_daily_cards_$uid';
   }
 
   String _getDailyDateKey([String? userId]) {
     final uid =
-        userId ?? _currentUserId ?? AuthService.instance.currentUser?.id ?? 'guest';
+        userId ??
+        _currentUserId ??
+        AuthService.instance.currentUser?.id ??
+        'guest';
     return 'premium_daily_date_$uid';
   }
 
   String _getAiMessagesKey([String? userId]) {
     final uid =
-        userId ?? _currentUserId ?? AuthService.instance.currentUser?.id ?? 'guest';
+        userId ??
+        _currentUserId ??
+        AuthService.instance.currentUser?.id ??
+        'guest';
     return 'premium_ai_messages_$uid';
   }
 
@@ -227,19 +233,22 @@ class PremiumService extends ChangeNotifier {
         final data = jsonDecode(resp.body) as Map<String, dynamic>;
         final serverIsPremium = data['isPremium'] == true;
         final serverExpStr = data['premiumExpiresAt'] as String?;
-        final serverExpiresAt =
-            serverExpStr != null ? DateTime.tryParse(serverExpStr) : null;
+        final serverExpiresAt = serverExpStr != null
+            ? DateTime.tryParse(serverExpStr)
+            : null;
         final serverGrantedAtStr = data['grantedAt'] as String?;
-        final serverGrantedAt =
-            serverGrantedAtStr != null ? DateTime.tryParse(serverGrantedAtStr) : null;
+        final serverGrantedAt = serverGrantedAtStr != null
+            ? DateTime.tryParse(serverGrantedAtStr)
+            : null;
 
         // Проверка новой выдачи Premium для показа праздничного диалога
         if (serverIsPremium && serverGrantedAt != null) {
           final prefs = await SharedPreferences.getInstance();
           final grantKey = 'premium_last_seen_grant_${user.id}';
           final lastSeenStr = prefs.getString(grantKey);
-          final lastSeen =
-              lastSeenStr != null ? DateTime.tryParse(lastSeenStr) : null;
+          final lastSeen = lastSeenStr != null
+              ? DateTime.tryParse(lastSeenStr)
+              : null;
 
           if (lastSeen == null || serverGrantedAt.isAfter(lastSeen)) {
             await prefs.setString(grantKey, serverGrantedAt.toIso8601String());
@@ -355,7 +364,13 @@ class PremiumService extends ChangeNotifier {
           'tier': tier.name,
           'tierName': tier == PremiumTier.threeMonths ? '3 месяца' : '1 неделя',
           'price': price,
-          'store': store ?? (kIsWeb ? 'web' : Platform.isIOS ? 'appstore' : 'rustore'),
+          'store':
+              store ??
+              (kIsWeb
+                  ? 'web'
+                  : Platform.isIOS
+                  ? 'appstore'
+                  : 'rustore'),
           'expiresAt': expiration.toIso8601String(),
           'country': CountryConfig.current.code,
           'app': 'ru',
@@ -396,7 +411,9 @@ class PremiumService extends ChangeNotifier {
       await prefs.setBool(_prefKeyIsPremium, _isPremium);
       if (_expiresAt != null) {
         await prefs.setInt(
-            _prefKeyExpiresAt, _expiresAt!.millisecondsSinceEpoch);
+          _prefKeyExpiresAt,
+          _expiresAt!.millisecondsSinceEpoch,
+        );
       } else {
         await prefs.remove(_prefKeyExpiresAt);
       }

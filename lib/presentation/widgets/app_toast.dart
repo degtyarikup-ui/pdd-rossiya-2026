@@ -87,10 +87,7 @@ class _TopToastWidgetState extends State<_TopToastWidget>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, -0.6),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     _controller.forward();
   }

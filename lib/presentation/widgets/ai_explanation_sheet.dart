@@ -71,14 +71,14 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
   @override
   void initState() {
     super.initState();
-    final correctAnswerText = (widget.correctAnswerIndex >= 0 &&
+    final correctAnswerText =
+        (widget.correctAnswerIndex >= 0 &&
             widget.correctAnswerIndex < widget.answers.length)
         ? widget.answers[widget.correctAnswerIndex]
         : '';
 
     // Индивидуальные контекстные вопросы-подсказки под тему вопроса
-    _quickSuggestions =
-        GeminiAiService.instance.getQuickSuggestionsForQuestion(
+    _quickSuggestions = GeminiAiService.instance.getQuickSuggestionsForQuestion(
       questionText: widget.questionText,
       officialExplanation: widget.officialExplanation,
       correctAnswerText: correctAnswerText,
@@ -88,19 +88,20 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
   }
 
   void _loadInitialExplanation() {
-    final correctAnswerText = (widget.correctAnswerIndex >= 0 &&
+    final correctAnswerText =
+        (widget.correctAnswerIndex >= 0 &&
             widget.correctAnswerIndex < widget.answers.length)
         ? widget.answers[widget.correctAnswerIndex]
         : '';
 
     // Мгновенный готовый первичный разбор от ИИ без задержек и спиннеров
     setState(() {
-      _initialExplanation =
-          GeminiAiService.instance.buildInstantPrewrittenExplanation(
-        questionText: widget.questionText,
-        correctAnswerText: correctAnswerText,
-        officialExplanation: widget.officialExplanation,
-      );
+      _initialExplanation = GeminiAiService.instance
+          .buildInstantPrewrittenExplanation(
+            questionText: widget.questionText,
+            correctAnswerText: correctAnswerText,
+            officialExplanation: widget.officialExplanation,
+          );
       _isLoadingInitial = false;
       _initialError = null;
     });
@@ -232,146 +233,159 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
             ),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
             ),
             child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: EdgeInsets.only(bottom: bottomInset),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 1. Header with Title & Limit Badge
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppDimensions.screenPadding,
-                      14,
-                      AppDimensions.screenPadding,
-                      10,
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: colors.premiumAmberSurface,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.auto_awesome_rounded,
-                                size: 15,
-                                color: colors.premiumAmber,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Разбор от ИИ',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: colors.premiumAmber,
-                                  fontFamily: 'Onest',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (isPrem)
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.only(bottom: bottomInset),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 1. Header with Title & Limit Badge
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppDimensions.screenPadding,
+                        14,
+                        AppDimensions.screenPadding,
+                        10,
+                      ),
+                      child: Row(
+                        children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
                             decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF162B1D)
-                                  : const Color(0xFFE8F8F0),
-                              borderRadius: BorderRadius.circular(8),
+                              color: colors.premiumAmberSurface,
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Text(
-                              'PRO',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF2BC280),
-                                fontFamily: 'Onest',
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.auto_awesome_rounded,
+                                  size: 15,
+                                  color: colors.premiumAmber,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Разбор от ИИ',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: colors.premiumAmber,
+                                    fontFamily: 'Onest',
+                                  ),
+                                ),
+                              ],
                             ),
-                          )
-                        else
-                          GestureDetector(
-                            onTap: () => PremiumPaywallSheet.show(context),
-                            child: Container(
+                          ),
+                          const SizedBox(width: 8),
+                          if (isPrem)
+                            Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
-                                color: remaining > 0
-                                    ? (isDark
-                                        ? const Color(0xFF2E2215)
-                                        : const Color(0xFFFFF7ED))
-                                    : (isDark
-                                        ? const Color(0xFF341717)
-                                        : const Color(0xFFFFECE8)),
+                                color: isDark
+                                    ? const Color(0xFF162B1D)
+                                    : const Color(0xFFE8F8F0),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Text(
-                                remaining > 0
-                                    ? '$remaining из $limit'
-                                    : 'Лимит 0 из $limit',
+                              child: const Text(
+                                'PRO',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: remaining > 0
-                                      ? const Color(0xFFFFA53C)
-                                      : const Color(0xFFED4621),
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF2BC280),
                                   fontFamily: 'Onest',
                                 ),
                               ),
+                            )
+                          else
+                            GestureDetector(
+                              onTap: () => PremiumPaywallSheet.show(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: remaining > 0
+                                      ? (isDark
+                                            ? const Color(0xFF2E2215)
+                                            : const Color(0xFFFFF7ED))
+                                      : (isDark
+                                            ? const Color(0xFF341717)
+                                            : const Color(0xFFFFECE8)),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  remaining > 0
+                                      ? '$remaining из $limit'
+                                      : 'Лимит 0 из $limit',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: remaining > 0
+                                        ? const Color(0xFFFFA53C)
+                                        : const Color(0xFFED4621),
+                                    fontFamily: 'Onest',
+                                  ),
+                                ),
+                              ),
                             ),
+                          const Spacer(),
+                          IconButton(
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: colors.secondaryText,
+                              size: 22,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () => Navigator.of(context).pop(),
                           ),
-                        const Spacer(),
-                        IconButton(
-                          icon: Icon(Icons.close_rounded,
-                              color: colors.secondaryText, size: 22),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
 
-                  // 2. Chat Timeline
-                  Expanded(
-                    child: _isLoadingInitial
-                        ? _buildLoadingInitial(colors)
-                        : _initialError != null
-                            ? _buildErrorInitial(colors)
-                            : _buildChatList(colors),
-                  ),
+                    // 2. Chat Timeline
+                    Expanded(
+                      child: _isLoadingInitial
+                          ? _buildLoadingInitial(colors)
+                          : _initialError != null
+                          ? _buildErrorInitial(colors)
+                          : _buildChatList(colors),
+                    ),
 
-                  // 3. Quick Suggestion Chips (only when limit not reached)
-                  if (!_isLoadingInitial && _initialError == null && !hasReachedLimit)
-                    _buildQuickSuggestions(colors),
+                    // 3. Quick Suggestion Chips (only when limit not reached)
+                    if (!_isLoadingInitial &&
+                        _initialError == null &&
+                        !hasReachedLimit)
+                      _buildQuickSuggestions(colors),
 
-                  // 4. Input Field Bar OR Premium Limit Banner
-                  if (!_isLoadingInitial && _initialError == null)
-                    if (hasReachedLimit)
-                      _buildLimitReachedBanner(colors, isDark)
-                    else
-                      _buildInputBar(colors),
-                ],
+                    // 4. Input Field Bar OR Premium Limit Banner
+                    if (!_isLoadingInitial && _initialError == null)
+                      if (hasReachedLimit)
+                        _buildLimitReachedBanner(colors, isDark)
+                      else
+                        _buildInputBar(colors),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
   Widget _buildLimitReachedBanner(AppThemeColors colors, bool isDark) {
     return Container(
@@ -489,7 +503,10 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
             Text(
               'Не удалось загрузить ответ',
               style: TextStyle(
-                  color: colors.red, fontSize: 14, fontFamily: 'Onest'),
+                color: colors.red,
+                fontSize: 14,
+                fontFamily: 'Onest',
+              ),
             ),
             const SizedBox(height: 12),
             ElevatedButton(
@@ -502,8 +519,10 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('Повторить',
-                  style: TextStyle(fontFamily: 'Onest')),
+              child: const Text(
+                'Повторить',
+                style: TextStyle(fontFamily: 'Onest'),
+              ),
             ),
           ],
         ),
@@ -590,8 +609,11 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.smart_toy_outlined,
-                      size: 13.5, color: colors.premiumAmber),
+                  Icon(
+                    Icons.smart_toy_outlined,
+                    size: 13.5,
+                    color: colors.premiumAmber,
+                  ),
                   const SizedBox(width: 5),
                   Text(
                     'ИИ-Автоинструктор',
@@ -682,11 +704,7 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
 
     return Text.rich(
       TextSpan(children: spans),
-      style: TextStyle(
-        fontSize: fontSize,
-        height: height,
-        fontFamily: 'Onest',
-      ),
+      style: TextStyle(fontSize: fontSize, height: height, fontFamily: 'Onest'),
     );
   }
 

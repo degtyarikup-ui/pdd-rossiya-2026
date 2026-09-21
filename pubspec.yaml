@@ -33,6 +33,7 @@ dependencies:
   google_sign_in: ^6.2.2
   sign_in_with_apple: ^6.1.4
   webview_flutter: ^4.10.0
+  webview_flutter_android: ^4.14.0
   in_app_purchase: ^3.2.0
 
 dev_dependencies:
@@ -84,6 +85,7 @@ flutter:
     - assets/icons/auth/
     - assets/audio/
     - assets/audio/feed/
+    - assets/game/
     # Контент ВСЕХ стран. Android-flavor сам по себе ассеты НЕ фильтрует
     # (flavor решает только applicationId/иконку/нативные ресурсы), поэтому
     # здесь перечислены все страны — иначе `flutter run`/тесты/IDE не найдут

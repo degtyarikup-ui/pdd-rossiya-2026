@@ -17,6 +17,7 @@ import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_banner_card.dart';
 import 'package:pdd_app/presentation/widgets/profile_modal_sheet.dart';
+import 'package:pdd_app/presentation/screens/pdd/pdd_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -116,11 +117,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       mode: LaunchMode.externalApplication,
     );
     if (!ok && mounted) {
-      AppToast.show(
-        context,
-        appL10n.linkOpenFailed,
-        type: AppToastType.error,
-      );
+      AppToast.show(context, appL10n.linkOpenFailed, type: AppToastType.error);
     }
   }
 
@@ -133,11 +130,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       mode: LaunchMode.externalApplication,
     );
     if (!ok && mounted) {
-      AppToast.show(
-        context,
-        appL10n.linkOpenFailed,
-        type: AppToastType.error,
-      );
+      AppToast.show(context, appL10n.linkOpenFailed, type: AppToastType.error);
     }
   }
 
@@ -150,11 +143,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       mode: LaunchMode.externalApplication,
     );
     if (!ok && mounted) {
-      AppToast.show(
-        context,
-        appL10n.linkOpenFailed,
-        type: AppToastType.error,
-      );
+      AppToast.show(context, appL10n.linkOpenFailed, type: AppToastType.error);
     }
   }
 
@@ -202,11 +191,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (!mounted) return;
 
     HapticFeedbackHelper.success();
-    AppToast.show(
-      context,
-      appL10n.statsReset,
-      type: AppToastType.success,
-    );
+    AppToast.show(context, appL10n.statsReset, type: AppToastType.success);
   }
 
   Future<void> _openExternalUrl(String url) async {
@@ -216,11 +201,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       mode: LaunchMode.externalApplication,
     );
     if (!ok && mounted) {
-      AppToast.show(
-        context,
-        appL10n.linkOpenFailed,
-        type: AppToastType.error,
-      );
+      AppToast.show(context, appL10n.linkOpenFailed, type: AppToastType.error);
     }
   }
 
@@ -242,7 +223,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
           systemStatusBarContrastEnforced: false,
           systemNavigationBarColor: colors.cardBackground,
-          systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          systemNavigationBarIconBrightness: isDark
+              ? Brightness.light
+              : Brightness.dark,
           systemNavigationBarDividerColor: Colors.transparent,
           systemNavigationBarContrastEnforced: false,
         ),
@@ -253,233 +236,262 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             AppDimensions.screenPadding,
             32,
           ),
-        children: [
-          if (currentUser != null) ...[
-            _buildUserProfileCard(colors, currentUser),
-            const SizedBox(height: AppDimensions.spacingM),
-          ] else ...[
-            _buildSignInCard(colors),
-            const SizedBox(height: AppDimensions.spacingM),
-          ],
-          _buildPremiumBannerCard(colors),
-          const SizedBox(height: AppDimensions.spacingXL),
-
-          _buildSectionTitle(appL10n.preparation),
-          _buildSectionCard(
-            children: [
-              _buildSettingItem(
-                icon: Icons.palette_outlined,
-                title: appL10n.themeSetting,
-                trailing: _buildThemeBadge(settings),
-                onTap: () => _showThemePicker(settings, settingsController),
-              ),
-              if (CountryConfig.current.hasCdCategory) ...[
-                _buildDivider(),
-                _buildSettingItem(
-                  icon: Icons.badge_outlined,
-                  title: appL10n.ticketCategorySetting,
-                  trailing: _buildTicketCategoryBadge(settings),
-                  onTap: _toggleTicketCategory,
-                ),
-              ],
-              _buildDivider(),
-              _buildSettingItem(
-                icon: Icons.check_circle_outline,
-                title: appL10n.confirmAnswerSetting,
-                subtitle: appL10n.confirmAnswerHint,
-                trailing: Switch(
-                  value: settings.confirmAnswerEnabled,
-                  onChanged: (value) {
-                    HapticFeedbackHelper.select();
-                    settingsController.setConfirmAnswerEnabled(value);
-                  },
-                ),
-              ),
+          children: [
+            if (currentUser != null) ...[
+              _buildUserProfileCard(colors, currentUser),
+              const SizedBox(height: AppDimensions.spacingM),
+            ] else ...[
+              _buildSignInCard(colors),
+              const SizedBox(height: AppDimensions.spacingM),
             ],
-          ),
-          const SizedBox(height: AppDimensions.spacingXL),
-
-          _buildSectionTitle(appL10n.feedbackSection),
-          _buildSectionCard(
-            children: [
-              _buildSettingItem(
-                icon: Icons.vibration_rounded,
-                title: appL10n.hapticFeedback,
-                trailing: Switch(
-                  value: settings.hapticsEnabled,
-                  onChanged: (value) {
-                    HapticFeedbackHelper.select();
-                    settingsController.setHapticsEnabled(value);
-                  },
-                ),
-              ),
-              _buildDivider(),
-              _buildSettingItem(
-                icon: Icons.volume_up_outlined,
-                title: appL10n.soundEffects,
-                trailing: Switch(
-                  value: settings.soundEffectsEnabled,
-                  onChanged: (value) {
-                    HapticFeedbackHelper.select();
-                    settingsController.setSoundEffectsEnabled(value);
-                  },
-                ),
-              ),
-              _buildDivider(),
-              _buildSettingItem(
-                icon: Icons.record_voice_over_outlined,
-                title: appL10n.voiceOverQuestions,
-                trailing: Switch(
-                  value: settings.voiceEnabled,
-                  onChanged: (value) {
-                    HapticFeedbackHelper.select();
-                    settingsController.setVoiceEnabled(value);
-                  },
-                ),
-              ),
-              _buildDivider(),
-              _buildSettingItem(
-                icon: Icons.notifications_none_rounded,
-                title: appL10n.notificationsSetting,
-                subtitle: appL10n.notificationsHint,
-                trailing: Switch(
-                  value: settings.notificationsEnabled,
-                  onChanged: (value) {
-                    HapticFeedbackHelper.select();
-                    settingsController.setNotificationsEnabled(value);
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.spacingXL),
-
-          _buildSectionTitle(appL10n.dataSection),
-          _buildSectionCard(
-            children: [
-              _buildSettingItem(
-                icon: Icons.restart_alt_rounded,
-                title: appL10n.resetStats,
-                trailing: Icon(
-                  Icons.chevron_right_rounded,
-                  color: colors.secondaryText,
-                ),
-                onTap: _handleResetStats,
-              ),
-            ],
-          ),
-
-          if (CountryConfig.current.dataSources.isNotEmpty ||
-              CountryConfig.current.notAffiliatedNote.isNotEmpty) ...[
+            _buildPremiumBannerCard(colors),
             const SizedBox(height: AppDimensions.spacingXL),
-            _buildSectionTitle(appL10n.aboutSection),
+
+            _buildSectionTitle(appL10n.preparation),
             _buildSectionCard(
               children: [
-                for (final src in CountryConfig.current.dataSources) ...[
-                  _buildSettingItem(
-                    icon: Icons.link_rounded,
-                    title: src.label,
-                    subtitle: appL10n.dataSourceTitle,
-                    trailing: Icon(
-                      Icons.open_in_new_rounded,
-                      size: 18,
-                      color: colors.secondaryText,
-                    ),
-                    onTap: () => _openExternalUrl(src.url),
-                  ),
+                _buildSettingItem(
+                  icon: Icons.gavel_outlined,
+                  title: appL10n.pdd,
+                  subtitle: appL10n.pddSettingsItem,
+                  onTap: () {
+                    HapticFeedbackHelper.tap();
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => Scaffold(
+                          backgroundColor: AppColors.of(context).background,
+                          body: const PddScreen(),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                _buildDivider(),
+                _buildSettingItem(
+                  icon: Icons.palette_outlined,
+                  title: appL10n.themeSetting,
+                  trailing: _buildThemeBadge(settings),
+                  onTap: () => _showThemePicker(settings, settingsController),
+                ),
+                if (CountryConfig.current.hasCdCategory) ...[
                   _buildDivider(),
+                  _buildSettingItem(
+                    icon: Icons.badge_outlined,
+                    title: appL10n.ticketCategorySetting,
+                    trailing: _buildTicketCategoryBadge(settings),
+                    onTap: _toggleTicketCategory,
+                  ),
                 ],
-                if (CountryConfig.current.notAffiliatedNote.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-                    child: Text(
-                      CountryConfig.current.notAffiliatedNote,
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: 1.4,
+                _buildDivider(),
+                _buildSettingItem(
+                  icon: Icons.check_circle_outline,
+                  title: appL10n.confirmAnswerSetting,
+                  subtitle: appL10n.confirmAnswerHint,
+                  trailing: Switch(
+                    value: settings.confirmAnswerEnabled,
+                    onChanged: (value) {
+                      HapticFeedbackHelper.select();
+                      settingsController.setConfirmAnswerEnabled(value);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimensions.spacingXL),
+
+            _buildSectionTitle(appL10n.feedbackSection),
+            _buildSectionCard(
+              children: [
+                _buildSettingItem(
+                  icon: Icons.vibration_rounded,
+                  title: appL10n.hapticFeedback,
+                  trailing: Switch(
+                    value: settings.hapticsEnabled,
+                    onChanged: (value) {
+                      HapticFeedbackHelper.select();
+                      settingsController.setHapticsEnabled(value);
+                    },
+                  ),
+                ),
+                _buildDivider(),
+                _buildSettingItem(
+                  icon: Icons.volume_up_outlined,
+                  title: appL10n.soundEffects,
+                  trailing: Switch(
+                    value: settings.soundEffectsEnabled,
+                    onChanged: (value) {
+                      HapticFeedbackHelper.select();
+                      settingsController.setSoundEffectsEnabled(value);
+                    },
+                  ),
+                ),
+                _buildDivider(),
+                _buildSettingItem(
+                  icon: Icons.record_voice_over_outlined,
+                  title: appL10n.voiceOverQuestions,
+                  trailing: Switch(
+                    value: settings.voiceEnabled,
+                    onChanged: (value) {
+                      HapticFeedbackHelper.select();
+                      settingsController.setVoiceEnabled(value);
+                    },
+                  ),
+                ),
+                _buildDivider(),
+                _buildSettingItem(
+                  icon: Icons.notifications_none_rounded,
+                  title: appL10n.notificationsSetting,
+                  subtitle: appL10n.notificationsHint,
+                  trailing: Switch(
+                    value: settings.notificationsEnabled,
+                    onChanged: (value) {
+                      HapticFeedbackHelper.select();
+                      settingsController.setNotificationsEnabled(value);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimensions.spacingXL),
+
+            _buildSectionTitle(appL10n.dataSection),
+            _buildSectionCard(
+              children: [
+                _buildSettingItem(
+                  icon: Icons.restart_alt_rounded,
+                  title: appL10n.resetStats,
+                  trailing: Icon(
+                    Icons.chevron_right_rounded,
+                    color: colors.secondaryText,
+                  ),
+                  onTap: _handleResetStats,
+                ),
+              ],
+            ),
+
+            if (CountryConfig.current.dataSources.isNotEmpty ||
+                CountryConfig.current.notAffiliatedNote.isNotEmpty) ...[
+              const SizedBox(height: AppDimensions.spacingXL),
+              _buildSectionTitle(appL10n.aboutSection),
+              _buildSectionCard(
+                children: [
+                  for (final src in CountryConfig.current.dataSources) ...[
+                    _buildSettingItem(
+                      icon: Icons.link_rounded,
+                      title: src.label,
+                      subtitle: appL10n.dataSourceTitle,
+                      trailing: Icon(
+                        Icons.open_in_new_rounded,
+                        size: 18,
                         color: colors.secondaryText,
+                      ),
+                      onTap: () => _openExternalUrl(src.url),
+                    ),
+                    _buildDivider(),
+                  ],
+                  if (CountryConfig.current.notAffiliatedNote.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                      child: Text(
+                        CountryConfig.current.notAffiliatedNote,
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.4,
+                          color: colors.secondaryText,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+
+            const SizedBox(height: AppDimensions.spacingXXL),
+            // Clean footer links: Tech Support, Terms of Use, and Privacy Policy
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 4,
+              runSpacing: 4,
+              children: [
+                GestureDetector(
+                  onTap: _openTelegramSupport,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppDimensions.spacingS,
+                      vertical: AppDimensions.spacingS,
+                    ),
+                    child: Text(
+                      appL10n.techSupport,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: colors.secondaryText,
+                        decoration: TextDecoration.underline,
+                        decorationColor: colors.secondaryText.withValues(
+                          alpha: 0.4,
+                        ),
                       ),
                     ),
                   ),
+                ),
+                if (CountryConfig.current.termsUrl.isNotEmpty) ...[
+                  Text(
+                    '•',
+                    style: TextStyle(color: colors.secondaryText, fontSize: 11),
+                  ),
+                  GestureDetector(
+                    onTap: _openTermsOfUse,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppDimensions.spacingS,
+                        vertical: AppDimensions.spacingS,
+                      ),
+                      child: Text(
+                        appL10n.termsOfUse,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: colors.secondaryText,
+                          decoration: TextDecoration.underline,
+                          decorationColor: colors.secondaryText.withValues(
+                            alpha: 0.4,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                if (CountryConfig.current.privacyUrl.isNotEmpty) ...[
+                  Text(
+                    '•',
+                    style: TextStyle(color: colors.secondaryText, fontSize: 11),
+                  ),
+                  GestureDetector(
+                    onTap: _openPrivacyPolicy,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppDimensions.spacingS,
+                        vertical: AppDimensions.spacingS,
+                      ),
+                      child: Text(
+                        appL10n.privacyPolicy,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: colors.secondaryText,
+                          decoration: TextDecoration.underline,
+                          decorationColor: colors.secondaryText.withValues(
+                            alpha: 0.4,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ],
-
-          const SizedBox(height: AppDimensions.spacingXXL),
-          // Clean footer links: Tech Support, Terms of Use, and Privacy Policy
-          Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 4,
-            runSpacing: 4,
-            children: [
-              GestureDetector(
-                onTap: _openTelegramSupport,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimensions.spacingS,
-                    vertical: AppDimensions.spacingS,
-                  ),
-                  child: Text(
-                    appL10n.techSupport,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: colors.secondaryText,
-                      decoration: TextDecoration.underline,
-                      decorationColor: colors.secondaryText.withValues(alpha: 0.4),
-                    ),
-                  ),
-                ),
-              ),
-              if (CountryConfig.current.termsUrl.isNotEmpty) ...[
-                Text('•', style: TextStyle(color: colors.secondaryText, fontSize: 11)),
-                GestureDetector(
-                  onTap: _openTermsOfUse,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimensions.spacingS,
-                      vertical: AppDimensions.spacingS,
-                    ),
-                    child: Text(
-                      appL10n.termsOfUse,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: colors.secondaryText,
-                        decoration: TextDecoration.underline,
-                        decorationColor: colors.secondaryText.withValues(alpha: 0.4),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-              if (CountryConfig.current.privacyUrl.isNotEmpty) ...[
-                Text('•', style: TextStyle(color: colors.secondaryText, fontSize: 11)),
-                GestureDetector(
-                  onTap: _openPrivacyPolicy,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimensions.spacingS,
-                      vertical: AppDimensions.spacingS,
-                    ),
-                    child: Text(
-                      appL10n.privacyPolicy,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: colors.secondaryText,
-                        decoration: TextDecoration.underline,
-                        decorationColor: colors.secondaryText.withValues(alpha: 0.4),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildUserProfileCard(AppThemeColors colors, UserProfile profile) {
     return GestureDetector(
@@ -500,7 +512,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 shape: BoxShape.circle,
               ),
               child: ClipOval(
-                child: profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty
+                child:
+                    profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty
                     ? Image.network(
                         profile.avatarUrl!,
                         width: 42,
@@ -659,9 +672,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         color: colors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
       ),
-      child: Column(
-        children: children,
-      ),
+      child: Column(children: children),
     );
   }
 
@@ -719,12 +730,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _buildDivider() {
     final colors = AppColors.of(context);
-    return Divider(
-      height: 1,
-      thickness: 1,
-      indent: 52,
-      color: colors.divider,
-    );
+    return Divider(height: 1, thickness: 1, indent: 52, color: colors.divider);
   }
 
   Widget _buildThemeBadge(AppSettings settings) {
@@ -749,10 +755,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 13,
-          color: colors.secondaryText,
-        ),
+        style: TextStyle(fontSize: 13, color: colors.secondaryText),
       ),
     );
   }
@@ -806,7 +809,10 @@ class _ThemeOptionTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(icon, color: selected ? colors.accent : colors.secondaryText),
+              Icon(
+                icon,
+                color: selected ? colors.accent : colors.secondaryText,
+              ),
               const SizedBox(width: AppDimensions.spacingM),
               Expanded(
                 child: Text(

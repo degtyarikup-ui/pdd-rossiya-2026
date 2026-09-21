@@ -18,8 +18,8 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
 import 'package:pdd_app/presentation/screens/favorites/favorites_screen.dart';
 import 'package:pdd_app/presentation/screens/mistakes/mistakes_screen.dart';
-import 'package:pdd_app/presentation/screens/pdd/pdd_screen.dart';
 import 'package:pdd_app/presentation/screens/feed/feed_screen.dart';
+import 'package:pdd_app/presentation/screens/game/game_screen.dart';
 import 'package:pdd_app/presentation/screens/settings/settings_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/screens/topics/topics_screen.dart';
@@ -49,14 +49,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _subscribePremiumGrant() {
-    _premiumGrantSub = PremiumService.instance.onPremiumGrantedStream.listen((expiresAt) {
+    _premiumGrantSub = PremiumService.instance.onPremiumGrantedStream.listen((
+      expiresAt,
+    ) {
       if (!mounted) return;
       _showPremiumGrantedDialog(expiresAt);
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final pendingExp = PremiumService.instance.pendingGrantNotificationExpiresAt;
+      final pendingExp =
+          PremiumService.instance.pendingGrantNotificationExpiresAt;
       if (pendingExp != null) {
         PremiumService.instance.consumePendingGrantNotification();
         _showPremiumGrantedDialog(pendingExp);
@@ -74,11 +77,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
-  final List<Widget> _screens = const [
-    _HomeTab(),
-    FeedScreen(),
-    PddScreen(),
-    SettingsScreen(),
+  List<Widget> get _screens => [
+    const _HomeTab(),
+    GameScreen(onExit: () => setState(() => _currentIndex = 0)),
+    const FeedScreen(),
+    const SettingsScreen(),
   ];
 
   @override
@@ -93,7 +96,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
         systemStatusBarContrastEnforced: false,
         systemNavigationBarColor: colors.cardBackground,
-        systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarIconBrightness: isDark
+            ? Brightness.light
+            : Brightness.dark,
         systemNavigationBarDividerColor: Colors.transparent,
         systemNavigationBarContrastEnforced: false,
       ),
@@ -103,18 +108,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         bottomNavigationBar: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              height: 1,
-              color: colors.divider,
-            ),
+            Container(height: 1, color: colors.divider),
             NavigationBar(
               selectedIndex: _currentIndex,
               onDestinationSelected: (index) {
-                if (index != _currentIndex) {
-                  TtsService.instance.stop();
-                  HapticFeedbackHelper.select();
-                  setState(() => _currentIndex = index);
-                }
+                if (index == _currentIndex) return;
+                TtsService.instance.stop();
+                HapticFeedbackHelper.select();
+                setState(() => _currentIndex = index);
               },
               destinations: [
                 NavigationDestination(
@@ -123,14 +124,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   label: appL10n.training,
                 ),
                 NavigationDestination(
+                  icon: const Icon(Icons.sports_esports_outlined),
+                  selectedIcon: const Icon(Icons.sports_esports_rounded),
+                  label: appL10n.game,
+                ),
+                NavigationDestination(
                   icon: const Icon(Icons.style_outlined),
                   selectedIcon: const Icon(Icons.style_rounded),
                   label: appL10n.video,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.gavel_outlined),
-                  selectedIcon: const Icon(Icons.gavel),
-                  label: appL10n.pdd,
                 ),
                 NavigationDestination(
                   icon: const Icon(Icons.settings_outlined),
@@ -238,7 +239,14 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
         final double continueCardH = hasContinueCard ? 56.0 : 0.0;
         final double totalGaps = gap * (hasContinueCard ? 4 : 3);
 
-        final double availableH = totalH - topInset - topPadding - bottomPadding - topPanelHeight - continueCardH - totalGaps;
+        final double availableH =
+            totalH -
+            topInset -
+            topPadding -
+            bottomPadding -
+            topPanelHeight -
+            continueCardH -
+            totalGaps;
 
         final double examHeight;
         final double buttonHeight;
@@ -386,10 +394,15 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
 
   static const double _homeNavLabelFontSize = 18;
 
-  Widget _buildExamHero(BuildContext context, WidgetRef ref, {required double height}) {
+  Widget _buildExamHero(
+    BuildContext context,
+    WidgetRef ref, {
+    required double height,
+  }) {
     final settings = ref.watch(appSettingsProvider);
-    final categoryLabel =
-        settings.ticketCategory == TicketCategory.cd ? 'C/D' : 'A/B';
+    final categoryLabel = settings.ticketCategory == TicketCategory.cd
+        ? 'C/D'
+        : 'A/B';
 
     return ExamHeroCard(
       height: height,

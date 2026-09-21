@@ -28,7 +28,8 @@ void main() {
         id: 'sign_warning_1.1',
         type: FeedItemType.roadSign,
         questionText: 'Что означает этот дорожный знак?',
-        imagePath: 'assets/countries/ru/images/signs/c6a558e6fbb120c93d55d8fd967dbe12.svg',
+        imagePath:
+            'assets/countries/ru/images/signs/c6a558e6fbb120c93d55d8fd967dbe12.svg',
         isSvgImage: true,
         answers: [
           'Железнодорожный переезд со шлагбаумом',

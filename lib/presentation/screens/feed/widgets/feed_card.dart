@@ -61,12 +61,13 @@ class _FeedCardState extends ConsumerState<FeedCard>
   int? _lastTickedSecond;
 
   Duration get _calculatedDuration {
-    final textLen = widget.item.questionText.length +
-        widget.item.answers.join('').length;
-    final baseSeconds = (7.0 +
-            widget.item.answers.length * 1.0 +
-            textLen * 0.025)
-        .clamp(9.0, 16.0);
+    final textLen =
+        widget.item.questionText.length + widget.item.answers.join('').length;
+    final baseSeconds =
+        (7.0 + widget.item.answers.length * 1.0 + textLen * 0.025).clamp(
+          9.0,
+          16.0,
+        );
     return Duration(milliseconds: (baseSeconds * 1000).round());
   }
 
@@ -82,7 +83,8 @@ class _FeedCardState extends ConsumerState<FeedCard>
       if (widget.isCurrent && !_isAnswered && !widget.isPaused) {
         final progress = (1.0 - _timerController.value).clamp(0.0, 1.0);
         final remainingSec = (_timerController.duration != null)
-            ? (progress * _timerController.duration!.inMilliseconds / 1000).ceil()
+            ? (progress * _timerController.duration!.inMilliseconds / 1000)
+                  .ceil()
             : 0;
         widget.onTimerTick?.call(progress, remainingSec);
 
@@ -186,8 +188,6 @@ class _FeedCardState extends ConsumerState<FeedCard>
     );
   }
 
-
-
   void _handleTimeExpired() {
     if (_isAnswered) return;
     HapticFeedbackHelper.error();
@@ -243,7 +243,10 @@ class _FeedCardState extends ConsumerState<FeedCard>
     });
   }
 
-  Future<void> _saveProgress({required bool isCorrect, required int selectedIndex}) async {
+  Future<void> _saveProgress({
+    required bool isCorrect,
+    required int selectedIndex,
+  }) async {
     final rawId = widget.item.rawQuestionId;
     if (rawId == null) return;
     try {
@@ -442,7 +445,8 @@ class _FeedCardState extends ConsumerState<FeedCard>
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: _selectedAnswerIndex == widget.item.correctAnswerIndex
+                    color:
+                        _selectedAnswerIndex == widget.item.correctAnswerIndex
                         ? colors.green
                         : colors.red,
                   ),
@@ -456,7 +460,10 @@ class _FeedCardState extends ConsumerState<FeedCard>
             builder: (context, _) {
               final progress = (1.0 - _timerController.value).clamp(0.0, 1.0);
               final remaining = (_timerController.duration != null)
-                  ? (progress * _timerController.duration!.inMilliseconds / 1000).ceil()
+                  ? (progress *
+                            _timerController.duration!.inMilliseconds /
+                            1000)
+                        .ceil()
                   : 0;
               final isUrgent = remaining <= 3;
               final bg = isUrgent ? colors.redLight : colors.lightAccent;
@@ -469,7 +476,10 @@ class _FeedCardState extends ConsumerState<FeedCard>
                   radius: 10.0,
                 ),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: bg,
                     borderRadius: BorderRadius.circular(10),
@@ -596,8 +606,8 @@ class _FeedCardState extends ConsumerState<FeedCard>
                   decoration: BoxDecoration(
                     color: _isAnswered
                         ? (isCorrect || isSelected
-                            ? AppColors.white.withValues(alpha: 0.28)
-                            : colors.gray)
+                              ? AppColors.white.withValues(alpha: 0.28)
+                              : colors.gray)
                         : colors.gray,
                     shape: BoxShape.circle,
                   ),
@@ -616,21 +626,21 @@ class _FeedCardState extends ConsumerState<FeedCard>
                               size: 16,
                             )
                           : _isAnswered && isSelected
-                              ? const Icon(
-                                  Icons.close_rounded,
-                                  key: ValueKey('feed_answer_close'),
-                                  color: AppColors.white,
-                                  size: 16,
-                                )
-                              : Text(
-                                  '${index + 1}',
-                                  key: ValueKey('feed_answer_num_${index + 1}'),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: colors.secondaryText,
-                                  ),
-                                ),
+                          ? const Icon(
+                              Icons.close_rounded,
+                              key: ValueKey('feed_answer_close'),
+                              color: AppColors.white,
+                              size: 16,
+                            )
+                          : Text(
+                              '${index + 1}',
+                              key: ValueKey('feed_answer_num_${index + 1}'),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: colors.secondaryText,
+                              ),
+                            ),
                     ),
                   ),
                 ),

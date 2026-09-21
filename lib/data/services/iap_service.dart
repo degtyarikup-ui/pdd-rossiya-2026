@@ -18,11 +18,13 @@ class IapService extends ChangeNotifier {
   final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
 
-  static String get productIdWeek => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS
+  static String get productIdWeek =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS
       ? 'u.pdd.pddApp.premium.week'
       : 'ru.pdd.pddapp.premium.week';
 
-  static String get productId3Months => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS
+  static String get productId3Months =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS
       ? 'ru.pdd.pddApp.sub.3months'
       : 'ru.pdd.pddapp.premium.3months';
 
@@ -124,7 +126,9 @@ class IapService extends ChangeNotifier {
   ProductDetails? _findProductForTier(PremiumTier tier) {
     if (_products.isEmpty) return null;
 
-    final primaryId = tier == PremiumTier.threeMonths ? productId3Months : productIdWeek;
+    final primaryId = tier == PremiumTier.threeMonths
+        ? productId3Months
+        : productIdWeek;
     if (_products.containsKey(primaryId)) {
       return _products[primaryId];
     }
@@ -213,7 +217,9 @@ class IapService extends ChangeNotifier {
 
     final purchaseParam = PurchaseParam(productDetails: product);
     try {
-      final launched = await _iap.buyNonConsumable(purchaseParam: purchaseParam);
+      final launched = await _iap.buyNonConsumable(
+        purchaseParam: purchaseParam,
+      );
       if (!launched) {
         _currentPurchaseCompleter = null;
         return PurchaseResult.error;
@@ -225,7 +231,8 @@ class IapService extends ChangeNotifier {
       return PurchaseResult.error;
     }
 
-    return _currentPurchaseCompleter?.future ?? Future.value(PurchaseResult.error);
+    return _currentPurchaseCompleter?.future ??
+        Future.value(PurchaseResult.error);
   }
 
   Future<bool> restorePurchases() async {
@@ -242,10 +249,12 @@ class IapService extends ChangeNotifier {
       _restoreCompleter = Completer<bool>();
       await _iap.restorePurchases();
 
-      final result = await _restoreCompleter!.future
-          .timeout(const Duration(seconds: 10), onTimeout: () {
-        return PremiumService.instance.isPremium;
-      });
+      final result = await _restoreCompleter!.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          return PremiumService.instance.isPremium;
+        },
+      );
       _restoreCompleter = null;
       return result;
     } catch (e) {
@@ -269,7 +278,9 @@ class IapService extends ChangeNotifier {
     return PremiumTier.weekly;
   }
 
-  Future<void> _onPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) async {
+  Future<void> _onPurchaseUpdated(
+    List<PurchaseDetails> purchaseDetailsList,
+  ) async {
     for (final purchaseDetails in purchaseDetailsList) {
       if (purchaseDetails.status == PurchaseStatus.pending) {
         // In progress
@@ -281,7 +292,6 @@ class IapService extends ChangeNotifier {
           _safeCompleteRestore(false);
         } else if (purchaseDetails.status == PurchaseStatus.purchased ||
             purchaseDetails.status == PurchaseStatus.restored) {
-
           final tier = _tierFromProductId(purchaseDetails.productID);
           final price = getProductPrice(
             tier,
@@ -317,7 +327,8 @@ class IapService extends ChangeNotifier {
   }
 
   void _safeCompletePurchase(PurchaseResult result) {
-    if (_currentPurchaseCompleter != null && !_currentPurchaseCompleter!.isCompleted) {
+    if (_currentPurchaseCompleter != null &&
+        !_currentPurchaseCompleter!.isCompleted) {
       _currentPurchaseCompleter!.complete(result);
     }
     _currentPurchaseCompleter = null;

@@ -50,8 +50,9 @@ void main() {
     expect(png[3], 0x47);
   });
 
-  testWidgets('вёрстка не переполняется: длинные подписи и большие числа',
-      (tester) async {
+  testWidgets('вёрстка не переполняется: длинные подписи и большие числа', (
+    tester,
+  ) async {
     // Сербский вариант подписей заметно длиннее русского, а число ошибок
     // на экзамене MUP доходит до двузначного — проверяем худший случай.
     await tester.pumpWidget(
@@ -77,8 +78,11 @@ void main() {
       ),
     );
 
-    expect(tester.takeException(), isNull,
-        reason: 'переполнение разметки бросило бы исключение');
+    expect(
+      tester.takeException(),
+      isNull,
+      reason: 'переполнение разметки бросило бы исключение',
+    );
     expect(find.text('Экзамен не сдан'), findsOneWidget);
     expect(find.text('35'), findsOneWidget);
     expect(find.text('Готовность к экзамену — 100%'), findsOneWidget);

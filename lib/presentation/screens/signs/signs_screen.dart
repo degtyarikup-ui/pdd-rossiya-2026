@@ -67,7 +67,8 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
   @override
   Widget build(BuildContext context) {
     final signsAsync = ref.watch(signsProvider);
-    final markup = ref.watch(markupProvider).valueOrNull ??
+    final markup =
+        ref.watch(markupProvider).valueOrNull ??
         const <String, List<Map<String, String>>>{};
     final colors = AppColors.of(context);
 
@@ -106,95 +107,94 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
             ],
           ),
         ),
-            Expanded(
-              child: signsAsync.when(
-                data: (signs) {
-                  final signCategories = <_SignCategoryMeta>[];
-                  signs.forEach((title, value) {
-                    if (value is Map && value.isNotEmpty) {
-                      final icon = _kSignCategoryIcons[title] ??
-                          _kSignCategoryFallbackIcon;
-                      signCategories.add(
-                        _SignCategoryMeta(
-                          title: title,
-                          assetPath: 'assets/images/category_icons/$icon',
-                          signs: Map<String, dynamic>.from(value),
-                        ),
-                      );
-                    }
-                  });
+        Expanded(
+          child: signsAsync.when(
+            data: (signs) {
+              final signCategories = <_SignCategoryMeta>[];
+              signs.forEach((title, value) {
+                if (value is Map && value.isNotEmpty) {
+                  final icon =
+                      _kSignCategoryIcons[title] ?? _kSignCategoryFallbackIcon;
+                  signCategories.add(
+                    _SignCategoryMeta(
+                      title: title,
+                      assetPath: 'assets/images/category_icons/$icon',
+                      signs: Map<String, dynamic>.from(value),
+                    ),
+                  );
+                }
+              });
 
-                  final markupCategories = <_SignCategoryMeta>[];
-                  markup.forEach((group, entries) {
-                    if (entries.isNotEmpty) {
-                      final icon = _markupIcons[group] ?? 'markup_horizontal.svg';
-                      markupCategories.add(
-                        _SignCategoryMeta(
-                          title: group,
-                          assetPath: 'assets/images/category_icons/$icon',
-                          markupEntries: entries
-                              .map((e) => MarkupEntry(
-                                    title: e['title'] ?? '',
-                                    description: e['description'] ?? '',
-                                  ))
-                              .toList(),
-                        ),
-                      );
-                    }
-                  });
-
-                  final categories = [...signCategories, ...markupCategories];
-
-                  final normalizedQuery = _query.trim().toLowerCase();
-                  final filteredCategories = normalizedQuery.isEmpty
-                      ? categories
-                      : categories
-                          .where(
-                            (c) => c.title.toLowerCase().contains(
-                                  normalizedQuery,
-                                ),
+              final markupCategories = <_SignCategoryMeta>[];
+              markup.forEach((group, entries) {
+                if (entries.isNotEmpty) {
+                  final icon = _markupIcons[group] ?? 'markup_horizontal.svg';
+                  markupCategories.add(
+                    _SignCategoryMeta(
+                      title: group,
+                      assetPath: 'assets/images/category_icons/$icon',
+                      markupEntries: entries
+                          .map(
+                            (e) => MarkupEntry(
+                              title: e['title'] ?? '',
+                              description: e['description'] ?? '',
+                            ),
                           )
-                          .toList();
+                          .toList(),
+                    ),
+                  );
+                }
+              });
 
-                  if (filteredCategories.isEmpty) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(
-                          AppDimensions.screenPadding,
-                        ),
-                        child: Text(
-                          appL10n.nothingFoundTryAnother,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            height: 1.4,
-                            color: colors.secondaryText,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
+              final categories = [...signCategories, ...markupCategories];
 
-                  return ListView.builder(
+              final normalizedQuery = _query.trim().toLowerCase();
+              final filteredCategories = normalizedQuery.isEmpty
+                  ? categories
+                  : categories
+                        .where(
+                          (c) =>
+                              c.title.toLowerCase().contains(normalizedQuery),
+                        )
+                        .toList();
+
+              if (filteredCategories.isEmpty) {
+                return Center(
+                  child: Padding(
                     padding: const EdgeInsets.all(AppDimensions.screenPadding),
-                    itemCount: filteredCategories.length,
-                    itemBuilder: (context, index) {
-                      final category = filteredCategories[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: AppDimensions.spacingM,
-                        ),
-                        child: _buildSignCategory(context, category),
-                      );
-                    },
+                    child: Text(
+                      appL10n.nothingFoundTryAnother,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.4,
+                        color: colors.secondaryText,
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(AppDimensions.screenPadding),
+                itemCount: filteredCategories.length,
+                itemBuilder: (context, index) {
+                  final category = filteredCategories[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(
+                      bottom: AppDimensions.spacingM,
+                    ),
+                    child: _buildSignCategory(context, category),
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text(dataLoadErrorMessage(e))),
-              ),
-            ),
-          ],
-        );
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text(dataLoadErrorMessage(e))),
+          ),
+        ),
+      ],
+    );
 
     if (!widget.showHeader) {
       return content;
@@ -202,9 +202,7 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
 
     return Scaffold(
       backgroundColor: colors.background,
-      body: SafeArea(
-        child: content,
-      ),
+      body: SafeArea(child: content),
     );
   }
 
@@ -293,10 +291,7 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
                 ),
               ),
               const SizedBox(width: AppDimensions.spacingS),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: colors.secondaryText,
-              ),
+              Icon(Icons.chevron_right_rounded, color: colors.secondaryText),
             ],
           ),
         ),
@@ -364,9 +359,7 @@ class SignCategoryScreen extends StatelessWidget {
                       : 2;
 
                   return GridView.builder(
-                    padding: const EdgeInsets.all(
-                      AppDimensions.screenPadding,
-                    ),
+                    padding: const EdgeInsets.all(AppDimensions.screenPadding),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: crossAxisCount,
                       mainAxisSpacing: AppDimensions.spacingM,
@@ -375,123 +368,116 @@ class SignCategoryScreen extends StatelessWidget {
                     ),
                     itemCount: entries.length,
                     itemBuilder: (context, index) {
-                            final entry = entries[index];
-                            final signNumber = entry.key;
-                            final signData =
-                                entry.value as Map<String, dynamic>;
-                            final signName =
-                                signData['title'] as String? ??
-                                signData['name'] as String? ??
-                                signNumber;
-                            final rawImage = signData['image'] as String?;
-                            final signImage =
-                                rawImage != null && rawImage.isNotEmpty
-                                ? rawImage.split('/').last
-                                : null;
+                      final entry = entries[index];
+                      final signNumber = entry.key;
+                      final signData = entry.value as Map<String, dynamic>;
+                      final signName =
+                          signData['title'] as String? ??
+                          signData['name'] as String? ??
+                          signNumber;
+                      final rawImage = signData['image'] as String?;
+                      final signImage = rawImage != null && rawImage.isNotEmpty
+                          ? rawImage.split('/').last
+                          : null;
 
-                            return Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(
-                                  AppDimensions.cardRadius,
-                                ),
-                                onTap: () {
-                                  HapticFeedbackHelper.tap();
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => SignDetailScreen(
-                                        signNumber: signNumber,
-                                        signName: signName,
-                                        signImage: signImage,
-                                        signDescription:
-                                            signData['description'] as String?,
-                                        signFolkName:
-                                            signData['folkName'] as String?,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(
-                                    AppDimensions.spacingM,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: colors.cardBackground,
-                                    borderRadius: BorderRadius.circular(
-                                      AppDimensions.cardRadius,
-                                    ),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Expanded(
-                                        child: Center(
-                                          child: signImage != null
-                                              ? SizedBox(
-                                                  width: 88,
-                                                  height: 88,
-                                                  child:
-                                                      signImage.endsWith('.svg')
-                                                      ? SvgPicture.asset(
-                                                          '${CountryConfig.current.signImagesDir}/$signImage',
-                                                          fit: BoxFit.contain,
-                                                        )
-                                                      : Image.asset(
-                                                          '${CountryConfig.current.signImagesDir}/$signImage',
-                                                          fit: BoxFit.contain,
-                                                           errorBuilder:
-                                                               (
-                                                                 context,
-                                                                 error,
-                                                                 stackTrace,
-                                                               ) => Icon(
-                                                                 Icons.signpost,
-                                                                 size: 48,
-                                                                 color: colors
-                                                                     .secondaryText,
-                                                               ),
-                                                        ),
-                                                )
-                                              : Icon(
-                                                  Icons.signpost,
-                                                  size: 48,
-                                                  color:
-                                                      colors.secondaryText,
-                                                ),
-                                        ),
-                                      ),
-                                      const SizedBox(
-                                        height: AppDimensions.spacingS,
-                                      ),
-                                      Text(
-                                        signNumber,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: colors.accent,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        signName,
-                                        textAlign: TextAlign.center,
-                                        maxLines: 3,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          height: 1.3,
-                                          color: colors.primaryText,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.cardRadius,
+                          ),
+                          onTap: () {
+                            HapticFeedbackHelper.tap();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SignDetailScreen(
+                                  signNumber: signNumber,
+                                  signName: signName,
+                                  signImage: signImage,
+                                  signDescription:
+                                      signData['description'] as String?,
+                                  signFolkName: signData['folkName'] as String?,
                                 ),
                               ),
                             );
                           },
-                        );
-                      },
-                    ),
+                          child: Container(
+                            padding: const EdgeInsets.all(
+                              AppDimensions.spacingM,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.cardBackground,
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.cardRadius,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: Center(
+                                    child: signImage != null
+                                        ? SizedBox(
+                                            width: 88,
+                                            height: 88,
+                                            child: signImage.endsWith('.svg')
+                                                ? SvgPicture.asset(
+                                                    '${CountryConfig.current.signImagesDir}/$signImage',
+                                                    fit: BoxFit.contain,
+                                                  )
+                                                : Image.asset(
+                                                    '${CountryConfig.current.signImagesDir}/$signImage',
+                                                    fit: BoxFit.contain,
+                                                    errorBuilder:
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) => Icon(
+                                                          Icons.signpost,
+                                                          size: 48,
+                                                          color: colors
+                                                              .secondaryText,
+                                                        ),
+                                                  ),
+                                          )
+                                        : Icon(
+                                            Icons.signpost,
+                                            size: 48,
+                                            color: colors.secondaryText,
+                                          ),
+                                  ),
+                                ),
+                                const SizedBox(height: AppDimensions.spacingS),
+                                Text(
+                                  signNumber,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: colors.accent,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  signName,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    height: 1.3,
+                                    color: colors.primaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),

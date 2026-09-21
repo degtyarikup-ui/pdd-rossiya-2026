@@ -9,6 +9,7 @@ class AppSettings {
   final bool notificationsEnabled;
   final TicketCategory ticketCategory;
   final ThemeMode themeMode;
+
   /// `false` — показать онбординг выбора A/B vs C/D. До загрузки из хранилища держим `true`.
   final bool vehicleOnboardingCompleted;
 
@@ -60,7 +61,8 @@ class AppSettings {
 
   factory AppSettings.fromJson(Map<String, dynamic>? json) {
     final map = json ?? <String, dynamic>{};
-    final migratedOnboarding = map['vehicleOnboardingCompleted'] as bool? ??
+    final migratedOnboarding =
+        map['vehicleOnboardingCompleted'] as bool? ??
         (map.isEmpty ? false : true);
 
     return AppSettings(
@@ -88,4 +90,3 @@ class AppSettings {
     };
   }
 }
-

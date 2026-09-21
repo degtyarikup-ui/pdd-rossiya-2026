@@ -87,6 +87,9 @@ class ExamRules {
 }
 
 class CountryConfig {
+  /// Game scenarios are currently verified only against Russian rules.
+  bool get hasVerifiedGame => code == 'ru';
+
   /// Код страны ('ru' | 'by').
   final String code;
 
@@ -172,7 +175,8 @@ class CountryConfig {
       r'(?:[Пп]ункт(?:ы|ов|а|е|ам|ами)?|[Пп]\.)\s*((?:\d{1,2}(?:\.\d{1,2}){1,3}(?:\s*(?:,|и)\s*)?)+)';
 
   /// Путь к JSON вопросов категории ('ab' | 'cd').
-  String questionsJson(String cat) => '$assetsRoot/questions/questions_$cat.json';
+  String questionsJson(String cat) =>
+      '$assetsRoot/questions/questions_$cat.json';
 
   /// Путь к JSON тем категории ('ab' | 'cd').
   String topicsJson(String cat) => '$assetsRoot/questions/topics_$cat.json';
@@ -283,13 +287,15 @@ class CountryConfig {
     ),
   );
 
-  static const String _countryCode =
-      String.fromEnvironment('COUNTRY', defaultValue: 'ru');
+  static const String _countryCode = String.fromEnvironment(
+    'COUNTRY',
+    defaultValue: 'ru',
+  );
 
   /// Конфигурация текущей сборки.
   static const CountryConfig current = _countryCode == 'by'
       ? belarus
       : _countryCode == 'rs'
-          ? serbia
-          : russia;
+      ? serbia
+      : russia;
 }

@@ -23,6 +23,7 @@ class _SilentTts implements TtsService {
   }) async {
     return null;
   }
+
   @override
   Future<void> stop() async {}
   @override
@@ -30,21 +31,21 @@ class _SilentTts implements TtsService {
 }
 
 List<Map<String, dynamic>> buildQuestions(int n) => List.generate(
-      n,
-      (i) => <String, dynamic>{
-        'id': 'q$i',
-        'question': 'Вопрос ${i + 1}',
-        'answers': [
-          {'text': 'Верный ответ', 'correct': true},
-          {'text': 'Неверный ответ', 'correct': false},
-        ],
-        'comment': '',
-        'pddPoints': <String>[],
-        'image': null,
-        'topic': <String>[],
-        'ticketNumber': 1,
-      },
-    );
+  n,
+  (i) => <String, dynamic>{
+    'id': 'q$i',
+    'question': 'Вопрос ${i + 1}',
+    'answers': [
+      {'text': 'Верный ответ', 'correct': true},
+      {'text': 'Неверный ответ', 'correct': false},
+    ],
+    'comment': '',
+    'pddPoints': <String>[],
+    'image': null,
+    'topic': <String>[],
+    'ticketNumber': 1,
+  },
+);
 
 /// Итог пройденного билета или темы.
 ///
@@ -89,10 +90,7 @@ void main() {
   Future<void> answer(WidgetTester tester, {required bool correct}) async {
     final text = correct ? 'Верный ответ' : 'Неверный ответ';
     await tester.tap(
-      find.ancestor(
-        of: find.text(text),
-        matching: find.byType(InkWell),
-      ).last,
+      find.ancestor(of: find.text(text), matching: find.byType(InkWell)).last,
       warnIfMissed: false,
     );
     await tester.pumpAndSettle();
@@ -100,12 +98,15 @@ void main() {
 
   Future<void> nextOrFinish(WidgetTester tester) async {
     final next = find.text('Следующий вопрос');
-    await tester.tap(next.evaluate().isNotEmpty ? next : find.text('Завершить'));
+    await tester.tap(
+      next.evaluate().isNotEmpty ? next : find.text('Завершить'),
+    );
     await tester.pumpAndSettle();
   }
 
-  testWidgets('после последнего вопроса показывается итог набора',
-      (tester) async {
+  testWidgets('после последнего вопроса показывается итог набора', (
+    tester,
+  ) async {
     await pumpTraining(tester, questions: 3);
 
     await answer(tester, correct: true);
@@ -123,8 +124,9 @@ void main() {
     expect(find.text('3'), findsOneWidget);
   });
 
-  testWidgets('без ошибок — итог хвалит и не предлагает повтор',
-      (tester) async {
+  testWidgets('без ошибок — итог хвалит и не предлагает повтор', (
+    tester,
+  ) async {
     await pumpTraining(tester, questions: 2);
 
     await answer(tester, correct: true);
@@ -141,8 +143,9 @@ void main() {
     );
   });
 
-  testWidgets('«Повторить ошибки» открывает только те вопросы, где ошиблись',
-      (tester) async {
+  testWidgets('«Повторить ошибки» открывает только те вопросы, где ошиблись', (
+    tester,
+  ) async {
     await pumpTraining(tester, questions: 3);
 
     await answer(tester, correct: false);
@@ -157,11 +160,10 @@ void main() {
 
     final training = tester.widget<TrainingScreen>(find.byType(TrainingScreen));
     expect(training.questions.length, 2);
-    expect(
-      training.questions.map((q) => q['id']),
-      ['q0', 'q2'],
-      reason: 'верно отвеченный вопрос повторять незачем',
-    );
+    expect(training.questions.map((q) => q['id']), [
+      'q0',
+      'q2',
+    ], reason: 'верно отвеченный вопрос повторять незачем');
   });
 
   testWidgets('разбор одного вопроса итогом не заканчивается', (tester) async {

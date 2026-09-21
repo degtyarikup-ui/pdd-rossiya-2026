@@ -28,7 +28,7 @@ const FLAGS = { ru: '🇷🇺', by: '🇧🇾', rs: '🇷🇸' };
 // воркер). Без этих заголовков браузер блокирует cross-origin POST.
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'content-type, x-install-secret',
   'Access-Control-Max-Age': '86400',
 };
@@ -1758,6 +1758,31 @@ function isSuspectRegistration(request, user) {
   return false;
 }
 
+
+// ────────────────────── Game leaderboard helpers ──────────────────────
+// ISO week (Monday-based) in UTC+3, the players' main time zone.
+function gameWeekKey(now = new Date()) {
+  const d = new Date(now.getTime() + 3 * 3600 * 1000);
+  const day = (d.getUTCDay() + 6) % 7;
+  const thursday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - day + 3));
+  const yearStart = new Date(Date.UTC(thursday.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((thursday - yearStart) / 86400000 + 1) / 7);
+  return thursday.getUTCFullYear() + '-W' + String(week).padStart(2, '0');
+}
+function gameWeekEnd(now = new Date()) {
+  const d = new Date(now.getTime() + 3 * 3600 * 1000);
+  const day = (d.getUTCDay() + 6) % 7;
+  const monday = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - day);
+  return new Date(monday + 7 * 86400000 - 3 * 3600 * 1000).toISOString();
+}
+async function readGameBoard(env, week) {
+  try { const raw = await env.INSTALLS.get('game_lb:' + week); return raw ? JSON.parse(raw) : {}; } catch (_) { return {}; }
+}
+function rankGameBoard(doc) {
+  return Object.entries(doc).map(([userId, e]) => ({ userId, ...e }))
+    .sort((a, b) => b.score - a.score || (a.updatedAt < b.updatedAt ? -1 : 1));
+}
+
 async function appKeyAllowed(request, env) {
   if (!env.SHARED_SECRET) return true;
   const got = request.headers.get('x-install-secret');
@@ -2926,6 +2951,41 @@ export default {
         ok: true,
         progress: progress || {}
       });
+    }
+
+    // ────────────────────── Game leaderboard (weekly) ──────────────────────
+    // One KV document per ISO week: { [userId]: { name, score, runs, best, updatedAt } }.
+    // Scores are summed over the week; the board shows the top 100.
+    if (url.pathname === '/api/game/score' && request.method === 'POST') {
+      if (!(await appKeyAllowed(request, env))) return jsonResponse({ error: 'forbidden' }, 403);
+      let body;
+      try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }
+      const userId = String(body?.userId || '').slice(0, 120);
+      const score = Math.max(0, Math.min(1000000, Math.floor(Number(body?.score) || 0)));
+      if (!userId || !env.INSTALLS) return jsonResponse({ error: 'missing userId' }, 400);
+      const week = gameWeekKey();
+      const doc = await readGameBoard(env, week);
+      const entry = doc[userId] || { score: 0, runs: 0, best: 0 };
+      entry.name = String(body?.name || entry.name || 'Игрок').slice(0, 40);
+      entry.score += score; entry.runs += 1; entry.best = Math.max(entry.best, score);
+      entry.updatedAt = new Date().toISOString();
+      doc[userId] = entry;
+      await env.INSTALLS.put('game_lb:' + week, JSON.stringify(doc), { expirationTtl: 60 * 60 * 24 * 21 });
+      const ranked = rankGameBoard(doc);
+      const me = ranked.findIndex(r => r.userId === userId);
+      return jsonResponse({ ok: true, week, rank: me + 1, total: ranked.length, weekScore: entry.score });
+    }
+    if (url.pathname === '/api/game/leaderboard' && request.method === 'GET') {
+      if (!env.INSTALLS) return jsonResponse({ ok: true, week: gameWeekKey(), top: [], me: null });
+      const week = gameWeekKey();
+      const userId = url.searchParams.get('userId') || '';
+      const ranked = rankGameBoard(await readGameBoard(env, week));
+      const meIndex = userId ? ranked.findIndex(r => r.userId === userId) : -1;
+      const publicRow = r => ({ name: r.name, score: r.score, runs: r.runs, isMe: r.userId === userId });
+      return jsonResponse({ ok: true, week, endsAt: gameWeekEnd(), total: ranked.length,
+        top: ranked.slice(0, 100).map((r, i) => ({ rank: i + 1, ...publicRow(r) })),
+        me: meIndex >= 0 ? { rank: meIndex + 1, ...publicRow(ranked[meIndex]) } : null },
+        200, { 'Cache-Control': 'no-store' });
     }
 
     // ────────────────────── User Profile & Sync API ──────────────────────

@@ -38,8 +38,9 @@ class ProgressPanelCard extends StatelessWidget {
     final totalQuestions = stats['totalQuestions'] ?? 0;
     final totalTickets = stats['totalTickets'] ?? 0;
 
-    final readiness =
-        totalQuestions > 0 ? (correct / totalQuestions * 100).round() : 0;
+    final readiness = totalQuestions > 0
+        ? (correct / totalQuestions * 100).round()
+        : 0;
     final remaining = math.max(0, totalQuestions - correct);
 
     return Container(
@@ -153,42 +154,42 @@ class _ReadinessGauge extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text.rich(
-                // Нижний выносной элемент шрифта исключён из разметки строки:
-                // тогда нижняя граница блока совпадает с основанием цифр, и
-                // «bottom: 0» ставит их ровно на уровень концов дуги. Иначе
-                // пришлось бы угадывать размер выносного элемента константой.
-                textHeightBehavior: const TextHeightBehavior(
-                  applyHeightToFirstAscent: false,
-                  applyHeightToLastDescent: false,
-                ),
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '$percent',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w700,
-                        height: 1,
-                        letterSpacing: -0.8,
-                        color: colors.primaryText,
-                      ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text.rich(
+                    // Нижний выносной элемент шрифта исключён из разметки строки:
+                    // тогда нижняя граница блока совпадает с основанием цифр, и
+                    // «bottom: 0» ставит их ровно на уровень концов дуги. Иначе
+                    // пришлось бы угадывать размер выносного элемента константой.
+                    textHeightBehavior: const TextHeightBehavior(
+                      applyHeightToFirstAscent: false,
+                      applyHeightToLastDescent: false,
                     ),
                     TextSpan(
-                      text: '%',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        height: 1,
-                        color: colors.primaryText,
-                      ),
+                      children: [
+                        TextSpan(
+                          text: '$percent',
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w700,
+                            height: 1,
+                            letterSpacing: -0.8,
+                            color: colors.primaryText,
+                          ),
+                        ),
+                        TextSpan(
+                          text: '%',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            height: 1,
+                            color: colors.primaryText,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-                ),
-              ),
               ],
             ),
           ),
@@ -295,11 +296,7 @@ class _MicroDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return Container(
-      width: 1,
-      height: 26,
-      color: colors.divider,
-    );
+    return Container(width: 1, height: 26, color: colors.divider);
   }
 }
 

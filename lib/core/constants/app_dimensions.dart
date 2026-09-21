@@ -5,7 +5,12 @@ class AppDimensions {
   static const double cardRadius = 16.0;
   static const double smallRadius = 8.0;
   static const double buttonRadius = 12.0;
+  static const double radiusSmall = 8.0;
+  static const double radiusMedium = 12.0;
+  static const double radiusLarge = 16.0;
+  static const double radiusExtraLarge = 24.0;
   static const double examButtonHeight = 120.0;
+
   /// Высота плиток режимов на главной («Темы», «Билеты», …).
   static const double topicButtonHeight = 92.0;
   static const double bottomNavHeight = 100.0;

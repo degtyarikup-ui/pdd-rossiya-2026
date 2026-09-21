@@ -80,7 +80,8 @@ void main() {
     expect(
       withFolk.length,
       greaterThanOrEqualTo(10),
-      reason: 'народные названия потерялись при пересборке signs.json — '
+      reason:
+          'народные названия потерялись при пересборке signs.json — '
           'перезапустите tools/ru_content/add_folk_names.py',
     );
     expect(withFolk['3.1'], 'кирпич');

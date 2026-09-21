@@ -130,9 +130,14 @@ class FeedStreakDialog extends StatelessWidget {
             children: [
               // Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: milestone.accentColor.withValues(alpha: isDark ? 0.25 : 0.12),
+                  color: milestone.accentColor.withValues(
+                    alpha: isDark ? 0.25 : 0.12,
+                  ),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -163,7 +168,9 @@ class FeedStreakDialog extends StatelessWidget {
                 width: 96,
                 height: 96,
                 decoration: BoxDecoration(
-                  color: milestone.accentColor.withValues(alpha: isDark ? 0.2 : 0.08),
+                  color: milestone.accentColor.withValues(
+                    alpha: isDark ? 0.2 : 0.08,
+                  ),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -228,7 +235,9 @@ class FeedStreakDialog extends StatelessWidget {
                     shadowColor: Colors.transparent,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.smallRadius,
+                      ),
                     ),
                   ),
                   child: const Text(

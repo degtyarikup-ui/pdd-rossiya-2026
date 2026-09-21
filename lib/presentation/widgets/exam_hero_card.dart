@@ -282,10 +282,7 @@ class _SignUPainter extends CustomPainter {
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    textPainter.paint(
-      canvas,
-      Offset(-textPainter.width / 2, -10),
-    );
+    textPainter.paint(canvas, Offset(-textPainter.width / 2, -10));
 
     canvas.restore();
   }
@@ -307,10 +304,26 @@ class _SignUPainter extends CustomPainter {
     final start = bottomLeft + dirLT * radius;
     path.moveTo(start.dx, start.dy);
     path.lineTo(top.dx - dirLT.dx * radius, top.dy - dirLT.dy * radius);
-    path.quadraticBezierTo(top.dx, top.dy, top.dx + dirTR.dx * radius, top.dy + dirTR.dy * radius);
-    path.lineTo(bottomRight.dx - dirTR.dx * radius, bottomRight.dy - dirTR.dy * radius);
-    path.quadraticBezierTo(bottomRight.dx, bottomRight.dy, bottomRight.dx + dirRL.dx * radius, bottomRight.dy + dirRL.dy * radius);
-    path.lineTo(bottomLeft.dx - dirRL.dx * radius, bottomLeft.dy - dirRL.dy * radius);
+    path.quadraticBezierTo(
+      top.dx,
+      top.dy,
+      top.dx + dirTR.dx * radius,
+      top.dy + dirTR.dy * radius,
+    );
+    path.lineTo(
+      bottomRight.dx - dirTR.dx * radius,
+      bottomRight.dy - dirTR.dy * radius,
+    );
+    path.quadraticBezierTo(
+      bottomRight.dx,
+      bottomRight.dy,
+      bottomRight.dx + dirRL.dx * radius,
+      bottomRight.dy + dirRL.dy * radius,
+    );
+    path.lineTo(
+      bottomLeft.dx - dirRL.dx * radius,
+      bottomLeft.dy - dirRL.dy * radius,
+    );
     path.quadraticBezierTo(bottomLeft.dx, bottomLeft.dy, start.dx, start.dy);
     path.close();
     return path;
@@ -362,39 +375,47 @@ class _LicenseCardPainter extends CustomPainter {
     // Силуэт на фото
     final avatarHead = Paint()..color = const Color(0xFF64748B);
     canvas.drawCircle(const Offset(-39, -15), 5.5, avatarHead);
-    final avatarBody = Path()
-      ..addOval(const Rect.fromLTWH(-48, -7, 18, 14));
+    final avatarBody = Path()..addOval(const Rect.fromLTWH(-48, -7, 18, 14));
     canvas.drawPath(avatarBody, avatarHead);
 
     // Строки текста
     final linePaint = Paint()..color = const Color(0xFF475569);
     canvas.drawRRect(
-      RRect.fromRectAndRadius(const Rect.fromLTWH(-18, -24, 66, 4), const Radius.circular(2)),
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(-18, -24, 66, 4),
+        const Radius.circular(2),
+      ),
       linePaint,
     );
     final subLinePaint = Paint()..color = const Color(0xFF94A3B8);
     canvas.drawRRect(
-      RRect.fromRectAndRadius(const Rect.fromLTWH(-18, -15, 48, 3.5), const Radius.circular(2)),
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(-18, -15, 48, 3.5),
+        const Radius.circular(2),
+      ),
       subLinePaint,
     );
     canvas.drawRRect(
-      RRect.fromRectAndRadius(const Rect.fromLTWH(-18, -7, 54, 3.5), const Radius.circular(2)),
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(-18, -7, 54, 3.5),
+        const Radius.circular(2),
+      ),
       subLinePaint,
     );
 
     // Голографическая полоса
     final holoPaint = Paint()
       ..shader = const LinearGradient(
-        colors: [
-          Color(0x99EC4899),
-          Color(0x993B82F6),
-          Color(0x9910B981),
-        ],
+        colors: [Color(0x99EC4899), Color(0x993B82F6), Color(0x9910B981)],
       ).createShader(const Rect.fromLTWH(-60, 14, 120, 10));
     canvas.drawRect(const Rect.fromLTWH(-60, 14, 120, 10), holoPaint);
 
     // Золотая точка-герб
-    canvas.drawCircle(const Offset(-46, 19), 3, Paint()..color = const Color(0xFFF59E0B));
+    canvas.drawCircle(
+      const Offset(-46, 19),
+      3,
+      Paint()..color = const Color(0xFFF59E0B),
+    );
 
     // Надпись RUS
     final rusPainter = TextPainter(
@@ -495,8 +516,16 @@ class _SpeedometerPainter extends CustomPainter {
     canvas.drawLine(Offset.zero, needleEnd, needlePaint);
 
     // Центральный колпачок
-    canvas.drawCircle(Offset.zero, 6.0, Paint()..color = const Color(0xFFF8FAFC));
-    canvas.drawCircle(Offset.zero, 3.0, Paint()..color = const Color(0xFF0F172A));
+    canvas.drawCircle(
+      Offset.zero,
+      6.0,
+      Paint()..color = const Color(0xFFF8FAFC),
+    );
+    canvas.drawCircle(
+      Offset.zero,
+      3.0,
+      Paint()..color = const Color(0xFF0F172A),
+    );
 
     // Число скорости «89»
     final speedPainter = TextPainter(
@@ -578,12 +607,28 @@ class _TrafficLightPainter extends CustomPainter {
     );
 
     // Красный сигнал (выкл)
-    canvas.drawCircle(const Offset(0, -28), 9.5, Paint()..color = const Color(0xFF334155));
+    canvas.drawCircle(
+      const Offset(0, -28),
+      9.5,
+      Paint()..color = const Color(0xFF334155),
+    );
     // Жёлтый сигнал (выкл)
-    canvas.drawCircle(const Offset(0, -1), 9.5, Paint()..color = const Color(0xFF334155));
+    canvas.drawCircle(
+      const Offset(0, -1),
+      9.5,
+      Paint()..color = const Color(0xFF334155),
+    );
     // Зелёный сигнал (вкл, яркий)
-    canvas.drawCircle(const Offset(0, 26), 10.5, Paint()..color = const Color(0xFF2BC280));
-    canvas.drawCircle(const Offset(0, 26), 6.5, Paint()..color = const Color(0xFF6EE7B7));
+    canvas.drawCircle(
+      const Offset(0, 26),
+      10.5,
+      Paint()..color = const Color(0xFF2BC280),
+    );
+    canvas.drawCircle(
+      const Offset(0, 26),
+      6.5,
+      Paint()..color = const Color(0xFF6EE7B7),
+    );
 
     canvas.restore();
   }
@@ -649,7 +694,11 @@ class _ChronometerPainter extends CustomPainter {
     canvas.restore();
 
     // Корпус секундомера
-    canvas.drawCircle(Offset.zero, 36, Paint()..color = const Color(0xFF0F172A));
+    canvas.drawCircle(
+      Offset.zero,
+      36,
+      Paint()..color = const Color(0xFF0F172A),
+    );
     canvas.drawCircle(
       Offset.zero,
       36,
@@ -661,7 +710,10 @@ class _ChronometerPainter extends CustomPainter {
 
     // Верхняя кнопка
     canvas.drawRRect(
-      RRect.fromRectAndRadius(const Rect.fromLTWH(-5, -42, 10, 7), const Radius.circular(2)),
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(-5, -42, 10, 7),
+        const Radius.circular(2),
+      ),
       Paint()..color = const Color(0xFF94A3B8),
     );
 
@@ -863,11 +915,19 @@ class _MainRoadSignPainter extends CustomPainter {
     const double innerSize = 34.0;
     final innerDiamond = _buildRoundedDiamond(innerSize, 4.5);
     final yellowPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFFFDE047), Color(0xFFF59E0B)],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(const Rect.fromLTWH(-innerSize, -innerSize, innerSize * 2, innerSize * 2))
+      ..shader =
+          const LinearGradient(
+            colors: [Color(0xFFFDE047), Color(0xFFF59E0B)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ).createShader(
+            const Rect.fromLTWH(
+              -innerSize,
+              -innerSize,
+              innerSize * 2,
+              innerSize * 2,
+            ),
+          )
       ..style = PaintingStyle.fill;
     canvas.drawPath(innerDiamond, yellowPaint);
 

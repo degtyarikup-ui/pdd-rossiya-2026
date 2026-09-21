@@ -29,7 +29,8 @@ class ProgressDataSource {
   static const String _keyStreakLastActive = 'streak_last_active';
   static const String _keyStreakStartDate = 'streak_start_date';
   static const String _keyStreakActiveDays = 'streak_active_days';
-  static const String _keyStreakCelebrationPending = 'streak_celebration_pending';
+  static const String _keyStreakCelebrationPending =
+      'streak_celebration_pending';
 
   /// Незаконченная тренировка: куда вернуться одним нажатием с главной.
   static const String _keyUnfinishedSession = 'unfinished_session';
@@ -236,9 +237,7 @@ class ProgressDataSource {
     ProgressSyncService.instance.scheduleSync();
   }
 
-  Future<List<String>> getFavoriteQuestionIds(
-    TicketCategory category,
-  ) async {
+  Future<List<String>> getFavoriteQuestionIds(TicketCategory category) async {
     return _loadList(_favoritesKey(category));
   }
 
@@ -317,8 +316,9 @@ class ProgressDataSource {
     final nextCurrent = isConsecutive ? stored + 1 : 1;
 
     final storedLongest = _prefs.getInt(_keyStreakLongest) ?? 0;
-    final nextLongest =
-        nextCurrent > storedLongest ? nextCurrent : storedLongest;
+    final nextLongest = nextCurrent > storedLongest
+        ? nextCurrent
+        : storedLongest;
 
     // Дата старта серии. Не трогаем, если серия продолжается; перезаписываем
     // на сегодня, если серия начинается заново (новая или после перерыва).
@@ -532,16 +532,28 @@ class ProgressDataSource {
   Future<void> importProgressSnapshot(Map<String, dynamic> data) async {
     if (data.isEmpty) return;
     if (data['questionProgressAb'] is Map) {
-      _saveMap(_keyProgressAb, Map<String, dynamic>.from(data['questionProgressAb'] as Map));
+      _saveMap(
+        _keyProgressAb,
+        Map<String, dynamic>.from(data['questionProgressAb'] as Map),
+      );
     }
     if (data['questionProgressCd'] is Map) {
-      _saveMap(_keyProgressCd, Map<String, dynamic>.from(data['questionProgressCd'] as Map));
+      _saveMap(
+        _keyProgressCd,
+        Map<String, dynamic>.from(data['questionProgressCd'] as Map),
+      );
     }
     if (data['ticketProgressAb'] is Map) {
-      _saveMap(_keyTicketProgressAb, Map<String, dynamic>.from(data['ticketProgressAb'] as Map));
+      _saveMap(
+        _keyTicketProgressAb,
+        Map<String, dynamic>.from(data['ticketProgressAb'] as Map),
+      );
     }
     if (data['ticketProgressCd'] is Map) {
-      _saveMap(_keyTicketProgressCd, Map<String, dynamic>.from(data['ticketProgressCd'] as Map));
+      _saveMap(
+        _keyTicketProgressCd,
+        Map<String, dynamic>.from(data['ticketProgressCd'] as Map),
+      );
     }
     if (data['favoritesAb'] is List) {
       _saveList(_keyFavoritesAb, (data['favoritesAb'] as List).cast<String>());
@@ -550,10 +562,16 @@ class ProgressDataSource {
       _saveList(_keyFavoritesCd, (data['favoritesCd'] as List).cast<String>());
     }
     if (data['examResultsAb'] is List) {
-      _saveList(_keyExamResultsAb, (data['examResultsAb'] as List).cast<String>());
+      _saveList(
+        _keyExamResultsAb,
+        (data['examResultsAb'] as List).cast<String>(),
+      );
     }
     if (data['examResultsCd'] is List) {
-      _saveList(_keyExamResultsCd, (data['examResultsCd'] as List).cast<String>());
+      _saveList(
+        _keyExamResultsCd,
+        (data['examResultsCd'] as List).cast<String>(),
+      );
     }
     if (data['streak'] is Map) {
       final s = data['streak'] as Map;
@@ -576,7 +594,8 @@ class ProgressDataSource {
         await _prefs.setString(_keyStreakStartDate, start);
       }
       if (active.isNotEmpty) {
-        final existingActive = _prefs.getStringList(_keyStreakActiveDays) ?? <String>[];
+        final existingActive =
+            _prefs.getStringList(_keyStreakActiveDays) ?? <String>[];
         final union = {...existingActive, ...active}.toList()..sort();
         await _prefs.setStringList(_keyStreakActiveDays, union);
       }

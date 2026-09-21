@@ -22,10 +22,12 @@ class SubscriptionManagementSheet extends StatefulWidget {
   }
 
   @override
-  State<SubscriptionManagementSheet> createState() => _SubscriptionManagementSheetState();
+  State<SubscriptionManagementSheet> createState() =>
+      _SubscriptionManagementSheetState();
 }
 
-class _SubscriptionManagementSheetState extends State<SubscriptionManagementSheet> {
+class _SubscriptionManagementSheetState
+    extends State<SubscriptionManagementSheet> {
   bool _isRestoring = false;
 
   Future<void> _openStoreSubscriptionSettings() async {
@@ -37,11 +39,16 @@ class _SubscriptionManagementSheetState extends State<SubscriptionManagementShee
       uri = Uri.parse('https://apps.apple.com/account/subscriptions');
     } else {
       // Google Play Subscriptions management deep-link
-      uri = Uri.parse('https://play.google.com/store/account/subscriptions?package=ru.pdd.pdd_app');
+      uri = Uri.parse(
+        'https://play.google.com/store/account/subscriptions?package=ru.pdd.pdd_app',
+      );
     }
 
     try {
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched) {
         // Fallback for Google Play web
         await launchUrl(
@@ -100,14 +107,14 @@ class _SubscriptionManagementSheetState extends State<SubscriptionManagementShee
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     const greenAccent = Color(0xFF2BC280);
-    final greenSurface = isDark ? const Color(0xFF162B1D) : const Color(0xFFE8F8F0);
+    final greenSurface = isDark
+        ? const Color(0xFF162B1D)
+        : const Color(0xFFE8F8F0);
 
     return Container(
       decoration: BoxDecoration(
         color: colors.background,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
         left: 20,
@@ -189,7 +196,8 @@ class _SubscriptionManagementSheetState extends State<SubscriptionManagementShee
                     _buildFeatureItem(
                       icon: Icons.all_inclusive_rounded,
                       title: 'Безлимитная умная лента',
-                      description: 'Все вопросы и категории доступны без ограничений',
+                      description:
+                          'Все вопросы и категории доступны без ограничений',
                       accentColor: greenAccent,
                       surfaceColor: greenSurface,
                       colors: colors,
@@ -198,7 +206,8 @@ class _SubscriptionManagementSheetState extends State<SubscriptionManagementShee
                     _buildFeatureItem(
                       icon: Icons.auto_awesome_rounded,
                       title: 'ИИ-разбор каждого вопроса',
-                      description: 'Мгновенное объяснение правил и дорожных ситуаций',
+                      description:
+                          'Мгновенное объяснение правил и дорожных ситуаций',
                       accentColor: greenAccent,
                       surfaceColor: greenSurface,
                       colors: colors,
@@ -276,7 +285,10 @@ class _SubscriptionManagementSheetState extends State<SubscriptionManagementShee
                     backgroundColor: greenAccent,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 0,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -346,19 +358,12 @@ class _SubscriptionManagementSheetState extends State<SubscriptionManagementShee
               ),
               Text(
                 description,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: colors.secondaryText,
-                ),
+                style: TextStyle(fontSize: 11.5, color: colors.secondaryText),
               ),
             ],
           ),
         ),
-        Icon(
-          Icons.check_circle_rounded,
-          color: colors.green,
-          size: 18,
-        ),
+        Icon(Icons.check_circle_rounded, color: colors.green, size: 18),
       ],
     );
   }

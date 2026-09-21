@@ -1,5 +1,6 @@
 // Тестирование аналитики, логина и эндпоинтов админки воркера локально
 import worker from './worker.js';
+import assert from 'node:assert/strict';
 
 class MockKV {
   constructor() {
@@ -35,7 +36,14 @@ async function runTests() {
   const adminReq = new Request('https://pdd-install-notifier.sergei-pdd.workers.dev/admin');
   const adminRes = await worker.fetch(adminReq, env);
   const adminHtml = await adminRes.text();
-  console.log('   Status:', adminRes.status, 'HTML contains title:', adminHtml.includes('ПДД 2026 — Панель аналитики'));
+  assert.equal(adminRes.status, 200);
+  assert.match(adminHtml, /<title>ПДД Аналитика — Панель управления<\/title>/);
+  assert.match(adminHtml, /id="admin-data-state"/);
+  assert.match(adminHtml, /Доля переходов/);
+  assert.match(adminHtml, /Данные аналитики/);
+  assert.match(adminHtml, /Беларусь \(BY\)/);
+  assert.equal((adminHtml.match(/id="sidebar-app-select"/g) || []).length, 1);
+  console.log('   Status:', adminRes.status, 'оболочка и состояния встроены: YES');
 
   console.log('2. Тестируем POST /api/track (просмотр из YouTube Shorts)...');
   const viewReq = new Request('https://pdd-install-notifier.sergei-pdd.workers.dev/api/track', {
@@ -91,6 +99,23 @@ async function runTests() {
   });
   await worker.fetch(ttReq, env);
 
+  const byReq = new Request('https://pdd-install-notifier.sergei-pdd.workers.dev/api/track', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'user-agent': 'Mozilla/5.0 Chrome/126.0' },
+    body: JSON.stringify({ type: 'view', app: 'by', country: 'BY', source: 'direct', path: '/' })
+  });
+  await worker.fetch(byReq, env);
+
+  // Предыдущий равный период: 7 дней, которые идут перед выбранными семью.
+  const previousDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const previousDayKey = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(previousDate);
+  await env.INSTALLS.put(`day:${previousDayKey}`, JSON.stringify({
+    views: 9, clicks: 4, installs: 2,
+    apps: { by: { views: 2, clicks: 1, installs: 1 } }
+  }));
+
   console.log('5. Тестируем GET /api/admin/stats без авторизации (ожидаем 401)...');
   const unauthReq = new Request('https://pdd-install-notifier.sergei-pdd.workers.dev/api/admin/stats');
   const unauthRes = await worker.fetch(unauthReq, env);
@@ -118,6 +143,39 @@ async function runTests() {
   console.log('   Targets:', statsData.targets);
   console.log('   Campaigns:', statsData.campaigns);
   console.log('   Recent events count:', statsData.recent.length);
+  assert.deepEqual(statsData.previous, { views: 9, clicks: 4, installs: 2 });
+  const byStatsRes = await worker.fetch(new Request(
+    'https://pdd-install-notifier.sergei-pdd.workers.dev/api/admin/stats?days=7&app=by',
+    { headers: { 'authorization': 'Bearer test_password_123' } }
+  ), env);
+  const byStats = await byStatsRes.json();
+  assert.equal(byStats.totals.views, 1);
+  assert.equal(byStats.timeline.reduce((sum, day) => sum + day.views, 0), 1);
+  assert.deepEqual(byStats.previous, { views: 2, clicks: 1, installs: 1 });
+  console.log('   Беларусь отделена от России: YES');
+
+  console.log('8. Тестируем атомарную перестановку статей...');
+  const articleList = JSON.parse(JSON.stringify([
+    { slug: 'first', title: 'Первая', datePublished: '2026-10-01' },
+    { slug: 'second', title: 'Вторая', datePublished: '2026-10-02' }
+  ]));
+  await env.INSTALLS.put('blog_articles', JSON.stringify(articleList));
+  const reorderRes = await worker.fetch(new Request(
+    'https://pdd-install-notifier.sergei-pdd.workers.dev/api/admin/blog/reorder',
+    {
+      method: 'POST',
+      headers: { 'authorization': 'Bearer test_password_123', 'content-type': 'application/json' },
+      body: JSON.stringify({ changes: [
+        { slug: 'first', datePublished: '2026-10-02' },
+        { slug: 'second', datePublished: '2026-10-01' }
+      ] })
+    }
+  ), env);
+  assert.equal(reorderRes.status, 200);
+  const reordered = JSON.parse(await env.INSTALLS.get('blog_articles'));
+  assert.equal(reordered[0].datePublished, '2026-10-02');
+  assert.equal(reordered[1].datePublished, '2026-10-01');
+  console.log('   Обе даты сохранены одной операцией: YES');
   console.log('Все тесты успешно пройдены!');
 }
 

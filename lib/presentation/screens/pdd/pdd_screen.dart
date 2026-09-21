@@ -46,7 +46,9 @@ class _PddScreenState extends State<PddScreen> {
         statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
         systemStatusBarContrastEnforced: false,
         systemNavigationBarColor: colors.cardBackground,
-        systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarIconBrightness: isDark
+            ? Brightness.light
+            : Brightness.dark,
         systemNavigationBarDividerColor: Colors.transparent,
         systemNavigationBarContrastEnforced: false,
       ),
@@ -59,66 +61,79 @@ class _PddScreenState extends State<PddScreen> {
               AppDimensions.screenPadding,
               8,
             ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: Text(
-                      appL10n.pdd,
-                      textAlign: TextAlign.left,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        height: 1.0,
-                        color: colors.primaryText,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    if (Navigator.of(context).canPop()) ...[
+                      AppChromeIconButton(
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        onTap: () {
+                          HapticFeedbackHelper.tap();
+                          Navigator.pop(context);
+                        },
+                      ),
+                      const SizedBox(width: AppDimensions.spacingM),
+                    ],
+                    Expanded(
+                      child: Text(
+                        appL10n.pdd,
+                        textAlign: TextAlign.left,
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          height: 1.0,
+                          color: colors.primaryText,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: colors.gray,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildSubTabButton(
-                            index: 0,
-                            title: appL10n.rules,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: _buildSubTabButton(
-                            index: 1,
-                            title: appL10n.signsAndMarkup,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_subTab == 0) ...[
-                    const SizedBox(height: AppDimensions.spacingS),
-                    AppPillSearchField(
-                      controller: _searchController,
-                      onChanged: (value) => setState(() => _query = value),
-                      hintText: appL10n.search,
-                    ),
                   ],
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: colors.gray,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildSubTabButton(
+                          index: 0,
+                          title: appL10n.rules,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: _buildSubTabButton(
+                          index: 1,
+                          title: appL10n.signsAndMarkup,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_subTab == 0) ...[
+                  const SizedBox(height: AppDimensions.spacingS),
+                  AppPillSearchField(
+                    controller: _searchController,
+                    onChanged: (value) => setState(() => _query = value),
+                    hintText: appL10n.search,
+                  ),
                 ],
-              ),
+              ],
             ),
-            Expanded(
-              child: _subTab == 0
-                  ? _buildRulesContent()
-                  : const SignsScreen(showHeader: false),
-            ),
-          ],
-        ),
-      );
+          ),
+          Expanded(
+            child: _subTab == 0
+                ? _buildRulesContent()
+                : const SignsScreen(showHeader: false),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSubTabButton({required int index, required String title}) {
@@ -153,59 +168,53 @@ class _PddScreenState extends State<PddScreen> {
     return FutureBuilder<List<Map<String, String>>>(
       future: _sectionsFuture,
       builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-                  final normalizedQuery = _query.trim().toLowerCase();
-                  final filteredSections = snapshot.data!.where((section) {
-                    if (normalizedQuery.isEmpty) return true;
-                    return section['title']!
-                            .toLowerCase()
-                            .contains(normalizedQuery) ||
-                        section['content']!
-                            .toLowerCase()
-                            .contains(normalizedQuery);
-                  }).toList();
+        final normalizedQuery = _query.trim().toLowerCase();
+        final filteredSections = snapshot.data!.where((section) {
+          if (normalizedQuery.isEmpty) return true;
+          return section['title']!.toLowerCase().contains(normalizedQuery) ||
+              section['content']!.toLowerCase().contains(normalizedQuery);
+        }).toList();
 
-                  if (filteredSections.isEmpty) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppDimensions.screenPadding),
-                        child: Text(
-                          appL10n.pddSearchEmpty,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            height: 1.4,
-                            color: colors.secondaryText,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
+        if (filteredSections.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppDimensions.screenPadding),
+              child: Text(
+                appL10n.pddSearchEmpty,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: colors.secondaryText,
+                ),
+              ),
+            ),
+          );
+        }
 
-                  return ListView(
-                    padding: const EdgeInsets.all(AppDimensions.screenPadding),
-                    children: [
-                      if (CountryConfig.current.notAffiliatedNote.isNotEmpty)
-                        const _SourceNote(),
-                      ...filteredSections.map((section) {
-                        return Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: AppDimensions.spacingM,
-                          ),
-                          child: _buildPddSection(
-                            context,
-                            section['title']!,
-                            section['content']!,
-                          ),
-                        );
-                      }),
-                    ],
-                  );
-                },
+        return ListView(
+          padding: const EdgeInsets.all(AppDimensions.screenPadding),
+          children: [
+            if (CountryConfig.current.notAffiliatedNote.isNotEmpty)
+              const _SourceNote(),
+            ...filteredSections.map((section) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppDimensions.spacingM),
+                child: _buildPddSection(
+                  context,
+                  section['title']!,
+                  section['content']!,
+                ),
               );
+            }),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildPddSection(BuildContext context, String title, String content) {
@@ -439,4 +448,3 @@ class _PddDetailScreenState extends State<PddDetailScreen> {
     );
   }
 }
-

@@ -91,12 +91,15 @@ export const THREADS_CLIENT_JS = `
 var thState = { posts: [], settings: {}, log: [] };
 var thFilter = 'queued';
 var thSelected = {};
+var thBusy = {};
 
 async function thApi(path, body) {
   var opts = body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {};
   var res = await fetch('/api/admin/threads/' + path, opts);
   if (res.status === 401) { checkAuthAndLoad(); throw new Error('нужно войти заново'); }
-  return await res.json();
+  var data = await res.json().catch(function () { return {}; });
+  if (!res.ok) throw new Error(data.error || ('ошибка сервера ' + res.status));
+  return data;
 }
 
 async function loadThreads() {
@@ -306,8 +309,18 @@ window.thDeleteOne = async function (id) {
 
 window.thPublishOne = async function (id) {
   if (!confirm('Опубликовать в Threads прямо сейчас?')) return;
-  var res = await thApi('publish-now', { ids: [id] });
-  scToast(res.message || 'Запущено');
+  if (thBusy[id]) return;
+  thBusy[id] = true;
+  try {
+    var res = await thApi('publish-now', { ids: [id] });
+    if (res.ok === false) throw new Error(res.message || res.error || 'не получилось');
+    scToast(res.message || 'Запущено');
+  } catch (e) {
+    scToast('Публикация не запущена: ' + e.message, true);
+    return;
+  } finally {
+    delete thBusy[id];
+  }
   thWatch();
 };
 
@@ -315,9 +328,19 @@ window.thPublishSelected = async function () {
   var ids = thPicked();
   if (!ids.length) return;
   if (!confirm('Опубликовать ' + ids.length + ' постов? Уйдут по очереди, не больше трёх за раз.')) return;
-  var res = await thApi('publish-now', { ids: ids });
-  scToast(res.message || 'Запущено', !res.ok);
-  thSelected = {};
+  if (thBusy.selected) return;
+  thBusy.selected = true;
+  try {
+    var res = await thApi('publish-now', { ids: ids });
+    if (res.ok === false) throw new Error(res.message || res.error || 'не получилось');
+    scToast(res.message || 'Запущено');
+    thSelected = {};
+  } catch (e) {
+    scToast('Публикация не запущена: ' + e.message, true);
+    return;
+  } finally {
+    thBusy.selected = false;
+  }
   thWatch();
 };
 

@@ -23,7 +23,8 @@ class AppStrings {
   static String get pddPoints => appL10n.pddPoints;
   static String get myAnswers => appL10n.myAnswers;
   static String get favorites => appL10n.favorites;
-  static String get questionAddedToFavorites => appL10n.questionAddedToFavorites;
+  static String get questionAddedToFavorites =>
+      appL10n.questionAddedToFavorites;
   static String get correctAnswer => appL10n.correctAnswer;
   static String get yourAnswer => appL10n.yourAnswer;
   static String get ticket => appL10n.ticket;

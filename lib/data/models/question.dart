@@ -28,18 +28,24 @@ class Question {
     return Question(
       id: json['id']?.toString() ?? '',
       question: json['question']?.toString() ?? '',
-      answers: (json['answers'] as List<dynamic>?)
-              ?.map((a) => Answer.fromJson(
-                  a is Map ? Map<String, dynamic>.from(a) : <String, dynamic>{}))
+      answers:
+          (json['answers'] as List<dynamic>?)
+              ?.map(
+                (a) => Answer.fromJson(
+                  a is Map ? Map<String, dynamic>.from(a) : <String, dynamic>{},
+                ),
+              )
               .toList() ??
           [],
       comment: json['comment'] as String?,
-      pddPoints: (json['pddPoints'] as List<dynamic>?)
+      pddPoints:
+          (json['pddPoints'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
       image: json['image'] as String?,
-      topic: (json['topic'] as List<dynamic>?)
+      topic:
+          (json['topic'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
@@ -83,15 +89,13 @@ class Answer {
   final String text;
   final bool isCorrect;
 
-  const Answer({
-    required this.text,
-    required this.isCorrect,
-  });
+  const Answer({required this.text, required this.isCorrect});
 
   factory Answer.fromJson(Map<String, dynamic> json) {
     return Answer(
       text: json['text'] as String? ?? json['answer_text'] as String? ?? '',
-      isCorrect: json['correct'] as bool? ?? json['is_correct'] as bool? ?? false,
+      isCorrect:
+          json['correct'] as bool? ?? json['is_correct'] as bool? ?? false,
     );
   }
 }

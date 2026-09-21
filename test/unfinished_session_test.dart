@@ -47,8 +47,11 @@ void main() {
   test('сессия другой категории не предлагается', () async {
     await save(category: TicketCategory.ab);
 
-    expect(source.loadUnfinishedSession(TicketCategory.cd), isNull,
-        reason: 'у C/D свой набор вопросов, возвращать в набор A/B нельзя');
+    expect(
+      source.loadUnfinishedSession(TicketCategory.cd),
+      isNull,
+      reason: 'у C/D свой набор вопросов, возвращать в набор A/B нельзя',
+    );
     expect(source.loadUnfinishedSession(TicketCategory.ab), isNotNull);
   });
 
@@ -88,7 +91,10 @@ void main() {
   test('сессия без вопросов не предлагается', () async {
     await save(ids: const []);
 
-    expect(source.loadUnfinishedSession(TicketCategory.ab), isNull,
-        reason: 'пустой набор — возвращаться некуда');
+    expect(
+      source.loadUnfinishedSession(TicketCategory.ab),
+      isNull,
+      reason: 'пустой набор — возвращаться некуда',
+    );
   });
 }

@@ -50,9 +50,7 @@ class TrainingResultScreen extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  perfect
-                      ? Icons.check_rounded
-                      : Icons.school_outlined,
+                  perfect ? Icons.check_rounded : Icons.school_outlined,
                   size: 52,
                   color: AppColors.white,
                 ),
@@ -95,9 +93,7 @@ class TrainingResultScreen extends StatelessWidget {
                     child: _ResultCell(
                       value: '$wrong',
                       label: appL10n.progressWrong,
-                      color: wrong > 0
-                          ? colors.red
-                          : colors.secondaryText,
+                      color: wrong > 0 ? colors.red : colors.secondaryText,
                     ),
                   ),
                   const SizedBox(width: AppDimensions.spacingM),
@@ -189,10 +185,7 @@ class _ResultCell extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: colors.secondaryText,
-            ),
+            style: TextStyle(fontSize: 12, color: colors.secondaryText),
           ),
         ],
       ),

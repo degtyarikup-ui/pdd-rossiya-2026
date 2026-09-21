@@ -163,8 +163,8 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                   final qMap = widget.questions[idx];
                   final ansList = qMap['answers'] as List;
                   final selI = widget.savedAnswers[idx];
-                  final correct = selI != null &&
-                      (ansList[selI]['correct'] as bool);
+                  final correct =
+                      selI != null && (ansList[selI]['correct'] as bool);
 
                   Color bg;
                   if (isCurrent) {
@@ -214,7 +214,8 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                     controller: _pageController,
                     itemCount: _order.length,
                     onPageChanged: _onReviewPageChanged,
-                    itemBuilder: (context, pos) => _buildReviewPage(context, pos),
+                    itemBuilder: (context, pos) =>
+                        _buildReviewPage(context, pos),
                   ),
                   if (ref.watch(isPremiumProvider))
                     Positioned(
@@ -251,9 +252,7 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                       );
                     },
               child: Text(
-                _currentPos >= _order.length - 1
-                    ? appL10n.close
-                    : appL10n.next,
+                _currentPos >= _order.length - 1 ? appL10n.close : appL10n.next,
               ),
             ),
           ),
@@ -289,9 +288,7 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
               margin: const EdgeInsets.only(bottom: AppDimensions.spacingM),
               decoration: BoxDecoration(
                 color: colors.redLight,
-                borderRadius: BorderRadius.circular(
-                  AppDimensions.smallRadius,
-                ),
+                borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
               ),
               child: Text(
                 appL10n.notAnsweredThisQuestion,
@@ -304,9 +301,7 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
             ),
           if (hasImage) ...[
             ClipRRect(
-              borderRadius: BorderRadius.circular(
-                AppDimensions.smallRadius,
-              ),
+              borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
               child: QuestionImage(assetPath: imagePath),
             ),
             const SizedBox(height: AppDimensions.spacingL),
@@ -339,9 +334,7 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
               tc = colors.secondaryText;
             }
             return Padding(
-              padding: const EdgeInsets.only(
-                bottom: AppDimensions.spacingM,
-              ),
+              padding: const EdgeInsets.only(bottom: AppDimensions.spacingM),
               child: Container(
                 padding: const EdgeInsets.all(AppDimensions.spacingL),
                 decoration: BoxDecoration(
@@ -369,19 +362,19 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                                 size: 16,
                               )
                             : isSelected
-                                ? const Icon(
-                                    Icons.close_rounded,
-                                    color: AppColors.white,
-                                    size: 16,
-                                  )
-                                : Text(
-                                    '${i + 1}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: colors.secondaryText,
-                                    ),
-                                  ),
+                            ? const Icon(
+                                Icons.close_rounded,
+                                color: AppColors.white,
+                                size: 16,
+                              )
+                            : Text(
+                                '${i + 1}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: colors.secondaryText,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(width: AppDimensions.spacingM),
@@ -459,7 +452,10 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
               runSpacing: 6,
               children: pddPoints.map((point) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.gold.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
@@ -495,8 +491,7 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
               .toList();
           final correctIdx = rawAnswers.indexWhere(
             (a) =>
-                a is Map &&
-                (a['correct'] == true || a['is_correct'] == true),
+                a is Map && (a['correct'] == true || a['is_correct'] == true),
           );
           final comment = q['comment']?.toString() ?? '';
           AiExplanationSheet.show(

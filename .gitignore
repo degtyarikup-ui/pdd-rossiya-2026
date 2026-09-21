@@ -83,3 +83,5 @@ exports/
 node_modules/
 
 # Ключ приложения и прочие учётки лежат в secrets/ (см. выше) — не в коде.
+.dev-device
+.dev-mac

@@ -1,10 +1,6 @@
 import 'dart:convert';
 
-enum AuthProviderType {
-  google,
-  apple,
-  yandex,
-}
+enum AuthProviderType { google, apple, yandex }
 
 class UserProfile {
   final String id;
@@ -44,7 +40,8 @@ class UserProfile {
         (p) => p.name == map['provider'],
         orElse: () => AuthProviderType.google,
       ),
-      createdAt: DateTime.tryParse(map['createdAt'] as String? ?? '') ??
+      createdAt:
+          DateTime.tryParse(map['createdAt'] as String? ?? '') ??
           DateTime.now(),
     );
   }

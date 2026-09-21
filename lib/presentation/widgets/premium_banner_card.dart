@@ -123,11 +123,7 @@ class PremiumBannerCard extends ConsumerWidget {
                   ),
                   const SizedBox(width: 12),
                   // Правая колонка: Плоский компактный светофор
-                  SvgPicture.asset(
-                    svgAsset,
-                    width: 36,
-                    height: 48,
-                  ),
+                  SvgPicture.asset(svgAsset, width: 36, height: 48),
                 ],
               ),
             ),

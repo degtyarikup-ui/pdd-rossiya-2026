@@ -164,8 +164,7 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
       premiumAmber: premiumAmber ?? this.premiumAmber,
       premiumAmberSurface: premiumAmberSurface ?? this.premiumAmberSurface,
       divider: divider ?? this.divider,
-      homeScreenBackground:
-          homeScreenBackground ?? this.homeScreenBackground,
+      homeScreenBackground: homeScreenBackground ?? this.homeScreenBackground,
       homeStatGraySurface: homeStatGraySurface ?? this.homeStatGraySurface,
       accentSurface10: accentSurface10 ?? this.accentSurface10,
       homeRedSurface: homeRedSurface ?? this.homeRedSurface,
@@ -194,17 +193,35 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
       lightBlueGray: Color.lerp(lightBlueGray, other.lightBlueGray, t)!,
       searchFieldFill: Color.lerp(searchFieldFill, other.searchFieldFill, t)!,
       gold: Color.lerp(gold, other.gold, t)!,
-      goldLightSurface: Color.lerp(goldLightSurface, other.goldLightSurface, t)!,
+      goldLightSurface: Color.lerp(
+        goldLightSurface,
+        other.goldLightSurface,
+        t,
+      )!,
       premiumAmber: Color.lerp(premiumAmber, other.premiumAmber, t)!,
-      premiumAmberSurface: Color.lerp(premiumAmberSurface, other.premiumAmberSurface, t)!,
+      premiumAmberSurface: Color.lerp(
+        premiumAmberSurface,
+        other.premiumAmberSurface,
+        t,
+      )!,
       divider: Color.lerp(divider, other.divider, t)!,
-      homeScreenBackground:
-          Color.lerp(homeScreenBackground, other.homeScreenBackground, t)!,
-      homeStatGraySurface:
-          Color.lerp(homeStatGraySurface, other.homeStatGraySurface, t)!,
+      homeScreenBackground: Color.lerp(
+        homeScreenBackground,
+        other.homeScreenBackground,
+        t,
+      )!,
+      homeStatGraySurface: Color.lerp(
+        homeStatGraySurface,
+        other.homeStatGraySurface,
+        t,
+      )!,
       accentSurface10: Color.lerp(accentSurface10, other.accentSurface10, t)!,
       homeRedSurface: Color.lerp(homeRedSurface, other.homeRedSurface, t)!,
-      homeGreenSurface: Color.lerp(homeGreenSurface, other.homeGreenSurface, t)!,
+      homeGreenSurface: Color.lerp(
+        homeGreenSurface,
+        other.homeGreenSurface,
+        t,
+      )!,
       white: Color.lerp(white, other.white, t)!,
       black: Color.lerp(black, other.black, t)!,
       isDark: t < 0.5 ? isDark : other.isDark,

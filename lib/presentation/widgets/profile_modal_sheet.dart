@@ -37,11 +37,7 @@ class ProfileModalSheet extends StatelessWidget {
     await AuthService.instance.signOut();
     if (context.mounted) {
       Navigator.of(context).pop();
-      AppToast.show(
-        context,
-        'Вы вышли из аккаунта',
-        type: AppToastType.normal,
-      );
+      AppToast.show(context, 'Вы вышли из аккаунта', type: AppToastType.normal);
     }
   }
 
@@ -61,7 +57,9 @@ class ProfileModalSheet extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFED4621)),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFED4621),
+            ),
             child: const Text('Удалить'),
           ),
         ],
@@ -124,24 +122,27 @@ class ProfileModalSheet extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: ClipOval(
-                    child: profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty
+                    child:
+                        profile.avatarUrl != null &&
+                            profile.avatarUrl!.isNotEmpty
                         ? Image.network(
                             profile.avatarUrl!,
                             width: 68,
                             height: 68,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Center(
-                              child: Text(
-                                profile.name.isNotEmpty
-                                    ? profile.name[0].toUpperCase()
-                                    : 'U',
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w700,
-                                  color: colors.accent,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Center(
+                                  child: Text(
+                                    profile.name.isNotEmpty
+                                        ? profile.name[0].toUpperCase()
+                                        : 'U',
+                                    style: TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w700,
+                                      color: colors.accent,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
                           )
                         : Center(
                             child: Text(
@@ -174,16 +175,16 @@ class ProfileModalSheet extends StatelessWidget {
                 Text(
                   profile.email,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    color: colors.secondaryText,
-                  ),
+                  style: TextStyle(fontSize: 13.5, color: colors.secondaryText),
                 ),
               ],
               const SizedBox(height: 6),
               Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.searchFieldFill,
                     borderRadius: BorderRadius.circular(8),
@@ -211,11 +212,16 @@ class ProfileModalSheet extends StatelessWidget {
                     color: colors.primaryText,
                   ),
                 ),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 onTap: () => _handleSignOut(context),
               ),
               ListTile(
-                leading: const Icon(Icons.delete_outline_rounded, color: Color(0xFFED4621)),
+                leading: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Color(0xFFED4621),
+                ),
                 title: const Text(
                   'Удалить аккаунт и данные',
                   style: TextStyle(
@@ -224,7 +230,9 @@ class ProfileModalSheet extends StatelessWidget {
                     color: Color(0xFFED4621),
                   ),
                 ),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 onTap: () => _handleDeleteAccount(context),
               ),
             ],

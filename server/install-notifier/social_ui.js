@@ -171,6 +171,7 @@ export const SOCIAL_CLIENT_JS = `
 var scState = { accounts: [], posts: [], settings: {}, log: [] };
 var scFilter = 'queued';
 var scSelected = {};
+var scBusy = {};
 
 function scEsc(v) {
   return String(v == null ? '' : v)
@@ -192,7 +193,9 @@ async function scApi(path, body) {
   var opts = body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {};
   var res = await fetch('/api/admin/social/' + path, opts);
   if (res.status === 401) { checkAuthAndLoad(); throw new Error('нужно войти заново'); }
-  return await res.json();
+  var data = await res.json().catch(function () { return {}; });
+  if (!res.ok) throw new Error(data.error || ('ошибка сервера ' + res.status));
+  return data;
 }
 
 // Дата в МСК: сервер отдаёт UTC, человеку показываем московское время.
@@ -326,9 +329,22 @@ function scRetryButtons(p) {
 
 window.scRetry = async function (ev, id, platform) {
   ev.stopPropagation();
-  var res = await scApi('posts/publish-platform', { id: id, platform: platform });
-  scToast(res.message || 'Запустил');
-  await loadSocial();
+  var key = id + ':' + platform;
+  if (scBusy[key]) return;
+  scBusy[key] = true;
+  if (ev.currentTarget) ev.currentTarget.disabled = true;
+  try {
+    var res = await scApi('posts/publish-platform', { id: id, platform: platform });
+    if (res.ok === false) throw new Error(res.message || res.error || 'не получилось');
+    scToast(res.message || 'Запустил');
+    await loadSocial();
+  } catch (e) {
+    scToast('Не удалось запустить: ' + e.message, true);
+    return;
+  } finally {
+    delete scBusy[key];
+    if (ev.currentTarget && ev.currentTarget.isConnected) ev.currentTarget.disabled = false;
+  }
   var ticks = 0;
   var timer = setInterval(async function () {
     ticks += 1;
@@ -464,11 +480,20 @@ window.scPublishSelected = async function () {
       ? 'Опубликовать ролик прямо сейчас?'
       : 'Опубликовать ' + ids.length + ' роликов? Уйдут по очереди, не больше пяти за раз.')) return;
 
-  var res = await scApi('posts/publish-now', { ids: ids });
-  if (!res.ok) { scToast(res.message || 'Не получилось', true); return; }
-  scToast(res.message + (res.skipped ? ' (остальные ' + res.skipped + ' — следующим заходом)' : ''));
-  scSelected = {};
-  await loadSocial();
+  if (scBusy.publishSelected) return;
+  scBusy.publishSelected = true;
+  try {
+    var res = await scApi('posts/publish-now', { ids: ids });
+    if (!res.ok) throw new Error(res.message || res.error || 'не получилось');
+    scToast(res.message + (res.skipped ? ' (остальные ' + res.skipped + ' — следующим заходом)' : ''));
+    scSelected = {};
+    await loadSocial();
+  } catch (e) {
+    scToast('Публикация не запущена: ' + e.message, true);
+    return;
+  } finally {
+    scBusy.publishSelected = false;
+  }
 
   // Instagram кодирует каждый ролик минуты — подтягиваем статусы сами.
   var ticks = 0;
@@ -627,10 +652,21 @@ window.scOne = async function (id, action) {
 
 window.scPublishNow = async function (id) {
   if (!confirm('Опубликовать прямо сейчас?')) return;
-  var res = await scApi('posts/publish', { id: id });
-  scToast(res.message || 'Публикация запущена');
-  document.querySelectorAll('.sc-modal-bg').forEach(function (m) { m.remove(); });
-  await loadSocial();
+  var key = 'publish:' + id;
+  if (scBusy[key]) return;
+  scBusy[key] = true;
+  try {
+    var res = await scApi('posts/publish', { id: id });
+    if (res.ok === false) throw new Error(res.message || res.error || 'не получилось');
+    scToast(res.message || 'Публикация запущена');
+    document.querySelectorAll('.sc-modal-bg').forEach(function (m) { m.remove(); });
+    await loadSocial();
+  } catch (e) {
+    scToast('Публикация не запущена: ' + e.message, true);
+    return;
+  } finally {
+    delete scBusy[key];
+  }
   // Instagram кодирует ролик несколько минут — подтягиваем статус сами.
   var ticks = 0;
   var timer = setInterval(async function () {
@@ -773,11 +809,22 @@ document.querySelectorAll('#social-view .sc-tabs .sc-tab').forEach(function (tab
   }
 
   toggle.addEventListener('change', async function () {
-    await fetch('/api/admin/ai/legacy', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ open: toggle.checked })
-    });
-    scToast(toggle.checked ? 'Старые сборки пускаем' : 'Доступ без ключа закрыт');
+    var next = toggle.checked;
+    toggle.disabled = true;
+    try {
+      var res = await fetch('/api/admin/ai/legacy', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ open: next })
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok || data.ok === false) throw new Error(data.error || ('ошибка сервера ' + res.status));
+      scToast(next ? 'Старые сборки пускаем' : 'Доступ без ключа закрыт');
+    } catch (e) {
+      toggle.checked = !next;
+      scToast('Настройка не сохранена: ' + e.message, true);
+    } finally {
+      toggle.disabled = false;
+    }
   });
 
   document.querySelectorAll('.sidebar-menu .nav-item').forEach(function (btn) {

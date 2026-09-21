@@ -48,14 +48,10 @@ class TtsService {
 
     if (!kIsWeb && Platform.isIOS) {
       try {
-        await _tts.setIosAudioCategory(
-          IosTextToSpeechAudioCategory.playback,
-          [
-            IosTextToSpeechAudioCategoryOptions.mixWithOthers,
-            IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
-          ],
-          IosTextToSpeechAudioMode.defaultMode,
-        );
+        await _tts.setIosAudioCategory(IosTextToSpeechAudioCategory.playback, [
+          IosTextToSpeechAudioCategoryOptions.mixWithOthers,
+          IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
+        ], IosTextToSpeechAudioMode.defaultMode);
       } catch (_) {}
     }
 
@@ -72,9 +68,7 @@ class TtsService {
             ),
             iOS: AudioContextIOS(
               category: AVAudioSessionCategory.playback,
-              options: const {
-                AVAudioSessionOptions.mixWithOthers,
-              },
+              options: const {AVAudioSessionOptions.mixWithOthers},
             ),
           ),
         );
@@ -146,7 +140,8 @@ class TtsService {
     );
 
     // Approximate duration: ~15.5 characters per second
-    final totalChars = question.length + answers.join('').length + answers.length * 6;
+    final totalChars =
+        question.length + answers.join('').length + answers.length * 6;
     return Duration(milliseconds: (totalChars / 15.5 * 1000).round());
   }
 

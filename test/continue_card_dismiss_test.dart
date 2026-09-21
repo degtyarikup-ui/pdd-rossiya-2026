@@ -48,8 +48,9 @@ void main() {
     return data;
   }
 
-  testWidgets('карточка уезжает анимацией, а не пропадает рывком',
-      (tester) async {
+  testWidgets('карточка уезжает анимацией, а не пропадает рывком', (
+    tester,
+  ) async {
     final data = await pumpCard(tester);
 
     expect(find.text('Продолжить'), findsOneWidget);
