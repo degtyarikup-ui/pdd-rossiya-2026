@@ -33,19 +33,9 @@
     }
     #loading-overlay {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #F8F8FA;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-family: -apple-system, BlinkMacSystemFont, "Onest", "Segoe UI", Roboto, sans-serif;
-      color: #121212;
+      inset: 0;
+      background: transparent;
       z-index: 100;
-      transition: opacity 0.3s ease;
     }
     .spinner {
       width: 38px;
@@ -69,10 +59,9 @@
 </head>
 <body>
   <div id="canvas-container"></div>
-  <div id="loading-overlay">
-    <div class="spinner"></div>
-    <div class="loading-text">Загрузка 3D сцены...</div>
-  </div>
+  <!-- Plain cover only: the loading screen itself is drawn by Flutter on top
+       of the WebView, so nothing here must ever show through. -->
+  <div id="loading-overlay"></div>
 
   <script src="three.min.js"></script>
   <script src="sign-textures.js"></script>

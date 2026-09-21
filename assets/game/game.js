@@ -5140,10 +5140,7 @@
 
     // Hide loader
     const loader = document.getElementById('loading-overlay');
-    if (loader) {
-      loader.style.opacity = '0';
-      setTimeout(() => loader.style.display = 'none', 300);
-    }
+    if (loader) loader.style.display = 'none';
 
     // Notify Flutter that engine is ready
     sendToFlutter({ event: 'ready' });

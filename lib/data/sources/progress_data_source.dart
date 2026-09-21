@@ -4,6 +4,7 @@ import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/services/progress_sync_service.dart';
+import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Локальный кэш прогресса в [SharedPreferences].
@@ -525,7 +526,69 @@ class ProgressDataSource {
         'activeDays': _prefs.getStringList(_keyStreakActiveDays) ?? <String>[],
       },
       'settings': _loadMap(_keySettings),
+      // Driving game: best score, the earned garage and the chosen car.
+      // Fuel stays on the device on purpose.
+      'game': {
+        'bestScore': _prefs.getInt('game_best_score') ?? 0,
+        'garageCars': _loadGarageCars(),
+        'garageCorrect': _prefs.getInt('game_garage_correct') ?? 0,
+        'garageUnlocks': _prefs.getInt('game_garage_unlocks') ?? 0,
+        'vehicle': _prefs.getString('game_vehicle'),
+        'vehiclePaint': _prefs.getString('game_vehicle_paint'),
+      },
     };
+  }
+
+  List<Map<String, dynamic>> _loadGarageCars() {
+    try {
+      final raw = _prefs.getString('game_garage_cars');
+      if (raw == null) return const [];
+      return (jsonDecode(raw) as List<dynamic>)
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> _importGame(Map<String, dynamic> g) async {
+    final best = (g['bestScore'] as num?)?.toInt() ?? 0;
+    if (best > (_prefs.getInt('game_best_score') ?? 0)) {
+      await _prefs.setInt('game_best_score', best);
+    }
+    final correct = (g['garageCorrect'] as num?)?.toInt() ?? 0;
+    if (correct > (_prefs.getInt('game_garage_correct') ?? 0)) {
+      await _prefs.setInt('game_garage_correct', correct);
+    }
+    final unlocks = (g['garageUnlocks'] as num?)?.toInt() ?? 0;
+    if (unlocks > (_prefs.getInt('game_garage_unlocks') ?? 0)) {
+      await _prefs.setInt('game_garage_unlocks', unlocks);
+    }
+    if (g['garageCars'] is List) {
+      // Union by model+paint, keeping the local order first.
+      final seen = <String>{};
+      final merged = <Map<String, dynamic>>[];
+      for (final car in [..._loadGarageCars(), ...(g['garageCars'] as List)]) {
+        if (car is! Map) continue;
+        final id = car['id'], paint = car['paint'];
+        if (id is! String || paint is! String) continue;
+        if (seen.add('$id:$paint')) merged.add({'id': id, 'paint': paint});
+      }
+      if (merged.isNotEmpty) {
+        await _prefs.setString('game_garage_cars', jsonEncode(merged));
+      }
+    }
+    if (!_prefs.containsKey('game_vehicle') && g['vehicle'] is String) {
+      await _prefs.setString('game_vehicle', g['vehicle'] as String);
+      if (g['vehiclePaint'] is String) {
+        await _prefs.setString(
+          'game_vehicle_paint',
+          g['vehiclePaint'] as String,
+        );
+      }
+    }
+    GameGarageService.instance.invalidate();
   }
 
   /// Импорт и сохранение слепка прогресса из облака.
@@ -572,6 +635,9 @@ class ProgressDataSource {
         _keyExamResultsCd,
         (data['examResultsCd'] as List).cast<String>(),
       );
+    }
+    if (data['game'] is Map) {
+      await _importGame(Map<String, dynamic>.from(data['game'] as Map));
     }
     if (data['streak'] is Map) {
       final s = data['streak'] as Map;

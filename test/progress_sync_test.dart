@@ -68,4 +68,51 @@ void main() {
     expect(await ds2.isFavorite('q_1_5', TicketCategory.ab), isTrue);
     expect(await ds2.getTicketCorrectAnswers(1, TicketCategory.ab), 20);
   });
+
+  test('Game progress rides along: best score, garage union, counters', () async {
+    SharedPreferences.setMockInitialValues({
+      'game_best_score': 1200,
+      'game_garage_cars':
+          '[{"id":"hatch","paint":"red"},{"id":"suv","paint":"blue"}]',
+      'game_garage_correct': 12,
+      'game_garage_unlocks': 1,
+    });
+    final ds = ProgressDataSource();
+    await ds.init();
+    final snapshot = ds.exportProgressSnapshot();
+    final game = snapshot['game'] as Map<String, dynamic>;
+    expect(game['bestScore'], 1200);
+    expect((game['garageCars'] as List).length, 2);
+
+    // The cloud knows a higher score, another car and a further counter.
+    await ds.importProgressSnapshot({
+      'game': {
+        'bestScore': 4110,
+        'garageCars': [
+          {'id': 'hatch', 'paint': 'red'},
+          {'id': 'coupe', 'paint': 'teal'},
+        ],
+        'garageCorrect': 20,
+        'garageUnlocks': 2,
+        'vehicle': 'coupe',
+        'vehiclePaint': 'teal',
+      },
+    });
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getInt('game_best_score'), 4110);
+    expect(prefs.getInt('game_garage_correct'), 20);
+    expect(prefs.getInt('game_garage_unlocks'), 2);
+    expect(
+      prefs.getString('game_garage_cars'),
+      '[{"id":"hatch","paint":"red"},{"id":"suv","paint":"blue"},{"id":"coupe","paint":"teal"}]',
+    );
+    expect(prefs.getString('game_vehicle'), 'coupe');
+
+    // A lower cloud score never overwrites the local best.
+    await ds.importProgressSnapshot({
+      'game': {'bestScore': 10, 'garageCorrect': 1},
+    });
+    expect(prefs.getInt('game_best_score'), 4110);
+    expect(prefs.getInt('game_garage_correct'), 20);
+  });
 }

@@ -146,6 +146,11 @@ class GameGarageService {
     }
   }
 
+  /// Cloud sync wrote new values to storage: re-read them on next [load].
+  void invalidate() {
+    _loaded = false;
+  }
+
   /// Test hook: resets to the starter garage without touching storage.
   void resetForTest() {
     _cars = const [starter];

@@ -2436,7 +2436,29 @@ function mergeProgress(existing, incoming) {
     examResultsCd: mergeExamResults(ex.examResultsCd, inc.examResultsCd),
     streak: mergeStreak(ex.streak, inc.streak),
     settings: { ...(ex.settings || {}), ...(inc.settings || {}) },
+    game: mergeGame(ex.game, inc.game),
     updatedAt: new Date().toISOString()
+  };
+}
+
+// Driving game: counters only grow, the garage is a union of cars, the
+// chosen car is whatever the device reports last.
+function mergeGame(existing, incoming) {
+  const ex = existing || {}, inc = incoming || {};
+  const seen = new Set(), cars = [];
+  for (const car of [...(Array.isArray(ex.garageCars) ? ex.garageCars : []), ...(Array.isArray(inc.garageCars) ? inc.garageCars : [])]) {
+    if (!car || typeof car.id !== 'string' || typeof car.paint !== 'string') continue;
+    const key = car.id + ':' + car.paint;
+    if (!seen.has(key)) { seen.add(key); cars.push({ id: car.id, paint: car.paint }); }
+  }
+  const num = v => (typeof v === 'number' && isFinite(v) ? v : 0);
+  return {
+    bestScore: Math.max(num(ex.bestScore), num(inc.bestScore)),
+    garageCars: cars,
+    garageCorrect: Math.max(num(ex.garageCorrect), num(inc.garageCorrect)),
+    garageUnlocks: Math.max(num(ex.garageUnlocks), num(inc.garageUnlocks)),
+    vehicle: inc.vehicle || ex.vehicle || null,
+    vehiclePaint: inc.vehiclePaint || ex.vehiclePaint || null,
   };
 }
 

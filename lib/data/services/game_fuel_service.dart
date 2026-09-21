@@ -1,14 +1,15 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Fuel for the driving game: five units, one burnt per mistake, one unit
-/// regenerated every [refillInterval]. Stored as the amount plus the time of
-/// the last change, so regeneration is computed on read and survives restarts.
+/// Fuel for the driving game: five units, one burnt per mistake. The tank
+/// refills completely [refillInterval] after the first unit was burnt from a
+/// full tank. Stored as the amount plus the moment the clock started, so the
+/// refill is computed on read and survives restarts.
 class GameFuelService {
   GameFuelService._();
   static final GameFuelService instance = GameFuelService._();
 
   static const int maxFuel = 5;
-  static const Duration refillInterval = Duration(minutes: 20);
+  static const Duration refillInterval = Duration(minutes: 30);
   static const _fuelKey = 'game_fuel';
   static const _sinceKey = 'game_fuel_since';
 
@@ -18,12 +19,13 @@ class GameFuelService {
 
   int get fuel => _fuel;
 
-  /// When the next unit arrives, or null when the tank is full.
+  /// When the tank is full again, or null when it already is.
   DateTime? get nextRefillAt =>
       _fuel >= maxFuel ? null : _since.add(refillInterval);
 
-  /// When the tank will have at least one unit (for the "empty" countdown).
-  DateTime? get firstUnitAt => _fuel > 0 ? null : _since.add(refillInterval);
+  /// When play is possible again (for the "empty" countdown): the same
+  /// moment, since the whole tank comes back at once.
+  DateTime? get firstUnitAt => _fuel > 0 ? null : nextRefillAt;
 
   Future<int> load() async {
     try {
@@ -39,18 +41,14 @@ class GameFuelService {
     return _tick();
   }
 
-  /// Applies the time-based regeneration and returns the current amount.
+  /// Applies the time-based refill and returns the current amount.
   int refresh() => _tick();
 
   int _tick() {
     if (_fuel >= maxFuel) return _fuel;
-    final elapsed = DateTime.now().difference(_since);
-    final gained = elapsed.inMilliseconds ~/ refillInterval.inMilliseconds;
-    if (gained > 0) {
-      _fuel = (_fuel + gained).clamp(0, maxFuel);
-      _since = _fuel >= maxFuel
-          ? DateTime.now()
-          : _since.add(refillInterval * gained);
+    if (!DateTime.now().isBefore(_since.add(refillInterval))) {
+      _fuel = maxFuel;
+      _since = DateTime.now();
       _persist();
     }
     return _fuel;
@@ -60,9 +58,9 @@ class GameFuelService {
   Future<void> setFuel(int fuel) async {
     final clamped = fuel.clamp(0, maxFuel);
     if (clamped == _fuel) return;
-    // Burning fuel from a full tank starts the regeneration clock now; a
-    // partially refilled tank keeps its clock so nothing is lost.
-    if (_fuel >= maxFuel || clamped > _fuel) _since = DateTime.now();
+    // The clock starts with the first unit burnt from a full tank; further
+    // mistakes do not push the refill back.
+    if (_fuel >= maxFuel) _since = DateTime.now();
     _fuel = clamped;
     await _persist();
   }

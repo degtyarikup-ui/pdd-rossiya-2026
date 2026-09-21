@@ -30,6 +30,7 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'package:pdd_app/data/services/game_fuel_service.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
+import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 
@@ -555,6 +556,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
   Future<void> _countCorrect() async {
     final unlocked = await GameGarageService.instance.recordCorrect();
     if (unlocked == null || !mounted || _reveal != null) return;
+    // A new car must not be lost with the device.
+    unawaited(ProgressSyncService.instance.syncWithServer());
     _showReveal(unlocked);
   }
 
@@ -631,14 +634,18 @@ class _GameScreenState extends ConsumerState<GameScreen>
       _newRecord = record;
       if (record) _bestScore = score;
     });
-    // Every finished run counts towards the weekly rating.
+    // Every finished run counts towards the weekly rating; the best score
+    // and the garage go to the cloud with the rest of the progress.
     GameLeaderboardService.instance.submitRun(score);
     if (record) {
       SoundEffectsService.instance.playStreak();
       HapticFeedbackHelper.success();
       SharedPreferences.getInstance()
           .then((prefs) => prefs.setInt(_bestScoreKey, score))
-          .catchError((_) => false);
+          .then((_) => ProgressSyncService.instance.syncWithServer())
+          .catchError((_) {});
+    } else {
+      unawaited(ProgressSyncService.instance.syncWithServer());
     }
   }
 
