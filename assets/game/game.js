@@ -5375,6 +5375,28 @@
     return sprite;
   }
 
+  // A compact round token for trajectory letters: white disc with a soft
+  // shadow and a bold brand-blue letter, like the app's chips.
+  function createLetterToken(letter) {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 96;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+    ctx.beginPath(); ctx.arc(48, 52, 40, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath(); ctx.arc(48, 46, 40, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0574F8';
+    ctx.font = '800 50px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(letter, 48, 49);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false }));
+    sprite.renderOrder = 1000;
+    sprite.scale.set(1.5, 1.5, 1);
+    return sprite;
+  }
+
   // --- Touch & Gesture Controls ---
   let touchStartX = 0, touchStartY = 0;
   function setupTouchControls() {
@@ -6843,12 +6865,18 @@
     // the factory frame, x = driver's right, z from the junction centre) are
     // drawn with the standard blue route chevrons (see the guide below); here
     // only their letters, on bright blue plates.
-    (situation.trajectories || []).forEach(t => {
-      const path = curve(t.points.map(([x, z]) => new THREE.Vector3(x, 0, centerZ + z)));
-      const at = path.getPointAt(0.72);
-      const label = createActorBadge(t.label, '#0574F8');
-      label.position.set(at.x, 1.2, at.z); // child position: mirrored with the segment
-      label.scale.multiplyScalar(1.6);
+    const trajPaths = (situation.trajectories || []).map(t => curve(t.points.map(([x, z]) => new THREE.Vector3(x, 0, centerZ + z))));
+    (situation.trajectories || []).forEach((t, n) => {
+      // Beside the arrow, on its outer side (away from the other routes),
+      // still within the junction so it stays on screen.
+      const path = trajPaths[n], u = 0.62;
+      const at = path.getPointAt(u), tan = path.getTangentAt(u);
+      const perp = new THREE.Vector3(-tan.z, 0, tan.x);
+      const others = trajPaths.filter((_, k) => k !== n).map(p => p.getPointAt(u));
+      const sideScore = sgn => others.reduce((sum, o) => sum + at.clone().addScaledVector(perp, sgn).distanceTo(o), 0);
+      const sgn = others.length && sideScore(-1) > sideScore(1) ? -1 : 1;
+      const label = createLetterToken(t.label);
+      label.position.set(at.x + perp.x * sgn * 1.25, 0.8, at.z + perp.z * sgn * 1.25); // child position: mirrored with the segment
       seg.add(label);
     });
 

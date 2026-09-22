@@ -374,7 +374,7 @@ class _RecordBadgeState extends State<_RecordBadge>
 /// A one-shot burst of confetti and stars flying out from the score, with
 /// gravity, drag, tumbling and fade — no packages, one CustomPainter.
 /// A slow, readable shower of confetti: flat rectangles, discs and pills in
-/// bright colours with a thin light rim so they read on grass and asphalt.
+/// three brand colours; they burst out from the score and drift down.
 /// [origin] is where the pieces come from (fractions of the canvas); the
 /// default is the middle of the screen, the game uses the top edge of the
 /// question card.
@@ -403,30 +403,23 @@ class _ConfettiBurstState extends State<ConfettiBurst>
 
   static List<_Particle> _spawn(Offset origin, int count) {
     final random = math.Random();
-    const palette = [
-      Color(0xFFFF8A00),
-      Color(0xFFFFD60A),
-      Color(0xFF1F7CFF),
-      Color(0xFF17D67A),
-      Color(0xFFFF3B5C),
-      Color(0xFFB65CFF),
-      Color(0xFF22D3EE),
-    ];
+    // Three brand colours only: accent blue, gold and green.
+    const palette = [Color(0xFF0574F8), Color(0xFFFFB21C), Color(0xFF2BC280)];
     return List.generate(count, (i) {
-      // A wide fan straight up from the origin; the outer pieces go slower.
-      final spread = (random.nextDouble() * 2 - 1);
-      final angle = -math.pi / 2 + spread * 0.95;
-      final speed =
-          (0.55 + random.nextDouble() * 0.5) * (1 - spread.abs() * 0.3);
+      // A burst in every direction (a little stronger upwards) that then
+      // drifts down: it flies out instead of just falling.
+      final angle = random.nextDouble() * math.pi * 2;
+      final lift = math.sin(angle) < 0 ? 1.25 : 0.8;
+      final speed = (1.1 + random.nextDouble() * 1.3) * lift;
       return _Particle(
-        origin: Offset(origin.dx + spread * 0.12, origin.dy),
+        origin: origin,
         velocity: Offset(math.cos(angle) * speed, math.sin(angle) * speed),
         color: palette[random.nextInt(palette.length)],
         size: 8 + random.nextDouble() * 7,
         shape: _Shape.values[random.nextInt(_Shape.values.length)],
-        spin: (random.nextDouble() - 0.5) * 6,
+        spin: (random.nextDouble() - 0.5) * 8,
         phase: random.nextDouble() * math.pi * 2,
-        delay: random.nextDouble() * 0.25,
+        delay: random.nextDouble() * 0.08,
       );
     });
   }
@@ -488,25 +481,21 @@ class _ConfettiPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final t = progress * seconds;
     final fill = Paint();
-    final rim = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
     for (final p in particles) {
       final age = t - p.delay;
       if (age <= 0) continue;
       // Ballistic path with strong air drag, then a gentle fall: units are
       // canvas heights, so the shower stays on screen long enough to read.
-      const k = 1.3;
+      const k = 2.6;
       final drag = 1 - math.exp(-age * k);
       final x = p.origin.dx + p.velocity.dx * drag / k * 0.62;
-      final y = p.origin.dy + p.velocity.dy * drag / k + 0.16 * age * age;
+      final y = p.origin.dy + p.velocity.dy * drag / k + 0.09 * age * age;
       final life = (1 - (age - (seconds - 1.1)) / 0.9).clamp(0.0, 1.0);
       if (life <= 0) continue;
       final sway = math.sin(age * 3.5 + p.phase) * 0.02;
       final center = Offset((x + sway) * size.width, y * size.height);
       if (center.dy > size.height + 20 || center.dy < -20) continue;
       fill.color = p.color.withValues(alpha: life);
-      rim.color = Colors.white.withValues(alpha: 0.85 * life);
       canvas.save();
       canvas.translate(center.dx, center.dy);
       canvas.rotate(p.phase + age * p.spin);
@@ -520,7 +509,6 @@ class _ConfettiPainter extends CustomPainter {
             height: p.size,
           );
           canvas.drawOval(oval, fill);
-          canvas.drawOval(oval, rim);
         case _Shape.rect:
           final rect = Rect.fromCenter(
             center: Offset.zero,
@@ -528,7 +516,6 @@ class _ConfettiPainter extends CustomPainter {
             height: p.size * 0.6,
           );
           canvas.drawRect(rect, fill);
-          canvas.drawRect(rect, rim);
         case _Shape.pill:
           final rr = RRect.fromRectAndRadius(
             Rect.fromCenter(
@@ -539,7 +526,6 @@ class _ConfettiPainter extends CustomPainter {
             Radius.circular(p.size),
           );
           canvas.drawRRect(rr, fill);
-          canvas.drawRRect(rr, rim);
       }
       canvas.restore();
     }
