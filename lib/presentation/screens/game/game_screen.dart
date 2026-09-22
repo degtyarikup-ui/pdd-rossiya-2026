@@ -966,6 +966,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 child: GameFuelEmptyPanel(
                   refillAt: GameFuelService.instance.firstUnitAt,
                   onBuyPremium: () => PremiumPaywallSheet.show(context),
+                  // Back to driving right away, no reload needed.
+                  onRefilled: () => _game.configureFuel(
+                    fuel: GameFuelService.instance.refresh(),
+                    unlimited: ref.read(isPremiumProvider),
+                  ),
                 ),
               ),
             if (_correctBurst > 0)

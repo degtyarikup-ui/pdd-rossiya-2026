@@ -82,11 +82,15 @@ class GameFuelEmptyPanel extends StatefulWidget {
   final VoidCallback onBuyPremium;
   final bool compact;
 
+  /// Called once when the countdown reaches zero: the tank is full again.
+  final VoidCallback? onRefilled;
+
   const GameFuelEmptyPanel({
     super.key,
     required this.refillAt,
     required this.onBuyPremium,
     this.compact = false,
+    this.onRefilled,
   });
 
   @override
@@ -101,7 +105,13 @@ class _GameFuelEmptyPanelState extends State<GameFuelEmptyPanel> {
     super.initState();
     if (!widget.compact) {
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (mounted) setState(() {});
+        if (!mounted) return;
+        final at = widget.refillAt;
+        if (at == null || !DateTime.now().isBefore(at)) {
+          _timer?.cancel();
+          widget.onRefilled?.call();
+        }
+        setState(() {});
       });
     }
   }

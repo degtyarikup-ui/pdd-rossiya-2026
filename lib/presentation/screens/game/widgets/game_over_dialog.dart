@@ -63,7 +63,12 @@ class _GameOverDialogState extends State<GameOverDialog> {
   Timer? _timer;
 
   GameState get state => widget.state;
-  bool get fuelEmpty => state.fuel <= 0 && !state.fuelUnlimited;
+  // Stops being "empty" the moment the countdown ends: the restart button
+  // comes back without leaving the dialog.
+  bool get fuelEmpty =>
+      state.fuel <= 0 &&
+      !state.fuelUnlimited &&
+      (widget.fuelRefillAt?.isAfter(DateTime.now()) ?? true);
 
   @override
   void initState() {
