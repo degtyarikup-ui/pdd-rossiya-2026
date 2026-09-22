@@ -8735,6 +8735,10 @@
 
   let cameraLook = new THREE.Vector3(0, 0, 14), cameraHeading = 0, cameraViewSize = 42;
   function updateCamera(dt) {
+    if (state.viewportTarget) {
+      const k = 1 - Math.exp(-4 * dt), v = state.viewportInsets, t = state.viewportTarget;
+      v.top += (t.top - v.top) * k; v.bottom += (t.bottom - v.bottom) * k;
+    }
     const height = container.clientHeight || window.innerHeight;
     const width = container.clientWidth || window.innerWidth;
     if (width <= 0 || height <= 0) return;
@@ -8934,8 +8938,12 @@
       gameAudio?.setPaused(next);
       lastTime = null;
     },
+    // Overlays come and go (question card, pedals): the camera eases to the
+    // new framing instead of jumping. The very first value is applied at once.
     setViewportInsets(insets) {
-      state.viewportInsets = { top: Math.max(0, Number(insets.top) || 0), bottom: Math.max(0, Number(insets.bottom) || 0) };
+      const next = { top: Math.max(0, Number(insets.top) || 0), bottom: Math.max(0, Number(insets.bottom) || 0) };
+      if (!state.viewportTarget) state.viewportInsets = { ...next };
+      state.viewportTarget = next;
     },
     configure(config) {
       state.nativeControls = true;

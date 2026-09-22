@@ -54,6 +54,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   bool _active = true;
   final _hudKey = GlobalKey();
   final _bottomKey = GlobalKey();
+  final _cardKey = GlobalKey();
   String? _lastInsets;
   bool _failed = false;
   bool _disposing = false;
@@ -777,7 +778,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
       final padding = MediaQuery.paddingOf(context);
       final insets = {
         'top': _hudKey.currentContext?.size?.height ?? padding.top,
-        'bottom': (_bottomKey.currentContext?.size?.height ?? padding.bottom)
+        'bottom': math
+            .max(
+              _bottomKey.currentContext?.size?.height ?? padding.bottom,
+              _cardKey.currentContext?.size?.height ?? 0,
+            )
             .clamp(padding.bottom, double.infinity),
       };
       final encoded = jsonEncode(insets);
@@ -988,6 +993,42 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   ),
                 ),
               ),
+            // The question card lives on its own layer: when it slides away
+            // nothing else in the bottom column moves, so there is no jerk.
+            if (!locked && !outOfFuel && _reveal == null)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: KeyedSubtree(
+                  key: _cardKey,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 420),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInOutCubic,
+                    // No clipping: the card slides down past the bottom
+                    // edge of the game area and disappears under the menu.
+                    transitionBuilder: (child, animation) => SlideTransition(
+                      position: Tween(
+                        begin: const Offset(0, 1.15),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                    layoutBuilder: (current, previous) => Stack(
+                      alignment: Alignment.bottomCenter,
+                      children: [...previous, ?current],
+                    ),
+                    child: gameState.phase == GamePhase.situation
+                        ? GameQuestionCard(
+                            key: const ValueKey('question'),
+                            state: gameState,
+                            onSelectAnswer: gameNotifier.submitAnswer,
+                          )
+                        : const SizedBox.shrink(key: ValueKey('none')),
+                  ),
+                ),
+              ),
             // Bottom Overlays depending on game phase
             if (!locked &&
                 !outOfFuel &&
@@ -1001,32 +1042,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   key: _bottomKey,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // The card slides down out of view once answered.
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 420),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInOutCubic,
-                      // No clipping: the card slides down past the bottom
-                      // edge of the game area and disappears under the menu.
-                      transitionBuilder: (child, animation) => SlideTransition(
-                        position: Tween(
-                          begin: const Offset(0, 1.15),
-                          end: Offset.zero,
-                        ).animate(animation),
-                        child: child,
-                      ),
-                      layoutBuilder: (current, previous) => Stack(
-                        alignment: Alignment.bottomCenter,
-                        children: [...previous, ?current],
-                      ),
-                      child: gameState.phase == GamePhase.situation
-                          ? GameQuestionCard(
-                              key: const ValueKey('question'),
-                              state: gameState,
-                              onSelectAnswer: gameNotifier.submitAnswer,
-                            )
-                          : const SizedBox.shrink(key: ValueKey('none')),
-                    ),
                     if (gameState.phase == GamePhase.explanation &&
                         gameState.currentSituation != null)
                       GameExplanationSheet(
@@ -1373,7 +1388,6 @@ class _CorrectCheckState extends State<_CorrectCheck>
                   decoration: BoxDecoration(
                     color: colors.green,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 5),
                   ),
                   child: const Icon(
                     Icons.check_rounded,
