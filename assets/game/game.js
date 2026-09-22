@@ -6839,36 +6839,16 @@
       noEntry.rotation.y = sx < 0 ? -Math.PI / 2 : Math.PI / 2;
       seg.add(noEntry);
     }
-    // Painted trajectories with letters, exactly like the ticket picture
-    // (situation.trajectories: [{ label, points: [[x, z], ...] }] in the
-    // factory frame, x = driver's right, z from the junction centre).
+    // Ticket trajectories (situation.trajectories: [{ label, points }] in
+    // the factory frame, x = driver's right, z from the junction centre) are
+    // drawn with the standard blue route chevrons (see the guide below); here
+    // only their letters, on bright blue plates.
     (situation.trajectories || []).forEach(t => {
-      const pts = t.points.map(([x, z]) => new THREE.Vector3(-x, 0.045, centerZ + z)); // pre-mirrored: baked geometry
-      const path = curve(pts), n = 48, width = 0.55;
-      const verts = [], idx = [];
-      for (let i = 0; i <= n; i++) {
-        const u = i / n, p = path.getPointAt(Math.min(u, 0.9)), tan = path.getTangentAt(Math.min(u, 0.9));
-        const side = new THREE.Vector3(-tan.z, 0, tan.x).multiplyScalar(width / 2);
-        if (u <= 0.9) { verts.push(p.x + side.x, p.y, p.z + side.z, p.x - side.x, p.y, p.z - side.z); }
-      }
-      const rows = verts.length / 6;
-      for (let i = 0; i < rows - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
-      // Arrow head.
-      const tip = path.getPointAt(1), base = path.getPointAt(0.9), dir = tip.clone().sub(base).normalize();
-      const across = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(width * 1.3);
-      const b = rows * 2;
-      verts.push(base.x + across.x, 0.045, base.z + across.z, base.x - across.x, 0.045, base.z - across.z, tip.x, 0.045, tip.z);
-      idx.push(b, b + 1, b + 2);
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3)); geo.setIndex(idx); geo.computeVertexNormals();
-      const ribbon = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));
-      ribbon.renderOrder = 5; ribbon.userData.roadMarking = true;
-      seg.add(ribbon);
-      // The letter sits over the arrow where it is still on screen.
-      const label = createActorBadge(t.label, '#20252A');
+      const path = curve(t.points.map(([x, z]) => new THREE.Vector3(x, 0, centerZ + z)));
       const at = path.getPointAt(0.72);
-      label.position.set(-at.x, 1.2, at.z); // child position: mirrored with the segment
-      label.scale.multiplyScalar(1.5);
+      const label = createActorBadge(t.label, '#0574F8');
+      label.position.set(at.x, 1.2, at.z); // child position: mirrored with the segment
+      label.scale.multiplyScalar(1.6);
       seg.add(label);
     });
 
@@ -6949,9 +6929,13 @@
     let guidePoints = action === 'right' ? [[-1.8, -7], [-1.8, -4], [-4, -1.8], [-16, -1.8]] :
       action === 'left' ? [[-1.8, -7], [-1.8, -1], [2, 1.8], [16, 1.8]] :
       action === 'uturn' ? [[-1.8, -7], [-2.5, 0], [0, 2.5], [2.5, 0], [1.8, -15]] : [[-1.8, -7], [-1.8, 16]];
-    const guidePath = curve(guidePoints.map(([x, z]) => new THREE.Vector3(x, 0.12, centerZ + z)));
+    // With ticket trajectories every one of them gets the chevrons (the
+    // player's route is among them), so there is one arrow style on screen.
+    const guidePaths = situation.trajectories?.length
+      ? situation.trajectories.map(t => curve(t.points.map(([x, z]) => new THREE.Vector3(-x, 0.12, centerZ + z))))
+      : [curve(guidePoints.map(([x, z]) => new THREE.Vector3(x, 0.12, centerZ + z)))];
     const guideMat = new THREE.MeshBasicMaterial({ color: BRAND.accent, transparent: true, opacity: 0.78, depthWrite: false, side: THREE.DoubleSide });
-    const guideLength = guidePath.getLength();
+
     // A chain of compact racing-line arrows stays readable through the whole
     // manoeuvre without looking like another piece of road marking.
     // Racing-game chevrons: two joined strokes, no stem.
@@ -6960,8 +6944,14 @@
     arrowShape.lineTo(0, 0.08); arrowShape.lineTo(0.78, -0.72); arrowShape.lineTo(0.78, -0.2); arrowShape.closePath();
     const arrowGeo = new THREE.ShapeGeometry(arrowShape);
     arrowGeo.rotateX(Math.PI / 2);
+    const placed = []; // shared stretches of several trajectories: one chevron
+    for (const guidePath of guidePaths) {
+    const guideLength = guidePath.getLength();
     for (let distance = 0.8; distance <= guideLength; distance += 1.85) {
       const t = Math.min(1, distance / guideLength);
+      const at = guidePath.getPointAt(t);
+      if (placed.some(p => p.distanceTo(at) < 1.1)) continue;
+      placed.push(at.clone());
       const arrow = new THREE.Mesh(arrowGeo, guideMat);
       arrow.position.copy(guidePath.getPointAt(t)); arrow.position.y += 0.01;
       const direction = guidePath.getTangentAt(t);
@@ -6969,6 +6959,7 @@
       arrow.scale.setScalar(t >= 0.98 ? 0.82 : 0.68);
       arrow.userData.guideArrow = true;
       guide.add(arrow);
+    }
     }
     seg.add(guide); guide.visible = false;
     intersectionData.guide = guide;
