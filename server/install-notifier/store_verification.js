@@ -66,10 +66,21 @@ export async function verifyStorePurchase(body, env, userId) {
   const key = await importPKCS8(env.APPLE_IAP_PRIVATE_KEY, 'ES256');
   const token = await new SignJWT({ bid: bundleId }).setProtectedHeader({ alg: 'ES256', kid: env.APPLE_IAP_KEY_ID, typ: 'JWT' })
     .setIssuer(env.APPLE_IAP_ISSUER_ID).setAudience('appstoreconnect-v1').setIssuedAt().setExpirationTime('5m').sign(key);
-  // Sandbox is opt-in on the server; a client cannot select it in production.
-  const sandbox = env.APPLE_IAP_ENVIRONMENT === 'sandbox';
-  const host = sandbox ? 'api.storekit-sandbox.apple.com' : 'api.storekit.apple.com';
-  const response = await fetchJson(`https://${host}/inApps/v1/transactions/${transactionId}`, { headers: { Authorization: `Bearer ${token}` } });
+  // Production first; a transaction unknown there is looked up in the
+  // sandbox (App Review and TestFlight buy there), as Apple recommends.
+  // The environment is decided by Apple's answer, never by the client.
+  const url = host => `https://${host}/inApps/v1/transactions/${transactionId}`;
+  let response;
+  if (env.APPLE_IAP_ENVIRONMENT === 'sandbox') {
+    response = await fetchJson(url('api.storekit-sandbox.apple.com'), { headers: { Authorization: `Bearer ${token}` } });
+  } else {
+    try {
+      response = await fetchJson(url('api.storekit.apple.com'), { headers: { Authorization: `Bearer ${token}` } });
+    } catch (e) {
+      if (!(e instanceof StoreError && e.status === 422)) throw e; // 404 from production
+      response = await fetchJson(url('api.storekit-sandbox.apple.com'), { headers: { Authorization: `Bearer ${token}` } });
+    }
+  }
   // This JWS comes directly from Apple's authenticated HTTPS API, never the client.
   const data = decodeJwt(response.signedTransactionInfo);
   if (data.bundleId !== bundleId || data.productId !== productId || String(data.transactionId) !== transactionId ||
