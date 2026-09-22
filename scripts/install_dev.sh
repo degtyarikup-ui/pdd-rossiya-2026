@@ -31,7 +31,10 @@ for arg in "$@"; do
 done
 
 if [[ $build -eq 1 || ! -f $APK ]]; then
-  flutter build apk --flavor ru --release --dart-define=COUNTRY=ru --dart-define=GAME_DEBUG=true -Pdev
+  # App key (secrets/, not in git) so rating, sync and AI work in the test build too.
+  key_define=()
+  [[ -f secrets/install_notify_secret.txt ]] && key_define=(--dart-define=INSTALL_NOTIFY_SECRET="$(cat secrets/install_notify_secret.txt)")
+  flutter build apk --flavor ru --release --dart-define=COUNTRY=ru --dart-define=GAME_DEBUG=true "${key_define[@]}" -Pdev
 fi
 
 connected() { adb devices | awk 'NR>1 && $2=="device" {print $1; exit}'; }

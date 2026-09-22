@@ -5,6 +5,7 @@ import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/models/question.dart';
 import 'package:flutter/services.dart';
@@ -956,7 +957,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 left: 16,
                 right: 16,
                 bottom: MediaQuery.paddingOf(context).bottom + 16,
-                child: _LockCard(onSignIn: () => AuthModalSheet.show(context)),
+                child: _LockCard(
+                  onSignIn: () => AuthModalSheet.show(context),
+                  onDebugSignIn: AuthService.debugSignInAvailable
+                      ? () => AuthService.instance.signInDebug()
+                      : null,
+                ),
               ),
             if (outOfFuel)
               Positioned(
@@ -1042,6 +1048,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
               ),
 
             if (_showGasHint &&
+                !locked &&
+                !outOfFuel &&
+                _reveal == null &&
                 gameState.phase == GamePhase.driving &&
                 gameState.speedKmH == 0)
               // Beside the gas pedal (the brake sits above it), pointing at it.
@@ -1240,7 +1249,9 @@ class _WheelPainter extends CustomPainter {
 /// Bottom card shown to signed-out visitors: they can look, not drive.
 class _LockCard extends StatelessWidget {
   final VoidCallback onSignIn;
-  const _LockCard({required this.onSignIn});
+  // Dev builds only: a local test account, no OAuth.
+  final VoidCallback? onDebugSignIn;
+  const _LockCard({required this.onSignIn, this.onDebugSignIn});
 
   @override
   Widget build(BuildContext context) {
@@ -1303,6 +1314,12 @@ class _LockCard extends StatelessWidget {
               ),
             ),
           ),
+          if (onDebugSignIn != null)
+            TextButton.icon(
+              onPressed: onDebugSignIn,
+              icon: const Icon(Icons.bug_report_outlined),
+              label: const Text('Тестовый вход (dev-сборка)'),
+            ),
         ],
       ),
     );
