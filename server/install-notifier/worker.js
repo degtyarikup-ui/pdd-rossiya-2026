@@ -2539,7 +2539,7 @@ async function saveUserProfile(env, user) {
     const notifKey = 'notified_reg:' + merged.id;
     try {
       const alreadyNotified = await env.INSTALLS.get(notifKey);
-      if (!alreadyNotified && verified.active) {
+      if (!alreadyNotified) {
         await env.INSTALLS.put(notifKey, '1');
         const regCount = await kvIncr(env, 'counter:registered_users');
         if (env.BOT_TOKEN && env.CHAT_ID) {

@@ -50,9 +50,42 @@ export async function verifyIdentity(body, env) {
   };
 }
 
+// v1.<base64url payload>.<hex HMAC-SHA256>; key = SESSION_SECRET (worker
+// secret, never shipped in the app). Without the secret no sessions are issued.
+const b64url = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const fromB64url = text => Uint8Array.from(atob(text.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((text.length + 3) % 4)), c => c.charCodeAt(0));
+async function hmacHex(env, data) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.SESSION_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data)));
+  return [...sig].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+export async function signSession(env, entry) {
+  if (!env.SESSION_SECRET) return null;
+  const body = 'v1.' + b64url(new TextEncoder().encode(JSON.stringify(entry)));
+  return body + '.' + await hmacHex(env, body);
+}
+async function readSignedSession(env, token) {
+  if (!env.SESSION_SECRET) return null;
+  const m = /^(v1\.[A-Za-z0-9_-]+)\.([a-f0-9]{64})$/.exec(token);
+  if (!m) return null;
+  const expected = await hmacHex(env, m[1]);
+  let diff = 0; for (let i = 0; i < 64; i++) diff |= expected.charCodeAt(i) ^ m[2].charCodeAt(i);
+  if (diff) return null;
+  try { return JSON.parse(new TextDecoder().decode(fromB64url(m[1].slice(3)))); } catch { return null; }
+}
+
 export async function readSession(request, env) {
   if (!env.INSTALLS) return null;
-  const token = request.headers.get('authorization')?.match(/^Bearer ([a-f0-9]{64})$/)?.[1];
+  const raw = request.headers.get('authorization')?.match(/^Bearer (\S{1,4096})$/)?.[1];
+  if (!raw) return null;
+  if (raw.startsWith('v1.')) {
+    const entry = await readSignedSession(env, raw);
+    if (!entry?.user?.id || !Number.isFinite(entry.expiresAt) || entry.expiresAt <= Date.now()) return null;
+    const generation = await env.INSTALLS.get('auth_generation:' + entry.user.id);
+    if ((generation || '') !== entry.generation) return null;
+    return { ...entry, key: null };
+  }
+  const token = /^[a-f0-9]{64}$/.test(raw) ? raw : null;
   if (!token) return null;
   const key = 'auth_session:' + await tokenHash(token);
   let entry;
@@ -77,14 +110,18 @@ export async function handleAuth(request, env, verify = verifyIdentity) {
     try { body = await request.json(); } catch { return reply({ error: 'invalid json' }, 400); }
     let user;
     try { user = await verify(body, env); } catch { return reply({ error: 'invalid credentials' }, 401); }
-    const token = randomToken(), expiresAt = Date.now() + SESSION_SECONDS * 1000;
+    const expiresAt = Date.now() + SESSION_SECONDS * 1000;
     const generation = await env.INSTALLS.get('auth_generation:' + user.id) || '';
-    await env.INSTALLS.put('auth_session:' + await tokenHash(token), JSON.stringify({ user, expiresAt, generation }), { expirationTtl: SESSION_SECONDS });
+    // Stateless signed session: issuing it needs no KV write, so sign-in keeps
+    // working when the free KV daily write quota is exhausted.
+    const token = await signSession(env, { user, expiresAt, generation });
+    if (!token) return reply({ error: 'unavailable' }, 503);
     return reply({ ok: true, token, expiresAt: new Date(expiresAt).toISOString(), user });
   }
   if (path === '/api/auth/logout' && request.method === 'POST') {
     const session = await readSession(request, env);
-    if (session) await env.INSTALLS.delete(session.key);
+    // Legacy KV sessions are deleted; signed ones simply expire on the client.
+    if (session?.key) { try { await env.INSTALLS.delete(session.key); } catch {} }
     return reply({ ok: true });
   }
   return null;

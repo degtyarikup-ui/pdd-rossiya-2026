@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPair, exportJWK, exportPKCS8, SignJWT } from 'jose';
 import worker from './worker.js';
-import { handleAuth, readSession, revokeUserSessions, verifyIdentity, tokenHash } from './user_auth.js';
+import { handleAuth, readSession, revokeUserSessions, verifyIdentity, tokenHash, signSession } from './user_auth.js';
 import { googleEntitlement, verifyStorePurchase, claimPurchase } from './store_verification.js';
 import { PurchaseClaims } from './purchase_claims.js';
 class KV {
@@ -11,7 +11,7 @@ class KV {
   async put(k, v) { this.data.set(k, String(v)); }
   async delete(k) { this.data.delete(k); }
 }
-const env = () => ({ INSTALLS: new KV(), SHARED_SECRET: 'test-key' });
+const env = () => ({ INSTALLS: new KV(), SHARED_SECRET: 'test-key', SESSION_SECRET: 'session-test-secret' });
 const request = (path, body, token, key = 'test-key') => new Request('https://app.test' + path, {
   method: body === undefined ? 'GET' : 'POST',
   headers: { 'content-type': 'application/json', ...(key ? { 'x-install-secret': key } : {}), ...(token ? { authorization: 'Bearer ' + token } : {}) },
@@ -69,11 +69,20 @@ test('expired, revoked and logged-out sessions are denied', async () => {
   assert.ok(await readSession(request('/api/user/progress', undefined, session.token), e));
   await revokeUserSessions(e, 'google_123');
   assert.equal(await readSession(request('/api/user/progress', undefined, session.token), e), null);
-  const fresh = await login(e); await handleAuth(request('/api/auth/logout', {}, fresh.token), e);
-  assert.equal(await readSession(request('/api/user/progress', undefined, fresh.token), e), null);
-  const last = await login(e), key = 'auth_session:' + await tokenHash(last.token), entry = JSON.parse(await e.INSTALLS.get(key));
-  entry.expiresAt = Date.now() - 1; await e.INSTALLS.put(key, JSON.stringify(entry));
-  assert.equal(await readSession(request('/api/user/progress', undefined, last.token), e), null);
+  // Signed sessions: no KV write on sign-in; forged or tampered tokens fail.
+  const fresh = await login(e);
+  assert.ok(fresh.token.startsWith('v1.'));
+  const [v, payload, sig] = fresh.token.split('.');
+  const forgedSig = v + '.' + payload + '.' + (sig[0] === 'a' ? 'b' : 'a') + sig.slice(1);
+  assert.equal(await readSession(request('/api/user/progress', undefined, forgedSig), e), null);
+  const other = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/'))); other.user.id = 'google_victim';
+  const tampered = v + '.' + btoa(JSON.stringify(other)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') + '.' + sig;
+  assert.equal(await readSession(request('/api/user/progress', undefined, tampered), e), null);
+  const expired = await signSession(e, { user: { id: 'google_123' }, expiresAt: Date.now() - 1, generation: '' });
+  assert.equal(await readSession(request('/api/user/progress', undefined, expired), e), null);
+  // Without the session secret no sessions are issued at all.
+  const noSecret = { ...e, SESSION_SECRET: undefined };
+  assert.equal((await handleAuth(request('/api/auth/session', {}), noSecret, async () => ({ id: 'google_123' }))).status, 503);
 });
 const productId = 'ru.pdd.pddapp.premium.week';
 const subscription = (state = 'ACTIVE') => ({ subscriptionState: 'SUBSCRIPTION_STATE_' + state, lineItems: [{ productId, expiryTime: '2030-01-01T00:00:00Z' }] });
