@@ -4,6 +4,7 @@ import 'package:pdd_app/data/services/auth_session_store.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +42,13 @@ class AuthService extends ChangeNotifier {
 
   Future<void> init() async {
     if (_isInitialized) return;
+    if (const bool.fromEnvironment('GAME_DEBUG')) {
+      try {
+        _devPackage = (await PackageInfo.fromPlatform()).packageName.endsWith(
+          '.dev',
+        );
+      } catch (_) {}
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       final userJson = prefs.getString(_prefKeyUser);
@@ -106,8 +114,11 @@ class AuthService extends ChangeNotifier {
   /// without an OAuth provider, so a dev-signed APK (its package and SHA-1
   /// are not registered with Google/Yandex) can still exercise the
   /// signed-in features. Never available in store builds.
-  static const bool debugSignInAvailable =
-      kDebugMode && bool.fromEnvironment('GAME_DEBUG');
+  /// Also the side-by-side test install (`-Pdev`, package `*.dev`), which is
+  /// a release build: the store package never ends in `.dev`.
+  static bool get debugSignInAvailable =>
+      const bool.fromEnvironment('GAME_DEBUG') && (kDebugMode || _devPackage);
+  static bool _devPackage = false;
 
   Future<bool> signInDebug() async {
     if (!debugSignInAvailable) return false;
