@@ -143,7 +143,8 @@ class AuthService extends ChangeNotifier {
         clientId: kIsWeb || defaultTargetPlatform == TargetPlatform.iOS
             ? googleClientId
             : null,
-        serverClientId: kIsWeb ? null : googleClientId,
+        // No Web OAuth client exists for Android, so no ID token: Android
+        // sends the access token and the server checks it with Google.
       );
       final account = await googleSignIn.signIn();
       if (account != null) {
@@ -158,7 +159,10 @@ class AuthService extends ChangeNotifier {
           provider: AuthProviderType.google,
           createdAt: DateTime.now(),
         );
-        return await _completeSignIn(profile, authentication.idToken);
+        final credential = defaultTargetPlatform == TargetPlatform.android
+            ? authentication.accessToken
+            : authentication.idToken;
+        return await _completeSignIn(profile, credential);
       }
       return false;
     } catch (e) {

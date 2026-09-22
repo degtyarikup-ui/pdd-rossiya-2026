@@ -17,7 +17,23 @@ export async function verifyIdentity(body, env) {
   const { provider, credential } = body || {};
   if (typeof credential !== 'string' || !credential || credential.length > 16384) throw new Error('invalid credential');
   let claims;
-  if (provider === 'google') {
+  if (provider === 'google' && credential.split('.').length !== 3) {
+    // Android: an OAuth access token (no Web client is configured for the app,
+    // so there is no ID token). Google itself validates it; the audience must
+    // be one of our Android client IDs once GOOGLE_ANDROID_CLIENT_IDS is set.
+    const info = await fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(credential), { signal: AbortSignal.timeout(8000) });
+    if (!info.ok) throw new Error('invalid credential');
+    const tok = await info.json();
+    const allowed = audiences(env.GOOGLE_ANDROID_CLIENT_IDS, '');
+    console.log('google access token aud', tok.aud || tok.azp);
+    if (allowed.length && !allowed.includes(tok.aud) && !allowed.includes(tok.azp)) throw new Error('wrong client');
+    if (!tok.sub || Number(tok.expires_in) <= 0) throw new Error('invalid credential');
+    const user = await fetch('https://openidconnect.googleapis.com/v1/userinfo', { headers: { Authorization: 'Bearer ' + credential }, signal: AbortSignal.timeout(8000) });
+    const profile = user.ok ? await user.json() : {};
+    if (profile.sub && profile.sub !== tok.sub) throw new Error('invalid credential');
+    claims = { sub: tok.sub, name: profile.name, email: tok.email || profile.email || '',
+      email_verified: tok.email_verified === 'true' || profile.email_verified === true, picture: profile.picture };
+  } else if (provider === 'google') {
     ({ payload: claims } = await jwtVerify(credential, googleKeys, {
       algorithms: ['RS256'], issuer: ['https://accounts.google.com', 'accounts.google.com'],
       audience: audiences(env.GOOGLE_CLIENT_IDS, GOOGLE_CLIENT), requiredClaims: ['sub', 'exp', 'iat'],

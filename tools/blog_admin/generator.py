@@ -713,6 +713,7 @@ def render_sitemap(arts=None):
     if os.path.isdir(GLOSSARY_DIR):
         rows.append((GLOSSARY_URL, "2026-07-22", "monthly", "0.6"))
     rows.append(("%s/privacy.html" % BASE, "2026-09-21", "yearly", "0.3"))
+    rows.append(("%s/delete-account.html" % BASE, "2026-09-22", "yearly", "0.2"))
     rows.append(("%s/terms.html" % BASE, "2026-08-25", "yearly", "0.3"))
 
     # обложки статей — в sitemap как image:image (индексация в Картинках)
