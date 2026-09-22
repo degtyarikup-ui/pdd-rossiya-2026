@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -8,12 +9,18 @@ import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+class YandexAuthResult {
+  final UserProfile profile;
+  final String token;
+  const YandexAuthResult(this.profile, this.token);
+}
+
 class YandexAuthSheet extends StatefulWidget {
   const YandexAuthSheet({super.key});
 
-  static Future<UserProfile?> show(BuildContext context) {
+  static Future<YandexAuthResult?> show(BuildContext context) {
     HapticFeedbackHelper.tap();
-    return showModalBottomSheet<UserProfile>(
+    return showModalBottomSheet<YandexAuthResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -29,6 +36,10 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
   late final WebViewController _controller;
   bool _isLoading = true;
   bool _isProcessingToken = false;
+  final String _oauthState = List.generate(
+    32,
+    (_) => Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0'),
+  ).join();
 
   static const String _redirectScheme = 'ru.pdd.pddapp://oauth';
 
@@ -36,7 +47,7 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
   void initState() {
     super.initState();
     final authUrl = Uri.parse(
-      'https://oauth.yandex.ru/authorize?response_type=token&client_id=${AuthService.yandexClientId}&redirect_uri=$_redirectScheme',
+      'https://oauth.yandex.ru/authorize?response_type=token&client_id=${AuthService.yandexClientId}&redirect_uri=$_redirectScheme&state=$_oauthState',
     );
 
     _controller = WebViewController()
@@ -53,8 +64,7 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
             _checkUrlForToken(url);
           },
           onNavigationRequest: (request) {
-            if (request.url.startsWith(_redirectScheme) ||
-                request.url.contains('access_token=')) {
+            if (_isRedirect(request.url)) {
               _checkUrlForToken(request.url);
               return NavigationDecision.prevent;
             }
@@ -65,21 +75,36 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
       ..loadRequest(authUrl);
   }
 
+  bool _isRedirect(String url) {
+    final uri = Uri.tryParse(url);
+    final redirect = Uri.parse(_redirectScheme);
+    return uri != null &&
+        uri.scheme == redirect.scheme &&
+        uri.host == redirect.host &&
+        uri.path == redirect.path &&
+        !uri.hasPort &&
+        uri.userInfo.isEmpty;
+  }
+
   Future<void> _checkUrlForToken(String url) async {
     if (_isProcessingToken) return;
 
-    if (url.startsWith(_redirectScheme) || url.contains('access_token=')) {
+    if (_isRedirect(url)) {
       _isProcessingToken = true;
       if (mounted) setState(() => _isLoading = true);
 
       try {
-        final uri = Uri.parse(url.replaceFirst('#', '?'));
-        final token = uri.queryParameters['access_token'];
+        final uri = Uri.parse(url);
+        final params = Uri.splitQueryString(uri.fragment);
+        if (params['state'] != _oauthState) {
+          throw const FormatException('invalid state');
+        }
+        final token = params['access_token'];
 
         if (token != null && token.isNotEmpty) {
           final profile = await _fetchYandexProfile(token);
           if (mounted && profile != null) {
-            Navigator.of(context).pop(profile);
+            Navigator.of(context).pop(YandexAuthResult(profile, token));
             return;
           }
         }
@@ -96,16 +121,17 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
 
   Future<UserProfile?> _fetchYandexProfile(String token) async {
     try {
-      final response = await http.get(
-        Uri.parse('https://login.yandex.ru/info?format=json'),
-        headers: {'Authorization': 'OAuth $token'},
-      );
+      final response = await http
+          .get(
+            Uri.parse('https://login.yandex.ru/info?format=json'),
+            headers: {'Authorization': 'OAuth $token'},
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final id =
-            data['id']?.toString() ??
-            DateTime.now().millisecondsSinceEpoch.toString();
+        final id = data['id']?.toString() ?? '';
+        if (id.isEmpty) return null;
 
         final realName = data['real_name'] as String?;
         final displayName = data['display_name'] as String?;
@@ -128,7 +154,7 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
             data['default_email'] as String? ??
             (data['emails'] is List && (data['emails'] as List).isNotEmpty
                 ? (data['emails'] as List).first.toString()
-                : 'user@yandex.ru');
+                : '');
 
         final defaultAvatarId = data['default_avatar_id'] as String?;
         final isAvatarEmpty = data['is_avatar_empty'] == true;

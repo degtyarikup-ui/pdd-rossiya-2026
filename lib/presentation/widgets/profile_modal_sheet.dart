@@ -1,3 +1,4 @@
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -69,12 +70,10 @@ class ProfileModalSheet extends StatelessWidget {
     if (confirmed == true) {
       final deleted = await AuthService.instance.deleteAccount();
       if (context.mounted) {
-        Navigator.of(context).pop();
+        if (deleted) Navigator.of(context).pop();
         AppToast.show(
           context,
-          deleted
-              ? 'Аккаунт и данные удалены'
-              : 'Вы вышли из аккаунта. Сервер недоступен — данные будут удалены по запросу на degtyarik.up@gmail.com',
+          deleted ? appL10n.accountDeleted : appL10n.accountDeleteFailed,
           type: deleted ? AppToastType.normal : AppToastType.error,
         );
       }

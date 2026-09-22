@@ -54,6 +54,14 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     setState(() => _isLoading = true);
 
     try {
+      if (!AuthService.instance.hasServerSession) {
+        final signedIn = await AuthModalSheet.show(context);
+        if (!mounted) return;
+        if (signedIn != true) {
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
       final result = await IapService.instance.buyProduct(_selectedTier);
       if (mounted) {
         setState(() => _isLoading = false);
@@ -97,6 +105,14 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   Future<void> _handleRestore() async {
     HapticFeedbackHelper.tap();
     setState(() => _isLoading = true);
+    if (!AuthService.instance.hasServerSession) {
+      final signedIn = await AuthModalSheet.show(context);
+      if (!mounted) return;
+      if (signedIn != true) {
+        setState(() => _isLoading = false);
+        return;
+      }
+    }
     final restored = await IapService.instance.restorePurchases();
     if (mounted) {
       setState(() => _isLoading = false);
@@ -247,6 +263,16 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                 icon: Icons.all_inclusive_rounded,
                 title: 'Безлимитная лента',
                 description: 'Тренируйтесь без ограничений в любое время',
+                accentColor: accentColor,
+                surfaceColor: surfaceColor,
+                colors: colors,
+              ),
+              const SizedBox(height: 12),
+              _buildFeatureItem(
+                icon: Icons.local_gas_station_rounded,
+                title: 'Бесконечный бензин в игре',
+                description:
+                    'Катайтесь сколько хотите — и золотой кибертрак в гараже',
                 accentColor: accentColor,
                 surfaceColor: surfaceColor,
                 colors: colors,

@@ -253,6 +253,9 @@
   "gameRevealTap": "Dodirnite vrata garaže",
   "gameRevealChoose": "Izaberi",
   "gameRevealClose": "Zatvori",
+  "feedLockedTitle": "Fid se otvara posle prijave",
+  "feedLockedBody": "Kratke kartice sa pravilima, znakovima i savetima za svaki dan. Prijavite se — i fid, niz učenja i napredak biće sa vama na svakom uređaju.",
+  "feedSignIn": "Prijavi se",
   "gameSceneTitle": "Vreme i godišnje doba",
   "gameSceneWeather": "Vreme",
   "gameSceneSeason": "Godišnje doba",
@@ -307,5 +310,15 @@
   "gameYou": "Vi",
   "gameStop": "STOP",
   "gameLoading": "Učitavanje igre",
-  "gameLoadError": "Vožnja ne može da se nastavi. Ponovo pokrenite simulator ili se vratite u meni."
+  "gameLoadError": "Vožnja ne može da se nastavi. Ponovo pokrenite simulator ili se vratite u meni.",
+  "authSuccess": "Uspešno ste prijavljeni",
+  "authFailed": "Prijava je otkazana ili je došlo do greške. Pokušajte ponovo.",
+  "authTitle": "Prijava na nalog",
+  "authDescription": "Sačuvajte premium pristup i statistiku pri promeni uređaja ili ponovnoj instalaciji",
+  "authApple": "Nastavi sa Apple ID",
+  "authGoogle": "Nastavi sa Google nalogom",
+  "authYandex": "Nastavi sa Yandex ID",
+  "authDebug": "Probna prijava (debug verzija)",
+  "accountDeleted": "Nalog i podaci su obrisani",
+  "accountDeleteFailed": "Nije moguće obrisati nalog. Proverite vezu i pokušajte ponovo."
 }

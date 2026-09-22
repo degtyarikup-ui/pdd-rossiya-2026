@@ -82,12 +82,9 @@ android {
 
     buildTypes {
         release {
-            signingConfig =
-                if (keystorePropertiesFile.exists()) {
-                    signingConfigs.getByName("release")
-                } else {
-                    signingConfigs.getByName("debug")
-                }
+            isDebuggable = false
+            // Never silently sign a store release with the debug key.
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

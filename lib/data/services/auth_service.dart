@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:pdd_app/data/services/auth_session_store.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
@@ -20,6 +21,20 @@ class AuthService extends ChangeNotifier {
 
   UserProfile? _currentUser;
   bool _isInitialized = false;
+  String? _sessionToken;
+  DateTime? _sessionExpiresAt;
+  int _accountRevision = 0;
+  int get accountRevision => _accountRevision;
+  bool get hasServerSession =>
+      _sessionToken != null &&
+      _sessionExpiresAt != null &&
+      DateTime.now().isBefore(_sessionExpiresAt!);
+  Map<String, String> get serverHeaders => {
+    'content-type': 'application/json',
+    if (BackendConfig.notifierSecret.isNotEmpty)
+      'x-install-secret': BackendConfig.notifierSecret,
+    if (hasServerSession) 'authorization': 'Bearer $_sessionToken',
+  };
 
   UserProfile? get currentUser => _currentUser;
   bool get isAuthenticated => _currentUser != null;
@@ -50,7 +65,31 @@ class AuthService extends ChangeNotifier {
           );
           await prefs.setString(_prefKeyUser, user.toJson());
         }
-        _currentUser = user;
+        if (!debugSignInAvailable && user.id == 'debug_tester') {
+          await prefs.remove(_prefKeyUser);
+        } else if (debugSignInAvailable && user.id == 'debug_tester') {
+          _currentUser = user;
+        } else {
+          Map<String, dynamic>? session;
+          try {
+            session = await AuthSessionStore.read();
+          } catch (_) {}
+          final expiry = DateTime.tryParse(
+            session?['expiresAt'] as String? ?? '',
+          );
+          if (session?['userId'] == user.id &&
+              session?['token'] is String &&
+              expiry != null &&
+              expiry.isAfter(DateTime.now())) {
+            _sessionToken = session!['token'] as String;
+            _sessionExpiresAt = expiry;
+            _currentUser = user;
+          } else {
+            // Legacy cached profiles are not proof of identity. Re-login is
+            // required once after this update; local progress is preserved.
+            await prefs.remove(_prefKeyUser);
+          }
+        }
       }
       _isInitialized = true;
       notifyListeners();
@@ -63,11 +102,12 @@ class AuthService extends ChangeNotifier {
   static const String googleClientId =
       '513938972930-3lclc5epsnm12druv86ut2o89pj71cu9.apps.googleusercontent.com';
 
-  /// Test builds only (`--dart-define=GAME_DEBUG=true`): a local account
+  /// Debug builds only (`--dart-define=GAME_DEBUG=true`): a local account
   /// without an OAuth provider, so a dev-signed APK (its package and SHA-1
   /// are not registered with Google/Yandex) can still exercise the
   /// signed-in features. Never available in store builds.
-  static const bool debugSignInAvailable = bool.fromEnvironment('GAME_DEBUG');
+  static const bool debugSignInAvailable =
+      kDebugMode && bool.fromEnvironment('GAME_DEBUG');
 
   Future<bool> signInDebug() async {
     if (!debugSignInAvailable) return false;
@@ -92,10 +132,12 @@ class AuthService extends ChangeNotifier {
         clientId: kIsWeb || defaultTargetPlatform == TargetPlatform.iOS
             ? googleClientId
             : null,
+        serverClientId: kIsWeb ? null : googleClientId,
       );
       final account = await googleSignIn.signIn();
       if (account != null) {
-        _currentUser = UserProfile(
+        final authentication = await account.authentication;
+        final profile = UserProfile(
           id: 'google_${account.id}',
           name: account.displayName?.isNotEmpty == true
               ? account.displayName!
@@ -105,11 +147,7 @@ class AuthService extends ChangeNotifier {
           provider: AuthProviderType.google,
           createdAt: DateTime.now(),
         );
-        await _saveUser();
-        notifyListeners();
-        await PremiumService.instance.onAuthChanged(_currentUser);
-        unawaited(ProgressSyncService.instance.syncWithServer());
-        return true;
+        return await _completeSignIn(profile, authentication.idToken);
       }
       return false;
     } catch (e) {
@@ -167,6 +205,9 @@ class AuthService extends ChangeNotifier {
       }
 
       final userIdentifier = credential.userIdentifier ?? '';
+      if (userIdentifier.isEmpty || credential.identityToken == null) {
+        return false;
+      }
       final prefs = await SharedPreferences.getInstance();
 
       // 1. Имя пользователя (Apple возвращает fullName только при первом входе)
@@ -209,8 +250,8 @@ class AuthService extends ChangeNotifier {
 
       final finalEmail = email ?? '';
 
-      _currentUser = UserProfile(
-        id: 'apple_${userIdentifier.isNotEmpty ? userIdentifier : DateTime.now().millisecondsSinceEpoch}',
+      final profile = UserProfile(
+        id: 'apple_$userIdentifier',
         name: displayName,
         email: finalEmail,
         avatarUrl: null,
@@ -218,11 +259,7 @@ class AuthService extends ChangeNotifier {
         createdAt: DateTime.now(),
       );
 
-      await _saveUser();
-      notifyListeners();
-      await PremiumService.instance.onAuthChanged(_currentUser);
-      unawaited(ProgressSyncService.instance.syncWithServer());
-      return true;
+      return await _completeSignIn(profile, credential.identityToken);
     } catch (e) {
       debugPrint('AuthService: apple sign in error: $e');
       return false;
@@ -233,14 +270,9 @@ class AuthService extends ChangeNotifier {
 
   Future<bool> signInWithYandex(BuildContext context) async {
     try {
-      final profile = await YandexAuthSheet.show(context);
-      if (profile != null) {
-        _currentUser = profile;
-        await _saveUser();
-        notifyListeners();
-        await PremiumService.instance.onAuthChanged(_currentUser);
-        unawaited(ProgressSyncService.instance.syncWithServer());
-        return true;
+      final result = await YandexAuthSheet.show(context);
+      if (result != null) {
+        return await _completeSignIn(result.profile, result.token);
       }
       return false;
     } catch (e) {
@@ -249,7 +281,73 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<bool> _completeSignIn(UserProfile profile, String? credential) async {
+    if (credential == null ||
+        credential.isEmpty ||
+        !BackendConfig.hasNotifier) {
+      return false;
+    }
+    final revision = _accountRevision;
+    final response = await http
+        .post(
+          Uri.parse('${BackendConfig.notifierUrl}/api/auth/session'),
+          headers: serverHeaders,
+          body: jsonEncode({
+            'provider': profile.provider.name,
+            'credential': credential,
+            'name': profile.name,
+          }),
+        )
+        .timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200 || revision != _accountRevision) {
+      return false;
+    }
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final user = UserProfile.fromMap(
+      Map<String, dynamic>.from(data['user'] as Map),
+    );
+    final token = data['token'] as String;
+    final expiry = DateTime.parse(data['expiresAt'] as String);
+    if (user.id != profile.id || !expiry.isAfter(DateTime.now())) return false;
+    await AuthSessionStore.write({
+      'userId': user.id,
+      'token': token,
+      'expiresAt': expiry.toIso8601String(),
+    });
+    if (revision != _accountRevision) return false;
+    _sessionToken = token;
+    _sessionExpiresAt = expiry;
+    _currentUser = user;
+    _accountRevision++;
+    await _saveUser();
+    notifyListeners();
+    await PremiumService.instance.onAuthChanged(user);
+    unawaited(ProgressSyncService.instance.syncWithServer());
+    return true;
+  }
+
   Future<void> signOut() async {
+    final oldHeaders = serverHeaders;
+    final hadSession = hasServerSession;
+    _accountRevision++;
+    _sessionToken = null;
+    _sessionExpiresAt = null;
+    _currentUser = null;
+    ProgressSyncService.instance.cancel();
+    if (hadSession) {
+      unawaited(
+        http
+            .post(
+              Uri.parse('${BackendConfig.notifierUrl}/api/auth/logout'),
+              headers: oldHeaders,
+            )
+            .timeout(const Duration(seconds: 8))
+            .catchError((_) => http.Response('', 503)),
+      );
+    }
+    try {
+      await AuthSessionStore.clear();
+    } catch (_) {}
     try {
       try {
         final googleSignIn = GoogleSignIn();
@@ -272,24 +370,27 @@ class AuthService extends ChangeNotifier {
   Future<bool> deleteAccount() async {
     var deleted = false;
     final user = _currentUser;
+    final revision = _accountRevision;
     try {
       if (user != null && BackendConfig.hasNotifier) {
         final resp = await http
             .post(
               Uri.parse('${BackendConfig.notifierUrl}/api/user/delete'),
-              headers: {
-                'content-type': 'application/json',
-                if (BackendConfig.notifierSecret.isNotEmpty)
-                  'x-install-secret': BackendConfig.notifierSecret,
-              },
+              headers: serverHeaders,
               body: jsonEncode({'userId': user.id}),
             )
             .timeout(const Duration(seconds: 10));
-        deleted = resp.statusCode == 200;
+        if (resp.statusCode == 200) {
+          final body = jsonDecode(resp.body);
+          deleted =
+              body is Map && body['ok'] == true && body['deleted'] == user.id;
+        }
       }
     } catch (e) {
       debugPrint('AuthService: delete account error: $e');
     }
+    if (!deleted) return false;
+    if (revision != _accountRevision) return true;
     try {
       await signOut();
     } catch (e) {

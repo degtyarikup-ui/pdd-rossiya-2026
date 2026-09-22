@@ -1,3 +1,6 @@
+export { PurchaseClaims } from './purchase_claims.js';
+import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, StoreError } from './store_verification.js';
+import { handleAuth, authorizeUserRequest, revokeUserSessions } from './user_auth.js';
 import { handleSocialAdmin, handleVideoStream, handleVideoThumb, runAutoPost } from './social.js';
 import { SOCIAL_NAV_HTML, SOCIAL_VIEW_HTML, SOCIAL_CLIENT_JS } from './social_ui.js';
 import { handleThreadsAdmin, runThreadsSchedule } from './threads.js';
@@ -29,7 +32,7 @@ const FLAGS = { ru: '🇷🇺', by: '🇧🇾', rs: '🇷🇸' };
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'content-type, x-install-secret',
+  'Access-Control-Allow-Headers': 'content-type, x-install-secret, authorization',
   'Access-Control-Max-Age': '86400',
 };
 
@@ -1784,13 +1787,13 @@ function rankGameBoard(doc) {
 }
 
 async function appKeyAllowed(request, env) {
-  if (!env.SHARED_SECRET) return true;
+  if (!env.SHARED_SECRET) return false;
   const got = request.headers.get('x-install-secret');
   if (got && safeEquals(got, env.SHARED_SECRET)) return true;
   // Переходный режим (галочка в админке, раздел «ИИ»): сборки без ключа или
   // с прежним ключом (после его смены) пропускаются, пока галочка включена.
-  if (!env.INSTALLS) return !got;
-  return (await env.INSTALLS.get('ai_legacy_open')) !== 'off';
+  if (!env.INSTALLS) return false;
+  return (await env.INSTALLS.get('ai_legacy_open')) === 'on';
 }
 
 // Slug статьи блога из пути страницы, либо null.
@@ -2465,6 +2468,12 @@ function mergeGame(existing, incoming) {
 }
 
 // ────────────────────── User Profile & Premium Security ──────────────────────
+function publicUser(user) {
+  if (!user) return null;
+  const { verifiedPurchase, storeVerifiedAt, ...profile } = user;
+  return profile;
+}
+
 async function saveUserProfile(env, user) {
   if (!env.INSTALLS || !user || !user.id) return user;
   const kvKey = 'user:' + user.id;
@@ -2474,6 +2483,7 @@ async function saveUserProfile(env, user) {
     if (raw) existing = JSON.parse(raw);
   } catch (_) {}
 
+  existing = await refreshStoreEntitlement(env, existing);
   // SECURITY: Subscriptions are strictly server-authoritative!
   let isPremium = existing ? (existing.isPremium || false) : false;
   let premiumExpiresAt = existing ? (existing.premiumExpiresAt || null) : null;
@@ -2498,6 +2508,8 @@ async function saveUserProfile(env, user) {
     isPremium,
     premiumExpiresAt,
     premiumSource,
+    verifiedPurchase: existing?.verifiedPurchase || null,
+    storeVerifiedAt: existing?.storeVerifiedAt || null,
     grantedAt: existing ? existing.grantedAt : (user.grantedAt || null),
     pushToken: user.pushToken !== undefined ? user.pushToken : (existing ? existing.pushToken : null),
     ipCountry: user.ipCountry || (existing ? existing.ipCountry : null),
@@ -2527,7 +2539,7 @@ async function saveUserProfile(env, user) {
     const notifKey = 'notified_reg:' + merged.id;
     try {
       const alreadyNotified = await env.INSTALLS.get(notifKey);
-      if (!alreadyNotified) {
+      if (!alreadyNotified && verified.active) {
         await env.INSTALLS.put(notifKey, '1');
         const regCount = await kvIncr(env, 'counter:registered_users');
         if (env.BOT_TOKEN && env.CHAT_ID) {
@@ -2914,6 +2926,26 @@ export default {
     }
 
     
+    const authResponse = await handleAuth(request, env);
+    if (authResponse) {
+      for (const [key, value] of Object.entries(CORS_HEADERS)) authResponse.headers.set(key, value);
+      return authResponse;
+    }
+    const authorization = await authorizeUserRequest(request, env);
+    if (authorization.response) {
+      for (const [key, value] of Object.entries(CORS_HEADERS)) authorization.response.headers.set(key, value);
+      return authorization.response;
+    }
+    const authenticatedUser = authorization.session?.user;
+    if (url.pathname === '/api/user/store/status' && request.method === 'GET') {
+      const store = url.searchParams.get('store');
+      const configured = Boolean(env.PURCHASE_CLAIMS) && (store === 'googleplay'
+        ? Boolean(env.GOOGLE_PLAY_SERVICE_ACCOUNT)
+        : store === 'appstore' && Boolean(env.APPLE_IAP_PRIVATE_KEY && env.APPLE_IAP_KEY_ID && env.APPLE_IAP_ISSUER_ID));
+      return jsonResponse({ ok: true, configured }, 200, { 'Cache-Control': 'no-store' });
+    }
+
+
     // ────────────────────── User Cloud Progress Sync API ──────────────────────
     if (url.pathname.startsWith('/api/user/') && request.method === 'POST') {
       if (!await appKeyAllowed(request, env)) return jsonResponse({ error: 'forbidden' }, 403);
@@ -3028,6 +3060,7 @@ export default {
         const raw = await env.INSTALLS.get('user:' + userId);
         if (raw) email = JSON.parse(raw).email || null;
       } catch (_) {}
+      await revokeUserSessions(env, userId);
       await env.INSTALLS.delete('user:' + userId);
       await env.INSTALLS.delete('user_progress:' + userId);
       if (email) await env.INSTALLS.delete('user_email:' + email.toLowerCase().trim());
@@ -3052,13 +3085,14 @@ export default {
       if (!body || !body.id) {
         return jsonResponse({ error: 'missing user id' }, 400);
       }
+      body = { ...body, ...authenticatedUser };
       body.ipCountry = request.headers.get('cf-ipcountry') || null;
       body.userAgent = String(request.headers.get('user-agent') || '').slice(0, 200);
       body.suspect = isSuspectRegistration(request, body);
       const updatedUser = await saveUserProfile(env, body);
       return jsonResponse({
         ok: true,
-        user: updatedUser,
+        user: publicUser(updatedUser),
         isPremium: updatedUser ? updatedUser.isPremium : false,
         premiumExpiresAt: updatedUser ? updatedUser.premiumExpiresAt : null,
         premiumSource: updatedUser ? updatedUser.premiumSource : null
@@ -3069,7 +3103,19 @@ export default {
     if (url.pathname === '/api/user/purchase' && request.method === 'POST') {
       let body;
       try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }
-      const { userId, name, email, provider, tier, tierName, price, store, expiresAt, platform, appVersion, country, app, transactionId, productId } = body || {};
+      let verified;
+      try {
+        verified = await verifyStorePurchase(body, env, authenticatedUser.id);
+        if (!verified.active) return jsonResponse({ ok: true, isPremium: false, premiumExpiresAt: verified.expiresAt });
+        await claimPurchase(env, authenticatedUser.id, verified);
+      } catch (error) {
+        return jsonResponse({ error: error instanceof StoreError ? error.message : 'store verification unavailable' }, error instanceof StoreError ? error.status : 503);
+      }
+      body = { ...body, userId: authenticatedUser.id, name: authenticatedUser.name,
+        email: authenticatedUser.email, provider: authenticatedUser.provider,
+        expiresAt: verified.expiresAt, transactionId: verified.orderId };
+      const { userId, name, email, provider, tier, tierName, price, store, expiresAt, platform, appVersion, country, app, transactionId, productId } = body;
+
 
       const targetId = userId || (email ? ('email_' + email) : `purchase_${Date.now()}`);
       if (!env.INSTALLS) return jsonResponse({ error: 'server error' }, 500);
@@ -3093,8 +3139,10 @@ export default {
         };
       }
 
-      user.isPremium = true;
-      user.premiumSource = store || 'iap';
+      user.isPremium = verified.active;
+      user.verifiedPurchase = verified.reference;
+      user.storeVerifiedAt = Date.now();
+      user.premiumSource = store;
       user.premiumExpiresAt = expiresAt || null;
       user.purchasedAt = new Date().toISOString();
       if (platform) user.platform = platform;
@@ -3146,23 +3194,19 @@ export default {
 
       return jsonResponse({
         ok: true,
-        user,
-        isPremium: true,
+        user: publicUser(user),
+        isPremium: user.isPremium,
         premiumExpiresAt: user.premiumExpiresAt,
         premiumSource: user.premiumSource
       });
     }
 
     if (url.pathname === '/api/user/status' && request.method === 'GET') {
-      const userId = url.searchParams.get('id');
       const email = url.searchParams.get('email');
-      let targetId = userId;
-      if (!targetId && email && env.INSTALLS) {
-        targetId = await env.INSTALLS.get('user_email:' + email.toLowerCase().trim());
+      if (email && email.toLowerCase().trim() !== authenticatedUser.email.toLowerCase().trim()) {
+        return jsonResponse({ error: 'wrong account' }, 403);
       }
-      if (!targetId) {
-        return jsonResponse({ ok: false, error: 'user not found', isPremium: false }, 404);
-      }
+      const targetId = authenticatedUser.id;
       let raw = null;
       if (env.INSTALLS) raw = await env.INSTALLS.get('user:' + targetId);
       if (!raw) return jsonResponse({ ok: false, error: 'user not found', isPremium: false }, 404);
@@ -3170,8 +3214,8 @@ export default {
         const user = JSON.parse(raw);
         return jsonResponse({
           ok: true,
-          user,
-          isPremium: user.isPremium || false,
+          user: publicUser(user),
+          isPremium: Boolean(user.isPremium) && (!user.premiumExpiresAt || Date.parse(user.premiumExpiresAt) > Date.now()),
           premiumExpiresAt: user.premiumExpiresAt || null,
           premiumSource: user.premiumSource || null
         });

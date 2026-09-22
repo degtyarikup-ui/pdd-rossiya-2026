@@ -1,4 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:pdd_app/core/config/backend_config.dart';
+import 'package:crypto/crypto.dart';
+import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
@@ -15,8 +20,9 @@ class IapService extends ChangeNotifier {
   static final IapService instance = IapService._internal();
   IapService._internal();
 
-  final InAppPurchase _iap = InAppPurchase.instance;
+  late final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
+  Future<void> _purchaseQueue = Future.value();
 
   static String get productIdWeek =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS
@@ -81,8 +87,14 @@ class IapService extends ChangeNotifier {
         return;
       }
 
-      _subscription = _iap.purchaseStream.listen(
-        _onPurchaseUpdated,
+      _subscription ??= _iap.purchaseStream.listen(
+        (purchases) {
+          _purchaseQueue = _purchaseQueue
+              .then((_) => _onPurchaseUpdated(purchases))
+              .catchError((Object _) {
+                _safeCompletePurchase(PurchaseResult.error);
+              });
+        },
         onDone: () => _subscription?.cancel(),
         onError: (error) {
           debugPrint('IapService: stream error: $error');
@@ -100,12 +112,11 @@ class IapService extends ChangeNotifier {
   }
 
   Future<void> loadProducts() async {
-    if (!_isAvailable) {
-      _isAvailable = await _iap.isAvailable();
-      if (!_isAvailable) return;
-    }
-
     try {
+      if (!_isAvailable) {
+        _isAvailable = await _iap.isAvailable();
+        if (!_isAvailable) return;
+      }
       final response = await _iap.queryProductDetails(_productIds);
       if (response.error != null) {
         debugPrint('IapService: query error: ${response.error}');
@@ -159,11 +170,6 @@ class IapService extends ChangeNotifier {
       }
     }
 
-    // Fallback if only 1 product is returned
-    if (_products.length == 1) {
-      return _products.values.first;
-    }
-
     return null;
   }
 
@@ -187,14 +193,40 @@ class IapService extends ChangeNotifier {
     return defaultPrice;
   }
 
+  String get _store => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS
+      ? 'appstore'
+      : 'googleplay';
+
+  Future<bool> _verificationAvailable() async {
+    if (!AuthService.instance.hasServerSession || !BackendConfig.hasNotifier) {
+      return false;
+    }
+    try {
+      final response = await http
+          .get(
+            Uri.parse(
+              '${BackendConfig.notifierUrl}/api/user/store/status',
+            ).replace(queryParameters: {'store': _store}),
+            headers: AuthService.instance.serverHeaders,
+          )
+          .timeout(const Duration(seconds: 8));
+      return response.statusCode == 200 &&
+          jsonDecode(response.body)['configured'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<PurchaseResult> buyProduct(PremiumTier tier) async {
     if (kIsWeb) {
       return PurchaseResult.storeUnavailable;
     }
 
     _lastErrorMessage = '';
+    if (!AuthService.instance.hasServerSession) return PurchaseResult.error;
+    if (!await _verificationAvailable()) return PurchaseResult.storeUnavailable;
 
-    if (!_isAvailable) {
+    if (!_isAvailable || _subscription == null) {
       await init();
       if (!_isAvailable) {
         debugPrint('IapService: Store is not available on this device');
@@ -213,9 +245,19 @@ class IapService extends ChangeNotifier {
       return PurchaseResult.productNotFound;
     }
 
-    _currentPurchaseCompleter = Completer<PurchaseResult>();
+    if (_currentPurchaseCompleter != null) return PurchaseResult.error;
+    final completer = Completer<PurchaseResult>();
+    _currentPurchaseCompleter = completer;
 
-    final purchaseParam = PurchaseParam(productDetails: product);
+    final purchaseParam = PurchaseParam(
+      productDetails: product,
+      applicationUserName:
+          !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+          ? sha256
+                .convert(utf8.encode(AuthService.instance.currentUser!.id))
+                .toString()
+          : null,
+    );
     try {
       final launched = await _iap.buyNonConsumable(
         purchaseParam: purchaseParam,
@@ -231,29 +273,27 @@ class IapService extends ChangeNotifier {
       return PurchaseResult.error;
     }
 
-    return _currentPurchaseCompleter?.future ??
-        Future.value(PurchaseResult.error);
+    return completer.future;
   }
 
   Future<bool> restorePurchases() async {
-    if (kIsWeb) {
+    if (kIsWeb || !AuthService.instance.hasServerSession) {
       return false;
     }
 
-    if (!_isAvailable) {
+    if (!_isAvailable || _subscription == null) {
       await init();
       if (!_isAvailable) return false;
     }
 
     try {
-      _restoreCompleter = Completer<bool>();
+      if (_restoreCompleter != null) return false;
+      final completer = Completer<bool>();
+      _restoreCompleter = completer;
       await _iap.restorePurchases();
-
-      final result = await _restoreCompleter!.future.timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          return PremiumService.instance.isPremium;
-        },
+      final result = await completer.future.timeout(
+        const Duration(seconds: 35),
+        onTimeout: () => false,
       );
       _restoreCompleter = null;
       return result;
@@ -297,21 +337,26 @@ class IapService extends ChangeNotifier {
             tier,
             tier == PremiumTier.threeMonths ? '290 ₽' : '99 ₽',
           );
-          final store = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS
-              ? 'appstore'
-              : 'rustore';
+          final store = _store;
 
+          final verified = await PremiumService.instance.recordPurchase(
+            tier: tier,
+            price: price,
+            store: store,
+            transactionId: purchaseDetails.purchaseID,
+            productId: purchaseDetails.productID,
+            purchaseToken:
+                purchaseDetails.verificationData.serverVerificationData,
+          );
+          if (!verified) {
+            _safeCompletePurchase(PurchaseResult.error);
+            // Do not acknowledge a payment we could not deliver. The store
+            // can redeliver it; the user can retry restoration after reconnecting.
+            continue;
+          }
           if (purchaseDetails.status == PurchaseStatus.purchased) {
-            await PremiumService.instance.recordPurchase(
-              tier: tier,
-              price: price,
-              store: store,
-              transactionId: purchaseDetails.purchaseID,
-              productId: purchaseDetails.productID,
-            );
             _safeCompletePurchase(PurchaseResult.success);
           } else {
-            await PremiumService.instance.purchase(tier);
             _safeCompleteRestore(true);
           }
         } else if (purchaseDetails.status == PurchaseStatus.canceled) {

@@ -872,6 +872,16 @@ class AppLocalizationsSr extends AppLocalizations {
   String get gameRevealClose => 'Zatvori';
 
   @override
+  String get feedLockedTitle => 'Fid se otvara posle prijave';
+
+  @override
+  String get feedLockedBody =>
+      'Kratke kartice sa pravilima, znakovima i savetima za svaki dan. Prijavite se — i fid, niz učenja i napredak biće sa vama na svakom uređaju.';
+
+  @override
+  String get feedSignIn => 'Prijavi se';
+
+  @override
   String get gameSceneTitle => 'Vreme i godišnje doba';
 
   @override
@@ -1062,4 +1072,37 @@ class AppLocalizationsSr extends AppLocalizations {
   @override
   String get gameLoadError =>
       'Vožnja ne može da se nastavi. Ponovo pokrenite simulator ili se vratite u meni.';
+
+  @override
+  String get authSuccess => 'Uspešno ste prijavljeni';
+
+  @override
+  String get authFailed =>
+      'Prijava je otkazana ili je došlo do greške. Pokušajte ponovo.';
+
+  @override
+  String get authTitle => 'Prijava na nalog';
+
+  @override
+  String get authDescription =>
+      'Sačuvajte premium pristup i statistiku pri promeni uređaja ili ponovnoj instalaciji';
+
+  @override
+  String get authApple => 'Nastavi sa Apple ID';
+
+  @override
+  String get authGoogle => 'Nastavi sa Google nalogom';
+
+  @override
+  String get authYandex => 'Nastavi sa Yandex ID';
+
+  @override
+  String get authDebug => 'Probna prijava (debug verzija)';
+
+  @override
+  String get accountDeleted => 'Nalog i podaci su obrisani';
+
+  @override
+  String get accountDeleteFailed =>
+      'Nije moguće obrisati nalog. Proverite vezu i pokušajte ponovo.';
 }

@@ -101,7 +101,7 @@ void main() {
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = byteData!.buffer.asUint8List();
       File('${outDir.path}/$name.png').writeAsBytesSync(pngBytes);
-      print('Rendered $name.png (${pngBytes.length} bytes)');
+      debugPrint('Rendered $name.png (${pngBytes.length} bytes)');
     }
 
     await saveScreen('01_home', const HomeScreen());

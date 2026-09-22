@@ -25,8 +25,12 @@ crons = ["0 7 * * *", "0 19 * * *", "*/5 * * * *"]
 # Буфер статистики (stats_buffer.js): копит события аналитики и пишет их в KV
 # пачкой раз в 10 минут, чтобы не выходить за бесплатный лимит записей KV.
 [durable_objects]
-bindings = [{ name = "STATS", class_name = "StatsBuffer" }]
+bindings = [{ name = "STATS", class_name = "StatsBuffer" }, { name = "PURCHASE_CLAIMS", class_name = "PurchaseClaims" }]
 
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["StatsBuffer"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["PurchaseClaims"]

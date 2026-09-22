@@ -406,10 +406,11 @@ const { chromium } = require('playwright');
       const stopEvent = enterRoadEvent('busstop');
       const bus = stopEvent?.actors[0];
       let dwelt = false, inBay = false;
-      const busStops = !!stopEvent && stopEvent.kind === 'busstop' && (() => {
+      const startedInBay = !!bus && bus.mesh.position.x < -4.5;
+      const busStops = startedInBay && !!stopEvent && stopEvent.kind === 'busstop' && (() => {
         for (let i = 0; i < 1500; i++) {
           const gap = bus.mesh.position.z - t.player().position.z;
-          if (!t.state.driveRecovery) window.game.setGas(gap > 14 || bus.mesh.position.x < -4);
+          if (!t.state.driveRecovery) window.game.setGas(gap > 16); // stay behind the bus
           t.tick(1 / 60);
           if (bus.mesh.position.x < -4.5) { inBay = true; if (bus.speed === 0) dwelt = true; }
           if (dwelt && bus.mesh.position.x > -2.2 && bus.mesh.position.z > stopEvent.bayZ + 15) break;

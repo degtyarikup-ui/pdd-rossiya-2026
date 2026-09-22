@@ -18,6 +18,7 @@ class PremiumService extends ChangeNotifier {
   PremiumService._internal();
 
   static const String _prefKeyIsPremium = 'premium_is_active';
+  static const String _prefKeyOwner = 'premium_owner_id';
   static const String _prefKeyExpiresAt = 'premium_expires_at';
   static const String _prefKeyDailyCards = 'premium_daily_cards_count';
   static const String _prefKeyDailyDate = 'premium_daily_cards_date';
@@ -108,7 +109,7 @@ class PremiumService extends ChangeNotifier {
         _expiresAt = DateTime.fromMillisecondsSinceEpoch(expMs);
       }
 
-      _currentUserId = AuthService.instance.currentUser?.id;
+      _currentUserId = prefs.getString(_prefKeyOwner);
 
       // Check daily reset for current user / guest
       final todayStr = _getTodayString();
@@ -143,7 +144,14 @@ class PremiumService extends ChangeNotifier {
   /// чтобы загрузить индивидуальный счетчик карточек, лимит ИИ и статус Premium.
   Future<void> onAuthChanged([UserProfile? user]) async {
     try {
+      final changedAccount = _currentUserId != user?.id;
       _currentUserId = user?.id;
+      if (changedAccount) {
+        _isPremium = false;
+        _expiresAt = null;
+        _pendingGrantNotificationExpiresAt = null;
+        await _saveState();
+      }
 
       final prefs = await SharedPreferences.getInstance();
       final todayStr = _getTodayString();
@@ -184,8 +192,9 @@ class PremiumService extends ChangeNotifier {
 
   Future<void> syncWithServer() async {
     final user = AuthService.instance.currentUser;
-    if (user == null) return;
+    if (user == null || !AuthService.instance.hasServerSession) return;
     if (!BackendConfig.hasNotifier) return;
+    final revision = AuthService.instance.accountRevision;
 
     try {
       String appVersion = '';
@@ -220,16 +229,13 @@ class PremiumService extends ChangeNotifier {
       final resp = await http
           .post(
             Uri.parse(_syncEndpoint),
-            headers: {
-              'content-type': 'application/json',
-              if (BackendConfig.notifierSecret.isNotEmpty)
-                'x-install-secret': BackendConfig.notifierSecret,
-            },
+            headers: AuthService.instance.serverHeaders,
             body: jsonEncode(payload),
           )
           .timeout(const Duration(seconds: 10));
 
-      if (resp.statusCode == 200) {
+      if (resp.statusCode == 200 &&
+          revision == AuthService.instance.accountRevision) {
         final data = jsonDecode(resp.body) as Map<String, dynamic>;
         final serverIsPremium = data['isPremium'] == true;
         final serverExpStr = data['premiumExpiresAt'] as String?;
@@ -308,99 +314,58 @@ class PremiumService extends ChangeNotifier {
     }
   }
 
-  Future<bool> purchase(PremiumTier tier) async {
-    return recordPurchase(
-      tier: tier,
-      price: tier == PremiumTier.threeMonths ? '290 ₽' : '99 ₽',
-    );
-  }
-
+  /// Both purchases and restores use the store's verified expiry. Replaying a
+  /// receipt never starts a new local 7/90-day period.
   Future<bool> recordPurchase({
     required PremiumTier tier,
     required String price,
-    String? store,
+    required String store,
+    required String productId,
+    required String purchaseToken,
     String? transactionId,
-    String? productId,
   }) async {
+    final auth = AuthService.instance;
+    final user = auth.currentUser;
+    if (user == null || !auth.hasServerSession || !BackendConfig.hasNotifier) {
+      return false;
+    }
+    final revision = auth.accountRevision;
     try {
-      final now = DateTime.now();
-      DateTime expiration;
-      switch (tier) {
-        case PremiumTier.weekly:
-          expiration = now.add(const Duration(days: 7));
-          break;
-        case PremiumTier.threeMonths:
-          expiration = now.add(const Duration(days: 90));
-          break;
+      final response = await http
+          .post(
+            Uri.parse('${BackendConfig.notifierUrl}/api/user/purchase'),
+            headers: auth.serverHeaders,
+            body: jsonEncode({
+              'userId': user.id,
+              'tier': tier.name,
+              'price': price,
+              'store': store,
+              'productId': productId,
+              'purchaseToken': purchaseToken,
+              'transactionId': ?transactionId,
+              'country': CountryConfig.current.code,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode != 200 || revision != auth.accountRevision) {
+        return false;
       }
-
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final expiry = DateTime.tryParse(
+        data['premiumExpiresAt'] as String? ?? '',
+      );
+      if (data['ok'] != true ||
+          data['isPremium'] != true ||
+          expiry == null ||
+          !expiry.isAfter(DateTime.now())) {
+        return false;
+      }
       _isPremium = true;
-      _expiresAt = expiration;
+      _expiresAt = expiry;
       await _saveState();
       notifyListeners();
-
-      // Notify server about purchase
-      if (BackendConfig.hasNotifier) {
-        final user = AuthService.instance.currentUser;
-        String appVersion = '';
-        String platform = '';
-        try {
-          final info = await PackageInfo.fromPlatform();
-          appVersion = '${info.version}+${info.buildNumber}';
-          if (kIsWeb) {
-            platform = 'web';
-          } else if (Platform.isIOS) {
-            platform = 'ios';
-          } else if (Platform.isAndroid) {
-            platform = 'android';
-          }
-        } catch (_) {}
-
-        final payload = {
-          'userId': user?.id ?? _currentUserId ?? 'guest',
-          'name': user?.name ?? 'Пользователь',
-          'email': user?.email,
-          'provider': user?.provider.name ?? 'guest',
-          'tier': tier.name,
-          'tierName': tier == PremiumTier.threeMonths ? '3 месяца' : '1 неделя',
-          'price': price,
-          'store':
-              store ??
-              (kIsWeb
-                  ? 'web'
-                  : Platform.isIOS
-                  ? 'appstore'
-                  : 'rustore'),
-          'expiresAt': expiration.toIso8601String(),
-          'country': CountryConfig.current.code,
-          'app': 'ru',
-          if (platform.isNotEmpty) 'platform': platform,
-          if (appVersion.isNotEmpty) 'appVersion': appVersion,
-          if (transactionId != null) 'transactionId': transactionId,
-          if (productId != null) 'productId': productId,
-        };
-
-        try {
-          await http
-              .post(
-                Uri.parse('${BackendConfig.notifierUrl}/api/user/purchase'),
-                headers: {
-                  'content-type': 'application/json',
-                  if (BackendConfig.notifierSecret.isNotEmpty)
-                    'x-install-secret': BackendConfig.notifierSecret,
-                },
-                body: jsonEncode(payload),
-              )
-              .timeout(const Duration(seconds: 10));
-        } catch (e) {
-          debugPrint('PremiumService: recordPurchase server error: $e');
-        }
-      }
-
-      unawaited(syncWithServer());
       return true;
-    } catch (e) {
-      debugPrint('PremiumService: recordPurchase error: $e');
+    } catch (_) {
       return false;
     }
   }
@@ -408,6 +373,11 @@ class PremiumService extends ChangeNotifier {
   Future<void> _saveState() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (_currentUserId != null) {
+        await prefs.setString(_prefKeyOwner, _currentUserId!);
+      } else {
+        await prefs.remove(_prefKeyOwner);
+      }
       await prefs.setBool(_prefKeyIsPremium, _isPremium);
       if (_expiresAt != null) {
         await prefs.setInt(

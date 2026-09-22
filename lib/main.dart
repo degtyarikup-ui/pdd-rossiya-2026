@@ -99,7 +99,7 @@ Future<void> _initStreakNotifications(ProgressDataSource ds) async {
     await StreakNotifier.instance.refreshStreakReminder(await ds.loadStreak());
     // Тестовый показ уведомления через несколько секунд после запуска.
     // Включается только сборкой с --dart-define=NOTIF_TEST=true; в прод нет.
-    if (const bool.fromEnvironment('NOTIF_TEST')) {
+    if (kDebugMode && const bool.fromEnvironment('NOTIF_TEST')) {
       unawaited(StreakNotifier.instance.showTestReminder());
     }
   } catch (e) {
@@ -158,10 +158,9 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     final appSettings = ref.watch(appSettingsProvider);
     HapticFeedbackHelper.setEnabled(appSettings.hapticsEnabled);
 
-    final String initialScreen = const String.fromEnvironment(
-      'SCREEN',
-      defaultValue: 'home',
-    );
+    final String initialScreen = kDebugMode
+        ? const String.fromEnvironment('SCREEN', defaultValue: 'home')
+        : 'home';
     Widget getInitialWidget() {
       switch (initialScreen) {
         case 'game':

@@ -4,6 +4,10 @@
   "type": "module",
   "scripts": {
     "test": "node test-local.mjs",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "test:security": "node --test test-release-security.mjs"
+  },
+  "dependencies": {
+    "jose": "^6.2.12"
   }
 }

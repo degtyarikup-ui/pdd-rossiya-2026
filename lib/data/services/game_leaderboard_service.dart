@@ -56,17 +56,18 @@ class GameLeaderboardService {
   GameLeaderboardService._();
   static final GameLeaderboardService instance = GameLeaderboardService._();
 
-  Map<String, String> get _headers => {
-    'content-type': 'application/json',
-    if (BackendConfig.notifierSecret.isNotEmpty)
-      'x-install-secret': BackendConfig.notifierSecret,
-  };
+  Map<String, String> get _headers => AuthService.instance.serverHeaders;
 
   /// Adds a run's score to this week's total. Silent on any failure: the
   /// game must never depend on the network.
   Future<int?> submitRun(int score) async {
     final user = AuthService.instance.currentUser;
-    if (user == null || score <= 0 || !BackendConfig.hasNotifier) return null;
+    if (user == null ||
+        !AuthService.instance.hasServerSession ||
+        score <= 0 ||
+        !BackendConfig.hasNotifier) {
+      return null;
+    }
     try {
       final resp = await http
           .post(

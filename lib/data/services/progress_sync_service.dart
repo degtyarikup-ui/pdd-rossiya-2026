@@ -28,7 +28,11 @@ class ProgressSyncService {
   /// Запланировать фоновую синхронизацию с debounce (по умолчанию 3 сек после последнего действия).
   void scheduleSync({Duration delay = const Duration(seconds: 3)}) {
     final user = AuthService.instance.currentUser;
-    if (user == null || !BackendConfig.hasNotifier) return;
+    if (user == null ||
+        !AuthService.instance.hasServerSession ||
+        !BackendConfig.hasNotifier) {
+      return;
+    }
     _debounceTimer?.cancel();
     _debounceTimer = Timer(delay, () {
       unawaited(syncWithServer());
@@ -46,7 +50,13 @@ class ProgressSyncService {
     if (_isSyncing) return;
     final user = AuthService.instance.currentUser;
     final ds = _dataSource;
-    if (user == null || ds == null || !BackendConfig.hasNotifier) return;
+    if (user == null ||
+        ds == null ||
+        !AuthService.instance.hasServerSession ||
+        !BackendConfig.hasNotifier) {
+      return;
+    }
+    final revision = AuthService.instance.accountRevision;
 
     _isSyncing = true;
     try {
@@ -75,11 +85,7 @@ class ProgressSyncService {
       final resp = await http
           .post(
             url,
-            headers: {
-              'content-type': 'application/json',
-              if (BackendConfig.notifierSecret.isNotEmpty)
-                'x-install-secret': BackendConfig.notifierSecret,
-            },
+            headers: AuthService.instance.serverHeaders,
             body: jsonEncode({
               'userId': user.id,
               'progress': localSnapshot,
@@ -89,7 +95,8 @@ class ProgressSyncService {
           )
           .timeout(const Duration(seconds: 10));
 
-      if (resp.statusCode == 200) {
+      if (resp.statusCode == 200 &&
+          revision == AuthService.instance.accountRevision) {
         final body = jsonDecode(resp.body) as Map<String, dynamic>;
         if (body['ok'] == true && body['progress'] is Map) {
           final mergedProgress = Map<String, dynamic>.from(
@@ -109,23 +116,24 @@ class ProgressSyncService {
   Future<void> pullFromServer() async {
     final user = AuthService.instance.currentUser;
     final ds = _dataSource;
-    if (user == null || ds == null || !BackendConfig.hasNotifier) return;
+    if (user == null ||
+        ds == null ||
+        !AuthService.instance.hasServerSession ||
+        !BackendConfig.hasNotifier) {
+      return;
+    }
+    final revision = AuthService.instance.accountRevision;
 
     try {
       final url = Uri.parse(
         '${BackendConfig.notifierUrl}/api/user/progress?userId=${Uri.encodeComponent(user.id)}',
       );
       final resp = await http
-          .get(
-            url,
-            headers: {
-              if (BackendConfig.notifierSecret.isNotEmpty)
-                'x-install-secret': BackendConfig.notifierSecret,
-            },
-          )
+          .get(url, headers: AuthService.instance.serverHeaders)
           .timeout(const Duration(seconds: 10));
 
-      if (resp.statusCode == 200) {
+      if (resp.statusCode == 200 &&
+          revision == AuthService.instance.accountRevision) {
         final body = jsonDecode(resp.body) as Map<String, dynamic>;
         if (body['ok'] == true && body['progress'] is Map) {
           final serverProgress = Map<String, dynamic>.from(

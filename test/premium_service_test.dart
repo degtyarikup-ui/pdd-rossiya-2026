@@ -142,36 +142,20 @@ void main() {
       },
     );
 
-    test('Purchasing weekly premium unlocks unlimited access', () async {
-      final service = PremiumService.instance;
-      final success = await service.purchase(PremiumTier.weekly);
-
-      expect(success, true);
-      expect(service.isPremium, true);
-      expect(service.canAccessFeed, true);
-      expect(service.canSendAiMessage, true);
-      expect(service.expiresAt, isNotNull);
-      expect(
-        service.expiresAt!.isAfter(DateTime.now().add(const Duration(days: 6))),
-        true,
-      );
-    });
-
-    test('Purchasing 3-month premium unlocks 90 days access', () async {
-      final service = PremiumService.instance;
-      final success = await service.purchase(PremiumTier.threeMonths);
-
-      expect(success, true);
-      expect(service.isPremium, true);
-      expect(service.canAccessFeed, true);
-      expect(service.canSendAiMessage, true);
-      expect(service.expiresAt, isNotNull);
-      expect(
-        service.expiresAt!.isAfter(
-          DateTime.now().add(const Duration(days: 89)),
-        ),
-        true,
-      );
-    });
+    for (final tier in PremiumTier.values) {
+      test('Unverified $tier purchase cannot activate premium', () async {
+        final service = PremiumService.instance;
+        final success = await service.recordPurchase(
+          tier: tier,
+          price: 'test',
+          store: 'googleplay',
+          productId: 'unverified',
+          purchaseToken: 'unverified',
+        );
+        expect(success, false);
+        expect(service.isPremium, false);
+        expect(service.expiresAt, isNull);
+      });
+    }
   });
 }

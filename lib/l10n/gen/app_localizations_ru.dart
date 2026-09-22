@@ -870,6 +870,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameRevealClose => 'Закрыть';
 
   @override
+  String get feedLockedTitle => 'Лента откроется после входа';
+
+  @override
+  String get feedLockedBody =>
+      'Короткие карточки с правилами, знаками и советами на каждый день. Войдите — и лента, серия занятий и прогресс будут с вами на любом устройстве.';
+
+  @override
+  String get feedSignIn => 'Войти';
+
+  @override
   String get gameSceneTitle => 'Погода и сезон';
 
   @override
@@ -1062,4 +1072,37 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get gameLoadError =>
       'Не удалось продолжить заезд. Перезапустите тренажёр или вернитесь в меню.';
+
+  @override
+  String get authSuccess => 'Вход выполнен успешно';
+
+  @override
+  String get authFailed =>
+      'Вход отменён или возникла ошибка. Попробуйте ещё раз.';
+
+  @override
+  String get authTitle => 'Вход в аккаунт';
+
+  @override
+  String get authDescription =>
+      'Сохраните премиум-доступ и статистику при смене или переустановке устройства';
+
+  @override
+  String get authApple => 'Продолжить с Apple ID';
+
+  @override
+  String get authGoogle => 'Продолжить с Google';
+
+  @override
+  String get authYandex => 'Продолжить с Яндекс ID';
+
+  @override
+  String get authDebug => 'Тестовый вход (debug-сборка)';
+
+  @override
+  String get accountDeleted => 'Аккаунт и данные удалены';
+
+  @override
+  String get accountDeleteFailed =>
+      'Не удалось удалить аккаунт. Проверьте подключение и попробуйте ещё раз.';
 }

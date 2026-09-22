@@ -80,12 +80,12 @@ fi
 if [[ -n "${INSTALL_NOTIFY_SECRET:-}" ]]; then
   NOTIFY_DEFINES+=(--dart-define=INSTALL_NOTIFY_SECRET="$INSTALL_NOTIFY_SECRET")
 else
-  echo "⚠️  secrets/install_notify_secret.txt не найден — сборка пойдёт без ключа приложения,"
-  echo "    и разбор вопросов от ИИ на ней работать не будет."
+  echo "Ошибка: отсутствует ключ приложения; release без ИИ и синхронизации не собираем." >&2
+  exit 1
 fi
 
-# Доп. --dart-define через окружение (напр. тестовая сборка с дебаг-меню:
-#   EXTRA_DEFINES="--dart-define=NOTIF_TEST=true" ./scripts/build.sh rs apk ).
+# Дополнительные параметры сборки через окружение.
+# GAME_DEBUG / NOTIF_TEST / SCREEN не включают отладку в release.
 EXTRA_DEFINES_ARR=()
 if [[ -n "${EXTRA_DEFINES:-}" ]]; then
   # shellcheck disable=SC2206

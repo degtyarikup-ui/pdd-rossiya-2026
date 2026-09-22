@@ -51,8 +51,9 @@ class InstallReporter {
   /// «not used for tracking» (ATT-запрос при этом не нужен). Иначе апдейт
   /// рискует отлететь на модерации за расхождение с декларацией.
   static Future<void> reportIfNeeded() async {
-    if (!_endpoint.startsWith('https://'))
+    if (!_endpoint.startsWith('https://')) {
       return; // не настроено — тихо выходим
+    }
 
     try {
       final prefs = await SharedPreferences.getInstance();

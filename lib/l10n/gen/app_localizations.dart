@@ -1574,6 +1574,24 @@ abstract class AppLocalizations {
   /// **'Закрыть'**
   String get gameRevealClose;
 
+  /// No description provided for @feedLockedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лента откроется после входа'**
+  String get feedLockedTitle;
+
+  /// No description provided for @feedLockedBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'Короткие карточки с правилами, знаками и советами на каждый день. Войдите — и лента, серия занятий и прогресс будут с вами на любом устройстве.'**
+  String get feedLockedBody;
+
+  /// No description provided for @feedSignIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Войти'**
+  String get feedSignIn;
+
   /// No description provided for @gameSceneTitle.
   ///
   /// In ru, this message translates to:
@@ -1903,6 +1921,66 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не удалось продолжить заезд. Перезапустите тренажёр или вернитесь в меню.'**
   String get gameLoadError;
+
+  /// No description provided for @authSuccess.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход выполнен успешно'**
+  String get authSuccess;
+
+  /// No description provided for @authFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход отменён или возникла ошибка. Попробуйте ещё раз.'**
+  String get authFailed;
+
+  /// No description provided for @authTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход в аккаунт'**
+  String get authTitle;
+
+  /// No description provided for @authDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сохраните премиум-доступ и статистику при смене или переустановке устройства'**
+  String get authDescription;
+
+  /// No description provided for @authApple.
+  ///
+  /// In ru, this message translates to:
+  /// **'Продолжить с Apple ID'**
+  String get authApple;
+
+  /// No description provided for @authGoogle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Продолжить с Google'**
+  String get authGoogle;
+
+  /// No description provided for @authYandex.
+  ///
+  /// In ru, this message translates to:
+  /// **'Продолжить с Яндекс ID'**
+  String get authYandex;
+
+  /// No description provided for @authDebug.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тестовый вход (debug-сборка)'**
+  String get authDebug;
+
+  /// No description provided for @accountDeleted.
+  ///
+  /// In ru, this message translates to:
+  /// **'Аккаунт и данные удалены'**
+  String get accountDeleted;
+
+  /// No description provided for @accountDeleteFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось удалить аккаунт. Проверьте подключение и попробуйте ещё раз.'**
+  String get accountDeleteFailed;
 }
 
 class _AppLocalizationsDelegate

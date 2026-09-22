@@ -24,6 +24,7 @@ import 'package:pdd_app/presentation/screens/settings/settings_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/screens/topics/topics_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_granted_dialog.dart';
+import 'package:pdd_app/presentation/widgets/sign_in_required_view.dart';
 import 'package:pdd_app/presentation/widgets/streak_celebration_dialog.dart';
 import 'package:pdd_app/presentation/widgets/continue_session_card.dart';
 import 'package:pdd_app/presentation/widgets/exam_hero_card.dart';
@@ -80,7 +81,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   List<Widget> get _screens => [
     const _HomeTab(),
     GameScreen(onExit: () => setState(() => _currentIndex = 0)),
-    const FeedScreen(),
+    if (ref.watch(isAuthenticatedProvider))
+      const FeedScreen()
+    else
+      SignInRequiredView(
+        icon: Icons.style_rounded,
+        title: appL10n.feedLockedTitle,
+        body: appL10n.feedLockedBody,
+      ),
     const SettingsScreen(),
   ];
 

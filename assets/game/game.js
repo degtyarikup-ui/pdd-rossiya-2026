@@ -91,6 +91,8 @@
   state.ambient = [];
   state.occluders = [];
   state.district = 0;
+  // park / homes / boulevard / high-rise blocks
+  const DISTRICTS = 4;
   state.viewportInsets = { top: 64, bottom: 150 };
   state.labels = { player: 'ВЫ' };
   const signTextureCache = new Map();
@@ -4824,6 +4826,175 @@
         "name": "Уступите дорогу"
       }
     ]
+  },
+  {
+    "id": "ticket_18_8",
+    "ticket": "Билет 18 · Вопрос 8",
+    "type": "crossroad_one_way",
+    "title": "Вам можно продолжить движение:",
+    "explanation": "Стрелка на знаке 5.7.1 «Выезд на дорогу с односторонним движением» указывает направление движения на дороге с односторонним движением. Пересечение дороги не запрещается (траектория «В»). Запрещается поворот налево, т.е. движение во встречном направлении. При повороте направо транспортное средство должно двигаться по возможности ближе к правому краю проезжей части. У Вас такая возможность есть. Можете повернуть по траектории «А».(Пункт 8.6 ПДД, «Дорожные знаки»)",
+    "pddRule": "п. 8.6",
+    "options": [
+      "Только по траектории А",
+      "По траекториям А или В",
+      "По любой траектории из указанных"
+    ],
+    "correctAnswerIndex": 1,
+    "legend": [],
+    "actorsConfig": [],
+    "trafficLights": null,
+    "signs": [
+      {
+        "code": "5.7.1",
+        "name": "Выезд на дорогу с односторонним движением"
+      }
+    ],
+    "oneWay": "to_right",
+    "trajectories": [
+      {
+        "label": "А",
+        "points": [
+          [
+            1.8,
+            -9
+          ],
+          [
+            1.8,
+            -5
+          ],
+          [
+            3.2,
+            -2.9
+          ],
+          [
+            6,
+            -2.1
+          ],
+          [
+            12,
+            -2.1
+          ]
+        ]
+      },
+      {
+        "label": "Б",
+        "points": [
+          [
+            1.4,
+            -9
+          ],
+          [
+            1.4,
+            -4
+          ],
+          [
+            3.4,
+            0.6
+          ],
+          [
+            6.5,
+            2.1
+          ],
+          [
+            12,
+            2.1
+          ]
+        ]
+      },
+      {
+        "label": "В",
+        "points": [
+          [
+            0.9,
+            -9
+          ],
+          [
+            0.9,
+            0
+          ],
+          [
+            0.9,
+            9
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ticket_14_8",
+    "ticket": "Билет 14 · Вопрос 8",
+    "type": "crossroad_one_way",
+    "title": "По какой траектории Вам разрешается выполнить поворот налево?",
+    "explanation": "Согласно знаку 5.7.2 «Выезд на дорогу с односторонним движением» на данном перекрёстке можно продолжить движение прямо, налево и совершить разворот. На дороге с односторонним движением можете двигаться по любой полосе. Поэтому Вам разрешается движение по любой из указанных траекторий.(«Дорожные знаки», пункт 8.6 ПДД)",
+    "pddRule": "п. 8.6",
+    "options": [
+      "Только по А",
+      "Только по Б",
+      "По любой из указанных"
+    ],
+    "correctAnswerIndex": 2,
+    "legend": [],
+    "actorsConfig": [],
+    "trafficLights": null,
+    "signs": [
+      {
+        "code": "5.7.2",
+        "name": "Выезд на дорогу с односторонним движением"
+      }
+    ],
+    "oneWay": "to_left",
+    "trajectories": [
+      {
+        "label": "А",
+        "points": [
+          [
+            1.4,
+            -9
+          ],
+          [
+            1.4,
+            -5
+          ],
+          [
+            -0.5,
+            -2.6
+          ],
+          [
+            -5,
+            -2.1
+          ],
+          [
+            -12,
+            -2.1
+          ]
+        ]
+      },
+      {
+        "label": "Б",
+        "points": [
+          [
+            1.8,
+            -9
+          ],
+          [
+            1.8,
+            -3
+          ],
+          [
+            0,
+            1.4
+          ],
+          [
+            -5,
+            2.1
+          ],
+          [
+            -12,
+            2.1
+          ]
+        ]
+      }
+    ]
   }
 ];
 
@@ -5803,8 +5974,9 @@
       signTextureCache.set(code, texture);
     }
     // A transparent exact SVG face, no nested coplanar coloured primitives.
+    const aspect = (window.PDD_SIGN_ASPECT || {})[code];
     const face = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.6, 1.6),
+      aspect ? new THREE.PlaneGeometry(2.4, 2.4 / aspect) : new THREE.PlaneGeometry(1.6, 1.6),
       new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.12, side: THREE.DoubleSide })
     );
     face.position.set(0, poleHeight - 0.25, -0.065);
@@ -6239,12 +6411,12 @@
     seg.userData.district = district;
     for (let z = startZ + 8, row = 0; z < startZ + length - 8; z += 20, row++) {
       const t = THREE.MathUtils.smoothstep((z - startZ) / length, 0.2, 0.8);
-      const next = (district + 1) % 3;
+      const next = (district + 1) % DISTRICTS;
       const style = row % 5 / 4 < t ? next : district;
       for (const side of [-1, 1]) {
         const vergeGeometry = new THREE.PlaneGeometry(22 + SEAM, 20 + SEAM);
-        const verge = new THREE.Mesh(vergeGeometry, new THREE.MeshLambertMaterial({ color: season().verge[style] }));
-        verge.material.userData.seasonal = 'verge' + style;
+        const verge = new THREE.Mesh(vergeGeometry, new THREE.MeshLambertMaterial({ color: season().verge[Math.min(style, 2)] }));
+        verge.material.userData.seasonal = 'verge' + Math.min(style, 2);
         verge.rotation.x = -Math.PI / 2; verge.position.set(side * 18.4, -0.015, z);
         verge.receiveShadow = true; seg.add(verge);
         // The far background beyond the verge (x 30-70): forest, distant
@@ -6268,6 +6440,11 @@
             house.rotation.y = Math.random() * 0.6 - 0.3; far.push(house);
           }
           for (let i = 0; i < 3; i++) { const tree = createTree('round'); tree.position.set(side * (32 + Math.random() * 16), 0, z - 8 + Math.random() * 16); far.push(tree); }
+        } else if (style === 3) {
+          for (let i = 0; i < 2; i++) {
+            const tower = createBuilding(14 + Math.random() * 4, 30 + Math.random() * 18, 12, 2);
+            tower.position.set(side * (36 + i * 16 + Math.random() * 3), 0, z - 5 + Math.random() * 10); far.push(tower);
+          }
         } else {
           for (let i = 0; i < 2; i++) {
             const block = createBuilding(10 + Math.random() * 4, 12 + Math.random() * 12, 9 + Math.random() * 3, 2);
@@ -6281,7 +6458,7 @@
         bakeGroups(far).forEach(m => seg.add(m));
         // Rows are 20 m apart; a building of depth D leaves a gap of 20 - D
         // where trees, hedges and parked cars go (never under a facade).
-        const depth = style === 0 ? 0 : style === 1 ? 6 + Math.random() * 2 : 8 + Math.random() * 2;
+        const depth = style === 0 ? 0 : style === 1 ? 6 + Math.random() * 2 : style === 3 ? 11 : 8 + Math.random() * 2;
         const gapZ = z + depth / 2 + (20 - depth) / 2;
         // The chase camera looks down +Z: scenery must sit in FRONT of a facade
         // (smaller z) to stay visible, never right behind one.
@@ -6289,11 +6466,13 @@
         // pitch, so trees stand just in front of the NEXT facade; on the boulevard
         // (tall facades) they are street trees on the outer half of the pavement.
         const tree = createTree(); tree.position.set(side * 8.6, 0, style === 0 ? z - 3 : gapZ + 3.5);
-        tree.scale.setScalar(style === 2 ? 0.8 : 1); seg.add(tree);
+        tree.scale.setScalar(style >= 2 ? 0.8 : 1); seg.add(tree);
         if (style !== 0) {
-          const floors = style === 1 ? (Math.random() < 0.7 ? 1 : 2) : 3 + Math.floor(Math.random() * 3);
-          const building = createBuilding(style === 1 ? 6 + Math.random() * 2 : 10 + Math.random() * 3, floors * 3 + 1.5, depth, style);
-          building.position.set(side * (style === 1 ? 11.5 : 13.5), 0, z); seg.add(building);
+          // High-rise blocks: 9–16 storey towers set back behind a lawn strip.
+          const floors = style === 1 ? (Math.random() < 0.7 ? 1 : 2) : style === 3 ? 9 + Math.floor(Math.random() * 8) : 3 + Math.floor(Math.random() * 3);
+          const width = style === 1 ? 6 + Math.random() * 2 : style === 3 ? 13 + Math.random() * 3 : 10 + Math.random() * 3;
+          const building = createBuilding(width, floors * 3 + 1.5, depth, style === 3 ? 2 : style);
+          building.position.set(side * (style === 1 ? 11.5 : style === 3 ? 18.5 : 13.5), 0, z); seg.add(building);
           state.occluders.push(building);
         }
         // Street furniture and district flavour, all outside the carriageway.
@@ -6318,6 +6497,10 @@
           } else {
             const hedge = createBush(); hedge.scale.set(1.2, 0.9, 3); hedge.position.set(side * 12.8, 0.5, gapZ - 0.5); seg.add(hedge);
           }
+        } else if (style === 3) {
+          // Courtyards between towers: a parked car and a hedge.
+          if (row % 2 === 0) { const parked = createParkedCar(); parked.position.set(side * 10.4, 0, gapZ - 0.5); parked.rotation.y = side * Math.PI / 2; seg.add(parked); }
+          else { const hedge = createBush(); hedge.scale.set(1, 0.8, 2.6); hedge.position.set(side * 10.4, 0.4, gapZ - 0.5); seg.add(hedge); }
         } else {
           // Boulevard: kiosk or billboard between the tall facades.
           if (row % 3 === 0) { const kiosk = createKiosk(); kiosk.position.set(side * 9.4, 0, gapZ - 3.2); kiosk.rotation.y = side > 0 ? -Math.PI / 2 : Math.PI / 2; seg.add(kiosk); }
@@ -6393,7 +6576,8 @@
       actorMesh.scale.set(0.85, 0.85, 0.85);
       badgeHeight = 3.2;
     } else if (cfg.type === 'tractor') {
-      actorMesh = createTractor(cfg.color);
+      // Tractors come in the usual farm colours, not only the scenario's.
+      actorMesh = createTractor([0xF2B233, 0x2F6FD6, 0xD63A2F, 0x3E9B4F][Math.floor(Math.random() * 4)]);
       badgeHeight = 3.6;
     } else if (cfg.type === 'truck') {
       actorMesh = createTruck(cfg.color);
@@ -6466,7 +6650,9 @@
     actorMesh.add(badge);
     actorMesh.userData.badge = badge;
     actorMesh.traverse(obj => { obj.userData.actor = true; });
-    if (cfg.blinker || cfg.maneuver) {
+    // Every motor vehicle has indicators: junction traffic signals its
+    // targetAction exactly as the ticket picture shows it.
+    if (cfg.blinker || cfg.maneuver || !['pedestrian', 'cyclist'].includes(cfg.type)) {
       // Turn signals readable from the chase camera, on both sides; which side
       // blinks (if any) follows the actor's manoeuvre plan.
       const k = actorMesh.scale.x;
@@ -6571,8 +6757,14 @@
       line.userData.roadMarking = true;
       seg.add(line);
     }
+    // One-way cross street (situation.oneWay = 'to_right' | 'to_left', as
+    // seen by the player): no solid centre line 1.1 on it, only the lane
+    // divider 1.5 between two lanes of the same direction.
+    const oneWay = situation.oneWay || null;
     for (const [yaw, end] of [[0, 26], [Math.PI, 26], [Math.PI / 2, 35], [-Math.PI / 2, 35]]) {
+      const crossArm = Math.abs(Math.sin(yaw)) > 0.5;
       for (const edge of [-1, 1]) approachLine(edge * (roadWidth / 2 - 0.25), 7.6, end, 0.15, yaw);
+      if (oneWay && crossArm) { for (let z = 8; z < end; z += 5) approachLine(0, z, Math.min(z + 2, end), 0.15, yaw); continue; }
       approachLine(0, 7.6, 16, 0.18, yaw);
       // Transition back to the same 2m / 3m dashed centre as the open road.
       for (let z = 18; z < end; z += 5) approachLine(0, z, Math.min(z + 2, end), 0.18, yaw);
@@ -6637,6 +6829,48 @@
         seg.add(sign);
       });
     }
+
+    if (oneWay) {
+      // 3.1 "No entry" where the one-way street is left against its flow:
+      // on the entering driver's right, facing the junction.
+      const sx = oneWay === 'to_right' ? -1 : 1;
+      const noEntry = createRoadSign('3.1');
+      noEntry.position.set(sx * (roadWidth / 2 + 3.5), 0, centerZ + (sx < 0 ? roadWidth / 2 + 1.0 : -(roadWidth / 2 + 1.0)));
+      noEntry.rotation.y = sx < 0 ? -Math.PI / 2 : Math.PI / 2;
+      seg.add(noEntry);
+    }
+    // Painted trajectories with letters, exactly like the ticket picture
+    // (situation.trajectories: [{ label, points: [[x, z], ...] }] in the
+    // factory frame, x = driver's right, z from the junction centre).
+    (situation.trajectories || []).forEach(t => {
+      const pts = t.points.map(([x, z]) => new THREE.Vector3(-x, 0.045, centerZ + z)); // pre-mirrored: baked geometry
+      const path = curve(pts), n = 48, width = 0.55;
+      const verts = [], idx = [];
+      for (let i = 0; i <= n; i++) {
+        const u = i / n, p = path.getPointAt(Math.min(u, 0.9)), tan = path.getTangentAt(Math.min(u, 0.9));
+        const side = new THREE.Vector3(-tan.z, 0, tan.x).multiplyScalar(width / 2);
+        if (u <= 0.9) { verts.push(p.x + side.x, p.y, p.z + side.z, p.x - side.x, p.y, p.z - side.z); }
+      }
+      const rows = verts.length / 6;
+      for (let i = 0; i < rows - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+      // Arrow head.
+      const tip = path.getPointAt(1), base = path.getPointAt(0.9), dir = tip.clone().sub(base).normalize();
+      const across = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(width * 1.3);
+      const b = rows * 2;
+      verts.push(base.x + across.x, 0.045, base.z + across.z, base.x - across.x, 0.045, base.z - across.z, tip.x, 0.045, tip.z);
+      idx.push(b, b + 1, b + 2);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3)); geo.setIndex(idx); geo.computeVertexNormals();
+      const ribbon = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));
+      ribbon.renderOrder = 5; ribbon.userData.roadMarking = true;
+      seg.add(ribbon);
+      // The letter sits over the arrow where it is still on screen.
+      const label = createActorBadge(t.label, '#20252A');
+      const at = path.getPointAt(0.72);
+      label.position.set(-at.x, 1.2, at.z); // child position: mirrored with the segment
+      label.scale.multiplyScalar(1.5);
+      seg.add(label);
+    });
 
     // Place Actors
     const actorsInScene = [];
@@ -6746,7 +6980,7 @@
       ['left', Math.PI / 2, crossStreetLength / 2, centerZ],
       ['right', -Math.PI / 2, -crossStreetLength / 2, centerZ],
     ]) {
-      const extension = buildStraightSegment(0, 200, true, (state.district + 1) % 3);
+      const extension = buildStraightSegment(0, 200, true, (state.district + 1) % DISTRICTS);
       extension.rotation.y = yaw;
       extension.position.set(x, 0, z);
       seg.add(extension);
@@ -6951,7 +7185,7 @@
 
     const ends = corridorWorldEnds();
     const startZ = Math.max(...ends.map(p => p.z));
-    state.district = (state.district + 1) % 3;
+    state.district = (state.district + 1) % DISTRICTS;
     buildIntersectionSegment(startZ, nextSituation(), currentCorridor);
     nextSegmentZ = startZ + 52;
     refreshRoadBounds();
@@ -7504,7 +7738,7 @@
     const trailing = r.motions.filter(a => !r.yielding.includes(a));
     trailing.forEach(a => { a.waitsForPlayer = false; });
     const id = r.intersection.situation.id;
-    state.district = (state.district + 1) % 3;
+    state.district = (state.district + 1) % DISTRICTS;
     r.intersection.guide.visible = false;
     state.intersections = state.intersections.filter(i => i !== r.intersection);
     const outgoingPreview = r.intersection.previews[r.exitDirection || r.spec.maneuver];
@@ -7750,12 +7984,10 @@
     // A proper pavement behind the pocket (2.4 m wide, with ramps at both
     // ends) — walkers move onto it early and leave it late.
     const pave = new THREE.MeshLambertMaterial({ color: season().sidewalk });
-    const path = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.18, 44), pave);
+    // Straight and square: it runs right along the outer edge of the
+    // pavement (x −7.3…−9.7), so both ends join it without angled ramps.
+    const path = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.18, 50), pave);
     path.position.set(-8.5, 0.09, bayZ); group.add(path);
-    [-1, 1].forEach(end => {
-      const ramp = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.18, 6), pave);
-      ramp.position.set(-7.6, 0.09, bayZ + end * 24.5); ramp.rotation.y = end * 0.45; group.add(ramp);
-    });
     clearRoadside(bayZ);
     // Shelter behind the path, bench, and the stop sign at the head of the bay.
     const dark = sceneryMat(0x3B4450), glassMat = new THREE.MeshLambertMaterial({ color: 0x9DB8C6, transparent: true, opacity: 0.55 });
@@ -7766,15 +7998,14 @@
     // 5.16 stands at the entry to the pocket, on the road side of the path.
     addRoadSign(group, '5.16', bayZ - 17, 'right', null, -1.9);
     refreshRoadBounds();
-    // The bus: ahead in the player's lane, pulls in, waits, pulls out.
+    // The bus is already standing in the bay when it comes into view (it
+    // used to be spawned in the lane ahead, sometimes right in front of the
+    // player); it pulls out once the player is close.
     const V = (x, z) => new THREE.Vector3(x, 0, z);
-    const p = V(-1.8, bayZ - 46);
+    const p = V(-5.5, bayZ - 2);
     const cfg = { id: 'road_bus', type: 'bus', name: 'Автобус', color: '#FFA53C' };
-    const bus = addRoadActor(group, cfg, p, 0, [p, V(-1.8, bayZ - 26), V(-5.5, bayZ - 8), V(-5.5, bayZ + 4), V(-2.6, bayZ + 20), V(-1.8, bayZ + 40), V(-1.8, bayZ + 300)], 9);
-    // Stop roughly at the middle of the bay: find the path distance there.
-    let best = 0, bestD = 1e9;
-    for (let d = 0; d < 120; d += 0.5) { const q = bus.path.getPointAt(Math.min(1, d / bus.length)); const dd = Math.abs(q.z - bayZ) + Math.abs(q.x + 5.5); if (dd < bestD) { bestD = dd; best = d; } }
-    bus.stopAtDistance = best; bus.stopFor = 3.5;
+    const bus = addRoadActor(group, cfg, p, 0, [p, V(-5.5, bayZ + 4), V(-2.6, bayZ + 20), V(-1.8, bayZ + 40), V(-1.8, bayZ + 300)], 9);
+    bus.stopAtDistance = 0; bus.stopFor = Infinity;
     ev.actors.push(bus);
     state.busBays.push({ mesh: bay, center: new THREE.Vector3(-5.5, 0, bayZ) });
     return ev;
@@ -7791,8 +8022,9 @@
       if (state.ambient.some(a => a.mesh === o)) return;
       const box = new THREE.Box3().setFromObject(o);
       if (box.isEmpty()) return;
-      const c = box.getCenter(new THREE.Vector3());
-      if (c.x < -7 && Math.abs(c.z - bayZ) < 26 && box.max.y > 0.3) doomed.push(o);
+      // Anything that reaches into the lot (path, shelter and a margin),
+      // not only objects centred there: a long house must not cover the path.
+      if (box.max.x > -13 && box.min.x < -7 && box.max.z > bayZ - 30 && box.min.z < bayZ + 30 && box.max.y > 0.3) doomed.push(o);
     });
     doomed.forEach(o => { seg.remove(o); state.occluders = state.occluders.filter(b => b !== o); });
   }
@@ -7933,6 +8165,9 @@
       const bus = ev.actors[0];
       if (ev.phase === 'approach' && z > ev.bayZ - 120) { ev.phase = 'manual'; releaseRoadActors(ev); }
       if (bus && !bus.done && bus.stopAtDistance !== undefined) {
+        // Doors close and it signals out a moment after the player comes near.
+        if (z > ev.bayZ - 35 && bus.stopFor > 1.8) bus.stopFor = 1.8;
+        bus.signalPlan = bus.stopFor > 0 ? (z > ev.bayZ - 35 ? [{ from: 0, to: 30, side: 'left' }] : null) : [{ from: 0, to: 30, side: 'left' }];
         if (bus.distance >= bus.stopAtDistance && bus.stopFor > 0) {
           // Dwell with the doors open, then merge back at full speed.
           bus.stopFor -= dt; bus.maxSpeed = 0; bus.speed = 0;

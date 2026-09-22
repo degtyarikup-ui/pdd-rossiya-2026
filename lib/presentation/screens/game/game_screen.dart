@@ -5,6 +5,8 @@ import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/models/question.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -75,6 +77,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   bool _fuelLoaded = false;
   Timer? _fuelTimer;
   int _correctBurst = 0;
+  List<Question>? _abQuestions;
   Offset _burstOrigin = const Offset(0.5, 0.72);
   Timer? _burstTimer;
   // First session: clear weather in the engine and a "this is the gas" hint
@@ -203,9 +206,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
     }
   }
 
-  // Long-press on the garage button: weather and season (an unlisted extra).
+  // Debug builds only: long-press opens the weather/season controls.
   Future<void> _openDebug() async {
-    if (!_configured) return;
+    if (!kDebugMode || !_configured) return;
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -519,6 +522,34 @@ class _GameScreenState extends ConsumerState<GameScreen>
     }
   }
 
+  /// A wrong answer in the game lands in «Ошибки» as the very ticket
+  /// question the road situation was built from («Билет N · Вопрос M»).
+  Future<void> _recordMistake(GameSituation situation, int? selected) async {
+    final m = RegExp(r'(\d+)\D+(\d+)').firstMatch(situation.ticket);
+    if (m == null) return;
+    final ticket = int.parse(m.group(1)!), number = int.parse(m.group(2)!);
+    try {
+      _abQuestions ??= await ref
+          .read(questionsDataSourceProvider)
+          .loadTickets(TicketCategory.ab);
+      final inTicket = _abQuestions!
+          .where((q) => q.ticketNumber == ticket)
+          .toList();
+      if (number < 1 || number > inTicket.length) return;
+      await ref
+          .read(progressDataSourceProvider)
+          .saveAnswer(
+            questionId: inTicket[number - 1].id,
+            isCorrect: false,
+            selectedAnswerIndex: selected ?? -1,
+            category: TicketCategory.ab,
+          );
+      ref.read(appDataRefreshProvider.notifier).state++;
+    } catch (e) {
+      debugPrint('Game mistake not saved: $e');
+    }
+  }
+
   void _selectCar(GameCar car) {
     setState(() {
       _vehicleId = car.id;
@@ -703,6 +734,14 @@ class _GameScreenState extends ConsumerState<GameScreen>
         _scheduleFuelTick();
       }
       if (previous?.phase == GamePhase.situation &&
+          next.phase != GamePhase.situation &&
+          next.isLastAnswerCorrect == false &&
+          previous?.currentSituation != null) {
+        unawaited(
+          _recordMistake(previous!.currentSituation!, next.selectedAnswerIndex),
+        );
+      }
+      if (previous?.phase == GamePhase.situation &&
           next.phase == GamePhase.resolving &&
           next.isLastAnswerCorrect == true) {
         // A correct answer: confetti rises from the top edge of the question
@@ -718,7 +757,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
         setState(() => _correctBurst++);
         unawaited(_countCorrect());
         _burstTimer?.cancel();
-        _burstTimer = Timer(const Duration(milliseconds: 2900), () {
+        _burstTimer = Timer(const Duration(milliseconds: 1600), () {
           if (mounted) setState(() => _correctBurst = 0);
         });
       }
@@ -904,7 +943,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     onGarage: gameState.controlsEnabled ? _openGarage : null,
                     showGarage:
                         GameGarageService.instance.cars.length > 1 || premium,
-                    onGarageLongPress: _openDebug,
+                    onGarageLongPress: kDebugMode ? _openDebug : null,
                     onLeaderboard: gameState.controlsEnabled
                         ? _openLeaderboard
                         : null,
@@ -932,7 +971,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
             if (_correctBurst > 0)
               Positioned.fill(
                 child: IgnorePointer(
-                  child: ConfettiBurst(
+                  child: _CorrectCheck(
                     key: ValueKey(_correctBurst),
                     origin: _burstOrigin,
                   ),
@@ -953,17 +992,17 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   children: [
                     // The card slides down out of view once answered.
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 380),
+                      duration: const Duration(milliseconds: 420),
                       switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      transitionBuilder: (child, animation) => ClipRect(
-                        child: SlideTransition(
-                          position: Tween(
-                            begin: const Offset(0, 1),
-                            end: Offset.zero,
-                          ).animate(animation),
-                          child: child,
-                        ),
+                      switchOutCurve: Curves.easeInOutCubic,
+                      // No clipping: the card slides down past the bottom
+                      // edge of the game area and disappears under the menu.
+                      transitionBuilder: (child, animation) => SlideTransition(
+                        position: Tween(
+                          begin: const Offset(0, 1.15),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
                       ),
                       layoutBuilder: (current, previous) => Stack(
                         alignment: Alignment.bottomCenter,
@@ -1261,6 +1300,70 @@ class _LockCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A correct answer: a bright green check pops above the question card as
+/// it slides away, holds for a moment and fades.
+class _CorrectCheck extends StatefulWidget {
+  final Offset origin;
+  const _CorrectCheck({super.key, required this.origin});
+
+  @override
+  State<_CorrectCheck> createState() => _CorrectCheckState();
+}
+
+class _CorrectCheckState extends State<_CorrectCheck>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1500),
+  )..forward();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        final t = _c.value;
+        final pop = Curves.elasticOut.transform((t / 0.45).clamp(0.0, 1.0));
+        final fade = t < 0.75 ? 1.0 : 1 - (t - 0.75) / 0.25;
+        final rise = Curves.easeOut.transform(t) * 40;
+        return Align(
+          alignment: Alignment(0, (widget.origin.dy * 2 - 1) - 0.12),
+          child: Transform.translate(
+            offset: Offset(0, -rise),
+            child: Opacity(
+              opacity: fade.clamp(0.0, 1.0),
+              child: Transform.scale(
+                scale: 0.4 + 0.6 * pop,
+                child: Container(
+                  width: 92,
+                  height: 92,
+                  decoration: BoxDecoration(
+                    color: colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 5),
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    size: 60,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

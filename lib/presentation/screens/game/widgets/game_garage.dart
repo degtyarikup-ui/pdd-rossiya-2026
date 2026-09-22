@@ -280,14 +280,27 @@ class _GameCarThumbnailState extends State<GameCarThumbnail> {
     if (_bytes == null && widget.loader != null) _load();
   }
 
+  @override
+  void didUpdateWidget(GameCarThumbnail old) {
+    super.didUpdateWidget(old);
+    // Same element, another car (e.g. the HUD button after a pick): drop the
+    // old picture instead of showing it until something else rebuilds.
+    if (old.car.key != widget.car.key) {
+      _bytes = widget.cache[widget.car.key];
+      if (_bytes == null && widget.loader != null) _load();
+    }
+  }
+
   Future<void> _load() async {
+    final car = widget.car;
     try {
-      final url = await widget.loader!(widget.car.id, widget.car.paint);
+      final url = await widget.loader!(car.id, car.paint);
       final comma = url.indexOf(',');
       if (comma < 0) return;
       final bytes = base64Decode(url.substring(comma + 1));
-      widget.cache[widget.car.key] = bytes;
-      if (mounted) setState(() => _bytes = bytes);
+      widget.cache[car.key] = bytes;
+      // A slower render of a previous car must not overwrite the current one.
+      if (mounted && widget.car.key == car.key) setState(() => _bytes = bytes);
     } catch (_) {
       /* Keep the fallback picture. */
     }

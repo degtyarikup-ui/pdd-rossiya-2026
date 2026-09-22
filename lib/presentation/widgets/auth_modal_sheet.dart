@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -39,25 +40,17 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
           Navigator.of(context).pop(true);
           AppToast.show(
             context,
-            'Вход выполнен успешно',
+            appL10n.authSuccess,
             type: AppToastType.success,
           );
         } else {
-          AppToast.show(
-            context,
-            'Вход отменен или возникла ошибка',
-            type: AppToastType.error,
-          );
+          AppToast.show(context, appL10n.authFailed, type: AppToastType.error);
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        AppToast.show(
-          context,
-          'Ошибка авторизации: $e',
-          type: AppToastType.error,
-        );
+        AppToast.show(context, appL10n.authFailed, type: AppToastType.error);
       }
     }
   }
@@ -81,84 +74,91 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
             AppDimensions.screenPadding,
             24,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Close Button
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  icon: Icon(Icons.close_rounded, color: colors.secondaryText),
-                  onPressed: () => Navigator.of(context).pop(false),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Close Button
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: colors.secondaryText,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(false),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
+                const SizedBox(height: 4),
 
-              Text(
-                'Вход в аккаунт',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: colors.primaryText,
+                Text(
+                  appL10n.authTitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: colors.primaryText,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Сохраните премиум-доступ и статистику при смене или переустановке устройства',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  height: 1.35,
-                  color: colors.secondaryText,
+                const SizedBox(height: 6),
+                Text(
+                  appL10n.authDescription,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    height: 1.35,
+                    color: colors.secondaryText,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // OAuth Buttons
-              if (Theme.of(context).platform == TargetPlatform.iOS) ...[
+                // OAuth Buttons
+                if (Theme.of(context).platform == TargetPlatform.iOS) ...[
+                  _buildAuthButton(
+                    svgAsset: 'assets/icons/auth/apple.svg',
+                    svgColor: colors.primaryText,
+                    label: appL10n.authApple,
+                    onTap: () =>
+                        _handleAuth(AuthService.instance.signInWithApple),
+                    colors: colors,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 10),
+                ],
+
                 _buildAuthButton(
-                  svgAsset: 'assets/icons/auth/apple.svg',
-                  svgColor: colors.primaryText,
-                  label: 'Продолжить с Apple ID',
+                  svgAsset: 'assets/icons/auth/google.svg',
+                  label: appL10n.authGoogle,
                   onTap: () =>
-                      _handleAuth(AuthService.instance.signInWithApple),
+                      _handleAuth(AuthService.instance.signInWithGoogle),
                   colors: colors,
                   isDark: isDark,
                 ),
                 const SizedBox(height: 10),
-              ],
 
-              _buildAuthButton(
-                svgAsset: 'assets/icons/auth/google.svg',
-                label: 'Продолжить с Google',
-                onTap: () => _handleAuth(AuthService.instance.signInWithGoogle),
-                colors: colors,
-                isDark: isDark,
-              ),
-              const SizedBox(height: 10),
-
-              _buildAuthButton(
-                svgAsset: 'assets/icons/auth/yandex.svg',
-                label: 'Продолжить с Яндекс ID',
-                onTap: () => _handleAuth(
-                  () => AuthService.instance.signInWithYandex(context),
+                _buildAuthButton(
+                  svgAsset: 'assets/icons/auth/yandex.svg',
+                  label: appL10n.authYandex,
+                  onTap: () => _handleAuth(
+                    () => AuthService.instance.signInWithYandex(context),
+                  ),
+                  colors: colors,
+                  isDark: isDark,
                 ),
-                colors: colors,
-                isDark: isDark,
-              ),
-              if (AuthService.debugSignInAvailable) ...[
-                const SizedBox(height: 10),
-                TextButton.icon(
-                  onPressed: () =>
-                      _handleAuth(AuthService.instance.signInDebug),
-                  icon: const Icon(Icons.bug_report_outlined),
-                  label: const Text('Тестовый вход (dev-сборка)'),
-                ),
+                if (AuthService.debugSignInAvailable) ...[
+                  const SizedBox(height: 10),
+                  TextButton.icon(
+                    onPressed: _isLoading
+                        ? null
+                        : () => _handleAuth(AuthService.instance.signInDebug),
+                    icon: const Icon(Icons.bug_report_outlined),
+                    label: Text(appL10n.authDebug),
+                  ),
+                ],
+                const SizedBox(height: 12),
               ],
-              const SizedBox(height: 12),
-            ],
+            ),
           ),
         ),
       ),
@@ -194,12 +194,15 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                   : null,
             ),
             const SizedBox(width: 12),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: colors.primaryText,
+            Flexible(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: colors.primaryText,
+                ),
               ),
             ),
           ],
