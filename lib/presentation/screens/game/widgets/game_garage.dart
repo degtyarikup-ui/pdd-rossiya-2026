@@ -90,211 +90,306 @@ class GameGarage extends StatefulWidget {
 }
 
 class _GameGarageState extends State<GameGarage> {
-  // Premium: every model is open, in whichever paint is picked below.
+  /// The model whose colours are being chosen; null shows the model list.
+  String? _model;
   late String _paint = widget.selected.paint;
-  List<GameCar> get _items => widget.premium
-      ? [for (final id in gameVehicleIds) GameCar(id, _paint)]
-      : widget.cars;
+
+  // Each model's own factory paint, so a premium list is not seven clones.
+  static const _defaultPaint = {
+    'hatch': 'red',
+    'sedan': 'blue',
+    'coupe': 'black',
+    'wagon': 'green',
+    'suv': 'green',
+    'pickup': 'sand',
+    'cyber': 'gold',
+  };
+
+  List<String> get _models => widget.premium
+      ? gameVehicleIds
+      : [
+          for (final id in gameVehicleIds)
+            if (widget.cars.any((c) => c.id == id)) id,
+        ];
+
+  List<String> _paintsOf(String id) => widget.premium
+      ? gamePaintColors.keys.toList()
+      : [
+          for (final c in widget.cars)
+            if (c.id == id) c.paint,
+        ];
+
+  /// How a model appears in the list: in the paint being driven, else its
+  /// factory paint (premium) or the first paint owned.
+  GameCar _listCar(String id) {
+    if (widget.selected.id == id) return widget.selected;
+    final paints = _paintsOf(id);
+    final preferred = _defaultPaint[id];
+    return GameCar(id, paints.contains(preferred) ? preferred! : paints.first);
+  }
+
+  void _openModel(String id) {
+    HapticFeedbackHelper.select();
+    final paints = _paintsOf(id);
+    // A single colour: nothing to choose — take the car right away.
+    if (paints.length == 1) {
+      Navigator.pop(context, GameCar(id, paints.single));
+      return;
+    }
+    setState(() {
+      _model = id;
+      _paint = _listCar(id).paint;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final model = _model;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    appL10n.gameGarage,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: colors.primaryText,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                  onPressed: () {
-                    HapticFeedbackHelper.tap();
-                    Navigator.pop(context);
-                  },
-                  icon: const Icon(Icons.close_rounded),
-                ),
-              ],
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: model == null
+              ? _buildList(colors)
+              : _buildColours(colors, model),
+        ),
+      ),
+    );
+  }
+
+  Widget _header(AppThemeColors colors, String title, {VoidCallback? onBack}) =>
+      Row(
+        children: [
+          if (onBack != null)
+            IconButton(
+              tooltip: appL10n.back,
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back_rounded),
             ),
-            if (!widget.premium)
-              Text(
-                appL10n.gameGarageNextCar(widget.correctUntilNext),
-                style: TextStyle(
-                  fontFamily: 'Onest',
-                  fontSize: 13,
-                  color: colors.secondaryText,
-                ),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: colors.primaryText,
               ),
-            if (!widget.premium) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.workspace_premium_rounded,
-                    size: 16,
-                    color: colors.gold,
+            ),
+          ),
+          IconButton(
+            tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+            onPressed: () {
+              HapticFeedbackHelper.tap();
+              Navigator.pop(context);
+            },
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
+      );
+
+  Widget _buildList(AppThemeColors colors) {
+    final models = _models;
+    return Column(
+      key: const ValueKey('garage-list'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _header(colors, appL10n.gameGarage),
+        if (!widget.premium)
+          Text(
+            appL10n.gameGarageNextCar(widget.correctUntilNext),
+            style: TextStyle(
+              fontFamily: 'Onest',
+              fontSize: 13,
+              color: colors.secondaryText,
+            ),
+          ),
+        if (!widget.premium) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(
+                Icons.workspace_premium_rounded,
+                size: 16,
+                color: colors.gold,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  appL10n.gameGaragePremiumCar,
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 12,
+                    color: colors.secondaryText,
                   ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      appL10n.gameGaragePremiumCar,
-                      style: TextStyle(
-                        fontFamily: 'Onest',
-                        fontSize: 12,
-                        color: colors.secondaryText,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
-            if (widget.premium) ...[
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 36,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    for (final paint in gamePaintColors.keys)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: Semantics(
-                          button: true,
-                          selected: paint == _paint,
-                          label: gamePaintName(paint),
-                          child: GestureDetector(
-                            onTap: () {
-                              HapticFeedbackHelper.select();
-                              setState(() => _paint = paint);
-                            },
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: gamePaintColors[paint],
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: paint == _paint
-                                      ? colors.accent
-                                      : colors.divider,
-                                  width: paint == _paint ? 3 : 1,
-                                ),
-                              ),
+          ),
+        ],
+        const SizedBox(height: 12),
+        Flexible(
+          child: GridView.builder(
+            shrinkWrap: true,
+            itemCount: models.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: MediaQuery.sizeOf(context).width >= 600 ? 4 : 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.1,
+            ),
+            itemBuilder: (context, i) {
+              final car = _listCar(models[i]);
+              final isSelected = car.id == widget.selected.id;
+              final paints = _paintsOf(car.id).length;
+              return Semantics(
+                selected: isSelected,
+                button: true,
+                label: gameCarName(car.id),
+                child: Material(
+                  color: isSelected
+                      ? colors.accentSurface10
+                      : colors.cardBackground,
+                  borderRadius: BorderRadius.circular(18),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => _openModel(car.id),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                            child: GameCarThumbnail(
+                              car: car,
+                              loader: widget.thumbnail,
+                              cache: widget.thumbnailCache,
                             ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-            Flexible(
-              child: GridView.builder(
-                shrinkWrap: true,
-                itemCount: _items.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: MediaQuery.sizeOf(context).width >= 600
-                      ? 4
-                      : 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.1,
-                ),
-                itemBuilder: (context, i) {
-                  final car = _items[i];
-                  final isSelected = car.key == widget.selected.key;
-                  final isCyber = car.id == GameGarageService.cyber;
-                  final label =
-                      '${gameCarName(car.id)}, ${gamePaintName(car.paint)}';
-                  return Semantics(
-                    selected: isSelected,
-                    button: true,
-                    label: label,
-                    child: Material(
-                      color: isSelected
-                          ? colors.accentSurface10
-                          : colors.cardBackground,
-                      borderRadius: BorderRadius.circular(18),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        onTap: () {
-                          HapticFeedbackHelper.select();
-                          Navigator.pop(context, car);
-                        },
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-                                child: GameCarThumbnail(
-                                  car: car,
-                                  loader: widget.thumbnail,
-                                  cache: widget.thumbnailCache,
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  gameCarName(car.id),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: car.id == GameGarageService.cyber
+                                        ? colors.gold
+                                        : colors.primaryText,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    width: 12,
-                                    height: 12,
-                                    margin: const EdgeInsets.only(right: 6),
-                                    decoration: BoxDecoration(
-                                      color: gamePaintColors[car.paint],
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  Flexible(
-                                    child: Text(
-                                      gameCarName(car.id),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: isCyber
-                                            ? colors.gold
-                                            : colors.primaryText,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  if (isSelected) ...[
-                                    const SizedBox(width: 5),
-                                    Icon(
-                                      Icons.check_circle_rounded,
-                                      size: 18,
-                                      color: colors.accent,
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ],
+                              // Several colours: a hint that a choice follows.
+                              if (paints > 1) ...[
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.palette_outlined,
+                                  size: 15,
+                                  color: colors.secondaryText,
+                                ),
+                              ],
+                              if (isSelected) ...[
+                                const SizedBox(width: 5),
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 18,
+                                  color: colors.accent,
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildColours(AppThemeColors colors, String model) {
+    final paints = _paintsOf(model);
+    final car = GameCar(model, _paint);
+    return Column(
+      key: ValueKey('garage-$model'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _header(
+          colors,
+          gameCarName(model),
+          onBack: () {
+            HapticFeedbackHelper.tap();
+            setState(() => _model = null);
+          },
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 190,
+          child: GameCarThumbnail(
+            car: car,
+            loader: widget.thumbnail,
+            cache: widget.thumbnailCache,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            for (final paint in paints)
+              Semantics(
+                button: true,
+                selected: paint == _paint,
+                label: gamePaintName(paint),
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedbackHelper.select();
+                    setState(() => _paint = paint);
+                  },
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: gamePaintColors[paint],
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: paint == _paint ? colors.accent : colors.divider,
+                        width: paint == _paint ? 3 : 1,
                       ),
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
-            ),
           ],
         ),
-      ),
+        const SizedBox(height: 8),
+        Text(
+          gamePaintName(_paint),
+          textAlign: TextAlign.center,
+          style: TextStyle(fontFamily: 'Onest', color: colors.secondaryText),
+        ),
+        const SizedBox(height: 16),
+        ElevatedButton(
+          onPressed: () {
+            HapticFeedbackHelper.confirm();
+            Navigator.pop(context, car);
+          },
+          child: Text(appL10n.gameRevealChoose),
+        ),
+      ],
     );
   }
 }

@@ -56,6 +56,7 @@
     maxSpeed: 18, // m/s, follows the speed limit in force (see effectiveLimitKmH)
     baseLimitKmH: 60, // built-up area unless a sign says otherwise
     busBays: [], // bus bays in the world; walkers detour round them
+    humps: [], // speed humps (5.20) the player's car rides over
     props: [], // knockable cones / barriers of road works
     flying: [], // props knocked loose, until they settle
     crews: [], // animated road-works crews
@@ -5370,7 +5371,10 @@
     ctx.roundRect(6, 6, 148, 58, 14);
     ctx.fill();
 
-    ctx.fillStyle = '#FFFFFF';
+    // Dark text on a light plate (a pale truck body colour), white otherwise.
+    const rgb = new THREE.Color(fill);
+    const luminance = 0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b;
+    ctx.fillStyle = luminance > 0.55 ? '#121212' : '#FFFFFF';
     ctx.font = '600 28px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -8372,7 +8376,9 @@
   // follows the road network: at a T-junction ahead there is no straight on,
   // so it turns right instead of driving over the far pavement.
   function rerouteAtTJunctions() {
-    const tees = state.intersections.filter(it => it.situation.geometry === 't_no_straight');
+    // T-junction: no straight on — turn right. Roundabout: go round the ring
+    // (counter-clockwise, keeping right) and leave straight ahead.
+    const tees = state.intersections.filter(it => ['t_no_straight', 'roundabout'].includes(it.situation.geometry));
     if (!tees.length) return;
     for (const a of state.actors) {
       if (a.done || a.fall || a.crashed || a.rerouted || ['pedestrian', 'tram'].includes(a.config.type)) continue;
@@ -8384,13 +8390,18 @@
       if (tangent.z < 0.8 || pos.z > c - 7 || pos.z < c - 40 || Math.abs(pos.x) > 4.3) continue;
       const end = a.path.getPointAt(1).applyMatrix4(a.mesh.parent.matrixWorld);
       if (end.z < c || Math.abs(end.x) > 5) continue; // only paths that go straight on through it
-      const x = pos.x, lane = c - 1.8;
-      const world = [pos, new THREE.Vector3(x, 0, c - 6), new THREE.Vector3(x - 1.2, 0, c - 3.4),
-        new THREE.Vector3(x - 4.2, 0, lane), new THREE.Vector3(-40, 0, lane), new THREE.Vector3(-320, 0, lane)];
+      const x = pos.x, lane = c - 1.8, V = (px, pz) => new THREE.Vector3(px, 0, pz);
+      const roundabout = tee.situation.geometry === 'roundabout';
+      if (roundabout && pos.z > c - 19) continue; // too late to join the ring properly
+      const world = roundabout
+        ? [pos, V(-1.8, c - 18), V(-4.0, c - 14), V(-9.5, c - 6), V(-10.5, c), V(-8.5, c + 8), V(-4.0, c + 14),
+          V(-1.8, c + 18), V(-1.8, c + 40), V(-1.8, c + 320)]
+        : [pos, V(x, c - 6), V(x - 1.2, c - 3.4), V(x - 4.2, lane), V(-40, lane), V(-320, lane)];
       a.path = curve(world.map(p => a.mesh.parent.worldToLocal(p.clone())));
       a.length = a.path.getLength(); a.distance = 0; a.rerouted = true;
       a.holdSpeedUntil = undefined; a.stopAtDistance = undefined;
-      a.signalPlan = [{ from: 0, to: 18, side: 'right' }];
+      // Signal right for the turn / before leaving the ring (8.1, 8.6).
+      a.signalPlan = roundabout ? [{ from: a.length - 300, to: a.length - 290, side: 'right' }] : [{ from: 0, to: 18, side: 'right' }];
       a.clearDistance = Infinity;
     }
   }
@@ -9643,9 +9654,53 @@
   // Unregulated zebra without a question: a pedestrian steps out when the
   // player approaches; passing the crossing while they are on the carriageway
   // is a 'pedestrian' violation (14.1), a hit is an ordinary collision.
+  // Speed hump (5.20) across the whole carriageway: a low yellow/black
+  // cylinder top. Cars rise over it; no speed penalty, just a nudge.
+  function addSpeedHump(group, z) {
+    const r = 1.0, h = 0.15, pieces = 8, width = 8.4 / pieces;
+    for (let i = 0; i < pieces; i++) {
+      const g = new THREE.CylinderGeometry(r, r, width, 20, 1, false, -0.55, 1.1);
+      g.rotateZ(Math.PI / 2); g.rotateX(-Math.PI / 2); // axis across the road, arc on top
+      const m = new THREE.Mesh(g, sceneryMat(i % 2 ? 0x22262A : 0xF2C230));
+      m.position.set(-4.2 + width * (i + 0.5), 0.02 + h - r, z);
+      m.receiveShadow = true;
+      group.add(m);
+    }
+    const marker = new THREE.Object3D(); marker.position.set(0, 0, z); group.add(marker);
+    state.humps.push({ marker, r, h });
+  }
+  // Height of the road surface under a point (world), humps included.
+  function humpHeight(p) {
+    let y = 0;
+    for (const hump of state.humps) {
+      const at = hump.marker.getWorldPosition(new THREE.Vector3());
+      const d = Math.abs(p.z - at.z);
+      if (d < hump.r && Math.abs(p.x - at.x) < 4.3) y = Math.max(y, Math.sqrt(hump.r * hump.r - d * d) - (hump.r - hump.h));
+    }
+    return y;
+  }
+  // The body rides over humps: height and pitch from both axles.
+  function updateBodyOverHumps() {
+    state.humps = state.humps.filter(h => h.marker.parent && h.marker.parent.parent);
+    const car = playerCarGroup;
+    car.rotation.order = 'YXZ';
+    if (!state.humps.length) { car.position.y = 0; car.rotation.x = 0; return; }
+    const fwd = new THREE.Vector3(Math.sin(car.rotation.y), 0, Math.cos(car.rotation.y));
+    const base = (car.userData.halfLength || 2) * 0.62;
+    const yF = humpHeight(car.position.clone().addScaledVector(fwd, base));
+    const yR = humpHeight(car.position.clone().addScaledVector(fwd, -base));
+    car.position.y = (yF + yR) / 2;
+    car.rotation.x = -Math.atan2(yF - yR, 2 * base);
+  }
+
   function buildCrosswalkEvent(group, crosswalkZ) {
     const ev = { group, kind: 'crosswalk', crosswalkZ, phase: 'approach', actors: [], passedZ: null };
     addZebra(group, crosswalkZ);
+    // Humps on both approaches to the zebra, each with its 5.20 sign.
+    addSpeedHump(group, crosswalkZ - 9);
+    addSpeedHump(group, crosswalkZ + 9);
+    addRoadSign(group, '5.20', crosswalkZ - 9, 'right');
+    addRoadSign(group, '5.20', crosswalkZ + 9, 'left').rotation.y = Math.PI;
     addRoadSign(group, '5.19.1', crosswalkZ - 2.6, 'right');
     addRoadSign(group, '5.19.2', crosswalkZ + 2.6, 'left');
     const start = new THREE.Vector3(-6.2, 0.18, crosswalkZ);
@@ -10497,9 +10552,14 @@
       if (gameAudio) gameAudio.blinkerOn = on;
       return;
     }
+    state.steerHold = state.steering ? (state.steerHold || 0) + dt : 0;
+    if (state.steering && state.steerHold >= 0.3) {
+      const side = state.steering > 0 ? 'left' : 'right';
+      if (state.blinker?.side !== side) state.blinker = { side, remaining: 2.2, elapsed: 0 };
+    }
     const b = state.blinker;
     if (b) {
-      b.remaining = state.steering ? 2.2 : b.remaining - dt;
+      b.remaining = state.steering && b.side === (state.steering > 0 ? 'left' : 'right') ? 2.2 : b.remaining - dt;
       b.elapsed += dt;
       if (b.remaining <= 0) state.blinker = null;
     }
@@ -10648,6 +10708,7 @@
     if (Math.cos(playerCarGroup.rotation.y) > 0.2) limit = roadEventLimit(playerCarGroup.position.z, limit);
     const contactsBefore = playerContacts();
     integrateDriving(dt, limit);
+    updateBodyOverHumps();
     if (state.driveRecovery > 0) return;
     state.currentLaneOffset = playerCarGroup.position.x;
     const oneWay = oneWayStatus();
@@ -10809,6 +10870,7 @@
     state.roadTurn = 0;
     state.busBays = [];
     state.props = [];
+    state.humps = [];
     state.flying = [];
     state.crews = [];
     state.sideJunction = null;
@@ -10883,10 +10945,9 @@
     setSteering(direction) {
       state.steering = !state.paused && !state.driveRecovery && (!state.isAtSituation || state.resolution?.phase === 'manual') && !state.resolution?.recovery
         ? Math.max(-1, Math.min(1, Number(direction) || 0)) : 0;
-      if (state.steering) {
-        const side = state.steering > 0 ? 'left' : 'right';
-        if (state.blinker?.side !== side) state.blinker = { side, remaining: 2.2, elapsed: 0 };
-      }
+      // The indicator comes on only for a deliberate hold (see updateBlinkers):
+      // a quick tap to straighten the car does not blink.
+      if (Math.sign(state.steering) !== Math.sign(state.steerHoldSide || 0)) { state.steerHold = 0; state.steerHoldSide = state.steering; }
     },
     switchLane,
     selectVehicle,

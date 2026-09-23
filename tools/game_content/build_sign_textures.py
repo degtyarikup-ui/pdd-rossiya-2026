@@ -11,7 +11,7 @@ CODES = ['2.1', '2.3.1', '2.4', '2.5',                      # crossroad priority
          '1.6', '1.14', '1.25',                     # warnings used by overtaking/roadworks scenes
          '3.1', '3.20', '3.21', '3.24', '3.25',     # no entry, overtaking / speed limits
          '4.2.1', '4.2.2', '4.3',                   # obstacle detour, roundabout
-         '5.1', '5.2', '5.5', '5.6', '5.7.1', '5.7.2', '5.16', '5.19.1', '5.19.2', '5.21', '5.22', '5.23.1', '5.24.1', '5.25', '5.26',  # special prescriptions
+         '5.1', '5.2', '5.5', '5.6', '5.7.1', '5.20', '5.7.2', '5.16', '5.19.1', '5.19.2', '5.21', '5.22', '5.23.1', '5.24.1', '5.25', '5.26',  # special prescriptions
          '6.16']                                    # stop line sign
 
 # Some catalogue SVGs are contact sheets containing two official variants.
