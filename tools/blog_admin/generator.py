@@ -80,7 +80,8 @@ FOOTER = """<footer class="site-footer">
   </div>
 </footer>"""
 
-DEGRADE = """<script src="/assets/tracker.js" defer></script>
+DEGRADE = """<script src="/assets/site.js" defer></script>
+<script src="/assets/tracker.js" defer></script>
 <!-- Yandex.Metrika counter -->
 <script type="text/javascript">
     (function(m,e,t,r,i,k,a){
@@ -293,7 +294,10 @@ def render_article(slug, all_published=None):
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/assets/favicon.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="/assets/style.css?v=3">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/assets/style.css?v=4">
   <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
 {ld}
 </head>""".format(
@@ -513,7 +517,10 @@ def render_cluster_hubs(arts=None):
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/assets/favicon.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="/assets/style.css?v=3">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/assets/style.css?v=4">
   <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
 {ld}
 </head>
@@ -620,7 +627,10 @@ def render_blog_index(arts=None):
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/assets/favicon.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="/assets/style.css?v=3">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/assets/style.css?v=4">
   <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
 {ld}
 </head>
@@ -674,12 +684,17 @@ def render_home_blog(arts=None):
         block = """
   <section class="section alt" id="blog">
     <div class="container">
-      <h2 class="section-title">Из блога</h2>
-      <p class="section-lead">Разборы правил и практические планы подготовки к экзамену.</p>
+      <div class="blog-head">
+        <div>
+          <p class="kicker">Блог</p>
+          <h2 class="section-title">Разборы правил</h2>
+          <p class="section-lead">Практические планы подготовки и изменения ПДД простым языком.</p>
+        </div>
+        <a class="btn btn-ghost" href="/blog/">Все статьи</a>
+      </div>
       <div class="post-grid">
 {cards}
       </div>
-      <div class="blog-all-link"><a class="btn btn-primary" href="/blog/">Все статьи</a></div>
     </div>
   </section>
 """.format(cards=cards)
@@ -1088,7 +1103,10 @@ def render_glossary():
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/assets/favicon.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="/assets/style.css?v=3">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/assets/style.css?v=4">
   <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
 {ld1}
 {ld2}
