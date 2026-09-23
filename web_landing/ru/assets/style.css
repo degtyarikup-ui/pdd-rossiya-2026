@@ -440,6 +440,7 @@ section[id] { scroll-margin-top: 76px; }
   .site-nav a:not(.nav-cta) { display: none; }
   .nav-cta-tail { display: none; }
   .logo { font-size: 16px; }
+  .site-header .container { height: auto; min-height: 64px; flex-wrap: wrap; gap: 8px; padding-top: 10px; padding-bottom: 10px; }
   .hero-badges .btn { width: 100%; }
   .cta-box { padding: 36px 20px; }
 }

@@ -38,31 +38,31 @@ if [ "${SKIP_SEO_AUDIT:-0}" != "1" ] && [ "$COUNTRY" = "ru" ]; then
   fi
 fi
 
-WORKTREE="/tmp/pdd-landing-deploy-$COUNTRY"
-rm -rf "$WORKTREE"
-mkdir -p "$WORKTREE"
-cp -R "$SRC/." "$WORKTREE/"
+WORKTREE="$(mktemp -d "${TMPDIR:-/tmp}/pdd-landing-deploy-$COUNTRY.XXXXXX")"
+trap 'rm -rf "$WORKTREE"' EXIT
+git clone --quiet --single-branch --branch gh-pages "$REMOTE_REPO" "$WORKTREE"
+PREVIOUS="$(git -C "$WORKTREE" rev-parse HEAD)"
+echo "Previous deployment (rollback): $PREVIOUS"
+# Preserve deployment history and reject a concurrent remote update on push.
+rsync -rc --delete --exclude=.git "$SRC/" "$WORKTREE/"
 
 touch "$WORKTREE/.nojekyll"
 printf '%s' "$CNAME_DOMAIN" > "$WORKTREE/CNAME"
 
-git -C "$WORKTREE" init >/dev/null
-git -C "$WORKTREE" checkout -b gh-pages >/dev/null 2>&1 || git -C "$WORKTREE" branch -m gh-pages
 git -C "$WORKTREE" add -A
+if git -C "$WORKTREE" diff --cached --quiet; then
+  echo "Landing is already up to date"
+  exit 0
+fi
+git -C "$WORKTREE" diff --cached --stat
 git -C "$WORKTREE" -c user.email="degtyarik.up@gmail.com" -c user.name="degtyarikup-ui" \
   commit -m "$MSG" >/dev/null
 
-TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
-if [ -z "$TOKEN" ] && command -v gh >/dev/null 2>&1; then
-  TOKEN="$(gh auth token 2>/dev/null || true)"
-fi
-
-if [ -n "$TOKEN" ]; then
-  REMOTE_AUTH="https://x-access-token:${TOKEN}@github.com/degtyarikup-ui/pdd-rossiya-2026.git"
+if command -v gh >/dev/null 2>&1; then
+  GH_TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}" git -C "$WORKTREE" \
+    -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin gh-pages:gh-pages
 else
-  REMOTE_AUTH="$REMOTE_REPO"
+  git -C "$WORKTREE" push origin gh-pages:gh-pages
 fi
-
-git -C "$WORKTREE" push --force "$REMOTE_AUTH" gh-pages:gh-pages
-rm -rf "$WORKTREE"
+echo "Deployment commit: $(git -C "$WORKTREE" rev-parse HEAD)"
 echo "Deployed $COUNTRY landing → https://$CNAME_DOMAIN"

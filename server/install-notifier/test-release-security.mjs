@@ -58,6 +58,25 @@ test('private APIs reject anonymous and cross-account requests', async () => {
   }
   assert.equal((await worker.fetch(request('/api/user/progress?userId=google_123', undefined, session.token), e)).status, 200);
 });
+test('self-deletion removes profile, progress and current score and revokes access', async () => {
+  const e = env(), session = await login(e), id = 'google_123';
+  const boardResponse = await worker.fetch(request('/api/game/leaderboard'), e);
+  const { week } = await boardResponse.json();
+  await e.INSTALLS.put('user:' + id, JSON.stringify({ id, email: 'test@example.com', isPremium: true }));
+  await e.INSTALLS.put('user_email:test@example.com', id);
+  await e.INSTALLS.put('user_progress:' + id, JSON.stringify({ game: { best: 100 }, favorites: [1] }));
+  await e.INSTALLS.put('users_list', JSON.stringify([id, 'other']));
+  await e.INSTALLS.put('game_lb:' + week, JSON.stringify({ [id]: { score: 100 }, other: { score: 50 } }));
+  const response = await worker.fetch(request('/api/user/delete', { userId: id }, session.token), e);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { ok: true, deleted: id });
+  for (const key of ['user:' + id, 'user_progress:' + id, 'user_email:test@example.com']) {
+    assert.equal(await e.INSTALLS.get(key), null, key);
+  }
+  assert.deepEqual(JSON.parse(await e.INSTALLS.get('users_list')), ['other']);
+  assert.deepEqual(JSON.parse(await e.INSTALLS.get('game_lb:' + week)), { other: { score: 50 } });
+  assert.equal(await readSession(request('/api/user/progress', undefined, session.token), e), null);
+});
 test('profile sync cannot forge identity or premium', async () => {
   const e = env(), session = await login(e);
   const response = await worker.fetch(request('/api/user/sync', { id: 'google_123', email: 'victim@example.com', provider: 'apple', isPremium: true, premiumExpiresAt: '2099-01-01T00:00:00Z' }, session.token), e);
