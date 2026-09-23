@@ -3017,13 +3017,25 @@ export default {
       let body;
       try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }
       const userId = String(body?.userId || '').slice(0, 120);
-      const score = Math.max(0, Math.min(1000000, Math.floor(Number(body?.score) || 0)));
       if (!userId || !env.INSTALLS) return jsonResponse({ error: 'missing userId' }, 400);
       const week = gameWeekKey();
       const doc = await readGameBoard(env, week);
       const entry = doc[userId] || { score: 0, runs: 0, best: 0 };
       entry.name = String(body?.name || entry.name || 'Игрок').slice(0, 40);
-      entry.score += score; entry.runs += 1; entry.best = Math.max(entry.best, score);
+      if (body?.delta !== undefined) {
+        // 2.1.3+: progress is reported during the run (premium runs never end,
+        // and a closed app must not lose points). delta may be negative
+        // (penalties); runScore is the run total so far.
+        const delta = Math.max(-20000, Math.min(20000, Math.trunc(Number(body.delta) || 0)));
+        const runScore = Math.max(0, Math.min(1000000, Math.floor(Number(body.runScore) || 0)));
+        entry.score = Math.max(0, entry.score + delta);
+        if (body.newRun === true) entry.runs += 1;
+        entry.best = Math.max(entry.best, runScore);
+      } else {
+        // Older builds: one call with the final score when the run ends.
+        const score = Math.max(0, Math.min(1000000, Math.floor(Number(body?.score) || 0)));
+        entry.score += score; entry.runs += 1; entry.best = Math.max(entry.best, score);
+      }
       entry.updatedAt = new Date().toISOString();
       doc[userId] = entry;
       await env.INSTALLS.put('game_lb:' + week, JSON.stringify(doc), { expirationTtl: 60 * 60 * 24 * 21 });

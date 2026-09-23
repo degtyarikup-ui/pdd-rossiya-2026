@@ -89,6 +89,42 @@ class GameLeaderboardService {
     }
   }
 
+  /// Reports the change of the current run's score since the last report.
+  /// Returns true when the server took it (the caller then advances its
+  /// "reported" mark); false keeps the delta for the next attempt.
+  Future<bool> reportProgress({
+    required int delta,
+    required int runScore,
+    required bool newRun,
+  }) async {
+    final user = AuthService.instance.currentUser;
+    if (user == null ||
+        !AuthService.instance.hasServerSession ||
+        (delta == 0 && !newRun) ||
+        !BackendConfig.hasNotifier) {
+      return false;
+    }
+    try {
+      final resp = await http
+          .post(
+            Uri.parse('${BackendConfig.notifierUrl}/api/game/score'),
+            headers: _headers,
+            body: jsonEncode({
+              'userId': user.id,
+              'name': user.name,
+              'delta': delta,
+              'runScore': runScore,
+              'newRun': newRun,
+            }),
+          )
+          .timeout(const Duration(seconds: 8));
+      return resp.statusCode == 200;
+    } catch (e) {
+      debugPrint('GameLeaderboardService.reportProgress: $e');
+      return false;
+    }
+  }
+
   Future<GameLeaderboard?> fetch() async {
     if (!BackendConfig.hasNotifier) return null;
     final user = AuthService.instance.currentUser;

@@ -79,6 +79,14 @@ class _GameScreenState extends ConsumerState<GameScreen>
   bool _fuelLoaded = false;
   Timer? _fuelTimer;
   int _correctBurst = 0;
+  // Weekly rating: the run's score is reported as it grows (premium runs
+  // never end; a closed app must not lose points), not only at game over.
+  int _liveScore = 0;
+  int _reportedScore = 0;
+  bool _runCounted = false;
+  bool _reporting = false;
+  Timer? _reportTimer;
+  int _bestBeforeRun = 0;
   List<Question>? _abQuestions;
   Offset _burstOrigin = const Offset(0.5, 0.72);
   Timer? _burstTimer;
@@ -229,8 +237,35 @@ class _GameScreenState extends ConsumerState<GameScreen>
     );
   }
 
+  /// Sends the score gained since the last report. Safe to call often.
+  Future<void> _reportProgress() async {
+    if (_reporting) return;
+    final score = _liveScore;
+    final delta = score - _reportedScore;
+    if (delta == 0 && (_runCounted || score == 0)) return;
+    _reporting = true;
+    final ok = await GameLeaderboardService.instance.reportProgress(
+      delta: delta,
+      runScore: score,
+      newRun: !_runCounted,
+    );
+    _reporting = false;
+    if (ok) {
+      _reportedScore = score;
+      _runCounted = true;
+    }
+    // Premium runs never reach game over: keep the personal best anyway.
+    if (score > (_bestScore ?? 0)) {
+      _bestScore = score;
+      SharedPreferences.getInstance()
+          .then((prefs) => prefs.setInt(_bestScoreKey, score))
+          .catchError((_) => false);
+    }
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) unawaited(_reportProgress());
     _active = state == AppLifecycleState.resumed;
     _game.setPaused(
       !_active || _failed || _garageOpen || _locked || _outOfFuel,
@@ -243,6 +278,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
   @override
   void dispose() {
     _disposing = true;
+    _reportTimer?.cancel();
+    unawaited(_reportProgress());
     if (_reveal != null) ref.read(fullscreenProvider.notifier).state = false;
     _readyTimer?.cancel();
     _fuelTimer?.cancel();
@@ -258,6 +295,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
   @override
   void initState() {
     super.initState();
+    _reportTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => unawaited(_reportProgress()),
+    );
     _active =
         WidgetsBinding.instance.lifecycleState == null ||
         WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
@@ -293,6 +334,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
         });
       }
       _bestScore ??= prefs.getInt(_bestScoreKey) ?? 0;
+      _bestBeforeRun = _bestScore ?? 0;
       if (!_fuelLoaded) {
         final fuel = await GameFuelService.instance.load();
         _fuelLoaded = true;
@@ -646,6 +688,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
     _game.setPaused(true);
     await _stopWebView();
     if (!mounted || _disposing) return;
+    await _reportProgress();
+    _reportedScore = 0;
+    _liveScore = 0;
+    _runCounted = false;
+    _bestBeforeRun = _bestScore ?? 0;
     ref.read(gameControllerProvider.notifier).restartGame();
     _newRecord = false;
     // A fresh document isolates queued bridge events and resets all JS state.
@@ -661,7 +708,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
   // A new personal best: remember it, celebrate with the fanfare; the dialog
   // shows the badge and confetti while `_newRecord` is set.
   void _finishRun(int score) {
-    final best = _bestScore ?? 0;
+    // The record is judged against the best before this run (a live report
+    // may already have stored this run's score).
+    final best = _bestBeforeRun;
     final record = score > best && score > 0;
     setState(() {
       _newRecord = record;
@@ -669,7 +718,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
     });
     // Every finished run counts towards the weekly rating; the best score
     // and the garage go to the cloud with the rest of the progress.
-    GameLeaderboardService.instance.submitRun(score);
+    _liveScore = score;
+    unawaited(_reportProgress());
     if (record) {
       SoundEffectsService.instance.playStreak();
       HapticFeedbackHelper.success();
@@ -724,6 +774,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
       );
     }
     ref.listen(gameControllerProvider, (previous, next) {
+      _liveScore = next.score;
       if (previous?.controlsEnabled == true && !next.controlsEnabled) {
         _send('setGas', [false]);
         _send('setBrake', [false]);
