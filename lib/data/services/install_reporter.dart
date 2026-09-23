@@ -42,6 +42,18 @@ class InstallReporter {
   static const String _keyInstallId = 'install_id';
   static const String _keyReported = 'install_reported';
 
+  static bool? _isExistingAtLaunch;
+
+  /// Вызывать в main() до инициализации остальных сервисов.
+  static Future<void> captureLaunchState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _isExistingAtLaunch = prefs.getKeys().any(
+        (k) => k != _keyReported && k != _keyInstallId,
+      );
+    } catch (_) {}
+  }
+
   /// Вызывать один раз на старте приложения. НЕ await — fire-and-forget.
   ///
   /// iOS включён (2026-08-12, ранее был отключён ради декларации
@@ -65,9 +77,10 @@ class InstallReporter {
       // Свежая установка или обновившийся существующий пользователь — определяем
       // по наличию данных приложения (прогресс/настройки/стрик) на момент
       // первого отчёта. Считаем и тех, и других, но помечаем по-разному.
-      final isExisting = prefs.getKeys().any(
-        (k) => k != _keyReported && k != _keyInstallId,
-      );
+      final isExisting = _isExistingAtLaunch ??
+          prefs.getKeys().any(
+            (k) => k != _keyReported && k != _keyInstallId,
+          );
 
       var installId = prefs.getString(_keyInstallId);
       if (installId == null) {

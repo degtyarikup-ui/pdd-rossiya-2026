@@ -1,80 +1,30 @@
 // Локальный прогон рендера сообщений — БЕЗ деплоя и без реального Telegram.
 // Запуск:  node server/install-notifier/test-local.mjs
 import {
-  buildSlotReportMessage,
+  buildDailyReportMessage,
   buildReportMessage,
   buildUserRegistrationMessage,
   buildPremiumPurchaseMessage,
 } from './worker.js';
 
 console.log('========================================');
-console.log('1. УТРЕННИЙ ОТЧЕТ (10:00 МСК)');
+console.log('1. СУТОЧНЫЙ ОТЧЕТ (22:00 МСК)');
 console.log('========================================');
-const morningSample = buildSlotReportMessage({
-  slotType: 'night',
-  slotData: {
-    installs: 12,
-    installsByStore: {
-      'RuStore': 7,
-      'Google Play': 4,
-      'App Store': 1,
-    },
-    views: 84,
-    viewsBySource: {
-      yandex: 46,
-      google: 24,
-      social_other: 14,
-    },
-    clicks: 19,
-    clicksByStore: {
-      'RuStore': 11,
-      'Google Play': 6,
-      'App Store': 2,
-    },
-    aiRequests: 14,
-    aiCostUsd: 0.0018,
-  },
-  grandTotal: 1428,
-});
-console.log(morningSample);
-
-console.log('\n========================================');
-console.log('2. ВЕЧЕРНИЙ ОТЧЕТ (22:00 МСК)');
-console.log('========================================');
-const eveningSample = buildSlotReportMessage({
-  slotType: 'day',
-  slotData: {
-    installs: 28,
-    installsByStore: {
-      'RuStore': 16,
-      'Google Play': 9,
-      'App Store': 3,
-    },
-    views: 210,
-    viewsBySource: {
-      yandex: 118,
-      google: 64,
-      social_other: 28,
-    },
-    clicks: 48,
-    clicksByStore: {
-      'RuStore': 27,
-      'Google Play': 15,
-      'App Store': 6,
-    },
-    aiRequests: 32,
-    aiCostUsd: 0.0041,
-  },
-  dayTotals: {
+console.log(buildDailyReportMessage({
+  data: {
     installs: 40,
+    installsByStore: { 'RuStore': 23, 'Google Play': 13, 'App Store': 4 },
+    registrations: 9,
     views: 294,
+    viewsBySource: { yandex: 164, google: 88, social_other: 42 },
     clicks: 67,
+    clicksByStore: { 'RuStore': 38, 'Google Play': 21, 'App Store': 8 },
     aiRequests: 46,
     aiCostUsd: 0.0059,
   },
   grandTotal: 1456,
-});
-console.log(eveningSample);
+  registeredTotal: 46,
+}));
 
 console.log('\n========================================');
 console.log('3. НОВАЯ РЕГИСТРАЦИЯ ПОЛЬЗОВАТЕЛЯ (Мгновенная)');

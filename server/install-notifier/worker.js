@@ -210,6 +210,7 @@ function emptySlotData() {
     },
     aiRequests: 0,
     aiCostUsd: 0,
+    registrations: 0,
   };
 }
 
@@ -229,6 +230,10 @@ async function getSlotData(env, slotDate, slotType) {
 function applyEventToSlot(slotData, event) {
   if (!slotData.installsByStore) slotData = emptySlotData();
 
+  if (event.type === 'registration') {
+    slotData.registrations = (slotData.registrations || 0) + 1;
+    return slotData;
+  }
 
   if (event.type === 'view') {
     slotData.views++;
@@ -286,71 +291,71 @@ function formatNumberWithSpaces(num) {
   return String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
-export function buildSlotReportMessage({ slotType, slotData, dayTotals, grandTotal }) {
-  const isMorning = slotType === 'night';
-  const title = isMorning ? 'Отчет · Утро (22:00 – 10:00)' : 'Отчет · Вечер (10:00 – 22:00)';
+function mergeSlotData(a, b) {
+  const sum = (x, y) => {
+    const out = { ...(x || {}) };
+    for (const [k, v] of Object.entries(y || {})) out[k] = (out[k] || 0) + (v || 0);
+    return out;
+  };
+  return {
+    installs: (a.installs || 0) + (b.installs || 0),
+    installsByStore: sum(a.installsByStore, b.installsByStore),
+    views: (a.views || 0) + (b.views || 0),
+    viewsBySource: sum(a.viewsBySource, b.viewsBySource),
+    clicks: (a.clicks || 0) + (b.clicks || 0),
+    clicksByStore: sum(a.clicksByStore, b.clicksByStore),
+    aiRequests: (a.aiRequests || 0) + (b.aiRequests || 0),
+    aiCostUsd: (a.aiCostUsd || 0) + (b.aiCostUsd || 0),
+    registrations: (a.registrations || 0) + (b.registrations || 0),
+  };
+}
 
-  const installsPeriod = slotData?.installs || 0;
-  const installsDay = dayTotals?.installs ?? installsPeriod;
-  const installsRuStore = slotData?.installsByStore?.['RuStore'] || 0;
-  const installsGPlay = slotData?.installsByStore?.['Google Play'] || 0;
-  const installsAppStore = slotData?.installsByStore?.['App Store'] || 0;
+// Суточный отчёт: ночной слот (22:00 вчера – 10:00) + дневной (10:00 – 22:00).
+async function buildDailyReport(env, now = new Date()) {
+  const date = mskDayKey(now);
+  const data = mergeSlotData(
+    await getSlotData(env, date, 'night'),
+    await getSlotData(env, date, 'day'),
+  );
+  let grandTotal = 0;
+  let registeredTotal = 0;
+  try {
+    grandTotal = parseInt((await env.INSTALLS.get('counter')) || '0', 10);
+    registeredTotal = parseInt((await env.INSTALLS.get('counter:registered_users')) || '0', 10);
+  } catch (_) {}
+  return buildDailyReportMessage({ data, grandTotal, registeredTotal });
+}
 
-  const viewsPeriod = slotData?.views || 0;
-  const viewsDay = dayTotals?.views ?? viewsPeriod;
-  const viewsYandex = slotData?.viewsBySource?.yandex || 0;
-  const viewsGoogle = slotData?.viewsBySource?.google || 0;
-  const viewsSocialOther = slotData?.viewsBySource?.social_other || 0;
+export function buildDailyReportMessage({ data, grandTotal, registeredTotal }) {
+  const store = (obj, k) => obj?.[k] || 0;
+  const views = data?.views || 0;
+  const clicks = data?.clicks || 0;
+  const cr = views > 0 ? ((clicks / views) * 100).toFixed(1) : '0.0';
 
-  const clicksPeriod = slotData?.clicks || 0;
-  const clicksRuStore = slotData?.clicksByStore?.['RuStore'] || 0;
-  const clicksGPlay = slotData?.clicksByStore?.['Google Play'] || 0;
-  const clicksAppStore = slotData?.clicksByStore?.['App Store'] || 0;
-
-  const cr = viewsPeriod > 0 ? ((clicksPeriod / viewsPeriod) * 100).toFixed(1) : '0.0';
-
-  const aiReqPeriod = slotData?.aiRequests || 0;
-  const aiCostPeriod = formatCostUsd(slotData?.aiCostUsd);
-
-  const aiReqDay = (dayTotals?.aiRequests !== undefined ? dayTotals.aiRequests : slotData?.aiRequests) || 0;
-  const aiCostDay = formatCostUsd(dayTotals?.aiCostUsd !== undefined ? dayTotals.aiCostUsd : slotData?.aiCostUsd);
-
-  const installsLine = isMorning
-    ? `📱 Новые пользователи: +${installsPeriod}`
-    : `📱 Новые пользователи: +${installsPeriod} (за весь день: ${installsDay})`;
-
-  const viewsLine = isMorning
-    ? `🌐 Посетители сайта: +${viewsPeriod}`
-    : `🌐 Посетители сайта: +${viewsPeriod} (за весь день: ${viewsDay})`;
-
-  const aiLine = isMorning
-    ? `🤖 ИИ-помощник: ${aiReqPeriod} запр. (~${aiCostPeriod})`
-    : `🤖 ИИ-помощник: ${aiReqPeriod} запр. (за весь день: ${aiReqDay} • ~${aiCostDay})`;
-
-  const lines = [
-    title,
+  return [
+    'Отчет за сутки (22:00 – 22:00 МСК)',
     '',
-    installsLine,
-    `  • RuStore: ${installsRuStore}`,
-    `  • Google Play: ${installsGPlay}`,
-    `  • App Store: ${installsAppStore}`,
+    `📱 Новые установки: +${data?.installs || 0}`,
+    `  • RuStore: ${store(data?.installsByStore, 'RuStore')}`,
+    `  • Google Play: ${store(data?.installsByStore, 'Google Play')}`,
+    `  • App Store: ${store(data?.installsByStore, 'App Store')}`,
     '',
-    viewsLine,
-    `  • Яндекс: ${viewsYandex}`,
-    `  • Google: ${viewsGoogle}`,
-    `  • Соцсети/другое: ${viewsSocialOther}`,
+    `👤 Регистрации: +${data?.registrations || 0}`,
     '',
-    `🎯 Переходы в приложение с сайта: ${clicksPeriod} (CR ${cr}%)`,
-    `  • RuStore: ${clicksRuStore}`,
-    `  • Google Play: ${clicksGPlay}`,
-    `  • App Store: ${clicksAppStore}`,
+    `🌐 Посетители сайта: +${views}`,
+    `  • Яндекс: ${store(data?.viewsBySource, 'yandex')}`,
+    `  • Google: ${store(data?.viewsBySource, 'google')}`,
+    `  • Соцсети/другое: ${store(data?.viewsBySource, 'social_other')}`,
     '',
-    aiLine,
+    `🎯 Переходы в приложение с сайта: ${clicks} (CR ${cr}%)`,
+    `  • RuStore: ${store(data?.clicksByStore, 'RuStore')}`,
+    `  • Google Play: ${store(data?.clicksByStore, 'Google Play')}`,
+    `  • App Store: ${store(data?.clicksByStore, 'App Store')}`,
     '',
-    `Всего пользователей за всё время: #${formatNumberWithSpaces(grandTotal)}`,
-  ];
-
-  return lines.join('\n');
+    `🤖 ИИ-помощник: ${data?.aiRequests || 0} запр. (~${formatCostUsd(data?.aiCostUsd)})`,
+    '',
+    `Всего установок: #${formatNumberWithSpaces(grandTotal)} · с аккаунтом: #${formatNumberWithSpaces(registeredTotal)}`,
+  ].join('\n');
 }
 
 /// Возвращает имя магазина или null, если установка НЕ из магазина
@@ -1883,6 +1888,10 @@ function normalizeDayData(dayData, dayKey) {
 
 // Применяет событие к данным дня. Чистая функция, без обращений к KV.
 function applyEventToDay(dayData, event) {
+  if (event.type === 'registration') {
+    dayData.registrations = (dayData.registrations || 0) + 1;
+    return;
+  }
   const app = detectAppCode(event);
 
   const src = event.source || 'direct';
@@ -2004,7 +2013,7 @@ export async function flushBufferedStats(env, items) {
         if (slug) viewsBySlug.set(slug, (viewsBySlug.get(slug) || 0) + 1);
       }
       // Live Feed — только клики/установки/кампании (экономия KV).
-      if (event.type !== 'view' || event.campaign) feed.push(liveFeedEntry(event, now));
+      if (event.type !== 'registration' && (event.type !== 'view' || event.campaign)) feed.push(liveFeedEntry(event, now));
     } else if (item.kind === 'ai') {
       const pricing = GEMINI_PRICING[item.model] || GEMINI_PRICING['gemini-3.6-flash'];
       const pTokens = Number(item.promptTokens) || 0;
@@ -2542,6 +2551,11 @@ async function saveUserProfile(env, user) {
       if (!alreadyNotified) {
         await env.INSTALLS.put(notifKey, '1');
         const regCount = await kvIncr(env, 'counter:registered_users');
+        await trackStats(env, null, { kind: 'analytics', event: {
+          type: 'registration',
+          app: merged.app,
+          platform: merged.platform,
+        } });
         if (env.BOT_TOKEN && env.CHAT_ID) {
           const msg = buildUserRegistrationMessage(merged, regCount);
           await sendTelegram(env, msg);
@@ -3639,36 +3653,11 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
         return jsonResponse({ ok: true, checked: 'reviews' });
       }
 
-      // Предпросмотр или ручной запуск отчета (morning / evening)
+      // Предпросмотр или ручной запуск суточного отчёта
       const reportParam = url.searchParams.get('report');
-      if (reportParam === 'morning' || reportParam === 'evening') {
-        const isMorning = reportParam === 'morning';
-        const slotType = isMorning ? 'night' : 'day';
-        const now = new Date();
-        const slotDate = mskDayKey(now);
-
-        const slotData = await getSlotData(env, slotDate, slotType);
-
-        let dayTotals = null;
-        if (!isMorning) {
-          try {
-            const rawDay = await env.INSTALLS.get(`day:${slotDate}`);
-            if (rawDay) dayTotals = JSON.parse(rawDay);
-          } catch (_) {}
-        }
-
-        let grandTotal = 0;
-        try {
-          const g = await env.INSTALLS.get('counter');
-          grandTotal = g ? parseInt(g, 10) : 0;
-        } catch (_) {}
-
-        const msg = buildSlotReportMessage({
-          slotType,
-          slotData,
-          dayTotals,
-          grandTotal,
-        });
+      if (reportParam === 'daily' || reportParam === 'evening') {
+        await flushStatsBuffer(env);
+        const msg = await buildDailyReport(env);
 
         if (url.searchParams.get('send') === 'true') {
           await sendTelegram(env, msg);
@@ -3771,11 +3760,11 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
       } });
     }
 
-    // Мгновенная отправка в Telegram отключена в пользу 2-разовой сводки (10:00 и 22:00 МСК)
+    // Мгновенная отправка в Telegram отключена в пользу суточной сводки (22:00 МСК)
     return jsonResponse({ ok: true, number: number.value });
   },
 
-  // Крон срабатывает дважды в день: в 10:00 МСК (07:00 UTC) и в 22:00 МСК (19:00 UTC)
+  // Суточная сводка — крон в 22:00 МСК (19:00 UTC)
   async scheduled(event, env, ctx) {
     if (!env.INSTALLS) return;
 
@@ -3794,45 +3783,12 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
 
     if (!env.BOT_TOKEN || !env.CHAT_ID) return;
 
-    // 1. Проверяем новые отзывы в RuStore (2 раза в день при отчете)
     ctx.waitUntil(pollReviews(env));
-
-    // 2. Формируем и отправляем отчет в Telegram
-    const now = event.scheduledTime ? new Date(event.scheduledTime) : new Date();
-    const hour = getMskHour(now);
-
-    // 19:00 UTC = 22:00 MSK -> вечерний отчет (дневной слот 10:00–22:00)
-    // 07:00 UTC = 10:00 MSK -> утренний отчет (ночной слот 22:00–10:00)
-    const isMorning = hour < 15;
-    const slotType = isMorning ? 'night' : 'day';
-    const slotDate = mskDayKey(now);
 
     // Сначала выталкиваем буфер статистики, чтобы отчёт учёл последние события.
     await flushStatsBuffer(env);
-
-    const slotData = await getSlotData(env, slotDate, slotType);
-
-    let dayTotals = null;
-    if (!isMorning) {
-      try {
-        const rawDay = await env.INSTALLS.get(`day:${slotDate}`);
-        if (rawDay) dayTotals = JSON.parse(rawDay);
-      } catch (_) {}
-    }
-
-    let grandTotal = 0;
-    try {
-      const g = await env.INSTALLS.get('counter');
-      grandTotal = g ? parseInt(g, 10) : 0;
-    } catch (_) {}
-
-    const msg = buildSlotReportMessage({
-      slotType,
-      slotData,
-      dayTotals,
-      grandTotal,
-    });
-
+    const now = event.scheduledTime ? new Date(event.scheduledTime) : new Date();
+    const msg = await buildDailyReport(env, now);
     await sendTelegram(env, msg);
   },
 };

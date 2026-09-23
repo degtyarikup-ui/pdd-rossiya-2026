@@ -43,6 +43,10 @@ void main() async {
     debugPrint('SystemChrome config error: $e');
   }
 
+  // До инициализации сервисов: они пишут в настройки, и свежая установка
+  // иначе выглядит как обновление.
+  await InstallReporter.captureLaunchState();
+
   final progressDataSource = ProgressDataSource();
   try {
     await progressDataSource.init().timeout(const Duration(seconds: 2));
