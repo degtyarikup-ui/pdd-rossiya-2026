@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Переход в веб-версию...</title>
+  <meta http-equiv="refresh" content="0; url=/app/">
+  <script>
+    (function() {
+      var target = '/app/';
+      var params = new URLSearchParams(window.location.search);
+      var rawRef = params.get('ref') || params.get('utm_source') || '';
+      var ref = 'direct';
+      var camp = params.get('utm_campaign') || '';
+      if (rawRef) {
+        var parts = rawRef.split('_');
+        var code = parts[0].toLowerCase();
+        if (code === 'yt' || code === 'youtube') ref = 'youtube';
+        else if (code === 'tt' || code === 'tiktok') ref = 'tiktok';
+        else if (code === 'ig' || code === 'instagram') ref = 'instagram';
+        else if (code === 'tg' || code === 'telegram') ref = 'telegram';
+        else if (code === 'vk') ref = 'vk';
+        else ref = code;
+        if (parts.length > 1 && !camp) camp = parts.slice(1).join('_');
+      } else if (document.referrer) {
+        if (document.referrer.indexOf('youtube') !== -1 || document.referrer.indexOf('youtu.be') !== -1) ref = 'youtube';
+        else if (document.referrer.indexOf('tiktok') !== -1) ref = 'tiktok';
+        else if (document.referrer.indexOf('instagram') !== -1) ref = 'instagram';
+        else if (document.referrer.indexOf('telegram') !== -1 || document.referrer.indexOf('t.me') !== -1) ref = 'telegram';
+        else if (document.referrer.indexOf('vk.com') !== -1) ref = 'vk';
+      }
+      var payload = {
+        type: 'click',
+        source: ref,
+        campaign: camp,
+        target: 'web',
+        platform: /iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'ios' : /Android/i.test(navigator.userAgent) ? 'android' : 'desktop'
+      };
+      try {
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon('https://pdd-install-notifier.sergei-pdd.workers.dev/api/track', JSON.stringify(payload));
+        } else {
+          fetch('https://pdd-install-notifier.sergei-pdd.workers.dev/api/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            keepalive: true
+          });
+        }
+      } catch (_) {}
+      window.location.replace(target);
+    })();
+  </script>
+</head>
+<body style="font-family:sans-serif; text-align:center; padding:40px; color:#555;">
+  <p>Переход в <a href="/app/">веб-версию</a>...</p>
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=111960332', 'ym');
+
+    ym(111960332, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/111960332" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+</body>
+</html>
