@@ -131,7 +131,7 @@ case "$TARGET" in
     echo "APK: build/app/outputs/flutter-apk/app-${COUNTRY}-release.apk"
     ;;
   web)
-    flutter build web --release --base-href "/" --no-wasm-dry-run \
+    flutter build web --release --base-href "${WEB_BASE_HREF:-/}" --no-wasm-dry-run \
       --dart-define=COUNTRY="$COUNTRY" \
       ${NOTIFY_DEFINES[@]+"${NOTIFY_DEFINES[@]}"} \
       ${EXTRA_DEFINES_ARR[@]+"${EXTRA_DEFINES_ARR[@]}"}

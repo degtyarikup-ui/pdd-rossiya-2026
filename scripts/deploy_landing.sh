@@ -44,7 +44,14 @@ git clone --quiet --single-branch --branch gh-pages "$REMOTE_REPO" "$WORKTREE"
 PREVIOUS="$(git -C "$WORKTREE" rev-parse HEAD)"
 echo "Previous deployment (rollback): $PREVIOUS"
 # Preserve deployment history and reject a concurrent remote update on push.
-rsync -rc --delete --exclude=.git "$SRC/" "$WORKTREE/"
+# /app/ — копия веб-приложения (сборка с --base-href /app/), в исходниках её нет:
+# не даём --delete её стереть. Обновить: WEB_BASE_HREF=/app/ ./scripts/build.sh ru web,
+# затем APP_BUILD=build/web ./scripts/deploy_landing.sh ru
+rsync -rc --delete --exclude=.git --exclude=/app/ "$SRC/" "$WORKTREE/"
+if [ -n "${APP_BUILD:-}" ]; then
+  grep -q '<base href="/app/"' "$APP_BUILD/index.html" || { echo "APP_BUILD собран не с --base-href /app/"; exit 1; }
+  rsync -rc --delete "$APP_BUILD/" "$WORKTREE/app/"
+fi
 
 touch "$WORKTREE/.nojekyll"
 printf '%s' "$CNAME_DOMAIN" > "$WORKTREE/CNAME"

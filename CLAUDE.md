@@ -178,6 +178,10 @@ flutter test                           # тесты всех моделей (exa
       не менялись; цифры в админке отстают до 10 минут, перед Telegram-отчётом
       буфер сбрасывается принудительно. Новые счётчики — только через
       `trackStats`, никаких `put` на каждый запрос.
+  - **Копия приложения на pdd-drive.ru/app/** (на неё ведут все кнопки сайта,
+    т.к. у app.pdd-drive.ru нет HTTPS-сертификата): `WEB_BASE_HREF=/app/
+    ./scripts/build.sh ru web`, затем `APP_BUILD=build/web ./scripts/deploy_landing.sh ru`.
+    Обычный деплой лендинга `/app/` не трогает (исключён из `--delete`).
   - **Приложение**: `deploy_web.sh ru` → репо `pdd-rossiya-app` gh-pages →
     app.pdd-drive.ru (robots.txt Disallow: SEO живёт на лендинге; DNS: CNAME
     `app` → degtyarikup-ui.github.io на reg.ru).
