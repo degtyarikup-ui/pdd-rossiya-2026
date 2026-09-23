@@ -3723,10 +3723,8 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
       return jsonResponse({ ok: true, reported: true });
     }
 
-    // Трекаем только новых пользователей: обновившихся молча игнорируем
-    if (body.kind === 'update') {
-      return jsonResponse({ ok: true, ignored: true });
-    }
+    // kind: 'update' не отбрасываем: сборки до 2.1.3 помечали так и свежие
+    // установки. Отчёт шлётся один раз за жизнь установки, дубли режет assignNumber.
 
     // Веб-пинги
     if (isWebRequest(body)) {
