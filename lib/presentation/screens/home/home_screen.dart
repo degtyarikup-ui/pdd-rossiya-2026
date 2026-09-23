@@ -78,9 +78,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
-  // Tabs are built on first visit and then kept: the game run survives a
-  // switch to another tab (it pauses) instead of being thrown away.
-  final Set<int> _visited = {};
+  // Only the game is kept alive off-screen (paused) so a run survives a tab
+  // switch; every other tab is built only while shown, so e.g. the feed's
+  // autoplay, voice-over and sounds stop the moment you leave it.
+  static const _gameTab = 1;
+  bool _gameVisited = false;
 
   List<Widget> get _screens => [
     const _HomeTab(),
@@ -121,13 +123,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         backgroundColor: colors.homeScreenBackground,
         body: Builder(
           builder: (context) {
-            _visited.add(_currentIndex);
+            if (_currentIndex == _gameTab) _gameVisited = true;
             final screens = _screens;
             return IndexedStack(
               index: _currentIndex,
               children: [
                 for (var i = 0; i < screens.length; i++)
-                  _visited.contains(i) ? screens[i] : const SizedBox.shrink(),
+                  i == _currentIndex || (i == _gameTab && _gameVisited)
+                      ? screens[i]
+                      : const SizedBox.shrink(),
               ],
             );
           },
