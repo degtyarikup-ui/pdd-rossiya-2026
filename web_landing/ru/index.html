@@ -38,10 +38,8 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/assets/favicon.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="/assets/style.css?v=4">
+  <link rel="preload" href="/assets/fonts/onest-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/style.css?v=5">
   <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
   <script type="application/ld+json">
   {
@@ -169,7 +167,7 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
     <div class="container">
       <div class="hero-copy">
         <span class="eyebrow"><i></i>Билеты обновлены на 2026 год</span>
-        <h1>Сдайте теорию <em>с первого раза</em></h1>
+        <h1>Билеты ПДД 2026 — <em>сдайте с первого раза</em></h1>
         <p class="subtitle">Официальные билеты ГИБДД A/B и C/D с пояснением к каждому вопросу и экзамен по настоящему регламенту.</p>
         <div class="hero-actions">
           <a class="btn btn-primary btn-lg" href="/app/">Начать бесплатно <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
