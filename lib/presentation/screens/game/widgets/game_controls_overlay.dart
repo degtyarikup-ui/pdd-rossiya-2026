@@ -2,6 +2,7 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
+import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
 
 class GameControlsOverlay extends StatefulWidget {
@@ -80,6 +81,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                           ? (held) => _steer(1, held)
                           : null,
                       onTap: null,
+                      haptic: _ControlHaptic.steering,
                     ),
                     const SizedBox(width: 10),
                     _LaneButton(
@@ -90,6 +92,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                           ? (held) => _steer(-1, held)
                           : null,
                       onTap: null,
+                      haptic: _ControlHaptic.steering,
                     ),
                   ],
                 ),
@@ -110,6 +113,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                           ? (held) => widget.onBrake?.call(held)
                           : null,
                       onTap: null,
+                      haptic: _ControlHaptic.brake,
                     ),
                     const SizedBox(height: 10),
                     _GasPedal(
@@ -128,6 +132,8 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
   }
 }
 
+enum _ControlHaptic { steering, brake }
+
 class _LaneButton extends StatefulWidget {
   final Widget icon;
   final String label;
@@ -137,6 +143,7 @@ class _LaneButton extends StatefulWidget {
   final Color? backgroundColor;
   final Color? iconColor;
   final double width;
+  final _ControlHaptic? haptic;
 
   const _LaneButton({
     super.key,
@@ -148,6 +155,7 @@ class _LaneButton extends StatefulWidget {
     this.backgroundColor,
     this.iconColor,
     this.width = 74,
+    this.haptic,
   });
 
   @override
@@ -179,6 +187,16 @@ class _LaneButtonState extends State<_LaneButton> {
     return Listener(
       onPointerDown: (event) {
         if (widget.onHold == null || _pointer != null) return;
+        switch (widget.haptic) {
+          case _ControlHaptic.steering:
+            HapticFeedbackHelper.select();
+            break;
+          case _ControlHaptic.brake:
+            HapticFeedbackHelper.tap();
+            break;
+          case null:
+            break;
+        }
         setState(() => _pointer = event.pointer);
         widget.onHold!(true);
       },
@@ -338,6 +356,7 @@ class _GasPedalState extends State<_GasPedal> {
       behavior: HitTestBehavior.opaque,
       onPointerDown: (event) {
         if (!widget.enabled || _pointer != null) return;
+        HapticFeedbackHelper.select();
         _pointer = event.pointer;
         _setPressed(true);
       },
@@ -352,6 +371,7 @@ class _GasPedalState extends State<_GasPedal> {
         _setPressed(false);
       },
       child: AnimatedContainer(
+        key: const ValueKey('game-gas'),
         duration: const Duration(milliseconds: 120),
         width: 100,
         height: 100,
@@ -367,20 +387,13 @@ class _GasPedalState extends State<_GasPedal> {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.speed_rounded,
-                  size: 26,
-                  color: _isPressed ? AppColors.white : colors.accent,
-                ),
-                const SizedBox(height: 2),
+                // Speed only, large: the dial is the gas pedal and the
+                // speedometer at once.
                 Text(
                   '${widget.speedKmH}',
-                  style: TextStyle(
-                    fontFamily: 'Onest',
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
+                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
                     color: _isPressed ? AppColors.white : colors.primaryText,
-                    height: 1.1,
+                    height: 1.05,
                   ),
                 ),
                 Text(

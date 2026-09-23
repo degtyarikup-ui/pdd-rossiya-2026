@@ -185,6 +185,19 @@ flutter test                           # тесты всех моделей (exa
   (локальный клон: `/Users/sergei/Documents/pdd-belarus`).
 - Веб RS: репо `pdd-serbia` gh-pages → rs.pdd-drive.online (поддомен).
 
+## Стенд игры (проверка сцен по билетам)
+
+`./scripts/game_lab.sh` → http://127.0.0.1:8940/ (только localhost). Все сцены
+игры (перекрёстки `ticket_N_M` и дорожные `road_*`) рядом с оригиналом билета из
+`questions_ab.json` (картинка, ответы, комментарий) + автосверка текста/ответов.
+Режимы: осмотр (свободная камера), езда с клавиатуры, редактор знаков и декора.
+Правки → `assets/game/scene-edits.js` (применяет сама игра, `applySceneEdits`),
+отметки проверки → `tools/game_lab/review.json`. Мастерская моделей (цвета,
+скрытие деталей, размеры) → `assets/game/model-edits.js` (`applyModelEdits` в
+vehicles.js + обёртки фабрик в game.js). Кнопка «🚀 В игру» —
+`install_dev.sh --build` на телефон. `lab-hook.js` вставляется в
+game.js только сервером стенда, в приложение не попадает.
+
 ## Ролики «Успей узнать знак» (Shorts/Reels/TikTok)
 
 ```bash

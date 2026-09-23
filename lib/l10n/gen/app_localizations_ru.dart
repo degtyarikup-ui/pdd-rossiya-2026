@@ -855,7 +855,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameGaragePremiumCar =>
-      'Золотой кибертрак — для премиум-водителей';
+      'С премиумом открыты все машины и все цвета';
 
   @override
   String get gameRevealTitle => 'Новая машина!';
@@ -904,6 +904,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameSceneCalendar => 'По календарю';
 
   @override
+  String get gameDebugUnlimitedFuel => 'Бесконечный бензин';
+
+  @override
+  String get gameDebugUnlimitedFuelHint => 'Ошибки не расходуют бензин';
+
+  @override
   String get gameSceneSummer => 'Лето';
 
   @override
@@ -913,7 +919,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameSceneWinter => 'Зима';
 
   @override
-  String get gameCollision => 'Столкновение · отпустите газ';
+  String get gameCollision => 'Столкновение';
 
   @override
   String get gameOffroad => 'Бордюр · поверните к дороге';
@@ -926,6 +932,13 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameOncoming => 'Встречная полоса! Вернитесь вправо';
+
+  @override
+  String get gameOneWayAgainst =>
+      'Одностороннее движение! Вы едете против потока';
+
+  @override
+  String get gameRoadworksHit => 'Вы въехали в зону дорожных работ';
 
   @override
   String get gameCorrectAnswers => 'Верных ответов';

@@ -7,17 +7,41 @@ The WebView runs offline from bundled assets, so the artwork of every sign the
 import base64, json, pathlib, re
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-CODES = ['2.1', '2.4', '2.5',                      # crossroad priority signs
-         '1.6', '1.14',                             # warnings used by overtaking scenes
+CODES = ['2.1', '2.3.1', '2.4', '2.5',                      # crossroad priority signs
+         '1.6', '1.14', '1.25',                     # warnings used by overtaking/roadworks scenes
          '3.1', '3.20', '3.21', '3.24', '3.25',     # no entry, overtaking / speed limits
-         '5.1', '5.2', '5.5', '5.7.1', '5.7.2', '5.16', '5.19.1', '5.19.2', '5.21', '5.22', '5.23.1', '5.25', '5.26']  # special prescriptions
+         '4.2.1', '4.2.2', '4.3',                   # obstacle detour, roundabout
+         '5.1', '5.2', '5.5', '5.6', '5.7.1', '5.7.2', '5.16', '5.19.1', '5.19.2', '5.21', '5.22', '5.23.1', '5.24.1', '5.25', '5.26',  # special prescriptions
+         '6.16']                                    # stop line sign
+
+# Some catalogue SVGs are contact sheets containing two official variants.
+# Crop coordinates are in the source SVG coordinate system: x, y, width, height.
+SPRITE_CROPS = {
+    '5.7.1': (0, 0, 137, 48),
+    '5.7.2': (148, 0, 137, 48),
+    '5.19.1': (0, 3, 84, 84),
+    '5.19.2': (89, 3, 84, 84),
+}
 
 signs = json.loads((ROOT / 'assets/countries/ru/questions/signs.json').read_text())
 by_code = {code: item for category in signs.values() for code, item in category.items()}
+# Fail closed when another embedded sign starts sharing a sprite. Showing a
+# whole contact sheet in traffic changes the sign's meaning.
+images = {}
+for code in CODES:
+    images.setdefault(by_code[code]['image'], []).append(code)
+for codes in images.values():
+    if len(codes) > 1:
+        assert all(code in SPRITE_CROPS for code in codes), f'Uncropped sign sprite: {codes}'
 out, aspect = {}, {}
 for code in CODES:
     image = ROOT / 'assets/countries/ru' / by_code[code]['image'].removeprefix('./')
     raw = image.read_bytes()
+    if code in SPRITE_CROPS:
+        body = re.sub(rb'^<svg[^>]*>', b'', raw).removesuffix(b'</svg>')
+        x, y, width, height = SPRITE_CROPS[code]
+        raw = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
+               f'viewBox="{x} {y} {width} {height}">').encode() + body + b'</svg>'
     out[code] = 'data:image/svg+xml;base64,' + base64.b64encode(raw).decode()
     # Plates (5.7.x, 5.23.x …) are wide: keep their real proportions.
     w = re.search(rb' width="([\d.]+)"', raw[:800]); h = re.search(rb' height="([\d.]+)"', raw[:800])

@@ -56,6 +56,9 @@
     maxSpeed: 18, // m/s, follows the speed limit in force (see effectiveLimitKmH)
     baseLimitKmH: 60, // built-up area unless a sign says otherwise
     busBays: [], // bus bays in the world; walkers detour round them
+    props: [], // knockable cones / barriers of road works
+    flying: [], // props knocked loose, until they settle
+    crews: [], // animated road-works crews
     acceleration: 24, // m/s^2
     braking: 35, // m/s^2
     coasting: 10, // m/s^2
@@ -5047,7 +5050,10 @@
         const context = new contextClass();
         audio.context = context;
         audio.master = context.createGain(); audio.master.gain.value = 0;
-        audio.master.connect(context.destination);
+        // No sub-bass: on a phone speaker a 30-60 Hz engine rumble is felt in
+        // the hand like vibration while the gas is held.
+        const lowCut = context.createBiquadFilter(); lowCut.type = 'highpass'; lowCut.frequency.value = 140; lowCut.Q.value = 0.7;
+        audio.master.connect(lowCut).connect(context.destination);
         const makeTone = (type, frequency) => {
           const oscillator = context.createOscillator(); oscillator.type = type; oscillator.frequency.value = frequency;
           const gain = context.createGain(); gain.gain.value = 0;
@@ -5210,7 +5216,10 @@
       ramp(audio.nodes.squeal.gain.gain, state.isBraking && state.speed > 6 ? 0.03 + speedRatio * 0.05 : 0, 0.06);
       ramp(audio.nodes.scrape.gain.gain, state.curbClearTime === 0 && Math.abs(state.speed) > 0.5 ? 0.04 : 0, 0.05);
       if (state.speed < -0.3 && elapsed >= audio.reverseBeepAt) { audio.beep(); audio.reverseBeepAt = elapsed + 0.7; }
-      ramp(audio.nodes.rain.gain.gain, (state.rain || 0) * 0.045, 0.3);
+      // Snow falls silently: only a faint low hush instead of the rain hiss.
+      const snowing = season().precipitation === 'snow';
+      audio.nodes.rain.filter.frequency.value = snowing ? 380 : 1600;
+      ramp(audio.nodes.rain.gain.gain, (state.rain || 0) * (snowing ? 0.006 : 0.045), 0.3);
       ramp(audio.nodes.road.gain.gain, speedRatio * 0.035);
       ramp(audio.nodes.wind.gain.gain, Math.max(0, speedRatio - 0.3) * 0.012);
       ramp(audio.nodes.ambience.gain.gain, 0.013 + (state.district === 1 ? 0.006 : 0));
@@ -5475,10 +5484,13 @@
   }
 
   function selectVehicle(id, paint = null) {
-    if (!window.PDD_VEHICLES.specs[id] || (!state.paused && Math.abs(state.speed) > 0.1)) return;
+    if (!window.PDD_VEHICLES.specs[id]) return;
+    // Never silently drop a choice: while moving it is applied once stopped.
+    if (!state.paused && Math.abs(state.speed) > 0.1) { state.pendingVehicle = [id, paint]; return; }
+    state.pendingVehicle = null;
     state.speed = 0; state.isAccelerating = false; state.isBraking = false; state.steering = 0;
     if (state.vehicleId === id && (state.vehiclePaint || null) === (paint || null)) {
-      sendToFlutter({ event: 'vehicle_selected', vehicleId: id });
+      sendToFlutter({ event: 'vehicle_selected', vehicleId: id, paint: state.vehiclePaint });
       return;
     }
     const previous = playerCarGroup;
@@ -5505,12 +5517,12 @@
       playerCarGroup = previous;
       playerWheels = previous.userData.wheels;
       state.vehicleId = previousId; state.vehiclePaint = previousPaint;
-      sendToFlutter({ event: 'vehicle_selected', vehicleId: previousId });
+      sendToFlutter({ event: 'vehicle_selected', vehicleId: previousId, paint: previousPaint });
       return;
     }
     scene.add(playerCarGroup);
     disposeSegment(previous);
-    sendToFlutter({ event: 'vehicle_selected', vehicleId: id });
+    sendToFlutter({ event: 'vehicle_selected', vehicleId: id, paint: state.vehiclePaint });
     renderer.render(scene, camera);
   }
 
@@ -5629,6 +5641,28 @@
     addVehicleDetails(car, { width: 1.75, length: 3.6, baseY: 0.5, lampY: 0.62, cabinY: 0.95, cabinH: 0.5, cabinZ: -0.2, cabinL: 1.9, cabinW: 1.45, wheels, wheelR: 0.32, wheelW: 0.25 });
 
     return car;
+  }
+
+  // --- Delivery van (a courier "bus" in the tickets' photos) ---
+  function createVan(color = 0xF2C230) {
+    const van = new THREE.Group();
+    const bodyMat = new THREE.MeshLambertMaterial({ color });
+    const glassMat = new THREE.MeshLambertMaterial({ color: 0x1E293B });
+    const wheelMat = new THREE.MeshLambertMaterial({ color: 0x18181B });
+    const box = (w, h, d, x, y, z, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.castShadow = true; van.add(m); return m; };
+    box(1.9, 1.55, 3.7, 0, 1.2, -0.55, bodyMat);          // cargo box
+    box(1.9, 0.9, 1.2, 0, 0.9, 1.85, bodyMat);            // cab / bonnet
+    const shield = box(1.7, 0.62, 0.06, 0, 1.55, 1.3, glassMat); shield.rotation.x = -0.35; // windscreen
+    box(1.92, 0.12, 4.9, 0, 0.5, 0, new THREE.MeshLambertMaterial({ color: 0x3A3F45 })); // sill
+    box(1.4, 0.14, 0.02, 0, 1.3, -2.41, new THREE.MeshLambertMaterial({ color: 0xD8262E })); // rear stripe
+    van.userData.lampSpec = { front: { x: 0.65, y: 0.72, z: 2.45 }, rear: { x: 0.7, y: 0.75, z: -2.4 } };
+    const wheelGeo = new THREE.CylinderGeometry(0.36, 0.36, 0.26, 12); wheelGeo.rotateZ(Math.PI / 2);
+    const wheels = [[-0.9, 1.6], [0.9, 1.6], [-0.9, -1.5], [0.9, -1.5]].map(([x, z]) => {
+      const w = new THREE.Mesh(wheelGeo, wheelMat); w.position.set(x, 0.36, z); van.add(w); return w;
+    });
+    van.userData.wheels = wheels;
+    addVehicleDetails(van, { width: 1.9, length: 4.9, baseY: 0.6, lampY: 0.75, cabinY: 1.45, cabinH: 0.5, cabinZ: 1.5, cabinL: 0.9, cabinW: 1.9, wheels, wheelR: 0.36, wheelW: 0.26 });
+    return van;
   }
 
   // --- Bus Model Factory ---
@@ -5815,45 +5849,62 @@
   }
 
   // --- Motorcycle Model Factory ---
-  function createMotorcycle(color = 0xF59E0B) {
+  // A road bike with its rider: tank, seat, engine, exhaust, fork, fenders,
+  // lamps and spoked wheels. Paint varies from bike to bike (the badge keeps
+  // the scenario colour, so the legend still matches).
+  const MOTO_PAINTS = [0xD62D2D, 0x1F2933, 0x2563EB, 0xF1F3F5, 0xF08A24, 0x2F855A, 0xE8C547, 0x9AA5B1, 0x7A5BC6];
+  function createMotorcycle(color = 0xF59E0B, paint = MOTO_PAINTS[Math.floor(Math.random() * MOTO_PAINTS.length)]) {
     const moto = new THREE.Group();
-    const bodyMat = new THREE.MeshLambertMaterial({ color });
-    const darkMat = new THREE.MeshLambertMaterial({ color: 0x1E293B });
-    const wheelMat = new THREE.MeshLambertMaterial({ color: 0x18181B });
-    const riderMat = sceneryMat(PEOPLE_COLORS[Math.floor(Math.random() * PEOPLE_COLORS.length)]);
-
-    // Chassis
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.55, 1.7), bodyMat);
-    body.position.set(0, 0.58, 0);
-    body.castShadow = true;
-    moto.add(body);
-
-    // Handlebars
-    moto.userData.lampSpec = { front: { x: 0, y: 0.85, z: 0.85 }, rear: { x: 0, y: 0.72, z: -0.85 }, single: true };
-    const hb = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.75, 8), darkMat);
-    hb.rotateZ(Math.PI / 2);
-    hb.position.set(0, 0.92, 0.6);
-    moto.add(hb);
-
-    // 2 Wheels
-    const wheelGeo = new THREE.CylinderGeometry(0.34, 0.34, 0.14, 12);
-    wheelGeo.rotateZ(Math.PI / 2);
-    [0.72, -0.72].forEach(z => {
-      const w = new THREE.Mesh(wheelGeo, wheelMat);
-      w.position.set(0, 0.34, z);
-      moto.add(w);
+    const paintMat = new THREE.MeshLambertMaterial({ color: paint });
+    const dark = new THREE.MeshLambertMaterial({ color: 0x23272C });
+    const metal = new THREE.MeshLambertMaterial({ color: 0xB8C0C6 });
+    const tyre = new THREE.MeshLambertMaterial({ color: 0x151719 });
+    const look = personLook(Math.floor(Math.random() * 12));
+    const part = (geo, mat, x, y, z, rx = 0) => {
+      const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.x = rx; m.castShadow = true; moto.add(m); return m;
+    };
+    moto.userData.lampSpec = { front: { x: 0, y: 0.86, z: 1.02 }, rear: { x: 0, y: 0.78, z: -1.02 }, single: true };
+    // Wheels: tyre, rim and spokes; they turn with the bike.
+    moto.userData.wheels = [];
+    [0.74, -0.72].forEach(z => {
+      const wheel = new THREE.Group(); wheel.position.set(0, 0.33, z);
+      const t = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.075, 6, 16), tyre); t.rotation.y = Math.PI / 2; wheel.add(t);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.12, 8), metal); hub.rotation.z = Math.PI / 2; wheel.add(hub);
+      for (let k = 0; k < 3; k++) {
+        const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.5, 0.03), metal); spoke.rotation.x = k * Math.PI / 3; wheel.add(spoke);
+      }
+      moto.add(wheel); moto.userData.wheels.push(wheel);
+      // Fender over each wheel.
+      part(new THREE.BoxGeometry(0.2, 0.04, 0.5), paintMat, 0, 0.66, z + (z > 0 ? 0.04 : -0.06), z > 0 ? -0.25 : 0.3);
     });
-
-    // Rider
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.52, 0.32), riderMat);
-    torso.position.set(0, 1.0, -0.1);
-    torso.rotation.x = -0.15;
-    moto.add(torso);
-
-    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), bodyMat);
-    helmet.position.set(0, 1.38, -0.05);
-    moto.add(helmet);
-
+    // Frame, engine and exhaust.
+    part(new THREE.BoxGeometry(0.1, 0.1, 1.2), dark, 0, 0.62, 0, -0.12);
+    part(new THREE.BoxGeometry(0.34, 0.32, 0.46), dark, 0, 0.44, 0.05);
+    part(new THREE.BoxGeometry(0.28, 0.12, 0.3), metal, 0, 0.4, 0.05);
+    const pipe = part(new THREE.CylinderGeometry(0.05, 0.06, 0.9, 8), metal, 0.2, 0.36, -0.4, Math.PI / 2 - 0.12);
+    pipe.rotation.z = 0.05;
+    // Tank, seat and tail.
+    part(new THREE.BoxGeometry(0.36, 0.24, 0.5), paintMat, 0, 0.86, 0.28, 0.12);
+    part(new THREE.BoxGeometry(0.3, 0.1, 0.62), dark, 0, 0.84, -0.3);
+    part(new THREE.BoxGeometry(0.26, 0.14, 0.34), paintMat, 0, 0.84, -0.72, -0.2);
+    // Fork, handlebar with grips, headlight and tail light.
+    [-0.09, 0.09].forEach(x => part(new THREE.CylinderGeometry(0.025, 0.025, 0.66, 6), metal, x, 0.64, 0.66, -0.35));
+    const bar = part(new THREE.CylinderGeometry(0.022, 0.022, 0.66, 6), dark, 0, 1.0, 0.56); bar.rotation.z = Math.PI / 2;
+    [-0.33, 0.33].forEach(x => { const g = part(new THREE.CylinderGeometry(0.035, 0.035, 0.12, 6), tyre, x, 1.0, 0.56); g.rotation.z = Math.PI / 2; });
+    part(new THREE.CylinderGeometry(0.09, 0.09, 0.06, 10), new THREE.MeshBasicMaterial({ color: 0xFFF3CC }), 0, 0.86, 0.9, Math.PI / 2);
+    part(new THREE.BoxGeometry(0.14, 0.06, 0.04), new THREE.MeshBasicMaterial({ color: 0xD33D38 }), 0, 0.84, -0.9);
+    // Rider: leaning forward, hands on the grips, feet on the pegs.
+    const jacket = sceneryMat(look.top), trousers = sceneryMat(look.pants);
+    part(new THREE.BoxGeometry(0.4, 0.5, 0.26), jacket, 0, 1.18, -0.12, 0.35);
+    [-1, 1].forEach(side => {
+      const arm = part(new THREE.CylinderGeometry(0.055, 0.05, 0.62, 6), jacket, side * 0.24, 1.14, 0.2, 1.05); arm.rotation.z = -side * 0.25;
+      part(new THREE.BoxGeometry(0.13, 0.13, 0.46), trousers, side * 0.17, 0.9, -0.12);
+      part(new THREE.BoxGeometry(0.11, 0.42, 0.13), trousers, side * 0.2, 0.64, 0.04, 0.35);
+      part(new THREE.BoxGeometry(0.11, 0.08, 0.22), dark, side * 0.21, 0.44, 0.12);
+    });
+    part(new THREE.SphereGeometry(0.19, 12, 9), paintMat, 0, 1.54, 0.04);
+    part(new THREE.BoxGeometry(0.28, 0.1, 0.06), new THREE.MeshLambertMaterial({ color: 0x1E293B }), 0, 1.53, 0.2);
+    moto.userData.paint = paint;
     return moto;
   }
 
@@ -5980,6 +6031,10 @@
   }
 
   // --- Russian Road Sign Factory (GOST 52290) ---
+  // Sign faces must sit fully in front of the thickest support. Keeping this
+  // shared offset for both the main sign and supplementary plates prevents a
+  // pole from showing through their artwork at any camera distance.
+  const ROAD_SIGN_FACE_Z = -0.09;
   function createRoadSign(code, poleHeight = 3.2) {
     const group = new THREE.Group();
     const pole = new THREE.Mesh(
@@ -6001,7 +6056,7 @@
       aspect ? new THREE.PlaneGeometry(2.4, 2.4 / aspect) : new THREE.PlaneGeometry(1.6, 1.6),
       new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.12, side: THREE.DoubleSide })
     );
-    face.position.set(0, poleHeight - 0.25, -0.065);
+    face.position.set(0, poleHeight - 0.25, ROAD_SIGN_FACE_Z);
     face.rotation.y = Math.PI;
     group.add(face);
     return group;
@@ -6033,8 +6088,214 @@
     });
     const face = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.94),
       new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), side: THREE.DoubleSide }));
+    // In front of the pole, like every sign face: the pole must not cross it.
+    face.position.z = ROAD_SIGN_FACE_Z;
     face.rotation.y = Math.PI;
     const group = new THREE.Group(); group.add(face);
+    return group;
+  }
+
+  // --- Traffic Controller Factory (Регулировщик, ГОСТ / ПДД 6.10) ---
+  function createTrafficController(pose = 'arms_down', orientation = 'front') {
+    const group = new THREE.Group();
+    group.userData.isRegulator = true;
+    group.userData.pose = pose;
+    group.userData.orientation = orientation;
+
+    const darkUniform = new THREE.MeshLambertMaterial({ color: 0x1E293B });
+    const vestLime = new THREE.MeshLambertMaterial({ color: 0x84CC16 });
+    const stripeSilver = new THREE.MeshLambertMaterial({ color: 0xF1F5F9 });
+    const skinMat = new THREE.MeshLambertMaterial({ color: 0xE2A76F });
+    const capMat = new THREE.MeshLambertMaterial({ color: 0x0F172A });
+    const whiteMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
+    const blackMat = new THREE.MeshLambertMaterial({ color: 0x111827 });
+
+    // Boots
+    [-0.14, 0.14].forEach(x => {
+      const boot = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 0.32), blackMat);
+      boot.position.set(x, 0.08, 0.04);
+      group.add(boot);
+    });
+
+    // Legs
+    [-0.14, 0.14].forEach(x => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.85, 8), darkUniform);
+      leg.position.set(x, 0.58, 0);
+      group.add(leg);
+    });
+
+    // Torso with vest
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.65, 0.3), vestLime);
+    torso.position.set(0, 1.28, 0);
+    group.add(torso);
+
+    // Reflective stripes on vest
+    const hStripe = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.08, 0.32), stripeSilver);
+    hStripe.position.set(0, 1.18, 0);
+    group.add(hStripe);
+
+    [-0.15, 0.15].forEach(x => {
+      const vStripe = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.45, 0.32), stripeSilver);
+      vStripe.position.set(x, 1.38, 0);
+      group.add(vStripe);
+    });
+
+    // Head
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.26, 0.24), skinMat);
+    head.position.set(0, 1.73, 0);
+    group.add(head);
+
+    // Police Cap
+    const capBand = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.08, 12), capMat);
+    capBand.position.set(0, 1.86, 0);
+    group.add(capBand);
+    const capCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.15, 0.06, 12), capMat);
+    capCrown.position.set(0, 1.92, 0);
+    group.add(capCrown);
+    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.02, 0.14), blackMat);
+    visor.position.set(0, 1.84, 0.18);
+    visor.rotation.x = 0.2;
+    group.add(visor);
+    const cockade = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.02), new THREE.MeshLambertMaterial({ color: 0xF59E0B }));
+    cockade.position.set(0, 1.88, 0.15);
+    group.add(cockade);
+
+    function createBaton() {
+      const batonGroup = new THREE.Group();
+      const bWhite = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.44, 8), whiteMat);
+      batonGroup.add(bWhite);
+      for (let i = -1; i <= 1; i++) {
+        const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.023, 0.023, 0.07, 8), blackMat);
+        stripe.position.y = i * 0.12;
+        batonGroup.add(stripe);
+      }
+      return batonGroup;
+    }
+
+    if (pose === 'right_arm_forward') {
+      const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.65), darkUniform);
+      rArm.position.set(0.32, 1.45, 0.32);
+      group.add(rArm);
+      const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), skinMat);
+      rHand.position.set(0.32, 1.45, 0.66);
+      group.add(rHand);
+      const baton = createBaton();
+      baton.rotation.x = Math.PI / 2;
+      baton.position.set(0.32, 1.45, 0.88);
+      group.add(baton);
+
+      const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), darkUniform);
+      lArm.position.set(-0.32, 1.25, 0);
+      group.add(lArm);
+    } else if (pose === 'arm_up') {
+      const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 0.12), darkUniform);
+      rArm.position.set(0.32, 1.8, 0);
+      group.add(rArm);
+      const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), skinMat);
+      rHand.position.set(0.32, 2.15, 0);
+      group.add(rHand);
+      const baton = createBaton();
+      baton.position.set(0.32, 2.4, 0);
+      group.add(baton);
+
+      const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), darkUniform);
+      lArm.position.set(-0.32, 1.25, 0);
+      group.add(lArm);
+    } else {
+      const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), darkUniform);
+      lArm.position.set(-0.32, 1.25, 0);
+      group.add(lArm);
+
+      const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), darkUniform);
+      rArm.position.set(0.32, 1.25, 0);
+      group.add(rArm);
+      const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), skinMat);
+      rHand.position.set(0.32, 0.94, 0);
+      group.add(rHand);
+      const baton = createBaton();
+      baton.rotation.z = -0.3;
+      baton.position.set(0.36, 0.8, 0);
+      group.add(baton);
+    }
+
+    if (orientation === 'facing_player' || orientation === 'front') group.rotation.y = Math.PI;
+    else if (orientation === 'back') group.rotation.y = 0;
+    else if (orientation === 'left_side') group.rotation.y = Math.PI / 2;
+    else if (orientation === 'right_side') group.rotation.y = -Math.PI / 2;
+
+    const pedestal = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.2, 1.3, 0.06, 24),
+      new THREE.MeshLambertMaterial({ color: 0xE2E8F0 })
+    );
+    pedestal.position.y = 0.03;
+    pedestal.receiveShadow = true;
+    group.add(pedestal);
+
+    return group;
+  }
+
+  function createTrafficCone() {
+    const group = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.04, 0.38), new THREE.MeshLambertMaterial({ color: 0x1E293B }));
+    base.position.y = 0.02;
+    group.add(base);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.16, 0.62, 12), new THREE.MeshLambertMaterial({ color: 0xEA580C }));
+    body.position.y = 0.33;
+    group.add(body);
+    const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.11, 0.14, 12), new THREE.MeshLambertMaterial({ color: 0xFFFFFF }));
+    stripe.position.y = 0.35;
+    group.add(stripe);
+    return group;
+  }
+
+  // Three separate parts (two trestles and the striped board) so that a car
+  // driving into it breaks it apart instead of passing through.
+  function createRoadworksBarrier(width = 2.4) {
+    const group = new THREE.Group();
+    const wood = new THREE.MeshLambertMaterial({ color: 0xE2E8F0 });
+    const red = new THREE.MeshLambertMaterial({ color: 0xDC2626 });
+    group.userData.parts = [];
+    [-width / 2 + 0.2, width / 2 - 0.2].forEach(x => {
+      const trestle = new THREE.Group();
+      trestle.position.set(x, 0, 0);
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.0, 0.08), wood);
+      leg.position.set(0, 0.5, 0);
+      trestle.add(leg);
+      const foot = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.6), wood);
+      foot.position.set(0, 0.03, 0);
+      trestle.add(foot);
+      group.add(trestle); group.userData.parts.push(trestle);
+    });
+    const board = new THREE.Group();
+    board.position.set(0, 0.72, 0);
+    board.add(new THREE.Mesh(new THREE.BoxGeometry(width, 0.28, 0.04), wood));
+    for (let x = -width / 2 + 0.3; x < width / 2; x += 0.5) {
+      const s = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.28, 0.042), red);
+      s.position.set(x, 0, 0);
+      s.rotation.z = 0.4;
+      board.add(s);
+    }
+    group.add(board); group.userData.parts.push(board);
+    return group;
+  }
+
+  function createEmergencyTriangle() {
+    const group = new THREE.Group();
+    const shape = new THREE.Shape();
+    const h = 0.45 * Math.sqrt(3) / 2;
+    shape.moveTo(-0.22, 0); shape.lineTo(0.22, 0); shape.lineTo(0, h); shape.closePath();
+    const hole = new THREE.Path();
+    const h2 = 0.3 * Math.sqrt(3) / 2;
+    hole.moveTo(-0.15, 0.04); hole.lineTo(0.15, 0.04); hole.lineTo(0, 0.04 + h2); hole.closePath();
+    shape.holes.push(hole);
+    const geom = new THREE.ShapeGeometry(shape);
+    const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: 0xEF4444, side: THREE.DoubleSide }));
+    mesh.position.y = 0.02;
+    mesh.rotation.x = -0.15;
+    group.add(mesh);
+    const stand = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.02, 0.15), new THREE.MeshLambertMaterial({ color: 0x475569 }));
+    stand.position.y = 0.01;
+    group.add(stand);
     return group;
   }
 
@@ -6370,7 +6631,9 @@
   // Overlaps are same-colour, so the coplanar overlap itself is invisible.
   const SEAM = 0.12;
 
-  function buildStraightSegment(startZ, length = 70, preview = false, district = state.district) {
+  // oneWay: null (two-way), 'with' (the player drives with the one-way flow)
+  // or 'against' (the player entered it against the flow, a violation).
+  function buildStraightSegment(startZ, length = 70, preview = false, district = state.district, oneWay = null) {
     const seg = new THREE.Group();
     const roadWidth = 8.4; // 2 lanes (4.2m each)
 
@@ -6428,6 +6691,22 @@
     lineR.position.set(roadWidth / 2 - 0.25, 0.025, startZ + length / 2);
     seg.add(lineR);
 
+    if (oneWay) {
+      // Both lanes carry the same direction: the centre dashes are the lane
+      // divider 1.5. 5.5 starts the one-way stretch, 5.6 ends it before the
+      // next (two-way) junction. Against the flow the driver sees their backs.
+      const flowForward = oneWay === 'with';
+      const place = (code, z) => {
+        const sign = createRoadSign(code);
+        // On the flow's right-hand pavement (factory X = driver's right).
+        sign.position.set(flowForward ? 5.2 : -5.2, 0, z);
+        sign.rotation.y = flowForward ? 0 : Math.PI;
+        seg.add(sign);
+      };
+      place('5.5', flowForward ? startZ + 6 : startZ + length - 6);
+      place('5.6', flowForward ? startZ + length - 14 : startZ + 14);
+    }
+
     // Districts blend over the road's length, and are built with the road,
     // never spawned in response to a camera turn: park / homes / boulevard.
     seg.userData.district = district;
@@ -6477,7 +6756,9 @@
           const hill = new THREE.Mesh(new THREE.SphereGeometry(22, 12, 8), new THREE.MeshLambertMaterial({ color: season().hillColor }));
           hill.scale.set(1.6, 0.32, 1); hill.position.set(side * 66, -2, z + 20); far.push(hill);
         }
-        bakeGroups(far).forEach(m => seg.add(m));
+        const backdrop = new THREE.Group();
+        bakeGroups(far).forEach(m => backdrop.add(m));
+        seg.add(backdrop);
         // Rows are 20 m apart; a building of depth D leaves a gap of 20 - D
         // where trees, hedges and parked cars go (never under a facade).
         const depth = style === 0 ? 0 : style === 1 ? 6 + Math.random() * 2 : style === 3 ? 11 : 8 + Math.random() * 2;
@@ -6528,9 +6809,10 @@
           if (row % 3 === 0) { const kiosk = createKiosk(); kiosk.position.set(side * 9.4, 0, gapZ - 3.2); kiosk.rotation.y = side > 0 ? -Math.PI / 2 : Math.PI / 2; seg.add(kiosk); }
           else if (row % 3 === 2) {
             const board = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.6, 3), sceneryMat([0xF2C14E, 0x5DA9E9, 0xE07A5F][row % 3]));
-            board.position.set(side * 8.6, 2.2, gapZ - 3.2); seg.add(board);
+            board.position.set(side * 8.6, 2.2, gapZ - 3.2);
+            const billboard = new THREE.Group(); billboard.add(board); seg.add(billboard);
             const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.4, 6), sceneryMat(0x5B646A));
-            leg.position.set(side * 8.6, 0.7, gapZ - 3.2); seg.add(leg);
+            leg.position.set(side * 8.6, 0.7, gapZ - 3.2); billboard.add(leg);
           }
         }
         // A bench and planter form a quiet park edge, outside the walking lane.
@@ -6574,7 +6856,14 @@
       }
     }
 
+    // Treat each complete roadside object as one unit when clearing a junction.
+    // Cutting its individual meshes leaves open facades and floating furniture.
+    seg.children.forEach(o => {
+      const box = new THREE.Box3().setFromObject(o);
+      if (!box.isEmpty() && box.max.y > 0.3) o.userData.sceneryObject = true;
+    });
     registerRoadSegment(seg);
+    seg.userData.oneWay = oneWay;
     seg.userData.roadEnds = [new THREE.Vector3(0, 0, startZ), new THREE.Vector3(0, 0, startZ + length)];
     addPuddles(seg, startZ, length);
     state.weatherDirty = true;
@@ -6608,6 +6897,9 @@
     } else if (cfg.type === 'special') {
       actorMesh = createSpecialCar(cfg.color);
       badgeHeight = 2.4;
+    } else if (cfg.type === 'van') {
+      actorMesh = createVan(cfg.color);
+      badgeHeight = 3.0;
     } else if (cfg.type === 'motorcycle') {
       actorMesh = createMotorcycle(cfg.color);
       badgeHeight = 2.7;
@@ -6658,6 +6950,7 @@
         cfg.name.includes('Трамвай Б') ? 'Б' :
         cfg.name.includes('Трамвай') ? 'Трамвай' :
         cfg.name.includes('Автобус') ? 'Автобус' :
+        cfg.name.includes('Фургон') ? 'Фургон' :
         cfg.name.includes('Грузовик') ? 'Грузовик' :
         cfg.name.includes('Спец') ? 'Спец' :
         cfg.name.includes('Мотоцикл') ? 'Мото' :
@@ -6678,9 +6971,21 @@
       // Turn signals readable from the chase camera, on both sides; which side
       // blinks (if any) follows the actor's manoeuvre plan.
       const k = actorMesh.scale.x;
-      const lamps = side => [-halfLength + 0.15, halfLength - 0.15].map(z => {
-        const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.3), new THREE.MeshBasicMaterial({ color: 0xFFB21C }));
-        lamp.position.set(side * (modelSize.x / 2 - 0.02) / k, 0.85 / k, z / k);
+      // At the very corners of the body, poking out a little: on a tall
+      // truck or bus a lamp set inside the outline hides under the cargo box
+      // or roof as seen by the chase camera.
+      // Each model knows where its head and tail lamps are (lampSpec, model
+      // units): the indicators sit just outboard of them, on the body — not
+      // at the outline of wheels, mirrors or a trailer hanging in the air.
+      const spec = actorMesh.userData.lampSpec;
+      const lampAt = (side, end) => {
+        if (!spec) return [side * (modelSize.x / 2 - 0.02) / k, 0.85 / k, end * (halfLength + 0.04) / k];
+        const l = end > 0 ? spec.front : spec.rear;
+        return [side * (spec.single ? 0.22 : l.x + 0.2), l.y, l.z + end * 0.06];
+      };
+      const lamps = side => [-1, 1].map(end => {
+        const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 0.12), new THREE.MeshBasicMaterial({ color: 0xFFB21C }));
+        lamp.position.set(...lampAt(side, end));
         lamp.visible = false;
         window.PDD_VEHICLES.addGlow(lamp, 0xFFB21C, 1.1);
         actorMesh.userData.body.add(lamp);
@@ -6692,9 +6997,287 @@
     return { actorMesh, halfLength, halfWidth: modelSize.x / 2 };
   }
 
+  function buildRoundaboutSegment(startZ, situation, incomingRoad = null) {
+    const spec = routeSpec(situation);
+    situation = { ...situation, ...(spec.overrides || {}) };
+    const intentions = { straight: 'Вы прямо', left: 'Вы налево', right: 'Вы направо', uturn: 'Вы на разворот' };
+    situation.legend = [{ label: intentions[spec.maneuver] || 'Вы на круг', color: '#ED4621' },
+      ...(situation.actorsConfig || []).map(a => ({ label: a.name, color: a.color || '#0574F8' }))];
+    const seg = new THREE.Group();
+    const roadWidth = 8.4;
+    const intersectionLength = 52;
+    const centerZ = startZ + 26;
+    const crossStreetLength = 70;
+
+    // The same lawn colour as the roads that meet here: the approach ends and
+    // every exit starts in district (state.district + 1). No colour seam.
+    const lawn = Math.min((state.district + 1) % DISTRICTS, 2);
+    const districtGround = new THREE.Mesh(new THREE.PlaneGeometry(crossStreetLength + SEAM, intersectionLength + SEAM),
+      new THREE.MeshLambertMaterial({ color: season().verge[lawn] }));
+    districtGround.material.userData.seasonal = 'verge' + lawn;
+    districtGround.rotation.x = -Math.PI / 2;
+    districtGround.position.set(0, -0.02, centerZ);
+    districtGround.receiveShadow = true;
+    seg.add(districtGround);
+
+    // Central Island (radius 8.5m)
+    const islandCurb = new THREE.Mesh(
+      new THREE.CylinderGeometry(8.5, 8.5, 0.2, 48),
+      new THREE.MeshLambertMaterial({ color: BRAND.sidewalk })
+    );
+    islandCurb.position.set(0, 0.1, centerZ);
+    islandCurb.receiveShadow = true;
+    seg.add(islandCurb);
+
+    const islandLawn = new THREE.Mesh(
+      new THREE.CircleGeometry(8.3, 48),
+      new THREE.MeshLambertMaterial({ color: season().ground })
+    );
+    islandLawn.material.userData.seasonal = 'ground';
+    islandLawn.rotation.x = -Math.PI / 2;
+    islandLawn.position.set(0, 0.205, centerZ);
+    islandLawn.receiveShadow = true;
+    seg.add(islandLawn);
+
+    const centralTree = createTree('deciduous');
+    centralTree.position.set(0, 0.2, centerZ);
+    seg.add(centralTree);
+
+    // Circular Ring Asphalt (inner 8.5m, outer 15.5m)
+    const ringGeo = new THREE.RingGeometry(8.5, 15.5, 160);
+    ringGeo.rotateX(-Math.PI / 2);
+    const ringAsphalt = new THREE.Mesh(ringGeo, new THREE.MeshLambertMaterial({ color: BRAND.asphalt }));
+    ringAsphalt.position.set(0, 0.021, centerZ);
+    ringAsphalt.userData.surface = 'road';
+    ringAsphalt.receiveShadow = true;
+    seg.add(ringAsphalt);
+
+    // 4 Straight approach roads connecting to the ring
+    const southLen = (intersectionLength / 2) - 14.5;
+    const southAsphalt = new THREE.Mesh(new THREE.PlaneGeometry(roadWidth, southLen + SEAM), new THREE.MeshLambertMaterial({ color: BRAND.asphalt }));
+    southAsphalt.rotation.x = -Math.PI / 2;
+    southAsphalt.position.set(0, 0.02, startZ + southLen / 2);
+    southAsphalt.userData.surface = 'road';
+    southAsphalt.receiveShadow = true;
+    seg.add(southAsphalt);
+
+    const northAsphalt = new THREE.Mesh(new THREE.PlaneGeometry(roadWidth, southLen + SEAM), new THREE.MeshLambertMaterial({ color: BRAND.asphalt }));
+    northAsphalt.rotation.x = -Math.PI / 2;
+    northAsphalt.position.set(0, 0.02, centerZ + 14.5 + southLen / 2);
+    northAsphalt.userData.surface = 'road';
+    northAsphalt.receiveShadow = true;
+    seg.add(northAsphalt);
+
+    const westLen = (crossStreetLength / 2) - 14.5;
+    const westAsphalt = new THREE.Mesh(new THREE.PlaneGeometry(westLen + SEAM, roadWidth), new THREE.MeshLambertMaterial({ color: BRAND.asphalt }));
+    westAsphalt.rotation.x = -Math.PI / 2;
+    westAsphalt.position.set(-(14.5 + westLen / 2), 0.02, centerZ);
+    westAsphalt.userData.surface = 'road';
+    westAsphalt.receiveShadow = true;
+    seg.add(westAsphalt);
+
+    const eastAsphalt = new THREE.Mesh(new THREE.PlaneGeometry(westLen + SEAM, roadWidth), new THREE.MeshLambertMaterial({ color: BRAND.asphalt }));
+    eastAsphalt.rotation.x = -Math.PI / 2;
+    eastAsphalt.position.set(14.5 + westLen / 2, 0.02, centerZ);
+    eastAsphalt.userData.surface = 'road';
+    eastAsphalt.receiveShadow = true;
+    seg.add(eastAsphalt);
+
+    // Pavements: one raised slab per quadrant runs along both road arms and
+    // round the outside of the ring. Where an arm meets the ring the kerb
+    // flares on a 5 m radius (no sharp corner to clip when entering), and the
+    // asphalt in that flare is road for the kerb check up to the exact curve.
+    const swW = 3.2, Ro = 15.5, rf = 5, ringPave = 18.7;
+    const Fz = Math.sqrt((Ro + rf) ** 2 - (4.2 + rf) ** 2), F = [4.2 + rf, Fz];
+    const T2 = [F[0] * Ro / (Ro + rf), F[1] * Ro / (Ro + rf)];
+    const phi2 = Math.atan2(-F[1], -F[0]);
+    const flare = (radius, n = 12) => Array.from({ length: n + 1 }, (_, i) => {
+      const a = phi2 + (-Math.PI - phi2) * i / n; // from the ring round to the arm kerb
+      return [F[0] + radius * Math.cos(a), F[1] + radius * Math.sin(a)];
+    });
+    // The raised pavement overlaps the ring's rim slightly and is sampled
+    // finely, so no sliver of mismatched polygon edges shows along the kerb.
+    const ringArc = (from, to, n = 48, radius = Ro) => Array.from({ length: n + 1 }, (_, i) => {
+      const a = from + (to - from) * i / n; return [radius * Math.sin(a), radius * Math.cos(a)];
+    });
+    const swap = pts => pts.map(([x, z]) => [z, x]);
+    const thetaF = Math.atan2(F[0], F[1]);
+    const shapeOf = pts => { const sh = new THREE.Shape(); sh.moveTo(...pts[0]); pts.slice(1).forEach(q => sh.lineTo(...q)); sh.closePath(); return sh; };
+    for (let quadrant = 0; quadrant < 4; quadrant++) {
+      const lenZ = quadrant % 2 === 0 ? intersectionLength / 2 : crossStreetLength / 2;
+      const lenX = quadrant % 2 === 0 ? crossStreetLength / 2 : intersectionLength / 2;
+      const a0 = Math.asin(7.4 / ringPave);
+      const outer = Array.from({ length: 49 }, (_, i) => { const a = a0 + (Math.PI / 2 - 2 * a0) * i / 48; return [ringPave * Math.sin(a), ringPave * Math.cos(a)]; });
+      // Kerb from the x-arm (Fz, 4.2) round its flare, along the ring and
+      // round the other flare to the z-arm (4.2, Fz).
+      const kerb = [...[...swap(flare(rf))].reverse(), ...ringArc(Math.PI / 2 - thetaF, thetaF, 48, Ro - 0.06).slice(1, -1), ...flare(rf)];
+      const pave = [[4.2, lenZ + SEAM], [7.4, lenZ + SEAM], ...outer, [lenX + SEAM, 7.4], [lenX + SEAM, 4.2], ...kerb];
+      const geo = new THREE.ExtrudeGeometry(shapeOf(pave), { depth: 0.18, bevelEnabled: false });
+      geo.rotateX(Math.PI / 2);
+      const slab = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: BRAND.sidewalk, side: THREE.DoubleSide }));
+      slab.rotation.y = quadrant * Math.PI / 2;
+      slab.position.set(0, 0.18, centerZ);
+      seg.add(slab);
+      // Asphalt in both flares of this quadrant.
+      const flareRoad = [[4.2, Fz], [4.2, Math.sqrt(Ro * Ro - 4.2 * 4.2)], ...ringArc(Math.asin(4.2 / Ro), thetaF).slice(1), ...flare(rf).slice(1)];
+      for (const pts of [flareRoad, swap(flareRoad)]) {
+        const g = new THREE.ShapeGeometry(shapeOf(pts)); g.rotateX(Math.PI / 2);
+        const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: BRAND.asphalt, side: THREE.DoubleSide }));
+        m.rotation.y = quadrant * Math.PI / 2; m.position.set(0, 0.021, centerZ);
+        m.userData.surface = 'road';
+        const c = pts === flareRoad ? F : [F[1], F[0]];
+        m.userData.fillet = { center: new THREE.Vector3(c[0], 0, c[1]), r: rf };
+        seg.add(m);
+      }
+    }
+    const armEdgeStart = Fz; // the arms' edge lines start where the flare ends
+
+    // Markings
+    const markingMat = new THREE.MeshBasicMaterial({ color: BRAND.asphaltMarking });
+
+    for (let a = 0; a < 2 * Math.PI; a += 0.28) {
+      const dash = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 1.8), markingMat);
+      dash.geometry.rotateX(-Math.PI / 2);
+      dash.position.set(12.0 * Math.sin(a), 0.028, centerZ + 12.0 * Math.cos(a));
+      dash.rotation.y = a + Math.PI / 2;
+      dash.userData.roadMarking = true;
+      seg.add(dash);
+    }
+
+    // Approach markings stop before the circular carriageway; edge lines
+    // continue to the adjoining straight segments without a bare seam.
+    for (let arm = 0; arm < 4; arm++) {
+      const longitudinal = arm % 2 === 0;
+      const sign = arm < 2 ? 1 : -1;
+      const end = longitudinal ? intersectionLength / 2 : crossStreetLength / 2;
+      for (const edge of [-3.95, 3.95]) {
+        const length = end - armEdgeStart + SEAM;
+        addFlatPlane(seg, longitudinal ? 0.15 : length,
+          longitudinal ? length : 0.15,
+          longitudinal ? edge : sign * (armEdgeStart + end) / 2,
+          centerZ + (longitudinal ? sign * (armEdgeStart + end) / 2 : edge), 0.028, markingMat);
+      }
+      for (let distance = 19; distance < end - 1; distance += 5) {
+        addFlatPlane(seg, longitudinal ? 0.18 : 2,
+          longitudinal ? 2 : 0.18,
+          longitudinal ? 0 : sign * distance,
+          centerZ + (longitudinal ? sign * distance : 0), 0.028, markingMat);
+      }
+    }
+
+    // The ticket owns priority evidence; do not invent a yield sign for
+    // roundabouts whose source scene contains only sign 4.3.
+    (situation.signs || []).forEach((entry, index) => {
+      const sign = createRoadSign(entry.code);
+      sign.position.set(roadWidth / 2 + 1.2, 0, centerZ - 18.5 - index * 2.5);
+      seg.add(sign);
+    });
+
+    // Place Actors
+    const actorsInScene = [];
+    (situation.actorsConfig || []).forEach(cfg => {
+      const { actorMesh, halfLength, halfWidth } = createActorMesh(cfg);
+      if (cfg.side === 'ring' || cfg.roundabout) {
+        const ringRadius = cfg.ringRadius || 12.0;
+        const ringAngle = cfg.ringAngle !== undefined ? cfg.ringAngle : (cfg.id.includes('moto') ? 0.8 : 2.1);
+        actorMesh.position.set(ringRadius * Math.sin(ringAngle), 0, centerZ + ringRadius * Math.cos(ringAngle));
+        actorMesh.rotation.y = ringAngle + Math.PI / 2;
+      } else if (cfg.side === 'cross_left') {
+        actorMesh.position.set(-18, 0, centerZ - 2.05);
+        actorMesh.rotation.y = Math.PI / 2;
+      } else if (cfg.side === 'cross_right') {
+        actorMesh.position.set(18, 0, centerZ + 2.05);
+        actorMesh.rotation.y = -Math.PI / 2;
+      } else {
+        actorMesh.position.set(0, 0, centerZ);
+      }
+      seg.add(actorMesh);
+      actorsInScene.push({ actorMesh, mesh: actorMesh, config: cfg, halfLength, halfWidth, initialPos: actorMesh.position.clone() });
+    });
+
+    registerRoadSegment(seg);
+    applySceneEdits(seg, situation.id, centerZ);
+    actorsInScene.forEach(a => {
+      a.initialPos = a.mesh.position.clone();
+      a.viewBounds = new THREE.Box3().setFromObject(a.mesh);
+    });
+    state.roadSegments.push(seg);
+
+    const intersectionData = {
+      seg,
+      startZ,
+      centerZ,
+      stopZ: centerZ - 17.5,
+      situation,
+      actors: actorsInScene,
+      trafficLight: null
+    };
+    state.intersections.push(intersectionData);
+    ensureTraffic(intersectionData);
+
+    const guide = new THREE.Group();
+    const action = spec.maneuver || 'right';
+    let guidePoints;
+    if (action === 'right') {
+      guidePoints = [[-1.8, -18], [-3.5, -14], [-7.5, -10], [-12, -4], [-18, -1.8], [-24, -1.8]];
+    } else if (action === 'straight') {
+      guidePoints = [[-1.8, -18], [-4.0, -14], [-9.5, -6], [-10.5, 0], [-8.5, 8], [-4.0, 14], [-1.8, 18], [-1.8, 24]];
+    } else {
+      guidePoints = [[-1.8, -18], [-4.0, -14], [-9.5, -6], [-10.5, 0], [-8.5, 8], [0, 11.5], [8.5, 8], [14, 4], [18, 1.8], [24, 1.8]];
+    }
+    const guidePaths = [curve(guidePoints.map(([x, z]) => new THREE.Vector3(x, 0.12, centerZ + z)))];
+    const guideMat = new THREE.MeshBasicMaterial({ color: BRAND.accent, transparent: true, opacity: 0.78, depthWrite: false, side: THREE.DoubleSide });
+    const arrowShape = new THREE.Shape();
+    arrowShape.moveTo(0, 0.62); arrowShape.lineTo(-0.78, -0.2); arrowShape.lineTo(-0.78, -0.72);
+    arrowShape.lineTo(0, 0.08); arrowShape.lineTo(0.78, -0.72); arrowShape.lineTo(0.78, -0.2); arrowShape.closePath();
+    const arrowGeo = new THREE.ShapeGeometry(arrowShape);
+    arrowGeo.rotateX(Math.PI / 2);
+    for (const gp of guidePaths) {
+      const gLen = gp.getLength();
+      for (let dist = 1.0; dist <= gLen; dist += 2.0) {
+        const t = Math.min(1, dist / gLen);
+        const arrow = new THREE.Mesh(arrowGeo, guideMat);
+        arrow.position.copy(gp.getPointAt(t)); arrow.position.y += 0.01;
+        const dir = gp.getTangentAt(t);
+        arrow.rotation.y = Math.atan2(dir.x, dir.z);
+        arrow.scale.setScalar(t >= 0.98 ? 0.82 : 0.68);
+        arrow.userData.guideArrow = true;
+        guide.add(arrow);
+      }
+    }
+    seg.add(guide); guide.visible = false;
+    intersectionData.guide = guide;
+
+    intersectionData.previews = {};
+    for (const [direction, yaw, x, z] of [
+      ['straight', 0, 0, startZ + intersectionLength],
+      ['left', Math.PI / 2, crossStreetLength / 2, centerZ],
+      ['right', -Math.PI / 2, -crossStreetLength / 2, centerZ],
+    ]) {
+      const extension = buildStraightSegment(0, 200, true, (state.district + 1) % DISTRICTS);
+      extension.rotation.y = yaw;
+      extension.position.set(x, 0, z);
+      seg.add(extension);
+      intersectionData.previews[direction] = extension;
+    }
+    if (incomingRoad) {
+      scene.updateMatrixWorld(true);
+      const world = incomingRoad.matrixWorld.clone();
+      seg.add(incomingRoad);
+      incomingRoad.matrix.copy(world);
+      world.decompose(incomingRoad.position, incomingRoad.quaternion, incomingRoad.scale);
+      state.roadSegments = state.roadSegments.filter(s => s !== incomingRoad);
+      intersectionData.previews.uturn = incomingRoad;
+    }
+
+    refreshRoadBounds();
+    return intersectionLength;
+  }
+
   function buildIntersectionSegment(startZ, situation, incomingRoad = null) {
     const spec = routeSpec(situation);
     situation = { ...situation, ...(spec.overrides || {}) };
+    if (situation.geometry === 'roundabout') return buildRoundaboutSegment(startZ, situation, incomingRoad);
     const intentions = { straight: 'Вы прямо', left: 'Вы налево', right: 'Вы направо', uturn: 'Вы на разворот' };
     situation.legend = [{ label: intentions[spec.maneuver], color: '#ED4621' },
       ...(situation.actorsConfig || []).map(a => ({ label: a.name, color: a.color || '#0574F8' }))];
@@ -6703,23 +7286,54 @@
     const intersectionLength = 52;
     const centerZ = startZ + 26;
     const crossStreetLength = 70;
+    const tJunction = situation.geometry === 't_no_straight';
+    // Wide cross street (situation.crossWidth, or a dual carriageway for
+    // 'divided_road'): full width at the junction, narrowing smoothly to the
+    // ordinary 8.4 m road over |x| 18...33 so it meets the exit roads with no
+    // step. Trams keep the inner lanes, cars the outer ones.
+    const divided = situation.geometry === 'divided_road';
+    const crossW = situation.crossWidth || (divided ? 20.8 : roadWidth);
+    const wide = crossW > roadWidth + 0.01;
+    const medianHalf = divided ? 2 : 0;
+    const narrow = x => THREE.MathUtils.smoothstep(Math.abs(x), 18, 33);
+    const halfW = x => crossW / 2 + (roadWidth / 2 - crossW / 2) * narrow(x);
+    const medHalf = x => medianHalf * (1 - THREE.MathUtils.smoothstep(Math.abs(x), 18, 30));
+    const laneW = (crossW / 2 - medianHalf) / 2;
+    // The same for the main street (situation.mainWidth): e.g. a tram in the
+    // inner oncoming lane with a car beside it, both clear of the kerb.
+    const mainW = situation.mainWidth || roadWidth;
+    const wideMain = mainW > roadWidth + 0.01 && !tJunction;
+    const halfM = z => mainW / 2 + (roadWidth / 2 - mainW / 2) * THREE.MathUtils.smoothstep(Math.abs(z - centerZ), 13, 25);
+    const kerbX = mainW / 2, kerbZ = crossW / 2; // kerb lines at the junction itself
+    // The same lawn colour as the roads that meet here: the approach ends and
+    // every exit starts in district (state.district + 1). No colour seam.
+    const lawn = Math.min((state.district + 1) % DISTRICTS, 2);
     const districtGround = new THREE.Mesh(new THREE.PlaneGeometry(crossStreetLength + SEAM, intersectionLength + SEAM),
-      new THREE.MeshLambertMaterial({ color: season().ground }));
-    districtGround.material.userData.seasonal = 'ground';
+      new THREE.MeshLambertMaterial({ color: season().verge[lawn] }));
+    districtGround.material.userData.seasonal = 'verge' + lawn;
     districtGround.rotation.x = -Math.PI / 2;
     districtGround.position.set(0, -0.02, centerZ);
     districtGround.receiveShadow = true;
     seg.add(districtGround);
 
     // Main longitudinal asphalt
+    const mainAsphaltLength = tJunction ? intersectionLength / 2 + roadWidth / 2 + SEAM : intersectionLength + 2 * SEAM;
     const mainAsphalt = new THREE.Mesh(
-      new THREE.PlaneGeometry(roadWidth, intersectionLength + 2 * SEAM),
+      new THREE.PlaneGeometry(roadWidth, mainAsphaltLength),
       new THREE.MeshLambertMaterial({ color: BRAND.asphalt })
     );
     mainAsphalt.rotation.x = -Math.PI / 2;
-    mainAsphalt.position.set(0, 0.02, centerZ);
+    mainAsphalt.position.set(0, 0.02, tJunction ? startZ + mainAsphaltLength / 2 : centerZ);
     mainAsphalt.receiveShadow = true;
     seg.add(mainAsphalt);
+    if (wideMain) {
+      mainAsphalt.visible = false; mainAsphalt.scale.set(0.0001, 0.0001, 1);
+      const mat = new THREE.MeshLambertMaterial({ color: BRAND.asphalt });
+      for (let z = startZ - SEAM; z < startZ + intersectionLength + SEAM - 1e-6; z += 1.5) {
+        const m = addRibbon(seg, z, Math.min(z + 1.5, startZ + intersectionLength + SEAM), q => -halfM(q), q => halfM(q), 0.02, mat, 0.75);
+        m.userData.surface = 'road'; m.receiveShadow = true;
+      }
+    }
 
     // Crossing street asphalt (extends left and right across entire screen)
     const crossAsphalt = new THREE.Mesh(
@@ -6729,43 +7343,133 @@
     crossAsphalt.rotation.x = -Math.PI / 2;
     crossAsphalt.position.set(0, 0.021, centerZ);
     crossAsphalt.receiveShadow = true;
+    if (wide) {
+      // Tapered: short chunks keep each drivable bounding box tight.
+      crossAsphalt.visible = false; crossAsphalt.scale.set(0.0001, 0.0001, 1);
+      addRibbonX(seg, -crossStreetLength / 2 - SEAM, crossStreetLength / 2 + SEAM,
+        x => centerZ - halfW(x), x => centerZ + halfW(x), 0.021, new THREE.MeshLambertMaterial({ color: BRAND.asphalt }), 1.5)
+        .forEach(m => { m.userData.surface = 'road'; m.receiveShadow = true; });
+    }
     seg.add(crossAsphalt);
+
+    const markingMat = new THREE.MeshBasicMaterial({ color: BRAND.asphaltMarking });
+
+    if (situation.geometry === 'dirt_approach') {
+      const dirtArm = new THREE.Mesh(new THREE.PlaneGeometry((crossStreetLength - roadWidth) / 2 + SEAM, roadWidth),
+        new THREE.MeshLambertMaterial({ color: 0x7A5835 }));
+      dirtArm.rotation.x = -Math.PI / 2;
+      dirtArm.position.set(roadWidth / 2 + (crossStreetLength - roadWidth) / 4, 0.022, centerZ);
+      dirtArm.userData.surface = 'dirt_road';
+      seg.add(dirtArm);
+    }
+
+    // 'motorway_merge' (ticket 2.15) needs no extra geometry: the 5.1 sign
+    // of the ticket marks the player's road. A separate acceleration lane
+    // used to lie under the pavement (a black strip behind the kerb) together
+    // with a second, duplicate 5.1 sign.
+
+    if (situation.geometry === 'divided_road') {
+      const medianW = 4.0;
+      // The median separates the carriageways and tapers to a point where
+      // they merge into the ordinary exit road.
+      for (const side of [-1, 1]) {
+        const xs = []; for (let x = roadWidth / 2; x <= 30.01; x += 1) xs.push(side * x);
+        const curb = extrudedStrip(xs, x => -medHalf(x), x => medHalf(x), 0.18, new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
+        curb.position.z = centerZ; seg.add(curb);
+        const lawnMat = new THREE.MeshLambertMaterial({ color: season().ground }); lawnMat.userData.seasonal = 'ground';
+        addRibbonX(seg, side < 0 ? -28 : roadWidth / 2 + 0.25, side < 0 ? -roadWidth / 2 - 0.25 : 28,
+          x => centerZ - Math.max(0, medHalf(x) - 0.2), x => centerZ + Math.max(0, medHalf(x) - 0.2), 0.186, lawnMat, 2);
+      }
+      const medianTL = createTrafficLight('red');
+      medianTL.position.set(roadWidth / 2 + 0.6, 0, centerZ + medianW / 2 + 0.4);
+      medianTL.rotation.y = -Math.PI / 2;
+      seg.add(medianTL);
+      seg.userData.medianTrafficLight = medianTL;
+      if (situation.hasMedianStopLine) {
+        const medStop = new THREE.Mesh(new THREE.PlaneGeometry(roadWidth / 2, 0.45), markingMat);
+        medStop.rotation.x = -Math.PI / 2;
+        medStop.position.set(roadWidth / 4, 0.028, centerZ + medianW / 2);
+        medStop.userData.medianStopLine = true;
+        seg.add(medStop);
+        const stop616 = createRoadSign('6.16');
+        stop616.position.set(roadWidth / 2 + 0.6, 0, centerZ + medianW / 2 - 1.2);
+        stop616.rotation.y = -Math.PI / 2;
+        seg.add(stop616);
+      }
+    }
 
     // Sidewalks on all 4 corners
     const swW = 3.2;
     const cornerL = (crossStreetLength - roadWidth) / 2;
-    const cornerH = (intersectionLength - roadWidth) / 2;
+    const cornerH = (intersectionLength - crossW) / 2;
 
     // Corners run along the cross street only, from the outer edge of the
     // main-street pavement outwards: no coplanar overlap with those pavements.
-    const cornerW = cornerL - swW + SEAM, cornerX = roadWidth / 2 + swW - 0.03 + cornerW / 2;
+    const cornerW = crossStreetLength / 2 - kerbX - swW + SEAM, cornerX = kerbX + swW - 0.03 + cornerW / 2;
     const corner = (sx, sz) => {
+      if (wide) {
+        // The pavement follows the tapering kerb.
+        const xs = []; for (let x = kerbX + swW - 0.03; x <= crossStreetLength / 2 + SEAM + 0.01; x += 1) xs.push(sx * x);
+        const slab = extrudedStrip(xs, x => sz * halfW(x) + (sz < 0 ? -swW : 0), x => sz * halfW(x) + (sz > 0 ? swW : 0), 0.18,
+          new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
+        slab.position.z = centerZ; seg.add(slab); return slab;
+      }
       const box = new THREE.Mesh(new THREE.BoxGeometry(cornerW, 0.18, swW + SEAM), new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
       box.position.set(sx * cornerX, 0.09, centerZ + sz * (roadWidth / 2 + swW / 2 - SEAM / 2));
       seg.add(box); return box;
     };
-    corner(-1, -1); corner(1, -1); corner(-1, 1); corner(1, 1);
+    corner(-1, -1); corner(1, -1);
+    if (!tJunction) { corner(-1, 1); corner(1, 1); }
 
     // Main street entrance sidewalks
-    const swMainL = new THREE.Mesh(new THREE.BoxGeometry(swW + SEAM, 0.18, cornerH + 2 * SEAM), new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
-    swMainL.position.set(-(roadWidth / 2 + swW / 2) + SEAM / 2, 0.09, startZ + cornerH / 2);
-    seg.add(swMainL);
+    if (wideMain) {
+      // Pavements follow the widening main street (entrance and exit).
+      const pave = () => new THREE.MeshLambertMaterial({ color: BRAND.sidewalk });
+      for (const side of [-1, 1]) for (const [a, b] of [[startZ - SEAM, centerZ - kerbZ - swW], [centerZ + kerbZ + swW, startZ + intersectionLength + SEAM]]) {
+        const zs = []; for (let z = a; z <= b + 0.01; z += 1) zs.push(Math.min(z, b));
+        const slab = extrudedStripZ(zs, z => side < 0 ? -halfM(z) - swW : halfM(z), z => side < 0 ? -halfM(z) : halfM(z) + swW, 0.18, pave());
+        seg.add(slab);
+        // Paving joints every 2.5 m, as on the pavements it continues.
+        const joints = [];
+        for (let z = a + 2; z < b; z += 2.5) {
+          const x0 = side < 0 ? -halfM(z) - swW : halfM(z), x1 = x0 + swW;
+          joints.push(new THREE.Vector3(x0, 0.184, z), new THREE.Vector3(x1, 0.184, z));
+        }
+        seg.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(joints),
+          new THREE.LineBasicMaterial({ color: BRAND.curb, transparent: true, opacity: 0.35 })));
+      }
+    }
+    // Main pavements stop a pavement-width short of the cross street: the
+    // square corner itself is the rounded piece from addCornerFillet.
+    const entLen = cornerH - swW + SEAM, exitLen = cornerH - swW + SEAM;
+    const swMainL = new THREE.Mesh(new THREE.BoxGeometry(swW + SEAM, 0.18, entLen), new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
+    swMainL.position.set(-(roadWidth / 2 + swW / 2) + SEAM / 2, 0.09, startZ - SEAM + entLen / 2);
+    if (!wideMain) seg.add(swMainL);
 
-    const swMainR = new THREE.Mesh(new THREE.BoxGeometry(swW + SEAM, 0.18, cornerH + 2 * SEAM), new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
-    swMainR.position.set(roadWidth / 2 + swW / 2 - SEAM / 2, 0.09, startZ + cornerH / 2);
-    seg.add(swMainR);
+    const swMainR = new THREE.Mesh(new THREE.BoxGeometry(swW + SEAM, 0.18, entLen), new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
+    swMainR.position.set(roadWidth / 2 + swW / 2 - SEAM / 2, 0.09, startZ - SEAM + entLen / 2);
+    if (!wideMain) seg.add(swMainR);
 
-    // Main street exit sidewalks
-    const swMainL_exit = new THREE.Mesh(new THREE.BoxGeometry(swW + SEAM, 0.18, cornerH + 2 * SEAM), new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
-    swMainL_exit.position.set(-(roadWidth / 2 + swW / 2) + SEAM / 2, 0.09, centerZ + roadWidth / 2 + cornerH / 2);
-    seg.add(swMainL_exit);
+    if (tJunction) {
+      // One slab spans the whole far side. Combining two corner pieces with a
+      // narrow road-width cap left visible holes at both former kerbs.
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(crossStreetLength + 2 * SEAM, 0.18, swW + SEAM),
+        new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
+      cap.position.set(0, 0.09, centerZ + roadWidth / 2 + swW / 2 - SEAM / 2);
+      cap.userData.tJunctionSidewalk = true;
+      seg.add(cap);
+    } else {
+      // Main street exit sidewalks
+      const swMainL_exit = new THREE.Mesh(new THREE.BoxGeometry(swW + SEAM, 0.18, exitLen), new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
+      swMainL_exit.position.set(-(roadWidth / 2 + swW / 2) + SEAM / 2, 0.09, startZ + intersectionLength + SEAM - exitLen / 2);
+      if (!wideMain) seg.add(swMainL_exit);
 
-    const swMainR_exit = new THREE.Mesh(new THREE.BoxGeometry(swW + SEAM, 0.18, cornerH + 2 * SEAM), new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
-    swMainR_exit.position.set(roadWidth / 2 + swW / 2 - SEAM / 2, 0.09, centerZ + roadWidth / 2 + cornerH / 2);
-    seg.add(swMainR_exit);
+      const swMainR_exit = new THREE.Mesh(new THREE.BoxGeometry(swW + SEAM, 0.18, exitLen), new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
+      swMainR_exit.position.set(roadWidth / 2 + swW / 2 - SEAM / 2, 0.09, startZ + intersectionLength + SEAM - exitLen / 2);
+      if (!wideMain) seg.add(swMainR_exit);
+    }
 
     // Markings
-    const markingMat = new THREE.MeshBasicMaterial({ color: BRAND.asphaltMarking });
 
     // Four continuous approaches. Edges join the adjoining straight roads,
     // but all longitudinal paint stops before the crossings (no zebra overlap).
@@ -6784,51 +7488,108 @@
     // divider 1.5 between two lanes of the same direction.
     const oneWay = situation.oneWay || null;
     for (const [yaw, end] of [[0, 26], [Math.PI, 26], [Math.PI / 2, 35], [-Math.PI / 2, 35]]) {
+      if (tJunction && yaw === 0) continue;
       const crossArm = Math.abs(Math.sin(yaw)) > 0.5;
-      for (const edge of [-1, 1]) approachLine(edge * (roadWidth / 2 - 0.25), 7.6, end, 0.15, yaw);
+      if ((wide && crossArm) || (wideMain && !crossArm)) continue; // drawn along the taper below
+      const from = crossArm ? kerbX + 3.4 : kerbZ + 3.4, shift = from - 7.6;
+      for (const edge of [-1, 1]) approachLine(edge * (roadWidth / 2 - 0.25), from, end, 0.15, yaw);
       if (oneWay && crossArm) { for (let z = 8; z < end; z += 5) approachLine(0, z, Math.min(z + 2, end), 0.15, yaw); continue; }
-      approachLine(0, 7.6, 16, 0.18, yaw);
+      approachLine(0, from, 16 + shift, 0.18, yaw);
       // Transition back to the same 2m / 3m dashed centre as the open road.
-      for (let z = 18; z < end; z += 5) approachLine(0, z, Math.min(z + 2, end), 0.18, yaw);
+      for (let z = 18 + shift; z < end; z += 5) approachLine(0, z, Math.min(z + 2, end), 0.18, yaw);
     }
-
-    // Stop line 1.12: across player's right lane (x: 0.1 to 4.2)
-    const stopLineZ = centerZ - 8.5;
-    const stopLine = new THREE.Mesh(new THREE.PlaneGeometry(roadWidth / 2, 0.45), markingMat);
-    stopLine.rotation.x = -Math.PI / 2;
-    stopLine.position.set(roadWidth / 4, 0.027, stopLineZ);
-    seg.add(stopLine);
-
-    // Pedestrian Zebra 1.14.1 (entrance)
-    const zebraZ = centerZ - 6.0;
-    const numStripes = 10;
-    const stripeGeo = new THREE.PlaneGeometry(0.4, 2.6);
-    stripeGeo.rotateX(-Math.PI / 2);
-    const stripes = [];
-    for (let i = 0; i < numStripes; i++) {
-      const stripe = new THREE.Mesh(stripeGeo, markingMat);
-      stripe.position.set(-roadWidth / 2 + 0.45 + i * (roadWidth / numStripes), 0.027, zebraZ);
-      stripes.push(stripe);
-    }
-
-    // Pedestrian Zebra 1.14.1 (exit)
-    const exitZebraZ = centerZ + 6.0;
-    for (let i = 0; i < numStripes; i++) {
-      const stripe = new THREE.Mesh(stripeGeo, markingMat);
-      stripe.position.set(-roadWidth / 2 + 0.45 + i * (roadWidth / numStripes), 0.027, exitZebraZ);
-      stripes.push(stripe);
-    }
-
-    // Destination-road crossings for right/left turns, aligned with pedestrian routes.
-    for (const side of [-1, 1]) {
-      for (let i = 0; i < numStripes; i++) {
-        const stripe = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.4), markingMat);
-        stripe.rotation.x = -Math.PI / 2;
-        stripe.position.set(side * 6.1, 0.028, centerZ - roadWidth / 2 + 0.45 + i * roadWidth / numStripes);
-        stripes.push(stripe);
+    if (wideMain) {
+      // Main-street paint along its widening: kerb edges, a solid centre
+      // near the junction, lane dividers where there are two lanes a side.
+      const lineZ = (a, b, xc, w) => { const m = addRibbon(seg, a, b, z => xc(z) - w / 2, z => xc(z) + w / 2, 0.032, markingMat, 0.75); return m; };
+      for (const sz of [-1, 1]) {
+        const span = (a, b) => sz < 0 ? [centerZ - b, centerZ - a] : [centerZ + a, centerZ + b];
+        for (const sx of [-1, 1]) {
+          lineZ(...span(kerbZ + 3.4, 26 + SEAM), z => sx * (halfM(z) - 0.25), 0.15);
+          for (let d = kerbZ + 3.4; d < 20; d += 5) lineZ(...span(d, Math.min(d + 2, 20)), z => sx * halfM(z) / 2, 0.15);
+        }
+        lineZ(...span(kerbZ + 3.4, 17), () => 0, 0.18);
+        for (let d = 19; d < 26; d += 5) lineZ(...span(d, Math.min(d + 2, 26)), () => 0, 0.18);
       }
     }
-    seg.add(mergeStatic(stripes, markingMat));
+    if (wide) {
+      // Cross-street paint following the taper: kerb edges, the median's
+      // edges or a solid centre line, lane dividers that end where the lanes
+      // merge, then the open road's dashed centre.
+      const line = (from, to, zc, w) => addRibbonX(seg, from, to, x => centerZ + zc(x) - w / 2, x => centerZ + zc(x) + w / 2, 0.032, markingMat, 1.5);
+      const dashes = (from, to, zc, w) => { for (let x = from; x < to; x += 5) line(x, Math.min(x + 2, to), zc, w); };
+      for (const sx of [-1, 1]) {
+        const span = (a, b) => sx < 0 ? [-b, -a] : [a, b];
+        for (const sz of [-1, 1]) {
+          line(...span(kerbX + 3.4, 35 + SEAM), x => sz * (halfW(x) - 0.25), 0.15);
+          if (divided) line(...span(kerbX + 3.4, 26), x => sz * (medHalf(x) + 0.25), 0.15);
+          dashes(...span(kerbX + 3.4, 24), x => sz * (medHalf(x) + halfW(x)) / 2, 0.15);
+        }
+        if (divided) dashes(...span(30, 35), () => 0, 0.18);
+        else { line(...span(kerbX + 3.4, 22), () => 0, 0.18); dashes(...span(24, 35), () => 0, 0.18); }
+      }
+    }
+    if (tJunction) {
+      // The far edge of the through road continues across the closed arm.
+      // The two horizontal approach pieces stop 7.6 m from the centre, so
+      // bridge exactly that gap without overlapping or z-fighting them.
+      const edgeBridge = new THREE.Mesh(new THREE.PlaneGeometry(15.2, 0.15), markingMat);
+      edgeBridge.rotation.x = -Math.PI / 2;
+      edgeBridge.position.set(0, 0.032, centerZ + roadWidth / 2 - 0.25);
+      edgeBridge.userData.roadMarking = true;
+      edgeBridge.userData.tJunctionEdgeBridge = true;
+      seg.add(edgeBridge);
+    }
+
+    // Rounded kerbs at every corner, with the edge line following the curve.
+    for (const sx of [-1, 1]) for (const sz of tJunction ? [-1] : [-1, 1]) addCornerFillet(seg, sx, sz, kerbX, kerbZ, centerZ, markingMat);
+
+    // Marking 1.12 belongs only where the source has a signal or STOP sign.
+    // Adding it to every unregulated junction invents legally meaningful road
+    // evidence which is absent from the exam picture.
+    const stopLineZ = centerZ - crossW / 2 - 4.3;
+    const hasStopLine = !!situation.trafficLights || (situation.signs || []).some(s => s.code === '2.5');
+    if (hasStopLine) {
+      const stopLine = new THREE.Mesh(new THREE.PlaneGeometry(kerbX, 0.45), markingMat);
+      stopLine.rotation.x = -Math.PI / 2;
+      stopLine.position.set(kerbX / 2, 0.027, stopLineZ);
+      stopLine.userData.stopLine = true;
+      seg.add(stopLine);
+    }
+
+    // A crossing is rendered only when it is part of the authored evidence.
+    // Pedestrians in 13.1 questions may cross an unmarked road.
+    // Pedestrians of the scene cross the side street at a zebra, never across
+    // bare asphalt (the answer — 13.1, give way when turning — is the same).
+    const walkSides = (situation.actorsConfig || []).filter(a => a.type === 'pedestrian').map(a =>
+      a.side === 'crosswalk_left' ? 'left' : a.side === 'crosswalk_right' ? 'right' :
+      a.position ? (a.position[0] > 0 ? 'right' : 'left') : null).filter(Boolean);
+    if (walkSides.length) situation.crosswalks = [...new Set([...(situation.crosswalks || []), ...walkSides])];
+    if (situation.crosswalks?.length) {
+      const numStripes = 10;
+      const stripes = [];
+      const addAcrossMain = z => {
+        const stripeGeo = new THREE.PlaneGeometry(0.4, 2.6); stripeGeo.rotateX(-Math.PI / 2);
+        for (let i = 0; i < numStripes; i++) {
+          const stripe = new THREE.Mesh(stripeGeo, markingMat);
+          stripe.position.set(-kerbX + 0.45 + i * (2 * kerbX / numStripes), 0.027, z);
+          stripes.push(stripe);
+        }
+      };
+      const addAcrossSide = side => {
+        for (let i = 0; i < numStripes; i++) {
+          const stripe = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.4), markingMat);
+          stripe.rotation.x = -Math.PI / 2;
+          stripe.position.set(side * (kerbX + 1.9), 0.028, centerZ - kerbZ + 0.45 + i * 2 * kerbZ / numStripes);
+          stripes.push(stripe);
+        }
+      };
+      if (situation.crosswalks.includes('entrance')) addAcrossMain(centerZ - kerbZ - 1.8);
+      if (situation.crosswalks.includes('exit') && !tJunction) addAcrossMain(centerZ + kerbZ + 1.8);
+      if (situation.crosswalks.includes('left')) addAcrossSide(-1);
+      if (situation.crosswalks.includes('right')) addAcrossSide(1);
+      const zebra = mergeStatic(stripes, markingMat); zebra.userData.crosswalk = true; seg.add(zebra);
+    }
 
     // Rails are generated from actual tram trajectories below.
 
@@ -6836,9 +7597,19 @@
     let tlMesh = null;
     if (situation.trafficLights) {
       tlMesh = createTrafficLight(situation.trafficLights.state || 'green', situation.trafficLights.arrow);
-      tlMesh.position.set(roadWidth / 2 + 1.2, 0, stopLineZ);
+      tlMesh.position.set(kerbX + 1.2, 0, stopLineZ);
       tlMesh.rotation.y = Math.PI;
+      tlMesh.userData.editKey = 'light';
       seg.add(tlMesh);
+    }
+
+    const regConfig = situation.regulator || spec.regulator;
+    if (regConfig) {
+      const regMesh = createTrafficController(regConfig.pose || 'arms_down', regConfig.orientation || 'left_side');
+      regMesh.position.set(0, 0, centerZ);
+      seg.add(regMesh);
+      seg.userData.regulator = regMesh;
+      if (tlMesh) tlMesh.visible = false;
     }
 
     // Signs
@@ -6846,8 +7617,9 @@
       situation.signs.forEach((s, index) => {
         const sign = s.code === '8.13' ? createPriorityPlate(s.mainRoad) : createRoadSign(s.code);
         const plate = s.code === '8.13';
-        sign.position.set(roadWidth / 2 + 1.2, plate ? 1.85 : 0, stopLineZ - 2.4 - (plate ? Math.max(0, index - 1) : index) * 2);
+        sign.position.set(kerbX + 1.2, plate ? 1.85 : 0, stopLineZ - 2.4 - (plate ? Math.max(0, index - 1) : index) * 2);
         sign.rotation.y = 0; // Facing oncoming player
+        sign.userData.editKey = 'sign:' + index; sign.userData.signCode = s.code;
         seg.add(sign);
       });
     }
@@ -6857,6 +7629,7 @@
       // on the entering driver's right, facing the junction.
       const sx = oneWay === 'to_right' ? -1 : 1;
       const noEntry = createRoadSign('3.1');
+      noEntry.userData.editKey = 'sign:noentry'; noEntry.userData.signCode = '3.1';
       noEntry.position.set(sx * (roadWidth / 2 + 3.5), 0, centerZ + (sx < 0 ? roadWidth / 2 + 1.0 : -(roadWidth / 2 + 1.0)));
       noEntry.rotation.y = sx < 0 ? -Math.PI / 2 : Math.PI / 2;
       seg.add(noEntry);
@@ -6909,9 +7682,9 @@
           actorMesh.position.set(-1.8, 0, centerZ + 18);
           actorMesh.rotation.y = Math.PI;
         } else if (cfg.side === 'crosswalk_right') {
-          actorMesh.position.set(6.1, 0.18, centerZ - 5.6);
+          actorMesh.position.set(kerbX + 1.9, 0.18, centerZ - kerbZ - 1.4);
         } else if (cfg.side === 'crosswalk_left') {
-          actorMesh.position.set(-6.1, 0.18, centerZ - 5.6);
+          actorMesh.position.set(-(kerbX + 1.9), 0.18, centerZ - kerbZ - 1.4);
         } else if (cfg.side === 'cross_right_edge') {
           actorMesh.position.set(3.35, 0, centerZ - 7.5);
           actorMesh.rotation.y = 0;
@@ -6933,6 +7706,7 @@
     }
 
     registerRoadSegment(seg);
+    applySceneEdits(seg, situation.id, centerZ);
     actorsInScene.forEach(a => {
       a.initialPos = a.mesh.position.clone();
       a.viewBounds = new THREE.Box3().setFromObject(a.mesh);
@@ -6946,7 +7720,14 @@
       stopZ: stopLineZ - 2.2,
       situation,
       actors: actorsInScene,
-      trafficLight: tlMesh
+      trafficLight: tlMesh,
+      // Lane the player turns into: the leftmost lane of the far carriageway
+      // for a left turn (8.5), the rightmost lane for a right turn (8.6).
+      leftLane: divided ? medianHalf + laneW / 2 : wide ? laneW / 2 : 1.8,
+      rightLane: wide ? crossW / 2 - laneW / 2 : 1.8,
+      halfW: wide ? halfW : null,
+      halfM: wideMain ? halfM : null,
+      kerbZ,
     };
     state.intersections.push(intersectionData);
     // Visible participants already occupy the road, even before their question.
@@ -6954,8 +7735,9 @@
     ensureTraffic(intersectionData);
     const guide = new THREE.Group();
     const action = spec.maneuver;
-    let guidePoints = action === 'right' ? [[-1.8, -7], [-1.8, -4], [-4, -1.8], [-16, -1.8]] :
-      action === 'left' ? [[-1.8, -7], [-1.8, -1], [2, 1.8], [16, 1.8]] :
+    const L = intersectionData.leftLane, R = intersectionData.rightLane;
+    let guidePoints = action === 'right' ? [[-1.8, -R - 5.2], [-1.8, -R - 2.2], [-4, -R], [-16, -R]] :
+      action === 'left' ? [[-1.8, -7], [-1.8, -1], [2, L], [16, L]] :
       action === 'uturn' ? [[-1.8, -7], [-2.5, 0], [0, 2.5], [2.5, 0], [1.8, -15]] : [[-1.8, -7], [-1.8, 16]];
     // With ticket trajectories every one of them gets the chevrons (the
     // player's route is among them), so there is one arrow style on screen.
@@ -6999,7 +7781,13 @@
       ['left', Math.PI / 2, crossStreetLength / 2, centerZ],
       ['right', -Math.PI / 2, -crossStreetLength / 2, centerZ],
     ]) {
-      const extension = buildStraightSegment(0, 200, true, (state.district + 1) % DISTRICTS);
+      if (tJunction && direction === 'straight') continue;
+      // The one-way cross street continues past the junction as a one-way
+      // road: turning with its flow leaves any lane usable, turning against
+      // it is driving against the flow, never an ordinary "oncoming lane".
+      const flowExit = oneWay === 'to_right' ? 'right' : 'left';
+      const oneWayMode = oneWay && direction !== 'straight' ? (direction === flowExit ? 'with' : 'against') : null;
+      const extension = buildStraightSegment(0, 200, true, (state.district + 1) % DISTRICTS, oneWayMode);
       extension.rotation.y = yaw;
       extension.position.set(x, 0, z);
       seg.add(extension);
@@ -7018,7 +7806,9 @@
     }
     actorsInScene.filter(a => a.config.type === 'tram').forEach(a => {
       const motion = buildActorMotion(a, intersectionData);
-      const incoming = motion.path.getTangentAt(0);
+      // The approach rails run along the tram's own heading (the path's first
+      // tangent can already lean into the turn and skew them).
+      const incoming = new THREE.Vector3(Math.sin(a.mesh.rotation.y), 0, Math.cos(a.mesh.rotation.y));
       const outgoing = motion.path.getTangentAt(1);
       const points = [a.initialPos.clone().addScaledVector(incoming, -70)];
       for (let i = 0; i <= 60; i++) points.push(motion.path.getPointAt(i / 60));
@@ -7044,6 +7834,81 @@
 
     refreshRoadBounds();
     return intersectionLength;
+  }
+
+  // Hand edits made in the game lab (tools/game_lab), per scenario id:
+  // window.PDD_SCENE_EDITS[id] = { objects: [{ key, x, z, rotY, code, removed, add }] }.
+  // x is world X (driver's right is negative), z is measured from the
+  // scenario origin (junction centre / road-question stop point).
+  const EDITABLE_DECOR = {
+    tree: () => createTree(), pine: () => createTree('pine'), bush: () => createBush(),
+    cone: () => createTrafficCone(), barrier: () => createRoadworksBarrier(2.4),
+    lamp: () => createLampPost(), parked_car: () => createParkedCar(), kiosk: () => createKiosk(),
+    fence: () => createFence(4), house: () => createBuilding(7, 4.5, 7, 1),
+    triangle: () => createEmergencyTriangle(),
+  };
+  function createEditable(add) {
+    if (add.type === 'sign') {
+      const sign = createRoadSign(add.code);
+      sign.userData.signCode = add.code;
+      return sign;
+    }
+    const make = EDITABLE_DECOR[add.kind];
+    if (!make) return null;
+    const obj = make();
+    obj.userData.decorKind = add.kind;
+    return obj;
+  }
+  // Model workshop edits (colours, hidden parts, scale) for the engine's own
+  // models; the player's cars get theirs inside vehicles.js.
+  const modelEdited = (id, factory) => (...args) => window.PDD_VEHICLES.applyModelEdits(id, factory(...args));
+  createNpcCar = modelEdited('car', createNpcCar);
+  createBus = modelEdited('bus', createBus);
+  createVan = modelEdited('van', createVan);
+  createTruck = modelEdited('truck', createTruck);
+  createTractor = modelEdited('tractor', createTractor);
+  createSpecialCar = modelEdited('special', createSpecialCar);
+  createMotorcycle = modelEdited('motorcycle', createMotorcycle);
+  createTram = modelEdited('tram', createTram);
+  createPedestrian = modelEdited('pedestrian', createPedestrian);
+  createCyclist = modelEdited('cyclist', createCyclist);
+  createTrafficCone = modelEdited('cone', createTrafficCone);
+  createRoadworksBarrier = modelEdited('barrier', createRoadworksBarrier);
+  createTrafficLight = modelEdited('traffic_light', createTrafficLight);
+  createTree = modelEdited('tree', createTree);
+  createLampPost = modelEdited('lamp', createLampPost);
+  createKiosk = modelEdited('kiosk', createKiosk);
+  createBuilding = modelEdited('building', createBuilding);
+  function applySceneEdits(group, id, originZ) {
+    // Stable keys for the rest of the scene's own objects (build order is
+    // deterministic): trees, lamps, kiosks... Actors are never edited here.
+    group.children.forEach((o, i) => {
+      if (!o.userData.editKey && o.isGroup && !o.userData.actor) o.userData.editKey = 'obj:' + i;
+    });
+    const edits = (window.PDD_SCENE_EDITS || {})[id];
+    if (!edits) return;
+    const keyed = new Map();
+    group.traverse(o => { if (o.userData.editKey) keyed.set(o.userData.editKey, o); });
+    for (const e of edits.objects || []) {
+      let obj = keyed.get(e.key);
+      if (!obj && e.add) {
+        obj = createEditable(e.add);
+        if (!obj) continue;
+        obj.userData.editKey = e.key;
+        group.add(obj);
+      }
+      if (!obj) continue;
+      if (e.code && obj.userData.signCode && e.code !== obj.userData.signCode) {
+        const sign = createRoadSign(e.code);
+        sign.position.copy(obj.position); sign.rotation.copy(obj.rotation); sign.scale.copy(obj.scale);
+        sign.userData = { ...obj.userData, signCode: e.code };
+        obj.parent.add(sign); obj.parent.remove(obj); obj = sign;
+      }
+      if (e.x !== undefined) obj.position.x = e.x;
+      if (e.z !== undefined) obj.position.z = originZ + e.z;
+      if (e.rotY !== undefined) obj.rotation.y = e.rotY;
+      if (e.removed) obj.visible = false;
+    }
   }
 
   // Road factories use X = driver's right. Convert once at their boundary to
@@ -7094,6 +7959,7 @@
     state.occluders = state.occluders.filter(o => !removed.has(o));
     if (seg.parent) seg.parent.remove(seg);
     const geometries = new Set(), materials = new Set(), textures = new Set();
+    seg.traverse(o => o.userData.replacedMaterials?.forEach(m => materials.add(m)));
     seg.traverse(obj => {
       if (obj.geometry) geometries.add(obj.geometry);
       if (obj.material) (Array.isArray(obj.material) ? obj.material : [obj.material]).forEach(m => {
@@ -7112,20 +7978,46 @@
       { maneuver: 'straight', yieldTo: [], reviewed: false };
   }
 
+  function isRegulatorSituation(s) {
+    const spec = routeSpec(s);
+    return !!(s.regulator || spec.regulator || (spec.overrides && spec.overrides.regulator));
+  }
+
   function nextSituation() {
     // Unreviewed geometry must not silently teach an incorrect scene.
-    const pool = SITUATIONS.filter(s => routeSpec(s).reviewed);
+    const pool = SITUATIONS.filter(s => routeSpec(s).reviewed === true);
     if (!pool.length) throw new Error('No validated driving scenarios loaded');
-    if (!situationBag.length) {
-      situationBag = pool.slice();
-      for (let i = situationBag.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [situationBag[i], situationBag[j]] = [situationBag[j], situationBag[i]];
-      }
-      if (situationBag.length > 1 && situationBag[situationBag.length - 1].id === lastSituationId) {
-        [situationBag[0], situationBag[situationBag.length - 1]] =
-          [situationBag[situationBag.length - 1], situationBag[0]];
-      }
+
+    if (situationBag.length) {
+      const selected = situationBag.pop();
+      lastSituationId = selected.id;
+      return selected;
+    }
+
+    const regPool = pool.filter(isRegulatorSituation);
+    const normalPool = pool.filter(s => !isRegulatorSituation(s));
+
+    state.situationsSinceLastRegulator = (state.situationsSinceLastRegulator || 0) + 1;
+    const wantRegulator = Boolean(state.forceRegulator) ||
+      (state.situationsSinceLastRegulator >= 30 && Math.random() < 0.02);
+
+    if (wantRegulator && regPool.length) {
+      state.situationsSinceLastRegulator = 0;
+      const idx = Math.floor(Math.random() * regPool.length);
+      const selected = regPool[idx];
+      lastSituationId = selected.id;
+      return selected;
+    }
+
+    const availablePool = normalPool.length ? normalPool : pool;
+    situationBag = availablePool.slice();
+    for (let i = situationBag.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [situationBag[i], situationBag[j]] = [situationBag[j], situationBag[i]];
+    }
+    if (situationBag.length > 1 && situationBag[situationBag.length - 1].id === lastSituationId) {
+      [situationBag[0], situationBag[situationBag.length - 1]] =
+        [situationBag[situationBag.length - 1], situationBag[0]];
     }
     const selected = situationBag.pop();
     lastSituationId = selected.id;
@@ -7179,6 +8071,12 @@
       .multiply(new THREE.Matrix4().makeRotationY(Math.PI))
       .multiply(new THREE.Matrix4().makeTranslation(-pivot.x, 0, -pivot.z));
     state.roadSegments.forEach(seg => seg.applyMatrix4(transform));
+    const planes = new Set();
+    state.roadSegments.forEach(seg => seg.traverse(o => {
+      const materials = Array.isArray(o.material) ? o.material : [o.material];
+      materials.forEach(m => (m?.clippingPlanes || []).forEach(p => planes.add(p)));
+    }));
+    planes.forEach(p => p.applyMatrix4(transform));
     camera.position.applyMatrix4(transform); cameraLook.applyMatrix4(transform);
     playerCarGroup.applyMatrix4(transform);
     state.lastSafePosition.applyMatrix4(transform);
@@ -7190,13 +8088,21 @@
     scene.add(currentCorridor);
     corridorWorld.decompose(currentCorridor.position, currentCorridor.quaternion, currentCorridor.scale);
     cancelRoadEvent();
-    const retired = state.roadSegments.filter(seg => seg !== currentCorridor);
+    // Scenes along this very road (a car in a driveway, a bus at its stop,
+    // road works) stay where they are and keep moving: only the junctions
+    // at its ends are rebuilt. Nothing the player is looking at vanishes.
+    const kept = new Set(state.roadSegments.filter(seg => seg === currentCorridor || seg.userData.roadEvent));
+    const retired = state.roadSegments.filter(seg => !kept.has(seg));
     retired.forEach(disposeSegment);
-    state.roadSegments = [currentCorridor];
+    state.roadSegments = [...kept];
     state.intersections = [];
     state.activeIntersection = null;
-    state.actors = [];
+    const inKept = a => { let o = a.mesh; while (o && !kept.has(o)) o = o.parent; return !!o; };
+    state.actors = state.actors.filter(a => !a.done && inKept(a));
+    // Their question/event is over: anyone waiting for the player moves on.
+    state.actors.forEach(a => { a.waitsForPlayer = false; if (a.stopFor === Infinity) a.stopFor = 1.2; });
     state.exitRoad = currentCorridor;
+    state.sideJunction = null;
     clearOncoming();
     state.speedLimitKmH = null;
     state.speedingTime = 0;
@@ -7221,18 +8127,34 @@
     const z = intersection.centerZ;
     let points, clearDistance;
     if (cfg.type === 'pedestrian') {
-      // Cross the side street at its zebra, then continue along the pavement.
+      // Cross the destination road, then continue along the pavement. The
+      // crossing may be unmarked, as in the source ticket.
       const x = p.x;
-      points = [p, new THREE.Vector3(x, 0.03, z - 3.8),
-        new THREE.Vector3(x, 0.03, z + 3.8),
-        new THREE.Vector3(x, 0.18, z + 5.8),
-        new THREE.Vector3(x * 1.8, 0.18, z + 6.1),
-        new THREE.Vector3(Math.sign(x) * 48, 0.18, z + 6.1)];
+      const k = intersection.kerbZ || 4.2;
+      points = [p, new THREE.Vector3(x, 0.03, z - k + 0.4),
+        new THREE.Vector3(x, 0.03, z + k - 0.4),
+        new THREE.Vector3(x, 0.18, z + k + 1.6),
+        new THREE.Vector3(x * 1.8, 0.18, z + k + 1.9),
+        new THREE.Vector3(Math.sign(x) * 48, 0.18, z + k + 1.9)];
       clearDistance = 12.5;
     } else {
       const yaw = actor.mesh.rotation.y;
       const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
-      if (cfg.targetAction === 'uturn') {
+      if (cfg.side === 'ring' || cfg.roundabout) {
+        const ringRadius = cfg.ringRadius || 12.0;
+        const startAngle = Math.atan2(p.x, p.z - z);
+        const arcPoints = [p];
+        for (let da = 0.35; da <= Math.PI * 1.5; da += 0.35) {
+          const a = startAngle + da;
+          arcPoints.push(new THREE.Vector3(ringRadius * Math.sin(a), 0, z + ringRadius * Math.cos(a)));
+        }
+        const lastAngle = startAngle + Math.PI * 1.5;
+        const lastPt = arcPoints[arcPoints.length - 1];
+        const outTangent = new THREE.Vector3(Math.cos(lastAngle), 0, -Math.sin(lastAngle));
+        arcPoints.push(lastPt.clone().addScaledVector(outTangent, 25));
+        points = arcPoints;
+        clearDistance = 18;
+      } else if (cfg.targetAction === 'uturn') {
         const side = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
         const entry = p.clone().addScaledVector(forward, 5);
         const exit = entry.clone().addScaledVector(side, 3.6);
@@ -7255,11 +8177,43 @@
         const exit = center.clone().addScaledVector(outgoing, 6).addScaledVector(right, 1.8);
         points = [p, approach, entry, exit, exit.clone().addScaledVector(outgoing, 10), exit.clone().addScaledVector(outgoing, 45)];
         clearDistance = p.distanceTo(entry) + entry.distanceTo(exit) + actor.halfLength + 3;
+        if (cfg.type === 'tram') {
+          // Rails turn on a true circular arc tangent to both tracks, never
+          // a kink: the corner K where the two track lines meet is rounded
+          // with the largest radius the junction allows.
+          const exitLine = center.clone().addScaledVector(right, 1.8);
+          const K = center.clone().add(lateral).addScaledVector(forward, exitLine.clone().sub(center).dot(forward));
+          const R = Math.max(3, Math.min(9, K.clone().sub(p).dot(forward) - 0.5));
+          const A = K.clone().addScaledVector(forward, -R), B = K.clone().addScaledVector(outgoing, R);
+          const O = A.clone().addScaledVector(outgoing, R);
+          const arc = [];
+          for (let i = 0; i <= 12; i++) {
+            const t = i / 12 * Math.PI / 2;
+            arc.push(O.clone().addScaledVector(outgoing, -R * Math.cos(t)).addScaledVector(forward, R * Math.sin(t)));
+          }
+          // The arc starts at A; no extra point that could fold the rails back.
+          const lead = A.clone().sub(p).dot(forward);
+          points = [p, ...arc.filter(q => q.clone().sub(p).dot(forward) > 0.5 || q.clone().sub(p).dot(outgoing) > 0.5),
+            B.clone().addScaledVector(outgoing, 10), B.clone().addScaledVector(outgoing, 45)];
+          clearDistance = p.distanceTo(A) + R * Math.PI / 2 + actor.halfLength + 3;
+        }
       } else {
         points = [p, p.clone().addScaledVector(forward, 16), p.clone().addScaledVector(forward, 65)];
         clearDistance = cfg.type === 'cyclist' ? 15 :
           (Math.abs(p.x) > 5 ? Math.abs(p.x) : Math.abs(p.z - z)) + 5.5 + actor.halfLength;
       }
+    }
+    if ((intersection.halfW || intersection.halfM) && cfg.type !== 'pedestrian') {
+      // On a tapering wide street every lane closes in towards the centre
+      // with the kerbs, smoothly (the rails follow the same path).
+      const hw = intersection.halfW, hm = intersection.halfM;
+      const raw = curve(points), n = Math.ceil(raw.getLength() / 2);
+      points = Array.from({ length: n + 1 }, (_, i) => {
+        const q = raw.getPointAt(i / n);
+        if (hw && Math.abs(q.x) > 8) q.z = z + (q.z - z) * hw(q.x) / hw(0);
+        if (hm && Math.abs(q.z - z) > 12 && Math.abs(q.x) < 8) q.x = q.x * hm(q.z) / hm(z);
+        return q;
+      });
     }
     const path = curve(points);
     // Turning traffic signals its manoeuvre until the turn is complete.
@@ -7267,7 +8221,8 @@
       (cfg.targetAction === 'turn_left' || cfg.targetAction === 'uturn') ? [{ from: 0, to: clearDistance, side: 'left' }] : null;
     return { ...actor, segment: intersection.seg, path, length: path.getLength(),
       distance: 0, speed: 0, maxSpeed: cfg.type === 'pedestrian' ? 3.6 : cfg.type === 'cyclist' ? 7 : 12,
-      clearDistance, active: false, waitsForPlayer: true, cleared: false, done: false, gait: 0, signalPlan };
+      clearDistance, active: false, waitsForPlayer: true, cleared: false, done: false, gait: 0, signalPlan,
+      stopAtDistance: cfg.stopAtDistance, stopFor: cfg.stopFor };
   }
 
   function ensureTraffic(intersection) {
@@ -7312,6 +8267,7 @@
     state.speed = 0;
     const spec = routeSpec(intersection.situation);
     const motions = ensureTraffic(intersection);
+    hideBadges(motions);
     const yielding = spec.yieldTo.map(id => motions.find(a => a.config.id === id)).filter(Boolean);
     state.resolution = { intersection, spec, motions, yielding, phase: 'manual', elapsed: 0,
       entry: playerCarGroup.position.clone(), entryYaw: playerCarGroup.rotation.y, faults: new Set(), recovery: 0 };
@@ -7333,14 +8289,38 @@
     const start = playerCarGroup.position.clone();
     const action = r.spec.maneuver;
     let points, exitYaw = 0;
-    if (action === 'right') {
+    if (r.intersection.situation.geometry === 'roundabout') {
+      if (action === 'right') {
+        exitYaw = -Math.PI / 2;
+        points = [start, new THREE.Vector3(-1.8, 0, z - 18), new THREE.Vector3(-3.5, 0, z - 14),
+          new THREE.Vector3(-7.5, 0, z - 10), new THREE.Vector3(-12, 0, z - 4), new THREE.Vector3(-18, 0, z - 1.8), new THREE.Vector3(-24, 0, z - 1.8)];
+      } else if (action === 'straight') {
+        exitYaw = 0;
+        points = [start, new THREE.Vector3(-1.8, 0, z - 18), new THREE.Vector3(-4.0, 0, z - 14),
+          new THREE.Vector3(-9.5, 0, z - 6), new THREE.Vector3(-10.5, 0, z), new THREE.Vector3(-8.5, 0, z + 8),
+          new THREE.Vector3(-4.0, 0, z + 14), new THREE.Vector3(-1.8, 0, z + 18), new THREE.Vector3(-1.8, 0, z + 26)];
+      } else {
+        exitYaw = Math.PI / 2;
+        points = [start, new THREE.Vector3(-1.8, 0, z - 18), new THREE.Vector3(-4.0, 0, z - 14),
+          new THREE.Vector3(-9.5, 0, z - 6), new THREE.Vector3(-10.5, 0, z), new THREE.Vector3(-8.5, 0, z + 8),
+          new THREE.Vector3(0, 0, z + 11.5), new THREE.Vector3(8.5, 0, z + 8), new THREE.Vector3(14, 0, z + 4),
+          new THREE.Vector3(18, 0, z + 1.8), new THREE.Vector3(24, 0, z + 1.8)];
+      }
+    } else if (action === 'right') {
       exitYaw = -Math.PI / 2;
-      points = [start, new THREE.Vector3(-1.8, 0, z - 4.8),
-        new THREE.Vector3(-4.8, 0, z - 1.8), new THREE.Vector3(-22, 0, z - 1.8)];
+      const R = r.intersection.rightLane || 1.8;
+      points = [start, new THREE.Vector3(-1.8, 0, z - R - 3),
+        new THREE.Vector3(-4.8, 0, z - R), new THREE.Vector3(-22, 0, z - R)];
+      const hw = r.intersection.halfW;
+      // On a wide street the lane closes in with the taper to the exit road.
+      if (hw) points.splice(3, 1, new THREE.Vector3(-14, 0, z - R), new THREE.Vector3(-26, 0, z - R * hw(26) / hw(0)), new THREE.Vector3(-36, 0, z - 1.8));
     } else if (action === 'left') {
       exitYaw = Math.PI / 2;
+      const L = r.intersection.leftLane || 1.8;
       points = [start, new THREE.Vector3(-1.8, 0, z - 1.5),
-        new THREE.Vector3(1.5, 0, z + 1.8), new THREE.Vector3(22, 0, z + 1.8)];
+        new THREE.Vector3(1.5, 0, z + L), new THREE.Vector3(22, 0, z + L)];
+      const hw = r.intersection.halfW;
+      if (hw) points.splice(3, 1, new THREE.Vector3(14, 0, z + L), new THREE.Vector3(26, 0, z + L * hw(26) / hw(0)), new THREE.Vector3(36, 0, z + 1.8));
     } else if (action === 'uturn') {
       exitYaw = Math.PI;
       points = [start, new THREE.Vector3(-2.8, 0, z - 3), new THREE.Vector3(-2.8, 0, z),
@@ -7388,7 +8368,35 @@
     return Math.max(0, limit);
   }
 
+  // Through traffic (road-event vehicles, traffic leaving an earlier task)
+  // follows the road network: at a T-junction ahead there is no straight on,
+  // so it turns right instead of driving over the far pavement.
+  function rerouteAtTJunctions() {
+    const tees = state.intersections.filter(it => it.situation.geometry === 't_no_straight');
+    if (!tees.length) return;
+    for (const a of state.actors) {
+      if (a.done || a.fall || a.crashed || a.rerouted || ['pedestrian', 'tram'].includes(a.config.type)) continue;
+      const tee = tees.find(it => !it.actors.some(x => x.mesh === a.mesh));
+      if (!tee) continue;
+      const pos = a.mesh.getWorldPosition(new THREE.Vector3());
+      const c = tee.centerZ, t = Math.min(1, a.distance / a.length);
+      const tangent = a.path.getTangentAt(t).transformDirection(a.mesh.parent.matrixWorld);
+      if (tangent.z < 0.8 || pos.z > c - 7 || pos.z < c - 40 || Math.abs(pos.x) > 4.3) continue;
+      const end = a.path.getPointAt(1).applyMatrix4(a.mesh.parent.matrixWorld);
+      if (end.z < c || Math.abs(end.x) > 5) continue; // only paths that go straight on through it
+      const x = pos.x, lane = c - 1.8;
+      const world = [pos, new THREE.Vector3(x, 0, c - 6), new THREE.Vector3(x - 1.2, 0, c - 3.4),
+        new THREE.Vector3(x - 4.2, 0, lane), new THREE.Vector3(-40, 0, lane), new THREE.Vector3(-320, 0, lane)];
+      a.path = curve(world.map(p => a.mesh.parent.worldToLocal(p.clone())));
+      a.length = a.path.getLength(); a.distance = 0; a.rerouted = true;
+      a.holdSpeedUntil = undefined; a.stopAtDistance = undefined;
+      a.signalPlan = [{ from: 0, to: 18, side: 'right' }];
+      a.clearDistance = Infinity;
+    }
+  }
+
   function updateActors(dt) {
+    rerouteAtTJunctions();
     state.busBays = state.busBays.filter(b => b.mesh.parent);
     // Walkers meeting on the same pavement lane step to the other lane and
     // pass each other instead of walking through one another.
@@ -7416,14 +8424,17 @@
       const phase = a.phase + a.time * 0.14;
       a.mesh.position.z = a.center + Math.sin(phase) * 6;
       // Near a bus bay on their side, walkers take the path behind it.
-      let laneX = 5.2 + (a.targetLane ?? a.lane ?? 0) * 1.1;
+      let laneX = 5.2 + (a.targetLane ?? a.lane ?? 0) * 1.1, bayed = false;
       for (const bay of state.busBays || []) {
         if (!bay.mesh.parent) continue;
         const local = a.seg.worldToLocal(bay.mesh.parent.localToWorld(bay.center.clone()));
-        if (Math.sign(local.x) === Math.sign(a.mesh.position.x || 1) && Math.abs(local.z - a.mesh.position.z) < 24) { laneX = 8.5; break; }
+        if (Math.sign(local.x) !== Math.sign(a.mesh.position.x || 1)) continue;
+        // Round the pocket along the curved pavement, in single file.
+        const k = bayProfile(local.z - a.mesh.position.z);
+        if (k > 0) { laneX = laneX + (8.55 - laneX) * k; bayed = true; break; }
       }
       const targetX = Math.sign(a.mesh.position.x || 1) * laneX;
-      a.mesh.position.x += (targetX - a.mesh.position.x) * Math.min(1, dt * 3);
+      a.mesh.position.x += (targetX - a.mesh.position.x) * (bayed ? 1 : Math.min(1, dt * 3));
       const direction = Math.cos(phase);
       a.mesh.rotation.y = direction >= 0 ? 0 : Math.PI;
       a.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(a.time * 5 + i * Math.PI) * 0.32 * Math.abs(direction); });
@@ -7459,6 +8470,11 @@
       }
       if (!a.active && !a.waitsForPlayer && a.dependencies?.every(b => b.cleared)) a.active = true;
       if (!a.active || a.done) return;
+      if (a.stopAtDistance !== undefined && a.distance >= a.stopAtDistance && a.stopFor > 0) {
+        a.stopFor -= dt;
+        a.speed = 0;
+        return;
+      }
       a.speed = Math.min(followingSpeed(a, traffic, dt), a.speed + dt * (a.config.type === 'pedestrian' ? 8 : 12));
       const advance = a.speed * dt;
       const steps = Math.max(1, Math.ceil(advance / 0.15));
@@ -7595,6 +8611,8 @@
   }
 
   function pathsConflict(a, b) {
+    if (a.config?.concurrentWith?.includes('player') || b.config?.concurrentWith?.includes('player')) return false;
+    if (a.config?.concurrentWith?.includes(b.config?.id) || b.config?.concurrentWith?.includes(a.config?.id)) return false;
     const samples = motion => {
       const points = [];
       for (let d = 0; d <= Math.min(motion.length, motion.clearDistance + 5); d += 1) {
@@ -7608,11 +8626,78 @@
     return aa.some(p => bb.some(q => footprintsOverlap(p, q, 0.2)));
   }
 
+  let mistakeHighlightMesh = null;
+
+  function highlightMistake(details = {}) {
+    clearMistakeHighlight();
+    const group = new THREE.Group();
+    group.userData.mistakeHighlight = true;
+
+    const ringGeo = new THREE.RingGeometry(1.8, 3.6, 32);
+    ringGeo.rotateX(-Math.PI / 2);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0xEF4444,
+      transparent: true,
+      opacity: 0.75,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.position.y = 0.04;
+    group.add(ring);
+
+    const innerGeo = new THREE.CircleGeometry(1.75, 32);
+    innerGeo.rotateX(-Math.PI / 2);
+    const innerMat = new THREE.MeshBasicMaterial({
+      color: 0xF87171,
+      transparent: true,
+      opacity: 0.28,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const innerDisc = new THREE.Mesh(innerGeo, innerMat);
+    innerDisc.position.y = 0.038;
+    group.add(innerDisc);
+
+    const pos = details.position || playerCarGroup.position;
+    group.position.set(pos.x, 0, pos.z);
+    scene.add(group);
+    mistakeHighlightMesh = { group, ringMat, innerMat, elapsed: 0, duration: 1.8 };
+  }
+
+  function clearMistakeHighlight() {
+    if (mistakeHighlightMesh) {
+      scene.remove(mistakeHighlightMesh.group);
+      mistakeHighlightMesh.group.traverse(o => {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) o.material.dispose();
+      });
+      mistakeHighlightMesh = null;
+    }
+  }
+
+  function updateMistakeHighlight(dt) {
+    if (!mistakeHighlightMesh) return;
+    const mh = mistakeHighlightMesh;
+    mh.elapsed += dt;
+    if (mh.elapsed >= mh.duration) {
+      clearMistakeHighlight();
+      return;
+    }
+    const progress = mh.elapsed / mh.duration;
+    const pulse = 1.0 + 0.12 * Math.sin(mh.elapsed * 12);
+    mh.group.scale.set(pulse, 1, pulse);
+    const fade = Math.max(0, 1 - Math.pow(progress, 2));
+    mh.ringMat.opacity = 0.75 * fade;
+    mh.innerMat.opacity = 0.28 * fade;
+  }
+
   function drivingFault(type, key = type) {
     const r = state.resolution;
     const faults = r ? r.faults : state.driveFaults;
     if (faults.has(key)) return;
     faults.add(key);
+    highlightMistake({ type });
     sendToFlutter({ event: 'violation', type, episode: ++state.violationEpisode });
   }
 
@@ -7668,6 +8753,9 @@
   function parkCrashedActor(actor) {
     if (!actor || actor.crashed || ['pedestrian', 'cyclist'].includes(actor.config.type)) return;
     separateCrashedActor(actor);
+    // After a crash: turn signals off, hazard lights on (п. 7.1).
+    actor.signalPlan = null;
+    actor.mesh.userData.blinkerSide = 'hazard';
     actor.speed = 0;
     actor.active = false;
     actor.crashed = true;
@@ -7684,6 +8772,7 @@
 
   function resetAfterImpact(type, key) {
     drivingFault(type, key);
+    if (type === 'collision') { state.hazard = 8; state.blinker = null; }
     state.speed = 0;
     state.isAccelerating = false;
     state.isBraking = false;
@@ -7725,23 +8814,43 @@
         return;
       }
       if (state.speed > 0.5 && r.yielding.includes(a) && !a.cleared) {
-        const predicted = { ...playerBox, p: p.clone().add(new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)).multiplyScalar(state.speed)) };
-        const obstacle = { ...other, p: other.p.clone().add(new THREE.Vector3(Math.sin(other.yaw), 0, Math.cos(other.yaw)).multiplyScalar(a.speed)) };
-        if (footprintsOverlap(predicted, obstacle, 0.5)) drivingFault('priority');
+        if (r.spec.staged && r.spec.waitInside && p.z < z - 1.5 && Math.abs(p.x) < 2.5) {
+          // Staged maneuver: driver enters intersection and waits before turning path
+        } else {
+          const predicted = { ...playerBox, p: p.clone().add(new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)).multiplyScalar(state.speed)) };
+          const obstacle = { ...other, p: other.p.clone().add(new THREE.Vector3(Math.sin(other.yaw), 0, Math.cos(other.yaw)).multiplyScalar(a.speed)) };
+          if (footprintsOverlap(predicted, obstacle, 0.5)) drivingFault('priority');
+        }
       }
     }
     const sideStreet = Math.abs(p.x) > 7;
     const mainStreet = Math.abs(p.z - z) > 7;
-    updateLaneViolation(dt, sideStreet ? Math.sin(yaw) * (p.z - z) < -0.85 : mainStreet && Math.cos(yaw) * p.x > 0.85);
+    const oneWay = r.intersection.situation.oneWay;
+    if (oneWay && sideStreet) {
+      // A one-way cross street has no oncoming lane: with its flow any lane
+      // is legal (8.6 is judged by the question, not here), against it is
+      // driving against the flow whatever the lane.
+      const flowSide = oneWay === 'to_right' ? -1 : 1; // world X of the flow's exit
+      const heading = Math.sign(Math.sin(yaw)) || 1;
+      updateLaneViolation(dt, false, heading !== flowSide);
+    } else {
+      updateLaneViolation(dt, sideStreet ? Math.sin(yaw) * (p.z - z) < -0.85 : mainStreet && Math.cos(yaw) * p.x > 0.85);
+    }
     const exits = [
-      ['left', Math.PI / 2, p.x > 24, Math.abs(p.z - z)],
-      ['right', -Math.PI / 2, p.x < -24, Math.abs(p.z - z)],
-      ['straight', 0, p.z > z + 24, Math.abs(p.x)],
-      ['uturn', Math.PI, p.z < z - 24, Math.abs(p.x)],
+      ['left', Math.PI / 2, p.x > 24, Math.abs(p.z - z), p.x > 40],
+      ['right', -Math.PI / 2, p.x < -24, Math.abs(p.z - z), p.x < -40],
+      ['straight', 0, p.z > z + 24, Math.abs(p.x), p.z > z + 40],
+      ['uturn', Math.PI, p.z < z - 24, Math.abs(p.x), p.z < z - 40],
     ];
-    for (const [direction, heading, beyond, lateral] of exits) {
+    for (const [direction, heading, beyond, lateral, farBeyond] of exits) {
       const error = Math.atan2(Math.sin(yaw - heading), Math.cos(yaw - heading));
-      if (beyond && lateral < 3.3 && Math.abs(error) < 0.35) {
+      // Any position on the exit's carriageway counts (a car hugging the far
+      // kerb, or still straightening out). Well past the junction the exit is
+      // taken whatever the heading: the preview roads end after 200 m, and a
+      // missed hand-over used to leave the player in a dead end.
+      const sideExit = direction === 'left' || direction === 'right';
+      const width = sideExit && r.intersection.halfW ? r.intersection.halfW(p.x) + 0.1 : 4.3;
+      if ((beyond && lateral < width && Math.abs(error) < 0.7) || (farBeyond && lateral < width + 1.7 && Math.abs(error) < Math.PI / 2)) {
         r.exitDirection = direction;
         r.exitYaw = heading;
         if (direction !== r.spec.maneuver) drivingFault('wrong_maneuver');
@@ -7794,13 +8903,27 @@
     nextSegmentZ = Math.max(...ends.map(p => p.z));
     state.exitRoad = outgoingPreview;
     currentCorridor = outgoingPreview;
+    state.sideJunction = null;
+    state.oneWayAgainst = false;
     // The outgoing road owns everything past this seam. Retired cross streets
     // cannot cut through future junctions even after several turns or U-turns.
     const cut = new THREE.Plane(new THREE.Vector3(0, 0, -1), boundary);
     state.roadSegments.filter(seg => seg !== outgoingPreview).forEach(seg => seg.traverse(obj => {
+      if (obj.userData.sceneryObject) {
+        const box = new THREE.Box3().setFromObject(obj);
+        if (box.max.z > boundary) obj.visible = false;
+      }
+      let root = obj;
+      while (root) { if (root.userData.sceneryObject) return; root = root.parent; }
       if (obj.userData.actor || obj.userData.tramRail || !obj.material) return;
-      obj.material.clippingPlanes = [...(obj.material.clippingPlanes || []), cut];
-      obj.material.clipShadows = true;
+      const clip = material => {
+        const copy = material.clone();
+        (obj.userData.replacedMaterials ||= new Set()).add(material);
+        copy.clippingPlanes = [...(material.clippingPlanes || []), cut];
+        copy.clipShadows = true;
+        return copy;
+      };
+      obj.material = Array.isArray(obj.material) ? obj.material.map(clip) : clip(obj.material);
     }));
     refreshRoadBounds();
     state.currentLaneOffset = playerCarGroup.position.x;
@@ -7808,7 +8931,8 @@
     state.targetLane = state.currentLaneOffset > 0 ? 0 : 1;
     state.lastSafePosition.copy(playerCarGroup.position);
     state.lastSafeYaw = playerCarGroup.rotation.y;
-    if (state.targetLane === 1) clearOncoming();
+    // Entering a one-way road against its flow stays one ongoing violation.
+    if (state.targetLane === 1 && outgoingPreview.userData.oneWay !== 'against') clearOncoming();
     state.isAtSituation = false;
     state.isResolvingSituation = false;
     state.activeIntersection = null;
@@ -7855,6 +8979,7 @@
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 120, 62);
     const face = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.62),
       new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), side: THREE.DoubleSide }));
+    face.position.z = ROAD_SIGN_FACE_Z;
     face.rotation.y = Math.PI;
     const group = new THREE.Group(); group.add(face);
     return group;
@@ -7888,12 +9013,66 @@
     const parts = []; for (let x = -3.6; x <= 3.6 + 0.01; x += 0.9) parts.push(addFlatPlane(new THREE.Group(), 0.45, 4, x, z, 0.04, paint));
     group.add(mergeStatic(parts, paint));
   }
-  function addRoadSign(group, code, z, side = 'right', plate = null, offsetX = 0) {
+  // Towns for the settlement signs 5.23.1 / 5.24.1: the town you leave and
+  // the next one are always different places.
+  const TOWNS = ['Липецк', 'Тверь', 'Калуга', 'Рязань', 'Тула', 'Владимир', 'Кострома', 'Ярославль', 'Псков', 'Орёл',
+    'Курск', 'Брянск', 'Смоленск', 'Иваново', 'Вологда', 'Тамбов', 'Пенза', 'Саранск', 'Чебоксары', 'Киров',
+    'Пермь', 'Уфа', 'Самара', 'Казань', 'Сызрань', 'Коломна', 'Серпухов', 'Дмитров', 'Суздаль', 'Ростов'];
+  function townPair() {
+    const a = Math.floor(Math.random() * TOWNS.length);
+    const b = (a + 1 + Math.floor(Math.random() * (TOWNS.length - 1))) % TOWNS.length;
+    return [TOWNS[a], TOWNS[b]];
+  }
+  function settlementTexture(code, town) {
+    const key = code + ':' + town;
+    let texture = signTextureCache.get(key);
+    if (texture) return texture;
+    const canvas = document.createElement('canvas'); canvas.width = 896; canvas.height = 200;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 896, 200);
+    ctx.strokeStyle = '#151515'; ctx.lineWidth = 14; ctx.strokeRect(14, 14, 868, 172);
+    ctx.fillStyle = '#151515'; ctx.font = 'bold 118px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(town.toUpperCase(), 448, 106, 800);
+    if (code === '5.24.1') { // end of the settlement: red diagonal across the name
+      ctx.strokeStyle = '#cc1725'; ctx.lineWidth = 16;
+      ctx.beginPath(); ctx.moveTo(40, 180); ctx.lineTo(856, 20); ctx.stroke();
+    }
+    texture = new THREE.CanvasTexture(canvas); signTextureCache.set(key, texture);
+    return texture;
+  }
+  function addRoadSign(group, code, z, side = 'right', plate = null, offsetX = 0, speedValue = null, town = null) {
     const x = (side === 'left' ? 5.4 : -5.4) + offsetX;
     const sign = createRoadSign(code);
+    if (town && (code === '5.23.1' || code === '5.24.1')) {
+      sign.children.find(o => o.geometry?.type === 'PlaneGeometry').material.map = settlementTexture(code, town);
+    }
+    if (speedValue !== null && (code === '3.24' || code === '3.25')) {
+      // The number is scene data: the bundled generic signs depict 50, while
+      // ticket 16.10 specifically shows the end of a 70 km/h restriction.
+      const key = code + ':' + speedValue;
+      let texture = signTextureCache.get(key);
+      if (!texture) {
+        const canvas = document.createElement('canvas'); canvas.width = canvas.height = 256;
+        const ctx = canvas.getContext('2d'), cancelled = code === '3.25';
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(128, 128, 119, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = cancelled ? '#888' : '#cc1725'; ctx.lineWidth = cancelled ? 4 : 20;
+        ctx.beginPath(); ctx.arc(128, 128, cancelled ? 117 : 109, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = cancelled ? '#777' : '#151515'; ctx.font = 'bold 128px Arial';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(speedValue), 128, 137);
+        if (cancelled) {
+          ctx.save(); ctx.beginPath(); ctx.arc(128, 128, 116, 0, Math.PI * 2); ctx.clip();
+          ctx.strokeStyle = '#444'; ctx.lineWidth = 6;
+          for (let d = -28; d <= 28; d += 14) { ctx.beginPath(); ctx.moveTo(30 + d, 230); ctx.lineTo(230 + d, 30); ctx.stroke(); }
+          ctx.restore();
+        }
+        texture = new THREE.CanvasTexture(canvas); signTextureCache.set(key, texture);
+      }
+      sign.children.find(o => o.geometry?.type === 'PlaneGeometry').material.map = texture;
+    }
     // Larger than junction signs: on a straight the camera sits further back.
     sign.scale.setScalar(1.35);
     sign.position.set(x, 0, z);
+    sign.userData.questionEvidence = true;
     group.add(sign);
     if (plate) { const p = createTextPlate(plate); p.scale.setScalar(1.35); p.position.set(x, 2.5, z); group.add(p); }
     return sign;
@@ -7901,6 +9080,9 @@
   function addRoadActor(group, cfg, position, yaw, pathPoints, maxSpeed, signalPlan = null) {
     const { actorMesh, halfLength, halfWidth } = createActorMesh(cfg);
     actorMesh.position.copy(position); actorMesh.rotation.y = yaw;
+    // Only participants of a question carry a name badge; passing traffic,
+    // bus-stop buses, cyclists and the like are just traffic.
+    actorMesh.userData.badge.visible = !!cfg.question;
     group.add(actorMesh);
     const path = curve(pathPoints);
     const actor = { mesh: actorMesh, config: cfg, halfLength, halfWidth, initialPos: position.clone(), segment: group,
@@ -7918,46 +9100,404 @@
     scene.add(group);
     state.roadSegments.push(group);
     state.roadTurn = (state.roadTurn || 0) + 1;
-    const situation = state.roadTurn % 2 === 1 ? nextRoadSituation() : null;
-    const kind = state.forceRoadEvent || (Math.random() < 0.45 ? 'busstop' : 'crosswalk'); // forceRoadEvent: tests
-    state.roadEvent = situation ? buildQuestionEvent(group, boundary, situation) :
-      (kind === 'busstop' ? buildBusStopEvent(group, boundary + 62) : buildCrosswalkEvent(group, boundary + 70));
+    // A one-way street has no oncoming lane: road questions (overtaking,
+    // oncoming traffic, centre lines) and oncoming vehicles do not belong there.
+    const oneWay = !!currentCorridor?.userData.oneWay;
+    const situation = state.roadTurn % 2 === 1 && !oneWay ? nextRoadSituation() : null;
+    const eventKinds = oneWay ? ['busstop', 'crosswalk', 'roadworks', 'obstacle', 'courtyard', 'cyclist']
+      : ['busstop', 'crosswalk', 'roadworks', 'obstacle', 'courtyard', 'cyclist', 'emergency'];
+    const kind = state.forceRoadEvent || eventKinds[Math.floor(Math.random() * eventKinds.length)];
+    if (situation) {
+      state.roadEvent = buildQuestionEvent(group, boundary, situation);
+    } else if (kind === 'busstop') {
+      state.roadEvent = buildBusStopEvent(group, boundary + 62);
+    } else if (kind === 'roadworks') {
+      state.roadEvent = buildRoadworksEvent(group, boundary + 60);
+    } else if (kind === 'obstacle') {
+      state.roadEvent = buildObstacleEvent(group, boundary + 60);
+    } else if (kind === 'courtyard') {
+      state.roadEvent = buildCourtyardEvent(group, boundary + 60);
+    } else if (kind === 'cyclist') {
+      state.roadEvent = buildCyclistEvent(group, boundary + 40);
+    } else if (kind === 'emergency') {
+      state.roadEvent = buildEmergencyEvent(group, boundary + 60);
+    } else {
+      state.roadEvent = buildCrosswalkEvent(group, boundary + 70);
+    }
     // Life on the road: oncoming traffic on many stretches, question or not.
-    if (!state.forceRoadEvent && Math.random() < 0.65) addOncomingTraffic(group, boundary, situation ? situation.scene : null);
+    if (!state.forceRoadEvent && !oneWay && Math.random() < 0.65) addOncomingTraffic(group, boundary, situation ? situation.scene : null);
     trimSegments();
     return state.roadEvent;
   }
 
+  // Road questions own their topology. A nearby random ticket junction must
+  // never stand in for the crossing described in a road question.
+  // taper: the pavements end on a diagonal (town edge, motorway); a side
+  // junction keeps square pavement ends that meet its own corners.
+  function replaceCorridorStrip(from, to, build, taper = false) {
+    const corridor = state.exitRoad || currentCorridor;
+    const environment = new THREE.Group();
+    environment.userData.questionTopology = true;
+    if (corridor) {
+      scene.updateMatrixWorld(true);
+      corridor.traverse(o => {
+        if (!o.userData.sceneryObject) return;
+        const box = new THREE.Box3().setFromObject(o);
+        if (box.max.z >= from && box.min.z <= to) o.visible = false;
+      });
+      const parts = [];
+      corridor.traverse(o => {
+        let root = o, scenery = false;
+        while (root && root !== corridor) { scenery ||= !!root.userData.sceneryObject; root = root.parent; }
+        if (!scenery && (o.isMesh || o.isLine) && !o.userData.actor && o.material) parts.push(o);
+      });
+      const straightBefore = new THREE.Plane(new THREE.Vector3(0, 0, -1), from);
+      const straightAfter = new THREE.Plane(new THREE.Vector3(0, 0, 1), -to);
+      // Pavements do not stop square: they taper towards the kerb over 10 m
+      // (cut on a diagonal), like a pavement ending at the edge of town.
+      const slope = 10 / 3.2;
+      const taperBefore = side => new THREE.Plane(new THREE.Vector3(side * -slope, 0, -1), from + 4.2 * slope).normalize();
+      const taperAfter = side => new THREE.Plane(new THREE.Vector3(side * -slope, 0, 1), -to + 4.2 * slope).normalize();
+      parts.forEach(o => {
+        const box = new THREE.Box3().setFromObject(o);
+        if (box.max.z < from || box.min.z > to) return;
+        const side = taper && o.userData.surface === 'sidewalk' ? Math.sign(box.getCenter(new THREE.Vector3()).x) : 0;
+        // Pavement joint lines stop before the taper starts, so none are left
+        // lying on the grass beside a narrowing pavement.
+        const lineShift = taper && o.isLine ? 10 : 0;
+        const before = side ? taperBefore(side) : lineShift ? new THREE.Plane(new THREE.Vector3(0, 0, -1), from - lineShift) : straightBefore;
+        const after = side ? taperAfter(side) : lineShift ? new THREE.Plane(new THREE.Vector3(0, 0, 1), -(to + lineShift)) : straightAfter;
+        const cloneWithPlanes = (m, planes) => {
+          (corridor.userData.replacedMaterials ||= new Set()).add(m);
+          const copy = m.clone();
+          copy.clippingPlanes = [...(m.clippingPlanes || []), ...planes];
+          copy.clipShadows = true;
+          return copy;
+        };
+        const mapMaterials = planes => Array.isArray(o.material)
+          ? o.material.map(m => cloneWithPlanes(m, planes))
+          : cloneWithPlanes(o.material, planes);
+        if (box.min.z < from && box.max.z > to) {
+          // Only long surfaces such as asphalt and pavement need two halves.
+          const copy = o.clone(false);
+          const originals = Array.isArray(o.material) ? o.material : [o.material];
+          o.material = Array.isArray(o.material)
+            ? originals.map(m => cloneWithPlanes(m, [before]))
+            : cloneWithPlanes(originals[0], [before]);
+          copy.material = Array.isArray(copy.material)
+            ? originals.map(m => cloneWithPlanes(m, [after]))
+            : cloneWithPlanes(originals[0], [after]);
+          o.parent.add(copy);
+        } else if (box.min.z < from) {
+          o.material = mapMaterials([before]);
+        } else if (box.max.z > to) {
+          o.material = mapMaterials([after]);
+        } else {
+          // Scenery wholly inside the replacement is clipped away without
+          // creating duplicate buildings, trees or pedestrians.
+          o.material = mapMaterials([before, after]);
+        }
+      });
+      // Ambient walkers must not keep walking through the new carriageway.
+      state.ambient = state.ambient.filter(a => {
+        const p = a.mesh.getWorldPosition(new THREE.Vector3());
+        if (p.z < from - 7 || p.z > to + 7) return true;
+        a.mesh.visible = false; return false;
+      });
+    }
+    build(environment);
+    scene.add(environment);
+    if (corridor) corridor.attach(environment);
+    else state.roadSegments.push(environment);
+    refreshRoadBounds();
+    return environment;
+  }
+
+  function roadSurface(group, width, length, x, z, sidewalk = false) {
+    const m = new THREE.MeshLambertMaterial({ color: sidewalk ? season().sidewalk : BRAND.asphalt });
+    const surface = addFlatPlane(group, width + SEAM, length + SEAM, x, z, sidewalk ? 0.18 : 0.02, m);
+    surface.userData.surface = sidewalk ? 'sidewalk' : 'road';
+    return surface;
+  }
+
+  function extendQuestionCorridor(endZ) {
+    if (!state.exitRoad || endZ <= nextSegmentZ) return;
+    const extra = buildStraightSegment(nextSegmentZ, endZ - nextSegmentZ, true);
+    state.exitRoad.attach(extra);
+    const ends = corridorWorldEnds();
+    const first = Math.min(...ends.map(p => p.z));
+    state.exitRoad.userData.roadEnds = [first, endZ].map(z => state.exitRoad.worldToLocal(new THREE.Vector3(0, 0, z)));
+    nextSegmentZ = endZ;
+  }
+
+  function buildRoadQuestionJunction(ev) {
+    const j = ev.scene.junction, z = ev.stopZ + j.z;
+    ev.junctionZ = z;
+    // Leave room after the authored crossing before the next ticket junction.
+    extendQuestionCorridor(z + 55);
+    ev.junction = replaceCorridorStrip(z - 9, z + 9, group => {
+      roadSurface(group, 8.4, 18, 0, z);
+      roadSurface(group, 70, 8.4, 0, z);
+      for (const side of [-1, 1]) for (const end of [-1, 1]) {
+        roadSurface(group, 27.6, 3.2, side * 21.2, z + end * 5.8, true); // corners: addCornerFillet
+        roadSurface(group, 3.2, 1.6, side * 5.8, z + end * 8.2, true);
+      }
+      ev.junctionPreviews = {};
+      for (const side of [-1, 1]) {
+        const road = buildStraightSegment(0, 200, true);
+        road.rotation.y = side * Math.PI / 2;
+        road.position.set(side * 35, 0, z);
+        group.add(road);
+        ev.junctionPreviews[side < 0 ? 'right' : 'left'] = road;
+      }
+      // Outlives the road event: a turn into a side road must always hand
+      // over the corridor, even after the question's stretch has finished.
+      state.sideJunction = { junctionZ: z, previews: ev.junctionPreviews, situation: ev.situation, actors: ev.actors };
+      const paint = roadMarkingMat();
+      for (const side of [-1, 1]) for (let x = 8; x < 34; x += 5) {
+        addFlatPlane(group, 2, 0.13, side * x, z, 0.027, paint);
+      }
+      // Rounded corners with the edge lines running round them: along the
+      // side roads and across the gap in the main road's own edge lines.
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+        addCornerFillet(group, sx, sz, 4.2, 4.2, z, paint);
+        addFlatPlane(group, 35 - 7.6, 0.15, sx * (7.6 + 35) / 2, z + sz * 3.95, 0.027, paint);
+        addFlatPlane(group, 0.15, 9 - 7.6 + SEAM, sx * 3.95, z + sz * (7.6 + 9) / 2, 0.027, paint);
+      }
+      if (j.priority === 'secondary') {
+        addRoadSign(group, '2.4', z - 7);
+      } else if (j.priority === 'main') {
+        // Yield signs on the side road also make its priority unambiguous.
+        for (const side of [-1, 1]) {
+          const sign = createRoadSign('2.4');
+          sign.position.set(side * 8, 0, z + side * 5.4);
+          sign.rotation.y = side * Math.PI / 2;
+          group.add(sign);
+        }
+      }
+    });
+    if (j.priority === 'secondary') {
+      ev.laneDeadlineZ = z - 4.2;
+      ev.endZ = z + 12;
+    }
+  }
+
+  // The same strip laid along X (a cross street): z edges as functions of x,
+  // split into chunks so drivable bounding boxes stay tight on a taper.
+  function addRibbonX(group, from, to, low, high, y, material, chunk = Infinity) {
+    const meshes = [];
+    for (let a = from; a < to - 1e-6; a = Math.min(to, a + chunk)) {
+      const b = Math.min(to, a + chunk), pos = [], idx = [];
+      const n = Math.max(1, Math.ceil((b - a) / 0.75));
+      for (let i = 0; i <= n; i++) {
+        const x = a + (b - a) * i / n;
+        pos.push(x, y, low(x), x, y, high(x));
+        if (i) idx.push(2 * i - 2, 2 * i, 2 * i - 1, 2 * i - 1, 2 * i, 2 * i + 1);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setIndex(idx); geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, material);
+      material.side = THREE.DoubleSide;
+      group.add(mesh); meshes.push(mesh);
+    }
+    return meshes;
+  }
+  // Pavement along the main street whose x edges follow functions of z.
+  function extrudedStripZ(zs, left, right, height, material) {
+    const shape = new THREE.Shape();
+    shape.moveTo(left(zs[0]), zs[0]);
+    zs.forEach(z => shape.lineTo(left(z), z));
+    [...zs].reverse().forEach(z => shape.lineTo(right(z), z));
+    shape.closePath();
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false });
+    geo.rotateX(Math.PI / 2);
+    const mesh = new THREE.Mesh(geo, material);
+    mesh.position.y = height; mesh.receiveShadow = true;
+    return mesh;
+  }
+  // A kerb rounded with radius 3.2 m at a junction corner. The square
+  // corner of the pavements is left out by the callers and built here: the
+  // pavement part up to the curve (a real raised slab, no overlay) and the
+  // asphalt part in front of it, which the kerb check treats by the exact
+  // curve. The edge line follows the curve and joins both streets' lines.
+  function addCornerFillet(group, sx, sz, kerbX, kerbZ, centerZ, paint, r = 3.2) {
+    const P = (u, v) => [sx * (kerbX + u), centerZ + sz * (kerbZ + v)];
+    const arc = (radius, from, to, n = 16) => Array.from({ length: n + 1 }, (_, i) => {
+      const t = from + (to - from) * i / n;
+      return [r + radius * Math.cos(t), r + radius * Math.sin(t)];
+    });
+    const shapeOf = pts => { const sh = new THREE.Shape(); sh.moveTo(...pts[0]); pts.slice(1).forEach(q => sh.lineTo(...q)); sh.closePath(); return sh; };
+    // Asphalt: the corner of the square outside the curve.
+    const road = shapeOf([[0, 0], ...arc(r, 1.5 * Math.PI, Math.PI)].map(([u, v]) => P(u, v)));
+    const rg = new THREE.ShapeGeometry(road); rg.rotateX(Math.PI / 2);
+    const asphalt = new THREE.Mesh(rg, new THREE.MeshLambertMaterial({ color: BRAND.asphalt, side: THREE.DoubleSide }));
+    asphalt.position.y = 0.021; asphalt.receiveShadow = true;
+    asphalt.userData.surface = 'road';
+    asphalt.userData.fillet = { center: new THREE.Vector3(...[P(r, r)].map(([x, z]) => [x, 0, z])[0]), r };
+    group.add(asphalt);
+    // Pavement: the rest of the square, a slab like the pavements around it.
+    const pave = shapeOf([[r + 0.02, -0.02], [r + 0.02, r + 0.02], [-0.02, r + 0.02], ...arc(r, Math.PI, 1.5 * Math.PI)].map(([u, v]) => P(u, v)));
+    const pg = new THREE.ExtrudeGeometry(pave, { depth: 0.18, bevelEnabled: false }); pg.rotateX(Math.PI / 2);
+    const slabMat = new THREE.MeshLambertMaterial({ color: season().sidewalk, side: THREE.DoubleSide });
+    slabMat.userData.seasonal = 'sidewalk';
+    const slab = new THREE.Mesh(pg, slabMat);
+    slab.position.y = 0.18; slab.receiveShadow = true; slab.userData.surface = 'sidewalk';
+    group.add(slab);
+    // Edge line: the arc plus the short pieces up to both straight lines.
+    const inner = arc(r + 0.175, 1.5 * Math.PI, Math.PI), outer = arc(r + 0.325, 1.5 * Math.PI, Math.PI);
+    inner.unshift([3.4, -0.175]); outer.unshift([3.4, -0.325]);
+    inner.push([-0.175, 3.4]); outer.push([-0.325, 3.4]);
+    const pos = [], idx = [];
+    inner.forEach((q, i) => {
+      const [ax, az] = P(...q), [bx, bz] = P(...outer[i]);
+      pos.push(ax, 0.032, az, bx, 0.032, bz);
+      if (i) idx.push(2 * i - 2, 2 * i - 1, 2 * i, 2 * i - 1, 2 * i + 1, 2 * i);
+    });
+    const lg = new THREE.BufferGeometry();
+    lg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); lg.setIndex(idx);
+    const line = new THREE.Mesh(lg, paint.clone()); line.material.side = THREE.DoubleSide;
+    line.userData.roadMarking = true;
+    group.add(line);
+  }
+  // A raised slab (kerbed pavement, median) whose z edges follow functions
+  // of x; xs are the sample positions along the street.
+  function extrudedStrip(xs, low, high, height, material) {
+    const shape = new THREE.Shape();
+    shape.moveTo(xs[0], low(xs[0]));
+    xs.forEach(x => shape.lineTo(x, low(x)));
+    [...xs].reverse().forEach(x => shape.lineTo(x, high(x)));
+    shape.closePath();
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false });
+    geo.rotateX(Math.PI / 2);
+    const mesh = new THREE.Mesh(geo, material);
+    mesh.position.y = height; mesh.castShadow = false; mesh.receiveShadow = true;
+    return mesh;
+  }
+
+  // A flat strip between two lateral edge functions of z (world X): used for
+  // carriageways that swing out or merge smoothly instead of starting square.
+  function addRibbon(group, from, to, left, right, y, material, step = 1) {
+    const pos = [], idx = [];
+    for (let z = from, i = 0; z <= to + 1e-6; z = Math.min(to, z + step), i++) {
+      pos.push(left(z), y, z, right(z), y, z);
+      if (i) idx.push(2 * i - 2, 2 * i - 1, 2 * i, 2 * i - 1, 2 * i + 1, 2 * i);
+      if (z === to) break;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setIndex(idx); geo.computeVertexNormals();
+    const mesh = new THREE.Mesh(geo, material);
+    mesh.material.side = THREE.DoubleSide;
+    group.add(mesh);
+    return mesh;
+  }
+
+  // Motorway (5.1 ... 5.2): the oncoming lane swings out into a separate
+  // carriageway behind a grass median over 45 m and merges back the same way
+  // at the end — no second road appearing out of nowhere. The player's own
+  // carriageway keeps both lanes in its direction.
+  function buildQuestionMotorway(ev) {
+    ev.motorwayFrom = ev.stopZ + 4; ev.motorwayTo = ev.stopZ + 175; ev.endZ = ev.motorwayTo;
+    ev.motorway = replaceCorridorStrip(ev.motorwayFrom, ev.motorwayTo, group => {
+      const from = ev.motorwayFrom, to = ev.motorwayTo, taper = 45;
+      const length = to - from, mid = (to + from) / 2;
+      // 0 at both ends, 1 on the separated stretch.
+      const k = z => THREE.MathUtils.smoothstep(z, from, from + taper) * (1 - THREE.MathUtils.smoothstep(z, to - taper, to));
+      const inner = z => 7.2 * k(z);                                     // 0 -> 7.2
+      const outer = z => 4.2 + 11.4 * k(z);                              // 4.2 -> 15.6
+      roadSurface(group, 8.4, length, 0, mid);
+      const asphalt = new THREE.MeshLambertMaterial({ color: BRAND.asphalt });
+      // The opposite carriageway can be driven onto (it is a violation, and
+      // the merge at the end brings the car back): short chunks keep each
+      // drivable bounding box off the median.
+      for (let z = from; z < to - 1e-6; z += 2) {
+        const m = addRibbon(group, z, Math.min(to, z + 2), inner, outer, 0.021, asphalt, 0.5);
+        m.userData.surface = 'road'; m.userData.oppositeCarriageway = true;
+      }
+      const grass = new THREE.MeshLambertMaterial({ color: season().ground });
+      grass.userData.seasonal = 'ground';
+      const median = addRibbon(group, from, to, () => 4.2, z => Math.max(4.2, inner(z)), 0.024, grass);
+      median.userData.surface = 'median';
+      const paint = roadMarkingMat(), dashes = [];
+      // Own carriageway: lane divider and both edge lines (the left one only
+      // where the median exists).
+      for (let p = from + 2; p < to - 2; p += 5) dashes.push(addFlatPlane(new THREE.Group(), 0.13, 2, 0, p, 0.028, paint));
+      addFlatPlane(group, 0.15, length, -3.95, mid, 0.028, paint);
+      const split = taper * 0.6; // the carriageways are apart from here on
+      addRibbon(group, from + split, to - split, () => 3.88, () => 4.02, 0.029, paint);
+      // Opposite carriageway: its edges and lane divider follow the swing.
+      addRibbon(group, from + split, to - split, z => inner(z) + 0.18, z => inner(z) + 0.32, 0.029, paint);
+      addRibbon(group, from, to, z => outer(z) - 0.32, z => outer(z) - 0.18, 0.029, paint);
+      for (let p = from + split; p < to - split - 2; p += 5) {
+        const c = (inner(p + 1) + outer(p + 1)) / 2;
+        const d = addFlatPlane(new THREE.Group(), 0.13, 2, c, p + 1, 0.029, paint);
+        dashes.push(d);
+      }
+      group.add(mergeStatic(dashes, paint));
+    }, true);
+  }
+
   function buildQuestionEvent(group, boundary, situation) {
     const sc = situation.scene;
-    const stopZ = boundary + 45;
+    // Far enough past the junction that anything the question rebuilds
+    // (rural stretch, motorway, side junction, markings) is out of the
+    // camera's view when it is laid: the player never sees the road change.
+    const stopZ = boundary + 110;
     const ev = { group, situation, kind: sc.kind, scene: sc, stopZ, startZ: stopZ, endZ: stopZ + 120,
       phase: 'approach', actors: [], overtakePenalized: false };
-    if (sc.overtake === 'before_intersection') {
-      // The next junction segment starts 200 m past the seam; be back in lane
-      // well before its crossing (its stop line is ~24 m into the segment).
-      ev.laneDeadlineZ = boundary + 200 + 4;
-      ev.endZ = boundary + 200 + 12;
+    // The stretch belongs to this question: the next ticket junction comes after it.
+    extendQuestionCorridor(stopZ + Math.max(120, sc.zoneLength || 0, sc.motorway ? 175 : 0) + 45);
+    if (sc.junction) buildRoadQuestionJunction(ev);
+    if (sc.motorway) buildQuestionMotorway(ev);
+    if (sc.outsideSettlement) {
+      ev.rural = replaceCorridorStrip(stopZ - 34, ev.endZ - 5, g => {
+        const from = stopZ - 34, to = ev.endZ - 5, length = to - from;
+        roadSurface(g, 8.4, length, 0, (from + to) / 2);
+        const paint = roadMarkingMat();
+        for (const x of [-3.95, 3.95]) addFlatPlane(g, 0.15, length, x, (from + to) / 2, 0.027, paint);
+        for (let z = from + 1; z < to - 2; z += 5) addFlatPlane(g, 0.13, 2, 0, z, 0.027, paint);
+        for (const side of [-1, 1]) for (let z = from + 5; z < to - 3; z += 12) {
+          const tree = createTree('pine'); tree.position.set(side * 11, 0, z); g.add(tree);
+        }
+      }, true);
     }
-    (sc.signs || []).forEach(sg => addRoadSign(group, sg.code, stopZ + sg.z, sg.side, sg.plate || null));
+    if (sc.approachLimitKmH) state.speedLimitKmH = sc.approachLimitKmH;
+    const [town, nextTown] = townPair();
+    ev.towns = [town, nextTown];
+    (sc.signs || []).forEach((sg, i) => {
+      const sign = addRoadSign(group, sg.code, stopZ + sg.z, sg.side, sg.plate || null, 0, sg.speedValue ?? null,
+        sg.code === '5.23.1' ? nextTown : town);
+      sign.userData.editKey = 'sign:' + i; sign.userData.signCode = sg.code;
+    });
     if (sc.kind === 'speed') {
-      ev.signZ = stopZ + (sc.signs?.[0]?.z ?? 12);
+      ev.signZ = stopZ + (sc.signs?.find(s => s.z >= 0)?.z ?? 12);
       if (sc.zoneLength) ev.endZ = stopZ + sc.zoneLength;
       // The zone ends with its counterpart sign (5.22, 5.2, 5.26, 5.23.1):
       // past it the built-up limit applies again, as the rules require.
-      if (sc.endSign) { ev.endSignZ = ev.endZ - 6; addRoadSign(group, sc.endSign, ev.endSignZ, 'right'); }
+      if (sc.endSign) {
+        ev.endSignZ = ev.endZ - 6;
+        const end = addRoadSign(group, sc.endSign, ev.endSignZ, 'right', null, 0, null, nextTown);
+        end.userData.editKey = 'sign:end'; end.userData.signCode = sc.endSign;
+      }
     }
     if (sc.marking) addCentreMarking(group, stopZ - 12, ev.endZ, sc.marking);
     if (sc.crosswalkZ !== undefined) { ev.crosswalkZ = stopZ + sc.crosswalkZ; addZebra(group, ev.crosswalkZ); }
     (sc.vehicles || []).forEach((v, i) => {
-      const cfg = { id: `road_${i}_${v.type}`, type: v.type, name: v.name, color: v.color,
-        badge: v.badge, blinker: v.blinker, maneuver: v.maneuver, scale: v.scale };
-      if (v.lane === 'oncoming') {
+      const cfg = { id: `road_${i}_${v.type}`, type: v.type, name: v.name, color: v.color, question: true,
+        badge: v.badge, blinker: v.blinker, maneuver: v.maneuver, scale: v.scale, approach: v.lane };
+      if (v.lane === 'right') {
+        const p = new THREE.Vector3(v.x ?? -15, 0, ev.junctionZ - 1.8);
+        const actor = addRoadActor(group, cfg, p, Math.PI / 2,
+          [p, new THREE.Vector3(12, 0, p.z), new THREE.Vector3(34, 0, p.z)], v.speed);
+        actor.clearDistance = 24;
+        ev.actors.push(actor);
+      } else if (v.lane === 'oncoming') {
         const p = new THREE.Vector3(1.8, 0, stopZ + v.z);
         ev.actors.push(addRoadActor(group, cfg, p, Math.PI,
           [p, p.clone().add(new THREE.Vector3(0, 0, -90)), p.clone().add(new THREE.Vector3(0, 0, -280))], v.speed));
       } else {
-        const p = new THREE.Vector3(-1.8, 0, stopZ + v.z);
+        const p = new THREE.Vector3(v.x ?? -1.8, 0, stopZ + v.z);
         const V = (x, z) => new THREE.Vector3(x, 0, z);
         if (v.maneuver === 'turn_left_at_junction') {
           // A signalled left turn happens at the next junction (its centre is
@@ -7969,12 +9509,33 @@
           actor.signalPlan = [{ from: 0, to: turnEnd - 14, side: 'left' }];
           actor.holdSpeedUntil = turnEnd + 8;
           ev.actors.push(actor);
+        } else if (v.maneuver === 'overtake' && v.joinsAtQuestion) {
+          // Comes up from behind while the camera frames the question (never
+          // seen appearing), waits behind the player signalling left, and
+          // overtakes briskly once the question is answered.
+          ev.joiners = ev.joiners || [];
+          ev.joiners.push(() => {
+            const z0 = stopZ - 9, start = V(-1.8, z0 - 31);
+            const actor = addRoadActor(group, cfg, start, 0, [start, V(-1.8, z0), V(1.8, z0 + 14), V(1.8, z0 + 90),
+              V(-1.8, z0 + 110), V(-1.8, z0 + 420)], Math.max(v.speed, 14));
+            actor.stopAtDistance = 31; actor.stopFor = Infinity; actor.waitsForPlayer = false;
+            actor.signalPlan = [{ from: 0, to: 52, side: 'left' }, { from: 112, to: 136, side: 'right' }];
+            actor.passedAt = 125;
+            ev.actors.push(actor);
+          });
         } else if (v.maneuver === 'overtake') {
           // Pulls out into the oncoming lane, passes the vehicle ahead and
           // returns: left signal out, right signal back, then nothing.
-          const points = [p, V(-1.8, p.z + 8), V(1.8, p.z + 22), V(1.8, p.z + 62), V(-1.8, p.z + 78), V(-1.8, p.z + 120), V(-1.8, p.z + 320)];
-          const actor = addRoadActor(group, cfg, p, 0, points, v.speed);
+          // Already over the centre line, or (as in the ticket photo) still in
+          // the lane with the left signal on: it pulls out once released.
+          const points = v.alreadyOvertaking && p.x > 0
+            ? [p, V(1.8, p.z + 12), V(1.8, p.z + 62), V(-1.8, p.z + 82), V(-1.8, p.z + 120), V(-1.8, p.z + 320)]
+            : [p, V(-1.8, p.z + 8), V(1.8, p.z + 22), V(1.8, p.z + 62), V(-1.8, p.z + 78), V(-1.8, p.z + 120), V(-1.8, p.z + 320)];
+          // The overtaking vehicle is clearly faster than the one it passes,
+          // so the manoeuvre actually completes on screen.
+          const actor = addRoadActor(group, cfg, p, 0, points, Math.max(v.speed * 1.6, 13));
           actor.signalPlan = [{ from: 0, to: 20, side: 'left' }, { from: 56, to: 80, side: 'right' }];
+          actor.passedAt = 90;
           ev.actors.push(actor);
         } else {
           ev.actors.push(addRoadActor(group, cfg, p, 0,
@@ -7982,6 +9543,9 @@
         }
       }
     });
+    applySceneEdits(group, situation.id, stopZ);
+    const crossTraffic = ev.actors.filter(a => a.config.approach === 'right' && sc.junction?.priority === 'equal');
+    if (crossTraffic.length) ev.actors.filter(a => !crossTraffic.includes(a)).forEach(a => { a.dependencies = crossTraffic; });
     return ev;
   }
 
@@ -8003,10 +9567,18 @@
     // A proper pavement behind the pocket (2.4 m wide, with ramps at both
     // ends) — walkers move onto it early and leave it late.
     const pave = new THREE.MeshLambertMaterial({ color: season().sidewalk });
-    // Straight and square: it runs right along the outer edge of the
-    // pavement (x −7.3…−9.7), so both ends join it without angled ramps.
-    const path = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.18, 50), pave);
-    path.position.set(-8.5, 0.09, bayZ); group.add(path);
+    pave.userData.seasonal = 'sidewalk';
+    // The pavement bulges out round the pocket with the same smooth taper
+    // (no square step): its outer edge follows bayProfile().
+    const walk = new THREE.Shape();
+    const outer = dz => -(7.4 + 2.5 * bayProfile(dz));
+    walk.moveTo(-6.9, -26);
+    for (let dz = -26; dz <= 26.01; dz += 1) walk.lineTo(outer(dz), dz);
+    walk.lineTo(-6.9, 26); walk.closePath();
+    const slab = new THREE.ExtrudeGeometry(walk, { depth: 0.185, bevelEnabled: false });
+    slab.rotateX(Math.PI / 2); // shape Y -> world Z; the extrusion hangs down from its top face
+    const path = new THREE.Mesh(slab, pave);
+    path.position.set(0, 0.185, bayZ); path.receiveShadow = true; group.add(path);
     clearRoadside(bayZ);
     // Shelter behind the path, bench, and the stop sign at the head of the bay.
     const dark = sceneryMat(0x3B4450), glassMat = new THREE.MeshLambertMaterial({ color: 0x9DB8C6, transparent: true, opacity: 0.55 });
@@ -8029,9 +9601,12 @@
     state.busBays.push({ mesh: bay, center: new THREE.Vector3(-5.5, 0, bayZ) });
     return ev;
   }
+  // 1 beside a bus pocket, 0 away from it, smooth in between (pavement edge
+  // and the walkers' line follow it).
+  function bayProfile(dz) { return 1 - THREE.MathUtils.smoothstep(Math.abs(dz), 14, 25); }
   // Remove houses, fences, trees and parked cars from the exit road's right
   // side around a bus bay, so the shelter and the path get a clear lot.
-  function clearRoadside(bayZ) {
+  function clearRoadside(bayZ, half = 30, xMin = -13, xMax = -7) {
     const seg = state.exitRoad;
     if (!seg) return;
     seg.updateMatrixWorld(true);
@@ -8043,14 +9618,14 @@
       if (box.isEmpty()) return;
       // Anything that reaches into the lot (path, shelter and a margin),
       // not only objects centred there: a long house must not cover the path.
-      if (box.max.x > -13 && box.min.x < -7 && box.max.z > bayZ - 30 && box.min.z < bayZ + 30 && box.max.y > 0.3) doomed.push(o);
+      if (box.max.x > xMin && box.min.x < xMax && box.max.z > bayZ - half && box.min.z < bayZ + half && box.max.y > 0.3) doomed.push(o);
     });
     doomed.forEach(o => { seg.remove(o); state.occluders = state.occluders.filter(b => b !== o); });
   }
   // Vehicles coming the other way on a straight: they pass and vanish behind.
   function addOncomingTraffic(group, boundary, scene) {
     // Overtaking questions author their own traffic; never add random cars there.
-    if (scene && scene.kind !== 'speed') return;
+    if (scene && (scene.kind !== 'speed' || scene.motorway)) return;
     const V = (x, z) => new THREE.Vector3(x, 0, z);
     const kinds = [['car', 'Встречный', '#2BC280'], ['car', 'Встречный', '#6E86A6'], ['truck', 'Грузовик', '#9AA0A6'],
       ['tractor', 'Трактор', '#F2B233'], ['motorcycle', 'Мотоцикл', '#8B5CF6'], ['bus', 'Автобус', '#FFA53C']];
@@ -8083,6 +9658,259 @@
     return ev;
   }
 
+  // Road works in the right lane: 1.25 and 4.2.2 (detour on the left, the
+  // oncoming lane may be used for it), a taper of cones, a barrier, and behind
+  // it a crew repairing a manhole — one lays fresh asphalt, one works down
+  // the open hatch. Cones and the barrier are knocked flying if hit.
+  function buildRoadworksEvent(group, workZ) {
+    const ev = { group, kind: 'roadworks', workZ, phase: 'approach', actors: [], zoneEnd: workZ + 16 };
+    addRoadSign(group, '1.25', workZ - 30, 'right');
+    addRoadSign(group, '4.2.2', workZ - 3, 'right', null, 1.3);
+    const prop = (mesh, radius, kind) => { state.props.push({ mesh, radius, kind, ev, root: group }); };
+    // The taper closes the whole lane, from the kerb to the lane line.
+    for (let i = 0; i < 6; i++) {
+      const cone = createTrafficCone();
+      cone.position.set(-3.8 + i * 0.66, 0, workZ - 18 + i * 3.2);
+      group.add(cone); prop(cone, 0.2, 'cone');
+    }
+    const barrier = createRoadworksBarrier(3.2);
+    barrier.position.set(-1.8, 0, workZ);
+    group.add(barrier);
+    state.props.push({ mesh: barrier, radius: 1.6, depth: 0.3, kind: 'barrier', ev, root: group });
+    // The closed zone: a fresh asphalt patch around the manhole.
+    const patch = addFlatPlane(group, 3.0, 7.5, -1.9, workZ + 7, 0.03, new THREE.MeshLambertMaterial({ color: 0x2B3036 }));
+    patch.userData.freshAsphalt = true;
+    const hatchZ = workZ + 9.5;
+    const hole = new THREE.Mesh(new THREE.CircleGeometry(0.46, 20), new THREE.MeshBasicMaterial({ color: 0x0B0D10 }));
+    hole.rotation.x = -Math.PI / 2; hole.position.set(-1.5, 0.036, hatchZ); group.add(hole);
+    const rim = new THREE.Mesh(new THREE.RingGeometry(0.46, 0.6, 20), sceneryMat(0x4A4F55));
+    rim.rotation.x = -Math.PI / 2; rim.position.set(-1.5, 0.038, hatchZ); group.add(rim);
+    const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.05, 20), sceneryMat(0x3E434A));
+    lid.position.set(-0.55, 0.03, hatchZ + 0.9); lid.rotation.set(0.06, 0, 0.04); group.add(lid);
+    // Asphalt heap and a wheelbarrow at the head of the patch.
+    const heap = new THREE.Mesh(new THREE.SphereGeometry(0.75, 9, 6), sceneryMat(0x1F2328));
+    heap.scale.set(1, 0.42, 1.3); heap.position.set(-3.1, 0.02, workZ + 3.2); group.add(heap);
+    const barrow = new THREE.Group();
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 0.9), sceneryMat(0x2F7D4F)); tray.position.y = 0.5; barrow.add(tray);
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.08, 10), sceneryMat(0x23282D));
+    wheel.rotation.z = Math.PI / 2; wheel.position.set(0, 0.18, 0.55); barrow.add(wheel);
+    [-0.22, 0.22].forEach(x => { const h = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.9), sceneryMat(0x5B646A)); h.position.set(x, 0.55, -0.7); barrow.add(h); });
+    barrow.position.set(-0.9, 0, workZ + 3.6); barrow.rotation.y = 0.5; group.add(barrow);
+    // The hatch is fenced by four cones; the zone ends with a closing cone line.
+    [[-0.8, -0.8], [0.8, -0.8], [-0.8, 0.8], [0.8, 0.8]].forEach(([dx, dz]) => {
+      const cone = createTrafficCone(); cone.position.set(-1.5 + dx, 0, hatchZ + dz); group.add(cone); prop(cone, 0.2, 'cone');
+    });
+    for (let i = 0; i < 3; i++) {
+      const cone = createTrafficCone(); cone.position.set(-0.3 - i * 1.1, 0, workZ + 15 + i * 1.5); group.add(cone); prop(cone, 0.2, 'cone');
+    }
+    // Crew: a worker with a rake on the patch (a real participant: hitting
+    // him is a collision) and one down the hatch, head and shoulders out.
+    const vest = '#F97316';
+    const raker = addRoadActor(group, { id: 'road_worker', type: 'pedestrian', name: 'Рабочий', color: vest, worker: true },
+      new THREE.Vector3(-2.7, 0.03, workZ + 6.5), Math.PI / 2 - 0.3,
+      [new THREE.Vector3(-2.7, 0.03, workZ + 6.5), new THREE.Vector3(-2.7, 0.03, workZ + 6.51)], 0);
+    raker.mesh.userData.badge.visible = false;
+    dressWorker(raker.mesh, 'rake');
+    ev.actors.push(raker);
+    const digger = createPedestrian(0xF97316, 4);
+    dressWorker(digger, 'shovel');
+    digger.position.set(-1.5, -0.78, hatchZ); digger.rotation.y = -Math.PI / 2;
+    // Standing below the road: the asphalt hides everything under the hole.
+    group.add(digger);
+    state.crews.push({ ev, raker, digger, hatch: new THREE.Vector3(-1.5, 0, hatchZ), group, t: Math.random() * 5, duck: 0 });
+    return ev;
+  }
+
+  // Hard hat and a long-handled tool held in both hands.
+  function dressWorker(person, tool) {
+    const body = person.userData.body || person;
+    const hat = new THREE.Mesh(new THREE.SphereGeometry(0.21, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2), sceneryMat(0xFACC15));
+    hat.position.set(0, 1.42, 0); body.add(hat);
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.03, 12), sceneryMat(0xFACC15));
+    brim.position.set(0, 1.43, 0.03); body.add(brim);
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.06, 0.28), sceneryMat(0xE5E7EB));
+    stripe.position.set(0, 0.86, 0); body.add(stripe);
+    const arm = person.userData.arms?.[1];
+    if (!arm) return;
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.3, 6), sceneryMat(0x9A7B55));
+    handle.rotation.x = Math.PI / 2 - 0.5; handle.position.set(0, -0.42, 0.5); arm.add(handle);
+    const head = new THREE.Mesh(tool === 'rake' ? new THREE.BoxGeometry(0.5, 0.05, 0.08) : new THREE.BoxGeometry(0.24, 0.03, 0.3),
+      sceneryMat(tool === 'rake' ? 0x6B7280 : 0x9CA3AF));
+    head.position.set(0, -0.72, 1.06); arm.add(head);
+    person.userData.tool = tool;
+  }
+
+  // Idle work loops for the road crews; a worker never walks into traffic.
+  function updateCrews(dt) {
+    state.crews = (state.crews || []).filter(c => c.group.parent);
+    const p = playerCarGroup.position;
+    state.crews.forEach(c => {
+      c.t += dt;
+      const r = c.raker;
+      if (!r.fall && !r.done) {
+        // Raking: long strokes towards himself, a slight lean with each one.
+        const stroke = Math.sin(c.t * 2.4);
+        r.mesh.userData.arms.forEach((arm, i) => { arm.rotation.x = -0.55 + stroke * 0.35 + i * 0.1; });
+        r.mesh.userData.body.rotation.x = 0.12 + stroke * 0.06;
+      }
+      // Down the hatch: digging strokes; ducks when a car comes too close.
+      const d = c.digger;
+      const hatchWorld = c.group.localToWorld(c.hatch.clone());
+      const near = hatchWorld.distanceTo(p) < 5 && Math.abs(state.speed) > 0.5;
+      c.duck = Math.max(0, Math.min(1, c.duck + (near ? 3 : -0.8) * dt));
+      const lift = Math.max(0, Math.sin(c.t * 1.7)) * 0.08;
+      d.position.y = -0.78 + lift - c.duck * 0.75;
+      d.userData.arms.forEach((arm, i) => { arm.rotation.x = -1.0 + Math.sin(c.t * 3.1 + i * 0.4) * 0.45; });
+    });
+  }
+
+  // Loose roadside props (cones, barrier parts): knocked flying by the
+  // player's car, they tumble, bounce and settle on the ground.
+  function knockProp(prop) {
+    const speed = Math.abs(state.speed);
+    const sign = Math.sign(state.speed) || 1;
+    const fwd = new THREE.Vector3(Math.sin(playerCarGroup.rotation.y), 0, Math.cos(playerCarGroup.rotation.y)).multiplyScalar(sign);
+    const parts = prop.kind === 'barrier' ? [...prop.mesh.userData.parts] : [prop.mesh];
+    const parent = prop.mesh.parent;
+    parts.forEach((part, i) => {
+      if (part !== prop.mesh) parent.attach(part); // keep the world pose, fly on its own
+      const at = part.getWorldPosition(new THREE.Vector3());
+      const side = new THREE.Vector3(fwd.z, 0, -fwd.x).multiplyScalar(
+        Math.sign(at.clone().sub(playerCarGroup.position).dot(new THREE.Vector3(fwd.z, 0, -fwd.x))) || (i % 2 ? 1 : -1));
+      const light = prop.kind === 'cone';
+      const v = fwd.clone().multiplyScalar(speed * (light ? 1.25 : 0.9) + 0.8)
+        .addScaledVector(side, (light ? 1.6 : 1.1) + Math.random() * 1.4 + speed * 0.12);
+      v.y = (light ? 2.4 : 1.6) + speed * (light ? 0.22 : 0.14) + Math.random();
+      state.flying.push({ mesh: part, v, spin: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5)
+        .normalize().multiplyScalar(6 + speed * 0.6), rest: light ? 0.16 : 0.04, settled: false });
+    });
+    if (prop.kind === 'barrier') parent.remove(prop.mesh);
+    prop.knocked = true;
+    state.speed *= prop.kind === 'barrier' ? 0.6 : 0.93;
+    gameAudio?.scrapeHit();
+    const ev = prop.ev;
+    if (ev && prop.penalize !== false && !ev.propPenalized && !state.attract) {
+      ev.propPenalized = true;
+      roadViolation('roadworks');
+    }
+  }
+
+  function updateProps(dt) {
+    state.props = (state.props || []).filter(pr => !pr.knocked && pr.mesh.parent && pr.root.parent);
+    state.flying = (state.flying || []).filter(f => f.mesh.parent);
+    if (Math.abs(state.speed) > 0.3) {
+      const player = playerFootprint();
+      for (const pr of state.props) {
+        const world = pr.mesh.getWorldPosition(new THREE.Vector3());
+        if (world.distanceTo(player.p) > 6) continue;
+        const yaw = pr.mesh.getWorldQuaternion(new THREE.Quaternion());
+        const box = { p: world, yaw: new THREE.Euler().setFromQuaternion(yaw, 'YXZ').y,
+          halfWidth: pr.radius, halfLength: pr.depth ?? pr.radius };
+        if (footprintsOverlap(player, box, 0.02)) knockProp(pr);
+      }
+    }
+    for (const f of state.flying) {
+      if (f.settled) continue;
+      const parent = f.mesh.parent;
+      const world = f.mesh.getWorldPosition(new THREE.Vector3());
+      f.v.y -= 9.8 * dt;
+      world.addScaledVector(f.v, dt);
+      f.mesh.rotateOnAxis(f.spin.clone().normalize(), f.spin.length() * dt);
+      if (world.y <= f.rest && f.v.y < 0) {
+        world.y = f.rest;
+        f.v.y = -f.v.y * 0.3;
+        f.v.x *= 0.55; f.v.z *= 0.55;
+        f.spin.multiplyScalar(0.5);
+        if (f.v.length() < 0.9) {
+          // Come to rest lying on the side, keeping the direction it slid in.
+          f.settled = true;
+          f.mesh.rotation.set(Math.PI / 2, 0, Math.random() * Math.PI * 2);
+        }
+      }
+      f.mesh.position.copy(parent.worldToLocal(world));
+    }
+  }
+
+  function buildObstacleEvent(group, obstZ) {
+    const ev = { group, kind: 'obstacle', obstZ, phase: 'approach', actors: [] };
+    // A real, solid participant (it used to be scenery the player drove
+    // through), standing with its hazard lights on.
+    const at = new THREE.Vector3(-1.8, 0, obstZ);
+    const broken = addRoadActor(group, { id: 'road_obstacle_car', type: 'car', color: '#64748B', name: 'Сломанное авто' },
+      at, 0, [at, at.clone().add(new THREE.Vector3(0, 0, 0.01))], 0);
+    broken.mesh.userData.blinkerSide = 'hazard';
+    ev.actors.push(broken);
+    const triangle = createEmergencyTriangle();
+    triangle.position.set(-1.8, 0, obstZ - 15);
+    group.add(triangle);
+    state.props.push({ mesh: triangle, radius: 0.25, kind: 'cone', ev, root: group, penalize: false });
+    return ev;
+  }
+
+  function buildCourtyardEvent(group, yardZ) {
+    const ev = { group, kind: 'courtyard', yardZ, phase: 'approach', actors: [] };
+    const asphalt = new THREE.MeshLambertMaterial({ color: BRAND.asphalt });
+    // The driveway runs out of the yard and across the pavement (a lowered
+    // kerb); lamps, trees and fences in its way are cleared.
+    clearRoadside(yardZ, 6, -17, -4.3);
+    // A garage by the road: the car comes out of its open door, over a
+    // concrete apron and a lowered kerb.
+    const concrete = new THREE.MeshLambertMaterial({ color: 0xA7ADB2 });
+    addFlatPlane(group, 3.9, 3.6, -9.35, yardZ, 0.02, concrete);   // apron
+    addFlatPlane(group, 3.2, 3.6, -5.8, yardZ, 0.186, concrete);   // lowered kerb
+    const wall = sceneryMat(0xC9B89E), roofMat = sceneryMat(0x7A5A48), dark = sceneryMat(0x22262A);
+    const box = (w, h, d, x, y, z, m) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, z); b.castShadow = true; group.add(b); return b; };
+    box(6.2, 2.5, 0.2, -14.4, 1.25, yardZ - 1.75, wall);  // side walls
+    box(6.2, 2.5, 0.2, -14.4, 1.25, yardZ + 1.75, wall);
+    box(0.2, 2.5, 3.7, -17.4, 1.25, yardZ, wall);         // back wall
+    box(0.2, 0.5, 3.7, -11.35, 2.25, yardZ, wall);        // lintel over the door
+    box(6.6, 0.18, 4.1, -14.4, 2.6, yardZ, roofMat);      // roof
+    addFlatPlane(group, 6, 3.3, -14.4, yardZ, 0.021, dark); // shaded floor inside
+    const door = box(0.08, 0.5, 3.3, -11.3, 2.1, yardZ, sceneryMat(0x8A96A0)); // rolled-up door
+    door.rotation.z = 0.2;
+
+    // Pulls up to the road edge with its right signal on, waits for the
+    // player to pass (they have priority, 8.3), then turns right after them.
+    const V = (x, z) => new THREE.Vector3(x, 0, z);
+    const start = V(-14.2, yardZ);
+    const cfg = { id: 'road_yard_car', type: 'car', name: 'Авто из двора', color: '#3B82F6' };
+    const car = addRoadActor(group, cfg, start, Math.PI / 2, [start, V(-4.9, yardZ), V(-3.2, yardZ + 1.2),
+      V(-2.0, yardZ + 4.5), V(-1.8, yardZ + 12), V(-1.8, yardZ + 260)], 7);
+    car.stopAtDistance = 8.0; // nose at the kerb, not over the edge line
+    car.stopFor = Infinity;
+    car.signalPlan = [{ from: 0, to: 14, side: 'right' }];
+    ev.actors.push(car);
+    return ev;
+  }
+
+  function buildCyclistEvent(group, cycZ) {
+    const ev = { group, kind: 'cyclist', cycZ, phase: 'approach', actors: [] };
+    const start = new THREE.Vector3(-3.4, 0, cycZ);
+    const cfg = { id: 'road_free_cyclist', type: 'cyclist', name: 'Велосипедист', color: '#10B981' };
+    const cyc = addRoadActor(group, cfg, start, 0, [
+      start,
+      new THREE.Vector3(-3.4, 0, cycZ + 80),
+      new THREE.Vector3(-3.4, 0, cycZ + 250)
+    ], 4.2);
+    cyc.waitsForPlayer = false;
+    ev.actors.push(cyc);
+    return ev;
+  }
+
+  function buildEmergencyEvent(group, emZ) {
+    const ev = { group, kind: 'emergency', emZ, phase: 'approach', actors: [] };
+    const start = new THREE.Vector3(1.8, 0, emZ + 120);
+    const cfg = { id: 'road_emergency_car', type: 'special', name: 'Спецмашина', color: '#0574F8', beacon: 'blue', siren: true };
+    const sp = addRoadActor(group, cfg, start, Math.PI, [
+      start,
+      new THREE.Vector3(1.8, 0, emZ - 30),
+      new THREE.Vector3(1.8, 0, emZ - 180)
+    ], 14.0);
+    sp.waitsForPlayer = false;
+    ev.actors.push(sp);
+    return ev;
+  }
+
   function roadEventLimit(z, limit) {
     const ev = state.roadEvent;
     if (!ev || ev.phase !== 'approach' || ev.stopZ === undefined) return limit;
@@ -8094,6 +9922,8 @@
   function startRoadQuestion() {
     const ev = state.roadEvent;
     ev.phase = 'question';
+    (ev.joiners || []).forEach(join => join());
+    ev.joiners = null;
     state.speed = 0; state.isAccelerating = false; state.steering = 0;
     state.isAtSituation = true;
     sendToFlutter({ event: 'approach_situation', situation: ev.situation });
@@ -8101,9 +9931,13 @@
 
   function releaseRoadActors(ev) { ev.actors.forEach(a => { a.waitsForPlayer = false; }); }
 
+  // Once the question is answered its participants lose their badges.
+  function hideBadges(actors) { actors.forEach(a => { if (a.mesh.userData.badge) a.mesh.userData.badge.visible = false; }); }
   function startRoadManual() {
     const ev = state.roadEvent;
     ev.phase = 'manual';
+    hideBadges(ev.actors);
+    ev.actors.forEach(a => { if (a.stopFor === Infinity && a.config.maneuver === 'overtake') a.stopFor = 0; });
     releaseRoadActors(ev);
     state.isAtSituation = false;
     state.isResolvingSituation = false;
@@ -8130,8 +9964,25 @@
 
   function roadOvertakeAllowedAt(z) {
     const ev = state.roadEvent;
+    // Detouring a closed lane (4.2.2) or a stopped car uses the oncoming lane
+    // legally (11.7 governs who gives way); only over its length.
+    if (ev?.kind === 'roadworks' && z >= ev.workZ - 34 && z <= ev.zoneEnd + 10) return true;
+    if (ev?.kind === 'obstacle' && z >= ev.obstZ - 20 && z <= ev.obstZ + 12) return true;
+    // Overtaking a cyclist on a broken centre line is legal; the lane is
+    // used only alongside them.
+    if (ev?.kind === 'cyclist') {
+      const bike = ev.actors[0];
+      if (bike && !bike.done && Math.abs(bike.mesh.getWorldPosition(new THREE.Vector3()).z - z) < 16) return true;
+    }
+    // Both lanes of the own carriageway are the player's; the opposite
+    // carriageway beyond the median is not.
+    if (ev?.scene?.motorway && z >= ev.motorwayFrom && z <= ev.motorwayTo && Math.cos(playerCarGroup.rotation.y) > 0 &&
+        playerCarGroup.position.x < 4.3) return true;
     if (!ev || ev.phase !== 'manual' || ev.kind !== 'overtake') return false;
     const o = ev.scene.overtake;
+    if (ev.scene.junction?.priority === 'equal') return z >= ev.startZ - 12 && z <= ev.endZ && Math.abs(z - ev.junctionZ) > 8;
+    if (ev.scene.vehicles?.some(v => v.alreadyOvertaking || v.joinsAtQuestion)) return z >= ev.startZ - 12 && z <= ev.endZ &&
+      ev.actors.filter(a => a.config.maneuver === 'overtake').every(a => a.distance > (a.passedAt || 90));
     if (o === true) return z >= ev.startZ - 12 && z <= ev.endZ;
     if (o === 'before_intersection') return z >= ev.startZ - 12 && z < ev.laneDeadlineZ;
     if (o === 'after_crosswalk') return z >= ev.startZ - 12 && z <= ev.endZ && Math.abs(z - ev.crosswalkZ) > 6;
@@ -8141,10 +9992,13 @@
   // The limit in force: a sign from a speed question, else the built-up 60.
   function effectiveLimitKmH() { return state.speedLimitKmH || state.baseLimitKmH; }
   function roadViolation(type) {
+    highlightMistake({ type });
     sendToFlutter({ event: 'violation', type, episode: ++state.violationEpisode });
   }
 
   function updateRoadEvent(dt) {
+    updateProps(dt);
+    updateCrews(dt);
     const ev = state.roadEvent;
     // Simulated time, so signals freeze on pause and stay deterministic in tests.
     state.signalClock = (state.signalClock || 0) + dt;
@@ -8160,8 +10014,8 @@
       const planned = a.signalPlan ? a.signalPlan.find(p => a.distance >= p.from && a.distance < p.to)?.side || null
         : a.mesh.userData.blinkerSide;
       const on = Math.floor(now / 380) % 2 === 0;
-      lamps.left.forEach(l => { l.visible = on && planned === 'left'; });
-      lamps.right.forEach(l => { l.visible = on && planned === 'right'; });
+      lamps.left.forEach(l => { l.visible = on && (planned === 'left' || planned === 'hazard'); });
+      lamps.right.forEach(l => { l.visible = on && (planned === 'right' || planned === 'hazard'); });
     });
     // The car can always exceed the limit (that is what a violation is); its
     // top speed only rises where a higher limit allows it: 65 km/h in town,
@@ -8178,8 +10032,29 @@
         roadViolation('speeding');
       }
     }
-    if (!ev) return;
     const z = playerCarGroup.position.z, x = playerCarGroup.position.x;
+    // A side exit from an authored crossing becomes the next driving corridor,
+    // just like an exit from a ticket junction. Never strand the player at the
+    // end of a decorative cross street (their previews end after 200 m).
+    const sj = state.sideJunction;
+    if (sj && !state.resolution && Math.abs(x) > 24 && Math.abs(z - sj.junctionZ) < (Math.abs(x) > 40 ? 6 : 4.3)) {
+      const heading = Math.sign(x) * Math.PI / 2;
+      const error = Math.atan2(Math.sin(playerCarGroup.rotation.y - heading), Math.cos(playerCarGroup.rotation.y - heading));
+      if (Math.abs(error) < (Math.abs(x) > 40 ? Math.PI / 2 : 0.7)) {
+        const direction = x < 0 ? 'right' : 'left';
+        if (ev) finishRoadEvent(false);
+        state.sideJunction = null;
+        state.resolution = {
+          motions: sj.actors, yielding: [], exitDirection: direction, exitYaw: heading,
+          spec: { maneuver: direction },
+          intersection: { situation: sj.situation, centerZ: sj.junctionZ,
+            guide: new THREE.Group(), previews: sj.previews },
+        };
+        finishManeuver();
+        return;
+      }
+    }
+    if (!ev) return;
     if (ev.kind === 'busstop') {
       const bus = ev.actors[0];
       if (ev.phase === 'approach' && z > ev.bayZ - 120) { ev.phase = 'manual'; releaseRoadActors(ev); }
@@ -8206,6 +10081,17 @@
       if (z > ev.crosswalkZ + 8 || z < ev.crosswalkZ - 120) finishRoadEvent(false);
       return;
     }
+    if (['roadworks', 'obstacle', 'courtyard', 'cyclist', 'emergency'].includes(ev.kind)) {
+      const markZ = ev.workZ || ev.obstZ || ev.yardZ || ev.cycZ || ev.emZ || 0;
+      // The yard car goes once the player has passed the driveway.
+      if (ev.kind === 'courtyard') ev.actors.forEach(a => { if (a.stopFor === Infinity && z > ev.yardZ + 9) a.stopFor = 0.8; });
+      if (ev.phase === 'approach' && z > markZ - 50) {
+        ev.phase = 'manual';
+        releaseRoadActors(ev);
+      }
+      if (z > markZ + 50 || z < markZ - 120) finishRoadEvent(false);
+      return;
+    }
     if (ev.phase === 'approach' && z > ev.stopZ + 6) {
       // The stop was skipped (e.g. after a collision push); ask no question here.
       finishRoadEvent(false);
@@ -8222,13 +10108,13 @@
     });
     if (ev.kind === 'overtake') {
       const oncomingLane = Math.cos(playerCarGroup.rotation.y) * x > 0.85;
-      const o = ev.scene.overtake;
-      const forbiddenHere = oncomingLane && (
-        (o === false && z >= ev.startZ - 12 && z <= ev.endZ) ||
-        (o === 'before_intersection' && z >= ev.laneDeadlineZ) ||
-        (o === 'after_crosswalk' && Math.abs(z - ev.crosswalkZ) <= 6));
+      const forbiddenHere = oncomingLane && z >= ev.startZ - 12 && z <= ev.endZ && !roadOvertakeAllowedAt(z);
       if (forbiddenHere && !ev.overtakePenalized) { ev.overtakePenalized = true; roadViolation('overtaking'); }
       if (!oncomingLane) ev.overtakePenalized = false;
+    }
+    if (ev.scene.junction && !ev.priorityPenalized && z + playerCarGroup.userData.halfLength > ev.junctionZ - 4.2 &&
+        ev.actors.some(a => a.config.approach === 'right' && !a.cleared)) {
+      ev.priorityPenalized = true; roadViolation('priority');
     }
     if (z > ev.endZ || z < ev.startZ - 45) finishRoadEvent(true);
   }
@@ -8513,25 +10399,51 @@
     state.oncomingPenalized = false;
     if (state.oncoming) {
       state.oncoming = false;
+      state.oncomingAgainst = false;
       sendToFlutter({ event: 'lane_changed', lane: 'right', oncoming: false });
     }
   }
 
-  function updateLaneViolation(dt, oncoming = state.currentLaneOffset > -0.85) {
-    if (oncoming !== state.oncoming) {
+  // oncoming: the left lane of a two-way road (3 s grace for a manoeuvre).
+  // against: driving against the flow of a one-way road — any lane, no grace
+  // beyond a moment; the notice says so instead of "keep right".
+  function updateLaneViolation(dt, oncoming = state.currentLaneOffset > -0.85, against = false) {
+    oncoming = oncoming || against;
+    if (oncoming !== state.oncoming || (oncoming && against !== !!state.oncomingAgainst)) {
       state.oncoming = oncoming;
+      state.oncomingAgainst = oncoming && against;
       state.oncomingSeconds = 0;
       state.oncomingPenalized = false;
-      sendToFlutter({ event: 'lane_changed', lane: oncoming ? 'left' : 'right', oncoming });
+      sendToFlutter({ event: 'lane_changed', lane: against ? 'against' : oncoming ? 'left' : 'right', oncoming });
       if (oncoming) state.oncomingEpisode = ++state.violationEpisode;
       return;
     }
     if (oncoming && !state.oncomingPenalized) {
       state.oncomingSeconds += dt;
-      if (state.oncomingSeconds + 1e-9 < 3) return;
+      if (state.oncomingSeconds + 1e-9 < (against ? 1 : 3)) return;
       state.oncomingPenalized = true;
-      sendToFlutter({ event: 'violation', type: 'oncoming', episode: state.oncomingEpisode });
+      if (against) highlightMistake({ type: 'one_way' });
+      sendToFlutter({ event: 'violation', type: against ? 'one_way' : 'oncoming', episode: state.oncomingEpisode });
     }
+  }
+
+  // The one-way mode of the road under the player: null on two-way roads,
+  // else whether the player's heading goes with or against the flow.
+  function oneWayStatus() {
+    const mode = currentCorridor?.userData.oneWay;
+    if (!mode) return null;
+    const ends = corridorWorldEnds();
+    const z = playerCarGroup.position.z;
+    // The road starts at the junction it leaves (its cross arm is part of
+    // the same street), so the stretch begins ~15 m before the seam.
+    if (!ends.length || z < Math.min(...ends.map(p => p.z)) - 16 || z > Math.max(...ends.map(p => p.z)) + 2) return null;
+    // Heading relative to the road's own +Z (its flow when built 'with'):
+    // stays right after the world is turned round behind a U-turn.
+    const axis = new THREE.Vector3(0, 0, 1).transformDirection(currentCorridor.matrixWorld);
+    const c = axis.x * Math.sin(playerCarGroup.rotation.y) + axis.z * Math.cos(playerCarGroup.rotation.y);
+    if (Math.abs(c) < 0.3) return state.oneWayAgainst ? 'against' : 'with'; // sideways: keep the last verdict
+    state.oneWayAgainst = (mode === 'against') !== (c < 0);
+    return state.oneWayAgainst ? 'against' : 'with';
   }
 
   let lastTime = null, telemetryElapsed = 0;
@@ -8549,6 +10461,7 @@
       updateRoadEvent(dt);
       updateWeather(dt);
       updateBlinkers(dt);
+      updateMistakeHighlight(dt);
       gameAudio?.update(dt, time / 1000);
       state.roadSegments.forEach(seg => seg.traverse(obj => {
         if (obj.userData.beacons) obj.userData.beacons.forEach((lamp, i) => {
@@ -8574,6 +10487,16 @@
     playerCarGroup.brakeLights.forEach(light => {
       light.material.color.setHex(state.isBraking || state.speed === 0 || !state.isAccelerating ? 0xF04438 : 0x7F1D1D);
     });
+    if (state.hazard > 0) {
+      // The player's own hazard lights after a crash, for a few seconds.
+      state.hazard = Math.max(0, state.hazard - dt);
+      state.hazardClock = (state.hazardClock || 0) + dt;
+      const on = Math.floor(state.hazardClock * 3) % 2 === 0;
+      playerCarGroup.blinkerL.visible = playerCarGroup.blinkerR.visible = on;
+      if (on && !gameAudio?.blinkerOn) gameAudio?.click();
+      if (gameAudio) gameAudio.blinkerOn = on;
+      return;
+    }
     const b = state.blinker;
     if (b) {
       b.remaining = state.steering ? 2.2 : b.remaining - dt;
@@ -8681,14 +10604,17 @@
     state.roadSegments.forEach(seg => seg.traverse(obj => {
       if (obj.userData.surface === 'road') state.roadBounds.push({
         box: new THREE.Box3().setFromObject(obj), material: obj.material,
+        // A rounded corner is road only outside its kerb curve.
+        fillet: obj.userData.fillet && { center: obj.userData.fillet.center.clone().applyMatrix4(obj.matrixWorld), r: obj.userData.fillet.r },
       });
     }));
   }
 
   function roadSupports(point) {
-    return (state.roadBounds || []).some(({box, material}) =>
+    return (state.roadBounds || []).some(({box, material, fillet}) =>
       point.x >= box.min.x - 0.1 && point.x <= box.max.x + 0.1 &&
       point.z >= box.min.z - 0.1 && point.z <= box.max.z + 0.1 &&
+      (!fillet || Math.hypot(point.x - fillet.center.x, point.z - fillet.center.z) >= fillet.r - 0.05) &&
       (material.clippingPlanes || []).every(plane => plane.distanceToPoint(point) >= -0.01));
   }
 
@@ -8702,6 +10628,7 @@
   }
 
   function updatePlayerMovement(dt) {
+    if (state.pendingVehicle && Math.abs(state.speed) <= 0.1) selectVehicle(...state.pendingVehicle);
     if (state.isAtSituation) { state.speed = 0; return; }
     if (state.driveRecovery > 0) {
       state.driveRecovery = Math.max(0, state.driveRecovery - dt);
@@ -8723,8 +10650,12 @@
     integrateDriving(dt, limit);
     if (state.driveRecovery > 0) return;
     state.currentLaneOffset = playerCarGroup.position.x;
-    const inOncomingLane = Math.cos(playerCarGroup.rotation.y) * playerCarGroup.position.x > 0.85;
-    updateLaneViolation(dt, inOncomingLane && !roadOvertakeAllowedAt(playerCarGroup.position.z));
+    const oneWay = oneWayStatus();
+    if (oneWay) updateLaneViolation(dt, false, oneWay === 'against');
+    else {
+      const inOncomingLane = Math.cos(playerCarGroup.rotation.y) * playerCarGroup.position.x > 0.85;
+      updateLaneViolation(dt, inOncomingLane && !roadOvertakeAllowedAt(playerCarGroup.position.z));
+    }
     for (const actor of state.actors) {
       if (actor.done || actor.fall) continue;
       if (footprintsOverlap(playerFootprint(), actorFootprint(actor))) {
@@ -8778,14 +10709,19 @@
       // junction 200 m ahead that state.activeIntersection already points at.
       const ev = roadQuestion;
       const boxes = ev.actors.map(a => new THREE.Box3().setFromObject(a.mesh));
-      ev.group.children.filter(o => !o.userData.actor && o.position.y === 0).forEach(o => boxes.push(new THREE.Box3().setFromObject(o)));
+      // Frame answer evidence, not long marking meshes or distant zone-end signs.
+      ev.group.children.filter(o => o.userData.questionEvidence && o.position.z <= ev.stopZ + 60)
+        .forEach(o => boxes.push(new THREE.Box3().setFromObject(o)));
       const minX = Math.min(-7, ...boxes.map(b => b.min.x)) - 1.5;
       const maxX = Math.max(7, ...boxes.map(b => b.max.x)) + 1.5;
-      const minZ = playerCarGroup.position.z - 4;
+      if (ev.junctionZ !== undefined && ev.junctionZ < ev.stopZ + 65) {
+        boxes.push(new THREE.Box3(new THREE.Vector3(-14, 0, ev.junctionZ - 7), new THREE.Vector3(14, 0, ev.junctionZ + 7)));
+      }
+      const minZ = Math.min(playerCarGroup.position.z - 4, ...boxes.map(b => b.min.z - 2));
       const maxZ = Math.min(ev.stopZ + 60, Math.max(ev.stopZ + 24, ...boxes.map(b => b.max.z + b.max.y * 1.05))) + 2;
       const visibleFraction = Math.max(0.25, (height - state.viewportInsets.top - state.viewportInsets.bottom) / height);
       desiredViewSize = Math.max(42, (maxX - minX) / (width / height), (maxZ - minZ) * 0.69 / visibleFraction);
-      focus.set(0, 0, (minZ + maxZ) / 2);
+      focus.set((minX + maxX) / 2, 0, (minZ + maxZ) / 2);
       lookAhead = 0;
     } else if (state.isAtSituation && state.activeIntersection && state.resolution?.phase !== 'manual') {
       const intersection = state.activeIntersection;
@@ -8872,6 +10808,11 @@
     state.roadEvent = null;
     state.roadTurn = 0;
     state.busBays = [];
+    state.props = [];
+    state.flying = [];
+    state.crews = [];
+    state.sideJunction = null;
+    state.oneWayAgainst = false;
     state.sky = null; state.weatherOverride = null; state.rain = 0; state.overcast = 0;
     state.speedLimitKmH = null;
     state.speedingTime = 0;
@@ -8889,6 +10830,7 @@
     state.violationEpisode = 0;
     state.steering = 0;
     state.blinker = null;
+    state.hazard = 0;
     clearOncoming();
     situationIndex = 0;
     situationBag = [];
@@ -9001,7 +10943,9 @@
       if (state.weatherOverride) { state.sky.kind = state.weatherOverride; state.sky.left = 1e9; }
       else state.sky.left = 0;
     },
-    reset: resetGame
+    reset: resetGame,
+    highlightMistake,
+    clearMistakeHighlight
   };
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) window.game.setPaused(true);

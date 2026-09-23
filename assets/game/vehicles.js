@@ -20,6 +20,14 @@
     lamp.add(glow);
     return glow;
   }
+  // Indicators blink front AND rear: the rear lamp rides on the front one, so
+  // every turn signal and the hazard lights show from behind too.
+  function addRearBlinker(front, length) {
+    const rear = new THREE.Mesh(front.geometry, front.material);
+    rear.position.set(0, 0, -(length + 0.1));
+    front.add(rear);
+    addGlow(rear, 0xFFB329, 1.25);
+  }
   // Six passenger cars (any paint colour) plus the premium-only gold wedge.
   const specs = {
     hatch: { color: 0xED4621, width: 1.72, length: 3.5, height: 1.4, cabin: 2.0, cabinZ: -0.3 },
@@ -35,8 +43,45 @@
     red: 0xED4621, blue: 0x317ED4, green: 0x4D7768, sand: 0xD7AA60, white: 0xF2F3F5, black: 0x2B2F36,
     silver: 0xB9C0C7, orange: 0xF08A24, purple: 0x7A5BC6, teal: 0x2FA3A0, yellow: 0xE8C547, wine: 0x8B1E2D, gold: 0xD4AF37,
   };
+  // Hand edits from the game lab's model workshop (model-edits.js):
+  // PDD_MODEL_EDITS[modelId] = { spec, scale: [x, y, z], colors: { 'hex': 'hex' },
+  // parts: { meshIndex: { color, hidden } } }. Mesh indices follow the build order.
+  function hex(value) { return parseInt(String(value).replace('#', ''), 16); }
+  function applyModelEdits(modelId, root) {
+    const e = (window.PDD_MODEL_EDITS || {})[modelId];
+    if (!e || !root) return root;
+    const remap = Object.fromEntries(Object.entries(e.colors || {}).map(([a, b]) => [hex(a), hex(b)]));
+    const meshes = [];
+    root.traverse(o => { if (o.isMesh) meshes.push(o); });
+    meshes.forEach((m, i) => {
+      const part = (e.parts || {})[i];
+      const own = () => { if (!m.userData.ownMaterial) { m.material = m.material.clone(); m.userData.ownMaterial = true; } return m.material; };
+      if (m.material?.color && remap[m.material.color.getHex()] !== undefined) own().color.setHex(remap[m.material.color.getHex()]);
+      const attr = m.geometry?.attributes?.color;
+      if (attr && Object.keys(remap).length) {
+        const c = new THREE.Color();
+        for (let k = 0; k < attr.count; k++) {
+          c.setRGB(attr.getX(k), attr.getY(k), attr.getZ(k));
+          const to = remap[c.getHex()];
+          if (to !== undefined) { c.setHex(to); attr.setXYZ(k, c.r, c.g, c.b); }
+        }
+        attr.needsUpdate = true;
+      }
+      if (part?.color && m.material?.color) {
+        own().color.setHex(hex(part.color));
+        if (m.material.vertexColors) m.material.vertexColors = false, m.material.needsUpdate = true;
+      }
+      if (part?.hidden) m.visible = false;
+    });
+    if (e.scale) root.scale.multiply(new THREE.Vector3(...e.scale));
+    return root;
+  }
   function create(id = 'hatch', paint) {
-    const s = specs[id] || specs.hatch, car = new THREE.Group();
+    const edited = (window.PDD_MODEL_EDITS || {})['vehicle:' + id]?.spec;
+    const s = { ...(specs[id] || specs.hatch), ...(edited || {}) }, car = new THREE.Group();
+    return applyModelEdits('vehicle:' + (specs[id] ? id : 'hatch'), build(id, s, car, paint));
+  }
+  function build(id, s, car, paint) {
     const material = color => new THREE.MeshLambertMaterial({ color });
     const paintColor = paint === undefined || paint === null ? s.color : (typeof paint === 'string' ? (paints[paint] ?? parseInt(paint.replace('#', ''), 16)) : paint);
     const body = material(paintColor), glass = material(0x233542), dark = material(0x252C32), metal = material(0xBBC4C7);
@@ -85,6 +130,7 @@
     });
     car.blinkerL = box(0.13, 0.12, 0.07, s.width / 2 - 0.1, baseY + 0.08, s.length / 2 + 0.05,
       new THREE.MeshBasicMaterial({ color: 0xFFAE25 }));
+    addRearBlinker(car.blinkerL, s.length);
     car.blinkerR = car.blinkerL.clone(); car.blinkerR.position.x *= -1; car.add(car.blinkerR);
     car.blinkerL.visible = car.blinkerR.visible = false;
     addGlow(car.blinkerL, 0xFFB329, 1.25);
@@ -128,6 +174,7 @@
     [-1, 1].forEach(side => car.brakeLights.push(box(0.4, 0.1, 0.06, side * s.width * 0.3, baseY + 0.16, -s.length / 2 - 0.05,
       new THREE.MeshBasicMaterial({ color: 0xD33D38 }))));
     car.blinkerL = box(0.13, 0.12, 0.07, s.width / 2 - 0.1, baseY + 0.16, s.length / 2 + 0.05, new THREE.MeshBasicMaterial({ color: 0xFFAE25 }));
+    addRearBlinker(car.blinkerL, s.length);
     car.blinkerR = car.blinkerL.clone(); car.blinkerR.position.x *= -1; car.add(car.blinkerR);
     car.blinkerL.visible = car.blinkerR.visible = false;
     addGlow(car.blinkerL, 0xFFB329, 1.25); addGlow(car.blinkerR, 0xFFB329, 1.25);
@@ -145,5 +192,5 @@
     car.userData.halfWidth = s.width / 2; car.userData.halfLength = s.length / 2; car.userData.height = s.height;
     return car;
   }
-  window.PDD_VEHICLES = { specs, paints, create, addGlow };
+  window.PDD_VEHICLES = { specs, paints, create, addGlow, applyModelEdits };
 })();

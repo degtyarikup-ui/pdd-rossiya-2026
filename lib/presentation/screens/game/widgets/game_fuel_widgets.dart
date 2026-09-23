@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -28,47 +29,43 @@ class GameFuelGauge extends StatelessWidget {
       label: unlimited
           ? appL10n.gameFuelUnlimited
           : '${appL10n.gameFuel}: $fuel / $maxFuel',
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: colors.cardBackground,
-          borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.local_gas_station_rounded, size: 20, color: tint),
-            const SizedBox(width: 6),
-            if (unlimited)
-              Text(
-                '∞',
-                style: TextStyle(
-                  fontSize: 18,
-                  height: 1,
-                  fontWeight: FontWeight.w800,
-                  color: tint,
-                ),
-              )
-            else
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (var i = 0; i < maxFuel; i++)
-                    Container(
-                      width: 7,
-                      height: 14,
-                      margin: EdgeInsets.only(right: i == maxFuel - 1 ? 0 : 3),
-                      decoration: BoxDecoration(
-                        color: i < fuel
-                            ? tint
-                            : colors.gray.withValues(alpha: 0.35),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                ],
+      // Design: the fuel pump and one bar per unit, straight on the map.
+      // Unlimited fuel shows a full tank.
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            'assets/icons/game/hud_fuel.svg',
+            key: const ValueKey('hud-fuel'),
+            width: 21,
+            height: 24,
+            colorFilter: ColorFilter.mode(tint, BlendMode.srcIn),
+          ),
+          const SizedBox(width: 8),
+          // Unlimited fuel: the infinity sign instead of the bars.
+          if (unlimited)
+            Text(
+              '∞',
+              style: TextStyle(
+                fontFamily: 'Onest',
+                fontSize: 24,
+                height: 1,
+                fontWeight: FontWeight.w800,
+                color: tint,
               ),
-          ],
-        ),
+            )
+          else
+            for (var i = 0; i < maxFuel; i++)
+              Container(
+                width: 5,
+                height: 16,
+                margin: EdgeInsets.only(right: i == maxFuel - 1 ? 0 : 4),
+                decoration: BoxDecoration(
+                  color: i < fuel ? tint : colors.gray.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(38),
+                ),
+              ),
+        ],
       ),
     );
   }

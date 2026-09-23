@@ -115,11 +115,9 @@ class _GameOverDialogState extends State<GameOverDialog> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Out of fuel: the pump instead of the car, and the
-                  // countdown in the header. Otherwise the car that was driven.
                   if (fuelEmpty)
-                    const Center(child: GameFuelEmptyIcon(size: 72))
-                  else
+                    _FuelEmptyHeader(refillAt: widget.fuelRefillAt)
+                  else ...[
                     Semantics(
                       label: appL10n.gameYourCar,
                       image: true,
@@ -132,122 +130,131 @@ class _GameOverDialogState extends State<GameOverDialog> {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 10),
-                  Text(
-                    fuelEmpty ? appL10n.gameFuelEmptyTitle : appL10n.gameOver,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Onest',
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: colors.primaryText,
+                    const SizedBox(height: 10),
+                    Text(
+                      appL10n.gameOver,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Onest',
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: colors.primaryText,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    fuelEmpty
-                        ? appL10n.gameFuelRefillIn(
-                            gameFuelCountdown(widget.fuelRefillAt),
-                          )
-                        : appL10n.gameOverDescription,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Onest',
-                      fontSize: fuelEmpty ? 14 : 13,
-                      fontWeight: fuelEmpty ? FontWeight.w700 : FontWeight.w500,
-                      color: fuelEmpty ? colors.red : colors.secondaryText,
-                      height: 1.35,
+                    const SizedBox(height: 6),
+                    Text(
+                      appL10n.gameOverDescription,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Onest',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: colors.secondaryText,
+                        height: 1.35,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 18),
+                  ],
+                  SizedBox(height: fuelEmpty ? 14 : 18),
 
-                  // Score is the headline number of the run: all gold.
-                  Semantics(
-                    label: '${appL10n.gameScore}: ${state.score}',
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.star_rounded,
-                              size: 40,
-                              color: colors.gold,
-                            ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  '${state.score}',
-                                  style: TextStyle(
-                                    fontFamily: 'Onest',
-                                    fontSize: 44,
-                                    fontWeight: FontWeight.w800,
-                                    height: 1,
-                                    color: colors.gold,
+                  if (fuelEmpty)
+                    _FuelScoreCard(
+                      score: state.score,
+                      bestScore: bestScore,
+                      isNewRecord: isNewRecord,
+                    )
+                  else
+                    Semantics(
+                      label: '${appL10n.gameScore}: ${state.score}',
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.star_rounded,
+                                size: 40,
+                                color: colors.gold,
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    '${state.score}',
+                                    style: TextStyle(
+                                      fontFamily: 'Onest',
+                                      fontSize: 44,
+                                      fontWeight: FontWeight.w800,
+                                      height: 1,
+                                      color: colors.gold,
+                                    ),
                                   ),
                                 ),
                               ),
+                            ],
+                          ),
+                          if (isNewRecord) ...[
+                            const SizedBox(height: 6),
+                            _RecordBadge(color: colors.gold),
+                          ] else if (bestScore != null && bestScore > 0) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              appL10n.gameBestScore(bestScore),
+                              style: TextStyle(
+                                fontFamily: 'Onest',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: colors.secondaryText,
+                              ),
                             ),
                           ],
-                        ),
-                        if (isNewRecord) ...[
-                          const SizedBox(height: 6),
-                          _RecordBadge(color: colors.gold),
-                        ] else if (bestScore != null && bestScore > 0) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            appL10n.gameBestScore(bestScore),
-                            style: TextStyle(
-                              fontFamily: 'Onest',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: colors.secondaryText,
-                            ),
-                          ),
                         ],
+                      ),
+                    ),
+                  SizedBox(height: fuelEmpty ? 12 : 18),
+
+                  if (fuelEmpty)
+                    _FuelStatsStrip(
+                      violations: state.violationCount,
+                      correct: state.totalCorrect,
+                      distance: distance,
+                    )
+                  else
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _StatTile(
+                            icon: hasViolations
+                                ? Icons.warning_amber_rounded
+                                : Icons.verified_rounded,
+                            color: hasViolations ? colors.red : colors.green,
+                            label: appL10n.gameViolations,
+                            value: '${state.violationCount}',
+                            emphasized: hasViolations,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _StatTile(
+                            icon: Icons.check_circle_rounded,
+                            color: colors.accent,
+                            label: appL10n.gameCorrectAnswers,
+                            value: '${state.totalCorrect}',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _StatTile(
+                            icon: Icons.route_rounded,
+                            color: colors.accent,
+                            label: appL10n.gameDistance,
+                            value: distance,
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 18),
-
-                  // Three compact tiles; violations are tinted red when any.
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _StatTile(
-                          icon: hasViolations
-                              ? Icons.warning_amber_rounded
-                              : Icons.verified_rounded,
-                          color: hasViolations ? colors.red : colors.green,
-                          label: appL10n.gameViolations,
-                          value: '${state.violationCount}',
-                          emphasized: hasViolations,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _StatTile(
-                          icon: Icons.check_circle_rounded,
-                          color: colors.accent,
-                          label: appL10n.gameCorrectAnswers,
-                          value: '${state.totalCorrect}',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _StatTile(
-                          icon: Icons.route_rounded,
-                          color: colors.accent,
-                          label: appL10n.gameDistance,
-                          value: distance,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: fuelEmpty ? 14 : 18),
 
                   if (onLeaderboard != null) ...[
                     OutlinedButton.icon(
@@ -308,6 +315,254 @@ class _GameOverDialogState extends State<GameOverDialog> {
           ),
           if (isNewRecord)
             const Positioned.fill(child: IgnorePointer(child: ConfettiBurst())),
+        ],
+      ),
+    );
+  }
+}
+
+class _FuelEmptyHeader extends StatelessWidget {
+  final DateTime? refillAt;
+
+  const _FuelEmptyHeader({required this.refillAt});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Row(
+      children: [
+        const GameFuelEmptyIcon(size: 58),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                appL10n.gameFuelEmptyTitle,
+                style: TextStyle(
+                  fontFamily: 'Onest',
+                  fontSize: 21,
+                  fontWeight: FontWeight.w800,
+                  color: colors.primaryText,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                appL10n.gameFuelRefillIn(gameFuelCountdown(refillAt)),
+                style: TextStyle(
+                  fontFamily: 'Onest',
+                  fontSize: 13,
+                  height: 1.25,
+                  fontWeight: FontWeight.w700,
+                  color: colors.red,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FuelScoreCard extends StatelessWidget {
+  final int score;
+  final int? bestScore;
+  final bool isNewRecord;
+
+  const _FuelScoreCard({
+    required this.score,
+    required this.bestScore,
+    required this.isNewRecord,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Semantics(
+      label: '${appL10n.gameScore}: $score',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: colors.gold.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: colors.gold.withValues(alpha: 0.18),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.star_rounded, size: 28, color: colors.gold),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '$score',
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    height: 1,
+                    color: colors.gold,
+                  ),
+                ),
+              ),
+            ),
+            if (isNewRecord) ...[
+              const SizedBox(width: 8),
+              Flexible(child: _RecordBadge(color: colors.gold)),
+            ] else if (bestScore != null && bestScore! > 0) ...[
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  appL10n.gameBestScore(bestScore!),
+                  textAlign: TextAlign.end,
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 12,
+                    height: 1.25,
+                    fontWeight: FontWeight.w600,
+                    color: colors.secondaryText,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FuelStatsStrip extends StatelessWidget {
+  final int violations;
+  final int correct;
+  final String distance;
+
+  const _FuelStatsStrip({
+    required this.violations,
+    required this.correct,
+    required this.distance,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final hasViolations = violations > 0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 11),
+      decoration: BoxDecoration(
+        color: colors.searchFieldFill,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _CompactStat(
+              icon: hasViolations
+                  ? Icons.warning_amber_rounded
+                  : Icons.verified_rounded,
+              color: hasViolations ? colors.red : colors.green,
+              label: appL10n.gameViolations,
+              value: '$violations',
+            ),
+          ),
+          _StatDivider(color: colors.gray.withValues(alpha: 0.30)),
+          Expanded(
+            child: _CompactStat(
+              icon: Icons.check_circle_rounded,
+              color: colors.accent,
+              label: appL10n.gameCorrectAnswers,
+              value: '$correct',
+            ),
+          ),
+          _StatDivider(color: colors.gray.withValues(alpha: 0.30)),
+          Expanded(
+            child: _CompactStat(
+              icon: Icons.route_rounded,
+              color: colors.accent,
+              label: appL10n.gameDistance,
+              value: distance,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatDivider extends StatelessWidget {
+  final Color color;
+  const _StatDivider({required this.color});
+
+  @override
+  Widget build(BuildContext context) =>
+      Container(width: 1, height: 38, color: color);
+}
+
+class _CompactStat extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String value;
+
+  const _CompactStat({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Semantics(
+      label: '$label: $value',
+      excludeSemantics: true,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 17, color: color),
+              const SizedBox(width: 4),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontFamily: 'Onest',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: colors.primaryText,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Onest',
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: colors.secondaryText,
+            ),
+          ),
         ],
       ),
     );

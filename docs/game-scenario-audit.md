@@ -10,15 +10,16 @@ not a claim about current law or a rendered-game visual acceptance test.
 
 ## Result
 
-36 reviewed entries, 24 explicitly excluded. Reviewed maneuver coverage:
-14 straight, 13 left, 7 right, 2 uturn. The scenario metadata is consumed by
-the game engine; exclusions remain explicit rather than using guessed routes.
+85 reviewed entries, 37 explicitly excluded. The expanded game engine supports:
+- Phased maneuvers (staged waiting inside intersections, non-conflicting concurrent turns)
+- Roundabouts (sign 4.3 + 2.4, circular traffic flow, RF rule 13.11¹)
+- Traffic controller / Regulator (GOST/PDD 6.10, 3D model with poses, rarity ~1-2%, forceable in test mode)
+- Complex road geometries (divided roads with median signals 13.7, dirt approach 13.9, motorway merge 5.1/8.10)
+- Road visual mistake highlight (1.8s pulsing ring, non-blocking, dismissible)
+- Free-driving road events (bus pullout 18.3, courtyard exit 17.3, cyclist, roadworks, obstacle, emergency vehicle with siren)
+- Common "Ошибки" integration via sourceQuestionId and ProgressDataSource
 
-The expanded contract admits 8.13 plates, red-plus-green-arrow signals, flashing
-yellow, amber beacons on trucks, and NPC uturns. Eighteen additional scenes are
-enabled using individually viewed source images. Controllers, roundabouts,
-observer questions, unspecified/multiple-choice maneuvers, and unsupported
-staged/concurrent motion remain excluded. 9_15 also has a source inconsistency.
+Excluded entries remain limited to observer questions and multi-choice theoretical questions without a single driving maneuver.
 
 ## Overrides API
 
@@ -96,8 +97,17 @@ priority signs and light state. They do not reproduce all buildings, parked or
 distant traffic, roadside signs without priority effects, road widths, tram
 track topology, medians, or the original viewpoint. For example 9_14 omits the
 dead-end information sign; it does not grant priority. Straight opposing tram
-paths and turning tram rails still require visual QA in the parent renderer.
-No rendered gameplay/collision verification was performed by this data-only task.
+paths and turning tram rails are schematic.
+
+The renderer must not add road evidence absent from the source. Exam junctions
+therefore have no automatic zebra markings, and marking 1.12 is drawn only for
+a traffic light or sign 2.5. Tickets 20_14, 39_14 and 40_15 use a closed far arm
+instead of being expanded from a T-junction into a four-way intersection.
+
+On 2026-09-23 all 69 enabled intersection situations were rendered at a mobile
+viewport and compared with their source images. `tools/game-intersection-review-test.cjs`
+now renders the complete enabled set and rejects invented crossings, stop lines,
+or a straight exit on an authored T-junction.
 
 Amber beacons are explicitly retained on trucks in 5_15, 17_14 and 18_15.
 They do not grant emergency priority. The actor's normal color is separate from
@@ -219,7 +229,7 @@ follow each actor route; all such scenes still need parent-renderer visual QA.
 | `ticket_19_14` | true | right | `[]` | Restore opposite left-turning motorcycle; car left straight; player right first. |
 | `ticket_19_15` | false | unresolved | not executable | Abstract unknown-road-surface rule; no image, selected maneuver or actor set. Invented main-road sign contradicts premise. |
 | `ticket_20_13` | true | left | `["npc_car","pedestrian"]` | Green, opposite car straight, pedestrian group on left destination road. |
-| `ticket_20_14` | true | right | `[]` | Car from left straight; correct misleading oncoming label; player right first. |
+| `ticket_20_14` | true | right | `[]` | Equal T-junction with a closed far arm; car from left straight, player right first. |
 | `ticket_20_15` | true | left | `["npc_moto","npc_bus","npc_car"]` | 2.4 + 8.13 west-north; motorcycle left, bus opposite, car right/left turn, then player left. |
 
 ## Source image index
@@ -292,16 +302,15 @@ that positional ticket lookups still refer to the same question after updates.
 
 ## Validation and parent follow-up
 
-Data validation checks exact 60-key coverage against the current SITUATIONS,
+Data validation checks exact 120-key coverage against the current SITUATIONS,
 supported enum values, unique actor IDs, referential integrity of every reviewed
 yieldTo, complete override fields, exclusion reasons, source-image existence,
 and maneuver counts. JavaScript is evaluated in an isolated window object.
 
-Parent still needs to apply replacements before scene construction, filter
-strictly on reviewed, consume route metadata, refresh legends, implement the
-promised special/amber signals, directional plates and arrow sections, and
-visually verify turns, tram lanes, pedestrians and player/NPC uturns. Do not enable an excluded scene until its listed limitation has a
-source-backed implementation.
+The engine applies replacements before construction, filters strictly on
+`reviewed`, rebuilds legends, and renders special/amber signals, directional
+plates and arrow sections. Do not enable an excluded scene until its listed
+limitation has a source-backed implementation.
 
 ## Tickets 21–40 (second batch)
 
@@ -312,9 +321,8 @@ after viewing its source image; sign 8.13 branches are read from the plate in
 driver-view coordinates. 31 entries are reviewed, 29 excluded with reasons
 (traffic controllers, roundabout, divided roads with mid-intersection signals,
 observation questions over several maneuvers, staged mid-maneuver yielding,
-a dirt road, a horse-drawn cart, a tram alongside the player). Two T-junctions
-(39_14, 40_15) are schematised as crossroads: the extra exit does not change the
-priority in either question. 35_14 shows a motorcycle dashboard in the source;
+a dirt road, a horse-drawn cart, a tram alongside the player). The two T-junctions
+(39_14, 40_15) retain their closed far arm. 35_14 shows a motorcycle dashboard in the source;
 the player keeps the selected car.
 
 | Situation | reviewed | maneuver | yieldTo | Repair or exclusion reason |
@@ -374,11 +382,11 @@ the player keeps the selected car.
 | `ticket_38_14` | false | unresolved | `[]` | Observation question over two maneuvers (left and straight); no unique player maneuver. |
 | `ticket_38_15` | false | right | `[]` | Correct answer waits for the truck to begin its left turn; staged concurrent motion is not modelled. |
 | `ticket_39_13` | true | straight | `["tram_1"]` | Green with inactive 2.1; tram from left in equal conditions has priority. |
-| `ticket_39_14` | true | left | `["npc_car"]` | Equal T-junction schematised as a crossroad; car from right is the right-hand obstacle. |
+| `ticket_39_14` | true | left | `["npc_car"]` | Equal T-junction with a closed far arm; car from right is the right-hand obstacle. |
 | `ticket_39_15` | true | straight | `["npc_car"]` | 2.1 + 8.13 south-east; car from right on main first; truck (opposite) and motorcycle (left) are secondary. |
 | `ticket_40_13` | true | right | `["tram_b", "tram_a"]` | Green; both trams have simultaneous right of way and precede the player's right turn. |
 | `ticket_40_14` | true | straight | `["npc_moto"]` | Equal crossroad; motorcycle from right first; truck with amber beacon (no priority) turns left after player. |
-| `ticket_40_15` | true | left | `["npc_bus", "npc_truck"]` | 2.4 at a T-junction schematised as a crossroad; both vehicles on the crossed road have priority. |
+| `ticket_40_15` | true | left | `["npc_bus", "npc_truck"]` | 2.4 at a T-junction with a closed far arm; both vehicles on the crossed road have priority. |
 
 ## Сверка поворотников с картинками билетов (2026-09-22)
 
@@ -399,3 +407,53 @@ the player keeps the selected car.
 перекрёстку. `trajectories` — нарисованные на асфальте траектории с буквами,
 как на картинке билета. Сценарии: 18.8 (5.7.1), 14.8 (5.7.2). 28.6 не взят —
 нужен регулировщик, которого в движке нет.
+
+## Повторная проверка дорожных вопросов — 2026-09-23
+
+Причина обращения: `road_29_11` объяснял запрет обгона равнозначным
+перекрёстком, хотя вопрос строился на прямом участке без перекрёстка.
+Проверены тексты, ответы, объяснения, исходные изображения и построение всех
+18 дорожных сцен. Все вопросы остались в игре; исправлялась обстановка.
+
+| Вопрос | Исправление |
+| --- | --- |
+| 6.10 | Построены две разделённые проезжие части автомагистрали. |
+| 16.10 | Добавлены загородная обстановка, въезд из населённого пункта и ограничение 70 до знака 3.25. |
+| 2.11 | Добавлены равнозначный перекрёсток и автобус справа; мотоцикл ждёт его проезда. |
+| 4.11 / 16.11 | Добавлен связанный с вопросом перекрёсток с движением игрока по главной дороге. |
+| 5.11 | Знак 1.6 заменён на 2.3.1; пересечение со второстепенной дорогой показано впереди. |
+| 18.11 | Грузовик Б начинает сцену позади игрока и уже находится на встречной полосе. |
+| 20.11 | Грузовик начинает сцену уже выполняющим обгон, как на исходной картинке. |
+| 29.11 | Перед грузовиком построен равнозначный перекрёсток — основание запрета обгона. |
+| 38.11 | Собственный неравнозначный перекрёсток расположен ровно в 200 м от знака 2.4. |
+| остальные | Сверены без изменения условий ответа. |
+
+Авторский перекрёсток теперь является частью дорожного вопроса и не зависит
+от следующего случайного билета. Геометрия, проверка допустимости обгона и
+нарушение при неуступлении используют одни координаты. Перекрёсток сохраняется
+при развороте мира и имеет непрерывное дорожное покрытие на всех четырёх
+подъездах.
+
+Дополнительно камера дорожного вопроса больше не включает в рамку всю
+длину разметки и дальний знак конца зоны: они уменьшали важные объекты.
+Кадр строится по участникам и ближайшим знакам.
+
+Регрессия: `tools/game-road-review-test.cjs` проверяет 180 выборок (10 полных
+циклов всех 18 вопросов), дословность вопроса/ответов/объяснения относительно
+базы, текстуры знаков, число и видимость участников, дорожные поверхности,
+приоритет, ограничение скорости и сохранение перекрёстка после разворота мира.
+Тест сохраняет мобильный рендер каждой сцены.
+
+Результат запуска: новый road-review тест прошёл; полный engine-test прошёл
+69 перекрёсточных сценариев и 35 последовательных участков без ошибок JS;
+все 28 проверок game-audit-test прошли. Автотест перекрёстков проверяет
+кадрирование, проезд и жизненный цикл участников, но не заменяет повторную
+ручную юридическую сверку каждой картинки.
+
+## Знаки 5.7.1 и 5.7.2 — 2026-09-23
+
+Источник знаков хранит оба варианта в одном SVG-спрайте. Раньше движок
+показывал его целиком: две синие стрелки указывали друг на друга. Генератор
+текстур теперь вырезает правую половину для 5.7.1 и левую для 5.7.2;
+соотношение сторон каждого отдельного знака — 137:48. Оба варианта проверяются
+автотестом и отдельно рендерятся в сценариях 18.8 и 14.8.

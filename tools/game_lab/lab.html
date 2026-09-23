@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Стенд игры ПДД</title>
+<style>
+  :root { --accent: #0574F8; --accent-soft: #EAF2FF; --red: #ED4621; --red-soft: #FDECE7; --green: #1FA463; --green-soft: #E4F6EC;
+    --amber: #F5A300; --bg: #F3F4F6; --card: #fff; --text: #16181D; --muted: #8A919C; --line: #ECEEF1; --r: 14px; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 13px/1.4 -apple-system, system-ui, sans-serif; color: var(--text); background: var(--bg);
+    height: 100vh; display: grid; grid-template-columns: 290px 1fr 400px; grid-template-rows: 56px 1fr; overflow: hidden; }
+  button, select, input, textarea { font: inherit; color: inherit; }
+  button { border: 0; background: none; cursor: pointer; }
+  input, select, textarea { border: 1px solid var(--line); border-radius: 10px; padding: 7px 9px; background: #fff; width: 100%; }
+  .muted { color: var(--muted); }
+  .hide { display: none !important; }
+
+  /* top bar */
+  header { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 0 14px; background: var(--card); border-bottom: 1px solid var(--line); }
+  .brand { font-weight: 700; font-size: 15px; width: 262px; display: flex; gap: 8px; align-items: center; }
+  .seg { display: flex; background: var(--bg); border-radius: 12px; padding: 3px; }
+  .seg button { padding: 7px 13px; border-radius: 9px; display: flex; gap: 6px; align-items: center; font-weight: 600; color: #4B5260; }
+  .seg button.on { background: var(--card); color: var(--accent); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .seg button .i { font-size: 16px; }
+  .spacer { flex: 1; }
+  .ib { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-size: 17px; background: var(--bg); position: relative; }
+  .ib:hover { background: #E6E9EE; }
+  .ib.on { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+  .group { display: flex; gap: 4px; }
+  [data-tip]:hover::after { content: attr(data-tip); position: absolute; top: 42px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+    background: #16181D; color: #fff; font-size: 11px; font-weight: 500; padding: 4px 8px; border-radius: 6px; z-index: 20; pointer-events: none; }
+  .rocket { background: var(--accent); color: #fff; border-radius: 10px; padding: 8px 14px; font-weight: 600; display: flex; gap: 6px; align-items: center; }
+
+  /* left */
+  #side { background: var(--card); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+  .search { padding: 12px 12px 8px; }
+  #chips { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 12px 10px; border-bottom: 1px solid var(--line); }
+  .chip { padding: 4px 9px; border-radius: 20px; background: var(--bg); font-size: 12px; display: flex; gap: 4px; align-items: center; }
+  .chip b { font-weight: 600; color: var(--muted); }
+  .chip.on { background: var(--accent); color: #fff; } .chip.on b { color: #cfe2ff; }
+  #list { overflow: auto; flex: 1; padding: 6px; }
+  .card { display: grid; grid-template-columns: 64px 1fr; gap: 10px; padding: 6px; border-radius: 12px; cursor: pointer; align-items: center; }
+  .card:hover { background: #F6F7F9; }
+  .card.active { background: var(--accent-soft); }
+  .thumb { width: 64px; height: 44px; border-radius: 8px; object-fit: cover; background: #E5E7EB; display: grid; place-items: center; font-size: 20px; }
+  .card .t { font-weight: 700; display: flex; gap: 6px; align-items: center; }
+  .card .s { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .st { width: 18px; height: 18px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 10px; color: #fff; }
+  .st.ok { background: var(--green); } .st.problem { background: var(--red); } .st.unreviewed { background: var(--amber); } .st.none { background: #D6DAE0; }
+  .mini { font-size: 12px; }
+
+  /* stage */
+  #stage { display: flex; flex-direction: column; min-height: 0; position: relative; }
+  #frameWrap { flex: 1; display: grid; place-items: center; min-height: 0; overflow: hidden; }
+  iframe { border: 0; border-radius: 22px; background: #fff; box-shadow: 0 10px 40px rgba(0,0,0,.14); transform-origin: center; }
+  #hud { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 8px; }
+  .pill { background: rgba(22,24,29,.82); color: #fff; border-radius: 20px; padding: 6px 12px; display: flex; gap: 6px; align-items: center; font-weight: 600; }
+  #toast { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); background: var(--red); color: #fff; border-radius: 12px; padding: 8px 14px; font-weight: 600; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+  #keys { position: absolute; right: 14px; bottom: 14px; display: grid; grid-template-columns: repeat(3, 34px); gap: 4px; }
+  #keys span { height: 30px; border-radius: 8px; background: rgba(255,255,255,.9); display: grid; place-items: center; font-weight: 700; color: #4B5260; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  #keys span.on { background: var(--accent); color: #fff; }
+
+  /* right */
+  #panel { background: var(--card); border-left: 1px solid var(--line); overflow: auto; padding: 14px; }
+  .sec { margin-bottom: 16px; }
+  .sec > h4 { margin: 0 0 8px; font-size: 12px; color: var(--muted); font-weight: 600; display: flex; gap: 6px; align-items: center; }
+  .ticketImg { width: 100%; height: auto; border-radius: var(--r); display: block; background: #E5E7EB; cursor: zoom-in; }
+  div.ticketImg { aspect-ratio: 16/10; }
+  #zoom { position: fixed; inset: 0; background: rgba(0,0,0,.8); display: grid; place-items: center; z-index: 50; cursor: zoom-out; }
+  #zoom img { max-width: 92vw; max-height: 92vh; border-radius: 12px; }
+  .noimg { display: grid; place-items: center; color: var(--muted); font-size: 34px; }
+  .qhead { display: flex; justify-content: space-between; align-items: center; margin: 12px 0 6px; }
+  .badge { background: var(--accent-soft); color: var(--accent); font-weight: 700; border-radius: 8px; padding: 3px 9px; }
+  .qtext { font-size: 15px; font-weight: 600; margin: 0 0 10px; }
+  .ans { display: flex; gap: 8px; padding: 9px 10px; border-radius: 11px; background: var(--bg); margin: 5px 0; align-items: flex-start; }
+  .ans .n { width: 22px; height: 22px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-weight: 700; font-size: 12px; flex: none; }
+  .ans.correct { background: var(--green-soft); } .ans.correct .n { background: var(--green); color: #fff; }
+  .ans.wrong { background: var(--red-soft); } .ans.wrong .n { background: var(--red); color: #fff; }
+  .ans.click { cursor: pointer; } .ans.click:hover { background: var(--accent-soft); }
+  .checks { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ck { border-radius: 9px; padding: 5px 9px; font-weight: 600; font-size: 12px; display: flex; gap: 5px; align-items: center; }
+  .ck.y { background: var(--green-soft); color: var(--green); } .ck.n { background: var(--red-soft); color: var(--red); }
+  .facts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fact { background: var(--bg); border-radius: 9px; padding: 5px 9px; display: flex; gap: 6px; align-items: center; }
+  .fact img { width: 22px; height: 22px; object-fit: contain; }
+  .vote { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; }
+  .vote button { border-radius: 12px; padding: 11px; font-weight: 700; background: var(--bg); display: flex; justify-content: center; gap: 6px; }
+  .vote .up.on { background: var(--green); color: #fff; } .vote .down.on { background: var(--red); color: #fff; }
+  details { background: var(--bg); border-radius: 11px; padding: 8px 10px; }
+  details summary { cursor: pointer; font-weight: 600; }
+  .feed { display: grid; gap: 4px; max-height: 240px; overflow: auto; }
+  .ev { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 9px; background: var(--bg); }
+  .ev .ico { font-size: 16px; } .ev .time { margin-left: auto; color: var(--muted); font-size: 11px; }
+  .ev.bad { background: var(--red-soft); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
+  .tile { border-radius: 11px; background: var(--bg); padding: 6px 4px; display: grid; justify-items: center; gap: 2px; font-size: 11px; color: #4B5260; }
+  .tile:hover { background: var(--accent-soft); }
+  .tile img { width: 34px; height: 34px; object-fit: contain; }
+  .tile .e { font-size: 26px; line-height: 34px; }
+  .tile.on { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-soft); }
+  .selcard { display: flex; gap: 10px; align-items: center; background: var(--accent-soft); border-radius: 12px; padding: 10px; }
+  .selcard .big { font-size: 28px; width: 40px; text-align: center; } .selcard img { width: 40px; height: 40px; object-fit: contain; }
+  .nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+  .nums label { font-size: 11px; color: var(--muted); display: grid; gap: 3px; }
+  .acts { display: flex; gap: 6px; margin-top: 8px; }
+  .btn { border-radius: 11px; padding: 9px 12px; font-weight: 600; background: var(--bg); display: flex; gap: 6px; align-items: center; justify-content: center; }
+  .btn.primary { background: var(--accent); color: #fff; } .btn.danger { background: var(--red-soft); color: var(--red); }
+  .btn.wide { width: 100%; }
+  .swatches { display: grid; gap: 6px; }
+  .sw { display: grid; grid-template-columns: 28px 16px 44px 36px; gap: 8px; align-items: center; }
+  .sw .c { width: 28px; height: 28px; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.1); }
+  .sw input[type=color] { width: 36px; height: 30px; padding: 2px; border-radius: 8px; }
+  .slider { display: grid; grid-template-columns: 90px 1fr 44px; gap: 8px; align-items: center; margin: 5px 0; }
+  .slider input { padding: 0; }
+  .empty { text-align: center; color: var(--muted); padding: 18px 8px; background: var(--bg); border-radius: 12px; }
+  .empty .e { font-size: 30px; display: block; }
+  kbd { background: #fff; border-radius: 5px; padding: 1px 6px; box-shadow: 0 1px 0 rgba(0,0,0,.15); font-family: inherit; font-size: 11px; }
+
+  /* dialog */
+  dialog { border: 0; border-radius: 18px; padding: 22px; width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+  dialog::backdrop { background: rgba(0,0,0,.3); }
+  .steps { display: grid; gap: 10px; margin: 14px 0; }
+  .step { display: grid; grid-template-columns: 40px 1fr; gap: 10px; align-items: center; background: var(--bg); border-radius: 12px; padding: 10px; }
+  .step .e { font-size: 24px; text-align: center; }
+  #buildLog { font: 11px ui-monospace, monospace; background: #16181D; color: #D1D5DB; border-radius: 10px; padding: 10px; max-height: 200px; overflow: auto; white-space: pre-wrap; margin-top: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">🚦 Стенд игры ПДД</div>
+  <div class="seg" id="modes">
+    <button data-mode="view"><span class="i">👁</span>Осмотр</button>
+    <button data-mode="edit"><span class="i">✏️</span>Сцена</button>
+    <button data-mode="drive"><span class="i">🚗</span>Езда</button>
+    <button data-mode="models"><span class="i">🧩</span>Модели</button>
+  </div>
+  <div class="spacer"></div>
+  <div class="group">
+    <button class="ib" id="camFree" data-tip="Свободная камера">🎥</button>
+    <button class="ib" id="reload" data-tip="Пересобрать сцену">🔄</button>
+    <button class="ib" id="freeRide" data-tip="Свободная езда как в приложении">🎲</button>
+  </div>
+  <div class="group" id="devices">
+    <button class="ib" data-size="390x844" data-tip="Телефон">📱</button>
+    <button class="ib" data-size="820x1000" data-tip="Планшет">📟</button>
+    <button class="ib" data-size="fill" data-tip="Во всё окно">🖥</button>
+  </div>
+  <div class="group" id="weather">
+    <button class="ib" data-w="" data-tip="Погода авто">🔁</button>
+    <button class="ib" data-w="clear" data-tip="Ясно">☀️</button>
+    <button class="ib" data-w="overcast" data-tip="Пасмурно">☁️</button>
+    <button class="ib" data-w="rain" data-tip="Дождь">🌧</button>
+  </div>
+  <div class="group" id="season">
+    <button class="ib" data-s="spring" data-tip="Весна">🌸</button>
+    <button class="ib" data-s="summer" data-tip="Лето">🌳</button>
+    <button class="ib" data-s="autumn" data-tip="Осень">🍂</button>
+    <button class="ib" data-s="winter" data-tip="Зима">❄️</button>
+  </div>
+  <button class="rocket" id="ship">🚀 В игру</button>
+</header>
+
+<aside id="side">
+  <div class="search"><input id="search" placeholder="🔍  Билет, текст…"></div>
+  <div id="chips"></div>
+  <div id="list"></div>
+</aside>
+
+<section id="stage">
+  <div id="frameWrap"><iframe id="frame" src="/game/index.html"></iframe></div>
+  <div id="toast"></div>
+  <div id="hud" class="hide"><span class="pill" id="speed">0 км/ч</span><span class="pill" id="limit">⛔ 60</span></div>
+  <div id="keys" class="hide"><i></i><span data-k="gas">↑</span><i></i><span data-k="left">←</span><span data-k="brake">↓</span><span data-k="right">→</span></div>
+</section>
+
+<section id="panel"></section>
+
+<dialog id="shipDlg">
+  <h3 style="margin:0">🚀 Как правки попадают в игру</h3>
+  <div class="steps">
+    <div class="step"><span class="e">💾</span><div><b>Сохраните</b> — сцены в <code>scene-edits.js</code>, модели в <code>model-edits.js</code>. Игра применяет их сама.</div></div>
+    <div class="step"><span class="e">📲</span><div><b>Проверка на телефоне</b> — кнопка ниже собирает dev-версию и ставит её на Pixel по Wi‑Fi (рядом с магазинной).</div></div>
+    <div class="step"><span class="e">📦</span><div><b>Релиз</b> — обычная сборка <code>./scripts/build.sh ru aab</code>: файлы правок уже внутри <code>assets/game</code>.</div></div>
+  </div>
+  <div class="acts"><button class="btn primary" id="buildBtn">📲 Собрать и поставить на телефон</button><button class="btn" onclick="shipDlg.close()">Закрыть</button></div>
+  <div id="buildLog" class="hide"></div>
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const frame = $('#frame');
+let lab = null, gameWin = null, items = [], current = null, filter = 'all', mode = 'view';
+let tickets = {}, byQuestionId = {}, review = {}, edits = {}, models = {};
+let asked = null, answered = null, feed = [], size = '390x844', selection = null;
+let model = null, modelDraft = null, part = null;
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const norm = s => String(s || '').toLowerCase().replace(/ё/g, 'е').replace(/[«»"“”„]/g, '"').replace(/[\s ]+/g, ' ').replace(/[.:?!]+$/, '').trim();
+const signImg = code => gameWin?.PDD_SIGN_TEXTURES?.[code] || '';
+const short = t => (/(\d+)\D+(\d+)/.exec(t || '') || [, '?', '?']).slice(1).join(' · ');
+
+// ---------- data ----------
+async function loadData() {
+  const q = await fetch('/content/questions/questions_ab.json').then(r => r.json());
+  q.tickets.forEach(t => t.questions.forEach((qq, i) => { tickets[`${t.number}_${i + 1}`] = qq; byQuestionId[qq.id] = qq; }));
+  [review, edits, models] = await Promise.all(['/api/review', '/api/edits', '/api/models'].map(u => fetch(u).then(r => r.json())));
+}
+function original(item) {
+  if (!item) return null;
+  if (item.sourceQuestionId && byQuestionId[item.sourceQuestionId]) return byQuestionId[item.sourceQuestionId];
+  const m = /(\d+) · Вопрос (\d+)/.exec(item.ticket || '') || /ticket_(\d+)_(\d+)/.exec(item.id);
+  return m ? tickets[`${m[1]}_${m[2]}`] : null;
+}
+const imgOf = item => { const o = original(item); return o?.image ? `/content/images/questions_ab/${o.image}.webp` : ''; };
+function checks(item) {
+  const o = original(item);
+  if (!o) return [{ ok: false, t: 'Нет билета' }];
+  const ci = o.answers.findIndex(a => a.correct), opts = (item.options || []).map(norm), orig = o.answers.map(a => norm(a.text));
+  return [
+    { ok: norm(item.title) === norm(o.question), t: 'Вопрос' },
+    { ok: opts.length === orig.length && opts.every((x, i) => x === orig[i]), t: 'Ответы' },
+    { ok: item.correct === ci, t: 'Верный ответ' },
+    { ok: item.reviewed, t: item.reviewed ? 'В игре' : 'Не в игре' },
+  ];
+}
+const statusOf = item => review[item.id]?.status || (item.reviewed ? 'none' : 'unreviewed');
+
+// ---------- list ----------
+const CHIPS = [['all', 'Все'], ['junction', '✚'], ['road', '🛣'], ['todo', '⏳'], ['ok', '✅'], ['problem', '❌'], ['mismatch', '⚠️'], ['unreviewed', '🚫'], ['edited', '✏️']];
+const CHIP_TIP = { junction: 'Перекрёстки', road: 'Сцены на дороге', todo: 'Ещё не проверены', ok: 'Соответствуют', problem: 'Есть проблема', mismatch: 'Расходятся с билетом', unreviewed: 'Не попадают в игру', edited: 'С правками' };
+function match(item, f) {
+  const st = review[item.id]?.status;
+  switch (f) {
+    case 'junction': case 'road': return item.kind === f;
+    case 'todo': return !st && item.reviewed;
+    case 'ok': case 'problem': return st === f;
+    case 'mismatch': return checks(item).slice(0, 3).some(c => !c.ok);
+    case 'unreviewed': return !item.reviewed;
+    case 'edited': return !!edits[item.id];
+  }
+  return true;
+}
+function renderChips() {
+  $('#chips').innerHTML = CHIPS.map(([k, l]) => `<button class="chip ${filter === k ? 'on' : ''}" data-f="${k}" title="${CHIP_TIP[k] || ''}">${l}<b>${items.filter(i => match(i, k)).length}</b></button>`).join('');
+  $('#chips').querySelectorAll('button').forEach(b => b.onclick = () => { filter = b.dataset.f; renderChips(); renderList(); });
+}
+function renderList() {
+  if (mode === 'models') return renderModelList();
+  $('#chips').classList.remove('hide');
+  const q = norm($('#search').value);
+  const shown = items.filter(i => match(i, filter) && (!q || norm(`${i.ticket} ${i.title} ${i.id}`).includes(q)));
+  $('#list').innerHTML = shown.map(i => {
+    const st = statusOf(i), img = imgOf(i);
+    return `<div class="card ${current?.id === i.id ? 'active' : ''}" data-id="${i.id}">
+      ${img ? `<img class="thumb" loading="lazy" src="${img}">` : `<div class="thumb">${i.kind === 'road' ? '🛣' : '✚'}</div>`}
+      <div style="min-width:0"><div class="t"><span class="st ${st}">${{ ok: '✓', problem: '✕', unreviewed: '!' }[st] || ''}</span>${short(i.ticket)}
+        <span class="mini">${i.kind === 'road' ? '🛣' : '✚'}${edits[i.id] ? ' ✏️' : ''}</span></div>
+      <div class="s">${esc(i.title)}</div></div></div>`;
+  }).join('') || '<div class="empty"><span class="e">🤷</span>Ничего не найдено</div>';
+  $('#list').querySelectorAll('.card').forEach(el => el.onclick = () => open(el.dataset.id));
+}
+$('#search').oninput = renderList;
+// Click the ticket picture to see it full size.
+document.addEventListener('click', e => {
+  if (e.target.matches('img.ticketImg')) {
+    const z = document.createElement('div'); z.id = 'zoom'; z.innerHTML = `<img src="${e.target.src}">`;
+    z.onclick = () => z.remove(); document.body.appendChild(z);
+  }
+});
+
+// ---------- right panel ----------
+function ticketCard(item, { interactive = false } = {}) {
+  const o = original(item), img = imgOf(item);
+  const correct = item.correct;
+  const answers = (item.options || []).map((a, i) => {
+    let cls = '';
+    if (!interactive || answered) cls = i === correct ? 'correct' : answered && answered.index === i ? 'wrong' : '';
+    return `<div class="ans ${cls} ${interactive && !answered ? 'click' : ''}" data-i="${i}"><span class="n">${i + 1}</span><span>${esc(a)}</span></div>`;
+  }).join('');
+  return `
+    ${img ? `<img class="ticketImg" src="${img}">` : `<div class="ticketImg noimg">${item.kind === 'road' ? '🛣' : '✚'}</div>`}
+    <div class="qhead"><span class="badge">Билет ${short(item.ticket)}</span><span class="muted">${esc(item.pddRule || '')}</span></div>
+    <p class="qtext">${esc(item.title)}</p>
+    ${answers}
+    ${interactive && !answered ? '<p class="muted mini">👆 Выберите ответ — сцена продолжится</p>' : ''}
+    ${o ? `<details style="margin-top:8px"><summary>💡 Пояснение</summary><p>${esc(o.comment)}</p></details>` : ''}`;
+}
+function facts(item) {
+  const man = { straight: '⬆️ прямо', left: '⬅️ налево', right: '➡️ направо', uturn: '↩️ разворот' }[item.maneuver];
+  return `<div class="facts">
+    ${man ? `<span class="fact" title="Манёвр игрока">🚗 ${man}</span>` : ''}
+    ${(item.yieldTo || []).length ? `<span class="fact" title="Кому уступает игрок">🤚 ${item.yieldTo.length}</span>` : ''}
+    ${(item.signs || []).map(c => `<span class="fact" title="Знак ${c}">${signImg(c) ? `<img src="${signImg(c)}">` : ''}${c}</span>`).join('')}
+    ${item.reason ? `<span class="fact" title="${esc(item.reason)}">🚫 почему не в игре</span>` : ''}
+  </div>`;
+}
+function renderPanel() {
+  if (mode === 'models') return renderModelPanel();
+  if (mode === 'edit') return renderEditPanel();
+  if (mode === 'drive') return renderDrivePanel();
+  if (!current) { $('#panel').innerHTML = '<div class="empty"><span class="e">👈</span>Выберите сцену слева</div>'; return; }
+  const st = review[current.id]?.status;
+  $('#panel').innerHTML = `
+    <div class="sec">${ticketCard(current)}</div>
+    <div class="sec"><h4>🔎 Сверка с базой билетов</h4><div class="checks">${checks(current).map(c => `<span class="ck ${c.ok ? 'y' : 'n'}">${c.ok ? '✓' : '✕'} ${c.t}</span>`).join('')}</div></div>
+    <div class="sec"><h4>🧭 Что в сцене</h4>${facts(current)}</div>
+    <div class="sec"><h4>🗳 Сцена соответствует билету?</h4>
+      <div class="vote"><button class="up ${st === 'ok' ? 'on' : ''}" id="vUp">👍 Да</button><button class="down ${st === 'problem' ? 'on' : ''}" id="vDown">👎 Нет</button><button id="vClear" title="Сбросить">↺</button></div>
+      <textarea id="note" rows="2" placeholder="📝 Что не так…" style="margin-top:8px">${esc(review[current.id]?.note || '')}</textarea></div>`;
+  $('#vUp').onclick = () => saveReview('ok');
+  $('#vDown').onclick = () => saveReview('problem');
+  $('#vClear').onclick = () => saveReview('');
+  $('#note').onchange = () => saveReview(review[current.id]?.status || '');
+}
+async function saveReview(st) {
+  review[current.id] = { status: st, note: $('#note')?.value || '' };
+  await fetch('/api/review', { method: 'POST', body: JSON.stringify({ id: current.id, ...review[current.id] }) });
+  renderChips(); renderList(); renderPanel();
+}
+
+// ---------- drive ----------
+const VIOL = { oncoming: ['↔️', 'Встречная полоса'], one_way: ['⛔', 'Против потока (односторонняя)'], collision: ['💥', 'Столкновение'],
+  offroad: ['🧱', 'Бордюр'], priority: ['🤚', 'Не уступил дорогу'], wrong_maneuver: ['🔀', 'Манёвр не по заданию'], speeding: ['🏎', 'Превышение'],
+  overtaking: ['🚫', 'Запрещённый обгон'], pedestrian: ['🚶', 'Не пропустил пешехода'], roadworks: ['🚧', 'Въезд в зону работ'] };
+function renderDrivePanel() {
+  const item = asked ? items.find(i => i.id === asked.id) || situationItem(asked) : null;
+  $('#panel').innerHTML = `
+    <div class="sec">${item ? ticketCard(item, { interactive: true }) : '<div class="empty"><span class="e">🚗</span>Подъезжайте к стоп-линии — здесь появится билет с картинкой</div>'}</div>
+    <div class="sec"><h4>📋 События</h4><div class="feed">${feed.map(f => `<div class="ev ${f.bad ? 'bad' : ''}"><span class="ico">${f.icon}</span>${esc(f.text)}<span class="time">${f.time}</span></div>`).join('') || '<span class="muted">Пока тихо</span>'}</div></div>
+    <div class="sec muted mini"><kbd>↑</kbd><kbd>W</kbd> газ · <kbd>↓</kbd><kbd>S</kbd> тормоз · <kbd>←</kbd><kbd>→</kbd> руль</div>`;
+  $('#panel').querySelectorAll('.ans.click').forEach(el => el.onclick = () => answer(+el.dataset.i));
+}
+function situationItem(s) { return { id: s.id, kind: s.scene ? 'road' : 'junction', ticket: s.ticket, title: s.title, options: s.options, correct: s.correctAnswerIndex, pddRule: s.pddRule, sourceQuestionId: s.sourceQuestionId }; }
+function answer(i) {
+  answered = { index: i };
+  const ok = i === asked.correctAnswerIndex;
+  push(ok ? '✅' : '❌', ok ? 'Ответ верный' : `Неверно, правильный — ${asked.correctAnswerIndex + 1}`, !ok);
+  gameWin.game.releaseTraffic(asked.id);
+  gameWin.game.proceedAfterAnswer(ok, asked.id);
+  renderDrivePanel();
+}
+function push(icon, text, bad = false) {
+  feed.unshift({ icon, text, bad, time: new Date().toLocaleTimeString().slice(0, 5) }); feed.length = Math.min(feed.length, 60);
+  if (mode === 'drive') renderDrivePanel();
+}
+let toastTimer;
+function toast(text) { $('#toast').textContent = text; $('#toast').classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').classList.remove('show'), 2500); }
+addEventListener('message', m => {
+  const ev = m.data?.labEvent; if (!ev) return;
+  if (ev.event === 'telemetry') { $('#speed').textContent = `${ev.speedKmH} км/ч`; $('#limit').textContent = `⛔ ${ev.limitKmH}`; return; }
+  if (ev.event === 'violation') { const [i, t] = VIOL[ev.type] || ['⚠️', ev.type]; push(i, t, true); toast(`${i} ${t}`); }
+  else if (ev.event === 'approach_situation') {
+    asked = ev.situation; answered = null;
+    const item = items.find(i => i.id === asked.id);
+    if (item && mode === 'drive') { current = item; renderList(); scrollToCurrent(); }
+    push('🚦', `Билет ${short(asked.ticket)}`);
+    if (mode === 'drive') renderDrivePanel();
+  } else if (ev.event === 'situation_cleared') push('🏁', 'Сцена пройдена');
+});
+function scrollToCurrent() { $('#list .card.active')?.scrollIntoView({ block: 'nearest' }); }
+
+// ---------- scene editor ----------
+const DECOR = { tree: ['🌳', 'Дерево'], pine: ['🌲', 'Ель'], bush: ['🌿', 'Куст'], cone: ['🔶', 'Конус'], barrier: ['🚧', 'Барьер'], lamp: ['💡', 'Фонарь'],
+  parked_car: ['🚙', 'Машина'], kiosk: ['🏪', 'Киоск'], fence: ['🪵', 'Забор'], house: ['🏠', 'Дом'], triangle: ['⚠️', 'Знак аварийки'] };
+const sceneEdits = () => (edits[current?.id] ||= { objects: [] }).objects;
+let dirty = false;
+function record(d, extra = {}) {
+  if (!current || !d) return;
+  let r = sceneEdits().find(e => e.key === d.key);
+  if (!r) { r = { key: d.key }; sceneEdits().push(r); }
+  Object.assign(r, { x: d.x, z: d.z, rotY: d.rotY }, extra);
+  if (d.code) r.code = d.code;
+  if (!d.visible) r.removed = true; else delete r.removed;
+  dirty = true; selection = d; renderEditPanel();
+}
+function renderEditPanel() {
+  if (!current) { $('#panel').innerHTML = '<div class="empty"><span class="e">👈</span>Выберите сцену</div>'; return; }
+  const d = selection, codes = lab.signCodes();
+  const icon = d ? (d.code ? `<img src="${signImg(d.code)}">` : `<span class="big">${DECOR[d.kind]?.[0] || '📦'}</span>`) : '';
+  $('#panel').innerHTML = `
+    <div class="sec"><h4>👆 Выбрано</h4>${d ? `
+      <div class="selcard">${icon}<div><b>${esc(d.code ? 'Знак ' + d.code : DECOR[d.kind]?.[1] || 'Объект сцены')}</b><div class="muted mini">${d.visible ? 'тащите мышью · Q/E поворот' : 'скрыт'}</div></div></div>
+      <div class="nums"><label>↔ X<input id="sx" type="number" step="0.1" value="${d.x}"></label><label>↕ Z<input id="sz" type="number" step="0.1" value="${d.z}"></label><label>⟳ °<input id="sr" type="number" step="15" value="${Math.round(d.rotY * 180 / Math.PI)}"></label></div>
+      <div class="acts"><button class="btn" id="rotL">↺ 15°</button><button class="btn" id="rotR">↻ 15°</button><button class="btn danger" id="hide">${d.visible ? '🗑 Скрыть' : '↩︎ Вернуть'}</button></div>`
+      : '<div class="empty"><span class="e">🖱</span>Кликните по знаку или декору в сцене</div>'}</div>
+    <div class="sec"><h4>🪧 Знаки ${d?.code ? '<span class="muted">— клик заменит выбранный</span>' : '<span class="muted">— клик добавит</span>'}</h4>
+      <div class="grid">${codes.map(c => `<button class="tile ${d?.code === c ? 'on' : ''}" data-sign="${c}" title="${c}"><img src="${signImg(c)}">${c}</button>`).join('')}</div></div>
+    <div class="sec"><h4>🌳 Декор — клик добавит</h4>
+      <div class="grid">${Object.entries(DECOR).map(([k, [e, t]]) => `<button class="tile" data-decor="${k}" title="${t}"><span class="e">${e}</span>${t}</button>`).join('')}</div></div>
+    <div class="sec"><h4>✏️ Правки сцены · ${sceneEdits().length}</h4>
+      <div class="acts"><button class="btn primary wide" id="save">${dirty ? '💾 Сохранить' : '✓ Сохранено'}</button><button class="btn danger" id="drop" title="Удалить все правки сцены">🗑</button></div></div>`;
+  const apply = props => record(lab.update(props));
+  if (d) {
+    $('#sx').onchange = e => apply({ x: +e.target.value });
+    $('#sz').onchange = e => apply({ z: +e.target.value });
+    $('#sr').onchange = e => apply({ rotY: +e.target.value * Math.PI / 180 });
+    $('#rotL').onclick = () => apply({ rotY: d.rotY + Math.PI / 12 });
+    $('#rotR').onclick = () => apply({ rotY: d.rotY - Math.PI / 12 });
+    $('#hide').onclick = () => apply({ visible: !d.visible });
+  }
+  $('#panel').querySelectorAll('[data-sign]').forEach(b => b.onclick = () => {
+    const code = b.dataset.sign;
+    if (d?.code) return apply({ code });
+    const nd = lab.add({ type: 'sign', code }); record(nd, { add: { type: 'sign', code } });
+  });
+  $('#panel').querySelectorAll('[data-decor]').forEach(b => b.onclick = () => {
+    const nd = lab.add({ type: 'decor', kind: b.dataset.decor }); record(nd, { add: { type: 'decor', kind: b.dataset.decor } });
+  });
+  $('#save').onclick = async () => {
+    await fetch('/api/edits', { method: 'POST', body: JSON.stringify({ id: current.id, objects: sceneEdits() }) });
+    if (!sceneEdits().length) delete edits[current.id];
+    dirty = false; renderEditPanel(); renderChips(); renderList(); toast('💾 Сохранено');
+  };
+  $('#drop').onclick = async () => {
+    if (!confirm('Удалить все правки этой сцены?')) return;
+    delete edits[current.id]; dirty = false;
+    await fetch('/api/edits', { method: 'POST', body: JSON.stringify({ id: current.id, objects: [] }) });
+    open(current.id);
+  };
+}
+
+// ---------- model workshop ----------
+const MODEL_META = {
+  'vehicle:hatch': ['🚗', 'Хэтчбек'], 'vehicle:sedan': ['🚘', 'Седан'], 'vehicle:coupe': ['🏎', 'Купе'], 'vehicle:wagon': ['🚙', 'Универсал'],
+  'vehicle:suv': ['🚙', 'Внедорожник'], 'vehicle:pickup': ['🛻', 'Пикап'], 'vehicle:cyber': ['✨', 'Кибер'],
+  car: ['🚕', 'Машина NPC'], bus: ['🚌', 'Автобус'], truck: ['🚚', 'Грузовик'], tractor: ['🚜', 'Трактор'], special: ['🚓', 'Спецмашина'],
+  motorcycle: ['🏍', 'Мотоцикл'], tram: ['🚋', 'Трамвай'], pedestrian: ['🚶', 'Пешеход'], cyclist: ['🚴', 'Велосипедист'],
+  cone: ['🔶', 'Конус'], barrier: ['🚧', 'Барьер'], traffic_light: ['🚦', 'Светофор'], tree: ['🌲', 'Дерево'], lamp: ['💡', 'Фонарь'],
+  kiosk: ['🏪', 'Киоск'], building: ['🏠', 'Дом'],
+};
+const SPEC = { width: ['Ширина', 1.4, 2.4], length: ['Длина', 3, 6], height: ['Высота', 1, 2.3], cabin: ['Салон', 1.2, 3.4], cabinZ: ['Сдвиг салона', -1, 1] };
+function renderModelList() {
+  $('#chips').classList.add('hide');
+  $('#list').innerHTML = `<div class="grid" style="grid-template-columns:repeat(3,1fr);padding:6px">${lab.models().map(id => {
+    const [e, t] = MODEL_META[id] || ['📦', id];
+    return `<button class="tile ${model?.id === id ? 'on' : ''}" data-model="${id}"><span class="e">${e}</span>${t}${models[id] ? ' ✏️' : ''}</button>`;
+  }).join('')}</div>`;
+  $('#list').querySelectorAll('[data-model]').forEach(b => b.onclick = () => openModel(b.dataset.model));
+}
+function openModel(id, keepDraft = false) {
+  if (!keepDraft) { modelDraft = JSON.parse(JSON.stringify(models[id] || {})); part = null; }
+  gameWin.PDD_MODEL_EDITS = { ...models };
+  model = lab.showModel(id, modelDraft);
+  renderModelList(); renderModelPanel();
+}
+function renderModelPanel() {
+  if (!model) { $('#panel').innerHTML = '<div class="empty"><span class="e">👈</span>Выберите модель слева</div>'; return; }
+  const [e, t] = MODEL_META[model.id] || ['📦', model.id];
+  const colors = modelDraft.colors ||= {}, parts = modelDraft.parts ||= {}, scale = modelDraft.scale || [1, 1, 1];
+  const hexCss = h => h.startsWith('#') ? h : '#' + h;
+  $('#panel').innerHTML = `
+    <div class="sec"><div class="selcard"><span class="big">${e}</span><div><b>${t}</b><div class="muted mini">${model.parts} деталей · ${model.size.join(' × ')} м</div></div></div></div>
+    <div class="sec"><h4>🎨 Цвета модели</h4><div class="swatches">${model.original.map(c => `
+      <div class="sw"><span class="c" style="background:${c}"></span>→<input type="color" data-from="${c}" value="${hexCss(colors[c] || c)}">
+      ${colors[c] ? `<button class="btn" data-reset="${c}">↺</button>` : '<span></span>'}</div>`).join('')}</div>
+      ${model.id.startsWith('vehicle:') ? '<p class="muted mini">🎨 Кузов машин игрока красится в гараже — здесь его базовый цвет.</p>' : ''}</div>
+    <div class="sec"><h4>🖱 Деталь</h4>${part ? `
+      <div class="selcard"><span class="big">🔩</span><div><b>Деталь №${part.index}</b><div class="muted mini">${part.merged ? 'Сборная (цвет общий)' : 'Отдельная деталь'}</div></div></div>
+      <div class="acts">${part.merged ? '' : `<input type="color" id="pColor" value="${(parts[part.index]?.color) || part.color}" style="width:60px">`}
+        <button class="btn danger" id="pHide">${parts[part.index]?.hidden ? '↩︎ Вернуть' : '🙈 Скрыть'}</button>
+        ${parts[part.index] ? '<button class="btn" id="pReset">↺</button>' : ''}</div>`
+      : '<div class="empty"><span class="e">🖱</span>Кликните по детали модели</div>'}</div>
+    <div class="sec"><h4>📐 Размер</h4>${['X', 'Y', 'Z'].map((a, i) => `
+      <div class="slider"><span>${['↔ Ширина', '↕ Высота', '⇕ Длина'][i]}</span><input type="range" min="0.5" max="1.8" step="0.05" data-scale="${i}" value="${scale[i]}"><b>${scale[i]}</b></div>`).join('')}
+      ${model.spec ? Object.entries(SPEC).map(([k, [l, mn, mx]]) => `
+      <div class="slider"><span>${l}</span><input type="range" min="${mn}" max="${mx}" step="0.05" data-spec="${k}" value="${model.spec[k]}"><b>${(+model.spec[k]).toFixed(2)}</b></div>`).join('') : ''}</div>
+    <div class="sec"><div class="acts"><button class="btn primary wide" id="mSave">💾 Сохранить модель</button><button class="btn danger" id="mDrop" title="Вернуть как было">🗑</button></div></div>`;
+  const rebuild = () => { openModel(model.id, true); };
+  $('#panel').querySelectorAll('[data-from]').forEach(inp => inp.onchange = () => { colors[inp.dataset.from] = inp.value; rebuild(); });
+  $('#panel').querySelectorAll('[data-reset]').forEach(b => b.onclick = () => { delete colors[b.dataset.reset]; rebuild(); });
+  $('#panel').querySelectorAll('[data-scale]').forEach(inp => inp.onchange = () => { const s = modelDraft.scale ||= [1, 1, 1]; s[+inp.dataset.scale] = +inp.value; rebuild(); });
+  $('#panel').querySelectorAll('[data-spec]').forEach(inp => inp.onchange = () => { (modelDraft.spec ||= {})[inp.dataset.spec] = +inp.value; rebuild(); });
+  if (part) {
+    const p = () => (parts[part.index] ||= {});
+    $('#pColor') && ($('#pColor').onchange = e => { p().color = e.target.value; rebuild(); });
+    $('#pHide').onclick = () => { p().hidden = !p().hidden; rebuild(); };
+    $('#pReset') && ($('#pReset').onclick = () => { delete parts[part.index]; rebuild(); });
+  }
+  $('#mSave').onclick = async () => {
+    const clean = { ...modelDraft };
+    ['colors', 'parts', 'spec'].forEach(k => { if (clean[k] && !Object.keys(clean[k]).length) delete clean[k]; });
+    if (clean.scale?.every(v => v === 1)) delete clean.scale;
+    const empty = !Object.keys(clean).length;
+    await fetch('/api/models', { method: 'POST', body: JSON.stringify({ id: model.id, edit: empty ? null : clean }) });
+    if (empty) delete models[model.id]; else models[model.id] = clean;
+    renderModelList(); toast('💾 Модель сохранена — её увидит игра');
+  };
+  $('#mDrop').onclick = async () => {
+    if (!confirm('Вернуть модель к исходной?')) return;
+    await fetch('/api/models', { method: 'POST', body: JSON.stringify({ id: model.id, edit: null }) });
+    delete models[model.id]; openModel(model.id);
+  };
+}
+
+// ---------- scene / modes ----------
+function open(id) {
+  current = items.find(i => i.id === id);
+  if (!current || !lab) return;
+  asked = null; answered = null; selection = null; dirty = false;
+  gameWin.PDD_SCENE_EDITS = edits; gameWin.PDD_MODEL_EDITS = { ...models };
+  lab.show(id, mode === 'drive');
+  if (mode === 'edit') setFreeCam(true);
+  gameWin.game.setPaused(false);
+  renderList(); renderPanel(); scrollToCurrent();
+  history.replaceState(null, '', '#' + id);
+}
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+  $('#hud').classList.toggle('hide', m !== 'drive'); $('#keys').classList.toggle('hide', m !== 'drive');
+  if (m === 'models') { renderList(); openModel(model?.id || 'vehicle:hatch'); return; }
+  model = null;
+  setFreeCam(m === 'edit');
+  renderList();
+  if (current) open(current.id); else renderPanel();
+}
+function setFreeCam(on) {
+  lab.lab.freeCam = on;
+  $('#camFree').classList.toggle('on', on);
+  if (on && mode !== 'models') { const o = lab.lab.orbit; o.target.set(0, 0, lab.lab.origin); o.yaw = 0; o.pitch = 0.85; o.size = 48; }
+}
+document.querySelectorAll('#modes button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+$('#camFree').onclick = () => setFreeCam(!lab.lab.freeCam);
+$('#reload').onclick = () => mode === 'models' ? openModel(model.id, true) : current && open(current.id);
+$('#freeRide').onclick = () => {
+  if (mode !== 'drive') setMode('drive');
+  current = null; asked = null; gameWin.game.reset(); lab.state.attract = false; setFreeCam(false); renderList(); renderPanel();
+};
+function markGroup(sel, attr, val) { document.querySelectorAll(sel + ' button').forEach(b => b.classList.toggle('on', b.dataset[attr] === val)); }
+document.querySelectorAll('#weather button').forEach(b => b.onclick = () => { gameWin.game.setWeather(b.dataset.w || null); markGroup('#weather', 'w', b.dataset.w); });
+document.querySelectorAll('#season button').forEach(b => b.onclick = () => { gameWin.game.setSeason(b.dataset.s); markGroup('#season', 's', b.dataset.s); });
+document.querySelectorAll('#devices button').forEach(b => b.onclick = () => { size = b.dataset.size; markGroup('#devices', 'size', size); resize(); });
+function resize() {
+  const wrap = $('#frameWrap').getBoundingClientRect();
+  if (size === 'fill') { Object.assign(frame.style, { width: wrap.width - 24 + 'px', height: wrap.height - 24 + 'px', transform: '', borderRadius: '14px' }); }
+  else {
+    const [w, h] = size.split('x').map(Number), k = Math.min(1, (wrap.height - 24) / h, (wrap.width - 24) / w);
+    Object.assign(frame.style, { width: w + 'px', height: h + 'px', transform: `scale(${k})`, borderRadius: '22px' });
+  }
+  gameWin?.dispatchEvent(new Event('resize'));
+}
+addEventListener('resize', resize);
+
+// ---------- ship ----------
+$('#ship').onclick = () => $('#shipDlg').showModal();
+$('#buildBtn').onclick = async () => {
+  await fetch('/api/build', { method: 'POST', body: '{}' });
+  $('#buildLog').classList.remove('hide');
+  const poll = async () => {
+    const b = await fetch('/api/build').then(r => r.json());
+    $('#buildLog').textContent = b.log.join('\n') + (b.running ? '\n⏳ …' : b.code === 0 ? '\n✅ Готово — приложение на телефоне' : `\n❌ Ошибка (код ${b.code})`);
+    $('#buildLog').scrollTop = 1e9;
+    if (b.running) setTimeout(poll, 1500);
+  };
+  poll();
+};
+
+// ---------- mouse & keys in the game frame ----------
+function bindFrameInput() {
+  const doc = gameWin.document, canvas = () => doc.querySelector('canvas');
+  const ndc = e => { const r = canvas().getBoundingClientRect(); return [(e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1]; };
+  let drag = null;
+  doc.addEventListener('mousedown', e => {
+    if (!lab.lab.freeCam) return;
+    const [nx, ny] = ndc(e);
+    if (mode === 'models' && !e.shiftKey) {
+      const hit = lab.pickPart(nx, ny);
+      if (hit) { part = hit; renderModelPanel(); }
+    }
+    if (mode === 'edit' && !e.shiftKey) {
+      const d = lab.pick(nx, ny); selection = d; renderEditPanel();
+      if (d) { const g = lab.ground(nx, ny); drag = { kind: 'move', dx: d.x - g.x, dz: d.z + lab.lab.origin - g.z }; return; }
+    }
+    drag = { kind: e.shiftKey ? 'pan' : 'orbit', x: e.clientX, y: e.clientY };
+  }, true);
+  doc.addEventListener('mousemove', e => {
+    if (!drag) return;
+    const o = lab.lab.orbit;
+    if (drag.kind === 'move') {
+      const [nx, ny] = ndc(e), g = lab.ground(nx, ny); if (!g) return;
+      drag.last = lab.update({ x: +(g.x + drag.dx).toFixed(2), z: +(g.z + drag.dz - lab.lab.origin).toFixed(2) }); return;
+    }
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
+    if (drag.kind === 'orbit') { o.yaw -= dx * 0.008; o.pitch = Math.max(0.1, Math.min(1.5, o.pitch + dy * 0.006)); }
+    else { const k = o.size / canvas().clientHeight;
+      o.target.x += (Math.cos(o.yaw) * dx + Math.sin(o.yaw) * dy) * k;
+      o.target.z += (-Math.sin(o.yaw) * dx + Math.cos(o.yaw) * dy) * k; }
+  });
+  doc.addEventListener('mouseup', () => { if (drag?.kind === 'move' && drag.last) record(drag.last); drag = null; });
+  doc.addEventListener('wheel', e => {
+    if (!lab.lab.freeCam) return;
+    e.preventDefault(); const o = lab.lab.orbit; o.size = Math.max(3, Math.min(160, o.size * Math.exp(e.deltaY * 0.001)));
+  }, { passive: false });
+  [doc, document].forEach(d => { d.addEventListener('keydown', key(true)); d.addEventListener('keyup', key(false)); });
+}
+const held = new Set();
+function key(down) {
+  return e => {
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+    const k = e.key.toLowerCase();
+    if (down && mode === 'edit' && selection) {
+      if (k === 'q' || k === 'e') return record(lab.update({ rotY: selection.rotY + (k === 'q' ? 1 : -1) * Math.PI / 12 }));
+      if (k === 'delete' || k === 'backspace') return record(lab.update({ visible: false }));
+    }
+    const map = { arrowup: 'gas', w: 'gas', arrowdown: 'brake', s: 'brake', arrowleft: 'left', a: 'left', arrowright: 'right', d: 'right' };
+    if (!map[k] || mode === 'edit' || mode === 'models') return;
+    e.preventDefault();
+    down ? held.add(map[k]) : held.delete(map[k]);
+    document.querySelectorAll('#keys span').forEach(s => s.classList.toggle('on', held.has(s.dataset.k)));
+    gameWin.game.setGas(held.has('gas')); gameWin.game.setBrake(held.has('brake'));
+    gameWin.game.setSteering((held.has('left') ? 1 : 0) - (held.has('right') ? 1 : 0));
+  };
+}
+
+// ---------- boot ----------
+frame.onload = async () => {
+  gameWin = frame.contentWindow;
+  await new Promise(r => { const t = setInterval(() => { if (gameWin.__lab && gameWin.game) { clearInterval(t); r(); } }, 50); });
+  lab = gameWin.__lab;
+  await loadData();
+  const num = s => (/(\d+)\D+(\d+)/.exec(s.ticket || '') || [0, 999, 999]).slice(1).map(Number);
+  items = [...lab.junctions(), ...lab.roads()].sort((a, b) => { const [a1, a2] = num(a), [b1, b2] = num(b); return a1 - b1 || a2 - b2; });
+  bindFrameInput(); markGroup('#devices', 'size', size); markGroup('#weather', 'w', ''); resize(); renderChips();
+  mode = 'view'; document.querySelector('#modes [data-mode=view]').classList.add('on');
+  const start = location.hash.slice(1);
+  open(items.find(i => i.id === start) ? start : items[0].id);
+  (function loop() { lab.tick(); requestAnimationFrame(loop); })();
+};
+</script>
+</body>
+</html>

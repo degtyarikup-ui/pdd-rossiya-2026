@@ -159,7 +159,8 @@ class GameController extends StateNotifier<GameState> {
     if (state.phase == GamePhase.ready || state.phase == GamePhase.gameOver) {
       return;
     }
-    if (lane != 'left' && lane != 'right') return;
+    // 'against': any lane of a one-way road, driven against its flow.
+    if (lane != 'left' && lane != 'right' && lane != 'against') return;
     state = state.copyWith(lane: lane, oncoming: oncoming);
   }
 
@@ -175,6 +176,8 @@ class GameController extends StateNotifier<GameState> {
           'speeding',
           'overtaking',
           'pedestrian',
+          'one_way',
+          'roadworks',
         }.contains(type) ||
         episode < 0 ||
         !_violationEpisodes.add(episode)) {

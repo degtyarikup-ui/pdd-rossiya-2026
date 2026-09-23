@@ -7,15 +7,19 @@ import 'package:pdd_app/l10n/l10n.dart';
 class GameDebugSheet extends StatefulWidget {
   final String? weatherOverride;
   final String? seasonOverride;
+  final bool unlimitedFuel;
   final ValueChanged<String?> onWeatherChanged;
   final ValueChanged<String?> onSeasonChanged;
+  final ValueChanged<bool> onUnlimitedFuelChanged;
 
   const GameDebugSheet({
     super.key,
     required this.weatherOverride,
     required this.seasonOverride,
+    required this.unlimitedFuel,
     required this.onWeatherChanged,
     required this.onSeasonChanged,
+    required this.onUnlimitedFuelChanged,
   });
 
   @override
@@ -25,6 +29,7 @@ class GameDebugSheet extends StatefulWidget {
 class _GameDebugSheetState extends State<GameDebugSheet> {
   late String? _weather = widget.weatherOverride;
   late String? _season = widget.seasonOverride;
+  late bool _unlimitedFuel = widget.unlimitedFuel;
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +61,30 @@ class _GameDebugSheetState extends State<GameDebugSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: _unlimitedFuel,
+              secondary: Icon(
+                Icons.all_inclusive_rounded,
+                color: _unlimitedFuel ? colors.gold : colors.secondaryText,
+              ),
+              title: Text(
+                appL10n.gameDebugUnlimitedFuel,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: colors.primaryText,
+                ),
+              ),
+              subtitle: Text(
+                appL10n.gameDebugUnlimitedFuelHint,
+                style: TextStyle(color: colors.secondaryText),
+              ),
+              onChanged: (value) {
+                setState(() => _unlimitedFuel = value);
+                widget.onUnlimitedFuelChanged(value);
+              },
+            ),
+            const SizedBox(height: 12),
             title(appL10n.gameSceneWeather),
             const SizedBox(height: 8),
             Wrap(

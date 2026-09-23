@@ -4,20 +4,42 @@
     {
       "name": "rs-web",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "build/web"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8765",
+        "--directory",
+        "build/web"
+      ],
       "port": 8765
     },
     {
       "name": "landing-ru",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8901", "--directory", "web_landing/ru"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8901",
+        "--directory",
+        "web_landing/ru"
+      ],
       "port": 8901
     },
     {
       "name": "blog-admin",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["tools/blog_admin/server.py"],
+      "runtimeArgs": [
+        "tools/blog_admin/server.py"
+      ],
       "port": 8930
+    },
+    {
+      "name": "game-lab",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "tools/game_lab/server.py"
+      ],
+      "port": 8940
     }
   ]
 }

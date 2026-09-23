@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -39,31 +40,46 @@ class GameHud extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final notice =
-        state.lastViolation != null && state.lastViolation != 'oncoming'
+        state.lastViolation != null &&
+            state.lastViolation != 'oncoming' &&
+            state.lastViolation != 'one_way'
         ? state.lastViolation
         : state.oncoming
-        ? 'oncoming'
+        ? (state.lane == 'against' ? 'one_way' : 'oncoming')
         : null;
-    Widget surface(Widget child) => Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+    // A coloured pill with a white icon and value (design: HUD counters).
+    Widget metric(String icon, Color color, String value) => Container(
+      key: ValueKey('hud-$icon'),
+      padding: const EdgeInsets.fromLTRB(7, 6, 8, 6),
       decoration: BoxDecoration(
-        color: colors.cardBackground,
-        borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
+        color: color,
+        borderRadius: BorderRadius.circular(90),
       ),
-      child: child,
-    );
-    Widget metric(IconData icon, Color color, String value) => surface(
-      Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 17, color: color),
-          const SizedBox(width: 5),
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: Center(
+              child: SvgPicture.asset(
+                'assets/icons/game/$icon.svg',
+                colorFilter: const ColorFilter.mode(
+                  AppColors.white,
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 13,
+            style: const TextStyle(
+              fontFamily: 'Onest',
+              fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: colors.primaryText,
+              color: AppColors.white,
+              height: 1,
             ),
           ),
         ],
@@ -93,7 +109,7 @@ class GameHud extends StatelessWidget {
                         unlimited: state.fuelUnlimited,
                       ),
                     ),
-                    if (showGarage) const SizedBox(height: 8),
+                    if (showGarage) const SizedBox(height: 20),
                     // The button shows the car being driven: choosing a
                     // different model in the garage changes it here too. It is
                     // greyed while controls are locked so the HUD never jumps;
@@ -102,10 +118,8 @@ class GameHud extends StatelessWidget {
                       Opacity(
                         opacity: onGarage != null ? 1 : 0.55,
                         child: Material(
-                          color: colors.cardBackground,
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.smallRadius,
-                          ),
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(8),
                           clipBehavior: Clip.antiAlias,
                           child: InkWell(
                             onTap: onGarage,
@@ -114,19 +128,24 @@ class GameHud extends StatelessWidget {
                               button: true,
                               enabled: onGarage != null,
                               label: appL10n.gameGarage,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 2,
-                                ),
-                                child: SizedBox(
-                                  width: 78,
-                                  height: 54,
-                                  child: ExcludeSemantics(
-                                    child: GameCarThumbnail(
-                                      car: GameCar(vehicleId, vehiclePaint),
-                                      loader: thumbnail,
-                                      cache: thumbnailCache,
+                              child: SizedBox(
+                                width: 68,
+                                height: 52,
+                                // The car fills the card (the render has
+                                // transparent margins round the model).
+                                child: Center(
+                                  child: Transform.scale(
+                                    scale: 1.45,
+                                    child: SizedBox(
+                                      width: 49,
+                                      height: 38,
+                                      child: ExcludeSemantics(
+                                        child: GameCarThumbnail(
+                                          car: GameCar(vehicleId, vehiclePaint),
+                                          loader: thumbnail,
+                                          cache: thumbnailCache,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -143,8 +162,9 @@ class GameHud extends StatelessWidget {
                     alignment: Alignment.topRight,
                     child: Wrap(
                       alignment: WrapAlignment.end,
-                      spacing: 8,
-                      runSpacing: 8,
+                      spacing: 4,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         if (state.limitKmH != null)
                           // A miniature 3.24 sign: the limit currently in force.
@@ -174,14 +194,14 @@ class GameHud extends StatelessWidget {
                           label:
                               '${appL10n.gameViolations}: ${state.violationCount}',
                           child: metric(
-                            Icons.warning_amber_rounded,
+                            'hud_warning',
                             colors.red,
                             '${state.violationCount}',
                           ),
                         ),
                         metric(
-                          Icons.route_rounded,
-                          colors.accent,
+                          'hud_location',
+                          AppColors.primaryText,
                           state.distanceM >= 1000
                               ? '${(state.distanceM / 1000).toStringAsFixed(1)} ${appL10n.gameKilometers}'
                               : '${state.distanceM} ${appL10n.gameMeters}',
@@ -193,7 +213,7 @@ class GameHud extends StatelessWidget {
                             button: onLeaderboard != null,
                             label: appL10n.gameWeeklyRating,
                             child: metric(
-                              Icons.star_rounded,
+                              'hud_star',
                               colors.gold,
                               '${state.score}',
                             ),
@@ -226,6 +246,8 @@ class GameHud extends StatelessWidget {
                         child: Text(
                           switch (notice) {
                             'oncoming' => appL10n.gameOncoming,
+                            'one_way' => appL10n.gameOneWayAgainst,
+                            'roadworks' => appL10n.gameRoadworksHit,
                             'collision' => appL10n.gameCollision,
                             'offroad' => appL10n.gameOffroad,
                             'priority' => appL10n.gamePriorityViolation,

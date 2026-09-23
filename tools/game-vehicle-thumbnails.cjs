@@ -10,7 +10,7 @@ const path = require('node:path');
     await page.goto((process.env.GAME_URL || 'http://127.0.0.1:8938') + '/assets/game/');
     await page.waitForFunction(() => window.PDD_VEHICLES && window.game);
     await page.evaluate(() => window.game.setPaused(true));
-    for (const id of ['hatch', 'sedan', 'suv', 'pickup']) {
+    for (const id of ['hatch', 'sedan', 'coupe', 'wagon', 'suv', 'pickup', 'cyber']) {
       await page.evaluate(id => {
         document.body.replaceChildren();
         const scene = new THREE.Scene();

@@ -23,6 +23,9 @@ class GameSituation {
       correctAnswerIndex < options.length;
   final String id;
   final String ticket;
+  final String? sourceQuestionId;
+  final String? country;
+  final String? category;
   final String title;
   final String explanation;
   final String pddRule;
@@ -34,6 +37,9 @@ class GameSituation {
   const GameSituation({
     required this.id,
     required this.ticket,
+    this.sourceQuestionId,
+    this.country,
+    this.category,
     required this.title,
     required this.explanation,
     required this.pddRule,
@@ -47,6 +53,9 @@ class GameSituation {
     return GameSituation(
       id: json['id'] as String? ?? '',
       ticket: json['ticket'] as String? ?? '',
+      sourceQuestionId: json['sourceQuestionId'] as String?,
+      country: json['country'] as String?,
+      category: json['category'] as String?,
       title: json['title'] as String? ?? '',
       explanation: json['explanation'] as String? ?? '',
       pddRule: json['pddRule'] as String? ?? '',
@@ -74,6 +83,9 @@ class GameSituation {
   Map<String, dynamic> toJson() => {
     'id': id,
     'ticket': ticket,
+    if (sourceQuestionId != null) 'sourceQuestionId': sourceQuestionId,
+    if (country != null) 'country': country,
+    if (category != null) 'category': category,
     'title': title,
     'explanation': explanation,
     'pddRule': pddRule,

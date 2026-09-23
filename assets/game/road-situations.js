@@ -4,6 +4,9 @@ window.PDD_ROAD_SITUATIONS = [
  {
   "id": "road_1_16",
   "ticket": "Билет 1 · Вопрос 16",
+  "sourceQuestionId": "764a2188d8c6e13d0b510eca4f241cbf",
+  "country": "ru",
+  "category": "ab",
   "type": "road_speed",
   "title": "С какой максимальной скоростью можно продолжить движение за знаком?",
   "explanation": "В жилой зоне, согласно знаку, в которую Вы въезжаете, разрешается движение со скоростью не более 20 км/ч.(«Дорожные знаки» 5.21, пункт 10.2 ПДД).",
@@ -40,6 +43,9 @@ window.PDD_ROAD_SITUATIONS = [
  {
   "id": "road_6_10",
   "ticket": "Билет 6 · Вопрос 10",
+  "sourceQuestionId": "98fb437543d9b1d123cf0cebeec7be6e",
+  "country": "ru",
+  "category": "ab",
   "type": "road_speed",
   "title": "С какой максимальной скоростью Вы имеете право продолжить движение на легковом автомобиле?",
   "explanation": "На автомагистрали разрешается более скоростное движение. При этом допустимая максимальная скорость равна 110 км/ч.(«Дорожные знаки» 5.1. «Автомагистраль», пункт 10.3 ПДД)",
@@ -59,6 +65,7 @@ window.PDD_ROAD_SITUATIONS = [
   "sourceImage": "912c11e435dbe941191ac47cac98bb96",
   "scene": {
    "kind": "speed",
+   "motorway": true,
    "signs": [
     {
      "code": "5.1",
@@ -69,11 +76,14 @@ window.PDD_ROAD_SITUATIONS = [
    "limitKmH": 110,
    "endSign": "5.2"
   },
-  "note": "Sign 5.1 (motorway): 110 km/h for a car; the two-lane road is schematic."
+  "note": "Sign 5.1 (motorway): 110 km/h for a car; separate carriageways are rendered."
  },
  {
   "id": "road_13_10",
   "ticket": "Билет 13 · Вопрос 10",
+  "sourceQuestionId": "0de0d49f52dfe615b1a7b6d0c6eecea7",
+  "country": "ru",
+  "category": "ab",
   "type": "road_speed",
   "title": "С какой максимальной скоростью Вы имеете право продолжить движение на легковом автомобиле?",
   "explanation": "Наименование населённого пункта обозначено знаком с синим фоном. Это значит, на данном участке дороги не действуют пункты Правил, устанавливающие порядок движения в населённых пунктах. Можете продолжить движение со скоростью не более 90 км/ч.(«Дорожные знаки», пункт 10.3 ПДД)",
@@ -109,6 +119,9 @@ window.PDD_ROAD_SITUATIONS = [
  {
   "id": "road_16_10",
   "ticket": "Билет 16 · Вопрос 10",
+  "sourceQuestionId": "cae870309f61865420a0d4aafa053f27",
+  "country": "ru",
+  "category": "ab",
   "type": "road_speed",
   "title": "С какой максимальной скоростью Вы имеете право продолжить движение вне населенных пунктов на легковом автомобиле?",
   "explanation": "Действие происходит вне населённого пункта. После проезда знака 3.25 «Конец зоны ограничения максимальной скорости» Вам разрешается движение с максимальной скоростью 90 км/ч.(«Дорожные знаки», пункт 10.3 ПДД)",
@@ -128,11 +141,25 @@ window.PDD_ROAD_SITUATIONS = [
   "sourceImage": "def37a56d498740728e91902c2a75cfc",
   "scene": {
    "kind": "speed",
+   "outsideSettlement": true,
+   "approachLimitKmH": 70,
    "signs": [
+    {
+     "code": "5.24.1",
+     "z": -32,
+     "side": "right"
+    },
+    {
+     "code": "3.24",
+     "z": -22,
+     "side": "right",
+     "speedValue": 70
+    },
     {
      "code": "3.25",
      "z": 12,
-     "side": "right"
+     "side": "right",
+     "speedValue": 70
     }
    ],
    "limitKmH": 90,
@@ -143,6 +170,9 @@ window.PDD_ROAD_SITUATIONS = [
  {
   "id": "road_2_11",
   "ticket": "Билет 2 · Вопрос 11",
+  "sourceQuestionId": "e199aabae4eac33bc54a26df34fa47af",
+  "country": "ru",
+  "category": "ab",
   "type": "road_overtake",
   "title": "Разрешено ли Вам обогнать мотоцикл?",
   "explanation": "Перекресток равнозначный. На равнозначных перекрёстках обгон запрещён всех видов транспорта всеми транспортными средствами. Мотоциклист притормаживает, он уступает помехе справа. То же самое делаете и Вы. В противном случае Вы нарушите и правила обгона, и правила проезда перекрёстков.(Пункты 11.4, 13.11 ПДД).",
@@ -161,30 +191,48 @@ window.PDD_ROAD_SITUATIONS = [
    {
     "label": "Мотоцикл",
     "color": "#8B5CF6"
+   },
+   {
+    "label": "Фургон",
+    "color": "#F2C230"
    }
   ],
   "sourceImage": "ddd733bef00665b6608b3e08d9008821",
   "scene": {
    "kind": "overtake",
    "overtake": false,
+   "junction": {
+    "z": 24,
+    "priority": "equal"
+   },
    "vehicles": [
     {
      "type": "motorcycle",
      "name": "Мотоцикл",
      "lane": "ahead",
      "z": 14,
-     "speed": 7,
-     "color": "#8B5CF6",
-     "blinker": "left",
-     "maneuver": "turn_left_at_junction"
+     "speed": 5,
+     "color": "#8B5CF6"
+    },
+    {
+     "type": "van",
+     "name": "Фургон",
+     "lane": "right",
+     "z": 24,
+     "speed": 6,
+     "color": "#F2C230",
+     "x": -10
     }
    ]
   },
-  "note": "Motorcycle ahead signals a left turn before the junction: overtaking prohibited (11.2)."
+  "note": "Equal junction: motorcycle ahead and bus approaching from the right; both player and motorcycle yield."
  },
  {
   "id": "road_4_11",
   "ticket": "Билет 4 · Вопрос 11",
+  "sourceQuestionId": "fb63e3c75141dea70c95ec1adf96b16d",
+  "country": "ru",
+  "category": "ab",
   "type": "road_overtake",
   "title": "Разрешено ли Вам обогнать мотоцикл?",
   "explanation": "Обгон запрещён на нерегулируемых перекрестках при движении по дороге не являющейся главной. Мотоциклист и Вы согласно знаку 2.1 «Главная дорога» двигаетесь по главной. Соответственно Вы можете производить обгон.(«Дорожные знаки», пункт 11.4 ПДД)",
@@ -209,10 +257,14 @@ window.PDD_ROAD_SITUATIONS = [
   "scene": {
    "kind": "overtake",
    "overtake": true,
+   "junction": {
+    "z": 24,
+    "priority": "main"
+   },
    "signs": [
     {
      "code": "2.1",
-     "z": 60,
+     "z": 8,
      "side": "right"
     }
    ],
@@ -232,6 +284,9 @@ window.PDD_ROAD_SITUATIONS = [
  {
   "id": "road_5_11",
   "ticket": "Билет 5 · Вопрос 11",
+  "sourceQuestionId": "120e58fc8c6b182e4faf9d0cc2930645",
+  "country": "ru",
+  "category": "ab",
   "type": "road_overtake",
   "title": "Разрешен ли Вам обгон?",
   "explanation": "Обгон запрещён на равнозначных перекрёстках. Вы же, согласно знаку 2.3.1 «Пересечение со второстепенной дорогой», двигаетесь по направлению главной дороги. Можете совершить обгон.(«Дорожные знаки», пункт 11.4 ПДД)",
@@ -256,10 +311,14 @@ window.PDD_ROAD_SITUATIONS = [
   "scene": {
    "kind": "overtake",
    "overtake": true,
+   "junction": {
+    "z": 60,
+    "priority": "main"
+   },
    "signs": [
     {
-     "code": "1.6",
-     "z": 10,
+     "code": "2.3.1",
+     "z": 8,
      "side": "right"
     }
    ],
@@ -274,11 +333,14 @@ window.PDD_ROAD_SITUATIONS = [
     }
    ]
   },
-  "note": "Sign 1.6 warns of an equal junction far ahead; overtaking on this stretch is allowed."
+  "note": "Sign 2.3.1 warns of a secondary-road crossing ahead: overtaking on the main road is allowed."
  },
  {
   "id": "road_9_5",
   "ticket": "Билет 9 · Вопрос 5",
+  "sourceQuestionId": "56715ea708c2149c01bf1bfdd7e0bba3",
+  "country": "ru",
+  "category": "ab",
   "type": "road_overtake",
   "title": "Можно ли Вам выполнить обгон при наличии данной разметки?",
   "explanation": "Разметку 1.11 разрешается пересекать со стороны прерывистой линии, а также и со стороны сплошной, но только при завершении обгона или объезда препятствия. В данной ситуации Вам выполнить обгон можно, независимо от скорости трактора.(«Горизонтальная разметка»)",
@@ -321,6 +383,9 @@ window.PDD_ROAD_SITUATIONS = [
  {
   "id": "road_16_11",
   "ticket": "Билет 16 · Вопрос 11",
+  "sourceQuestionId": "fdc633762f291c5a0796920bc0780667",
+  "country": "ru",
+  "category": "ab",
   "type": "road_overtake",
   "title": "Разрешается ли Вам выполнить обгон в данной ситуации?",
   "explanation": "Перед Вами неравнозначный перекресток. Вы находитесь на главной дороге. Правила обгона разрешают в данной ситуации производить обгон любого транспортного средства.(Пункт 11.4 ПДД)",
@@ -345,10 +410,14 @@ window.PDD_ROAD_SITUATIONS = [
   "scene": {
    "kind": "overtake",
    "overtake": true,
+   "junction": {
+    "z": 24,
+    "priority": "main"
+   },
    "signs": [
     {
      "code": "2.1",
-     "z": 40,
+     "z": 8,
      "side": "right"
     }
    ],
@@ -369,6 +438,9 @@ window.PDD_ROAD_SITUATIONS = [
  {
   "id": "road_17_5",
   "ticket": "Билет 17 · Вопрос 5",
+  "sourceQuestionId": "5eba5d47b4007432fc2a8258287bae21",
+  "country": "ru",
+  "category": "ab",
   "type": "road_overtake",
   "title": "Можно ли Вам выполнить обгон при наличии данной разметки?",
   "explanation": "Горизонтальную разметку 1.11 разрешается пересекать со стороны прерывистой линии для обгона или объезда. С Вашей стороны - сплошная линия. В такой ситуации пересекать ее нельзя.(«Горизонтальная разметка»)",
@@ -411,6 +483,9 @@ window.PDD_ROAD_SITUATIONS = [
  {
   "id": "road_18_11",
   "ticket": "Билет 18 · Вопрос 11",
+  "sourceQuestionId": "235f0f55e112ee1bcd341b6e9d22cc7f",
+  "country": "ru",
+  "category": "ab",
   "type": "road_overtake",
   "title": "Можно ли водителю легкового автомобиля начать обгон?",
   "explanation": "Водитель грузовика «Б», движущегося позади легкового автомобиля, уже приступил к обгону. Помеху ему создавать нельзя.(Пункт 11.2 ПДД)",
@@ -433,10 +508,6 @@ window.PDD_ROAD_SITUATIONS = [
    {
     "label": "Грузовик А",
     "color": "#B8A98A"
-   },
-   {
-    "label": "Встречный",
-    "color": "#2BC280"
    }
   ],
   "sourceImage": "30c2da37d1fa7b6066d868d270790224",
@@ -448,37 +519,33 @@ window.PDD_ROAD_SITUATIONS = [
      "type": "truck",
      "name": "Грузовик Б",
      "lane": "ahead",
-     "z": 14,
-     "speed": 8,
+     "z": -40,
+     "speed": 14,
      "color": "#C9C2B2",
      "badge": "Б",
      "blinker": "left",
-     "maneuver": "overtake"
+     "maneuver": "overtake",
+     "joinsAtQuestion": true
     },
     {
      "type": "truck",
      "name": "Грузовик А",
      "lane": "ahead",
-     "z": 36,
+     "z": 24,
      "speed": 5,
      "color": "#B8A98A",
      "badge": "А"
-    },
-    {
-     "type": "car",
-     "name": "Встречный",
-     "lane": "oncoming",
-     "z": 260,
-     "speed": 12,
-     "color": "#2BC280"
     }
    ]
   },
-  "note": "Truck Б ahead has already started overtaking (left signal): prohibited (11.2)."
+  "note": "Truck Б comes up behind the player as the question starts and signals left: it has begun overtaking, so the player may not (11.2)."
  },
  {
   "id": "road_20_11",
   "ticket": "Билет 20 · Вопрос 11",
+  "sourceQuestionId": "a4beacf74ef3ce64eaa2a68340c86f84",
+  "country": "ru",
+  "category": "ab",
   "type": "road_overtake",
   "title": "Можно ли Вам начать обгон грузового автомобиля в данной ситуации?",
   "explanation": "В данной ситуации Вам обгон грузового автомобиля начинать нельзя, хотя зона запрещения обгона заканчивается. Причина – водителю запрещается выполнять обгон, если ТС, движущееся впереди, в данном случае грузовик, уже производит обгон.(Пункт 11.2 ПДД)",
@@ -523,7 +590,8 @@ window.PDD_ROAD_SITUATIONS = [
      "speed": 8,
      "color": "#E05A4E",
      "blinker": "left",
-     "maneuver": "overtake"
+     "maneuver": "overtake",
+     "alreadyOvertaking": true
     },
     {
      "type": "truck",
@@ -540,6 +608,9 @@ window.PDD_ROAD_SITUATIONS = [
  {
   "id": "road_24_11",
   "ticket": "Билет 24 · Вопрос 11",
+  "sourceQuestionId": "1d52692921a28e842e2d845e3feda5bf",
+  "country": "ru",
+  "category": "ab",
   "type": "road_overtake",
   "title": "Разрешено ли Вам выполнить обгон?",
   "explanation": "Знак 3.20 «Обгон запрещён» запрещает обгон всех транспортных средств, кроме тихоходных т. с., гужевых повозок, мопедов и двухколесных мотоциклов без бокового прицепа.Обгон грузового автомобиля запрещён.(«Дорожные знаки»)",
@@ -587,6 +658,9 @@ window.PDD_ROAD_SITUATIONS = [
  {
   "id": "road_29_3",
   "ticket": "Билет 29 · Вопрос 3",
+  "sourceQuestionId": "a4b56b832895b21c610340152732b743",
+  "country": "ru",
+  "category": "ab",
   "type": "road_overtake",
   "title": "Разрешено ли Вам выполнить обгон?",
   "explanation": "Вспоминаем, что знак 3.20 «Обгон запрещён» запрещает обгон всех ТС кроме тихоходных ТС, гужевых повозок, мопедов и двухколесных мотоциклов без бокового прицепа. Обгон Вам разрешён вне зависимости от скорости мотоциклиста.(«Дорожные знаки»)",
@@ -634,6 +708,9 @@ window.PDD_ROAD_SITUATIONS = [
  {
   "id": "road_29_11",
   "ticket": "Билет 29 · Вопрос 11",
+  "sourceQuestionId": "8b0addcc697856fee116ab77f4d1efae",
+  "country": "ru",
+  "category": "ab",
   "type": "road_overtake",
   "title": "Разрешается ли Вам выполнить обгон?",
   "explanation": "Перекрёсток равнозначный. На равнозначных перекрёстках обгон запрещён.(Пункт 11.4 ПДД)",
@@ -658,6 +735,10 @@ window.PDD_ROAD_SITUATIONS = [
   "scene": {
    "kind": "overtake",
    "overtake": false,
+   "junction": {
+    "z": 24,
+    "priority": "equal"
+   },
    "vehicles": [
     {
      "type": "truck",
@@ -674,6 +755,9 @@ window.PDD_ROAD_SITUATIONS = [
  {
   "id": "road_38_11",
   "ticket": "Билет 38 · Вопрос 11",
+  "sourceQuestionId": "71fc9623189673d56b891f0bbe7d9fe3",
+  "country": "ru",
+  "category": "ab",
   "type": "road_overtake",
   "title": "Можно ли Вам начать обгон?",
   "explanation": "Табличка 8.1.1 «Расстояние до объекта» под знаком 2.4 «Уступите дорогу» указывает расстояние от знака до пересечения неравнозначных дорог, на которых обгон разрешается по направлению главной дороги. Вы находитесь на второстепенной дороге, поэтому начатый обгон должен быть завершён до перекрёстка.(«Дорожные знаки», пункт 11.4 ПДД)",
@@ -698,6 +782,10 @@ window.PDD_ROAD_SITUATIONS = [
   "scene": {
    "kind": "overtake",
    "overtake": "before_intersection",
+   "junction": {
+    "z": 208,
+    "priority": "secondary"
+   },
    "signs": [
     {
      "code": "2.4",
@@ -722,6 +810,9 @@ window.PDD_ROAD_SITUATIONS = [
  {
   "id": "road_13_11",
   "ticket": "Билет 13 · Вопрос 11",
+  "sourceQuestionId": "dbeb93458947c8647335e65df9a50ea9",
+  "country": "ru",
+  "category": "ab",
   "type": "road_overtake",
   "title": "Сколько транспортных средств Вам можно обогнать одновременно после проезда пешеходного перехода?",
   "explanation": "Правилами не оговаривается количество обгоняемых транспортных средств. Запрещается обгон на пешеходных переходах. Факторов, запрещающих обгон, нет. Можете обогнать все три ТС. Но всегда следует помнить: обгон – классический вид риска водителя.(Пункты 1.2, 11.1, 11.4 ПДД)",
@@ -799,6 +890,9 @@ window.PDD_ROAD_SITUATIONS = [
  {
   "id": "road_34_19",
   "ticket": "Билет 34 · Вопрос 19",
+  "sourceQuestionId": "2c89f94cd878850827e8c0511a4938cb",
+  "country": "ru",
+  "category": "ab",
   "type": "road_overtake",
   "title": "При движении по двухполосной дороге за грузовым автомобилем у Вас появилась возможность совершить обгон. Ваши действия?",
   "explanation": "Движущийся впереди большегрузный грузовой автомобиль – это «движущаяся стена», ограничивающая обзорность. Только на дистанции можно просматривать достаточное для обгона расстояние, своевременно информировать и быть замеченным обгоняемым. При необходимости своевременно прекратить обгон и вернуться на свою полосу.(«Техника управления автомобилем»)",

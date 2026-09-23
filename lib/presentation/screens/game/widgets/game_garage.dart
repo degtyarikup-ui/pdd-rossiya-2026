@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
+import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 
@@ -89,11 +90,11 @@ class GameGarage extends StatefulWidget {
 }
 
 class _GameGarageState extends State<GameGarage> {
-  late final List<GameCar> _items = [
-    ...widget.cars,
-    if (widget.premium)
-      const GameCar(GameGarageService.cyber, GameGarageService.cyberPaint),
-  ];
+  // Premium: every model is open, in whichever paint is picked below.
+  late String _paint = widget.selected.paint;
+  List<GameCar> get _items => widget.premium
+      ? [for (final id in gameVehicleIds) GameCar(id, _paint)]
+      : widget.cars;
 
   @override
   Widget build(BuildContext context) {
@@ -119,19 +120,23 @@ class _GameGarageState extends State<GameGarage> {
                 ),
                 IconButton(
                   tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    HapticFeedbackHelper.tap();
+                    Navigator.pop(context);
+                  },
                   icon: const Icon(Icons.close_rounded),
                 ),
               ],
             ),
-            Text(
-              appL10n.gameGarageNextCar(widget.correctUntilNext),
-              style: TextStyle(
-                fontFamily: 'Onest',
-                fontSize: 13,
-                color: colors.secondaryText,
+            if (!widget.premium)
+              Text(
+                appL10n.gameGarageNextCar(widget.correctUntilNext),
+                style: TextStyle(
+                  fontFamily: 'Onest',
+                  fontSize: 13,
+                  color: colors.secondaryText,
+                ),
               ),
-            ),
             if (!widget.premium) ...[
               const SizedBox(height: 4),
               Row(
@@ -153,6 +158,46 @@ class _GameGarageState extends State<GameGarage> {
                     ),
                   ),
                 ],
+              ),
+            ],
+            if (widget.premium) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 36,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    for (final paint in gamePaintColors.keys)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Semantics(
+                          button: true,
+                          selected: paint == _paint,
+                          label: gamePaintName(paint),
+                          child: GestureDetector(
+                            onTap: () {
+                              HapticFeedbackHelper.select();
+                              setState(() => _paint = paint);
+                            },
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: gamePaintColors[paint],
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: paint == _paint
+                                      ? colors.accent
+                                      : colors.divider,
+                                  width: paint == _paint ? 3 : 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
             const SizedBox(height: 12),
@@ -185,7 +230,10 @@ class _GameGarageState extends State<GameGarage> {
                       borderRadius: BorderRadius.circular(18),
                       clipBehavior: Clip.antiAlias,
                       child: InkWell(
-                        onTap: () => Navigator.pop(context, car),
+                        onTap: () {
+                          HapticFeedbackHelper.select();
+                          Navigator.pop(context, car);
+                        },
                         child: Column(
                           children: [
                             Expanded(
@@ -287,16 +335,29 @@ class _GameCarThumbnailState extends State<GameCarThumbnail> {
     // old picture instead of showing it until something else rebuilds.
     if (old.car.key != widget.car.key) {
       _bytes = widget.cache[widget.car.key];
+      _attempts = 0;
       if (_bytes == null && widget.loader != null) _load();
     }
   }
+
+  int _attempts = 0;
 
   Future<void> _load() async {
     final car = widget.car;
     try {
       final url = await widget.loader!(car.id, car.paint);
       final comma = url.indexOf(',');
-      if (comma < 0) return;
+      if (comma < 0) {
+        // The engine is still loading: ask again shortly, so the real car in
+        // its real paint replaces the bundled picture as soon as it can.
+        if (_attempts++ < 30) {
+          await Future<void>.delayed(const Duration(seconds: 1));
+          if (mounted && widget.car.key == car.key && _bytes == null) {
+            await _load();
+          }
+        }
+        return;
+      }
       final bytes = base64Decode(url.substring(comma + 1));
       widget.cache[car.key] = bytes;
       // A slower render of a previous car must not overwrite the current one.
@@ -313,17 +374,15 @@ class _GameCarThumbnailState extends State<GameCarThumbnail> {
       return Image.memory(bytes, fit: BoxFit.contain, gaplessPlayback: true);
     }
     final id = widget.car.id;
-    if (const ['hatch', 'sedan', 'suv', 'pickup'].contains(id)) {
+    // Every model has a bundled picture of the same mesh (default paint):
+    // never an icon in place of the car.
+    if (gameVehicleIds.contains(id)) {
       return Image.asset(
         'assets/game/vehicle-$id.png',
         fit: BoxFit.contain,
         excludeFromSemantics: true,
       );
     }
-    return Icon(
-      Icons.directions_car_rounded,
-      size: 56,
-      color: gamePaintColors[widget.car.paint],
-    );
+    return const SizedBox.shrink();
   }
 }

@@ -1547,7 +1547,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameGaragePremiumCar.
   ///
   /// In ru, this message translates to:
-  /// **'Золотой кибертрак — для премиум-водителей'**
+  /// **'С премиумом открыты все машины и все цвета'**
   String get gameGaragePremiumCar;
 
   /// No description provided for @gameRevealTitle.
@@ -1640,6 +1640,18 @@ abstract class AppLocalizations {
   /// **'По календарю'**
   String get gameSceneCalendar;
 
+  /// No description provided for @gameDebugUnlimitedFuel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бесконечный бензин'**
+  String get gameDebugUnlimitedFuel;
+
+  /// No description provided for @gameDebugUnlimitedFuelHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ошибки не расходуют бензин'**
+  String get gameDebugUnlimitedFuelHint;
+
   /// No description provided for @gameSceneSummer.
   ///
   /// In ru, this message translates to:
@@ -1661,7 +1673,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameCollision.
   ///
   /// In ru, this message translates to:
-  /// **'Столкновение · отпустите газ'**
+  /// **'Столкновение'**
   String get gameCollision;
 
   /// No description provided for @gameOffroad.
@@ -1687,6 +1699,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Встречная полоса! Вернитесь вправо'**
   String get gameOncoming;
+
+  /// No description provided for @gameOneWayAgainst.
+  ///
+  /// In ru, this message translates to:
+  /// **'Одностороннее движение! Вы едете против потока'**
+  String get gameOneWayAgainst;
+
+  /// No description provided for @gameRoadworksHit.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы въехали в зону дорожных работ'**
+  String get gameRoadworksHit;
 
   /// No description provided for @gameCorrectAnswers.
   ///

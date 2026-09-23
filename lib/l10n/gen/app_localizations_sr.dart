@@ -857,7 +857,8 @@ class AppLocalizationsSr extends AppLocalizations {
   }
 
   @override
-  String get gameGaragePremiumCar => 'Zlatni sajbertrak — za premium vozače';
+  String get gameGaragePremiumCar =>
+      'Uz premium su otključani svi automobili i sve boje';
 
   @override
   String get gameRevealTitle => 'Novi auto!';
@@ -906,6 +907,12 @@ class AppLocalizationsSr extends AppLocalizations {
   String get gameSceneCalendar => 'Po kalendaru';
 
   @override
+  String get gameDebugUnlimitedFuel => 'Beskonačno gorivo';
+
+  @override
+  String get gameDebugUnlimitedFuelHint => 'Greške ne troše gorivo';
+
+  @override
   String get gameSceneSummer => 'Leto';
 
   @override
@@ -915,7 +922,7 @@ class AppLocalizationsSr extends AppLocalizations {
   String get gameSceneWinter => 'Zima';
 
   @override
-  String get gameCollision => 'Sudar · pustite gas';
+  String get gameCollision => 'Sudar';
 
   @override
   String get gameOffroad => 'Ivičnjak · skrenite ka kolovozu';
@@ -928,6 +935,12 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get gameOncoming => 'Suprotna traka! Vratite se udesno';
+
+  @override
+  String get gameOneWayAgainst => 'Jednosmerni put! Vozite suprotno od smera';
+
+  @override
+  String get gameRoadworksHit => 'Uleteli ste u zonu radova na putu';
 
   @override
   String get gameCorrectAnswers => 'Tačnih odgovora';

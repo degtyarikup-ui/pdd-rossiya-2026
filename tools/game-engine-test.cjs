@@ -22,7 +22,8 @@ const { chromium } = require('playwright');
       const body = (await response.text()).replace('  // Run init on DOM ready', `
       window.__engineTest = {
         state, player: () => playerCarGroup, camera: () => camera,
-        scenarios: () => SITUATIONS.filter(s => routeSpec(s).reviewed),
+        scenarios: () => SITUATIONS.filter(s => routeSpec(s).reviewed && !isRegulatorSituation(s)),
+        allScenarios: () => SITUATIONS.filter(s => routeSpec(s).reviewed),
         drawSituation: nextSituation,
         randomSequence(n) { situationBag = []; return Array.from({ length: n }, () => nextSituation().id); },
         updateActors, updateCamera,
@@ -83,6 +84,12 @@ const { chromium } = require('playwright');
           state.roadSegments.forEach(disposeSegment);
           state.roadSegments = []; state.intersections = [];
           situationIndex = index; situationBag = [this.scenarios()[index]]; buildInitialTrack();
+        },
+        selectAll(index) {
+          resetGame();
+          state.roadSegments.forEach(disposeSegment);
+          state.roadSegments = []; state.intersections = [];
+          situationIndex = index; situationBag = [this.allScenarios()[index]]; buildInitialTrack();
         },
         approach() {
           if (!state.intersections.length) {
@@ -371,7 +378,7 @@ const { chromium } = require('playwright');
         window.events.slice(eventsBeforeOvertake).some(e => e.event === 'situation_cleared' && e.situationId === 'road_24_11') &&
         !t.state.intersections.some(it => it.stopZ < t.player().position.z);
       // Signalled manoeuvres: the truck with a left signal really overtakes and
-      // returns; the motorcycle really turns left at the next junction.
+      // returns; the motorcycle yields at the equal junction to traffic from its right.
       const overtakeNpc = enterRoadEvent('road_20_11');
       const npcTruck = overtakeNpc?.actors[0];
       let npcLeft = false, npcRight = false, npcOut = false;
@@ -388,18 +395,14 @@ const { chromium } = require('playwright');
         return npcLeft && npcRight && npcOut && Math.abs(npcTruck.mesh.position.x + 1.8) < 0.2 &&
           !lamps.left.some(l => l.visible) && !lamps.right.some(l => l.visible);
       })();
-      const turnEvent = enterRoadEvent('road_2_11');
-      const npcMoto = turnEvent?.actors[0];
-      const npcTurns = !!turnEvent && driveUntil(() => t.state.isAtSituation) && (() => {
+      const equalEvent = enterRoadEvent('road_2_11');
+      const npcMoto = equalEvent?.actors[0], crossingBus = equalEvent?.actors[1];
+      const npcYields = !!equalEvent && driveUntil(() => t.state.isAtSituation) && (() => {
         window.game.proceedAfterAnswer(true, 'road_2_11');
-        // Follow at a safe distance instead of ramming the motorcycle.
-        for (let i = 0; i < 4000 && npcMoto.mesh.position.x < 15; i++) {
-          const gap = npcMoto.mesh.position.z - t.player().position.z;
-          if (!t.state.driveRecovery) window.game.setGas(gap > 16 || npcMoto.mesh.position.x > 2);
-          t.tick(1 / 60);
-        }
-        window.game.setGas(false);
-        return npcMoto.mesh.position.x > 15 && Math.abs(npcMoto.mesh.rotation.y - Math.PI / 2) < 0.2 &&
+        t.tick(0.5);
+        const waited = npcMoto.distance === 0 && crossingBus.distance > 0;
+        for (let i = 0; i < 900 && npcMoto.distance < 25; i++) t.tick(1/60);
+        return waited && crossingBus.cleared && npcMoto.distance > 20 && Math.abs(npcMoto.mesh.position.x + 1.8) < 0.2 &&
           !npcMoto.mesh.userData.blinkerLamps.left.some(l => l.visible);
       })();
       // Bus bay: the bus pulls into the pocket, dwells, then merges back.
@@ -504,7 +507,7 @@ const { chromium } = require('playwright');
       const thumbnails = thumbs.every(u => u.startsWith('data:image/png') && u.length > 2000);
       return { attractParked, attractTraffic, revealShown, thumbnails,
         curbSlide, curbExit, noseExit, wrongAnswerTraffic, noTrafficRestart, rearCollision,
-        rebasedCollision, sideCollisionEscape, collisionUnstuck, brakeWorks, roadPlaced, roadStopped, roadManual, speedLimited, roadCleared, overtakeQuestion, overtakePenalised, overtakeDone, npcOvertakes, npcTurns, busStops, zebraPlaced, pedestrianReleased, pedestrianYield, continuousRails, muteWorks, dynamicAudio, livingScenery, cameraInvariant, reverseGenerated, reverseSituation };
+        rebasedCollision, sideCollisionEscape, collisionUnstuck, brakeWorks, roadPlaced, roadStopped, roadManual, speedLimited, roadCleared, overtakeQuestion, overtakePenalised, overtakeDone, npcOvertakes, npcYields, busStops, zebraPlaced, pedestrianReleased, pedestrianYield, continuousRails, muteWorks, dynamicAudio, livingScenery, cameraInvariant, reverseGenerated, reverseSituation };
     });
     if (process.env.GAME_SHOTS) {
       for (const id of ['road_24_11', 'road_13_11', 'road_9_5', 'road_1_16', null]) {
@@ -535,9 +538,9 @@ const { chromium } = require('playwright');
 
     const results = await page.evaluate(only => {
       const t = window.__engineTest;
-      return t.scenarios().map((scenario, index) => {
+      return t.allScenarios().map((scenario, index) => {
         if (only && scenario.id !== only) return { id: scenario.id };
-        t.select(index); t.approach();
+        t.selectAll(index); t.approach();
         window.game.setViewportInsets({ top: 130, bottom: 400 });
         t.tick(3);
         const bounds = t.state.activeIntersection.actors.map(a => a.viewBounds);
@@ -551,7 +554,8 @@ const { chromium } = require('playwright');
         });
         const id = t.state.activeIntersection.situation.id;
         const previews = Object.values(t.state.activeIntersection.previews);
-        const exitsPrebuilt = previews.length === 4 && previews.every(p =>
+        const expectedExits = t.state.activeIntersection.situation.geometry === 't_no_straight' ? 3 : 4;
+        const exitsPrebuilt = previews.length === expectedExits && previews.every(p =>
           p.parent === t.state.activeIntersection.seg &&
           p.children.some(m => m.geometry?.parameters?.height === 200));
         const before = window.events.filter(e => e.event === 'situation_cleared').length;
@@ -581,7 +585,9 @@ const { chromium } = require('playwright');
           const surface = t.surfaceAt(x, t.player().position.z + d);
           return surface.includes('road') && !surface.includes('sidewalk');
         }));
-        const sceneryPreserved = t.state.exitRoad === keptRoad && keptRoad.children.map(o => o.uuid).join() === keptTrees;
+        const originalScenery = new Set(keptTrees.split(','));
+        const sceneryPreserved = t.state.exitRoad === keptRoad &&
+          [...originalScenery].every(uuid => keptRoad.children.some(o => o.uuid === uuid));
         const result = { id, framed, exitsPrebuilt, waitsForInput, cleanRoad, sceneryPreserved, staleIgnored, clearedOnce: after === before + 1,
           resolved: !t.state.isResolvingSituation,
           actorsFinished: t.state.actors.every(a => a.done || a.road) /* road-event traffic waits for the player by design */,

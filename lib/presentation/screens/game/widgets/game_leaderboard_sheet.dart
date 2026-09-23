@@ -59,15 +59,6 @@ class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                appL10n.gameRatingHint,
-                style: TextStyle(
-                  fontFamily: 'Onest',
-                  fontSize: 13,
-                  color: colors.secondaryText,
-                ),
-              ),
               const SizedBox(height: 12),
               Expanded(
                 child: FutureBuilder<GameLeaderboard?>(

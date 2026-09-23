@@ -2,6 +2,7 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
+import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/game_situation.dart';
 
 class GameExplanationSheet extends StatelessWidget {
@@ -129,7 +130,10 @@ class GameExplanationSheet extends StatelessWidget {
 
                 // Continue Button
                 ElevatedButton(
-                  onPressed: onContinue,
+                  onPressed: () {
+                    HapticFeedbackHelper.tap();
+                    onContinue();
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colors.accent,
                     foregroundColor: Colors.white,

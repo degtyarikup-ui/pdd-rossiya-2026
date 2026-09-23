@@ -40,7 +40,11 @@ import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 class GameScreen extends ConsumerStatefulWidget {
   final VoidCallback? onExit;
 
-  const GameScreen({super.key, this.onExit});
+  /// False while another bottom tab is shown: the run is kept (paused), so a
+  /// stray tap on the tab bar never throws the session away.
+  final bool visible;
+
+  const GameScreen({super.key, this.onExit, this.visible = true});
 
   @override
   ConsumerState<GameScreen> createState() => _GameScreenState();
@@ -77,6 +81,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   bool _locked = false;
   bool _outOfFuel = false;
   bool _fuelLoaded = false;
+  bool _debugUnlimitedFuel = false;
   Timer? _fuelTimer;
   int _correctBurst = 0;
   // Weekly rating: the run's score is reported as it grows (premium runs
@@ -96,6 +101,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   bool _showGasHint = false;
   static const _seenKey = 'game_seen';
   static const _bestScoreKey = 'game_best_score';
+  static const _debugUnlimitedFuelKey = 'game_debug_unlimited_fuel';
 
   Future<void> _stopWebView() {
     return _cleanup ??= _stopAndDetach(_webViewController, _initialization);
@@ -197,6 +203,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   Future<void> _openLeaderboard() async {
     if (_garageOpen) return;
+    HapticFeedbackHelper.tap();
     _garageOpen = true; // reuse the pause bookkeeping of the garage
     _game.setPaused(true);
     _send('setPaused', [true]);
@@ -216,15 +223,30 @@ class _GameScreenState extends ConsumerState<GameScreen>
     }
   }
 
-  // Debug builds only: long-press opens the weather/season controls.
+  Future<void> _setDebugUnlimitedFuel(bool enabled) async {
+    if (!AuthService.debugSignInAvailable) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_debugUnlimitedFuelKey, enabled);
+    if (!mounted) return;
+    setState(() => _debugUnlimitedFuel = enabled);
+    _game.configureFuel(
+      fuel: GameFuelService.instance.refresh(),
+      unlimited: enabled || ref.read(isPremiumProvider),
+    );
+    _scheduleFuelTick();
+  }
+
+  // Dev APK only: long-press the fuel gauge or garage to open controls.
   Future<void> _openDebug() async {
-    if (!kDebugMode || !_configured) return;
+    if (!AuthService.debugSignInAvailable || !_configured) return;
+    HapticFeedbackHelper.confirm();
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (_) => GameDebugSheet(
         weatherOverride: _weatherOverride,
         seasonOverride: _seasonOverride,
+        unlimitedFuel: _debugUnlimitedFuel,
         onWeatherChanged: (kind) {
           _weatherOverride = kind;
           _send('setWeather', [kind]);
@@ -233,6 +255,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
           _seasonOverride = kind;
           _send('setSeason', [kind]);
         },
+        onUnlimitedFuelChanged: _setDebugUnlimitedFuel,
       ),
     );
   }
@@ -263,10 +286,33 @@ class _GameScreenState extends ConsumerState<GameScreen>
     }
   }
 
+  bool _appResumed = true;
+
+  @override
+  void didUpdateWidget(GameScreen old) {
+    super.didUpdateWidget(old);
+    if (old.visible != widget.visible) _applyActive();
+  }
+
+  void _applyActive() {
+    if (!widget.visible) {
+      unawaited(_reportProgress());
+      _send('setGas', [false]);
+      _send('setBrake', [false]);
+      _send('setSteering', [0]);
+    }
+    _active = _appResumed && widget.visible;
+    _game.setPaused(
+      !_active || _failed || _garageOpen || _locked || _outOfFuel,
+    );
+    _send('setPaused', [_enginePaused]);
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) unawaited(_reportProgress());
-    _active = state == AppLifecycleState.resumed;
+    _appResumed = state == AppLifecycleState.resumed;
+    _active = _appResumed && widget.visible;
     _game.setPaused(
       !_active || _failed || _garageOpen || _locked || _outOfFuel,
     );
@@ -299,9 +345,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
       const Duration(seconds: 30),
       (_) => unawaited(_reportProgress()),
     );
-    _active =
+    _appResumed =
         WidgetsBinding.instance.lifecycleState == null ||
         WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    _active = _appResumed && widget.visible;
     WidgetsBinding.instance.addObserver(this);
     _game = ref.read(gameControllerProvider.notifier);
     _game.onStopGas = () {
@@ -335,13 +382,16 @@ class _GameScreenState extends ConsumerState<GameScreen>
       }
       _bestScore ??= prefs.getInt(_bestScoreKey) ?? 0;
       _bestBeforeRun = _bestScore ?? 0;
+      _debugUnlimitedFuel =
+          AuthService.debugSignInAvailable &&
+          (prefs.getBool(_debugUnlimitedFuelKey) ?? false);
       if (!_fuelLoaded) {
         final fuel = await GameFuelService.instance.load();
         _fuelLoaded = true;
         if (mounted) {
           _game.configureFuel(
             fuel: fuel,
-            unlimited: ref.read(isPremiumProvider),
+            unlimited: _debugUnlimitedFuel || ref.read(isPremiumProvider),
           );
           _scheduleFuelTick();
         }
@@ -481,7 +531,20 @@ class _GameScreenState extends ConsumerState<GameScreen>
         }
       } else if (event == 'violation') {
         if (data['type'] is String && data['episode'] is int) {
-          gameNotifier.recordViolation(data['type'], data['episode']);
+          final type = data['type'] as String;
+          final episode = data['episode'] as int;
+          gameNotifier.recordViolation(type, episode);
+          final activeSit = ref.read(gameControllerProvider).currentSituation;
+          if (activeSit != null &&
+              (type == 'priority' || type == 'wrong_maneuver')) {
+            unawaited(
+              _recordMistake(
+                activeSit,
+                null,
+                episodeKey: '${activeSit.id}_viol_$episode',
+              ),
+            );
+          }
         }
       } else if (event == 'maneuver_reset') {
         gameNotifier.setRecovering(true);
@@ -491,13 +554,23 @@ class _GameScreenState extends ConsumerState<GameScreen>
       } else if (event == 'maneuver_ready') {
         gameNotifier.setRecovering(false);
       } else if (event == 'vehicle_selected') {
+        // The car the engine actually drives: the HUD button always shows it.
         final id = data['vehicleId'];
+        final paint = data['paint'];
         if (id is String && gameVehicleIds.contains(id)) {
-          setState(() => _vehicleId = id);
+          setState(() {
+            _vehicleId = id;
+            if (paint is String && gamePaintColors.containsKey(paint)) {
+              _vehiclePaint = paint;
+            }
+          });
           unawaited(_saveVehicle(id, _vehiclePaint));
         }
       } else if (event == 'reveal_shown') {
-        if (_reveal != null) setState(() => _revealShown = true);
+        if (_reveal != null && !_revealShown) {
+          HapticFeedbackHelper.success();
+          setState(() => _revealShown = true);
+        }
       }
     } catch (e) {
       debugPrint('Game JS Message Error: $e');
@@ -527,6 +600,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   Future<void> _openGarage() async {
     if (_garageOpen || !_configured || _failed) return;
+    HapticFeedbackHelper.tap();
     _garageOpen = true;
     _game.setPaused(true);
     _send('setPaused', [true]);
@@ -566,24 +640,46 @@ class _GameScreenState extends ConsumerState<GameScreen>
     }
   }
 
+  final Set<String> _recordedMistakeKeys = <String>{};
+
   /// A wrong answer in the game lands in «Ошибки» as the very ticket
   /// question the road situation was built from («Билет N · Вопрос M»).
-  Future<void> _recordMistake(GameSituation situation, int? selected) async {
-    final m = RegExp(r'(\d+)\D+(\d+)').firstMatch(situation.ticket);
-    if (m == null) return;
-    final ticket = int.parse(m.group(1)!), number = int.parse(m.group(2)!);
+  Future<void> _recordMistake(
+    GameSituation situation,
+    int? selected, {
+    String? episodeKey,
+  }) async {
+    final key =
+        episodeKey ??
+        '${situation.id}_${situation.sourceQuestionId ?? situation.ticket}';
+    if (_recordedMistakeKeys.contains(key)) return;
+    _recordedMistakeKeys.add(key);
+
+    if (situation.country != null &&
+        situation.country != CountryConfig.current.code) {
+      return;
+    }
+
     try {
-      _abQuestions ??= await ref
-          .read(questionsDataSourceProvider)
-          .loadTickets(TicketCategory.ab);
-      final inTicket = _abQuestions!
-          .where((q) => q.ticketNumber == ticket)
-          .toList();
-      if (number < 1 || number > inTicket.length) return;
+      String? questionId = situation.sourceQuestionId;
+      if (questionId == null || questionId.isEmpty) {
+        final m = RegExp(r'(\d+)\D+(\d+)').firstMatch(situation.ticket);
+        if (m == null) return;
+        final ticket = int.parse(m.group(1)!), number = int.parse(m.group(2)!);
+        _abQuestions ??= await ref
+            .read(questionsDataSourceProvider)
+            .loadTickets(TicketCategory.ab);
+        final inTicket = _abQuestions!
+            .where((q) => q.ticketNumber == ticket)
+            .toList();
+        if (number < 1 || number > inTicket.length) return;
+        questionId = inTicket[number - 1].id;
+      }
+
       await ref
           .read(progressDataSourceProvider)
           .saveAnswer(
-            questionId: inTicket[number - 1].id,
+            questionId: questionId,
             isCorrect: false,
             selectedAnswerIndex: selected ?? -1,
             category: TicketCategory.ab,
@@ -651,6 +747,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
   void _closeReveal({required bool choose}) {
     final car = _reveal;
     if (car == null) return;
+    if (choose) {
+      HapticFeedbackHelper.confirm();
+    } else {
+      HapticFeedbackHelper.tap();
+    }
     setState(() {
       _reveal = null;
       _revealShown = false;
@@ -681,8 +782,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
     if (_restarting || _disposing) return;
     final tank = GameFuelService.instance.refresh();
     final premium = ref.read(isPremiumProvider);
-    if (!premium && tank <= 0) return;
-    _game.configureFuel(fuel: tank, unlimited: premium);
+    final unlimited = premium || _debugUnlimitedFuel;
+    if (!unlimited && tank <= 0) return;
+    HapticFeedbackHelper.confirm();
+    _game.configureFuel(fuel: tank, unlimited: unlimited);
     _restarting = true;
     _readyTimer?.cancel();
     _game.setPaused(true);
@@ -733,6 +836,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   void _handleExit() {
+    HapticFeedbackHelper.tap();
     _game.setPaused(true);
     _send('setPaused', [true]);
     if (widget.onExit != null) {
@@ -775,6 +879,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
     }
     ref.listen(gameControllerProvider, (previous, next) {
       _liveScore = next.score;
+      if (previous?.phase != GamePhase.situation &&
+          next.phase == GamePhase.situation) {
+        HapticFeedbackHelper.tap();
+      }
       if (previous?.controlsEnabled == true && !next.controlsEnabled) {
         _send('setGas', [false]);
         _send('setBrake', [false]);
@@ -814,9 +922,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
           if (mounted) setState(() => _correctBurst = 0);
         });
       }
-      if (next.lastViolation == 'collision' &&
-          next.violationCount != previous?.violationCount) {
-        HapticFeedbackHelper.collision();
+      if (next.violationCount != previous?.violationCount) {
+        if (next.lastViolation == 'collision') {
+          HapticFeedbackHelper.collision();
+        } else {
+          HapticFeedbackHelper.warning();
+        }
       }
       if (previous?.phase != GamePhase.gameOver &&
           next.phase == GamePhase.gameOver) {
@@ -897,19 +1008,20 @@ class _GameScreenState extends ConsumerState<GameScreen>
     // driven; a card at the bottom asks to sign in. Everything else stays.
     final locked = !ref.watch(isAuthenticatedProvider);
     final premium = ref.watch(isPremiumProvider);
-    if (_fuelLoaded && premium != gameState.fuelUnlimited) {
+    final unlimitedFuel = premium || _debugUnlimitedFuel;
+    if (_fuelLoaded && unlimitedFuel != gameState.fuelUnlimited) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _game.configureFuel(
             fuel: GameFuelService.instance.refresh(),
-            unlimited: premium,
+            unlimited: unlimitedFuel,
           );
         }
       });
     }
     final outOfFuel =
         !locked &&
-        !premium &&
+        !unlimitedFuel &&
         _fuelLoaded &&
         gameState.fuel <= 0 &&
         gameState.phase != GamePhase.gameOver;
@@ -1000,7 +1112,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     onGarage: gameState.controlsEnabled ? _openGarage : null,
                     showGarage:
                         GameGarageService.instance.cars.length > 1 || premium,
-                    onGarageLongPress: kDebugMode ? _openDebug : null,
+                    onGarageLongPress: AuthService.debugSignInAvailable
+                        ? _openDebug
+                        : null,
                     onLeaderboard: gameState.controlsEnabled
                         ? _openLeaderboard
                         : null,
@@ -1031,7 +1145,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   // Back to driving right away, no reload needed.
                   onRefilled: () => _game.configureFuel(
                     fuel: GameFuelService.instance.refresh(),
-                    unlimited: ref.read(isPremiumProvider),
+                    unlimited:
+                        _debugUnlimitedFuel || ref.read(isPremiumProvider),
                   ),
                 ),
               ),
@@ -1150,7 +1265,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
                       vehiclePaint: _vehiclePaint,
                       thumbnail: _thumbnail,
                       thumbnailCache: _thumbnails,
-                      onLeaderboard: () => GameLeaderboardSheet.show(context),
+                      onLeaderboard: () {
+                        HapticFeedbackHelper.tap();
+                        GameLeaderboardSheet.show(context);
+                      },
                       fuelRefillAt: GameFuelService.instance.firstUnitAt,
                       onBuyPremium: () => PremiumPaywallSheet.show(context),
                       bestScore: _newRecord ? null : _bestScore,

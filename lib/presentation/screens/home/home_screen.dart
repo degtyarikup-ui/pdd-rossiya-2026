@@ -78,9 +78,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
+  // Tabs are built on first visit and then kept: the game run survives a
+  // switch to another tab (it pauses) instead of being thrown away.
+  final Set<int> _visited = {};
+
   List<Widget> get _screens => [
     const _HomeTab(),
-    GameScreen(onExit: () => setState(() => _currentIndex = 0)),
+    GameScreen(
+      onExit: () => setState(() => _currentIndex = 0),
+      visible: _currentIndex == 1,
+    ),
     if (ref.watch(isAuthenticatedProvider))
       const FeedScreen()
     else
@@ -112,7 +119,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       child: Scaffold(
         backgroundColor: colors.homeScreenBackground,
-        body: _screens[_currentIndex],
+        body: Builder(
+          builder: (context) {
+            _visited.add(_currentIndex);
+            final screens = _screens;
+            return IndexedStack(
+              index: _currentIndex,
+              children: [
+                for (var i = 0; i < screens.length; i++)
+                  _visited.contains(i) ? screens[i] : const SizedBox.shrink(),
+              ],
+            );
+          },
+        ),
         bottomNavigationBar: ref.watch(fullscreenProvider)
             ? null
             : Column(

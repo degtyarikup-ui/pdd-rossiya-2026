@@ -24,6 +24,12 @@ class HapticFeedbackHelper {
     HapticFeedback.mediumImpact();
   }
 
+  /// A deliberate action such as restarting a run or choosing an unlocked car.
+  static void confirm() {
+    if (!_enabled) return;
+    HapticFeedback.mediumImpact();
+  }
+
   static void error() {
     if (!_enabled) return;
     HapticFeedback.heavyImpact();

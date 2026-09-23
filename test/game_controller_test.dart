@@ -20,6 +20,7 @@ import 'package:webview_flutter_platform_interface/webview_flutter_platform_inte
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_controls_overlay.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_debug_sheet.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_hud.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_question_card.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_over_dialog.dart';
@@ -54,6 +55,29 @@ void main() {
   });
   tearDown(() => SoundEffectsService.instance.setEnabled(true));
 
+  testWidgets('Debug menu toggles unlimited fuel', (tester) async {
+    bool? unlimited;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: GameDebugSheet(
+            weatherOverride: null,
+            seasonOverride: null,
+            unlimitedFuel: false,
+            onWeatherChanged: (_) {},
+            onSeasonChanged: (_) {},
+            onUnlimitedFuelChanged: (value) => unlimited = value,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text(appL10n.gameDebugUnlimitedFuel), findsOneWidget);
+    await tester.tap(find.byType(Switch));
+    await tester.pump();
+    expect(unlimited, isTrue);
+  });
+
   testWidgets(
     'Question, explanation and results fit 320px at double text scale',
     (tester) async {
@@ -85,6 +109,20 @@ void main() {
           state: const GameState(phase: GamePhase.gameOver, score: 1234567),
           onRestart: () {},
           onExit: () {},
+        ),
+        GameOverDialog(
+          state: const GameState(
+            phase: GamePhase.gameOver,
+            score: 1234567,
+            fuel: 0,
+            distanceM: 12345,
+            violationCount: 12,
+          ),
+          fuelRefillAt: DateTime.now().add(const Duration(minutes: 30)),
+          bestScore: 7654321,
+          onLeaderboard: () {},
+          onBuyPremium: () {},
+          onRestart: () {},
         ),
         const GameGarage(
           selected: GameGarageService.starter,
@@ -139,23 +177,16 @@ void main() {
           ),
         );
         expect(tester.takeException(), isNull, reason: 'width $width');
-        for (final icon in [
-          Icons.arrow_back_rounded,
-          Icons.arrow_forward_rounded,
-          Icons.speed_rounded,
+        for (final control in [
+          find.byIcon(Icons.arrow_back_rounded),
+          find.byIcon(Icons.arrow_forward_rounded),
+          find.byKey(const ValueKey('game-gas')),
         ]) {
-          final center = tester.getCenter(find.byIcon(icon));
+          final center = tester.getCenter(control);
           expect(center.dx, inInclusiveRange(20, width - 20));
         }
         final brake = tester.getRect(find.byKey(const ValueKey('game-brake')));
-        final gas = tester.getRect(
-          find
-              .ancestor(
-                of: find.byIcon(Icons.speed_rounded),
-                matching: find.byType(AnimatedContainer),
-              )
-              .first,
-        );
+        final gas = tester.getRect(find.byKey(const ValueKey('game-gas')));
         expect(brake.center.dx, gas.center.dx);
         expect(brake.bottom + 10, gas.top);
       }
@@ -192,6 +223,59 @@ void main() {
     expect(brake, [true, false, true, false]);
     await held.up();
     expect(brake.length, 4);
+  });
+
+  testWidgets('Driving controls vibrate once on press and never on release', (
+    tester,
+  ) async {
+    final haptics = <Object?>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'HapticFeedback.vibrate') {
+            haptics.add(call.arguments);
+          }
+          return null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: GameControlsOverlay(
+            state: const GameState(phase: GamePhase.driving),
+            onGasChanged: (_) {},
+            onSwitchLane: (_) {},
+            onSteering: (_) {},
+            onBrake: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    final steering = await tester.startGesture(
+      tester.getCenter(find.byIcon(Icons.arrow_back_rounded)),
+    );
+    await steering.moveBy(const Offset(5, 0));
+    await steering.up();
+    final gas = await tester.startGesture(
+      tester.getCenter(find.byKey(const ValueKey('game-gas'))),
+      pointer: 2,
+    );
+    await gas.up();
+    final brake = await tester.startGesture(
+      tester.getCenter(find.byKey(const ValueKey('game-brake'))),
+      pointer: 3,
+    );
+    await brake.up();
+    await tester.pump();
+
+    expect(haptics, [
+      'HapticFeedbackType.selectionClick',
+      'HapticFeedbackType.selectionClick',
+      'HapticFeedbackType.lightImpact',
+    ]);
   });
 
   testWidgets(
@@ -254,7 +338,7 @@ void main() {
     engine.emit('{"event":"ready"}');
     await tester.pump();
     final gas = await tester.startGesture(
-      tester.getCenter(find.byIcon(Icons.speed_rounded)),
+      tester.getCenter(find.byKey(const ValueKey('game-gas'))),
     );
     await tester.pump();
     engine.emit('{"event":"maneuver_reset"}');
@@ -272,7 +356,7 @@ void main() {
     expect(controls.state.controlsEnabled, true);
     engine.scripts.clear();
     final retry = await tester.startGesture(
-      tester.getCenter(find.byIcon(Icons.speed_rounded)),
+      tester.getCenter(find.byKey(const ValueKey('game-gas'))),
     );
     expect(engine.scripts.any((s) => s.contains('setGas(true)')), true);
     await retry.up();
@@ -453,9 +537,9 @@ void main() {
       );
       await tester.pumpWidget(hud(0));
       expect(find.text('${appL10n.gameViolations}: 0'), findsNothing);
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      expect(find.byKey(const ValueKey('hud-hud_warning')), findsOneWidget);
       // The fuel gauge replaced the hearts: a canister with five pips.
-      expect(find.byIcon(Icons.local_gas_station_rounded), findsOneWidget);
+      expect(find.byKey(const ValueKey('hud-fuel')), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp('5 / 5')), findsOneWidget);
       await tester.pumpWidget(hud(2));
       final label = find.text('2');
@@ -492,7 +576,7 @@ void main() {
       expect(find.text(appL10n.gameLeft), findsNothing);
       final left = tester.getCenter(find.byIcon(Icons.arrow_back_rounded));
       final right = tester.getCenter(find.byIcon(Icons.arrow_forward_rounded));
-      final gas = tester.getCenter(find.byIcon(Icons.speed_rounded));
+      final gas = tester.getCenter(find.byKey(const ValueKey('game-gas')));
       expect(left.dx, lessThan(right.dx));
       expect(right.dx, lessThan(195));
       expect(gas.dx, greaterThan(195));
@@ -574,12 +658,7 @@ void main() {
     final bounds = tester.getRect(left);
     expect(bounds.left, 20);
     expect(844 - bounds.bottom, 20);
-    final gas = find
-        .ancestor(
-          of: find.byIcon(Icons.speed_rounded),
-          matching: find.byType(AnimatedContainer),
-        )
-        .first;
+    final gas = find.byKey(const ValueKey('game-gas'));
     expect(390 - tester.getRect(gas).right, 20);
     expect(tester.getRect(gas).bottom, bounds.bottom);
     expect(find.text(appL10n.gameResolving), findsNothing);
@@ -698,7 +777,7 @@ void main() {
       oncoming: true,
     );
     final boundary = GlobalKey();
-    for (final name in ['question', 'results', 'controls']) {
+    for (final name in ['question', 'results', 'fuel_results', 'controls']) {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData(fontFamily: 'Onest'),
@@ -712,10 +791,18 @@ void main() {
               key: boundary,
               child: Scaffold(
                 backgroundColor: const Color(0xffdee4e5),
-                body: name == 'results'
+                body: name == 'results' || name == 'fuel_results'
                     ? Center(
                         child: GameOverDialog(
-                          state: state,
+                          state: name == 'fuel_results'
+                              ? state.copyWith(fuel: 0)
+                              : state,
+                          fuelRefillAt: name == 'fuel_results'
+                              ? DateTime.now().add(const Duration(minutes: 30))
+                              : null,
+                          bestScore: 3548,
+                          onLeaderboard: () {},
+                          onBuyPremium: name == 'fuel_results' ? () {} : null,
                           onRestart: () {},
                           onExit: () {},
                         ),
@@ -1067,6 +1154,17 @@ void main() {
       expect(controller.state.phase, GamePhase.gameOver);
     });
 
+    test('Unlimited fuel is not spent on mistakes', () {
+      controller.onEngineReady();
+      controller.configureFuel(fuel: 0, unlimited: true);
+      controller.onApproachSituation(dummySituation);
+      controller.submitAnswer(0);
+
+      expect(controller.state.fuelUnlimited, isTrue);
+      expect(controller.state.fuel, GameState.maxFuel);
+      expect(controller.state.phase, GamePhase.explanation);
+    });
+
     test('Telemetry updates distance, speed and score', () {
       controller.onEngineReady();
       controller.updateTelemetry(speedKmH: 42, distanceM: 250);
@@ -1169,7 +1267,7 @@ void main() {
       );
       await tester.tap(find.byIcon(Icons.arrow_back_rounded));
       await tester.tap(find.byIcon(Icons.arrow_forward_rounded));
-      await tester.tap(find.byIcon(Icons.speed_rounded));
+      await tester.tap(find.byKey(const ValueKey('game-gas')));
       expect(gas, isEmpty);
       expect(lanes, isEmpty);
     });
@@ -1212,7 +1310,7 @@ void main() {
       );
       await tester.pumpWidget(controls(GamePhase.driving));
       final press = await tester.startGesture(
-        tester.getCenter(find.byIcon(Icons.speed_rounded)),
+        tester.getCenter(find.byKey(const ValueKey('game-gas'))),
       );
       await tester.pump(const Duration(milliseconds: 200));
       expect(gas, [true]);
@@ -1238,7 +1336,7 @@ void main() {
         );
         await tester.pumpWidget(controls(0));
         final pedal = await tester.startGesture(
-          tester.getCenter(find.byIcon(Icons.speed_rounded)),
+          tester.getCenter(find.byKey(const ValueKey('game-gas'))),
           pointer: 1,
         );
         await pedal.moveBy(const Offset(-40, -35));
@@ -1287,7 +1385,7 @@ void main() {
         );
         expect(find.text(appL10n.gameOncoming), findsOneWidget);
         expect(find.text('2'), findsOneWidget);
-        expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+        expect(find.byKey(const ValueKey('hud-hud_warning')), findsOneWidget);
         expect(tester.takeException(), isNull);
       }
     });
