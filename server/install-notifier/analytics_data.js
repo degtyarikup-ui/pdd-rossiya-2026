@@ -4,8 +4,9 @@
 
 const DAY_MS = 86400000;
 
+// Боты и тестовые устройства (suspect) не считаются — как и в Telegram.
 function isRegistered(u) {
-  return !u.pending && String(u.provider || 'guest').toLowerCase() !== 'guest';
+  return !u.pending && !u.suspect && String(u.provider || 'guest').toLowerCase() !== 'guest';
 }
 
 function premiumActive(u, now) {

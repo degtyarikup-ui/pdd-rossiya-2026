@@ -137,3 +137,16 @@ test('список из метаданных: 2500 пользователей б
   assert.equal(env.INSTALLS.ops, 0, 'после дозаписи профили не читаются');
   assert.ok(done.data.users.every(u => u.pushToken === undefined));
 });
+
+test('мои ссылки: сохранение, уникальная метка, проверка ввода, удаление', async () => {
+  const env = setup();
+  const post = (b) => call(env, '/api/admin/links', b);
+  const ok = await post({ source: 'ig', campaign: 'bio', page: 'https://pdd-drive.ru/links/' });
+  assert.equal(ok.status, 200);
+  assert.equal((await post({ source: 'yt', campaign: 'bio', page: 'https://pdd-drive.ru/' })).status, 409);
+  assert.equal((await post({ source: 'ig', campaign: '<b>', page: 'https://pdd-drive.ru/' })).status, 400);
+  assert.equal((await post({ source: 'ig', campaign: 'x', page: 'https://evil.example/' })).status, 400);
+  assert.equal((await call(env, '/api/admin/links', undefined, null)).status, 401);
+  const del = await worker.fetch(new Request('https://w.test/api/admin/links', { method: 'DELETE', headers: { authorization: 'Bearer pw', 'content-type': 'application/json' }, body: JSON.stringify({ id: ok.data.link.id }) }), env);
+  assert.deepEqual((await del.json()).links, []);
+});

@@ -337,7 +337,7 @@ function uvRenderList() {
   var head = '<div class="uv-row uv-head"><div>Пользователь</div><div class="uv-hide-sm">Страна</div><div>Статус</div><div class="uv-hide-sm">Заходил</div><div class="uv-hide-sm">Регистрация</div><div></div></div>';
   box.innerHTML = head + list.slice(0, uvState.limit).map(function (u) {
     var sub = u.email || ('ID ' + u.id);
-    var flags = u.suspect ? ' <span class="uv-chip warn" title="Отмечен как подозрительный">!</span>' : '';
+    var flags = u.suspect ? ' <span class="uv-chip warn" title="Похоже на бота или тестовое устройство Google Play: адрес вида имя.12345@gmail.com или запрос не из приложения. Не считается в регистрациях и не приходит в Telegram.">бот?</span>' : '';
     return '<button class="uv-row" data-user="' + uvEsc(u.id) + '">'
       + '<div class="uv-user">' + uvAvatar(u) + '<div style="min-width:0"><div class="uv-name">' + uvEsc(u.name || 'Пользователь') + flags + '</div><div class="uv-sub">' + uvEsc(sub) + '</div></div></div>'
       + '<div class="uv-cell uv-hide-sm">' + uvEsc(uvAppCode(u).toUpperCase()) + (uvPlatform(u) ? ' · ' + uvEsc(uvPlatform(u)) : '') + '</div>'
@@ -419,7 +419,7 @@ function uvHeroHtml(u) {
   var chips = [uvStatusChip(u), '<span class="uv-chip">' + uvEsc(uvProvider(u)) + '</span>',
     '<span class="uv-chip">' + uvEsc(UV_APPS[uvAppCode(u)] || uvAppCode(u).toUpperCase()) + '</span>'];
   if (uvPlatform(u)) chips.push('<span class="uv-chip">' + uvEsc(uvPlatform(u)) + (u.appVersion ? ' · v' + uvEsc(u.appVersion) : '') + '</span>');
-  if (u.suspect) chips.push('<span class="uv-chip warn">Подозрительный</span>');
+  if (u.suspect) chips.push('<span class="uv-chip warn" title="Похоже на бота или тестовое устройство Google Play: адрес вида имя.12345@gmail.com или запрос не из приложения. Не считается в регистрациях и не приходит в Telegram.">Похоже на бота</span>');
   return '<div class="uv-hero">' + uvAvatar(u, true)
     + '<div style="min-width:0"><div class="uv-hero-name">' + uvEsc(u.name || 'Пользователь') + '</div>'
     + '<div class="uv-sub">' + (u.email ? uvEsc(u.email) + '<button class="uv-copy" data-copy="' + uvEsc(u.email) + '">копировать</button>' : 'без email') + '</div>'
@@ -584,8 +584,8 @@ function uvHistoryText(h) {
   }
   if (h.action === 'revoke') return 'Premium отозван';
   if (h.action === 'sessions') return 'Выход на всех устройствах';
-  if (h.action === 'flag') return 'Отмечен как подозрительный';
-  if (h.action === 'unflag') return 'Снята отметка «подозрительный»';
+  if (h.action === 'flag') return 'Помечен как бот';
+  if (h.action === 'unflag') return 'Отмечен как живой человек';
   return h.action;
 }
 function uvHistoryCard(admin) {
@@ -601,7 +601,7 @@ function uvHistoryCard(admin) {
 function uvDangerCard(u) {
   return '<div class="uv-card"><div class="uv-card-title">Управление</div><div class="uv-actions" style="margin-top:0">'
     + '<button class="uv-btn" data-uv="sessions" title="Приложение попросит войти заново">Выйти на всех устройствах</button>'
-    + '<button class="uv-btn" data-uv="suspect">' + (u.suspect ? 'Снять отметку' : 'Пометить подозрительным') + '</button>'
+    + '<button class="uv-btn" data-uv="suspect">' + (u.suspect ? 'Это живой человек' : 'Пометить как бота') + '</button>'
     + '<button class="uv-btn danger" data-uv="delete">Удалить аккаунт</button>'
     + '</div></div>';
 }

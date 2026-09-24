@@ -5,12 +5,13 @@ import { handleSocialAdmin, handleVideoStream, handleVideoThumb, runAutoPost } f
 import { SOCIAL_NAV_HTML, SOCIAL_VIEW_HTML, SOCIAL_CLIENT_JS } from './social_ui.js';
 import { handleThreadsAdmin, runThreadsSchedule } from './threads.js';
 import { THREADS_VIEW_HTML, THREADS_CLIENT_JS } from './threads_ui.js';
-import { LINKS_SOURCE_SELECT_MARKER, LINKS_SOURCE_HTML, LINKS_CLIENT_JS } from './links_ui.js';
+import { LINKS_VIEW_HTML, LINKS_CLIENT_JS } from './links_ui.js';
 import { enhanceAdminHtml, enhanceAdminClientJs, ADMIN_UI_CLIENT_JS } from './admin_ui.js';
 import { StatsBuffer } from './stats_buffer.js';
 import { handleUsersAdmin } from './users_admin.js';
 import { putUserRecord, listUserSummaries } from './user_store.js';
 import { usersSnapshot } from './analytics_data.js';
+import { handleLinksAdmin } from './links_admin.js';
 import { USERS_VIEW_HTML, USERS_CLIENT_JS } from './users_ui.js';
 import { ANALYTICS_VIEW_HTML, ANALYTICS_CLIENT_JS } from './analytics_ui.js';
 
@@ -2280,6 +2281,7 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
     let previousReturning = 0;
     const previousStores = {};
     const previousSources = {};
+    const previousCampaigns = {};
     for (let i = daysCount * 2 - 1; i >= daysCount; i--) {
       const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dayData = await readDayData(env, mskDayKey(d));
@@ -2290,6 +2292,11 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
       previousInstalls += block.installs || 0;
       previousReturning += block.returning || 0;
       for (const [store, n] of Object.entries(installsByStore(block))) previousStores[store] = (previousStores[store] || 0) + n;
+      for (const [cmp, counts] of Object.entries(block.campaigns || {})) {
+        if (!previousCampaigns[cmp]) previousCampaigns[cmp] = { views: 0, clicks: 0 };
+        previousCampaigns[cmp].views += counts.views || 0;
+        previousCampaigns[cmp].clicks += counts.clicks || 0;
+      }
       for (const [src, counts] of Object.entries(block.sources || {})) {
         if (!previousSources[src]) previousSources[src] = { views: 0, clicks: 0 };
         previousSources[src].views += counts.views || 0;
@@ -2351,6 +2358,7 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
         returning: previousReturning,
         stores: previousStores,
         sources: previousSources,
+        campaigns: previousCampaigns,
       },
       timeline,
       sources,
@@ -2404,13 +2412,12 @@ function renderAdminPage() {
       "telegram: { name: 'Telegram', color: '#229ed9', icon: BRAND_SVGS.telegram },\n  threads: { name: 'Threads', color: '#000000', icon: BRAND_SVGS.other },\n  dzen: { name: 'Дзен', color: '#000000', icon: BRAND_SVGS.other },"
     ));
 
-  // Список соцсетей заменяем полем с подсказками: свои каналы (Threads, Дзен,
-  // рассылка) вписываются руками, а не ждут правки кода.
-  const sourceStart = withoutOldThreads.indexOf(LINKS_SOURCE_SELECT_MARKER);
-  const sourceEnd = sourceStart === -1 ? -1 : withoutOldThreads.indexOf('</select>', sourceStart);
-  const withSourceInput = sourceEnd === -1 ? withoutOldThreads
-    : withoutOldThreads.slice(0, sourceStart) + LINKS_SOURCE_HTML
-      + withoutOldThreads.slice(sourceEnd + '</select>'.length);
+  // Раздел «Ссылки» — целиком из links_ui.js.
+  const linksStart = withoutOldThreads.indexOf('<!-- 2. LINKS GENERATOR VIEW -->');
+  const linksEnd = withoutOldThreads.indexOf('<!-- 3. BLOG VIEW -->');
+  const withSourceInput = (linksStart !== -1 && linksEnd > linksStart)
+    ? withoutOldThreads.slice(0, linksStart) + LINKS_VIEW_HTML.trim() + '\n\n    ' + withoutOldThreads.slice(linksEnd)
+    : withoutOldThreads;
 
   // Раздел «Пользователи» тоже заменяем целиком (users_ui.js): старую таблицу
   // и её скрипт вырезаем по границам соседних разделов.
@@ -3351,6 +3358,10 @@ export default {
       } catch (_) {
         return jsonResponse({ ok: false, error: 'parse error' }, 500);
       }
+    }
+
+    if (url.pathname === '/api/admin/links') {
+      return handleLinksAdmin(request, env, url, { verifyAdminAuth, jsonResponse });
     }
 
     // ────────────────────── Admin Users API ──────────────────────

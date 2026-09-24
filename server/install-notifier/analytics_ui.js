@@ -15,7 +15,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
     <!-- 1. ANALYTICS VIEW -->
     <div id="analytics-view">
       <style>
-        #analytics-view { --an-accent:#0574F8; --an-green:#2BC280; --an-red:#ED4621; --an-text:#121212; --an-muted:#A1A6B7; --an-axis:#7C8190; --an-gray:#EFF0F4; }
+        :root { --an-accent:#0574F8; --an-green:#2BC280; --an-red:#ED4621; --an-text:#121212; --an-muted:#A1A6B7; --an-axis:#7C8190; --an-gray:#EFF0F4; }
         .an-card { background:#fff; border-radius:16px; padding:24px; min-width:0; margin-bottom:16px; }
         .an-title { font-size:15px; font-weight:800; line-height:20px; color:var(--an-text); margin-bottom:24px; }
         .an-label { font-size:13px; font-weight:600; line-height:18px; color:var(--an-muted); }
