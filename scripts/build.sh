@@ -130,6 +130,17 @@ case "$TARGET" in
     verify_archive "build/app/outputs/flutter-apk/app-${COUNTRY}-release.apk"
     echo "APK: build/app/outputs/flutter-apk/app-${COUNTRY}-release.apk"
     ;;
+  ipa)
+    # iOS (только RU-приложение ru.pdd.pddApp): архив + экспорт с
+    # destination=upload из ios/ExportOptions.plist — сборка сразу уходит в
+    # App Store Connect через аккаунт, в который вошёл Xcode.
+    flutter build ipa --release \
+      --dart-define=COUNTRY="$COUNTRY" \
+      --export-options-plist=ios/ExportOptions.plist \
+      ${NOTIFY_DEFINES[@]+"${NOTIFY_DEFINES[@]}"} \
+      ${EXTRA_DEFINES_ARR[@]+"${EXTRA_DEFINES_ARR[@]}"}
+    echo "IPA: загружено в App Store Connect (build/ios/archive/Runner.xcarchive)"
+    ;;
   web)
     flutter build web --release --base-href "${WEB_BASE_HREF:-/}" --no-wasm-dry-run \
       --dart-define=COUNTRY="$COUNTRY" \
@@ -137,5 +148,5 @@ case "$TARGET" in
       ${EXTRA_DEFINES_ARR[@]+"${EXTRA_DEFINES_ARR[@]}"}
     echo "Web: build/web (COUNTRY=$COUNTRY)"
     ;;
-  *) echo "unknown target: $TARGET (expected aab|web)"; exit 1 ;;
+  *) echo "unknown target: $TARGET (expected aab|apk|ipa|web)"; exit 1 ;;
 esac
