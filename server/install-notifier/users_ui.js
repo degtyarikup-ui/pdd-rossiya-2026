@@ -461,7 +461,7 @@ function uvPremiumCard(u) {
   else { title = 'Бесплатный доступ'; }
   if (u.isPremium && u.premiumSource) sub += (sub ? ' · ' : '') + (UV_SOURCES[u.premiumSource] || u.premiumSource);
   var storeNote = pro && u.premiumSource && u.premiumSource !== 'admin_grant'
-    ? '<div class="uv-preview" style="margin-top:12px">Подписка оплачена через магазин. Выдача вручную заменит её срок, а магазин может перезаписать его при следующей проверке.</div>' : '';
+    ? '<div class="uv-preview" style="margin-top:12px">Подписка оплачена через магазин и продлевается им сама. Если выдать срок вручную, он заменит магазинный, и магазин перестанет его обновлять.</div>' : '';
 
   var presets = UV_PRESETS.map(function (p) {
     return '<button data-days="' + p[0] + '" class="' + (!g.lifetime && !g.until && g.days === p[0] ? 'active' : '') + '">' + p[1] + '</button>';

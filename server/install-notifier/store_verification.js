@@ -1,3 +1,4 @@
+import { putUserRecord } from './user_store.js';
 import { SignJWT, importPKCS8, decodeJwt } from 'jose';
 import { tokenHash } from './user_auth.js';
 
@@ -109,13 +110,13 @@ export async function refreshStoreEntitlement(env, user) {
     user.isPremium = verified.active;
     user.premiumExpiresAt = verified.expiresAt;
     user.storeVerifiedAt = Date.now();
-    await env.INSTALLS.put('user:' + user.id, JSON.stringify(user));
+    await putUserRecord(env, user);
   } catch (error) {
     // A network/configuration failure never creates or extends an entitlement.
     if (error instanceof StoreError && error.status === 422) {
       user.isPremium = false;
       user.storeVerifiedAt = Date.now();
-      await env.INSTALLS.put('user:' + user.id, JSON.stringify(user));
+      await putUserRecord(env, user);
     }
   }
   return user;

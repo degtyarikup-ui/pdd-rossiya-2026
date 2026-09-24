@@ -5,6 +5,8 @@
 // `user_admin:<id>`: профиль `user:<id>` приложение пересобирает при каждом
 // входе (saveUserProfile) и лишние поля оттуда бы пропадали.
 
+import { putUserRecord } from './user_store.js';
+
 const DAY_MS = 86400000;
 const MAX_DAYS = 3650;
 const HISTORY_LIMIT = 50;
@@ -137,7 +139,7 @@ export async function handleUsersAdmin(request, env, url, deps) {
 
   if (path === '/api/admin/users' && request.method === 'GET') {
     const users = await getAllUsers(env);
-    return jsonResponse({ ok: true, users: users.map(adminUser) });
+    return jsonResponse({ ok: true, users });
   }
 
   if (path === '/api/admin/users/detail' && request.method === 'GET') {
@@ -198,7 +200,7 @@ export async function handleUsersAdmin(request, env, url, deps) {
     user.premiumSource = 'admin_grant';
     user.grantedAt = new Date().toISOString();
     user.premiumExpiresAt = result.expiresAt;
-    await env.INSTALLS.put('user:' + userId, JSON.stringify(user));
+    await putUserRecord(env, user);
     await writeAdminMeta(env, userId, meta, {
       action: 'grant',
       days: body.isLifetime || body.until ? null : Number.parseInt(body.days, 10),
@@ -215,7 +217,7 @@ export async function handleUsersAdmin(request, env, url, deps) {
     user.isPremium = false;
     user.premiumSource = null;
     user.premiumExpiresAt = null;
-    await env.INSTALLS.put('user:' + userId, JSON.stringify(user));
+    await putUserRecord(env, user);
     await writeAdminMeta(env, userId, meta, { action: 'revoke', from: previous });
     return jsonResponse({ ok: true, user: adminUser(user), admin: meta });
   }
@@ -229,7 +231,7 @@ export async function handleUsersAdmin(request, env, url, deps) {
 
   if (path === '/api/admin/users/suspect') {
     user.suspect = body.suspect === true;
-    await env.INSTALLS.put('user:' + userId, JSON.stringify(user));
+    await putUserRecord(env, user);
     await writeAdminMeta(env, userId, meta, { action: user.suspect ? 'flag' : 'unflag' });
     return jsonResponse({ ok: true, user: adminUser(user), admin: meta });
   }

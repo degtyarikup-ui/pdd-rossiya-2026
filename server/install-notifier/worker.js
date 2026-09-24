@@ -9,6 +9,7 @@ import { LINKS_SOURCE_SELECT_MARKER, LINKS_SOURCE_HTML, LINKS_CLIENT_JS } from '
 import { enhanceAdminHtml, enhanceAdminClientJs, ADMIN_UI_CLIENT_JS } from './admin_ui.js';
 import { StatsBuffer } from './stats_buffer.js';
 import { handleUsersAdmin } from './users_admin.js';
+import { putUserRecord, listUserSummaries } from './user_store.js';
 import { USERS_VIEW_HTML, USERS_CLIENT_JS } from './users_ui.js';
 
 // Durable Object буфера статистики (см. trackStats / flushBufferedStats).
@@ -2573,7 +2574,7 @@ async function saveUserProfile(env, user) {
     suspect: user.suspect === true || (existing ? existing.suspect === true : false),
   };
 
-  await env.INSTALLS.put(kvKey, JSON.stringify(merged));
+  await putUserRecord(env, merged);
 
   if (merged.email) {
     await env.INSTALLS.put('user_email:' + merged.email.toLowerCase().trim(), merged.id);
@@ -2618,43 +2619,7 @@ async function saveUserProfile(env, user) {
 
 async function getAllUsers(env) {
   if (!env.INSTALLS) return [];
-  const idSet = new Set();
-  try {
-    const rawList = await env.INSTALLS.get('users_list');
-    if (rawList) {
-      const list = JSON.parse(rawList);
-      if (Array.isArray(list)) list.forEach(id => idSet.add(id));
-    }
-  } catch (_) {}
-
-  try {
-    const listRes = await env.INSTALLS.list({ prefix: 'user:' });
-    if (listRes && listRes.keys) {
-      listRes.keys.forEach(k => {
-        const uId = k.name.replace(/^user:/, '');
-        if (uId && !uId.startsWith('email:')) idSet.add(uId);
-      });
-    }
-  } catch (_) {}
-
-  const users = [];
-  for (const id of idSet) {
-    try {
-      const raw = await env.INSTALLS.get('user:' + id);
-      if (raw) {
-        const u = JSON.parse(raw);
-        users.push(u);
-      }
-    } catch (_) {}
-  }
-
-  users.sort((a, b) => {
-    const ta = new Date(a.lastSeenAt || a.createdAt || 0).getTime();
-    const tb = new Date(b.lastSeenAt || b.createdAt || 0).getTime();
-    return tb - ta;
-  });
-
-  return users;
+  return listUserSummaries(env);
 }
 
 
@@ -2883,7 +2848,14 @@ export default {
       if (request.method === 'PUT') {
         let body = {};
         try { body = await request.json(); } catch (_) {}
-        articles[idx] = { ...articles[idx], ...body };
+        // Меняются только существующие строковые поля статьи; slug — её ключ.
+        const patch = {};
+        for (const [key, value] of Object.entries(body || {})) {
+          if (key === 'slug' || !(key in articles[idx]) || typeof value !== 'string') continue;
+          if (key === 'datePublished' && !/^\d{4}-\d{2}-\d{2}$/.test(value)) return jsonResponse({ error: 'invalid date' }, 400);
+          patch[key] = value.slice(0, 2000);
+        }
+        articles[idx] = { ...articles[idx], ...patch };
         if (env.INSTALLS) await env.INSTALLS.put('blog_articles', JSON.stringify(articles));
         return jsonResponse({ ok: true, article: articles[idx] });
       }
@@ -3033,7 +3005,7 @@ export default {
             if (appVersion) userObj.appVersion = appVersion;
             if (platform) userObj.platform = platform;
             userObj.lastSeenAt = merged.lastSeenAt;
-            await env.INSTALLS.put(userKey, JSON.stringify(userObj));
+            await putUserRecord(env, userObj);
           }
         } catch (_) {}
       }
@@ -3213,7 +3185,7 @@ export default {
       if (platform) user.platform = platform;
       if (appVersion) user.appVersion = appVersion;
 
-      await env.INSTALLS.put(kvKey, JSON.stringify(user));
+      await putUserRecord(env, user);
       if (user.email) {
         await env.INSTALLS.put('user_email:' + user.email.toLowerCase().trim(), user.id);
       }

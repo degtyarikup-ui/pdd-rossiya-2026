@@ -6,10 +6,17 @@ import { computePremiumExpiry, summarizeProgress } from './users_admin.js';
 
 class KV {
   data = new Map();
-  async get(k) { return this.data.get(k) ?? null; }
-  async put(k, v) { this.data.set(k, String(v)); }
-  async delete(k) { this.data.delete(k); }
-  async list({ prefix }) { return { keys: [...this.data.keys()].filter(k => k.startsWith(prefix)).map(name => ({ name })) }; }
+  meta = new Map();
+  ops = 0;
+  async get(k) { this.ops++; return this.data.get(k) ?? null; }
+  async put(k, v, o) { this.data.set(k, String(v)); if (o?.metadata) this.meta.set(k, o.metadata); else this.meta.delete(k); }
+  async delete(k) { this.data.delete(k); this.meta.delete(k); }
+  async list({ prefix, cursor }) {
+    const all = [...this.data.keys()].filter(k => k.startsWith(prefix)).sort();
+    const start = cursor ? Number(cursor) : 0, page = all.slice(start, start + 1000);
+    const done = start + 1000 >= all.length;
+    return { keys: page.map(name => ({ name, metadata: this.meta.get(name) })), list_complete: done, cursor: done ? undefined : String(start + 1000) };
+  }
 }
 const DAY = 86400000;
 function setup() {
@@ -115,4 +122,18 @@ test('импорт Threads требует пароль и чистит id', asyn
 test('страница админки не встраивается в чужие сайты', async () => {
   const r = await worker.fetch(new Request('https://w.test/admin'), setup());
   assert.equal(r.headers.get('x-frame-options'), 'DENY');
+});
+
+test('список из метаданных: 2500 пользователей без чтения профилей', async () => {
+  const env = setup();
+  for (let i = 0; i < 2500; i++) env.INSTALLS.data.set('user:x' + i, JSON.stringify({ id: 'x' + i, name: 'U' + i }));
+  const first = await call(env, '/api/admin/users');
+  assert.equal(first.data.users.length, 2501);
+  assert.equal(first.data.users.filter(u => u.pending).length, 2501 - 150);
+  for (let i = 0; i < 20; i++) await call(env, '/api/admin/users');
+  env.INSTALLS.ops = 0;
+  const done = await call(env, '/api/admin/users');
+  assert.equal(done.data.users.filter(u => u.pending).length, 0);
+  assert.equal(env.INSTALLS.ops, 0, 'после дозаписи профили не читаются');
+  assert.ok(done.data.users.every(u => u.pushToken === undefined));
 });
