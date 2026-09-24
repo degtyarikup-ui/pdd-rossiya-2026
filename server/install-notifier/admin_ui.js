@@ -61,6 +61,15 @@ export const ADMIN_UI_STYLES = `
   }
   button:disabled { cursor: not-allowed; opacity: .55; }
   @media (max-width: 760px) {
+    /* Телефон: меню — горизонтальная лента сверху, контент на всю ширину. */
+    #app { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; position: static; }
+    .sidebar-menu { flex-direction: row; overflow-x: auto; padding: 8px 12px; gap: 4px; }
+    .nav-item { white-space: nowrap; flex-shrink: 0; width: auto; padding: 9px 12px; }
+    .sidebar-context { margin: 0 12px; }
+    .sidebar-footer { display: none; }
+    .top-bar, .header { flex-direction: column; align-items: stretch; }
+    .top-actions { justify-content: flex-start; }
     .admin-data-state { display: none; }
     .main-area, .content { padding: 20px 16px; }
     .top-bar, .header { align-items: flex-start; gap: 14px; }
@@ -90,6 +99,11 @@ export function enhanceAdminHtml(html) {
     ''
   );
 
+  // Периоды по возрастанию: Сегодня · 7 · 30 · 90.
+  result = result.replace(
+    '<button class="active" data-days="7">7 дней</button>\n          <button data-days="1">Сегодня</button>',
+    '<button data-days="1">Сегодня</button>\n          <button class="active" data-days="7">7 дней</button>'
+  );
   result = result.replace(
     '<div class="top-actions" id="top-period-actions">',
     '<div class="top-actions" id="top-period-actions">\n        <span class="admin-data-state" id="admin-data-state" aria-live="polite">Ещё не обновлено</span>'
