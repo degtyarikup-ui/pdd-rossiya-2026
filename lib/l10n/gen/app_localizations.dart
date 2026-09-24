@@ -1808,6 +1808,24 @@ abstract class AppLocalizations {
   /// **'Рекорд'**
   String get gameLobbyRecord;
 
+  /// No description provided for @gameLobbyColour.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цвет'**
+  String get gameLobbyColour;
+
+  /// No description provided for @gameLobbyRating.
+  ///
+  /// In ru, this message translates to:
+  /// **'Рейтинг'**
+  String get gameLobbyRating;
+
+  /// No description provided for @gameLobbyColoursHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новые цвета открываются за правильные ответы в игре'**
+  String get gameLobbyColoursHint;
+
   /// No description provided for @gameRatingHint.
   ///
   /// In ru, this message translates to:

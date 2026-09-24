@@ -195,7 +195,7 @@
       const g = new THREE.ShapeGeometry(shape);
       // Shape (z, y) onto the plane x = ±(Wg/2 + 0.004), facing outwards.
       const pos = g.attributes.position;
-      for (let i = 0; i < pos.count; i++) { const zz = pos.getX(i), yy = pos.getY(i); pos.setXYZ(i, sx * (Wg / 2 + 0.006), yy, zz); }
+      for (let i = 0; i < pos.count; i++) { const zz = pos.getX(i), yy = pos.getY(i); pos.setXYZ(i, sx * (Wg / 2 + 0.015), yy, zz); }
       g.computeVertexNormals();
       add(new THREE.Mesh(g, mats.glass));
     }
@@ -211,11 +211,11 @@
     add(quad(rs(-gw, roofR - 0.05, H - 0.05), rs(gw, roofR - 0.05, H - 0.05), rs(gw, cabR + 0.05, b.belt + 0.05), rs(-gw, cabR + 0.05, b.belt + 0.05), mats.glass));
 
     // Wheel arches: dark half discs on both flanks, then the wheels.
-    const r = b.r, wb = L * 0.31, tw = W / 2 - 0.12;
+    const r = b.r, wb = L * 0.31, tw = W / 2 - 0.1; // tyre face 2 cm outside the arch
     const zFrontAxle = id === 'pickup' ? L * 0.33 : wb, zRearAxle = -wb;
     for (const z of [zFrontAxle, zRearAxle]) for (const sx of [-1, 1]) {
       const arch = new THREE.Mesh(new THREE.CircleGeometry(r + 0.08, 20, 0, Math.PI), mats.dark);
-      arch.rotation.y = sx * Math.PI / 2; arch.position.set(sx * (W / 2 + 0.005), r, z); add(arch);
+      arch.rotation.y = sx * Math.PI / 2; arch.position.set(sx * (W / 2 + 0.02), r, z); add(arch);
     }
     car.userData.wheels = []; car.userData.frontAxles = [];
     for (const z of [zFrontAxle, zRearAxle]) for (const sx of [-1, 1]) {
@@ -237,9 +237,8 @@
       // Mirrors on the doors at the A-pillar; a door seam and a handle.
       const mirror = box(0.08, 0.1, 0.18, sx * (W / 2 + 0.07), b.belt + 0.1, cabF - 0.18, mats.paint);
       mirror.rotation.y = sx * 0.15;
-      box(0.012, b.belt - ground - 0.2, 0.015, sx * (W / 2 + 0.004), (b.belt + ground) / 2, mid, mats.trim);
-      box(0.02, 0.03, 0.12, sx * (W / 2 + 0.01), b.belt - 0.12, mid + 0.35, mats.trim);
-      box(0.02, 0.03, 0.12, sx * (W / 2 + 0.01), b.belt - 0.12, mid - 0.35, mats.trim);
+      box(0.03, 0.03, 0.12, sx * (W / 2 + 0.02), b.belt - 0.12, mid + 0.35, mats.trim);
+      box(0.03, 0.03, 0.12, sx * (W / 2 + 0.02), b.belt - 0.12, mid - 0.35, mats.trim);
     }
     car.brakeLights = [];
     for (const sx of [-1, 1]) {
@@ -302,7 +301,7 @@
     for (const sx of [-1, 1]) {
       const shape = new THREE.Shape(); shape.moveTo(win[0][0], win[0][1]); win.slice(1).forEach(p => shape.lineTo(p[0], p[1])); shape.closePath();
       const g = new THREE.ShapeGeometry(shape); const pos = g.attributes.position;
-      for (let i = 0; i < pos.count; i++) pos.setXYZ(i, sx * (W / 2 + 0.004), pos.getY(i), pos.getX(i));
+      for (let i = 0; i < pos.count; i++) pos.setXYZ(i, sx * (W / 2 + 0.015), pos.getY(i), pos.getX(i));
       g.computeVertexNormals(); add(new THREE.Mesh(g, mats.glass));
     }
     // Windscreen on the front slope.
@@ -322,12 +321,12 @@
       const shape = new THREE.Shape();
       shape.moveTo(-r - 0.16, 0); shape.lineTo(-r - 0.02, r + 0.16); shape.lineTo(r + 0.02, r + 0.16); shape.lineTo(r + 0.16, 0); shape.closePath();
       const g = new THREE.ShapeGeometry(shape); const pos = g.attributes.position;
-      for (let i = 0; i < pos.count; i++) pos.setXYZ(i, sx * (W / 2 + 0.006), r + pos.getY(i) - 0.02, z + pos.getX(i));
+      for (let i = 0; i < pos.count; i++) pos.setXYZ(i, sx * (W / 2 + 0.02), r + pos.getY(i) - 0.02, z + pos.getX(i));
       g.computeVertexNormals(); add(new THREE.Mesh(g, mats.dark));
     }
     car.userData.wheels = []; car.userData.frontAxles = [];
     for (const z of [wb, -wb]) for (const sx of [-1, 1]) {
-      const w = wheel(car, r, 0.28, sx * (W / 2 - 0.14), z, mats, 6);
+      const w = wheel(car, r, 0.28, sx * (W / 2 - 0.11), z, mats, 6);
       car.userData.wheels.push(w.tyre);
       if (z > 0) car.userData.frontAxles.push(w.axle);
     }

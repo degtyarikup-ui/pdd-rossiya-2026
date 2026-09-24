@@ -10373,8 +10373,15 @@
   function buildRevealScene(id, paint) {
     const sn = season(), dark = state.isDarkTheme;
     const rs = new THREE.Scene();
-    rs.background = new THREE.Color(dark ? sn.skyDark : sn.sky);
-    rs.fog = new THREE.FogExp2(dark ? sn.skyDark : sn.sky, 0.012);
+    // A real sky: deep blue overhead fading to a pale horizon (night: dark).
+    const skyTop = dark ? 0x0F1B2E : 0x4F9BE8, skyLow = dark ? 0x23324A : 0xCFE6F7;
+    const skyC = document.createElement('canvas'); skyC.width = 4; skyC.height = 256;
+    const sg = skyC.getContext('2d'), grad = sg.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, '#' + skyTop.toString(16).padStart(6, '0'));
+    grad.addColorStop(1, '#' + skyLow.toString(16).padStart(6, '0'));
+    sg.fillStyle = grad; sg.fillRect(0, 0, 4, 256);
+    rs.background = new THREE.CanvasTexture(skyC);
+    rs.fog = new THREE.Fog(skyLow, 45, 120);
     rs.add(new THREE.AmbientLight(0xFFFFFF, sn.ambient));
     const sun = new THREE.DirectionalLight(sn.sun, sn.sunIntensity + 0.2); sun.position.set(-8, 14, -10); rs.add(sun);
     const mat = c => new THREE.MeshLambertMaterial({ color: c });
@@ -10426,7 +10433,7 @@
     // Driveway: herringbone-ish paving between edging stones, running from
     // the road into the garage, flush with the dropped kerb.
     const driveMat = texMat(paving(new THREE.Color(sn.sidewalk).multiplyScalar(0.95).getHex(), 5, 20));
-    planeY(6.4, 26.4, 0, 0.02, -13.6, driveMat);
+    planeY(6.4, 26.2, 0, 0.02, -13.7, driveMat); // ends at the garage floor, no overlap
     for (const sx of [-1, 1]) block(0.2, 0.08, 26.4, sx * 3.3, 0.04, -13.6, kerbMat);
     block(6.8, 0.06, 0.22, 0, 0.03, -26.8, kerbMat);
 
@@ -10435,6 +10442,19 @@
     [[-12, -6], [-15, 4], [13, -5], [16, 6], [-9, 12], [11, 13], [-22, -14], [22, -14]].forEach(([x, z]) => { const t = createTree(); t.position.set(x, 0, z); rs.add(t); });
     for (const sx of [-1, 1]) block(0.9, 1.0, 17, sx * 7.2, 0.5, -14.5, mat(0x4E7A48));
     [[-19, 10, 1], [19, 10, 1]].forEach(([x, z, style]) => { const h = createBuilding(9, 6, 8, style); h.position.set(x, 0, z); rs.add(h); });
+    // Behind the garage: two rows of trees, a hedge line and far hills.
+    for (let i = 0; i < 16; i++) {
+      const t = createTree(i % 3 === 0 ? 'pine' : undefined);
+      t.position.set(-24 + i * 3.2 + (i % 2) * 0.8, 0, 11 + (i % 2) * 3.5); t.scale.setScalar(1.1 + (i % 3) * 0.15); rs.add(t);
+    }
+    for (let i = 0; i < 12; i++) {
+      const t = createTree('pine'); t.position.set(-30 + i * 5.5, 0, 22 + (i % 3) * 2); t.scale.setScalar(1.5 + (i % 2) * 0.3); rs.add(t);
+    }
+    const hillMat = mat(new THREE.Color(sn.ground).multiplyScalar(0.82).getHex());
+    [[-30, 60, 26], [8, 64, 30], [42, 58, 24]].forEach(([x, z, r]) => {
+      const hill = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 10), hillMat);
+      hill.scale.set(1.6, 0.35, 1); hill.position.set(x, -2, z); rs.add(hill);
+    });
     const lamp = createLampPost(); lamp.position.set(-6.5, 0, -24.4); rs.add(lamp);
 
     // The garage: siding walls with corner trims, a gable roof in shingles
@@ -10515,7 +10535,6 @@
     rs.add(car);
     // Celebration: headlights, light pouring out of the opening door, a
     // glowing pad where the car stops, sparkles round it and confetti.
-    car.traverse(o => { if (o.isMesh && o.material?.color?.getHex() === 0xFFF3CC) window.PDD_VEHICLES.addGlow(o, 0xFFF3CC, 1.6); });
     const additive = (color, opacity) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
     const rays = new THREE.Group();
     for (let i = 0; i < 5; i++) {
@@ -10525,6 +10544,7 @@
       ray.rotation.x = -Math.PI / 2; ray.position.set((i - 2) * 1.5, 0.03 + i * 0.002, -0.7);
       rays.add(ray);
     }
+    rays.visible = false; // no light shafts on the floor (they flickered)
     rs.add(rays);
     const pad = new THREE.Mesh(new THREE.RingGeometry(2.6, 3.0, 64), additive(0x3F8CFF, 0));
     pad.rotation.x = -Math.PI / 2; pad.position.set(0, 0.045, -6.6); rs.add(pad);
@@ -11157,6 +11177,8 @@
       updateReveal(0);
     },
     hideLobby() { if (reveal?.phase === 'lobby') window.game.hideReveal(); },
+    // A finger drag on the start screen turns the car.
+    lobbySpin(dx) { if (reveal?.phase === 'lobby') { reveal.yaw += dx * 0.012; reveal.spin = dx * 0.6; } },
     // Browsing cars on the start screen: the current car drives off one side
     // while the next one rolls in from the other. dir 1 = next (arrives from
     // the right of the screen), -1 = previous.
@@ -11165,7 +11187,6 @@
       if (!r || r.phase !== 'lobby' || !window.PDD_VEHICLES.specs[id]) { window.game.showLobby(id, paint); return; }
       if (r.swap) { r.scene.remove(r.swap.from); r.swap.to.position.x = 0; r.swap = null; }
       const next = window.PDD_VEHICLES.create(id, paint || null);
-      next.traverse(o => { if (o.isMesh && o.material?.color?.getHex() === 0xFFF3CC) window.PDD_VEHICLES.addGlow(o, 0xFFF3CC, 1.6); });
       next.position.set(-9 * dir, 0, -6.6); next.rotation.y = r.yaw;
       r.scene.add(next);
       r.swap = { from: r.car, to: next, dir, t: 0 };

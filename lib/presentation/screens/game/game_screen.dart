@@ -747,6 +747,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
       context,
       paints: _paintsOf(_vehicleId),
       selected: _vehiclePaint,
+      // Without premium, colours are won: say how to get more.
+      showHint: !ref.read(isPremiumProvider),
     );
     if (paint == null || !mounted || paint == _vehiclePaint) return;
     _selectCar(GameCar(_vehicleId, paint));
@@ -1376,10 +1378,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   onNext: _lobbyModels().length > 1
                       ? () => _browseCar(1)
                       : null,
-                  onColour: _paintsOf(_vehicleId).length > 1
-                      ? _pickColour
-                      : null,
+                  onColour: _pickColour,
                   onLeaderboard: _openLeaderboard,
+                  onSpin: (dx) => _send('lobbySpin', [dx]),
                 ),
               ),
 

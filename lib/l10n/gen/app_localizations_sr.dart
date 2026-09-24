@@ -997,6 +997,16 @@ class AppLocalizationsSr extends AppLocalizations {
   String get gameLobbyRecord => 'Rekord';
 
   @override
+  String get gameLobbyColour => 'Boja';
+
+  @override
+  String get gameLobbyRating => 'Rang lista';
+
+  @override
+  String get gameLobbyColoursHint =>
+      'Nove boje se otključavaju tačnim odgovorima u igri';
+
+  @override
   String get gameRatingHint =>
       'Poeni svih vožnji za nedelju. U tabeli su najboljih 100.';
 

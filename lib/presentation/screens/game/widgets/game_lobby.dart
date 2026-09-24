@@ -21,8 +21,10 @@ class GameLobby extends StatelessWidget {
   final VoidCallback? onPrevious;
   final VoidCallback? onNext;
 
-  /// Null when the car has a single colour.
   final VoidCallback? onColour;
+
+  /// A finger drag on the scene turns the car (horizontal pixels).
+  final ValueChanged<double>? onSpin;
   final VoidCallback? onLeaderboard;
 
   const GameLobby({
@@ -36,6 +38,7 @@ class GameLobby extends StatelessWidget {
     this.onNext,
     this.onColour,
     this.onLeaderboard,
+    this.onSpin,
   });
 
   @override
@@ -47,6 +50,24 @@ class GameLobby extends StatelessWidget {
     final onPaint = paint.computeLuminance() > 0.55
         ? AppColors.primaryText
         : AppColors.white;
+    // A round button with its caption underneath, readable over the scene.
+    Widget labelled(Widget button, String caption) => Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        button,
+        const SizedBox(height: 4),
+        Text(
+          caption,
+          style: const TextStyle(
+            fontFamily: 'Onest',
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: AppColors.white,
+            shadows: [Shadow(color: Color(0x99000000), blurRadius: 6)],
+          ),
+        ),
+      ],
+    );
     Widget round({
       required Color color,
       required Widget icon,
@@ -82,20 +103,11 @@ class GameLobby extends StatelessWidget {
     );
     return Stack(
       children: [
-        // Swiping anywhere on the scene browses the cars.
+        // Dragging on the scene turns the car; the arrows change it.
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onHorizontalDragEnd: (details) {
-              final v = details.primaryVelocity ?? 0;
-              if (v < -250 && onNext != null) {
-                HapticFeedbackHelper.select();
-                onNext!();
-              } else if (v > 250 && onPrevious != null) {
-                HapticFeedbackHelper.select();
-                onPrevious!();
-              }
-            },
+            onHorizontalDragUpdate: (details) => onSpin?.call(details.delta.dx),
           ),
         ),
         // Top: fuel on the left, the record in the HUD's gold pill.
@@ -180,23 +192,29 @@ class GameLobby extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              if (onColour != null)
+              labelled(
                 round(
                   color: paint,
-                  label: gamePaintName(vehiclePaint),
+                  label:
+                      '${appL10n.gameLobbyColour}: ${gamePaintName(vehiclePaint)}',
                   onTap: onColour,
                   icon: Icon(Icons.palette_rounded, color: onPaint, size: 26),
                 ),
-              if (onColour != null) const SizedBox(height: 12),
-              round(
-                color: colors.gold,
-                label: appL10n.gameWeeklyRating,
-                onTap: onLeaderboard,
-                icon: const Icon(
-                  Icons.leaderboard_rounded,
-                  color: AppColors.white,
-                  size: 26,
+                appL10n.gameLobbyColour,
+              ),
+              const SizedBox(height: 12),
+              labelled(
+                round(
+                  color: colors.gold,
+                  label: appL10n.gameWeeklyRating,
+                  onTap: onLeaderboard,
+                  icon: const Icon(
+                    Icons.leaderboard_rounded,
+                    color: AppColors.white,
+                    size: 26,
+                  ),
                 ),
+                appL10n.gameLobbyRating,
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -232,6 +250,7 @@ Future<String?> showGamePaintSheet(
   BuildContext context, {
   required List<String> paints,
   required String selected,
+  bool showHint = false,
 }) {
   return showModalBottomSheet<String>(
     context: context,
@@ -241,37 +260,64 @@ Future<String?> showGamePaintSheet(
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 12,
-            runSpacing: 12,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              for (final paint in paints)
-                Semantics(
-                  button: true,
-                  selected: paint == selected,
-                  label: gamePaintName(paint),
-                  child: GestureDetector(
-                    onTap: () {
-                      HapticFeedbackHelper.select();
-                      Navigator.pop(context, paint);
-                    },
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: gamePaintColors[paint],
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: paint == selected
-                              ? colors.accent
-                              : colors.divider,
-                          width: paint == selected ? 3 : 1,
+              Text(
+                appL10n.gameLobbyColour,
+                style: TextStyle(
+                  fontFamily: 'Onest',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: colors.primaryText,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  for (final paint in paints)
+                    Semantics(
+                      button: true,
+                      selected: paint == selected,
+                      label: gamePaintName(paint),
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedbackHelper.select();
+                          Navigator.pop(context, paint);
+                        },
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: gamePaintColors[paint],
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: paint == selected
+                                  ? colors.accent
+                                  : colors.divider,
+                              width: paint == selected ? 3 : 1,
+                            ),
+                          ),
                         ),
                       ),
                     ),
+                ],
+              ),
+              if (showHint) ...[
+                const SizedBox(height: 16),
+                Text(
+                  appL10n.gameLobbyColoursHint,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 13,
+                    color: colors.secondaryText,
                   ),
                 ),
+              ],
             ],
           ),
         ),

@@ -995,6 +995,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameLobbyRecord => 'Рекорд';
 
   @override
+  String get gameLobbyColour => 'Цвет';
+
+  @override
+  String get gameLobbyRating => 'Рейтинг';
+
+  @override
+  String get gameLobbyColoursHint =>
+      'Новые цвета открываются за правильные ответы в игре';
+
+  @override
   String get gameRatingHint =>
       'Очки всех заездов за неделю. В таблице — лучшие 100.';
 
