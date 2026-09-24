@@ -8,6 +8,8 @@ import { THREADS_VIEW_HTML, THREADS_CLIENT_JS } from './threads_ui.js';
 import { LINKS_SOURCE_SELECT_MARKER, LINKS_SOURCE_HTML, LINKS_CLIENT_JS } from './links_ui.js';
 import { enhanceAdminHtml, enhanceAdminClientJs, ADMIN_UI_CLIENT_JS } from './admin_ui.js';
 import { StatsBuffer } from './stats_buffer.js';
+import { handleUsersAdmin } from './users_admin.js';
+import { USERS_VIEW_HTML, USERS_CLIENT_JS } from './users_ui.js';
 
 // Durable Object буфера статистики (см. trackStats / flushBufferedStats).
 export { StatsBuffer };
@@ -2305,10 +2307,18 @@ function renderAdminPage() {
     : withoutOldThreads.slice(0, sourceStart) + LINKS_SOURCE_HTML
       + withoutOldThreads.slice(sourceEnd + '</select>'.length);
 
-  const html = enhanceAdminHtml(withSourceInput
+  // Раздел «Пользователи» тоже заменяем целиком (users_ui.js): старую таблицу
+  // и её скрипт вырезаем по границам соседних разделов.
+  const usersStart = withSourceInput.indexOf('<div id="users-view"');
+  const usersEnd = withSourceInput.indexOf('<!-- 5. AI MANAGEMENT VIEW -->');
+  const withUsers = (usersStart !== -1 && usersEnd > usersStart)
+    ? withSourceInput.slice(0, usersStart) + USERS_VIEW_HTML.trim() + '\n\n    ' + withSourceInput.slice(usersEnd)
+    : withSourceInput;
+
+  const html = enhanceAdminHtml(withUsers
     .replace('</nav>', SOCIAL_NAV_HTML + '    </nav>')
     .replace('\n\n  </main>', '\n' + SOCIAL_VIEW_HTML + '\n' + THREADS_VIEW_HTML + '\n  </main>'));
-  return html + "<script>" + clientJs + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + ADMIN_UI_CLIENT_JS + "</script></body></html>";
+  return html + "<script>" + clientJs + USERS_CLIENT_JS + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + ADMIN_UI_CLIENT_JS + "</script></body></html>";
 }
 
 
@@ -3251,92 +3261,11 @@ export default {
     }
 
     // ────────────────────── Admin Users API ──────────────────────
-    if (url.pathname === '/api/admin/users' && request.method === 'GET') {
-      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
-      const users = await getAllUsers(env);
-      return jsonResponse({ ok: true, users });
-    }
-
-    if (url.pathname === '/api/admin/users/grant-premium' && request.method === 'POST') {
-      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
-      let body;
-      try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'bad json' }, 400); }
-      const { userId, days, isLifetime } = body || {};
-      if (!userId || !env.INSTALLS) return jsonResponse({ error: 'missing userId' }, 400);
-
-      const raw = await env.INSTALLS.get('user:' + userId);
-      if (!raw) return jsonResponse({ error: 'user not found' }, 404);
-      const user = JSON.parse(raw);
-
-      user.isPremium = true;
-      user.premiumSource = 'admin_grant';
-      user.grantedAt = new Date().toISOString();
-      if (isLifetime) {
-        user.premiumExpiresAt = null;
-      } else {
-        const d = days ? parseInt(days, 10) : 30;
-        const now = (user.premiumExpiresAt && new Date(user.premiumExpiresAt) > new Date())
-          ? new Date(user.premiumExpiresAt)
-          : new Date();
-        now.setDate(now.getDate() + d);
-        user.premiumExpiresAt = now.toISOString();
-      }
-
-      await env.INSTALLS.put('user:' + userId, JSON.stringify(user));
-      return jsonResponse({ ok: true, user });
-    }
-
-    if (url.pathname === '/api/admin/users/revoke-premium' && request.method === 'POST') {
-      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
-      let body;
-      try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'bad json' }, 400); }
-      const { userId } = body || {};
-      if (!userId || !env.INSTALLS) return jsonResponse({ error: 'missing userId' }, 400);
-
-      const raw = await env.INSTALLS.get('user:' + userId);
-      if (!raw) return jsonResponse({ error: 'user not found' }, 404);
-      const user = JSON.parse(raw);
-
-      user.isPremium = false;
-      user.premiumSource = null;
-      user.premiumExpiresAt = null;
-      await env.INSTALLS.put('user:' + userId, JSON.stringify(user));
-      return jsonResponse({ ok: true, user });
-    }
-
-    if (url.pathname === '/api/admin/users/delete' && request.method === 'POST') {
-      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
-      let body;
-      try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'bad json' }, 400); }
-      const { userId } = body || {};
-      if (!userId || !env.INSTALLS) return jsonResponse({ error: 'missing userId' }, 400);
-
-      let email = null;
-      try {
-        const raw = await env.INSTALLS.get('user:' + userId);
-        if (raw) {
-          const u = JSON.parse(raw);
-          if (u.email) email = u.email;
-        }
-      } catch (_) {}
-
-      await env.INSTALLS.delete('user:' + userId);
-      if (email) {
-        await env.INSTALLS.delete('user_email:' + email.toLowerCase().trim());
-      }
-
-      try {
-        const rawList = await env.INSTALLS.get('users_list');
-        if (rawList) {
-          let userIds = JSON.parse(rawList);
-          if (Array.isArray(userIds)) {
-            userIds = userIds.filter(id => id !== userId);
-            await env.INSTALLS.put('users_list', JSON.stringify(userIds));
-          }
-        }
-      } catch (_) {}
-
-      return jsonResponse({ ok: true, deleted: userId });
+    if (url.pathname.startsWith('/api/admin/users')) {
+      const usersResponse = await handleUsersAdmin(request, env, url, {
+        verifyAdminAuth, getAllUsers, revokeUserSessions, readGameBoard, gameWeekKey, jsonResponse,
+      });
+      if (usersResponse) return usersResponse;
     }
 
     // ────────────────────── AI Assistant & Chat API ──────────────────────

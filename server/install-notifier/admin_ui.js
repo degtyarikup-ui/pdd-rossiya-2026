@@ -58,9 +58,6 @@ export const ADMIN_UI_STYLES = `
   .kpi-change.up { color: #159461; }
   .kpi-change.down { color: var(--danger); }
   .card-head { gap: 12px; }
-  .users-toolbar { display: flex; gap: 10px; margin: -2px 0 14px; }
-  .users-toolbar input { width: min(360px, 100%); }
-  .users-toolbar select { min-width: 150px; }
   .blog-toolbar { margin: -2px 0 14px; }
   .blog-toolbar input { width: min(420px, 100%); }
   button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible {
@@ -73,9 +70,7 @@ export const ADMIN_UI_STYLES = `
     .main-area, .content { padding: 20px 16px; }
     .top-bar, .header { align-items: flex-start; gap: 14px; }
     .top-actions { flex-wrap: wrap; justify-content: flex-end; }
-    .users-toolbar { flex-direction: column; }
-    .users-toolbar select { width: 100%; }
-  }
+      }
 </style>`;
 
 export function enhanceAdminHtml(html) {
@@ -130,19 +125,6 @@ export function enhanceAdminHtml(html) {
       '<button class="btn-action" id="admin-error-retry">Повторить</button>' +
     '</div>\n\n    <!-- 1. ANALYTICS VIEW -->'
   );
-  const usersStart = result.indexOf('<div id="users-view"');
-  if (usersStart !== -1) {
-    const tableStart = result.indexOf('<div style="overflow-x:auto;">', usersStart);
-    if (tableStart !== -1) {
-      result = result.slice(0, tableStart)
-        + '<div class="users-toolbar">'
-        + '<input id="users-search" type="search" placeholder="Имя, email или ID" aria-label="Поиск пользователей">'
-        + '<select id="users-status" aria-label="Статус пользователя">'
-        + '<option value="all">Все статусы</option><option value="premium">Premium</option><option value="free">Без Premium</option>'
-        + '</select></div>\n          '
-        + result.slice(tableStart);
-    }
-  }
   const blogContainer = '<div id="blog-articles-container" style="display:grid; gap:12px;">';
   result = result.replace(
     blogContainer,
@@ -158,7 +140,7 @@ export function enhanceAdminClientJs(js) {
     .replace("let currentApp = 'all'; // 'all' | 'ru' | 'rs'", "let currentApp = localStorage.getItem('pdd-admin-app') || 'all'; // 'all' | 'ru' | 'by' | 'rs'")
     .replace(
       "currentFeature = btn.dataset.feature;",
-      "currentFeature = btn.dataset.feature;\n    localStorage.setItem('pdd-admin-feature', currentFeature);\n    if (history.pushState && location.hash !== '#' + currentFeature) history.pushState(null, '', '#' + currentFeature);"
+      "currentFeature = btn.dataset.feature;\n    localStorage.setItem('pdd-admin-feature', currentFeature);\n    if (history.pushState && location.hash.split('/')[0] !== '#' + currentFeature) history.pushState(null, '', '#' + currentFeature);"
     )
     .replace(
       "currentApp = e.target.value;\n  checkAuthAndLoad();",
@@ -232,53 +214,12 @@ export function enhanceAdminClientJs(js) {
     "console.error('loadAiStats error:', err);\n    if (typeof scToast === 'function') scToast('Статистика ИИ не загрузилась: ' + err.message, true);"
   );
 
-  const usersStart = result.indexOf('async function loadUsersList()');
+  // Старый список пользователей заменён модулем users_ui.js — вырезаем его
+  // целиком, иначе он навесит обработчики на уже несуществующую таблицу.
+  const usersStart = result.indexOf('// ────────────────────── Users & Premium Management');
   const usersEnd = result.indexOf('// ────────────────────── AI Management', usersStart);
   if (usersStart !== -1 && usersEnd > usersStart) {
-    let usersJs = result.slice(usersStart, usersEnd);
-    usersJs = usersJs
-      .replace(
-        "const data = await res.json();\n    const users = data.users || [];",
-        "const data = await res.json();\n    if (!res.ok) throw new Error(data.error || ('ошибка сервера ' + res.status));\n    const users = data.users || [];\n    window.__premiumExpiry = {};\n    users.forEach(function (user) { window.__premiumExpiry[user.id] = user.premiumExpiresAt || null; });"
-      )
-      .replace("'<img src=\"' + u.avatarUrl + '", "'<img src=\"' + adminEsc(u.avatarUrl) + '")
-      .replace("+ (u.name ? u.name.charAt(0).toUpperCase() : 'U') +", "+ adminEsc(u.name ? u.name.charAt(0).toUpperCase() : 'U') +")
-      .replace("+ 'v' + u.appVersion", "+ 'v' + adminEsc(u.appVersion)")
-      .replace(
-        "const escapedName = (u.name || 'Пользователь').replace(/'/g, \"\\\\'\");",
-        "const escapedName = adminInlineJs(u.name || 'Пользователь');\n      const safeUserId = adminInlineJs(u.id);"
-      )
-      .replaceAll("+ u.id +", "+ safeUserId +")
-      .replace("return '<tr>'", "return '<tr data-premium=\"' + (activePrem ? 'true' : 'false') + '\">'")
-      .replace("+ (u.name || 'Пользователь') +", "+ adminEsc(u.name || 'Пользователь') +")
-      .replace("+ (u.email || u.id) +", "+ adminEsc(u.email || u.id) +")
-      .replace("+ err.message +", "+ adminEsc(err.message) +")
-      .replace("Пользователь: <b>' + userName + '</b>", "Пользователь: <b>' + adminEsc(userName) + '</b>")
-      .replace(
-        "document.body.appendChild(overlay);\n\n  document.getElementById('grant-cancel-btn')",
-        `overlay.classList.add('admin-dialog-backdrop');
-  document.body.appendChild(overlay);
-
-  const durationSelect = document.getElementById('grant-duration');
-  const expiryPreview = document.createElement('div');
-  expiryPreview.style.cssText = 'margin-top:8px;font-size:12px;color:var(--text-muted);';
-  durationSelect.insertAdjacentElement('afterend', expiryPreview);
-  function updateExpiryPreview() {
-    if (durationSelect.value === 'lifetime') {
-      expiryPreview.textContent = 'Новый срок: бессрочно';
-      return;
-    }
-    var stored = window.__premiumExpiry && window.__premiumExpiry[userId];
-    var base = stored && new Date(stored) > new Date() ? new Date(stored) : new Date();
-    base.setDate(base.getDate() + parseInt(durationSelect.value, 10));
-    expiryPreview.textContent = 'Будет действовать до ' + base.toLocaleDateString('ru-RU');
-  }
-  durationSelect.addEventListener('change', updateExpiryPreview);
-  updateExpiryPreview();
-
-  document.getElementById('grant-cancel-btn')`
-      );
-    result = result.slice(0, usersStart) + usersJs + result.slice(usersEnd);
+    result = result.slice(0, usersStart) + result.slice(usersEnd);
   }
 
   const blogStart = result.indexOf('async function loadBlogArticles()');
@@ -461,25 +402,6 @@ export const ADMIN_UI_CLIENT_JS = `
   var retry = document.getElementById('admin-error-retry');
   if (retry) retry.addEventListener('click', checkAuthAndLoad);
 
-  var userSearch = document.getElementById('users-search');
-  var userStatus = document.getElementById('users-status');
-  var usersBody = document.getElementById('table-users');
-  function filterUsers() {
-    if (!usersBody) return;
-    var query = (userSearch ? userSearch.value : '').trim().toLocaleLowerCase('ru');
-    var status = userStatus ? userStatus.value : 'all';
-    usersBody.querySelectorAll('tr').forEach(function (row) {
-      var rowText = row.textContent.toLocaleLowerCase('ru');
-      var matchesText = !query || rowText.indexOf(query) !== -1;
-      var hasPremium = row.dataset.premium === 'true';
-      var matchesStatus = status === 'all' || (status === 'premium' ? hasPremium : !hasPremium);
-      row.style.display = matchesText && matchesStatus ? '' : 'none';
-    });
-  }
-  if (userSearch) userSearch.addEventListener('input', filterUsers);
-  if (userStatus) userStatus.addEventListener('change', filterUsers);
-  if (usersBody) new MutationObserver(filterUsers).observe(usersBody, { childList: true });
-
   var blogSearch = document.getElementById('blog-search');
   var blogContainer = document.getElementById('blog-articles-container');
   function filterBlogArticles() {
@@ -498,14 +420,15 @@ export const ADMIN_UI_CLIENT_JS = `
     if (dialogs.length) dialogs[dialogs.length - 1].remove();
   });
 
-  var initial = location.hash ? location.hash.slice(1) : currentFeature;
+  // #users/<id> — карточка пользователя внутри раздела «Пользователи».
+  var initial = (location.hash ? location.hash.slice(1) : currentFeature).split('/')[0];
   var allowed = ['analytics', 'links', 'blog', 'users', 'ai', 'threads', 'social'];
   if (allowed.indexOf(initial) === -1) initial = 'analytics';
   var initialButton = document.querySelector('.sidebar-menu .nav-item[data-feature="' + initial + '"]');
   if (initialButton) initialButton.click();
 
   window.addEventListener('popstate', function () {
-    var feature = location.hash.slice(1);
+    var feature = location.hash.slice(1).split('/')[0];
     if (feature === currentFeature || allowed.indexOf(feature) === -1) return;
     var button = document.querySelector('.sidebar-menu .nav-item[data-feature="' + feature + '"]');
     if (button) button.click();
