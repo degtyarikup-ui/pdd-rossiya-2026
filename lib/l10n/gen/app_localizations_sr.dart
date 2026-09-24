@@ -991,6 +991,9 @@ class AppLocalizationsSr extends AppLocalizations {
   String get gameLobbyStart => 'Kreni u vožnju';
 
   @override
+  String get gameLobbyContinue => 'Nastavi vožnju';
+
+  @override
   String get gameLobbyChangeCar => 'Promeni';
 
   @override

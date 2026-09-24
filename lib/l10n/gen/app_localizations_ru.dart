@@ -989,6 +989,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameLobbyStart => 'Начать заезд';
 
   @override
+  String get gameLobbyContinue => 'Продолжить заезд';
+
+  @override
   String get gameLobbyChangeCar => 'Сменить';
 
   @override

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -436,6 +437,13 @@ class _GameCarThumbnailState extends State<GameCarThumbnail> {
   }
 
   int _attempts = 0;
+  Timer? _retry;
+
+  @override
+  void dispose() {
+    _retry?.cancel();
+    super.dispose();
+  }
 
   Future<void> _load() async {
     final car = widget.car;
@@ -446,10 +454,12 @@ class _GameCarThumbnailState extends State<GameCarThumbnail> {
         // The engine is still loading: ask again shortly, so the real car in
         // its real paint replaces the bundled picture as soon as it can.
         if (_attempts++ < 30) {
-          await Future<void>.delayed(const Duration(seconds: 1));
-          if (mounted && widget.car.key == car.key && _bytes == null) {
-            await _load();
-          }
+          _retry?.cancel();
+          _retry = Timer(const Duration(seconds: 1), () {
+            if (mounted && widget.car.key == car.key && _bytes == null) {
+              _load();
+            }
+          });
         }
         return;
       }

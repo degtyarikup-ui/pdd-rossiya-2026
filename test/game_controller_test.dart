@@ -428,28 +428,42 @@ void main() {
     engine.emit('{"event":"ready"}');
     await tester.pump();
     await _startDrive(tester);
+    // The car button in the HUD opens the garage over the paused run.
+    engine.scripts.clear();
     await tester.tap(find.bySemanticsLabel(appL10n.gameGarage));
-    await tester.pumpAndSettle();
-    expect(find.byType(GameGarage), findsOneWidget);
+    await tester.pump();
     expect(engine.scripts.any((s) => s.contains('setPaused(true)')), true);
-    for (final label in [appL10n.gameCarHatch, appL10n.gameCarPickup]) {
-      expect(find.text(label), findsOneWidget);
-    }
-    // Not earned yet: absent from the list.
-    expect(find.text(appL10n.gameCarSedan), findsNothing);
-    expect(find.text(appL10n.gameCarCyber), findsNothing);
-    await tester.tap(find.text(appL10n.gameCarPickup));
+    expect(engine.scripts.any((s) => s.contains('showLobby')), true);
+    expect(find.text(appL10n.gameLobbyContinue), findsOneWidget);
+    // Arrows browse the earned cars only (hatch -> pickup), in their paint.
+    await tester.tap(
+      find.bySemanticsLabel(
+        MaterialLocalizations.of(
+          tester.element(find.byType(GameScreen)),
+        ).nextPageTooltip,
+      ),
+      warnIfMissed: false,
+    );
+    await tester.pump();
     engine.emit('{"event":"vehicle_selected","vehicleId":"pickup"}');
-    await tester.pumpAndSettle();
+    await tester.pump();
     expect(
       engine.scripts.any((s) => s.contains('selectVehicle("pickup","teal")')),
+      true,
+    );
+    expect(
+      engine.scripts.any((s) => s.contains('lobbySwap("pickup","teal",1)')),
       true,
     );
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('game_vehicle'), 'pickup');
     expect(prefs.getString('game_vehicle_paint'), 'teal');
+    // «Continue the drive» returns to the same run.
+    await tester.tap(find.text(appL10n.gameLobbyContinue));
+    await tester.pump();
+    expect(engine.scripts.any((s) => s.contains('hideLobby')), true);
+    expect(find.byType(GameControlsOverlay), findsOneWidget);
     GameGarageService.instance.resetForTest();
-    expect(find.byType(GameGarage), findsNothing);
     await tester.pumpWidget(const SizedBox());
   });
 

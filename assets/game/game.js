@@ -10374,7 +10374,7 @@
     const sn = season(), dark = state.isDarkTheme;
     const rs = new THREE.Scene();
     // A real sky: deep blue overhead fading to a pale horizon (night: dark).
-    const skyTop = dark ? 0x0F1B2E : 0x4F9BE8, skyLow = dark ? 0x23324A : 0xCFE6F7;
+    const skyTop = dark ? 0x1B2A40 : 0x9FD2F2, skyLow = dark ? 0x2C3C55 : 0xE6F4FC;
     const skyC = document.createElement('canvas'); skyC.width = 4; skyC.height = 256;
     const sg = skyC.getContext('2d'), grad = sg.createLinearGradient(0, 0, 0, 256);
     grad.addColorStop(0, '#' + skyTop.toString(16).padStart(6, '0'));
@@ -10442,6 +10442,16 @@
     [[-12, -6], [-15, 4], [13, -5], [16, 6], [-9, 12], [11, 13], [-22, -14], [22, -14]].forEach(([x, z]) => { const t = createTree(); t.position.set(x, 0, z); rs.add(t); });
     for (const sx of [-1, 1]) block(0.9, 1.0, 17, sx * 7.2, 0.5, -14.5, mat(0x4E7A48));
     [[-19, 10, 1], [19, 10, 1]].forEach(([x, z, style]) => { const h = createBuilding(9, 6, 8, style); h.position.set(x, 0, z); rs.add(h); });
+    // Soft low-poly clouds: clusters of flattened white puffs in the sky.
+    const cloudMat = new THREE.MeshLambertMaterial({ color: dark ? 0x8FA0B5 : 0xFFFFFF, emissive: dark ? 0x000000 : 0x3A4A55, fog: false });
+    [[-26, 21, 70], [4, 25, 82], [30, 19, 66], [-8, 17, 58], [44, 24, 90]].forEach(([x, y, z], k) => {
+      const cloud = new THREE.Group();
+      [[0, 0, 0, 3.2], [2.8, 0.4, 0.4, 2.4], [-2.7, -0.2, 0.3, 2.2], [1.2, 1.4, -0.3, 2.3], [-1.1, 1.1, 0.2, 2.0]].forEach(([cx, cy, cz, r]) => {
+        const puff = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), cloudMat);
+        puff.position.set(cx, cy, cz); cloud.add(puff);
+      });
+      cloud.scale.set(1.4 + (k % 2) * 0.4, 0.62, 0.8); cloud.position.set(x, y, z); rs.add(cloud);
+    });
     // Behind the garage: two rows of trees, a hedge line and far hills.
     for (let i = 0; i < 16; i++) {
       const t = createTree(i % 3 === 0 ? 'pine' : undefined);
@@ -10799,7 +10809,26 @@
     if (gameAudio) gameAudio.blinkerOn = blinkerOn;
   }
 
+  // Gentle driving aid for newcomers: with the steering released on the open
+  // road the car straightens along the road and drifts towards the middle of
+  // the nearest lane. Any steering input takes over completely.
+  function applySteeringAssist(dt) {
+    if (state.steering || state.resolution || Math.abs(state.speed) < 1.5) return;
+    const car = playerCarGroup, x = car.position.x;
+    if (Math.abs(x) > 4.6) return;
+    const back = Math.cos(car.rotation.y) < 0;
+    const axis = back ? Math.PI : 0;
+    const err = Math.atan2(Math.sin(axis - car.rotation.y), Math.cos(axis - car.rotation.y));
+    if (Math.abs(err) > 0.45) return; // a deliberate turn: leave it alone
+    // Nearest lane centre (driver's right is -X going forward).
+    const lane = Math.abs(x - 1.8) < Math.abs(x + 1.8) ? 1.8 : -1.8;
+    const pull = THREE.MathUtils.clamp((lane - x) * 0.05, -0.06, 0.06) * (back ? -1 : 1);
+    const target = err + pull;
+    car.rotation.y += target * Math.min(1, dt * 1.8);
+  }
+
   function integrateDriving(dt, limit = state.maxSpeed) {
+    applySteeringAssist(dt);
     // Brake: firm deceleration while moving; from a standstill it becomes
     // reverse gear (slow, negative speed). Gas is ignored while braking.
     if (state.isBraking) {

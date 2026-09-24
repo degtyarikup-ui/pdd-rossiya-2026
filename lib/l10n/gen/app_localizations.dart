@@ -1796,6 +1796,12 @@ abstract class AppLocalizations {
   /// **'Начать заезд'**
   String get gameLobbyStart;
 
+  /// No description provided for @gameLobbyContinue.
+  ///
+  /// In ru, this message translates to:
+  /// **'Продолжить заезд'**
+  String get gameLobbyContinue;
+
   /// No description provided for @gameLobbyChangeCar.
   ///
   /// In ru, this message translates to:

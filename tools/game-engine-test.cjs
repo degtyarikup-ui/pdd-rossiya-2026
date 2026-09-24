@@ -150,7 +150,10 @@ const { chromium } = require('playwright');
       window.game.setGas(true); window.game.setSteering(0.4); t.tick(0.35);
       const heading = t.player().rotation.y;
       window.game.setSteering(0); t.tick(0.2);
-      const freeSteering = heading > 0.01 && Math.abs(heading - t.player().rotation.y) < 0.001;
+      // Released steering: the driving aid straightens the car gently — the
+      // heading shrinks towards the road, never snaps straight in 0.2 s.
+      const after = t.player().rotation.y;
+      const freeSteering = heading > 0.01 && after < heading && after > heading * 0.3;
       window.game.setGas(false); t.tick(0.5);
       const models = [];
       window.game.setPaused(true);

@@ -62,6 +62,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
   /// and after «To menu» at the end of a run. The engine then renders the
   /// garage and the run is paused.
   bool _inLobby = true;
+
+  /// A run has been started from the garage (and not yet ended): the garage
+  /// opened from the HUD then continues it.
+  bool _runStarted = false;
   final _hudKey = GlobalKey();
   final _bottomKey = GlobalKey();
   final _cardKey = GlobalKey();
@@ -606,49 +610,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
     _send('switchLane', [direction]);
   }
 
-  Future<void> _openGarage() async {
-    if (_garageOpen || !_configured || _failed) return;
-    HapticFeedbackHelper.tap();
-    _garageOpen = true;
-    _game.setPaused(true);
-    _send('setPaused', [true]);
-    _send('selectVehicle', [_vehicleId, _vehiclePaint]);
-    try {
-      final garage = GameGarageService.instance;
-      final selected = await showModalBottomSheet<GameCar>(
-        context: context,
-        showDragHandle: true,
-        isScrollControlled: true,
-        builder: (_) => GameGarage(
-          selected: GameCar(_vehicleId, _vehiclePaint),
-          cars: garage.cars,
-          premium: ref.read(isPremiumProvider),
-          correctUntilNext: garage.correctUntilNext,
-          thumbnail: _thumbnail,
-          thumbnailCache: _thumbnails,
-        ),
-      );
-      if (!mounted ||
-          selected == null ||
-          !gameVehicleIds.contains(selected.id)) {
-        return;
-      }
-      _selectCar(selected);
-    } finally {
-      _garageOpen = false;
-      if (mounted && !_disposing) {
-        final paused =
-            _inLobby ||
-            !_active ||
-            _failed ||
-            _locked ||
-            ref.read(gameControllerProvider).phase == GamePhase.gameOver;
-        _game.setPaused(paused);
-        _send('setPaused', [paused]);
-      }
-    }
-  }
-
   final Set<String> _recordedMistakeKeys = <String>{};
 
   /// A wrong answer in the game lands in «Ошибки» as the very ticket
@@ -760,7 +721,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
     if (!_inLobby) return;
     HapticFeedbackHelper.confirm();
     final ended = ref.read(gameControllerProvider).phase == GamePhase.gameOver;
-    setState(() => _inLobby = false);
+    setState(() {
+      _inLobby = false;
+      _runStarted = true;
+    });
     _send('hideLobby', []);
     if (ended) {
       unawaited(_handleRestart());
@@ -1192,7 +1156,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     vehiclePaint: _vehiclePaint,
                     thumbnail: _thumbnail,
                     thumbnailCache: _thumbnails,
-                    onGarage: gameState.controlsEnabled ? _openGarage : null,
+                    // The car button opens the garage itself (the run
+                    // pauses and continues from there).
+                    onGarage: gameState.controlsEnabled ? _openLobby : null,
                     showGarage:
                         GameGarageService.instance.cars.length > 1 || premium,
                     onGarageLongPress: AuthService.debugSignInAvailable
@@ -1372,6 +1338,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                         )
                       : null,
                   onStart: _startFromLobby,
+                  resume: _runStarted && gameState.phase != GamePhase.gameOver,
                   onPrevious: _lobbyModels().length > 1
                       ? () => _browseCar(-1)
                       : null,

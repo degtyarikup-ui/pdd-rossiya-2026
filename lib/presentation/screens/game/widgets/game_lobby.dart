@@ -17,6 +17,9 @@ class GameLobby extends StatelessWidget {
   final Widget? blocker;
   final VoidCallback? onStart;
 
+  /// Opened from a run in progress: the button continues it.
+  final bool resume;
+
   /// Null when there is only one car to choose from.
   final VoidCallback? onPrevious;
   final VoidCallback? onNext;
@@ -34,6 +37,7 @@ class GameLobby extends StatelessWidget {
     required this.fuel,
     this.blocker,
     this.onStart,
+    this.resume = false,
     this.onPrevious,
     this.onNext,
     this.onColour,
@@ -227,7 +231,9 @@ class GameLobby extends StatelessWidget {
                         onPressed: onStart,
                         icon: const Icon(Icons.play_arrow_rounded, size: 26),
                         label: Text(
-                          appL10n.gameLobbyStart,
+                          resume
+                              ? appL10n.gameLobbyContinue
+                              : appL10n.gameLobbyStart,
                           style: const TextStyle(
                             fontFamily: 'Onest',
                             fontSize: 17,

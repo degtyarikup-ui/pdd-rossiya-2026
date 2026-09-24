@@ -77,10 +77,9 @@ class InstallReporter {
       // Свежая установка или обновившийся существующий пользователь — определяем
       // по наличию данных приложения (прогресс/настройки/стрик) на момент
       // первого отчёта. Считаем и тех, и других, но помечаем по-разному.
-      final isExisting = _isExistingAtLaunch ??
-          prefs.getKeys().any(
-            (k) => k != _keyReported && k != _keyInstallId,
-          );
+      final isExisting =
+          _isExistingAtLaunch ??
+          prefs.getKeys().any((k) => k != _keyReported && k != _keyInstallId);
 
       var installId = prefs.getString(_keyInstallId);
       if (installId == null) {
