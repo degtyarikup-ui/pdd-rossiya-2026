@@ -5652,37 +5652,12 @@
     });
   }
 
+  // Traffic and parked cars use the same detailed bodies as the player's
+  // cars (hatchback, saloon or estate), in the scenario's colour.
+  const NPC_MODELS = ['sedan', 'hatch', 'wagon', 'sedan'];
   function createNpcCar(color = 0x2BC280) {
-    const car = new THREE.Group();
-    const bodyMat = new THREE.MeshLambertMaterial({ color });
-    const glassMat = new THREE.MeshLambertMaterial({ color: 0x1E293B });
-    const wheelMat = new THREE.MeshLambertMaterial({ color: 0x18181B });
-
-    const body = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.55, 3.6), bodyMat);
-    body.position.y = 0.5;
-    body.castShadow = true;
-    car.add(body);
-    car.userData.lampSpec = { front: { x: 0.6, y: 0.62, z: 1.8 }, rear: { x: 0.6, y: 0.62, z: -1.8 } };
-
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.5, 1.9), bodyMat);
-    cabin.position.set(0, 0.95, -0.2);
-    cabin.castShadow = true;
-    car.add(cabin);
-
-    const glass = new THREE.Mesh(new THREE.BoxGeometry(1.48, 0.38, 1.6), glassMat);
-    glass.position.set(0, 0.95, -0.2);
-    car.add(glass);
-
-    const wheelGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.25, 10);
-    wheelGeo.rotateZ(Math.PI / 2);
-    const wheels = [[-0.88, 0.32, 1.05], [0.88, 0.32, 1.05], [-0.88, 0.32, -1.05], [0.88, 0.32, -1.05]].map(p => {
-      const w = new THREE.Mesh(wheelGeo, wheelMat);
-      w.position.set(p[0], p[1], p[2]);
-      car.add(w); return w;
-    });
-    addVehicleDetails(car, { width: 1.75, length: 3.6, baseY: 0.5, lampY: 0.62, cabinY: 0.95, cabinH: 0.5, cabinZ: -0.2, cabinL: 1.9, cabinW: 1.45, wheels, wheelR: 0.32, wheelW: 0.25 });
-
-    return car;
+    const id = NPC_MODELS[Math.floor(Math.random() * NPC_MODELS.length)];
+    return window.PDD_VEHICLES.create(id, color);
   }
 
   // --- Delivery van (a courier "bus" in the tickets' photos) ---
@@ -5860,19 +5835,19 @@
 
   // --- Special / Police Car Model Factory ---
   function createSpecialCar(color = 0xFFFFFF) {
-    const car = createNpcCar(color);
-    // Blue side stripe
+    const car = window.PDD_VEHICLES.create('sedan', color);
+    // Blue side stripe along the doors.
     const stripeMat = new THREE.MeshLambertMaterial({ color: 0x0574F8 });
-    const s1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.22, 3.2), stripeMat);
-    s1.position.set(-0.9, 0.6, 0);
-    const s2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.22, 3.2), stripeMat);
-    s2.position.set(0.9, 0.6, 0);
+    const s1 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.18, 3.0), stripeMat);
+    s1.position.set(-0.915, 0.62, 0);
+    const s2 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.18, 3.0), stripeMat);
+    s2.position.set(0.915, 0.62, 0);
     car.add(s1);
     car.add(s2);
 
     // Flashing light bar on roof
     const bar = new THREE.Group();
-    bar.position.set(0, 1.25, -0.2);
+    bar.position.set(0, car.userData.height + 0.04, -0.2); // on the roof
     const mount = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.08, 0.2), new THREE.MeshLambertMaterial({ color: 0x1E293B }));
     bar.add(mount);
 
@@ -6569,8 +6544,6 @@
   function createParkedCar() {
     const colors = [0xE8E8E8, 0x2F3A46, 0x8B1E2D, 0x6E86A6, 0xC9B36B, 0x4D756A, 0xB87847, 0xD1CEC4];
     const car = createNpcCar(colors[Math.floor(Math.random() * colors.length)]);
-    const shape = Math.floor(Math.random() * 3);
-    car.scale.set(1, shape === 1 ? 1.18 : 1, shape === 2 ? 1.14 : shape === 1 ? 0.88 : 1);
     car.traverse(o => { o.userData.scenery = true; });
     return car;
   }
@@ -10405,31 +10378,120 @@
     rs.add(new THREE.AmbientLight(0xFFFFFF, sn.ambient));
     const sun = new THREE.DirectionalLight(sn.sun, sn.sunIntensity + 0.2); sun.position.set(-8, 14, -10); rs.add(sun);
     const mat = c => new THREE.MeshLambertMaterial({ color: c });
-    // The player's neighbourhood in the current season: lawn, a driveway,
-    // a pavement strip with the road, trees, bushes, houses and a fence.
-    const lawn = new THREE.Mesh(new THREE.PlaneGeometry(140, 140), mat(sn.ground)); lawn.rotation.x = -Math.PI / 2; rs.add(lawn);
-    const drive = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 26), mat(sn.sidewalk)); drive.rotation.x = -Math.PI / 2; drive.position.set(0, 0.01, -13.6); rs.add(drive);
-    const road = new THREE.Mesh(new THREE.PlaneGeometry(90, 8), mat(BRAND.asphalt)); road.rotation.x = -Math.PI / 2; road.position.set(0, 0.012, -30); rs.add(road);
-    const kerb = new THREE.Mesh(new THREE.PlaneGeometry(90, 2.4), mat(sn.sidewalk)); kerb.rotation.x = -Math.PI / 2; kerb.position.set(0, 0.011, -24.8); rs.add(kerb);
-    for (let x = -42; x <= 42; x += 6) { const dash = new THREE.Mesh(new THREE.PlaneGeometry(3, 0.16), mat(BRAND.asphaltMarking)); dash.rotation.x = -Math.PI / 2; dash.position.set(x, 0.013, -30); rs.add(dash); }
-    [[-12, -6], [-15, 4], [13, -5], [16, 6], [-9, 10], [11, 12], [-20, -14], [21, -14]].forEach(([x, z]) => { const t = createTree(); t.position.set(x, 0, z); rs.add(t); });
-    [[6.2, -16], [-7, -4], [7, -8], [9, -14]].forEach(([x, z]) => { const b = createBush(); b.position.set(x, 0, z); rs.add(b); });
+    // Procedural textures (canvas): paving, siding, shingles, concrete.
+    const tex = (w, h, draw, rx = 1, ry = 1) => {
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      draw(c.getContext('2d'), w, h);
+      const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry);
+      t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+      return t;
+    };
+    const hex = n => '#' + n.toString(16).padStart(6, '0');
+    const shade = (n, k) => { const c = new THREE.Color(n); c.multiplyScalar(k); return '#' + c.getHexString(); };
+    const texMat = (t, color = 0xFFFFFF) => new THREE.MeshLambertMaterial({ map: t, color });
+    const paving = (base, rx, ry) => tex(256, 256, (g, w, h) => {
+      g.fillStyle = hex(base); g.fillRect(0, 0, w, h);
+      for (let row = 0; row < 8; row++) for (let col = 0; col < 4; col++) {
+        const x = col * 64 + (row % 2) * 32, y = row * 32;
+        g.fillStyle = shade(base, 0.9 + ((row * 7 + col * 3) % 5) * 0.03);
+        g.fillRect(x + 2, y + 2, 60, 28); g.fillRect(x - 256 + 2, y + 2, 60, 28);
+      }
+    }, rx, ry);
+    const planeY = (w, d, x, y, z, m) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(w, d), m); p.rotation.x = -Math.PI / 2; p.position.set(x, y, z); p.receiveShadow = true; rs.add(p); return p; };
+    const block = (w, h, d, x, y, z, m) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, z); b.castShadow = true; b.receiveShadow = true; rs.add(b); return b; };
+
+    // Ground: lawn with a faint mottle.
+    planeY(160, 160, 0, 0, 0, texMat(tex(128, 128, (g, w, h) => {
+      g.fillStyle = hex(sn.ground); g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 380; i++) { g.fillStyle = shade(sn.ground, 0.92 + Math.random() * 0.14); g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+    }, 40, 40)));
+    // Street: asphalt with edge lines and a broken centre line.
+    planeY(120, 8.4, 0, 0.01, -31, texMat(tex(128, 128, (g, w, h) => {
+      g.fillStyle = hex(BRAND.asphalt); g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 500; i++) { g.fillStyle = shade(BRAND.asphalt, 0.85 + Math.random() * 0.3); g.fillRect(Math.random() * w, Math.random() * h, 1, 1); }
+    }, 30, 2)));
+    const lineMat = mat(BRAND.asphaltMarking);
+    for (const z of [-27.05, -34.95]) planeY(120, 0.14, 0, 0.014, z, lineMat);
+    for (let x = -58; x <= 58; x += 5) planeY(2, 0.14, x, 0.014, -31, lineMat);
+    // Pavement (raised, paved) with a stone kerb, cut for the driveway,
+    // whose kerb is dropped flush.
+    const paveMat = texMat(paving(sn.sidewalk, 2, 0.5));
+    const kerbMat = mat(new THREE.Color(sn.sidewalk).multiplyScalar(0.78).getHex());
+    for (const sx of [-1, 1]) {
+      const w = 60 - 3.4, x = sx * (3.4 + w / 2);
+      block(w, 0.12, 2.6, x, 0.06, -25.4, [mat(sn.sidewalk), mat(sn.sidewalk), paveMat, mat(sn.sidewalk), mat(sn.sidewalk), mat(sn.sidewalk)]);
+      paveMat.map.repeat.set(w / 2.6, 1);
+      block(w, 0.16, 0.22, x, 0.08, -26.8, kerbMat);
+    }
+    // Driveway: herringbone-ish paving between edging stones, running from
+    // the road into the garage, flush with the dropped kerb.
+    const driveMat = texMat(paving(new THREE.Color(sn.sidewalk).multiplyScalar(0.95).getHex(), 5, 20));
+    planeY(6.4, 26.4, 0, 0.02, -13.6, driveMat);
+    for (const sx of [-1, 1]) block(0.2, 0.08, 26.4, sx * 3.3, 0.04, -13.6, kerbMat);
+    block(6.8, 0.06, 0.22, 0, 0.03, -26.8, kerbMat);
+
+    // Neighbourhood behind the lot: trees, hedges and houses, clear of the
+    // driveway and the camera's view line.
+    [[-12, -6], [-15, 4], [13, -5], [16, 6], [-9, 12], [11, 13], [-22, -14], [22, -14]].forEach(([x, z]) => { const t = createTree(); t.position.set(x, 0, z); rs.add(t); });
+    for (const sx of [-1, 1]) block(0.9, 1.0, 17, sx * 7.2, 0.5, -14.5, mat(0x4E7A48));
     [[-19, 10, 1], [19, 10, 1]].forEach(([x, z, style]) => { const h = createBuilding(9, 6, 8, style); h.position.set(x, 0, z); rs.add(h); });
-    [[-24, 2], [24, 2]].forEach(([x, z]) => { const f = createFence(30); f.position.set(x, 0, z); f.rotation.y = Math.PI / 2; rs.add(f); });
-    const lamp = createLampPost(); lamp.position.set(-6.5, 0, -22.5); rs.add(lamp);
-    // The garage: an open-fronted box the camera looks into from the side,
-    // with a tool wall, shelves, a tyre stack and a strip light.
-    const wall = mat(0x8F969E), inside = mat(0x6E757D), trim = mat(0x5A626A);
+    const lamp = createLampPost(); lamp.position.set(-6.5, 0, -24.4); rs.add(lamp);
+
+    // The garage: siding walls with corner trims, a gable roof in shingles
+    // with eaves and a gutter, a lintel with the door housing, lamps.
+    const sidingT = tex(64, 256, (g, w, h) => {
+      g.fillStyle = '#9EA6AD'; g.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 16) { g.fillStyle = '#8A9299'; g.fillRect(0, y + 13, w, 3); g.fillStyle = '#AAB2B9'; g.fillRect(0, y, w, 2); }
+    }, 3, 1.4);
+    const wall = texMat(sidingT), inside = mat(0x6E757D), trimM = mat(0xE9ECEF), metalDark = mat(0x3A4148);
     const back = new THREE.Mesh(new THREE.BoxGeometry(9, 4.2, 0.3), inside); back.position.set(0, 2.1, 6.2); rs.add(back);
     [-1, 1].forEach(sx => {
-      const side = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.2, 7), sx < 0 ? inside : wall); side.position.set(sx * 4.5, 2.1, 2.7); rs.add(side);
-      const pier = new THREE.Mesh(new THREE.BoxGeometry(1.4, 4.6, 0.5), wall); pier.position.set(sx * 5.0, 2.3, -0.6); rs.add(pier);
+      block(0.3, 4.2, 7, sx * 4.5, 2.1, 2.7, sx < 0 ? inside : wall);
+      block(1.4, 4.2, 0.5, sx * 5.0, 2.1, -0.6, wall);
+      block(0.16, 4.3, 0.16, sx * 5.72, 2.15, -0.86, trimM);          // corner trims
+      block(0.16, 4.3, 0.16, sx * 4.66, 2.15, -0.86, trimM);          // door jambs
     });
-    const roofGeo = new THREE.ConeGeometry(Math.SQRT2 / 2, 1, 4); roofGeo.rotateY(Math.PI / 4);
-    const roof = new THREE.Mesh(roofGeo, mat(sn.roof || 0x8C4A3C)); roof.scale.set(11.4, 2.2, 8.6); roof.position.set(0, 5.5, 2.7); rs.add(roof);
-    const eave = new THREE.Mesh(new THREE.BoxGeometry(11.2, 0.35, 8.4), trim); eave.position.set(0, 4.55, 2.7); rs.add(eave);
-    const lintel = new THREE.Mesh(new THREE.BoxGeometry(9, 0.7, 0.5), wall); lintel.position.set(0, 4.05, -0.6); rs.add(lintel);
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 6.6), mat(0x4B525A)); floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0.014, 2.7); rs.add(floor);
+    block(9.4, 0.7, 0.5, 0, 3.85, -0.6, wall);                         // lintel
+    block(8.6, 0.34, 0.34, 0, 3.52, -0.2, metalDark);                       // door roll housing
+    // Gable roof: two shingled slopes over the walls, ridge front to back.
+    const shinglesT = tex(128, 128, (g, w, h) => {
+      const base = sn.roof || 0x8C4A3C;
+      g.fillStyle = hex(base); g.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 16) for (let x = -((y / 16) % 2) * 8; x < w; x += 16) {
+        g.fillStyle = shade(base, 0.86 + ((x + y) % 3) * 0.05); g.fillRect(x + 1, y + 1, 14, 13);
+      }
+    }, 4, 3);
+    const roofM = texMat(shinglesT), rise = 1.7, half = 5.9, slopeLen = Math.hypot(half, rise), ang = Math.atan2(rise, half);
+    for (const sx of [-1, 1]) {
+      const slope = block(slopeLen + 0.2, 0.16, 8.2, sx * half / 2, 4.2 + rise / 2 + 0.08, 2.7, roofM);
+      slope.rotation.z = -sx * ang;
+      block(0.14, 0.14, 8.2, sx * (half + 0.05), 4.18, 2.7, metalDark);     // gutters
+      block(0.1, 4.1, 0.1, sx * (half - 0.2), 2.05, -1.35, metalDark);      // downpipes
+    }
+    const gable = new THREE.Shape(); gable.moveTo(-5.7, 0); gable.lineTo(5.7, 0); gable.lineTo(0, rise); gable.closePath();
+    const gableM = new THREE.Mesh(new THREE.ShapeGeometry(gable), wall);
+    gableM.position.set(0, 4.2, -0.86); gableM.rotation.y = Math.PI; rs.add(gableM);
+    // Wall lamps either side of the door, lit, and a house number.
+    for (const sx of [-1, 1]) {
+      block(0.24, 0.34, 0.2, sx * 5.1, 3.2, -0.95, metalDark);
+      const bulb = block(0.16, 0.2, 0.06, sx * 5.1, 3.18, -1.06, new THREE.MeshBasicMaterial({ color: 0xFFE9B8 }));
+      window.PDD_VEHICLES.addGlow(bulb, 0xFFD58A, 1.4);
+      const lampLight = new THREE.PointLight(0xFFD58A, 0.35, 7); lampLight.position.set(sx * 5.1, 3.0, -1.6); rs.add(lampLight);
+    }
+    block(0.62, 0.36, 0.04, -5.0, 2.5, -0.88, mat(0x0574F8));
+    const numC = document.createElement('canvas'); numC.width = 64; numC.height = 36;
+    const ng = numC.getContext('2d'); ng.fillStyle = '#0574F8'; ng.fillRect(0, 0, 64, 36); ng.fillStyle = '#fff'; ng.font = 'bold 26px Arial'; ng.textAlign = 'center'; ng.fillText('12', 32, 28);
+    const numFace = new THREE.Mesh(new THREE.PlaneGeometry(0.58, 0.32), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(numC) }));
+    numFace.position.set(-5.0, 2.5, -0.905); numFace.rotation.y = Math.PI; rs.add(numFace);
+    // A side window on the near wall.
+    block(0.06, 1.1, 1.8, -4.66, 2.4, 3.2, trimM);
+    block(0.07, 0.9, 1.6, -4.67, 2.4, 3.2, mat(0x5E7890));
+    // Concrete floor inside.
+    planeY(8.4, 6.6, 0, 0.022, 2.7, texMat(tex(128, 128, (g, w, h) => {
+      g.fillStyle = '#6B7178'; g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 300; i++) { g.fillStyle = shade(0x6B7178, 0.85 + Math.random() * 0.3); g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+      g.fillStyle = '#5D636A'; g.fillRect(0, h / 2 - 1, w, 2);
+    }, 2, 2)));
     // Furnishings along the back and the far wall.
     const shelf = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.08, 0.5), mat(0xB0895C)); [1.3, 2.2, 3.1].forEach(y => { const m = shelf.clone(); m.position.set(-2.4, y, 5.8); rs.add(m); });
     const cans = [0xF08A24, 0x317ED4, 0xE8C547, 0xF2F3F5, 0x2FA3A0];
@@ -10465,7 +10527,7 @@
     }
     rs.add(rays);
     const pad = new THREE.Mesh(new THREE.RingGeometry(2.6, 3.0, 64), additive(0x3F8CFF, 0));
-    pad.rotation.x = -Math.PI / 2; pad.position.set(0, 0.04, -6.6); rs.add(pad);
+    pad.rotation.x = -Math.PI / 2; pad.position.set(0, 0.045, -6.6); rs.add(pad);
     const padFill = new THREE.Mesh(new THREE.CircleGeometry(2.4, 48), additive(0x2F7BF0, 0));
     padFill.rotation.x = -Math.PI / 2; padFill.position.set(0, 0.035, -6.6); rs.add(padFill);
     const sparkles = [];
@@ -10532,10 +10594,22 @@
       if (Math.floor(fx.time * 1.4) !== Math.floor((fx.time - dt) * 1.4) && Math.random() < 0.5) gameAudio?.celebrate('sparkle');
     }
     if (r.phase === 'lobby') {
-      // The garage start screen: the car waits outside, turning slowly;
-      // a finger spins it.
+      // The garage start screen: the car waits outside, turning slowly.
       r.yaw += (r.spin + 0.22) * dt; r.spin *= Math.pow(0.05, dt);
       r.car.rotation.y = r.yaw;
+      if (r.swap) {
+        const sw = r.swap; sw.t += dt;
+        const u = Math.min(1, sw.t / 0.45), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+        sw.from.position.x = 9 * sw.dir * e;
+        sw.to.position.x = -9 * sw.dir * (1 - e);
+        sw.from.rotation.y = r.yaw;
+        [sw.from, sw.to].forEach(c => c.userData.wheels?.forEach(w => w.rotateX(dt * 9 * (1 - Math.abs(e - 0.5) * 2 + 0.1))));
+        if (u >= 1) {
+          r.scene.remove(sw.from);
+          sw.from.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+          r.swap = null;
+        }
+      }
     }
     if (r.phase === 'driving' || r.phase === 'turning' || r.phase === 'shown' || r.phase === 'lobby') {
       // Light keeps pouring out; the pad under the car pulses.
@@ -11083,9 +11157,23 @@
       updateReveal(0);
     },
     hideLobby() { if (reveal?.phase === 'lobby') window.game.hideReveal(); },
+    // Browsing cars on the start screen: the current car drives off one side
+    // while the next one rolls in from the other. dir 1 = next (arrives from
+    // the right of the screen), -1 = previous.
+    lobbySwap(id, paint, dir = 1) {
+      const r = reveal;
+      if (!r || r.phase !== 'lobby' || !window.PDD_VEHICLES.specs[id]) { window.game.showLobby(id, paint); return; }
+      if (r.swap) { r.scene.remove(r.swap.from); r.swap.to.position.x = 0; r.swap = null; }
+      const next = window.PDD_VEHICLES.create(id, paint || null);
+      next.traverse(o => { if (o.isMesh && o.material?.color?.getHex() === 0xFFF3CC) window.PDD_VEHICLES.addGlow(o, 0xFFF3CC, 1.6); });
+      next.position.set(-9 * dir, 0, -6.6); next.rotation.y = r.yaw;
+      r.scene.add(next);
+      r.swap = { from: r.car, to: next, dir, t: 0 };
+      r.car = next;
+    },
     hideReveal() {
       if (!reveal) return;
-      reveal.scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+      reveal.scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) [].concat(o.material).forEach(m => { m.map?.dispose(); m.dispose(); }); });
       reveal = null;
       renderer.render(scene, camera);
     },

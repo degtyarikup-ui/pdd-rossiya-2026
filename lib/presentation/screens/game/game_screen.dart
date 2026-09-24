@@ -699,14 +699,57 @@ class _GameScreenState extends ConsumerState<GameScreen>
     }
   }
 
-  void _selectCar(GameCar car) {
+  void _selectCar(GameCar car, {int direction = 0}) {
     setState(() {
       _vehicleId = car.id;
       _vehiclePaint = car.paint;
     });
     _send('selectVehicle', [car.id, car.paint]);
-    if (_inLobby) _send('showLobby', [car.id, car.paint]);
+    if (_inLobby) {
+      direction == 0
+          ? _send('showLobby', [car.id, car.paint])
+          : _send('lobbySwap', [car.id, car.paint, direction]);
+    }
     unawaited(_saveVehicle(car.id, car.paint));
+  }
+
+  // Cars and colours the player can use: all of them with premium, else
+  // the ones won in the garage.
+  List<String> _lobbyModels() => ref.read(isPremiumProvider)
+      ? gameVehicleIds
+      : [
+          for (final id in gameVehicleIds)
+            if (GameGarageService.instance.cars.any((c) => c.id == id)) id,
+        ];
+
+  List<String> _paintsOf(String id) => ref.read(isPremiumProvider)
+      ? gamePaintColors.keys.toList()
+      : [
+          for (final c in GameGarageService.instance.cars)
+            if (c.id == id) c.paint,
+        ];
+
+  /// Swipe / arrows on the start screen: the next car (in its colour, the
+  /// current one when available).
+  void _browseCar(int step) {
+    final models = _lobbyModels();
+    if (models.length < 2) return;
+    final i = models.indexOf(_vehicleId);
+    final next = models[((i < 0 ? 0 : i) + step) % models.length];
+    final paints = _paintsOf(next);
+    if (paints.isEmpty) return;
+    final paint = paints.contains(_vehiclePaint) ? _vehiclePaint : paints.first;
+    _selectCar(GameCar(next, paint), direction: step);
+  }
+
+  Future<void> _pickColour() async {
+    final paint = await showGamePaintSheet(
+      context,
+      paints: _paintsOf(_vehicleId),
+      selected: _vehiclePaint,
+    );
+    if (paint == null || !mounted || paint == _vehiclePaint) return;
+    _selectCar(GameCar(_vehicleId, paint));
   }
 
   /// «Start the drive» on the garage screen: a fresh world after a finished
@@ -1300,7 +1343,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 gameState.phase != GamePhase.ready)
               Positioned.fill(
                 child: GameLobby(
-                  vehicleId: _vehicleId,
                   vehiclePaint: _vehiclePaint,
                   bestScore: _bestScore ?? 0,
                   fuel: GameFuelGauge(
@@ -1328,7 +1370,15 @@ class _GameScreenState extends ConsumerState<GameScreen>
                         )
                       : null,
                   onStart: _startFromLobby,
-                  onGarage: locked ? null : _openGarage,
+                  onPrevious: _lobbyModels().length > 1
+                      ? () => _browseCar(-1)
+                      : null,
+                  onNext: _lobbyModels().length > 1
+                      ? () => _browseCar(1)
+                      : null,
+                  onColour: _paintsOf(_vehicleId).length > 1
+                      ? _pickColour
+                      : null,
                   onLeaderboard: _openLeaderboard,
                 ),
               ),
