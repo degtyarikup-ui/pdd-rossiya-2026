@@ -322,6 +322,31 @@ void main() {
     },
   );
 
+  testWidgets('Game tab opens on the garage start screen', (tester) async {
+    final platform = _GameWebPlatform();
+    WebViewPlatform.instance = platform;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: signedIn,
+        child: const MaterialApp(home: GameScreen()),
+      ),
+    );
+    await tester.pump();
+    final engine = platform.controllers.single;
+    engine.emit('{"event":"ready"}');
+    await tester.pump();
+    // The garage: the engine is asked for it, the run waits, no controls.
+    expect(engine.scripts.any((s) => s.contains('showLobby')), true);
+    expect(find.text(appL10n.gameLobbyStart), findsOneWidget);
+    expect(find.byType(GameControlsOverlay), findsNothing);
+    await tester.tap(find.text(appL10n.gameLobbyStart));
+    await tester.pump();
+    expect(engine.scripts.any((s) => s.contains('hideLobby')), true);
+    expect(find.byType(GameControlsOverlay), findsOneWidget);
+    expect(find.text(appL10n.gameLobbyStart), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('Impact releases native pedals until engine recovery completes', (
     tester,
   ) async {
@@ -337,6 +362,7 @@ void main() {
     final engine = platform.controllers.single;
     engine.emit('{"event":"ready"}');
     await tester.pump();
+    await _startDrive(tester);
     final gas = await tester.startGesture(
       tester.getCenter(find.byKey(const ValueKey('game-gas'))),
     );
@@ -401,6 +427,7 @@ void main() {
     final engine = platform.controllers.single;
     engine.emit('{"event":"ready"}');
     await tester.pump();
+    await _startDrive(tester);
     await tester.tap(find.bySemanticsLabel(appL10n.gameGarage));
     await tester.pumpAndSettle();
     expect(find.byType(GameGarage), findsOneWidget);
@@ -693,6 +720,7 @@ void main() {
     expect(find.byType(GameControlsOverlay), findsNothing);
     engine.emit('{"event":"ready"}');
     await tester.pump();
+    await _startDrive(tester);
     expect(find.byType(GameControlsOverlay), findsOneWidget);
     engine.emit(
       jsonEncode({
@@ -882,6 +910,7 @@ void main() {
     );
     first.emit('{"event":"ready"}');
     await tester.pump();
+    await _startDrive(tester);
     expect(
       first.scripts.any(
         (s) =>
@@ -907,6 +936,7 @@ void main() {
     expect(find.text(appL10n.gameLoading), findsOneWidget);
     platform.controllers.last.emit('{"event":"ready"}');
     await tester.pump();
+    await _startDrive(tester);
     expect(
       find.descendant(
         of: find.byType(GameHud),
@@ -968,6 +998,7 @@ void main() {
         old.emit('{"event":"engine_error"}');
         platform.controllers.last.emit('{"event":"ready"}');
         await tester.pump(const Duration(seconds: 31));
+        await _startDrive(tester);
         expect(find.text(appL10n.gameLoadError), findsNothing);
         expect(find.byType(GameControlsOverlay), findsOneWidget);
         await tester.pumpWidget(const SizedBox());
@@ -1470,4 +1501,13 @@ class _GameWebWidget extends PlatformWebViewWidget {
   _GameWebWidget(super.params) : super.implementation();
   @override
   Widget build(BuildContext context) => const SizedBox.expand();
+}
+
+/// The game opens on the garage start screen: tap «Start the drive» when it
+/// is shown (a restarted run goes straight to driving).
+Future<void> _startDrive(WidgetTester tester) async {
+  final start = find.text(appL10n.gameLobbyStart);
+  if (start.evaluate().isEmpty) return;
+  await tester.tap(start, warnIfMissed: false);
+  await tester.pump();
 }

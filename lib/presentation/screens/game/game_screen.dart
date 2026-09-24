@@ -19,6 +19,7 @@ import 'package:pdd_app/presentation/screens/game/controllers/game_controller.da
 import 'package:pdd_app/presentation/screens/game/widgets/game_controls_overlay.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_explanation_sheet.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_hud.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_lobby.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_over_dialog.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_question_card.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -56,6 +57,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
   late GameController _game;
   bool _configured = false;
   bool _active = true;
+
+  /// The start screen (garage) is shown instead of a run: on opening the tab
+  /// and after «To menu» at the end of a run. The engine then renders the
+  /// garage and the run is paused.
+  bool _inLobby = true;
   final _hudKey = GlobalKey();
   final _bottomKey = GlobalKey();
   final _cardKey = GlobalKey();
@@ -157,6 +163,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   void _configure() {
+    if (_inLobby) _send('showLobby', [_vehicleId, _vehiclePaint]);
     _send('configure', [
       {
         'country': CountryConfig.current.code,
@@ -213,7 +220,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
       _garageOpen = false;
       if (mounted && !_disposing) {
         _game.setPaused(
-          !_active ||
+          _inLobby ||
+              !_active ||
               _failed ||
               _locked ||
               ref.read(gameControllerProvider).phase == GamePhase.gameOver,
@@ -303,7 +311,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     }
     _active = _appResumed && widget.visible;
     _game.setPaused(
-      !_active || _failed || _garageOpen || _locked || _outOfFuel,
+      _inLobby || !_active || _failed || _garageOpen || _locked || _outOfFuel,
     );
     _send('setPaused', [_enginePaused]);
   }
@@ -314,7 +322,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     _appResumed = state == AppLifecycleState.resumed;
     _active = _appResumed && widget.visible;
     _game.setPaused(
-      !_active || _failed || _garageOpen || _locked || _outOfFuel,
+      _inLobby || !_active || _failed || _garageOpen || _locked || _outOfFuel,
     );
     // JS pauses on document.hidden; Flutter explicitly resumes the renderer.
     // A completed run must remain paused even after the app regains focus.
@@ -495,7 +503,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
         _readyTimer?.cancel();
         _configured = true;
         gameNotifier.setPaused(
-          !_active || _garageOpen || _locked || _outOfFuel,
+          _inLobby || !_active || _garageOpen || _locked || _outOfFuel,
         );
         _configure();
       }
@@ -630,6 +638,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
       _garageOpen = false;
       if (mounted && !_disposing) {
         final paused =
+            _inLobby ||
             !_active ||
             _failed ||
             _locked ||
@@ -696,7 +705,36 @@ class _GameScreenState extends ConsumerState<GameScreen>
       _vehiclePaint = car.paint;
     });
     _send('selectVehicle', [car.id, car.paint]);
+    if (_inLobby) _send('showLobby', [car.id, car.paint]);
     unawaited(_saveVehicle(car.id, car.paint));
+  }
+
+  /// «Start the drive» on the garage screen: a fresh world after a finished
+  /// run, else the world already loaded behind the garage.
+  void _startFromLobby() {
+    if (!_inLobby) return;
+    HapticFeedbackHelper.confirm();
+    final ended = ref.read(gameControllerProvider).phase == GamePhase.gameOver;
+    setState(() => _inLobby = false);
+    _send('hideLobby', []);
+    if (ended) {
+      unawaited(_handleRestart());
+      return;
+    }
+    _game.setPaused(
+      !_active || _failed || _garageOpen || _locked || _outOfFuel,
+    );
+    _send('setPaused', [_enginePaused]);
+  }
+
+  void _openLobby() {
+    setState(() => _inLobby = true);
+    _game.setPaused(true);
+    _send('setGas', [false]);
+    _send('setBrake', [false]);
+    _send('setSteering', [0]);
+    _send('setPaused', [true]);
+    _send('showLobby', [_vehicleId, _vehiclePaint]);
   }
 
   Future<void> _saveVehicle(String id, String paint) async {
@@ -763,7 +801,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
     ref.read(fullscreenProvider.notifier).state = false;
     if (choose) _selectCar(car);
     _game.setPaused(
-      !_active ||
+      _inLobby ||
+          !_active ||
           _failed ||
           _garageOpen ||
           _locked ||
@@ -776,6 +815,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   /// Whether the three.js loop should stop. A signed-out visitor keeps the
   /// engine running: the street stays alive around the parked car.
   bool get _enginePaused =>
+      _inLobby ||
       !_active ||
       _failed ||
       _garageOpen ||
@@ -808,7 +848,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     setState(() => _failed = false);
     _lastInsets = null;
     _initialization = _initWebView();
-    _game.setPaused(!_active);
+    _game.setPaused(_inLobby || !_active);
   }
 
   // A new personal best: remember it, celebrate with the fanfare; the dialog
@@ -838,15 +878,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
     }
   }
 
+  // «To menu» at the end of a run: back to the garage start screen.
   void _handleExit() {
     HapticFeedbackHelper.tap();
-    _game.setPaused(true);
-    _send('setPaused', [true]);
-    if (widget.onExit != null) {
-      widget.onExit!();
-    } else if (Navigator.canPop(context)) {
-      Navigator.pop(context);
-    }
+    _openLobby();
   }
 
   @override
@@ -1032,7 +1067,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
       _outOfFuel = outOfFuel;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _game.setPaused(outOfFuel || locked || !_active);
+        _game.setPaused(_inLobby || outOfFuel || locked || !_active);
         _send('setAttract', [outOfFuel || locked]);
         _send('setPaused', [!_active]);
       });
@@ -1041,7 +1076,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
       _locked = locked;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _game.setPaused(locked || !_active);
+        _game.setPaused(_inLobby || locked || !_active);
         _send('setAttract', [locked || _outOfFuel]);
         _send('setPaused', [!_active]);
       });
@@ -1099,7 +1134,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
               ),
 
             // Top HUD
-            if (_reveal == null)
+            if (_reveal == null && !_inLobby)
               Positioned(
                 top: 0,
                 left: 0,
@@ -1125,7 +1160,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 ),
               ),
 
-            if (locked)
+            if (locked && !_inLobby)
               Positioned(
                 left: 16,
                 right: 16,
@@ -1137,7 +1172,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                       : null,
                 ),
               ),
-            if (outOfFuel)
+            if (outOfFuel && !_inLobby)
               Positioned(
                 left: 16,
                 right: 16,
@@ -1164,7 +1199,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
               ),
             // The question card lives on its own layer: when it slides away
             // nothing else in the bottom column moves, so there is no jerk.
-            if (!locked && !outOfFuel && _reveal == null)
+            if (!locked && !outOfFuel && _reveal == null && !_inLobby)
               Positioned(
                 left: 0,
                 right: 0,
@@ -1202,6 +1237,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
             if (!locked &&
                 !outOfFuel &&
                 _reveal == null &&
+                !_inLobby &&
                 gameState.phase != GamePhase.gameOver)
               Positioned(
                 left: 0,
@@ -1232,6 +1268,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
               ),
 
             if (_showGasHint &&
+                !_inLobby &&
                 !locked &&
                 !outOfFuel &&
                 _reveal == null &&
@@ -1257,7 +1294,48 @@ class _GameScreenState extends ConsumerState<GameScreen>
               ),
 
             // Game Over Dialog Modal
-            if (gameState.phase == GamePhase.gameOver && _reveal == null)
+            // The garage start screen over the engine's garage scene.
+            if (_inLobby &&
+                _reveal == null &&
+                gameState.phase != GamePhase.ready)
+              Positioned.fill(
+                child: GameLobby(
+                  vehicleId: _vehicleId,
+                  vehiclePaint: _vehiclePaint,
+                  bestScore: _bestScore ?? 0,
+                  fuel: GameFuelGauge(
+                    fuel: gameState.fuel,
+                    maxFuel: GameState.maxFuel,
+                    unlimited: gameState.fuelUnlimited,
+                  ),
+                  blocker: locked
+                      ? _LockCard(
+                          onSignIn: () => AuthModalSheet.show(context),
+                          onDebugSignIn: AuthService.debugSignInAvailable
+                              ? () => AuthService.instance.signInDebug()
+                              : null,
+                        )
+                      : !unlimitedFuel && _fuelLoaded && gameState.fuel <= 0
+                      ? GameFuelEmptyPanel(
+                          refillAt: GameFuelService.instance.firstUnitAt,
+                          onBuyPremium: () => PremiumPaywallSheet.show(context),
+                          onRefilled: () => _game.configureFuel(
+                            fuel: GameFuelService.instance.refresh(),
+                            unlimited:
+                                _debugUnlimitedFuel ||
+                                ref.read(isPremiumProvider),
+                          ),
+                        )
+                      : null,
+                  onStart: _startFromLobby,
+                  onGarage: locked ? null : _openGarage,
+                  onLeaderboard: _openLeaderboard,
+                ),
+              ),
+
+            if (gameState.phase == GamePhase.gameOver &&
+                _reveal == null &&
+                !_inLobby)
               Positioned.fill(
                 child: Container(
                   color: const Color(0x80000000),

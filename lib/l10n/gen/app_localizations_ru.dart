@@ -986,6 +986,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameWeeklyRating => 'Рейтинг недели';
 
   @override
+  String get gameLobbyStart => 'Начать заезд';
+
+  @override
+  String get gameLobbyChangeCar => 'Сменить';
+
+  @override
+  String get gameLobbyRecord => 'Рекорд';
+
+  @override
   String get gameRatingHint =>
       'Очки всех заездов за неделю. В таблице — лучшие 100.';
 

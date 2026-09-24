@@ -5468,7 +5468,7 @@
     el.addEventListener('touchmove', (e) => {
       if (!e.touches.length || !(state.attract || reveal)) return;
       const x = e.touches[0].clientX, dx = x - (state.dragX ?? x); state.dragX = x; state.dragMoved = (state.dragMoved || 0) + Math.abs(dx);
-      if (reveal) { if (reveal.phase === 'shown') { reveal.yaw += dx * 0.012; reveal.spin = dx * 0.6; } }
+      if (reveal) { if (reveal.phase === 'shown' || reveal.phase === 'lobby') { reveal.yaw += dx * 0.012; reveal.spin = dx * 0.6; } }
       else state.orbitYaw = (state.orbitYaw || 0) + dx * 0.006;
       e.preventDefault();
     }, { passive: false });
@@ -10464,7 +10464,7 @@
       rays.add(ray);
     }
     rs.add(rays);
-    const pad = new THREE.Mesh(new THREE.RingGeometry(2.4, 3.3, 48), additive(0x7FB8FF, 0));
+    const pad = new THREE.Mesh(new THREE.RingGeometry(2.6, 3.0, 64), additive(0x3F8CFF, 0));
     pad.rotation.x = -Math.PI / 2; pad.position.set(0, 0.04, -6.6); rs.add(pad);
     const padFill = new THREE.Mesh(new THREE.CircleGeometry(2.4, 48), additive(0x2F7BF0, 0));
     padFill.rotation.x = -Math.PI / 2; padFill.position.set(0, 0.035, -6.6); rs.add(padFill);
@@ -10485,8 +10485,10 @@
     confetti.frustumCulled = false; rs.add(confetti);
     // Three-quarter view from the driveway: the whole garage front and the
     // spot where the car stops are in frame on a portrait screen.
-    const cam = new THREE.PerspectiveCamera(50, 1, 0.1, 160);
-    cam.position.set(-12, 5.6, -20); cam.lookAt(0.2, 1.0, -3);
+    // Aimed at the spot where the car stops (x 0, z -6.6): the car sits in
+    // the middle of the screen with the open garage behind it.
+    const cam = new THREE.PerspectiveCamera(46, 1, 0.1, 160);
+    cam.position.set(-4.2, 5.2, -20.5); cam.lookAt(0, 0.1, -6.6);
     return { scene: rs, camera: cam, door, car, phase: 'closed', t: 0, yaw: 0, spin: 0,
       fx: { rays, pad, padFill, sparkles, confetti, cVel, time: 0, burst: false } };
   }
@@ -10529,12 +10531,18 @@
       r.car.rotation.y = r.yaw;
       if (Math.floor(fx.time * 1.4) !== Math.floor((fx.time - dt) * 1.4) && Math.random() < 0.5) gameAudio?.celebrate('sparkle');
     }
-    if (r.phase === 'driving' || r.phase === 'turning' || r.phase === 'shown') {
+    if (r.phase === 'lobby') {
+      // The garage start screen: the car waits outside, turning slowly;
+      // a finger spins it.
+      r.yaw += (r.spin + 0.22) * dt; r.spin *= Math.pow(0.05, dt);
+      r.car.rotation.y = r.yaw;
+    }
+    if (r.phase === 'driving' || r.phase === 'turning' || r.phase === 'shown' || r.phase === 'lobby') {
       // Light keeps pouring out; the pad under the car pulses.
       fx.rays.children.forEach((ray, i) => { ray.material.opacity = 0.14 + 0.04 * Math.sin(fx.time * 2.5 + i); });
       const pulse = 0.5 + 0.5 * Math.sin(fx.time * 3);
-      const k = r.phase === 'shown' ? 1 : r.phase === 'turning' ? Math.min(1, r.t / 1.1) : 0;
-      fx.pad.material.opacity = k * (0.35 + 0.35 * pulse); fx.padFill.material.opacity = k * (0.10 + 0.08 * pulse);
+      const k = r.phase === 'shown' || r.phase === 'lobby' ? 1 : r.phase === 'turning' ? Math.min(1, r.t / 1.1) : 0;
+      fx.pad.material.opacity = k * (0.16 + 0.12 * pulse); fx.padFill.material.opacity = k * (0.05 + 0.04 * pulse);
       fx.pad.scale.setScalar(1 + 0.05 * pulse);
     }
     fx.sparkles.forEach(sp => {
@@ -11062,6 +11070,19 @@
       updateReveal(0);
     },
     openReveal() { if (reveal && reveal.phase === 'closed') { reveal.phase = 'opening'; reveal.t = 0; } },
+    // Start screen: the garage with the current car already out on its pad.
+    showLobby(id, paint) {
+      const vid = window.PDD_VEHICLES.specs[id] ? id : 'hatch';
+      if (reveal) window.game.hideReveal();
+      reveal = buildRevealScene(vid, paint || null);
+      const r = reveal;
+      r.phase = 'lobby';
+      r.door.position.y = 4.3; r.door.children.forEach(slat => { slat.visible = false; });
+      r.car.position.set(0, 0, -6.6);
+      r.yaw = Math.PI + Math.PI / 2 - 0.5; r.car.rotation.y = r.yaw;
+      updateReveal(0);
+    },
+    hideLobby() { if (reveal?.phase === 'lobby') window.game.hideReveal(); },
     hideReveal() {
       if (!reveal) return;
       reveal.scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });

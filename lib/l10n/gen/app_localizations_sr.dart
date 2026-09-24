@@ -988,6 +988,15 @@ class AppLocalizationsSr extends AppLocalizations {
   String get gameWeeklyRating => 'Rang lista nedelje';
 
   @override
+  String get gameLobbyStart => 'Kreni u vožnju';
+
+  @override
+  String get gameLobbyChangeCar => 'Promeni';
+
+  @override
+  String get gameLobbyRecord => 'Rekord';
+
+  @override
   String get gameRatingHint =>
       'Poeni svih vožnji za nedelju. U tabeli su najboljih 100.';
 

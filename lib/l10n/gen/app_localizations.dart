@@ -1790,6 +1790,24 @@ abstract class AppLocalizations {
   /// **'Рейтинг недели'**
   String get gameWeeklyRating;
 
+  /// No description provided for @gameLobbyStart.
+  ///
+  /// In ru, this message translates to:
+  /// **'Начать заезд'**
+  String get gameLobbyStart;
+
+  /// No description provided for @gameLobbyChangeCar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сменить'**
+  String get gameLobbyChangeCar;
+
+  /// No description provided for @gameLobbyRecord.
+  ///
+  /// In ru, this message translates to:
+  /// **'Рекорд'**
+  String get gameLobbyRecord;
+
   /// No description provided for @gameRatingHint.
   ///
   /// In ru, this message translates to:
