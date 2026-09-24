@@ -83,3 +83,36 @@ test('сводка прогресса без данных', () => {
   assert.equal(summarizeProgress(null), null);
   assert.equal(summarizeProgress({}).ab.answered, 0);
 });
+
+test('события аналитики чистятся: XSS, __proto__, мусор', async () => {
+  const env = setup();
+  await worker.fetch(new Request('https://w.test/api/track', { method: 'POST', headers: { 'content-type': 'application/json', 'user-agent': 'Mozilla/5.0 (iPhone)', 'cf-ipcountry': 'RU' },
+    body: JSON.stringify({ type: 'view', source: '__proto__', campaign: '<img src=x onerror=alert(1)>', path: '/a"><script>' }) }), env, { waitUntil() {} });
+  assert.equal({}.views, undefined);
+  const all = [...env.INSTALLS.data.values()].join('\n');
+  assert.ok(!all.includes('<img') && !all.includes('<script'), 'HTML не должен попасть в KV');
+});
+
+test('отчёт и опрос отзывов — только с паролем', async () => {
+  const env = setup();
+  for (const q of ['?report=daily&send=true', '?reviews=check']) {
+    const r = await worker.fetch(new Request('https://w.test/' + q), env, { waitUntil() {} });
+    assert.equal(r.status, 401, q);
+  }
+});
+
+test('импорт Threads требует пароль и чистит id', async () => {
+  const env = setup();
+  env.SHARED_SECRET = 'app-key';
+  const post = (headers) => worker.fetch(new Request('https://w.test/api/threads/import', { method: 'POST', headers: { 'content-type': 'application/json', ...headers },
+    body: JSON.stringify({ posts: [{ id: "x');alert(1)//", text: 'пост' }] }) }), env);
+  assert.equal((await post({ 'x-install-secret': 'app-key' })).status, 403);
+  assert.equal((await post({ authorization: 'Bearer pw' })).status, 200);
+  const r = await call(env, '/api/admin/threads/state');
+  assert.ok(!JSON.stringify(r.data).includes('alert'));
+});
+
+test('страница админки не встраивается в чужие сайты', async () => {
+  const r = await worker.fetch(new Request('https://w.test/admin'), setup());
+  assert.equal(r.headers.get('x-frame-options'), 'DENY');
+});

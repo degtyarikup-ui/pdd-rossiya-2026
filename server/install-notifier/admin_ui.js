@@ -162,6 +162,13 @@ export function enhanceAdminClientJs(js) {
       "setInterval(() => { if (!document.hidden && currentFeature === 'analytics') checkAuthAndLoad(); }, 30000);"
     );
 
+  // Кампании и источники приходят с публичных ссылок — только через adminEsc.
+  result = result
+    .replace("'<td><span class=\"code-badge\">' + c.name + '</span></td>'", "'<td><span class=\"code-badge\">' + adminEsc(c.name) + '</span></td>'")
+    .replace("'<span class=\"code-badge\">' + ev.campaign + '</span>'", "'<span class=\"code-badge\">' + adminEsc(ev.campaign) + '</span>'")
+    .replace("+ '<span>' + conf.name + '</span>'", "+ '<span>' + adminEsc(conf.name) + '</span>'")
+    .replace("+ flag + '</span> ' + c + '</span>';", "+ adminEsc(flag) + '</span> ' + adminEsc(c) + '</span>';");
+
   result = result.replace(
     "document.getElementById('m-clicks').innerText = (data.totals.clicks || 0).toLocaleString();",
     "document.getElementById('m-clicks').innerText = (data.totals.clicks || 0).toLocaleString();\n  const previous = data.previous || {};\n  adminRenderChange('m-installs-change', data.totals.installs || 0, previous.installs || 0);\n  adminRenderChange('m-views-change', data.totals.views || 0, previous.views || 0);\n  adminRenderChange('m-clicks-change', data.totals.clicks || 0, previous.clicks || 0);"

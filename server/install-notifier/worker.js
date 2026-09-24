@@ -1663,7 +1663,16 @@ async function getReelsManifest(env) {
 }
 
 function htmlResponse(html) {
-  return new Response(html, { status: 200, headers: { 'content-type': 'text/html;charset=UTF-8' } });
+  // Страница админки: не встраивается в чужие сайты (кликджекинг),
+  // не кэшируется и не отдаёт адрес в Referer внешним ресурсам.
+  return new Response(html, { status: 200, headers: {
+    'content-type': 'text/html;charset=UTF-8',
+    'X-Frame-Options': 'DENY',
+    'Content-Security-Policy': "frame-ancestors 'none'",
+    'Cache-Control': 'no-store',
+    'Referrer-Policy': 'same-origin',
+    'X-Content-Type-Options': 'nosniff',
+  } });
 }
 
 // Сессия админки живёт год и продлевается при заходах — пароль вводится один
@@ -1822,8 +1831,36 @@ function articleSlugFromPath(path) {
 // Событие буфера: { kind: 'analytics', ts, event }
 //                 { kind: 'ai', ts, model, promptTokens, candidateTokens }
 
+// Поля событий аналитики приходят с публичных /api/track и /go: чистим их до
+// записи. Значения становятся ключами объектов дня (__proto__ ломал бы
+// счётчики), выводятся в админке и не должны раздувать день в KV.
+const ANALYTICS_TOKEN_RE = /^[A-Za-z0-9._-]{1,64}$/;
+const ANALYTICS_RESERVED = new Set(['__proto__', 'constructor', 'prototype', 'hasOwnProperty', 'toString', 'valueOf']);
+function analyticsToken(value, fallback) {
+  if (value == null || value === '') return fallback;
+  const text = String(value).trim();
+  return ANALYTICS_TOKEN_RE.test(text) && !ANALYTICS_RESERVED.has(text) ? text : fallback;
+}
+export function sanitizeAnalyticsEvent(event) {
+  const e = event && typeof event === 'object' ? event : {};
+  const out = {
+    type: ['view', 'click', 'install', 'registration'].includes(e.type) ? e.type : 'view',
+    source: analyticsToken(e.source, 'direct').toLowerCase(),
+    campaign: analyticsToken(e.campaign, ''),
+    target: analyticsToken(e.target, ''),
+    platform: analyticsToken(e.platform, 'unknown').toLowerCase(),
+    country: /^[A-Za-z]{2}$/.test(String(e.country || '')) ? String(e.country).toUpperCase() : '',
+    app: analyticsToken(e.app, ''),
+    package: analyticsToken(e.package, ''),
+    path: String(e.path || '').replace(/[^A-Za-z0-9._~\/-]/g, '').slice(0, 120),
+  };
+  for (const key of Object.keys(out)) if (out[key] === '') delete out[key];
+  return out;
+}
+
 async function trackStats(env, ctx, item) {
   if (!env.INSTALLS) return;
+  if (item && item.kind === 'analytics') item.event = sanitizeAnalyticsEvent(item.event);
   item.ts = item.ts || Date.now();
   if (env.STATS && ctx && typeof ctx.waitUntil === 'function') {
     const stub = env.STATS.get(env.STATS.idFromName('main'));
@@ -2715,15 +2752,19 @@ export default {
     }
 
     if (url.pathname === '/api/threads/import' && request.method === 'POST') {
-      if (!env.SHARED_SECRET || request.headers.get('x-install-secret') !== env.SHARED_SECRET) {
-        return jsonResponse({ error: 'forbidden' }, 403);
-      }
+      // Ключ приложения зашит в сборки и секретом не является — импорт в
+      // очередь, которую показывает админка, только с паролем админа (Bearer).
+      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'forbidden' }, 403);
       let body; try { body = await request.json(); } catch { return jsonResponse({ error: 'bad json'}, 400); }
+      const posts = (Array.isArray(body?.posts) ? body.posts : [])
+        .filter(p => p && typeof p.text === 'string' && p.text.trim())
+        .slice(0, 500)
+        .map(p => ({ text: p.text.slice(0, 500), scheduledDate: typeof p.scheduledDate === 'string' ? p.scheduledDate.slice(0, 32) : null }));
       let queue = [];
       try { queue = JSON.parse(await env.INSTALLS.get('threads_queue')) || []; } catch {}
-      queue = queue.concat(body.posts || []);
+      queue = queue.concat(posts);
       await env.INSTALLS.put('threads_queue', JSON.stringify(queue));
-      return jsonResponse({ ok: true, imported: body.posts?.length });
+      return jsonResponse({ ok: true, imported: posts.length });
     }
 
     // Новый раздел Threads: свои маршруты обрабатываем раньше старых.
@@ -2863,18 +2904,6 @@ export default {
       return jsonResponse({ ok: true, count: filtered.length, reels: filtered }, 200, {
         'Cache-Control': 'public, max-age=60, s-maxage=300'
       });
-    }
-
-    if (url.pathname.startsWith('/api/reels/') && url.pathname.endsWith('/like') && request.method === 'POST') {
-      const reelId = url.pathname.replace('/api/reels/', '').replace('/like', '').replace(/\/$/, '');
-      let allReels = await getReelsManifest(env);
-      const idx = allReels.findIndex(r => r.id === reelId);
-      if (idx !== -1) {
-        allReels[idx].likesCount = (allReels[idx].likesCount || 0) + 1;
-        if (env.INSTALLS) await env.INSTALLS.put('reels_manifest', JSON.stringify(allReels));
-        return jsonResponse({ ok: true, likesCount: allReels[idx].likesCount });
-      }
-      return jsonResponse({ error: 'not found' }, 404);
     }
 
     if (url.pathname === '/api/admin/reels' && request.method === 'GET') {
@@ -3577,6 +3606,12 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
     // ────────────────────── Original GET/POST routes ──────────────────────
     if (request.method === 'GET') {
       // Ручной прогон проверки отзывов
+      // Отчёт и опрос отзывов — служебные: раньше их мог дёрнуть кто угодно
+      // (чтение всей статистики, спам в Telegram). Только с паролем админа.
+      if ((url.searchParams.has('reviews') || url.searchParams.has('report'))
+          && !await verifyAdminAuth(request, env)) {
+        return jsonResponse({ error: 'unauthorized' }, 401);
+      }
       if (url.searchParams.get('reviews') === 'check') {
         await pollReviews(env);
         return jsonResponse({ ok: true, checked: 'reviews' });

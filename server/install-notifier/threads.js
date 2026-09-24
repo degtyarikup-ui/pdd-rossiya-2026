@@ -120,8 +120,9 @@ async function resolveAccount(token) {
 /** Приводим записи к одному виду: очередь пережила прежнюю версию раздела. */
 function normalize(post) {
   return {
-    id: post.id || newId(),
-    text: post.text || '',
+    // id попадает в разметку админки — только безопасные символы.
+    id: /^[A-Za-z0-9_-]{1,64}$/.test(String(post.id || '')) ? String(post.id) : newId(),
+    text: typeof post.text === 'string' ? post.text : '',
     imageUrl: post.imageUrl || '',
     scheduledAt: post.scheduledAt || null,
     // Старые записи хранили только дату — считаем её временем публикации.
