@@ -33,8 +33,12 @@ const { chromium } = require('playwright');
           actor(type = 'car', x = -1.8, z = 0, yaw = 0) {
             const group = new THREE.Group(); scene.add(group); state.roadSegments.push(group);
             const p = new THREE.Vector3(x, 0, z), forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
-            return addRoadActor(group, { id: 'audit-' + state.actors.length, type, name: 'Audit', color: '#0574F8' }, p, yaw,
+            const a = addRoadActor(group, { id: 'audit-' + state.actors.length, type, name: 'Audit', color: '#0574F8' }, p, yaw,
               [p, p.clone().addScaledVector(forward, 20), p.clone().addScaledVector(forward, 60)], 6);
+            // Isolated from the random start junction: a T-junction or a
+            // roundabout ahead would otherwise reroute these test cars.
+            a.rerouted = true;
+            return a;
           },
           approach() { playerCarGroup.position.z = state.intersections[0].stopZ; updatePlayerMovement(0); },
           recover() { for (let i = 0; i < 30; i++) {
@@ -50,6 +54,9 @@ const { chromium } = require('playwright');
       const t = audit, results = {};
       const check = (name, fn) => { t.fresh(); try { results[name] = !!fn(); } catch (e) { results[name] = e.message; } };
       check('futureIntersectionTrafficAlreadyBlocksRoad', () => {
+        // The start junction is drawn at random and may have no traffic:
+        // redraw until it has some (the check is about that traffic).
+        for (let k = 0; k < 40 && !t.state.intersections[0]?.actors.length; k++) t.fresh();
         const next = t.state.intersections[0];
         return next.actors.length > 0 && next.actors.every(a => t.state.actors.some(m =>
           m.mesh === a.mesh && !m.active && m.waitsForPlayer));
