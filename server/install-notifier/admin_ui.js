@@ -52,11 +52,6 @@ export const ADMIN_UI_STYLES = `
   }
   .admin-error-banner.visible { display: flex; }
   .admin-error-banner button { flex-shrink: 0; }
-  .kpi-card { min-height: 112px; }
-  .kpi-value { font-variant-numeric: tabular-nums; }
-  .kpi-change { display: block; min-height: 16px; margin-top: 4px; color: var(--text-muted); font-size: 11.5px; font-weight: 600; }
-  .kpi-change.up { color: #159461; }
-  .kpi-change.down { color: var(--danger); }
   .card-head { gap: 12px; }
   .blog-toolbar { margin: -2px 0 14px; }
   .blog-toolbar input { width: min(420px, 100%); }
@@ -95,25 +90,6 @@ export function enhanceAdminHtml(html) {
     ''
   );
 
-  // Процент показываем один раз и называем формулой, которую действительно
-  // считает аналитика. Число кликов остаётся самостоятельным показателем.
-  result = result.replace(
-    '<span class="kpi-badge badge-blue" id="m-ctr">CTR: 0%</span>',
-    '<span id="m-ctr" hidden></span>'
-  );
-  result = result.replace(
-    '<span class="kpi-label">Конверсия лендинга</span>\n            <span class="kpi-badge badge-green">CR %</span>',
-    '<span class="kpi-label">Доля переходов</span>\n            <span class="kpi-badge badge-blue">Клики / визиты</span>'
-  );
-  result = result
-    .replace('<div class="kpi-value" id="m-installs">0</div>', '<div class="kpi-value" id="m-installs">0</div><span class="kpi-change" id="m-installs-change"></span>')
-    .replace('<div class="kpi-value" id="m-views">0</div>', '<div class="kpi-value" id="m-views">0</div><span class="kpi-change" id="m-views-change"></span>')
-    .replace('<div class="kpi-value" id="m-clicks">0</div>', '<div class="kpi-value" id="m-clicks">0</div><span class="kpi-change" id="m-clicks-change"></span>');
-  result = result
-    .replace('Воронка веб-маркетинга (Визиты и Клики)', 'Визиты и переходы')
-    .replace('Живая лента событий', 'Последние события')
-    .replace('<span class="kpi-badge badge-green">АКТИВНА</span>', '');
-
   result = result.replace(
     '<div class="top-actions" id="top-period-actions">',
     '<div class="top-actions" id="top-period-actions">\n        <span class="admin-data-state" id="admin-data-state" aria-live="polite">Ещё не обновлено</span>'
@@ -150,16 +126,9 @@ export function enhanceAdminClientJs(js) {
       "currentDays = parseInt(btn.dataset.days, 10);\n    checkAuthAndLoad();",
       "currentDays = parseInt(btn.dataset.days, 10);\n    localStorage.setItem('pdd-admin-days', String(currentDays));\n    checkAuthAndLoad();"
     )
-    .replace('tension: 0.3,', 'tension: 0,')
-    .replace('tension: 0.3,', 'tension: 0,')
-    .replace("chartInstalls = new Chart(ctxInstalls, {\n    type: 'line',", "chartInstalls = new Chart(ctxInstalls, {\n    type: 'bar',")
-    .replaceAll("type: 'doughnut',", "type: 'bar',")
-    .replace('data: storeValues.some(v => v > 0) ? storeValues : [1, 1, 1],', 'data: storeValues,')
-    .replace('data: srcValues.some(v => v > 0) ? srcValues : [1],', 'data: srcValues,')
-    .replace("y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { color: '#64748b', font: { size: 11 } }, beginAtZero: true }", "y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { color: '#64748b', precision: 0, font: { size: 11 } }, beginAtZero: true }")
     .replace(
       "setInterval(checkAuthAndLoad, 30000);",
-      "setInterval(() => { if (!document.hidden && currentFeature === 'analytics') checkAuthAndLoad(); }, 30000);"
+      "setInterval(() => { if (!document.hidden && currentFeature === 'analytics') checkAuthAndLoad(); }, 60000);"
     );
 
   // Кампании и источники приходят с публичных ссылок — только через adminEsc.
@@ -168,11 +137,6 @@ export function enhanceAdminClientJs(js) {
     .replace("'<span class=\"code-badge\">' + ev.campaign + '</span>'", "'<span class=\"code-badge\">' + adminEsc(ev.campaign) + '</span>'")
     .replace("+ '<span>' + conf.name + '</span>'", "+ '<span>' + adminEsc(conf.name) + '</span>'")
     .replace("+ flag + '</span> ' + c + '</span>';", "+ adminEsc(flag) + '</span> ' + adminEsc(c) + '</span>';");
-
-  result = result.replace(
-    "document.getElementById('m-clicks').innerText = (data.totals.clicks || 0).toLocaleString();",
-    "document.getElementById('m-clicks').innerText = (data.totals.clicks || 0).toLocaleString();\n  const previous = data.previous || {};\n  adminRenderChange('m-installs-change', data.totals.installs || 0, previous.installs || 0);\n  adminRenderChange('m-views-change', data.totals.views || 0, previous.views || 0);\n  adminRenderChange('m-clicks-change', data.totals.clicks || 0, previous.clicks || 0);"
-  );
 
   result = result.replace(
     /document\.getElementById\('copy-link-btn'\)\.addEventListener\('click', \(\) => \{[\s\S]*?\n\}\);/,
@@ -195,31 +159,19 @@ export function enhanceAdminClientJs(js) {
   );
 
   result = result.replace(
-    /function getDoughnutOptions\(\) \{[\s\S]*?\n\}/,
-    `function getDoughnutOptions() {
-  return {
-    indexAxis: 'y',
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { backgroundColor: '#0f172a', padding: 10, cornerRadius: 8 }
-    },
-    scales: {
-      x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { precision: 0, color: '#64748b' } },
-      y: { grid: { display: false }, ticks: { color: '#475569', font: { size: 11.5, weight: '600' } } }
-    }
-  };
-}`
-  );
-
-  result = result.replace(
     "const res = await fetch('/api/admin/ai/stats');\n    if (res.status === 401) { checkAuthAndLoad(); return; }\n    const data = await res.json();",
     "const res = await fetch('/api/admin/ai/stats');\n    if (res.status === 401) { checkAuthAndLoad(); return; }\n    const data = await res.json();\n    if (!res.ok) throw new Error(data.error || ('ошибка сервера ' + res.status));"
   ).replace(
     "console.error('loadAiStats error:', err);",
     "console.error('loadAiStats error:', err);\n    if (typeof scToast === 'function') scToast('Статистика ИИ не загрузилась: ' + err.message, true);"
   );
+
+  // Старая отрисовка аналитики (Chart.js) заменена модулем analytics_ui.js.
+  const dashStart = result.indexOf('// ────────────────────── Dashboard Analytics Rendering');
+  const dashEnd = result.indexOf('// ────────────────────── Link Generator Module', dashStart);
+  if (dashStart !== -1 && dashEnd > dashStart) {
+    result = result.slice(0, dashStart) + result.slice(dashEnd);
+  }
 
   // Старый список пользователей заменён модулем users_ui.js — вырезаем его
   // целиком, иначе он навесит обработчики на уже несуществующую таблицу.
@@ -361,13 +313,6 @@ function adminEsc(value) {
 function adminInlineJs(value) {
   return adminEsc(String(value == null ? '' : value).replace(/\\\\/g, '\\\\\\\\')
     .replace(/'/g, "\\\\'").replace(/[\\r\\n]+/g, ' '));
-}
-function adminRenderChange(id, current, previous) {
-  var element = document.getElementById(id);
-  if (!element) return;
-  var delta = Number(current || 0) - Number(previous || 0);
-  element.className = 'kpi-change' + (delta > 0 ? ' up' : delta < 0 ? ' down' : '');
-  element.textContent = delta === 0 ? '' : (delta > 0 ? '+' : '') + delta.toLocaleString('ru-RU') + ' к прошлому периоду';
 }
 async function adminFetchJson(url, options) {
   var response = await fetch(url, options);
