@@ -725,6 +725,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
   /// A correct answer counts towards the next car; when it arrives, the
   /// garage doors open over the paused scene.
   Future<void> _countCorrect() async {
+    // Premium already opens every car and paint: nothing to hand out, no
+    // garage ceremony interrupting the run.
+    if (ref.read(isPremiumProvider)) return;
     final unlocked = await GameGarageService.instance.recordCorrect();
     if (unlocked == null || !mounted || _reveal != null) return;
     // A new car must not be lost with the device.

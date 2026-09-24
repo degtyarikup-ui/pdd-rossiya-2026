@@ -5191,6 +5191,41 @@
       gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.2);
       oscillator.connect(gain).connect(audio.master); oscillator.start(); oscillator.stop(context.currentTime + 0.21);
     };
+    // Celebration sounds for a new car. They bypass the paused game mix
+    // (the run is paused while the garage reveal plays).
+    audio.celebrate = kind => {
+      audio.unlock();
+      const context = audio.context;
+      if (!audio.enabled || !context) return;
+      const out = context.createGain(); out.gain.value = 0.55;
+      const lowCut = context.createBiquadFilter(); lowCut.type = 'highpass'; lowCut.frequency.value = 140;
+      out.connect(lowCut).connect(context.destination);
+      const now = context.currentTime;
+      const tone = (freq, at, dur, vol, type = 'sine') => {
+        const o = context.createOscillator(), g = context.createGain();
+        o.type = type; o.frequency.setValueAtTime(freq, now + at);
+        g.gain.setValueAtTime(0.0001, now + at);
+        g.gain.linearRampToValueAtTime(vol, now + at + 0.015);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + at + dur);
+        o.connect(g).connect(out); o.start(now + at); o.stop(now + at + dur + 0.02);
+      };
+      if (kind === 'door') {
+        // A soft mechanical roll: filtered noise swelling and settling.
+        const len = 1.3, buffer = context.createBuffer(1, context.sampleRate * len, context.sampleRate);
+        const data = buffer.getChannelData(0); for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (0.6 + 0.4 * Math.sin(i / 900));
+        const src = context.createBufferSource(); src.buffer = buffer;
+        const bp = context.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 420; bp.Q.value = 1.1;
+        const g = context.createGain(); g.gain.setValueAtTime(0.0001, now); g.gain.linearRampToValueAtTime(0.09, now + 0.2); g.gain.exponentialRampToValueAtTime(0.0001, now + len);
+        src.connect(bp).connect(g).connect(out); src.start(now);
+        tone(196, 1.15, 0.25, 0.08, 'triangle');
+      } else if (kind === 'fanfare') {
+        // Major arpeggio up to a held chord, bright and short.
+        [[523.25, 0], [659.25, 0.11], [783.99, 0.22], [1046.5, 0.33]].forEach(([f, at]) => { tone(f, at, 0.5, 0.09, 'triangle'); tone(f * 2, at, 0.25, 0.025); });
+        [523.25, 659.25, 783.99, 1046.5].forEach(f => tone(f, 0.48, 1.3, 0.06, 'triangle'));
+      } else if (kind === 'sparkle') {
+        for (let i = 0; i < 6; i++) tone(2200 + Math.random() * 2400, i * 0.07 + Math.random() * 0.03, 0.3, 0.035);
+      }
+    };
     audio.update = (dt, elapsed) => {
       if (!audio.enabled || audio.paused) return;
       audio.ensure();
@@ -8147,7 +8182,21 @@
     } else {
       const yaw = actor.mesh.rotation.y;
       const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
-      if (cfg.side === 'ring' || cfg.roundabout) {
+      if (intersection.situation.geometry === 'roundabout' && cfg.side !== 'ring' && !cfg.roundabout && cfg.type !== 'tram') {
+        // Traffic entering a roundabout drives round the ring counter-
+        // clockwise to its exit — never straight across the island. The
+        // player's own ring paths, turned to this actor's approach.
+        const T = {
+          right: [[-1.8, -18], [-3.5, -14], [-7.5, -10], [-12, -4], [-18, -1.8], [-40, -1.8]],
+          straight: [[-1.8, -18], [-4.0, -14], [-9.5, -6], [-10.5, 0], [-8.5, 8], [-4.0, 14], [-1.8, 18], [-1.8, 40]],
+          left: [[-1.8, -18], [-4.0, -14], [-9.5, -6], [-10.5, 0], [-8.5, 8], [0, 11.5], [8.5, 8], [14, 4], [18, 1.8], [40, 1.8]],
+        }[cfg.targetAction === 'turn_right' ? 'right' : cfg.targetAction === 'turn_left' || cfg.targetAction === 'uturn' ? 'left' : 'straight'];
+        const c = Math.cos(yaw), sn = Math.sin(yaw);
+        const toWorld = ([lx, lz]) => new THREE.Vector3(lx * c + lz * sn, 0, z - lx * sn + lz * c);
+        const route = T.map(toWorld).filter(q => q.clone().sub(p).dot(forward) > 0.5 || q.distanceTo(new THREE.Vector3(0, 0, z)) < 16);
+        points = [p, ...route];
+        clearDistance = 26;
+      } else if (cfg.side === 'ring' || cfg.roundabout) {
         const ringRadius = cfg.ringRadius || 12.0;
         const startAngle = Math.atan2(p.x, p.z - z);
         const arcPoints = [p];
@@ -10402,18 +10451,54 @@
     const car = window.PDD_VEHICLES.create(id, paint);
     car.position.set(0, 0, 2.6); car.rotation.y = Math.PI; // nose towards the door
     rs.add(car);
+    // Celebration: headlights, light pouring out of the opening door, a
+    // glowing pad where the car stops, sparkles round it and confetti.
+    car.traverse(o => { if (o.isMesh && o.material?.color?.getHex() === 0xFFF3CC) window.PDD_VEHICLES.addGlow(o, 0xFFF3CC, 1.6); });
+    const additive = (color, opacity) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    const rays = new THREE.Group();
+    for (let i = 0; i < 5; i++) {
+      const shape = new THREE.Shape(); const w = 0.9 + i * 0.35;
+      shape.moveTo(-w, 0); shape.lineTo(w, 0); shape.lineTo(w * 2.2, -9); shape.lineTo(-w * 2.2, -9); shape.closePath();
+      const ray = new THREE.Mesh(new THREE.ShapeGeometry(shape), additive(0xFFE6A8, 0));
+      ray.rotation.x = -Math.PI / 2; ray.position.set((i - 2) * 1.5, 0.03 + i * 0.002, -0.7);
+      rays.add(ray);
+    }
+    rs.add(rays);
+    const pad = new THREE.Mesh(new THREE.RingGeometry(2.4, 3.3, 48), additive(0x7FB8FF, 0));
+    pad.rotation.x = -Math.PI / 2; pad.position.set(0, 0.04, -6.6); rs.add(pad);
+    const padFill = new THREE.Mesh(new THREE.CircleGeometry(2.4, 48), additive(0x2F7BF0, 0));
+    padFill.rotation.x = -Math.PI / 2; padFill.position.set(0, 0.035, -6.6); rs.add(padFill);
+    const sparkles = [];
+    for (let i = 0; i < 18; i++) {
+      const holder = new THREE.Object3D();
+      window.PDD_VEHICLES.addGlow(holder, [0xFFE27A, 0xFFFFFF, 0x9FD0FF][i % 3], 0.55 + Math.random() * 0.5);
+      holder.visible = false; rs.add(holder);
+      sparkles.push({ holder, angle: i / 18 * Math.PI * 2, radius: 2.6 + Math.random() * 1.4, height: 0.4 + Math.random() * 2.2, speed: 0.4 + Math.random() * 0.6, phase: Math.random() * 6 });
+    }
+    const confettiCount = 220, cPos = new Float32Array(confettiCount * 3), cCol = new Float32Array(confettiCount * 3);
+    const palette = [0xED4621, 0x0574F8, 0xFFA53C, 0x2BC280, 0xE8C547, 0x7A5BC6].map(c => new THREE.Color(c));
+    const cVel = [];
+    for (let i = 0; i < confettiCount; i++) { const c = palette[i % palette.length]; cCol.set([c.r, c.g, c.b], i * 3); cVel.push(new THREE.Vector3()); }
+    const cGeo = new THREE.BufferGeometry();
+    cGeo.setAttribute('position', new THREE.BufferAttribute(cPos, 3)); cGeo.setAttribute('color', new THREE.BufferAttribute(cCol, 3));
+    const confetti = new THREE.Points(cGeo, new THREE.PointsMaterial({ size: 0.22, vertexColors: true, transparent: true, opacity: 0 }));
+    confetti.frustumCulled = false; rs.add(confetti);
     // Three-quarter view from the driveway: the whole garage front and the
     // spot where the car stops are in frame on a portrait screen.
     const cam = new THREE.PerspectiveCamera(50, 1, 0.1, 160);
     cam.position.set(-12, 5.6, -20); cam.lookAt(0.2, 1.0, -3);
-    return { scene: rs, camera: cam, door, car, phase: 'closed', t: 0, yaw: 0, spin: 0 };
+    return { scene: rs, camera: cam, door, car, phase: 'closed', t: 0, yaw: 0, spin: 0,
+      fx: { rays, pad, padFill, sparkles, confetti, cVel, time: 0, burst: false } };
   }
   function updateReveal(dt) {
     const r = reveal; if (!r) return;
     const w = container.clientWidth || window.innerWidth, h = container.clientHeight || window.innerHeight;
     r.camera.aspect = w / h; r.camera.updateProjectionMatrix();
+    const fx = r.fx; fx.time += dt;
+    if (r.phase === 'opening' && r.t === 0) gameAudio?.celebrate('door');
     if (r.phase === 'opening') {
       r.t += dt; const u = Math.min(1, r.t / 1.3);
+      fx.rays.children.forEach((ray, i) => { ray.material.opacity = 0.16 * u * (0.8 + 0.2 * Math.sin(fx.time * 3 + i)); });
       r.door.position.y = 4.3 * (1 - Math.pow(1 - u, 3));
       r.door.children.forEach(slat => { slat.visible = slat.position.y + r.door.position.y < 3.75; });
       if (u >= 1) { r.phase = 'driving'; r.t = 0; }
@@ -10425,11 +10510,50 @@
     } else if (r.phase === 'turning') {
       r.t += dt; const u = Math.min(1, r.t / 1.1), e = 1 - Math.pow(1 - u, 3);
       r.car.rotation.y = Math.PI + (Math.PI / 2) * e; // nose towards the viewer
-      if (u >= 1) { r.phase = 'shown'; r.yaw = r.car.rotation.y; sendToFlutter({ event: 'reveal_shown' }); }
+      if (u >= 1) {
+        r.phase = 'shown'; r.yaw = r.car.rotation.y; sendToFlutter({ event: 'reveal_shown' });
+        // Ta-da: confetti bursts up round the car, sparkles appear.
+        gameAudio?.celebrate('fanfare');
+        const pos = fx.confetti.geometry.attributes.position;
+        fx.cVel.forEach((v, i) => {
+          const a = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 4;
+          v.set(Math.cos(a) * sp, 6 + Math.random() * 6, Math.sin(a) * sp);
+          pos.setXYZ(i, r.car.position.x, 1.2, r.car.position.z);
+        });
+        pos.needsUpdate = true; fx.burst = true; fx.confetti.material.opacity = 1;
+        fx.sparkles.forEach(sp => { sp.holder.visible = true; });
+      }
     } else if (r.phase === 'shown') {
       // Free spin by finger; drifts slowly when idle.
       r.yaw += (r.spin + 0.15) * dt; r.spin *= Math.pow(0.05, dt);
       r.car.rotation.y = r.yaw;
+      if (Math.floor(fx.time * 1.4) !== Math.floor((fx.time - dt) * 1.4) && Math.random() < 0.5) gameAudio?.celebrate('sparkle');
+    }
+    if (r.phase === 'driving' || r.phase === 'turning' || r.phase === 'shown') {
+      // Light keeps pouring out; the pad under the car pulses.
+      fx.rays.children.forEach((ray, i) => { ray.material.opacity = 0.14 + 0.04 * Math.sin(fx.time * 2.5 + i); });
+      const pulse = 0.5 + 0.5 * Math.sin(fx.time * 3);
+      const k = r.phase === 'shown' ? 1 : r.phase === 'turning' ? Math.min(1, r.t / 1.1) : 0;
+      fx.pad.material.opacity = k * (0.35 + 0.35 * pulse); fx.padFill.material.opacity = k * (0.10 + 0.08 * pulse);
+      fx.pad.scale.setScalar(1 + 0.05 * pulse);
+    }
+    fx.sparkles.forEach(sp => {
+      if (!sp.holder.visible) return;
+      const a = sp.angle + fx.time * sp.speed;
+      sp.holder.position.set(r.car.position.x + Math.cos(a) * sp.radius, sp.height + 0.3 * Math.sin(fx.time * 2 + sp.phase), r.car.position.z + Math.sin(a) * sp.radius);
+      sp.holder.scale.setScalar(0.4 + 0.6 * Math.abs(Math.sin(fx.time * 4 + sp.phase)));
+    });
+    if (fx.burst) {
+      const pos = fx.confetti.geometry.attributes.position;
+      let alive = 0;
+      fx.cVel.forEach((v, i) => {
+        v.y -= 9 * dt; v.multiplyScalar(Math.pow(0.35, dt)); // air drag: confetti flutters down
+        const y = Math.max(0.05, pos.getY(i) + v.y * dt);
+        pos.setXYZ(i, pos.getX(i) + v.x * dt + Math.sin(fx.time * 6 + i) * 0.01, y, pos.getZ(i) + v.z * dt);
+        if (y > 0.06) alive++;
+      });
+      pos.needsUpdate = true;
+      if (!alive) fx.confetti.material.opacity = Math.max(0, fx.confetti.material.opacity - dt * 0.5);
     }
     renderer.render(r.scene, r.camera);
   }
