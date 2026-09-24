@@ -94,6 +94,7 @@ export function enhanceAdminHtml(html) {
     '<option value="ru">Россия (RU)</option>',
     '<option value="ru">Россия (RU)</option>\n          <option value="by">Беларусь (BY)</option>'
   );
+  result = result.replace('<span>Генератор ссылок</span>', '<span>Ссылки</span>');
   result = result.replace(
     '<span class="brand-badge"><span class="live-dot"></span>LIVE</span>',
     ''
@@ -125,6 +126,7 @@ export function enhanceAdminHtml(html) {
 
 export function enhanceAdminClientJs(js) {
   let result = js
+    .replace("links: 'Генератор ссылок и кампании',", "links: 'Ссылки',")
     .replace("let currentFeature = 'analytics';", "let currentFeature = localStorage.getItem('pdd-admin-feature') || 'analytics';")
     .replace("let currentDays = 7;", "let currentDays = parseInt(localStorage.getItem('pdd-admin-days') || '7', 10);")
     .replace("let currentApp = 'all'; // 'all' | 'ru' | 'rs'", "let currentApp = localStorage.getItem('pdd-admin-app') || 'all'; // 'all' | 'ru' | 'by' | 'rs'")
@@ -153,26 +155,6 @@ export function enhanceAdminClientJs(js) {
     .replace("+ flag + '</span> ' + c + '</span>';", "+ adminEsc(flag) + '</span> ' + adminEsc(c) + '</span>';");
 
   result = result.replace(
-    /document\.getElementById\('copy-link-btn'\)\.addEventListener\('click', \(\) => \{[\s\S]*?\n\}\);/,
-    `document.getElementById('copy-link-btn').addEventListener('click', async () => {
-  const url = document.getElementById('gen-output').innerText;
-  const btn = document.getElementById('copy-link-btn');
-  const original = btn.innerText;
-  try {
-    await navigator.clipboard.writeText(url);
-    btn.innerText = 'Скопировано';
-  } catch (_) {
-    var range = document.createRange();
-    range.selectNodeContents(document.getElementById('gen-output'));
-    window.getSelection().removeAllRanges();
-    window.getSelection().addRange(range);
-    btn.innerText = 'Выделено — нажмите Ctrl+C';
-  }
-  setTimeout(() => { btn.innerText = original; }, 2200);
-});`
-  );
-
-  result = result.replace(
     "const res = await fetch('/api/admin/ai/stats');\n    if (res.status === 401) { checkAuthAndLoad(); return; }\n    const data = await res.json();",
     "const res = await fetch('/api/admin/ai/stats');\n    if (res.status === 401) { checkAuthAndLoad(); return; }\n    const data = await res.json();\n    if (!res.ok) throw new Error(data.error || ('ошибка сервера ' + res.status));"
   ).replace(
@@ -185,6 +167,13 @@ export function enhanceAdminClientJs(js) {
   const dashEnd = result.indexOf('// ────────────────────── Link Generator Module', dashStart);
   if (dashStart !== -1 && dashEnd > dashStart) {
     result = result.slice(0, dashStart) + result.slice(dashEnd);
+  }
+
+  // Старый генератор ссылок заменён модулем links_ui.js.
+  const linkStart = result.indexOf('// ────────────────────── Link Generator Module');
+  const linkEnd = result.indexOf('// ────────────────────── Blog Articles Module', linkStart);
+  if (linkStart !== -1 && linkEnd > linkStart) {
+    result = result.slice(0, linkStart) + result.slice(linkEnd);
   }
 
   // Старый список пользователей заменён модулем users_ui.js — вырезаем его
