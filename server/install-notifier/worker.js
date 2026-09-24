@@ -10,7 +10,9 @@ import { enhanceAdminHtml, enhanceAdminClientJs, ADMIN_UI_CLIENT_JS } from './ad
 import { StatsBuffer } from './stats_buffer.js';
 import { handleUsersAdmin } from './users_admin.js';
 import { putUserRecord, listUserSummaries } from './user_store.js';
+import { usersSnapshot } from './analytics_data.js';
 import { USERS_VIEW_HTML, USERS_CLIENT_JS } from './users_ui.js';
+import { ANALYTICS_VIEW_HTML, ANALYTICS_CLIENT_JS } from './analytics_ui.js';
 
 // Durable Object буфера статистики (см. trackStats / flushBufferedStats).
 export { StatsBuffer };
@@ -235,6 +237,11 @@ function applyEventToSlot(slotData, event) {
 
   if (event.type === 'registration') {
     slotData.registrations = (slotData.registrations || 0) + 1;
+    return slotData;
+  }
+  // Давний пользователь после обновления — не установка (и в отчёте тоже).
+  if (event.type === 'install' && event.kind === 'returning') {
+    slotData.returning = (slotData.returning || 0) + 1;
     return slotData;
   }
 
@@ -617,6 +624,16 @@ function detectAppCode(data = {}) {
 }
 
 // Выдаёт порядковый номер установки. Идемпотентно по install_id.
+// Сборки до 41 помечали свежую установку как 'update' (баг порядка
+// инициализации), поэтому их пометке не верим и считаем установкой. С 41-й
+// 'update' — давний пользователь, впервые приславший отчёт после обновления:
+// в установки он не идёт, в админке показывается отдельно.
+const RELIABLE_INSTALL_KIND_BUILD = 41;
+function installKind(body) {
+  const build = parseInt(String(body?.version || '').split('+')[1], 10);
+  return body?.kind === 'update' && build >= RELIABLE_INSTALL_KIND_BUILD ? 'returning' : 'new';
+}
+
 async function assignNumber(env, installId, app = 'ru') {
   if (!env.INSTALLS) return { value: null, isNew: true };
   const counterKey = app === 'ru' ? 'counter' : `counter:${app}`;
@@ -1846,6 +1863,7 @@ export function sanitizeAnalyticsEvent(event) {
   const e = event && typeof event === 'object' ? event : {};
   const out = {
     type: ['view', 'click', 'install', 'registration'].includes(e.type) ? e.type : 'view',
+    kind: e.kind === 'returning' ? 'returning' : '',
     source: analyticsToken(e.source, 'direct').toLowerCase(),
     campaign: analyticsToken(e.campaign, ''),
     target: analyticsToken(e.target, ''),
@@ -1980,6 +1998,9 @@ function applyEventToDay(dayData, event) {
     a.targets[target] = (a.targets[target] || 0) + 1;
     if (camp) a.campaigns[camp].clicks++;
 
+  } else if (event.type === 'install' && event.kind === 'returning') {
+    dayData.returning = (dayData.returning || 0) + 1;
+    a.returning = (a.returning || 0) + 1;
   } else if (event.type === 'install') {
     dayData.installs++;
     dayData.sources[src].installs++;
@@ -2131,6 +2152,35 @@ function analyticsBlockForApp(dayData, appFilter) {
   return null;
 }
 
+// Прошедшие дни уже не меняются (сброс буфера раз в час дописывает максимум
+// во вчерашний день), поэтому держим их в памяти изолята: панель обновляется
+// раз в минуту и без кэша читала бы до 180 ключей за раз.
+const pastDayCache = new Map();
+async function readDayData(env, dateKey) {
+  const today = mskDayKey(new Date());
+  const yesterday = mskDayKey(new Date(Date.now() - 86400000));
+  const frozen = dateKey !== today && dateKey !== yesterday;
+  if (frozen && pastDayCache.has(dateKey)) return pastDayCache.get(dateKey);
+  let data = null;
+  try {
+    const raw = await env.INSTALLS.get(`day:${dateKey}`);
+    if (raw) data = JSON.parse(raw);
+  } catch (_) {}
+  if (frozen) {
+    if (pastDayCache.size > 800) pastDayCache.clear();
+    pastDayCache.set(dateKey, data);
+  }
+  return data;
+}
+
+function installsByStore(block) {
+  const out = {};
+  for (const [name, counts] of Object.entries(block?.sources || {})) {
+    if (counts && counts.installs) out[name] = counts.installs;
+  }
+  return out;
+}
+
 async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
   const emptyRes = {
     totals: { views: 0, clicks: 0, installs: 0, grandTotal: 0, ctr: '0.0', cr: '0.0' },
@@ -2162,13 +2212,10 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
     const platformsMap = {};
     const countriesMap = {};
 
+    let totalReturning = 0;
+    const appsMap = {};
     for (const dateKey of dateKeys) {
-      let dayData = null;
-      try {
-        const raw = await env.INSTALLS.get(`day:${dateKey}`);
-        if (raw) dayData = JSON.parse(raw);
-      } catch (_) {}
-
+      const dayData = await readDayData(env, dateKey);
       const block = analyticsBlockForApp(dayData, appFilter);
 
       const views = block ? block.views || 0 : 0;
@@ -2179,7 +2226,16 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
       totalClicks += clicks;
       totalInstalls += installs;
 
-      timeline.push({ date: dateKey, views, clicks, installs });
+      for (const [code, appBlock] of Object.entries(dayData?.apps || {})) {
+        if (!appsMap[code]) appsMap[code] = { views: 0, clicks: 0, installs: 0, returning: 0 };
+        appsMap[code].views += appBlock.views || 0;
+        appsMap[code].clicks += appBlock.clicks || 0;
+        appsMap[code].installs += appBlock.installs || 0;
+        appsMap[code].returning += appBlock.returning || 0;
+      }
+      const returning = block ? block.returning || 0 : 0;
+      totalReturning += returning;
+      timeline.push({ date: dateKey, views, clicks, installs, returning, stores: installsByStore(block) });
 
       if (block) {
         if (block.sources) {
@@ -2221,18 +2277,24 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
     let previousViews = 0;
     let previousClicks = 0;
     let previousInstalls = 0;
+    let previousReturning = 0;
+    const previousStores = {};
+    const previousSources = {};
     for (let i = daysCount * 2 - 1; i >= daysCount; i--) {
       const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      let dayData = null;
-      try {
-        const raw = await env.INSTALLS.get(`day:${mskDayKey(d)}`);
-        if (raw) dayData = JSON.parse(raw);
-      } catch (_) {}
+      const dayData = await readDayData(env, mskDayKey(d));
       const block = analyticsBlockForApp(dayData, appFilter);
       if (!block) continue;
       previousViews += block.views || 0;
       previousClicks += block.clicks || 0;
       previousInstalls += block.installs || 0;
+      previousReturning += block.returning || 0;
+      for (const [store, n] of Object.entries(installsByStore(block))) previousStores[store] = (previousStores[store] || 0) + n;
+      for (const [src, counts] of Object.entries(block.sources || {})) {
+        if (!previousSources[src]) previousSources[src] = { views: 0, clicks: 0 };
+        previousSources[src].views += counts.views || 0;
+        previousSources[src].clicks += counts.clicks || 0;
+      }
     }
 
     const grandTotalRu = parseInt((await env.INSTALLS.get('counter')) || '0', 10);
@@ -2277,6 +2339,7 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
         views: totalViews,
         clicks: totalClicks,
         installs: totalInstalls,
+        returning: totalReturning,
         grandTotal,
         ctr: Number(ctr),
         cr: Number(cr),
@@ -2285,12 +2348,16 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
         views: previousViews,
         clicks: previousClicks,
         installs: previousInstalls,
+        returning: previousReturning,
+        stores: previousStores,
+        sources: previousSources,
       },
       timeline,
       sources,
       targets,
       campaigns,
       platforms: platformsMap,
+      apps: appsMap,
       countries: countriesMap,
       recent: recent.slice(0, 50),
     };
@@ -2353,10 +2420,19 @@ function renderAdminPage() {
     ? withSourceInput.slice(0, usersStart) + USERS_VIEW_HTML.trim() + '\n\n    ' + withSourceInput.slice(usersEnd)
     : withSourceInput;
 
-  const html = enhanceAdminHtml(withUsers
+  // Аналитику — тоже целиком (analytics_ui.js), вместе с Chart.js: новые
+  // графики рисуются своим SVG.
+  const analyticsStart = withUsers.indexOf('<!-- 1. ANALYTICS VIEW -->');
+  const analyticsEnd = withUsers.indexOf('<!-- 2. LINKS GENERATOR VIEW -->');
+  const withAnalytics = (analyticsStart !== -1 && analyticsEnd > analyticsStart)
+    ? withUsers.slice(0, analyticsStart) + ANALYTICS_VIEW_HTML.trim() + '\n\n    ' + withUsers.slice(analyticsEnd)
+    : withUsers;
+  const withoutChartJs = withAnalytics.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/chart\.js[^"]*"><\/script>\s*/, '');
+
+  const html = enhanceAdminHtml(withoutChartJs
     .replace('</nav>', SOCIAL_NAV_HTML + '    </nav>')
     .replace('\n\n  </main>', '\n' + SOCIAL_VIEW_HTML + '\n' + THREADS_VIEW_HTML + '\n  </main>'));
-  return html + "<script>" + clientJs + USERS_CLIENT_JS + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + ADMIN_UI_CLIENT_JS + "</script></body></html>";
+  return html + "<script>" + clientJs + ANALYTICS_CLIENT_JS + USERS_CLIENT_JS + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + ADMIN_UI_CLIENT_JS + "</script></body></html>";
 }
 
 
@@ -2617,6 +2693,16 @@ async function saveUserProfile(env, user) {
   return merged;
 }
 
+// Сводки пользователей для аналитики: list() в KV тоже лимитирован
+// (1000 в сутки на бесплатном тарифе), поэтому не чаще раза в 5 минут.
+let userSummaryCache = { at: 0, users: null };
+async function cachedUserSummaries(env) {
+  if (userSummaryCache.users && Date.now() - userSummaryCache.at < 5 * 60 * 1000) return userSummaryCache.users;
+  const users = await listUserSummaries(env);
+  userSummaryCache = { at: Date.now(), users };
+  return users;
+}
+
 async function getAllUsers(env) {
   if (!env.INSTALLS) return [];
   return listUserSummaries(env);
@@ -2691,7 +2777,13 @@ export default {
       if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
       const days = parseInt(url.searchParams.get('days') || '7', 10);
       const appFilter = url.searchParams.get('app') || 'all';
-      const stats = await getStatsForPeriod(env, Math.min(Math.max(days, 1), 365), appFilter);
+      const period = Math.min(Math.max(days, 1), 365);
+      const stats = await getStatsForPeriod(env, period, appFilter);
+      try {
+        stats.users = usersSnapshot(await cachedUserSummaries(env), period, appFilter, mskDayKey);
+      } catch (e) {
+        console.error('users snapshot failed', e);
+      }
       return jsonResponse(stats);
     }
 
@@ -3687,6 +3779,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
     if (env.INSTALLS) {
       await trackStats(env, ctx, { kind: 'analytics', event: {
         type: 'install',
+        kind: installKind(body),
         app: appCode,
         source: store,
         platform: body.platform || 'android',

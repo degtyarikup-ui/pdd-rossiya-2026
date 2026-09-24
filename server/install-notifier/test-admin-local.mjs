@@ -39,7 +39,8 @@ async function runTests() {
   assert.equal(adminRes.status, 200);
   assert.match(adminHtml, /<title>ПДД Аналитика — Панель управления<\/title>/);
   assert.match(adminHtml, /id="admin-data-state"/);
-  assert.match(adminHtml, /Доля переходов/);
+  assert.match(adminHtml, /Установки по дням/);
+  assert.doesNotMatch(adminHtml, /chart\.js/);
   assert.match(adminHtml, /Данные аналитики/);
   assert.match(adminHtml, /Беларусь \(BY\)/);
   assert.equal((adminHtml.match(/id="sidebar-app-select"/g) || []).length, 1);
@@ -143,7 +144,8 @@ async function runTests() {
   console.log('   Targets:', statsData.targets);
   console.log('   Campaigns:', statsData.campaigns);
   console.log('   Recent events count:', statsData.recent.length);
-  assert.deepEqual(statsData.previous, { views: 9, clicks: 4, installs: 2 });
+  const { views, clicks, installs } = statsData.previous;
+  assert.deepEqual({ views, clicks, installs }, { views: 9, clicks: 4, installs: 2 });
   const byStatsRes = await worker.fetch(new Request(
     'https://pdd-install-notifier.sergei-pdd.workers.dev/api/admin/stats?days=7&app=by',
     { headers: { 'authorization': 'Bearer test_password_123' } }
@@ -151,7 +153,7 @@ async function runTests() {
   const byStats = await byStatsRes.json();
   assert.equal(byStats.totals.views, 1);
   assert.equal(byStats.timeline.reduce((sum, day) => sum + day.views, 0), 1);
-  assert.deepEqual(byStats.previous, { views: 2, clicks: 1, installs: 1 });
+  assert.deepEqual({ views: byStats.previous.views, clicks: byStats.previous.clicks, installs: byStats.previous.installs }, { views: 2, clicks: 1, installs: 1 });
   console.log('   Беларусь отделена от России: YES');
 
   console.log('8. Тестируем атомарную перестановку статей...');
