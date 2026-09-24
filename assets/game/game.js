@@ -5282,7 +5282,10 @@
     // Renderer
     // Weak phones (few cores / little memory) get a cheaper profile: no soft
     // shadow filtering, a smaller shadow map and 1x pixel ratio.
-    const lowEnd = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 3;
+    // iOS WebKit reports a capped hardwareConcurrency (so every iPhone looked
+    // "weak" and rendered at 1x without antialiasing — visibly pixelated).
+    // Only a clearly weak device (≤2 cores or ≤3 GB) gets the cheap profile.
+    const lowEnd = (navigator.hardwareConcurrency || 8) <= 2 || (navigator.deviceMemory || 8) <= 3;
     state.lowEnd = lowEnd;
     renderer = new THREE.WebGLRenderer({ antialias: !lowEnd, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
