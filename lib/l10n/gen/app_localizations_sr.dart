@@ -1217,4 +1217,17 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get gameReviewMistakes => 'Pregledaj greške';
+
+  @override
+  String get notifGameRunTitle => 'Nova vožnja je spremna';
+
+  @override
+  String get notifGameRunBody =>
+      'Sedite za volan: raskrsnice iz testova vas čekaju.';
+
+  @override
+  String get notifGameChannelName => 'Igra';
+
+  @override
+  String get notifGameChannelDesc => 'Kada se vožnja u igri obnovi';
 }

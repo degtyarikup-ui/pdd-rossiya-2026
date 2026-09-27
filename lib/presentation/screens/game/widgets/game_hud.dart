@@ -21,6 +21,10 @@ class GameHud extends StatelessWidget {
   final String vehiclePaint;
   final GameThumbnailLoader? thumbnail;
   final Map<String, Uint8List> thumbnailCache;
+
+  /// The engine's season is winter: in the light theme the snow is as light
+  /// as the white numbers, so they are drawn dark instead.
+  final bool snow;
   const GameHud({
     super.key,
     required this.state,
@@ -32,11 +36,16 @@ class GameHud extends StatelessWidget {
     this.vehiclePaint = 'red',
     this.thumbnail,
     this.thumbnailCache = const {},
+    this.snow = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    // Bare numbers over the scene (run progress, speed): white, dark on snow.
+    final sceneText = snow && Theme.of(context).brightness != Brightness.dark
+        ? AppColors.primaryText
+        : AppColors.white;
     final notice =
         state.lastViolation != null &&
             state.lastViolation != 'oncoming' &&
@@ -237,11 +246,11 @@ class GameHud extends StatelessWidget {
                               ),
                             ],
                           ),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Onest',
                             fontWeight: FontWeight.w800,
                             height: 1,
-                            color: AppColors.white,
+                            color: sceneText,
                           ),
                         ),
                       ),
@@ -260,11 +269,11 @@ class GameHud extends StatelessWidget {
                         ),
                       ],
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Onest',
                       fontWeight: FontWeight.w800,
                       height: 1,
-                      color: AppColors.white,
+                      color: sceneText,
                     ),
                   ),
                 ],

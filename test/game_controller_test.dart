@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
+import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -62,6 +63,39 @@ void main() {
     );
     garage.resetForTest();
   });
+
+  test(
+    'Runs: the last one spent sets the refill moment, time brings it back',
+    () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      SharedPreferences.setMockInitialValues({});
+      final runs = GameRunsService.instance;
+      expect(await runs.load(), GameRunsService.maxRuns);
+      for (var i = 0; i < GameRunsService.maxRuns; i++) {
+        // Spending the last run also asks for the "run is ready" reminder: a
+        // no-op without the notification plugin, it must not throw.
+        expect(await runs.consume(), isTrue);
+      }
+      expect(runs.runs, 0);
+      expect(await runs.consume(), isFalse);
+      final at = runs.firstUnitAt!;
+      expect(
+        at.difference(DateTime.now()).inMinutes,
+        closeTo(GameRunsService.refillInterval.inMinutes, 1),
+      );
+      await runs.cancelReminder();
+
+      // Reopened 25 minutes after the stock ran out: one run is back.
+      SharedPreferences.setMockInitialValues({
+        'game_runs': 0,
+        'game_runs_since': DateTime.now()
+            .subtract(const Duration(minutes: 25))
+            .millisecondsSinceEpoch,
+      });
+      expect(await runs.load(), 1);
+      expect(runs.firstUnitAt, isNull);
+    },
+  );
 
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() {
@@ -208,6 +242,39 @@ void main() {
     await tester.pumpAndSettle(); // the previous notice fades out
     expect(find.text(appL10n.gameOncoming), findsOneWidget);
     expect(find.byKey(const ValueKey('hud-penalty')), findsNothing);
+  });
+
+  testWidgets('HUD numbers turn dark over winter snow in the light theme', (
+    tester,
+  ) async {
+    Future<Color?> speedColor({required bool snow, required bool dark}) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            brightness: dark ? Brightness.dark : Brightness.light,
+          ),
+          home: Scaffold(
+            body: GameHud(
+              state: const GameState(phase: GamePhase.driving),
+              snow: snow,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle(); // MaterialApp animates theme changes
+      final text = tester.widget<RichText>(
+        find.descendant(
+          of: find.byKey(const ValueKey('hud-speed')),
+          matching: find.byType(RichText),
+        ),
+      );
+      return text.text.style?.color;
+    }
+
+    expect(await speedColor(snow: false, dark: false), AppColors.white);
+    expect(await speedColor(snow: true, dark: false), AppColors.primaryText);
+    // The dark theme dims the snow: white stays readable there.
+    expect(await speedColor(snow: true, dark: true), AppColors.white);
   });
 
   testWidgets('Simple steering lights the chosen exit and pulses the hint', (

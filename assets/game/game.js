@@ -51,6 +51,8 @@
   }
   let currentSeason = SEASONS[seasonFromDate()];
   const season = () => currentSeason;
+  // The HUD draws its bare numbers dark over the snow (light theme).
+  const seasonName = () => Object.keys(SEASONS).find(k => SEASONS[k] === currentSeason);
   const state = {
     speed: 0,
     maxSpeed: 18, // m/s, follows the speed limit in force (see effectiveLimitKmH)
@@ -5362,7 +5364,7 @@
     if (loader) loader.style.display = 'none';
 
     // Notify Flutter that engine is ready
-    sendToFlutter({ event: 'ready' });
+    sendToFlutter({ event: 'ready', season: seasonName() });
 
     // Animation Loop
     animate(0);
@@ -7795,6 +7797,7 @@
     let guidePoints = action === 'right' ? [[-1.8, -R - 5.2], [-1.8, -R - 2.2], [-4, -R], [-16, -R]] :
       action === 'left' ? [[-1.8, -7], [-1.8, -1], [2, L], [16, L]] :
       action === 'uturn' ? [[-1.8, -7], [-2.5, 0], [0, 2.5], [2.5, 0], [1.8, -15]] : [[-1.8, -7], [-1.8, 16]];
+    if (spec.paths?.[action]) guidePoints = spec.paths[action];
     // With ticket trajectories every one of them gets the chevrons (the
     // player's route is among them), so there is one arrow style on screen.
     const guidePaths = situation.trajectories?.length
@@ -8184,7 +8187,19 @@
     const cfg = actor.config;
     const z = intersection.centerZ;
     let points, clearDistance;
-    if (cfg.type === 'pedestrian') {
+    if (cfg.route) {
+      // An authored route ([x, z from the centre], world axes). The actor has
+      // passed once it is out of the junction box.
+      points = [p, ...cfg.route.map(([x, dz]) => new THREE.Vector3(x, 0, z + dz))];
+      const box = (intersection.kerbZ || 4.2) + 1.5;
+      const raw = curve(points), n = Math.ceil(raw.getLength());
+      let out = raw.getLength();
+      for (let i = 1; i <= n; i++) {
+        const q = raw.getPointAt(i / n);
+        if (i / n > 0.2 && (Math.abs(q.x) > box || Math.abs(q.z - z) > box)) { out = raw.getLength() * i / n; break; }
+      }
+      clearDistance = out + actor.halfLength + 1;
+    } else if (cfg.type === 'pedestrian') {
       // Cross the destination road, then continue along the pavement. The
       // crossing may be unmarked, as in the source ticket.
       const x = p.x;
@@ -8399,7 +8414,13 @@
   function maneuverPoints(r, action, start) {
     const z = r.intersection.centerZ;
     let points, exitYaw = 0;
-    if (r.intersection.situation.geometry === 'roundabout') {
+    const custom = r.spec.paths?.[action];
+    if (custom) {
+      // An authored route for this scene ([x, z from the centre], world
+      // axes): e.g. a left turn wide enough to pass an opposing left-turner.
+      exitYaw = { left: Math.PI / 2, right: -Math.PI / 2, uturn: Math.PI }[action] || 0;
+      points = [start, ...custom.map(([x, dz]) => new THREE.Vector3(x, 0, z + dz))];
+    } else if (r.intersection.situation.geometry === 'roundabout') {
       if (action === 'right') {
         exitYaw = -Math.PI / 2;
         points = [start, new THREE.Vector3(-1.8, 0, z - 18), new THREE.Vector3(-3.5, 0, z - 14),
@@ -9000,6 +9021,7 @@
   // player's path where a straight extrapolation of it would not (13_15).
   function conflictAhead(playerBox, a) {
     const forward = new THREE.Vector3(Math.sin(playerBox.yaw), 0, Math.cos(playerBox.yaw));
+    const planned = state.autoPath;
     a.mesh.parent.updateWorldMatrix(true, false);
     const toWorld = a.mesh.parent.matrixWorld;
     for (const t of [0.25, 0.5, 0.75, 1]) {
@@ -9007,7 +9029,13 @@
       const tangent = a.path.getTangentAt(u).transformDirection(toWorld);
       const other = { p: a.path.getPointAt(u).applyMatrix4(toWorld), yaw: Math.atan2(tangent.x, tangent.z),
         halfWidth: a.halfWidth, halfLength: a.halfLength };
-      const mine = { ...playerBox, p: playerBox.p.clone().addScaledVector(forward, state.speed * t) };
+      // Simple steering drives a planned curve: predict along it, not along
+      // the heading (a turning car does not go straight on).
+      let mine;
+      if (planned) {
+        const v = Math.min(1, (planned.s + state.speed * t) / planned.length), tan = planned.path.getTangentAt(v);
+        mine = { ...playerBox, p: planned.path.getPointAt(v), yaw: Math.atan2(tan.x, tan.z) };
+      } else mine = { ...playerBox, p: playerBox.p.clone().addScaledVector(forward, state.speed * t) };
       if (footprintsOverlap(mine, other, 0.5)) return true;
     }
     return false;
@@ -9658,6 +9686,10 @@
     }
     if (sc.marking) addCentreMarking(group, stopZ - 12, ev.endZ, sc.marking);
     if (sc.crosswalkZ !== undefined) { ev.crosswalkZ = stopZ + sc.crosswalkZ; addZebra(group, ev.crosswalkZ); }
+    // Different centre lines before and after a crossing (13_11): the zebra
+    // itself stays unmarked, as on the road.
+    if (sc.markingBefore) addCentreMarking(group, stopZ - 12, ev.crosswalkZ - 2.6, sc.markingBefore);
+    if (sc.markingAfter) addCentreMarking(group, ev.crosswalkZ + 2.6, ev.endZ, sc.markingAfter);
     (sc.vehicles || []).forEach((v, i) => {
       const cfg = { id: `road_${i}_${v.type}`, type: v.type, name: v.name, color: v.color, question: true,
         badge: v.badge, blinker: v.blinker, maneuver: v.maneuver, scale: v.scale, approach: v.lane };
@@ -10212,7 +10244,9 @@
       ev.actors.filter(a => a.config.maneuver === 'overtake').every(a => a.distance > (a.passedAt || 90));
     if (o === true) return z >= ev.startZ - 12 && z <= ev.endZ;
     if (o === 'before_intersection') return z >= ev.startZ - 12 && z < ev.laneDeadlineZ;
-    if (o === 'after_crosswalk') return z >= ev.startZ - 12 && z <= ev.endZ && Math.abs(z - ev.crosswalkZ) > 6;
+    // After the crossing only: before it the solid line of 1.11 is on the
+    // player's side, on it overtaking is banned (11.4).
+    if (o === 'after_crosswalk') return z > ev.crosswalkZ + 6 && z <= ev.endZ;
     return false;
   }
 
@@ -11649,6 +11683,7 @@
     setSeason(kind) {
       currentSeason = SEASONS[kind] || SEASONS[seasonFromDate()];
       const sn = currentSeason;
+      sendToFlutter({ event: 'season', season: seasonName() });
       scene.traverse(o => {
         const tag = o.material?.userData?.seasonal; if (!tag) return;
         if (tag === 'ground') o.material.color.setHex(sn.ground);

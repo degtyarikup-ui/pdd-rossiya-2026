@@ -2155,6 +2155,30 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Разобрать ошибки'**
   String get gameReviewMistakes;
+
+  /// No description provided for @notifGameRunTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новый заезд готов'**
+  String get notifGameRunTitle;
+
+  /// No description provided for @notifGameRunBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'Садитесь за руль: перекрёстки из экзаменационных билетов ждут.'**
+  String get notifGameRunBody;
+
+  /// No description provided for @notifGameChannelName.
+  ///
+  /// In ru, this message translates to:
+  /// **'Игра'**
+  String get notifGameChannelName;
+
+  /// No description provided for @notifGameChannelDesc.
+  ///
+  /// In ru, this message translates to:
+  /// **'Когда восстановится заезд в игре'**
+  String get notifGameChannelDesc;
 }
 
 class _AppLocalizationsDelegate

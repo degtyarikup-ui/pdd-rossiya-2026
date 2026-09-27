@@ -379,5 +379,9 @@
   "@gamePenaltyPoints": {"placeholders": {"points": {"type": "int"}}},
   "gameRunMistakes": "{count, plural, one{{count} ошибка в заезде} few{{count} ошибки в заезде} many{{count} ошибок в заезде} other{{count} ошибки в заезде}}",
   "@gameRunMistakes": {"placeholders": {"count": {"type": "int"}}},
-  "gameReviewMistakes": "Разобрать ошибки"
+  "gameReviewMistakes": "Разобрать ошибки",
+  "notifGameRunTitle": "Новый заезд готов",
+  "notifGameRunBody": "Садитесь за руль: перекрёстки из экзаменационных билетов ждут.",
+  "notifGameChannelName": "Игра",
+  "notifGameChannelDesc": "Когда восстановится заезд в игре"
 }

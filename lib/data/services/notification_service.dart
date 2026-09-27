@@ -28,6 +28,10 @@ class StreakNotifier {
   static const int _reminderId = 1001;
   static const String _channelId = 'streak_reminder';
 
+  /// The driving game: «a new run is ready» once the stock was empty.
+  static const int _gameRunId = 1003;
+  static const String _gameChannelId = 'game_runs';
+
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
   bool _initialized = false;
@@ -86,6 +90,44 @@ class StreakNotifier {
 
     final (title, body) = _randomMessage();
     await _schedule(target, title, body);
+  }
+
+  /// Игра: все заезды потрачены — напомнить, когда восстановится следующий.
+  /// Повторный вызов переносит напоминание; no-op на web и до [init].
+  Future<void> scheduleGameRunReady(DateTime at) async {
+    if (kIsWeb || !_initialized) return;
+    await _plugin.cancel(_gameRunId);
+    if (!at.isAfter(DateTime.now())) return;
+    final when = _tzReady
+        ? tz.TZDateTime.from(at, tz.local)
+        : tz.TZDateTime.from(at, tz.UTC);
+    try {
+      await _plugin.zonedSchedule(
+        _gameRunId,
+        appL10n.notifGameRunTitle,
+        appL10n.notifGameRunBody,
+        when,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            _gameChannelId,
+            appL10n.notifGameChannelName,
+            channelDescription: appL10n.notifGameChannelDesc,
+            importance: Importance.defaultImportance,
+            icon: 'ic_notification',
+          ),
+          iOS: const DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    } catch (e) {
+      debugPrint('StreakNotifier: game run reminder failed: $e');
+    }
+  }
+
+  /// Игра: заезд есть (или премиум) — напоминание больше не нужно.
+  Future<void> cancelGameRunReady() async {
+    if (kIsWeb || !_initialized) return;
+    await _plugin.cancel(_gameRunId);
   }
 
   /// Полностью снять напоминание (напр. при сбросе статистики). No-op на web.

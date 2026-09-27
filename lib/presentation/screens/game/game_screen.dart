@@ -89,6 +89,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
   bool _newRecord = false;
   String? _weatherOverride;
   String? _seasonOverride;
+
+  /// The engine's current season ('summer' | 'autumn' | 'winter').
+  String? _season;
   bool _locked = false;
   bool _outOfFuel = false;
   bool _fuelLoaded = false;
@@ -416,10 +419,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
         final fuel = await GameRunsService.instance.load();
         _fuelLoaded = true;
         if (mounted) {
-          _game.configureRuns(
-            runs: fuel,
-            unlimited: _debugUnlimitedFuel || ref.read(isPremiumProvider),
-          );
+          final unlimited = _debugUnlimitedFuel || ref.read(isPremiumProvider);
+          _game.configureRuns(runs: fuel, unlimited: unlimited);
+          // A run is in stock (or none is needed): the "run is ready"
+          // reminder set when the stock ran out is stale.
+          if (unlimited || fuel > 0) GameRunsService.instance.cancelReminder();
           _scheduleFuelTick();
         }
       }
@@ -532,6 +536,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
         _configure();
       }
 
+      if (event == 'ready' || event == 'season') {
+        final season = data['season'];
+        if (season is String && season != _season && mounted) {
+          setState(() => _season = season);
+        }
+      }
       if (event == 'ready') {
         _lastInsets = null;
         gameNotifier.onEngineReady();
@@ -1154,6 +1164,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
             runs: GameRunsService.instance.refresh(),
             unlimited: unlimitedFuel,
           );
+          if (unlimitedFuel) GameRunsService.instance.cancelReminder();
         }
       });
     }
@@ -1251,6 +1262,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     vehiclePaint: _vehiclePaint,
                     thumbnail: _thumbnail,
                     thumbnailCache: _thumbnails,
+                    snow: _season == 'winter',
                     // The car button opens the garage itself (the run
                     // pauses and continues from there).
                     onGarage: gameState.controlsEnabled ? _openLobby : null,

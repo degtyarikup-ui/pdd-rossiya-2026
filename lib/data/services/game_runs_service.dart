@@ -1,3 +1,4 @@
+import 'package:pdd_app/data/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Runs of the driving game for free players: up to [maxRuns] in stock, one
@@ -66,8 +67,16 @@ class GameRunsService {
     if (_runs >= maxRuns) _since = DateTime.now();
     _runs--;
     await _persist();
+    // The last run is gone: a local notification says when the next is back.
+    final at = nextRefillAt;
+    if (_runs <= 0 && at != null) {
+      await StreakNotifier.instance.scheduleGameRunReady(at);
+    }
     return true;
   }
+
+  /// No reminder is needed any more (premium, or a run is in stock).
+  Future<void> cancelReminder() => StreakNotifier.instance.cancelGameRunReady();
 
   Future<void> _persist() async {
     if (!_loaded) return;

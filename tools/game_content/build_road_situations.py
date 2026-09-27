@@ -66,9 +66,11 @@ SCENES = {
                   vehicles=[truck(14, 5, color='#D0D0D0')],
                   note='2.4 with plate 8.1.1 (200 m): overtaking allowed only if completed before the junction.'),
     '13_11': dict(kind='overtake', overtake='after_crosswalk', crosswalkZ=10,
+                  markingBefore='double_solid_right', markingAfter='double_dashed_right',
                   signs=[sign('5.19.1', 10), sign('5.19.2', 10, side='left')],
                   vehicles=[moto(18, 4), truck(28, 4, color='#E39AA8'), V('car', 'Автомобиль', 'ahead', 38, 4, '#7A8A99')],
-                  note='All three may be overtaken after the pedestrian crossing; not on it.'),
+                  note='1.11 with the solid line on the player\'s side up to the crossing, the broken line on it after: '
+                       'all three may be overtaken after the pedestrian crossing, not before it or on it.'),
     '34_19': dict(kind='overtake', overtake=True, signs=[sign('3.21', 8)], vehicles=[truck(14, 5, color='#C9C2B2')],
                   note='End of the no-overtaking zone (3.21): lane change first, then closing in.'),
 }

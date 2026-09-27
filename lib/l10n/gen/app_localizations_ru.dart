@@ -1220,4 +1220,17 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameReviewMistakes => 'Разобрать ошибки';
+
+  @override
+  String get notifGameRunTitle => 'Новый заезд готов';
+
+  @override
+  String get notifGameRunBody =>
+      'Садитесь за руль: перекрёстки из экзаменационных билетов ждут.';
+
+  @override
+  String get notifGameChannelName => 'Игра';
+
+  @override
+  String get notifGameChannelDesc => 'Когда восстановится заезд в игре';
 }

@@ -349,5 +349,9 @@
   "gameTimeUp": "Vreme je isteklo",
   "gamePenaltyPoints": "{points, plural, one{−{points} poen} few{−{points} poena} other{−{points} poena}}",
   "gameRunMistakes": "{count, plural, one{{count} greška u vožnji} few{{count} greške u vožnji} other{{count} grešaka u vožnji}}",
-  "gameReviewMistakes": "Pregledaj greške"
+  "gameReviewMistakes": "Pregledaj greške",
+  "notifGameRunTitle": "Nova vožnja je spremna",
+  "notifGameRunBody": "Sedite za volan: raskrsnice iz testova vas čekaju.",
+  "notifGameChannelName": "Igra",
+  "notifGameChannelDesc": "Kada se vožnja u igri obnovi"
 }

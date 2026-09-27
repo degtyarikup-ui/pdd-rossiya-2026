@@ -846,6 +846,8 @@ window.PDD_ROAD_SITUATIONS = [
    "kind": "overtake",
    "overtake": "after_crosswalk",
    "crosswalkZ": 10,
+   "markingBefore": "double_solid_right",
+   "markingAfter": "double_dashed_right",
    "signs": [
     {
      "code": "5.19.1",
@@ -885,7 +887,7 @@ window.PDD_ROAD_SITUATIONS = [
     }
    ]
   },
-  "note": "All three may be overtaken after the pedestrian crossing; not on it."
+  "note": "1.11 with the solid line on the player's side up to the crossing, the broken line on it after: all three may be overtaken after the pedestrian crossing, not before it or on it."
  },
  {
   "id": "road_34_19",
