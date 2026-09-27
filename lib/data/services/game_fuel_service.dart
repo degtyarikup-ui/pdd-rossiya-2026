@@ -9,9 +9,17 @@ class GameFuelService {
   static final GameFuelService instance = GameFuelService._();
 
   static const int maxFuel = 5;
-  static const Duration refillInterval = Duration(minutes: 30);
+  static const Duration refillInterval = Duration(minutes: 25);
   static const _fuelKey = 'game_fuel';
   static const _sinceKey = 'game_fuel_since';
+  static const _freeKey = 'game_fuel_free_refills';
+
+  /// The first few times the tank runs dry it is refilled on the spot, so a
+  /// newcomer is not stopped by the timer before getting into the game.
+  static const int freeRefills = 3;
+  int _freeUsed = 0;
+
+  int get freeRefillsLeft => freeRefills - _freeUsed;
 
   int _fuel = maxFuel;
   DateTime _since = DateTime.now();
@@ -31,6 +39,7 @@ class GameFuelService {
     try {
       final prefs = await SharedPreferences.getInstance();
       _fuel = prefs.getInt(_fuelKey) ?? maxFuel;
+      _freeUsed = prefs.getInt(_freeKey) ?? 0;
       _since = DateTime.fromMillisecondsSinceEpoch(
         prefs.getInt(_sinceKey) ?? DateTime.now().millisecondsSinceEpoch,
       );
@@ -54,15 +63,24 @@ class GameFuelService {
     return _fuel;
   }
 
-  /// Records the amount left after a run or a mistake.
-  Future<void> setFuel(int fuel) async {
+  /// Records the amount left after a run or a mistake. Returns true when an
+  /// empty tank was refilled for free instead.
+  Future<bool> setFuel(int fuel) async {
     final clamped = fuel.clamp(0, maxFuel);
-    if (clamped == _fuel) return;
+    if (clamped == _fuel) return false;
+    if (clamped == 0 && _freeUsed < freeRefills) {
+      _freeUsed++;
+      _fuel = maxFuel;
+      _since = DateTime.now();
+      await _persist();
+      return true;
+    }
     // The clock starts with the first unit burnt from a full tank; further
     // mistakes do not push the refill back.
     if (_fuel >= maxFuel) _since = DateTime.now();
     _fuel = clamped;
     await _persist();
+    return false;
   }
 
   Future<void> _persist() async {
@@ -71,6 +89,7 @@ class GameFuelService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_fuelKey, _fuel);
       await prefs.setInt(_sinceKey, _since.millisecondsSinceEpoch);
+      await prefs.setInt(_freeKey, _freeUsed);
     } catch (_) {
       /* Keep the in-memory value. */
     }

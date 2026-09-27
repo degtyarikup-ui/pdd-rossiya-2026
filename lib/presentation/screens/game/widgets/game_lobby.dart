@@ -29,6 +29,7 @@ class GameLobby extends StatelessWidget {
   /// A finger drag on the scene turns the car (horizontal pixels).
   final ValueChanged<double>? onSpin;
   final VoidCallback? onLeaderboard;
+  final VoidCallback? onControls;
 
   const GameLobby({
     super.key,
@@ -42,6 +43,7 @@ class GameLobby extends StatelessWidget {
     this.onNext,
     this.onColour,
     this.onLeaderboard,
+    this.onControls,
     this.onSpin,
   });
 
@@ -170,7 +172,7 @@ class GameLobby extends StatelessWidget {
         // Arrows either side of the car.
         if (onPrevious != null)
           Align(
-            alignment: const Alignment(-0.92, -0.05),
+            alignment: const Alignment(-0.92, -0.3),
             child: arrow(
               Icons.chevron_left_rounded,
               MaterialLocalizations.of(context).previousPageTooltip,
@@ -179,7 +181,7 @@ class GameLobby extends StatelessWidget {
           ),
         if (onNext != null)
           Align(
-            alignment: const Alignment(0.92, -0.05),
+            alignment: const Alignment(0.92, -0.3),
             child: arrow(
               Icons.chevron_right_rounded,
               MaterialLocalizations.of(context).nextPageTooltip,
@@ -219,6 +221,20 @@ class GameLobby extends StatelessWidget {
                   ),
                 ),
                 appL10n.gameLobbyRating,
+              ),
+              const SizedBox(height: 12),
+              labelled(
+                round(
+                  color: colors.accent,
+                  label: appL10n.gameControlsTitle,
+                  onTap: onControls,
+                  icon: const Icon(
+                    Icons.sports_esports_rounded,
+                    color: AppColors.white,
+                    size: 26,
+                  ),
+                ),
+                appL10n.gameControlsTitle,
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -329,5 +345,41 @@ Future<String?> showGamePaintSheet(
         ),
       );
     },
+  );
+}
+
+/// Choice between «Простое» (tap = lane change, hold = turn) and «Свободное»
+/// (the arrow turns the wheel while held) steering.
+Future<bool?> showGameControlsSheet(
+  BuildContext context, {
+  required bool simple,
+}) {
+  return showModalBottomSheet<bool>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+        child: RadioGroup<bool>(
+          groupValue: simple,
+          onChanged: (value) => Navigator.of(context).pop(value),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<bool>(
+                value: true,
+                title: Text(appL10n.gameControlsSimple),
+                subtitle: Text(appL10n.gameControlsSimpleHint),
+              ),
+              RadioListTile<bool>(
+                value: false,
+                title: Text(appL10n.gameControlsFree),
+                subtitle: Text(appL10n.gameControlsFreeHint),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
   );
 }

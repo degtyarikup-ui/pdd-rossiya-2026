@@ -166,6 +166,42 @@ class GameHud extends StatelessWidget {
                       runSpacing: 4,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
+                        // Current speed, red once clearly over the limit.
+                        Container(
+                          key: const ValueKey('hud-speed'),
+                          height: 36,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: state.limitKmH != null &&
+                                    state.speedKmH > state.limitKmH! + 5
+                                ? colors.red
+                                : colors.cardBackground,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Text.rich(
+                            TextSpan(
+                              text: '${state.speedKmH}',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                color: state.limitKmH != null &&
+                                        state.speedKmH > state.limitKmH! + 5
+                                    ? AppColors.white
+                                    : colors.primaryText,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: ' ${appL10n.gameSpeedUnit}',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                         if (state.limitKmH != null)
                           // A miniature 3.24 sign: the limit currently in force.
                           Semantics(

@@ -5530,7 +5530,7 @@
     // Never silently drop a choice: while moving it is applied once stopped.
     if (!state.paused && Math.abs(state.speed) > 0.1) { state.pendingVehicle = [id, paint]; return; }
     state.pendingVehicle = null;
-    state.speed = 0; state.isAccelerating = false; state.isBraking = false; state.steering = 0;
+    state.speed = 0; state.isAccelerating = false; state.isBraking = false; state.steering = 0; state.laneChangeX = null;
     if (state.vehicleId === id && (state.vehiclePaint || null) === (paint || null)) {
       sendToFlutter({ event: 'vehicle_selected', vehicleId: id, paint: state.vehiclePaint });
       return;
@@ -6052,7 +6052,9 @@
   // shared offset for both the main sign and supplementary plates prevents a
   // pole from showing through their artwork at any camera distance.
   const ROAD_SIGN_FACE_Z = -0.09;
-  function createRoadSign(code, poleHeight = 3.2) {
+  // Signs are drawn larger than life (~1.3×) so they read on a phone screen.
+  const SIGN_FACE = 2.1;
+  function createRoadSign(code, poleHeight = 3.6) {
     const group = new THREE.Group();
     const pole = new THREE.Mesh(
       new THREE.CylinderGeometry(0.045, 0.055, poleHeight, 8),
@@ -6070,10 +6072,10 @@
     // A transparent exact SVG face, no nested coplanar coloured primitives.
     const aspect = (window.PDD_SIGN_ASPECT || {})[code];
     const face = new THREE.Mesh(
-      aspect ? new THREE.PlaneGeometry(2.4, 2.4 / aspect) : new THREE.PlaneGeometry(1.6, 1.6),
+      aspect ? new THREE.PlaneGeometry(2.9, 2.9 / aspect) : new THREE.PlaneGeometry(SIGN_FACE, SIGN_FACE),
       new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.12, side: THREE.DoubleSide })
     );
-    face.position.set(0, poleHeight - 0.25, ROAD_SIGN_FACE_Z);
+    face.position.set(0, poleHeight - 0.35, ROAD_SIGN_FACE_Z);
     face.rotation.y = Math.PI;
     group.add(face);
     return group;
@@ -6094,8 +6096,9 @@
   // --- Working Traffic Light Factory ---
   function createPriorityPlate(mainRoad = ['south', 'north']) {
     const canvas = document.createElement('canvas');
-    canvas.width = 240; canvas.height = 180;
+    canvas.width = 480; canvas.height = 360;
     const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2); // drawn in 240×180 units, twice the pixels for sharpness
     ctx.fillStyle = '#fafafa'; ctx.fillRect(0, 0, 240, 180);
     ctx.strokeStyle = '#20252a'; ctx.lineWidth = 8; ctx.strokeRect(5, 5, 230, 170);
     const ends = { north: [120, 25], south: [120, 155], west: [30, 90], east: [210, 90] };
@@ -6103,7 +6106,7 @@
       ctx.lineWidth = mainRoad.includes(direction) ? 24 : 6;
       ctx.beginPath(); ctx.moveTo(120, 90); ctx.lineTo(...ends[direction]); ctx.stroke();
     });
-    const face = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.94),
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.13),
       new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), side: THREE.DoubleSide }));
     // In front of the pole, like every sign face: the pole must not cross it.
     face.position.z = ROAD_SIGN_FACE_Z;
@@ -7632,7 +7635,7 @@
       situation.signs.forEach((s, index) => {
         const sign = s.code === '8.13' ? createPriorityPlate(s.mainRoad) : createRoadSign(s.code);
         const plate = s.code === '8.13';
-        sign.position.set(kerbX + 1.2, plate ? 1.85 : 0, stopLineZ - 2.4 - (plate ? Math.max(0, index - 1) : index) * 2);
+        sign.position.set(kerbX + 1.2, plate ? 1.5 : 0, stopLineZ - 2.4 - (plate ? Math.max(0, index - 1) : index) * 2);
         sign.rotation.y = 0; // Facing oncoming player
         sign.userData.editKey = 'sign:' + index; sign.userData.signCode = s.code;
         seg.add(sign);
@@ -8074,6 +8077,7 @@
 
   function maybeReverseWorld(force = false) {
     if (!currentCorridor || state.isAtSituation || state.resolution || Math.cos(playerCarGroup.rotation.y) > -0.55) return false;
+    state.laneChangeX = null;
     const forward = new THREE.Vector3(Math.sin(playerCarGroup.rotation.y), 0, Math.cos(playerCarGroup.rotation.y));
     const distanceToEnd = Math.max(...corridorWorldEnds().map(p => p.clone().sub(playerCarGroup.position).dot(forward)));
     if (!force && distanceToEnd > 105) return false;
@@ -8300,7 +8304,7 @@
     const yielding = spec.yieldTo.map(id => motions.find(a => a.config.id === id)).filter(Boolean);
     state.resolution = { intersection, spec, motions, yielding, phase: 'manual', elapsed: 0,
       entry: playerCarGroup.position.clone(), entryYaw: playerCarGroup.rotation.y, faults: new Set(), recovery: 0 };
-    state.steering = 0;
+    state.steering = 0; state.laneChangeX = null;
     startPlayerManeuver();
     const r = state.resolution;
     const intended = { path: r.path, length: r.length, clearDistance: r.length, halfWidth: 0.9, halfLength: 2 };
@@ -8812,7 +8816,7 @@
     state.speed = 0;
     state.isAccelerating = false;
     state.isBraking = false;
-    state.steering = 0;
+    state.steering = 0; state.laneChangeX = null;
     // A short control release makes the impact legible, but never teleports or
     // rotates the player's car. After it expires the player can immediately
     // steer around the stationary crash participant.
@@ -8897,6 +8901,7 @@
   }
 
   function finishManeuver() {
+    state.laneChangeX = null;
     const r = state.resolution;
     if (!r) return;
     const trailing = r.motions.filter(a => !r.yielding.includes(a));
@@ -9106,11 +9111,11 @@
       sign.children.find(o => o.geometry?.type === 'PlaneGeometry').material.map = texture;
     }
     // Larger than junction signs: on a straight the camera sits further back.
-    sign.scale.setScalar(1.35);
+    sign.scale.setScalar(1.25);
     sign.position.set(x, 0, z);
     sign.userData.questionEvidence = true;
     group.add(sign);
-    if (plate) { const p = createTextPlate(plate); p.scale.setScalar(1.35); p.position.set(x, 2.5, z); group.add(p); }
+    if (plate) { const p = createTextPlate(plate); p.scale.setScalar(1.35); p.position.set(x, 2.15, z); group.add(p); }
     return sign;
   }
   function addRoadActor(group, cfg, position, yaw, pathPoints, maxSpeed, signalPlan = null) {
@@ -10004,7 +10009,7 @@
     ev.phase = 'question';
     (ev.joiners || []).forEach(join => join());
     ev.joiners = null;
-    state.speed = 0; state.isAccelerating = false; state.steering = 0;
+    state.speed = 0; state.isAccelerating = false; state.steering = 0; state.laneChangeX = null;
     state.isAtSituation = true;
     sendToFlutter({ event: 'approach_situation', situation: ev.situation });
   }
@@ -10812,6 +10817,15 @@
   // Gentle driving aid for newcomers: with the steering released on the open
   // road the car straightens along the road and drifts towards the middle of
   // the nearest lane. Any steering input takes over completely.
+  function changeLane(direction) {
+    if (!playerCarGroup || state.paused || state.driveRecovery || state.resolution) return;
+    if (state.isAtSituation && state.resolution?.phase !== 'manual') return;
+    const back = Math.cos(playerCarGroup.rotation.y) < 0;
+    // Forward is +Z, so the driver's left is +X; heading back mirrors it.
+    state.laneChangeX = (direction === 'left' ? 1.8 : -1.8) * (back ? -1 : 1);
+    triggerBlinker(direction);
+  }
+
   function applySteeringAssist(dt) {
     if (state.steering || state.resolution || Math.abs(state.speed) < 1.5) return;
     const car = playerCarGroup, x = car.position.x;
@@ -10821,8 +10835,14 @@
     const err = Math.atan2(Math.sin(axis - car.rotation.y), Math.cos(axis - car.rotation.y));
     if (Math.abs(err) > 0.45) return; // a deliberate turn: leave it alone
     // Nearest lane centre (driver's right is -X going forward).
-    const lane = Math.abs(x - 1.8) < Math.abs(x + 1.8) ? 1.8 : -1.8;
-    const pull = THREE.MathUtils.clamp((lane - x) * 0.05, -0.06, 0.06) * (back ? -1 : 1);
+    // A tapped lane change («простое управление») steers to the chosen lane,
+    // otherwise the car settles into the nearest one.
+    const change = state.laneChangeX;
+    if (change != null && Math.abs(change - x) < 0.12) state.laneChangeX = null;
+    const lane = state.laneChangeX ?? (Math.abs(x - 1.8) < Math.abs(x + 1.8) ? 1.8 : -1.8);
+    const pull = (state.laneChangeX != null
+      ? THREE.MathUtils.clamp((lane - x) * 0.16, -0.2, 0.2)
+      : THREE.MathUtils.clamp((lane - x) * 0.05, -0.06, 0.06)) * (back ? -1 : 1);
     const target = err + pull;
     car.rotation.y += target * Math.min(1, dt * 1.8);
   }
@@ -10850,7 +10870,9 @@
       // Slow steering remains available when the nose is pressed against a curb.
       // In reverse the rear swings the other way, as on a real car.
       playerCarGroup.rotation.y += (state.steering || 0) * Math.sign(state.speed || 1) *
-        Math.min(1.8, Math.max(state.isAccelerating ? 1 : 0, Math.abs(state.speed)) * 0.32) * dt / steps;
+        Math.min(1.8, Math.max(state.isAccelerating ? 1 : 0, Math.abs(state.speed)) * 0.32) /
+        // Softer at speed: a held arrow does not throw the car across the road.
+        (1 + Math.max(0, Math.abs(state.speed) - 8) * 0.04) * dt / steps;
       const desiredYaw = playerCarGroup.rotation.y;
       const dx = Math.sin(desiredYaw) * step, dz = Math.cos(desiredYaw) * step;
       playerCarGroup.position.x += dx; playerCarGroup.position.z += dz;
@@ -10996,7 +11018,7 @@
     if (active && active.stopZ - playerCarGroup.position.z <= 0.18) {
       state.speed = 0;
       state.isAccelerating = false;
-      state.steering = 0;
+      state.steering = 0; state.laneChangeX = null;
       state.isAtSituation = true;
       sendToFlutter({ event: 'approach_situation', situation: active.situation });
     }
@@ -11148,7 +11170,7 @@
     state.targetLane = 1;
     state.currentLaneOffset = state.targetLaneOffset = -1.8;
     state.violationEpisode = 0;
-    state.steering = 0;
+    state.steering = 0; state.laneChangeX = null;
     state.blinker = null;
     state.hazard = 0;
     clearOncoming();
@@ -11228,11 +11250,13 @@
       renderer.render(scene, camera);
     },
     thumbnail(id, paint) { try { return renderThumbnail(id, paint || null); } catch (_) { return ''; } },
+    changeLane(direction) { changeLane(direction); },
     setSteering(direction) {
       state.steering = !state.paused && !state.driveRecovery && (!state.isAtSituation || state.resolution?.phase === 'manual') && !state.resolution?.recovery
         ? Math.max(-1, Math.min(1, Number(direction) || 0)) : 0;
       // The indicator comes on only for a deliberate hold (see updateBlinkers):
       // a quick tap to straighten the car does not blink.
+      if (state.steering) state.laneChangeX = null;
       if (Math.sign(state.steering) !== Math.sign(state.steerHoldSide || 0)) { state.steerHold = 0; state.steerHoldSide = state.steering; }
     },
     switchLane,
@@ -11242,7 +11266,7 @@
       const next = Boolean(paused);
       if (next === state.paused) return;
       state.paused = next;
-      if (next) { state.isAccelerating = false; state.isBraking = false; state.steering = 0; }
+      if (next) { state.isAccelerating = false; state.isBraking = false; state.steering = 0; state.laneChangeX = null; }
       gameAudio?.setPaused(next);
       lastTime = null;
     },

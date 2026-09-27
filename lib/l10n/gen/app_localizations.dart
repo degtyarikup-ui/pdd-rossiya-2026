@@ -2047,6 +2047,72 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не удалось удалить аккаунт. Проверьте подключение и попробуйте ещё раз.'**
   String get accountDeleteFailed;
+
+  /// No description provided for @gameFuelFreeRefill.
+  ///
+  /// In ru, this message translates to:
+  /// **'{n, plural, =0{Бак заправлен бесплатно — это была последняя бесплатная заправка} one{Бак заправлен бесплатно. Осталось {n} бесплатная заправка} few{Бак заправлен бесплатно. Осталось {n} бесплатные заправки} other{Бак заправлен бесплатно. Осталось {n} бесплатных заправок}}'**
+  String gameFuelFreeRefill(int n);
+
+  /// No description provided for @gameControlsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Управление'**
+  String get gameControlsTitle;
+
+  /// No description provided for @gameControlsSimple.
+  ///
+  /// In ru, this message translates to:
+  /// **'Простое управление'**
+  String get gameControlsSimple;
+
+  /// No description provided for @gameControlsSimpleHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Касание стрелки — перестроиться, удержание — поворот на перекрёстке'**
+  String get gameControlsSimpleHint;
+
+  /// No description provided for @gameControlsFree.
+  ///
+  /// In ru, this message translates to:
+  /// **'Свободное управление'**
+  String get gameControlsFree;
+
+  /// No description provided for @gameControlsFreeHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стрелка крутит руль, пока её держишь'**
+  String get gameControlsFreeHint;
+
+  /// No description provided for @gameTipGas.
+  ///
+  /// In ru, this message translates to:
+  /// **'Держи педаль газа — машина едет. Отпусти — плавно остановится'**
+  String get gameTipGas;
+
+  /// No description provided for @gameTipSteer.
+  ///
+  /// In ru, this message translates to:
+  /// **'Коснись стрелки — машина перестроится в соседнюю полосу'**
+  String get gameTipSteer;
+
+  /// No description provided for @gameTipTurn.
+  ///
+  /// In ru, this message translates to:
+  /// **'На перекрёстке держи стрелку, чтобы повернуть'**
+  String get gameTipTurn;
+
+  /// No description provided for @gameTipNext.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дальше'**
+  String get gameTipNext;
+
+  /// No description provided for @gameTipDone.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поехали'**
+  String get gameTipDone;
 }
 
 class _AppLocalizationsDelegate

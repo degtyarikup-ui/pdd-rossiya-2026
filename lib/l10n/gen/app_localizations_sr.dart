@@ -1140,4 +1140,53 @@ class AppLocalizationsSr extends AppLocalizations {
   @override
   String get accountDeleteFailed =>
       'Nije moguće obrisati nalog. Proverite vezu i pokušajte ponovo.';
+
+  @override
+  String gameFuelFreeRefill(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other:
+          'Rezervoar je besplatno napunjen. Preostalo je $n besplatnih punjenja',
+      few:
+          'Rezervoar je besplatno napunjen. Preostala su $n besplatna punjenja',
+      one:
+          'Rezervoar je besplatno napunjen. Preostalo je $n besplatno punjenje',
+      zero:
+          'Rezervoar je besplatno napunjen — ovo je bilo poslednje besplatno punjenje',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gameControlsTitle => 'Upravljanje';
+
+  @override
+  String get gameControlsSimple => 'Jednostavno upravljanje';
+
+  @override
+  String get gameControlsSimpleHint =>
+      'Dodir strelice — promena trake, držanje — skretanje na raskrsnici';
+
+  @override
+  String get gameControlsFree => 'Slobodno upravljanje';
+
+  @override
+  String get gameControlsFreeHint => 'Strelica okreće volan dok je držiš';
+
+  @override
+  String get gameTipGas =>
+      'Drži pedalu gasa — auto ide. Pusti je — auto se polako zaustavlja';
+
+  @override
+  String get gameTipSteer => 'Dodirni strelicu — auto prelazi u susednu traku';
+
+  @override
+  String get gameTipTurn => 'Na raskrsnici drži strelicu da skreneš';
+
+  @override
+  String get gameTipNext => 'Dalje';
+
+  @override
+  String get gameTipDone => 'Kreni';
 }

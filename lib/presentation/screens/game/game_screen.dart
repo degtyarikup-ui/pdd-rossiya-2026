@@ -109,6 +109,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
   // until the pedal is pressed for the first time.
   bool _firstRun = false;
   bool _showGasHint = false;
+
+  /// First-drive tips: gas, steering, junction; null once seen.
+  int? _tipStep;
+  static const _tipsSeenKey = 'game_tips_seen';
+  static const _simpleSteeringKey = 'game_simple_steering';
+  bool _simpleSteering = true;
   static const _seenKey = 'game_seen';
   static const _bestScoreKey = 'game_best_score';
   static const _debugUnlimitedFuelKey = 'game_debug_unlimited_fuel';
@@ -408,6 +414,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
           _scheduleFuelTick();
         }
       }
+      _simpleSteering = prefs.getBool(_simpleSteeringKey) ?? true;
+      if (!prefs.containsKey(_tipsSeenKey) && mounted) {
+        setState(() => _tipStep = 0);
+      }
       if (!prefs.containsKey(_seenKey) && mounted) {
         setState(() {
           _firstRun = true;
@@ -605,9 +615,33 @@ class _GameScreenState extends ConsumerState<GameScreen>
     _send('setGas', [isPressed]);
   }
 
+  void _nextTip() {
+    if (_tipStep == null) return;
+    if (_tipStep! < 2) {
+      setState(() => _tipStep = _tipStep! + 1);
+      return;
+    }
+    setState(() => _tipStep = null);
+    SharedPreferences.getInstance()
+        .then((prefs) => prefs.setBool(_tipsSeenKey, true))
+        .catchError((_) => false);
+  }
+
+  Future<void> _openControls() async {
+    final simple = await showGameControlsSheet(
+      context,
+      simple: _simpleSteering,
+    );
+    if (simple == null || !mounted) return;
+    setState(() => _simpleSteering = simple);
+    SharedPreferences.getInstance()
+        .then((prefs) => prefs.setBool(_simpleSteeringKey, simple))
+        .catchError((_) => false);
+  }
+
   void _handleSwitchLane(String direction) {
     if (!ref.read(gameControllerProvider).controlsEnabled) return;
-    _send('switchLane', [direction]);
+    _send('changeLane', [direction]);
   }
 
   final Set<String> _recordedMistakeKeys = <String>{};
@@ -938,7 +972,20 @@ class _GameScreenState extends ConsumerState<GameScreen>
       if (previous != null &&
           next.fuel != previous.fuel &&
           !next.fuelUnlimited) {
-        GameFuelService.instance.setFuel(next.fuel);
+        final messenger = ScaffoldMessenger.maybeOf(context);
+        GameFuelService.instance.setFuel(next.fuel).then((refilled) {
+          if (!refilled || !mounted) return;
+          _game.configureFuel(fuel: GameFuelService.maxFuel, unlimited: false);
+          messenger?.showSnackBar(
+            SnackBar(
+              content: Text(
+                appL10n.gameFuelFreeRefill(
+                  GameFuelService.instance.freeRefillsLeft,
+                ),
+              ),
+            ),
+          );
+        });
         _scheduleFuelTick();
       }
       if (previous?.phase == GamePhase.situation &&
@@ -1273,12 +1320,30 @@ class _GameScreenState extends ConsumerState<GameScreen>
                         onSteering: (direction) =>
                             _send('setSteering', [direction]),
                         onBrake: (pressed) => _send('setBrake', [pressed]),
+                        simpleSteering: _simpleSteering,
                       ),
                   ],
                 ),
               ),
 
+            if (_tipStep != null &&
+                !_inLobby &&
+                !locked &&
+                !outOfFuel &&
+                _reveal == null &&
+                gameState.phase == GamePhase.driving)
+              Positioned(
+                left: 16,
+                right: 16,
+                top: MediaQuery.paddingOf(context).top + 84,
+                child: _FirstDriveTip(
+                  step: _tipStep!,
+                  onNext: _nextTip,
+                ),
+              ),
+
             if (_showGasHint &&
+                _tipStep == null &&
                 !_inLobby &&
                 !locked &&
                 !outOfFuel &&
@@ -1347,6 +1412,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                       : null,
                   onColour: _pickColour,
                   onLeaderboard: _openLeaderboard,
+                  onControls: _openControls,
                   onSpin: (dx) => _send('lobbySpin', [dx]),
                 ),
               ),
@@ -1668,6 +1734,73 @@ class _CorrectCheckState extends State<_CorrectCheck>
           ),
         );
       },
+    );
+  }
+}
+
+/// One of three first-drive tips over the road, with «Дальше»/«Поехали».
+class _FirstDriveTip extends StatelessWidget {
+  final int step;
+  final VoidCallback onNext;
+
+  const _FirstDriveTip({required this.step, required this.onNext});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final (icon, text) = switch (step) {
+      0 => (Icons.speed_rounded, appL10n.gameTipGas),
+      1 => (Icons.swap_horiz_rounded, appL10n.gameTipSteer),
+      _ => (Icons.turn_right_rounded, appL10n.gameTipTurn),
+    };
+    return Material(
+      color: colors.cardBackground,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 8, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, color: colors.accent, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    text,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                const SizedBox(width: 40),
+                for (var i = 0; i < 3; i++)
+                  Container(
+                    width: 7,
+                    height: 7,
+                    margin: const EdgeInsets.only(right: 5),
+                    decoration: BoxDecoration(
+                      color: i == step ? colors.accent : colors.divider,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                const Spacer(),
+                TextButton(
+                  key: const ValueKey('game-tip-next'),
+                  onPressed: onNext,
+                  child: Text(
+                    step < 2 ? appL10n.gameTipNext : appL10n.gameTipDone,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

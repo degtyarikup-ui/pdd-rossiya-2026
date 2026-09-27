@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -12,6 +14,9 @@ class GameControlsOverlay extends StatefulWidget {
   final ValueChanged<int>? onSteering;
   final ValueChanged<bool>? onBrake;
 
+  /// «Простое управление»: a tap changes lane, a hold turns the wheel.
+  final bool simpleSteering;
+
   const GameControlsOverlay({
     super.key,
     required this.state,
@@ -19,6 +24,7 @@ class GameControlsOverlay extends StatefulWidget {
     required this.onSwitchLane,
     this.onSteering,
     this.onBrake,
+    this.simpleSteering = true,
   });
 
   @override
@@ -28,6 +34,32 @@ class GameControlsOverlay extends StatefulWidget {
 class _GameControlsOverlayState extends State<GameControlsOverlay> {
   final _heldDirections = <int>[];
   bool _disposing = false;
+  final _pending = <int, Timer>{};
+
+  static const _holdDelay = Duration(milliseconds: 260);
+
+  /// In simple mode a press becomes steering only once it is held; a release
+  /// before that is a tap, which asks for the neighbouring lane.
+  void _press(int direction, bool held) {
+    if (!widget.simpleSteering) return _steer(direction, held);
+    if (held) {
+      _pending[direction]?.cancel();
+      _pending[direction] = Timer(_holdDelay, () {
+        _pending.remove(direction);
+        _steer(direction, true);
+      });
+      return;
+    }
+    final timer = _pending.remove(direction);
+    if (timer != null) {
+      timer.cancel();
+      if (widget.state.controlsEnabled && !_disposing) {
+        widget.onSwitchLane(direction > 0 ? 'left' : 'right');
+      }
+      return;
+    }
+    _steer(direction, false);
+  }
 
   void _steer(int direction, bool held) {
     if (_disposing) return;
@@ -43,12 +75,21 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
   @override
   void didUpdateWidget(covariant GameControlsOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!widget.state.controlsEnabled) _heldDirections.clear();
+    if (!widget.state.controlsEnabled) {
+      _heldDirections.clear();
+      for (final timer in _pending.values) {
+        timer.cancel();
+      }
+      _pending.clear();
+    }
   }
 
   @override
   void dispose() {
     _disposing = true;
+    for (final timer in _pending.values) {
+      timer.cancel();
+    }
     if (_heldDirections.isNotEmpty) widget.onSteering?.call(0);
     super.dispose();
   }
@@ -78,7 +119,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                       icon: const Icon(Icons.arrow_back_rounded),
                       label: appL10n.gameLeft,
                       onHold: widget.state.controlsEnabled
-                          ? (held) => _steer(1, held)
+                          ? (held) => _press(1, held)
                           : null,
                       onTap: null,
                       haptic: _ControlHaptic.steering,
@@ -89,7 +130,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                       icon: const Icon(Icons.arrow_forward_rounded),
                       label: appL10n.gameRight,
                       onHold: widget.state.controlsEnabled
-                          ? (held) => _steer(-1, held)
+                          ? (held) => _press(-1, held)
                           : null,
                       onTap: null,
                       haptic: _ControlHaptic.steering,
@@ -387,17 +428,14 @@ class _GasPedalState extends State<_GasPedal> {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Speed only, large: the dial is the gas pedal and the
-                // speedometer at once.
-                Text(
-                  '${widget.speedKmH}',
-                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                    color: _isPressed ? AppColors.white : colors.primaryText,
-                    height: 1.05,
-                  ),
+                // The speed lives in the top HUD beside the limit sign.
+                Icon(
+                  Icons.keyboard_double_arrow_up_rounded,
+                  size: 44,
+                  color: _isPressed ? AppColors.white : colors.primaryText,
                 ),
                 Text(
-                  _isPressed ? appL10n.gameGas : appL10n.gameSpeedUnit,
+                  appL10n.gameGas,
                   style: TextStyle(
                     fontFamily: 'Onest',
                     fontSize: 10,

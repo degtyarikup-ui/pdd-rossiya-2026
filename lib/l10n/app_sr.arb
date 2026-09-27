@@ -331,5 +331,16 @@
   "authYandex": "Nastavi sa Yandex ID",
   "authDebug": "Probna prijava (debug verzija)",
   "accountDeleted": "Nalog i podaci su obrisani",
-  "accountDeleteFailed": "Nije moguće obrisati nalog. Proverite vezu i pokušajte ponovo."
+  "accountDeleteFailed": "Nije moguće obrisati nalog. Proverite vezu i pokušajte ponovo.",
+  "gameFuelFreeRefill": "{n, plural, =0{Rezervoar je besplatno napunjen — ovo je bilo poslednje besplatno punjenje} one{Rezervoar je besplatno napunjen. Preostalo je {n} besplatno punjenje} few{Rezervoar je besplatno napunjen. Preostala su {n} besplatna punjenja} other{Rezervoar je besplatno napunjen. Preostalo je {n} besplatnih punjenja}}",
+  "gameControlsTitle": "Upravljanje",
+  "gameControlsSimple": "Jednostavno upravljanje",
+  "gameControlsSimpleHint": "Dodir strelice — promena trake, držanje — skretanje na raskrsnici",
+  "gameControlsFree": "Slobodno upravljanje",
+  "gameControlsFreeHint": "Strelica okreće volan dok je držiš",
+  "gameTipGas": "Drži pedalu gasa — auto ide. Pusti je — auto se polako zaustavlja",
+  "gameTipSteer": "Dodirni strelicu — auto prelazi u susednu traku",
+  "gameTipTurn": "Na raskrsnici drži strelicu da skreneš",
+  "gameTipNext": "Dalje",
+  "gameTipDone": "Kreni"
 }

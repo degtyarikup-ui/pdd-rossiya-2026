@@ -278,6 +278,35 @@ void main() {
     ]);
   });
 
+  testWidgets('Simple steering: tap changes lane, hold turns', (tester) async {
+    final steering = <int>[];
+    final lanes = <String>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: GameControlsOverlay(
+            state: const GameState(phase: GamePhase.driving),
+            onGasChanged: (_) {},
+            onSwitchLane: lanes.add,
+            onSteering: steering.add,
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(lanes, ['left']);
+    expect(steering, isEmpty);
+    final hold = await tester.startGesture(
+      tester.getCenter(find.byIcon(Icons.arrow_forward_rounded)),
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(steering.last, -1);
+    await hold.up();
+    expect(steering.last, 0);
+    expect(lanes, ['left']);
+  });
+
   testWidgets(
     'Releasing either steering finger preserves the other held direction',
     (tester) async {
@@ -290,6 +319,7 @@ void main() {
               onGasChanged: (_) {},
               onSwitchLane: (_) {},
               onSteering: steering.add,
+              simpleSteering: false,
             ),
           ),
         ),

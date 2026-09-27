@@ -1140,4 +1140,50 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get accountDeleteFailed =>
       'Не удалось удалить аккаунт. Проверьте подключение и попробуйте ещё раз.';
+
+  @override
+  String gameFuelFreeRefill(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'Бак заправлен бесплатно. Осталось $n бесплатных заправок',
+      few: 'Бак заправлен бесплатно. Осталось $n бесплатные заправки',
+      one: 'Бак заправлен бесплатно. Осталось $n бесплатная заправка',
+      zero: 'Бак заправлен бесплатно — это была последняя бесплатная заправка',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gameControlsTitle => 'Управление';
+
+  @override
+  String get gameControlsSimple => 'Простое управление';
+
+  @override
+  String get gameControlsSimpleHint =>
+      'Касание стрелки — перестроиться, удержание — поворот на перекрёстке';
+
+  @override
+  String get gameControlsFree => 'Свободное управление';
+
+  @override
+  String get gameControlsFreeHint => 'Стрелка крутит руль, пока её держишь';
+
+  @override
+  String get gameTipGas =>
+      'Держи педаль газа — машина едет. Отпусти — плавно остановится';
+
+  @override
+  String get gameTipSteer =>
+      'Коснись стрелки — машина перестроится в соседнюю полосу';
+
+  @override
+  String get gameTipTurn => 'На перекрёстке держи стрелку, чтобы повернуть';
+
+  @override
+  String get gameTipNext => 'Дальше';
+
+  @override
+  String get gameTipDone => 'Поехали';
 }
