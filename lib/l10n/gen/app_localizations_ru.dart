@@ -904,10 +904,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameSceneCalendar => 'По календарю';
 
   @override
-  String get gameDebugUnlimitedFuel => 'Бесконечный бензин';
+  String get gameDebugUnlimitedFuel => 'Бесконечные заезды';
 
   @override
-  String get gameDebugUnlimitedFuelHint => 'Ошибки не расходуют бензин';
+  String get gameDebugUnlimitedFuelHint => 'Заезды не расходуются';
 
   @override
   String get gameSceneSummer => 'Лето';
@@ -1066,21 +1066,21 @@ class AppLocalizationsRu extends AppLocalizations {
       'Живой город, билеты ГИБДД прямо на дороге и рейтинг недели. Войдите — и поехали.';
 
   @override
-  String get gameFuel => 'Топливо';
+  String get gameFuel => 'Заезды';
 
   @override
-  String get gameFuelUnlimited => 'Безлимитное топливо';
+  String get gameFuelUnlimited => 'Безлимитные заезды';
 
   @override
-  String get gameFuelEmptyTitle => 'Бензин закончился';
+  String get gameFuelEmptyTitle => 'Заезды закончились';
 
   @override
   String gameFuelRefillIn(String time) {
-    return 'Бак пополнится через $time';
+    return 'Новый заезд через $time';
   }
 
   @override
-  String get gameFuelPremiumPitch => 'С подпиской бензин не заканчивается';
+  String get gameFuelPremiumPitch => 'С подпиской заезды не заканчиваются';
 
   @override
   String get gameFuelBuyPremium => 'Подключить Премиум';
@@ -1142,19 +1142,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось удалить аккаунт. Проверьте подключение и попробуйте ещё раз.';
 
   @override
-  String gameFuelFreeRefill(int n) {
-    String _temp0 = intl.Intl.pluralLogic(
-      n,
-      locale: localeName,
-      other: 'Бак заправлен бесплатно. Осталось $n бесплатных заправок',
-      few: 'Бак заправлен бесплатно. Осталось $n бесплатные заправки',
-      one: 'Бак заправлен бесплатно. Осталось $n бесплатная заправка',
-      zero: 'Бак заправлен бесплатно — это была последняя бесплатная заправка',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get gameControlsTitle => 'Управление';
 
   @override
@@ -1193,4 +1180,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameLobbyControls => 'Управ.';
+
+  @override
+  String gameRunProgress(int n, int total) {
+    return 'Вопрос $n из $total';
+  }
 }

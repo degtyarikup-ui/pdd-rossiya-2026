@@ -32,7 +32,7 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_leaderboard_sheet
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
-import 'package:pdd_app/data/services/game_fuel_service.dart';
+import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
@@ -195,27 +195,35 @@ class _GameScreenState extends ConsumerState<GameScreen>
     if (_seasonOverride != null) _send('setSeason', [_seasonOverride]);
   }
 
-  // Regeneration happens on a clock: re-read the tank when a unit is due.
+  // Runs come back on a clock: re-read the stock when one is due.
   void _scheduleFuelTick() {
     _fuelTimer?.cancel();
-    final at = GameFuelService.instance.nextRefillAt;
+    final at = GameRunsService.instance.nextRefillAt;
     if (at == null) return;
     _fuelTimer = Timer(
       at.difference(DateTime.now()) + const Duration(seconds: 1),
       () {
         if (!mounted) return;
-        final fuel = GameFuelService.instance.refresh();
+        final runs = GameRunsService.instance.refresh();
         final s = ref.read(gameControllerProvider);
-        if (!s.fuelUnlimited && fuel > s.fuel) {
-          if (s.phase != GamePhase.gameOver) {
-            _game.configureFuel(fuel: fuel, unlimited: false);
-          } else {
-            setState(() {});
-          }
+        if (!s.runsUnlimited && runs != s.runs) {
+          _game.configureRuns(runs: runs, unlimited: false);
         }
         _scheduleFuelTick();
       },
     );
+  }
+
+  bool get _unlimitedRuns => _debugUnlimitedFuel || ref.read(isPremiumProvider);
+
+  /// Takes a run from the stock when a new one starts (free players).
+  Future<bool> _takeRun() async {
+    if (_unlimitedRuns) return true;
+    final ok = await GameRunsService.instance.consume();
+    if (!mounted) return ok;
+    _game.configureRuns(runs: GameRunsService.instance.runs, unlimited: false);
+    _scheduleFuelTick();
+    return ok;
   }
 
   Future<void> _openLeaderboard() async {
@@ -247,8 +255,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
     await prefs.setBool(_debugUnlimitedFuelKey, enabled);
     if (!mounted) return;
     setState(() => _debugUnlimitedFuel = enabled);
-    _game.configureFuel(
-      fuel: GameFuelService.instance.refresh(),
+    _game.configureRuns(
+      runs: GameRunsService.instance.refresh(),
       unlimited: enabled || ref.read(isPremiumProvider),
     );
     _scheduleFuelTick();
@@ -404,11 +412,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
           AuthService.debugSignInAvailable &&
           (prefs.getBool(_debugUnlimitedFuelKey) ?? false);
       if (!_fuelLoaded) {
-        final fuel = await GameFuelService.instance.load();
+        final fuel = await GameRunsService.instance.load();
         _fuelLoaded = true;
         if (mounted) {
-          _game.configureFuel(
-            fuel: fuel,
+          _game.configureRuns(
+            runs: fuel,
             unlimited: _debugUnlimitedFuel || ref.read(isPremiumProvider),
           );
           _scheduleFuelTick();
@@ -754,10 +762,14 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   /// «Start the drive» on the garage screen: a fresh world after a finished
   /// run, else the world already loaded behind the garage.
-  void _startFromLobby() {
+  Future<void> _startFromLobby() async {
     if (!_inLobby) return;
-    HapticFeedbackHelper.confirm();
     final ended = ref.read(gameControllerProvider).phase == GamePhase.gameOver;
+    // A new run (not the continuation of a paused one) costs a run; the
+    // restart after game over takes it in _handleRestart.
+    if (!_runStarted && !ended && !await _takeRun()) return;
+    if (!mounted || !_inLobby) return;
+    HapticFeedbackHelper.confirm();
     setState(() {
       _inLobby = false;
       _runStarted = true;
@@ -869,12 +881,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   Future<void> _handleRestart() async {
     if (_restarting || _disposing) return;
-    final tank = GameFuelService.instance.refresh();
-    final premium = ref.read(isPremiumProvider);
-    final unlimited = premium || _debugUnlimitedFuel;
-    if (!unlimited && tank <= 0) return;
+    if (!await _takeRun()) return;
+    if (!mounted || _disposing) return;
     HapticFeedbackHelper.confirm();
-    _game.configureFuel(fuel: tank, unlimited: unlimited);
     _restarting = true;
     _readyTimer?.cancel();
     _game.setPaused(true);
@@ -971,25 +980,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
         _send('setGas', [false]);
         _send('setBrake', [false]);
         _send('setSteering', [0]);
-      }
-      if (previous != null &&
-          next.fuel != previous.fuel &&
-          !next.fuelUnlimited) {
-        final messenger = ScaffoldMessenger.maybeOf(context);
-        GameFuelService.instance.setFuel(next.fuel).then((refilled) {
-          if (!refilled || !mounted) return;
-          _game.configureFuel(fuel: GameFuelService.maxFuel, unlimited: false);
-          messenger?.showSnackBar(
-            SnackBar(
-              content: Text(
-                appL10n.gameFuelFreeRefill(
-                  GameFuelService.instance.freeRefillsLeft,
-                ),
-              ),
-            ),
-          );
-        });
-        _scheduleFuelTick();
       }
       if (previous?.phase == GamePhase.situation &&
           next.phase != GamePhase.situation &&
@@ -1106,21 +1096,25 @@ class _GameScreenState extends ConsumerState<GameScreen>
     final locked = !ref.watch(isAuthenticatedProvider);
     final premium = ref.watch(isPremiumProvider);
     final unlimitedFuel = premium || _debugUnlimitedFuel;
-    if (_fuelLoaded && unlimitedFuel != gameState.fuelUnlimited) {
+    if (_fuelLoaded && unlimitedFuel != gameState.runsUnlimited) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          _game.configureFuel(
-            fuel: GameFuelService.instance.refresh(),
+          _game.configureRuns(
+            runs: GameRunsService.instance.refresh(),
             unlimited: unlimitedFuel,
           );
         }
       });
     }
+    // No run in stock to start a new one (a run in progress always goes on;
+    // the results dialog shows the countdown itself).
+    final runActive = _runStarted && gameState.phase != GamePhase.gameOver;
     final outOfFuel =
         !locked &&
         !unlimitedFuel &&
         _fuelLoaded &&
-        gameState.fuel <= 0 &&
+        gameState.runs <= 0 &&
+        !runActive &&
         gameState.phase != GamePhase.gameOver;
     if (outOfFuel != _outOfFuel) {
       _outOfFuel = outOfFuel;
@@ -1231,22 +1225,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   onDebugSignIn: AuthService.debugSignInAvailable
                       ? () => AuthService.instance.signInDebug()
                       : null,
-                ),
-              ),
-            if (outOfFuel && !_inLobby)
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: MediaQuery.paddingOf(context).bottom + 16,
-                child: GameFuelEmptyPanel(
-                  refillAt: GameFuelService.instance.firstUnitAt,
-                  onBuyPremium: () => PremiumPaywallSheet.show(context),
-                  // Back to driving right away, no reload needed.
-                  onRefilled: () => _game.configureFuel(
-                    fuel: GameFuelService.instance.refresh(),
-                    unlimited:
-                        _debugUnlimitedFuel || ref.read(isPremiumProvider),
-                  ),
                 ),
               ),
             if (_correctBurst > 0)
@@ -1379,9 +1357,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   vehiclePaint: _vehiclePaint,
                   bestScore: _bestScore ?? 0,
                   fuel: GameFuelGauge(
-                    fuel: gameState.fuel,
-                    maxFuel: GameState.maxFuel,
-                    unlimited: gameState.fuelUnlimited,
+                    fuel: gameState.runs,
+                    maxFuel: GameState.maxRuns,
+                    unlimited: gameState.runsUnlimited,
                   ),
                   blocker: locked
                       ? _LockCard(
@@ -1390,12 +1368,15 @@ class _GameScreenState extends ConsumerState<GameScreen>
                               ? () => AuthService.instance.signInDebug()
                               : null,
                         )
-                      : !unlimitedFuel && _fuelLoaded && gameState.fuel <= 0
+                      : !unlimitedFuel &&
+                            _fuelLoaded &&
+                            gameState.runs <= 0 &&
+                            !runActive
                       ? GameFuelEmptyPanel(
-                          refillAt: GameFuelService.instance.firstUnitAt,
+                          refillAt: GameRunsService.instance.firstUnitAt,
                           onBuyPremium: () => PremiumPaywallSheet.show(context),
-                          onRefilled: () => _game.configureFuel(
-                            fuel: GameFuelService.instance.refresh(),
+                          onRefilled: () => _game.configureRuns(
+                            runs: GameRunsService.instance.refresh(),
                             unlimited:
                                 _debugUnlimitedFuel ||
                                 ref.read(isPremiumProvider),
@@ -1434,7 +1415,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                         HapticFeedbackHelper.tap();
                         GameLeaderboardSheet.show(context);
                       },
-                      fuelRefillAt: GameFuelService.instance.firstUnitAt,
+                      fuelRefillAt: GameRunsService.instance.firstUnitAt,
                       onBuyPremium: () => PremiumPaywallSheet.show(context),
                       bestScore: _newRecord ? null : _bestScore,
                       isNewRecord: _newRecord,

@@ -1643,13 +1643,13 @@ abstract class AppLocalizations {
   /// No description provided for @gameDebugUnlimitedFuel.
   ///
   /// In ru, this message translates to:
-  /// **'Бесконечный бензин'**
+  /// **'Бесконечные заезды'**
   String get gameDebugUnlimitedFuel;
 
   /// No description provided for @gameDebugUnlimitedFuelHint.
   ///
   /// In ru, this message translates to:
-  /// **'Ошибки не расходуют бензин'**
+  /// **'Заезды не расходуются'**
   String get gameDebugUnlimitedFuelHint;
 
   /// No description provided for @gameSceneSummer.
@@ -1913,31 +1913,31 @@ abstract class AppLocalizations {
   /// No description provided for @gameFuel.
   ///
   /// In ru, this message translates to:
-  /// **'Топливо'**
+  /// **'Заезды'**
   String get gameFuel;
 
   /// No description provided for @gameFuelUnlimited.
   ///
   /// In ru, this message translates to:
-  /// **'Безлимитное топливо'**
+  /// **'Безлимитные заезды'**
   String get gameFuelUnlimited;
 
   /// No description provided for @gameFuelEmptyTitle.
   ///
   /// In ru, this message translates to:
-  /// **'Бензин закончился'**
+  /// **'Заезды закончились'**
   String get gameFuelEmptyTitle;
 
   /// No description provided for @gameFuelRefillIn.
   ///
   /// In ru, this message translates to:
-  /// **'Бак пополнится через {time}'**
+  /// **'Новый заезд через {time}'**
   String gameFuelRefillIn(String time);
 
   /// No description provided for @gameFuelPremiumPitch.
   ///
   /// In ru, this message translates to:
-  /// **'С подпиской бензин не заканчивается'**
+  /// **'С подпиской заезды не заканчиваются'**
   String get gameFuelPremiumPitch;
 
   /// No description provided for @gameFuelBuyPremium.
@@ -2048,12 +2048,6 @@ abstract class AppLocalizations {
   /// **'Не удалось удалить аккаунт. Проверьте подключение и попробуйте ещё раз.'**
   String get accountDeleteFailed;
 
-  /// No description provided for @gameFuelFreeRefill.
-  ///
-  /// In ru, this message translates to:
-  /// **'{n, plural, =0{Бак заправлен бесплатно — это была последняя бесплатная заправка} one{Бак заправлен бесплатно. Осталось {n} бесплатная заправка} few{Бак заправлен бесплатно. Осталось {n} бесплатные заправки} other{Бак заправлен бесплатно. Осталось {n} бесплатных заправок}}'**
-  String gameFuelFreeRefill(int n);
-
   /// No description provided for @gameControlsTitle.
   ///
   /// In ru, this message translates to:
@@ -2125,6 +2119,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Управ.'**
   String get gameLobbyControls;
+
+  /// No description provided for @gameRunProgress.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вопрос {n} из {total}'**
+  String gameRunProgress(int n, int total);
 }
 
 class _AppLocalizationsDelegate

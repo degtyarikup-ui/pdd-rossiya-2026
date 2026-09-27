@@ -907,10 +907,10 @@ class AppLocalizationsSr extends AppLocalizations {
   String get gameSceneCalendar => 'Po kalendaru';
 
   @override
-  String get gameDebugUnlimitedFuel => 'Beskonačno gorivo';
+  String get gameDebugUnlimitedFuel => 'Beskonačne vožnje';
 
   @override
-  String get gameDebugUnlimitedFuelHint => 'Greške ne troše gorivo';
+  String get gameDebugUnlimitedFuelHint => 'Vožnje se ne troše';
 
   @override
   String get gameSceneSummer => 'Leto';
@@ -1066,21 +1066,21 @@ class AppLocalizationsSr extends AppLocalizations {
       'Živi grad, ispitna pitanja na putu i rang lista nedelje. Prijavite se — i krećemo.';
 
   @override
-  String get gameFuel => 'Gorivo';
+  String get gameFuel => 'Vožnje';
 
   @override
-  String get gameFuelUnlimited => 'Neograničeno gorivo';
+  String get gameFuelUnlimited => 'Neograničene vožnje';
 
   @override
-  String get gameFuelEmptyTitle => 'Nestalo je goriva';
+  String get gameFuelEmptyTitle => 'Vožnje su potrošene';
 
   @override
   String gameFuelRefillIn(String time) {
-    return 'Rezervoar se puni za $time';
+    return 'Nova vožnja za $time';
   }
 
   @override
-  String get gameFuelPremiumPitch => 'Uz pretplatu gorivo se ne troši';
+  String get gameFuelPremiumPitch => 'Uz pretplatu vožnje se ne troše';
 
   @override
   String get gameFuelBuyPremium => 'Uključi Premium';
@@ -1142,23 +1142,6 @@ class AppLocalizationsSr extends AppLocalizations {
       'Nije moguće obrisati nalog. Proverite vezu i pokušajte ponovo.';
 
   @override
-  String gameFuelFreeRefill(int n) {
-    String _temp0 = intl.Intl.pluralLogic(
-      n,
-      locale: localeName,
-      other:
-          'Rezervoar je besplatno napunjen. Preostalo je $n besplatnih punjenja',
-      few:
-          'Rezervoar je besplatno napunjen. Preostala su $n besplatna punjenja',
-      one:
-          'Rezervoar je besplatno napunjen. Preostalo je $n besplatno punjenje',
-      zero:
-          'Rezervoar je besplatno napunjen — ovo je bilo poslednje besplatno punjenje',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get gameControlsTitle => 'Upravljanje';
 
   @override
@@ -1196,4 +1179,9 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get gameLobbyControls => 'Uprav.';
+
+  @override
+  String gameRunProgress(int n, int total) {
+    return 'Pitanje $n od $total';
+  }
 }

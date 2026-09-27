@@ -1,13 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 
-/// HUD fuel gauge: a canister with five pips, or the infinity sign for
-/// premium players. Replaces the old hearts.
+/// Runs in stock: a flag with one bar per run, or the infinity sign for
+/// premium players.
 class GameFuelGauge extends StatelessWidget {
   final int fuel;
   final int maxFuel;
@@ -27,7 +26,7 @@ class GameFuelGauge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final low = !unlimited && fuel <= 1;
+    final low = !unlimited && fuel <= 0;
     final tint = low ? colors.red : colors.accent;
     return Semantics(
       label: unlimited
@@ -39,12 +38,12 @@ class GameFuelGauge extends StatelessWidget {
         direction: vertical ? Axis.vertical : Axis.horizontal,
         mainAxisSize: MainAxisSize.min,
         children: [
-          SvgPicture.asset(
-            'assets/icons/game/hud_fuel.svg',
+          // Runs in stock: a finish flag and one bar per run.
+          Icon(
+            Icons.sports_score_rounded,
             key: const ValueKey('hud-fuel'),
-            width: 21,
-            height: 24,
-            colorFilter: ColorFilter.mode(tint, BlendMode.srcIn),
+            size: 24,
+            color: tint,
           ),
           const SizedBox(width: 8, height: 8),
           // Unlimited fuel: the infinity sign instead of the bars.
@@ -211,7 +210,7 @@ class GameFuelEmptyIcon extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       child: Icon(
-        Icons.local_gas_station_rounded,
+        Icons.sports_score_rounded,
         color: colors.red,
         size: size * 0.55,
       ),

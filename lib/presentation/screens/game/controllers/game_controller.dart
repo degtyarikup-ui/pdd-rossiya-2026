@@ -7,11 +7,14 @@ import 'package:pdd_app/data/services/sound_effects_service.dart';
 enum GamePhase { ready, driving, situation, resolving, explanation, gameOver }
 
 class GameState {
-  /// Fuel: one unit per mistake; regenerates over time (see GameFuelService).
-  /// Premium players have unlimited fuel.
-  final int fuel;
-  final bool fuelUnlimited;
-  static const int maxFuel = 5;
+  /// Runs left in stock for a free player (see GameRunsService); premium
+  /// players have unlimited runs.
+  final int runs;
+  final bool runsUnlimited;
+  static const int maxRuns = 3;
+
+  /// A run ends after this many answered questions.
+  static const int runQuestions = 20;
   final int score;
   final int distanceM;
   final int speedKmH;
@@ -34,8 +37,8 @@ class GameState {
   final double maxSeconds;
 
   const GameState({
-    this.fuel = maxFuel,
-    this.fuelUnlimited = false,
+    this.runs = maxRuns,
+    this.runsUnlimited = false,
     this.score = 0,
     this.distanceM = 0,
     this.speedKmH = 0,
@@ -66,8 +69,8 @@ class GameState {
       !recovering;
 
   GameState copyWith({
-    int? fuel,
-    bool? fuelUnlimited,
+    int? runs,
+    bool? runsUnlimited,
     int? score,
     int? distanceM,
     int? speedKmH,
@@ -93,8 +96,8 @@ class GameState {
     bool clearViolation = false,
   }) {
     return GameState(
-      fuel: fuel ?? this.fuel,
-      fuelUnlimited: fuelUnlimited ?? this.fuelUnlimited,
+      runs: runs ?? this.runs,
+      runsUnlimited: runsUnlimited ?? this.runsUnlimited,
       score: score ?? this.score,
       distanceM: distanceM ?? this.distanceM,
       speedKmH: speedKmH ?? this.speedKmH,
@@ -285,33 +288,22 @@ class GameController extends StateNotifier<GameState> {
   void _onTimeout() {
     onTrafficReleaseToEngine?.call(state.currentSituation!.id);
     final newMistakes = state.totalMistakes + 1;
-    final newFuel = state.fuelUnlimited ? state.fuel : state.fuel - 1;
 
     SoundEffectsService.instance.playIncorrect();
     HapticFeedbackHelper.error();
 
-    if (newFuel <= 0) {
-      state = state.copyWith(
-        fuel: 0,
-        totalAnswered: state.totalAnswered + 1,
-        totalMistakes: newMistakes,
-        consecutiveCorrect: 0,
-        isLastAnswerCorrect: false,
-        phase: GamePhase.gameOver,
-        remainingSeconds: 0,
-      );
-    } else {
-      state = state.copyWith(
-        fuel: newFuel,
-        totalAnswered: state.totalAnswered + 1,
-        totalMistakes: newMistakes,
-        consecutiveCorrect: 0,
-        isLastAnswerCorrect: false,
-        phase: GamePhase.explanation,
-        remainingSeconds: 0,
-      );
-    }
+    state = state.copyWith(
+      totalAnswered: state.totalAnswered + 1,
+      totalMistakes: newMistakes,
+      consecutiveCorrect: 0,
+      isLastAnswerCorrect: false,
+      phase: GamePhase.explanation,
+      remainingSeconds: 0,
+    );
   }
+
+  /// The run is over once [GameState.runQuestions] questions are answered.
+  bool get _runComplete => state.totalAnswered >= GameState.runQuestions;
 
   void submitAnswer(int answerIndex) {
     if (state.phase != GamePhase.situation || state.paused) return;
@@ -351,34 +343,24 @@ class GameController extends StateNotifier<GameState> {
       HapticFeedbackHelper.error();
 
       final newMistakes = state.totalMistakes + 1;
-      final newFuel = state.fuelUnlimited ? state.fuel : state.fuel - 1;
 
-      if (newFuel <= 0) {
-        state = state.copyWith(
-          selectedAnswerIndex: answerIndex,
-          isLastAnswerCorrect: false,
-          consecutiveCorrect: 0,
-          totalAnswered: state.totalAnswered + 1,
-          totalMistakes: newMistakes,
-          fuel: 0,
-          phase: GamePhase.gameOver,
-        );
-      } else {
-        state = state.copyWith(
-          selectedAnswerIndex: answerIndex,
-          isLastAnswerCorrect: false,
-          consecutiveCorrect: 0,
-          totalAnswered: state.totalAnswered + 1,
-          totalMistakes: newMistakes,
-          fuel: newFuel,
-          phase: GamePhase.explanation,
-        );
-      }
+      state = state.copyWith(
+        selectedAnswerIndex: answerIndex,
+        isLastAnswerCorrect: false,
+        consecutiveCorrect: 0,
+        totalAnswered: state.totalAnswered + 1,
+        totalMistakes: newMistakes,
+        phase: GamePhase.explanation,
+      );
     }
   }
 
   void continueAfterExplanation() {
     if (state.phase == GamePhase.explanation && !state.paused) {
+      if (_runComplete) {
+        state = state.copyWith(phase: GamePhase.gameOver);
+        return;
+      }
       state = state.copyWith(phase: GamePhase.resolving);
       onSituationResolvedToEngine?.call(false, state.currentSituation!.id);
     }
@@ -389,15 +371,18 @@ class GameController extends StateNotifier<GameState> {
         state.currentSituation?.id != situationId) {
       return;
     }
-    state = state.copyWith(phase: GamePhase.driving, clearSituation: true);
+    state = state.copyWith(
+      phase: _runComplete ? GamePhase.gameOver : GamePhase.driving,
+      clearSituation: true,
+    );
   }
 
-  /// Sets the fuel for a run: the persisted, time-regenerated amount for free
+  /// Sets the runs in stock: the persisted, time-refilled count for free
   /// players; unlimited for premium. Safe to call at any time.
-  void configureFuel({required int fuel, required bool unlimited}) {
+  void configureRuns({required int runs, required bool unlimited}) {
     state = state.copyWith(
-      fuel: unlimited ? GameState.maxFuel : fuel.clamp(0, GameState.maxFuel),
-      fuelUnlimited: unlimited,
+      runs: unlimited ? GameState.maxRuns : runs.clamp(0, GameState.maxRuns),
+      runsUnlimited: unlimited,
     );
   }
 
@@ -410,8 +395,8 @@ class GameController extends StateNotifier<GameState> {
     _lastSituationId = null;
     sessionId =
         '${DateTime.now().microsecondsSinceEpoch}-${_sessionSequence++}';
-    // A fresh run keeps the tank as it is (fuel is a resource, not a life bar).
-    state = GameState(fuel: state.fuel, fuelUnlimited: state.fuelUnlimited);
+    // A fresh run keeps the stock of runs as it is.
+    state = GameState(runs: state.runs, runsUnlimited: state.runsUnlimited);
   }
 }
 

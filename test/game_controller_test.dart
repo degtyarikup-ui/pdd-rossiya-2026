@@ -114,7 +114,7 @@ void main() {
           state: const GameState(
             phase: GamePhase.gameOver,
             score: 1234567,
-            fuel: 0,
+            runs: 0,
             distanceM: 12345,
             violationCount: 12,
           ),
@@ -278,7 +278,9 @@ void main() {
     ]);
   });
 
-  testWidgets('Simple steering: each press is one lane or exit command', (tester) async {
+  testWidgets('Simple steering: each press is one lane or exit command', (
+    tester,
+  ) async {
     final steering = <int>[];
     final lanes = <String>[];
     await tester.pumpWidget(
@@ -608,9 +610,8 @@ void main() {
       await tester.pumpWidget(hud(0));
       expect(find.text('${appL10n.gameViolations}: 0'), findsNothing);
       expect(find.byKey(const ValueKey('hud-hud_warning')), findsOneWidget);
-      // The fuel gauge replaced the hearts: a canister with five pips.
-      expect(find.byKey(const ValueKey('hud-fuel')), findsOneWidget);
-      expect(find.bySemanticsLabel(RegExp('5 / 5')), findsOneWidget);
+      // Run progress: questions answered of 20.
+      expect(find.byKey(const ValueKey('hud-run')), findsOneWidget);
       await tester.pumpWidget(hud(2));
       final label = find.text('2');
       expect(label, findsOneWidget);
@@ -866,7 +867,7 @@ void main() {
                     ? Center(
                         child: GameOverDialog(
                           state: name == 'fuel_results'
-                              ? state.copyWith(fuel: 0)
+                              ? state.copyWith(runs: 0)
                               : state,
                           fuelRefillAt: name == 'fuel_results'
                               ? DateTime.now().add(const Duration(minutes: 30))
@@ -1127,7 +1128,7 @@ void main() {
 
     test('Initial state is ready and defaults are valid', () {
       expect(controller.state.phase, GamePhase.ready);
-      expect(controller.state.fuel, 5);
+      expect(controller.state.runs, 3);
       expect(controller.state.score, 0);
       expect(controller.state.distanceM, 0);
     });
@@ -1189,7 +1190,6 @@ void main() {
       expect(controller.state.phase, GamePhase.explanation);
       expect(controller.state.isLastAnswerCorrect, false);
       expect(controller.state.consecutiveCorrect, 0);
-      expect(controller.state.fuel, 4);
       expect(controller.state.totalMistakes, 1);
       // Engine is not yet notified until user taps continue
       expect(engineNotified, false);
@@ -1199,44 +1199,39 @@ void main() {
       expect(engineNotified, true);
     });
 
-    test('Burning the last fuel unit triggers gameOver phase', () {
+    test('Mistakes cost nothing; the run ends after 20 answers', () {
       controller.onEngineReady();
-      controller.configureFuel(fuel: 3, unlimited: false);
-
-      // Mistake 1
-      controller.onApproachSituation(dummySituation);
-      controller.submitAnswer(0);
-      expect(controller.state.fuel, 2);
-      controller.continueAfterExplanation();
-
-      // Mistake 2
-      controller.onSituationClearedFromEngine(dummySituation.id);
-      controller.onApproachSituation(
-        GameSituation.fromJson({...dummySituation.toJson(), 'id': 'second'}),
-      );
-      controller.submitAnswer(0);
-      expect(controller.state.fuel, 1);
-      controller.continueAfterExplanation();
-
-      // Mistake 3 -> Game Over
-      controller.onSituationClearedFromEngine('second');
-      controller.onApproachSituation(
-        GameSituation.fromJson({...dummySituation.toJson(), 'id': 'third'}),
-      );
-      controller.submitAnswer(0);
-      expect(controller.state.fuel, 0);
+      controller.configureRuns(runs: 1, unlimited: false);
+      for (var i = 0; i < GameState.runQuestions; i++) {
+        final id = 'q$i';
+        controller.onApproachSituation(
+          GameSituation.fromJson({...dummySituation.toJson(), 'id': id}),
+        );
+        // Alternate wrong and right answers.
+        controller.submitAnswer(
+          i.isEven ? 0 : dummySituation.correctAnswerIndex,
+        );
+        if (i.isEven) {
+          expect(controller.state.runs, 1);
+          controller.continueAfterExplanation();
+        }
+        if (i < GameState.runQuestions - 1) {
+          expect(controller.state.phase, GamePhase.resolving);
+          controller.onSituationClearedFromEngine(id);
+          expect(controller.state.phase, GamePhase.driving);
+        }
+      }
+      // The last one was right: the car drives through, then the results.
+      expect(controller.state.phase, GamePhase.resolving);
+      controller.onSituationClearedFromEngine('q${GameState.runQuestions - 1}');
       expect(controller.state.phase, GamePhase.gameOver);
+      expect(controller.state.totalAnswered, 20);
     });
 
-    test('Unlimited fuel is not spent on mistakes', () {
-      controller.onEngineReady();
-      controller.configureFuel(fuel: 0, unlimited: true);
-      controller.onApproachSituation(dummySituation);
-      controller.submitAnswer(0);
-
-      expect(controller.state.fuelUnlimited, isTrue);
-      expect(controller.state.fuel, GameState.maxFuel);
-      expect(controller.state.phase, GamePhase.explanation);
+    test('Unlimited runs for premium', () {
+      controller.configureRuns(runs: 0, unlimited: true);
+      expect(controller.state.runsUnlimited, isTrue);
+      expect(controller.state.runs, GameState.maxRuns);
     });
 
     test('Telemetry updates distance, speed and score', () {
@@ -1281,26 +1276,22 @@ void main() {
       },
     );
 
-    test(
-      'Oncoming episodes count once without burning fuel; restart clears all',
-      () {
-        controller.onEngineReady();
-        final oldSession = controller.sessionId;
-        controller.updateLane('left', true);
-        controller.recordViolation('oncoming', 1);
-        controller.recordViolation('oncoming', 1);
-        controller.recordViolation('oncoming', 2);
-        expect(controller.state.violationCount, 2);
-        expect(controller.state.fuel, 5);
-        expect(controller.state.totalMistakes, 0);
-        controller.restartGame();
-        expect(controller.acceptsSession(oldSession), false);
-        expect(controller.acceptsSession(null), false);
-        expect(controller.state.violationCount, 0);
-        expect(controller.state.oncoming, false);
-        expect(controller.state.phase, GamePhase.ready);
-      },
-    );
+    test('Oncoming episodes count once; restart clears all', () {
+      controller.onEngineReady();
+      final oldSession = controller.sessionId;
+      controller.updateLane('left', true);
+      controller.recordViolation('oncoming', 1);
+      controller.recordViolation('oncoming', 1);
+      controller.recordViolation('oncoming', 2);
+      expect(controller.state.violationCount, 2);
+      expect(controller.state.totalMistakes, 0);
+      controller.restartGame();
+      expect(controller.acceptsSession(oldSession), false);
+      expect(controller.acceptsSession(null), false);
+      expect(controller.state.violationCount, 0);
+      expect(controller.state.oncoming, false);
+      expect(controller.state.phase, GamePhase.ready);
+    });
 
     testWidgets('Pause freezes answer countdown and releases gas', (
       tester,
@@ -1314,11 +1305,10 @@ void main() {
       controller.setPaused(true);
       await tester.pump(const Duration(seconds: 20));
       expect(controller.state.remainingSeconds, 15);
-      expect(controller.state.fuel, 5);
       expect(stops, 2);
       controller.setPaused(false);
       await tester.pump(const Duration(seconds: 16));
-      expect(controller.state.fuel, 4);
+      expect(controller.state.totalMistakes, 1);
       expect(controller.state.phase, GamePhase.explanation);
       expect(released, [dummySituation.id]);
     });

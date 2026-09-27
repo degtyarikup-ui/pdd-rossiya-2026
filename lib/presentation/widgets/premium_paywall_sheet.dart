@@ -269,8 +269,8 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
               ),
               const SizedBox(height: 12),
               _buildFeatureItem(
-                icon: Icons.local_gas_station_rounded,
-                title: 'Бесконечный бензин в игре',
+                icon: Icons.sports_score_rounded,
+                title: 'Безлимитные заезды в игре',
                 description:
                     'Катайтесь сколько хотите — и золотой кибертрак в гараже',
                 accentColor: accentColor,

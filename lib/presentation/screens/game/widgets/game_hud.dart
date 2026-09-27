@@ -7,7 +7,6 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
-import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 
 class GameHud extends StatelessWidget {
   final GameState state;
@@ -216,11 +215,31 @@ class GameHud extends StatelessWidget {
                     padding: const EdgeInsets.only(left: 11),
                     child: GestureDetector(
                       onLongPress: onGarageLongPress,
-                      child: GameFuelGauge(
-                        fuel: state.fuel,
-                        maxFuel: GameState.maxFuel,
-                        unlimited: state.fuelUnlimited,
-                        vertical: true,
+                      // Progress of the run: answered of 20 questions.
+                      child: Semantics(
+                        label: appL10n.gameRunProgress(
+                          state.totalAnswered,
+                          GameState.runQuestions,
+                        ),
+                        child: Text.rich(
+                          key: const ValueKey('hud-run'),
+                          TextSpan(
+                            text: '${state.totalAnswered}',
+                            style: const TextStyle(fontSize: 26),
+                            children: [
+                              TextSpan(
+                                text: ' / ${GameState.runQuestions}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ],
+                          ),
+                          style: const TextStyle(
+                            fontFamily: 'Onest',
+                            fontWeight: FontWeight.w800,
+                            height: 1,
+                            color: AppColors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ),
