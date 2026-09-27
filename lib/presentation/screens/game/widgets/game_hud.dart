@@ -127,19 +127,6 @@ class GameHud extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 11),
-                      child: GestureDetector(
-                        onLongPress: onGarageLongPress,
-                        child: GameFuelGauge(
-                          fuel: state.fuel,
-                          maxFuel: GameState.maxFuel,
-                          unlimited: state.fuelUnlimited,
-                          vertical: true,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
                 const SizedBox(width: 16),
@@ -213,39 +200,52 @@ class GameHud extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
-                      // Current speed under the counters, red when clearly
-                      // over the limit in force.
-                      Text.rich(
-                        key: const ValueKey('hud-speed'),
-                        TextSpan(
-                          text: '${state.speedKmH}',
-                          style: const TextStyle(fontSize: 26),
-                          children: [
-                            TextSpan(
-                              text: ' ${appL10n.gameSpeedUnit}',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                        style: TextStyle(
-                          fontFamily: 'Onest',
-                          fontWeight: FontWeight.w800,
-                          height: 1,
-                          color:
-                              state.limitKmH != null &&
-                                  state.speedKmH > state.limitKmH! + 5
-                              ? colors.red
-                              : AppColors.primaryText,
-                          shadows: const [
-                            Shadow(color: Color(0xB3FFFFFF), blurRadius: 6),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                 ),
               ],
+            ),
+            // Fuel on the left and speed on the right, on one line
+            // below the counters.
+            Padding(
+              padding: const EdgeInsets.only(top: 22),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 11),
+                    child: GestureDetector(
+                      onLongPress: onGarageLongPress,
+                      child: GameFuelGauge(
+                        fuel: state.fuel,
+                        maxFuel: GameState.maxFuel,
+                        unlimited: state.fuelUnlimited,
+                        vertical: true,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Text.rich(
+                    key: const ValueKey('hud-speed'),
+                    TextSpan(
+                      text: '${state.speedKmH}',
+                      style: const TextStyle(fontSize: 26),
+                      children: [
+                        TextSpan(
+                          text: ' ${appL10n.gameSpeedUnit}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    style: const TextStyle(
+                      fontFamily: 'Onest',
+                      fontWeight: FontWeight.w800,
+                      height: 1,
+                      color: AppColors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 220),
