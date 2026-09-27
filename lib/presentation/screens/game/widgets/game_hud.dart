@@ -45,6 +45,10 @@ class GameHud extends StatelessWidget {
         : state.oncoming
         ? (state.lane == 'against' ? 'one_way' : 'oncoming')
         : null;
+    // What the violation just cost; a mere lane warning costs nothing yet.
+    final penalty = notice != null && notice == state.lastViolation
+        ? GameController.penaltyFor(notice)
+        : null;
     // A coloured pill with a white icon and value (design: HUD counters).
     Widget metric(String icon, Color color, String value) => Container(
       key: ValueKey('hud-$icon'),
@@ -284,25 +288,42 @@ class GameHud extends StatelessWidget {
                             AppDimensions.smallRadius,
                           ),
                         ),
-                        child: Text(
-                          switch (notice) {
-                            'oncoming' => appL10n.gameOncoming,
-                            'one_way' => appL10n.gameOneWayAgainst,
-                            'roadworks' => appL10n.gameRoadworksHit,
-                            'collision' => appL10n.gameCollision,
-                            'offroad' => appL10n.gameOffroad,
-                            'priority' => appL10n.gamePriorityViolation,
-                            'speeding' => appL10n.gameSpeeding,
-                            'overtaking' => appL10n.gameOvertakingProhibited,
-                            'pedestrian' => appL10n.gamePedestrianYield,
-                            _ => appL10n.gameWrongManeuver,
-                          },
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppColors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              switch (notice) {
+                                'oncoming' => appL10n.gameOncoming,
+                                'one_way' => appL10n.gameOneWayAgainst,
+                                'roadworks' => appL10n.gameRoadworksHit,
+                                'collision' => appL10n.gameCollision,
+                                'offroad' => appL10n.gameOffroad,
+                                'priority' => appL10n.gamePriorityViolation,
+                                'speeding' => appL10n.gameSpeeding,
+                                'overtaking' =>
+                                  appL10n.gameOvertakingProhibited,
+                                'pedestrian' => appL10n.gamePedestrianYield,
+                                _ => appL10n.gameWrongManeuver,
+                              },
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: AppColors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            if (penalty != null)
+                              Text(
+                                appL10n.gamePenaltyPoints(penalty),
+                                key: const ValueKey('hud-penalty'),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: AppColors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ),

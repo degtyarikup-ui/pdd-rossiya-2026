@@ -366,7 +366,7 @@
   "gameControlsFreeHint": "Стрелки крутят руль, пока их держишь",
   "gameTipGas": "Держи педаль газа — машина едет. Отпусти — плавно остановится",
   "gameTipSteer": "Нажми стрелку — машина перестроится в соседнюю полосу",
-  "gameTipTurn": "На перекрёстке нажми стрелку — машина сама повернёт. Нажмёшь ещё раз — поедет прямо",
+  "gameTipTurn": "На перекрёстке нажми стрелку — машина сама повернёт. Влево ещё раз — разворот, ещё раз — прямо",
   "gameTipNext": "Дальше",
   "gameTipDone": "Поехали",
   "gamePause": "Пауза",
@@ -374,5 +374,10 @@
   "gameRunProgress": "Вопрос {n} из {total}",
   "@gameRunProgress": {"placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}},
   "gameCorrectAnswer": "Правильный ответ",
-  "gameTimeUp": "Время вышло"
+  "gameTimeUp": "Время вышло",
+  "gamePenaltyPoints": "{points, plural, one{−{points} очко} few{−{points} очка} many{−{points} очков} other{−{points} очков}}",
+  "@gamePenaltyPoints": {"placeholders": {"points": {"type": "int"}}},
+  "gameRunMistakes": "{count, plural, one{{count} ошибка в заезде} few{{count} ошибки в заезде} many{{count} ошибок в заезде} other{{count} ошибки в заезде}}",
+  "@gameRunMistakes": {"placeholders": {"count": {"type": "int"}}},
+  "gameReviewMistakes": "Разобрать ошибки"
 }

@@ -37,6 +37,7 @@ import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
+import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
   final VoidCallback? onExit;
@@ -578,6 +579,15 @@ class _GameScreenState extends ConsumerState<GameScreen>
             );
           }
         }
+      } else if (event == 'exit_choice') {
+        final choice = data['choice'], hint = data['hint'];
+        gameNotifier.updateExit(
+          choice is String ? choice : null,
+          hint is String ? hint : null,
+        );
+      } else if (event == 'input_refused') {
+        // The exit is committed or there is no lane to move to.
+        HapticFeedbackHelper.warning();
       } else if (event == 'maneuver_reset') {
         gameNotifier.setRecovering(true);
         _send('setGas', [false]);
@@ -678,17 +688,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
     try {
       String? questionId = situation.sourceQuestionId;
       if (questionId == null || questionId.isEmpty) {
-        final m = RegExp(r'(\d+)\D+(\d+)').firstMatch(situation.ticket);
-        if (m == null) return;
-        final ticket = int.parse(m.group(1)!), number = int.parse(m.group(2)!);
-        _abQuestions ??= await ref
-            .read(questionsDataSourceProvider)
-            .loadTickets(TicketCategory.ab);
-        final inTicket = _abQuestions!
-            .where((q) => q.ticketNumber == ticket)
-            .toList();
-        if (number < 1 || number > inTicket.length) return;
-        questionId = inTicket[number - 1].id;
+        questionId = (await _questionFor(situation))?.id;
+        if (questionId == null) return;
       }
 
       await ref
@@ -703,6 +704,56 @@ class _GameScreenState extends ConsumerState<GameScreen>
     } catch (e) {
       debugPrint('Game mistake not saved: $e');
     }
+  }
+
+  /// The ticket question a game situation was built from: by its source id,
+  /// else by «Билет N · Вопрос M».
+  Future<Question?> _questionFor(GameSituation situation) async {
+    _abQuestions ??= await ref
+        .read(questionsDataSourceProvider)
+        .loadTickets(TicketCategory.ab);
+    final questions = _abQuestions!;
+    final id = situation.sourceQuestionId;
+    if (id != null && id.isNotEmpty) {
+      for (final q in questions) {
+        if (q.id == id) return q;
+      }
+    }
+    final m = RegExp(r'(\d+)\D+(\d+)').firstMatch(situation.ticket);
+    if (m == null) return null;
+    final ticket = int.parse(m.group(1)!), number = int.parse(m.group(2)!);
+    final inTicket = questions.where((q) => q.ticketNumber == ticket).toList();
+    if (number < 1 || number > inTicket.length) return null;
+    return inTicket[number - 1];
+  }
+
+  /// The run's mistakes as the ticket questions, in the regular trainer.
+  Future<void> _reviewMistakes(List<GameSituation> mistakes) async {
+    HapticFeedbackHelper.tap();
+    final questions = <Map<String, dynamic>>[];
+    final seen = <String>{};
+    for (final m in mistakes) {
+      if (m.country != null && m.country != CountryConfig.current.code) {
+        continue;
+      }
+      try {
+        final q = await _questionFor(m);
+        if (q != null && seen.add(q.id)) questions.add(q.toMap());
+      } catch (e) {
+        debugPrint('Game mistake not found: $e');
+      }
+    }
+    if (!mounted || questions.isEmpty) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => TrainingScreen(
+          questions: questions,
+          title: questions.length == 1
+              ? appL10n.mistakeReview
+              : appL10n.mistakesTitle,
+        ),
+      ),
+    );
   }
 
   void _selectCar(GameCar car, {int direction = 0}) {
@@ -1416,6 +1467,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                         HapticFeedbackHelper.tap();
                         GameLeaderboardSheet.show(context);
                       },
+                      onReviewMistakes: _reviewMistakes,
                       fuelRefillAt: GameRunsService.instance.firstUnitAt,
                       onBuyPremium: () => PremiumPaywallSheet.show(context),
                       bestScore: _newRecord ? null : _bestScore,

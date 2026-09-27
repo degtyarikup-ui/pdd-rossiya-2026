@@ -8204,19 +8204,24 @@
         points = [p, ...route];
         clearDistance = 26;
       } else if (cfg.side === 'ring' || cfg.roundabout) {
+        // Round the ring counter-clockwise and leave by the arm nearest to
+        // three quarters of a turn, along that arm's exit lane. (Leaving on
+        // the tangent drove straight across an arm and its verge, and the
+        // vehicle counted as passed while it was still circling towards the
+        // player's entry.)
         const ringRadius = cfg.ringRadius || 12.0;
         const startAngle = Math.atan2(p.x, p.z - z);
+        const exitArm = Math.round((startAngle + Math.PI * 1.5) / (Math.PI / 2)) * (Math.PI / 2);
+        const arcEnd = exitArm - 0.35;
+        const onRing = a => new THREE.Vector3(ringRadius * Math.sin(a), 0, z + ringRadius * Math.cos(a));
         const arcPoints = [p];
-        for (let da = 0.35; da <= Math.PI * 1.5; da += 0.35) {
-          const a = startAngle + da;
-          arcPoints.push(new THREE.Vector3(ringRadius * Math.sin(a), 0, z + ringRadius * Math.cos(a)));
-        }
-        const lastAngle = startAngle + Math.PI * 1.5;
-        const lastPt = arcPoints[arcPoints.length - 1];
-        const outTangent = new THREE.Vector3(Math.cos(lastAngle), 0, -Math.sin(lastAngle));
-        arcPoints.push(lastPt.clone().addScaledVector(outTangent, 25));
-        points = arcPoints;
-        clearDistance = 18;
+        for (let a = startAngle + 0.35; a < arcEnd - 0.1; a += 0.35) arcPoints.push(onRing(a));
+        arcPoints.push(onRing(arcEnd));
+        const out = new THREE.Vector3(Math.sin(exitArm), 0, Math.cos(exitArm));
+        const right = new THREE.Vector3(-Math.cos(exitArm), 0, Math.sin(exitArm));
+        const lane = r => new THREE.Vector3(0, 0, z).addScaledVector(out, r).addScaledVector(right, 1.8);
+        points = [...arcPoints, lane(16.5), lane(24), lane(60)];
+        clearDistance = ringRadius * (arcEnd - startAngle) + 9 + actor.halfLength;
       } else if (cfg.targetAction === 'uturn') {
         const side = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
         const entry = p.clone().addScaledVector(forward, 5);
@@ -8373,6 +8378,7 @@
       r.simpleGate = r.intersection.situation.geometry === 'roundabout' ? r.intersection.centerZ - 17
         : r.intersection.centerZ - (r.intersection.rightLane || 1.8) - 3;
       r.simpleChoice = previews.straight ? 'straight' : null;
+      r.simpleDeviated = false;
       applyJunctionChoice(r);
     } else if (action !== 'straight') triggerBlinker(action === 'right' ? 'right' : 'left');
     if (r.intersection.trafficLight && !r.intersection.trafficLight.userData.arrow &&
@@ -8913,6 +8919,7 @@
     if (waitForExit) state.speed = 0;
     if (r.simpleOpen && playerCarGroup.position.z > r.simpleGate && r.simpleChoice) r.simpleOpen = false;
     integrateDriving(dt, waitForExit ? 0 : state.maxSpeed);
+    reportExit(r);
     if (r.recovery > 0) return;
     const p = playerCarGroup.position, z = r.intersection.centerZ, yaw = playerCarGroup.rotation.y;
     const playerBox = { p, yaw, halfWidth: playerCarGroup.userData.halfWidth, halfLength: playerCarGroup.userData.halfLength };
@@ -9091,6 +9098,7 @@
     }
     // Populate the exit in this same update, not after the next rendered frame.
     checkAndSpawnNext();
+    reportExit(null);
     sendToFlutter({ event: 'situation_cleared', situationId: id });
   }
 
@@ -10962,12 +10970,18 @@
     // Never start a lane change the question stop would cut in half: the car
     // would stand diagonally across the lanes.
     const stops = [...state.intersections.map(it => it.stopZ), state.roadEvent?.phase === 'approach' ? state.roadEvent.stopZ : null];
-    if (!back && stops.some(z => z != null && z - car.position.z > -2 && z - car.position.z < 28)) return;
+    // Back to one's own side is always allowed: stopping for a question out
+    // in the oncoming lane is worse than a stop mid-change.
+    const homeward = !back && direction === 'right' && car.position.x > 0.85;
+    if (!back && !homeward && stops.some(z => z != null && z - car.position.z > -2 && z - car.position.z < 28)) {
+      if (state.simpleSteering) refuseInput();
+      return;
+    }
     // Forward is +Z, so the driver's left is +X; heading back mirrors it.
     // Wide streets have more lanes: step one lane over if there is road.
     const from = state.laneChangeX ?? nearestLaneX(car.position.x);
     const to = from + (direction === 'left' ? 3.6 : -3.6) * sign;
-    if (!laneFits(to)) return;
+    if (!laneFits(to)) { if (state.simpleSteering) refuseInput(); return; }
     state.laneChangeX = to;
     planLaneCurve(to);
     triggerBlinker(direction);
@@ -10991,18 +11005,73 @@
   // At a junction an arrow picks the exit (only roads that exist); the car
   // then drives it by itself. Pressing the same arrow again goes back to
   // straight on. The choice is open until the car reaches the turn.
+  // Left pressed again on a chosen left turn means a U-turn (where one
+  // fits); once more — straight on again.
   function chooseJunctionExit(direction) {
     const r = state.resolution, previews = r.intersection.previews || {};
-    if (!r.simpleOpen || playerCarGroup.position.z > r.simpleGate) return;
+    if (!r.simpleOpen || playerCarGroup.position.z > r.simpleGate) { refuseInput(); return; }
+    // A U-turn needs the whole crossing: not on a ring, at a T, across a
+    // median or where a motorway joins (16.1).
+    const uturnFits = previews.uturn && !['roundabout', 't_no_straight', 'divided_road', 'motorway_merge']
+      .includes(r.intersection.situation.geometry);
     let choice = direction;
-    if (!previews[choice] || r.simpleChoice === choice) choice = previews.straight ? 'straight' : null;
+    if (direction === 'left' && r.simpleChoice === 'left' && uturnFits) choice = 'uturn';
+    else if (!previews[choice] || r.simpleChoice === choice || (direction === 'left' && r.simpleChoice === 'uturn')) {
+      choice = previews.straight ? 'straight' : null;
+    }
     if (choice === r.simpleChoice) return;
+    const previous = r.simpleChoice;
     r.simpleChoice = choice;
-    applyJunctionChoice(r);
-    if (choice === 'left' || choice === 'right') triggerBlinker(choice);
+    // An exit that cannot be driven from where the car is now (half-way into
+    // another turn, or out in the oncoming lane) is refused: the car keeps
+    // its route and the phone buzzes.
+    if (!applyJunctionChoice(r, true)) { r.simpleChoice = previous; refuseInput(); return; }
+    // A press that leads away from the task's manoeuvre is the player's own
+    // decision: the hint stops insisting (a first left press is on the way
+    // to a U-turn).
+    const task = r.spec.maneuver, toward = task === 'uturn' ? ['left', 'uturn'] : [task];
+    if (!toward.includes(choice)) r.simpleDeviated = true;
+    if (choice === 'left' || choice === 'right' || choice === 'uturn') triggerBlinker(choice === 'right' ? 'right' : 'left');
   }
 
-  function applyJunctionChoice(r) {
+  // An arrow press that can change nothing any more (the exit is committed,
+  // no lane to move to): Flutter answers with a short vibration.
+  function refuseInput() {
+    sendToFlutter({ event: 'input_refused' });
+  }
+
+  // Simple mode at a task junction: the exit chosen so far and, until the
+  // player decides otherwise, the arrow that leads to the task's manoeuvre.
+  // The car never turns by itself — the hint only points at the arrow.
+  function reportExit(r) {
+    let choice = null, hint = null;
+    if (r && state.simpleSteering && r.phase === 'manual') {
+      choice = r.simpleChoice || null;
+      const task = r.spec.maneuver;
+      if (r.simpleOpen && playerCarGroup.position.z <= r.simpleGate && !r.simpleDeviated &&
+          ['left', 'right', 'uturn'].includes(task) && choice !== task && r.intersection.previews?.[task]) {
+        hint = task === 'right' ? 'right' : 'left';
+      }
+    }
+    const key = choice + '|' + hint;
+    if (key === state.exitReported) return;
+    state.exitReported = key;
+    sendToFlutter({ event: 'exit_choice', choice, hint });
+  }
+
+  // The first metres of a planned route keep the whole car on the road.
+  function pathDrivable(path) {
+    const length = path.getLength();
+    for (let d = 0.5; d <= Math.min(length, 8); d += 0.5) {
+      const u = d / length, tangent = path.getTangentAt(u);
+      if (!playerOnRoad(path.getPointAt(u), Math.atan2(tangent.x, tangent.z))) return false;
+    }
+    return true;
+  }
+
+  // Plans the route for the chosen exit from where the car is. With check,
+  // a route that would put the car on a kerb is not taken (returns false).
+  function applyJunctionChoice(r, check = false) {
     const choice = r.simpleChoice;
     const roundabout = r.intersection.situation.geometry === 'roundabout';
     const car = playerCarGroup, start = car.position.clone();
@@ -11013,20 +11082,29 @@
       const z = r.intersection.centerZ, side = start.x < 0 ? -1 : 1;
       const laneX = side * (Math.abs(start.x) > 3.6 ? 5.4 : 1.8);
       const zA = Math.max(start.z + 10, z + 2), zB = Math.max(start.z + 24, z + 18);
-      state.autoPath = planPath(new THREE.CubicBezierCurve3(start, start.clone().addScaledVector(heading, 4),
-        new THREE.Vector3(laneX, 0, zA), new THREE.Vector3(laneX, 0, zB)));
-      return;
+      const path = new THREE.CubicBezierCurve3(start, start.clone().addScaledVector(heading, 4),
+        new THREE.Vector3(laneX, 0, zA), new THREE.Vector3(laneX, 0, zB));
+      if (check && !pathDrivable(path)) return false;
+      state.autoPath = planPath(path);
+      return true;
     }
     const { points, exitYaw } = maneuverPoints(r, choice, start);
     // Approach points the car has already passed would send it backwards.
     while (points.length > 3 && points[1].z < start.z + 1.5 && Math.abs(points[1].x - start.x) < 2.5) points.splice(1, 1);
-    // Leave along the car's current heading: no snap when the choice changes
-    // with the car already moving.
-    points.splice(1, 0, start.clone().addScaledVector(heading, 2.5));
     // Run out straight along the exit road so the car leaves square to it.
     const last = points[points.length - 1], out = new THREE.Vector3(Math.sin(exitYaw), 0, Math.cos(exitYaw));
     points.push(last.clone().addScaledVector(out, 8), last.clone().addScaledVector(out, 20));
-    state.autoPath = planPath(curve(points));
+    // Leave along the car's current heading (no snap when the choice changes
+    // with the car already moving), shorter or not at all near a kerb.
+    let path = null;
+    for (const lead of [2.5, 1.2, 0]) {
+      const withLead = lead ? [points[0], start.clone().addScaledVector(heading, lead), ...points.slice(1)] : points;
+      path = curve(withLead);
+      if (pathDrivable(path)) break;
+      if (!lead && check) return false;
+    }
+    state.autoPath = planPath(path);
+    return true;
   }
 
   // «Простое управление»: the wheel turns only inside a junction (after the
@@ -11206,10 +11284,10 @@
       (material.clippingPlanes || []).every(plane => plane.distanceToPoint(point) >= -0.01));
   }
 
-  function playerOnRoad() {
+  function playerOnRoad(at = playerCarGroup.position, yaw = playerCarGroup.rotation.y) {
     for (const x of [-playerCarGroup.userData.halfWidth, playerCarGroup.userData.halfWidth])
       for (const z of [-playerCarGroup.userData.halfLength, playerCarGroup.userData.halfLength]) {
-        const corner = new THREE.Vector3(x, 0, z).applyAxisAngle(new THREE.Vector3(0, 1, 0), playerCarGroup.rotation.y).add(playerCarGroup.position);
+        const corner = new THREE.Vector3(x, 0, z).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw).add(at);
         if (!roadSupports(corner)) return false;
       }
     return true;
@@ -11400,6 +11478,7 @@
     state.lastSafePosition.set(-1.8, 0, 0);
     state.lastSafeYaw = 0;
     state.resolution = null;
+    state.exitReported = undefined;
     state.activeIntersection = null;
     state.roadEvent = null;
     state.roadTurn = 0;

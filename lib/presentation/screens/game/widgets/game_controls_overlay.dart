@@ -81,6 +81,12 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
               48.0,
               74.0,
             );
+            // Simple steering at a task junction: the chosen exit stays lit,
+            // the arrow for the task's manoeuvre pulses until the player
+            // picks a way of their own (the car never turns by itself).
+            final simple = widget.simpleSteering;
+            final choice = simple ? widget.state.exitChoice : null;
+            final hint = simple ? widget.state.exitHint : null;
             return Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -89,17 +95,25 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _LaneButton(
+                      key: const ValueKey('game-left'),
                       width: buttonWidth,
-                      icon: const Icon(Icons.arrow_back_rounded),
+                      icon: Icon(
+                        choice == 'uturn'
+                            ? Icons.u_turn_left_rounded
+                            : Icons.arrow_back_rounded,
+                      ),
                       label: appL10n.gameLeft,
                       onHold: widget.state.controlsEnabled
                           ? (held) => _press(1, held)
                           : null,
                       onTap: null,
                       haptic: _ControlHaptic.steering,
+                      selected: choice == 'left' || choice == 'uturn',
+                      pulse: hint == 'left',
                     ),
                     const SizedBox(width: 10),
                     _LaneButton(
+                      key: const ValueKey('game-right'),
                       width: buttonWidth,
                       icon: const Icon(Icons.arrow_forward_rounded),
                       label: appL10n.gameRight,
@@ -108,6 +122,8 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                           : null,
                       onTap: null,
                       haptic: _ControlHaptic.steering,
+                      selected: choice == 'right',
+                      pulse: hint == 'right',
                     ),
                   ],
                 ),
@@ -160,6 +176,12 @@ class _LaneButton extends StatefulWidget {
   final double width;
   final _ControlHaptic? haptic;
 
+  /// The exit chosen at a junction: a light accent fill.
+  final bool selected;
+
+  /// The arrow suggested for the task: the fill breathes in and out.
+  final bool pulse;
+
   const _LaneButton({
     super.key,
     required this.icon,
@@ -171,14 +193,37 @@ class _LaneButton extends StatefulWidget {
     this.iconColor,
     this.width = 74,
     this.haptic,
+    this.selected = false,
+    this.pulse = false,
   });
 
   @override
   State<_LaneButton> createState() => _LaneButtonState();
 }
 
-class _LaneButtonState extends State<_LaneButton> {
+class _LaneButtonState extends State<_LaneButton>
+    with SingleTickerProviderStateMixin {
   int? _pointer;
+  AnimationController? _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncPulse();
+  }
+
+  void _syncPulse() {
+    if (widget.pulse) {
+      _pulse ??= AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 650),
+      );
+      if (!_pulse!.isAnimating) _pulse!.repeat(reverse: true);
+    } else {
+      _pulse?.stop();
+      _pulse?.value = 0;
+    }
+  }
 
   @override
   void didUpdateWidget(covariant _LaneButton oldWidget) {
@@ -187,11 +232,13 @@ class _LaneButtonState extends State<_LaneButton> {
       _pointer = null;
       oldWidget.onHold?.call(false);
     }
+    if (widget.pulse != oldWidget.pulse) _syncPulse();
   }
 
   @override
   void dispose() {
     if (_pointer != null) widget.onHold?.call(false);
+    _pulse?.dispose();
     super.dispose();
   }
 
@@ -228,11 +275,26 @@ class _LaneButtonState extends State<_LaneButton> {
       child: SizedBox(
         width: widget.width,
         height: 76,
-        child: Material(
-          color: _pointer != null
-              ? (widget.activeColor ?? colors.accent)
-              : (widget.backgroundColor ?? colors.cardBackground),
-          borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
+        child: AnimatedBuilder(
+          animation: _pulse ?? kAlwaysDismissedAnimation,
+          builder: (context, child) {
+            final resting = widget.backgroundColor ?? colors.cardBackground;
+            final lit = Color.alphaBlend(
+              colors.accent.withValues(alpha: 0.22),
+              resting,
+            );
+            return Material(
+              color: _pointer != null
+                  ? (widget.activeColor ?? colors.accent)
+                  : widget.pulse
+                  ? Color.lerp(resting, lit, _pulse?.value ?? 0)
+                  : widget.selected
+                  ? lit
+                  : resting,
+              borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
+              child: child,
+            );
+          },
           child: InkWell(
             onTap: widget.onHold == null ? widget.onTap : null,
             borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
@@ -241,6 +303,7 @@ class _LaneButtonState extends State<_LaneButton> {
               child: Semantics(
                 label: widget.label,
                 button: true,
+                selected: widget.selected,
                 child: Center(
                   child: IconTheme(
                     data: IconThemeData(

@@ -1166,7 +1166,7 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get gameTipTurn =>
-      'Na raskrsnici pritisni strelicu — auto će samo skrenuti. Ponovni pritisak — pravo';
+      'Na raskrsnici pritisni strelicu — auto će samo skrenuti. Levo još jednom — polukružno, još jednom — pravo';
 
   @override
   String get gameTipNext => 'Dalje';
@@ -1190,4 +1190,31 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get gameTimeUp => 'Vreme je isteklo';
+
+  @override
+  String gamePenaltyPoints(int points) {
+    String _temp0 = intl.Intl.pluralLogic(
+      points,
+      locale: localeName,
+      other: '−$points poena',
+      few: '−$points poena',
+      one: '−$points poen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gameRunMistakes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count grešaka u vožnji',
+      few: '$count greške u vožnji',
+      one: '$count greška u vožnji',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gameReviewMistakes => 'Pregledaj greške';
 }

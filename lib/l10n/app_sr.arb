@@ -339,12 +339,15 @@
   "gameControlsFreeHint": "Strelice okreću volan dok ih držiš",
   "gameTipGas": "Drži pedalu gasa — auto ide. Pusti je — auto se polako zaustavlja",
   "gameTipSteer": "Pritisni strelicu — auto prelazi u susednu traku",
-  "gameTipTurn": "Na raskrsnici pritisni strelicu — auto će samo skrenuti. Ponovni pritisak — pravo",
+  "gameTipTurn": "Na raskrsnici pritisni strelicu — auto će samo skrenuti. Levo još jednom — polukružno, još jednom — pravo",
   "gameTipNext": "Dalje",
   "gameTipDone": "Kreni",
   "gamePause": "Pauza",
   "gameLobbyControls": "Uprav.",
   "gameRunProgress": "Pitanje {n} od {total}",
   "gameCorrectAnswer": "Tačan odgovor",
-  "gameTimeUp": "Vreme je isteklo"
+  "gameTimeUp": "Vreme je isteklo",
+  "gamePenaltyPoints": "{points, plural, one{−{points} poen} few{−{points} poena} other{−{points} poena}}",
+  "gameRunMistakes": "{count, plural, one{{count} greška u vožnji} few{{count} greške u vožnji} other{{count} grešaka u vožnji}}",
+  "gameReviewMistakes": "Pregledaj greške"
 }

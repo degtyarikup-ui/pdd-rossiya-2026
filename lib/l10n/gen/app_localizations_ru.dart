@@ -1167,7 +1167,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameTipTurn =>
-      'На перекрёстке нажми стрелку — машина сама повернёт. Нажмёшь ещё раз — поедет прямо';
+      'На перекрёстке нажми стрелку — машина сама повернёт. Влево ещё раз — разворот, ещё раз — прямо';
 
   @override
   String get gameTipNext => 'Дальше';
@@ -1191,4 +1191,33 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameTimeUp => 'Время вышло';
+
+  @override
+  String gamePenaltyPoints(int points) {
+    String _temp0 = intl.Intl.pluralLogic(
+      points,
+      locale: localeName,
+      other: '−$points очков',
+      many: '−$points очков',
+      few: '−$points очка',
+      one: '−$points очко',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gameRunMistakes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ошибки в заезде',
+      many: '$count ошибок в заезде',
+      few: '$count ошибки в заезде',
+      one: '$count ошибка в заезде',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gameReviewMistakes => 'Разобрать ошибки';
 }

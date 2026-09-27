@@ -151,7 +151,37 @@ const { chromium } = require('playwright');
     assert.ok(crash.finished && !crash.faults.includes('wrong_maneuver') && !crash.faults.includes('offroad'),
       'After the crash the chosen left turn is completed: ' + JSON.stringify(crash));
 
+    // 5. Simple steering on every enabled junction: the arrow for the task
+    // pulses (never a turn by itself), pressing it — left twice for a
+    // U-turn — and giving way as the ticket says costs no violation.
+    const simple = await page.evaluate(() => {
+      const t = window.__priorityTest, s = t.state, bad = [];
+      window.game.setSimpleSteering(true);
+      for (const sc of t.scenarios()) {
+        const task = window.PDD_SCENARIO_ROUTES[sc.id].maneuver;
+        t.select(sc.id);
+        const mark = window.events.length;
+        window.game.proceedAfterAnswer(true, sc.id);
+        const r = s.resolution;
+        for (let w = 0; w < 30 && !r.yielding.every(a => a.cleared || a.done || a.held); w += 0.25) t.tick(0.25);
+        t.tick(1 / 60);
+        const hint = window.events.slice(mark).filter(e => e.event === 'exit_choice').map(e => e.hint).find(h => h) || null;
+        const turnedAlone = r.simpleChoice !== (r.intersection.previews.straight ? 'straight' : null);
+        if (task === 'left' || task === 'uturn') window.game.changeLane('left');
+        if (task === 'uturn') window.game.changeLane('left');
+        if (task === 'right') window.game.changeLane('right');
+        for (let f = 0; f < 2400 && s.resolution; f++) { window.game.setGas(!s.resolution.recovery && s.speed < 9); t.tick(1 / 60); }
+        window.game.setGas(false);
+        const faults = window.events.slice(mark).filter(e => e.event === 'violation').map(e => e.type);
+        const expectedHint = task === 'straight' ? null : task === 'right' ? 'right' : 'left';
+        if (s.resolution || faults.length || hint !== expectedHint || turnedAlone) bad.push({ id: sc.id, task, hint, faults, turnedAlone });
+      }
+      window.game.setSimpleSteering(false);
+      return bad;
+    });
+    assert.deepEqual(simple, [], 'Simple steering follows the hinted arrows cleanly, U-turns included');
+
     assert.deepEqual(errors, []);
-    console.log('PASS: priority follows the tickets; staged 8_14, 13_15 interference, route kept after a crash');
+    console.log('PASS: priority follows the tickets; staged 8_14, 13_15 interference, route kept after a crash, simple steering with hints');
   } finally { await browser.close(); }
 })();

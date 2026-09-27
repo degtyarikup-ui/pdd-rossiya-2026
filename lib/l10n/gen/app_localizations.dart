@@ -2093,7 +2093,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameTipTurn.
   ///
   /// In ru, this message translates to:
-  /// **'На перекрёстке нажми стрелку — машина сама повернёт. Нажмёшь ещё раз — поедет прямо'**
+  /// **'На перекрёстке нажми стрелку — машина сама повернёт. Влево ещё раз — разворот, ещё раз — прямо'**
   String get gameTipTurn;
 
   /// No description provided for @gameTipNext.
@@ -2137,6 +2137,24 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Время вышло'**
   String get gameTimeUp;
+
+  /// No description provided for @gamePenaltyPoints.
+  ///
+  /// In ru, this message translates to:
+  /// **'{points, plural, one{−{points} очко} few{−{points} очка} many{−{points} очков} other{−{points} очков}}'**
+  String gamePenaltyPoints(int points);
+
+  /// No description provided for @gameRunMistakes.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{{count} ошибка в заезде} few{{count} ошибки в заезде} many{{count} ошибок в заезде} other{{count} ошибки в заезде}}'**
+  String gameRunMistakes(int count);
+
+  /// No description provided for @gameReviewMistakes.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разобрать ошибки'**
+  String get gameReviewMistakes;
 }
 
 class _AppLocalizationsDelegate

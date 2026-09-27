@@ -163,6 +163,202 @@ void main() {
     },
   );
 
+  test('Long questions get more time to answer, up to 30 seconds', () {
+    GameSituation withText(int titleLength, int optionLength) => GameSituation(
+      id: 'timer',
+      ticket: 'Билет 1 · Вопрос 1',
+      title: 'в' * titleLength,
+      explanation: '',
+      pddRule: '',
+      options: ['о' * optionLength, 'о' * optionLength],
+      correctAnswerIndex: 0,
+      legend: const [],
+      type: 'crossroad',
+    );
+    expect(GameController.answerSeconds(withText(60, 30)), 15);
+    expect(GameController.answerSeconds(withText(100, 30)), 15);
+    // 100 + 2 × 50 = 200 characters: 40 over — three more seconds.
+    expect(GameController.answerSeconds(withText(100, 50)), 18);
+    expect(GameController.answerSeconds(withText(400, 200)), 30);
+    final controller = GameController();
+    addTearDown(controller.dispose);
+    controller.onEngineReady();
+    controller.onApproachSituation(withText(100, 50));
+    expect(controller.state.maxSeconds, 18);
+    expect(controller.state.remainingSeconds, 18);
+  });
+
+  testWidgets('A violation notice says what it cost', (tester) async {
+    Future<void> hud(GameState state) => tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: GameHud(state: state)),
+      ),
+    );
+    await hud(
+      const GameState(phase: GamePhase.driving, lastViolation: 'collision'),
+    );
+    expect(find.text(appL10n.gameCollision), findsOneWidget);
+    expect(find.text(appL10n.gamePenaltyPoints(100)), findsOneWidget);
+    await hud(
+      const GameState(phase: GamePhase.driving, lastViolation: 'priority'),
+    );
+    expect(find.text(appL10n.gamePenaltyPoints(50)), findsOneWidget);
+    // Driving on the oncoming side is only a warning until it becomes one.
+    await hud(const GameState(phase: GamePhase.driving, oncoming: true));
+    await tester.pumpAndSettle(); // the previous notice fades out
+    expect(find.text(appL10n.gameOncoming), findsOneWidget);
+    expect(find.byKey(const ValueKey('hud-penalty')), findsNothing);
+  });
+
+  testWidgets('Simple steering lights the chosen exit and pulses the hint', (
+    tester,
+  ) async {
+    Future<void> controls(GameState state, {bool simple = true}) =>
+        tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: GameControlsOverlay(
+                state: state,
+                simpleSteering: simple,
+                onGasChanged: (_) {},
+                onSwitchLane: (_) {},
+              ),
+            ),
+          ),
+        );
+    Color fill(String key) => tester
+        .widget<Material>(
+          find
+              .descendant(
+                of: find.byKey(ValueKey(key)),
+                matching: find.byType(Material),
+              )
+              .first,
+        )
+        .color!;
+    await controls(const GameState(phase: GamePhase.resolving));
+    final resting = fill('game-left');
+    // A left-turn task: the left arrow breathes until pressed.
+    await controls(
+      const GameState(
+        phase: GamePhase.resolving,
+        exitChoice: 'straight',
+        exitHint: 'left',
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 325));
+    expect(fill('game-left'), isNot(resting));
+    expect(fill('game-right'), resting);
+    // Pressed twice: a U-turn, shown on the lit left arrow; no more hint.
+    await controls(
+      const GameState(phase: GamePhase.resolving, exitChoice: 'uturn'),
+    );
+    await tester.pump();
+    expect(find.byIcon(Icons.u_turn_left_rounded), findsOneWidget);
+    final lit = fill('game-left');
+    expect(lit, isNot(resting));
+    await tester.pump(const Duration(milliseconds: 325));
+    expect(fill('game-left'), lit);
+    // Free steering: the arrows are a wheel, nothing is lit.
+    await controls(
+      const GameState(
+        phase: GamePhase.resolving,
+        exitChoice: 'left',
+        exitHint: 'right',
+      ),
+      simple: false,
+    );
+    await tester.pump(const Duration(milliseconds: 325));
+    expect(fill('game-left'), resting);
+    expect(fill('game-right'), resting);
+  });
+
+  testWidgets('Results list the run mistakes and open them for review', (
+    tester,
+  ) async {
+    const a = GameSituation(
+      id: 'a',
+      ticket: 'Билет 8 · Вопрос 14',
+      title: 'Вы намерены продолжить движение в прямом направлении.',
+      explanation: '',
+      pddRule: '',
+      options: ['1', '2'],
+      correctAnswerIndex: 1,
+      legend: [],
+      type: 'crossroad',
+    );
+    const b = GameSituation(
+      id: 'b',
+      ticket: 'Билет 13 · Вопрос 15',
+      title: 'Можете ли Вы приступить к повороту налево?',
+      explanation: '',
+      pddRule: '',
+      options: ['1', '2'],
+      correctAnswerIndex: 1,
+      legend: [],
+      type: 'crossroad',
+    );
+    final reviewed = <List<String>>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GameOverDialog(
+              state: const GameState(
+                phase: GamePhase.gameOver,
+                totalAnswered: 20,
+                totalCorrect: 18,
+                mistakes: [a, b],
+              ),
+              onRestart: () {},
+              onReviewMistakes: (m) => reviewed.add([for (final s in m) s.id]),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text(appL10n.gameAnswersOf(18, 20)), findsOneWidget);
+    expect(find.text(appL10n.gameRunMistakes(2)), findsOneWidget);
+    expect(find.text(a.ticket), findsOneWidget);
+    await tester.tap(find.text(b.ticket));
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('game-review-mistakes')),
+    );
+    await tester.tap(find.byKey(const ValueKey('game-review-mistakes')));
+    expect(reviewed, [
+      ['b'],
+      ['a', 'b'],
+    ]);
+  });
+
+  test('Wrong answers and timeouts are kept as the run mistakes', () async {
+    const situation = GameSituation(
+      id: 'm1',
+      ticket: 'Билет 1 · Вопрос 13',
+      title: 'Кому уступить?',
+      explanation: '',
+      pddRule: '',
+      options: ['Никому', 'Пешеходу'],
+      correctAnswerIndex: 1,
+      legend: [],
+      type: 'crossroad',
+    );
+    final controller = GameController();
+    addTearDown(controller.dispose);
+    controller.onEngineReady();
+    controller.onApproachSituation(situation);
+    controller.submitAnswer(1);
+    expect(controller.state.mistakes, isEmpty);
+    controller.onSituationClearedFromEngine('m1');
+    controller.onApproachSituation(
+      GameSituation.fromJson({...situation.toJson(), 'id': 'm2'}),
+    );
+    controller.submitAnswer(0);
+    expect(controller.state.mistakes.map((s) => s.id), ['m2']);
+    controller.restartGame();
+    expect(controller.state.mistakes, isEmpty);
+  });
+
   testWidgets('After a mistake the explanation names the right answer', (
     tester,
   ) async {

@@ -36,6 +36,15 @@ class GameState {
   final double remainingSeconds;
   final double maxSeconds;
 
+  /// Questions of this run answered wrong or left to time out, in order.
+  final List<GameSituation> mistakes;
+
+  /// Simple steering at a task junction: the exit chosen so far
+  /// (straight/left/right/uturn) and the arrow the engine suggests for the
+  /// task's manoeuvre until the player decides otherwise.
+  final String? exitChoice;
+  final String? exitHint;
+
   const GameState({
     this.runs = maxRuns,
     this.runsUnlimited = false,
@@ -59,6 +68,9 @@ class GameState {
     this.phase = GamePhase.ready,
     this.remainingSeconds = 15.0,
     this.maxSeconds = 15.0,
+    this.mistakes = const [],
+    this.exitChoice,
+    this.exitHint,
   });
 
   double get timerProgress =>
@@ -92,6 +104,10 @@ class GameState {
     GamePhase? phase,
     double? remainingSeconds,
     double? maxSeconds,
+    List<GameSituation>? mistakes,
+    String? exitChoice,
+    String? exitHint,
+    bool clearExit = false,
     bool clearSituation = false,
     bool clearViolation = false,
   }) {
@@ -126,6 +142,9 @@ class GameState {
       phase: phase ?? this.phase,
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,
       maxSeconds: maxSeconds ?? this.maxSeconds,
+      mistakes: mistakes ?? this.mistakes,
+      exitChoice: clearExit ? exitChoice : (exitChoice ?? this.exitChoice),
+      exitHint: clearExit ? exitHint : (exitHint ?? this.exitHint),
     );
   }
 }
@@ -167,6 +186,14 @@ class GameController extends StateNotifier<GameState> {
     state = state.copyWith(lane: lane, oncoming: oncoming);
   }
 
+  /// The engine's exit choice and hint (both null away from a junction).
+  void updateExit(String? choice, String? hint) {
+    const exits = {'straight', 'left', 'right', 'uturn'};
+    if (choice != null && !exits.contains(choice)) return;
+    if (hint != null && hint != 'left' && hint != 'right') return;
+    state = state.copyWith(exitChoice: choice, exitHint: hint, clearExit: true);
+  }
+
   void recordViolation(String type, int episode) {
     if (state.phase == GamePhase.ready ||
         state.phase == GamePhase.gameOver ||
@@ -187,7 +214,7 @@ class GameController extends StateNotifier<GameState> {
       return;
     }
     // Violations cost points (a crash the most); the score never goes below zero.
-    final penalty = type == 'collision' ? 100 : 50;
+    final penalty = penaltyFor(type);
     state = state.copyWith(
       violationCount: state.violationCount + 1,
       lastViolation: type,
@@ -200,6 +227,19 @@ class GameController extends StateNotifier<GameState> {
   }
 
   GameController() : super(const GameState());
+
+  /// Points a violation costs: a crash the most.
+  static int penaltyFor(String type) => type == 'collision' ? 100 : 50;
+
+  /// Seconds to answer: 15 for a short question, one more for every 16
+  /// characters of question and options beyond 160, at most 30 — the longest
+  /// tickets (divided roads, overtaking steps) are otherwise unreadable in time.
+  static double answerSeconds(GameSituation situation) {
+    final length =
+        situation.title.length +
+        situation.options.fold<int>(0, (sum, o) => sum + o.length);
+    return (15 + ((length - 160) / 16).ceil()).clamp(15, 30).toDouble();
+  }
 
   @override
   void dispose() {
@@ -250,13 +290,14 @@ class GameController extends StateNotifier<GameState> {
     _timer?.cancel();
     _lastTickSecond = -1;
 
+    final seconds = answerSeconds(situation);
     state = state.copyWith(
       currentSituation: situation,
       selectedAnswerIndex: null,
       isLastAnswerCorrect: null,
       phase: GamePhase.situation,
-      remainingSeconds: 15.0,
-      maxSeconds: 15.0,
+      remainingSeconds: seconds,
+      maxSeconds: seconds,
     );
 
     _startCountdown();
@@ -299,6 +340,7 @@ class GameController extends StateNotifier<GameState> {
       isLastAnswerCorrect: false,
       phase: GamePhase.explanation,
       remainingSeconds: 0,
+      mistakes: [...state.mistakes, state.currentSituation!],
     );
   }
 
@@ -351,6 +393,7 @@ class GameController extends StateNotifier<GameState> {
         totalAnswered: state.totalAnswered + 1,
         totalMistakes: newMistakes,
         phase: GamePhase.explanation,
+        mistakes: [...state.mistakes, sit],
       );
     }
   }

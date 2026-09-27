@@ -9,6 +9,7 @@ import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
+import 'package:pdd_app/data/models/game_situation.dart';
 import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 
@@ -26,6 +27,9 @@ class GameOverDialog extends StatefulWidget {
 
   /// Opens the weekly rating sheet.
   final VoidCallback? onLeaderboard;
+
+  /// Opens the given mistakes of the run as ticket questions to work through.
+  final void Function(List<GameSituation> mistakes)? onReviewMistakes;
 
   /// Out of fuel: when set, the restart button gives way to the countdown and
   /// the premium pitch.
@@ -49,6 +53,7 @@ class GameOverDialog extends StatefulWidget {
     required this.onRestart,
     this.onExit,
     this.onLeaderboard,
+    this.onReviewMistakes,
     this.fuelRefillAt,
     this.onBuyPremium,
     this.bestScore,
@@ -98,6 +103,11 @@ class _GameOverDialogState extends State<GameOverDialog> {
         ? '${(state.distanceM / 1000).toStringAsFixed(1)} ${appL10n.gameKilometers}'
         : '${state.distanceM} ${appL10n.gameMeters}';
     final hasViolations = state.violationCount > 0;
+    final correct = appL10n.gameAnswersOf(
+      state.totalCorrect,
+      state.totalAnswered,
+    );
+    final onReview = widget.onReviewMistakes;
 
     return Dialog(
       backgroundColor: colors.cardBackground,
@@ -217,7 +227,7 @@ class _GameOverDialogState extends State<GameOverDialog> {
                   if (fuelEmpty)
                     _FuelStatsStrip(
                       violations: state.violationCount,
-                      correct: state.totalCorrect,
+                      correct: correct,
                       distance: distance,
                     )
                   else
@@ -240,7 +250,7 @@ class _GameOverDialogState extends State<GameOverDialog> {
                             icon: Icons.check_circle_rounded,
                             color: colors.accent,
                             label: appL10n.gameCorrectAnswers,
-                            value: '${state.totalCorrect}',
+                            value: correct,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -255,6 +265,11 @@ class _GameOverDialogState extends State<GameOverDialog> {
                       ],
                     ),
                   SizedBox(height: fuelEmpty ? 14 : 18),
+
+                  if (state.mistakes.isNotEmpty && onReview != null) ...[
+                    _RunMistakes(mistakes: state.mistakes, onReview: onReview),
+                    const SizedBox(height: 12),
+                  ],
 
                   if (onLeaderboard != null) ...[
                     OutlinedButton.icon(
@@ -462,7 +477,7 @@ class _FuelScoreCard extends StatelessWidget {
 
 class _FuelStatsStrip extends StatelessWidget {
   final int violations;
-  final int correct;
+  final String correct;
   final String distance;
 
   const _FuelStatsStrip({
@@ -499,7 +514,7 @@ class _FuelStatsStrip extends StatelessWidget {
               icon: Icons.check_circle_rounded,
               color: colors.accent,
               label: appL10n.gameCorrectAnswers,
-              value: '$correct',
+              value: correct,
             ),
           ),
           _StatDivider(color: colors.gray.withValues(alpha: 0.30)),
@@ -870,6 +885,100 @@ class _StatTile extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The run's wrong answers: the ticket each came from, tap one to work
+/// through it, or all of them at once.
+class _RunMistakes extends StatelessWidget {
+  final List<GameSituation> mistakes;
+  final void Function(List<GameSituation> mistakes) onReview;
+
+  const _RunMistakes({required this.mistakes, required this.onReview});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      key: const ValueKey('game-run-mistakes'),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+      decoration: BoxDecoration(
+        color: colors.redLight,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            appL10n.gameRunMistakes(mistakes.length),
+            style: TextStyle(
+              fontFamily: 'Onest',
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: colors.red,
+            ),
+          ),
+          const SizedBox(height: 4),
+          for (final m in mistakes)
+            InkWell(
+              onTap: () => onReview([m]),
+              borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            m.ticket,
+                            style: TextStyle(
+                              fontFamily: 'Onest',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: colors.secondaryText,
+                            ),
+                          ),
+                          Text(
+                            m.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: 'Onest',
+                              fontSize: 13,
+                              height: 1.3,
+                              fontWeight: FontWeight.w600,
+                              color: colors.primaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: colors.secondaryText,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          TextButton(
+            key: const ValueKey('game-review-mistakes'),
+            onPressed: () => onReview(mistakes),
+            style: TextButton.styleFrom(foregroundColor: colors.red),
+            child: Text(
+              appL10n.gameReviewMistakes,
+              style: const TextStyle(
+                fontFamily: 'Onest',
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
