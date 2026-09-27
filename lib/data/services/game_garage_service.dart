@@ -105,7 +105,11 @@ class GameGarageService {
   Future<GameCar?> recordCorrect() async {
     _correct++;
     GameCar? unlocked;
-    if (_correct >= nextThreshold) {
+    // Every model in every paint is owned: nothing new to hand out (a random
+    // pick would add a duplicate to the garage).
+    final everythingOwned =
+        _cars.map((c) => c.key).toSet().length >= models.length * paints.length;
+    if (_correct >= nextThreshold && !everythingOwned) {
       unlocked = _pickNew();
       _unlocks++;
       _cars = [..._cars, unlocked];
@@ -125,6 +129,14 @@ class GameGarageService {
         .map((c) => c.paint)
         .toSet();
     final freshPaints = paints.where((p) => !usedPaints.contains(p)).toList();
+    if (freshPaints.isEmpty) {
+      // This model is complete: a missing paint of another model instead.
+      for (final m in models) {
+        for (final p in paints) {
+          if (!owns(m, p)) return GameCar(m, p);
+        }
+      }
+    }
     final paint = freshPaints.isNotEmpty
         ? freshPaints[_random.nextInt(freshPaints.length)]
         : paints[_random.nextInt(paints.length)];

@@ -127,11 +127,11 @@ one of the thick branches: south is deliberately absent in 16_15, 18_13 and
 
 | Enabled situations | Player sign | 8.13 thick branches |
 | --- | --- | --- |
-| 1_15, 2_13, 3_15, 5_15, 7_15, 10_15 | 2.1 | south, west |
-| 8_15, 12_15, 15_15 | 2.1 | south, east |
+| 1_15, 2_13, 3_15, 5_15, 7_15, 10_15, 30_15, 35_15 | 2.1 | south, west |
+| 8_15, 12_15, 15_15, 23_15, 25_15, 28_15, 38_13, 39_15 | 2.1 | south, east |
 | 16_15 | 2.4 | west, east |
-| 18_13 | 2.4 | north, east |
-| 20_15 | 2.4 | west, north |
+| 13_15, 18_13, 26_15, 27_15, 29_15, 33_15 | 2.4 | north, east |
+| 20_15, 31_15, 34_15 | 2.4 | west, north |
 
 The diagonal right branch drawn in 10_15, 15_15 and 16_15 is normalized to east
 in the supported four-approach model, not north. Its physical angle is schematic.
@@ -356,7 +356,7 @@ the player keeps the selected car.
 | `ticket_29_15` | true | straight | `["npc_bus", "npc_car"]` | 2.4 + 8.13 north-east; opposite bus and car from right are on the main road; player yields to both. |
 | `ticket_30_13` | false | unresolved | `[]` | Observation question over two maneuvers (left and uturn); no unique player maneuver. |
 | `ticket_30_14` | false | straight | `[]` | Horse-drawn cart actor type is not available. |
-| `ticket_30_15` | true | left | `[]` | 2.1 + 8.13 south-east; car from right turns right (no conflict), player first; motorcycle and bus are secondary. |
+| `ticket_30_15` | true | left | `[]` | 2.1 + 8.13 south-west (plate in the source); motorcycle on the left is on the main road and yields to the player; bus and the car from the right are secondary. Corrected 2026-09-27 (was south-east, which contradicted the answer «Никому»). |
 | `ticket_31_13` | false | left | `[]` | Traffic controller. |
 | `ticket_31_14` | true | straight | `["tram_1", "npc_truck"]` | Equal crossroad; tram from left has priority, truck from right is the right-hand obstacle; conservative serial order. |
 | `ticket_31_15` | true | straight | `["npc_moto", "npc_bus", "npc_car"]` | 2.4 + 8.13 north-west; motorcycle from left and opposite bus on main road, then car from right; player last. |
@@ -457,3 +457,40 @@ the player keeps the selected car.
 текстур теперь вырезает правую половину для 5.7.1 и левую для 5.7.2;
 соотношение сторон каждого отдельного знака — 137:48. Оба варианта проверяются
 автотестом и отдельно рендерятся в сценариях 18.8 и 14.8.
+
+## Сверка всех включённых сцен с картинками — 2026-09-27
+
+Все 85 включённых перекрёстков и 18 дорожных вопросов заново сверены с
+картинками билетов (участники, стороны, поворотники, знаки, таблички 8.13,
+сигналы). Тексты вопросов, ответов и комментариев совпадают с базой дословно.
+Исправлено в `scenario-routes.js`:
+
+| Сцена | Было | Стало |
+| --- | --- | --- |
+| 8_14 | легковой встречный налево, мотоцикл справа, уступить мотоциклу — противоречило ответу «Уступите дорогу легковому автомобилю» | как на картинке: мотоцикл слева прямо, легковой справа налево. Легковой трогается первым и останавливается у края проезжей части игрока (`stopAtDistance` + `holdFor: ["player","npc_moto"]`), игрок проезжает, затем мотоцикл, легковой заканчивает поворот последним |
+| 13_15 | знак 2.1 | 2.4 + 8.13 north-east (игрок на второстепенной). Грузовик в `yieldTo` при `concurrentWith: ["player"]`: одновременный поворот разрешён, штраф только за помеху (п. 1.2 «Уступить дорогу») |
+| 16_14 | 4.3 + 2.4 | только 4.3, как на картинке (обязанность уступить — п. 13.11¹) |
+| 17_15, 27_14 | въезжающий участник слева | справа, как на картинке: он действительно пересекает путь игрока по кольцу и ждёт его — видно, что «правило правой руки» на кольце не действует |
+| 30_15 | 8.13 south-east | south-west (см. таблицу выше) |
+
+Движок:
+
+- `holdFor` у участника: доехав до `stopAtDistance`, он стоит, пока игрок не
+  покинет перекрёсток (`'player'`) и не проедут перечисленные участники;
+  стоящий так участник помечен `held` и считается уступившим место игроку.
+- Проверка «Вы не уступили дорогу» прогнозирует уступаемого участника по его
+  маршруту (0,25–1 с), а не по прямой: поворачивающий участник, заметающий
+  путь игрока, распознаётся до контакта; ложные срабатывания на участниках,
+  чей путь с игроком не пересекается (например, 19_13), ушли.
+- «Простое управление»: после ДТП на перекрёстке сохраняется выбранный
+  маршрут — машина продолжает поворот, а не едет прямо мимо него с лишним
+  нарушением «Манёвр не соответствует заданию».
+
+Регрессия: `tools/game-priority-test.cjs` — на всех включённых перекрёстках
+водитель, уступающий по билету, не получает ни одного нарушения; очерёдность
+8_14; помеха грузовику в 13_15 фиксируется как неуступка; маршрут после ДТП.
+
+Осталось схематичным (не исправлялось): в 24_13 и 39_13 трамвай на картинке
+идёт попутно слева по трамвайным путям посередине дороги, в игре он пересекает
+перекрёсток слева (нет геометрии путей в осевой); в 27_13 трамвай, которому
+регулировщик не разрешает движение, после проезда игрока всё же уезжает.

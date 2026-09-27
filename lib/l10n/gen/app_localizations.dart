@@ -1961,7 +1961,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameOverDescription.
   ///
   /// In ru, this message translates to:
-  /// **'Жизни закончились. Разберите ошибки и попробуйте снова.'**
+  /// **'Все вопросы заезда позади. Неверные ответы уже в «Ошибках» — разберите их и попробуйте снова.'**
   String get gameOverDescription;
 
   /// No description provided for @gameYou.
@@ -2125,6 +2125,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Вопрос {n} из {total}'**
   String gameRunProgress(int n, int total);
+
+  /// No description provided for @gameCorrectAnswer.
+  ///
+  /// In ru, this message translates to:
+  /// **'Правильный ответ'**
+  String get gameCorrectAnswer;
+
+  /// No description provided for @gameTimeUp.
+  ///
+  /// In ru, this message translates to:
+  /// **'Время вышло'**
+  String get gameTimeUp;
 }
 
 class _AppLocalizationsDelegate

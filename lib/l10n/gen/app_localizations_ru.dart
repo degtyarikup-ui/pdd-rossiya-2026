@@ -1093,7 +1093,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameOverDescription =>
-      'Жизни закончились. Разберите ошибки и попробуйте снова.';
+      'Все вопросы заезда позади. Неверные ответы уже в «Ошибках» — разберите их и попробуйте снова.';
 
   @override
   String get gameYou => 'Вы';
@@ -1185,4 +1185,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String gameRunProgress(int n, int total) {
     return 'Вопрос $n из $total';
   }
+
+  @override
+  String get gameCorrectAnswer => 'Правильный ответ';
+
+  @override
+  String get gameTimeUp => 'Время вышло';
 }

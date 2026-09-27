@@ -140,7 +140,7 @@ const { chromium } = require('playwright');
         for (; frames < 60 * 90 && s.resolution; frames++) {
           const r = s.resolution;
           // A careful driver: gives way first, then drives the chosen exit.
-          const clear = r.yielding.every(a => a.cleared || a.done) && r.elapsed > 3;
+          const clear = r.yielding.every(a => a.cleared || a.done || a.held) && r.elapsed > 3;
           window.game.setGas(clear && s.speed < 7);
           t.tick(1 / 60);
           if (s.resolution?.recovery) break;

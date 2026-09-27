@@ -9,10 +9,14 @@ class GameExplanationSheet extends StatelessWidget {
   final GameSituation situation;
   final VoidCallback onContinue;
 
+  /// No answer was chosen before the countdown ran out.
+  final bool timedOut;
+
   const GameExplanationSheet({
     super.key,
     required this.situation,
     required this.onContinue,
+    this.timedOut = false,
   });
 
   @override
@@ -78,7 +82,7 @@ class GameExplanationSheet extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            appL10n.gameMistake,
+                            timedOut ? appL10n.gameTimeUp : appL10n.gameMistake,
                             style: TextStyle(
                               fontFamily: 'Onest',
                               fontSize: 12,
@@ -114,6 +118,58 @@ class GameExplanationSheet extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
+
+                // The right answer first: the question card is gone by now,
+                // so this is the only place the player can see it.
+                if (situation.correctAnswerIndex >= 0 &&
+                    situation.correctAnswerIndex < situation.options.length)
+                  Container(
+                    key: const ValueKey('game-correct-answer'),
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                    decoration: BoxDecoration(
+                      color: colors.greenLight,
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.smallRadius,
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.check_circle_rounded,
+                          size: 20,
+                          color: colors.green,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: '${appL10n.gameCorrectAnswer}: ',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: situation
+                                      .options[situation.correctAnswerIndex],
+                                ),
+                              ],
+                            ),
+                            style: TextStyle(
+                              fontFamily: 'Onest',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: colors.primaryText,
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
                 // Explanation Text
                 Text(

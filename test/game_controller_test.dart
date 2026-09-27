@@ -48,6 +48,21 @@ void main() {
     garage.resetForTest();
   });
 
+  test('A complete garage hands out no duplicate cars', () async {
+    final garage = GameGarageService.instance..resetForTest();
+    // 5 + 10 + 20 × 70 correct answers unlock all 72 model/paint pairs.
+    for (var i = 0; i < 5 + 10 + 20 * 80; i++) {
+      await garage.recordCorrect();
+    }
+    final keys = garage.cars.map((c) => c.key).toList();
+    expect(keys.toSet().length, keys.length);
+    expect(
+      keys.length,
+      GameGarageService.models.length * GameGarageService.paints.length,
+    );
+    garage.resetForTest();
+  });
+
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -147,6 +162,78 @@ void main() {
       }
     },
   );
+
+  testWidgets('After a mistake the explanation names the right answer', (
+    tester,
+  ) async {
+    const situation = GameSituation(
+      id: 'answer',
+      ticket: 'Билет 40 · Вопрос 15',
+      title: 'Кому Вы обязаны уступить дорогу?',
+      explanation: 'Необходимо уступить дорогу обоим транспортным средствам.',
+      pddRule: 'п. 13.9',
+      options: ['Только автобусу', 'Только грузовому автомобилю', 'Обоим'],
+      correctAnswerIndex: 2,
+      legend: [],
+      type: 'crossroad',
+    );
+    Future<void> show({required bool timedOut}) => tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: GameExplanationSheet(
+            situation: situation,
+            timedOut: timedOut,
+            onContinue: () {},
+          ),
+        ),
+      ),
+    );
+    await show(timedOut: false);
+    expect(find.byKey(const ValueKey('game-correct-answer')), findsOneWidget);
+    expect(
+      find.textContaining(
+        '${appL10n.gameCorrectAnswer}: Обоим',
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(appL10n.gameMistake), findsOneWidget);
+    await show(timedOut: true);
+    expect(find.text(appL10n.gameTimeUp), findsOneWidget);
+    expect(find.text(appL10n.gameMistake), findsNothing);
+  });
+
+  testWidgets('Results lead back to the garage without spending a run', (
+    tester,
+  ) async {
+    for (final runs in [2, 0]) {
+      var exits = 0, restarts = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: GameOverDialog(
+                state: GameState(phase: GamePhase.gameOver, runs: runs),
+                fuelRefillAt: runs == 0
+                    ? DateTime.now().add(const Duration(minutes: 20))
+                    : null,
+                onBuyPremium: () {},
+                onRestart: () => restarts++,
+                onExit: () => exits++,
+              ),
+            ),
+          ),
+        ),
+      );
+      final exit = find.byKey(const ValueKey('game-over-exit'));
+      expect(exit, findsOneWidget, reason: 'runs: $runs');
+      expect(find.text(appL10n.gameExit), findsOneWidget);
+      await tester.ensureVisible(exit);
+      await tester.tap(exit);
+      expect(exits, 1);
+      expect(restarts, 0);
+    }
+  });
 
   testWidgets(
     'All controls fit narrow phones and remain usable at large text',

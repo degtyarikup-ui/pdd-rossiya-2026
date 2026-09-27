@@ -20,8 +20,8 @@ class GameOverDialog extends StatefulWidget {
   final Map<String, Uint8List> thumbnailCache;
   final VoidCallback onRestart;
 
-  /// Kept for API compatibility; the dialog no longer shows an exit button
-  /// because the game lives in a bottom-navigation tab.
+  /// «To menu»: back to the garage start screen without spending a run
+  /// (the only way there once the run is over).
   final VoidCallback? onExit;
 
   /// Opens the weekly rating sheet.
@@ -309,6 +309,25 @@ class _GameOverDialogState extends State<GameOverDialog> {
                         ),
                       ),
                     ),
+                  if (widget.onExit != null) ...[
+                    const SizedBox(height: 4),
+                    TextButton(
+                      key: const ValueKey('game-over-exit'),
+                      onPressed: widget.onExit,
+                      style: TextButton.styleFrom(
+                        foregroundColor: colors.secondaryText,
+                        minimumSize: const Size.fromHeight(44),
+                      ),
+                      child: Text(
+                        appL10n.gameExit,
+                        style: const TextStyle(
+                          fontFamily: 'Onest',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

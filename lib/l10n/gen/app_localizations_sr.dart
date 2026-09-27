@@ -1093,7 +1093,7 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get gameOverDescription =>
-      'Nema više života. Pogledajte greške i pokušajte ponovo.';
+      'Sva pitanja vožnje su iza vas. Pogrešni odgovori su već u „Greškama“ — pregledajte ih i pokušajte ponovo.';
 
   @override
   String get gameYou => 'Vi';
@@ -1184,4 +1184,10 @@ class AppLocalizationsSr extends AppLocalizations {
   String gameRunProgress(int n, int total) {
     return 'Pitanje $n od $total';
   }
+
+  @override
+  String get gameCorrectAnswer => 'Tačan odgovor';
+
+  @override
+  String get gameTimeUp => 'Vreme je isteklo';
 }

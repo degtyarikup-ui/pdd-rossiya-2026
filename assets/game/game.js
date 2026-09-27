@@ -8285,7 +8285,15 @@
     return { ...actor, segment: intersection.seg, path, length: path.getLength(),
       distance: 0, speed: 0, maxSpeed: cfg.type === 'pedestrian' ? 3.6 : cfg.type === 'cyclist' ? 7 : 12,
       clearDistance, active: false, waitsForPlayer: true, cleared: false, done: false, gait: 0, signalPlan,
-      stopAtDistance: cfg.stopAtDistance, stopFor: cfg.stopFor };
+      stopAtDistance: cfg.stopAtDistance, stopFor: cfg.stopFor, holdFor: cfg.holdFor, home: intersection };
+  }
+
+  // A staged participant (config.holdFor) has already rolled out onto the
+  // junction and waits at its stop point until the player has left the
+  // junction ('player') and the listed participants have passed (8_14).
+  function holdPending(a) {
+    return a.holdFor.some(id => id === 'player' ? state.intersections.includes(a.home) :
+      (a.home.motions || []).some(b => b.config.id === id && !b.cleared));
   }
 
   function ensureTraffic(intersection) {
@@ -8556,6 +8564,12 @@
       }
       if (!a.active && !a.waitsForPlayer && a.dependencies?.every(b => b.cleared)) a.active = true;
       if (!a.active || a.done) return;
+      // held: standing at the stop point, the way is clear for the player.
+      a.held = !!a.holdFor && a.stopAtDistance !== undefined && a.distance >= a.stopAtDistance && holdPending(a);
+      if (a.held) {
+        a.speed = 0;
+        return;
+      }
       if (a.stopAtDistance !== undefined && a.distance >= a.stopAtDistance && a.stopFor > 0) {
         a.stopFor -= dt;
         a.speed = 0;
@@ -8862,6 +8876,9 @@
     state.speed = 0;
     state.isAccelerating = false;
     state.isBraking = false;
+    // Simple mode keeps the planned route through the junction for after the
+    // control release: the car stands still on it meanwhile (no teleport).
+    if (state.resolution && state.simpleSteering && state.autoPath) state.resolution.pausedPath = state.autoPath;
     state.steering = 0; state.laneChangeX = null; state.autoPath = null;
     // A short control release makes the impact legible, but never teleports or
     // rotates the player's car. After it expires the player can immediately
@@ -8880,6 +8897,10 @@
       if (!r.recovery) {
         r.faults.delete('offroad');
         r.motions.forEach(a => r.faults.delete('collision:' + a.config.id));
+        // Back on the route the player chose (simple mode): without it the
+        // car ran straight on past the turn — the choice is closed by then —
+        // and collected a wrong-manoeuvre fault on top of the crash.
+        if (r.pausedPath) { state.autoPath = r.pausedPath; r.pausedPath = null; }
         sendToFlutter({ event: 'maneuver_ready' });
       }
       return;
@@ -8910,11 +8931,7 @@
       if (state.speed > 0.5 && r.yielding.includes(a) && !a.cleared) {
         if (r.spec.staged && r.spec.waitInside && p.z < z - 1.5 && Math.abs(p.x) < 2.5) {
           // Staged maneuver: driver enters intersection and waits before turning path
-        } else {
-          const predicted = { ...playerBox, p: p.clone().add(new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)).multiplyScalar(state.speed)) };
-          const obstacle = { ...other, p: other.p.clone().add(new THREE.Vector3(Math.sin(other.yaw), 0, Math.cos(other.yaw)).multiplyScalar(a.speed)) };
-          if (footprintsOverlap(predicted, obstacle, 0.5)) drivingFault('priority');
-        }
+        } else if (conflictAhead(playerBox, a)) drivingFault('priority');
       }
     }
     const sideStreet = Math.abs(p.x) > 7;
@@ -8952,6 +8969,25 @@
         break;
       }
     }
+  }
+
+  // Would the player, keeping speed and heading, get in the way of a
+  // participant it must give way to within the next second? The participant
+  // is followed along its own route: a turning vehicle sweeps across the
+  // player's path where a straight extrapolation of it would not (13_15).
+  function conflictAhead(playerBox, a) {
+    const forward = new THREE.Vector3(Math.sin(playerBox.yaw), 0, Math.cos(playerBox.yaw));
+    a.mesh.parent.updateWorldMatrix(true, false);
+    const toWorld = a.mesh.parent.matrixWorld;
+    for (const t of [0.25, 0.5, 0.75, 1]) {
+      const u = Math.min(1, (a.distance + a.speed * t) / a.length);
+      const tangent = a.path.getTangentAt(u).transformDirection(toWorld);
+      const other = { p: a.path.getPointAt(u).applyMatrix4(toWorld), yaw: Math.atan2(tangent.x, tangent.z),
+        halfWidth: a.halfWidth, halfLength: a.halfLength };
+      const mine = { ...playerBox, p: playerBox.p.clone().addScaledVector(forward, state.speed * t) };
+      if (footprintsOverlap(mine, other, 0.5)) return true;
+    }
+    return false;
   }
 
   function finishManeuver() {

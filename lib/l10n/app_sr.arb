@@ -317,7 +317,7 @@
   "gameFuelBuyPremium": "Uključi Premium",
   "gameFuelWait": "Sačekati",
   "gameViolations": "Prekršaji",
-  "gameOverDescription": "Nema više života. Pogledajte greške i pokušajte ponovo.",
+  "gameOverDescription": "Sva pitanja vožnje su iza vas. Pogrešni odgovori su već u „Greškama“ — pregledajte ih i pokušajte ponovo.",
   "gameYou": "Vi",
   "gameStop": "STOP",
   "gameLoading": "Učitavanje igre",
@@ -344,5 +344,7 @@
   "gameTipDone": "Kreni",
   "gamePause": "Pauza",
   "gameLobbyControls": "Uprav.",
-  "gameRunProgress": "Pitanje {n} od {total}"
+  "gameRunProgress": "Pitanje {n} od {total}",
+  "gameCorrectAnswer": "Tačan odgovor",
+  "gameTimeUp": "Vreme je isteklo"
 }

@@ -1290,6 +1290,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                         gameState.currentSituation != null)
                       GameExplanationSheet(
                         situation: gameState.currentSituation!,
+                        timedOut: gameState.selectedAnswerIndex == null,
                         onContinue: gameNotifier.continueAfterExplanation,
                       ),
                     if (gameState.phase == GamePhase.driving ||

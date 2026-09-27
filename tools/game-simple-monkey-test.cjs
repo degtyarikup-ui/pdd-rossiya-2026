@@ -125,7 +125,7 @@ const { chromium } = require('playwright');
           }
           if (rnd() < 0.03) { const d = rnd() < 0.5 ? 'left' : 'right'; window.game.changeLane(d); log.push(d[0] + (s.resolution ? 'J' : 'R') + Math.round(t.player().position.z - it0.centerZ)); }
           const r = s.resolution;
-          const clear = !r || (r.yielding.every(a => a.cleared || a.done) && r.elapsed > 3);
+          const clear = !r || (r.yielding.every(a => a.cleared || a.done || a.held) && r.elapsed > 3);
           window.game.setGas(clear && s.speed < 9);
           const n0 = window.events.length;
           t.tick(1 / 60);

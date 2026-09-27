@@ -344,7 +344,7 @@
   "gameFuelBuyPremium": "Подключить Премиум",
   "gameFuelWait": "Подождать",
   "gameViolations": "Нарушения",
-  "gameOverDescription": "Жизни закончились. Разберите ошибки и попробуйте снова.",
+  "gameOverDescription": "Все вопросы заезда позади. Неверные ответы уже в «Ошибках» — разберите их и попробуйте снова.",
   "gameYou": "Вы",
   "gameStop": "СТОП",
   "gameLoading": "Загрузка игры",
@@ -372,5 +372,7 @@
   "gamePause": "Пауза",
   "gameLobbyControls": "Управ.",
   "gameRunProgress": "Вопрос {n} из {total}",
-  "@gameRunProgress": {"placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}}
+  "@gameRunProgress": {"placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}},
+  "gameCorrectAnswer": "Правильный ответ",
+  "gameTimeUp": "Время вышло"
 }
