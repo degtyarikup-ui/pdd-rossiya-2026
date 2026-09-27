@@ -27,13 +27,13 @@ export const ANALYTICS_VIEW_HTML = String.raw`
         .an-step { position:relative; padding-right:16px; }
         .an-step + .an-step { padding-left:24px; border-left:1px solid var(--an-gray); }
         .an-rate { display:inline-block; margin-top:12px; font-size:13px; font-weight:700; line-height:18px; color:var(--an-accent); background:#E8F2FE; border-radius:8px; padding:2px 8px; }
-        .an-path { display:flex; flex-direction:column; gap:20px; }
-        .an-path-row { display:grid; grid-template-columns:200px minmax(0,1fr) 88px; gap:16px; align-items:center; }
-        .an-path-name { font-size:15px; font-weight:700; line-height:20px; color:var(--an-text); }
-        .an-path-bar { height:40px; background:var(--an-gray); border-radius:12px; overflow:hidden; }
-        .an-path-bar > div { height:100%; border-radius:12px; min-width:4px; }
-        .an-path-val { font-size:24px; font-weight:800; line-height:32px; text-align:right; color:var(--an-text); font-variant-numeric:tabular-nums; }
-        .an-path .an-rate { margin-top:4px; }
+        .an-path { display:flex; flex-direction:column; gap:12px; }
+        .an-path-row { display:grid; grid-template-columns:260px minmax(0,1fr) 56px; gap:16px; align-items:center; }
+        .an-path-name { font-size:15px; font-weight:700; line-height:20px; color:var(--an-text); white-space:nowrap; }
+        .an-path-pct { font-size:13px; font-weight:700; color:var(--an-accent); margin-left:6px; }
+        .an-path-bar { height:12px; background:var(--an-gray); border-radius:6px; overflow:hidden; }
+        .an-path-bar > div { height:100%; border-radius:6px; min-width:3px; }
+        .an-path-val { font-size:15px; font-weight:800; line-height:20px; text-align:right; color:var(--an-text); font-variant-numeric:tabular-nums; }
         .an-row2 { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; align-items:start; }
         .an-row2 > .an-card { margin-bottom:16px; }
         .an-chart { position:relative; width:100%; }
@@ -60,8 +60,8 @@ export const ANALYTICS_VIEW_HTML = String.raw`
         @media (max-width:640px) {
           .an-card { padding:16px; }
           .an-funnel { grid-template-columns:1fr 1fr; row-gap:16px; }
-          .an-path-row { grid-template-columns:minmax(0,1fr) 64px; row-gap:8px; }
-          .an-path-bar { grid-column:1 / -1; grid-row:2; height:24px; }
+          .an-path-row { grid-template-columns:minmax(0,1fr) 56px; row-gap:6px; }
+          .an-path-bar { grid-column:1 / -1; grid-row:2; }
           .an-step:nth-child(3) { padding-left:0; border-left:none; }
           .an-big { font-size:24px; line-height:32px; }
           .an-now { grid-template-columns:1fr 1fr; }
@@ -256,9 +256,9 @@ function renderDashboard(data) {
     if (st.of !== undefined && base[st.of]) {
       var pct = Math.round(st.value / base[st.of] * 100);
       // Больше 100% бывает, пока установки до 25.09 недосчитаны, — такую долю не показываем.
-      if (pct <= 100) rate = '<div class="an-rate">' + pct + '% ' + st.word + '</div>';
+      if (pct <= 100) rate = '<span class="an-path-pct">' + pct + '%</span>';
     }
-    return '<div class="an-path-row"><div><div class="an-path-name">' + st.name + '</div>' + rate + '</div>'
+    return '<div class="an-path-row"><div class="an-path-name">' + st.name + rate + '</div>'
       + '<div class="an-path-bar"><div style="width:' + (st.value / pathMax * 100) + '%;background:' + st.color + '"></div></div>'
       + '<div class="an-path-val">' + anNum(st.value) + '</div></div>';
   }).join('');
