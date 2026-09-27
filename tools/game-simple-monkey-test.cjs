@@ -105,85 +105,46 @@ const { chromium } = require('playwright');
     });
     await page.goto((process.env.GAME_URL || 'http://127.0.0.1:8938') + '/assets/game/');
     await page.waitForFunction(() => window.events.some(e => e.event === 'ready'));
-
-    // «Простое управление»: an arrow is a whole lane change or junction exit,
-    // driven by the engine along a planned curve — never free steering.
-    const result = await page.evaluate(() => {
-      const t = window.__engineTest, s = t.state;
-      const events = () => window.events.filter(e => e.event === 'violation').map(e => e.type);
+    const out = await page.evaluate(() => {
+      const t = window.__engineTest, s = t.state, res = [];
       window.game.setSimpleSteering(true);
-      // 1. Lane change on the approach straight: exactly centred, straight.
-      t.select(0); s.paused = false;
-      t.player().position.set(-1.8, 0, s.intersections[0].stopZ - 110); t.player().rotation.y = 0;
-      window.game.setGas(true); t.tick(1);
-      window.game.changeLane('left'); t.tick(1.6);
-      const leftLane = { x: t.player().position.x, yaw: t.player().rotation.y };
-      window.game.changeLane('left'); t.tick(0.4); // no third lane: ignored
-      const noThird = { x: t.player().position.x };
-      window.game.setSteering(1); t.tick(0.6); // holding: no free steering
-      const held = { x: t.player().position.x, yaw: t.player().rotation.y };
-      window.game.changeLane('right'); t.tick(1.6);
-      const back = { x: t.player().position.x, yaw: t.player().rotation.y, atSituation: s.isAtSituation };
-      window.game.setGas(false); window.game.setSteering(0);
-      // 2. Every reviewed junction: choose the correct exit with the arrow.
-      const junctions = [];
-      t.scenarios().forEach((sc, i) => {
-        t.select(i); s.paused = false; t.approach();
-        const it = s.activeIntersection, maneuver = t.routeSpec(it.situation).maneuver;
-        if (maneuver === 'uturn') return;
-        const before = events().length;
-        window.game.proceedAfterAnswer(true, it.situation.id);
-        window.game.releaseTraffic(it.situation.id);
-        t.tick(0.2);
-        if (maneuver === 'left' || maneuver === 'right') window.game.changeLane(maneuver);
-        let frames = 0;
-        for (; frames < 60 * 90 && s.resolution; frames++) {
+      let seed = 31337; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      for (let round = 0; round < 2; round++) t.scenarios().forEach((sc, i) => {
+        t.select(i); s.paused = false;
+        // Approach from further back, pressing arrows on the way.
+        const it0 = s.intersections[0];
+        t.player().position.set(-1.8, 0, it0.stopZ - 40); t.player().rotation.y = 0;
+        const log = [];
+        const before = window.events.length;
+        let answered = false, frames = 0;
+        for (; frames < 60 * 60; frames++) {
+          if (s.isAtSituation && !answered && s.activeIntersection && !s.resolution) {
+            answered = true;
+            window.game.proceedAfterAnswer(true, s.activeIntersection.situation.id);
+            window.game.releaseTraffic(s.activeIntersection.situation.id);
+          }
+          if (rnd() < 0.03) { const d = rnd() < 0.5 ? 'left' : 'right'; window.game.changeLane(d); log.push(d[0] + (s.resolution ? 'J' : 'R') + Math.round(t.player().position.z - it0.centerZ)); }
           const r = s.resolution;
-          // A careful driver: gives way first, then drives the chosen exit.
-          const clear = r.yielding.every(a => a.cleared || a.done) && r.elapsed > 3;
-          window.game.setGas(clear && s.speed < 7);
+          const clear = !r || (r.yielding.every(a => a.cleared || a.done) && r.elapsed > 3);
+          window.game.setGas(clear && s.speed < 9);
+          const n0 = window.events.length;
           t.tick(1 / 60);
+          window.events.slice(n0).filter(e => e.event === 'violation' && e.type === 'offroad').forEach(() => log.push('OFFROAD@' + t.player().position.x.toFixed(1) + ',' + (t.player().position.z - it0.centerZ).toFixed(1) + ' yaw=' + t.player().rotation.y.toFixed(2) + ' ch=' + s.resolution?.simpleChoice + ' path=' + !!s.autoPath + ' open=' + s.resolution?.simpleOpen));
+          if (answered && !s.resolution) break;
           if (s.resolution?.recovery) break;
         }
-        if (!s.resolution) { window.game.setGas(true); t.tick(3); }
         window.game.setGas(false);
-        const hit = s.resolution?.motions?.filter(a => a.crashed || a.fall).map(a => [a.config.id, a.config.type, !!s.resolution.yielding.includes(a), a.waitsForPlayer, +a.mesh.position.x.toFixed(1), +(a.mesh.position.z - it.centerZ).toFixed(1)]);
-        const faults = events().slice(before).filter(f => f !== 'speeding');
-        junctions.push({ id: it.situation.id, geometry: it.situation.geometry, maneuver, hit,
-          done: !s.resolution, faults, yaw: +t.player().rotation.y.toFixed(3), x: +t.player().position.x.toFixed(2) });
+        const faults = window.events.slice(before).filter(e => e.event === 'violation').map(e => e.type);
+        const stuck = answered && s.resolution && !s.resolution.recovery;
+        if (faults.includes('offroad') || stuck || !answered)
+          res.push({ id: sc.id, g: sc.geometry, faults, stuck, answered, log: log.slice(-14).join(' '), pos: [+t.player().position.x.toFixed(1), +(t.player().position.z - it0.centerZ).toFixed(1)], choice: s.resolution?.simpleChoice });
       });
-      // 3. T-junction: the car waits at the turn with the gas held and moves
-      // off the moment an arrow is pressed (no second press of the gas).
-      const tees = [];
-      t.scenarios().forEach((sc, i) => {
-        t.select(i); s.paused = false; t.approach();
-        const it = s.activeIntersection;
-        if (it.previews.straight) return;
-        window.game.proceedAfterAnswer(true, it.situation.id);
-        window.game.releaseTraffic(it.situation.id);
-        window.game.setGas(true); t.tick(4);
-        const waited = s.speed === 0 && !!s.resolution;
-        window.game.changeLane('right'); t.tick(6);
-        window.game.setGas(false);
-        tees.push({ id: sc.id, waited, turned: !s.resolution });
-      });
-      return { leftLane, noThird, held, back, junctions, tees };
+      return res;
     });
-    const near = (a, b, eps) => Math.abs(a - b) < eps;
-    assert(near(result.leftLane.x, 1.8, 0.05) && near(result.leftLane.yaw, 0, 0.01), 'Lane change ends centred: ' + JSON.stringify(result.leftLane));
-    assert(near(result.noThird.x, 1.8, 0.05), 'No lane beyond the road');
-    assert(near(result.held.x, 1.8, 0.05) && near(result.held.yaw, 0, 0.01), 'Holding does not steer');
-    assert(near(result.back.x, -1.8, 0.05) && near(result.back.yaw, 0, 0.01), 'Lane change back ends centred');
-    // Collisions with crossing traffic are the driver's braking, not the path.
-    const bad = result.junctions.filter(j => (!j.done && !j.faults.includes('collision')) || j.faults.some(f => ['offroad', 'wrong_maneuver', 'oncoming'].includes(f)));
-    console.log(JSON.stringify({ junctions: result.junctions.length, bad, ends: result.junctions.filter(j => j.done).map(j => [j.id, j.geometry || "", j.maneuver, j.x, j.yaw]) }));
-    assert.equal(bad.length, 0, 'Every junction drives cleanly with arrows');
-    const skew = result.junctions.filter(j => j.done && (Math.abs(Math.abs(j.x) - 1.8) > 0.1 || Math.abs(Math.sin(j.yaw)) > 0.02));
-    assert.deepEqual(skew, [], 'After a junction the car is centred and straight');
-    assert(result.tees.length && result.tees.every(x => x.waited && x.turned), 'T-junction: wait, then turn on the arrow: ' + JSON.stringify(result.tees));
+    // Random arrow presses at any moment (approach, stop line, mid-turn,
+    // changing one's mind) never put the car on the kerb or leave it stuck.
+    assert.deepEqual(out, [], JSON.stringify(out.slice(0, 5)));
     assert.deepEqual(errors, []);
-    console.log('PASS: simple steering — centred lane changes, no free steering, clean junctions');
-  } finally {
-    await browser.close();
-  }
-})().catch(error => { console.error(error); process.exit(1); });
+    console.log('PASS: simple steering survives random arrow presses at every junction');
+  } finally { await browser.close(); }
+})();

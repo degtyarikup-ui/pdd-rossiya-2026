@@ -41,7 +41,7 @@ const { chromium } = require('playwright');
             const texture = signTextureCache.get(situation.signs[0].code);
             const faces = [];
             state.intersections[0].seg.traverse(o => {
-              if (o.isMesh && o.material?.map === texture) faces.push(o);
+              if (o.isMesh && !o.userData.signBack && o.material?.map === texture) faces.push(o);
             });
             return {faces: faces.length, aspect: faces[0]?.geometry.parameters.width / faces[0]?.geometry.parameters.height};
           },

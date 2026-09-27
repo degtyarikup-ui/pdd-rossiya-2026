@@ -6073,12 +6073,39 @@
     const aspect = (window.PDD_SIGN_ASPECT || {})[code];
     const face = new THREE.Mesh(
       aspect ? new THREE.PlaneGeometry(2.9, 2.9 / aspect) : new THREE.PlaneGeometry(SIGN_FACE, SIGN_FACE),
-      new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.12, side: THREE.DoubleSide })
+      new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.12 })
     );
     face.position.set(0, poleHeight - 0.35, ROAD_SIGN_FACE_Z);
     face.rotation.y = Math.PI;
     group.add(face);
+    addSignBack(face);
     return group;
+  }
+
+  // The back of a sign: plain grey metal in the sign's outline, so a sign
+  // meant for the other direction shows nothing readable.
+  const signBackMaterials = new Map();
+  function signBackMaterial(texture) {
+    let material = signBackMaterials.get(texture);
+    if (!material) {
+      material = new THREE.MeshLambertMaterial({ color: 0x8E979C, map: texture, transparent: true, alphaTest: 0.12 });
+      material.onBeforeCompile = shader => {
+        shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>',
+          'diffuseColor.a *= texture2D( map, vUv ).a;');
+      };
+      signBackMaterials.set(texture, material);
+    }
+    return material;
+  }
+
+  function addSignBack(face) {
+    const back = new THREE.Mesh(face.geometry, signBackMaterial(face.material.map));
+    back.position.copy(face.position); back.position.z += 0.02;
+    back.rotation.y = face.rotation.y + Math.PI;
+    back.userData.signBack = true;
+    face.userData.back = back;
+    face.parent.add(back);
+    return back;
   }
 
   function createTriangleMesh(size, depth, color) {
@@ -6107,11 +6134,12 @@
       ctx.beginPath(); ctx.moveTo(120, 90); ctx.lineTo(...ends[direction]); ctx.stroke();
     });
     const face = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.13),
-      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), side: THREE.DoubleSide }));
+      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas) }));
     // In front of the pole, like every sign face: the pole must not cross it.
     face.position.z = ROAD_SIGN_FACE_Z;
     face.rotation.y = Math.PI;
     const group = new THREE.Group(); group.add(face);
+    addSignBack(face);
     return group;
   }
 
@@ -7598,7 +7626,9 @@
         for (let i = 0; i < numStripes; i++) {
           const stripe = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.4), markingMat);
           stripe.rotation.x = -Math.PI / 2;
-          stripe.position.set(side * (kerbX + 1.9), 0.028, centerZ - kerbZ + 0.45 + i * 2 * kerbZ / numStripes);
+          // Merged (baked) geometry is not mirrored by registerRoadSegment,
+          // unlike child positions: place the stripes in world X directly.
+          stripe.position.set(-side * (kerbX + 1.9), 0.028, centerZ - kerbZ + 0.45 + i * 2 * kerbZ / numStripes);
           stripes.push(stripe);
         }
       };
@@ -8330,7 +8360,10 @@
       // (a T-junction waits at the turn until a side is chosen).
       const previews = r.intersection.previews || {};
       r.simpleOpen = true;
-      r.simpleGate = r.intersection.centerZ - (r.intersection.rightLane || 1.8) - 3;
+      // The choice closes where the manoeuvre begins: at the turn, or at
+      // the entry to the ring.
+      r.simpleGate = r.intersection.situation.geometry === 'roundabout' ? r.intersection.centerZ - 17
+        : r.intersection.centerZ - (r.intersection.rightLane || 1.8) - 3;
       r.simpleChoice = previews.straight ? 'straight' : null;
       applyJunctionChoice(r);
     } else if (action !== 'straight') triggerBlinker(action === 'right' ? 'right' : 'left');
@@ -8371,7 +8404,8 @@
     } else if (action === 'left') {
       exitYaw = Math.PI / 2;
       const L = r.intersection.leftLane || 1.8;
-      points = [start, new THREE.Vector3(-1.8, 0, z - 1.5),
+      // From the lane the car is in (the left one on a wider road).
+      points = [start, new THREE.Vector3(THREE.MathUtils.clamp(start.x, -1.8, 1.8), 0, z - 1.5),
         new THREE.Vector3(1.5, 0, z + L), new THREE.Vector3(22, 0, z + L)];
       const hw = r.intersection.halfW;
       if (hw) points.splice(3, 1, new THREE.Vector3(14, 0, z + L), new THREE.Vector3(26, 0, z + L * hw(26) / hw(0)), new THREE.Vector3(36, 0, z + 1.8));
@@ -8997,9 +9031,26 @@
     state.activeIntersection = null;
     state.resolution = null;
     state.speedLimitKmH = null;
+    state.motorwayEndZ = null;
     state.speedingTime = 0;
     state.speedingPenalized = false;
+    const junctionSigns = r.intersection.situation.signs || [];
+    if ((r.exitDirection || r.spec.maneuver) === 'straight' && junctionSigns.some(sg => sg.code === '5.1')) {
+      // Past a 5.1 the player may actually drive at motorway speed; a 5.2
+      // further on ends the stretch and the town limit comes back.
+      state.speedLimitKmH = 110;
+      state.motorwayEndZ = playerCarGroup.position.z + 170;
+    }
     placeRoadEvent(boundary);
+    if (state.motorwayEndZ != null) {
+      // The stretch ends well before the next road question.
+      const nextStop = state.roadEvent?.stopZ;
+      if (nextStop != null) state.motorwayEndZ = Math.max(playerCarGroup.position.z + 50, Math.min(state.motorwayEndZ, nextStop - 30));
+      const end = createRoadSign('5.2');
+      end.position.copy(outgoingPreview.worldToLocal(new THREE.Vector3(-5.6, 0, state.motorwayEndZ)));
+      end.userData.signCode = '5.2';
+      outgoingPreview.add(end);
+    }
     // Populate the exit in this same update, not after the next rendered frame.
     checkAndSpawnNext();
     sendToFlutter({ event: 'situation_cleared', situationId: id });
@@ -9037,10 +9088,11 @@
     ctx.fillStyle = '#20252a'; ctx.font = 'bold 64px sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 120, 62);
     const face = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.62),
-      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), side: THREE.DoubleSide }));
+      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas) }));
     face.position.z = ROAD_SIGN_FACE_Z;
     face.rotation.y = Math.PI;
     const group = new THREE.Group(); group.add(face);
+    addSignBack(face);
     return group;
   }
 
@@ -9126,7 +9178,9 @@
         }
         texture = new THREE.CanvasTexture(canvas); signTextureCache.set(key, texture);
       }
-      sign.children.find(o => o.geometry?.type === 'PlaneGeometry').material.map = texture;
+      const face = sign.children.find(o => o.geometry?.type === 'PlaneGeometry');
+      face.material.map = texture;
+      if (face.userData.back) face.userData.back.material = signBackMaterial(texture);
     }
     // Larger than junction signs: on a straight the camera sits further back.
     sign.scale.setScalar(1.25);
@@ -10867,6 +10921,10 @@
     }
     if (state.isAtSituation) return;
     const car = playerCarGroup, back = Math.cos(car.rotation.y) < 0, sign = back ? -1 : 1;
+    // Never start a lane change the question stop would cut in half: the car
+    // would stand diagonally across the lanes.
+    const stops = [...state.intersections.map(it => it.stopZ), state.roadEvent?.phase === 'approach' ? state.roadEvent.stopZ : null];
+    if (!back && stops.some(z => z != null && z - car.position.z > -2 && z - car.position.z < 28)) return;
     // Forward is +Z, so the driver's left is +X; heading back mirrors it.
     // Wide streets have more lanes: step one lane over if there is road.
     const from = state.laneChangeX ?? nearestLaneX(car.position.x);
@@ -10909,12 +10967,24 @@
   function applyJunctionChoice(r) {
     const choice = r.simpleChoice;
     const roundabout = r.intersection.situation.geometry === 'roundabout';
+    const car = playerCarGroup, start = car.position.clone();
+    const heading = new THREE.Vector3(Math.sin(car.rotation.y), 0, Math.cos(car.rotation.y));
     if (!choice || (choice === 'straight' && !roundabout)) {
-      // Straight on keeps the lane the car is in.
-      state.autoPath = null;
+      // Straight on: back to the centre of the lane the car is in (it may be
+      // half-way into a turn the player changed their mind about).
+      const z = r.intersection.centerZ, side = start.x < 0 ? -1 : 1;
+      const laneX = side * (Math.abs(start.x) > 3.6 ? 5.4 : 1.8);
+      const zA = Math.max(start.z + 10, z + 2), zB = Math.max(start.z + 24, z + 18);
+      state.autoPath = planPath(new THREE.CubicBezierCurve3(start, start.clone().addScaledVector(heading, 4),
+        new THREE.Vector3(laneX, 0, zA), new THREE.Vector3(laneX, 0, zB)));
       return;
     }
-    const { points, exitYaw } = maneuverPoints(r, choice, playerCarGroup.position.clone());
+    const { points, exitYaw } = maneuverPoints(r, choice, start);
+    // Approach points the car has already passed would send it backwards.
+    while (points.length > 3 && points[1].z < start.z + 1.5 && Math.abs(points[1].x - start.x) < 2.5) points.splice(1, 1);
+    // Leave along the car's current heading: no snap when the choice changes
+    // with the car already moving.
+    points.splice(1, 0, start.clone().addScaledVector(heading, 2.5));
     // Run out straight along the exit road so the car leaves square to it.
     const last = points[points.length - 1], out = new THREE.Vector3(Math.sin(exitYaw), 0, Math.cos(exitYaw));
     points.push(last.clone().addScaledVector(out, 8), last.clone().addScaledVector(out, 20));
@@ -11097,6 +11167,10 @@
   function updatePlayerMovement(dt) {
     if (state.pendingVehicle && Math.abs(state.speed) <= 0.1) selectVehicle(...state.pendingVehicle);
     if (state.isAtSituation) { state.speed = 0; return; }
+    if (state.motorwayEndZ != null && playerCarGroup.position.z > state.motorwayEndZ) {
+      state.motorwayEndZ = null;
+      if (state.speedLimitKmH === 110) state.speedLimitKmH = null;
+    }
     if (state.driveRecovery > 0) {
       state.driveRecovery = Math.max(0, state.driveRecovery - dt);
       if (!state.driveRecovery) {
@@ -11180,15 +11254,17 @@
       // Frame answer evidence, not long marking meshes or distant zone-end signs.
       ev.group.children.filter(o => o.userData.questionEvidence && o.position.z <= ev.stopZ + 60)
         .forEach(o => boxes.push(new THREE.Box3().setFromObject(o)));
-      const minX = Math.min(-7, ...boxes.map(b => b.min.x)) - 1.5;
-      const maxX = Math.max(7, ...boxes.map(b => b.max.x)) + 1.5;
+      const minX = Math.min(-6, ...boxes.map(b => b.min.x)) - 1;
+      const maxX = Math.max(6, ...boxes.map(b => b.max.x)) + 1;
       if (ev.junctionZ !== undefined && ev.junctionZ < ev.stopZ + 65) {
         boxes.push(new THREE.Box3(new THREE.Vector3(-14, 0, ev.junctionZ - 7), new THREE.Vector3(14, 0, ev.junctionZ + 7)));
       }
+      // Tight on what the question is about (a car and a sign next to it
+      // need no 40 m of road): the view only grows for evidence far ahead.
       const minZ = Math.min(playerCarGroup.position.z - 4, ...boxes.map(b => b.min.z - 2));
-      const maxZ = Math.min(ev.stopZ + 60, Math.max(ev.stopZ + 24, ...boxes.map(b => b.max.z + b.max.y * 1.05))) + 2;
+      const maxZ = Math.min(ev.stopZ + 60, Math.max(ev.stopZ + 8, ...boxes.map(b => b.max.z + b.max.y * 1.05))) + 2;
       const visibleFraction = Math.max(0.25, (height - state.viewportInsets.top - state.viewportInsets.bottom) / height);
-      desiredViewSize = Math.max(42, (maxX - minX) / (width / height), (maxZ - minZ) * 0.69 / visibleFraction);
+      desiredViewSize = Math.max(26, (maxX - minX) / (width / height), (maxZ - minZ) * 0.69 / visibleFraction);
       focus.set((minX + maxX) / 2, 0, (minZ + maxZ) / 2);
       lookAhead = 0;
     } else if (state.isAtSituation && state.activeIntersection && state.resolution?.phase !== 'manual') {
