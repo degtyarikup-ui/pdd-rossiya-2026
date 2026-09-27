@@ -82,7 +82,11 @@ const { chromium } = require('playwright');
   // The broken-down car is solid.
   ev = await toEvent('obstacle');
   const z = await page.evaluate(w => { window.T.follow([[-1.8, w + 5]], 6, 900); return window.T.pos()[1]; }, ev.obstZ);
-  assert.ok(z < ev.obstZ - 2 && types(await events()).includes('collision'), 'no driving through the obstacle car');
+  // Hitting it is a collision; after that the wreck is shoved off the line
+  // rather than trapping the player (never driven through).
+  const hit = types(await events());
+  assert.ok(hit.includes('collision'), 'the obstacle car is solid');
+  assert.equal(hit.filter(t => t === 'collision').length, 1, 'one collision, no repeated ДТП while pushing: ' + JSON.stringify(hit) + JSON.stringify(await page.evaluate(() => window.events.filter(e => e.event === 'violation'))));
   // A turn finishing along the far kerb still hands over the exit road.
   await page.evaluate(() => { window.T.select('ticket_18_8'); window.T.forceRoad('crosswalk'); window.T.approach(); window.game.proceedAfterAnswer(true, 'ticket_18_8'); });
   r = await page.evaluate(() => { const T = window.T, c = T.state.resolution.intersection.centerZ;

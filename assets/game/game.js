@@ -8902,6 +8902,8 @@
         // A contact that already existed at the start of the frame is being
         // resolved (the player is driving out of it) — never a new ДТП.
         if (contactsBefore.has(a)) { if (a.crashed && !a.knock) separateCrashedActor(a); continue; }
+        // Nudging a car already standing after a crash is not a new ДТП.
+        if (a.crashed && !a.fall) continue;
         handleCollision(a, 'collision:' + a.config.id);
         return;
       }
@@ -11100,6 +11102,19 @@
         const wasOverlapping = footprintsOverlap(previousPlayer, other, 0.025);
         const separating = playerCarGroup.position.distanceTo(other.p) > before.distanceTo(other.p) + 0.002;
         const stationary = obstacle.crashed;
+        if (stationary && !obstacle.fall && step > 0) {
+          // A car left standing after a crash never traps the player (and is
+          // no new ДТП): the gas nudges it out of the way at walking pace.
+          // Mostly sideways, off the player's line, so the way clears
+          // quickly instead of the wreck being shoved down the road.
+          const at = obstacle.mesh.getWorldPosition(new THREE.Vector3());
+          const forward = new THREE.Vector3(dx, 0, dz).normalize(), right = new THREE.Vector3(forward.z, 0, -forward.x);
+          const side = Math.sign(at.clone().sub(before).dot(right)) || Math.sign(at.x) || 1;
+          const target = at.addScaledVector(forward.multiplyScalar(0.35).addScaledVector(right, side).normalize(), Math.hypot(dx, dz) * 1.6);
+          obstacle.mesh.position.copy(obstacle.mesh.parent.worldToLocal(target));
+          state.speed = Math.min(state.speed, 1.5);
+          continue;
+        }
         if (!wasOverlapping && !(stationary && Math.abs(state.speed) < 3)) {
           playerCarGroup.position.copy(before); playerCarGroup.rotation.y = oldYaw;
           handleCollision(obstacle, 'collision:' + obstacle.config.id);
@@ -11202,6 +11217,7 @@
       if (actor.done || actor.fall) continue;
       if (footprintsOverlap(playerFootprint(), actorFootprint(actor))) {
         if (contactsBefore.has(actor)) { if (actor.crashed && !actor.knock) separateCrashedActor(actor); continue; }
+        if (actor.crashed) continue; // a wreck being nudged aside, no new ДТП
         handleCollision(actor, 'collision:' + actor.config.id); return;
       }
     }
