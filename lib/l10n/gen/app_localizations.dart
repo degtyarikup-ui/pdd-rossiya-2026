@@ -2113,6 +2113,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Поехали'**
   String get gameTipDone;
+
+  /// No description provided for @gamePause.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пауза'**
+  String get gamePause;
 }
 
 class _AppLocalizationsDelegate

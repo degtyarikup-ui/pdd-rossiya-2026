@@ -460,7 +460,7 @@ void main() {
     await _startDrive(tester);
     // The car button in the HUD opens the garage over the paused run.
     engine.scripts.clear();
-    await tester.tap(find.bySemanticsLabel(appL10n.gameGarage));
+    await tester.tap(find.bySemanticsLabel(appL10n.gamePause));
     await tester.pump();
     expect(engine.scripts.any((s) => s.contains('setPaused(true)')), true);
     expect(engine.scripts.any((s) => s.contains('showLobby')), true);

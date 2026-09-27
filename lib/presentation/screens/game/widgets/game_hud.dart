@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -99,164 +98,151 @@ class GameHud extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Long-press on the gauge opens the weather/season sheet
-                    // (the garage button may be hidden).
-                    GestureDetector(
-                      onLongPress: onGarageLongPress,
-                      child: GameFuelGauge(
-                        fuel: state.fuel,
-                        maxFuel: GameState.maxFuel,
-                        unlimited: state.fuelUnlimited,
-                      ),
-                    ),
-                    if (showGarage) const SizedBox(height: 20),
-                    // The button shows the car being driven: choosing a
-                    // different model in the garage changes it here too. It is
-                    // greyed while controls are locked so the HUD never jumps;
-                    // Tooltip is avoided because it swallows the long-press.
-                    if (showGarage)
-                      Opacity(
-                        opacity: onGarage != null ? 1 : 0.55,
-                        child: Material(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          clipBehavior: Clip.antiAlias,
-                          child: InkWell(
-                            onTap: onGarage,
-                            onLongPress: onGarageLongPress,
-                            child: Semantics(
-                              button: true,
-                              enabled: onGarage != null,
-                              label: appL10n.gameGarage,
-                              child: SizedBox(
-                                width: 68,
-                                height: 52,
-                                // The car fills the card (the render has
-                                // transparent margins round the model).
-                                child: Center(
-                                  child: Transform.scale(
-                                    scale: 1.45,
-                                    child: SizedBox(
-                                      width: 49,
-                                      height: 38,
-                                      child: ExcludeSemantics(
-                                        child: GameCarThumbnail(
-                                          car: GameCar(vehicleId, vehiclePaint),
-                                          loader: thumbnail,
-                                          cache: thumbnailCache,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                    // Pause: the run stops and the garage opens with
+                    // «Продолжить заезд». Long-press — the dev sheet.
+                    Opacity(
+                      opacity: onGarage != null ? 1 : 0.55,
+                      child: Material(
+                        color: colors.cardBackground,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          key: const ValueKey('hud-pause'),
+                          onTap: onGarage,
+                          onLongPress: onGarageLongPress,
+                          child: Semantics(
+                            button: true,
+                            enabled: onGarage != null,
+                            label: appL10n.gamePause,
+                            child: SizedBox(
+                              width: 44,
+                              height: 44,
+                              child: Icon(
+                                Icons.pause_rounded,
+                                size: 28,
+                                color: colors.primaryText,
                               ),
                             ),
                           ),
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 14),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 11),
+                      child: GestureDetector(
+                        onLongPress: onGarageLongPress,
+                        child: GameFuelGauge(
+                          fuel: state.fuel,
+                          maxFuel: GameState.maxFuel,
+                          unlimited: state.fuelUnlimited,
+                          vertical: true,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: Align(
-                    alignment: Alignment.topRight,
-                    child: Wrap(
-                      alignment: WrapAlignment.end,
-                      spacing: 4,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        // Current speed, red once clearly over the limit.
-                        Container(
-                          key: const ValueKey('hud-speed'),
-                          height: 36,
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: state.limitKmH != null &&
-                                    state.speedKmH > state.limitKmH! + 5
-                                ? colors.red
-                                : colors.cardBackground,
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: Text.rich(
-                            TextSpan(
-                              text: '${state.speedKmH}',
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w800,
-                                color: state.limitKmH != null &&
-                                        state.speedKmH > state.limitKmH! + 5
-                                    ? AppColors.white
-                                    : colors.primaryText,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Wrap(
+                        alignment: WrapAlignment.end,
+                        spacing: 4,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (state.limitKmH != null)
+                            // A miniature 3.24 sign: the limit currently in force.
+                            Semantics(
+                              label: appL10n.gameSpeedLimitLabel(
+                                state.limitKmH!,
                               ),
-                              children: [
-                                TextSpan(
-                                  text: ' ${appL10n.gameSpeedUnit}',
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
+                              child: Container(
+                                width: 36,
+                                height: 36,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: AppColors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: colors.red,
+                                    width: 4,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        if (state.limitKmH != null)
-                          // A miniature 3.24 sign: the limit currently in force.
-                          Semantics(
-                            label: appL10n.gameSpeedLimitLabel(state.limitKmH!),
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: AppColors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: colors.red, width: 4),
-                              ),
-                              child: Text(
-                                '${state.limitKmH}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF1A1A1A),
-                                  height: 1,
+                                child: Text(
+                                  '${state.limitKmH}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF1A1A1A),
+                                    height: 1,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        Semantics(
-                          label:
-                              '${appL10n.gameViolations}: ${state.violationCount}',
-                          child: metric(
-                            'hud_warning',
-                            colors.red,
-                            '${state.violationCount}',
-                          ),
-                        ),
-                        metric(
-                          'hud_location',
-                          AppColors.primaryText,
-                          state.distanceM >= 1000
-                              ? '${(state.distanceM / 1000).toStringAsFixed(1)} ${appL10n.gameKilometers}'
-                              : '${state.distanceM} ${appL10n.gameMeters}',
-                        ),
-                        // Tapping the score opens the weekly rating.
-                        GestureDetector(
-                          onTap: onLeaderboard,
-                          child: Semantics(
-                            button: onLeaderboard != null,
-                            label: appL10n.gameWeeklyRating,
+                          Semantics(
+                            label:
+                                '${appL10n.gameViolations}: ${state.violationCount}',
                             child: metric(
-                              'hud_star',
-                              colors.gold,
-                              '${state.score}',
+                              'hud_warning',
+                              colors.red,
+                              '${state.violationCount}',
                             ),
                           ),
+                          metric(
+                            'hud_location',
+                            AppColors.primaryText,
+                            state.distanceM >= 1000
+                                ? '${(state.distanceM / 1000).toStringAsFixed(1)} ${appL10n.gameKilometers}'
+                                : '${state.distanceM} ${appL10n.gameMeters}',
+                          ),
+                          // Tapping the score opens the weekly rating.
+                          GestureDetector(
+                            onTap: onLeaderboard,
+                            child: Semantics(
+                              button: onLeaderboard != null,
+                              label: appL10n.gameWeeklyRating,
+                              child: metric(
+                                'hud_star',
+                                colors.gold,
+                                '${state.score}',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      // Current speed under the counters, red when clearly
+                      // over the limit in force.
+                      Text.rich(
+                        key: const ValueKey('hud-speed'),
+                        TextSpan(
+                          text: '${state.speedKmH}',
+                          style: const TextStyle(fontSize: 26),
+                          children: [
+                            TextSpan(
+                              text: ' ${appL10n.gameSpeedUnit}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                        style: TextStyle(
+                          fontFamily: 'Onest',
+                          fontWeight: FontWeight.w800,
+                          height: 1,
+                          color:
+                              state.limitKmH != null &&
+                                  state.speedKmH > state.limitKmH! + 5
+                              ? colors.red
+                              : AppColors.primaryText,
+                          shadows: const [
+                            Shadow(color: Color(0xB3FFFFFF), blurRadius: 6),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

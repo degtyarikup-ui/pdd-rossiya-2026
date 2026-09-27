@@ -342,5 +342,6 @@
   "gameTipSteer": "Dodirni strelicu — auto prelazi u susednu traku",
   "gameTipTurn": "Na raskrsnici drži strelicu da skreneš",
   "gameTipNext": "Dalje",
-  "gameTipDone": "Kreni"
+  "gameTipDone": "Kreni",
+  "gamePause": "Pauza"
 }

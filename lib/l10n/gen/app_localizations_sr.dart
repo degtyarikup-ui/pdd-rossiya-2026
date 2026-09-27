@@ -1189,4 +1189,7 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get gameTipDone => 'Kreni';
+
+  @override
+  String get gamePause => 'Pauza';
 }

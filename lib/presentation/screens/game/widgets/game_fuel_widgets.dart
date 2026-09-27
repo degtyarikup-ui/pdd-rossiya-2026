@@ -18,7 +18,11 @@ class GameFuelGauge extends StatelessWidget {
     required this.fuel,
     required this.maxFuel,
     required this.unlimited,
+    this.vertical = false,
   });
+
+  /// HUD layout: the pump on top, the bars stacked upward beneath it.
+  final bool vertical;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +35,8 @@ class GameFuelGauge extends StatelessWidget {
           : '${appL10n.gameFuel}: $fuel / $maxFuel',
       // Design: the fuel pump and one bar per unit, straight on the map.
       // Unlimited fuel shows a full tank.
-      child: Row(
+      child: Flex(
+        direction: vertical ? Axis.vertical : Axis.horizontal,
         mainAxisSize: MainAxisSize.min,
         children: [
           SvgPicture.asset(
@@ -41,7 +46,7 @@ class GameFuelGauge extends StatelessWidget {
             height: 24,
             colorFilter: ColorFilter.mode(tint, BlendMode.srcIn),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 8, height: 8),
           // Unlimited fuel: the infinity sign instead of the bars.
           if (unlimited)
             Text(
@@ -57,11 +62,16 @@ class GameFuelGauge extends StatelessWidget {
           else
             for (var i = 0; i < maxFuel; i++)
               Container(
-                width: 5,
-                height: 16,
-                margin: EdgeInsets.only(right: i == maxFuel - 1 ? 0 : 4),
+                width: vertical ? 16 : 5,
+                height: vertical ? 5 : 16,
+                margin: vertical
+                    ? EdgeInsets.only(bottom: i == maxFuel - 1 ? 0 : 4)
+                    : EdgeInsets.only(right: i == maxFuel - 1 ? 0 : 4),
                 decoration: BoxDecoration(
-                  color: i < fuel ? tint : colors.gray.withValues(alpha: 0.6),
+                  // Vertical: filled from the bottom up, like a tank.
+                  color: (vertical ? maxFuel - 1 - i : i) < fuel
+                      ? tint
+                      : colors.gray.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(38),
                 ),
               ),

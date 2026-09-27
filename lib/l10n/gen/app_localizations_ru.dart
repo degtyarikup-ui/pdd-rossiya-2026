@@ -1186,4 +1186,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameTipDone => 'Поехали';
+
+  @override
+  String get gamePause => 'Пауза';
 }

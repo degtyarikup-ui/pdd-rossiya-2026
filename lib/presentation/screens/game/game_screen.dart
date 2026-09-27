@@ -415,6 +415,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
         }
       }
       _simpleSteering = prefs.getBool(_simpleSteeringKey) ?? true;
+      _send('setSimpleSteering', [_simpleSteering]);
       if (!prefs.containsKey(_tipsSeenKey) && mounted) {
         setState(() => _tipStep = 0);
       }
@@ -526,6 +527,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
         _lastInsets = null;
         gameNotifier.onEngineReady();
         _syncTheme();
+        _send('setSimpleSteering', [_simpleSteering]);
       } else if (event == 'approach_situation') {
         final sitMap = data['situation'] as Map<String, dynamic>?;
         if (sitMap != null) {
@@ -634,6 +636,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     );
     if (simple == null || !mounted) return;
     setState(() => _simpleSteering = simple);
+    _send('setSimpleSteering', [simple]);
     SharedPreferences.getInstance()
         .then((prefs) => prefs.setBool(_simpleSteeringKey, simple))
         .catchError((_) => false);
@@ -1336,10 +1339,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 left: 16,
                 right: 16,
                 top: MediaQuery.paddingOf(context).top + 84,
-                child: _FirstDriveTip(
-                  step: _tipStep!,
-                  onNext: _nextTip,
-                ),
+                child: _FirstDriveTip(step: _tipStep!, onNext: _nextTip),
               ),
 
             if (_showGasHint &&

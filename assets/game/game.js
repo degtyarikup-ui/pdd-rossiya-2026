@@ -10826,6 +10826,12 @@
     triggerBlinker(direction);
   }
 
+  // «Простое управление»: the wheel turns only inside a junction (after the
+  // answer) or in reverse; elsewhere an arrow means the neighbouring lane.
+  function freeWheel() {
+    return !state.simpleSteering || state.resolution?.phase === 'manual' || state.speed < -0.05;
+  }
+
   function applySteeringAssist(dt) {
     if (state.steering || state.resolution || Math.abs(state.speed) < 1.5) return;
     const car = playerCarGroup, x = car.position.x;
@@ -10841,10 +10847,10 @@
     if (change != null && Math.abs(change - x) < 0.12) state.laneChangeX = null;
     const lane = state.laneChangeX ?? (Math.abs(x - 1.8) < Math.abs(x + 1.8) ? 1.8 : -1.8);
     const pull = (state.laneChangeX != null
-      ? THREE.MathUtils.clamp((lane - x) * 0.16, -0.2, 0.2)
+      ? THREE.MathUtils.clamp((lane - x) * 0.35, -0.32, 0.32)
       : THREE.MathUtils.clamp((lane - x) * 0.05, -0.06, 0.06)) * (back ? -1 : 1);
     const target = err + pull;
-    car.rotation.y += target * Math.min(1, dt * 1.8);
+    car.rotation.y += target * Math.min(1, dt * (state.laneChangeX != null ? 4.5 : 1.8));
   }
 
   function integrateDriving(dt, limit = state.maxSpeed) {
@@ -10869,6 +10875,7 @@
       const step = state.speed * dt / steps;
       // Slow steering remains available when the nose is pressed against a curb.
       // In reverse the rear swings the other way, as on a real car.
+      if (state.steering && !freeWheel()) state.steering = 0;
       playerCarGroup.rotation.y += (state.steering || 0) * Math.sign(state.speed || 1) *
         Math.min(1.8, Math.max(state.isAccelerating ? 1 : 0, Math.abs(state.speed)) * 0.32) /
         // Softer at speed: a held arrow does not throw the car across the road.
@@ -11251,7 +11258,10 @@
     },
     thumbnail(id, paint) { try { return renderThumbnail(id, paint || null); } catch (_) { return ''; } },
     changeLane(direction) { changeLane(direction); },
+    setSimpleSteering(on) { state.simpleSteering = Boolean(on); },
     setSteering(direction) {
+      const wanted = Math.sign(Number(direction) || 0);
+      if (wanted && !freeWheel()) { state.steering = 0; changeLane(wanted > 0 ? 'left' : 'right'); return; }
       state.steering = !state.paused && !state.driveRecovery && (!state.isAtSituation || state.resolution?.phase === 'manual') && !state.resolution?.recovery
         ? Math.max(-1, Math.min(1, Number(direction) || 0)) : 0;
       // The indicator comes on only for a deliberate hold (see updateBlinkers):
