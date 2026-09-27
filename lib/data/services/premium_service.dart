@@ -43,11 +43,21 @@ class PremiumService extends ChangeNotifier {
       _premiumGrantedStreamController.stream;
 
   DateTime? _pendingGrantNotificationExpiresAt;
+  bool _pendingGrant = false;
   DateTime? get pendingGrantNotificationExpiresAt =>
       _pendingGrantNotificationExpiresAt;
 
+  /// A grant the user has not seen yet (also for lifetime Premium, which has
+  /// no expiry date).
+  bool get hasPendingGrant => _pendingGrant;
+
+  /// The admin's text for the last grant notice («за победу в конкурсе»).
+  String? _grantMessage;
+  String? get grantMessage => _grantMessage;
+
   void consumePendingGrantNotification() {
     _pendingGrantNotificationExpiresAt = null;
+    _pendingGrant = false;
   }
 
   bool get isPremium {
@@ -242,26 +252,12 @@ class PremiumService extends ChangeNotifier {
         final serverExpiresAt = serverExpStr != null
             ? DateTime.tryParse(serverExpStr)
             : null;
-        final serverGrantedAtStr = data['grantedAt'] as String?;
-        final serverGrantedAt = serverGrantedAtStr != null
-            ? DateTime.tryParse(serverGrantedAtStr)
-            : null;
-
-        // Проверка новой выдачи Premium для показа праздничного диалога
-        if (serverIsPremium && serverGrantedAt != null) {
-          final prefs = await SharedPreferences.getInstance();
-          final grantKey = 'premium_last_seen_grant_${user.id}';
-          final lastSeenStr = prefs.getString(grantKey);
-          final lastSeen = lastSeenStr != null
-              ? DateTime.tryParse(lastSeenStr)
-              : null;
-
-          if (lastSeen == null || serverGrantedAt.isAfter(lastSeen)) {
-            await prefs.setString(grantKey, serverGrantedAt.toIso8601String());
-            _pendingGrantNotificationExpiresAt = serverExpiresAt;
-            _premiumGrantedStreamController.add(serverExpiresAt);
-          }
-        }
+        await _handleGrantNotice(
+          data,
+          user.id,
+          serverIsPremium,
+          serverExpiresAt,
+        );
 
         // Сервер — единый источник правды для состояния подписки аккаунта
         _isPremium = serverIsPremium;
@@ -271,6 +267,68 @@ class PremiumService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('PremiumService: syncWithServer error: $e');
+    }
+  }
+
+  /// A new «Premium granted» notice from the admin panel: shown once, with
+  /// the admin's reason as its text. Silent grants carry no new notice.
+  Future<void> _handleGrantNotice(
+    Map<String, dynamic> data,
+    String userId,
+    bool serverIsPremium,
+    DateTime? serverExpiresAt,
+  ) async {
+    final notice = data['grantNotice'];
+    if (!serverIsPremium || notice is! Map) return;
+    final at = DateTime.tryParse(notice['at'] as String? ?? '');
+    if (at == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final grantKey = 'premium_last_seen_grant_$userId';
+    final lastSeen = DateTime.tryParse(prefs.getString(grantKey) ?? '');
+    if (lastSeen != null && !at.isAfter(lastSeen)) return;
+    await prefs.setString(grantKey, at.toIso8601String());
+    final message = (notice['message'] as String? ?? '').trim();
+    _grantMessage = message.isEmpty ? null : message;
+    _pendingGrantNotificationExpiresAt = serverExpiresAt;
+    _pendingGrant = true;
+    _premiumGrantedStreamController.add(serverExpiresAt);
+  }
+
+  static const String _statusEndpoint =
+      '${BackendConfig.notifierUrl}/api/user/status';
+
+  /// A read-only look at the account (no write on the server): picks up a
+  /// Premium granted from the admin panel while the app is open.
+  Future<void> checkForGrant() async {
+    final user = AuthService.instance.currentUser;
+    if (user == null || !AuthService.instance.hasServerSession) return;
+    if (!BackendConfig.hasNotifier) return;
+    final revision = AuthService.instance.accountRevision;
+    try {
+      final resp = await http
+          .get(
+            Uri.parse(_statusEndpoint),
+            headers: AuthService.instance.serverHeaders,
+          )
+          .timeout(const Duration(seconds: 10));
+      if (resp.statusCode != 200 ||
+          revision != AuthService.instance.accountRevision) {
+        return;
+      }
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      final serverIsPremium = data['isPremium'] == true;
+      final serverExpiresAt = DateTime.tryParse(
+        data['premiumExpiresAt'] as String? ?? '',
+      );
+      await _handleGrantNotice(data, user.id, serverIsPremium, serverExpiresAt);
+      if (serverIsPremium != _isPremium) {
+        _isPremium = serverIsPremium;
+        _expiresAt = serverIsPremium ? serverExpiresAt : null;
+        await _saveState();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('PremiumService: checkForGrant error: $e');
     }
   }
 

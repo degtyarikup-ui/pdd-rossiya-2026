@@ -150,3 +150,15 @@ test('мои ссылки: сохранение, уникальная метка
   const del = await worker.fetch(new Request('https://w.test/api/admin/links', { method: 'DELETE', headers: { authorization: 'Bearer pw', 'content-type': 'application/json' }, body: JSON.stringify({ id: ok.data.link.id }) }), env);
   assert.deepEqual((await del.json()).links, []);
 });
+
+test('выдача с уведомлением сохраняет текст, тихая — не трогает уведомление', async () => {
+  const env = setup();
+  await call(env, '/api/admin/users/grant-premium', { userId: 'u1', days: 7, comment: 'Победитель конкурса' });
+  const first = JSON.parse(await env.INSTALLS.get('user:u1'));
+  assert.equal(first.grantNotice.message, 'Победитель конкурса');
+  assert.ok(first.grantNotice.at);
+  await call(env, '/api/admin/users/grant-premium', { userId: 'u1', days: 7, comment: 'тихо', notify: false });
+  const second = JSON.parse(await env.INSTALLS.get('user:u1'));
+  assert.deepEqual(second.grantNotice, first.grantNotice);
+});
+

@@ -5,21 +5,30 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 
 class PremiumGrantedDialog extends StatefulWidget {
   final DateTime? expiresAt;
+
+  /// The admin's reason for the grant, shown under the title.
+  final String? message;
   final VoidCallback onDismiss;
 
   const PremiumGrantedDialog({
     super.key,
     required this.expiresAt,
+    this.message,
     required this.onDismiss,
   });
 
-  static Future<void> show(BuildContext context, {DateTime? expiresAt}) {
+  static Future<void> show(
+    BuildContext context, {
+    DateTime? expiresAt,
+    String? message,
+  }) {
     HapticFeedbackHelper.success();
     return showDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (ctx) => PremiumGrantedDialog(
         expiresAt: expiresAt,
+        message: message,
         onDismiss: () => Navigator.of(ctx).pop(),
       ),
     );
@@ -208,6 +217,30 @@ class _PremiumGrantedDialogState extends State<PremiumGrantedDialog>
                         height: 1.35,
                       ),
                     ),
+                    if (widget.message != null) ...[
+                      const SizedBox(height: 14),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.accentSurface10,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          widget.message!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: colors.primaryText,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 18),
 
                     // Feature highlights

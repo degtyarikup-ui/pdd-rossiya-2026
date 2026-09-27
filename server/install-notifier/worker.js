@@ -2651,6 +2651,7 @@ async function saveUserProfile(env, user) {
     verifiedPurchase: existing?.verifiedPurchase || null,
     storeVerifiedAt: existing?.storeVerifiedAt || null,
     grantedAt: existing ? existing.grantedAt : (user.grantedAt || null),
+    grantNotice: existing?.grantNotice || null,
     pushToken: user.pushToken !== undefined ? user.pushToken : (existing ? existing.pushToken : null),
     ipCountry: user.ipCountry || (existing ? existing.ipCountry : null),
     userAgent: user.userAgent || (existing ? existing.userAgent : null),
@@ -3231,7 +3232,8 @@ export default {
         user: publicUser(updatedUser),
         isPremium: updatedUser ? updatedUser.isPremium : false,
         premiumExpiresAt: updatedUser ? updatedUser.premiumExpiresAt : null,
-        premiumSource: updatedUser ? updatedUser.premiumSource : null
+        premiumSource: updatedUser ? updatedUser.premiumSource : null,
+        grantNotice: updatedUser ? (updatedUser.grantNotice || null) : null
       });
     }
 
@@ -3353,7 +3355,8 @@ export default {
           user: publicUser(user),
           isPremium: Boolean(user.isPremium) && (!user.premiumExpiresAt || Date.parse(user.premiumExpiresAt) > Date.now()),
           premiumExpiresAt: user.premiumExpiresAt || null,
-          premiumSource: user.premiumSource || null
+          premiumSource: user.premiumSource || null,
+          grantNotice: user.grantNotice || null
         });
       } catch (_) {
         return jsonResponse({ ok: false, error: 'parse error' }, 500);

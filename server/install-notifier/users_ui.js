@@ -480,7 +480,8 @@ function uvPremiumCard(u) {
     + '<input class="uv-field" type="date" id="uv-until" min="' + tomorrow + '" value="' + uvEsc(g.until) + '" title="Действует до конца выбранного дня">'
     + '</div>'
     + (canExtend ? '<div class="uv-form-row"><div class="uv-seg" id="uv-mode"><button data-mode="extend" class="' + (g.mode === 'extend' ? 'active' : '') + '">Прибавить к сроку</button><button data-mode="set" class="' + (g.mode === 'set' ? 'active' : '') + '">Считать с сегодня</button></div></div>' : '')
-    + '<div class="uv-form-row"><input class="uv-field" id="uv-comment" maxlength="200" placeholder="Причина — попадёт в историю (необязательно)"></div>'
+    + '<div class="uv-form-row"><input class="uv-field" id="uv-comment" maxlength="200" placeholder="Причина — попадёт в историю и в уведомление пользователю"></div>'
+    + '<div class="uv-form-row"><label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" id="uv-notify" checked> Уведомить пользователя (окно в приложении с текстом причины)</label></div>'
     + '<div class="uv-preview" id="uv-preview"></div>'
     + '<div class="uv-actions"><button class="uv-btn primary" data-uv="grant">' + (pro ? 'Сохранить срок' : 'Выдать Premium') + '</button>'
     + (u.isPremium ? '<button class="uv-btn danger" data-uv="revoke">Отозвать</button>' : '') + '</div>'
@@ -632,11 +633,13 @@ async function uvAction(action, btn) {
       var r = uvGrantResult();
       if (r.error) { uvToast(r.error, true); return; }
       var comment = (document.getElementById('uv-comment') || {}).value || '';
+      var notifyBox = document.getElementById('uv-notify');
+      var notify = !notifyBox || notifyBox.checked;
       busy(true);
-      var res = await uvFetch('/api/admin/users/grant-premium', Object.assign({ userId: id, comment: comment.trim() || undefined }, r.body));
+      var res = await uvFetch('/api/admin/users/grant-premium', Object.assign({ userId: id, comment: comment.trim() || undefined, notify: notify }, r.body));
       uvState.grant = { days: 30, mode: 'extend', until: '', lifetime: false };
       uvApplyUser(res.user, res.admin);
-      uvToast('Premium сохранён');
+      uvToast(notify ? 'Premium сохранён, пользователь увидит уведомление' : 'Premium сохранён без уведомления');
     } else if (action === 'revoke') {
       if (!confirm('Отозвать Premium у «' + name + '»?')) return;
       busy(true);

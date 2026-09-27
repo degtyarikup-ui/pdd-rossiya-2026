@@ -200,6 +200,14 @@ export async function handleUsersAdmin(request, env, url, deps) {
     user.premiumSource = 'admin_grant';
     user.grantedAt = new Date().toISOString();
     user.premiumExpiresAt = result.expiresAt;
+    // The app shows a «Вам выдан Premium» window once per notice, with the
+    // admin's reason as its text. A silent grant leaves the last notice as is.
+    if (body.notify !== false) {
+      user.grantNotice = {
+        at: user.grantedAt,
+        message: typeof body.comment === 'string' ? body.comment.trim().slice(0, 200) : '',
+      };
+    }
     await putUserRecord(env, user);
     await writeAdminMeta(env, userId, meta, {
       action: 'grant',
@@ -208,6 +216,7 @@ export async function handleUsersAdmin(request, env, url, deps) {
       from: previous,
       until: result.expiresAt,
       comment: typeof body.comment === 'string' ? body.comment.slice(0, 200) : undefined,
+      notify: body.notify !== false,
     });
     return jsonResponse({ ok: true, user: adminUser(user), admin: meta });
   }

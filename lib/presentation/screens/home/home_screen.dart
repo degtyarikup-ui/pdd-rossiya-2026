@@ -38,15 +38,31 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
   late int _currentIndex;
   StreamSubscription<DateTime?>? _premiumGrantSub;
+  Timer? _grantPoll;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
     _subscribePremiumGrant();
+    WidgetsBinding.instance.addObserver(this);
+    // A Premium granted from the admin panel shows up while the app is open
+    // (a read-only check, no write on the server).
+    _grantPoll = Timer.periodic(
+      const Duration(minutes: 5),
+      (_) => PremiumService.instance.checkForGrant(),
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(PremiumService.instance.checkForGrant());
+    }
   }
 
   void _subscribePremiumGrant() {
@@ -59,9 +75,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final pendingExp =
-          PremiumService.instance.pendingGrantNotificationExpiresAt;
-      if (pendingExp != null) {
+      if (PremiumService.instance.hasPendingGrant) {
+        final pendingExp =
+            PremiumService.instance.pendingGrantNotificationExpiresAt;
         PremiumService.instance.consumePendingGrantNotification();
         _showPremiumGrantedDialog(pendingExp);
       }
@@ -69,12 +85,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showPremiumGrantedDialog(DateTime? expiresAt) {
-    PremiumGrantedDialog.show(context, expiresAt: expiresAt);
+    PremiumService.instance.consumePendingGrantNotification();
+    PremiumGrantedDialog.show(
+      context,
+      expiresAt: expiresAt,
+      message: PremiumService.instance.grantMessage,
+    );
   }
 
   @override
   void dispose() {
     _premiumGrantSub?.cancel();
+    _grantPoll?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
