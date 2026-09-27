@@ -2069,7 +2069,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameControlsSimpleHint.
   ///
   /// In ru, this message translates to:
-  /// **'Касание стрелки — перестроиться, удержание — поворот на перекрёстке'**
+  /// **'Стрелка — перестроиться в соседнюю полосу, на перекрёстке — выбрать поворот. Машина едет сама'**
   String get gameControlsSimpleHint;
 
   /// No description provided for @gameControlsFree.
@@ -2093,13 +2093,13 @@ abstract class AppLocalizations {
   /// No description provided for @gameTipSteer.
   ///
   /// In ru, this message translates to:
-  /// **'Коснись стрелки — машина перестроится в соседнюю полосу'**
+  /// **'Нажми стрелку — машина перестроится в соседнюю полосу'**
   String get gameTipSteer;
 
   /// No description provided for @gameTipTurn.
   ///
   /// In ru, this message translates to:
-  /// **'На перекрёстке держи стрелку, чтобы повернуть'**
+  /// **'На перекрёстке нажми стрелку — машина сама повернёт. Нажмёшь ещё раз — поедет прямо'**
   String get gameTipTurn;
 
   /// No description provided for @gameTipNext.

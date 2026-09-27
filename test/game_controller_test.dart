@@ -278,7 +278,7 @@ void main() {
     ]);
   });
 
-  testWidgets('Simple steering: tap changes lane, hold turns', (tester) async {
+  testWidgets('Simple steering: each press is one lane or exit command', (tester) async {
     final steering = <int>[];
     final lanes = <String>[];
     await tester.pumpWidget(
@@ -294,17 +294,16 @@ void main() {
       ),
     );
     await tester.tap(find.byIcon(Icons.arrow_back_rounded));
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
     expect(lanes, ['left']);
-    expect(steering, isEmpty);
+    // Holding is still one command: no free steering at all.
     final hold = await tester.startGesture(
       tester.getCenter(find.byIcon(Icons.arrow_forward_rounded)),
     );
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(steering.last, -1);
+    await tester.pump(const Duration(milliseconds: 600));
     await hold.up();
-    expect(steering.last, 0);
-    expect(lanes, ['left']);
+    expect(lanes, ['left', 'right']);
+    expect(steering, isEmpty);
   });
 
   testWidgets(
@@ -1406,6 +1405,7 @@ void main() {
               onGasChanged: gas.add,
               onSwitchLane: (_) {},
               onSteering: steering.add,
+              simpleSteering: false,
             ),
           ),
         );

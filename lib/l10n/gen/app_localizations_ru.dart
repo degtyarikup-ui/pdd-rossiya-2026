@@ -1162,7 +1162,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameControlsSimpleHint =>
-      'Касание стрелки — перестроиться, удержание — поворот на перекрёстке';
+      'Стрелка — перестроиться в соседнюю полосу, на перекрёстке — выбрать поворот. Машина едет сама';
 
   @override
   String get gameControlsFree => 'Свободное управление';
@@ -1176,10 +1176,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameTipSteer =>
-      'Коснись стрелки — машина перестроится в соседнюю полосу';
+      'Нажми стрелку — машина перестроится в соседнюю полосу';
 
   @override
-  String get gameTipTurn => 'На перекрёстке держи стрелку, чтобы повернуть';
+  String get gameTipTurn =>
+      'На перекрёстке нажми стрелку — машина сама повернёт. Нажмёшь ещё раз — поедет прямо';
 
   @override
   String get gameTipNext => 'Дальше';

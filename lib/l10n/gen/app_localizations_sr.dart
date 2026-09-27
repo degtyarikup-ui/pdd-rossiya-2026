@@ -1166,7 +1166,7 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get gameControlsSimpleHint =>
-      'Dodir strelice — promena trake, držanje — skretanje na raskrsnici';
+      'Strelica — prelazak u susednu traku, na raskrsnici — izbor skretanja. Auto vozi samo';
 
   @override
   String get gameControlsFree => 'Slobodno upravljanje';
@@ -1179,10 +1179,11 @@ class AppLocalizationsSr extends AppLocalizations {
       'Drži pedalu gasa — auto ide. Pusti je — auto se polako zaustavlja';
 
   @override
-  String get gameTipSteer => 'Dodirni strelicu — auto prelazi u susednu traku';
+  String get gameTipSteer => 'Pritisni strelicu — auto prelazi u susednu traku';
 
   @override
-  String get gameTipTurn => 'Na raskrsnici drži strelicu da skreneš';
+  String get gameTipTurn =>
+      'Na raskrsnici pritisni strelicu — auto će samo skrenuti. Ponovni pritisak — pravo';
 
   @override
   String get gameTipNext => 'Dalje';

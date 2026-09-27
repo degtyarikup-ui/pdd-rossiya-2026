@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -34,31 +32,14 @@ class GameControlsOverlay extends StatefulWidget {
 class _GameControlsOverlayState extends State<GameControlsOverlay> {
   final _heldDirections = <int>[];
   bool _disposing = false;
-  final _pending = <int, Timer>{};
 
-  static const _holdDelay = Duration(milliseconds: 260);
-
-  /// In simple mode a press becomes steering only once it is held; a release
-  /// before that is a tap, which asks for the neighbouring lane.
+  /// In simple mode every press is one command — the next lane, or the
+  /// exit at a junction; the engine drives it. Holding changes nothing.
   void _press(int direction, bool held) {
     if (!widget.simpleSteering) return _steer(direction, held);
-    if (held) {
-      _pending[direction]?.cancel();
-      _pending[direction] = Timer(_holdDelay, () {
-        _pending.remove(direction);
-        _steer(direction, true);
-      });
-      return;
+    if (held && widget.state.controlsEnabled && !_disposing) {
+      widget.onSwitchLane(direction > 0 ? 'left' : 'right');
     }
-    final timer = _pending.remove(direction);
-    if (timer != null) {
-      timer.cancel();
-      if (widget.state.controlsEnabled && !_disposing) {
-        widget.onSwitchLane(direction > 0 ? 'left' : 'right');
-      }
-      return;
-    }
-    _steer(direction, false);
   }
 
   void _steer(int direction, bool held) {
@@ -77,19 +58,12 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
     super.didUpdateWidget(oldWidget);
     if (!widget.state.controlsEnabled) {
       _heldDirections.clear();
-      for (final timer in _pending.values) {
-        timer.cancel();
-      }
-      _pending.clear();
     }
   }
 
   @override
   void dispose() {
     _disposing = true;
-    for (final timer in _pending.values) {
-      timer.cancel();
-    }
     if (_heldDirections.isNotEmpty) widget.onSteering?.call(0);
     super.dispose();
   }

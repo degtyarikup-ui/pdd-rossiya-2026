@@ -5530,7 +5530,7 @@
     // Never silently drop a choice: while moving it is applied once stopped.
     if (!state.paused && Math.abs(state.speed) > 0.1) { state.pendingVehicle = [id, paint]; return; }
     state.pendingVehicle = null;
-    state.speed = 0; state.isAccelerating = false; state.isBraking = false; state.steering = 0; state.laneChangeX = null;
+    state.speed = 0; state.isAccelerating = false; state.isBraking = false; state.steering = 0; state.laneChangeX = null; state.autoPath = null;
     if (state.vehicleId === id && (state.vehiclePaint || null) === (paint || null)) {
       sendToFlutter({ event: 'vehicle_selected', vehicleId: id, paint: state.vehiclePaint });
       return;
@@ -8077,7 +8077,7 @@
 
   function maybeReverseWorld(force = false) {
     if (!currentCorridor || state.isAtSituation || state.resolution || Math.cos(playerCarGroup.rotation.y) > -0.55) return false;
-    state.laneChangeX = null;
+    state.laneChangeX = null; state.autoPath = null;
     const forward = new THREE.Vector3(Math.sin(playerCarGroup.rotation.y), 0, Math.cos(playerCarGroup.rotation.y));
     const distanceToEnd = Math.max(...corridorWorldEnds().map(p => p.clone().sub(playerCarGroup.position).dot(forward)));
     if (!force && distanceToEnd > 105) return false;
@@ -8304,7 +8304,7 @@
     const yielding = spec.yieldTo.map(id => motions.find(a => a.config.id === id)).filter(Boolean);
     state.resolution = { intersection, spec, motions, yielding, phase: 'manual', elapsed: 0,
       entry: playerCarGroup.position.clone(), entryYaw: playerCarGroup.rotation.y, faults: new Set(), recovery: 0 };
-    state.steering = 0; state.laneChangeX = null;
+    state.steering = 0; state.laneChangeX = null; state.autoPath = null;
     startPlayerManeuver();
     const r = state.resolution;
     const intended = { path: r.path, length: r.length, clearDistance: r.length, halfWidth: 0.9, halfLength: 2 };
@@ -8318,9 +8318,30 @@
   function startPlayerManeuver() {
     const r = state.resolution;
     if (!r) return;
-    const z = r.intersection.centerZ;
-    const start = playerCarGroup.position.clone();
+    const { points, exitYaw } = maneuverPoints(r, r.spec.maneuver, playerCarGroup.position.clone());
     const action = r.spec.maneuver;
+    r.phase = 'manual';
+    r.path = curve(points);
+    r.length = r.path.getLength();
+    r.distance = 0;
+    r.exitYaw = exitYaw;
+    if (state.simpleSteering) {
+      // The player chooses the exit with the arrows; straight on by default
+      // (a T-junction waits at the turn until a side is chosen).
+      const previews = r.intersection.previews || {};
+      r.simpleOpen = true;
+      r.simpleGate = r.intersection.centerZ - (r.intersection.rightLane || 1.8) - 3;
+      r.simpleChoice = previews.straight ? 'straight' : null;
+      applyJunctionChoice(r);
+    } else if (action !== 'straight') triggerBlinker(action === 'right' ? 'right' : 'left');
+    if (r.intersection.trafficLight && !r.intersection.trafficLight.userData.arrow &&
+        r.intersection.situation.trafficLights.state !== 'flashing_yellow') {
+      r.intersection.trafficLight.setLightState('green');
+    }
+  }
+
+  function maneuverPoints(r, action, start) {
+    const z = r.intersection.centerZ;
     let points, exitYaw = 0;
     if (r.intersection.situation.geometry === 'roundabout') {
       if (action === 'right') {
@@ -8362,16 +8383,7 @@
     } else {
       points = [start, new THREE.Vector3(-1.8, 0, z), new THREE.Vector3(-1.8, 0, z + 16)];
     }
-    r.phase = 'manual';
-    r.path = curve(points);
-    r.length = r.path.getLength();
-    r.distance = 0;
-    r.exitYaw = exitYaw;
-    if (action !== 'straight') triggerBlinker(action === 'right' ? 'right' : 'left');
-    if (r.intersection.trafficLight && !r.intersection.trafficLight.userData.arrow &&
-        r.intersection.situation.trafficLights.state !== 'flashing_yellow') {
-      r.intersection.trafficLight.setLightState('green');
-    }
+    return { points, exitYaw };
   }
 
   function followingSpeed(actor, traffic, dt) {
@@ -8816,7 +8828,7 @@
     state.speed = 0;
     state.isAccelerating = false;
     state.isBraking = false;
-    state.steering = 0; state.laneChangeX = null;
+    state.steering = 0; state.laneChangeX = null; state.autoPath = null;
     // A short control release makes the impact legible, but never teleports or
     // rotates the player's car. After it expires the player can immediately
     // steer around the stationary crash participant.
@@ -8839,6 +8851,12 @@
       return;
     }
     const contactsBefore = playerContacts();
+    if (state.simpleSteering && r.simpleOpen && !r.simpleChoice &&
+        playerCarGroup.position.z >= r.simpleGate - 0.5 && state.speed > 0) {
+      // No exit chosen at a T-junction: wait at the turn for an arrow.
+      state.speed = 0; state.isAccelerating = false;
+    }
+    if (r.simpleOpen && playerCarGroup.position.z > r.simpleGate && r.simpleChoice) r.simpleOpen = false;
     integrateDriving(dt);
     if (r.recovery > 0) return;
     const p = playerCarGroup.position, z = r.intersection.centerZ, yaw = playerCarGroup.rotation.y;
@@ -8901,7 +8919,7 @@
   }
 
   function finishManeuver() {
-    state.laneChangeX = null;
+    state.laneChangeX = null; state.autoPath = null;
     const r = state.resolution;
     if (!r) return;
     const trailing = r.motions.filter(a => !r.yielding.includes(a));
@@ -10009,7 +10027,7 @@
     ev.phase = 'question';
     (ev.joiners || []).forEach(join => join());
     ev.joiners = null;
-    state.speed = 0; state.isAccelerating = false; state.steering = 0; state.laneChangeX = null;
+    state.speed = 0; state.isAccelerating = false; state.steering = 0; state.laneChangeX = null; state.autoPath = null;
     state.isAtSituation = true;
     sendToFlutter({ event: 'approach_situation', situation: ev.situation });
   }
@@ -10834,27 +10852,88 @@
   }
 
   function changeLane(direction) {
-    if (!playerCarGroup || state.paused || state.driveRecovery || state.resolution) return;
-    if (state.isAtSituation && state.resolution?.phase !== 'manual') return;
-    const back = Math.cos(playerCarGroup.rotation.y) < 0;
+    if (!playerCarGroup || state.paused || state.driveRecovery) return;
+    if (state.resolution) {
+      if (state.resolution.phase === 'manual' && !state.resolution.recovery) chooseJunctionExit(direction);
+      return;
+    }
+    if (state.isAtSituation) return;
+    const car = playerCarGroup, back = Math.cos(car.rotation.y) < 0, sign = back ? -1 : 1;
     // Forward is +Z, so the driver's left is +X; heading back mirrors it.
     // Wide streets have more lanes: step one lane over if there is road.
-    const x = playerCarGroup.position.x;
-    const from = state.laneChangeX ?? nearestLaneX(x);
-    const to = from + (direction === 'left' ? 3.6 : -3.6) * (back ? -1 : 1);
+    const from = state.laneChangeX ?? nearestLaneX(car.position.x);
+    const to = from + (direction === 'left' ? 3.6 : -3.6) * sign;
     if (!laneFits(to)) return;
     state.laneChangeX = to;
+    planLaneCurve(to);
     triggerBlinker(direction);
+  }
+
+  // An S-curve that ends exactly on the lane centre, parallel to the road.
+  function planLaneCurve(to) {
+    const car = playerCarGroup, sign = Math.cos(car.rotation.y) < 0 ? -1 : 1;
+    const start = car.position.clone();
+    const length = Math.max(9, Math.abs(state.speed) * 1.05);
+    const end = new THREE.Vector3(to, 0, start.z + sign * length);
+    state.autoPath = planPath(new THREE.CubicBezierCurve3(start,
+      new THREE.Vector3(start.x, 0, start.z + sign * length * 0.45),
+      new THREE.Vector3(to, 0, end.z - sign * length * 0.45), end));
+  }
+
+  function planPath(path) {
+    return { path, length: path.getLength(), s: 0 };
+  }
+
+  // At a junction an arrow picks the exit (only roads that exist); the car
+  // then drives it by itself. Pressing the same arrow again goes back to
+  // straight on. The choice is open until the car reaches the turn.
+  function chooseJunctionExit(direction) {
+    const r = state.resolution, previews = r.intersection.previews || {};
+    if (!r.simpleOpen || playerCarGroup.position.z > r.simpleGate) return;
+    let choice = direction;
+    if (!previews[choice] || r.simpleChoice === choice) choice = previews.straight ? 'straight' : null;
+    if (choice === r.simpleChoice) return;
+    r.simpleChoice = choice;
+    applyJunctionChoice(r);
+    if (choice === 'left' || choice === 'right') triggerBlinker(choice);
+  }
+
+  function applyJunctionChoice(r) {
+    const choice = r.simpleChoice;
+    const roundabout = r.intersection.situation.geometry === 'roundabout';
+    if (!choice || (choice === 'straight' && !roundabout)) {
+      // Straight on keeps the lane the car is in.
+      state.autoPath = null;
+      return;
+    }
+    const { points, exitYaw } = maneuverPoints(r, choice, playerCarGroup.position.clone());
+    // Run out straight along the exit road so the car leaves square to it.
+    const last = points[points.length - 1], out = new THREE.Vector3(Math.sin(exitYaw), 0, Math.cos(exitYaw));
+    points.push(last.clone().addScaledVector(out, 8), last.clone().addScaledVector(out, 20));
+    state.autoPath = planPath(curve(points));
   }
 
   // «Простое управление»: the wheel turns only inside a junction (after the
   // answer) or in reverse; elsewhere an arrow means the neighbouring lane.
   function freeWheel() {
-    return !state.simpleSteering || state.resolution?.phase === 'manual' || state.speed < -0.05;
+    return !state.simpleSteering || state.speed < -0.05;
   }
 
   function applySteeringAssist(dt) {
-    if (state.steering || state.resolution || Math.abs(state.speed) < 1.5) return;
+    if (state.steering || state.autoPath || state.resolution || Math.abs(state.speed) < 1.5) return;
+    if (state.simpleSteering && state.laneChangeX == null) {
+      // Simple mode keeps the car exactly on a lane centre: any leftover
+      // offset (after a junction, a nudge) is taken out with a short curve.
+      const x = playerCarGroup.position.x, yaw = playerCarGroup.rotation.y;
+      const axis = Math.cos(yaw) < 0 ? Math.PI : 0;
+      const off = Math.atan2(Math.sin(axis - yaw), Math.cos(axis - yaw));
+      const lane = nearestLaneX(x);
+      if (Math.abs(off) < 0.3 && (Math.abs(lane - x) > 0.08 || Math.abs(off) > 0.01)) {
+        state.laneChangeX = lane;
+        planLaneCurve(lane);
+        return;
+      }
+    }
     const car = playerCarGroup, x = car.position.x;
     if (Math.abs(x) > 16) return;
     const back = Math.cos(car.rotation.y) < 0;
@@ -10901,8 +10980,20 @@
         Math.min(1.8, Math.max(state.isAccelerating ? 1 : 0, Math.abs(state.speed)) * 0.32) /
         // Softer at speed: a held arrow does not throw the car across the road.
         (1 + Math.max(0, Math.abs(state.speed) - 8) * 0.04) * dt / steps;
-      const desiredYaw = playerCarGroup.rotation.y;
-      const dx = Math.sin(desiredYaw) * step, dz = Math.cos(desiredYaw) * step;
+      let desiredYaw = playerCarGroup.rotation.y;
+      let dx = Math.sin(desiredYaw) * step, dz = Math.cos(desiredYaw) * step;
+      const ap = state.autoPath;
+      if (ap && step < 0) state.autoPath = null; // reversing drops the planned move
+      else if (ap && step > 0) {
+        // «Простое управление»: the car rides the planned curve exactly.
+        ap.s = Math.min(ap.length, ap.s + step);
+        const t = ap.s / ap.length, point = ap.path.getPointAt(t), tangent = ap.path.getTangentAt(t);
+        const yaw = Math.atan2(tangent.x, tangent.z);
+        desiredYaw = oldYaw + Math.atan2(Math.sin(yaw - oldYaw), Math.cos(yaw - oldYaw));
+        playerCarGroup.rotation.y = desiredYaw;
+        dx = point.x - before.x; dz = point.z - before.z;
+        if (ap.s >= ap.length) state.autoPath = null;
+      }
       playerCarGroup.position.x += dx; playerCarGroup.position.z += dz;
       if (!playerOnRoad()) {
         curbContact = true;
@@ -11046,7 +11137,7 @@
     if (active && active.stopZ - playerCarGroup.position.z <= 0.18) {
       state.speed = 0;
       state.isAccelerating = false;
-      state.steering = 0; state.laneChangeX = null;
+      state.steering = 0; state.laneChangeX = null; state.autoPath = null;
       state.isAtSituation = true;
       sendToFlutter({ event: 'approach_situation', situation: active.situation });
     }
@@ -11198,7 +11289,7 @@
     state.targetLane = 1;
     state.currentLaneOffset = state.targetLaneOffset = -1.8;
     state.violationEpisode = 0;
-    state.steering = 0; state.laneChangeX = null;
+    state.steering = 0; state.laneChangeX = null; state.autoPath = null;
     state.blinker = null;
     state.hazard = 0;
     clearOncoming();
@@ -11282,7 +11373,7 @@
     setSimpleSteering(on) { state.simpleSteering = Boolean(on); },
     setSteering(direction) {
       const wanted = Math.sign(Number(direction) || 0);
-      if (wanted && !freeWheel()) { state.steering = 0; changeLane(wanted > 0 ? 'left' : 'right'); return; }
+      if (!freeWheel()) { state.steering = 0; return; } // simple mode: taps only (changeLane)
       state.steering = !state.paused && !state.driveRecovery && (!state.isAtSituation || state.resolution?.phase === 'manual') && !state.resolution?.recovery
         ? Math.max(-1, Math.min(1, Number(direction) || 0)) : 0;
       // The indicator comes on only for a deliberate hold (see updateBlinkers):
@@ -11297,7 +11388,7 @@
       const next = Boolean(paused);
       if (next === state.paused) return;
       state.paused = next;
-      if (next) { state.isAccelerating = false; state.isBraking = false; state.steering = 0; state.laneChangeX = null; }
+      if (next) { state.isAccelerating = false; state.isBraking = false; state.steering = 0; state.laneChangeX = null; state.autoPath = null; }
       gameAudio?.setPaused(next);
       lastTime = null;
     },
