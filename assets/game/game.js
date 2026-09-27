@@ -10817,12 +10817,33 @@
   // Gentle driving aid for newcomers: with the steering released on the open
   // road the car straightens along the road and drifts towards the middle of
   // the nearest lane. Any steering input takes over completely.
+  // Lane centres lie at ±1.8, ±5.4, … from the road axis; a lane counts
+  // when the whole car width fits on the asphalt a little ahead.
+  function laneFits(x) {
+    const z = playerCarGroup.position.z + Math.sign(Math.cos(playerCarGroup.rotation.y) || 1) * 3;
+    return roadSupports(new THREE.Vector3(x - 1.1, 0, z)) && roadSupports(new THREE.Vector3(x + 1.1, 0, z));
+  }
+
+  function nearestLaneX(x) {
+    let best = null;
+    for (let k = 0; k < 4; k++) for (const c of [1.8 + 3.6 * k, -1.8 - 3.6 * k]) {
+      if (!laneFits(c)) continue;
+      if (best == null || Math.abs(c - x) < Math.abs(best - x)) best = c;
+    }
+    return best ?? (Math.abs(x - 1.8) < Math.abs(x + 1.8) ? 1.8 : -1.8);
+  }
+
   function changeLane(direction) {
     if (!playerCarGroup || state.paused || state.driveRecovery || state.resolution) return;
     if (state.isAtSituation && state.resolution?.phase !== 'manual') return;
     const back = Math.cos(playerCarGroup.rotation.y) < 0;
     // Forward is +Z, so the driver's left is +X; heading back mirrors it.
-    state.laneChangeX = (direction === 'left' ? 1.8 : -1.8) * (back ? -1 : 1);
+    // Wide streets have more lanes: step one lane over if there is road.
+    const x = playerCarGroup.position.x;
+    const from = state.laneChangeX ?? nearestLaneX(x);
+    const to = from + (direction === 'left' ? 3.6 : -3.6) * (back ? -1 : 1);
+    if (!laneFits(to)) return;
+    state.laneChangeX = to;
     triggerBlinker(direction);
   }
 
@@ -10835,7 +10856,7 @@
   function applySteeringAssist(dt) {
     if (state.steering || state.resolution || Math.abs(state.speed) < 1.5) return;
     const car = playerCarGroup, x = car.position.x;
-    if (Math.abs(x) > 4.6) return;
+    if (Math.abs(x) > 16) return;
     const back = Math.cos(car.rotation.y) < 0;
     const axis = back ? Math.PI : 0;
     const err = Math.atan2(Math.sin(axis - car.rotation.y), Math.cos(axis - car.rotation.y));
@@ -10845,7 +10866,7 @@
     // otherwise the car settles into the nearest one.
     const change = state.laneChangeX;
     if (change != null && Math.abs(change - x) < 0.12) state.laneChangeX = null;
-    const lane = state.laneChangeX ?? (Math.abs(x - 1.8) < Math.abs(x + 1.8) ? 1.8 : -1.8);
+    const lane = state.laneChangeX ?? nearestLaneX(x);
     const pull = (state.laneChangeX != null
       ? THREE.MathUtils.clamp((lane - x) * 0.35, -0.32, 0.32)
       : THREE.MathUtils.clamp((lane - x) * 0.05, -0.06, 0.06)) * (back ? -1 : 1);
