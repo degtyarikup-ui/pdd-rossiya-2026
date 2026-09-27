@@ -237,6 +237,12 @@ void main() {
       const GameState(phase: GamePhase.driving, lastViolation: 'priority'),
     );
     expect(find.text(appL10n.gamePenaltyPoints(50)), findsOneWidget);
+    // Going round the queue at a closed railway crossing (ticket 2.16).
+    await hud(
+      const GameState(phase: GamePhase.driving, lastViolation: 'railway'),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(appL10n.gameRailwayViolation), findsOneWidget);
     // Driving on the oncoming side is only a warning until it becomes one.
     await hud(const GameState(phase: GamePhase.driving, oncoming: true));
     await tester.pumpAndSettle(); // the previous notice fades out
@@ -784,6 +790,11 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     expect(controller.state.lastViolation, isNull);
     expect(controller.state.violationCount, 2);
+    // The railway crossing fault counts like any other.
+    controller.recordViolation('railway', 3);
+    expect(controller.state.lastViolation, 'railway');
+    expect(controller.state.violationCount, 3);
+    await tester.pump(const Duration(seconds: 5));
     controller.dispose();
   });
 

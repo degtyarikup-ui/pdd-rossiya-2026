@@ -22,6 +22,8 @@ moto = lambda z=14, speed=4, **kw: V('motorcycle', 'Мотоцикл', 'ahead', 
 truck = lambda z=14, speed=4, name='Грузовик', color='#FFA53C', **kw: V('truck', name, 'ahead', z, speed, color, **kw)
 tractor = lambda z=14, speed=3: V('tractor', 'Трактор', 'ahead', z, speed, '#F2B233', badge='Трактор')
 oncoming = lambda z=130, speed=12: V('car', 'Встречный', 'oncoming', z, speed, '#2BC280')
+cart = lambda z=14, speed=4: V('cart', 'Повозка', 'ahead', z, speed, '#8B5A2B', badge='Повозка')
+van = lambda z=8, speed=5, color='#E8EAEC': V('van', 'Фургон', 'ahead', z, speed, color)
 sign = lambda code, z, side='right', **kw: dict(code=code, z=z, side=side, **kw)
 
 SCENES = {
@@ -73,6 +75,37 @@ SCENES = {
                        'all three may be overtaken after the pedestrian crossing, not before it or on it.'),
     '34_19': dict(kind='overtake', overtake=True, signs=[sign('3.21', 8)], vehicles=[truck(14, 5, color='#C9C2B2')],
                   note='End of the no-overtaking zone (3.21): lane change first, then closing in.'),
+    # --- railway crossings (11.4: no overtaking on it or within 100 m before it;
+    # 15.3: no going round vehicles waiting at a closed one). railway.z is the
+    # track, `after` how far the question's stretch runs past it.
+    '10_11': dict(kind='overtake', overtake='before_crossing', outsideSettlement=True, railway=dict(z=210, after=30),
+                  signs=[sign('1.2', 10, plateSign='1.4.1'), sign('1.4.2', 80), sign('1.2', 150, plateSign='1.4.3')],
+                  vehicles=[tractor(14, 5)],
+                  note='1.2 with 1.4.1 outside a built-up area: the crossing is 150-300 m on (here 200 m). The tractor may be '
+                       'overtaken if the manoeuvre is over 100 m before the crossing; 1.4.2 and the repeated 1.2 + 1.4.3 follow.'),
+    '17_11': dict(kind='overtake', overtake='after_crossing', railway=dict(z=78, after=60),
+                  signs=[sign('1.2', 8)], vehicles=[truck(14, 5, color='#A3A7AA')],
+                  note='In a built-up area 1.2 stands 50-100 m before the crossing (here 70 m): the truck ahead is already '
+                       'inside the 100 m zone, so overtaking may start only past the crossing. The photo shows a truck '
+                       '(the explanation calls it a tractor).'),
+    '21_11': dict(kind='overtake', overtake='after_crossing', railway=dict(z=10, after=70),
+                  vehicles=[van(8, 5)],
+                  note='The van is on the crossing; overtaking may start right after its boundary, the signal posts '
+                       'with 1.3.1 just past the track.'),
+    '2_16': dict(kind='railway', outsideSettlement=True, railway=dict(z=20, barrier=True, train=True, after=40),
+                 signs=[sign('1.1', 3, plateSign='1.4.3')],
+                 vehicles=[truck(9, 8, color='#4F7FB8', waitsAtCrossing=True)],
+                 note='Closed barrier with the red signals on: the truck waits at the boom and may not be gone round '
+                      'through the oncoming lane (15.3). A train passes, the booms rise and the truck moves off.'),
+    # --- equal junction ahead (1.6 outside a built-up area: 150-300 m)
+    '12_11': dict(kind='overtake', overtake='before_intersection', outsideSettlement=True,
+                  junction=dict(z=158, priority='equal'), zoneLength=170, signs=[sign('1.6', 8)], vehicles=[cart(14, 5)],
+                  note='1.6: an equal junction 150 m on. The horse-drawn cart may be overtaken if the manoeuvre is over '
+                       'before the junction; overtaking on it is prohibited (11.4).'),
+    # --- detour: sign 4.2.2 prevails over the solid centre line
+    '35_5': dict(kind='detour', obstacleZ=24, marking='solid', signs=[sign('1.25', 12)],
+                 note='Road works barrier with 4.2.2 in the player\'s lane and a solid centre line: signs take precedence '
+                      'over markings, so the way round is on the left (trajectory A).'),
 }
 
 def rule(comment):

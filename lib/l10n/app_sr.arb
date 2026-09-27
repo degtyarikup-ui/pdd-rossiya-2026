@@ -282,6 +282,7 @@
   "gameYourCar": "Vaš automobil",
   "gameSpeeding": "Prekoračenje brzine",
   "gameOvertakingProhibited": "Preticanje je ovde zabranjeno",
+  "gameRailwayViolation": "Prelaz je zatvoren — obilaženje i ulazak su zabranjeni",
   "gamePedestrianYield": "Propustite pešaka",
   "gameSpeedLimitLabel": "Ograničenje {limit} km/h",
   "gameBrake": "Kočnica · unazad kad stojite",

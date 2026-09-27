@@ -1748,6 +1748,12 @@ abstract class AppLocalizations {
   /// **'Обгон здесь запрещён'**
   String get gameOvertakingProhibited;
 
+  /// No description provided for @gameRailwayViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Переезд закрыт — объезжать и выезжать нельзя'**
+  String get gameRailwayViolation;
+
   /// No description provided for @gamePedestrianYield.
   ///
   /// In ru, this message translates to:

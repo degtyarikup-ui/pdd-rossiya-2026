@@ -961,6 +961,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameOvertakingProhibited => 'Обгон здесь запрещён';
 
   @override
+  String get gameRailwayViolation =>
+      'Переезд закрыт — объезжать и выезжать нельзя';
+
+  @override
   String get gamePedestrianYield => 'Уступите дорогу пешеходу';
 
   @override

@@ -938,5 +938,326 @@ window.PDD_ROAD_SITUATIONS = [
    ]
   },
   "note": "End of the no-overtaking zone (3.21): lane change first, then closing in."
+ },
+ {
+  "id": "road_10_11",
+  "ticket": "Билет 10 · Вопрос 11",
+  "sourceQuestionId": "406ecb824188cb24e008ce80d5e4e6ae",
+  "country": "ru",
+  "category": "ab",
+  "type": "road_overtake",
+  "title": "Можно ли Вам обогнать трактор?",
+  "explanation": "Обгон запрещён на железнодорожных переездах и ближе, чем за 100 м перед ними. В данной ситуации действие происходит вне населённого пункта, согласно знаку 1.4.1 «Приближение к железнодорожному переезду» до железнодорожного переезда расстояние не менее 150-300 м.Поэтому вы можете совершить обгон трактора, если уверены, что успеете его завершить за 100 м до переезда.(«Дорожные знаки», пункт 11.4 ПДД)",
+  "pddRule": "п. 11.4",
+  "options": [
+   "Можно",
+   "Можно, если обгон будет завершен не ближе чем за 100 м до переезда",
+   "Нельзя"
+  ],
+  "correctAnswerIndex": 1,
+  "legend": [
+   {
+    "label": "Вы",
+    "color": "#ED4621"
+   },
+   {
+    "label": "Трактор",
+    "color": "#F2B233"
+   }
+  ],
+  "sourceImage": "ee408ecd1f2cfad89a7aef5a05dda155",
+  "scene": {
+   "kind": "overtake",
+   "overtake": "before_crossing",
+   "outsideSettlement": true,
+   "railway": {
+    "z": 210,
+    "after": 30
+   },
+   "signs": [
+    {
+     "code": "1.2",
+     "z": 10,
+     "side": "right",
+     "plateSign": "1.4.1"
+    },
+    {
+     "code": "1.4.2",
+     "z": 80,
+     "side": "right"
+    },
+    {
+     "code": "1.2",
+     "z": 150,
+     "side": "right",
+     "plateSign": "1.4.3"
+    }
+   ],
+   "vehicles": [
+    {
+     "type": "tractor",
+     "name": "Трактор",
+     "lane": "ahead",
+     "z": 14,
+     "speed": 5,
+     "color": "#F2B233",
+     "badge": "Трактор"
+    }
+   ]
+  },
+  "note": "1.2 with 1.4.1 outside a built-up area: the crossing is 150-300 m on (here 200 m). The tractor may be overtaken if the manoeuvre is over 100 m before the crossing; 1.4.2 and the repeated 1.2 + 1.4.3 follow."
+ },
+ {
+  "id": "road_17_11",
+  "ticket": "Билет 17 · Вопрос 11",
+  "sourceQuestionId": "55ac3f9f67efded665d3d2e6c33daa48",
+  "country": "ru",
+  "category": "ab",
+  "type": "road_overtake",
+  "title": "Можно ли Вам начать обгон в населённом пункте?",
+  "explanation": "Обгон на железнодорожных переездах и ближе, чем за 100 м перед ними, запрещён. Трактор согласно знаку 1.2 «Железнодорожной переезд без шлагбаума», который в населённом пункте устанавливается за 50-100 м, находится уже в зоне запрещения обгона. Теперь начать обгон сможете только за железнодорожным переездом.(«Дорожные знаки», пункт 11.4 ПДД)",
+  "pddRule": "п. 11.4",
+  "options": [
+   "Можно",
+   "Можно, если обгон будет завершен до переезда",
+   "Нельзя"
+  ],
+  "correctAnswerIndex": 2,
+  "legend": [
+   {
+    "label": "Вы",
+    "color": "#ED4621"
+   },
+   {
+    "label": "Грузовик",
+    "color": "#A3A7AA"
+   }
+  ],
+  "sourceImage": "be4116e09d59536b0ba2e32000275eb3",
+  "scene": {
+   "kind": "overtake",
+   "overtake": "after_crossing",
+   "railway": {
+    "z": 78,
+    "after": 60
+   },
+   "signs": [
+    {
+     "code": "1.2",
+     "z": 8,
+     "side": "right"
+    }
+   ],
+   "vehicles": [
+    {
+     "type": "truck",
+     "name": "Грузовик",
+     "lane": "ahead",
+     "z": 14,
+     "speed": 5,
+     "color": "#A3A7AA"
+    }
+   ]
+  },
+  "note": "In a built-up area 1.2 stands 50-100 m before the crossing (here 70 m): the truck ahead is already inside the 100 m zone, so overtaking may start only past the crossing. The photo shows a truck (the explanation calls it a tractor)."
+ },
+ {
+  "id": "road_21_11",
+  "ticket": "Билет 21 · Вопрос 11",
+  "sourceQuestionId": "6599c01f0c6ecae5b89db87f4d108b10",
+  "country": "ru",
+  "category": "ab",
+  "type": "road_overtake",
+  "title": "Вы можете начать обгон:",
+  "explanation": "Обгон запрещён на железнодорожных переездах и ближе чем за 100 м перед ними. Сразу же после проезда границы железнодорожного переезда (в данной ситуации стойки со знаками и светофором за переездом) можете приступать к обгону.(Пункт 11.4 ПДД)",
+  "pddRule": "п. 11.4",
+  "options": [
+   "На переезде",
+   "Непосредственно после переезда",
+   "Через 100 м после переезда"
+  ],
+  "correctAnswerIndex": 1,
+  "legend": [
+   {
+    "label": "Вы",
+    "color": "#ED4621"
+   },
+   {
+    "label": "Фургон",
+    "color": "#E8EAEC"
+   }
+  ],
+  "sourceImage": "53238441d57b3b4fe3844515985c9173",
+  "scene": {
+   "kind": "overtake",
+   "overtake": "after_crossing",
+   "railway": {
+    "z": 10,
+    "after": 70
+   },
+   "vehicles": [
+    {
+     "type": "van",
+     "name": "Фургон",
+     "lane": "ahead",
+     "z": 8,
+     "speed": 5,
+     "color": "#E8EAEC"
+    }
+   ]
+  },
+  "note": "The van is on the crossing; overtaking may start right after its boundary, the signal posts with 1.3.1 just past the track."
+ },
+ {
+  "id": "road_2_16",
+  "ticket": "Билет 2 · Вопрос 16",
+  "sourceQuestionId": "01a21d5f1a47c109e98fc934bf93a32a",
+  "country": "ru",
+  "category": "ab",
+  "type": "road_railway",
+  "title": "Разрешается ли водителю выполнить объезд грузового автомобиля?",
+  "explanation": "Водитель легкового автомобиля хочет объехать стоящий перед закрытым шлагбаумом грузовик. Правила, оговаривающие порядок проезда через железнодорожный переезд, такой маневр (с выездом на полосу встречного движения) запрещают.(Пункт 15.3 ПДД).",
+  "pddRule": "п. 15.3",
+  "options": [
+   "Разрешается",
+   "Разрешается, если между шлагбаумом и остановившимся грузовым автомобилем расстояние более 5 м",
+   "Запрещается"
+  ],
+  "correctAnswerIndex": 2,
+  "legend": [
+   {
+    "label": "Вы",
+    "color": "#ED4621"
+   },
+   {
+    "label": "Грузовик",
+    "color": "#4F7FB8"
+   }
+  ],
+  "sourceImage": "07bad44c13de4e79e02eda779e92eab6",
+  "scene": {
+   "kind": "railway",
+   "outsideSettlement": true,
+   "railway": {
+    "z": 20,
+    "barrier": true,
+    "train": true,
+    "after": 40
+   },
+   "signs": [
+    {
+     "code": "1.1",
+     "z": 3,
+     "side": "right",
+     "plateSign": "1.4.3"
+    }
+   ],
+   "vehicles": [
+    {
+     "type": "truck",
+     "name": "Грузовик",
+     "lane": "ahead",
+     "z": 9,
+     "speed": 8,
+     "color": "#4F7FB8",
+     "waitsAtCrossing": true
+    }
+   ]
+  },
+  "note": "Closed barrier with the red signals on: the truck waits at the boom and may not be gone round through the oncoming lane (15.3). A train passes, the booms rise and the truck moves off."
+ },
+ {
+  "id": "road_12_11",
+  "ticket": "Билет 12 · Вопрос 11",
+  "sourceQuestionId": "65bb67bbaf1798938a78e2c76565be6f",
+  "country": "ru",
+  "category": "ab",
+  "type": "road_overtake",
+  "title": "Разрешено ли Вам выполнить обгон в данной ситуации?",
+  "explanation": "Предупреждающий знак 1.6 «Пересечение равнозначных дорог» устанавливается вне населённого пункта за 150-300 м до перекрёстка. На таких перекрёстках обгон запрещён. Обгон в показанной ситуации совершить можете, но закончить его необходимо до границы перекрёстка.(«Дорожные знаки», пункт 11.4 ПДД)",
+  "pddRule": "п. 11.4",
+  "options": [
+   "Разрешено",
+   "Разрешено, если обгон будет завершён до перекрёстка",
+   "Запрещено"
+  ],
+  "correctAnswerIndex": 1,
+  "legend": [
+   {
+    "label": "Вы",
+    "color": "#ED4621"
+   },
+   {
+    "label": "Повозка",
+    "color": "#8B5A2B"
+   }
+  ],
+  "sourceImage": "dfcdfe8499bd05570a8c33ebf0d97611",
+  "scene": {
+   "kind": "overtake",
+   "overtake": "before_intersection",
+   "outsideSettlement": true,
+   "junction": {
+    "z": 158,
+    "priority": "equal"
+   },
+   "zoneLength": 170,
+   "signs": [
+    {
+     "code": "1.6",
+     "z": 8,
+     "side": "right"
+    }
+   ],
+   "vehicles": [
+    {
+     "type": "cart",
+     "name": "Повозка",
+     "lane": "ahead",
+     "z": 14,
+     "speed": 5,
+     "color": "#8B5A2B",
+     "badge": "Повозка"
+    }
+   ]
+  },
+  "note": "1.6: an equal junction 150 m on. The horse-drawn cart may be overtaken if the manoeuvre is over before the junction; overtaking on it is prohibited (11.4)."
+ },
+ {
+  "id": "road_35_5",
+  "ticket": "Билет 35 · Вопрос 5",
+  "sourceQuestionId": "003122179e28d84d4f206d1a080fdadd",
+  "country": "ru",
+  "category": "ab",
+  "type": "road_detour",
+  "title": "Вы можете объехать препятствие:",
+  "explanation": "Знаки имеют приоритет над разметкой. Поэтому согласно знаку 4.2.2 «Объезд препятствия слева» Вы должны продолжить движение по траектории «А».(«Дорожные знаки», «Горизонтальная разметка»)",
+  "pddRule": "",
+  "options": [
+   "Только по траектории А",
+   "Только по траектории Б",
+   "По любой траектории из указанных"
+  ],
+  "correctAnswerIndex": 0,
+  "legend": [
+   {
+    "label": "Вы",
+    "color": "#ED4621"
+   }
+  ],
+  "sourceImage": "0b3c7cb3d24384033e0438ae7ea4c267",
+  "scene": {
+   "kind": "detour",
+   "obstacleZ": 24,
+   "marking": "solid",
+   "signs": [
+    {
+     "code": "1.25",
+     "z": 12,
+     "side": "right"
+    }
+   ]
+  },
+  "note": "Road works barrier with 4.2.2 in the player's lane and a solid centre line: signs take precedence over markings, so the way round is on the left (trajectory A)."
  }
 ];

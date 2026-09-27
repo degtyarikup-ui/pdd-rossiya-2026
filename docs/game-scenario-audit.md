@@ -355,18 +355,18 @@ the player keeps the selected car.
 | `ticket_29_14` | false | left | `[]` | Turn from tram tracks of the same direction; lane/track selection is not modelled. |
 | `ticket_29_15` | true | straight | `["npc_bus", "npc_car"]` | 2.4 + 8.13 north-east; opposite bus and car from right are on the main road; player yields to both. |
 | `ticket_30_13` | false | unresolved | `[]` | Observation question over two maneuvers (left and uturn); no unique player maneuver. |
-| `ticket_30_14` | false | straight | `[]` | Horse-drawn cart actor type is not available. |
+| `ticket_30_14` | true | straight | `["npc_car","npc_cart"]` | Flashing yellow = equal junction. Oncoming car first (nobody on its right), then the horse-drawn cart from the right (`type: 'cart'`), the player last. Enabled 2026-09-27. |
 | `ticket_30_15` | true | left | `[]` | 2.1 + 8.13 south-west (plate in the source); motorcycle on the left is on the main road and yields to the player; bus and the car from the right are secondary. Corrected 2026-09-27 (was south-east, which contradicted the answer «Никому»). |
 | `ticket_31_13` | false | left | `[]` | Traffic controller. |
 | `ticket_31_14` | true | straight | `["tram_1", "npc_truck"]` | Equal crossroad; tram from left has priority, truck from right is the right-hand obstacle; conservative serial order. |
 | `ticket_31_15` | true | straight | `["npc_moto", "npc_bus", "npc_car"]` | 2.4 + 8.13 north-west; motorcycle from left and opposite bus on main road, then car from right; player last. |
 | `ticket_32_13` | true | left | `["npc_bus"]` | Green with inactive 2.4; opposite bus straight has priority; truck with amber beacon waits at red on the right. |
 | `ticket_32_14` | false | uturn | `[]` | Correct answer requires entering first and yielding mid-maneuver; staged yielding is not modelled. |
-| `ticket_32_15` | false | straight | `[]` | Tram travels alongside the player on the same approach; that placement is not in the scene vocabulary. |
+| `ticket_32_15` | true | straight | `["tram_1","npc_car"]` | 2.1 + 8.13 south-east, four-lane approach (`mainWidth: 14`): the tram alongside on the left turns right with the main road, the car from the right goes straight — they pass together, then the player; the motorcycle on the secondary road last. Enabled 2026-09-27. |
 | `ticket_33_13` | false | right | `[]` | Traffic controller. |
 | `ticket_33_14` | false | left | `[]` | Correct answer requires entering first and yielding mid-maneuver; staged yielding is not modelled. |
 | `ticket_33_15` | true | straight | `["npc_car", "npc_truck"]` | 2.4 + 8.13 north-east; opposite car and truck from right are on the main road. |
-| `ticket_34_13` | false | straight | `[]` | Traffic controller. |
+| `ticket_34_13` | true | straight | `[]` | Regulator side-on, arms down: straight/right for the player, only straight for a tram. The tram alongside wants to turn right and stays (`staysPut`); the player goes first. Source view is from a motorcycle. Enabled 2026-09-27. |
 | `ticket_34_14` | true | left | `["npc_car"]` | Equal crossroad; car from right is the only right-hand obstacle; motorcycle from left yields to player. |
 | `ticket_34_15` | true | left | `["npc_bus", "npc_car"]` | 2.4 + 8.13 north-west; bus from left (turning right) and opposite car are on the main road. |
 | `ticket_35_13` | false | unresolved | `[]` | Observation question over several maneuvers; no unique player maneuver. |
@@ -504,3 +504,25 @@ the player keeps the selected car.
 путь манёвра `paths[action]` (по нему же рисуются шевроны). Прогноз
 «не уступил» использует путь игрока, когда он задан. Ещё — `staysPut`
 (участник не трогается, сцена считается очищенной от него).
+
+### Новые сцены по билетам (2026-09-27)
+
+Дорожные вопросы (`build_road_situations.py`, всего 24):
+
+| Сцена | Как на картинке | Что проверяется |
+| --- | --- | --- |
+| 2_16 | загородная дорога, 1.1 + 1.4.3, грузовик стоит перед закрытым шлагбаумом, красные сигналы | объезд грузовика через встречную или выезд за брус до открытия — `railway` (п. 15.3); проходит поезд, брусья поднимаются, грузовик уезжает |
+| 10_11 | вне населённого пункта, трактор впереди, 1.2 + 1.4.1 | переезд через 200 м (150–300 м), дальше 1.4.2 и повторный 1.2 + 1.4.3; обгон разрешён, если закончен за 100 м до пути (п. 11.4) |
+| 17_11 | в населённом пункте, грузовик впереди, 1.2 (50–100 м) | грузовик уже в 100-метровой зоне — обгон только за переездом. На фото грузовик, в пояснении «трактор»; оставлен грузовик по фото |
+| 21_11 | фургон на переезде, светофоры с 1.3.1 за путём | обгон можно начинать сразу за границей переезда (стойки со знаками) |
+| 12_11 | вне населённого пункта, повозка с мешками, знак 1.6 | равнозначный перекрёсток через 150 м; обгон разрешён, если закончен до перекрёстка, на перекрёстке — `overtaking` |
+| 35_5 | барьер с 4.2.2 на полосе, 1.25, сплошная по оси | знак важнее разметки: объезд слева (траектория А) без нарушений; наезд на барьер — `roadworks` |
+
+Перекрёстки: включены 30_14 (гужевая повозка), 32_15 (трамвай попутно слева
+по путям у осевой), 34_13 (регулировщик, трамвай ждёт другого сигнала) —
+см. таблицу выше. Всего включено 88 перекрёстков (86 вопросов 13–15 и 14_8, 18_8).
+
+Регрессия: `tools/game-road-rules-test.cjs` — для каждой новой дорожной сцены
+законный проезд не стоит ни одного нарушения, а нарушение из билета
+фиксируется; `tools/game-road-review-test.cjs` проверяет переезды (настил,
+сигналы, состояние шлагбаума, границы окна обгона) и объезд.

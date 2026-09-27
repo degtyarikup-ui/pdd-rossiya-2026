@@ -9,6 +9,7 @@ import base64, json, pathlib, re
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 CODES = ['2.1', '2.3.1', '2.4', '2.5',                      # crossroad priority signs
          '1.6', '1.14', '1.25',                     # warnings used by overtaking/roadworks scenes
+         '1.1', '1.2', '1.3.1', '1.4.1', '1.4.2', '1.4.3',  # railway crossing and its approach plates
          '3.1', '3.20', '3.21', '3.24', '3.25',     # no entry, overtaking / speed limits
          '4.2.1', '4.2.2', '4.3',                   # obstacle detour, roundabout
          '5.1', '5.2', '5.5', '5.6', '5.7.1', '5.20', '5.7.2', '5.16', '5.19.1', '5.19.2', '5.21', '5.22', '5.23.1', '5.24.1', '5.25', '5.26',  # special prescriptions
@@ -21,7 +22,13 @@ SPRITE_CROPS = {
     '5.7.2': (148, 0, 137, 48),
     '5.19.1': (0, 3, 84, 84),
     '5.19.2': (89, 3, 84, 84),
+    # 1.4.x: the right-hand plates (stripes rising to the right) are the top row.
+    '1.4.1': (0, 0, 44, 82),
+    '1.4.2': (49, 0, 44, 82),
+    '1.4.3': (98, 0, 44, 82),
 }
+# Codes that share one catalogue entry with their siblings.
+CATALOGUE = {'1.4.1': '1.4', '1.4.2': '1.4', '1.4.3': '1.4'}
 
 signs = json.loads((ROOT / 'assets/countries/ru/questions/signs.json').read_text())
 by_code = {code: item for category in signs.values() for code, item in category.items()}
@@ -29,13 +36,13 @@ by_code = {code: item for category in signs.values() for code, item in category.
 # whole contact sheet in traffic changes the sign's meaning.
 images = {}
 for code in CODES:
-    images.setdefault(by_code[code]['image'], []).append(code)
+    images.setdefault(by_code[CATALOGUE.get(code, code)]['image'], []).append(code)
 for codes in images.values():
     if len(codes) > 1:
         assert all(code in SPRITE_CROPS for code in codes), f'Uncropped sign sprite: {codes}'
 out, aspect = {}, {}
 for code in CODES:
-    image = ROOT / 'assets/countries/ru' / by_code[code]['image'].removeprefix('./')
+    image = ROOT / 'assets/countries/ru' / by_code[CATALOGUE.get(code, code)]['image'].removeprefix('./')
     raw = image.read_bytes()
     if code in SPRITE_CROPS:
         body = re.sub(rb'^<svg[^>]*>', b'', raw).removesuffix(b'</svg>')

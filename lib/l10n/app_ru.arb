@@ -303,6 +303,7 @@
   "gameYourCar": "Ваш автомобиль",
   "gameSpeeding": "Превышение скорости",
   "gameOvertakingProhibited": "Обгон здесь запрещён",
+  "gameRailwayViolation": "Переезд закрыт — объезжать и выезжать нельзя",
   "gamePedestrianYield": "Уступите дорогу пешеходу",
   "gameSpeedLimitLabel": "Ограничение {limit} км/ч",
   "@gameSpeedLimitLabel": {"placeholders": {"limit": {"type": "int"}}},

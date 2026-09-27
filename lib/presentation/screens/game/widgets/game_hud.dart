@@ -312,6 +312,7 @@ class GameHud extends StatelessWidget {
                                 'overtaking' =>
                                   appL10n.gameOvertakingProhibited,
                                 'pedestrian' => appL10n.gamePedestrianYield,
+                                'railway' => appL10n.gameRailwayViolation,
                                 _ => appL10n.gameWrongManeuver,
                               },
                               textAlign: TextAlign.center,

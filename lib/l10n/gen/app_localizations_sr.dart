@@ -963,6 +963,10 @@ class AppLocalizationsSr extends AppLocalizations {
   String get gameOvertakingProhibited => 'Preticanje je ovde zabranjeno';
 
   @override
+  String get gameRailwayViolation =>
+      'Prelaz je zatvoren — obilaženje i ulazak su zabranjeni';
+
+  @override
   String get gamePedestrianYield => 'Propustite pešaka';
 
   @override

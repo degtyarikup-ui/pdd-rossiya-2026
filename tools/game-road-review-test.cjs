@@ -112,7 +112,29 @@ const { chromium } = require('playwright');
                 this.surface(5.7, mz).includes('median') && !this.surface(5.7, mz).includes('road');
               result.forwardLeftLane = roadOvertakeAllowedAt(mz);
             }
-            if (s.outsideSettlement) {
+            if (s.railway) {
+              // The track crosses the road on a deck, signals face both ways;
+              // a barrier crossing starts closed (red lamps), an open one shows
+              // the white-moon lamp. Overtaking stops 100 m short of the track
+              // (11.4) or starts past its boundary, as the ticket says.
+              const cz = ev.crossingZ;
+              result.crossingDrivable = this.surface(-1.8, cz).includes('road') && this.surface(1.8, cz).includes('road');
+              result.crossingSignals = ev.rail.red.length === 4 && ev.rail.white.length === 2;
+              result.barrierState = s.railway.barrier ? ev.rail.booms.length === 2 && !ev.rail.open : ev.rail.open;
+              ev.phase = 'manual';
+              if (s.overtake === 'before_crossing') result.overtakeWindow = roadOvertakeAllowedAt(cz - 101) && !roadOvertakeAllowedAt(cz - 99);
+              if (s.overtake === 'after_crossing') result.overtakeWindow = !roadOvertakeAllowedAt(cz - 1) && roadOvertakeAllowedAt(cz + 6);
+              if (s.kind === 'railway') result.noOvertakeAtBarrier = !roadOvertakeAllowedAt(ev.stopZ + 5);
+              ev.phase = 'question';
+            }
+            if (s.kind === 'detour') {
+              // 4.2.2 prevails over the solid line: round the barrier on the left.
+              ev.phase = 'manual';
+              result.detourLeftAllowed = roadOvertakeAllowedAt(ev.obstZ) && !roadOvertakeAllowedAt(ev.obstZ + 40);
+              ev.phase = 'question';
+              result.barrierInLane = state.props.some(p => p.ev === ev && p.kind === 'barrier');
+            }
+            if (s.outsideSettlement && s.approachLimitKmH) {
               result.ruralShoulder = !this.surface(-5.7, ev.stopZ + 12).includes('sidewalk');
               result.approachLimit = state.speedLimitKmH === 70;
               ev.phase = 'manual'; playerCarGroup.position.z = ev.signZ + 1; updateRoadEvent(0);
@@ -147,7 +169,7 @@ const { chromium } = require('playwright');
     await page.goto((process.env.GAME_URL || 'http://127.0.0.1:8938') + '/assets/game/');
     await page.waitForFunction(() => window.roadReview);
     const catalog = await page.evaluate(() => window.PDD_ROAD_SITUATIONS);
-    assert.equal(catalog.length, 18);
+    assert.equal(catalog.length, 24);
     const splitCodes = ['5.7.1', '5.7.2', '5.19.1', '5.19.2'];
     const splitSigns = await page.evaluate(codes => codes.map(code => window.PDD_SIGN_TEXTURES[code]), splitCodes);
     const splitSvgs = splitSigns.map(uri => Buffer.from(uri.split(',')[1], 'base64').toString('utf8'));
@@ -170,7 +192,7 @@ const { chromium } = require('playwright');
     }
     const enabled = catalog;
     const ids = enabled.map(s => s.id).sort();
-    const samples = await page.evaluate(() => roadReview.sample(180));
+    const samples = await page.evaluate(n => roadReview.sample(n), ids.length * 8);
     for (let i = 0; i < samples.length; i += ids.length) assert.deepEqual(samples.slice(i, i + ids.length).sort(), ids);
     const output = process.env.GAME_SHOTS || 'build/game_ui/road-review';
     fs.mkdirSync(output, {recursive: true});
