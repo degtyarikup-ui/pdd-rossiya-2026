@@ -25,7 +25,7 @@ const { chromium } = require('playwright');
         scenarios: () => SITUATIONS.filter(s => routeSpec(s).reviewed && !isRegulatorSituation(s)),
         allScenarios: () => SITUATIONS.filter(s => routeSpec(s).reviewed),
         drawSituation: nextSituation,
-        randomSequence(n) { situationBag = []; return Array.from({ length: n }, () => nextSituation().id); },
+        randomSequence(n) { situationBag = []; state.regulatorAt = Infinity; return Array.from({ length: n }, () => nextSituation().id); },
         updateActors, updateCamera,
         roadQueue(ids) { roadBag = ids.map(id => window.PDD_ROAD_SITUATIONS.find(r => r.id === id)).reverse(); },
         actorInView,

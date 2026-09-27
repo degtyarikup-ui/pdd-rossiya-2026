@@ -6220,56 +6220,64 @@
       return batonGroup;
     }
 
+    // He faces +Z, so his right hand is on -X (6.10 is about the RIGHT arm:
+    // a mirrored figure turns «left side, right arm forward» into a
+    // prohibiting right side).
+    const RX = -1;
     if (pose === 'right_arm_forward') {
       const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.65), darkUniform);
-      rArm.position.set(0.32, 1.45, 0.32);
+      rArm.position.set(RX * 0.32, 1.45, 0.32);
       group.add(rArm);
       const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), skinMat);
-      rHand.position.set(0.32, 1.45, 0.66);
+      rHand.position.set(RX * 0.32, 1.45, 0.66);
       group.add(rHand);
       const baton = createBaton();
       baton.rotation.x = Math.PI / 2;
-      baton.position.set(0.32, 1.45, 0.88);
+      baton.position.set(RX * 0.32, 1.45, 0.88);
       group.add(baton);
 
       const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), darkUniform);
-      lArm.position.set(-0.32, 1.25, 0);
+      lArm.position.set(-RX * 0.32, 1.25, 0);
       group.add(lArm);
     } else if (pose === 'arm_up') {
       const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 0.12), darkUniform);
-      rArm.position.set(0.32, 1.8, 0);
+      rArm.position.set(RX * 0.32, 1.8, 0);
       group.add(rArm);
       const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), skinMat);
-      rHand.position.set(0.32, 2.15, 0);
+      rHand.position.set(RX * 0.32, 2.15, 0);
       group.add(rHand);
       const baton = createBaton();
-      baton.position.set(0.32, 2.4, 0);
+      baton.position.set(RX * 0.32, 2.4, 0);
       group.add(baton);
 
       const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), darkUniform);
-      lArm.position.set(-0.32, 1.25, 0);
+      lArm.position.set(-RX * 0.32, 1.25, 0);
       group.add(lArm);
     } else {
       const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), darkUniform);
-      lArm.position.set(-0.32, 1.25, 0);
+      lArm.position.set(-RX * 0.32, 1.25, 0);
       group.add(lArm);
 
       const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), darkUniform);
-      rArm.position.set(0.32, 1.25, 0);
+      rArm.position.set(RX * 0.32, 1.25, 0);
       group.add(rArm);
       const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), skinMat);
-      rHand.position.set(0.32, 0.94, 0);
+      rHand.position.set(RX * 0.32, 0.94, 0);
       group.add(rHand);
       const baton = createBaton();
-      baton.rotation.z = -0.3;
-      baton.position.set(0.36, 0.8, 0);
+      baton.rotation.z = -0.3 * RX;
+      baton.position.set(RX * 0.36, 0.8, 0);
       group.add(baton);
     }
 
+    // Which side of him the player sees. The junction factory frame is
+    // mirrored when the segment is registered (x and rotation.y flip), so
+    // facing the player's left (his left side towards the player) is -π/2
+    // here and becomes +π/2 in the world.
     if (orientation === 'facing_player' || orientation === 'front') group.rotation.y = Math.PI;
     else if (orientation === 'back') group.rotation.y = 0;
-    else if (orientation === 'left_side') group.rotation.y = Math.PI / 2;
-    else if (orientation === 'right_side') group.rotation.y = -Math.PI / 2;
+    else if (orientation === 'left_side') group.rotation.y = -Math.PI / 2;
+    else if (orientation === 'right_side') group.rotation.y = Math.PI / 2;
 
     const pedestal = new THREE.Mesh(
       new THREE.CylinderGeometry(1.2, 1.3, 0.06, 24),
@@ -8045,12 +8053,13 @@
     const regPool = pool.filter(isRegulatorSituation);
     const normalPool = pool.filter(s => !isRegulatorSituation(s));
 
-    state.situationsSinceLastRegulator = (state.situationsSinceLastRegulator || 0) + 1;
-    const wantRegulator = Boolean(state.forceRegulator) ||
-      (state.situationsSinceLastRegulator >= 30 && Math.random() < 0.02);
+    // One junction with a traffic controller per run, somewhere between the
+    // 3rd and the 8th (a run of 20 questions passes about ten junctions).
+    state.junctionsDrawn = (state.junctionsDrawn || 0) + 1;
+    if (state.regulatorAt === undefined) state.regulatorAt = 3 + Math.floor(Math.random() * 6);
+    const wantRegulator = Boolean(state.forceRegulator) || state.junctionsDrawn === state.regulatorAt;
 
     if (wantRegulator && regPool.length) {
-      state.situationsSinceLastRegulator = 0;
       const idx = Math.floor(Math.random() * regPool.length);
       const selected = regPool[idx];
       lastSituationId = selected.id;
@@ -8566,6 +8575,13 @@
           a.done = true;
           a.mesh.visible = false;
         }
+        return;
+      }
+      // staysPut: held by a traffic controller's signal (6.10) for good; it
+      // blocks nobody's turn and is removed once far behind, out of view.
+      if (a.config.staysPut) {
+        a.cleared = true;
+        if (actorFootprint(a).p.distanceTo(playerCarGroup.position) > 90 && !actorInView(a.mesh)) { a.done = true; a.mesh.visible = false; }
         return;
       }
       if (!a.active && !a.waitsForPlayer && a.dependencies?.every(b => b.cleared)) a.active = true;
@@ -11479,6 +11495,8 @@
     state.lastSafeYaw = 0;
     state.resolution = null;
     state.exitReported = undefined;
+    state.junctionsDrawn = 0;
+    state.regulatorAt = undefined;
     state.activeIntersection = null;
     state.roadEvent = null;
     state.roadTurn = 0;
