@@ -27,6 +27,13 @@ export const ANALYTICS_VIEW_HTML = String.raw`
         .an-step { position:relative; padding-right:16px; }
         .an-step + .an-step { padding-left:24px; border-left:1px solid var(--an-gray); }
         .an-rate { display:inline-block; margin-top:12px; font-size:13px; font-weight:700; line-height:18px; color:var(--an-accent); background:#E8F2FE; border-radius:8px; padding:2px 8px; }
+        .an-path { display:flex; flex-direction:column; gap:20px; }
+        .an-path-row { display:grid; grid-template-columns:200px minmax(0,1fr) 88px; gap:16px; align-items:center; }
+        .an-path-name { font-size:15px; font-weight:700; line-height:20px; color:var(--an-text); }
+        .an-path-bar { height:40px; background:var(--an-gray); border-radius:12px; overflow:hidden; }
+        .an-path-bar > div { height:100%; border-radius:12px; min-width:4px; }
+        .an-path-val { font-size:24px; font-weight:800; line-height:32px; text-align:right; color:var(--an-text); font-variant-numeric:tabular-nums; }
+        .an-path .an-rate { margin-top:4px; }
         .an-row2 { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; align-items:start; }
         .an-row2 > .an-card { margin-bottom:16px; }
         .an-chart { position:relative; width:100%; }
@@ -53,19 +60,21 @@ export const ANALYTICS_VIEW_HTML = String.raw`
         @media (max-width:640px) {
           .an-card { padding:16px; }
           .an-funnel { grid-template-columns:1fr 1fr; row-gap:16px; }
+          .an-path-row { grid-template-columns:minmax(0,1fr) 64px; row-gap:8px; }
+          .an-path-bar { grid-column:1 / -1; grid-row:2; height:24px; }
           .an-step:nth-child(3) { padding-left:0; border-left:none; }
           .an-big { font-size:24px; line-height:32px; }
           .an-now { grid-template-columns:1fr 1fr; }
         }
       </style>
-      <div class="an-card"><div class="an-funnel" id="an-funnel"></div></div>
+      <div class="an-card"><div class="an-title">Путь пользователя</div><div class="an-path" id="an-path"></div></div>
       <div class="an-card">
         <div class="an-title" id="an-installs-title">Установки</div>
         <div class="an-chart" id="an-installs-chart"></div>
         <div class="an-caption" id="an-installs-caption"></div>
       </div>
       <div class="an-row2">
-        <div class="an-card"><div class="an-title">Откуда приходят на сайт</div><div class="an-list" id="an-sources"></div></div>
+        <div class="an-card"><div class="an-title">Сайт</div><div class="an-funnel" id="an-funnel" style="grid-template-columns:1fr 1fr;margin-bottom:24px"></div><div class="an-label" style="margin-bottom:16px">Откуда приходят</div><div class="an-list" id="an-sources"></div></div>
         <div>
           <div class="an-card"><div class="an-title">Где устанавливают</div><div class="an-list" id="an-stores"></div></div>
           <div class="an-card" id="an-apps-card"><div class="an-title">Страны</div><div class="an-list" id="an-apps"></div></div>
@@ -220,7 +229,7 @@ function anShareList(items, total, color) {
 }
 
 function renderDashboard(data) {
-  if (!document.getElementById('an-funnel')) return;
+  if (!document.getElementById('an-path')) return;
   window.__anData = data;
   var t = data.totals || {}, p = data.previous || {}, u = data.users || null;
   var tl = data.timeline || [];
@@ -231,12 +240,33 @@ function renderDashboard(data) {
   var cmp = !today;
   var cmpInstalls = cmp && firstPrevDay >= AN_RELIABLE_FROM;
 
-  // 1. Воронка за период
+  // 1. Путь пользователя: скачали → зарегистрировались → вернулись → купили.
+  // Шаги 3–4 считаются по тем, кто зарегистрировался в этот период.
+  var co = (u && u.cohort) || {};
+  var path = [
+    { name: 'Скачали', value: t.installs, color: '#0574F8' },
+    { name: 'Зарегистрировались', value: u ? u.registrations : 0, color: '#0574F8', of: 0, word: 'скачавших' },
+    { name: 'Вернулись на другой день', value: co.returned || 0, color: '#0574F8', of: 1, word: 'зарегистрировавшихся', hide: today },
+    { name: 'Купили Premium', value: co.paid || 0, color: '#FFA53C', of: 1, word: 'зарегистрировавшихся' }
+  ].filter(function (st) { return !st.hide; });
+  var pathMax = Math.max.apply(null, path.map(function (st) { return st.value; }).concat([1]));
+  var base = [path[0].value, u ? u.registrations : 0];
+  document.getElementById('an-path').innerHTML = path.map(function (st) {
+    var rate = '';
+    if (st.of !== undefined && base[st.of]) {
+      var pct = Math.round(st.value / base[st.of] * 100);
+      // Больше 100% бывает, пока установки до 25.09 недосчитаны, — такую долю не показываем.
+      if (pct <= 100) rate = '<div class="an-rate">' + pct + '% ' + st.word + '</div>';
+    }
+    return '<div class="an-path-row"><div><div class="an-path-name">' + st.name + '</div>' + rate + '</div>'
+      + '<div class="an-path-bar"><div style="width:' + (st.value / pathMax * 100) + '%;background:' + st.color + '"></div></div>'
+      + '<div class="an-path-val">' + anNum(st.value) + '</div></div>';
+  }).join('');
+
+  // Сайт: визиты → переходы в магазин
   var steps = [
-    ['Визиты сайта', t.views, p.views, cmp],
-    ['Перешли в магазин', t.clicks, p.clicks, cmp, 'посетителей'],
-    ['Установки', t.installs, p.installs, cmpInstalls],
-    ['Регистрации', u ? u.registrations : 0, u ? u.previousRegistrations : 0, cmp, 'установивших']
+    ['Визиты', t.views, p.views, cmp],
+    ['Перешли в магазин', t.clicks, p.clicks, cmp, 'посетителей']
   ];
   document.getElementById('an-funnel').innerHTML = steps.map(function (st, i) {
     var rate = '';

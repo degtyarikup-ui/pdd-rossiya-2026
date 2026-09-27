@@ -9,6 +9,10 @@ function isRegistered(u) {
   return !u.pending && !u.suspect && String(u.provider || 'guest').toLowerCase() !== 'guest';
 }
 
+function isPaid(u) {
+  return Boolean(u.purchasedAt) || (Boolean(u.premiumSource) && u.premiumSource !== 'admin_grant');
+}
+
 function premiumActive(u, now) {
   if (!u.isPremium) return false;
   return !u.premiumExpiresAt || Date.parse(u.premiumExpiresAt) > now;
@@ -33,13 +37,22 @@ export function usersSnapshot(users, days, app, dayKey, now = Date.now()) {
   let previousRegistrations = 0;
   let active1 = 0, active7 = 0, active30 = 0, premium = 0;
   const premiumBySource = {};
+  // Когорта периода: кто зарегистрировался в период — вернулся ли через
+  // сутки и купил ли Premium (оплата в магазине, не ручная выдача).
+  let cohortReturned = 0, cohortPaid = 0, cohortActive7 = 0;
   const byApp = {};
 
   for (const u of list) {
     const created = Date.parse(u.createdAt || '');
     if (Number.isFinite(created)) {
       const key = dayKey(new Date(created));
-      if (inPeriod.has(key)) { perDay[key]++; registrations++; }
+      if (inPeriod.has(key)) {
+        perDay[key]++; registrations++;
+        const seenAt = Date.parse(u.lastSeenAt || '');
+        if (Number.isFinite(seenAt) && seenAt - created >= DAY_MS) cohortReturned++;
+        if (Number.isFinite(seenAt) && now - seenAt <= 7 * DAY_MS) cohortActive7++;
+        if (isPaid(u)) cohortPaid++;
+      }
       else if (prevKeys.has(key)) previousRegistrations++;
     }
     const seen = now - Date.parse(u.lastSeenAt || u.createdAt || 0);
@@ -63,6 +76,7 @@ export function usersSnapshot(users, days, app, dayKey, now = Date.now()) {
     registrations,
     previousRegistrations,
     registrationsByDay: perDay,
+    cohort: { returned: cohortReturned, active7: cohortActive7, paid: cohortPaid },
     active1,
     active7,
     active30,
