@@ -25,9 +25,10 @@ export function userSummary(user) {
     isPremium: Boolean(user.isPremium),
     premiumExpiresAt: user.premiumExpiresAt || null,
     premiumSource: cut(user.premiumSource, 20),
+    purchasedAt: user.purchasedAt || null,
     hasPushToken: Boolean(user.pushToken),
     suspect: user.suspect === true,
-    v: 1,
+    v: 2,
   };
   if (new TextEncoder().encode(JSON.stringify(meta)).length > META_LIMIT) meta.avatarUrl = null;
   return meta;
@@ -49,7 +50,7 @@ export async function listUserSummaries(env) {
   do {
     const page = await env.INSTALLS.list({ prefix: 'user:', cursor });
     for (const key of page.keys || []) {
-      if (key.metadata && key.metadata.v === 1) users.push(key.metadata);
+      if (key.metadata && key.metadata.v === 2) users.push(key.metadata);
       else missing.push(key.name);
     }
     cursor = page.list_complete === false ? page.cursor : undefined;
