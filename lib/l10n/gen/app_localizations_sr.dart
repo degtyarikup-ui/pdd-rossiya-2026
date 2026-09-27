@@ -1166,13 +1166,13 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get gameControlsSimpleHint =>
-      'Strelica — prelazak u susednu traku, na raskrsnici — izbor skretanja. Auto vozi samo';
+      'Strelice — promena trake i skretanja, auto vozi samo';
 
   @override
   String get gameControlsFree => 'Slobodno upravljanje';
 
   @override
-  String get gameControlsFreeHint => 'Strelica okreće volan dok je držiš';
+  String get gameControlsFreeHint => 'Strelice okreću volan dok ih držiš';
 
   @override
   String get gameTipGas =>
@@ -1193,4 +1193,7 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get gamePause => 'Pauza';
+
+  @override
+  String get gameLobbyControls => 'Uprav.';
 }

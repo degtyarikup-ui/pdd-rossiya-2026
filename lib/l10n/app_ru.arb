@@ -363,13 +363,14 @@
   "@gameFuelFreeRefill": {"placeholders": {"n": {"type": "int"}}},
   "gameControlsTitle": "Управление",
   "gameControlsSimple": "Простое управление",
-  "gameControlsSimpleHint": "Стрелка — перестроиться в соседнюю полосу, на перекрёстке — выбрать поворот. Машина едет сама",
+  "gameControlsSimpleHint": "Стрелки — перестроения и повороты, машина едет сама",
   "gameControlsFree": "Свободное управление",
-  "gameControlsFreeHint": "Стрелка крутит руль, пока её держишь",
+  "gameControlsFreeHint": "Стрелки крутят руль, пока их держишь",
   "gameTipGas": "Держи педаль газа — машина едет. Отпусти — плавно остановится",
   "gameTipSteer": "Нажми стрелку — машина перестроится в соседнюю полосу",
   "gameTipTurn": "На перекрёстке нажми стрелку — машина сама повернёт. Нажмёшь ещё раз — поедет прямо",
   "gameTipNext": "Дальше",
   "gameTipDone": "Поехали",
-  "gamePause": "Пауза"
+  "gamePause": "Пауза",
+  "gameLobbyControls": "Управ."
 }

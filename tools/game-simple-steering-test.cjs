@@ -152,7 +152,22 @@ const { chromium } = require('playwright');
         junctions.push({ id: it.situation.id, geometry: it.situation.geometry, maneuver, hit,
           done: !s.resolution, faults, yaw: +t.player().rotation.y.toFixed(3), x: +t.player().position.x.toFixed(2) });
       });
-      return { leftLane, noThird, held, back, junctions };
+      // 3. T-junction: the car waits at the turn with the gas held and moves
+      // off the moment an arrow is pressed (no second press of the gas).
+      const tees = [];
+      t.scenarios().forEach((sc, i) => {
+        t.select(i); s.paused = false; t.approach();
+        const it = s.activeIntersection;
+        if (it.previews.straight) return;
+        window.game.proceedAfterAnswer(true, it.situation.id);
+        window.game.releaseTraffic(it.situation.id);
+        window.game.setGas(true); t.tick(4);
+        const waited = s.speed === 0 && !!s.resolution;
+        window.game.changeLane('right'); t.tick(6);
+        window.game.setGas(false);
+        tees.push({ id: sc.id, waited, turned: !s.resolution });
+      });
+      return { leftLane, noThird, held, back, junctions, tees };
     });
     const near = (a, b, eps) => Math.abs(a - b) < eps;
     assert(near(result.leftLane.x, 1.8, 0.05) && near(result.leftLane.yaw, 0, 0.01), 'Lane change ends centred: ' + JSON.stringify(result.leftLane));
@@ -165,6 +180,7 @@ const { chromium } = require('playwright');
     assert.equal(bad.length, 0, 'Every junction drives cleanly with arrows');
     const skew = result.junctions.filter(j => j.done && (Math.abs(Math.abs(j.x) - 1.8) > 0.1 || Math.abs(Math.sin(j.yaw)) > 0.02));
     assert.deepEqual(skew, [], 'After a junction the car is centred and straight');
+    assert(result.tees.length && result.tees.every(x => x.waited && x.turned), 'T-junction: wait, then turn on the arrow: ' + JSON.stringify(result.tees));
     assert.deepEqual(errors, []);
     console.log('PASS: simple steering — centred lane changes, no free steering, clean junctions');
   } finally {

@@ -1162,13 +1162,13 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameControlsSimpleHint =>
-      'Стрелка — перестроиться в соседнюю полосу, на перекрёстке — выбрать поворот. Машина едет сама';
+      'Стрелки — перестроения и повороты, машина едет сама';
 
   @override
   String get gameControlsFree => 'Свободное управление';
 
   @override
-  String get gameControlsFreeHint => 'Стрелка крутит руль, пока её держишь';
+  String get gameControlsFreeHint => 'Стрелки крутят руль, пока их держишь';
 
   @override
   String get gameTipGas =>
@@ -1190,4 +1190,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gamePause => 'Пауза';
+
+  @override
+  String get gameLobbyControls => 'Управ.';
 }

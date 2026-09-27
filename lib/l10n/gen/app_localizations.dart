@@ -2069,7 +2069,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameControlsSimpleHint.
   ///
   /// In ru, this message translates to:
-  /// **'Стрелка — перестроиться в соседнюю полосу, на перекрёстке — выбрать поворот. Машина едет сама'**
+  /// **'Стрелки — перестроения и повороты, машина едет сама'**
   String get gameControlsSimpleHint;
 
   /// No description provided for @gameControlsFree.
@@ -2081,7 +2081,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameControlsFreeHint.
   ///
   /// In ru, this message translates to:
-  /// **'Стрелка крутит руль, пока её держишь'**
+  /// **'Стрелки крутят руль, пока их держишь'**
   String get gameControlsFreeHint;
 
   /// No description provided for @gameTipGas.
@@ -2119,6 +2119,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Пауза'**
   String get gamePause;
+
+  /// No description provided for @gameLobbyControls.
+  ///
+  /// In ru, this message translates to:
+  /// **'Управ.'**
+  String get gameLobbyControls;
 }
 
 class _AppLocalizationsDelegate

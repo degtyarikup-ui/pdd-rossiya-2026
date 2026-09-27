@@ -8851,13 +8851,13 @@
       return;
     }
     const contactsBefore = playerContacts();
-    if (state.simpleSteering && r.simpleOpen && !r.simpleChoice &&
-        playerCarGroup.position.z >= r.simpleGate - 0.5 && state.speed > 0) {
-      // No exit chosen at a T-junction: wait at the turn for an arrow.
-      state.speed = 0; state.isAccelerating = false;
-    }
+    // No exit chosen at a T-junction: wait at the turn for an arrow (the gas
+    // stays held, so the car moves off the moment a side is picked).
+    const waitForExit = state.simpleSteering && r.simpleOpen && !r.simpleChoice &&
+      playerCarGroup.position.z >= r.simpleGate - 0.5 && state.speed >= 0;
+    if (waitForExit) state.speed = 0;
     if (r.simpleOpen && playerCarGroup.position.z > r.simpleGate && r.simpleChoice) r.simpleOpen = false;
-    integrateDriving(dt);
+    integrateDriving(dt, waitForExit ? 0 : state.maxSpeed);
     if (r.recovery > 0) return;
     const p = playerCarGroup.position, z = r.intersection.centerZ, yaw = playerCarGroup.rotation.y;
     const playerBox = { p, yaw, halfWidth: playerCarGroup.userData.halfWidth, halfLength: playerCarGroup.userData.halfLength };
@@ -10042,6 +10042,14 @@
     hideBadges(ev.actors);
     ev.actors.forEach(a => { if (a.stopFor === Infinity && a.config.maneuver === 'overtake') a.stopFor = 0; });
     releaseRoadActors(ev);
+    if (ev.kind === 'overtake' && !ev.scene.overtake) {
+      // Overtaking is forbidden here: the vehicle ahead does not make the
+      // player crawl behind it — it speeds up and drives away.
+      ev.actors.forEach(a => {
+        if (a.config.maneuver || a.config.approach === 'right' || a.config.approach === 'oncoming') return;
+        a.maxSpeed = Math.max(a.maxSpeed, 24); a.speedAway = true;
+      });
+    }
     state.isAtSituation = false;
     state.isResolvingSituation = false;
     state.speed = 0;
@@ -10207,7 +10215,7 @@
     // never block the next junction or its question.
     ev.actors.forEach(a => {
       if (a.holdSpeedUntil !== undefined ? a.distance > a.holdSpeedUntil :
-          (a.config.name !== 'Встречный' && a.mesh.position.z > ev.endZ - 15)) a.maxSpeed = state.maxSpeed;
+          (a.config.name !== 'Встречный' && a.mesh.position.z > ev.endZ - 15)) { if (!a.speedAway) a.maxSpeed = state.maxSpeed; }
     });
     if (ev.kind === 'overtake') {
       const oncomingLane = Math.cos(playerCarGroup.rotation.y) * x > 0.85;

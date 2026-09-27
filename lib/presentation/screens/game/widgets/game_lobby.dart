@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
+import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
@@ -57,22 +58,27 @@ class GameLobby extends StatelessWidget {
         ? AppColors.primaryText
         : AppColors.white;
     // A round button with its caption underneath, readable over the scene.
-    Widget labelled(Widget button, String caption) => Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        button,
-        const SizedBox(height: 4),
-        Text(
-          caption,
-          style: const TextStyle(
-            fontFamily: 'Onest',
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: AppColors.white,
-            shadows: [Shadow(color: Color(0x99000000), blurRadius: 6)],
+    // A fixed-width column keeps the round buttons on one vertical line
+    // whatever the caption length.
+    Widget labelled(Widget button, String caption) => SizedBox(
+      width: 64,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          button,
+          const SizedBox(height: 4),
+          Text(
+            caption,
+            style: const TextStyle(
+              fontFamily: 'Onest',
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.white,
+              shadows: [Shadow(color: Color(0x99000000), blurRadius: 6)],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
     Widget round({
       required Color color,
@@ -234,7 +240,7 @@ class GameLobby extends StatelessWidget {
                     size: 26,
                   ),
                 ),
-                appL10n.gameControlsTitle,
+                appL10n.gameLobbyControls,
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -348,8 +354,8 @@ Future<String?> showGamePaintSheet(
   );
 }
 
-/// Choice between «Простое» (tap = lane change, hold = turn) and «Свободное»
-/// (the arrow turns the wheel while held) steering.
+/// Choice between «Простое» (arrows = lane changes and exits, the car
+/// drives itself) and «Свободное» (the arrow turns the wheel while held).
 Future<bool?> showGameControlsSheet(
   BuildContext context, {
   required bool simple,
@@ -357,29 +363,126 @@ Future<bool?> showGameControlsSheet(
   return showModalBottomSheet<bool>(
     context: context,
     showDragHandle: true,
-    builder: (context) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
-        child: RadioGroup<bool>(
-          groupValue: simple,
-          onChanged: (value) => Navigator.of(context).pop(value),
+    builder: (context) {
+      final colors = AppColors.of(context);
+      Widget option({
+        required bool value,
+        required IconData icon,
+        required String title,
+        required String hint,
+      }) {
+        final selected = value == simple;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Material(
+            color: selected ? colors.accentSurface10 : colors.background,
+            borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => Navigator.of(context).pop(value),
+              child: Semantics(
+                selected: selected,
+                button: true,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? colors.accent
+                              : colors.cardBackground,
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.buttonRadius,
+                          ),
+                        ),
+                        child: Icon(
+                          icon,
+                          color: selected ? AppColors.white : colors.accent,
+                          size: 26,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontFamily: 'Onest',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: colors.primaryText,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              hint,
+                              style: TextStyle(
+                                fontFamily: 'Onest',
+                                fontSize: 13,
+                                height: 1.3,
+                                color: colors.secondaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Icon(
+                        selected
+                            ? Icons.check_circle_rounded
+                            : Icons.circle_outlined,
+                        color: selected ? colors.accent : colors.gray,
+                        size: 24,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              RadioListTile<bool>(
-                value: true,
-                title: Text(appL10n.gameControlsSimple),
-                subtitle: Text(appL10n.gameControlsSimpleHint),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),
+                child: Text(
+                  appL10n.gameControlsTitle,
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: colors.primaryText,
+                  ),
+                ),
               ),
-              RadioListTile<bool>(
+              option(
+                value: true,
+                icon: Icons.alt_route_rounded,
+                title: appL10n.gameControlsSimple,
+                hint: appL10n.gameControlsSimpleHint,
+              ),
+              option(
                 value: false,
-                title: Text(appL10n.gameControlsFree),
-                subtitle: Text(appL10n.gameControlsFreeHint),
+                icon: Icons.sports_esports_rounded,
+                title: appL10n.gameControlsFree,
+                hint: appL10n.gameControlsFreeHint,
               ),
             ],
           ),
         ),
-      ),
-    ),
+      );
+    },
   );
 }

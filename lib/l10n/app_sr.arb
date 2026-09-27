@@ -335,13 +335,14 @@
   "gameFuelFreeRefill": "{n, plural, =0{Rezervoar je besplatno napunjen — ovo je bilo poslednje besplatno punjenje} one{Rezervoar je besplatno napunjen. Preostalo je {n} besplatno punjenje} few{Rezervoar je besplatno napunjen. Preostala su {n} besplatna punjenja} other{Rezervoar je besplatno napunjen. Preostalo je {n} besplatnih punjenja}}",
   "gameControlsTitle": "Upravljanje",
   "gameControlsSimple": "Jednostavno upravljanje",
-  "gameControlsSimpleHint": "Strelica — prelazak u susednu traku, na raskrsnici — izbor skretanja. Auto vozi samo",
+  "gameControlsSimpleHint": "Strelice — promena trake i skretanja, auto vozi samo",
   "gameControlsFree": "Slobodno upravljanje",
-  "gameControlsFreeHint": "Strelica okreće volan dok je držiš",
+  "gameControlsFreeHint": "Strelice okreću volan dok ih držiš",
   "gameTipGas": "Drži pedalu gasa — auto ide. Pusti je — auto se polako zaustavlja",
   "gameTipSteer": "Pritisni strelicu — auto prelazi u susednu traku",
   "gameTipTurn": "Na raskrsnici pritisni strelicu — auto će samo skrenuti. Ponovni pritisak — pravo",
   "gameTipNext": "Dalje",
   "gameTipDone": "Kreni",
-  "gamePause": "Pauza"
+  "gamePause": "Pauza",
+  "gameLobbyControls": "Uprav."
 }
