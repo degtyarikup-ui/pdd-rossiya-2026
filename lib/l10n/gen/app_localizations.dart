@@ -2257,6 +2257,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Пройдено {n} из {total}'**
   String gameLobbyProgress(int n, int total);
+
+  /// No description provided for @gameLobbyNewCar.
+  ///
+  /// In ru, this message translates to:
+  /// **'НОВАЯ'**
+  String get gameLobbyNewCar;
 }
 
 class _AppLocalizationsDelegate

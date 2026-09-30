@@ -402,5 +402,6 @@
   "gameLobbyRunLength": "{count, plural, one{{count} вопрос} few{{count} вопроса} many{{count} вопросов} other{{count} вопроса}}",
   "@gameLobbyRunLength": {"placeholders": {"count": {"type": "int"}}},
   "gameLobbyProgress": "Пройдено {n} из {total}",
-  "@gameLobbyProgress": {"placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}}
+  "@gameLobbyProgress": {"placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}},
+  "gameLobbyNewCar": "НОВАЯ"
 }

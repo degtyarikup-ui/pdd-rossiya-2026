@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -293,9 +294,10 @@ class GameFuelPremiumPitch extends StatelessWidget {
   }
 }
 
-/// Garage: the runs in stock as a plain white pill («Заезды 2 из 3»); a tap
-/// explains what a run is and when the next one comes.
-class GameRunsPill extends StatelessWidget {
+/// Garage: the runs in stock in the same pill as the record («Заезды 2 из
+/// 3», a steering wheel); a tap explains what a run is and when the next one
+/// comes. It pulses when a run comes back while the garage is open.
+class GameRunsPill extends StatefulWidget {
   final int runs;
   final int maxRuns;
   final bool unlimited;
@@ -310,43 +312,89 @@ class GameRunsPill extends StatelessWidget {
   });
 
   @override
+  State<GameRunsPill> createState() => _GameRunsPillState();
+}
+
+class _GameRunsPillState extends State<GameRunsPill>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 700),
+  );
+  late final Animation<double> _scale = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween(
+        begin: 1.0,
+        end: 1.22,
+      ).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 35,
+    ),
+    TweenSequenceItem(
+      tween: Tween(
+        begin: 1.22,
+        end: 1.0,
+      ).chain(CurveTween(curve: Curves.elasticOut)),
+      weight: 65,
+    ),
+  ]).animate(_pulse);
+
+  @override
+  void didUpdateWidget(covariant GameRunsPill oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.unlimited && widget.runs > oldWidget.runs) {
+      _pulse.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final empty = !unlimited && runs <= 0;
-    final text = unlimited
+    final empty = !widget.unlimited && widget.runs <= 0;
+    final text = widget.unlimited
         ? appL10n.gameRunsUnlimitedPill
-        : appL10n.gameRunsPill(runs, maxRuns);
+        : appL10n.gameRunsPill(widget.runs, widget.maxRuns);
     return Semantics(
-      button: onTap != null,
+      button: widget.onTap != null,
       label: text,
-      child: Material(
-        color: colors.cardBackground,
-        borderRadius: BorderRadius.circular(90),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          key: const ValueKey('lobby-runs'),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 0, 12, 0),
-            child: SizedBox(
-              height: 36,
+      child: ScaleTransition(
+        scale: _scale,
+        child: Material(
+          color: empty ? colors.red : colors.accent,
+          borderRadius: BorderRadius.circular(90),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            key: const ValueKey('lobby-runs'),
+            onTap: widget.onTap,
+            // The record pill's measures: same height and type.
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(9, 7, 11, 7),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.sports_score_rounded,
-                    size: 20,
-                    color: empty ? colors.red : colors.accent,
+                  SvgPicture.asset(
+                    'assets/icons/game/hud_wheel.svg',
+                    width: 14,
+                    height: 14,
+                    colorFilter: const ColorFilter.mode(
+                      AppColors.white,
+                      BlendMode.srcIn,
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Text(
                     text,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'Onest',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
+                      color: AppColors.white,
                       height: 1,
-                      color: empty ? colors.red : colors.primaryText,
                     ),
                   ),
                 ],
@@ -354,6 +402,119 @@ class GameRunsPill extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// No run left: one line in place of the start button — when the next run
+/// comes (live) — and a gold square for unlimited runs.
+class GameRunsWaitBar extends StatefulWidget {
+  final DateTime? refillAt;
+  final VoidCallback onBuyPremium;
+
+  /// Called once when the countdown reaches zero.
+  final VoidCallback? onRefilled;
+
+  const GameRunsWaitBar({
+    super.key,
+    required this.refillAt,
+    required this.onBuyPremium,
+    this.onRefilled,
+  });
+
+  @override
+  State<GameRunsWaitBar> createState() => _GameRunsWaitBarState();
+}
+
+class _GameRunsWaitBarState extends State<GameRunsWaitBar> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final at = widget.refillAt;
+      if (at == null || !DateTime.now().isBefore(at)) {
+        _timer?.cancel();
+        widget.onRefilled?.call();
+      }
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final radius = BorderRadius.circular(AppDimensions.radiusLarge);
+    return SizedBox(
+      height: 56,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: Container(
+              key: const ValueKey('lobby-runs-wait'),
+              decoration: BoxDecoration(
+                color: colors.cardBackground,
+                borderRadius: radius,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.schedule_rounded, size: 20, color: colors.red),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        appL10n.gameRunsNextIn(
+                          gameFuelCountdown(widget.refillAt),
+                        ),
+                        style: TextStyle(
+                          fontFamily: 'Onest',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: colors.primaryText,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Semantics(
+            button: true,
+            label: appL10n.gameRunsGetPremium,
+            child: Material(
+              color: colors.gold,
+              borderRadius: radius,
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: widget.onBuyPremium,
+                child: const SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: Icon(
+                    Icons.all_inclusive_rounded,
+                    color: AppColors.white,
+                    size: 28,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

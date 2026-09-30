@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -24,8 +26,13 @@ class GameLobby extends StatelessWidget {
   /// Opened from a run in progress: the button continues it.
   final bool resume;
 
-  /// Small line under the start button: «20 вопросов» / «Пройдено 8 из 20».
+  /// Small line under «Продолжить заезд»: «Пройдено 8 из 20».
   final String? startCaption;
+
+  /// The car on the stand: its name shows for a moment after browsing and
+  /// stays, with a «Новая» badge, while the model has never been driven.
+  final String? carName;
+  final bool carIsNew;
 
   /// Null when there is only one car to choose from.
   final VoidCallback? onPrevious;
@@ -47,6 +54,8 @@ class GameLobby extends StatelessWidget {
     this.onStart,
     this.resume = false,
     this.startCaption,
+    this.carName,
+    this.carIsNew = false,
     this.onPrevious,
     this.onNext,
     this.onColour,
@@ -159,7 +168,7 @@ class GameLobby extends StatelessWidget {
                             width: 44,
                             height: 44,
                             child: Icon(
-                              Icons.sports_esports_rounded,
+                              Icons.settings_rounded,
                               size: 24,
                               color: colors.primaryText,
                             ),
@@ -216,10 +225,23 @@ class GameLobby extends StatelessWidget {
             ),
           ),
         ),
+        if (carName != null)
+          Positioned(
+            top: MediaQuery.paddingOf(context).top + 66,
+            left: 16,
+            right: 16,
+            child: Center(
+              child: _CarTitle(
+                key: ValueKey(carName),
+                name: carName!,
+                isNew: carIsNew,
+              ),
+            ),
+          ),
         // Arrows either side of the car.
         if (onPrevious != null)
           Align(
-            alignment: const Alignment(-0.92, -0.3),
+            alignment: const Alignment(-0.92, -0.04),
             child: arrow(
               Icons.chevron_left_rounded,
               MaterialLocalizations.of(context).previousPageTooltip,
@@ -228,7 +250,7 @@ class GameLobby extends StatelessWidget {
           ),
         if (onNext != null)
           Align(
-            alignment: const Alignment(0.92, -0.3),
+            alignment: const Alignment(0.92, -0.04),
             child: arrow(
               Icons.chevron_right_rounded,
               MaterialLocalizations.of(context).nextPageTooltip,
@@ -275,44 +297,36 @@ class GameLobby extends StatelessWidget {
                 child:
                     blocker ??
                     SizedBox(
-                      height: 60,
+                      height: 56,
                       child: ElevatedButton(
                         onPressed: onStart,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.play_arrow_rounded, size: 28),
-                            const SizedBox(width: 8),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  resume
-                                      ? appL10n.gameLobbyContinue
-                                      : appL10n.gameLobbyStart,
-                                  style: const TextStyle(
-                                    fontFamily: 'Onest',
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.1,
+                            Text(
+                              resume
+                                  ? appL10n.gameLobbyContinue
+                                  : appL10n.gameLobbyStart,
+                              style: const TextStyle(
+                                fontFamily: 'Onest',
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                                height: 1.1,
+                              ),
+                            ),
+                            if (startCaption != null)
+                              Text(
+                                startCaption!,
+                                style: TextStyle(
+                                  fontFamily: 'Onest',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.2,
+                                  color: AppColors.white.withValues(
+                                    alpha: 0.78,
                                   ),
                                 ),
-                                if (startCaption != null)
-                                  Text(
-                                    startCaption!,
-                                    style: TextStyle(
-                                      fontFamily: 'Onest',
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      height: 1.2,
-                                      color: AppColors.white.withValues(
-                                        alpha: 0.78,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
+                              ),
                           ],
                         ),
                       ),
@@ -538,4 +552,86 @@ Future<bool?> showGameControlsSheet(
       );
     },
   );
+}
+
+/// The model's name over the scene; with a «Новая» badge it stays, else it
+/// fades out a moment after the car was changed.
+class _CarTitle extends StatefulWidget {
+  final String name;
+  final bool isNew;
+
+  const _CarTitle({super.key, required this.name, required this.isNew});
+
+  @override
+  State<_CarTitle> createState() => _CarTitleState();
+}
+
+class _CarTitleState extends State<_CarTitle> {
+  bool _shown = true;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(const Duration(milliseconds: 2200), () {
+      if (mounted) setState(() => _shown = false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return IgnorePointer(
+      child: AnimatedOpacity(
+        opacity: _shown || widget.isNew ? 1 : 0,
+        duration: const Duration(milliseconds: 400),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                widget.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontFamily: 'Onest',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.white,
+                  shadows: [Shadow(color: Color(0x99000000), blurRadius: 8)],
+                ),
+              ),
+            ),
+            if (widget.isNew) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colors.gold,
+                  borderRadius: BorderRadius.circular(90),
+                ),
+                child: Text(
+                  appL10n.gameLobbyNewCar,
+                  style: const TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                    color: AppColors.white,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }

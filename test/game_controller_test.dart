@@ -1214,6 +1214,7 @@ void main() {
       'fuel_results',
       'controls',
       'lobby',
+      'lobby_empty',
       'runs_sheet',
     ]) {
       await tester.pumpWidget(
@@ -1229,18 +1230,27 @@ void main() {
               key: boundary,
               child: Scaffold(
                 backgroundColor: const Color(0xffdee4e5),
-                body: name == 'lobby'
+                body: name == 'lobby' || name == 'lobby_empty'
                     ? ColoredBox(
                         color: const Color(0xff8a8f7a),
                         child: GameLobby(
                           vehiclePaint: 'yellow',
                           bestScore: 3958,
-                          runs: const GameRunsPill(
-                            runs: 2,
+                          runs: GameRunsPill(
+                            runs: name == 'lobby' ? 2 : 0,
                             maxRuns: 3,
                             unlimited: false,
                           ),
-                          startCaption: appL10n.gameLobbyRunLength(20),
+                          carName: 'Пикап',
+                          carIsNew: name == 'lobby',
+                          blocker: name == 'lobby_empty'
+                              ? GameRunsWaitBar(
+                                  refillAt: DateTime.now().add(
+                                    const Duration(minutes: 14, seconds: 32),
+                                  ),
+                                  onBuyPremium: () {},
+                                )
+                              : null,
                           onStart: () {},
                           onPrevious: () {},
                           onNext: () {},

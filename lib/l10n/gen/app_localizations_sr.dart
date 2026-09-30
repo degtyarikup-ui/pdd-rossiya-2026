@@ -1289,4 +1289,7 @@ class AppLocalizationsSr extends AppLocalizations {
   String gameLobbyProgress(int n, int total) {
     return 'Pređeno $n od $total';
   }
+
+  @override
+  String get gameLobbyNewCar => 'NOVO';
 }

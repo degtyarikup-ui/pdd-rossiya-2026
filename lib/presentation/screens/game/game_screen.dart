@@ -121,6 +121,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
   bool _simpleSteering = true;
   static const _seenKey = 'game_seen';
   static const _bestScoreKey = 'game_best_score';
+
+  /// Models already driven: any other one available shows «Новая» in the
+  /// garage until its first run.
+  static const _seenModelsKey = 'game_seen_models';
+  Set<String>? _seenModels;
   static const _debugUnlimitedFuelKey = 'game_debug_unlimited_fuel';
 
   Future<void> _stopWebView() {
@@ -411,6 +416,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
         });
       }
       _bestScore ??= prefs.getInt(_bestScoreKey) ?? 0;
+      final seen = prefs.getStringList(_seenModelsKey);
+      // First launch with this feature: what is already there is not new.
+      _seenModels = seen?.toSet() ?? _lobbyModels().toSet();
+      if (seen == null) {
+        unawaited(prefs.setStringList(_seenModelsKey, _seenModels!.toList()));
+      }
       _bestBeforeRun = _bestScore ?? 0;
       _debugUnlimitedFuel =
           AuthService.debugSignInAvailable &&
@@ -855,6 +866,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
     setState(() {
       _inLobby = false;
       _runStarted = true;
+      if (_seenModels?.add(_vehicleId) == true) {
+        final seen = _seenModels!.toList();
+        SharedPreferences.getInstance()
+            .then((prefs) => prefs.setStringList(_seenModelsKey, seen))
+            .catchError((_) => false);
+      }
     });
     _send('hideLobby', []);
     if (ended) {
@@ -1447,13 +1464,15 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     unlimited: gameState.runsUnlimited,
                     onTap: _openRunsInfo,
                   ),
-                  startCaption:
-                      _runStarted && gameState.phase != GamePhase.gameOver
+                  startCaption: runActive
                       ? appL10n.gameLobbyProgress(
                           gameState.totalAnswered,
                           GameState.runQuestions,
                         )
-                      : appL10n.gameLobbyRunLength(GameState.runQuestions),
+                      : null,
+                  carName: gameCarName(_vehicleId),
+                  carIsNew:
+                      _seenModels != null && !_seenModels!.contains(_vehicleId),
                   blocker: locked
                       ? _LockCard(
                           onSignIn: () => AuthModalSheet.show(context),
@@ -1465,7 +1484,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                             _fuelLoaded &&
                             gameState.runs <= 0 &&
                             !runActive
-                      ? GameFuelEmptyPanel(
+                      ? GameRunsWaitBar(
                           refillAt: GameRunsService.instance.firstUnitAt,
                           onBuyPremium: () => PremiumPaywallSheet.show(context),
                           onRefilled: () => _game.configureRuns(

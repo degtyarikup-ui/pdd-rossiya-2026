@@ -1293,4 +1293,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String gameLobbyProgress(int n, int total) {
     return 'Пройдено $n из $total';
   }
+
+  @override
+  String get gameLobbyNewCar => 'НОВАЯ';
 }
