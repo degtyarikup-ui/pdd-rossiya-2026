@@ -6436,6 +6436,8 @@
 
   function createEmergencyTriangle() {
     const group = new THREE.Group();
+    // About twice life size: seen from above a real one is a speck.
+    group.scale.setScalar(2.2);
     const shape = new THREE.Shape();
     const h = 0.45 * Math.sqrt(3) / 2;
     shape.moveTo(-0.22, 0); shape.lineTo(0.22, 0); shape.lineTo(0, h); shape.closePath();
@@ -9454,6 +9456,34 @@
     return actor;
   }
 
+  // Half-width of the asphalt across the corridor at z (0 where no road is
+  // built yet): a joining road (junction arm, side street, driveway) shows
+  // as asphalt well beyond the street's own width.
+  function asphaltHalfAt(z) {
+    let h = 0;
+    for (let x = 0.5; x <= 18; x += 0.5) {
+      if (roadSupports(new THREE.Vector3(x, 0, z)) || roadSupports(new THREE.Vector3(-x, 0, z))) h = x;
+      else break;
+    }
+    return h;
+  }
+  // The first z (from z0, 5 m steps, at most 80 m on) with the span
+  // [z + from, z + to] free of joining roads; null when there is none.
+  function clearOfJunctions(z0, [from, to]) {
+    refreshRoadBounds();
+    const halves = [];
+    for (let z = z0 + from - 10; z <= z0 + 80 + to; z += 4) { const h = asphaltHalfAt(z); if (h > 0) halves.push(h); }
+    if (!halves.length) return z0;
+    const street = Math.min(...halves);
+    const joins = z => asphaltHalfAt(z) > street + 1.5;
+    for (let z = z0; z <= z0 + 80; z += 5) {
+      let clear = true;
+      for (let d = from; d <= to && clear; d += 2) clear = !joins(z + d);
+      if (clear) return z;
+    }
+    return null;
+  }
+
   function placeRoadEvent(boundary) {
     if (state.roadEvent) return;
     const group = new THREE.Group();
@@ -9472,10 +9502,12 @@
       state.roadEvent = buildQuestionEvent(group, boundary, situation);
     } else if (kind === 'busstop') {
       state.roadEvent = buildBusStopEvent(group, boundary + 62);
-    } else if (kind === 'roadworks') {
-      state.roadEvent = buildRoadworksEvent(group, boundary + 60);
-    } else if (kind === 'obstacle') {
-      state.roadEvent = buildObstacleEvent(group, boundary + 60);
+    } else if (kind === 'roadworks' || kind === 'obstacle') {
+      // A lane blockage never stands in a junction mouth: step it down the
+      // road until nothing joins between its warning and its end.
+      const z = clearOfJunctions(boundary + 60, kind === 'roadworks' ? [-20, 22] : [-17, 5]);
+      state.roadEvent = z === null ? buildCrosswalkEvent(group, boundary + 70)
+        : kind === 'roadworks' ? buildRoadworksEvent(group, z) : buildObstacleEvent(group, z);
     } else if (kind === 'courtyard') {
       state.roadEvent = buildCourtyardEvent(group, boundary + 60);
     } else if (kind === 'cyclist') {
@@ -10465,7 +10497,7 @@
     const triangle = createEmergencyTriangle();
     triangle.position.set(-1.8, 0, obstZ - 15);
     group.add(triangle);
-    state.props.push({ mesh: triangle, radius: 0.25, kind: 'cone', ev, root: group, penalize: false });
+    state.props.push({ mesh: triangle, radius: 0.55, kind: 'cone', ev, root: group, penalize: false });
     return ev;
   }
 
