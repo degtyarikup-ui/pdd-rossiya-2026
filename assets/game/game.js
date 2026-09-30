@@ -7535,7 +7535,10 @@
       // The median separates the carriageways and tapers to a point where
       // they merge into the ordinary exit road.
       for (const side of [-1, 1]) {
-        const xs = []; for (let x = roadWidth / 2; x <= 30.01; x += 1) xs.push(side * x);
+        // Ends with the lawn (28 m): past it the kerb would only be a thread
+        // across the asphalt.
+        const xs = []; for (let x = roadWidth / 2; x < 28 - 1e-6; x += 1) xs.push(side * x);
+        xs.push(side * 28);
         const curb = extrudedStrip(xs, x => -medHalf(x), x => medHalf(x), 0.18, new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
         curb.position.z = centerZ; seg.add(curb);
         const lawnMat = new THREE.MeshLambertMaterial({ color: season().ground }); lawnMat.userData.seasonal = 'ground';
@@ -7566,17 +7569,32 @@
 
     // Corners run along the cross street only, from the outer edge of the
     // main-street pavement outwards: no coplanar overlap with those pavements.
-    // Where a street widens at the junction its pavement keeps the outer
-    // edge of the ordinary pavement and narrows (to 1.6 m at least) instead
-    // of swinging out: no lawn wedges or steps where it meets the rest.
-    const paveOuter = half => Math.max(roadWidth / 2 + swW, half + 1.6);
+    // Pavements keep their width and follow a widening kerb: the rounded
+    // corner pieces (addCornerFillet, a pavement-width square) then meet them
+    // exactly — narrowing them left the corners sticking out.
+    const paveOuter = half => half + swW;
+    // Along a slanting kerb (a street widening or narrowing) the pavement's
+    // width across it stays swW: measured along the street it has to be
+    // wider by 1/cos of the slant, or the pavement looks pinched there.
+    const slantOuter = (half, v) => {
+      const d = (half(v + 0.05) - half(v - 0.05)) / 0.1;
+      return half(v) + swW * Math.sqrt(1 + d * d);
+    };
+    // Strips sampled every metre must still end exactly at their ends: a
+    // last sample short of the end left a gap to the next piece.
+    const samples = (from, to, step = 1) => {
+      const out = [];
+      for (let v = from; v < to - 1e-6; v += step) out.push(v);
+      out.push(to);
+      return out;
+    };
     const cornerStart = paveOuter(kerbX), crossOuter0 = paveOuter(kerbZ);
     const cornerW = crossStreetLength / 2 - cornerStart + SEAM, cornerX = cornerStart - 0.03 + cornerW / 2;
     const corner = (sx, sz) => {
       if (wide) {
         // The pavement follows the tapering kerb.
-        const xs = []; for (let x = cornerStart - 0.03; x <= crossStreetLength / 2 + SEAM + 0.01; x += 1) xs.push(sx * x);
-        const slab = extrudedStrip(xs, x => sz < 0 ? -paveOuter(halfW(x)) : halfW(x), x => sz < 0 ? -halfW(x) : paveOuter(halfW(x)), 0.18,
+        const xs = samples(cornerStart - 0.03, crossStreetLength / 2 + SEAM).map(x => sx * x);
+        const slab = extrudedStrip(xs, x => sz < 0 ? -slantOuter(halfW, x) : halfW(x), x => sz < 0 ? -halfW(x) : slantOuter(halfW, x), 0.18,
           new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
         slab.position.z = centerZ; seg.add(slab); return slab;
       }
@@ -7592,13 +7610,13 @@
       // Pavements follow the widening main street (entrance and exit).
       const pave = () => new THREE.MeshLambertMaterial({ color: BRAND.sidewalk });
       for (const side of [-1, 1]) for (const [a, b] of [[startZ - SEAM, centerZ - crossOuter0], [centerZ + crossOuter0, startZ + intersectionLength + SEAM]]) {
-        const zs = []; for (let z = a; z <= b + 0.01; z += 1) zs.push(Math.min(z, b));
-        const slab = extrudedStripZ(zs, z => side < 0 ? -paveOuter(halfM(z)) : halfM(z), z => side < 0 ? -halfM(z) : paveOuter(halfM(z)), 0.18, pave());
+        const zs = samples(a, b);
+        const slab = extrudedStripZ(zs, z => side < 0 ? -slantOuter(halfM, z) : halfM(z), z => side < 0 ? -halfM(z) : slantOuter(halfM, z), 0.18, pave());
         seg.add(slab);
         // Paving joints every 2.5 m, as on the pavements it continues.
         const joints = [];
         for (let z = a + 2; z < b; z += 2.5) {
-          const x0 = side < 0 ? -paveOuter(halfM(z)) : halfM(z), x1 = side < 0 ? -halfM(z) : paveOuter(halfM(z));
+          const x0 = side < 0 ? -slantOuter(halfM, z) : halfM(z), x1 = side < 0 ? -halfM(z) : slantOuter(halfM, z);
           joints.push(new THREE.Vector3(x0, 0.184, z), new THREE.Vector3(x1, 0.184, z));
         }
         seg.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(joints),
@@ -10511,7 +10529,9 @@
     // concrete apron and a lowered kerb.
     const concrete = new THREE.MeshLambertMaterial({ color: 0xA7ADB2 });
     addFlatPlane(group, 3.9, 3.6, -9.35, yardZ, 0.02, concrete);   // apron
-    addFlatPlane(group, 3.2, 3.6, -5.8, yardZ, 0.186, concrete);   // lowered kerb
+    // Lowered kerb: from the pavement's outer edge right up to the kerb
+    // (the pavement starts just inside 4.2), no strip of pavement left.
+    addFlatPlane(group, 3.4, 3.6, -5.7, yardZ, 0.186, concrete);
     const wall = sceneryMat(0xC9B89E), roofMat = sceneryMat(0x7A5A48), dark = sceneryMat(0x22262A);
     const box = (w, h, d, x, y, z, m) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, z); b.castShadow = true; group.add(b); return b; };
     box(6.2, 2.5, 0.2, -14.4, 1.25, yardZ - 1.75, wall);  // side walls
