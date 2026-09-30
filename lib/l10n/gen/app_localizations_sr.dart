@@ -738,7 +738,7 @@ class AppLocalizationsSr extends AppLocalizations {
   String get gameRestart => 'Pokušaj ponovo';
 
   @override
-  String get gameExit => 'U meni';
+  String get gameExit => 'U garažu';
 
   @override
   String get gameUnavailable =>
@@ -1234,4 +1234,12 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get notifGameChannelDesc => 'Kada se vožnja u igri obnovi';
+
+  @override
+  String gameRunMistakesButton(int count) {
+    return 'Greške · $count';
+  }
+
+  @override
+  String get gameCorrectShort => 'Tačno';
 }

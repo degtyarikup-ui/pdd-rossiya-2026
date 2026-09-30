@@ -346,7 +346,7 @@ void main() {
     expect(fill('game-right'), resting);
   });
 
-  testWidgets('Results list the run mistakes and open them for review', (
+  testWidgets('Results hide the run mistakes behind one button', (
     tester,
   ) async {
     const a = GameSituation(
@@ -391,15 +391,11 @@ void main() {
       ),
     );
     expect(find.text(appL10n.gameAnswersOf(18, 20)), findsOneWidget);
-    expect(find.text(appL10n.gameRunMistakes(2)), findsOneWidget);
-    expect(find.text(a.ticket), findsOneWidget);
-    await tester.tap(find.text(b.ticket));
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('game-review-mistakes')),
-    );
-    await tester.tap(find.byKey(const ValueKey('game-review-mistakes')));
+    // The mistakes hide behind one button: no list on the results screen.
+    expect(find.text(a.ticket), findsNothing);
+    expect(find.text(appL10n.gameOverDescription), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('game-over-mistakes')));
     expect(reviewed, [
-      ['b'],
       ['a', 'b'],
     ]);
   });

@@ -211,7 +211,7 @@
   "gameDistance": "Udaljenost",
   "gameOver": "Vožnja završena",
   "gameRestart": "Pokušaj ponovo",
-  "gameExit": "U meni",
+  "gameExit": "U garažu",
   "gameUnavailable": "Situacije u simulatoru su za sada proverene samo prema pravilima Rusije. Igra će biti dostupna nakon provere lokalnih pravila.",
   "gameMobileOnly": "3D simulator je dostupan u mobilnoj aplikaciji za iOS i Android.",
   "gameLeft": "Ulevo",
@@ -354,5 +354,7 @@
   "notifGameRunTitle": "Nova vožnja je spremna",
   "notifGameRunBody": "Sedite za volan: raskrsnice iz testova vas čekaju.",
   "notifGameChannelName": "Igra",
-  "notifGameChannelDesc": "Kada se vožnja u igri obnovi"
+  "notifGameChannelDesc": "Kada se vožnja u igri obnovi",
+  "gameRunMistakesButton": "Greške · {count}",
+  "gameCorrectShort": "Tačno"
 }

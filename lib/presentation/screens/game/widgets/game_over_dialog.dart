@@ -132,7 +132,7 @@ class _GameOverDialogState extends State<GameOverDialog> {
                       label: appL10n.gameYourCar,
                       image: true,
                       child: SizedBox(
-                        height: 118,
+                        height: 96,
                         child: GameCarThumbnail(
                           car: GameCar(vehicleId, vehiclePaint),
                           loader: thumbnail,
@@ -149,18 +149,6 @@ class _GameOverDialogState extends State<GameOverDialog> {
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                         color: colors.primaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      appL10n.gameOverDescription,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Onest',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: colors.secondaryText,
-                        height: 1.35,
                       ),
                     ),
                   ],
@@ -231,73 +219,32 @@ class _GameOverDialogState extends State<GameOverDialog> {
                       distance: distance,
                     )
                   else
+                    // Three plain figures, no coloured tiles.
                     Row(
                       children: [
                         Expanded(
-                          child: _StatTile(
-                            icon: hasViolations
-                                ? Icons.warning_amber_rounded
-                                : Icons.verified_rounded,
-                            color: hasViolations ? colors.red : colors.green,
-                            label: appL10n.gameViolations,
-                            value: '${state.violationCount}',
-                            emphasized: hasViolations,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _StatTile(
-                            icon: Icons.check_circle_rounded,
-                            color: colors.accent,
-                            label: appL10n.gameCorrectAnswers,
+                          child: _MiniStat(
                             value: correct,
+                            label: appL10n.gameCorrectShort,
                           ),
                         ),
-                        const SizedBox(width: 8),
                         Expanded(
-                          child: _StatTile(
-                            icon: Icons.route_rounded,
-                            color: colors.accent,
-                            label: appL10n.gameDistance,
+                          child: _MiniStat(
+                            value: '${state.violationCount}',
+                            label: appL10n.gameViolations,
+                            color: hasViolations ? colors.red : null,
+                          ),
+                        ),
+                        Expanded(
+                          child: _MiniStat(
                             value: distance,
+                            label: appL10n.gameDistance,
                           ),
                         ),
                       ],
                     ),
                   SizedBox(height: fuelEmpty ? 14 : 18),
 
-                  if (state.mistakes.isNotEmpty && onReview != null) ...[
-                    _RunMistakes(mistakes: state.mistakes, onReview: onReview),
-                    const SizedBox(height: 12),
-                  ],
-
-                  if (onLeaderboard != null) ...[
-                    OutlinedButton.icon(
-                      onPressed: onLeaderboard,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: colors.accent,
-                        side: BorderSide(
-                          color: colors.accent.withValues(alpha: 0.35),
-                        ),
-                        minimumSize: const Size.fromHeight(46),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusMedium,
-                          ),
-                        ),
-                      ),
-                      icon: const Icon(Icons.emoji_events_rounded, size: 20),
-                      label: Text(
-                        appL10n.gameWeeklyRating,
-                        style: const TextStyle(
-                          fontFamily: 'Onest',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
                   if (fuelEmpty && onBuyPremium != null) ...[
                     GameFuelPremiumPitch(onBuyPremium: onBuyPremium),
                     const SizedBox(height: 8),
@@ -324,6 +271,41 @@ class _GameOverDialogState extends State<GameOverDialog> {
                         ),
                       ),
                     ),
+                  // Secondary actions side by side: the run's mistakes (open
+                  // as ticket questions) and the weekly rating.
+                  if ((state.mistakes.isNotEmpty && onReview != null) ||
+                      onLeaderboard != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        if (state.mistakes.isNotEmpty && onReview != null)
+                          Expanded(
+                            child: _SecondaryButton(
+                              key: const ValueKey('game-over-mistakes'),
+                              icon: Icons.error_outline_rounded,
+                              label: appL10n.gameRunMistakesButton(
+                                state.mistakes.length,
+                              ),
+                              color: colors.red,
+                              onPressed: () => onReview(state.mistakes),
+                            ),
+                          ),
+                        if (state.mistakes.isNotEmpty &&
+                            onReview != null &&
+                            onLeaderboard != null)
+                          const SizedBox(width: 8),
+                        if (onLeaderboard != null)
+                          Expanded(
+                            child: _SecondaryButton(
+                              icon: Icons.emoji_events_rounded,
+                              label: appL10n.gameLobbyRating,
+                              color: colors.gold,
+                              onPressed: onLeaderboard,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
                   if (widget.onExit != null) ...[
                     const SizedBox(height: 4),
                     TextButton(
@@ -824,161 +806,95 @@ class _ConfettiPainter extends CustomPainter {
   bool shouldRepaint(_ConfettiPainter old) => old.progress != progress;
 }
 
-class _StatTile extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String label;
+/// A figure over its caption, no background (results summary).
+class _MiniStat extends StatelessWidget {
   final String value;
-  final bool emphasized;
+  final String label;
+  final Color? color;
 
-  const _StatTile({
-    required this.icon,
-    required this.color,
-    required this.label,
-    required this.value,
-    this.emphasized = false,
-  });
+  const _MiniStat({required this.value, required this.label, this.color});
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return Semantics(
-      label: '$label: $value',
-      excludeSemantics: true,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        decoration: BoxDecoration(
-          color: emphasized
-              ? color.withValues(alpha: 0.10)
-              : colors.searchFieldFill,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 20, color: color),
-            const SizedBox(height: 4),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontFamily: 'Onest',
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  color: emphasized ? color : colors.primaryText,
-                ),
-              ),
+    return Column(
+      children: [
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: TextStyle(
+              fontFamily: 'Onest',
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: color ?? colors.primaryText,
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: 'Onest',
-                fontSize: 11,
-                height: 1.15,
-                fontWeight: FontWeight.w600,
-                color: colors.secondaryText,
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontFamily: 'Onest',
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: colors.secondaryText,
+          ),
+        ),
+      ],
     );
   }
 }
 
-/// The run's wrong answers: the ticket each came from, tap one to work
-/// through it, or all of them at once.
-class _RunMistakes extends StatelessWidget {
-  final List<GameSituation> mistakes;
-  final void Function(List<GameSituation> mistakes) onReview;
+/// A quiet tinted button for the results' secondary actions.
+class _SecondaryButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
 
-  const _RunMistakes({required this.mistakes, required this.onReview});
+  const _SecondaryButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return Container(
-      key: const ValueKey('game-run-mistakes'),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
-      decoration: BoxDecoration(
-        color: colors.redLight,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            appL10n.gameRunMistakes(mistakes.length),
-            style: TextStyle(
-              fontFamily: 'Onest',
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: colors.red,
-            ),
-          ),
-          const SizedBox(height: 4),
-          for (final m in mistakes)
-            InkWell(
-              onTap: () => onReview([m]),
-              borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            m.ticket,
-                            style: TextStyle(
-                              fontFamily: 'Onest',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: colors.secondaryText,
-                            ),
-                          ),
-                          Text(
-                            m.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontFamily: 'Onest',
-                              fontSize: 13,
-                              height: 1.3,
-                              fontWeight: FontWeight.w600,
-                              color: colors.primaryText,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: colors.secondaryText,
-                    ),
-                  ],
+    return Material(
+      color: color.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        child: SizedBox(
+          height: 46,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 19, color: color),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
                 ),
               ),
-            ),
-          TextButton(
-            key: const ValueKey('game-review-mistakes'),
-            onPressed: () => onReview(mistakes),
-            style: TextButton.styleFrom(foregroundColor: colors.red),
-            child: Text(
-              appL10n.gameReviewMistakes,
-              style: const TextStyle(
-                fontFamily: 'Onest',
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

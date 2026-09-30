@@ -231,7 +231,7 @@
   "gameDistance": "Дистанция",
   "gameOver": "Заезд завершён",
   "gameRestart": "Попробовать снова",
-  "gameExit": "В меню",
+  "gameExit": "В гараж",
   "gameUnavailable": "Сценарии тренажёра пока проверены только для ПДД России. Для этой страны игра станет доступна после проверки местных правил.",
   "gameMobileOnly": "3D-тренажёр доступен в мобильном приложении на iOS и Android.",
   "gameLeft": "Левее",
@@ -384,5 +384,8 @@
   "notifGameRunTitle": "Новый заезд готов",
   "notifGameRunBody": "Садитесь за руль: перекрёстки из экзаменационных билетов ждут.",
   "notifGameChannelName": "Игра",
-  "notifGameChannelDesc": "Когда восстановится заезд в игре"
+  "notifGameChannelDesc": "Когда восстановится заезд в игре",
+  "gameRunMistakesButton": "Ошибки · {count}",
+  "@gameRunMistakesButton": {"placeholders": {"count": {"type": "int"}}},
+  "gameCorrectShort": "Верно"
 }

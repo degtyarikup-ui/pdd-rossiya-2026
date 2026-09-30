@@ -1331,7 +1331,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameExit.
   ///
   /// In ru, this message translates to:
-  /// **'В меню'**
+  /// **'В гараж'**
   String get gameExit;
 
   /// No description provided for @gameUnavailable.
@@ -2185,6 +2185,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Когда восстановится заезд в игре'**
   String get notifGameChannelDesc;
+
+  /// No description provided for @gameRunMistakesButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ошибки · {count}'**
+  String gameRunMistakesButton(int count);
+
+  /// No description provided for @gameCorrectShort.
+  ///
+  /// In ru, this message translates to:
+  /// **'Верно'**
+  String get gameCorrectShort;
 }
 
 class _AppLocalizationsDelegate

@@ -734,7 +734,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameRestart => 'Попробовать снова';
 
   @override
-  String get gameExit => 'В меню';
+  String get gameExit => 'В гараж';
 
   @override
   String get gameUnavailable =>
@@ -1237,4 +1237,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get notifGameChannelDesc => 'Когда восстановится заезд в игре';
+
+  @override
+  String gameRunMistakesButton(int count) {
+    return 'Ошибки · $count';
+  }
+
+  @override
+  String get gameCorrectShort => 'Верно';
 }
