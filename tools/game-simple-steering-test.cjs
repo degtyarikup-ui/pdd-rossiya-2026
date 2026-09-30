@@ -185,7 +185,24 @@ const { chromium } = require('playwright');
       t.tick(0.6); window.game.setBrake(true); t.tick(8); window.game.setBrake(false); t.tick(0.3);
       reverse.push({ kind: 'turn', midYaw: +midYaw.toFixed(2), x: +(t.player().position.x - stopX).toFixed(2), z: +(t.player().position.z - stopZ).toFixed(2), yaw: +t.player().rotation.y.toFixed(3) });
       const reverseFaults = window.events.slice(faultsBefore).filter(e => e.event === 'violation' && e.type === 'offroad').length;
-      return { leftLane, noThird, held, back, junctions, tees, reverse, reverseFaults };
+      // 5. Ticket 26·13 (13.7): stop at the median stop line, wait for its
+      // light, then finish the left turn; an arrow pressed while standing
+      // there still counts.
+      const med = t.allScenarios().findIndex(sc => sc.id === 'ticket_26_13');
+      t.selectAll(med); s.paused = false; t.approach();
+      const mit = s.activeIntersection, n26 = window.events.length;
+      window.game.proceedAfterAnswer(true, mit.situation.id);
+      let medianHeld = 0, green = false;
+      window.game.setGas(true);
+      for (let f = 0; f < 60 * 30 && s.resolution; f++) {
+        if (f === 90) window.game.changeLane('left');
+        t.tick(1 / 60);
+        if (s.resolution?.medianWait && s.speed === 0) medianHeld++;
+        if (s.resolution?.medianGreen) green = true;
+      }
+      window.game.setGas(false);
+      const median = { held: medianHeld, green, done: !s.resolution, v: window.events.slice(n26).filter(e => e.event === 'violation').map(e => e.type) };
+      return { leftLane, noThird, held, back, junctions, tees, reverse, reverseFaults, median };
     });
     const near = (a, b, eps) => Math.abs(a - b) < eps;
     assert(near(result.leftLane.x, 1.8, 0.05) && near(result.leftLane.yaw, 0, 0.01), 'Lane change ends centred: ' + JSON.stringify(result.leftLane));
@@ -205,6 +222,8 @@ const { chromium } = require('playwright');
     assert(near(laneBack.x, -1.8, 0.1) && near(laneBack.yaw, 0, 0.02), 'Reverse retraces the lane change: ' + JSON.stringify(laneBack));
     assert(Math.abs(turnBack.midYaw) > 0.2 && near(turnBack.yaw, 0, 0.03) && near(turnBack.x, 0, 0.15), 'Reverse out of a turn: ' + JSON.stringify(turnBack));
     assert.equal(result.reverseFaults, 0, 'no kerb while reversing');
+    assert(result.median.held > 60 && result.median.green && result.median.done && !result.median.v.includes('wrong_maneuver'),
+      '26·13: wait at the median line for green, then turn left: ' + JSON.stringify(result.median));
     assert.deepEqual(errors, []);
     console.log('PASS: simple steering — centred lane changes, no free steering, clean junctions');
   } finally {

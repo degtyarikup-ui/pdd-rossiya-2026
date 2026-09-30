@@ -9056,13 +9056,33 @@
       return;
     }
     const contactsBefore = playerContacts();
+    // Separate signals (13.7, ticket 26·13): past the first carriageway the
+    // car stops at the median stop line until its own light turns green —
+    // two seconds of standing there.
+    let medianHold = false;
+    const medianLight = r.intersection.situation.hasMedianStopLine && r.intersection.seg?.userData.medianTrafficLight;
+    if (medianLight && !r.medianGreen) {
+      const car = playerCarGroup, lineZ = r.intersection.centerZ + 2;
+      const front = car.position.z + Math.cos(car.rotation.y) * (car.userData.halfLength || 2);
+      const onLine = car.position.x > -4.6 && car.position.x < 0.6 && Math.cos(car.rotation.y) > 0.3;
+      if (onLine && front >= lineZ - 0.4 && front < lineZ + 1.5) {
+        medianHold = state.speed >= 0;
+        r.medianWait = (r.medianWait || 0) + (Math.abs(state.speed) < 0.3 ? dt : 0);
+        if (r.medianWait >= 2) { r.medianGreen = true; medianLight.setLightState('green'); medianHold = false; }
+      }
+    }
+    if (medianHold) state.speed = 0;
     // No exit chosen at a T-junction: wait at the turn for an arrow (the gas
     // stays held, so the car moves off the moment a side is picked).
     const waitForExit = state.simpleSteering && r.simpleOpen && !r.simpleChoice &&
       playerCarGroup.position.z >= r.simpleGate - 0.5 && state.speed >= 0;
     if (waitForExit) state.speed = 0;
     if (r.simpleOpen && playerCarGroup.position.z > r.simpleGate && r.simpleChoice) r.simpleOpen = false;
-    integrateDriving(dt, waitForExit ? 0 : state.maxSpeed);
+    if (state.replanExit && state.speed > 0 && state.simpleSteering) {
+      state.replanExit = false;
+      if (r.simpleChoice && !state.autoPath) applyJunctionChoice(r);
+    }
+    integrateDriving(dt, waitForExit || medianHold ? 0 : state.maxSpeed);
     reportExit(r);
     if (r.recovery > 0) return;
     const p = playerCarGroup.position, z = r.intersection.centerZ, yaw = playerCarGroup.rotation.y;
@@ -11440,7 +11460,14 @@
   // fits); once more — straight on again.
   function chooseJunctionExit(direction) {
     const r = state.resolution, previews = r.intersection.previews || {};
-    if (!r.simpleOpen || playerCarGroup.position.z > r.simpleGate) { refuseInput(); return; }
+    // Each exit stays open until the car reaches the point where that very
+    // manoeuvre begins: a car waiting at the median stop line can still turn
+    // left, the turn itself starts beyond it.
+    const z = r.intersection.centerZ, R = r.intersection.rightLane || 1.8, pz = playerCarGroup.position.z;
+    const ring = r.intersection.situation.geometry === 'roundabout';
+    const gateFor = c => ring ? z - 17 : c === 'right' ? z - R - 3 : c === 'left' ? z - 2.5 : c === 'uturn' ? z - 3.5 : Infinity;
+    // A turn already under way is committed.
+    if (r.simpleChoice && r.simpleChoice !== 'straight' && pz > gateFor(r.simpleChoice)) { refuseInput(); return; }
     // A U-turn needs the whole crossing: not on a ring, at a T, across a
     // median or where a motorway joins (16.1).
     const uturnFits = previews.uturn && !['roundabout', 't_no_straight', 'divided_road', 'motorway_merge']
@@ -11451,6 +11478,7 @@
       choice = previews.straight ? 'straight' : null;
     }
     if (choice === r.simpleChoice) return;
+    if (choice && pz > gateFor(choice)) { refuseInput(); return; }
     const previous = r.simpleChoice;
     r.simpleChoice = choice;
     // An exit that cannot be driven from where the car is now (half-way into
@@ -11608,7 +11636,9 @@
       let desiredYaw = playerCarGroup.rotation.y;
       let dx = Math.sin(desiredYaw) * step, dz = Math.cos(desiredYaw) * step;
       const ap = state.autoPath;
-      if (ap && step < 0) state.autoPath = null; // reversing drops the planned move
+      // Reversing drops the planned move; the junction exit is planned again
+      // from the new spot once the car rolls forward.
+      if (ap && step < 0) { state.autoPath = null; state.replanExit = true; }
       if (step < 0 && state.simpleSteering) {
         // «Простое управление»: reverse retraces the way the car came, so it
         // stays in its lane; past the recorded trail it backs straight.
