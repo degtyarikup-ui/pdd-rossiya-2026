@@ -6788,7 +6788,10 @@
 
   // oneWay: null (two-way), 'with' (the player drives with the one-way flow)
   // or 'against' (the player entered it against the flow, a violation).
-  function buildStraightSegment(startZ, length = 70, preview = false, district = state.district, oneWay = null) {
+  // backdropFrom: no far background (x 30-70) in the first metres of the
+  // road. A cross street starting at a junction leaves its corners to the
+  // main street's background: both used to put houses on the same plots.
+  function buildStraightSegment(startZ, length = 70, preview = false, district = state.district, oneWay = null, backdropFrom = 0) {
     const seg = new THREE.Group();
     const roadWidth = 8.4; // 2 lanes (4.2m each)
 
@@ -6879,7 +6882,9 @@
         // houses or tall blocks, fields and a hill, so a glance sideways never
         // ends in empty grass. Baked per row into a few meshes.
         const far = [];
-        if (style === 0 || row % 3 === 2) {
+        if (z - startZ < backdropFrom) {
+          // Left to the main street's background at a junction corner.
+        } else if (style === 0 || row % 3 === 2) {
           for (let i = 0; i < 7; i++) {
             const tree = createTree(i % 3 === 0 ? 'pine' : undefined);
             tree.position.set(side * (28 + Math.random() * 18), 0, z - 9 + Math.random() * 18);
@@ -6890,21 +6895,29 @@
             field.rotation.x = -Math.PI / 2; field.position.set(side * 50, -0.012, z); far.push(field);
           }
         } else if (style === 1) {
-          for (let i = 0; i < 2; i++) {
-            const house = createBuilding(6 + Math.random() * 2, 4.5, 6 + Math.random() * 2, 1);
-            house.position.set(side * (30 + i * 10 + Math.random() * 3), 0, z - 4 + Math.random() * 8);
+          // Side by side by their widths, with a gap (random fixed steps let
+          // two wide ones grow into each other).
+          for (let i = 0, x = 29 + Math.random() * 2; i < 2; i++) {
+            const w = 6 + Math.random() * 2, d = 6 + Math.random() * 2;
+            const house = createBuilding(w, 4.5, d, 1);
+            house.position.set(side * (x + w / 2), 0, z - 4 + Math.random() * 8);
             house.rotation.y = Math.random() * 0.6 - 0.3; far.push(house);
+            x += w + 2.5 + Math.random() * 2; // room for the ±0.3 rad turn
           }
           for (let i = 0; i < 3; i++) { const tree = createTree('round'); tree.position.set(side * (32 + Math.random() * 16), 0, z - 8 + Math.random() * 16); far.push(tree); }
         } else if (style === 3) {
-          for (let i = 0; i < 2; i++) {
-            const tower = createBuilding(14 + Math.random() * 4, 30 + Math.random() * 18, 12, 2);
-            tower.position.set(side * (36 + i * 16 + Math.random() * 3), 0, z - 5 + Math.random() * 10); far.push(tower);
+          for (let i = 0, x = 29 + Math.random() * 3; i < 2; i++) {
+            const w = 14 + Math.random() * 4;
+            const tower = createBuilding(w, 30 + Math.random() * 18, 12, 2);
+            tower.position.set(side * (x + w / 2), 0, z - 5 + Math.random() * 10); far.push(tower);
+            x += w + 1.5 + Math.random() * 2;
           }
         } else {
-          for (let i = 0; i < 2; i++) {
-            const block = createBuilding(10 + Math.random() * 4, 12 + Math.random() * 12, 9 + Math.random() * 3, 2);
-            block.position.set(side * (31 + i * 13 + Math.random() * 4), 0, z - 6 + Math.random() * 12); far.push(block);
+          for (let i = 0, x = 26 + Math.random() * 3; i < 2; i++) {
+            const w = 10 + Math.random() * 4;
+            const block = createBuilding(w, 12 + Math.random() * 12, 9 + Math.random() * 3, 2);
+            block.position.set(side * (x + w / 2), 0, z - 6 + Math.random() * 12); far.push(block);
+            x += w + 1.5 + Math.random() * 2;
           }
         }
         if (row === 0 && Math.random() < 0.5) {
@@ -6930,7 +6943,9 @@
           const floors = style === 1 ? (Math.random() < 0.7 ? 1 : 2) : style === 3 ? 9 + Math.floor(Math.random() * 8) : 3 + Math.floor(Math.random() * 3);
           const width = style === 1 ? 6 + Math.random() * 2 : style === 3 ? 13 + Math.random() * 3 : 10 + Math.random() * 3;
           const building = createBuilding(width, floors * 3 + 1.5, depth, style === 3 ? 2 : style);
-          building.position.set(side * (style === 1 ? 11.5 : style === 3 ? 18.5 : 13.5), 0, z); seg.add(building);
+          // Homes stand 0.8 m behind their yard fence (8.0) whatever their
+          // width: a wide one used to put its facade right on the fence line.
+          building.position.set(side * (style === 1 ? 8.8 + width / 2 : style === 3 ? 18.5 : 13.5), 0, z); seg.add(building);
           state.occluders.push(building);
         }
         // Street furniture and district flavour, all outside the carriageway.
@@ -7211,6 +7226,9 @@
     const ringAsphalt = new THREE.Mesh(ringGeo, new THREE.MeshLambertMaterial({ color: BRAND.asphalt }));
     ringAsphalt.position.set(0, 0.021, centerZ);
     ringAsphalt.userData.surface = 'road';
+    // The ring is road only outside the island (its bounding box covers the
+    // island too): like a rounded corner, road outside this circle.
+    ringAsphalt.userData.fillet = { center: new THREE.Vector3(0, 0, 0), r: 8.5 };
     ringAsphalt.receiveShadow = true;
     seg.add(ringAsphalt);
 
@@ -7416,7 +7434,7 @@
       ['left', Math.PI / 2, crossStreetLength / 2, centerZ],
       ['right', -Math.PI / 2, -crossStreetLength / 2, centerZ],
     ]) {
-      const extension = buildStraightSegment(0, 200, true, (state.district + 1) % DISTRICTS);
+      const extension = buildStraightSegment(0, 200, true, (state.district + 1) % DISTRICTS, null, direction === 'straight' ? 0 : 30);
       extension.rotation.y = yaw;
       extension.position.set(x, 0, z);
       seg.add(extension);
@@ -7520,7 +7538,9 @@
       const dirtArm = new THREE.Mesh(new THREE.PlaneGeometry((crossStreetLength - roadWidth) / 2 + SEAM, roadWidth),
         new THREE.MeshLambertMaterial({ color: 0x7A5835 }));
       dirtArm.rotation.x = -Math.PI / 2;
-      dirtArm.position.set(roadWidth / 2 + (crossStreetLength - roadWidth) / 4, 0.022, centerZ);
+      // Above the asphalt and all its markings (up to 0.034): no lane lines on a
+      // dirt road, and no flicker with the asphalt 1 mm below.
+      dirtArm.position.set(roadWidth / 2 + (crossStreetLength - roadWidth) / 4, 0.04, centerZ);
       dirtArm.userData.surface = 'dirt_road';
       seg.add(dirtArm);
     }
@@ -7541,12 +7561,18 @@
         xs.push(side * 28);
         const curb = extrudedStrip(xs, x => -medHalf(x), x => medHalf(x), 0.18, new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
         curb.position.z = centerZ; seg.add(curb);
+        // The median is no carriageway, though asphalt runs under it: a car
+        // cannot drive across it (as over any kerb).
+        const [x0, x1] = side < 0 ? [-28, -roadWidth / 2] : [roadWidth / 2, 28];
+        curb.userData.noRoad = p => p.x > x0 && p.x < x1 && Math.abs(p.z) < medHalf(p.x) - 0.05;
         const lawnMat = new THREE.MeshLambertMaterial({ color: season().ground }); lawnMat.userData.seasonal = 'ground';
         addRibbonX(seg, side < 0 ? -28 : roadWidth / 2 + 0.25, side < 0 ? -roadWidth / 2 - 0.25 : 28,
           x => centerZ - Math.max(0, medHalf(x) - 0.2), x => centerZ + Math.max(0, medHalf(x) - 0.2), 0.186, lawnMat, 2);
       }
       const medianTL = createTrafficLight('red');
-      medianTL.position.set(roadWidth / 2 + 0.6, 0, centerZ + medianW / 2 + 0.4);
+      // On the median's nose, inside its kerb (it used to stand 0.4 m out on
+      // the carriageway).
+      medianTL.position.set(roadWidth / 2 + 0.7, 0, centerZ + medianW / 2 - 0.6);
       medianTL.rotation.y = -Math.PI / 2;
       seg.add(medianTL);
       seg.userData.medianTrafficLight = medianTL;
@@ -7974,7 +8000,7 @@
       // it is driving against the flow, never an ordinary "oncoming lane".
       const flowExit = oneWay === 'to_right' ? 'right' : 'left';
       const oneWayMode = oneWay && direction !== 'straight' ? (direction === flowExit ? 'with' : 'against') : null;
-      const extension = buildStraightSegment(0, 200, true, (state.district + 1) % DISTRICTS, oneWayMode);
+      const extension = buildStraightSegment(0, 200, true, (state.district + 1) % DISTRICTS, oneWayMode, direction === 'straight' ? 0 : 30);
       extension.rotation.y = yaw;
       extension.position.set(x, 0, z);
       seg.add(extension);
@@ -8218,6 +8244,34 @@
     currentCorridor = incoming;
     buildIntersectionSegment(50, nextSituation(), incoming);
     nextSegmentZ = 102;
+    resolveSceneryOverlaps();
+  }
+
+  // Streets are built independently, and at a junction's outer corners the
+  // houses of the road going on and of the cross street claim the same plot.
+  // A newly built house that overlaps one already standing is left out, and
+  // so is any tree, lamp, fence or bench that would stand inside a house.
+  function resolveSceneryOverlaps() {
+    scene.updateMatrixWorld(true);
+    const overlap = (a, b, margin) => Math.min(a.max.x, b.max.x) - Math.max(a.min.x, b.min.x) > margin &&
+      Math.min(a.max.z, b.max.z) - Math.max(a.min.z, b.min.z) > margin;
+    const houses = [];
+    for (const building of state.occluders) {
+      if (!building.parent || !building.visible) continue;
+      const box = new THREE.Box3().setFromObject(building);
+      if (box.isEmpty()) continue;
+      if (houses.some(h => overlap(h.box, box, 0.3))) { building.visible = false; continue; }
+      houses.push({ building, box });
+    }
+    const houseSet = new Set(houses.map(h => h.building));
+    state.roadSegments.forEach(seg => seg.traverse(o => {
+      if (!o.userData.sceneryObject || houseSet.has(o) || !o.visible) return;
+      if (state.occluders.includes(o)) return;
+      const box = new THREE.Box3().setFromObject(o);
+      if (box.isEmpty()) return;
+      const cx = (box.min.x + box.max.x) / 2, cz = (box.min.z + box.max.z) / 2;
+      if (houses.some(h => cx > h.box.min.x + 0.2 && cx < h.box.max.x - 0.2 && cz > h.box.min.z + 0.2 && cz < h.box.max.z - 0.2)) o.visible = false;
+    }));
   }
 
   function checkAndSpawnNext() {
@@ -8227,6 +8281,7 @@
       situationIndex++;
       buildIntersectionSegment(nextSegmentZ, nextSituation(), state.exitRoad);
       state.exitRoad = null;
+      resolveSceneryOverlaps();
     }
     trimSegments();
   }
@@ -9666,7 +9721,7 @@
       }
       ev.junctionPreviews = {};
       for (const side of [-1, 1]) {
-        const road = buildStraightSegment(0, 200, true);
+        const road = buildStraightSegment(0, 200, true, state.district, null, 30);
         road.rotation.y = side * Math.PI / 2;
         road.position.set(side * 35, 0, z);
         group.add(road);
@@ -10299,7 +10354,7 @@
     const rim = new THREE.Mesh(new THREE.RingGeometry(0.46, 0.6, 20), sceneryMat(0x4A4F55));
     rim.rotation.x = -Math.PI / 2; rim.position.set(-1.5, 0.038, hatchZ); group.add(rim);
     const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.05, 20), sceneryMat(0x3E434A));
-    lid.position.set(-0.55, 0.03, hatchZ + 0.9); lid.rotation.set(0.06, 0, 0.04); group.add(lid);
+    lid.position.set(-0.55, 0.06, hatchZ + 0.9); lid.rotation.set(0.06, 0, 0.04); group.add(lid); // resting on the patch, not sunk into it
     // Asphalt heap and a wheelbarrow at the head of the patch.
     const heap = new THREE.Mesh(new THREE.SphereGeometry(0.75, 9, 6), sceneryMat(0x1F2328));
     heap.scale.set(1, 0.42, 1.3); heap.position.set(-3.1, 0.02, workZ + 3.2); group.add(heap);
@@ -11469,12 +11524,19 @@
   }
 
   function nearestLaneX(x) {
+    // On a two-way road the oncoming lanes count only for a car already in
+    // one (overtaking): a car left on the centre line (after a bump, a turn
+    // gone wrong) is taken back to its own side, never across it.
+    const heading = Math.cos(playerCarGroup.rotation.y) < 0 ? -1 : 1;
+    const twoWay = !currentCorridor?.userData.oneWay;
     let best = null;
     for (let k = 0; k < 4; k++) for (const c of [1.8 + 3.6 * k, -1.8 - 3.6 * k]) {
       if (!laneFits(c)) continue;
+      const oncoming = twoWay && c * heading > 0;
+      if (oncoming && Math.abs(c - x) > 1) continue;
       if (best == null || Math.abs(c - x) < Math.abs(best - x)) best = c;
     }
-    return best ?? (Math.abs(x - 1.8) < Math.abs(x + 1.8) ? 1.8 : -1.8);
+    return best ?? -1.8 * heading;
   }
 
   function changeLane(direction) {
@@ -11835,6 +11897,11 @@
   function refreshRoadBounds() {
     scene.updateMatrixWorld(true);
     state.roadBounds = [];
+    // Kerbed islands over asphalt (a median): their own exact shape.
+    state.noRoad = [];
+    state.roadSegments.forEach(seg => seg.traverse(obj => {
+      if (obj.userData.noRoad && obj.visible) state.noRoad.push({ test: obj.userData.noRoad, inverse: obj.matrixWorld.clone().invert() });
+    }));
     state.roadSegments.forEach(seg => seg.traverse(obj => {
       if (obj.userData.surface === 'road') state.roadBounds.push({
         box: new THREE.Box3().setFromObject(obj), material: obj.material,
@@ -11845,6 +11912,7 @@
   }
 
   function roadSupports(point) {
+    if ((state.noRoad || []).some(({ test, inverse }) => test(point.clone().applyMatrix4(inverse)))) return false;
     return (state.roadBounds || []).some(({box, material, fillet}) =>
       point.x >= box.min.x - 0.1 && point.x <= box.max.x + 0.1 &&
       point.z >= box.min.z - 0.1 && point.z <= box.max.z + 0.1 &&
@@ -11995,17 +12063,18 @@
     camera.position.lerp(desiredPos, alpha);
     camera.lookAt(cameraLook);
     // Free steering can put scenery between the camera and the car. Fade only
-    // those buildings intersecting that sight line; never hide the road itself.
-    const sight = playerCarGroup.position.clone().sub(camera.position);
-    const sightLengthSq = sight.lengthSq();
+    // those buildings in front of the car; never hide the road itself. The
+    // camera is orthographic: every line of sight runs along its direction,
+    // so the check goes from the car (its sills and its roof) back towards
+    // the camera — not to the camera's position, which is off to one side
+    // whenever the car is not in the middle of the frame.
+    const towardsCamera = camera.getWorldDirection(new THREE.Vector3()).negate();
+    const car = playerCarGroup.position;
+    const sights = [0.4, 1.5].map(y => new THREE.Ray(new THREE.Vector3(car.x, y, car.z), towardsCamera));
     state.occluders.forEach(building => {
       if (!building.parent) return;
       const bounds = new THREE.Box3().setFromObject(building);
-      const center = bounds.getCenter(new THREE.Vector3());
-      const t = THREE.MathUtils.clamp(center.clone().sub(camera.position).dot(sight) / sightLengthSq, 0, 1);
-      const closest = camera.position.clone().addScaledVector(sight, t);
-      const radius = bounds.getSize(new THREE.Vector3()).length() * 0.28;
-      const faded = t > 0.04 && t < 0.96 && center.distanceTo(closest) < radius;
+      const faded = bounds.distanceToPoint(car) < 90 && sights.some(ray => ray.intersectsBox(bounds));
       building.traverse(part => {
         if (!part.material) return;
         part.material.transparent = faded;
@@ -12075,6 +12144,7 @@
     state.currentLaneOffset = state.targetLaneOffset = -1.8;
     state.violationEpisode = 0;
     state.steering = 0; state.laneChangeX = null; state.autoPath = null; state.trail = [];
+    state.pendingAnswer = null;
     state.blinker = null;
     state.hazard = 0;
     clearOncoming();
@@ -12174,14 +12244,27 @@
     },
     switchLane,
     selectVehicle,
-    proceedAfterAnswer: resolveSituationAnimation,
+    // An answer that arrives while the engine is paused (the garage, a new
+    // car's reveal, the app in the background) is kept and applied on
+    // resume: dropped, it left the car waiting at the question for good.
+    proceedAfterAnswer(isCorrect, situationId) {
+      if (state.paused) { state.pendingAnswer = [isCorrect, situationId]; return; }
+      resolveSituationAnimation(isCorrect, situationId);
+    },
     setPaused(paused) {
       const next = Boolean(paused);
       if (next === state.paused) return;
       state.paused = next;
-      if (next) { state.isAccelerating = false; state.isBraking = false; state.steering = 0; state.laneChangeX = null; state.autoPath = null; }
+      // The planned move (a lane change, a turn) is kept: resumed, the car
+      // carries on with it instead of going straight on.
+      if (next) { state.isAccelerating = false; state.isBraking = false; state.steering = 0; }
       gameAudio?.setPaused(next);
       lastTime = null;
+      if (!next && state.pendingAnswer) {
+        const [isCorrect, situationId] = state.pendingAnswer;
+        state.pendingAnswer = null;
+        resolveSituationAnimation(isCorrect, situationId);
+      }
     },
     // Overlays come and go (question card, pedals): the camera eases to the
     // new framing instead of jumping. The very first value is applied at once.

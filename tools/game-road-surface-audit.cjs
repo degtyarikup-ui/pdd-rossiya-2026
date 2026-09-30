@@ -45,6 +45,39 @@ const { chromium } = require('playwright');
             state.roadEvent = build(group, 40);
             refreshRoadBounds();
           },
+          // Z-fighting: two differently coloured ground layers within 4 mm.
+          zfight(cx, cz, hx, hz, step = 0.5) {
+            scene.updateMatrixWorld(true);
+            const meshes = [], flat = new THREE.Box3(), found = {};
+            scene.traverse(o => {
+              if (!o.isMesh || !o.material) return;
+              let root = o, skip = false, visible = true;
+              while (root) { if (root.userData.sceneryObject || root.userData.actor || root === playerCarGroup) skip = true; if (!root.visible) visible = false; root = root.parent; }
+              if (skip || !visible) return;
+              flat.setFromObject(o);
+              if (flat.isEmpty() || flat.max.y > 0.35 || flat.max.x < cx - hx || flat.min.x > cx + hx || flat.max.z < cz - hz || flat.min.z > cz + hz) return;
+              const m = Array.isArray(o.material) ? o.material[0] : o.material;
+              if (!m.color || m.transparent && m.opacity < 0.95) return;
+              meshes.push(o);
+            });
+            const ray = new THREE.Raycaster(); ray.far = 10;
+            const down = new THREE.Vector3(0, -1, 0);
+            const colorOf = hit => { const m = Array.isArray(hit.object.material) ? hit.object.material[hit.face?.materialIndex || 0] : hit.object.material; return m.color.getHex(); };
+            for (let x = cx - hx; x <= cx + hx; x += step) for (let z = cz - hz; z <= cz + hz; z += step) {
+              ray.set(new THREE.Vector3(x, 5, z), down);
+              const h = ray.intersectObjects(meshes, false).filter(hit => {
+                const m = Array.isArray(hit.object.material) ? hit.object.material[hit.face?.materialIndex || 0] : hit.object.material;
+                return (m.clippingPlanes || []).every(p => p.distanceToPoint(hit.point) >= -0.001);
+              });
+              if (h.length < 2) continue;
+              const a = h[0], b = h.find(k => colorOf(k) !== colorOf(a));
+              if (b && Math.abs(a.point.y - b.point.y) < 0.004) {
+                const key = colorOf(a).toString(16) + '/' + colorOf(b).toString(16) + ' @' + a.point.y.toFixed(3) + '/' + b.point.y.toFixed(3);
+                (found[key] ||= []).push([+x.toFixed(1), +z.toFixed(1)]);
+              }
+            }
+            return Object.fromEntries(Object.entries(found).map(([k, v]) => [k, { n: v.length, sample: v.slice(0, 3) }]));
+          },
           render(cx, cz, hx, hz, px, real = false) {
             const S = season();
             scene.updateMatrixWorld(true);
@@ -109,6 +142,18 @@ const { chromium } = require('playwright');
     for (const kind of ['busstop', 'crosswalk', 'roadworks', 'obstacle', 'courtyard', 'cyclist', 'emergency']) {
       if (only && !only.includes(kind)) continue;
       save('event_' + kind, await page.evaluate(kind => { window.roadAudit.event(kind); return window.roadAudit.render(0, 40, 40, 60, 8); }, kind));
+    }
+    if (process.env.ZFIGHT) {
+      const all = {};
+      for (const id of questions) {
+        const r = await page.evaluate(id => { window.roadAudit.question(id); return window.roadAudit.zfight(0, 55, 30, 100); }, id);
+        if (Object.keys(r).length) all[id] = r;
+      }
+      for (const kind of ['busstop', 'crosswalk', 'roadworks', 'obstacle', 'courtyard', 'cyclist', 'emergency']) {
+        const r = await page.evaluate(kind => { window.roadAudit.event(kind); return window.roadAudit.zfight(0, 40, 30, 60); }, kind);
+        if (Object.keys(r).length) all[kind] = r;
+      }
+      console.log('zfight', JSON.stringify(all, null, 1));
     }
     // Plain renders (as the player sees the ground) for a look by eye.
     if (process.env.REAL) {
