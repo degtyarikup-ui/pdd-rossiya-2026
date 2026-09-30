@@ -152,8 +152,9 @@ const { chromium } = require('playwright');
       'After the crash the chosen left turn is completed: ' + JSON.stringify(crash));
 
     // 5. Simple steering on every enabled junction: the arrow for the task
-    // pulses (never a turn by itself), pressing it — left twice for a
-    // U-turn — and giving way as the ticket says costs no violation.
+    // pulses (never a turn by itself), pressing it once — the left button is
+    // the U-turn on a U-turn task — and giving way as the ticket says costs
+    // no violation.
     const simple = await page.evaluate(() => {
       const t = window.__priorityTest, s = t.state, bad = [];
       window.game.setSimpleSteering(true);
@@ -167,13 +168,13 @@ const { chromium } = require('playwright');
         t.tick(1 / 60);
         const hint = window.events.slice(mark).filter(e => e.event === 'exit_choice').map(e => e.hint).find(h => h) || null;
         const turnedAlone = r.simpleChoice !== (r.intersection.previews.straight ? 'straight' : null);
+        // One press: for a U-turn task the left button is the U-turn.
         if (task === 'left' || task === 'uturn') window.game.changeLane('left');
-        if (task === 'uturn') window.game.changeLane('left');
         if (task === 'right') window.game.changeLane('right');
         for (let f = 0; f < 2400 && s.resolution; f++) { window.game.setGas(!s.resolution.recovery && s.speed < 9); t.tick(1 / 60); }
         window.game.setGas(false);
         const faults = window.events.slice(mark).filter(e => e.event === 'violation').map(e => e.type);
-        const expectedHint = task === 'straight' ? null : task === 'right' ? 'right' : 'left';
+        const expectedHint = task === 'straight' ? null : task;
         if (s.resolution || faults.length || hint !== expectedHint || turnedAlone) bad.push({ id: sc.id, task, hint, faults, turnedAlone });
       }
       window.game.setSimpleSteering(false);

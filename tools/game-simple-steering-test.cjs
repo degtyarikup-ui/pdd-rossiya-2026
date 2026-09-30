@@ -202,7 +202,18 @@ const { chromium } = require('playwright');
       }
       window.game.setGas(false);
       const median = { held: medianHeld, green, done: !s.resolution, v: window.events.slice(n26).filter(e => e.event === 'violation').map(e => e.type) };
-      return { leftLane, noThird, held, back, junctions, tees, reverse, reverseFaults, median };
+      // 6. A U-turn task: the first left press is the U-turn, a second one
+      // a plain left turn, a third straight on.
+      const uIndex = t.scenarios().findIndex(sc => t.routeSpec(sc).maneuver === 'uturn');
+      const uturnPresses = [];
+      if (uIndex >= 0) {
+        t.select(uIndex); s.paused = false; t.approach();
+        const uit = s.activeIntersection;
+        window.game.proceedAfterAnswer(true, uit.situation.id);
+        t.tick(0.2);
+        for (let i = 0; i < 3; i++) { window.game.changeLane('left'); uturnPresses.push(s.resolution?.simpleChoice); }
+      }
+      return { leftLane, noThird, held, back, junctions, tees, reverse, reverseFaults, median, uturnPresses };
     });
     const near = (a, b, eps) => Math.abs(a - b) < eps;
     assert(near(result.leftLane.x, 1.8, 0.05) && near(result.leftLane.yaw, 0, 0.01), 'Lane change ends centred: ' + JSON.stringify(result.leftLane));
@@ -224,6 +235,7 @@ const { chromium } = require('playwright');
     assert.equal(result.reverseFaults, 0, 'no kerb while reversing');
     assert(result.median.held > 60 && result.median.green && result.median.done && !result.median.v.includes('wrong_maneuver'),
       '26·13: wait at the median line for green, then turn left: ' + JSON.stringify(result.median));
+    assert.deepEqual(result.uturnPresses, ['uturn', 'left', 'straight'], 'U-turn task: one press is the U-turn: ' + JSON.stringify(result.uturnPresses));
     assert.deepEqual(errors, []);
     console.log('PASS: simple steering — centred lane changes, no free steering, clean junctions');
   } finally {

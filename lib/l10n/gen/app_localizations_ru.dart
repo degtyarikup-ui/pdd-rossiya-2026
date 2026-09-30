@@ -1302,4 +1302,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameRunsUntil => 'до заезда';
+
+  @override
+  String get gameUturn => 'Разворот';
+
+  @override
+  String get gameUturnHint =>
+      'Здесь нужен разворот: нажмите эту кнопку — машина развернётся сама';
 }

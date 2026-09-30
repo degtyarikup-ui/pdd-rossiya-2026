@@ -1298,4 +1298,11 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get gameRunsUntil => 'do vožnje';
+
+  @override
+  String get gameUturn => 'Polukružno okretanje';
+
+  @override
+  String get gameUturnHint =>
+      'Ovde treba polukružno okretanje: pritisnite ovo dugme — auto će se samo okrenuti';
 }

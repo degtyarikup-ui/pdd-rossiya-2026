@@ -369,5 +369,7 @@
   "gameLobbyProgress": "Pređeno {n} od {total}",
   "gameLobbyNewCar": "NOVO",
   "gameRunsReady": "Spremno",
-  "gameRunsUntil": "do vožnje"
+  "gameRunsUntil": "do vožnje",
+  "gameUturn": "Polukružno okretanje",
+  "gameUturnHint": "Ovde treba polukružno okretanje: pritisnite ovo dugme — auto će se samo okrenuti"
 }

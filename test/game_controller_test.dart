@@ -635,6 +635,34 @@ void main() {
     ]);
   });
 
+  testWidgets('A U-turn task turns the left button into the U-turn', (
+    tester,
+  ) async {
+    Widget overlay(String? choice) => MaterialApp(
+      home: Scaffold(
+        body: GameControlsOverlay(
+          state: GameState(
+            phase: GamePhase.situation,
+            exitHint: choice == 'uturn' ? null : 'uturn',
+            exitChoice: choice,
+          ),
+          onGasChanged: (_) {},
+          onSwitchLane: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpWidget(overlay(null));
+    expect(find.byIcon(Icons.u_turn_left_rounded), findsOneWidget);
+    expect(find.bySemanticsLabel(appL10n.gameUturn), findsOneWidget);
+    // After a second press (a plain left turn) the arrow is back.
+    await tester.pumpWidget(overlay('left'));
+    expect(find.byIcon(Icons.u_turn_left_rounded), findsNothing);
+    expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
+    await tester.pumpWidget(overlay('uturn'));
+    expect(find.byIcon(Icons.u_turn_left_rounded), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('Simple steering: each press is one lane or exit command', (
     tester,
   ) async {

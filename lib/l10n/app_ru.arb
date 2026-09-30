@@ -405,5 +405,7 @@
   "@gameLobbyProgress": {"placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}},
   "gameLobbyNewCar": "НОВАЯ",
   "gameRunsReady": "Готов",
-  "gameRunsUntil": "до заезда"
+  "gameRunsUntil": "до заезда",
+  "gameUturn": "Разворот",
+  "gameUturnHint": "Здесь нужен разворот: нажмите эту кнопку — машина развернётся сама"
 }

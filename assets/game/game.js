@@ -11488,7 +11488,13 @@
     const uturnFits = previews.uturn && !['roundabout', 't_no_straight', 'divided_road', 'motorway_merge']
       .includes(r.intersection.situation.geometry);
     let choice = direction;
-    if (direction === 'left' && r.simpleChoice === 'left' && uturnFits) choice = 'uturn';
+    const straightOn = previews.straight ? 'straight' : null;
+    if (direction === 'left' && uturnFits && r.spec.maneuver === 'uturn') {
+      // The task is a U-turn: the first press is the U-turn itself (the
+      // button shows it), a second one a plain left turn, a third straight on.
+      choice = r.simpleChoice === 'uturn' ? (previews.left ? 'left' : straightOn)
+        : r.simpleChoice === 'left' ? straightOn : 'uturn';
+    } else if (direction === 'left' && r.simpleChoice === 'left' && uturnFits) choice = 'uturn';
     else if (!previews[choice] || r.simpleChoice === choice || (direction === 'left' && r.simpleChoice === 'uturn')) {
       choice = previews.straight ? 'straight' : null;
     }
@@ -11501,9 +11507,8 @@
     // its route and the phone buzzes.
     if (!applyJunctionChoice(r, true)) { r.simpleChoice = previous; refuseInput(); return; }
     // A press that leads away from the task's manoeuvre is the player's own
-    // decision: the hint stops insisting (a first left press is on the way
-    // to a U-turn).
-    const task = r.spec.maneuver, toward = task === 'uturn' ? ['left', 'uturn'] : [task];
+    // decision: the hint stops insisting.
+    const toward = [r.spec.maneuver];
     if (!toward.includes(choice)) r.simpleDeviated = true;
     if (choice === 'left' || choice === 'right' || choice === 'uturn') triggerBlinker(choice === 'right' ? 'right' : 'left');
   }
@@ -11524,7 +11529,8 @@
       const task = r.spec.maneuver;
       if (r.simpleOpen && playerCarGroup.position.z <= r.simpleGate && !r.simpleDeviated &&
           ['left', 'right', 'uturn'].includes(task) && choice !== task && r.intersection.previews?.[task]) {
-        hint = task === 'right' ? 'right' : 'left';
+        // 'uturn' is shown on the left button (a U-turn icon).
+        hint = task;
       }
     }
     const key = choice + '|' + hint;

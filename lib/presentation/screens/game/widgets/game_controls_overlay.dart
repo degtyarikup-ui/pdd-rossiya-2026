@@ -87,6 +87,10 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
             final simple = widget.simpleSteering;
             final choice = simple ? widget.state.exitChoice : null;
             final hint = simple ? widget.state.exitHint : null;
+            // A U-turn task: the left button is the U-turn — it shows the
+            // U-turn icon while it is chosen or hinted.
+            final uturn =
+                choice == 'uturn' || (hint == 'uturn' && choice != 'left');
             return Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -98,18 +102,18 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                       key: const ValueKey('game-left'),
                       width: buttonWidth,
                       icon: Icon(
-                        choice == 'uturn'
+                        uturn
                             ? Icons.u_turn_left_rounded
                             : Icons.arrow_back_rounded,
                       ),
-                      label: appL10n.gameLeft,
+                      label: uturn ? appL10n.gameUturn : appL10n.gameLeft,
                       onHold: widget.state.controlsEnabled
                           ? (held) => _press(1, held)
                           : null,
                       onTap: null,
                       haptic: _ControlHaptic.steering,
                       selected: choice == 'left' || choice == 'uturn',
-                      pulse: hint == 'left',
+                      pulse: hint == 'left' || hint == 'uturn',
                     ),
                     const SizedBox(width: 10),
                     _LaneButton(

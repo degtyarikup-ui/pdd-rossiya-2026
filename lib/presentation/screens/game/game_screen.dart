@@ -122,6 +122,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
   static const _seenKey = 'game_seen';
   static const _bestScoreKey = 'game_best_score';
 
+  /// The first U-turn task in simple steering explains the button once.
+  static const _uturnHintKey = 'game_uturn_hint_seen';
+  bool _uturnHintSeen = true;
+
   /// Models already driven: any other one available shows «Новая» in the
   /// garage until its first run.
   static const _seenModelsKey = 'game_seen_models';
@@ -416,6 +420,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
         });
       }
       _bestScore ??= prefs.getInt(_bestScoreKey) ?? 0;
+      _uturnHintSeen = prefs.getBool(_uturnHintKey) ?? false;
       final seen = prefs.getStringList(_seenModelsKey);
       // First launch with this feature: what is already there is not new.
       _seenModels = seen?.toSet() ?? _lobbyModels().toSet();
@@ -602,6 +607,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
         }
       } else if (event == 'exit_choice') {
         final choice = data['choice'], hint = data['hint'];
+        if (choice == 'uturn' && !_uturnHintSeen) {
+          setState(() => _uturnHintSeen = true);
+          SharedPreferences.getInstance()
+              .then((prefs) => prefs.setBool(_uturnHintKey, true))
+              .catchError((_) => false);
+        }
         gameNotifier.updateExit(
           choice is String ? choice : null,
           hint is String ? hint : null,
@@ -1439,6 +1450,21 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 ),
               ),
 
+            // First U-turn task (simple steering): a callout over the left
+            // button, which now shows the U-turn icon.
+            if (!_uturnHintSeen &&
+                _simpleSteering &&
+                gameState.exitHint == 'uturn' &&
+                !_inLobby &&
+                _reveal == null)
+              Positioned(
+                left: 20,
+                bottom: MediaQuery.paddingOf(context).bottom + 20 + 76 + 6,
+                child: IgnorePointer(
+                  child: _UturnHint(text: appL10n.gameUturnHint),
+                ),
+              ),
+
             if (_reveal != null)
               Positioned.fill(
                 child: GameRevealOverlay(
@@ -1894,6 +1920,76 @@ class _FirstDriveTip extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A callout pointing down at the left button on the first U-turn task.
+class _UturnHint extends StatefulWidget {
+  final String text;
+  const _UturnHint({required this.text});
+
+  @override
+  State<_UturnHint> createState() => _UturnHintState();
+}
+
+class _UturnHintState extends State<_UturnHint>
+    with SingleTickerProviderStateMixin {
+  // Finite (a few bounces, then rest): keeps widget tests settling.
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 6),
+  )..forward();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) => Transform.translate(
+        offset: Offset(0, -6 * math.sin(_controller.value * math.pi * 7).abs()),
+        child: child,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 220),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                color: colors.accent,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+              ),
+              child: Text(
+                widget.text,
+                style: const TextStyle(
+                  color: AppColors.white,
+                  fontFamily: 'Onest',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 22),
+            child: Icon(
+              Icons.arrow_downward_rounded,
+              color: colors.accent,
+              size: 26,
+            ),
+          ),
+        ],
       ),
     );
   }
