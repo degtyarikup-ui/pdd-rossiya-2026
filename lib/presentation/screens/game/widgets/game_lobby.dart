@@ -83,16 +83,22 @@ class GameLobby extends StatelessWidget {
         children: [
           button,
           const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              caption,
-              style: const TextStyle(
-                fontFamily: 'Onest',
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.white,
-                shadows: [Shadow(color: Color(0x99000000), blurRadius: 6)],
+          // The button itself is labelled for screen readers; its caption
+          // grows only a little with the system text, or the column of
+          // buttons climbs over the car arrows on a small phone.
+          MediaQuery.withClampedTextScaling(
+            maxScaleFactor: 1.3,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                caption,
+                style: const TextStyle(
+                  fontFamily: 'Onest',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.white,
+                  shadows: [Shadow(color: Color(0x99000000), blurRadius: 6)],
+                ),
               ),
             ),
           ),
@@ -178,45 +184,63 @@ class GameLobby extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                   ],
+                  // Runs on the left, the record on the right; with very
+                  // large text both shrink together rather than overflow.
                   Expanded(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: FittedBox(fit: BoxFit.scaleDown, child: runs),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Semantics(
-                    label: '${appL10n.gameLobbyRecord}: $bestScore',
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(9, 7, 11, 7),
-                      decoration: BoxDecoration(
-                        color: colors.gold,
-                        borderRadius: BorderRadius.circular(90),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SvgPicture.asset(
-                            'assets/icons/game/hud_star.svg',
-                            width: 14,
-                            height: 14,
-                            colorFilter: const ColorFilter.mode(
-                              AppColors.white,
-                              BlendMode.srcIn,
-                            ),
+                    child: LayoutBuilder(
+                      builder: (context, box) => FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minWidth: box.maxWidth),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              runs,
+                              const SizedBox(width: 8),
+                              Semantics(
+                                label: '${appL10n.gameLobbyRecord}: $bestScore',
+                                child: Container(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    9,
+                                    7,
+                                    11,
+                                    7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.gold,
+                                    borderRadius: BorderRadius.circular(90),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SvgPicture.asset(
+                                        'assets/icons/game/hud_star.svg',
+                                        width: 14,
+                                        height: 14,
+                                        colorFilter: const ColorFilter.mode(
+                                          AppColors.white,
+                                          BlendMode.srcIn,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '${appL10n.gameLobbyRecord} $bestScore',
+                                        style: const TextStyle(
+                                          fontFamily: 'Onest',
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.white,
+                                          height: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${appL10n.gameLobbyRecord} $bestScore',
-                            style: const TextStyle(
-                              fontFamily: 'Onest',
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.white,
-                              height: 1,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -296,10 +320,19 @@ class GameLobby extends StatelessWidget {
                 width: double.infinity,
                 child:
                     blocker ??
-                    SizedBox(
-                      height: 56,
+                    ConstrainedBox(
+                      // Grows with the system text size instead of cutting
+                      // the caption off.
+                      constraints: const BoxConstraints(minHeight: 56),
                       child: ElevatedButton(
                         onPressed: onStart,
+                        // 56 high with the run's progress under the title.
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 8,
+                          ),
+                        ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -307,6 +340,7 @@ class GameLobby extends StatelessWidget {
                               resume
                                   ? appL10n.gameLobbyContinue
                                   : appL10n.gameLobbyStart,
+                              textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontFamily: 'Onest',
                                 fontSize: 17,
@@ -317,6 +351,7 @@ class GameLobby extends StatelessWidget {
                             if (startCaption != null)
                               Text(
                                 startCaption!,
+                                textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontFamily: 'Onest',
                                   fontSize: 12,
@@ -350,70 +385,74 @@ Future<String?> showGamePaintSheet(
   return showModalBottomSheet<String>(
     context: context,
     showDragHandle: true,
+    isScrollControlled: true,
+    useSafeArea: true,
     builder: (context) {
       final colors = AppColors.of(context);
-      return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                appL10n.gameLobbyColour,
-                style: TextStyle(
-                  fontFamily: 'Onest',
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: colors.primaryText,
+      return SingleChildScrollView(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  appL10n.gameLobbyColour,
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: colors.primaryText,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  for (final paint in paints)
-                    Semantics(
-                      button: true,
-                      selected: paint == selected,
-                      label: gamePaintName(paint),
-                      child: GestureDetector(
-                        onTap: () {
-                          HapticFeedbackHelper.select();
-                          Navigator.pop(context, paint);
-                        },
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: gamePaintColors[paint],
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: paint == selected
-                                  ? colors.accent
-                                  : colors.divider,
-                              width: paint == selected ? 3 : 1,
+                const SizedBox(height: 16),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    for (final paint in paints)
+                      Semantics(
+                        button: true,
+                        selected: paint == selected,
+                        label: gamePaintName(paint),
+                        child: GestureDetector(
+                          onTap: () {
+                            HapticFeedbackHelper.select();
+                            Navigator.pop(context, paint);
+                          },
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: gamePaintColors[paint],
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: paint == selected
+                                    ? colors.accent
+                                    : colors.divider,
+                                width: paint == selected ? 3 : 1,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                ],
-              ),
-              if (showHint) ...[
-                const SizedBox(height: 16),
-                Text(
-                  appL10n.gameLobbyColoursHint,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Onest',
-                    fontSize: 13,
-                    color: colors.secondaryText,
-                  ),
+                  ],
                 ),
+                if (showHint) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    appL10n.gameLobbyColoursHint,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Onest',
+                      fontSize: 13,
+                      color: colors.secondaryText,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       );
@@ -430,6 +469,8 @@ Future<bool?> showGameControlsSheet(
   return showModalBottomSheet<bool>(
     context: context,
     showDragHandle: true,
+    isScrollControlled: true,
+    useSafeArea: true,
     builder: (context) {
       final colors = AppColors.of(context);
       Widget option({
@@ -515,38 +556,40 @@ Future<bool?> showGameControlsSheet(
         );
       }
 
-      return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),
-                child: Text(
-                  appL10n.gameControlsTitle,
-                  style: TextStyle(
-                    fontFamily: 'Onest',
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: colors.primaryText,
+      return SingleChildScrollView(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),
+                  child: Text(
+                    appL10n.gameControlsTitle,
+                    style: TextStyle(
+                      fontFamily: 'Onest',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: colors.primaryText,
+                    ),
                   ),
                 ),
-              ),
-              option(
-                value: true,
-                icon: Icons.alt_route_rounded,
-                title: appL10n.gameControlsSimple,
-                hint: appL10n.gameControlsSimpleHint,
-              ),
-              option(
-                value: false,
-                icon: Icons.sports_esports_rounded,
-                title: appL10n.gameControlsFree,
-                hint: appL10n.gameControlsFreeHint,
-              ),
-            ],
+                option(
+                  value: true,
+                  icon: Icons.alt_route_rounded,
+                  title: appL10n.gameControlsSimple,
+                  hint: appL10n.gameControlsSimpleHint,
+                ),
+                option(
+                  value: false,
+                  icon: Icons.sports_esports_rounded,
+                  title: appL10n.gameControlsFree,
+                  hint: appL10n.gameControlsFreeHint,
+                ),
+              ],
+            ),
           ),
         ),
       );

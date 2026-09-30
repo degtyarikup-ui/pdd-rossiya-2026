@@ -11,6 +11,8 @@
 // Run with NODE_PATH pointing at Playwright and a local server on :8938:
 //   SOAK_MINUTES=12 SOAK_SEEDS=1,2,3 node tools/game-soak-test.cjs
 // SOAK_FREE=1 drives in free steering (the arrows as a wheel) instead.
+// SOAK_UTURN=1 turns back at every junction that allows it, whatever the
+// task: the approach road is then reused as the exit again and again.
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
 
@@ -43,6 +45,27 @@ const { chromium } = require('playwright');
           try { response = await route.fetch(); break; } catch (e) { if (attempt >= 4) throw e; await new Promise(r => setTimeout(r, 500)); }
         }
         const body = (await response.text()).replace('  // Run init on DOM ready', `
+        // Road bookkeeping trace (SOAK_ROADLOG).
+        const __roadLog = [];
+        const __surfaces = road => { const own = []; road?.traverse(o => { if (o.userData.surface === 'road') { const b = new THREE.Box3().setFromObject(o); own.push([+b.min.z.toFixed(0), +b.max.z.toFixed(0)]); } }); return own; };
+        const __extend = extendQuestionCorridor;
+        extendQuestionCorridor = endZ => {
+          const before = { road: state.exitRoad?.uuid.slice(0, 4), next: nextSegmentZ, endZ };
+          __extend(endZ);
+          __roadLog.push(['extend', +(window.__drive?.t || 0).toFixed(1), before, nextSegmentZ, __surfaces(state.exitRoad)]);
+        };
+        const __buildJunction = buildIntersectionSegment;
+        buildIntersectionSegment = (startZ, situation, incomingRoad) => {
+          __roadLog.push(['junction', +(window.__drive?.t || 0).toFixed(1), situation.id, startZ, incomingRoad?.uuid.slice(0, 4), __surfaces(incomingRoad), incomingRoad ? corridorWorldEndsOf(incomingRoad) : null]);
+          return __buildJunction(startZ, situation, incomingRoad);
+        };
+        const __clearRoadside = clearRoadside;
+        clearRoadside = (...args) => {
+          const before = __surfaces(state.exitRoad);
+          __clearRoadside(...args);
+          __roadLog.push(['clearRoadside', +(window.__drive?.t || 0).toFixed(1), args[0], state.exitRoad?.uuid.slice(0, 4), before, __surfaces(state.exitRoad)]);
+        };
+        const corridorWorldEndsOf = road => { road.updateWorldMatrix(true, false); return (road.userData.roadEnds || []).map(p => +p.clone().applyMatrix4(road.matrixWorld).z.toFixed(0)); };
         // Every collision with its circumstances: who hit whom.
         const __collisions = [];
         const __handleCollision = handleCollision;
@@ -60,9 +83,44 @@ const { chromium } = require('playwright');
           return __handleCollision(actor, key);
         };
         window.__soak = {
-          collisions: __collisions,
+          collisions: __collisions, roadLog: __roadLog,
           state, THREE, get player() { return playerCarGroup; },
           playerOnRoad: () => playerOnRoad(),
+          diag() {
+            const p = playerCarGroup.position, yaw = playerCarGroup.rotation.y, out = { p: [p.x, p.z].map(v => +v.toFixed(2)), yaw: +yaw.toFixed(2) };
+            out.corners = [];
+            for (const x of [-playerCarGroup.userData.halfWidth, playerCarGroup.userData.halfWidth])
+              for (const z of [-playerCarGroup.userData.halfLength, playerCarGroup.userData.halfLength]) {
+                const c = new THREE.Vector3(x, 0, z).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw).add(p);
+                out.corners.push([+c.x.toFixed(2), +c.z.toFixed(2), roadSupports(c)]);
+              }
+            out.profile = [];
+            for (let dz = -8; dz <= 8; dz += 1) out.profile.push([dz, roadSupports(new THREE.Vector3(p.x, 0, p.z + dz))]);
+            out.segments = state.roadSegments.map(seg => { const b = new THREE.Box3().setFromObject(seg); return [seg.userData.roadEvent ? 'event' : seg.userData.oneWay !== undefined ? 'road' : 'seg', +b.min.z.toFixed(0), +b.max.z.toFixed(0)]; });
+            out.exitRoadEnds = state.exitRoad ? corridorWorldEnds().map(v => [+v.x.toFixed(1), +v.z.toFixed(1)]) : null;
+            out.currentEnds = corridorWorldEnds().map(v => [+v.x.toFixed(1), +v.z.toFixed(1)]);
+            out.noRoad = (state.noRoad || []).length;
+            // Which kerbed island refuses the road just ahead, and whose it is.
+            out.noRoadHits = (state.noRoad || []).map(({ test, inverse }, i) => {
+              const hits = out.profile.filter(([dz]) => test(new THREE.Vector3(p.x, 0, p.z + dz).applyMatrix4(inverse))).map(([dz]) => dz);
+              return [i, hits];
+            }).filter(([, hits]) => hits.length);
+            out.islands = [];
+            state.roadSegments.forEach((seg, k) => seg.traverse(o => {
+              if (!o.userData.noRoad) return;
+              const b = new THREE.Box3().setFromObject(o), m = Array.isArray(o.material) ? o.material[0] : o.material;
+              out.islands.push([k, o.visible, [b.min.x, b.max.x, b.min.z, b.max.z].map(v => +v.toFixed(1)), (m?.clippingPlanes || []).map(pl => [pl.normal.toArray().map(v => +v.toFixed(2)), +pl.constant.toFixed(2)])]);
+            }));
+            out.intersections = state.intersections.map(it => [it.situation.id, +it.stopZ.toFixed(1), +(it.centerZ || 0).toFixed(1)]);
+            out.bounds = (state.roadBounds || []).filter(b => b.box.min.z < p.z + 40 && b.box.max.z > p.z - 5 && b.box.min.x < p.x + 3 && b.box.max.x > p.x - 3)
+              .map(b => [+b.box.min.x.toFixed(1), +b.box.max.x.toFixed(1), +b.box.min.z.toFixed(1), +b.box.max.z.toFixed(1), (b.material.clippingPlanes || []).map(pl => [pl.normal.toArray().map(v => +v.toFixed(2)), +pl.constant.toFixed(2)])]);
+            // The exit road's own road surfaces, wherever they are.
+            const exit = state.exitRoad || currentCorridor, own = [];
+            exit?.traverse(o => { if (o.userData.surface === 'road') { const b = new THREE.Box3().setFromObject(o); own.push([o.visible, +b.min.x.toFixed(1), +b.max.x.toFixed(1), +b.min.z.toFixed(1), +b.max.z.toFixed(1), (Array.isArray(o.material) ? o.material[0] : o.material).clippingPlanes?.map(pl => [pl.normal.toArray().map(v => +v.toFixed(2)), +pl.constant.toFixed(2)])]); } });
+            out.exitSurfaces = own.slice(0, 12);
+            out.exitInSegments = state.roadSegments.includes(exit);
+            return out;
+          },
           // One frame of the real loop (animate() without requestAnimationFrame).
           step(dt, time) {
             if (reveal) { updateReveal(dt); return; }
@@ -83,11 +141,16 @@ const { chromium } = require('playwright');
             updateCamera(dt);
             checkAndSpawnNext();
           },
-          render() { renderer.render(scene, camera); },
+          render() {
+            renderer.render(scene, camera);
+            const r = renderer.info.render;
+            this.maxCalls = Math.max(this.maxCalls || 0, r.calls);
+            this.maxTriangles = Math.max(this.maxTriangles || 0, r.triangles);
+          },
           shot() { renderer.render(scene, camera); return renderer.domElement.toDataURL('image/png'); },
           info() {
             let objects = 0; scene.traverse(() => objects++);
-            return { geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, signCache: signTextureCache.size,
+            return { maxCalls: this.maxCalls || 0, maxTriangles: this.maxTriangles || 0, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, signCache: signTextureCache.size,
               objects, segments: state.roadSegments.length, actors: state.actors.length,
               ambient: state.ambient.length, props: state.props.length, crews: (state.crews || []).length,
               blockers: (state.blockers || []).length, trail: (state.trail || []).length,
@@ -124,12 +187,12 @@ const { chromium } = require('playwright');
       const result = { seed, free, answered: 0, wrong: 0, stuck: [], offroad: [], nonFinite: null, resets: 0,
         violations: {}, info: [], distance: 0, exits: 0, refused: 0 };
       if (process.env.SOAK_SHOTS_AT) await page.evaluate(at => { window.__shotAt = at; }, process.env.SOAK_SHOTS_AT.split(',').map(Number));
-      await page.evaluate(free => {
+      await page.evaluate(([free, uturn]) => {
         window.__drive = { t: 0, pending: [], mark: 0, lastProgress: { t: 0, d: 0 }, offSince: null, free,
           pressedFor: null, answerAt: null, nextPauseAt: 150 + Math.random() * 120, pauseUntil: null,
           lobbyUntil: null, stuck: [], offroad: [], resets: 0, answered: 0, wrong: 0, violations: {}, refused: 0,
-          rnd: Math.random };
-      }, free);
+          rnd: Math.random, uturn: !!uturn };
+      }, [free, !!process.env.SOAK_UTURN]);
       for (let done = 0; done < frames; done += chunk) {
         const out = await page.evaluate(n => {
           const S = window.__soak, D = window.__drive, s = S.state, dt = 1 / 60;
@@ -153,7 +216,9 @@ const { chromium } = require('playwright');
                 const r = s.resolution;
                 if (r && D.pressedFor !== r) {
                   D.pressedFor = r;
-                  if (e.hint === 'uturn') window.game.chooseUturn(); else window.game.changeLane(e.hint);
+                  // SOAK_UTURN: turn back wherever the U-turn button shows,
+                  // whatever the task (the same road is then reused again and again).
+                  if (e.hint === 'uturn' || (D.uturn && e.uturn)) window.game.chooseUturn(); else window.game.changeLane(e.hint);
                 }
               }
             }
@@ -193,7 +258,20 @@ const { chromium } = require('playwright');
               }
               const heading = Math.atan2(target.x - p.x, target.z - p.z);
               const err = Math.atan2(Math.sin(heading - yaw), Math.cos(heading - yaw));
-              window.game.setSteering(Math.max(-1, Math.min(1, err * 3)));
+              // Pressed against something with the gas on: back off a little
+              // with the wheel the other way, as a player would.
+              // (at a kerb the speed stays at 4 m/s with the car not moving:
+              // judge by the distance covered)
+              D.pushFrom ??= { t: D.t, x: p.x, z: p.z };
+              if (Math.hypot(p.x - D.pushFrom.x, p.z - D.pushFrom.z) > 0.6 || !s.isAccelerating) D.pushFrom = { t: D.t, x: p.x, z: p.z };
+              else if (D.t - D.pushFrom.t > 2 && !D.reverseUntil) { D.reverseUntil = D.t + 1.5; D.reverses = (D.reverses || 0) + 1; D.pushFrom = null; }
+              if (D.reverseUntil && D.t < D.reverseUntil) {
+                window.game.setGas(false); window.game.setBrake(true);
+                window.game.setSteering(err > 0 ? -1 : 1);
+              } else {
+                if (D.reverseUntil) { D.reverseUntil = null; window.game.setBrake(false); }
+                window.game.setSteering(Math.max(-1, Math.min(1, err * 3)));
+              }
             }
             S.step(dt, D.t);
             if (f % 60 === 0) S.render();
@@ -203,7 +281,10 @@ const { chromium } = require('playwright');
             // Watch.
             const p = S.player.position;
             if (![p.x, p.z, s.speed, S.player.rotation.y].every(Number.isFinite)) return { nonFinite: [p.x, p.z, s.speed] };
-            if (s.paused || s.isAtSituation) { D.lastProgress = { t: D.t, d: s.distanceTraveled }; }
+            // Standing at a question (before the answer) is no lack of progress;
+            // driving through the junction afterwards is.
+            const atQuestion = s.isAtSituation && (!s.resolution || s.resolution.phase !== 'manual') || s.roadEvent?.phase === 'question';
+            if (s.paused || atQuestion) { D.lastProgress = { t: D.t, d: s.distanceTraveled }; }
             else if (s.distanceTraveled > D.lastProgress.d + 5) D.lastProgress = { t: D.t, d: s.distanceTraveled };
             else if (D.t - D.lastProgress.t > 45) {
               D.stuck.push({ t: Math.round(D.t), x: +p.x.toFixed(1), z: +p.z.toFixed(1), yaw: +S.player.rotation.y.toFixed(2),
@@ -225,6 +306,8 @@ const { chromium } = require('playwright');
         result.info.push({ t: out.t, ...out.info });
         result.distance = out.distance;
       }
+      if (process.env.SOAK_ROADLOG) (await page.evaluate(() => window.__soak.roadLog)).forEach(l => console.log('  road', JSON.stringify(l)));
+      if (process.env.SOAK_DIAG) console.log('  diag', JSON.stringify(await page.evaluate(() => window.__soak.diag())));
       if (process.env.SOAK_SHOTS_AT) {
         const shots = await page.evaluate(() => window.__shots || []);
         shots.forEach(([t, url], i) => require('node:fs').writeFileSync(process.env.SOAK_SHOT + '_' + seed + '_' + String(i).padStart(2, '0') + '_' + t + '.png', Buffer.from(url.split(',')[1], 'base64')));
@@ -232,7 +315,7 @@ const { chromium } = require('playwright');
       if (process.env.SOAK_SHOT) require('node:fs').writeFileSync(process.env.SOAK_SHOT + '_' + seed + '.png', Buffer.from((await page.evaluate(() => window.__soak.shot())).split(',')[1], 'base64'));
       Object.assign(result, await page.evaluate(() => {
         const D = window.__drive;
-        return { answered: D.answered, wrong: D.wrong, stuck: D.stuck, offroad: D.offroad, resets: D.resets, violations: D.violations, refused: D.refused,
+        return { reverses: D.reverses || 0, answered: D.answered, wrong: D.wrong, stuck: D.stuck, offroad: D.offroad, resets: D.resets, violations: D.violations, refused: D.refused,
           collisions: window.__soak.collisions, vlog: D.vlog || [] };
       }));
       result.errors = errors.slice(0, 10);
@@ -245,7 +328,7 @@ const { chromium } = require('playwright');
   }
   for (const r of report) {
     const first = r.info[0] || {}, last = r.info[r.info.length - 1] || {};
-    console.log(JSON.stringify({ seed: r.seed, free: r.free, answered: r.answered, wrong: r.wrong, distanceM: r.distance,
+    console.log(JSON.stringify({ seed: r.seed, free: r.free, reverses: r.reverses, maxCalls: last.maxCalls, maxTriangles: last.maxTriangles, answered: r.answered, wrong: r.wrong, distanceM: r.distance,
       resets: r.resets, refused: r.refused, violations: r.violations, stuck: r.stuck, offroad: r.offroad.slice(0, 6),
       nonFinite: r.nonFinite, errors: r.errors, consoleErrors: r.consoleErrors,
       growth: { geometries: [first.geometries, last.geometries], textures: [first.textures, last.textures],

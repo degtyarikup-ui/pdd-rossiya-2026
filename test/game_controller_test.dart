@@ -3,6 +3,7 @@ import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
+import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
@@ -667,6 +668,219 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('game-uturn')));
     expect(uturns, 1);
     await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets(
+    'Garage, HUD, runs sheet and U-turn controls fit small phones at large text',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+      // Real glyph widths: the test font draws every letter as a wide square.
+      final onest = FontLoader('Onest');
+      for (final weight in [
+        'Regular',
+        'Medium',
+        'SemiBold',
+        'Bold',
+        'ExtraBold',
+      ]) {
+        onest.addFont(rootBundle.load('assets/fonts/Onest-$weight.ttf'));
+      }
+      await onest.load();
+      const driving = GameState(
+        phase: GamePhase.driving,
+        runs: 2,
+        totalAnswered: 17,
+        speedKmH: 107,
+        limitKmH: 60,
+        score: 1234567,
+        distanceM: 123456,
+        violationCount: 12,
+        lastViolation: 'collision',
+        exitUturn: true,
+        exitHint: 'uturn',
+      );
+      final screens = <String, Widget>{
+        for (final empty in [false, true])
+          empty ? 'lobby_empty' : 'lobby': GameLobby(
+            vehiclePaint: 'yellow',
+            bestScore: 1234567,
+            runs: GameRunsPill(
+              runs: empty ? 0 : 2,
+              maxRuns: 3,
+              unlimited: false,
+            ),
+            carName: 'Внедорожник',
+            carIsNew: true,
+            startCaption: empty ? null : appL10n.gameLobbyProgress(17, 20),
+            resume: !empty,
+            blocker: empty
+                ? GameRunsWaitBar(
+                    refillAt: DateTime.now().add(
+                      const Duration(minutes: 29, seconds: 59),
+                    ),
+                    onBuyPremium: () {},
+                  )
+                : null,
+            onStart: () {},
+            onPrevious: () {},
+            onNext: () {},
+            onColour: () {},
+            onLeaderboard: () {},
+            onControls: () {},
+          ),
+        'hud': Stack(
+          children: [
+            Align(
+              alignment: Alignment.topCenter,
+              child: GameHud(state: driving, onLeaderboard: () {}),
+            ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: GameControlsOverlay(
+                state: driving,
+                onGasChanged: (_) {},
+                onSwitchLane: (_) {},
+                onUturn: () {},
+              ),
+            ),
+          ],
+        ),
+        'runs_sheet': SingleChildScrollView(
+          child: GameRunsSheet(
+            maxRuns: 3,
+            questions: 20,
+            refillMinutes: 30,
+            unlimited: false,
+            runs: () => 1,
+            nextRefillAt: () =>
+                DateTime.now().add(const Duration(minutes: 89, seconds: 59)),
+            onBuyPremium: () {},
+          ),
+        ),
+      };
+      for (final size in const [Size(320, 568), Size(360, 640)]) {
+        for (final scale in const [1.0, 2.0]) {
+          tester.view.physicalSize = size;
+          for (final entry in screens.entries) {
+            await tester.pumpWidget(
+              MaterialApp(
+                theme: AppTheme.lightTheme,
+                home: MediaQuery(
+                  data: MediaQueryData(
+                    size: size,
+                    textScaler: TextScaler.linear(scale),
+                    padding: const EdgeInsets.only(top: 24, bottom: 20),
+                  ),
+                  child: Scaffold(
+                    backgroundColor: const Color(0xff8a8f7a),
+                    body: entry.value,
+                  ),
+                ),
+              ),
+            );
+            await tester.pump(const Duration(milliseconds: 400));
+            expect(
+              tester.takeException(),
+              isNull,
+              reason: '${entry.key} at ${size.width.toInt()} px ×$scale',
+            );
+          }
+        }
+      }
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets('Garage sheets fit small phones at large text', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+    final onest = FontLoader('Onest');
+    for (final weight in [
+      'Regular',
+      'Medium',
+      'SemiBold',
+      'Bold',
+      'ExtraBold',
+    ]) {
+      onest.addFont(rootBundle.load('assets/fonts/Onest-$weight.ttf'));
+    }
+    await onest.load();
+    final sheets = <String, Future<void> Function(BuildContext)>{
+      'runs': (context) => showGameRunsSheet(
+        context,
+        maxRuns: 3,
+        questions: 20,
+        refillMinutes: 30,
+        unlimited: false,
+        runs: () => 1,
+        nextRefillAt: () =>
+            DateTime.now().add(const Duration(minutes: 14, seconds: 32)),
+        onBuyPremium: () {},
+      ),
+      'runs_full': (context) => showGameRunsSheet(
+        context,
+        maxRuns: 3,
+        questions: 20,
+        refillMinutes: 30,
+        unlimited: false,
+        runs: () => 3,
+        nextRefillAt: () => null,
+        onBuyPremium: () {},
+      ),
+      'controls': (context) => showGameControlsSheet(context, simple: true),
+      'paint': (context) => showGamePaintSheet(
+        context,
+        paints: const ['red', 'blue', 'yellow', 'white', 'black', 'green'],
+        selected: 'red',
+        showHint: true,
+      ),
+    };
+    final failures = <String>[];
+    for (final size in const [Size(320, 568), Size(360, 640), Size(390, 844)]) {
+      for (final scale in const [1.0, 1.3, 2.0]) {
+        tester.view.physicalSize = size;
+        for (final entry in sheets.entries) {
+          await tester.pumpWidget(
+            MaterialApp(
+              // A fresh navigator each time: no sheet left open from before.
+              key: ValueKey('${entry.key} $size $scale'),
+              theme: AppTheme.lightTheme,
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: TextScaler.linear(scale)),
+                child: child!,
+              ),
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => Center(
+                    child: TextButton(
+                      onPressed: () => entry.value(context),
+                      child: const Text('open'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.tap(find.text('open'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 600));
+          final error = tester.takeException();
+          if (error != null) {
+            failures.add(
+              '${entry.key} at ${size.width.toInt()}×${size.height.toInt()} '
+              '×$scale: $error',
+            );
+          }
+        }
+      }
+    }
+    await tester.pumpWidget(const SizedBox());
+    expect(failures, isEmpty);
   });
 
   testWidgets('Simple steering: each press is one lane or exit command', (

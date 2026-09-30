@@ -6,186 +6,6 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 
-/// Runs in stock: a flag with one bar per run, or the infinity sign for
-/// premium players.
-class GameFuelGauge extends StatelessWidget {
-  final int fuel;
-  final int maxFuel;
-  final bool unlimited;
-
-  const GameFuelGauge({
-    super.key,
-    required this.fuel,
-    required this.maxFuel,
-    required this.unlimited,
-    this.vertical = false,
-  });
-
-  /// HUD layout: the pump on top, the bars stacked upward beneath it.
-  final bool vertical;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final low = !unlimited && fuel <= 0;
-    final tint = low ? colors.red : colors.accent;
-    return Semantics(
-      label: unlimited
-          ? appL10n.gameFuelUnlimited
-          : '${appL10n.gameFuel}: $fuel / $maxFuel',
-      // Design: the fuel pump and one bar per unit, straight on the map.
-      // Unlimited fuel shows a full tank.
-      child: Flex(
-        direction: vertical ? Axis.vertical : Axis.horizontal,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Runs in stock: a finish flag and one bar per run.
-          Icon(
-            Icons.sports_score_rounded,
-            key: const ValueKey('hud-fuel'),
-            size: 24,
-            color: tint,
-          ),
-          const SizedBox(width: 8, height: 8),
-          // Unlimited fuel: the infinity sign instead of the bars.
-          if (unlimited)
-            Text(
-              '∞',
-              style: TextStyle(
-                fontFamily: 'Onest',
-                fontSize: 24,
-                height: 1,
-                fontWeight: FontWeight.w800,
-                color: tint,
-              ),
-            )
-          else
-            for (var i = 0; i < maxFuel; i++)
-              Container(
-                width: vertical ? 16 : 5,
-                height: vertical ? 5 : 16,
-                margin: vertical
-                    ? EdgeInsets.only(bottom: i == maxFuel - 1 ? 0 : 4)
-                    : EdgeInsets.only(right: i == maxFuel - 1 ? 0 : 4),
-                decoration: BoxDecoration(
-                  // Vertical: filled from the bottom up, like a tank.
-                  color: (vertical ? maxFuel - 1 - i : i) < fuel
-                      ? tint
-                      : colors.gray.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(38),
-                ),
-              ),
-        ],
-      ),
-    );
-  }
-}
-
-/// "Out of fuel": the countdown to the next unit and the premium pitch.
-/// On the game screen it is the bottom card; in the results dialog
-/// (`compact`) only the pitch is shown, the countdown lives in the header.
-class GameFuelEmptyPanel extends StatefulWidget {
-  final DateTime? refillAt;
-  final VoidCallback onBuyPremium;
-  final bool compact;
-
-  /// Called once when the countdown reaches zero: the tank is full again.
-  final VoidCallback? onRefilled;
-
-  const GameFuelEmptyPanel({
-    super.key,
-    required this.refillAt,
-    required this.onBuyPremium,
-    this.compact = false,
-    this.onRefilled,
-  });
-
-  @override
-  State<GameFuelEmptyPanel> createState() => _GameFuelEmptyPanelState();
-}
-
-class _GameFuelEmptyPanelState extends State<GameFuelEmptyPanel> {
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    if (!widget.compact) {
-      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (!mounted) return;
-        final at = widget.refillAt;
-        if (at == null || !DateTime.now().isBefore(at)) {
-          _timer?.cancel();
-          widget.onRefilled?.call();
-        }
-        setState(() {});
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final pitch = GameFuelPremiumPitch(onBuyPremium: widget.onBuyPremium);
-    if (widget.compact) return pitch;
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: colors.cardBackground,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              GameFuelEmptyIcon(size: 40),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      appL10n.gameFuelEmptyTitle,
-                      style: TextStyle(
-                        fontFamily: 'Onest',
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: colors.primaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      appL10n.gameFuelRefillIn(
-                        gameFuelCountdown(widget.refillAt),
-                      ),
-                      style: TextStyle(
-                        fontFamily: 'Onest',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: colors.red,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          pitch,
-        ],
-      ),
-    );
-  }
-}
-
 /// "M:SS" until [at]; "0:00" when it has passed or is unknown.
 String gameFuelCountdown(DateTime? at) {
   if (at == null) return '0:00';
@@ -195,7 +15,7 @@ String gameFuelCountdown(DateTime? at) {
   return '$m:${s.toString().padLeft(2, '0')}';
 }
 
-/// The red pump in a tinted circle, used wherever the tank is empty.
+/// The finish flag in a red tinted circle, shown when the runs are used up.
 class GameFuelEmptyIcon extends StatelessWidget {
   final double size;
   const GameFuelEmptyIcon({super.key, this.size = 40});
@@ -534,14 +354,18 @@ Future<void> showGameRunsSheet(
   return showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
-    builder: (context) => GameRunsSheet(
-      maxRuns: maxRuns,
-      questions: questions,
-      refillMinutes: refillMinutes,
-      unlimited: unlimited,
-      runs: runs,
-      nextRefillAt: nextRefillAt,
-      onBuyPremium: onBuyPremium,
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (context) => SingleChildScrollView(
+      child: GameRunsSheet(
+        maxRuns: maxRuns,
+        questions: questions,
+        refillMinutes: refillMinutes,
+        unlimited: unlimited,
+        runs: runs,
+        nextRefillAt: nextRefillAt,
+        onBuyPremium: onBuyPremium,
+      ),
     ),
   );
 }
@@ -610,6 +434,7 @@ class GameRunsSheetState extends State<GameRunsSheet> {
             color: colors.accentSurface10,
             borderRadius: radius,
           ),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -631,6 +456,7 @@ class GameRunsSheetState extends State<GameRunsSheet> {
               const SizedBox(height: 6),
               Text(
                 appL10n.gameRunsReady,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Onest',
                   fontSize: 12,
@@ -659,30 +485,40 @@ class GameRunsSheetState extends State<GameRunsSheet> {
               widthFactor: progress,
               child: ColoredBox(color: colors.accent.withValues(alpha: 0.16)),
             ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  gameFuelCountdown(at),
-                  style: TextStyle(
-                    fontFamily: 'Onest',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    fontFeatures: tabular,
-                    color: k == 0 ? colors.accent : colors.secondaryText,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // One line whatever the text size: «14:32», never «14:» over «32».
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      gameFuelCountdown(at),
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Onest',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        fontFeatures: tabular,
+                        color: k == 0 ? colors.accent : colors.secondaryText,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  appL10n.gameRunsUntil,
-                  style: TextStyle(
-                    fontFamily: 'Onest',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: colors.secondaryText,
+                  const SizedBox(height: 2),
+                  Text(
+                    appL10n.gameRunsUntil,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Onest',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: colors.secondaryText,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -708,16 +544,19 @@ class GameRunsSheetState extends State<GameRunsSheet> {
               ),
             ),
             const SizedBox(height: 14),
-            SizedBox(
-              height: 76,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = 0; i < widget.maxRuns; i++) ...[
-                    if (i > 0) const SizedBox(width: 8),
-                    Expanded(child: tile(i)),
+            // Tiles of one height, taller when the system text is large.
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 76),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = 0; i < widget.maxRuns; i++) ...[
+                      if (i > 0) const SizedBox(width: 8),
+                      Expanded(child: tile(i)),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
             const SizedBox(height: 14),

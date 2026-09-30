@@ -32,6 +32,8 @@ const { chromium } = require('playwright');
         createTrafficLight,
         maybeReverseWorld, corridorWorldEnds,
         playerOnRoad, playerFootprint, actorFootprint, footprintsOverlap, integrateDriving,
+        roadSupports, refreshRoadBounds, extendQuestionCorridor, clearRoadside, buildStraightSegment,
+        setCorridor(road, next) { currentCorridor = road; state.exitRoad = road; nextSegmentZ = next; },
         audioSnapshot: () => gameAudio.snapshot(), updateAudio: (dt, elapsed) => gameAudio.update(dt, elapsed),
         surfaceAt(x, z) {
           scene.updateMatrixWorld(true);
@@ -161,6 +163,28 @@ const { chromium } = require('playwright');
       let faded = false;
       building.traverse(part => { if (part.material && part.material.transparent && part.material.opacity < 0.5) faded = true; });
       out.occluderFaded = faded;
+
+      // 5. Clearing the roadside for a bus stop takes houses away, never a
+      // piece of the road: a stretch added for a long question used to go
+      // whole, leaving no asphalt ahead (the car stood there for good).
+      t.select(0); s.paused = false;
+      const road = t.buildStraightSegment(400, 200, true);
+      s.roadSegments.push(road);
+      t.setCorridor(road, 600);
+      t.extendQuestionCorridor(680);
+      t.clearRoadside(640);
+      t.refreshRoadBounds();
+      out.extensionKept = [610, 640, 670].every(z => t.roadSupports(new T.Vector3(-1.8, 0, z)));
+
+      // 6. A kerbed island of a street cut off after a turn is not drawn
+      // beyond the cut, and is not felt there either.
+      const island = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshBasicMaterial());
+      island.userData.noRoad = () => true;
+      island.material.clippingPlanes = [new T.Plane(new T.Vector3(0, 0, -1), 500)];
+      road.add(island);
+      t.refreshRoadBounds();
+      out.islandCut = { drawn: t.roadSupports(new T.Vector3(-1.8, 0, 450)), cutOff: t.roadSupports(new T.Vector3(-1.8, 0, 550)) };
+      road.remove(island);
       return out;
     });
     console.log(JSON.stringify(result));
@@ -169,7 +193,9 @@ const { chromium } = require('playwright');
     assert(Math.abs(result.fromCentreLine + 1.8) < 0.1, 'back to its own lane from the centre line: ' + result.fromCentreLine);
     assert(Math.abs(result.overtaking - 1.8) < 0.1, 'an overtaking car keeps the oncoming lane: ' + result.overtaking);
     assert.equal(result.occluderFaded, true, 'a building hiding the car is faded');
+    assert.equal(result.extensionKept, true, 'a bus stop never takes a piece of the road away');
+    assert.deepEqual(result.islandCut, { drawn: false, cutOff: true }, 'an island is felt only where it is drawn');
     assert.deepEqual(errors, []);
-    console.log('PASS: robustness — paused answers, pause mid-turn, own lane, faded occluders');
+    console.log('PASS: robustness — paused answers, pause mid-turn, own lane, faded occluders, road kept by bus stops, cut-off islands');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exit(1); });

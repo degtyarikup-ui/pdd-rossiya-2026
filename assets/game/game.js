@@ -10233,7 +10233,11 @@
     if (!seg) return;
     seg.updateMatrixWorld(true);
     const doomed = [];
-    seg.children.forEach(o => {
+    // A stretch added to this road for a long question and a question's own
+    // crossing are pieces of the road itself, not roadside objects: clear
+    // inside them. Taking one away whole left a gap with no asphalt ahead.
+    const visit = group => group.children.forEach(o => {
+      if (o.userData.roadEnds || o.userData.questionTopology) { visit(o); return; }
       if (o.userData.surface || o.userData.baked || o.isLine || o.userData.puddle) return;
       if (state.ambient.some(a => a.mesh === o)) return;
       const box = new THREE.Box3().setFromObject(o);
@@ -10242,7 +10246,8 @@
       // not only objects centred there: a long house must not cover the path.
       if (box.max.x > xMin && box.min.x < xMax && box.max.z > bayZ - half && box.min.z < bayZ + half && box.max.y > 0.3) doomed.push(o);
     });
-    doomed.forEach(o => { seg.remove(o); state.occluders = state.occluders.filter(b => b !== o); });
+    visit(seg);
+    doomed.forEach(o => { o.parent.remove(o); state.occluders = state.occluders.filter(b => b !== o); });
   }
   // Vehicles coming the other way on a straight: they pass and vanish behind.
   function addOncomingTraffic(group, boundary, scene) {
@@ -10269,22 +10274,24 @@
   // cylinder top. Cars rise over it; no speed penalty, just a nudge.
   function addSpeedHump(group, z) {
     const r = 1.0, h = 0.15, pieces = 8, width = 8.4 / pieces;
+    let piece;
     for (let i = 0; i < pieces; i++) {
       const g = new THREE.CylinderGeometry(r, r, width, 20, 1, false, -0.55, 1.1);
       g.rotateZ(Math.PI / 2); g.rotateX(-Math.PI / 2); // axis across the road, arc on top
-      const m = new THREE.Mesh(g, sceneryMat(i % 2 ? 0x22262A : 0xF2C230));
-      m.position.set(-4.2 + width * (i + 0.5), 0.02 + h - r, z);
-      m.receiveShadow = true;
-      group.add(m);
+      piece = new THREE.Mesh(g, sceneryMat(i % 2 ? 0x22262A : 0xF2C230));
+      piece.position.set(-4.2 + width * (i + 0.5), 0.02 + h - r, z);
+      piece.receiveShadow = true;
+      group.add(piece);
     }
     const marker = new THREE.Object3D(); marker.position.set(0, 0, z); group.add(marker);
-    state.humps.push({ marker, r, h });
+    state.humps.push({ marker, r, h, piece });
   }
   // Height of the road surface under a point (world), humps included.
   function humpHeight(p) {
     let y = 0;
     for (const hump of state.humps) {
       const at = hump.marker.getWorldPosition(new THREE.Vector3());
+      if (clippedAway(hump.piece?.material, at)) continue;
       const d = Math.abs(p.z - at.z);
       if (d < hump.r && Math.abs(p.x - at.x) < 4.3) y = Math.max(y, Math.sqrt(hump.r * hump.r - d * d) - (hump.r - hump.h));
     }
@@ -10471,6 +10478,8 @@
       for (const pr of state.props) {
         const world = pr.mesh.getWorldPosition(new THREE.Vector3());
         if (world.distanceTo(player.p) > 6) continue;
+        pr.probe ??= clipProbe(pr.mesh);
+        if (clippedAway(pr.probe?.material, world)) continue;
         const yaw = pr.mesh.getWorldQuaternion(new THREE.Quaternion());
         const box = { p: world, yaw: new THREE.Euler().setFromQuaternion(yaw, 'YXZ').y,
           halfWidth: pr.radius, halfLength: pr.depth ?? pr.radius };
@@ -10509,6 +10518,8 @@
   function pointBlocked(p, self) {
     for (const b of state.blockers || []) {
       if (!b.group.parent) continue;
+      b.probe ??= clipProbe(b.group);
+      if (clippedAway(b.probe?.material, p)) continue;
       const l = b.group.worldToLocal(p.clone());
       if (l.x >= b.x0 && l.x <= b.x1 && l.z >= b.z0 && l.z <= b.z1) return true;
     }
@@ -11894,13 +11905,32 @@
     }
   }
 
+  // Retired streets are cut off with clipping planes, not removed at once:
+  // whatever lies beyond the cut is not drawn — and must not be felt either
+  // (a median, a hump, a cone of a street that is no longer there).
+  function clippedAway(material, point) {
+    const m = Array.isArray(material) ? material[0] : material;
+    return !!m?.clippingPlanes?.some(plane => plane.distanceToPoint(point) < -0.01);
+  }
+  // The first drawn part of an event's own scenery (not a road user), whose
+  // material carries the cuts made to the whole group.
+  function clipProbe(group) {
+    let probe = null;
+    group.traverse(o => {
+      if (probe || !o.isMesh || !o.material) return;
+      for (let a = o; a && a !== group; a = a.parent) if (a.userData.actor || a.userData.sceneryObject) return;
+      probe = o;
+    });
+    return probe;
+  }
+
   function refreshRoadBounds() {
     scene.updateMatrixWorld(true);
     state.roadBounds = [];
     // Kerbed islands over asphalt (a median): their own exact shape.
     state.noRoad = [];
     state.roadSegments.forEach(seg => seg.traverse(obj => {
-      if (obj.userData.noRoad && obj.visible) state.noRoad.push({ test: obj.userData.noRoad, inverse: obj.matrixWorld.clone().invert() });
+      if (obj.userData.noRoad && obj.visible) state.noRoad.push({ test: obj.userData.noRoad, inverse: obj.matrixWorld.clone().invert(), mesh: obj });
     }));
     state.roadSegments.forEach(seg => seg.traverse(obj => {
       if (obj.userData.surface === 'road') state.roadBounds.push({
@@ -11912,7 +11942,7 @@
   }
 
   function roadSupports(point) {
-    if ((state.noRoad || []).some(({ test, inverse }) => test(point.clone().applyMatrix4(inverse)))) return false;
+    if ((state.noRoad || []).some(({ test, inverse, mesh }) => !clippedAway(mesh.material, point) && test(point.clone().applyMatrix4(inverse)))) return false;
     return (state.roadBounds || []).some(({box, material, fillet}) =>
       point.x >= box.min.x - 0.1 && point.x <= box.max.x + 0.1 &&
       point.z >= box.min.z - 0.1 && point.z <= box.max.z + 0.1 &&
