@@ -5532,7 +5532,7 @@
     // Never silently drop a choice: while moving it is applied once stopped.
     if (!state.paused && Math.abs(state.speed) > 0.1) { state.pendingVehicle = [id, paint]; return; }
     state.pendingVehicle = null;
-    state.speed = 0; state.isAccelerating = false; state.isBraking = false; state.steering = 0; state.laneChangeX = null; state.autoPath = null;
+    state.speed = 0; state.isAccelerating = false; state.isBraking = false; state.steering = 0; state.laneChangeX = null; state.autoPath = null; state.trail = [];
     if (state.vehicleId === id && (state.vehiclePaint || null) === (paint || null)) {
       sendToFlutter({ event: 'vehicle_selected', vehicleId: id, paint: state.vehiclePaint });
       return;
@@ -8223,7 +8223,7 @@
 
   function maybeReverseWorld(force = false) {
     if (!currentCorridor || state.isAtSituation || state.resolution || Math.cos(playerCarGroup.rotation.y) > -0.55) return false;
-    state.laneChangeX = null; state.autoPath = null;
+    state.laneChangeX = null; state.autoPath = null; state.trail = [];
     const forward = new THREE.Vector3(Math.sin(playerCarGroup.rotation.y), 0, Math.cos(playerCarGroup.rotation.y));
     const distanceToEnd = Math.max(...corridorWorldEnds().map(p => p.clone().sub(playerCarGroup.position).dot(forward)));
     if (!force && distanceToEnd > 105) return false;
@@ -8559,8 +8559,10 @@
       if (hw) points.splice(3, 1, new THREE.Vector3(14, 0, z + L), new THREE.Vector3(26, 0, z + L * hw(26) / hw(0)), new THREE.Vector3(36, 0, z + 1.8));
     } else if (action === 'uturn') {
       exitYaw = Math.PI;
-      points = [start, new THREE.Vector3(-2.8, 0, z - 3), new THREE.Vector3(-2.8, 0, z),
-        new THREE.Vector3(0, 0, z + 3), new THREE.Vector3(2.8, 0, z), new THREE.Vector3(1.8, 0, z - 6),
+      // A loop in the open middle of the junction; no swing out to the
+      // right kerb of the approach first (the car's corner caught it).
+      points = [start, new THREE.Vector3(-1.8, 0, z - 3), new THREE.Vector3(-1.9, 0, z + 0.5),
+        new THREE.Vector3(0, 0, z + 3), new THREE.Vector3(2.2, 0, z), new THREE.Vector3(1.8, 0, z - 6),
         new THREE.Vector3(1.8, 0, z - 22)];
     } else {
       points = [start, new THREE.Vector3(-1.8, 0, z), new THREE.Vector3(-1.8, 0, z + 16)];
@@ -9146,7 +9148,7 @@
   }
 
   function finishManeuver() {
-    state.laneChangeX = null; state.autoPath = null;
+    state.laneChangeX = null; state.autoPath = null; state.trail = [];
     const r = state.resolution;
     if (!r) return;
     const trailing = r.motions.filter(a => !r.yielding.includes(a));
@@ -11477,11 +11479,11 @@
   // «Простое управление»: the wheel turns only inside a junction (after the
   // answer) or in reverse; elsewhere an arrow means the neighbouring lane.
   function freeWheel() {
-    return !state.simpleSteering || state.speed < -0.05;
+    return !state.simpleSteering;
   }
 
   function applySteeringAssist(dt) {
-    if (state.steering || state.autoPath || state.resolution || Math.abs(state.speed) < 1.5) return;
+    if (state.steering || state.autoPath || state.resolution || state.speed < 1.5) return;
     if (state.simpleSteering && state.laneChangeX == null) {
       // Simple mode keeps the car exactly on a lane centre: any leftover
       // offset (after a junction, a nudge) is taken out with a short curve.
@@ -11545,7 +11547,21 @@
       let dx = Math.sin(desiredYaw) * step, dz = Math.cos(desiredYaw) * step;
       const ap = state.autoPath;
       if (ap && step < 0) state.autoPath = null; // reversing drops the planned move
-      else if (ap && step > 0) {
+      if (step < 0 && state.simpleSteering) {
+        // «Простое управление»: reverse retraces the way the car came, so it
+        // stays in its lane; past the recorded trail it backs straight.
+        const trail = state.trail || [];
+        let remaining = -step, x = before.x, z = before.z, yaw = oldYaw;
+        while (remaining > 1e-4 && trail.length) {
+          const t = trail[trail.length - 1], d = Math.hypot(t.x - x, t.z - z);
+          const turn = Math.atan2(Math.sin(t.yaw - yaw), Math.cos(t.yaw - yaw));
+          if (d <= remaining) { x = t.x; z = t.z; yaw += turn; remaining -= d; trail.pop(); }
+          else { const k = remaining / d; x += (t.x - x) * k; z += (t.z - z) * k; yaw += turn * k; remaining = 0; }
+        }
+        x -= Math.sin(yaw) * remaining; z -= Math.cos(yaw) * remaining;
+        desiredYaw = yaw; playerCarGroup.rotation.y = yaw;
+        dx = x - before.x; dz = z - before.z;
+      } else if (ap && step > 0) {
         // «Простое управление»: the car rides the planned curve exactly.
         ap.s = Math.min(ap.length, ap.s + step);
         const t = ap.s / ap.length, point = ap.path.getPointAt(t), tangent = ap.path.getTangentAt(t);
@@ -11619,6 +11635,14 @@
         }
       }
       if (state.speed > 0) state.distanceTraveled += playerCarGroup.position.distanceTo(before);
+      if (step > 0) {
+        // The way the car came (for reversing in «Простое управление»).
+        const trail = state.trail || (state.trail = []), p = playerCarGroup.position, last = trail[trail.length - 1];
+        if (!last || Math.hypot(p.x - last.x, p.z - last.z) > 0.25) {
+          trail.push({ x: p.x, z: p.z, yaw: playerCarGroup.rotation.y });
+          if (trail.length > 600) trail.shift();
+        }
+      }
     }
     if (curbContact) {
       drivingFault('offroad', 'offroad');
@@ -11873,7 +11897,7 @@
     state.targetLane = 1;
     state.currentLaneOffset = state.targetLaneOffset = -1.8;
     state.violationEpisode = 0;
-    state.steering = 0; state.laneChangeX = null; state.autoPath = null;
+    state.steering = 0; state.laneChangeX = null; state.autoPath = null; state.trail = [];
     state.blinker = null;
     state.hazard = 0;
     clearOncoming();
