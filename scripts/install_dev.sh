@@ -112,7 +112,9 @@ echo "$dev" > "$STATE"
 remember_mac "${dev%%:*}"
 # Fixed port: after this, `adb connect IP:5555` works without a new pairing
 # code until the phone reboots.
-if [[ $dev != *:5555 ]]; then
+# Only for an IP:PORT address: an mDNS name (adb-…._adb-tls-connect._tcp)
+# would leave a dead «name:5555» entry that adb then confuses with the live one.
+if [[ $dev != *:5555 && $dev =~ ^[0-9.]+: ]]; then
   ip=${dev%%:*}
   if adb -s "$dev" tcpip 5555 >/dev/null 2>&1; then
     sleep 3
@@ -122,5 +124,10 @@ if [[ $dev != *:5555 ]]; then
     if adb devices | grep -q "^$ip:5555[[:space:]]*device"; then dev="$ip:5555"; echo "$dev" > "$STATE"; fi
   fi
 fi
-adb -s "$dev" install -r "$APK"
-adb -s "$dev" shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 && echo "Запущено на $dev"
+# Drop dead entries, then address the live one by its transport id: two
+# entries may share a serial prefix and `adb -s` refuses to choose.
+adb devices | awk 'NR>1 && $2=="offline" {print $1}' | while read -r gone; do adb disconnect "$gone" >/dev/null 2>&1 || true; done
+tid=$(adb devices -l | awk -v d="$dev" '$1==d && $2=="device" {for (i=3;i<=NF;i++) if ($i ~ /^transport_id:/) {sub("transport_id:","",$i); print $i; exit}}')
+[[ -z $tid ]] && tid=$(adb devices -l | awk '$2=="device" {for (i=3;i<=NF;i++) if ($i ~ /^transport_id:/) {sub("transport_id:","",$i); print $i; exit}}')
+adb -t "$tid" install -r "$APK"
+adb -t "$tid" shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 && echo "Запущено на $dev"
