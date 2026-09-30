@@ -12,6 +12,9 @@ class GameControlsOverlay extends StatefulWidget {
   final ValueChanged<int>? onSteering;
   final ValueChanged<bool>? onBrake;
 
+  /// Simple steering: the U-turn button (shown only where one is allowed).
+  final VoidCallback? onUturn;
+
   /// «Простое управление»: a tap changes lane, a hold turns the wheel.
   final bool simpleSteering;
 
@@ -22,6 +25,7 @@ class GameControlsOverlay extends StatefulWidget {
     required this.onSwitchLane,
     this.onSteering,
     this.onBrake,
+    this.onUturn,
     this.simpleSteering = true,
   });
 
@@ -87,47 +91,79 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
             final simple = widget.simpleSteering;
             final choice = simple ? widget.state.exitChoice : null;
             final hint = simple ? widget.state.exitHint : null;
-            // A U-turn task: the left button is the U-turn — it shows the
-            // U-turn icon while it is chosen or hinted.
-            final uturn =
-                choice == 'uturn' || (hint == 'uturn' && choice != 'left');
+            // The U-turn has its own button above the arrows, only at a
+            // junction where one is allowed and still possible.
+            final showUturn =
+                simple &&
+                widget.onUturn != null &&
+                widget.state.controlsEnabled &&
+                (widget.state.exitUturn || choice == 'uturn');
             return Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Row(
+                Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _LaneButton(
-                      key: const ValueKey('game-left'),
-                      width: buttonWidth,
-                      icon: Icon(
-                        uturn
-                            ? Icons.u_turn_left_rounded
-                            : Icons.arrow_back_rounded,
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: ScaleTransition(scale: animation, child: child),
                       ),
-                      label: uturn ? appL10n.gameUturn : appL10n.gameLeft,
-                      onHold: widget.state.controlsEnabled
-                          ? (held) => _press(1, held)
-                          : null,
-                      onTap: null,
-                      haptic: _ControlHaptic.steering,
-                      selected: choice == 'left' || choice == 'uturn',
-                      pulse: hint == 'left' || hint == 'uturn',
+                      child: showUturn
+                          ? Padding(
+                              key: const ValueKey('game-uturn-slot'),
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: _LaneButton(
+                                key: const ValueKey('game-uturn'),
+                                width: buttonWidth,
+                                height: 64,
+                                icon: const Icon(Icons.u_turn_left_rounded),
+                                label: appL10n.gameUturn,
+                                onHold: (held) {
+                                  if (held) widget.onUturn?.call();
+                                },
+                                onTap: null,
+                                haptic: _ControlHaptic.steering,
+                                selected: choice == 'uturn',
+                                pulse: hint == 'uturn' && choice != 'uturn',
+                              ),
+                            )
+                          : const SizedBox.shrink(),
                     ),
-                    const SizedBox(width: 10),
-                    _LaneButton(
-                      key: const ValueKey('game-right'),
-                      width: buttonWidth,
-                      icon: const Icon(Icons.arrow_forward_rounded),
-                      label: appL10n.gameRight,
-                      onHold: widget.state.controlsEnabled
-                          ? (held) => _press(-1, held)
-                          : null,
-                      onTap: null,
-                      haptic: _ControlHaptic.steering,
-                      selected: choice == 'right',
-                      pulse: hint == 'right',
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _LaneButton(
+                          key: const ValueKey('game-left'),
+                          width: buttonWidth,
+                          icon: const Icon(Icons.arrow_back_rounded),
+                          label: appL10n.gameLeft,
+                          onHold: widget.state.controlsEnabled
+                              ? (held) => _press(1, held)
+                              : null,
+                          onTap: null,
+                          haptic: _ControlHaptic.steering,
+                          selected: choice == 'left',
+                          pulse: hint == 'left',
+                        ),
+                        const SizedBox(width: 10),
+                        _LaneButton(
+                          key: const ValueKey('game-right'),
+                          width: buttonWidth,
+                          icon: const Icon(Icons.arrow_forward_rounded),
+                          label: appL10n.gameRight,
+                          onHold: widget.state.controlsEnabled
+                              ? (held) => _press(-1, held)
+                              : null,
+                          onTap: null,
+                          haptic: _ControlHaptic.steering,
+                          selected: choice == 'right',
+                          pulse: hint == 'right',
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -178,6 +214,7 @@ class _LaneButton extends StatefulWidget {
   final Color? backgroundColor;
   final Color? iconColor;
   final double width;
+  final double height;
   final _ControlHaptic? haptic;
 
   /// The exit chosen at a junction: a light accent fill.
@@ -196,6 +233,7 @@ class _LaneButton extends StatefulWidget {
     this.backgroundColor,
     this.iconColor,
     this.width = 74,
+    this.height = 76,
     this.haptic,
     this.selected = false,
     this.pulse = false,
@@ -278,7 +316,7 @@ class _LaneButtonState extends State<_LaneButton>
       },
       child: SizedBox(
         width: widget.width,
-        height: 76,
+        height: widget.height,
         child: AnimatedBuilder(
           animation: _pulse ?? kAlwaysDismissedAnimation,
           builder: (context, child) {

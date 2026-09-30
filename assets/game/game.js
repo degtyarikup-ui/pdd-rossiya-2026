@@ -11505,31 +11505,40 @@
   // straight on. The choice is open until the car reaches the turn.
   // Left pressed again on a chosen left turn means a U-turn (where one
   // fits); once more — straight on again.
+  // Each exit stays open until the car reaches the point where that very
+  // manoeuvre begins: a car waiting at the median stop line can still turn
+  // left, the turn itself starts beyond it.
+  function exitGate(r, c) {
+    const z = r.intersection.centerZ, R = r.intersection.rightLane || 1.8;
+    if (r.intersection.situation.geometry === 'roundabout') return z - 17;
+    return c === 'right' ? z - R - 3 : c === 'left' ? z - 2.5 : c === 'uturn' ? z - 3.5 : Infinity;
+  }
+
+  // A U-turn needs the whole crossing: not on a ring, at a T, across a
+  // median or where a motorway joins (16.1).
+  function uturnFits(r) {
+    return !!r.intersection.previews?.uturn && !['roundabout', 't_no_straight', 'divided_road', 'motorway_merge']
+      .includes(r.intersection.situation.geometry);
+  }
+
+  // The U-turn button can still be used here (Flutter shows it only then).
+  function uturnOffered(r) {
+    if (!r || !state.simpleSteering || r.phase !== 'manual' || r.recovery || !uturnFits(r)) return false;
+    const pz = playerCarGroup.position.z;
+    if (r.simpleChoice && r.simpleChoice !== 'straight' && r.simpleChoice !== 'uturn' && pz > exitGate(r, r.simpleChoice)) return false;
+    return pz <= exitGate(r, 'uturn');
+  }
+
+  // Arrows: «←» left, «→» right, the same arrow again — straight on. The
+  // U-turn has its own button ('uturn', pressed again — straight on).
   function chooseJunctionExit(direction) {
     const r = state.resolution, previews = r.intersection.previews || {};
-    // Each exit stays open until the car reaches the point where that very
-    // manoeuvre begins: a car waiting at the median stop line can still turn
-    // left, the turn itself starts beyond it.
-    const z = r.intersection.centerZ, R = r.intersection.rightLane || 1.8, pz = playerCarGroup.position.z;
-    const ring = r.intersection.situation.geometry === 'roundabout';
-    const gateFor = c => ring ? z - 17 : c === 'right' ? z - R - 3 : c === 'left' ? z - 2.5 : c === 'uturn' ? z - 3.5 : Infinity;
+    const pz = playerCarGroup.position.z, gateFor = c => exitGate(r, c);
     // A turn already under way is committed.
     if (r.simpleChoice && r.simpleChoice !== 'straight' && pz > gateFor(r.simpleChoice)) { refuseInput(); return; }
-    // A U-turn needs the whole crossing: not on a ring, at a T, across a
-    // median or where a motorway joins (16.1).
-    const uturnFits = previews.uturn && !['roundabout', 't_no_straight', 'divided_road', 'motorway_merge']
-      .includes(r.intersection.situation.geometry);
+    if (direction === 'uturn' && !uturnFits(r)) { refuseInput(); return; }
     let choice = direction;
-    const straightOn = previews.straight ? 'straight' : null;
-    if (direction === 'left' && uturnFits && r.spec.maneuver === 'uturn') {
-      // The task is a U-turn: the first press is the U-turn itself (the
-      // button shows it), a second one a plain left turn, a third straight on.
-      choice = r.simpleChoice === 'uturn' ? (previews.left ? 'left' : straightOn)
-        : r.simpleChoice === 'left' ? straightOn : 'uturn';
-    } else if (direction === 'left' && r.simpleChoice === 'left' && uturnFits) choice = 'uturn';
-    else if (!previews[choice] || r.simpleChoice === choice || (direction === 'left' && r.simpleChoice === 'uturn')) {
-      choice = previews.straight ? 'straight' : null;
-    }
+    if (!previews[choice] || r.simpleChoice === choice) choice = previews.straight ? 'straight' : null;
     if (choice === r.simpleChoice) return;
     if (choice && pz > gateFor(choice)) { refuseInput(); return; }
     const previous = r.simpleChoice;
@@ -11565,10 +11574,11 @@
         hint = task;
       }
     }
-    const key = choice + '|' + hint;
+    const uturn = uturnOffered(r);
+    const key = choice + '|' + hint + '|' + uturn;
     if (key === state.exitReported) return;
     state.exitReported = key;
-    sendToFlutter({ event: 'exit_choice', choice, hint });
+    sendToFlutter({ event: 'exit_choice', choice, hint, uturn });
   }
 
   // The first metres of a planned route keep the whole car on the road.
@@ -11602,7 +11612,9 @@
     }
     const { points, exitYaw } = maneuverPoints(r, choice, start);
     // Approach points the car has already passed would send it backwards.
-    while (points.length > 3 && points[1].z < start.z + 1.5 && Math.abs(points[1].x - start.x) < 2.5) points.splice(1, 1);
+    // Nor any closer than the run-out along the current heading added next
+    // (2.5 m), or the curve would loop back towards the kerb.
+    while (points.length > 3 && points[1].z < start.z + 3.5 && Math.abs(points[1].x - start.x) < 2.5) points.splice(1, 1);
     // Run out straight along the exit road so the car leaves square to it.
     const last = points[points.length - 1], out = new THREE.Vector3(Math.sin(exitYaw), 0, Math.cos(exitYaw));
     points.push(last.clone().addScaledVector(out, 8), last.clone().addScaledVector(out, 20));
@@ -12123,6 +12135,12 @@
     },
     thumbnail(id, paint) { try { return renderThumbnail(id, paint || null); } catch (_) { return ''; } },
     changeLane(direction) { changeLane(direction); },
+    // The U-turn button of simple steering (shown only where one is allowed).
+    chooseUturn() {
+      const r = state.resolution;
+      if (!r || r.phase !== 'manual' || r.recovery || !state.simpleSteering) { refuseInput(); return; }
+      chooseJunctionExit('uturn');
+    },
     setSimpleSteering(on) { state.simpleSteering = Boolean(on); },
     setSteering(direction) {
       const wanted = Math.sign(Number(direction) || 0);

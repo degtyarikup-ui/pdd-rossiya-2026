@@ -1305,8 +1305,4 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameUturn => 'Разворот';
-
-  @override
-  String get gameUturnHint =>
-      'Здесь нужен разворот: нажмите эту кнопку — машина развернётся сама';
 }

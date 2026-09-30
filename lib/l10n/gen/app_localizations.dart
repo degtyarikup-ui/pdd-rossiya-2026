@@ -2281,12 +2281,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Разворот'**
   String get gameUturn;
-
-  /// No description provided for @gameUturnHint.
-  ///
-  /// In ru, this message translates to:
-  /// **'Здесь нужен разворот: нажмите эту кнопку — машина развернётся сама'**
-  String get gameUturnHint;
 }
 
 class _AppLocalizationsDelegate

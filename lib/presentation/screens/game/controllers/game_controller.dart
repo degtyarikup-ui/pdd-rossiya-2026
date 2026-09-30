@@ -45,6 +45,9 @@ class GameState {
   final String? exitChoice;
   final String? exitHint;
 
+  /// Simple steering: a U-turn can be chosen here (its button is shown).
+  final bool exitUturn;
+
   const GameState({
     this.runs = maxRuns,
     this.runsUnlimited = false,
@@ -71,6 +74,7 @@ class GameState {
     this.mistakes = const [],
     this.exitChoice,
     this.exitHint,
+    this.exitUturn = false,
   });
 
   double get timerProgress =>
@@ -107,6 +111,7 @@ class GameState {
     List<GameSituation>? mistakes,
     String? exitChoice,
     String? exitHint,
+    bool? exitUturn,
     bool clearExit = false,
     bool clearSituation = false,
     bool clearViolation = false,
@@ -145,6 +150,9 @@ class GameState {
       mistakes: mistakes ?? this.mistakes,
       exitChoice: clearExit ? exitChoice : (exitChoice ?? this.exitChoice),
       exitHint: clearExit ? exitHint : (exitHint ?? this.exitHint),
+      exitUturn: clearExit
+          ? (exitUturn ?? false)
+          : (exitUturn ?? this.exitUturn),
     );
   }
 }
@@ -187,11 +195,16 @@ class GameController extends StateNotifier<GameState> {
   }
 
   /// The engine's exit choice and hint (both null away from a junction).
-  void updateExit(String? choice, String? hint) {
+  void updateExit(String? choice, String? hint, {bool uturn = false}) {
     const exits = {'straight', 'left', 'right', 'uturn'};
     if (choice != null && !exits.contains(choice)) return;
-    if (hint != null && hint != 'left' && hint != 'right') return;
-    state = state.copyWith(exitChoice: choice, exitHint: hint, clearExit: true);
+    if (hint != null && !exits.contains(hint)) return;
+    state = state.copyWith(
+      exitChoice: choice,
+      exitHint: hint,
+      exitUturn: uturn,
+      clearExit: true,
+    );
   }
 
   void recordViolation(String type, int episode) {

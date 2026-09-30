@@ -327,12 +327,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 325));
     expect(fill('game-left'), isNot(resting));
     expect(fill('game-right'), resting);
-    // Pressed twice: a U-turn, shown on the lit left arrow; no more hint.
+    // Pressed: the chosen left turn stays lit; no more hint.
     await controls(
-      const GameState(phase: GamePhase.resolving, exitChoice: 'uturn'),
+      const GameState(phase: GamePhase.resolving, exitChoice: 'left'),
     );
     await tester.pump();
-    expect(find.byIcon(Icons.u_turn_left_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.u_turn_left_rounded), findsNothing);
     final lit = fill('game-left');
     expect(lit, isNot(resting));
     await tester.pump(const Duration(milliseconds: 325));
@@ -635,31 +635,37 @@ void main() {
     ]);
   });
 
-  testWidgets('A U-turn task turns the left button into the U-turn', (
+  testWidgets('The U-turn button shows only where a U-turn is possible', (
     tester,
   ) async {
-    Widget overlay(String? choice) => MaterialApp(
-      home: Scaffold(
-        body: GameControlsOverlay(
-          state: GameState(
-            phase: GamePhase.situation,
-            exitHint: choice == 'uturn' ? null : 'uturn',
-            exitChoice: choice,
+    var uturns = 0;
+    Widget overlay({bool uturn = false, String? hint, String? choice}) =>
+        MaterialApp(
+          home: Scaffold(
+            body: GameControlsOverlay(
+              state: GameState(
+                phase: GamePhase.driving,
+                exitUturn: uturn,
+                exitHint: hint,
+                exitChoice: choice,
+              ),
+              onGasChanged: (_) {},
+              onSwitchLane: (_) {},
+              onUturn: () => uturns++,
+            ),
           ),
-          onGasChanged: (_) {},
-          onSwitchLane: (_) {},
-        ),
-      ),
-    );
-    await tester.pumpWidget(overlay(null));
+        );
+    await tester.pumpWidget(overlay());
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const ValueKey('game-uturn')), findsNothing);
+    await tester.pumpWidget(overlay(uturn: true, hint: 'uturn'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const ValueKey('game-uturn')), findsOneWidget);
     expect(find.byIcon(Icons.u_turn_left_rounded), findsOneWidget);
-    expect(find.bySemanticsLabel(appL10n.gameUturn), findsOneWidget);
-    // After a second press (a plain left turn) the arrow is back.
-    await tester.pumpWidget(overlay('left'));
-    expect(find.byIcon(Icons.u_turn_left_rounded), findsNothing);
+    // The arrows stay arrows.
     expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
-    await tester.pumpWidget(overlay('uturn'));
-    expect(find.byIcon(Icons.u_turn_left_rounded), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('game-uturn')));
+    expect(uturns, 1);
     await tester.pumpWidget(const SizedBox());
   });
 

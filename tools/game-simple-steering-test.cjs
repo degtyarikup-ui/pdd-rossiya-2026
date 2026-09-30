@@ -202,16 +202,21 @@ const { chromium } = require('playwright');
       }
       window.game.setGas(false);
       const median = { held: medianHeld, green, done: !s.resolution, v: window.events.slice(n26).filter(e => e.event === 'violation').map(e => e.type) };
-      // 6. A U-turn task: the first left press is the U-turn, a second one
-      // a plain left turn, a third straight on.
+      // 6. The U-turn button: offered at a U-turn-capable junction, pressed
+      // again — straight on; the left arrow is only ever a left turn.
       const uIndex = t.scenarios().findIndex(sc => t.routeSpec(sc).maneuver === 'uturn');
       const uturnPresses = [];
       if (uIndex >= 0) {
         t.select(uIndex); s.paused = false; t.approach();
-        const uit = s.activeIntersection;
+        const uit = s.activeIntersection, um = window.events.length;
         window.game.proceedAfterAnswer(true, uit.situation.id);
         t.tick(0.2);
-        for (let i = 0; i < 3; i++) { window.game.changeLane('left'); uturnPresses.push(s.resolution?.simpleChoice); }
+        const offered = window.events.slice(um).filter(e => e.event === 'exit_choice').some(e => e.uturn === true);
+        uturnPresses.push(offered);
+        window.game.chooseUturn(); uturnPresses.push(s.resolution?.simpleChoice);
+        window.game.chooseUturn(); uturnPresses.push(s.resolution?.simpleChoice);
+        window.game.changeLane('left'); uturnPresses.push(s.resolution?.simpleChoice);
+        window.game.changeLane('left'); uturnPresses.push(s.resolution?.simpleChoice);
       }
       return { leftLane, noThird, held, back, junctions, tees, reverse, reverseFaults, median, uturnPresses };
     });
@@ -235,7 +240,7 @@ const { chromium } = require('playwright');
     assert.equal(result.reverseFaults, 0, 'no kerb while reversing');
     assert(result.median.held > 60 && result.median.green && result.median.done && !result.median.v.includes('wrong_maneuver'),
       '26·13: wait at the median line for green, then turn left: ' + JSON.stringify(result.median));
-    assert.deepEqual(result.uturnPresses, ['uturn', 'left', 'straight'], 'U-turn task: one press is the U-turn: ' + JSON.stringify(result.uturnPresses));
+    assert.deepEqual(result.uturnPresses, [true, 'uturn', 'straight', 'left', 'straight'], 'U-turn button and arrows: ' + JSON.stringify(result.uturnPresses));
     assert.deepEqual(errors, []);
     console.log('PASS: simple steering — centred lane changes, no free steering, clean junctions');
   } finally {
