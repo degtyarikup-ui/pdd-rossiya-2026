@@ -8734,6 +8734,7 @@
         a.mesh.position.copy(a.path.getPointAt(t));
         if (a.distance > a.length) a.mesh.position.addScaledVector(tangent, a.distance - a.length);
         a.mesh.rotation.y = Math.atan2(tangent.x, tangent.z);
+        applyDetour(a, advance / steps);
         const box = actorFootprint(a);
         const playerContact = footprintsOverlap(box, playerFootprint(), 0.04);
         let trafficContact = false;
@@ -10189,6 +10190,8 @@
   // the open hatch. Cones and the barrier are knocked flying if hit.
   function buildRoadworksEvent(group, workZ) {
     const ev = { group, kind: 'roadworks', workZ, phase: 'approach', actors: [], zoneEnd: workZ + 16 };
+    // Traffic drives round the closed lane (cones, barrier, crew, hatch).
+    addBlocker(group, -3.9, 0.2, workZ - 19, workZ + 21);
     addRoadSign(group, '1.25', workZ - 30, 'right');
     addRoadSign(group, '4.2.2', workZ - 3, 'right', null, 1.3);
     const prop = (mesh, radius, kind) => { state.props.push({ mesh, radius, kind, ev, root: group }); };
@@ -10356,8 +10359,67 @@
     }
   }
 
+  // Lane blockages other traffic must drive round, in the group's own
+  // coordinates (road events are rebased with the world).
+  function addBlocker(group, x0, x1, z0, z1) {
+    state.blockers = (state.blockers || []).filter(b => b.group.parent);
+    state.blockers.push({ group, x0, x1, z0, z1 });
+  }
+
+  function pointBlocked(p, self) {
+    for (const b of state.blockers || []) {
+      if (!b.group.parent) continue;
+      const l = b.group.worldToLocal(p.clone());
+      if (l.x >= b.x0 && l.x <= b.x1 && l.z >= b.z0 && l.z <= b.z1) return true;
+    }
+    // A car left standing after a crash (or broken down) blocks its lane too.
+    for (const o of state.actors) {
+      if (o === self || o.done || !(o.crashed || o.config.id === 'road_obstacle_car')) continue;
+      const f = actorFootprint(o), d = p.clone().sub(f.p);
+      const along = Math.abs(d.x * Math.sin(f.yaw) + d.z * Math.cos(f.yaw));
+      const across = Math.abs(d.x * Math.cos(f.yaw) - d.z * Math.sin(f.yaw));
+      if (along < f.halfLength + 1.5 && across < f.halfWidth + 1.1) return true;
+    }
+    return false;
+  }
+
+  // Every moving vehicle keeps its route but steps out into the next lane
+  // round anything standing in its own one, and back in once past.
+  function applyDetour(a, travelled) {
+    if (['pedestrian'].includes(a.config.type) || a.crashed || a.config.id === 'road_obstacle_car') return;
+    if (!state.blockers?.length && !state.actors.some(o => o.crashed || o.config.id === 'road_obstacle_car')) {
+      if (!a.detour) return;
+    }
+    const parent = a.mesh.parent;
+    const world = a.mesh.getWorldPosition(new THREE.Vector3());
+    const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(a.mesh.getWorldQuaternion(new THREE.Quaternion()));
+    fwd.y = 0; fwd.normalize();
+    const left = new THREE.Vector3(fwd.z, 0, -fwd.x);
+    let blocked = false;
+    for (let d = -5; d <= 24 && !blocked; d += 1.5) blocked = pointBlocked(world.clone().addScaledVector(fwd, d), a);
+    if (blocked && !a.detourSide) {
+      // Towards whichever side has road: normally the next lane on the left.
+      const probe = side => world.clone().addScaledVector(left, 3.6 * side).addScaledVector(fwd, 8);
+      a.detourSide = roadSupports(probe(1)) && !pointBlocked(probe(1), a) ? 1 : -1;
+    }
+    const want = blocked ? 3.6 * a.detourSide : 0;
+    const prev = a.detour || 0;
+    const next = prev + THREE.MathUtils.clamp(want - prev, -0.35 * travelled, 0.35 * travelled);
+    a.detour = Math.abs(next) < 1e-3 && !blocked ? 0 : next;
+    if (!a.detour && !blocked) a.detourSide = 0;
+    if (!a.detour) return;
+    const leftLocal = left.clone();
+    if (parent) {
+      const q = parent.getWorldQuaternion(new THREE.Quaternion()).invert();
+      leftLocal.applyQuaternion(q);
+    }
+    a.mesh.position.addScaledVector(leftLocal, a.detour);
+    a.mesh.rotation.y += Math.atan2(next - prev, Math.max(travelled, 1e-3));
+  }
+
   function buildObstacleEvent(group, obstZ) {
     const ev = { group, kind: 'obstacle', obstZ, phase: 'approach', actors: [] };
+    addBlocker(group, -3.2, -0.4, obstZ - 15.5, obstZ + 3);
     // A real, solid participant (it used to be scenery the player drove
     // through), standing with its hazard lights on.
     const at = new THREE.Vector3(-1.8, 0, obstZ);
@@ -11877,7 +11939,7 @@
     state.roadTurn = 0;
     state.busBays = [];
     state.props = [];
-    state.humps = [];
+    state.humps = []; state.blockers = [];
     state.flying = [];
     state.crews = [];
     state.sideJunction = null;

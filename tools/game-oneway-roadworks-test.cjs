@@ -34,6 +34,18 @@ const { chromium } = require('playwright');
       forceRoad(kind) { state.forceRoadEvent = kind; state.roadTurn = 1; },
       corridorOneWay() { return currentCorridor?.userData.oneWay || null; },
       ows: () => oneWayStatus(), ends: () => corridorWorldEnds(),
+      // A car driving the closed lane of the current road event.
+      laneCar(z0, z1) {
+        const ev = state.roadEvent, V = (x, z) => new THREE.Vector3(x, 0, z);
+        const car = addRoadActor(ev.group, { id: 'test_lane_car', type: 'special', name: 'Спецмашина', color: '#0574F8', beacon: 'blue' },
+          V(-1.8, z0), 0, [V(-1.8, z0), V(-1.8, z1)], 10);
+        car.waitsForPlayer = false; car.active = true; ev.actors.push(car);
+        playerCarGroup.position.set(-1.8, 0, z0 - 40); playerCarGroup.rotation.y = 0; state.speed = 0;
+        let maxX = -9, frames = 0;
+        for (; frames < 1500 && !car.done && car.distance < car.length - 1; frames++) { this.step(); maxX = Math.max(maxX, car.mesh.position.x); }
+        const raker = ev.actors.find(a => a.config.id === 'road_worker');
+        return { maxX: +maxX.toFixed(2), endX: +car.mesh.position.x.toFixed(2), done: car.distance >= car.length - 1, workerDown: !!raker?.fall, crashed: !!car.crashed };
+      },
       props() { return { props: state.props.length, flying: state.flying.length, settled: state.flying.filter(f => f.settled).length }; },
     };
     // Run init on DOM ready`);
@@ -79,6 +91,14 @@ const { chromium } = require('playwright');
   r = await page.evaluate(w => { const T = window.T; T.follow([[-1.8, w - 30], [1.8, w - 22], [1.8, w + 20], [-1.8, w + 28], [-1.8, w + 40]], 8); return T.props(); }, ev.workZ);
   assert.equal(r.flying, 0, 'nothing knocked on the detour');
   assert.deepEqual(types(await events()), []);
+  // Other traffic drives round the works (and the broken-down car) and
+  // gets back into its lane; nobody runs the crew over.
+  for (const kind of ['roadworks', 'obstacle']) {
+    ev = await toEvent(kind);
+    const z = kind === 'roadworks' ? ev.workZ : ev.obstZ;
+    const d = await page.evaluate(([z]) => { window.T.state.speed = 0; return window.T.laneCar(z - 70, z + 90); }, [z]);
+    assert.ok(d.done && !d.workerDown && !d.crashed && d.maxX > 1.2 && Math.abs(d.endX + 1.8) < 0.1, kind + ': traffic detours ' + JSON.stringify(d));
+  }
   // The broken-down car is solid.
   ev = await toEvent('obstacle');
   const z = await page.evaluate(w => { window.T.follow([[-1.8, w + 5]], 6, 900); return window.T.pos()[1]; }, ev.obstZ);
