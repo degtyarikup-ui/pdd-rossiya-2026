@@ -2263,6 +2263,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'НОВАЯ'**
   String get gameLobbyNewCar;
+
+  /// No description provided for @gameRunsReady.
+  ///
+  /// In ru, this message translates to:
+  /// **'Готов'**
+  String get gameRunsReady;
+
+  /// No description provided for @gameRunsUntil.
+  ///
+  /// In ru, this message translates to:
+  /// **'до заезда'**
+  String get gameRunsUntil;
 }
 
 class _AppLocalizationsDelegate

@@ -1296,4 +1296,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameLobbyNewCar => 'НОВАЯ';
+
+  @override
+  String get gameRunsReady => 'Готов';
+
+  @override
+  String get gameRunsUntil => 'до заезда';
 }

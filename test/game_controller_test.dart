@@ -87,11 +87,14 @@ void main() {
       );
       await runs.cancelReminder();
 
-      // Reopened 25 minutes after the stock ran out: one run is back.
+      // Reopened a little over one refill interval after the stock ran
+      // out: one run is back.
       SharedPreferences.setMockInitialValues({
         'game_runs': 0,
         'game_runs_since': DateTime.now()
-            .subtract(const Duration(minutes: 25))
+            .subtract(
+              GameRunsService.refillInterval + const Duration(minutes: 5),
+            )
             .millisecondsSinceEpoch,
       });
       expect(await runs.load(), 1);
@@ -1272,7 +1275,7 @@ void main() {
                             child: GameRunsSheet(
                               maxRuns: 3,
                               questions: 20,
-                              refillMinutes: 20,
+                              refillMinutes: 30,
                               unlimited: false,
                               runs: () => 1,
                               nextRefillAt: () => DateTime.now().add(

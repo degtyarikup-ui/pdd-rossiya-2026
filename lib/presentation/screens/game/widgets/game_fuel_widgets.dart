@@ -356,6 +356,8 @@ class _GameRunsPillState extends State<GameRunsPill>
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final empty = !widget.unlimited && widget.runs <= 0;
+    // White pill, black ink; red ink once no run is left.
+    final ink = empty ? colors.red : AppColors.primaryText;
     final text = widget.unlimited
         ? appL10n.gameRunsUnlimitedPill
         : appL10n.gameRunsPill(widget.runs, widget.maxRuns);
@@ -365,7 +367,7 @@ class _GameRunsPillState extends State<GameRunsPill>
       child: ScaleTransition(
         scale: _scale,
         child: Material(
-          color: empty ? colors.red : colors.accent,
+          color: colors.cardBackground,
           borderRadius: BorderRadius.circular(90),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -381,19 +383,16 @@ class _GameRunsPillState extends State<GameRunsPill>
                     'assets/icons/game/hud_wheel.svg',
                     width: 14,
                     height: 14,
-                    colorFilter: const ColorFilter.mode(
-                      AppColors.white,
-                      BlendMode.srcIn,
-                    ),
+                    colorFilter: ColorFilter.mode(ink, BlendMode.srcIn),
                   ),
                   const SizedBox(width: 6),
                   Text(
                     text,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Onest',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.white,
+                      color: ink,
                       height: 1,
                     ),
                   ),
@@ -596,19 +595,100 @@ class GameRunsSheetState extends State<GameRunsSheet> {
     final colors = AppColors.of(context);
     final runs = widget.unlimited ? widget.maxRuns : widget.runs();
     final full = widget.unlimited || runs >= widget.maxRuns;
-    final (
-      IconData statusIcon,
-      Color statusColor,
-      String status,
-    ) = widget.unlimited
-        ? (Icons.all_inclusive_rounded, colors.gold, appL10n.gameRunsPremium)
-        : full
-        ? (Icons.check_circle_rounded, colors.green, appL10n.gameRunsFull)
-        : (
-            Icons.schedule_rounded,
-            runs <= 0 ? colors.red : colors.accent,
-            appL10n.gameRunsNextIn(gameFuelCountdown(widget.nextRefillAt())),
-          );
+    final interval = Duration(minutes: widget.refillMinutes);
+    final next = widget.nextRefillAt();
+    final now = DateTime.now();
+    const tabular = [FontFeature.tabularFigures()];
+
+    // One tile per run: a ready one shows the wheel; an empty one counts
+    // down to its own return, the next one filling up as time passes.
+    Widget tile(int i) {
+      final radius = BorderRadius.circular(AppDimensions.radiusMedium);
+      if (widget.unlimited || i < runs) {
+        return Container(
+          decoration: BoxDecoration(
+            color: colors.accentSurface10,
+            borderRadius: radius,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              widget.unlimited
+                  ? Icon(
+                      Icons.all_inclusive_rounded,
+                      size: 26,
+                      color: colors.accent,
+                    )
+                  : SvgPicture.asset(
+                      'assets/icons/game/hud_wheel.svg',
+                      width: 26,
+                      height: 26,
+                      colorFilter: ColorFilter.mode(
+                        colors.accent,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+              const SizedBox(height: 6),
+              Text(
+                appL10n.gameRunsReady,
+                style: TextStyle(
+                  fontFamily: 'Onest',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: colors.accent,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      final k = i - runs; // 0: the run that comes back first
+      final at = next?.add(interval * k);
+      final left = at == null ? Duration.zero : at.difference(now);
+      final progress = k == 0 && !left.isNegative
+          ? (1 - left.inMilliseconds / interval.inMilliseconds).clamp(0.0, 1.0)
+          : 0.0;
+      return ClipRRect(
+        borderRadius: radius,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ColoredBox(color: colors.background),
+            FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: progress,
+              child: ColoredBox(color: colors.accent.withValues(alpha: 0.16)),
+            ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  gameFuelCountdown(at),
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    fontFeatures: tabular,
+                    color: k == 0 ? colors.accent : colors.secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  appL10n.gameRunsUntil,
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: colors.secondaryText,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
@@ -617,7 +697,9 @@ class GameRunsSheetState extends State<GameRunsSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              appL10n.gameRunsTitle,
+              widget.unlimited
+                  ? appL10n.gameRunsUnlimitedPill
+                  : appL10n.gameRunsPill(runs, widget.maxRuns),
               style: TextStyle(
                 fontFamily: 'Onest',
                 fontSize: 20,
@@ -626,33 +708,17 @@ class GameRunsSheetState extends State<GameRunsSheet> {
               ),
             ),
             const SizedBox(height: 14),
-            // One flag per run in stock.
-            Row(
-              children: [
-                for (var i = 0; i < widget.maxRuns; i++) ...[
-                  if (i > 0) const SizedBox(width: 8),
-                  Expanded(
-                    child: Container(
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: i < runs
-                            ? colors.accentSurface10
-                            : colors.background,
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.radiusMedium,
-                        ),
-                      ),
-                      child: Icon(
-                        widget.unlimited
-                            ? Icons.all_inclusive_rounded
-                            : Icons.sports_score_rounded,
-                        size: 28,
-                        color: i < runs ? colors.accent : colors.gray,
-                      ),
-                    ),
-                  ),
+            SizedBox(
+              height: 76,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < widget.maxRuns; i++) ...[
+                    if (i > 0) const SizedBox(width: 8),
+                    Expanded(child: tile(i)),
+                  ],
                 ],
-              ],
+              ),
             ),
             const SizedBox(height: 14),
             Text(
@@ -668,24 +734,36 @@ class GameRunsSheetState extends State<GameRunsSheet> {
                 color: colors.secondaryText,
               ),
             ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Icon(statusIcon, size: 20, color: statusColor),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    status,
-                    style: TextStyle(
-                      fontFamily: 'Onest',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: statusColor,
+            // The countdowns live in the tiles; a line only for a full stock
+            // or premium.
+            if (full) ...[
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Icon(
+                    widget.unlimited
+                        ? Icons.all_inclusive_rounded
+                        : Icons.check_circle_rounded,
+                    size: 20,
+                    color: widget.unlimited ? colors.gold : colors.green,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.unlimited
+                          ? appL10n.gameRunsPremium
+                          : appL10n.gameRunsFull,
+                      style: TextStyle(
+                        fontFamily: 'Onest',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: widget.unlimited ? colors.gold : colors.green,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
             if (!widget.unlimited && widget.onBuyPremium != null) ...[
               const SizedBox(height: 16),
               ElevatedButton.icon(

@@ -367,5 +367,7 @@
   "gameRunsGetPremium": "Neograničeno uz Premium",
   "gameLobbyRunLength": "{count, plural, one{{count} pitanje} few{{count} pitanja} other{{count} pitanja}}",
   "gameLobbyProgress": "Pređeno {n} od {total}",
-  "gameLobbyNewCar": "NOVO"
+  "gameLobbyNewCar": "NOVO",
+  "gameRunsReady": "Spremno",
+  "gameRunsUntil": "do vožnje"
 }

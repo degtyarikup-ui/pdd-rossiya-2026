@@ -1292,4 +1292,10 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get gameLobbyNewCar => 'NOVO';
+
+  @override
+  String get gameRunsReady => 'Spremno';
+
+  @override
+  String get gameRunsUntil => 'do vožnje';
 }

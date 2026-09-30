@@ -403,5 +403,7 @@
   "@gameLobbyRunLength": {"placeholders": {"count": {"type": "int"}}},
   "gameLobbyProgress": "Пройдено {n} из {total}",
   "@gameLobbyProgress": {"placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}},
-  "gameLobbyNewCar": "НОВАЯ"
+  "gameLobbyNewCar": "НОВАЯ",
+  "gameRunsReady": "Готов",
+  "gameRunsUntil": "до заезда"
 }

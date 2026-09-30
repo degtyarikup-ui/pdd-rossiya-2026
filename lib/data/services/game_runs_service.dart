@@ -3,7 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Runs of the driving game for free players: up to [maxRuns] in stock, one
 /// spent when a run starts, one earned back every [refillInterval] until the
-/// stock is full again (wait an hour — three runs). Premium is unlimited.
+/// stock is full again (an hour and a half from empty to full). Premium is
+/// unlimited.
 /// Stored as the count plus the moment the refill clock started, so the
 /// refill is computed on read and survives restarts.
 class GameRunsService {
@@ -11,7 +12,7 @@ class GameRunsService {
   static final GameRunsService instance = GameRunsService._();
 
   static const int maxRuns = 3;
-  static const Duration refillInterval = Duration(minutes: 20);
+  static const Duration refillInterval = Duration(minutes: 30);
   static const _runsKey = 'game_runs';
   static const _sinceKey = 'game_runs_since';
 
