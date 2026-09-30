@@ -7561,16 +7561,20 @@
     // Sidewalks on all 4 corners
     const swW = 3.2;
     const cornerL = (crossStreetLength - roadWidth) / 2;
-    const cornerH = (intersectionLength - crossW) / 2;
 
     // Corners run along the cross street only, from the outer edge of the
     // main-street pavement outwards: no coplanar overlap with those pavements.
-    const cornerW = crossStreetLength / 2 - kerbX - swW + SEAM, cornerX = kerbX + swW - 0.03 + cornerW / 2;
+    // Where a street widens at the junction its pavement keeps the outer
+    // edge of the ordinary pavement and narrows (to 1.6 m at least) instead
+    // of swinging out: no lawn wedges or steps where it meets the rest.
+    const paveOuter = half => Math.max(roadWidth / 2 + swW, half + 1.6);
+    const cornerStart = paveOuter(kerbX), crossOuter0 = paveOuter(kerbZ);
+    const cornerW = crossStreetLength / 2 - cornerStart + SEAM, cornerX = cornerStart - 0.03 + cornerW / 2;
     const corner = (sx, sz) => {
       if (wide) {
         // The pavement follows the tapering kerb.
-        const xs = []; for (let x = kerbX + swW - 0.03; x <= crossStreetLength / 2 + SEAM + 0.01; x += 1) xs.push(sx * x);
-        const slab = extrudedStrip(xs, x => sz * halfW(x) + (sz < 0 ? -swW : 0), x => sz * halfW(x) + (sz > 0 ? swW : 0), 0.18,
+        const xs = []; for (let x = cornerStart - 0.03; x <= crossStreetLength / 2 + SEAM + 0.01; x += 1) xs.push(sx * x);
+        const slab = extrudedStrip(xs, x => sz < 0 ? -paveOuter(halfW(x)) : halfW(x), x => sz < 0 ? -halfW(x) : paveOuter(halfW(x)), 0.18,
           new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
         slab.position.z = centerZ; seg.add(slab); return slab;
       }
@@ -7585,14 +7589,14 @@
     if (wideMain) {
       // Pavements follow the widening main street (entrance and exit).
       const pave = () => new THREE.MeshLambertMaterial({ color: BRAND.sidewalk });
-      for (const side of [-1, 1]) for (const [a, b] of [[startZ - SEAM, centerZ - kerbZ - swW], [centerZ + kerbZ + swW, startZ + intersectionLength + SEAM]]) {
+      for (const side of [-1, 1]) for (const [a, b] of [[startZ - SEAM, centerZ - crossOuter0], [centerZ + crossOuter0, startZ + intersectionLength + SEAM]]) {
         const zs = []; for (let z = a; z <= b + 0.01; z += 1) zs.push(Math.min(z, b));
-        const slab = extrudedStripZ(zs, z => side < 0 ? -halfM(z) - swW : halfM(z), z => side < 0 ? -halfM(z) : halfM(z) + swW, 0.18, pave());
+        const slab = extrudedStripZ(zs, z => side < 0 ? -paveOuter(halfM(z)) : halfM(z), z => side < 0 ? -halfM(z) : paveOuter(halfM(z)), 0.18, pave());
         seg.add(slab);
         // Paving joints every 2.5 m, as on the pavements it continues.
         const joints = [];
         for (let z = a + 2; z < b; z += 2.5) {
-          const x0 = side < 0 ? -halfM(z) - swW : halfM(z), x1 = x0 + swW;
+          const x0 = side < 0 ? -paveOuter(halfM(z)) : halfM(z), x1 = side < 0 ? -halfM(z) : paveOuter(halfM(z));
           joints.push(new THREE.Vector3(x0, 0.184, z), new THREE.Vector3(x1, 0.184, z));
         }
         seg.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(joints),
@@ -7601,7 +7605,7 @@
     }
     // Main pavements stop a pavement-width short of the cross street: the
     // square corner itself is the rounded piece from addCornerFillet.
-    const entLen = cornerH - swW + SEAM, exitLen = cornerH - swW + SEAM;
+    const entLen = intersectionLength / 2 - crossOuter0 + SEAM, exitLen = entLen;
     const swMainL = new THREE.Mesh(new THREE.BoxGeometry(swW + SEAM, 0.18, entLen), new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
     swMainL.position.set(-(roadWidth / 2 + swW / 2) + SEAM / 2, 0.09, startZ - SEAM + entLen / 2);
     if (!wideMain) seg.add(swMainL);
@@ -9513,8 +9517,19 @@
       // Pavements do not stop square: they taper towards the kerb over 10 m
       // (cut on a diagonal), like a pavement ending at the edge of town.
       const slope = 10 / 3.2;
-      const taperBefore = side => new THREE.Plane(new THREE.Vector3(side * -slope, 0, -1), from + 4.2 * slope).normalize();
-      const taperAfter = side => new THREE.Plane(new THREE.Vector3(side * -slope, 0, 1), -to + 4.2 * slope).normalize();
+      // The diagonal never reaches the end of the corridor's pavement: right
+      // after a junction it would leave a stub beside the junction corners.
+      // Short of room, the pavement runs a little into the strip and narrows
+      // there instead.
+      let paveStart = Infinity, paveEnd = -Infinity;
+      parts.forEach(o => {
+        if (o.userData.surface !== 'sidewalk') return;
+        const b = new THREE.Box3().setFromObject(o);
+        paveStart = Math.min(paveStart, b.min.z); paveEnd = Math.max(paveEnd, b.max.z);
+      });
+      const taperFrom = Math.max(from, paveStart + 11), taperTo = Math.min(to, paveEnd - 11);
+      const taperBefore = side => new THREE.Plane(new THREE.Vector3(side * -slope, 0, -1), taperFrom + 4.2 * slope).normalize();
+      const taperAfter = side => new THREE.Plane(new THREE.Vector3(side * -slope, 0, 1), -taperTo + 4.2 * slope).normalize();
       parts.forEach(o => {
         const box = new THREE.Box3().setFromObject(o);
         if (box.max.z < from || box.min.z > to) return;
