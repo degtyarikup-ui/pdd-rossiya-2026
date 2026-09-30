@@ -292,3 +292,271 @@ class GameFuelPremiumPitch extends StatelessWidget {
     );
   }
 }
+
+/// Garage: the runs in stock as a plain white pill («Заезды 2 из 3»); a tap
+/// explains what a run is and when the next one comes.
+class GameRunsPill extends StatelessWidget {
+  final int runs;
+  final int maxRuns;
+  final bool unlimited;
+  final VoidCallback? onTap;
+
+  const GameRunsPill({
+    super.key,
+    required this.runs,
+    required this.maxRuns,
+    required this.unlimited,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final empty = !unlimited && runs <= 0;
+    final text = unlimited
+        ? appL10n.gameRunsUnlimitedPill
+        : appL10n.gameRunsPill(runs, maxRuns);
+    return Semantics(
+      button: onTap != null,
+      label: text,
+      child: Material(
+        color: colors.cardBackground,
+        borderRadius: BorderRadius.circular(90),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          key: const ValueKey('lobby-runs'),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 0, 12, 0),
+            child: SizedBox(
+              height: 36,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.sports_score_rounded,
+                    size: 20,
+                    color: empty ? colors.red : colors.accent,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    text,
+                    style: TextStyle(
+                      fontFamily: 'Onest',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      height: 1,
+                      color: empty ? colors.red : colors.primaryText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// What a run is, how many are in stock and when the next one comes (a
+/// live countdown), with the way to unlimited runs.
+Future<void> showGameRunsSheet(
+  BuildContext context, {
+  required int maxRuns,
+  required int questions,
+  required int refillMinutes,
+  required bool unlimited,
+  required int Function() runs,
+  required DateTime? Function() nextRefillAt,
+  VoidCallback? onBuyPremium,
+}) {
+  return showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) => GameRunsSheet(
+      maxRuns: maxRuns,
+      questions: questions,
+      refillMinutes: refillMinutes,
+      unlimited: unlimited,
+      runs: runs,
+      nextRefillAt: nextRefillAt,
+      onBuyPremium: onBuyPremium,
+    ),
+  );
+}
+
+/// The body of [showGameRunsSheet].
+class GameRunsSheet extends StatefulWidget {
+  final int maxRuns;
+  final int questions;
+  final int refillMinutes;
+  final bool unlimited;
+  final int Function() runs;
+  final DateTime? Function() nextRefillAt;
+  final VoidCallback? onBuyPremium;
+
+  const GameRunsSheet({
+    super.key,
+    required this.maxRuns,
+    required this.questions,
+    required this.refillMinutes,
+    required this.unlimited,
+    required this.runs,
+    required this.nextRefillAt,
+    this.onBuyPremium,
+  });
+
+  @override
+  State<GameRunsSheet> createState() => GameRunsSheetState();
+}
+
+class GameRunsSheetState extends State<GameRunsSheet> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.unlimited) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final runs = widget.unlimited ? widget.maxRuns : widget.runs();
+    final full = widget.unlimited || runs >= widget.maxRuns;
+    final (
+      IconData statusIcon,
+      Color statusColor,
+      String status,
+    ) = widget.unlimited
+        ? (Icons.all_inclusive_rounded, colors.gold, appL10n.gameRunsPremium)
+        : full
+        ? (Icons.check_circle_rounded, colors.green, appL10n.gameRunsFull)
+        : (
+            Icons.schedule_rounded,
+            runs <= 0 ? colors.red : colors.accent,
+            appL10n.gameRunsNextIn(gameFuelCountdown(widget.nextRefillAt())),
+          );
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              appL10n.gameRunsTitle,
+              style: TextStyle(
+                fontFamily: 'Onest',
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: colors.primaryText,
+              ),
+            ),
+            const SizedBox(height: 14),
+            // One flag per run in stock.
+            Row(
+              children: [
+                for (var i = 0; i < widget.maxRuns; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  Expanded(
+                    child: Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: i < runs
+                            ? colors.accentSurface10
+                            : colors.background,
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusMedium,
+                        ),
+                      ),
+                      child: Icon(
+                        widget.unlimited
+                            ? Icons.all_inclusive_rounded
+                            : Icons.sports_score_rounded,
+                        size: 28,
+                        color: i < runs ? colors.accent : colors.gray,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              appL10n.gameRunsExplain(
+                widget.questions,
+                widget.maxRuns,
+                widget.refillMinutes,
+              ),
+              style: TextStyle(
+                fontFamily: 'Onest',
+                fontSize: 14,
+                height: 1.4,
+                color: colors.secondaryText,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Icon(statusIcon, size: 20, color: statusColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    status,
+                    style: TextStyle(
+                      fontFamily: 'Onest',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (!widget.unlimited && widget.onBuyPremium != null) ...[
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  widget.onBuyPremium!();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colors.gold,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusMedium,
+                    ),
+                  ),
+                ),
+                icon: const Icon(Icons.all_inclusive_rounded, size: 20),
+                label: Text(
+                  appL10n.gameRunsGetPremium,
+                  style: const TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

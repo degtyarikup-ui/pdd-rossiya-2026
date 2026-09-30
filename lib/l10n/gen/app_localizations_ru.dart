@@ -1245,4 +1245,52 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameCorrectShort => 'Верно';
+
+  @override
+  String gameRunsPill(int runs, int max) {
+    return 'Заезды $runs из $max';
+  }
+
+  @override
+  String get gameRunsUnlimitedPill => 'Заезды ∞';
+
+  @override
+  String get gameRunsTitle => 'Заезды';
+
+  @override
+  String gameRunsExplain(int questions, int max, int minutes) {
+    return 'Заезд — это $questions вопросов на дороге. В запасе до $max заездов, каждый потраченный возвращается через $minutes минут.';
+  }
+
+  @override
+  String gameRunsNextIn(String time) {
+    return 'Следующий заезд через $time';
+  }
+
+  @override
+  String get gameRunsFull => 'Запас полный — можно ехать';
+
+  @override
+  String get gameRunsPremium => 'С Премиум заезды без ограничений';
+
+  @override
+  String get gameRunsGetPremium => 'Безлимит с Премиум';
+
+  @override
+  String gameLobbyRunLength(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count вопроса',
+      many: '$count вопросов',
+      few: '$count вопроса',
+      one: '$count вопрос',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gameLobbyProgress(int n, int total) {
+    return 'Пройдено $n из $total';
+  }
 }

@@ -387,5 +387,20 @@
   "notifGameChannelDesc": "Когда восстановится заезд в игре",
   "gameRunMistakesButton": "Ошибки · {count}",
   "@gameRunMistakesButton": {"placeholders": {"count": {"type": "int"}}},
-  "gameCorrectShort": "Верно"
+  "gameCorrectShort": "Верно",
+  "gameRunsPill": "Заезды {runs} из {max}",
+  "@gameRunsPill": {"placeholders": {"runs": {"type": "int"}, "max": {"type": "int"}}},
+  "gameRunsUnlimitedPill": "Заезды ∞",
+  "gameRunsTitle": "Заезды",
+  "gameRunsExplain": "Заезд — это {questions} вопросов на дороге. В запасе до {max} заездов, каждый потраченный возвращается через {minutes} минут.",
+  "@gameRunsExplain": {"placeholders": {"questions": {"type": "int"}, "max": {"type": "int"}, "minutes": {"type": "int"}}},
+  "gameRunsNextIn": "Следующий заезд через {time}",
+  "@gameRunsNextIn": {"placeholders": {"time": {"type": "String"}}},
+  "gameRunsFull": "Запас полный — можно ехать",
+  "gameRunsPremium": "С Премиум заезды без ограничений",
+  "gameRunsGetPremium": "Безлимит с Премиум",
+  "gameLobbyRunLength": "{count, plural, one{{count} вопрос} few{{count} вопроса} many{{count} вопросов} other{{count} вопроса}}",
+  "@gameLobbyRunLength": {"placeholders": {"count": {"type": "int"}}},
+  "gameLobbyProgress": "Пройдено {n} из {total}",
+  "@gameLobbyProgress": {"placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}}
 }

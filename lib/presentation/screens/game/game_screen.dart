@@ -657,6 +657,27 @@ class _GameScreenState extends ConsumerState<GameScreen>
         .catchError((_) => false);
   }
 
+  void _openRunsInfo() {
+    HapticFeedbackHelper.tap();
+    final unlimited = _unlimitedRuns;
+    showGameRunsSheet(
+      context,
+      maxRuns: GameState.maxRuns,
+      questions: GameState.runQuestions,
+      refillMinutes: GameRunsService.refillInterval.inMinutes,
+      unlimited: unlimited,
+      runs: () {
+        final runs = GameRunsService.instance.refresh();
+        if (!unlimited && runs != ref.read(gameControllerProvider).runs) {
+          _game.configureRuns(runs: runs, unlimited: false);
+        }
+        return runs;
+      },
+      nextRefillAt: () => GameRunsService.instance.nextRefillAt,
+      onBuyPremium: unlimited ? null : () => PremiumPaywallSheet.show(context),
+    );
+  }
+
   Future<void> _openControls() async {
     final simple = await showGameControlsSheet(
       context,
@@ -1420,11 +1441,19 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 child: GameLobby(
                   vehiclePaint: _vehiclePaint,
                   bestScore: _bestScore ?? 0,
-                  fuel: GameFuelGauge(
-                    fuel: gameState.runs,
-                    maxFuel: GameState.maxRuns,
+                  runs: GameRunsPill(
+                    runs: gameState.runs,
+                    maxRuns: GameState.maxRuns,
                     unlimited: gameState.runsUnlimited,
+                    onTap: _openRunsInfo,
                   ),
+                  startCaption:
+                      _runStarted && gameState.phase != GamePhase.gameOver
+                      ? appL10n.gameLobbyProgress(
+                          gameState.totalAnswered,
+                          GameState.runQuestions,
+                        )
+                      : appL10n.gameLobbyRunLength(GameState.runQuestions),
                   blocker: locked
                       ? _LockCard(
                           onSignIn: () => AuthModalSheet.show(context),

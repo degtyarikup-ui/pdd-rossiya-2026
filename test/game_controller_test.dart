@@ -25,6 +25,8 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_debug_sheet.dart'
 import 'package:pdd_app/presentation/screens/game/widgets/game_hud.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_question_card.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_over_dialog.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_lobby.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_explanation_sheet.dart';
 import 'package:pdd_app/data/models/game_situation.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
@@ -1206,7 +1208,14 @@ void main() {
       oncoming: true,
     );
     final boundary = GlobalKey();
-    for (final name in ['question', 'results', 'fuel_results', 'controls']) {
+    for (final name in [
+      'question',
+      'results',
+      'fuel_results',
+      'controls',
+      'lobby',
+      'runs_sheet',
+    ]) {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData(fontFamily: 'Onest'),
@@ -1220,7 +1229,51 @@ void main() {
               key: boundary,
               child: Scaffold(
                 backgroundColor: const Color(0xffdee4e5),
-                body: name == 'results' || name == 'fuel_results'
+                body: name == 'lobby'
+                    ? ColoredBox(
+                        color: const Color(0xff8a8f7a),
+                        child: GameLobby(
+                          vehiclePaint: 'yellow',
+                          bestScore: 3958,
+                          runs: const GameRunsPill(
+                            runs: 2,
+                            maxRuns: 3,
+                            unlimited: false,
+                          ),
+                          startCaption: appL10n.gameLobbyRunLength(20),
+                          onStart: () {},
+                          onPrevious: () {},
+                          onNext: () {},
+                          onColour: () {},
+                          onLeaderboard: () {},
+                          onControls: () {},
+                        ),
+                      )
+                    : name == 'runs_sheet'
+                    ? Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Material(
+                          color: Colors.white,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(28),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 28),
+                            child: GameRunsSheet(
+                              maxRuns: 3,
+                              questions: 20,
+                              refillMinutes: 20,
+                              unlimited: false,
+                              runs: () => 1,
+                              nextRefillAt: () => DateTime.now().add(
+                                const Duration(minutes: 14, seconds: 32),
+                              ),
+                              onBuyPremium: () {},
+                            ),
+                          ),
+                        ),
+                      )
+                    : name == 'results' || name == 'fuel_results'
                     ? Center(
                         child: GameOverDialog(
                           state: name == 'fuel_results'

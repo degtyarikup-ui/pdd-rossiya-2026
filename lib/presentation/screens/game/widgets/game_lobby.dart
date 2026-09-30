@@ -8,18 +8,24 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
 
 /// The game's start screen, laid over the engine's garage scene. No cards:
 /// the car stands in the middle and is browsed by swiping or the side
-/// arrows; top — fuel and the record; right — round colour and rating
-/// buttons; bottom — «Start the drive» (or [blocker] when driving is not
-/// possible: sign-in card, empty tank).
+/// arrows; top — the (secondary) controls button, the runs in stock and the
+/// record; right — round colour and rating buttons; bottom — «Start the
+/// drive» with what a run is (or [blocker] when driving is not possible:
+/// sign-in card, no runs left).
 class GameLobby extends StatelessWidget {
   final String vehiclePaint;
   final int bestScore;
-  final Widget fuel;
+
+  /// The runs in stock (a tappable pill).
+  final Widget runs;
   final Widget? blocker;
   final VoidCallback? onStart;
 
   /// Opened from a run in progress: the button continues it.
   final bool resume;
+
+  /// Small line under the start button: «20 вопросов» / «Пройдено 8 из 20».
+  final String? startCaption;
 
   /// Null when there is only one car to choose from.
   final VoidCallback? onPrevious;
@@ -36,10 +42,11 @@ class GameLobby extends StatelessWidget {
     super.key,
     required this.vehiclePaint,
     required this.bestScore,
-    required this.fuel,
+    required this.runs,
     this.blocker,
     this.onStart,
     this.resume = false,
+    this.startCaption,
     this.onPrevious,
     this.onNext,
     this.onColour,
@@ -61,20 +68,23 @@ class GameLobby extends StatelessWidget {
     // A fixed-width column keeps the round buttons on one vertical line
     // whatever the caption length.
     Widget labelled(Widget button, String caption) => SizedBox(
-      width: 64,
+      width: 76,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           button,
           const SizedBox(height: 4),
-          Text(
-            caption,
-            style: const TextStyle(
-              fontFamily: 'Onest',
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppColors.white,
-              shadows: [Shadow(color: Color(0x99000000), blurRadius: 6)],
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              caption,
+              style: const TextStyle(
+                fontFamily: 'Onest',
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.white,
+                shadows: [Shadow(color: Color(0x99000000), blurRadius: 6)],
+              ),
             ),
           ),
         ],
@@ -122,7 +132,8 @@ class GameLobby extends StatelessWidget {
             onHorizontalDragUpdate: (details) => onSpin?.call(details.delta.dx),
           ),
         ),
-        // Top: fuel on the left, the record in the HUD's gold pill.
+        // Top: controls (like the pause button in the drive) and the runs
+        // on the left, the record in the HUD's gold pill on the right.
         Positioned(
           top: 0,
           left: 0,
@@ -133,8 +144,38 @@ class GameLobby extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
               child: Row(
                 children: [
-                  fuel,
-                  const Spacer(),
+                  if (onControls != null) ...[
+                    Semantics(
+                      button: true,
+                      label: appL10n.gameControlsTitle,
+                      child: Material(
+                        color: colors.cardBackground,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          key: const ValueKey('lobby-controls'),
+                          onTap: onControls,
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: Icon(
+                              Icons.sports_esports_rounded,
+                              size: 24,
+                              color: colors.primaryText,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FittedBox(fit: BoxFit.scaleDown, child: runs),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Semantics(
                     label: '${appL10n.gameLobbyRecord}: $bestScore',
                     child: Container(
@@ -228,39 +269,51 @@ class GameLobby extends StatelessWidget {
                 ),
                 appL10n.gameLobbyRating,
               ),
-              const SizedBox(height: 12),
-              labelled(
-                round(
-                  color: colors.accent,
-                  label: appL10n.gameControlsTitle,
-                  onTap: onControls,
-                  icon: const Icon(
-                    Icons.sports_esports_rounded,
-                    color: AppColors.white,
-                    size: 26,
-                  ),
-                ),
-                appL10n.gameLobbyControls,
-              ),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child:
                     blocker ??
                     SizedBox(
-                      height: 56,
-                      child: ElevatedButton.icon(
+                      height: 60,
+                      child: ElevatedButton(
                         onPressed: onStart,
-                        icon: const Icon(Icons.play_arrow_rounded, size: 26),
-                        label: Text(
-                          resume
-                              ? appL10n.gameLobbyContinue
-                              : appL10n.gameLobbyStart,
-                          style: const TextStyle(
-                            fontFamily: 'Onest',
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.play_arrow_rounded, size: 28),
+                            const SizedBox(width: 8),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  resume
+                                      ? appL10n.gameLobbyContinue
+                                      : appL10n.gameLobbyStart,
+                                  style: const TextStyle(
+                                    fontFamily: 'Onest',
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                if (startCaption != null)
+                                  Text(
+                                    startCaption!,
+                                    style: TextStyle(
+                                      fontFamily: 'Onest',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.2,
+                                      color: AppColors.white.withValues(
+                                        alpha: 0.78,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ),

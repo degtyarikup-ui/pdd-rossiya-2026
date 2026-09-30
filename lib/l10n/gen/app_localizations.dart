@@ -2197,6 +2197,66 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Верно'**
   String get gameCorrectShort;
+
+  /// No description provided for @gameRunsPill.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заезды {runs} из {max}'**
+  String gameRunsPill(int runs, int max);
+
+  /// No description provided for @gameRunsUnlimitedPill.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заезды ∞'**
+  String get gameRunsUnlimitedPill;
+
+  /// No description provided for @gameRunsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заезды'**
+  String get gameRunsTitle;
+
+  /// No description provided for @gameRunsExplain.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заезд — это {questions} вопросов на дороге. В запасе до {max} заездов, каждый потраченный возвращается через {minutes} минут.'**
+  String gameRunsExplain(int questions, int max, int minutes);
+
+  /// No description provided for @gameRunsNextIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Следующий заезд через {time}'**
+  String gameRunsNextIn(String time);
+
+  /// No description provided for @gameRunsFull.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запас полный — можно ехать'**
+  String get gameRunsFull;
+
+  /// No description provided for @gameRunsPremium.
+  ///
+  /// In ru, this message translates to:
+  /// **'С Премиум заезды без ограничений'**
+  String get gameRunsPremium;
+
+  /// No description provided for @gameRunsGetPremium.
+  ///
+  /// In ru, this message translates to:
+  /// **'Безлимит с Премиум'**
+  String get gameRunsGetPremium;
+
+  /// No description provided for @gameLobbyRunLength.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{{count} вопрос} few{{count} вопроса} many{{count} вопросов} other{{count} вопроса}}'**
+  String gameLobbyRunLength(int count);
+
+  /// No description provided for @gameLobbyProgress.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пройдено {n} из {total}'**
+  String gameLobbyProgress(int n, int total);
 }
 
 class _AppLocalizationsDelegate

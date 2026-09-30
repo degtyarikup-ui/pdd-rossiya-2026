@@ -356,5 +356,15 @@
   "notifGameChannelName": "Igra",
   "notifGameChannelDesc": "Kada se vožnja u igri obnovi",
   "gameRunMistakesButton": "Greške · {count}",
-  "gameCorrectShort": "Tačno"
+  "gameCorrectShort": "Tačno",
+  "gameRunsPill": "Vožnje {runs} od {max}",
+  "gameRunsUnlimitedPill": "Vožnje ∞",
+  "gameRunsTitle": "Vožnje",
+  "gameRunsExplain": "Vožnja je {questions} pitanja na putu. U rezervi je do {max} vožnje, svaka potrošena se vraća za {minutes} minuta.",
+  "gameRunsNextIn": "Sledeća vožnja za {time}",
+  "gameRunsFull": "Rezerva je puna — kreni",
+  "gameRunsPremium": "Uz Premium vožnje su neograničene",
+  "gameRunsGetPremium": "Neograničeno uz Premium",
+  "gameLobbyRunLength": "{count, plural, one{{count} pitanje} few{{count} pitanja} other{{count} pitanja}}",
+  "gameLobbyProgress": "Pređeno {n} od {total}"
 }

@@ -1242,4 +1242,51 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get gameCorrectShort => 'Tačno';
+
+  @override
+  String gameRunsPill(int runs, int max) {
+    return 'Vožnje $runs od $max';
+  }
+
+  @override
+  String get gameRunsUnlimitedPill => 'Vožnje ∞';
+
+  @override
+  String get gameRunsTitle => 'Vožnje';
+
+  @override
+  String gameRunsExplain(int questions, int max, int minutes) {
+    return 'Vožnja je $questions pitanja na putu. U rezervi je do $max vožnje, svaka potrošena se vraća za $minutes minuta.';
+  }
+
+  @override
+  String gameRunsNextIn(String time) {
+    return 'Sledeća vožnja za $time';
+  }
+
+  @override
+  String get gameRunsFull => 'Rezerva je puna — kreni';
+
+  @override
+  String get gameRunsPremium => 'Uz Premium vožnje su neograničene';
+
+  @override
+  String get gameRunsGetPremium => 'Neograničeno uz Premium';
+
+  @override
+  String gameLobbyRunLength(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pitanja',
+      few: '$count pitanja',
+      one: '$count pitanje',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gameLobbyProgress(int n, int total) {
+    return 'Pređeno $n od $total';
+  }
 }
