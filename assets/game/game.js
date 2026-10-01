@@ -11781,11 +11781,11 @@
   }
 
   // Simple steering through a junction: the car slows for the curve ahead
-  // like a driver would (a turn at ~20 km/h, a U-turn slower), instead of
+  // like a driver would (a turn at 30-35 km/h, a U-turn at ~25), instead of
   // sweeping round at the full town speed with the gas held.
   function curveSpeedLimit(ap) {
     // braking: the coast-down rate integrateDriving applies with the gas held.
-    const lateral = 5, braking = 4;
+    const lateral = 18, braking = 4;
     let limit = Infinity;
     const at = s => { const t = ap.path.getTangentAt(Math.min(1, s / ap.length)); return Math.atan2(t.x, t.z); };
     for (let d = 0; d <= 30 && ap.s + d < ap.length; d += 1) {
@@ -11794,7 +11794,7 @@
       if (bend < 1e-3) continue;
       limit = Math.min(limit, Math.sqrt(lateral / bend + 2 * braking * d));
     }
-    return Math.max(2.5, limit);
+    return Math.max(5.5, limit);
   }
 
   function integrateDriving(dt, limit = state.maxSpeed) {
