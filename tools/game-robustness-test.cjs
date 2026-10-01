@@ -185,6 +185,34 @@ const { chromium } = require('playwright');
       t.refreshRoadBounds();
       out.islandCut = { drawn: t.roadSupports(new T.Vector3(-1.8, 0, 450)), cutOff: t.roadSupports(new T.Vector3(-1.8, 0, 550)) };
       road.remove(island);
+
+      // 7. A U-turn in simple steering is one round loop driven at a
+      // turning speed: it used to kink (80° within a metre) at up to
+      // 58 km/h, its button came back half-way round, and a press there
+      // re-planned the route.
+      const iU = t.allScenarios().findIndex(sc => sc.id === 'ticket_4_15');
+      t.selectAll(iU); s.paused = false; t.approach();
+      it = s.activeIntersection;
+      window.game.proceedAfterAnswer(true, it.situation.id); window.game.releaseTraffic(it.situation.id);
+      t.tick(0.3); window.game.chooseUturn();
+      mark = window.events.length;
+      let prev = t.player().rotation.y, maxStep = 0, arcSpeed = 0, pressed = false;
+      for (let f = 0; f < 60 * 30 && s.resolution; f++) {
+        const r = s.resolution;
+        window.game.setGas(!(r.phase === 'manual' && r.elapsed < 3 && r.yielding.some(a => !a.cleared && !a.done)));
+        t.tick(1 / 60);
+        if (!s.resolution) break;
+        const yaw = t.player().rotation.y;
+        maxStep = Math.max(maxStep, Math.abs(Math.atan2(Math.sin(yaw - prev), Math.cos(yaw - prev))));
+        prev = yaw;
+        if (Math.abs(Math.sin(yaw)) > 0.5) arcSpeed = Math.max(arcSpeed, s.speed);
+        if (!pressed && Math.cos(yaw) < -0.3) { window.game.chooseUturn(); pressed = true; }
+      }
+      window.game.setGas(false);
+      const flags = window.events.slice(mark).filter(e => e.event === 'exit_choice').map(e => e.uturn);
+      out.uturn = { done: !s.resolution, smooth: maxStep < 0.08, slow: arcSpeed < 9,
+        offeredOnce: flags.lastIndexOf(true) < flags.indexOf(false) || !flags.includes(true),
+        refused: window.events.slice(mark).some(e => e.event === 'input_refused') };
       return out;
     });
     console.log(JSON.stringify(result));
@@ -195,7 +223,8 @@ const { chromium } = require('playwright');
     assert.equal(result.occluderFaded, true, 'a building hiding the car is faded');
     assert.equal(result.extensionKept, true, 'a bus stop never takes a piece of the road away');
     assert.deepEqual(result.islandCut, { drawn: false, cutOff: true }, 'an island is felt only where it is drawn');
+    assert.deepEqual(result.uturn, { done: true, smooth: true, slow: true, offeredOnce: true, refused: true }, 'a smooth, slow U-turn that cannot be re-planned half-way');
     assert.deepEqual(errors, []);
-    console.log('PASS: robustness — paused answers, pause mid-turn, own lane, faded occluders, road kept by bus stops, cut-off islands');
+    console.log('PASS: robustness — paused answers, pause mid-turn, own lane, faded occluders, road kept by bus stops, cut-off islands, U-turn');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exit(1); });

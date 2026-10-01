@@ -20,7 +20,7 @@ const { chromium } = require('playwright');
       const response = await route.fetch();
       const body = (await response.text()).replace('  // Run init on DOM ready', `
       window.__priorityTest = {
-        state, player: () => playerCarGroup, actorFootprint,
+        state, player: () => playerCarGroup, actorFootprint, THREE,
         scenarios: () => SITUATIONS.filter(s => routeSpec(s).reviewed),
         // Follows the task route like a careful driver; speed caps the gas.
         drive(speed = 4, maxFrames = 3000) {
@@ -136,8 +136,20 @@ const { chromium } = require('playwright');
       const mark = window.events.length;
       window.game.proceedAfterAnswer(true, 'ticket_2_13');
       window.game.changeLane('left');
-      let crashed = false;
+      // The car slows for the turn now, and walkers are long gone when it
+      // gets there: one stops dead on the turn's path, a few metres ahead.
+      const walker = s.actors.find(a => a.config.type === 'pedestrian');
+      let crashed = false, placed = false;
       for (let f = 0; f < 1800 && s.resolution; f++) {
+        const ap = s.autoPath;
+        if (!placed && walker && ap && ap.s > 6) {
+          const p = ap.path.getPointAt(Math.min(1, (ap.s + 5) / ap.length));
+          const local = walker.mesh.parent.worldToLocal(p.clone());
+          walker.path = new t.THREE.CatmullRomCurve3([local, local.clone().add(new t.THREE.Vector3(0, 0, 0.01))]);
+          walker.length = walker.path.getLength(); walker.distance = 0; walker.maxSpeed = 0; walker.done = false; walker.active = true;
+          walker.mesh.position.copy(local);
+          placed = true;
+        }
         window.game.setGas(!s.resolution.recovery);
         t.tick(1 / 60);
         crashed ||= window.events.slice(mark).some(e => e.type === 'collision');

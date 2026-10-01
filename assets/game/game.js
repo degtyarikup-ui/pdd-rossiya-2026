@@ -6197,6 +6197,14 @@
     return material;
   }
 
+  // A material copy for clipping. Material.clone() drops onBeforeCompile:
+  // a sign's back cut at a seam used to show the sign itself through its grey.
+  function cloneMaterial(material) {
+    const copy = material.clone();
+    copy.onBeforeCompile = material.onBeforeCompile;
+    return copy;
+  }
+
   function addSignBack(face) {
     const back = new THREE.Mesh(face.geometry, signBackMaterial(face.material.map));
     back.position.copy(face.position); back.position.z += 0.02;
@@ -8638,11 +8646,14 @@
       if (hw) points.splice(3, 1, new THREE.Vector3(14, 0, z + L), new THREE.Vector3(26, 0, z + L * hw(26) / hw(0)), new THREE.Vector3(36, 0, z + 1.8));
     } else if (action === 'uturn') {
       exitYaw = Math.PI;
-      // A loop in the open middle of the junction; no swing out to the
-      // right kerb of the approach first (the car's corner caught it).
-      points = [start, new THREE.Vector3(-1.8, 0, z - 3), new THREE.Vector3(-1.9, 0, z + 0.5),
-        new THREE.Vector3(0, 0, z + 3), new THREE.Vector3(2.2, 0, z), new THREE.Vector3(1.8, 0, z - 6),
-        new THREE.Vector3(1.8, 0, z - 22)];
+      // A round loop in the open middle of the junction (radius 2.6 m), no
+      // swing out to the right kerb of the approach first (the car's corner
+      // caught it). Sampled densely: a few loose points made a kink where
+      // the car turned 80° within a metre.
+      const R = 2.6, zc = z + 0.8, arc = [];
+      for (let a = 180; a >= 0; a -= 15) arc.push(new THREE.Vector3(R * Math.cos(a * Math.PI / 180), 0, zc + R * Math.sin(a * Math.PI / 180)));
+      points = [start, new THREE.Vector3(-1.8, 0, z - 7), new THREE.Vector3(-R, 0, zc - 2.5), ...arc,
+        new THREE.Vector3(R, 0, zc - 2.5), new THREE.Vector3(1.8, 0, z - 7), new THREE.Vector3(1.8, 0, z - 22)];
     } else {
       points = [start, new THREE.Vector3(-1.8, 0, z), new THREE.Vector3(-1.8, 0, z + 16)];
     }
@@ -9305,7 +9316,7 @@
       while (root) { if (root.userData.sceneryObject) return; root = root.parent; }
       if (obj.userData.actor || obj.userData.tramRail || !obj.material) return;
       const clip = material => {
-        const copy = material.clone();
+        const copy = cloneMaterial(material);
         (obj.userData.replacedMaterials ||= new Set()).add(material);
         copy.clippingPlanes = [...(material.clippingPlanes || []), cut];
         copy.clipShadows = true;
@@ -9646,7 +9657,7 @@
         const after = side ? taperAfter(side) : lineShift ? new THREE.Plane(new THREE.Vector3(0, 0, 1), -(to + lineShift)) : straightAfter;
         const cloneWithPlanes = (m, planes) => {
           (corridor.userData.replacedMaterials ||= new Set()).add(m);
-          const copy = m.clone();
+          const copy = cloneMaterial(m);
           copy.clippingPlanes = [...(m.clippingPlanes || []), ...planes];
           copy.clipShadows = true;
           return copy;
@@ -11619,6 +11630,9 @@
     if (!r || !state.simpleSteering || r.phase !== 'manual' || r.recovery || !uturnFits(r)) return false;
     const pz = playerCarGroup.position.z;
     if (r.simpleChoice && r.simpleChoice !== 'straight' && r.simpleChoice !== 'uturn' && pz > exitGate(r, r.simpleChoice)) return false;
+    // Only while the car still heads into the junction: a U-turn under way
+    // comes back below its gate, and the button used to show up again.
+    if (Math.cos(playerCarGroup.rotation.y) < 0.9) return false;
     return pz <= exitGate(r, 'uturn');
   }
 
@@ -11627,8 +11641,10 @@
   function chooseJunctionExit(direction) {
     const r = state.resolution, previews = r.intersection.previews || {};
     const pz = playerCarGroup.position.z, gateFor = c => exitGate(r, c);
-    // A turn already under way is committed.
-    if (r.simpleChoice && r.simpleChoice !== 'straight' && pz > gateFor(r.simpleChoice)) { refuseInput(); return; }
+    // A turn already under way is committed: past its gate, or already
+    // turned well away from the approach (a U-turn comes back below it).
+    if (r.simpleChoice && r.simpleChoice !== 'straight' &&
+        (pz > gateFor(r.simpleChoice) || Math.cos(playerCarGroup.rotation.y) < 0.9)) { refuseInput(); return; }
     if (direction === 'uturn' && !uturnFits(r)) { refuseInput(); return; }
     let choice = direction;
     if (!previews[choice] || r.simpleChoice === choice) choice = previews.straight ? 'straight' : null;
@@ -11764,8 +11780,26 @@
     car.rotation.y += target * Math.min(1, dt * (state.laneChangeX != null ? 4.5 : 1.8));
   }
 
+  // Simple steering through a junction: the car slows for the curve ahead
+  // like a driver would (a turn at ~20 km/h, a U-turn slower), instead of
+  // sweeping round at the full town speed with the gas held.
+  function curveSpeedLimit(ap) {
+    // braking: the coast-down rate integrateDriving applies with the gas held.
+    const lateral = 5, braking = 4;
+    let limit = Infinity;
+    const at = s => { const t = ap.path.getTangentAt(Math.min(1, s / ap.length)); return Math.atan2(t.x, t.z); };
+    for (let d = 0; d <= 30 && ap.s + d < ap.length; d += 1) {
+      const a = at(ap.s + d), b = at(ap.s + d + 1);
+      const bend = Math.abs(Math.atan2(Math.sin(b - a), Math.cos(b - a)));
+      if (bend < 1e-3) continue;
+      limit = Math.min(limit, Math.sqrt(lateral / bend + 2 * braking * d));
+    }
+    return Math.max(2.5, limit);
+  }
+
   function integrateDriving(dt, limit = state.maxSpeed) {
     applySteeringAssist(dt);
+    if (state.autoPath && state.resolution) limit = Math.min(limit, curveSpeedLimit(state.autoPath));
     // Brake: firm deceleration while moving; from a standstill it becomes
     // reverse gear (slow, negative speed). Gas is ignored while braking.
     if (state.isBraking) {
