@@ -5214,13 +5214,13 @@
       };
       if (kind === 'door') {
         // A soft mechanical roll: filtered noise swelling and settling.
-        const len = 1.3, buffer = context.createBuffer(1, context.sampleRate * len, context.sampleRate);
+        const len = 0.3, buffer = context.createBuffer(1, context.sampleRate * len, context.sampleRate);
         const data = buffer.getChannelData(0); for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (0.6 + 0.4 * Math.sin(i / 900));
         const src = context.createBufferSource(); src.buffer = buffer;
         const bp = context.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 420; bp.Q.value = 1.1;
         const g = context.createGain(); g.gain.setValueAtTime(0.0001, now); g.gain.linearRampToValueAtTime(0.09, now + 0.2); g.gain.exponentialRampToValueAtTime(0.0001, now + len);
         src.connect(bp).connect(g).connect(out); src.start(now);
-        tone(196, 1.15, 0.25, 0.08, 'triangle');
+        tone(196, 0.24, 0.08, 0.08, 'triangle');
       } else if (kind === 'fanfare') {
         // Major arpeggio up to a held chord, bright and short.
         [[523.25, 0], [659.25, 0.11], [783.99, 0.22], [1046.5, 0.33]].forEach(([f, at]) => { tone(f, at, 0.5, 0.09, 'triangle'); tone(f * 2, at, 0.25, 0.025); });
@@ -12617,6 +12617,7 @@
   // --- Garage reveal: a new car rolls out of a closed garage ---
   // Rendered in its own scene while active; the main scene is paused.
   let reveal = null;
+  const REVEAL_TIMING = { door: 0.3, launch: 0.4, drift: 0.46, settle: 0.14 };
   function buildRevealScene(id, paint) {
     const sn = season();
     const rs = new THREE.Scene();
@@ -12788,7 +12789,7 @@
     }
     door.position.set(0, 0, -0.7); rs.add(door);
     const car = window.PDD_VEHICLES.create(id, paint);
-    car.position.set(0, 0, 2.6); car.rotation.y = Math.PI; // nose towards the door
+    car.position.set(1.1, 0, 2.6); car.rotation.y = Math.PI; // room for the final parking arc
     rs.add(car);
     // Celebration: headlights, light pouring out of the opening door, a
     // glowing pad where the car stops, sparkles round it and confetti.
@@ -12810,7 +12811,7 @@
     const sparkles = [];
     for (let i = 0; i < 18; i++) {
       const holder = new THREE.Object3D();
-      window.PDD_VEHICLES.addGlow(holder, [0xFFE27A, 0xFFFFFF, 0x9FD0FF][i % 3], 0.55 + Math.random() * 0.5);
+      window.PDD_VEHICLES.addGlow(holder, [0xFFE27A, 0xFFFFFF, 0x9FD0FF][i % 3], 0.28 + Math.random() * 0.22);
       holder.visible = false; rs.add(holder);
       sparkles.push({ holder, angle: i / 18 * Math.PI * 2, radius: 2.6 + Math.random() * 1.4, height: 0.4 + Math.random() * 2.2, speed: 0.4 + Math.random() * 0.6, phase: Math.random() * 6 });
     }
@@ -12838,12 +12839,16 @@
       g.fillStyle = gradient; g.fillRect(0, 0, 64, 64);
     });
     smokeMap.wrapS = smokeMap.wrapT = THREE.ClampToEdgeWrapping;
-    const smoke = Array.from({ length: 32 }, () => {
+    const smoke = Array.from({ length: 48 }, () => {
       const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeMap, color: 0xE6E4DF,
         transparent: true, opacity: 0, depthWrite: false }));
       sprite.visible = false; rs.add(sprite);
       return { sprite, age: 1, life: 0.7, velocity: new THREE.Vector3() };
     });
+    const skidGeometry = new THREE.PlaneGeometry(1, 1); skidGeometry.rotateX(-Math.PI / 2);
+    const skids = new THREE.InstancedMesh(skidGeometry,
+      new THREE.MeshBasicMaterial({ color: 0x282629, transparent: true, opacity: 0.2, depthWrite: false }), 128);
+    skids.instanceMatrix.setUsage(THREE.DynamicDrawUsage); skids.count = 0; skids.frustumCulled = false; rs.add(skids);
     // Three-quarter view from the driveway: the whole garage front and the
     // spot where the car stops are in frame on a portrait screen.
     // Aimed at the spot where the car stops (x 0, z -6.6): the car sits in
@@ -12852,7 +12857,7 @@
     cam.position.set(-4.2, 5.2, -20.5); cam.lookAt(0, 0.1, -6.6);
     return { scene: rs, camera: cam, door, car, phase: 'closed', t: 0, yaw: 0, spin: 0,
       noseLength: (new THREE.Box3().setFromObject(car)).getSize(new THREE.Vector3()).z / 2,
-      fx: { rays, pad, padFill, sparkles, confetti, cPieces, dummy: new THREE.Object3D(), smoke, smokeClock: 0, smokeIndex: 0, time: 0, burst: false, burstAge: 0 } };
+      fx: { rays, pad, padFill, sparkles, confetti, cPieces, skids, skidPrev: [], skidAge: 0, dummy: new THREE.Object3D(), smoke, smokeClock: 0, smokeIndex: 0, time: 0, burst: false, burstAge: 0 } };
   }
   function burstRevealConfetti(r) {
     const fx = r.fx; fx.burst = true; fx.burstAge = 0; fx.confetti.visible = true;
@@ -12865,6 +12870,36 @@
       p.tumble.set(4 + Math.random() * 8, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 12);
     });
   }
+  function emitRevealSmoke(r, dt, drifting) {
+    const fx = r.fx; fx.smokeClock += dt; r.car.updateMatrixWorld(true);
+    while (fx.smokeClock >= 0.03) {
+      fx.smokeClock -= 0.03;
+      r.car.userData.wheels.filter(wh => wh.parent.position.z < 0).forEach(wh => {
+        const puff = fx.smoke[fx.smokeIndex++ % fx.smoke.length];
+        wh.getWorldPosition(puff.sprite.position); puff.sprite.position.y = 0.14;
+        puff.age = 0; puff.life = drifting ? 0.7 : 0.4; puff.strength = drifting ? 1 : 0.65;
+        const outward = Math.sign(wh.parent.position.x) * (drifting ? 1.8 : 0.6);
+        puff.velocity.set(Math.cos(r.car.rotation.y) * outward + (Math.random() - 0.5) * 0.6,
+          1 + Math.random() * 0.5, -Math.sin(r.car.rotation.y) * outward + 0.4);
+        puff.sprite.material.rotation = Math.random() * Math.PI; puff.sprite.visible = true;
+      });
+    }
+  }
+  function updateRevealSkids(r) {
+    const fx = r.fx; r.car.updateMatrixWorld(true);
+    r.car.userData.wheels.filter(wh => wh.parent.position.z < 0).forEach((wh, i) => {
+      const point = wh.getWorldPosition(new THREE.Vector3()); point.y = 0.028;
+      const previous = fx.skidPrev[i], length = previous ? previous.distanceTo(point) : 0;
+      if (length > 0.005 && fx.skids.count < 128) {
+        fx.dummy.position.copy(previous).add(point).multiplyScalar(0.5);
+        fx.dummy.rotation.set(0, Math.atan2(previous.x - point.x, previous.z - point.z), 0);
+        fx.dummy.scale.set(0.13, 1, length + 0.015); fx.dummy.updateMatrix();
+        fx.skids.setMatrixAt(fx.skids.count++, fx.dummy.matrix);
+        fx.skids.instanceMatrix.needsUpdate = true;
+      }
+      fx.skidPrev[i] = point;
+    });
+  }
   function updateReveal(dt) {
     const r = reveal; if (!r) return;
     const w = container.clientWidth || window.innerWidth, h = container.clientHeight || window.innerHeight;
@@ -12872,45 +12907,57 @@
     const fx = r.fx; fx.time += dt;
     if (r.phase === 'opening' && r.t === 0) gameAudio?.celebrate('door');
     if (r.phase === 'opening') {
-      r.t += dt; const u = Math.min(1, r.t / 0.55);
+      r.t += dt; const u = Math.min(1, r.t / REVEAL_TIMING.door);
       fx.rays.children.forEach((ray, i) => { ray.material.opacity = 0.16 * u * (0.8 + 0.2 * Math.sin(fx.time * 3 + i)); });
       r.door.position.y = 4.3 * (1 - Math.pow(1 - u, 3));
       r.door.children.forEach(slat => { slat.visible = slat.position.y + r.door.position.y < 3.75; });
       if (u >= 1) { r.phase = 'driving'; r.t = 0; }
     } else if (r.phase === 'driving') {
       const before = r.car.position.z;
-      r.t += dt; const u = Math.min(1, r.t / 0.95), e = u * u * (3 - 2 * u);
-      r.car.position.z = 2.6 - 9.2 * e;
+      r.t += dt; const u = Math.min(1, r.t / REVEAL_TIMING.launch);
+      // Strong launch; exit speed matches the beginning of the slide (~11 m/s).
+      const e = u * u * (2.375 - 1.375 * u);
+      r.car.position.z = 2.6 - 7.1 * e;
+      r.car.userData.frontAxles?.forEach(axle => { axle.rotation.y = 0.32 * Math.max(0, (u - 0.8) / 0.2); });
       r.car.rotation.x = -0.025 * Math.sin(u * Math.PI);
       const distance = before - r.car.position.z;
       r.car.userData.wheels.forEach(wh => wh.rotateX(-distance / Math.max(0.2, wh.parent.position.y)));
-      // Fire when the nose crosses the door, while the car is still emerging.
       if (!fx.burst && r.car.position.z - r.noseLength <= -0.9) burstRevealConfetti(r);
-      if (u < 0.7 && distance > 0) {
-        fx.smokeClock += dt;
-        r.car.updateMatrixWorld(true);
-        while (fx.smokeClock >= 0.035) {
-          fx.smokeClock -= 0.035;
-          r.car.userData.wheels.filter(wh => wh.parent.position.z < 0).forEach(wh => {
-            const puff = fx.smoke[fx.smokeIndex++ % fx.smoke.length];
-            wh.getWorldPosition(puff.sprite.position); puff.sprite.position.y = 0.16;
-            puff.age = 0; puff.life = 0.6 + Math.random() * 0.2;
-            puff.velocity.set((Math.random() - 0.5) * 1.3, 0.65 + Math.random() * 0.5, 0.6 + Math.random() * 0.5);
-            puff.sprite.material.rotation = Math.random() * Math.PI; puff.sprite.visible = true;
-          });
-        }
-      }
-      if (u >= 1) { r.phase = 'turning'; r.t = 0; r.car.rotation.x = 0; }
-    } else if (r.phase === 'turning') {
-      r.t += dt; const u = Math.min(1, r.t / 0.38), e = u * u * (3 - 2 * u);
-      r.car.rotation.y = Math.PI + (Math.PI / 2) * e;
+      if (distance > 0) emitRevealSmoke(r, dt, false);
       if (u >= 1) {
-        r.phase = 'shown'; r.yaw = r.car.rotation.y; sendToFlutter({ event: 'reveal_shown' });
+        r.phase = 'drifting'; r.t = 0; r.car.rotation.x = 0;
+        updateRevealSkids(r); // capture rear tyre contacts before the slide
+      }
+    } else if (r.phase === 'drifting') {
+      const before = r.car.position.clone();
+      r.t += dt; const u = Math.min(1, r.t / REVEAL_TIMING.drift), v = 1 - u;
+      // Forward momentum continues while the rear swings out. Translation
+      // and heading are deliberately separate: a slide, not a parking arc.
+      r.car.position.set(1.1 * (1 - u * u * (3 - 2 * u)), 0,
+        -4.5 * v * v * v - 3 * 6.2 * v * v * u - 3 * 6.6 * v * u * u - 6.6 * u * u * u);
+      const turn = Math.min(1, u / 0.78);
+      r.car.rotation.y = Math.PI + (Math.PI / 2 + 0.08) * turn * turn * (3 - 2 * turn);
+      r.car.rotation.z = -0.015 * Math.sin(Math.PI * u);
+      // Countersteer into the skid, then straighten as grip returns.
+      r.car.userData.frontAxles?.forEach(axle => { axle.rotation.y = 0.32 * Math.exp(-18 * u) - 0.52 * Math.sin(Math.PI * u); });
+      const distance = before.distanceTo(r.car.position);
+      r.car.userData.wheels.forEach(wh => wh.rotateX(-distance / Math.max(0.2, wh.parent.position.y)));
+      if (u < 0.92) emitRevealSmoke(r, dt, true);
+      updateRevealSkids(r);
+      if (u >= 1) { r.phase = 'settling'; r.t = 0; }
+    } else if (r.phase === 'settling') {
+      r.t += dt; const u = Math.min(1, r.t / REVEAL_TIMING.settle);
+      r.car.rotation.y = Math.PI * 1.5 + 0.08 * (1 - u) * (1 - u);
+      r.car.rotation.z = 0.012 * Math.sin(u * Math.PI * 2) * (1 - u);
+      r.car.userData.frontAxles?.forEach(axle => { axle.rotation.y = 0; });
+      if (u >= 1) {
+        r.car.position.set(0, 0, -6.6); r.car.rotation.set(0, Math.PI * 1.5, 0);
+        r.phase = 'shown'; r.t = 0; r.yaw = r.car.rotation.y; sendToFlutter({ event: 'reveal_shown' });
         fx.sparkles.forEach(sp => { sp.holder.visible = true; });
       }
     } else if (r.phase === 'shown') {
       // Free spin by finger; drifts slowly when idle.
-      r.yaw += (r.spin + 0.15) * dt; r.spin *= Math.pow(0.05, dt);
+      r.t += dt; r.yaw += (r.spin + (r.t > 1 ? 0.1 : 0)) * dt; r.spin *= Math.pow(0.05, dt);
       r.car.rotation.y = r.yaw;
       if (Math.floor(fx.time * 1.4) !== Math.floor((fx.time - dt) * 1.4) && Math.random() < 0.5) gameAudio?.celebrate('sparkle');
     }
@@ -12932,11 +12979,11 @@
         }
       }
     }
-    if (r.phase === 'driving' || r.phase === 'turning' || r.phase === 'shown' || r.phase === 'lobby') {
+    if (['driving', 'drifting', 'settling', 'shown', 'lobby'].includes(r.phase)) {
       // Light keeps pouring out; the pad under the car pulses.
       fx.rays.children.forEach((ray, i) => { ray.material.opacity = 0.14 + 0.04 * Math.sin(fx.time * 2.5 + i); });
       const pulse = 0.5 + 0.5 * Math.sin(fx.time * 3);
-      const k = r.phase === 'shown' || r.phase === 'lobby' ? 1 : r.phase === 'turning' ? Math.min(1, r.t / 0.38) : 0;
+      const k = r.phase === 'shown' || r.phase === 'lobby' ? 1 : r.phase === 'settling' ? 1 : r.phase === 'drifting' ? Math.min(1, r.t / REVEAL_TIMING.drift) : 0;
       fx.pad.material.opacity = k * (0.16 + 0.12 * pulse); fx.padFill.material.opacity = k * (0.05 + 0.04 * pulse);
       fx.pad.scale.setScalar(1 + 0.05 * pulse);
     }
@@ -12950,10 +12997,13 @@
       if (!puff.sprite.visible) return;
       puff.age += dt; const u = Math.min(1, puff.age / puff.life);
       puff.sprite.position.addScaledVector(puff.velocity, dt);
-      puff.sprite.scale.setScalar(0.32 + u * 1.25);
-      puff.sprite.material.opacity = 0.55 * Math.sin(Math.PI * u) * (1 - u);
+      puff.sprite.scale.setScalar(0.45 + Math.sqrt(u) * 2.3);
+      puff.sprite.material.opacity = puff.strength * 0.8 * Math.min(1, u / 0.12) * Math.pow(1 - u, 1.5);
       if (u >= 1) puff.sprite.visible = false;
     });
+    if (r.phase === 'shown' && fx.skids.count) {
+      fx.skidAge += dt; fx.skids.material.opacity = 0.2 * Math.max(0, 1 - fx.skidAge / 2.5);
+    }
     if (fx.burst && fx.confetti.visible) {
       fx.burstAge += dt;
       const fade = Math.max(0, 1 - Math.max(0, fx.burstAge - 2) / 1.1);
@@ -13049,9 +13099,12 @@
   let lastTime = null, telemetryElapsed = 0;
   function animate(time) {
     requestAnimationFrame(animate);
-    const dt = lastTime === null ? 0 : Math.min((time - lastTime) / 1000, 0.05);
+    const elapsed = lastTime === null ? 0 : Math.max(0, (time - lastTime) / 1000);
+    const dt = Math.min(elapsed, 0.05);
     lastTime = time;
-    if (reveal) { updateReveal(dt); return; }
+    // The ceremony follows wall time even below 20 FPS; road physics retains
+    // its smaller integration step. A background/resume gap stays bounded.
+    if (reveal) { updateReveal(Math.min(elapsed, 0.1)); return; }
     if (state.paused) return;
     if (!state.paused) {
       updateAttract(dt);
@@ -14021,7 +14074,7 @@
       // Vehicle/road texture maps belong to the shared caches, not this scene.
       const geometries = new Set(), materials = new Set(), maps = new Set();
       reveal.scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material) [].concat(o.material).forEach(m => materials.add(m)); });
-      materials.forEach(m => { if (m.map && !m.map.userData.pddVehicleShared && !m.map.userData.pddRoadShared) maps.add(m.map); m.dispose(); });
+      materials.forEach(m => { if (m.map && !m.map.userData?.pddVehicleShared && !m.map.userData?.pddRoadShared) maps.add(m.map); m.dispose(); });
       maps.forEach(t => t.dispose()); geometries.forEach(g => g.dispose());
       reveal.scene.background?.dispose();
       reveal = null;
