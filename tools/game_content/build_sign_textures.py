@@ -7,7 +7,7 @@ The WebView runs offline from bundled assets, so the artwork of every sign the
 import base64, json, pathlib, re
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-CODES = ['2.1', '2.3.1', '2.4', '2.5',                      # crossroad priority signs
+CODES = ['1.4.6', '3.2', '1.18', '1.34.3', '1.3.2', '8.1.2', '8.12', '5.31', '5.32', '6.19.1', '4.1.1', '3.31', '2.1', '2.3.1', '2.4', '2.5',                      # crossroad priority signs
          '1.6', '1.14', '1.25',                     # warnings used by overtaking/roadworks scenes
          '1.1', '1.2', '1.3.1', '1.4.1', '1.4.2', '1.4.3',  # railway crossing and its approach plates
          '3.1', '3.20', '3.21', '3.24', '3.25',     # no entry, overtaking / speed limits
@@ -16,8 +16,13 @@ CODES = ['2.1', '2.3.1', '2.4', '2.5',                      # crossroad priority
          '6.16']                                    # stop line sign
 
 # Some catalogue SVGs are contact sheets containing two official variants.
+CODES += ['4.1.2', '4.1.4', '6.8.2']
+
 # Crop coordinates are in the source SVG coordinate system: x, y, width, height.
 SPRITE_CROPS = {
+    '1.4.6': (98, 117, 44, 82),
+    '6.19.1': (0, 0, 112, 145),
+    '1.34.3': (0, 24, 143, 36),
     '5.7.1': (0, 0, 137, 48),
     '5.7.2': (148, 0, 137, 48),
     '5.19.1': (0, 3, 84, 84),
@@ -28,7 +33,7 @@ SPRITE_CROPS = {
     '1.4.3': (98, 0, 44, 82),
 }
 # Codes that share one catalogue entry with their siblings.
-CATALOGUE = {'1.4.1': '1.4', '1.4.2': '1.4', '1.4.3': '1.4'}
+CATALOGUE = {'1.4.1': '1.4', '1.4.2': '1.4', '1.4.3': '1.4', '1.4.6': '1.4'}
 
 signs = json.loads((ROOT / 'assets/countries/ru/questions/signs.json').read_text())
 by_code = {code: item for category in signs.values() for code, item in category.items()}
@@ -52,7 +57,7 @@ for code in CODES:
     out[code] = 'data:image/svg+xml;base64,' + base64.b64encode(raw).decode()
     # Plates (5.7.x, 5.23.x …) are wide: keep their real proportions.
     w = re.search(rb' width="([\d.]+)"', raw[:800]); h = re.search(rb' height="([\d.]+)"', raw[:800])
-    if w and h and float(w.group(1)) / float(h.group(1)) > 2:
+    if w and h and (code in ['6.8.2','5.5','1.34.3','6.19.1','5.31','5.32','8.12','8.1.2'] or float(w.group(1)) / float(h.group(1)) > 2):
         aspect[code] = round(float(w.group(1)) / float(h.group(1)), 3)
 target = ROOT / 'assets/game/sign-textures.js'
 target.write_text('// Exact sign artwork from assets/countries/ru/images/signs; embedded for offline WebView.\n'

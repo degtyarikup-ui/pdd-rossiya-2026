@@ -2,6 +2,8 @@
 // car and junction exits hugging the far kerb (formerly a dead end).
 // Run with the same GAME_URL / NODE_PATH setup as game-engine-test.cjs.
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { chromium } = require('playwright');
 (async () => {
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', args: ['--use-angle=swiftshader'] });
@@ -12,7 +14,7 @@ const { chromium } = require('playwright');
     const response = await route.fetch();
     const body = (await response.text()).replace('  // Run init on DOM ready', `
     window.T = {
-      state,
+      state, player: () => playerCarGroup,
       step(n = 1) { for (let i = 0; i < n; i++) { const dt = 1/60; updateAttract(dt); updateActors(dt);
         if (state.resolution) updateResolution(dt); else updatePlayerMovement(dt);
         updateRoadEvent(dt); updateBlinkers(dt); updateCamera(dt); checkAndSpawnNext(); } },
@@ -31,6 +33,9 @@ const { chromium } = require('playwright');
       },
       pos() { const p = playerCarGroup.position; return [+p.x.toFixed(2), +p.z.toFixed(2), +playerCarGroup.rotation.y.toFixed(2)]; },
       shot() { renderer.render(scene, camera); },
+      shotBay(z) { camera.position.set(0, 80, z); camera.lookAt(0, 0, z);
+        camera.left = -18; camera.right = 18; camera.top = 39; camera.bottom = -39;
+        camera.updateProjectionMatrix(); renderer.render(scene, camera); },
       forceRoad(kind) { state.forceRoadEvent = kind; state.roadTurn = 1; },
       corridorOneWay() { return currentCorridor?.userData.oneWay || null; },
       ows: () => oneWayStatus(), ends: () => corridorWorldEnds(),
@@ -47,6 +52,7 @@ const { chromium } = require('playwright');
         return { maxX: +maxX.toFixed(2), endX: +car.mesh.position.x.toFixed(2), done: car.distance >= car.length - 1, workerDown: !!raker?.fall, crashed: !!car.crashed };
       },
       nextZ: () => nextSegmentZ, ids: () => SITUATIONS.filter(s => window.PDD_SCENARIO_ROUTES[s.id]?.reviewed).map(s => s.id), halfAt: z => asphaltHalfAt(z), junctions: () => [...state.intersections.map(i => i.centerZ), state.sideJunction?.junctionZ].filter(v => v != null),
+      roadAt: (x, z) => roadSupports(new THREE.Vector3(x, 0, z)),
       props() { return { props: state.props.length, flying: state.flying.length, settled: state.flying.filter(f => f.settled).length }; },
     };
     // Run init on DOM ready`);
@@ -100,6 +106,45 @@ const { chromium } = require('playwright');
   // stands where another road joins, nor near the next junction.
   assert.deepEqual(bad, [], JSON.stringify(bad.slice(0, 5)));
   assert.ok(seen.every(r => !r.got), 'the event is placed, not replaced: ' + JSON.stringify(seen.filter(r => r.got)));
+  // Other roadside geometry also needs a junction-free span. The bus bay's
+  // taper must reject pavement even though it lies inside its bounding box.
+  const roadside = [];
+  for (const id of ids.slice(0, 12)) for (const kind of ['busstop', 'courtyard', 'crosswalk']) {
+    roadside.push(await page.evaluate(([id, kind]) => {
+      const T = window.T; T.select(id); T.forceRoad(kind); T.approach();
+      window.game.proceedAfterAnswer(true, id);
+      const c = T.state.resolution.intersection.centerZ;
+      T.step(600); T.follow([[-1.8, c + 30]], 6);
+      const ev = T.state.roadEvent;
+      if (ev?.kind !== kind) return { id, kind, fallback: ev?.kind };
+      const z = ev.bayZ ?? ev.yardZ ?? ev.crosswalkZ;
+      const span = kind === 'busstop' ? [-30, 45] : kind === 'courtyard' ? [-12, 18] : [-12, 12];
+      const halves = [];
+      for (let d = span[0]; d <= span[1]; d += 2) halves.push(T.halfAt(z + d));
+      return { id, kind, z, maxHalf: Math.max(...halves), paved: T.roadAt(-1.8, z) && T.roadAt(-1.8, z + span[1]),
+        tapered: kind !== 'busstop' || T.roadAt(-5.5, z) &&
+          !T.roadAt(-6.7, z - 14) && !T.roadAt(-6.7, z + 14) && !T.roadAt(-7.1, z) };
+    }, [id, kind]));
+  }
+  assert.ok(roadside.every(r => r.fallback === 'cyclist' || r.maxHalf < 9 && r.paved && r.tapered),
+    'Roadside event touches a junction or allows driving on a bay taper: ' + JSON.stringify(roadside.filter(r => r.maxHalf >= 9 || !r.paved || !r.tapered || r.fallback && r.fallback !== 'cyclist')));
+  if (process.env.GAME_SHOTS) {
+    const visible = await page.evaluate(id => {
+      const T = window.T; T.select(id); T.forceRoad('busstop'); T.approach();
+      window.game.proceedAfterAnswer(true, id);
+      const c = T.state.resolution.intersection.centerZ;
+      T.step(600); T.follow([[-1.8, c + 30]], 6);
+      const ev = T.state.roadEvent;
+      if (ev?.kind !== 'busstop') return false;
+      T.player().position.set(-1.8, 0, ev.bayZ - 38); T.player().rotation.y = 0;
+      T.shotBay(ev.bayZ);
+      return true;
+    }, ids[0]);
+    if (visible) {
+      fs.mkdirSync(process.env.GAME_SHOTS, { recursive: true });
+      await page.screenshot({ path: path.join(process.env.GAME_SHOTS, 'bus-bay.png') });
+    }
+  }
   console.log('PASS: broken-down cars and road works stand clear of junctions (' + seen.length + ' placements)');
   await browser.close();
 })();

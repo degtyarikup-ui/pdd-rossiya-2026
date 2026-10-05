@@ -38,7 +38,11 @@ const { chromium } = require('playwright');
             const heading = Math.atan2(target.x - playerCarGroup.position.x, target.z - playerCarGroup.position.z);
             const error = Math.atan2(Math.sin(heading - playerCarGroup.rotation.y), Math.cos(heading - playerCarGroup.rotation.y));
             window.game.setSteering(Math.max(-1, Math.min(1, error * 3 / (Math.max(1, state.speed) * 0.32))));
-            window.game.setGas(!r.recovery && state.speed < speed);
+            const boundary = r.intersection.situation.requiredStop;
+            const front = playerCarGroup.position.z + playerCarGroup.userData.halfLength;
+            const needsStop = boundary !== undefined && !(r.intersection.situation.redWait ? r.elapsed >= r.intersection.situation.redWait : r.stopSatisfied) && front > r.intersection.centerZ + boundary - 2;
+            window.game.setGas(!needsStop && !r.recovery && state.speed < speed);
+            window.game.setBrake(needsStop && state.speed > 0.02);
             this.tick(1 / 60);
           }
           window.game.setGas(false); window.game.setSteering(0);
@@ -183,7 +187,16 @@ const { chromium } = require('playwright');
         if (task === 'left') window.game.changeLane('left');
         if (task === 'uturn') window.game.chooseUturn();
         if (task === 'right') window.game.changeLane('right');
-        for (let f = 0; f < 2400 && s.resolution; f++) { window.game.setGas(!s.resolution.recovery && s.speed < 9); t.tick(1 / 60); }
+        for (let f = 0; f < 2400 && s.resolution; f++) {
+          const r = s.resolution, evidence = r.intersection.situation;
+          const front = t.player().position.z + t.player().userData.halfLength;
+          const needsStop = evidence.requiredStop !== undefined &&
+            !(evidence.redWait ? r.elapsed >= evidence.redWait : r.stopSatisfied) &&
+            front > r.intersection.centerZ + evidence.requiredStop - 2;
+          window.game.setGas(!needsStop && !r.recovery && s.speed < 9);
+          window.game.setBrake(needsStop && s.speed > 0.02);
+          t.tick(1 / 60);
+        }
         window.game.setGas(false);
         const faults = window.events.slice(mark).filter(e => e.event === 'violation').map(e => e.type);
         const expectedHint = task === 'straight' ? null : task;

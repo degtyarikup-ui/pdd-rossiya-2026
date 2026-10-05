@@ -17,6 +17,7 @@ const { chromium } = require('playwright');
       const response = await route.fetch();
       const body = (await response.text()).replace('  // Run init on DOM ready', `
         window.roadReview = {
+          ready() { return !!playerCarGroup; },
           sample(n) { roadBag = []; return Array.from({length:n}, () => nextRoadSituation()?.id ?? null); },
           signMounting() {
             const sign = createRoadSign('2.4');
@@ -62,7 +63,7 @@ const { chromium } = require('playwright');
             for (let i = 0; i < 180; i++) updateCamera(1/60);
             updateRoadEvent(0); renderer.render(scene, camera);
             return {actors: ev.actors.length, signs: (s.scene.signs || []).every(sg => !!window.PDD_SIGN_TEXTURES[sg.code]),
-              visibleActors: ev.actors.every(a => { const p = a.mesh.position.clone().project(camera);
+              visibleActors: ev.actors.every(a => { const p = (a.config.type === "train" ? new THREE.Vector3(0, 0, ev.crossingZ) : a.mesh.position.clone()).project(camera);
                 return Math.abs(p.x) < 1 && p.y < 1 - 220/844 && p.y > -1 + 600/844; })};
           },
           sideExit(side) {
@@ -82,7 +83,7 @@ const { chromium } = require('playwright');
           evidence() {
             const ev = state.roadEvent, s = ev.scene, result = {};
             if (s.junction) {
-              result.crossingRoad = [-25,-6,0,6,25].every(x => {
+              result.crossingRoad = (s.junction.noRight ? [0,6,25] : [-25,-6,0,6,25]).every(x => {
                 const hits = this.surface(x, ev.junctionZ); return hits.includes('road') && !hits.includes('sidewalk');
               });
               result.wholeScenery = true;
@@ -93,15 +94,19 @@ const { chromium } = require('playwright');
                   if (materials.some(m => m?.clippingPlanes?.length)) result.wholeScenery = false;
                 });
               }));
-              result.sideRoadsContinue = [-60, 60, -150, 150].every(x => this.surface(x, ev.junctionZ).includes('road'));
+              result.sideRoadsContinue = (s.junction.noRight ? [60,150] : [-60,60,-150,150]).every(x => this.surface(x, ev.junctionZ).includes('road'));
+              if(s.junction.noRight)result.closedRight = [-6,-25,-60].every(x=>!this.surface(x,ev.junctionZ).includes('road'));
+              if(s.junction.rural)result.noUrbanPavement = [-6,6].every(x=>[-12,12].every(d=>!this.surface(x,ev.junctionZ+d).includes('sidewalk')));
               result.crossingConnects = [-12,12].every(d => this.surface(-1.8, ev.junctionZ + d).includes('road'));
-              if (s.junction.priority === 'secondary') {
+              if (s.junction.priority === 'secondary' && s.kind === 'overtake') {
                 result.plateDistance = ev.junctionZ - (ev.stopZ + s.signs[0].z) === 200;
                 result.nextJunctionAfterAuthored = nextSegmentZ >= ev.junctionZ + 55;
               }
               ev.phase = 'manual';
-              result.overtakeAtCrossing = roadOvertakeAllowedAt(ev.junctionZ) === (s.junction.priority === 'main');
-              result.overtakeBeforeCrossing = roadOvertakeAllowedAt(ev.junctionZ - 15);
+              if(s.kind === 'overtake' && s.vehicles?.every(v=>v.maneuver !== 'turn_left_at_junction')) {
+                result.overtakeAtCrossing = roadOvertakeAllowedAt(ev.junctionZ) === (s.junction.priority === 'main');
+                result.overtakeBeforeCrossing = roadOvertakeAllowedAt(ev.junctionZ - 15);
+              }
               ev.phase = 'question';
             }
             if (s.motorway) {
@@ -119,8 +124,8 @@ const { chromium } = require('playwright');
               // (11.4) or starts past its boundary, as the ticket says.
               const cz = ev.crossingZ;
               result.crossingDrivable = this.surface(-1.8, cz).includes('road') && this.surface(1.8, cz).includes('road');
-              result.crossingSignals = ev.rail.red.length === 4 && ev.rail.white.length === 2;
-              result.barrierState = s.railway.barrier ? ev.rail.booms.length === 2 && !ev.rail.open : ev.rail.open;
+              result.crossingSignals = s.railway.signals === false ? ev.rail.red.length === 0 && ev.rail.white.length === 0 : ev.rail.red.length === 4 && ev.rail.white.length === (s.railway.whiteSignal === false ? 0 : 2);
+              result.barrierState = ev.rail.booms.length === (s.railway.barrier ? 2 : 0) && ev.rail.open === !(s.railway.closed ?? (!!s.railway.barrier && !s.railway.barrierOpen));
               ev.phase = 'manual';
               if (s.overtake === 'before_crossing') result.overtakeWindow = roadOvertakeAllowedAt(cz - 101) && !roadOvertakeAllowedAt(cz - 99);
               if (s.overtake === 'after_crossing') result.overtakeWindow = !roadOvertakeAllowedAt(cz - 1) && roadOvertakeAllowedAt(cz + 6);
@@ -157,7 +162,8 @@ const { chromium } = require('playwright');
               const mirrored = 2 * playerCarGroup.position.z - ev.junctionZ;
               playerCarGroup.rotation.y = Math.PI; state.isAtSituation = false;
               maybeReverseWorld(true);
-              result.crossingSurvivesReversal = this.surface(6, mirrored).includes('road') && !this.surface(6, mirrored).includes('sidewalk');
+              const side=s.junction.noRight?-6:6;
+              result.crossingSurvivesReversal = this.surface(side, mirrored).includes('road') && !this.surface(side, mirrored).includes('sidewalk');
             }
             return result;
           },
@@ -167,9 +173,9 @@ const { chromium } = require('playwright');
       await route.fulfill({response, body});
     });
     await page.goto((process.env.GAME_URL || 'http://127.0.0.1:8938') + '/assets/game/');
-    await page.waitForFunction(() => window.roadReview);
+    await page.waitForFunction(() => window.roadReview?.ready(), null, {polling: 100});
     const catalog = await page.evaluate(() => window.PDD_ROAD_SITUATIONS);
-    assert.equal(catalog.length, 24);
+    assert.equal(catalog.length, 48);
     const splitCodes = ['5.7.1', '5.7.2', '5.19.1', '5.19.2'];
     const splitSigns = await page.evaluate(codes => codes.map(code => window.PDD_SIGN_TEXTURES[code]), splitCodes);
     const splitSvgs = splitSigns.map(uri => Buffer.from(uri.split(',')[1], 'base64').toString('utf8'));
@@ -198,7 +204,7 @@ const { chromium } = require('playwright');
     fs.mkdirSync(output, {recursive: true});
     for (const s of enabled) {
       const result = await page.evaluate(id => roadReview.show(id), s.id);
-      assert.equal(result.actors, (s.scene.vehicles || []).length, s.id);
+      assert.equal(result.actors, (s.scene.vehicles || []).length + (s.scene.railway?.train ? 1 : 0) + (['bus_departure', 'emergency_lane', 'temporary_bypass'].includes(s.scene.kind) ? 1 : 0) + (s.scene.busPriority ? 1 : 0), s.id);
       assert(result.signs, s.id + ' sign texture missing');
       assert(result.visibleActors, s.id + ' actor hidden behind question/HUD');
       await page.evaluate(() => new Promise(resolve => setTimeout(() => { roadReview.render(); resolve(); }, 100)));

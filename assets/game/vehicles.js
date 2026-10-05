@@ -1,18 +1,10 @@
 // Shared procedural vehicle models: the garage thumbnails use these same meshes.
 (function () {
+  const surfaces = window.PDD_VEHICLE_MATERIALS;
   // Camera-facing halo: readable in daylight without expensive bloom/lights.
   function addGlow(lamp, color, size = 1.15) {
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    gradient.addColorStop(0, 'rgba(255,255,255,1)');
-    gradient.addColorStop(0.15, 'rgba(255,255,255,.9)');
-    gradient.addColorStop(0.38, 'rgba(255,255,255,.35)');
-    gradient.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = gradient; ctx.fillRect(0, 0, 64, 64);
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: new THREE.CanvasTexture(canvas), color, transparent: true,
+      map: surfaces.glowMap(), color, transparent: true,
       blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
     }));
     glow.scale.set(size, size, 1);
@@ -24,7 +16,7 @@
   // every turn signal and the hazard lights show from behind too.
   function addRearBlinker(front, length) {
     const rear = new THREE.Mesh(front.geometry, front.material);
-    rear.position.set(0, 0, -(length + 0.1));
+    rear.position.set(0, 0, -(length / 2 + front.position.z + .06));
     front.add(rear);
     addGlow(rear, 0xFFB329, 1.25);
   }
@@ -132,9 +124,10 @@
   function wheel(car, r, width, x, z, mats, spokes = 5) {
     const axle = new THREE.Group(); axle.position.set(x, r, z); car.add(axle);
     const tyre = new THREE.Mesh(new THREE.CylinderGeometry(r, r, width, 22), mats.tyre);
+    surfaces.tyreUV(tyre.geometry);
     tyre.geometry.rotateZ(Math.PI / 2); tyre.castShadow = true; axle.add(tyre);
     const side = Math.sign(x);
-    const rim = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.64, r * 0.64, 0.04, 20), mats.metal);
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.64, r * 0.64, 0.04, 20), mats.rim);
     rim.geometry.rotateZ(Math.PI / 2); rim.position.x = side * (width / 2 + 0.005); tyre.add(rim);
     const hub = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.2, r * 0.2, 0.05, 10), mats.dark);
     hub.geometry.rotateZ(Math.PI / 2); hub.position.x = side * (width / 2 + 0.015); tyre.add(hub);
@@ -150,14 +143,16 @@
   function build(id, s, car, paint) {
     const L = s.length, W = s.width;
     const mats = {
-      paint: new THREE.MeshLambertMaterial({ color: paintOf(s, paint) }),
-      glass: new THREE.MeshLambertMaterial({ color: 0x1D2B37, side: THREE.DoubleSide }),
+      paint: surfaces.material('paint', paintOf(s, paint)),
+      glass: surfaces.material('glass', 0x8497A3),
       dark: new THREE.MeshLambertMaterial({ color: 0x23282D }),
       trim: new THREE.MeshLambertMaterial({ color: 0x3A4148 }),
-      tyre: new THREE.MeshLambertMaterial({ color: 0x1B1E21 }),
-      metal: new THREE.MeshLambertMaterial({ color: 0xC4CBD0 }),
-      head: new THREE.MeshBasicMaterial({ color: 0xFFF3CC }),
-      plate: new THREE.MeshLambertMaterial({ color: 0xF4F4F0 }),
+      tyre: surfaces.material('rubber', 0x22272C),
+      metal: surfaces.material('metal', 0xC4CBD0),
+      rim: surfaces.material('rim', 0xC4CBD0),
+      head: surfaces.material('lens', 0xFFF3CC),
+      plate: surfaces.material('plate', 0xF4F4F0),
+      grille: surfaces.material('grille', 0x23282D),
     };
     if (id === 'cyber') return buildCyber(car, s, mats);
     const b = bodies[id] || bodies.hatch;
@@ -179,7 +174,10 @@
       [zf, ground + 0.16], [zf - 0.02, b.base], [zf - 0.32, b.hood], [cabF + 0.05, b.belt],
       [cabR, b.belt], [bed, 0.86], [zr + 0.04, 0.86], [zr, 0.8], [zr, ground + 0.16],
     ];
-    add(extrudeSide(lower, W, mats.paint, 0.06));
+    const panels = surfaces.material('paint', paintOf(s, paint), surfaces.panelMap(id, s, b));
+    const lowerBody = extrudeSide(lower, W, panels, 0.06);
+    surfaces.panelUV(lowerBody.geometry, L, ground, b.belt, W);
+    add(lowerBody);
 
     // Greenhouse in body colour; the glass is inset into it (pillars stay).
     const green = [[cabR, b.belt - 0.02], [cabF, b.belt - 0.02], [roofF, H], [roofR, H]];
@@ -197,6 +195,7 @@
       const pos = g.attributes.position;
       for (let i = 0; i < pos.count; i++) { const zz = pos.getX(i), yy = pos.getY(i); pos.setXYZ(i, sx * (Wg / 2 + 0.015), yy, zz); }
       g.computeVertexNormals();
+      surfaces.glassUV(g);
       add(new THREE.Mesh(g, mats.glass));
     }
     // Windscreen and rear screen on the sloped faces, just proud of them.
@@ -206,9 +205,11 @@
       return (x, z, y) => [x + n.x, y + n.y, z + n.z];
     };
     const ws = slope(cabF, b.belt, roofF, H, -0.065); // proud of the rounded edge (bevel 0.05)
-    add(quad(ws(-gw, cabF - 0.06, b.belt + 0.05), ws(gw, cabF - 0.06, b.belt + 0.05), ws(gw, roofF + 0.05, H - 0.05), ws(-gw, roofF + 0.05, H - 0.05), mats.glass));
+    const windscreen = quad(ws(-gw, cabF - 0.06, b.belt + 0.05), ws(gw, cabF - 0.06, b.belt + 0.05), ws(gw, roofF + 0.05, H - 0.05), ws(-gw, roofF + 0.05, H - 0.05), mats.glass);
+    surfaces.glassUV(windscreen.geometry, 'x', 'y'); add(windscreen);
     const rs = slope(roofR, H, cabR, b.belt, -0.065);
-    add(quad(rs(-gw, roofR - 0.05, H - 0.05), rs(gw, roofR - 0.05, H - 0.05), rs(gw, cabR + 0.05, b.belt + 0.05), rs(-gw, cabR + 0.05, b.belt + 0.05), mats.glass));
+    const rearScreen = quad(rs(-gw, roofR - 0.05, H - 0.05), rs(gw, roofR - 0.05, H - 0.05), rs(gw, cabR + 0.05, b.belt + 0.05), rs(-gw, cabR + 0.05, b.belt + 0.05), mats.glass);
+    surfaces.glassUV(rearScreen.geometry, 'x', 'y'); add(rearScreen);
 
     // Wheel arches: dark half discs on both flanks, then the wheels.
     const r = b.r, wb = L * 0.31, tw = W / 2 - 0.1; // tyre face 2 cm outside the arch
@@ -226,24 +227,25 @@
 
     // Front: grille, headlights, bumper, plate. Rear: lamps, bumper, plate.
     const faceY = (ground + 0.16 + b.base) / 2;
-    box(W * 0.46, 0.14, 0.04, 0, faceY, zf + 0.005, mats.dark);
-    box(W * 0.42, 0.025, 0.045, 0, faceY + 0.02, zf + 0.01, mats.metal);
+    box(W * 0.46, 0.14, 0.04, 0, faceY, zf + 0.065, mats.grille);
+    box(W * 0.42, 0.025, 0.045, 0, faceY + 0.02, zf + 0.065, mats.metal);
     box(W + 0.06, 0.14, 0.16, 0, ground + 0.08, zf - 0.04, mats.trim);
     box(W + 0.06, 0.14, 0.16, 0, ground + 0.08, zr + 0.04, mats.trim);
-    box(0.46, 0.1, 0.02, 0, ground + 0.1, zf + 0.05, mats.plate);
-    box(0.46, 0.1, 0.02, 0, (b.tail + ground) / 2, zr - 0.02, mats.plate);
+    box(0.46, 0.1, 0.02, 0, ground + 0.1, zf + 0.065, mats.plate);
+    box(0.46, 0.1, 0.02, 0, (b.tail + ground) / 2, zr - 0.065, mats.plate);
     for (const sx of [-1, 1]) {
-      box(0.3, 0.1, 0.05, sx * W * 0.34, faceY + 0.06, zf + 0.002, mats.head);
+      box(0.3, 0.1, 0.05, sx * W * 0.34, faceY + 0.06, zf + 0.065, mats.head);
       // Mirrors on the doors at the A-pillar; a door seam and a handle.
       const mirror = box(0.08, 0.1, 0.18, sx * (W / 2 + 0.07), b.belt + 0.1, cabF - 0.18, mats.paint);
       mirror.rotation.y = sx * 0.15;
-      box(0.03, 0.03, 0.12, sx * (W / 2 + 0.02), b.belt - 0.12, mid + 0.35, mats.trim);
-      box(0.03, 0.03, 0.12, sx * (W / 2 + 0.02), b.belt - 0.12, mid - 0.35, mats.trim);
+      box(0.03, 0.03, 0.12, sx * (W / 2 + 0.02), b.belt - 0.12, mid + 0.35, mats.metal);
+      const rearHandle = box(0.03, 0.03, 0.12, sx * (W / 2 + 0.02), b.belt - 0.12, mid - 0.35, mats.metal);
+      rearHandle.visible = id !== 'coupe' && id !== 'pickup';
     }
     car.brakeLights = [];
     for (const sx of [-1, 1]) {
       const y = (bed === null ? b.tail : 0.8) - 0.16;
-      car.brakeLights.push(box(0.28, 0.12, 0.04, sx * W * 0.35, y, zr - 0.012, new THREE.MeshBasicMaterial({ color: 0xD33D38 })));
+      car.brakeLights.push(box(0.28, 0.12, 0.04, sx * W * 0.35, y, zr - 0.065, surfaces.material('lens', 0xD33D38)));
     }
 
     // Model extras.
@@ -252,6 +254,7 @@
     if (id === 'wagon' || id === 'suv') for (const sx of [-1, 1]) box(0.06, 0.06, (roofF - roofR) * 0.9, sx * (Wg / 2 - 0.08), H + 0.06, (roofF + roofR) / 2, mats.dark); // roof rails
     if (id === 'suv') {
       const spare = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.2, 18), mats.tyre);
+      surfaces.tyreUV(spare.geometry);
       spare.geometry.rotateX(Math.PI / 2); spare.position.set(0, (b.tail + ground) / 2 + 0.2, zr - 0.12); add(spare);
       const cover = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.21, 18), mats.paint);
       cover.geometry.rotateX(Math.PI / 2); cover.position.copy(spare.position); add(cover);
@@ -268,7 +271,7 @@
     }
 
     // Indicators (front, with repeaters at the rear) — the game drives them.
-    car.blinkerL = box(0.12, 0.09, 0.05, W / 2 - 0.08, faceY + 0.06, zf + 0.004, new THREE.MeshBasicMaterial({ color: 0xFFAE25 }));
+    car.blinkerL = box(0.12, 0.09, 0.05, W / 2 - 0.08, faceY + 0.06, zf + 0.065, surfaces.material('lens', 0xFFAE25));
     addRearBlinker(car.blinkerL, L + 0.01);
     car.blinkerR = car.blinkerL.clone(); car.blinkerR.position.x *= -1; car.add(car.blinkerR);
     car.blinkerL.visible = car.blinkerR.visible = false;
@@ -293,7 +296,10 @@
     const add = m => { car.add(m); return m; };
     const box = (w, h, d, x, y, z, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.castShadow = true; return add(m); };
     const noseY = 0.9, tailY = 1.12;
-    add(extrudeSide([[zr, ground], [zf, ground], [zf, noseY], [peakZ, H], [zr, tailY]], W, mats.paint, 0.02));
+    const panels = surfaces.material('paint', mats.paint.color.getHex(), surfaces.panelMap('cyber', s,
+      { ground, belt: 1.08, cabF: .28, cabR: -.2, roofF: .06, roofR: -.12 }));
+    const lowerBody = extrudeSide([[zr, ground], [zf, ground], [zf, noseY], [peakZ, H], [zr, tailY]], W, panels, .02);
+    surfaces.panelUV(lowerBody.geometry, L, ground, H, W); add(lowerBody);
     // Glass band: an inset triangle-ish window along the roof line.
     const topAt = z => z >= peakZ ? H - (z - peakZ) / (zf - peakZ) * (H - noseY) : H - (peakZ - z) / (peakZ - zr) * (H - tailY);
     const zA = L * 0.28, zC = -L * 0.2, band = 1.08;
@@ -302,16 +308,17 @@
       const shape = new THREE.Shape(); shape.moveTo(win[0][0], win[0][1]); win.slice(1).forEach(p => shape.lineTo(p[0], p[1])); shape.closePath();
       const g = new THREE.ShapeGeometry(shape); const pos = g.attributes.position;
       for (let i = 0; i < pos.count; i++) pos.setXYZ(i, sx * (W / 2 + 0.015), pos.getY(i), pos.getX(i));
-      g.computeVertexNormals(); add(new THREE.Mesh(g, mats.glass));
+      g.computeVertexNormals(); surfaces.glassUV(g); add(new THREE.Mesh(g, mats.glass));
     }
     // Windscreen on the front slope.
     const slopeN = new THREE.Vector3(0, zf - peakZ, H - noseY).normalize().multiplyScalar(0.035);
     const P = (x, z) => [x + slopeN.x, topAt(z) + slopeN.y, z + slopeN.z];
     const gw = W / 2 - 0.14;
-    add(quad(P(-gw, zA), P(gw, zA), P(gw, peakZ + 0.1), P(-gw, peakZ + 0.1), mats.glass));
+    const windscreen = quad(P(-gw, zA), P(gw, zA), P(gw, peakZ + 0.1), P(-gw, peakZ + 0.1), mats.glass);
+    surfaces.glassUV(windscreen.geometry, 'x', 'y'); add(windscreen);
     // Light bars and a vault-like tonneau line.
-    box(W - 0.06, 0.05, 0.04, 0, noseY - 0.04, zf + 0.012, mats.head);
-    car.brakeLights = [box(W - 0.06, 0.05, 0.04, 0, tailY - 0.05, zr - 0.012, new THREE.MeshBasicMaterial({ color: 0xD33D38 }))];
+    box(W - 0.06, 0.05, 0.04, 0, noseY - 0.04, zf + 0.03, mats.head);
+    car.brakeLights = [box(W - 0.06, 0.05, 0.04, 0, tailY - 0.05, zr - 0.03, surfaces.material('lens', 0xD33D38))];
     box(W - 0.2, 0.012, 0.012, 0, (tailY + topAt(zC)) / 2 + 0.02, zC - 0.6, mats.trim);
     box(W + 0.04, 0.16, 0.2, 0, ground + 0.06, zf - 0.08, mats.trim);
     box(W + 0.04, 0.16, 0.2, 0, ground + 0.06, zr + 0.08, mats.trim);
@@ -330,7 +337,7 @@
       car.userData.wheels.push(w.tyre);
       if (z > 0) car.userData.frontAxles.push(w.axle);
     }
-    car.blinkerL = box(0.14, 0.06, 0.05, W / 2 - 0.1, noseY - 0.12, zf + 0.01, new THREE.MeshBasicMaterial({ color: 0xFFAE25 }));
+    car.blinkerL = box(0.14, 0.06, 0.05, W / 2 - 0.1, noseY - 0.12, zf + 0.01, surfaces.material('lens', 0xFFAE25));
     addRearBlinker(car.blinkerL, L + 0.02);
     car.blinkerR = car.blinkerL.clone(); car.blinkerR.position.x *= -1; car.add(car.blinkerR);
     car.blinkerL.visible = car.blinkerR.visible = false;

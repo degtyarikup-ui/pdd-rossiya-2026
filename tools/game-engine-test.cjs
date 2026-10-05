@@ -13,6 +13,7 @@ const { chromium } = require('playwright');
     const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
+    page.on('console',message=>{if(message.text().startsWith('scenario:'))console.log(message.text());});
     await page.addInitScript(() => {
       window.events = [];
       window.FlutterChannel = { postMessage: message => window.events.push(JSON.parse(message)) };
@@ -31,7 +32,7 @@ const { chromium } = require('playwright');
         actorInView,
         createTrafficLight,
         maybeReverseWorld, corridorWorldEnds,
-        playerOnRoad, playerFootprint, actorFootprint, footprintsOverlap, integrateDriving,
+        pathsConflict, playerOnRoad, roadSupports, asphaltHalfAt, playerFootprint, actorFootprint, footprintsOverlap, integrateDriving,
         audioSnapshot: () => gameAudio.snapshot(), updateAudio: (dt, elapsed) => gameAudio.update(dt, elapsed),
         surfaceAt(x, z) {
           scene.updateMatrixWorld(true);
@@ -66,7 +67,7 @@ const { chromium } = require('playwright');
           window.game.setGas(false); window.game.setSteering(0);
           return { complete: !state.resolution };
         },
-        tick(seconds) {
+        tick(seconds, cameraEvery = 1) {
           for (let i = 0; i < Math.ceil(seconds * 60); i++) {
             if (reveal) { updateReveal(1/60); continue; }
             if (!state.paused) {
@@ -75,7 +76,7 @@ const { chromium } = require('playwright');
               if (state.resolution) updateResolution(1/60); else updatePlayerMovement(1/60);
               updateRoadEvent(1/60);
             }
-            updateBlinkers(1/60); gameAudio.update(1/60, performance.now() / 1000); updateCamera(1/60); checkAndSpawnNext();
+            updateBlinkers(1/60); gameAudio.update(1/60, performance.now() / 1000); if(i%cameraEvery===0)updateCamera(cameraEvery/60); checkAndSpawnNext();
           }
           if (seconds >= 0.1) renderer.render(scene, camera);
         },
@@ -171,8 +172,10 @@ const { chromium } = require('playwright');
       window.game.proceedAfterAnswer(true, t.state.activeIntersection.situation.id);
       t.tick(0.1);
       const guideVisible = t.state.activeIntersection.guide.visible;
-      const routeArrows = t.state.activeIntersection.guide.children.length > 8 &&
-        t.state.activeIntersection.guide.children.every(child => child.userData.guideArrow === true);
+      // The route is a continuous band ending in an arrowhead.
+      const guideParts = t.state.activeIntersection.guide.children;
+      const routeArrows = guideParts.some(child => child.userData.routeStroke && child.userData.routePoints.length > 8) &&
+        guideParts.some(child => child.userData.guideArrow === true);
       const light = t.createTrafficLight('red');
       const litColors = () => {
         const colors = [];
@@ -182,7 +185,10 @@ const { chromium } = require('playwright');
       const redOnly = litColors().join() === String(0xFF3838);
       light.setLightState('green');
       const signalGlow = redOnly && litColors().join() === String(0x36FF88);
-      const simultaneous = t.state.resolution.yielding.every(a => a.active);
+      // A random pedestrian group may conflict with the cyclist; every waiting
+      // participant must either be active or wait for an active conflicting path.
+      const yielding=t.state.resolution.yielding;
+      const simultaneous=yielding.some(a=>a.active) && yielding.every(a=>a.active || yielding.some(b=>b.active && t.pathsConflict(a,b)));
       const pedestrian = t.state.resolution.motions.find(a => a.config.type === 'pedestrian');
       pedestrian.distance = pedestrian.length - 0.1;
       pedestrian.mesh.position.copy(pedestrian.path.getPointAt(1));
@@ -413,6 +419,14 @@ const { chromium } = require('playwright');
       const bus = stopEvent?.actors[0];
       let dwelt = false, inBay = false;
       const startedInBay = !!bus && bus.mesh.position.x < -4.5;
+      const bayRoadShape = !!stopEvent && (() => {
+        const point = (x, dz) => new THREE.Vector3(x, 0, stopEvent.bayZ + dz);
+        return t.roadSupports(point(-5.5, 0)) &&
+          !t.roadSupports(point(-6.7, -14)) && !t.roadSupports(point(-6.7, 14)) &&
+          !t.roadSupports(point(-7.1, 0));
+      })();
+      const bayClearOfJunctions = !!stopEvent && [-30, -20, 0, 20, 45].every(dz =>
+        t.asphaltHalfAt(stopEvent.bayZ + dz) < 9);
       const busStops = startedInBay && !!stopEvent && stopEvent.kind === 'busstop' && (() => {
         for (let i = 0; i < 1500; i++) {
           const gap = bus.mesh.position.z - t.player().position.z;
@@ -422,7 +436,7 @@ const { chromium } = require('playwright');
           if (dwelt && bus.mesh.position.x > -2.2 && bus.mesh.position.z > stopEvent.bayZ + 15) break;
         }
         window.game.setGas(false);
-        return inBay && dwelt && bus.mesh.position.x > -2.2 && bus.speed > 0;
+        return inBay && dwelt && bus.mesh.position.x > -2.2 && bus.speed > 0 && bayRoadShape && bayClearOfJunctions;
       })();
       const zebraEvent = enterRoadEvent(null);
       const zebraPlaced = !!zebraEvent && zebraEvent.kind === 'crosswalk' && zebraEvent.pedestrian.waitsForPlayer;
@@ -542,7 +556,8 @@ const { chromium } = require('playwright');
     const results = await page.evaluate(only => {
       const t = window.__engineTest;
       return t.allScenarios().map((scenario, index) => {
-        if (only && scenario.id !== only) return { id: scenario.id };
+        if(only && (only==='@extra'?!window.PDD_EXTRA_SITUATIONS.some(s=>s.id===scenario.id):scenario.id!==only))return {id:scenario.id};
+        console.log('scenario:'+scenario.id);
         t.selectAll(index); t.approach();
         window.game.setViewportInsets({ top: 130, bottom: 400 });
         t.tick(3);
@@ -557,10 +572,21 @@ const { chromium } = require('playwright');
         });
         const id = t.state.activeIntersection.situation.id;
         const previews = Object.values(t.state.activeIntersection.previews);
-        const expectedExits = t.state.activeIntersection.situation.geometry === 't_no_straight' ? 3 : 4;
-        const exitsPrebuilt = previews.length === expectedExits && previews.every(p =>
-          p.parent === t.state.activeIntersection.seg &&
-          p.children.some(m => m.geometry?.parameters?.height === 200));
+        const geometry = t.state.activeIntersection.situation.geometry;
+        const layout=t.state.activeIntersection.situation;
+        // The reused approach is also registered as the uturn preview;
+        // motorway driving still forbids choosing it via uturnFits().
+        const expectedExits=geometry==='motorway_parallel'?2:layout.junctionLayout?layout.junctionLayout.arms.length+1:
+          layout.noRight||geometry==='t_no_straight'||(geometry?.startsWith('courtyard_')&&geometry!=='courtyard_both')?3:4;
+        const exitsPrebuilt = previews.length === expectedExits && previews.every(p => {
+          if(p.parent !== t.state.activeIntersection.seg) return false;
+          if(p.children.some(m => m.geometry?.parameters?.height === 200)) return true;
+          // A dirt arm is built in strips, then joins paving. Verify its full
+          // length and actual driving surface instead of requiring one plane.
+          const ends=p.userData.roadEnds;
+          return geometry==='dirt_approach' && ends?.length===2 && ends[0].distanceTo(ends[1])>=199 &&
+            [.1,.3,.6,.95].every(fraction=>t.roadSupports(ends[0].clone().lerp(ends[1],fraction).add(new THREE.Vector3(-1.8,0,0)).applyMatrix4(p.matrixWorld)));
+        });
         const before = window.events.filter(e => e.event === 'situation_cleared').length;
         t.state.paused = false;
         window.game.proceedAfterAnswer(false, 'stale-id');
@@ -574,37 +600,47 @@ const { chromium } = require('playwright');
         const keptTrees = keptRoad.children.map(o => o.uuid).join();
         const drive = t.drive();
         if (!drive?.complete) return { id, drive };
-        t.tick(50);
+        t.tick(50, 10);
         // A stopped player now physically blocks following traffic. Vacate the
         // carriageway to verify that those actors resume instead of phasing through.
         const parked = t.player().position.clone();
         t.player().position.x += 1000;
         // The camera follows the player: a parked crash participant is removed
         // only once it leaves the view, so the view must move with the player.
-        for (let frame = 0; frame < 3600; frame++) { t.updateActors(1 / 60); t.updateCamera(1 / 60); }
+        for (let frame = 0; frame < 3600; frame++) { t.updateActors(1 / 60); if(frame<240)t.updateCamera(1 / 60); }
         t.player().position.copy(parked);
         const after = window.events.filter(e => e.event === 'situation_cleared').length;
-        const cleanRoad = [1.8, -1.8].every(x => [30, 55, 85, 120].every(d => {
-          const surface = t.surfaceAt(x, t.player().position.z + d);
-          return surface.includes('road') && !surface.includes('sidewalk');
+        const roadSamples = [1.8, -1.8].flatMap(x => [30, 55, 85, 120].map(d => {
+          const z=t.player().position.z+d;
+          return {x,z,d,surfaces:t.surfaceAt(x,z)};
         }));
+        // The next authored road question may intentionally place a grass
+        // median, railway or bend at 85/120 m. Check the retired junction's
+        // join before that question's replacement strip (stopZ - 34 m).
+        // Its own fabric is covered by game-road-review-test.cjs.
+        const nextQuestion=t.state.roadEvent;
+        const joinSamples=roadSamples.filter(s=>!nextQuestion?.situation || s.z<nextQuestion.stopZ-40);
+        const cleanRoad = joinSamples.length>=4 && joinSamples.every(s => s.surfaces.includes('road') && !s.surfaces.includes('sidewalk'));
+        if(!cleanRoad) console.log('scenario:road-evidence:'+JSON.stringify({id,roadSamples,event:t.state.roadEvent?.situation?.id,eventKeys:Object.keys(t.state.roadEvent||{}),eventStart:t.state.roadEvent?.startZ}));
         const originalScenery = new Set(keptTrees.split(','));
         const sceneryPreserved = t.state.exitRoad === keptRoad &&
           [...originalScenery].every(uuid => keptRoad.children.some(o => o.uuid === uuid));
         const result = { id, framed, exitsPrebuilt, waitsForInput, cleanRoad, sceneryPreserved, staleIgnored, clearedOnce: after === before + 1,
           resolved: !t.state.isResolvingSituation,
-          actorsFinished: t.state.actors.every(a => a.done || a.road) /* road-event traffic waits for the player by design */,
+          actorsFinished: t.state.actors.every(a => a.done || a.road || a.config.stationary) /* parked ticket actors and road-event traffic intentionally remain */,
           finite: Number.isFinite(t.player().position.x + t.player().position.z + t.camera().position.x),
           roadAhead: !!t.state.exitRoad,
           normalLane: t.state.targetLane === 1 };
         t.state.paused = true;
         if (!result.actorsFinished) throw new Error(JSON.stringify({ id,
-          blocked: t.state.actors.filter(a => !a.done && !a.road).map(a => ({ id: a.config.id,
+          blocked: t.state.actors.filter(a => !a.done && !a.road && !a.config.stationary).map(a => ({ id: a.config.id,
             position: a.mesh.position.toArray(), distance: a.distance, active: a.active,
             cleared: a.cleared, waits: a.waitsForPlayer, dependencies: a.dependencies?.map(b => [b.config.id, b.cleared]) })) }));
         return result;
       });
     }, process.env.SCENARIO || null);
+    fs.mkdirSync('output/game-review', {recursive:true});
+    fs.writeFileSync('output/game-review/final-engine-results.json', JSON.stringify(results,null,2));
     for (const result of results) {
       if (result.drive) throw new Error(JSON.stringify(result));
       for (const [key, value] of Object.entries(result)) if (key !== 'id') assert.equal(value, true, `${result.id}: ${key}`);
@@ -623,7 +659,7 @@ const { chromium } = require('playwright');
         window.game.proceedAfterAnswer(true, t.state.activeIntersection.situation.id);
         const drive = t.drive();
         if (!drive?.complete) return { failure: drive, count };
-        t.tick(50);
+        t.tick(50,10);
       }
       const bounded = t.state.roadSegments.length <= 8;
       window.game.reset();

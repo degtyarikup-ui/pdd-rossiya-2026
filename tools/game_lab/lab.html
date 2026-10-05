@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Стенд игры ПДД</title>
 <style>
   :root { --accent: #0574F8; --accent-soft: #EAF2FF; --red: #ED4621; --red-soft: #FDECE7; --green: #1FA463; --green-soft: #E4F6EC;
@@ -117,6 +118,15 @@
   .empty .e { font-size: 30px; display: block; }
   kbd { background: #fff; border-radius: 5px; padding: 1px 6px; box-shadow: 0 1px 0 rgba(0,0,0,.15); font-family: inherit; font-size: 11px; }
 
+  #inspectBar { display:flex; flex-wrap:wrap; gap:6px; padding:8px 12px; align-items:center; background:var(--card); border-bottom:1px solid var(--line); }
+  #inspectBar label { display:flex; gap:5px; align-items:center; }
+  #inspectBar input { width:auto; }
+  #position { margin-right:auto; color:var(--muted); }
+  #coverage { padding:4px 12px 10px; color:var(--muted); }
+  .notice { padding:10px; border-radius:10px; background:var(--accent-soft); margin-bottom:10px; }
+  @media(max-width:1200px) { body { grid-template-columns:230px minmax(300px,1fr) 340px; } header { overflow:auto; } .brand { width:auto; white-space:nowrap; } }
+  @media(max-width:850px) { body { height:auto; min-height:100vh; overflow:auto; grid-template-columns:1fr; grid-template-rows:auto; } header { position:sticky; top:0; z-index:10; } #side { max-height:280px; } #stage { height:820px; } #panel { border-left:0; } }
+
   /* dialog */
   dialog { border: 0; border-radius: 18px; padding: 22px; width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
   dialog::backdrop { background: rgba(0,0,0,.3); }
@@ -164,10 +174,19 @@
 <aside id="side">
   <div class="search"><input id="search" placeholder="🔍  Билет, текст…"></div>
   <div id="chips"></div>
+  <div id="coverage"></div>
   <div id="list"></div>
 </aside>
 
 <section id="stage">
+  <div id="inspectBar">
+    <button class="btn" id="previous" title="Предыдущая сцена">←</button>
+    <button class="btn" id="next" title="Следующая сцена">→</button><span id="position"></span>
+    <label><input type="checkbox" id="phoneCard" checked>Карточка на телефоне</label>
+    <label><input type="checkbox" id="darkTheme">Тёмная тема</label>
+    <button class="btn" id="exportReview">Отчёт</button>
+    <button class="btn" id="zoomIn" title="Приблизить">＋</button><button class="btn" id="zoomOut" title="Отдалить">−</button>
+  </div>
   <div id="frameWrap"><iframe id="frame" src="/game/index.html"></iframe></div>
   <div id="toast"></div>
   <div id="hud" class="hide"><span class="pill" id="speed">0 км/ч</span><span class="pill" id="limit">⛔ 60</span></div>
@@ -190,8 +209,8 @@
 <script>
 const $ = s => document.querySelector(s);
 const frame = $('#frame');
-let lab = null, gameWin = null, items = [], current = null, filter = 'all', mode = 'view';
-let tickets = {}, byQuestionId = {}, review = {}, edits = {}, models = {};
+let lab = null, gameWin = null, items = [], current = null, filter = 'active', mode = 'view';
+let tickets = {}, byQuestionId = {}, review = {}, edits = {}, models = {}, fixes = {};
 let asked = null, answered = null, feed = [], size = '390x844', selection = null;
 let model = null, modelDraft = null, part = null;
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -204,6 +223,7 @@ async function loadData() {
   const q = await fetch('/content/questions/questions_ab.json').then(r => r.json());
   q.tickets.forEach(t => t.questions.forEach((qq, i) => { tickets[`${t.number}_${i + 1}`] = qq; byQuestionId[qq.id] = qq; }));
   [review, edits, models] = await Promise.all(['/api/review', '/api/edits', '/api/models'].map(u => fetch(u).then(r => r.json())));
+  fixes = await fetch('/lab/fixes.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));
 }
 function original(item) {
   if (!item) return null;
@@ -214,7 +234,7 @@ function original(item) {
 const imgOf = item => { const o = original(item); return o?.image ? `/content/images/questions_ab/${o.image}.webp` : ''; };
 function checks(item) {
   const o = original(item);
-  if (!o) return [{ ok: false, t: 'Нет билета' }];
+  if (!o) return [{ ok: false, t: item.kind === 'event' ? 'Событие без исходного билета' : 'Нет билета' }];
   const ci = o.answers.findIndex(a => a.correct), opts = (item.options || []).map(norm), orig = o.answers.map(a => norm(a.text));
   return [
     { ok: norm(item.title) === norm(o.question), t: 'Вопрос' },
@@ -226,15 +246,18 @@ function checks(item) {
 const statusOf = item => review[item.id]?.status || (item.reviewed ? 'none' : 'unreviewed');
 
 // ---------- list ----------
-const CHIPS = [['all', 'Все'], ['junction', '✚'], ['road', '🛣'], ['todo', '⏳'], ['ok', '✅'], ['problem', '❌'], ['mismatch', '⚠️'], ['unreviewed', '🚫'], ['edited', '✏️']];
-const CHIP_TIP = { junction: 'Перекрёстки', road: 'Сцены на дороге', todo: 'Ещё не проверены', ok: 'Соответствуют', problem: 'Есть проблема', mismatch: 'Расходятся с билетом', unreviewed: 'Не попадают в игру', edited: 'С правками' };
+const CHIPS = [['active', 'В игре'], ['all', 'Все'], ['event', 'События'], ['junction', '✚'], ['road', '🛣'], ['todo', '⏳'], ['ok', '✅'], ['problem', '❌'], ['notes', '📝'], ['fixed', 'Изменено'], ['mismatch', '⚠️'], ['unreviewed', '🚫'], ['edited', '✏️']];
+const CHIP_TIP = { junction: 'Перекрёстки', road: 'Сцены на дороге', todo: 'Ещё не проверены', ok: 'Соответствуют', problem: 'Есть проблема', notes: 'Все сцены с заметками, включая отмеченные «Да»', mismatch: 'Расходятся с билетом', unreviewed: 'Не попадают в игру', fixed: 'Изменения разработчика для повторной сверки', edited: 'С правками' };
 function match(item, f) {
   const st = review[item.id]?.status;
   switch (f) {
-    case 'junction': case 'road': return item.kind === f;
+    case 'active': return item.reviewed;
+    case 'event': case 'junction': case 'road': return item.kind === f;
     case 'todo': return !st && item.reviewed;
     case 'ok': case 'problem': return st === f;
-    case 'mismatch': return checks(item).slice(0, 3).some(c => !c.ok);
+    case 'notes': return !!review[item.id]?.note?.trim();
+    case 'fixed': return !!fixes[item.id];
+    case 'mismatch': return item.kind !== 'event' && checks(item).slice(0, 3).some(c => !c.ok);
     case 'unreviewed': return !item.reviewed;
     case 'edited': return !!edits[item.id];
   }
@@ -242,24 +265,25 @@ function match(item, f) {
 }
 function renderChips() {
   $('#chips').innerHTML = CHIPS.map(([k, l]) => `<button class="chip ${filter === k ? 'on' : ''}" data-f="${k}" title="${CHIP_TIP[k] || ''}">${l}<b>${items.filter(i => match(i, k)).length}</b></button>`).join('');
-  $('#chips').querySelectorAll('button').forEach(b => b.onclick = () => { filter = b.dataset.f; renderChips(); renderList(); });
+  $('#chips').querySelectorAll('button').forEach(b => b.onclick = () => { filter = b.dataset.f; renderChips(); renderList();updatePosition(); });
 }
 function renderList() {
   if (mode === 'models') return renderModelList();
   $('#chips').classList.remove('hide');
   const q = norm($('#search').value);
   const shown = items.filter(i => match(i, filter) && (!q || norm(`${i.ticket} ${i.title} ${i.id}`).includes(q)));
+  $('#coverage').textContent = `${items.filter(i=>i.reviewed && i.kind!=='event').length} вопросов · ${items.filter(i=>i.kind==='event').length} событий без билета · ${shown.length} в списке`;
   $('#list').innerHTML = shown.map(i => {
     const st = statusOf(i), img = imgOf(i);
     return `<div class="card ${current?.id === i.id ? 'active' : ''}" data-id="${i.id}">
       ${img ? `<img class="thumb" loading="lazy" src="${img}">` : `<div class="thumb">${i.kind === 'road' ? '🛣' : '✚'}</div>`}
-      <div style="min-width:0"><div class="t"><span class="st ${st}">${{ ok: '✓', problem: '✕', unreviewed: '!' }[st] || ''}</span>${short(i.ticket)}
-        <span class="mini">${i.kind === 'road' ? '🛣' : '✚'}${edits[i.id] ? ' ✏️' : ''}</span></div>
+      <div style="min-width:0"><div class="t"><span class="st ${st}">${{ ok: '✓', problem: '✕', unreviewed: '!' }[st] || ''}</span>${i.kind==='event' ? esc(i.title) : short(i.ticket)}
+        <span class="mini">${i.kind === 'road' ? '🛣' : '✚'}${edits[i.id] ? ' ✏️' : ''}${fixes[i.id] ? ' ↻' : ''}</span></div>
       <div class="s">${esc(i.title)}</div></div></div>`;
   }).join('') || '<div class="empty"><span class="e">🤷</span>Ничего не найдено</div>';
   $('#list').querySelectorAll('.card').forEach(el => el.onclick = () => open(el.dataset.id));
 }
-$('#search').oninput = renderList;
+$('#search').oninput = ()=>{renderList();updatePosition();};
 // Click the ticket picture to see it full size.
 document.addEventListener('click', e => {
   if (e.target.matches('img.ticketImg')) {
@@ -271,8 +295,10 @@ document.addEventListener('click', e => {
 // ---------- right panel ----------
 function ticketCard(item, { interactive = false } = {}) {
   const o = original(item), img = imgOf(item);
-  const correct = item.correct;
-  const answers = (item.options || []).map((a, i) => {
+  if(item.kind==='event') return `<div class="notice">Процедурное событие свободной езды. Оно не построено на конкретном билете.</div><p class="qtext">${esc(item.title)}</p>`;
+  const correct = o ? o.answers.findIndex(a=>a.correct) : item.correct;
+  const sourceOptions = o ? o.answers.map(a=>a.text) : item.options;
+  const answers = (sourceOptions || []).map((a, i) => {
     let cls = '';
     if (!interactive || answered) cls = i === correct ? 'correct' : answered && answered.index === i ? 'wrong' : '';
     return `<div class="ans ${cls} ${interactive && !answered ? 'click' : ''}" data-i="${i}"><span class="n">${i + 1}</span><span>${esc(a)}</span></div>`;
@@ -280,7 +306,7 @@ function ticketCard(item, { interactive = false } = {}) {
   return `
     ${img ? `<img class="ticketImg" src="${img}">` : `<div class="ticketImg noimg">${item.kind === 'road' ? '🛣' : '✚'}</div>`}
     <div class="qhead"><span class="badge">Билет ${short(item.ticket)}</span><span class="muted">${esc(item.pddRule || '')}</span></div>
-    <p class="qtext">${esc(item.title)}</p>
+    <p class="qtext">${esc(o?.question || item.title)}</p>
     ${answers}
     ${interactive && !answered ? '<p class="muted mini">👆 Выберите ответ — сцена продолжится</p>' : ''}
     ${o ? `<details style="margin-top:8px"><summary>💡 Пояснение</summary><p>${esc(o.comment)}</p></details>` : ''}`;
@@ -294,6 +320,12 @@ function facts(item) {
     ${item.reason ? `<span class="fact" title="${esc(item.reason)}">🚫 почему не в игре</span>` : ''}
   </div>`;
 }
+function fixNotice(item) {
+  const fix = fixes[item.id];
+  if (!fix) return '';
+  const newer = (review[item.id]?.note || '').trim() !== (fix.note || '').trim();
+  return `<div class="notice"><strong>↻ Изменено · нужна повторная сверка</strong><p>${esc(fix.summary)}</p>${newer ? '<div><strong>После правки заметка изменилась.</strong> Она требует отдельной проверки.</div>' : ''}<div class="muted mini">${esc(fix.updatedAt)} · Ваша оценка не изменена</div></div>`;
+}
 function renderPanel() {
   if (mode === 'models') return renderModelPanel();
   if (mode === 'edit') return renderEditPanel();
@@ -302,8 +334,10 @@ function renderPanel() {
   const st = review[current.id]?.status;
   $('#panel').innerHTML = `
     <div class="sec">${ticketCard(current)}</div>
-    <div class="sec"><h4>🔎 Сверка с базой билетов</h4><div class="checks">${checks(current).map(c => `<span class="ck ${c.ok ? 'y' : 'n'}">${c.ok ? '✓' : '✕'} ${c.t}</span>`).join('')}</div></div>
+    <div class="notice">${current.reviewed ? 'Сцена используется в игре.' : 'Эта сцена исключена из игры: '+esc(current.reason)} Геометрия создана вручную; совпадение текста не подтверждает расположение объектов.</div>
+    <div class="sec"><h4>🔎 Сверка текста с базой билетов</h4><div class="checks">${checks(current).map(c => `<span class="ck ${c.ok ? 'y' : 'n'}">${c.ok ? '✓' : '✕'} ${c.t}</span>`).join('')}</div></div>
     <div class="sec"><h4>🧭 Что в сцене</h4>${facts(current)}</div>
+    ${fixNotice(current)}
     <div class="sec"><h4>🗳 Сцена соответствует билету?</h4>
       <div class="vote"><button class="up ${st === 'ok' ? 'on' : ''}" id="vUp">👍 Да</button><button class="down ${st === 'problem' ? 'on' : ''}" id="vDown">👎 Нет</button><button id="vClear" title="Сбросить">↺</button></div>
       <textarea id="note" rows="2" placeholder="📝 Что не так…" style="margin-top:8px">${esc(review[current.id]?.note || '')}</textarea></div>`;
@@ -346,6 +380,7 @@ function push(icon, text, bad = false) {
 let toastTimer;
 function toast(text) { $('#toast').textContent = text; $('#toast').classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').classList.remove('show'), 2500); }
 addEventListener('message', m => {
+  if(m.source!==frame.contentWindow)return;
   const ev = m.data?.labEvent; if (!ev) return;
   if (ev.event === 'telemetry') { $('#speed').textContent = `${ev.speedKmH} км/ч`; $('#limit').textContent = `⛔ ${ev.limitKmH}`; return; }
   if (ev.event === 'violation') { const [i, t] = VIOL[ev.type] || ['⚠️', ev.type]; push(i, t, true); toast(`${i} ${t}`); }
@@ -500,8 +535,10 @@ function open(id) {
   gameWin.PDD_SCENE_EDITS = edits; gameWin.PDD_MODEL_EDITS = { ...models };
   lab.show(id, mode === 'drive');
   if (mode === 'edit') setFreeCam(true);
-  gameWin.game.setPaused(false);
+  gameWin.game.setPaused(mode !== 'drive');
+  applyPhonePreview();
   renderList(); renderPanel(); scrollToCurrent();
+  updatePosition();
   history.replaceState(null, '', '#' + id);
 }
 function setMode(m) {
@@ -538,8 +575,58 @@ function resize() {
     Object.assign(frame.style, { width: w + 'px', height: h + 'px', transform: `scale(${k})`, borderRadius: '22px' });
   }
   gameWin?.dispatchEvent(new Event('resize'));
+  if(lab) applyPhonePreview();
 }
 addEventListener('resize', resize);
+
+// Review controls: filtered navigation and an uncovered viewport like the app.
+function visibleItems() {
+  const q=norm($('#search').value);
+  return items.filter(i=>match(i,filter)&&(!q||norm(`${i.ticket} ${i.title} ${i.id}`).includes(q)));
+}
+function updatePosition() {
+  const list=visibleItems(),i=list.findIndex(s=>s.id===current?.id);
+  $('#position').textContent=i<0 ? '' : `${i+1} / ${list.length}`;
+  $('#previous').disabled=i<=0;$('#next').disabled=i<0||i>=list.length-1;
+}
+function navigate(delta) {
+  const list=visibleItems(),i=list.findIndex(s=>s.id===current?.id);
+  if(list[i+delta])open(list[i+delta].id);
+}
+$('#exportReview').onclick=()=>{
+  const report=items.filter(i=>review[i.id]?.status||review[i.id]?.note).map(i=>({id:i.id,ticket:i.ticket||null,
+    sourceQuestionId:original(i)?.id||null,sourceImage:imgOf(i)||null,...review[i.id]}));
+  const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));
+  const link=document.createElement('a');link.href=url;link.download='game-review.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+$('#previous').onclick=()=>navigate(-1);$('#next').onclick=()=>navigate(1);
+function zoomBy(factor) { if(lab.lab.freeCam)lab.lab.orbit.size=Math.max(3,Math.min(160,lab.lab.orbit.size*factor));else gameWin.changeGameZoom(factor); }
+$('#zoomIn').onclick=()=>zoomBy(.85);
+$('#zoomOut').onclick=()=>zoomBy(1/.85);
+$('#phoneCard').onchange=applyPhonePreview;
+$('#darkTheme').onchange=()=>{gameWin.game.setTheme($('#darkTheme').checked);applyPhonePreview();};
+function applyPhonePreview() {
+  if(!gameWin?.game)return;
+  const doc=gameWin.document;
+  let style=doc.getElementById('lab-preview-style');
+  if(!style) { style=doc.createElement('style');style.id='lab-preview-style';doc.head.appendChild(style);
+    style.textContent=`.lab-sheet{position:absolute;bottom:0;left:0;right:0;padding:14px 14px 78px;border-radius:22px 22px 0 0;background:#fff;color:#121212;font:16px/1.35 system-ui;z-index:101;pointer-events:none}.lab-sheet.dark{background:#1c1d22;color:#f2f3f7}.lab-sheet b{font-size:12px;color:#298bfe}.lab-sheet p{margin:10px 0;font-weight:600}.lab-answer{margin-top:6px;padding:10px 12px;background:#f2f2f7;border-radius:12px}.dark .lab-answer{background:#202229}.lab-nav{position:absolute;bottom:20px;left:0;right:0;text-align:center;font-size:12px;color:#8a90a2}.lab-hud{position:absolute;top:32px;left:18px;right:18px;z-index:101;color:white;font:600 16px system-ui;pointer-events:none;text-shadow:0 1px 3px #333;display:flex;justify-content:space-between}`;
+  }
+  doc.getElementById('lab-sheet')?.remove();doc.getElementById('lab-hud')?.remove();
+  let bottom=0,top=0;
+  if(mode==='view' && $('#phoneCard').checked && current && current.kind!=='event') {
+    const o=original(current),sheet=doc.createElement('div');sheet.id='lab-sheet';sheet.className='lab-sheet'+($('#darkTheme').checked?' dark':'');
+    const opts=o?.answers.map(a=>a.text)||current.options||[];
+    sheet.innerHTML=`<b>Билет ${short(current.ticket)}</b><p>${esc(o?.question||current.title)}</p>`+opts.map((a,i)=>`<div class="lab-answer">${i+1}. ${esc(a)}</div>`).join('')+'<div class="lab-nav">Нижняя панель приложения</div>';
+    doc.body.appendChild(sheet);bottom=sheet.getBoundingClientRect().height;
+    const hud=doc.createElement('div');hud.id='lab-hud';hud.className='lab-hud';hud.innerHTML='<span>Осмотр сцены</span><span>0 км/ч</span>';doc.body.appendChild(hud);top=78;
+  }
+  gameWin.game.setViewportInsets({top,bottom});
+  // No easing from a previous ticket's answer sheet while inspecting a still.
+  lab.state.viewportInsets={top,bottom};lab.state.viewportTarget=null;
+  for(let i=0;i<120;i++)lab.run('updateCamera(1/60)');
+  updatePosition();
+}
 
 // ---------- ship ----------
 $('#ship').onclick = () => $('#shipDlg').showModal();
@@ -619,11 +706,12 @@ frame.onload = async () => {
   lab = gameWin.__lab;
   await loadData();
   const num = s => (/(\d+)\D+(\d+)/.exec(s.ticket || '') || [0, 999, 999]).slice(1).map(Number);
-  items = [...lab.junctions(), ...lab.roads()].sort((a, b) => { const [a1, a2] = num(a), [b1, b2] = num(b); return a1 - b1 || a2 - b2; });
+  items = [...lab.junctions(), ...lab.roads(), ...lab.events()].sort((a, b) => { const [a1, a2] = num(a), [b1, b2] = num(b); return a1 - b1 || a2 - b2; });
   bindFrameInput(); markGroup('#devices', 'size', size); markGroup('#weather', 'w', ''); resize(); renderChips();
   mode = 'view'; document.querySelector('#modes [data-mode=view]').classList.add('on');
   const start = location.hash.slice(1);
   open(items.find(i => i.id === start) ? start : items[0].id);
+  applyPhonePreview();
   (function loop() { lab.tick(); requestAnimationFrame(loop); })();
 };
 </script>

@@ -47,7 +47,7 @@ SCENES = {
                  note='Sign 2.3.1 warns of a secondary-road crossing ahead: overtaking on the main road is allowed.'),
     '9_5': dict(kind='overtake', overtake=True, marking='double_dashed_right', vehicles=[tractor()],
                 note='Marking 1.11 with the broken line on the player\'s side: crossing allowed.'),
-    '16_11': dict(kind='overtake', overtake=True, junction=dict(z=24, priority='main'), signs=[sign('2.1', 8)], vehicles=[tractor()],
+    '16_11': dict(kind='overtake', overtake=True, junction=dict(z=24, priority='main'), signs=[sign('2.1', 8)], vehicles=[dict(tractor(),color='#2F6FD6',paint='#2F6FD6')],
                   note='Tractor ahead, main road (2.1): overtaking allowed at the junction.'),
     '17_5': dict(kind='overtake', overtake=False, marking='double_solid_right', vehicles=[tractor()],
                  note='Marking 1.11 with the solid line on the player\'s side: crossing prohibited.'),
@@ -55,7 +55,7 @@ SCENES = {
                   vehicles=[truck(-40, 14, 'Грузовик Б', '#C9C2B2', badge='Б', blinker='left', maneuver='overtake', joinsAtQuestion=True),
                             truck(24, 5, 'Грузовик А', '#B8A98A', badge='А')],
                   note='Truck Б comes up behind the player as the question starts and signals left: it has begun overtaking, so the player may not (11.2).'),
-    '20_11': dict(kind='overtake', overtake=False, signs=[sign('3.21', 30)],
+    '20_11': dict(kind='overtake', overtake=False, signs=[sign('3.21', 8)],
                   vehicles=[truck(14, 8, color='#E05A4E', blinker='left', maneuver='overtake', alreadyOvertaking=True), truck(36, 5, color='#9AA0A6')],
                   note='Truck ahead signals left: prohibited regardless of the 3.21 sign further on.'),
     '24_11': dict(kind='overtake', overtake=False, signs=[sign('3.20', 8)], vehicles=[truck(14, 5, color='#3E8E5E')],
@@ -88,7 +88,7 @@ SCENES = {
                   note='In a built-up area 1.2 stands 50-100 m before the crossing (here 70 m): the truck ahead is already '
                        'inside the 100 m zone, so overtaking may start only past the crossing. The photo shows a truck '
                        '(the explanation calls it a tractor).'),
-    '21_11': dict(kind='overtake', overtake='after_crossing', railway=dict(z=10, after=70),
+    '21_11': dict(kind='overtake', overtake='after_crossing', railway=dict(z=10, after=70,signalsUnlit=True,whiteSignal=False),
                   vehicles=[van(8, 5)],
                   note='The van is on the crossing; overtaking may start right after its boundary, the signal posts '
                        'with 1.3.1 just past the track.'),
@@ -103,17 +103,44 @@ SCENES = {
                   note='1.6: an equal junction 150 m on. The horse-drawn cart may be overtaken if the manoeuvre is over '
                        'before the junction; overtaking on it is prohibited (11.4).'),
     # --- detour: sign 4.2.2 prevails over the solid centre line
-    '35_5': dict(kind='detour', obstacleZ=24, marking='solid', signs=[sign('1.25', 12)],
+    '35_5': dict(kind='detour', obstacleZ=24, obstacleX=-1.2, obstacleWidth=2.4,
+                 marking='solid', signs=[sign('1.25', 12)],
+                 # Both alternatives from the source picture, equally styled:
+                 # A crosses the centre line to the left, B stays on the right.
+                 trajectories=[
+                     dict(label='А', points=[[-1.8, 5], [-1.8, 9], [0.5, 15], [1.8, 20], [1.8, 29]], labelPosition=[1.8, 31]),
+                     dict(label='Б', points=[[-1.8, 5], [-1.8, 9], [-3.35, 15], [-3.35, 24], [-3.35, 29]], labelPosition=[-3.35, 31]),
+                 ],
                  note='Road works barrier with 4.2.2 in the player\'s lane and a solid centre line: signs take precedence '
-                      'over markings, so the way round is on the left (trajectory A).'),
+                      'over markings, so the way round is on the left (trajectory A). Both A and Б from the source '
+                      'are drawn; the barrier leaves the pictured gap on the right for alternative Б.'),
 }
+
+from first_batch import ROADS
+SCENES.update(ROADS)
+from second_batch import ROADS as SECOND_ROADS
+SCENES.update(SECOND_ROADS)
 
 def rule(comment):
     m = re.search(r'[Пп]ункт[ыа]?\s*([\d.]+)', comment or '')
     return 'п. ' + m.group(1).rstrip('.') if m else ''
 
+SCENES['29_3'].update(outsideSettlement=True,unmarkedRoad=True)
+SCENES['2_16']['railway']['z']=30
 out = []
 for key, scene in SCENES.items():
+    bend = scene.get('roadCurve')
+    if bend:
+        # Curves currently support rural sign questions with oncoming traffic.
+        # Reject incompatible scene mechanics rather than draw a false layout.
+        assert scene.get('outsideSettlement') and scene['kind'] in ('speed', 'observe'), key
+        assert set(bend) == {'from', 'to', 'offset'}, key
+        assert all(isinstance(v, (int, float)) and abs(v) < 10000 for v in bend.values()), key
+        span = bend['to'] - bend['from']
+        assert bend['from'] >= 0 and span >= 80 and bend['to'] <= scene['zoneLength'] - 10, key
+        assert 4.1 * abs(bend['offset']) / span <= .4, key
+        assert all(v['lane'] == 'oncoming' for v in scene.get('vehicles', [])), key
+        assert not any(scene.get(k) for k in ('motorway', 'wideCity', 'junction', 'junctionZ', 'crosswalkZ', 'trajectories', 'markingBefore', 'markingAfter', 'endJunction', 'railway', 'humpZ', 'marking', 'shoulderWorks', 'gravelZ', 'endJunctionZ')), key
     t, i = map(int, key.split('_'))
     qq = q['tickets'][t - 1]['questions'][i - 1]
     legend = [{"label": "Вы", "color": "#ED4621"}] + [
@@ -128,7 +155,7 @@ for key, scene in SCENES.items():
         "scene": {k: v for k, v in scene.items() if k != 'note'}, "note": scene['note'],
     })
 target = ROOT / 'assets/game/road-situations.js'
-target.write_text('// Straight-road exam situations. Generated by tools/game_content/build_road_situations.py\n'
+target.write_text('// Road exam situations. Generated by tools/game_content/build_road_situations.py\n'
                   '// from questions_ab.json (verbatim text) + authored scene layouts — do not edit by hand.\n'
                   'window.PDD_ROAD_SITUATIONS = ' + json.dumps(out, ensure_ascii=False, indent=1) + ';\n')
 print(len(out), 'road situations ->', target)

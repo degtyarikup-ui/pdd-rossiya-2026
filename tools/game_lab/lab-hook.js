@@ -27,7 +27,12 @@
     });
     const roads = () => (window.PDD_ROAD_SITUATIONS || []).map(s => ({ id: s.id, kind: 'road', ticket: s.ticket,
       title: s.title, options: s.options, correct: s.correctAnswerIndex, explanation: s.explanation, pddRule: s.pddRule,
-      type: s.type, reviewed: true, sourceQuestionId: s.sourceQuestionId, signs: (s.scene.signs || []).map(x => x.code) }));
+      type: s.type, reviewed: s.enabled !== false, sourceQuestionId: s.sourceQuestionId, signs: (s.scene.signs || []).map(x => x.code) }));
+    const EVENT_BUILDERS={busstop:buildBusStopEvent,crosswalk:buildCrosswalkEvent,roadworks:buildRoadworksEvent,
+      obstacle:buildObstacleEvent,courtyard:buildCourtyardEvent,cyclist:buildCyclistEvent,emergency:buildEmergencyEvent};
+    const EVENT_NAMES={busstop:'Автобусная остановка',crosswalk:'Пешеходный переход',roadworks:'Дорожные работы',
+      obstacle:'Препятствие',courtyard:'Выезд из двора',cyclist:'Велосипедист',emergency:'Спецавтомобиль'};
+    const events=()=>Object.keys(EVENT_BUILDERS).map(k=>({id:'event_'+k,kind:'event',title:EVENT_NAMES[k],reviewed:true,options:[],signs:[]}));
     function clearWorld() {
       resetGame(); state.attract = false;
       state.roadSegments.forEach(disposeSegment);
@@ -43,7 +48,14 @@
       playerCarGroup.visible = true;
       lab.id = id;
       const road = (window.PDD_ROAD_SITUATIONS || []).find(s => s.id === id);
-      if (road) {
+      if(id.startsWith('event_')) {
+        const kind=id.slice(6),seg=buildStraightSegment(-45,240,true);
+        state.roadSegments.push(seg);state.exitRoad=currentCorridor=seg;nextSegmentZ=195;
+        const group=new THREE.Group();scene.add(group);state.roadSegments.push(group);
+        state.roadEvent=EVENT_BUILDERS[kind](group,40);
+        refreshRoadBounds();lab.group=group;lab.origin=40;
+        playerCarGroup.position.set(-1.8,0,drive?-35:20);playerCarGroup.rotation.set(0,0,0);
+      } else if (road) {
         const seg = buildStraightSegment(-45, 200, true); state.roadSegments.push(seg);
         state.exitRoad = currentCorridor = seg; nextSegmentZ = 155;
         const group = new THREE.Group(); scene.add(group); state.roadSegments.push(group);
@@ -57,10 +69,15 @@
         situationBag = [s]; buildInitialTrack();
         const it = state.intersections[0];
         lab.group = it.seg; lab.origin = it.centerZ;
-        if (!drive) { playerCarGroup.position.z = it.stopZ; updatePlayerMovement(0); }
+        if (!drive) {
+          playerCarGroup.position.set(it.situation.playerStartX ?? -1.8,0,it.stopZ);
+          updatePlayerMovement(0);
+          clearMistakeHighlight();
+        }
       }
       lab.orbit.target.set(0, 0, lab.origin);
       for (let i = 0; i < 120; i++) baseUpdateCamera(1 / 60);
+      applyWeather();
       return { origin: lab.origin };
     }
     function describe(o) {
@@ -187,10 +204,14 @@
     }
     // Direct eval for scripted checks (tools/game_lab only, never shipped).
     const run = code => eval(code);
-    return { run, junctions, roads, show, showModel, pickPart, models: () => Object.keys(MODELS), pick, ground, update, add, find, describe, lab, state,
+    return { run, junctions, roads, events, show, showModel, pickPart, models: () => Object.keys(MODELS), pick, ground, update, add, find, describe, lab, state,
       select(key) { lab.selected = find(key); setHelper(lab.selected); return describe(lab.selected); },
       signCodes: () => Object.keys(window.PDD_SIGN_TEXTURES || {}).sort(),
       decorKinds: () => Object.keys(EDITABLE_DECOR),
       player: () => ({ x: playerCarGroup.position.x, z: playerCarGroup.position.z }),
-      tick: () => { if (lab.helper) lab.helper.update(); } };
+      tick: () => {
+        // Freeze traffic in inspection mode, but keep the canvas and camera live.
+        if(state.paused) { updateWeather(1/60); updateCamera(1/60); updateBlinkers(1/60); renderer.render(scene,camera); }
+        if (lab.helper) lab.helper.update();
+      } };
   })();

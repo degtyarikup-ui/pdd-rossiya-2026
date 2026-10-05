@@ -151,6 +151,13 @@ class Handler(BaseHTTPRequestHandler):
         self.send(404, '{"error":"not found"}')
 
 
+class LabServer(ThreadingHTTPServer):
+    # The scene list can request many source thumbnails at once. The default
+    # backlog of five drops connections and leaves apparently missing tickets.
+    request_queue_size = 128
+    daemon_threads = True
+
+
 if __name__ == "__main__":
     print(f"Стенд игры: http://127.0.0.1:{PORT}/")
-    ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
+    LabServer(("127.0.0.1", PORT), Handler).serve_forever()

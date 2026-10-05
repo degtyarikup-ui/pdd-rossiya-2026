@@ -17,7 +17,46 @@ const { chromium } = require('playwright');
       const response = await route.fetch();
       const body = (await response.text()).replace('  // Run init on DOM ready', `
         window.intersectionReview = {
+          ready() { return !!playerCarGroup; },
           ids() { return SITUATIONS.filter(s => routeSpec(s).reviewed === true).map(s => s.id); },
+          surfacesAt(x, z) {
+            scene.updateMatrixWorld(true);
+            const surfaces = [];
+            state.roadSegments.forEach(s => s.traverse(o => { if (o.userData.surface) surfaces.push(o); }));
+            const ray = new THREE.Raycaster(new THREE.Vector3(x, 20, z), new THREE.Vector3(0, -1, 0));
+            return ray.intersectObjects(surfaces, false).filter(h =>
+              (h.object.material.clippingPlanes || []).every(p => p.distanceToPoint(h.point) >= -0.001))
+              .map(h => ({ surface: h.object.userData.surface, dirt: !!h.object.userData.dirtSurface }));
+          },
+          dirtApproach() {
+            const it = state.activeIntersection;
+            const center = it.centerZ;
+            const core = [10, 30, 34.9, 35.1, 50, 75].map(d => this.surfacesAt(-d, center));
+            const shoulders = [6, 10, 30, 50, 75].flatMap(d => [-1, 1].map(side => this.surfacesAt(-d, center + side * 6.5)));
+            return { core, shoulders };
+          },
+          enterDirt(distance = 15) {
+            const it = state.activeIntersection;
+            window.game.proceedAfterAnswer(true, it.situation.id);
+            state.resolution.exitDirection = 'right'; state.resolution.exitYaw = -Math.PI / 2;
+            playerCarGroup.position.set(-26, 0, it.centerZ - 1.8);
+            playerCarGroup.rotation.y = -Math.PI / 2;
+            state.roadTurn = 1; state.forceRoadEvent = 'cyclist';
+            finishManeuver();
+            scene.updateMatrixWorld(true); refreshRoadBounds();
+            const road = state.exitRoad;
+            const supported = [2, 8, 12, 30, 60, 90, 120, 150].flatMap(z => [-1.8, 1.8].map(x =>
+              playerOnRoad(road.localToWorld(new THREE.Vector3(x, 0, z)), 0)));
+            const paved = road.localToWorld(new THREE.Vector3(0, 0, road.userData.dirtPavedFrom)).z;
+            this.dirtView(distance);
+            return { supported, paved, eventZ: state.roadEvent.cycZ };
+          },
+          dirtView(distance) {
+            playerCarGroup.position.copy(state.exitRoad.localToWorld(new THREE.Vector3(-1.8, 0, distance)));
+            state.viewportInsets = { top: 110, bottom: 150 }; state.viewportTarget = null;
+            for (let i = 0; i < 240; i++) updateCamera(1/60);
+            renderer.render(scene, camera);
+          },
           show(id) {
             resetGame(); state.attract = false;
             state.roadSegments.forEach(disposeSegment);
@@ -64,8 +103,8 @@ const { chromium } = require('playwright');
               crosswalks, tangentDashes, ringDashes,
               expectedCrosswalks: !!intersection.situation.crosswalks?.length,
               stopLines,
-              expectedStopLine: !!intersection.situation.trafficLights ||
-                intersection.situation.signs.some(s => s.code === '2.5'),
+              expectedStopLine: intersection.situation.hasStopLine ?? (!!intersection.situation.trafficLights ||
+                intersection.situation.signs.some(s => s.code === '2.5')),
               farArmRoad,
               tSidewalks,
               tEdgeBridges,
@@ -77,7 +116,7 @@ const { chromium } = require('playwright');
       await route.fulfill({ response, body });
     });
     await page.goto((process.env.GAME_URL || 'http://127.0.0.1:8938') + '/assets/game/');
-    await page.waitForFunction(() => window.intersectionReview);
+    await page.waitForFunction(() => window.intersectionReview?.ready(), null, { polling: 100 });
     const allIds = await page.evaluate(() => intersectionReview.ids());
     const ids = process.env.GAME_SCENARIO ? allIds.filter(id => id === process.env.GAME_SCENARIO) : allIds;
     const output = process.env.GAME_SHOTS || 'build/game_ui/intersection-review';
@@ -95,6 +134,20 @@ const { chromium } = require('playwright');
       assert.equal(result.tEdgeBridges, result.geometry === 't_no_straight' ? 1 : 0, id + ': continuous T-junction edge marking');
       await page.evaluate(() => new Promise(resolve => setTimeout(() => { intersectionReview.render(); resolve(); }, 100)));
       await page.screenshot({ path: output + '/' + id + '.png' });
+      if (result.geometry === 'dirt_approach') {
+        const dirt = await page.evaluate(() => intersectionReview.dirtApproach());
+        for (const surfaces of dirt.core) {
+          assert(surfaces.some(s => s.surface === 'road' && s.dirt), id + ': dirt continues across the preview seam');
+          assert(!surfaces.some(s => s.surface === 'road' && !s.dirt), id + ': no asphalt under the unpaved arm');
+        }
+        assert(dirt.shoulders.every(surfaces => !surfaces.some(s => s.surface === 'sidewalk')), id + ': grass shoulders, including the mouth');
+        const drive = await page.evaluate(() => intersectionReview.enterDirt());
+        assert(drive.supported.every(Boolean), id + ': both lanes remain drivable after the turn');
+        assert(drive.eventZ > drive.paved, id + ': next event follows the unpaved section');
+        await page.screenshot({ path: output + '/' + id + '-right.png' });
+        await page.evaluate(() => intersectionReview.dirtView(60));
+        await page.screenshot({ path: output + '/' + id + '-transition.png' });
+      }
     }
     assert.deepEqual(errors, []);
     console.log(JSON.stringify({ reviewed: ids.length, screenshots: output }));
