@@ -5349,6 +5349,10 @@
     groundMesh.receiveShadow = true;
     scene.add(groundMesh);
     terrainMesh = groundMesh;
+    // The same grass as the verges. The plane follows the player along Z, so
+    // its own copy of the map is shifted by that move: the grass stays put.
+    window.PDD_ROADS.skinObject(groundMesh, 'grass', { world: true });
+    groundMat.map = groundMat.map.clone(); groundMat.map.userData = {}; groundMat.map.needsUpdate = true;
 
     // Player Car
     playerCarGroup = createPlayerCar();
@@ -6771,8 +6775,12 @@
     const body = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.16, 0.62, 12), new THREE.MeshLambertMaterial({ color: 0xEA580C }));
     body.position.y = 0.33;
     group.add(body);
-    const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.11, 0.14, 12), new THREE.MeshLambertMaterial({ color: 0xFFFFFF }));
-    stripe.position.y = 0.35;
+    // Two retro-reflective bands, as on real cones (one mesh).
+    const bands = [[0.083, 0.104, 0.1, 0.46], [0.118, 0.14, 0.1, 0.24]].map(([a, b, h, y]) => {
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(a, b, h, 12, 1, true)); m.position.y = y; return m;
+    });
+    const stripe = mergeStatic(bands, new THREE.MeshLambertMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide }));
+    bands.forEach(m => m.geometry.dispose());
     group.add(stripe);
     return group;
   }
@@ -6863,6 +6871,17 @@
     const greenLamp = new THREE.Mesh(lampGeo, greenMat);
     greenLamp.position.set(0, 2.95, 0.46);
     tl.add(greenLamp);
+    // Visors over the lenses and a white-edged back plate (one mesh each).
+    const visorParts = [3.85, 3.4, 2.95].map(y => {
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.26, 12, 1, true, -Math.PI / 2, Math.PI));
+      m.rotation.x = Math.PI / 2; m.position.set(0, y, 0.6); return m;
+    });
+    const visors = mergeStatic(visorParts, new THREE.MeshLambertMaterial({ color: 0x1E293B, side: THREE.DoubleSide }));
+    visorParts.forEach(m => m.geometry.dispose()); tl.add(visors);
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.9, 0.03), new THREE.MeshLambertMaterial({ color: 0x111827 }));
+    plate.position.set(0, 3.4, 0.03); tl.add(plate);
+    const rim = new THREE.Mesh(new THREE.BoxGeometry(1.01, 1.96, 0.02), new THREE.MeshLambertMaterial({ color: 0xF1F5F9 }));
+    rim.position.set(0, 3.4, 0.01); tl.add(rim);
     const lamps = [redLamp, yellowLamp, greenLamp];
     const activeColors = [0xFF3838, 0xFFD52A, 0x36FF88];
     const glows = lamps.map((lamp, i) => {
@@ -6969,30 +6988,44 @@
     });
     return [...buckets.values()].map(b => { const m = mergeStatic(b.meshes, b.material); m.castShadow = false; m.userData.baked = true; return m; });
   }
+  // Foliage as a few merged blobs (one mesh, one draw call): an organic
+  // outline instead of a single ball. Bark and leaf maps are shared.
+  function foliage(blobs, material) {
+    const parts = blobs.map(([r, x, y, z, sy = 1]) => {
+      const m = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1)); m.position.set(x, y, z); m.scale.set(1, sy, 1); return m;
+    });
+    const mesh = mergeStatic(parts, material); parts.forEach(m => m.geometry.dispose());
+    window.PDD_ROADS.skinObject(mesh, 'leaves');
+    return mesh;
+  }
   function createTree(kind) {
     const tree = new THREE.Group();
     kind = kind || ['pine', 'pine', 'round', 'round', 'birch'][Math.floor(Math.random() * 5)];
     const sn = season(), pick = list => list[Math.floor(Math.random() * list.length)];
     if (kind === 'birch') {
       const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 3.2, 6), sceneryMat(0xE8E4DA));
-      trunk.position.y = 1.6; trunk.castShadow = true; tree.add(trunk);
-      const canopy = new THREE.Mesh(new THREE.SphereGeometry(1.1, 7, 6), sceneryMat(Math.random() < 0.7 ? sn.birch : pick(sn.canopy)));
+      trunk.position.y = 1.6; trunk.castShadow = true; tree.add(trunk); window.PDD_ROADS.skinObject(trunk, 'bark');
+      const canopy = foliage([[0.75, 0, 0, 0, 1.5], [0.55, 0.32, 0.55, 0.1, 1.3], [0.5, -0.3, -0.45, -0.12, 1.3]],
+        sceneryMat(Math.random() < 0.7 ? sn.birch : pick(sn.canopy)));
       canopy.material.userData.seasonal = 'birch';
-      canopy.scale.set(0.8, 1.35, 0.8); canopy.position.y = 3.6; canopy.castShadow = true; tree.add(canopy);
+      canopy.position.y = 3.6; canopy.castShadow = true; tree.add(canopy);
     } else if (kind === 'round') {
       const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 1.6, 6), sceneryMat(0x5D4037));
-      trunk.position.y = 0.8; trunk.castShadow = true; tree.add(trunk);
-      const canopy = new THREE.Mesh(new THREE.SphereGeometry(1.5, 8, 6), sceneryMat(pick(sn.canopy)));
+      trunk.position.y = 0.8; trunk.castShadow = true; tree.add(trunk); window.PDD_ROADS.skinObject(trunk, 'bark');
+      const canopy = foliage([[1.15, 0, 0.1, 0], [0.85, 0.75, -0.15, 0.35], [0.8, -0.7, -0.1, -0.3], [0.75, 0.1, 0.7, -0.45]], sceneryMat(pick(sn.canopy)));
       canopy.material.userData.seasonal = 'canopy';
       canopy.position.y = 2.6; canopy.castShadow = true; tree.add(canopy);
     } else {
       const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.28, 1.5, 6), sceneryMat(0x5D4037));
-      trunk.position.y = 0.75; trunk.castShadow = true; tree.add(trunk);
+      trunk.position.y = 0.75; trunk.castShadow = true; tree.add(trunk); window.PDD_ROADS.skinObject(trunk, 'bark');
       const foliageColor = pick(sn.pine);
-      const lower = new THREE.Mesh(new THREE.ConeGeometry(1.4, 2.4, 7), sceneryMat(foliageColor));
-      lower.position.y = 2.2; lower.castShadow = true; tree.add(lower);
-      const upper = new THREE.Mesh(new THREE.ConeGeometry(0.95, 1.9, 7), sceneryMat(foliageColor));
-      upper.position.y = 3.5; upper.castShadow = true; tree.add(upper);
+      // Three tiers in one mesh (same outline and height as the former two).
+      const tiers = [[1.4, 1.6, 1.9], [1.1, 1.5, 2.85], [0.75, 1.4, 3.75]].map(([r, h, y]) => {
+        const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 8)); m.position.y = y; return m;
+      });
+      const needles = mergeStatic(tiers, sceneryMat(foliageColor)); tiers.forEach(m => m.geometry.dispose());
+      window.PDD_ROADS.skinObject(needles, 'leaves');
+      needles.castShadow = true; tree.add(needles);
     }
     const scale = 0.8 + Math.random() * 0.5;
     tree.scale.set(scale, scale, scale);
@@ -7002,7 +7035,7 @@
   function createBush(color) {
     const sn = season();
     color = color || (sn.precipitation === 'snow' ? 0xC9D2D8 : sn.roof === null && sn.sun === 0xFFE3B8 ? 0x9A8A3E : 0x56764C);
-    const bush = new THREE.Mesh(new THREE.SphereGeometry(0.6, 7, 5), sceneryMat(color));
+    const bush = foliage([[0.55, 0, 0, 0], [0.42, 0.38, -0.08, 0.1], [0.4, -0.36, -0.1, -0.08]], sceneryMat(color));
     bush.scale.set(0.7 + Math.random() * 0.5, 0.6, 1 + Math.random() * 0.6);
     bush.position.y = 0.55;
     return bush;
@@ -7048,7 +7081,11 @@
     pole.position.y = 2.6;
     const arm = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.08, 0.08), null);
     arm.position.set(-0.6, 5.1, 0);
-    lamp.add(mergeStatic([pole, arm], sceneryMat(0x5B646A))); pole.geometry.dispose(); arm.geometry.dispose();
+    // A cast foot and a collar where the arm joins (same mesh as the pole).
+    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.17, 0.5, 8), null); foot.position.y = 0.25;
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.16, 8), null); collar.position.y = 5.1;
+    const parts = [pole, arm, foot, collar];
+    lamp.add(mergeStatic(parts, sceneryMat(0x5B646A))); parts.forEach(m => m.geometry.dispose());
     const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.26), new THREE.MeshBasicMaterial({ color: 0xE6E9D8 }));
     head.position.set(-1.25, 5.05, 0); lamp.add(head);
     return lamp;
@@ -7411,7 +7448,7 @@
           const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.4), null);
           leg.position.set(x, 0.25, 0); legs.push(leg);
         }
-        bench.add(mergeStatic(pieces, wood), mergeStatic(legs, sceneryMat(0x495452)));
+        bench.add(window.PDD_ROADS.skinObject(mergeStatic(pieces, wood), 'wood'), mergeStatic(legs, sceneryMat(0x495452)));
         [...pieces, ...legs].forEach(m => m.geometry.dispose());
         bench.position.set(side * 8.1, 0, z + (style === 0 ? 4 : 6)); bench.rotation.y = side * Math.PI / 2; seg.add(bench);
         const planter = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.45, 1.8),
@@ -12513,6 +12550,8 @@
     scene.traverse(o => {
       if (o.userData.puddle) o.material.opacity = rain * (snow ? 0.35 : 0.9);
       else if ((o.userData.surface === 'road' || o.material?.userData.asphalt) && o.material?.color) o.material.color.setHex(BRAND.asphalt).lerp(new THREE.Color(0x1F2228), rain * 0.8);
+      // Wet paving darkens too (less than asphalt); snow keeps it light.
+      else if (o.material?.userData.seasonal === 'sidewalk' && o.material.color) o.material.color.setHex(sn.sidewalk).multiplyScalar(1 - rain * (snow ? 0.08 : 0.28));
     });
   }
   function updateWeather(dt) {
@@ -13122,6 +13161,7 @@
         });
       }));
       terrainMesh.position.z = playerCarGroup.position.z + 500;
+      terrainMesh.material.map.offset.y = (terrainMesh.position.z / window.PDD_ROADS.kinds.grass.period) % 1;
       updateCamera(dt);
       checkAndSpawnNext();
       telemetryElapsed += dt;

@@ -40,6 +40,11 @@
     door: { geometry: true, macro: 0, macroScale: 1, w: 64, h: 128 },
     wood: { object: true, u: 1.2, v: 1.2, macro: 0.06, macroScale: 1 / 4, size: 128 },
     metal: { object: true, u: 1.2, v: 1.2, macro: 0.04, macroScale: 1 / 4, size: 128 },
+    // Nature (pass 5): lawns and verges in the road frame; bark and foliage
+    // on each plant's own geometry.
+    grass: { period: 4.8, macro: 0.16, macroScale: 1 / 6, size: 128, side: 4.8 },
+    bark: { object: true, u: 0.8, v: 1.6, macro: 0, macroScale: 1, size: 64 },
+    leaves: { object: true, u: 1.6, v: 1.6, macro: 0.08, macroScale: 1 / 3, size: 128 },
   };
   const textures = new Map();
   let renderer = null, hooks = null, dirty = true;
@@ -293,6 +298,34 @@
     },
   });
 
+  Object.assign(PAINT, {
+    grass(w, h) {
+      // Fine blades and clover-dark patches, no large repeating blotches.
+      const rand = rng(113), n = tileNoise(w, 8, rand), m = tileNoise(w, 24, rand), r = new Float32Array(w * h);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) r[y * w + x] = 0.5 + (n(x, y) - 0.5) * 0.08 + (m(x, y) - 0.5) * 0.07 + (rand() - 0.5) * 0.09;
+      speckles(r, w, h, 700, rand, [0.3, 0.8], [0.58, 0.66]);
+      speckles(r, w, h, 500, rand, [0.3, 0.7], [0.36, 0.42]);
+      centre(r, 0.5, 0.25, 0.75);
+      return { r, g: macroChannel(w, h, rand), b: r };
+    },
+    bark(w, h) {
+      const rand = rng(127), b = new Float32Array(w * h), streak = Array.from({ length: w }, () => (rand() - 0.5) * 0.18), n = tileNoise(w, 8, rand);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) b[y * w + x] = 0.5 + streak[x] * (0.6 + n(x, y)) + (rand() - 0.5) * 0.06;
+      centre(b);
+      return { r: b, g: new Float32Array(w * h).fill(0.5), b };
+    },
+    leaves(w, h) {
+      // Clusters of leaves: light tops, dark gaps between them.
+      const rand = rng(131), r = new Float32Array(w * h).fill(0.44);
+      for (let i = 0; i < r.length; i++) r[i] += (rand() - 0.5) * 0.06;
+      speckles(r, w, h, 260, rand, [2.5, 5.5], [0.5, 0.62]);
+      speckles(r, w, h, 200, rand, [1.2, 2.6], [0.58, 0.7]);
+      speckles(r, w, h, 120, rand, [0.8, 1.6], [0.3, 0.38]);
+      centre(r, 0.5, 0.22, 0.78);
+      return { r, g: macroChannel(w, h, rand), b: r };
+    },
+  });
+
   function texture(kind) {
     if (textures.has(kind)) return textures.get(kind);
     const k = KINDS[kind], w = k.w || k.size, h = k.h || k.size;
@@ -407,6 +440,8 @@
     if (u.surface === 'sidewalk' || m.userData.seasonal === 'sidewalk' || SIDEWALKS.has(hex)) return 'pavement';
     if (u.roadShoulder || hex === 0xB4AD92) return 'gravel';
     if (u.ballast || hex === 0x8C867C) return 'ballast';
+    // Lawns, verges and fields (season-coloured ground under the roads).
+    if (/^(ground|verge\d)$/.test(m.userData.seasonal || '') && mesh.geometry && mesh.geometry.type !== 'SphereGeometry') return 'grass';
     if (u.sleepers || hex === 0x5E4B3B) return 'sleeper';
     return null;
   }
@@ -495,7 +530,10 @@
     decorate(mesh.material, kind);
     const pos = g.attributes.position, nor = g.attributes.normal, count = pos.count;
     const uv = new Float32Array(count * 2), side = new Float32Array(count);
-    if (k.geometry) {
+    if (opts.world) {
+      // A world-mapped kind on a free-standing plane: plan position in metres.
+      for (let i = 0; i < count; i++) { uv[2 * i] = pos.getX(i) / k.period; uv[2 * i + 1] = pos.getZ(i) / k.period; }
+    } else if (k.geometry) {
       const src = g.attributes.uv;
       for (let i = 0; i < count; i++) { uv[2 * i] = (src ? src.getX(i) : 0) * (opts.su || 1); uv[2 * i + 1] = (src ? src.getY(i) : 0) * (opts.sv || 1); }
     } else {
