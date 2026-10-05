@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
@@ -1255,6 +1256,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 child: WebViewWidget(
                   key: ValueKey(_game.sessionId),
                   controller: _webViewController!,
+                  // Every touch on the scene belongs to the game: a two-finger
+                  // pinch (zoom) must not be split with Flutter's gestures.
+                  gestureRecognizers: {
+                    Factory<OneSequenceGestureRecognizer>(
+                      () => EagerGestureRecognizer(),
+                    ),
+                  },
                 ),
               ),
             // Opaque, theme-coloured loading cover with a spinning wheel: the

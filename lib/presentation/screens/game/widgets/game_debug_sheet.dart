@@ -37,7 +37,6 @@ class _GameDebugSheetState extends State<GameDebugSheet> {
     final weather = [
       (null, appL10n.gameSceneAuto),
       ('clear', appL10n.gameSceneClear),
-      ('overcast', appL10n.gameSceneOvercast),
       ('rain', appL10n.gameScenePrecip),
     ];
     final seasons = [
