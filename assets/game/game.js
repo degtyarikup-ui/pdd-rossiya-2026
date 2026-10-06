@@ -14980,7 +14980,10 @@
       if (ev.scene.yieldMarkingZ !== undefined) {
         const mz = ev.stopZ + ev.scene.yieldMarkingZ;
         boxes.push(new THREE.Box3(new THREE.Vector3(-4.2, 0, mz - 3), new THREE.Vector3(4.2, 0, mz + 4)));
-      } else if (ev.junctionZ !== undefined && ev.junctionZ < ev.stopZ + 65) {
+      // The junction ahead is framed only where it decides the answer
+      // (overtaking before/at a junction); a question about a sign or a
+      // marking by the car (11_4, 6_5) is framed tight on it.
+      } else if (ev.scene.kind === 'overtake' && ev.junctionZ !== undefined && ev.junctionZ < ev.stopZ + 65) {
         boxes.push(new THREE.Box3(new THREE.Vector3(-14, 0, ev.junctionZ - 7), new THREE.Vector3(14, 0, ev.junctionZ + 7)));
       }
       // Tight on what the question is about (a car and a sign next to it
