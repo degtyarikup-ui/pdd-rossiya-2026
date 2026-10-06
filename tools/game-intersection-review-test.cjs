@@ -106,6 +106,9 @@ const { chromium } = require('playwright');
               expectedStopLine: intersection.situation.hasStopLine ?? (!!intersection.situation.trafficLights ||
                 intersection.situation.signs.some(s => s.code === '2.5')),
               farArmRoad,
+              // A hand-drawn layout (skew_three_way…) has its far arm at an
+              // angle: the straight-ahead probe at x = 0 misses it by design.
+              authoredLayout: !!intersection.situation.junctionLayout,
               tSidewalks,
               tEdgeBridges,
             };
@@ -129,7 +132,7 @@ const { chromium } = require('playwright');
       assert.equal(result.crosswalks, result.expectedCrosswalks ? 1 : 0, id + ': pedestrian-crossing evidence');
       assert.equal(result.stopLines, result.expectedStopLine ? 1 : 0, id + ': stop-line evidence');
       assert.equal(result.hasStraightExit, result.geometry !== 't_no_straight', id + ': junction geometry');
-      assert.equal(result.farArmRoad, result.geometry !== 't_no_straight', id + ': far-arm asphalt');
+      if (!result.authoredLayout) assert.equal(result.farArmRoad, result.geometry !== 't_no_straight', id + ': far-arm asphalt');
       assert.equal(result.tSidewalks, result.geometry === 't_no_straight' ? 1 : 0, id + ': continuous T-junction sidewalk');
       assert.equal(result.tEdgeBridges, result.geometry === 't_no_straight' ? 1 : 0, id + ': continuous T-junction edge marking');
       await page.evaluate(() => new Promise(resolve => setTimeout(() => { intersectionReview.render(); resolve(); }, 100)));
