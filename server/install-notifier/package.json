@@ -5,7 +5,9 @@
   "scripts": {
     "test": "node test-local.mjs",
     "deploy": "wrangler deploy",
-    "test:security": "node --test test-release-security.mjs test-users-admin.mjs"
+    "test:traffic": "node --test test-traffic.mjs",
+    "test:logging": "node --test test-logging.mjs",
+    "test:security": "node --test test-release-security.mjs test-users-admin.mjs test-apple-purchases.mjs test-entitlements.mjs"
   },
   "dependencies": {
     "jose": "^6.2.12"

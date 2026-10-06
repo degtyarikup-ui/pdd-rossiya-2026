@@ -1,7 +1,7 @@
 name: pdd_app
 description: "ПДД Россия 2026 — билеты и экзамен"
 publish_to: 'none'
-version: 2.1.6+44
+version: 2.1.8+48
 
 environment:
   sdk: ^3.11.4
@@ -31,12 +31,15 @@ dependencies:
   in_app_review: ^2.0.12
   audioplayers: ^6.8.1
   google_sign_in: ^6.2.2
+  google_sign_in_web: ^0.12.4+4
   sign_in_with_apple: ^6.1.4
   webview_flutter: ^4.10.0
   webview_flutter_android: ^4.14.0
   in_app_purchase: ^3.2.0
   flutter_secure_storage: ^11.2.0
   crypto: ^3.0.7
+  firebase_core: ^4.15.0
+  firebase_messaging: ^16.7.0
 
 dev_dependencies:
   flutter_test:
@@ -45,6 +48,7 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
 
   webview_flutter_platform_interface: any
+  in_app_purchase_platform_interface: ^1.4.1
 flutter_launcher_icons:
   android: true
   ios: true

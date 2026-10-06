@@ -1,0 +1,25 @@
+{
+  "id": "002-bus",
+  "country": "ru",
+  "ticket": 17,
+  "questionNumber": 13,
+  "sceneId": "ticket_17_13",
+  "choicesSpeech": "Обязаны? Или не обязаны?",
+  "answerSpeech": "Да! Красный сигнал и зелёная стрелка: уступи автобусу, потом поворачивай.",
+  "rule": "13.5",
+  "motion": {
+    "playerDelay": 3.5,
+    "playerDuration": 3.1,
+    "npcDelay": 0,
+    "npcDuration": 3.5
+  },
+  "camera": {
+    "closeX": 0,
+    "closeY": 7,
+    "closeBehind": 18,
+    "closeTargetX": 1.5,
+    "closeTargetY": 2,
+    "highX": 4,
+    "highSize": 75
+  }
+}

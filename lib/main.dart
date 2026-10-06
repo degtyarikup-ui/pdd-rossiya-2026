@@ -14,6 +14,7 @@ import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/data/services/install_reporter.dart';
 import 'package:pdd_app/data/services/notification_service.dart';
+import 'package:pdd_app/data/services/remote_notifications_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
@@ -99,6 +100,14 @@ Future<void> _initStreakNotifications(ProgressDataSource ds) async {
   if (kIsWeb) return;
   try {
     await StreakNotifier.instance.init();
+    await RemoteNotificationsService.instance.init();
+    await RemoteNotificationsService.instance.setPushConsent(
+      (await ds.loadAppSettings()).pushMessagesEnabled,
+      requestPermission: false,
+    );
+    await StreakNotifier.instance.setUserStreakEnabled(
+      (await ds.loadAppSettings()).notificationsEnabled,
+    );
     await StreakNotifier.instance.requestPermission();
     await StreakNotifier.instance.refreshStreakReminder(await ds.loadStreak());
     // Тестовый показ уведомления через несколько секунд после запуска.
@@ -140,6 +149,9 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     // Пересчитываем напоминание при уходе в фон (учитывает сегодняшнюю
     // тренировку) и при возврате (держит расписание свежим).
     if (kIsWeb) return;
+    if (state == AppLifecycleState.resumed) {
+      IapService.instance.retryPendingPurchases();
+    }
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.resumed) {
       unawaited(_refreshStreakReminder());
@@ -149,6 +161,9 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
   Future<void> _refreshStreakReminder() async {
     try {
       final ds = ref.read(progressDataSourceProvider);
+      await StreakNotifier.instance.setUserStreakEnabled(
+        (await ds.loadAppSettings()).notificationsEnabled,
+      );
       await StreakNotifier.instance.refreshStreakReminder(
         await ds.loadStreak(),
       );

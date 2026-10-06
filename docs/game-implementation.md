@@ -515,3 +515,24 @@ node tools/game-first-batch-test.cjs
 
 Итоговые регрессии пакета: первый пакет — 30 сцен / 22 проверки; правила игры
 и экзаменов Flutter — 82 теста. Сборка и публикация в рамках пакета не выполнялись.
+
+
+## Flutter web game
+
+RU web application: https://pdd-drive.ru/app/ (`scripts/deploy_web.sh ru`).
+The same mobile engine runs in an iframe, with shared Flutter screens,
+questions, garage and progress services. Conditional imports select
+`platform/browser_game_web.dart`; `assets/game/browser-bridge.js` activates
+only for `flutterWeb=1`. Each side validates message source and origin;
+Flutter also rejects events from an outdated game session.
+
+Fine-pointer browsers use keyboard controls: Up/W accelerates,
+Down/S/Space brakes, Left/Right/A/D steer. Simple steering performs one
+maneuver per keydown; free steering holds the wheel. Blur, pause and tab
+changes release input. Coarse-pointer browsers retain mobile touch controls.
+
+Validation: Flutter analyze and tests,
+`node tools/game-browser-bridge-test.cjs`, desktop/mobile browser smoke
+tests and real iframe keydown/keyup forwarding. Web currently offers only
+three-month access with payment disabled until the provider is connected.
+Native Google Play and App Store offerings remain unchanged.

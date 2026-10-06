@@ -39,10 +39,12 @@ async function runTests() {
   assert.equal(adminRes.status, 200);
   assert.match(adminHtml, /<title>ПДД Аналитика — Панель управления<\/title>/);
   assert.match(adminHtml, /id="admin-data-state"/);
-  assert.match(adminHtml, /Установки по дням/);
+  assert.match(adminHtml, /География/);
   assert.doesNotMatch(adminHtml, /chart\.js/);
   assert.match(adminHtml, /Данные аналитики/);
-  assert.match(adminHtml, /Беларусь \(BY\)/);
+  assert.match(adminHtml, /id="sidebar-toggle-btn"/);
+  assert.match(adminHtml, /class="toggle-icon-collapse"/);
+  assert.doesNotMatch(adminHtml, /<div class="brand-text">ПДД Аналитика<\/div>/);
   assert.equal((adminHtml.match(/id="sidebar-app-select"/g) || []).length, 1);
   console.log('   Status:', adminRes.status, 'оболочка и состояния встроены: YES');
 

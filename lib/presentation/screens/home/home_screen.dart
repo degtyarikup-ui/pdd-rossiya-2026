@@ -12,6 +12,9 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
+import 'package:pdd_app/data/services/app_update_service.dart';
+import 'package:pdd_app/presentation/widgets/app_update_dialog.dart';
+import 'package:pdd_app/data/services/remote_notifications_service.dart';
 import 'package:pdd_app/data/services/review_prompt_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -23,7 +26,9 @@ import 'package:pdd_app/presentation/screens/game/game_screen.dart';
 import 'package:pdd_app/presentation/screens/settings/settings_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/screens/topics/topics_screen.dart';
+import 'package:pdd_app/presentation/widgets/app_notice_widgets.dart';
 import 'package:pdd_app/presentation/widgets/premium_granted_dialog.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:pdd_app/presentation/widgets/sign_in_required_view.dart';
 import 'package:pdd_app/presentation/widgets/streak_celebration_dialog.dart';
 import 'package:pdd_app/presentation/widgets/continue_session_card.dart';
@@ -39,29 +44,207 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, RouteAware {
   late int _currentIndex;
   StreamSubscription<DateTime?>? _premiumGrantSub;
   Timer? _grantPoll;
+  bool _noticeOpen = false;
+  bool _updateChecking = false;
+  bool _updateCheckQueued = false;
+  bool _routeSubscribed = false;
+  StreamSubscription<void>? _updateSub;
+  StreamSubscription<NoticeTap>? _tapSub;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _updateSub = ref.read(appUpdateServiceProvider).changes.listen((_) {
+      if (_updateChecking || _noticeOpen) {
+        _updateCheckQueued = true;
+      } else {
+        unawaited(_checkNotices());
+      }
+    });
     _subscribePremiumGrant();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => unawaited(_checkNotices()),
+    );
     WidgetsBinding.instance.addObserver(this);
+    _tapSub = RemoteNotificationsService.instance.taps.listen(
+      (tap) => unawaited(_runNoticeTap(tap)),
+    );
     // A Premium granted from the admin panel shows up while the app is open
     // (a read-only check, no write on the server).
-    _grantPoll = Timer.periodic(
-      const Duration(minutes: 5),
-      (_) => PremiumService.instance.checkForGrant(),
-    );
+    _grantPoll = Timer.periodic(const Duration(minutes: 5), (_) {
+      unawaited(PremiumService.instance.checkForGrant());
+      unawaited(_checkNotices());
+    });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(PremiumService.instance.checkForGrant());
+      unawaited(_checkNotices());
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (!_routeSubscribed && route is PageRoute) {
+      appRouteObserver.subscribe(this, route);
+      _routeSubscribed = true;
+    }
+  }
+
+  @override
+  void didPopNext() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_checkNotices());
+    });
+  }
+
+  bool get _canShowNotice {
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    return mounted &&
+        !_noticeOpen &&
+        _currentIndex == 0 &&
+        (lifecycle == null || lifecycle == AppLifecycleState.resumed) &&
+        ModalRoute.of(context)?.isCurrent == true &&
+        !PremiumService.instance.hasPendingGrant;
+  }
+
+  Future<bool> _checkUpdate() async {
+    if (_updateChecking) return false;
+    _updateChecking = true;
+    var ownsModal = false;
+    try {
+      final service = ref.read(appUpdateServiceProvider);
+      final offer = await service.check();
+      if (offer == null ||
+          !_canShowNotice ||
+          !await service.shouldShow(offer) ||
+          !_canShowNotice ||
+          !mounted) {
+        return false;
+      }
+      _noticeOpen = true;
+      ownsModal = true;
+      // Show synchronously after checking route/lifecycle. Record presentation,
+      // including swipe/back dismissal, without delaying the dialog on disk I/O.
+      final result = AppUpdateDialog.show(context, offer);
+      unawaited(service.markShown(offer));
+      final accepted = await result;
+      if (accepted && mounted) {
+        final opened = await service.update(offer);
+        if (!opened && mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(appL10n.appUpdateOpenFailed)));
+        }
+      }
+      return true;
+    } catch (_) {
+      return false; // Update checks must not prevent offline training.
+    } finally {
+      if (ownsModal) _noticeOpen = false;
+      _updateChecking = false;
+      _retryQueuedUpdate();
+    }
+  }
+
+  void _retryQueuedUpdate() {
+    if (!mounted || _noticeOpen || _updateChecking || !_updateCheckQueued) {
+      return;
+    }
+    _updateCheckQueued = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_checkNotices());
+    });
+  }
+
+  Future<void> _checkNotices() async {
+    if (!mounted || _updateChecking || _noticeOpen) return;
+    final service = RemoteNotificationsService.instance;
+    final launchTap = service.takePendingTap();
+    if (launchTap != null) {
+      await _runNoticeTap(launchTap);
+      return;
+    }
+    if (await _checkUpdate()) return;
+    await service.refresh();
+    final pending = service.takePendingTap();
+    if (pending != null && mounted) {
+      await _runNoticeTap(pending);
+      return;
+    }
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    if (!mounted ||
+        _noticeOpen ||
+        _currentIndex != 0 ||
+        (lifecycle != null && lifecycle != AppLifecycleState.resumed) ||
+        ModalRoute.of(context)?.isCurrent != true ||
+        PremiumService.instance.hasPendingGrant) {
+      return;
+    }
+    final notice = service.nextNotice;
+    if (notice == null) return;
+    _noticeOpen = true;
+    try {
+      await service.markSeen(notice.id);
+      if (!mounted ||
+          ModalRoute.of(context)?.isCurrent != true ||
+          _currentIndex != 0) {
+        return;
+      }
+      final accepted = await AppNoticeDialog.show(context, notice);
+      final tap = notice.tap;
+      if (accepted && tap != null && mounted) await _runNoticeTap(tap);
+    } finally {
+      _noticeOpen = false;
+      _retryQueuedUpdate();
+    }
+  }
+
+  /// Executes the action attached to a popup / banner / push.
+  Future<void> _runNoticeTap(NoticeTap tap) async {
+    if (!mounted) return;
+    void tab(int index) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      setState(() => _currentIndex = index);
+    }
+
+    switch (tap.action) {
+      case NoticeAction.none:
+        return;
+      case NoticeAction.url:
+        try {
+          await launchUrl(
+            Uri.parse(tap.url),
+            mode: LaunchMode.externalApplication,
+          );
+        } catch (_) {
+          /* ignore unlaunchable external links */
+        }
+      case NoticeAction.game:
+        tab(1);
+      case NoticeAction.feed:
+        tab(2);
+      case NoticeAction.settings:
+        tab(3);
+      case NoticeAction.tickets || NoticeAction.topics:
+        tab(0);
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => tap.action == NoticeAction.tickets
+                ? const TicketsScreen()
+                : const TopicsScreen(),
+          ),
+        );
     }
   }
 
@@ -97,6 +280,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void dispose() {
     _premiumGrantSub?.cancel();
     _grantPoll?.cancel();
+    _tapSub?.cancel();
+    _updateSub?.cancel();
+    if (_routeSubscribed) appRouteObserver.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -108,9 +294,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   bool _gameVisited = false;
 
   List<Widget> get _screens => [
-    const _HomeTab(),
+    _HomeTab(onNoticeTap: _runNoticeTap),
     GameScreen(
-      onExit: () => setState(() => _currentIndex = 0),
+      onExit: () {
+        setState(() => _currentIndex = 0);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(_checkNotices());
+        });
+      },
       visible: _currentIndex == 1,
     ),
     if (ref.watch(isAuthenticatedProvider))
@@ -172,6 +363,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       TtsService.instance.stop();
                       HapticFeedbackHelper.select();
                       setState(() => _currentIndex = index);
+                      if (index == 0) unawaited(_checkNotices());
                     },
                     destinations: [
                       NavigationDestination(
@@ -210,7 +402,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 /// приложения — короткие сессии в транспорте, и каждый лишний шаг на возврате
 /// стоит самого возврата.
 class _HomeTab extends ConsumerStatefulWidget {
-  const _HomeTab();
+  final Future<void> Function(NoticeTap tap) onNoticeTap;
+  const _HomeTab({required this.onNoticeTap});
 
   @override
   ConsumerState<_HomeTab> createState() => _HomeTabState();
@@ -327,28 +520,64 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              statsAsync.when(
-                data: (stats) => ProgressPanelCard(
-                  stats: stats,
-                  streak: streakAsync.valueOrNull,
-                ),
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 48),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-                error: (error, _) => ProgressPanelCard(
-                  stats: const {
+              ValueListenableBuilder<List<AppNotice>>(
+                valueListenable: RemoteNotificationsService.instance.banners,
+                builder: (context, banners, _) {
+                  const emptyStats = {
                     'correctAnswers': 0,
                     'answeredQuestions': 0,
                     'passedTickets': 0,
                     'wrongQuestions': 0,
                     'totalQuestions': 0,
                     'totalTickets': 0,
-                  },
-                  streak: streakAsync.valueOrNull,
-                ),
+                  };
+                  final progressCard = statsAsync.when(
+                    data: (stats) => ProgressPanelCard(
+                      stats: stats,
+                      streak: streakAsync.valueOrNull,
+                    ),
+                    loading: () => banners.isNotEmpty
+                        ? ProgressPanelCard(
+                            stats: emptyStats,
+                            streak: streakAsync.valueOrNull,
+                          )
+                        : const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 48),
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
+                    error: (error, _) => ProgressPanelCard(
+                      stats: emptyStats,
+                      streak: streakAsync.valueOrNull,
+                    ),
+                  );
+                  if (banners.isEmpty) return progressCard;
+                  final banner = banners.first;
+                  return Stack(
+                    children: [
+                      Visibility(
+                        visible: false,
+                        maintainSize: true,
+                        maintainAnimation: true,
+                        maintainState: true,
+                        child: progressCard,
+                      ),
+                      Positioned.fill(
+                        child: AppNoticeBanner(
+                          key: ValueKey(banner.id),
+                          notice: banner,
+                          onDismiss: () => RemoteNotificationsService.instance
+                              .dismissBanner(banner.id),
+                          onTap: () {
+                            final tap = banner.tap;
+                            if (tap != null) widget.onNoticeTap(tap);
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: gap),
               unfinishedSession.maybeWhen(

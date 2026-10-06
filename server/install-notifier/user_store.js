@@ -26,11 +26,21 @@ export function userSummary(user) {
     premiumExpiresAt: user.premiumExpiresAt || null,
     premiumSource: cut(user.premiumSource, 20),
     purchasedAt: user.purchasedAt || null,
+    autoRenewEnabled: typeof user.autoRenewEnabled === 'boolean' ? user.autoRenewEnabled : null,
+    storeVerifiedAt: user.storeVerifiedAt || null,
     hasPushToken: Boolean(user.pushToken),
     suspect: user.suspect === true,
-    v: 2,
+    ipCountry: cut(user.ipCountry, 4),
+    ipRegion: cut(user.ipRegion, 60),
+    ipCity: cut(user.ipCity, 60),
+    v: 4,
   };
   if (new TextEncoder().encode(JSON.stringify(meta)).length > META_LIMIT) meta.avatarUrl = null;
+  // Keep optional geographic fields bounded even for multibyte names.
+  for (const key of ['ipCity', 'ipRegion', 'name', 'email']) {
+    if (new TextEncoder().encode(JSON.stringify(meta)).length <= META_LIMIT) break;
+    meta[key] = null;
+  }
   return meta;
 }
 
@@ -46,28 +56,41 @@ const BACKFILL_PER_CALL = 150;
 export async function listUserSummaries(env) {
   const users = [];
   const missing = [];
+  const enrich = [];
   let cursor;
   do {
     const page = await env.INSTALLS.list({ prefix: 'user:', cursor });
     for (const key of page.keys || []) {
-      if (key.metadata && key.metadata.v === 2) users.push(key.metadata);
+      if (key.metadata && [2, 3, 4].includes(key.metadata.v)) {
+        users.push(key.metadata);
+        if (key.metadata.v < 4) enrich.push(key.name);
+      }
       else missing.push(key.name);
     }
     cursor = page.list_complete === false ? page.cursor : undefined;
   } while (cursor);
 
-  for (const [index, name] of missing.entries()) {
-    // Остальные дочитаются при следующих заходах; пока — строка с одним ID.
-    if (index >= BACKFILL_PER_CALL) { users.push({ id: name.slice(5), name: null, pending: true }); continue; }
-    try {
-      const raw = await env.INSTALLS.get(name);
-      if (!raw) continue;
-      const user = JSON.parse(raw);
-      if (!user || !user.id) continue;
-      await putUserRecord(env, user);
-      users.push(userSummary(user));
-    } catch (_) {}
-  }
+  const jobs = [...missing, ...enrich];
+  for (const name of missing.slice(BACKFILL_PER_CALL)) users.push({ id: name.slice(5), name: null, pending: true });
+  // Bound both KV work and concurrency: enriching old summaries must not
+  // make a dashboard wait for 150 sequential network round trips.
+  const selected = jobs.slice(0, BACKFILL_PER_CALL);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(6, selected.length) }, async () => {
+    while (next < selected.length) {
+      const name = selected[next++];
+      try {
+        const raw = await env.INSTALLS.get(name);
+        if (!raw) continue;
+        const user = JSON.parse(raw);
+        if (!user || !user.id) continue;
+        await putUserRecord(env, user);
+        const oldIndex = users.findIndex(u => u.id === user.id);
+        if (oldIndex >= 0) users[oldIndex] = userSummary(user);
+        else users.push(userSummary(user));
+      } catch (_) {}
+    }
+  }));
 
   users.sort((a, b) => Date.parse(b.lastSeenAt || b.createdAt || 0) - Date.parse(a.lastSeenAt || a.createdAt || 0));
   return users;

@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -29,12 +29,19 @@ class SubscriptionManagementSheet extends StatefulWidget {
 class _SubscriptionManagementSheetState
     extends State<SubscriptionManagementSheet> {
   bool _isRestoring = false;
+  /// Стор, где оформлена подписка (по данным сервера, а не по платформе:
+  /// премиум из App Store виден и на Android, и на сайте). null — доступ
+  /// без автопродления: оплата на сайте или выдача из админки.
+  String? get _store {
+    final source = PremiumService.instance.purchaseStore;
+    return source == 'appstore' || source == 'googleplay' ? source : null;
+  }
 
   Future<void> _openStoreSubscriptionSettings() async {
     HapticFeedbackHelper.select();
     Uri uri;
 
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+    if (_store == 'appstore') {
       // Apple Subscriptions management deep-link
       uri = Uri.parse('https://apps.apple.com/account/subscriptions');
     } else {
@@ -99,7 +106,8 @@ class _SubscriptionManagementSheetState
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final expiresAt = PremiumService.instance.expiresAt;
-    final isIOS = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+    final store = _store;
+    final isIOS = store == 'appstore';
 
     final dateStr = expiresAt != null
         ? DateFormat('d MMMM yyyy, HH:mm', 'ru').format(expiresAt)
@@ -247,7 +255,9 @@ class _SubscriptionManagementSheetState
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        isIOS
+                        store == null
+                            ? appL10n.premiumOneTimeInfo(dateStr)
+                            : isIOS
                             ? 'Вы можете отключить автопродление или изменить подписку в любой момент в настройках учетной записи Apple ID. При отмене доступ сохранится до $dateStr.'
                             : 'Вы можете отключить автопродление или изменить способ оплаты в любой момент в Google Play. При отмене подписка останется активной до $dateStr.',
                         style: TextStyle(
@@ -264,7 +274,7 @@ class _SubscriptionManagementSheetState
               const SizedBox(height: 20),
 
               // 6. Action Button: Manage in App Store / Google Play
-              SizedBox(
+              if (store != null) SizedBox(
                 height: 54,
                 child: ElevatedButton.icon(
                   onPressed: _openStoreSubscriptionSettings,

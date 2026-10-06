@@ -136,6 +136,15 @@ class CountryConfig {
   /// Требуется Apple (Guideline 3.1.2) и Google Play для платных подписок.
   final String termsUrl;
 
+  /// Страница тарифов оплаты на сайте (что и за сколько покупает клиент —
+  /// требование банка). Пусто → оплаты на сайте у страны нет, веб-пейвол
+  /// показывает только «оплата скоро». РФ: СБП через агрегатора.
+  final String tariffsUrl;
+
+  /// Оплата премиума на сайте (веб-версия). Только веб: в приложениях из
+  /// App Store / Google Play — покупки стора.
+  bool get hasWebPayments => tariffsUrl.isNotEmpty;
+
   /// Ссылки на официальные источники гос-данных (вопросы, закон) для секции
   /// «О приложении». Google Play/App Store требуют указывать источник для
   /// приложений с государственной информацией. Пусто → секция скрыта.
@@ -164,6 +173,7 @@ class CountryConfig {
     required this.webUrl,
     this.privacyUrl = '',
     this.termsUrl = '',
+    this.tariffsUrl = '',
     this.dataSources = const [],
     this.notAffiliatedNote = '',
     this.pddPointMarker,
@@ -206,6 +216,7 @@ class CountryConfig {
     webUrl: 'https://pdd-drive.ru',
     privacyUrl: 'https://pdd-drive.ru/privacy.html',
     termsUrl: 'https://pdd-drive.ru/terms.html',
+    tariffsUrl: 'https://pdd-drive.ru/tarify/',
     pddPointMarker: _pddPointMarkerRu,
     // Регламент ГИБДД (пост. Правительства РФ № 1097, приказ МВД № 80):
     // 20 вопросов / 20 минут, 4 тематических блока по 5 вопросов.

@@ -100,6 +100,26 @@ assets/countries/{code}/images/     questions_ab/, signs/, ...
     в `exam_screen.dart` по `rules.scoring`. Тесты обеих моделей —
     `test/exam_flow_test.dart`.
 
+## Премиум и оплата
+
+Премиум привязан к **аккаунту** на сервере (воркер), а не к устройству:
+купленное в одном месте работает везде, где человек вошёл тем же способом
+(Google/Яндекс/Apple — это разные аккаунты, `id = <provider>_<sub>`).
+
+- Сроки по источникам — `server/install-notifier/entitlements.js`:
+  `user.entitlements[appstore|googleplay|web|admin_grant]`, итог
+  (`isPremium/premiumExpiresAt/premiumSource`) — самый дальний срок. Писать
+  только через `setEntitlement`/`extendEntitlement`, не полями напрямую.
+- Оплата на сайте (РФ, СБП через агрегатора Platega) — `payments.js`, тарифы
+  `WEB_TARIFFS` (99 ₽/7 дн., 290 ₽/90 дн., разово, без автопродления) = страница
+  `web_landing/ru/tarify/` = веб-пейвол. Пока платёжка не подключена — заглушка:
+  `/api/user/pay-intent` пишет аккаунт+тариф+почту (`pay_intent:<id>`, список —
+  `/api/admin/pay-intents`). Флаг страны — `CountryConfig.tariffsUrl`.
+- Google Play: требование Play Billing не действует для пользователей **в
+  России** (с 02.08.2022) — СБП в Android-сборке только для них. RuStore
+  сторонние платежи разрешает без комиссии. iOS — только IAP, ссылок на
+  оплату на сайте в iOS-приложении быть не должно.
+
 ## Сборка и деплой
 
 ```bash

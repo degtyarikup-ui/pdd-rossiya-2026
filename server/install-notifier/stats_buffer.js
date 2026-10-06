@@ -1,93 +1,100 @@
-// Durable Object «буфер статистики».
-//
-// Принимает события аналитики от воркера (POST /enqueue), складывает их в
-// своё хранилище и раз в FLUSH_MS применяет к KV одной пачкой через
-// flushBufferedStats из worker.js. Смысл — уложиться в бесплатный лимит KV
-// (1000 записей в сутки): вместо 4–5 put на каждый просмотр страницы
-// получается несколько put на десять минут, сколько бы людей ни зашло.
-//
-// POST /flush — сбросить буфер немедленно (перед отчётом в Telegram).
-//
-// Класс намеренно не наследует DurableObject из 'cloudflare:workers', чтобы
-// worker.js по-прежнему импортировался в локальных тестах под Node.
-
+// Analytics are accepted into durable storage before batching into KV.
+// A persisted write plan makes partial KV failures safe to retry: counters
+// are replaced with the same totals, rather than incremented a second time.
 import { flushBufferedStats } from './worker.js';
 
-// Раз в час: бесплатный тариф KV даёт 1000 записей в сутки, а каждый сброс
-// пишет десятки ключей (дни, слоты, просмотры статей, лента, ИИ). При сбросе
-// раз в 10 минут лимит выбирался к вечеру, и все записи (очки игры, синк
-// профиля, покупки) падали с «KV put() limit exceeded».
-const FLUSH_MS = 60 * 60 * 1000;
-const RETRY_MS = 5 * 60 * 1000;
-// Предохранитель: старше этого события не копим, чтобы хранилище не росло
-// бесконечно, если KV долго недоступен (например, лимит уже исчерпан).
-const MAX_QUEUE = 20000;
-const DELETE_CHUNK = 128;
+const FLUSH_MS = 5 * 60 * 1000;
+const RETRY_MS = 65 * 1000; // KV permits only one write/second/key.
+const BATCH_SIZE = 1000;
 
 export class StatsBuffer {
   constructor(state, env) {
     this.state = state;
     this.env = env;
+    this.tail = Promise.resolve();
   }
-
-  async fetch(request) {
-    const url = new URL(request.url);
-    if (request.method !== 'POST') return new Response('not found', { status: 404 });
-
-    if (url.pathname === '/enqueue') {
-      let item;
-      try { item = await request.json(); } catch (_) {
-        return new Response('bad json', { status: 400 });
+  serial(fn) {
+    const result = this.tail.then(fn);
+    this.tail = result.catch(() => {});
+    return result;
+  }
+  fetch(request) {
+    return this.serial(async () => {
+      const url = new URL(request.url);
+      if (request.method !== 'POST') return new Response('not found', { status: 404 });
+      if (url.pathname === '/enqueue') {
+        let item;
+        try { item = await request.json(); } catch (_) { return new Response('bad json', { status: 400 }); }
+        if (item.id && await this.state.storage.get('seen:' + item.id)) return new Response('duplicate');
+        const alarmAt = await this.state.storage.getAlarm();
+        // Old deployments flushed hourly; shorten their persisted alarm too.
+        if (alarmAt === null || alarmAt > Date.now() + FLUSH_MS) {
+          await this.state.storage.setAlarm(Date.now() + FLUSH_MS);
+        }
+        const key = `q:${String(item.ts || Date.now()).padStart(13, '0')}:${crypto.randomUUID()}`;
+        await this.state.storage.transaction(async txn => {
+          await txn.put(key, item);
+          if (item.id) await txn.put('seen:' + item.id, true);
+        });
+        return new Response('ok');
       }
-      // Ключ с временем и случайным хвостом: события ложатся по порядку,
-      // а одновременные запросы не затирают друг друга.
-      const key = `q:${String(item.ts || Date.now()).padStart(13, '0')}:${Math.random().toString(36).slice(2, 8)}`;
-      await this.state.storage.put(key, item);
-      if ((await this.state.storage.getAlarm()) === null) {
-        await this.state.storage.setAlarm(Date.now() + FLUSH_MS);
+      if (url.pathname === '/flush') {
+        const complete = await this.flush();
+        return new Response(complete ? 'ok' : 'pending', { status: complete ? 200 : 202 });
       }
-      return new Response('ok');
-    }
-
-    if (url.pathname === '/flush') {
-      await this.flush();
-      return new Response('ok');
-    }
-
-    return new Response('not found', { status: 404 });
+      return new Response('not found', { status: 404 });
+    });
   }
-
-  async alarm() {
-    await this.flush();
-  }
+  alarm() { return this.serial(() => this.flush()); }
 
   async flush() {
-    const entries = await this.state.storage.list({ prefix: 'q:' });
-    if (!entries.size) return;
-
-    const keys = [...entries.keys()];
-    const items = [...entries.values()];
-
+    // Persist a plan BEFORE the first KV write. Keep it until all writes and
+    // queue cleanup succeed. Durable shadows avoid KV's stale cached reads.
+    let pending = await this.state.storage.get('pending');
+    const lastWrite = await this.state.storage.get('lastWrite') || 0;
+    if (Date.now() - lastWrite < RETRY_MS) {
+      await this.state.storage.setAlarm(lastWrite + RETRY_MS);
+      return false;
+    }
     try {
-      await flushBufferedStats(this.env, items);
-    } catch (e) {
-      // KV не принял запись (например, 429 по лимиту) — события остаются в
-      // хранилище, пробуем позже. Лишнее с головы очереди отбрасываем.
-      console.error('StatsBuffer flush failed', e && e.message);
-      if (keys.length > MAX_QUEUE) await this.deleteKeys(keys.slice(0, keys.length - MAX_QUEUE));
+      if (!pending) {
+        const entries = await this.state.storage.list({ prefix: 'q:', limit: BATCH_SIZE });
+        if (!entries.size) return true;
+        const kv = this.env.INSTALLS;
+        const env = { ...this.env, INSTALLS: {
+          get: async key => (await this.state.storage.get('shadow:' + key)) ?? kv.get(key),
+        } };
+        await flushBufferedStats(env, [...entries.values()], async writes => {
+          pending = { keys: [...entries.keys()], writes };
+          await this.state.storage.put('pending', pending);
+        });
+      }
+    } catch (_) {
+      console.error('StatsBuffer prepare failed; events retained');
       await this.state.storage.setAlarm(Date.now() + RETRY_MS);
-      return;
+      return false;
     }
-
-    await this.deleteKeys(keys);
-    // Пока шла запись, могли прийти новые события — им нужен свой будильник.
+    // If this invocation dies during KV writes, an alarm resumes the plan.
+    await this.state.storage.setAlarm(Date.now() + RETRY_MS);
+    try {
+      // Finish all started writes before returning a failure.
+      const results = await Promise.allSettled(pending.writes.map(w => this.env.INSTALLS.put(w.key, w.value, w.options)));
+      const failure = results.find(r => r.status === 'rejected');
+      if (failure) throw failure.reason;
+      await this.state.storage.transaction(async txn => {
+        for (const w of pending.writes) await txn.put('shadow:' + w.key, w.value);
+        await txn.put('lastWrite', Date.now());
+        for (let i = 0; i < pending.keys.length; i += 128) await txn.delete(pending.keys.slice(i, i + 128));
+        await txn.delete('pending');
+      });
+    } catch (_) {
+      console.error('StatsBuffer flush failed; persisted batch will retry');
+      await this.state.storage.setAlarm(Date.now() + RETRY_MS);
+      return false;
+    }
     const rest = await this.state.storage.list({ prefix: 'q:', limit: 1 });
-    if (rest.size) await this.state.storage.setAlarm(Date.now() + FLUSH_MS);
-  }
-
-  async deleteKeys(keys) {
-    for (let i = 0; i < keys.length; i += DELETE_CHUNK) {
-      await this.state.storage.delete(keys.slice(i, i + DELETE_CHUNK));
-    }
+    if (rest.size) await this.state.storage.setAlarm(Date.now() + RETRY_MS);
+    else await this.state.storage.deleteAlarm();
+    return !rest.size;
   }
 }

@@ -2,7 +2,7 @@
 # Деплой веб-версии страны на её GitHub Pages:
 #   ./scripts/deploy_web.sh {ru|by|rs} ["commit message"]
 #
-# ru → репо pdd-rossiya-app, ветка gh-pages, поддомен app.pdd-drive.ru
+# ru → /app/ в репо pdd-rossiya-2026, ветка gh-pages, https://pdd-drive.ru/app/
 #     (главный домен pdd-drive.ru занят лендингом — scripts/deploy_landing.sh)
 # by → репо pdd-belarus,  ветка gh-pages, домен pdd-drive.online
 #     (локальный клон: /Users/sergei/Documents/pdd-belarus)
@@ -17,8 +17,8 @@ ROOT="$(pwd)"
 
 case "$COUNTRY" in
   ru)
-    REMOTE_REPO="https://github.com/degtyarikup-ui/pdd-rossiya-app.git"
-    CNAME_DOMAIN="app.pdd-drive.ru"
+    REMOTE_REPO="https://github.com/degtyarikup-ui/pdd-rossiya-2026.git"
+    CNAME_DOMAIN="pdd-drive.ru"
     TITLE="ПДД Россия 2026 — билеты и экзамен"
     DESC="ПДД Россия 2026 — билеты, темы, экзамен. 800 вопросов, 40 билетов, категории A/B и C/D."
     SHORT="ПДД 2026"
@@ -40,7 +40,11 @@ case "$COUNTRY" in
   *) echo "unknown country: $COUNTRY"; exit 1 ;;
 esac
 
-./scripts/build.sh "$COUNTRY" web
+if [ "$COUNTRY" = "ru" ]; then
+  WEB_BASE_HREF=/app/ ./scripts/build.sh "$COUNTRY" web
+else
+  ./scripts/build.sh "$COUNTRY" web
+fi
 
 # Пост-обработка статических метаданных под страну.
 python3 - "$COUNTRY" <<PYEOF
@@ -66,33 +70,42 @@ json.dump(m, open(p, 'w'), ensure_ascii=False, indent=4)
 print('patched web metadata for', country)
 PYEOF
 
-# Свежая одиночная ревизия gh-pages: git init надёжнее клона
-# (пустые/непустые репо, отсутствующая ветка — без ветвлений).
-WORKTREE="/tmp/pdd-deploy-$COUNTRY"
-rm -rf "$WORKTREE"
-mkdir -p "$WORKTREE"
-(cd "$ROOT/build/web" && find . -mindepth 1 -maxdepth 1 -exec cp -R {} "$WORKTREE/" \;)
-
-# Статические страницы страны (политика конфиденциальности и т.п.), не часть
-# Flutter-сборки — просто лежат рядом и копируются поверх при каждом деплое.
-if [ -d "$ROOT/web_static/$COUNTRY" ]; then
-  cp -R "$ROOT/web_static/$COUNTRY/." "$WORKTREE/"
-fi
-
-touch "$WORKTREE/.nojekyll"
-printf '%s' "$CNAME_DOMAIN" > "$WORKTREE/CNAME"
-
-# RU-приложение живёт на поддомене app.* — из поиска его прячем, чтобы не
-# конкурировало с лендингом pdd-drive.ru (SEO живёт на главном домене).
+# RU shares the landing repository: preserve its deployed files and replace
+# only /app/. BY/RS retain their standalone deployments.
+WORKTREE="$(mktemp -d -t pdd-web-deploy.XXXXXX)"
+trap 'rm -rf "$WORKTREE"' EXIT
 if [ "$COUNTRY" = "ru" ]; then
-  printf 'User-agent: *\nDisallow: /\n' > "$WORKTREE/robots.txt"
+  git clone --quiet --depth 1 --branch gh-pages "$REMOTE_REPO" "$WORKTREE"
+  mkdir -p "$WORKTREE/app"
+  rsync -rc --delete "$ROOT/build/web/" "$WORKTREE/app/"
+  DEST="$WORKTREE/app"
+else
+  DEST="$WORKTREE"
+  cp -R "$ROOT/build/web/." "$DEST/"
+  git -C "$WORKTREE" init >/dev/null
+  git -C "$WORKTREE" checkout -b gh-pages >/dev/null 2>&1 || git -C "$WORKTREE" branch -m gh-pages
+  printf '%s' "$CNAME_DOMAIN" > "$WORKTREE/CNAME"
 fi
-
-git -C "$WORKTREE" init >/dev/null
-git -C "$WORKTREE" checkout -b gh-pages >/dev/null 2>&1 || git -C "$WORKTREE" branch -m gh-pages
+if [ -d "$ROOT/web_static/$COUNTRY" ]; then
+  cp -R "$ROOT/web_static/$COUNTRY/." "$DEST/"
+fi
+touch "$WORKTREE/.nojekyll"
+if [ "$COUNTRY" = "ru" ]; then
+  printf 'User-agent: *\nDisallow: /\n' > "$DEST/robots.txt"
+fi
 git -C "$WORKTREE" add -A
-git -C "$WORKTREE" -c user.email="degtyarik.up@gmail.com" -c user.name="degtyarikup-ui" \
-  commit -m "$MSG" >/dev/null
-git -C "$WORKTREE" push --force "$REMOTE_REPO" gh-pages:gh-pages
-rm -rf "$WORKTREE"
-echo "Deployed $COUNTRY → https://$CNAME_DOMAIN"
+if git -C "$WORKTREE" diff --cached --quiet; then
+  echo "Web deployment unchanged"
+else
+  git -C "$WORKTREE" -c user.email="degtyarik.up@gmail.com" -c user.name="degtyarikup-ui" commit -m "$MSG" >/dev/null
+  if [ "$COUNTRY" = "ru" ]; then
+    git -C "$WORKTREE" push "$REMOTE_REPO" gh-pages:gh-pages
+  else
+    git -C "$WORKTREE" push --force "$REMOTE_REPO" gh-pages:gh-pages
+  fi
+fi
+if [ "$COUNTRY" = "ru" ]; then
+  echo "Deployed ru → https://pdd-drive.ru/app/"
+else
+  echo "Deployed $COUNTRY → https://$CNAME_DOMAIN"
+fi

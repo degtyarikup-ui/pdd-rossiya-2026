@@ -99,8 +99,7 @@ var LN_PAGES = [
   ['https://pdd-drive.ru/', 'Сайт'],
   ['https://pdd-drive.ru/go/gplay/', 'Google Play'],
   ['https://pdd-drive.ru/go/rustore/', 'RuStore'],
-  ['https://pdd-drive.ru/go/appstore/', 'App Store'],
-  ['https://pdd-drive.ru/go/rs-gplay/', 'Сербия · Google Play']
+  ['https://pdd-drive.ru/go/appstore/', 'App Store']
 ];
 var LN_PAGE_NAMES = {}; LN_PAGES.forEach(function (p) { LN_PAGE_NAMES[p[0]] = p[1]; });
 var lnState = { source: 'ig', custom: '', page: LN_PAGES[0][0], campaign: '', days: 30, links: [], stats: null, loaded: false };
@@ -151,7 +150,7 @@ async function lnLoad() {
   try {
     var res = await Promise.all([
       adminFetchJson('/api/admin/links'),
-      adminFetchJson('/api/admin/stats?days=' + lnState.days + '&app=all')
+      adminFetchJson('/api/admin/stats?days=' + lnState.days + '&app=ru')
     ]);
     lnState.links = res[0].links || [];
     lnState.stats = res[1];

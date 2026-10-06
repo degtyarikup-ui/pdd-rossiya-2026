@@ -961,6 +961,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameOvertakingProhibited => 'Обгон здесь запрещён';
 
   @override
+  String get gameStopViolation => 'Вы не остановились в положенном месте';
+
+  @override
+  String get gameRedLightViolation => 'Проезд на запрещающий сигнал';
+
+  @override
   String get gameRailwayViolation =>
       'Переезд закрыт — объезжать и выезжать нельзя';
 
@@ -1118,6 +1124,47 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get authFailed =>
       'Вход отменён или возникла ошибка. Попробуйте ещё раз.';
+
+  @override
+  String get authErrorCancelled =>
+      'Вход не завершён. Попробуйте выбрать аккаунт ещё раз.';
+
+  @override
+  String get authErrorProvider =>
+      'Не удалось получить данные для входа от выбранного сервиса.';
+
+  @override
+  String get authErrorNetwork =>
+      'Не удалось связаться с сервером. Проверьте подключение к интернету.';
+
+  @override
+  String get authErrorTimeout =>
+      'Сервер не ответил вовремя. Попробуйте ещё раз.';
+
+  @override
+  String get authErrorAppKey =>
+      'Сервер отклонил эту сборку приложения. Обновите приложение из магазина.';
+
+  @override
+  String get authErrorCredential =>
+      'Сервер не подтвердил вход. Попробуйте другой аккаунт или способ входа.';
+
+  @override
+  String get authErrorServer =>
+      'Не удалось завершить вход на сервере. Попробуйте позже.';
+
+  @override
+  String get authErrorResponse =>
+      'Не удалось принять сессию входа. Проверьте дату и время на телефоне.';
+
+  @override
+  String get authSessionTemporary =>
+      'Вход выполнен. Телефон не смог сохранить сессию: после перезапуска потребуется войти снова.';
+
+  @override
+  String authDiagnosticCode(String code) {
+    return 'Код для поддержки: $code';
+  }
 
   @override
   String get authTitle => 'Вход в аккаунт';
@@ -1305,4 +1352,111 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameUturn => 'Разворот';
+
+  @override
+  String get purchaseVerificationPending =>
+      'Магазин сообщил о покупке, но доступ пока не подтверждён. Для повторной проверки нажмите «Восстановить» при доступном интернете.';
+
+  @override
+  String get notifAdminChannelName => 'Сообщения приложения';
+
+  @override
+  String get noticeAcknowledge => 'Понятно';
+
+  @override
+  String get noticeOpen => 'Открыть';
+
+  @override
+  String get pushMessagesSetting => 'Новости приложения';
+
+  @override
+  String get pushMessagesHint => 'Пуши об обновлениях и важных событиях';
+
+  @override
+  String get gameKeyboardHint =>
+      '↑ / W — газ · ↓ / S / пробел — тормоз · ← → / A D — повороты';
+
+  @override
+  String get webQuarter => '3 месяца';
+
+  @override
+  String get webPaymentSoon => 'Оплата скоро появится';
+
+  @override
+  String get webPaymentInfo =>
+      'Доступ на 3 месяца без автопродления. Оплата на сайте пока не подключена.';
+
+  @override
+  String get webWeek => '1 неделя';
+
+  @override
+  String get webPayButton => 'Оплатить через СБП';
+
+  @override
+  String get webPayInfo =>
+      'Разовая оплата без автопродления. Премиум откроется и в приложении на телефоне — войдите в нём тем же аккаунтом.';
+
+  @override
+  String get webPayTariffs => 'Тарифы';
+
+  @override
+  String get webPayEmailTitle => 'Оплата через СБП';
+
+  @override
+  String get webPayEmailBody =>
+      'Оплату через СБП подключаем в ближайшие дни. Оставьте почту — напишем, как только она заработает. На неё же придёт чек.';
+
+  @override
+  String get webPayEmailHint => 'Электронная почта';
+
+  @override
+  String get webPayEmailInvalid => 'Проверьте адрес почты';
+
+  @override
+  String get webPayNotify => 'Сообщить мне';
+
+  @override
+  String get webPayFailed => 'Не удалось отправить, попробуйте ещё раз';
+
+  @override
+  String webPaySaved(String email) {
+    return 'Спасибо! Напишем на $email, как только оплата заработает';
+  }
+
+  @override
+  String premiumOneTimeInfo(String date) {
+    return 'Доступ действует до $date и не продлевается автоматически.';
+  }
+
+  @override
+  String get appUpdateTitle => 'Вышло обновление';
+
+  @override
+  String get appUpdateBody =>
+      'В новой версии — улучшения и исправления. Обновите приложение, чтобы пользоваться ими.';
+
+  @override
+  String appUpdateVersion(String version) {
+    return 'Версия $version';
+  }
+
+  @override
+  String get appUpdateAction => 'Обновить';
+
+  @override
+  String get appUpdateLater => 'Позже';
+
+  @override
+  String get appUpdateReadyTitle => 'Обновление готово';
+
+  @override
+  String get appUpdateReadyBody =>
+      'Новая версия уже скачана. Перезапустите приложение, чтобы установить её.';
+
+  @override
+  String get appUpdateRestart => 'Перезапустить';
+
+  @override
+  String get appUpdateOpenFailed =>
+      'Не удалось открыть обновление. Попробуйте позже.';
 }

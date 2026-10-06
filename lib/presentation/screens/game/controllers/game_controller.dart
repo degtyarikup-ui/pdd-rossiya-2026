@@ -222,6 +222,8 @@ class GameController extends StateNotifier<GameState> {
           'one_way',
           'roadworks',
           'railway',
+          'stop',
+          'red_light',
         }.contains(type) ||
         episode < 0 ||
         !_violationEpisodes.add(episode)) {

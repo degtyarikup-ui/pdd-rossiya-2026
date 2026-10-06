@@ -1,5 +1,18 @@
+import { notificationRequest, uploadNotificationImage, serveNotificationImage } from './notifications.js';
+export { NotificationsState } from './notifications.js';
+import { NOTIFICATIONS_NAV_HTML, NOTIFICATIONS_VIEW_HTML, NOTIFICATIONS_CLIENT_JS } from './notifications_ui.js';
+import { TASKS_NAV_HTML, TASKS_VIEW_HTML, TASKS_CLIENT_JS } from './tasks_ui.js';
+import { handleTasksAdmin } from './tasks_admin.js';
+import { metadataFields, attributionLines, attributedDestination, marketingSource } from './attribution.js';
+import { renderDailyChart, pngBase64 } from './daily_chart.js';
+import { getAdsConfig, filterAdsForClient } from './ads_config.js';
+export { TrafficState } from './traffic_state.js';
+export { TelegramQueue } from './telegram_queue.js';
+import { trafficRequest } from './traffic_state.js';
 export { PurchaseClaims } from './purchase_claims.js';
-import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, StoreError } from './store_verification.js';
+import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntitlementExpiry, StoreError } from './store_verification.js';
+import { setEntitlement } from './entitlements.js';
+import { handlePayIntent, listPayIntents } from './payments.js';
 import { handleAuth, authorizeUserRequest, revokeUserSessions } from './user_auth.js';
 import { handleSocialAdmin, handleVideoStream, handleVideoThumb, runAutoPost } from './social.js';
 import { SOCIAL_NAV_HTML, SOCIAL_VIEW_HTML, SOCIAL_CLIENT_JS } from './social_ui.js';
@@ -236,8 +249,23 @@ async function getSlotData(env, slotDate, slotType) {
 function applyEventToSlot(slotData, event) {
   if (!slotData.installsByStore) slotData = emptySlotData();
 
+  if (['purchase', 'report'].includes(event.type)) {
+    const key = event.type === 'purchase' ? 'purchases' : 'reports';
+    slotData[key] = (slotData[key] || 0) + 1;
+    return slotData;
+  }
   if (event.type === 'registration') {
     slotData.registrations = (slotData.registrations || 0) + 1;
+    const channel = marketingSource(event.marketingSource);
+    if (!['unknown', 'other'].includes(channel)) {
+      slotData.registrationsByMarketingSource ||= {};
+      slotData.registrationsByMarketingSource[channel] = (slotData.registrationsByMarketingSource[channel] || 0) + 1;
+    }
+    if (event.marketingSource === 'threads') slotData.threadsRegistrations = (slotData.threadsRegistrations || 0) + 1;
+    return slotData;
+  }
+  if (event.type === 'install' && event.kind === 'unclassified') {
+    slotData.unclassified = (slotData.unclassified || 0) + 1;
     return slotData;
   }
   // Давний пользователь после обновления — не установка (и в отчёте тоже).
@@ -248,6 +276,7 @@ function applyEventToSlot(slotData, event) {
 
   if (event.type === 'view') {
     slotData.views++;
+    if (event.source === 'threads') slotData.threadsViews = (slotData.threadsViews || 0) + 1;
     const src = String(event.source || '').toLowerCase();
     if (src.includes('yandex') || src.includes('ya.ru')) {
       slotData.viewsBySource.yandex = (slotData.viewsBySource.yandex || 0) + 1;
@@ -258,6 +287,7 @@ function applyEventToSlot(slotData, event) {
     }
   } else if (event.type === 'click') {
     slotData.clicks++;
+    if (event.source === 'threads') slotData.threadsClicks = (slotData.threadsClicks || 0) + 1;
     const tgt = String(event.target || '').toLowerCase();
     if (tgt.includes('rustore')) {
       slotData.clicksByStore['RuStore'] = (slotData.clicksByStore['RuStore'] || 0) + 1;
@@ -318,12 +348,27 @@ function mergeSlotData(a, b) {
     aiRequests: (a.aiRequests || 0) + (b.aiRequests || 0),
     aiCostUsd: (a.aiCostUsd || 0) + (b.aiCostUsd || 0),
     registrations: (a.registrations || 0) + (b.registrations || 0),
+    registrationsByMarketingSource: sum(a.registrationsByMarketingSource, b.registrationsByMarketingSource),
+    threadsViews: (a.threadsViews || 0) + (b.threadsViews || 0),
+    threadsClicks: (a.threadsClicks || 0) + (b.threadsClicks || 0),
+    threadsRegistrations: (a.threadsRegistrations || 0) + (b.threadsRegistrations || 0),
+    purchases: (a.purchases || 0) + (b.purchases || 0),
+    reports: (a.reports || 0) + (b.reports || 0),
   };
 }
 
+// Новые метрики появились в production в этот момент; отсутствие истории не равно нулю.
+const EXTRA_METRICS_STARTED_AT = Date.parse('2026-10-03T21:03:13.125Z');
+export function dailyReportEnd(now = new Date()) {
+  const end = new Date(now);
+  end.setUTCHours(19, 0, 0, 0);
+  if (end > now) end.setUTCDate(end.getUTCDate() - 1);
+  return end;
+}
 // Суточный отчёт: ночной слот (22:00 вчера – 10:00) + дневной (10:00 – 22:00).
 async function buildDailyReport(env, now = new Date()) {
-  const date = mskDayKey(now);
+  const end = dailyReportEnd(now);
+  const date = mskDayKey(end);
   const data = mergeSlotData(
     await getSlotData(env, date, 'night'),
     await getSlotData(env, date, 'day'),
@@ -331,41 +376,74 @@ async function buildDailyReport(env, now = new Date()) {
   let grandTotal = 0;
   let registeredTotal = 0;
   try {
-    grandTotal = parseInt((await env.INSTALLS.get('counter')) || '0', 10);
-    registeredTotal = parseInt((await env.INSTALLS.get('counter:registered_users')) || '0', 10);
+    grandTotal = await readCounter(env, 'counter');
+    registeredTotal = await readCounter(env, 'counter:registered_users');
   } catch (_) {}
-  return buildDailyReportMessage({ data, grandTotal, registeredTotal });
+  return buildDailyReportMessage({ data, grandTotal, registeredTotal, end });
 }
 
-export function buildDailyReportMessage({ data, grandTotal, registeredTotal }) {
-  const store = (obj, k) => obj?.[k] || 0;
-  const views = data?.views || 0;
-  const clicks = data?.clicks || 0;
-  const cr = views > 0 ? ((clicks / views) * 100).toFixed(1) : '0.0';
+export async function dailyChartPoints(env, now = new Date()) {
+  return Promise.all(Array.from({ length: 7 }, async (_, i) => {
+    const date = mskDayKey(new Date(dailyReportEnd(now).getTime() - (6 - i) * 86400000));
+    const nightRaw = await env.INSTALLS.get(`slot:${date}:night`);
+    const dayRaw = await env.INSTALLS.get(`slot:${date}:day`);
+    const data = mergeSlotData(nightRaw ? JSON.parse(nightRaw) : emptySlotData(), dayRaw ? JSON.parse(dayRaw) : emptySlotData());
+    return { date, available: nightRaw != null || dayRaw != null, installs: data.installs, registrations: data.registrations };
+  }));
+}
+export async function sendDailyReport(env, now = new Date(), dedupKey = null) {
+  const text = await buildDailyReport(env, now);
+  if (!env.TELEGRAM) return sendTelegram(env, text, dedupKey);
+  let photoBase64;
+  try { photoBase64 = pngBase64(await renderDailyChart(await dailyChartPoints(env, now))); }
+  catch (_) { console.error('Daily chart unavailable; sending text'); return sendTelegram(env, text, dedupKey); }
+  const caption = text.length <= 1024 ? text : `📊 Сводка ПДД · ${mskDayKey(dailyReportEnd(now))}\nУстановки и регистрации за 7 суток (22:00–22:00 МСК). Нет данных обозначено N/A. Полный отчёт ниже.`;
+  const messages = [{ text: caption, photoBase64 }];
+  if (caption !== text) messages.push({ text });
+  const stub = env.TELEGRAM.get(env.TELEGRAM.idFromName(String(env.CHAT_ID)));
+  return stub.fetch('https://telegram/enqueue', { method: 'POST', body: JSON.stringify({ messages, dedupKey }) });
+}
 
+export async function finishPendingDailyReport(env) {
+  const raw = await env.INSTALLS.get('tg:daily_pending');
+  if (!raw) return;
+  const { scheduledTime } = JSON.parse(raw);
+  if (!await flushStatsBuffer(env)) return; // Backlog is durable; five-minute cron retries.
+  const now = new Date(scheduledTime);
+  const response = await sendDailyReport(env, now, 'daily:' + mskDayKey(now));
+  if (!response.ok) throw new Error('daily report queue unavailable');
+  await env.INSTALLS.delete('tg:daily_pending');
+}
+
+export function buildDailyReportMessage({ data, end = dailyReportEnd() }) {
+  const n = value => value == null ? '—' : formatNumberWithSpaces(value);
+  const stores = ['App Store', 'Google Play', 'RuStore'];
+  const clicks = stores.reduce((sum, k) => sum + (data?.clicksByStore?.[k] || 0), 0);
+  const start = new Date(end.getTime() - 86400000);
+  const months = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+  const date = d => `${d.getUTCDate()} ${months[d.getUTCMonth()]}`;
+  const completeExtra = start.getTime() >= EXTRA_METRICS_STARTED_AT;
+  const channelNames = { threads: 'Threads', instagram: 'Instagram', youtube: 'YouTube', tiktok: 'TikTok', telegram: 'Telegram', vk: 'VK', google: 'Google', yandex: 'Яндекс', direct: 'Прямой переход' };
+  const sources = Object.entries(data?.registrationsByMarketingSource || {})
+    .filter(([key, value]) => Object.hasOwn(channelNames, key) && Number.isFinite(value) && value > 0)
+    .sort((a, b) => b[1] - a[1]);
   return [
-    'Отчет за сутки (22:00 – 22:00 МСК)',
+    '📊 <b>Итоги за сутки</b>',
+    `<i>${date(start)} 22:00 — ${date(end)} 22:00 МСК</i>`,
     '',
-    `📱 Новые установки: +${data?.installs || 0}`,
-    `  • RuStore: ${store(data?.installsByStore, 'RuStore')}`,
-    `  • Google Play: ${store(data?.installsByStore, 'Google Play')}`,
-    `  • App Store: ${store(data?.installsByStore, 'App Store')}`,
+    '🌐 <b>Сайт</b>',
+    `Просмотры: <b>${n(data?.views)}</b>`,
+    `Переходы в магазины: <b>${n(clicks)}</b>`,
     '',
-    `👤 Регистрации: +${data?.registrations || 0}`,
+    '📱 <b>Приложение</b>',
+    `Новые установки: <b>${n(data?.installs)}</b>`,
+    `Новые аккаунты: <b>${n(data?.registrations)}</b>`,
+    `Покупки Premium: <b>${n(completeExtra ? data?.purchases : null)}</b>`,
     '',
-    `🌐 Посетители сайта: +${views}`,
-    `  • Яндекс: ${store(data?.viewsBySource, 'yandex')}`,
-    `  • Google: ${store(data?.viewsBySource, 'google')}`,
-    `  • Соцсети/другое: ${store(data?.viewsBySource, 'social_other')}`,
-    '',
-    `🎯 Переходы в приложение с сайта: ${clicks} (CR ${cr}%)`,
-    `  • RuStore: ${store(data?.clicksByStore, 'RuStore')}`,
-    `  • Google Play: ${store(data?.clicksByStore, 'Google Play')}`,
-    `  • App Store: ${store(data?.clicksByStore, 'App Store')}`,
-    '',
-    `🤖 ИИ-помощник: ${data?.aiRequests || 0} запр. (~${formatCostUsd(data?.aiCostUsd)})`,
-    '',
-    `Всего установок: #${formatNumberWithSpaces(grandTotal)} · с аккаунтом: #${formatNumberWithSpaces(registeredTotal)}`,
+    ...(sources.length ? ['<b>Источники новых аккаунтов · известные метки</b>', ...sources.map(([key, value]) => `${channelNames[key]}: <b>${n(value)}</b>`), ''] : []),
+    `🚩 Жалобы: <b>${n(completeExtra ? data?.reports : null)}</b>`,
+    `🤖 ИИ-запросы: <b>${n(data?.aiRequests)}</b>`,
+    '<i>— нет данных</i>',
   ].join('\n');
 }
 
@@ -443,11 +521,18 @@ export function buildMessage(b, num) {
   return lines.join('\n');
 }
 
+export function displayUserEmail(raw) {
+  const email = String(raw || '').trim().slice(0, 320);
+  if (!email) return '—';
+  const privateAddress = /@(privaterelay\.appleid\.com|private\.icloud\.com)$/i.test(email);
+  return esc(email) + (privateAddress ? ' (защищённый адрес Apple)' : '');
+}
+
 export function buildUserRegistrationMessage(user, totalCount) {
   const countryCode = String(user.country || user.app || 'ru').toLowerCase();
   const flag = FLAGS[countryCode] || (countryCode === 'rs' ? '🇷🇸' : '🇷🇺');
 
-  let providerStr = 'Гость';
+  let providerStr = '—';
   const p = String(user.provider || '').toLowerCase();
   if (p === 'yandex') providerStr = '🟡 Яндекс';
   else if (p === 'google') providerStr = '🌐 Google';
@@ -456,8 +541,8 @@ export function buildUserRegistrationMessage(user, totalCount) {
   else if (p === 'email') providerStr = '✉️ Email';
   else if (p) providerStr = esc(user.provider);
 
-  const name = user.name ? esc(user.name) : 'Пользователь';
-  const email = (user.email && !user.email.includes('privaterelay')) ? esc(user.email) : null;
+  const name = user.name ? esc(user.name) : '—';
+  const email = displayUserEmail(user.email);
   const platform = user.platform ? String(user.platform).toLowerCase() : null;
   const version = user.appVersion ? esc(user.appVersion) : null;
 
@@ -467,13 +552,14 @@ export function buildUserRegistrationMessage(user, totalCount) {
   const countStr = totalCount ? `👥 Всего с аккаунтом: #${formatNumberWithSpaces(totalCount)}` : null;
 
   const lines = [
-    `👤 ${flag} <b>Новая регистрация</b>`,
+    `${flag} <b>${name}</b>`,
     '',
-    `• <b>Имя:</b> ${name}`,
-    email ? `• <b>Email:</b> ${email}` : null,
+    `• <b>Email:</b> ${email}`,
     `• <b>Вход через:</b> ${providerStr}`,
-    platformMeta ? `• <b>Платформа:</b> ${platformMeta}` : null,
-    user.ipCountry ? `• <b>IP:</b> ${esc(user.ipCountry)}${user.userAgent ? ' · ' + esc(user.userAgent.slice(0, 60)) : ''}` : null,
+    `• <b>Платформа:</b> ${platformMeta || '—'}`,
+    ...attributionLines(user, esc),
+    user.id ? `• <b>ID:</b> <code>${esc(String(user.id).slice(0, 120))}</code>` : null,
+    user.ipCountry ? `• <b>Регион по IP:</b> ${[user.ipCountry, user.ipRegion, user.ipCity].filter(Boolean).map(esc).join(' · ')} (примерно)` : null,
     '',
     countStr,
     countStr ? '' : null,
@@ -488,7 +574,7 @@ export function buildPremiumPurchaseMessage(p) {
   const flag = FLAGS[countryCode] || (countryCode === 'rs' ? '🇷🇸' : '🇷🇺');
 
   const name = p.name ? esc(p.name) : 'Пользователь';
-  const email = (p.email && !p.email.includes('privaterelay')) ? esc(p.email) : null;
+  const email = displayUserEmail(p.email);
 
   let storeStr = 'In-App Purchase';
   const s = String(p.store || '').toLowerCase();
@@ -499,7 +585,7 @@ export function buildPremiumPurchaseMessage(p) {
   else if (s.includes('web') || s.includes('yookassa')) storeStr = '💳 ЮKassa / Web';
   else if (p.store) storeStr = esc(p.store);
 
-  let tierStr = p.tierName || (p.tier === 'threeMonths' ? '3 месяца' : p.tier === 'weekly' ? '1 неделя' : esc(p.tier || 'Премиум'));
+  let tierStr = (p.tierName ? esc(p.tierName) : null) || (p.tier === 'threeMonths' ? '3 месяца' : p.tier === 'weekly' ? '1 неделя' : esc(p.tier || 'Премиум'));
   if (p.price) {
     tierStr += ` • <b>${esc(p.price)}</b>`;
   }
@@ -519,13 +605,17 @@ export function buildPremiumPurchaseMessage(p) {
   const platformMeta = [platformEmoji, p.appVersion ? `v${esc(p.appVersion)}` : null].filter(Boolean).join(' • ');
 
   const lines = [
-    `⭐️ ${flag} <b>Покупка Premium-доступа!</b>`,
+    '⭐⭐⭐⭐⭐⭐⭐⭐',
+    `⭐️ ${flag} <b>Покупка Premium</b>`,
     '',
     `• <b>Тариф:</b> ${tierStr}`,
-    `• <b>Пользователь:</b> ${name}${email ? ` (${email})` : ''}`,
+    `• <b>Пользователь:</b> ${name}`,
+    `• <b>Email:</b> ${email}`,
     `• <b>Магазин:</b> ${storeStr}`,
+    ...attributionLines(p, esc),
+    p.id ? `• <b>ID:</b> <code>${esc(String(p.id).slice(0, 120))}</code>` : null,
     expiresStr ? `• <b>Действует до:</b> ${expiresStr}` : '• <b>Действует:</b> Навсегда',
-    platformMeta ? `• <b>Платформа:</b> ${platformMeta}` : null,
+    `• <b>Платформа:</b> ${platformMeta || '—'}`,
     '',
     `🕓 ${mskTime(new Date())} MSK`,
   ].filter((l) => l !== null);
@@ -546,6 +636,7 @@ export function buildReportMessage(b) {
   if (b.mode) meta.push(esc(b.mode));
 
   const lines = [
+    '🚩🚩🚩🚩🚩🚩🚩🚩',
     `🚩 ${flag} <b>Жалоба на вопрос</b>`,
     '',
     esc(String(b.message || '').slice(0, 1500)),
@@ -555,6 +646,8 @@ export function buildReportMessage(b) {
     // Текст вопроса — чтобы найти его глазами, не лазая в JSON по id.
     b.question_text ? `- «${esc(String(b.question_text).slice(0, 200))}»` : null,
     b.version ? `- v${esc(b.version)} • ${esc(b.platform || '')}` : null,
+    ...attributionLines(b, esc),
+    b.install_id ? `• <b>Установка ID:</b> <code>${esc(String(b.install_id).slice(0, 64))}</code>` : null,
     '',
     `🕓 ${mskTime(new Date())} MSK`,
   ].filter((l) => l !== null);
@@ -600,7 +693,13 @@ export function buildMonthlyMessage(monthKey, s) {
   return lines.join('\n');
 }
 
+async function readCounter(env, key) {
+  if (env.TRAFFIC) return trafficRequest(env, key, 'read');
+  return parseInt((await env.INSTALLS.get(key)) || '0', 10);
+}
+
 async function kvIncr(env, key) {
+  if (env.TRAFFIC) return trafficRequest(env, key, 'increment');
   const cur = parseInt((await env.INSTALLS.get(key)) || '0', 10);
   const next = cur + 1;
   await env.INSTALLS.put(key, String(next));
@@ -624,27 +723,27 @@ function detectAppCode(data = {}) {
   return 'ru';
 }
 
-// Выдаёт порядковый номер установки. Идемпотентно по install_id.
-// Сборки до 41 помечали свежую установку как 'update' (баг порядка
-// инициализации), поэтому их пометке не верим и считаем установкой. С 41-й
-// 'update' — давний пользователь, впервые приславший отчёт после обновления:
-// в установки он не идёт, в админке показывается отдельно.
+// Build 41 fixed first-launch classification. An old "update" is ambiguous:
+// keep it out of new installations instead of guessing that it is new.
 const RELIABLE_INSTALL_KIND_BUILD = 41;
 function installKind(body) {
+  if (body?.kind !== 'update') return 'new';
   const build = parseInt(String(body?.version || '').split('+')[1], 10);
-  return body?.kind === 'update' && build >= RELIABLE_INSTALL_KIND_BUILD ? 'returning' : 'new';
+  return build >= RELIABLE_INSTALL_KIND_BUILD ? 'returning' : 'unclassified';
 }
 
-async function assignNumber(env, installId, app = 'ru') {
+async function assignNumber(env, installId, app = 'ru', analytics = null) {
   if (!env.INSTALLS) return { value: null, isNew: true };
   const counterKey = app === 'ru' ? 'counter' : `counter:${app}`;
   const prefix = app === 'ru' ? 'id:' : `id:${app}:`;
+  if (env.TRAFFIC) return trafficRequest(env, counterKey, 'install', { installId, legacyKey: prefix + installId, analytics });
   if (installId) {
     const existing = await env.INSTALLS.get(prefix + installId);
-    if (existing !== null) return { value: parseInt(existing, 10), isNew: false };
+    if (existing !== null) return { value: existing === 'returning' ? null : parseInt(existing, 10), isNew: false };
   }
-  const next = await kvIncr(env, counterKey);
-  if (installId) await env.INSTALLS.put(prefix + installId, String(next));
+  const next = analytics?.kind === 'returning' || analytics?.kind === 'unclassified'
+    ? null : await kvIncr(env, counterKey);
+  if (installId) await env.INSTALLS.put(prefix + installId, next === null ? 'returning' : String(next));
   return { value: next, isNew: true };
 }
 
@@ -742,7 +841,13 @@ async function pollReviews(env) {
   }
 }
 
-async function sendTelegram(env, text) {
+async function sendTelegram(env, text, dedupKey = null) {
+  if (env.TELEGRAM) {
+    const stub = env.TELEGRAM.get(env.TELEGRAM.idFromName(String(env.CHAT_ID)));
+    return stub.fetch('https://telegram/enqueue', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, dedupKey }),
+    });
+  }
   const url = `https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`;
   return fetch(url, {
     method: 'POST',
@@ -753,6 +858,7 @@ async function sendTelegram(env, text) {
       parse_mode: 'HTML',
       disable_web_page_preview: true,
     }),
+    signal: AbortSignal.timeout(10000),
   });
 }
 
@@ -1814,7 +1920,16 @@ function gameWeekEnd(now = new Date()) {
   return new Date(monday + 7 * 86400000 - 3 * 3600 * 1000).toISOString();
 }
 async function readGameBoard(env, week) {
+  if (env.TRAFFIC) return trafficRequest(env, 'game_lb:' + week, 'read');
   try { const raw = await env.INSTALLS.get('game_lb:' + week); return raw ? JSON.parse(raw) : {}; } catch (_) { return {}; }
+}
+async function deleteGamePlayer(env, week, userId) {
+  if (env.TRAFFIC) return trafficRequest(env, 'game_lb:' + week, 'delete', { userId });
+  const board = await readGameBoard(env, week);
+  if (board[userId]) {
+    delete board[userId];
+    await env.INSTALLS.put('game_lb:' + week, JSON.stringify(board), { expirationTtl: 21 * 86400 });
+  }
 }
 function rankGameBoard(doc) {
   return Object.entries(doc).map(([userId, e]) => ({ userId, ...e }))
@@ -1863,10 +1978,12 @@ function analyticsToken(value, fallback) {
 export function sanitizeAnalyticsEvent(event) {
   const e = event && typeof event === 'object' ? event : {};
   const out = {
-    type: ['view', 'click', 'install', 'registration'].includes(e.type) ? e.type : 'view',
-    kind: e.kind === 'returning' ? 'returning' : '',
-    source: analyticsToken(e.source, 'direct').toLowerCase(),
+    type: ['view', 'click', 'install', 'registration', 'purchase', 'report'].includes(e.type) ? e.type : 'view',
+    kind: ['returning', 'unclassified'].includes(e.kind) ? e.kind : '',
+    source: ['App Store', 'Google Play', 'RuStore', 'Web'].includes(e.source)
+      ? e.source : analyticsToken(e.source, 'direct').toLowerCase(),
     campaign: analyticsToken(e.campaign, ''),
+    marketingSource: metadataFields(e).marketingSource,
     target: analyticsToken(e.target, ''),
     platform: analyticsToken(e.platform, 'unknown').toLowerCase(),
     country: /^[A-Za-z]{2}$/.test(String(e.country || '')) ? String(e.country).toUpperCase() : '',
@@ -1882,13 +1999,17 @@ async function trackStats(env, ctx, item) {
   if (!env.INSTALLS) return;
   if (item && item.kind === 'analytics') item.event = sanitizeAnalyticsEvent(item.event);
   item.ts = item.ts || Date.now();
-  if (env.STATS && ctx && typeof ctx.waitUntil === 'function') {
+  if (env.STATS) {
     const stub = env.STATS.get(env.STATS.idFromName('main'));
-    ctx.waitUntil(stub.fetch('https://stats/enqueue', {
-      method: 'POST',
-      body: JSON.stringify(item),
-      headers: { 'content-type': 'application/json' },
-    }).catch(() => flushBufferedStats(env, [item])));
+    const enqueue = stub.fetch('https://stats/enqueue', {
+      method: 'POST', body: JSON.stringify(item), headers: { 'content-type': 'application/json' },
+    }).then(response => {
+      if (!response.ok) throw new Error('analytics enqueue failed: ' + response.status);
+    });
+    // Registrations pass no ctx: they must still use the same serialized buffer.
+    // Never fall back to parallel KV increments on a queue failure.
+    if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(enqueue);
+    else await enqueue;
     return;
   }
   // Без Durable Object (локальные тесты) пишем сразу.
@@ -1897,11 +2018,12 @@ async function trackStats(env, ctx, item) {
 
 // Сбрасывает накопленный буфер в KV перед отчётом, чтобы в нём были все события.
 async function flushStatsBuffer(env) {
-  if (!env.STATS) return;
+  if (!env.STATS) return true;
   try {
     const stub = env.STATS.get(env.STATS.idFromName('main'));
-    await stub.fetch('https://stats/flush', { method: 'POST' });
-  } catch (_) {}
+    const response = await stub.fetch('https://stats/flush', { method: 'POST' });
+    return response.status === 200;
+  } catch (_) { return false; }
 }
 
 function newDayData(dayKey) {
@@ -1947,6 +2069,11 @@ function normalizeDayData(dayData, dayKey) {
 
 // Применяет событие к данным дня. Чистая функция, без обращений к KV.
 function applyEventToDay(dayData, event) {
+  if (['purchase', 'report'].includes(event.type)) {
+    const key = event.type === 'purchase' ? 'purchases' : 'reports';
+    dayData[key] = (dayData[key] || 0) + 1;
+    return;
+  }
   if (event.type === 'registration') {
     dayData.registrations = (dayData.registrations || 0) + 1;
     return;
@@ -1999,6 +2126,9 @@ function applyEventToDay(dayData, event) {
     a.targets[target] = (a.targets[target] || 0) + 1;
     if (camp) a.campaigns[camp].clicks++;
 
+  } else if (event.type === 'install' && event.kind === 'unclassified') {
+    dayData.unclassified = (dayData.unclassified || 0) + 1;
+    a.unclassified = (a.unclassified || 0) + 1;
   } else if (event.type === 'install' && event.kind === 'returning') {
     dayData.returning = (dayData.returning || 0) + 1;
     a.returning = (a.returning || 0) + 1;
@@ -2036,11 +2166,8 @@ function liveFeedEntry(event, now) {
 // Загружает ключ KV один раз на пачку и кэширует (в т.ч. для повторной записи).
 async function cachedKv(env, cache, key, parse) {
   if (cache.has(key)) return cache.get(key);
-  let value = null;
-  try {
-    const raw = await env.INSTALLS.get(key);
-    if (raw) value = JSON.parse(raw);
-  } catch (_) {}
+  const raw = await env.INSTALLS.get(key);
+  let value = raw ? JSON.parse(raw) : null;
   value = parse(value);
   cache.set(key, value);
   return value;
@@ -2049,8 +2176,16 @@ async function cachedKv(env, cache, key, parse) {
 // Применяет пачку событий буфера к KV. На каждый затронутый ключ — ровно
 // один put. Бросает исключение, если запись не удалась: буфер тогда
 // сохранит события и повторит позже.
-export async function flushBufferedStats(env, items) {
+export async function flushBufferedStats(env, items, persistBatch = null) {
   if (!env.INSTALLS || !items.length) return;
+  const writes = [];
+  if (persistBatch) {
+    const kv = env.INSTALLS;
+    env = { ...env, INSTALLS: {
+      get: key => kv.get(key),
+      put: async (key, value, options) => { writes.push({ key, value, options }); },
+    } };
+  }
   const days = new Map();
   const slots = new Map();
   const viewsBySlug = new Map();
@@ -2075,7 +2210,7 @@ export async function flushBufferedStats(env, items) {
         if (slug) viewsBySlug.set(slug, (viewsBySlug.get(slug) || 0) + 1);
       }
       // Live Feed — только клики/установки/кампании (экономия KV).
-      if (event.type !== 'registration' && (event.type !== 'view' || event.campaign)) feed.push(liveFeedEntry(event, now));
+      if (event.type !== 'registration' && !(event.type === 'install' && ['returning', 'unclassified'].includes(event.kind)) && (event.type !== 'view' || event.campaign)) feed.push(liveFeedEntry(event, now));
     } else if (item.kind === 'ai') {
       const pricing = GEMINI_PRICING[item.model] || GEMINI_PRICING['gemini-3.6-flash'];
       const pTokens = Number(item.promptTokens) || 0;
@@ -2113,11 +2248,8 @@ export async function flushBufferedStats(env, items) {
 
   // Последние 100 событий (Live Feed), новые — в начало.
   if (feed.length) {
-    let events = [];
-    try {
-      const rawEvents = await env.INSTALLS.get('recent_events');
-      events = rawEvents ? JSON.parse(rawEvents) : [];
-    } catch (_) {}
+    const rawEvents = await env.INSTALLS.get('recent_events');
+    let events = rawEvents ? JSON.parse(rawEvents) : [];
     events = feed.reverse().concat(events).slice(0, 100);
     puts.push(env.INSTALLS.put('recent_events', JSON.stringify(events)));
   }
@@ -2141,6 +2273,7 @@ export async function flushBufferedStats(env, items) {
   }
 
   await Promise.all(puts);
+  if (persistBatch) await persistBatch(writes);
 }
 
 
@@ -2304,9 +2437,9 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
       }
     }
 
-    const grandTotalRu = parseInt((await env.INSTALLS.get('counter')) || '0', 10);
-    const grandTotalBy = parseInt((await env.INSTALLS.get('counter:by')) || '0', 10);
-    const grandTotalRs = parseInt((await env.INSTALLS.get('counter:rs')) || '0', 10);
+    const grandTotalRu = await readCounter(env, 'counter');
+    const grandTotalBy = await readCounter(env, 'counter:by');
+    const grandTotalRs = await readCounter(env, 'counter:rs');
     const grandTotalAll = grandTotalRu + grandTotalBy + grandTotalRs;
     const grandTotal = appFilter === 'rs' ? grandTotalRs
       : appFilter === 'by' ? grandTotalBy
@@ -2380,7 +2513,7 @@ async function publishToThreads(post, env) {
   throw new Error('Threads publishing not configured');
 }
 
-const ADMIN_HTML_HEAD = "<!DOCTYPE html>\n<html lang=\"ru\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>ПДД Аналитика — Панель управления</title>\n  <link rel=\"icon\" href=\"https://pdd-drive.ru/assets/favicon.png\">\n  <script src=\"https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js\"></script>\n  <style>\n    :root {\n      --bg: #F8F8FA;\n      --sidebar-bg: #FFFFFF;\n      --card-bg: #FFFFFF;\n      --card-border: transparent;\n      --text: #121212;\n      --text-muted: #8E92A0;\n      --text-light: #6B7280;\n      --primary: #0574F8;\n      --primary-hover: #0463D6;\n      --primary-subtle: #E8F2FE;\n      --success: #2BC280;\n      --success-subtle: #E8F8F0;\n      --danger: #ED4621;\n      --danger-subtle: #FFECE8;\n      --surface-gray: #EFF0F4;\n      --surface-hover: #E5E7EB;\n      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n    }\n    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); -webkit-font-smoothing: antialiased; }\n    body { background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; display: flex; }\n\n    /* Layout structure */\n    .admin-wrapper { display: flex; width: 100vw; min-height: 100vh; }\n    \n    /* Sidebar */\n    .sidebar {\n      width: 250px;\n      background: var(--sidebar-bg);\n      border: none;\n      display: flex;\n      flex-direction: column;\n      flex-shrink: 0;\n      position: sticky;\n      top: 0;\n      height: 100vh;\n      z-index: 50;\n    }\n    .sidebar-brand {\n      padding: 22px 20px;\n      display: flex;\n      align-items: center;\n      gap: 12px;\n      border: none;\n    }\n    .sidebar-brand img { width: 34px; height: 34px; border-radius: 10px; }\n    .brand-text, .sidebar-brand-title { font-size: 15px; font-weight: 800; color: var(--text); line-height: 1.2; letter-spacing: -0.3px; }\n    .brand-badge, .sidebar-brand-badge {\n      display: inline-flex;\n      align-items: center;\n      gap: 4px;\n      padding: 2px 7px;\n      background: var(--success-subtle);\n      color: var(--success);\n      font-size: 10.5px;\n      font-weight: 700;\n      border-radius: 6px;\n      border: none;\n      margin-left: auto;\n    }\n    .live-dot { width: 5px; height: 5px; background: var(--success); border-radius: 50%; display: inline-block; }\n    \n    .sidebar-menu { padding: 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; }\n    .nav-item {\n      display: flex;\n      align-items: center;\n      gap: 12px;\n      padding: 11px 14px;\n      border-radius: 12px;\n      font-size: 13.5px;\n      font-weight: 600;\n      color: var(--text-muted);\n      cursor: pointer;\n      border: none;\n      background: transparent;\n      transition: all 0.15s ease;\n      text-decoration: none;\n      width: 100%;\n      text-align: left;\n    }\n    .nav-item:hover { background: var(--surface-gray); color: var(--text); }\n    .nav-item.active { background: var(--primary-subtle); color: var(--primary); font-weight: 700; }\n    .nav-item svg { flex-shrink: 0; }\n\n    .sidebar-footer { padding: 16px; border: none; margin-top: auto; display: flex; flex-direction: column; gap: 10px; }\n    .project-select-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }\n    .sidebar-select, .app-selector {\n      width: 100%;\n      background: var(--surface-gray);\n      border: none;\n      color: var(--text);\n      padding: 9px 12px;\n      border-radius: 10px;\n      font-size: 12.5px;\n      font-weight: 600;\n      outline: none;\n      cursor: pointer;\n    }\n    .btn-logout {\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      gap: 8px;\n      width: 100%;\n      padding: 10px 12px;\n      background: var(--surface-gray);\n      color: var(--text);\n      border: none;\n      border-radius: 10px;\n      font-size: 13px;\n      font-weight: 600;\n      cursor: pointer;\n      transition: all 0.15s;\n    }\n    .btn-logout:hover { background: var(--danger-subtle); color: var(--danger); }\n\n    /* Main Content Area */\n    .main-area, .content { flex: 1; padding: 28px 36px; max-width: 1440px; margin: 0 auto; width: 100%; min-width: 0; }\n    .top-bar, .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; min-height: 42px; }\n    .view-title, .page-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); }\n    \n    .top-actions { display: flex; align-items: center; gap: 10px; }\n    .segmented { display: flex; background: var(--surface-gray); padding: 4px; border-radius: 12px; border: none; gap: 2px; }\n    .segmented button {\n      border: none;\n      background: transparent;\n      padding: 6px 14px;\n      border-radius: 9px;\n      font-size: 12.5px;\n      font-weight: 600;\n      color: var(--text-muted);\n      cursor: pointer;\n      transition: all 0.15s;\n    }\n    .segmented button.active { background: var(--primary); color: #ffffff; font-weight: 700; }\n    .btn-icon {\n      width: 36px;\n      height: 36px;\n      border-radius: 10px;\n      border: none;\n      background: var(--surface-gray);\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      color: var(--text-muted);\n      cursor: pointer;\n      transition: all 0.15s;\n    }\n    .btn-icon:hover { background: var(--surface-hover); color: var(--text); }\n    \n    .btn-action {\n      padding: 7px 14px;\n      border: none;\n      background: var(--surface-gray);\n      color: var(--text);\n      border-radius: 10px;\n      font-size: 12.5px;\n      font-weight: 600;\n      cursor: pointer;\n      display: inline-flex;\n      align-items: center;\n      gap: 6px;\n      transition: all 0.15s;\n    }\n    .btn-action:hover { background: var(--surface-hover); color: var(--text); }\n    .btn-primary { background: var(--primary); color: #ffffff; border: none; font-weight: 600; }\n    .btn-primary:hover { background: var(--primary-hover); color: #ffffff; }\n    .btn-danger { background: var(--danger-subtle); color: var(--danger); border: none; }\n    .btn-danger:hover { background: var(--danger); color: #ffffff; }\n\n    /* KPI Grid */\n    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 22px; }\n    .kpi-card { background: var(--card-bg); border: none; border-radius: 18px; padding: 20px 22px; }\n    .kpi-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }\n    .kpi-label { font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; }\n    .kpi-value { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); margin-bottom: 4px; }\n    .kpi-footer { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }\n    .kpi-badge { display: inline-flex; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; border: none; }\n    .badge-blue { background: var(--primary-subtle); color: var(--primary); }\n    .badge-green { background: var(--success-subtle); color: var(--success); }\n\n    /* Chart Cards */\n    .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; margin-bottom: 22px; }\n    .grid-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }\n    @media (max-width: 1000px) { .grid-2-1, .grid-1-1 { grid-template-columns: 1fr; } }\n\n    .card { background: var(--card-bg); border: none; border-radius: 18px; padding: 22px 24px; margin-bottom: 22px; }\n    .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }\n    .card-title { font-size: 15px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }\n    .chart-box { position: relative; height: 260px; width: 100%; }\n\n    /* Tables */\n    table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px; }\n    th {\n      color: var(--text-muted);\n      font-size: 11px;\n      font-weight: 700;\n      text-transform: uppercase;\n      letter-spacing: 0.5px;\n      padding: 12px 14px;\n      background: var(--bg);\n      border: none;\n    }\n    th:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }\n    th:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }\n    td { padding: 14px 14px; border: none; border-bottom: 1px solid #F4F5F8; color: var(--text); vertical-align: middle; }\n    tr:last-child td { border-bottom: none; }\n    tbody tr:hover { background: #FAFAFC; }\n\n    .code-badge { font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--primary); background: var(--primary-subtle); padding: 3px 8px; border-radius: 6px; border: none; font-weight: 600; }\n    .tag-badge { display: inline-flex; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600; background: var(--surface-gray); color: var(--text-light); border: none; }\n\n    /* Forms & Inputs */\n    input, select, textarea, .form-input, .form-textarea {\n      border: none;\n      background: var(--surface-gray);\n      color: var(--text);\n      border-radius: 10px;\n      outline: none;\n      padding: 9px 12px;\n      font-size: 13px;\n      font-family: inherit;\n    }\n    input:focus, select:focus, textarea:focus, .form-input:focus, .form-textarea:focus { background: var(--primary-subtle); }\n    .form-group { display: flex; flex-direction: column; gap: 6px; }\n    .form-label { font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.4px; }\n\n    /* Login Modal */\n    #login-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }\n    .login-box { background: #ffffff; border: none; border-radius: 20px; padding: 36px 32px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.08); }\n    .login-box img { width: 56px; height: 56px; border-radius: 14px; margin-bottom: 14px; }\n    .login-box h2 { font-size: 20px; font-weight: 800; margin-bottom: 6px; color: var(--text); }\n    .login-box p { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }\n    .login-box input { width: 100%; background: var(--surface-gray); border: none; color: var(--text); padding: 12px; border-radius: 12px; font-size: 15px; margin-bottom: 14px; text-align: center; letter-spacing: 2px; }\n    .login-box input:focus { outline: none; background: var(--primary-subtle); }\n    .login-box button { width: 100%; padding: 12px; font-size: 13.5px; font-weight: 700; border-radius: 12px; }\n    .login-err-msg { color: var(--danger); font-size: 12px; margin-top: 10px; display: none; }\n  </style>\n</head>\n<body>\n\n<!-- Login Modal -->\n<div id=\"login-overlay\">\n  <div class=\"login-box\">\n    <img src=\"https://pdd-drive.ru/assets/icon-192.png\" alt=\"PDD Logo\">\n    <h2>Вход в панель</h2>\n    <p>Введите ключ доступа к аналитике</p>\n    <div>\n      <input type=\"text\" id=\"login-pwd\" placeholder=\"••••••••••••\" autofocus autocomplete=\"off\" autocorrect=\"off\" autocapitalize=\"off\" spellcheck=\"false\" style=\"-webkit-text-security: disc; text-security: disc;\">\n      <button type=\"button\" id=\"login-submit-btn\" class=\"btn-action btn-primary\" style=\"width:100%; justify-content:center;\">Войти</button>\n      <div id=\"login-err\" class=\"login-err-msg\">Неверный ключ доступа</div>\n    </div>\n  </div>\n</div>\n\n<!-- Main App Wrapper -->\n<div class=\"admin-wrapper\" id=\"app\" style=\"display:none;\">\n\n  <!-- Sidebar -->\n  <aside class=\"sidebar\">\n    <div class=\"sidebar-brand\">\n      <img src=\"https://pdd-drive.ru/assets/icon-192.png\" alt=\"PDD\">\n      <div>\n        <div class=\"brand-text\">ПДД Аналитика</div>\n      </div>\n      <span class=\"brand-badge\"><span class=\"live-dot\"></span>LIVE</span>\n    </div>\n\n    <nav class=\"sidebar-menu\">\n      <button class=\"nav-item active\" data-feature=\"analytics\">\n        <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"18\" y1=\"20\" x2=\"18\" y2=\"10\"/><line x1=\"12\" y1=\"20\" x2=\"12\" y2=\"4\"/><line x1=\"6\" y1=\"20\" x2=\"6\" y2=\"14\"/></svg>\n        <span>Аналитика</span>\n      </button>\n      <button class=\"nav-item\" data-feature=\"links\">\n        <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/></svg>\n        <span>Генератор ссылок</span>\n      </button>\n      <button class=\"nav-item\" data-feature=\"blog\">\n        <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 19.5A2.5 2.5 0 0 1 6.5 17H20\"/><path d=\"M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z\"/></svg>\n        <span>Статьи блога</span>\n      </button>\n                  <button class=\"nav-item\" data-feature=\"users\">\n        <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M23 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></svg>\n        <span>Пользователи</span>\n      </button>\n      <button class=\"nav-item\" data-feature=\"ai\">\n        <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"11\" width=\"18\" height=\"10\" rx=\"2\"/><circle cx=\"12\" cy=\"5\" r=\"2\"/><path d=\"M12 7v4\"/><line x1=\"8\" y1=\"16\" x2=\"8.01\" y2=\"16\"/><line x1=\"16\" y1=\"16\" x2=\"16.01\" y2=\"16\"/></svg>\n        <span>Управление ИИ</span>\n      </button>\n<button class=\"nav-item\" data-feature=\"threads\">\n        <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z\"/></svg>\n        <span>Threads постер</span>\n      </button>\n    </nav>\n\n    <div class=\"sidebar-footer\">\n      <div>\n        <div class=\"project-select-label\">Проект</div>\n        <select id=\"sidebar-app-select\" class=\"sidebar-select\">\n          <option value=\"all\">Все проекты</option>\n          <option value=\"ru\">Россия (RU)</option>\n          <option value=\"rs\">Сербия (RS)</option>\n        </select>\n      </div>\n      <button class=\"btn-logout\" id=\"logout-btn\">\n        <svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"/><polyline points=\"16 17 21 12 16 7\"/><line x1=\"21\" y1=\"12\" x2=\"9\" y2=\"12\"/></svg>\n        <span>Выйти</span>\n      </button>\n    </div>\n  </aside>\n\n  <!-- Main Area -->\n  <main class=\"main-area\">\n\n    <!-- Top bar -->\n    <header class=\"top-bar\">\n      <h1 class=\"view-title\" id=\"current-view-title\">Аналитика продукта</h1>\n      <div class=\"top-actions\" id=\"top-period-actions\">\n        <div class=\"segmented\" id=\"period-buttons\">\n          <button class=\"active\" data-days=\"7\">7 дней</button>\n          <button data-days=\"1\">Сегодня</button>\n          <button data-days=\"30\">30 дней</button>\n          <button data-days=\"90\">90 дней</button>\n        </div>\n        <button class=\"btn-icon\" id=\"refresh-btn\" title=\"Обновить\">\n          <svg viewBox=\"0 0 24 24\" width=\"15\" height=\"15\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"23 4 23 10 17 10\"/><polyline points=\"1 20 1 14 7 14\"/><path d=\"M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15\"/></svg>\n        </button>\n      </div>\n    </header>\n\n    <!-- 1. ANALYTICS VIEW -->\n    <div id=\"analytics-view\">\n      <!-- KPI Cards -->\n      <div class=\"kpi-grid\">\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Установки приложения</span>\n          </div>\n          <div class=\"kpi-value\" id=\"m-installs\">0</div>\n          <div class=\"kpi-footer\">\n            <span>За всё время: <b id=\"m-grand\" style=\"color:var(--text);font-weight:700;\">0</b></span>\n          </div>\n        </div>\n\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Визиты лендинга</span>\n          </div>\n          <div class=\"kpi-value\" id=\"m-views\">0</div>\n        </div>\n\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Клики в сторы</span>\n            <span class=\"kpi-badge badge-blue\" id=\"m-ctr\">CTR: 0%</span>\n          </div>\n          <div class=\"kpi-value\" id=\"m-clicks\">0</div>\n        </div>\n\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Конверсия лендинга</span>\n            <span class=\"kpi-badge badge-green\">CR %</span>\n          </div>\n          <div class=\"kpi-value\" id=\"m-cr\">0.0%</div>\n        </div>\n      </div>\n\n      <!-- Charts Row 1: App Growth & Store Distribution -->\n      <div class=\"grid-2-1\">\n        <div class=\"card\">\n          <div class=\"card-head\">\n            <div class=\"card-title\">\n              <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"5\" y=\"2\" width=\"14\" height=\"20\" rx=\"2\" ry=\"2\"/><line x1=\"12\" y1=\"18\" x2=\"12.01\" y2=\"18\"/></svg>\n              <span>Динамика установок приложения</span>\n            </div>\n          </div>\n          <div class=\"chart-box\">\n            <canvas id=\"chart-installs\"></canvas>\n          </div>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-head\">\n            <div class=\"card-title\">\n              <span>Платформы и магазины</span>\n            </div>\n          </div>\n          <div class=\"chart-box\">\n            <canvas id=\"chart-targets\"></canvas>\n          </div>\n        </div>\n      </div>\n\n      <!-- Charts Row 2: Web Marketing Funnel & Traffic Sources -->\n      <div class=\"grid-2-1\">\n        <div class=\"card\">\n          <div class=\"card-head\">\n            <div class=\"card-title\">\n              <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"18\" y1=\"20\" x2=\"18\" y2=\"10\"/><line x1=\"12\" y1=\"20\" x2=\"12\" y2=\"4\"/><line x1=\"6\" y1=\"20\" x2=\"6\" y2=\"14\"/></svg>\n              <span>Воронка веб-маркетинга (Визиты и Клики)</span>\n            </div>\n          </div>\n          <div class=\"chart-box\">\n            <canvas id=\"chart-web-funnel\"></canvas>\n          </div>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-head\">\n            <div class=\"card-title\">\n              <span>Источники трафика</span>\n            </div>\n          </div>\n          <div class=\"chart-box\">\n            <canvas id=\"chart-sources\"></canvas>\n          </div>\n        </div>\n      </div>\n\n      <!-- Tables: Social channels & Live feed -->\n      <div class=\"grid-1-1\">\n        <div class=\"card\">\n          <div class=\"card-head\">\n            <div class=\"card-title\">\n              <span>Эффективность каналов и соцсетей</span>\n            </div>\n          </div>\n          <table>\n            <thead>\n              <tr>\n                <th>Источник</th>\n                <th>Визиты</th>\n                <th>Клики</th>\n                <th>CTR</th>\n                <th>Установки</th>\n              </tr>\n            </thead>\n            <tbody id=\"table-sources\">\n              <tr><td colspan=\"5\" style=\"text-align:center;color:var(--text-muted);\">Загрузка...</td></tr>\n            </tbody>\n          </table>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-head\">\n            <div class=\"card-title\">\n              <span>Живая лента событий</span>\n            </div>\n          </div>\n          <table>\n            <thead>\n              <tr>\n                <th>Время</th>\n                <th>Событие</th>\n                <th>Источник</th>\n                <th>Кампания</th>\n                <th>Страна</th>\n              </tr>\n            </thead>\n            <tbody id=\"table-live\">\n              <tr><td colspan=\"5\" style=\"text-align:center;color:var(--text-muted);\">Ожидание событий...</td></tr>\n            </tbody>\n          </table>\n        </div>\n      </div>\n    </div>\n\n    <!-- 2. LINKS GENERATOR VIEW -->\n    <div id=\"links-view\" style=\"display:none;\">\n      <div class=\"card\" style=\"margin-bottom: 22px;\">\n        <div class=\"card-head\">\n          <div class=\"card-title\">\n            <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/></svg>\n            <span>Генератор UTM-ссылок для соцсетей и кампаний</span>\n          </div>\n        </div>\n        <p style=\"font-size:13px; color:var(--text-muted); margin-bottom:18px; line-height:1.5;\">\n          Создавайте отслеживаемые ссылки для шапок профиля (bio), описаний видео, Shorts и постов. Переходы будут точно атрибутированы в аналитике.\n        </p>\n\n        <div style=\"display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:16px;\">\n          <div>\n            <label style=\"display:block; font-size:11.5px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px;\">Целевая страница</label>\n            <select id=\"gen-page\" class=\"sidebar-select\">\n              <optgroup label=\"Россия (RU)\">\n                <option value=\"https://pdd-drive.ru/links/\">Таплинк со всеми кнопками (/links/)</option>\n                <option value=\"https://pdd-drive.ru/\">Главный сайт (/)</option>\n                <option value=\"https://pdd-drive.ru/go/rustore/\">RuStore</option>\n                <option value=\"https://pdd-drive.ru/go/gplay/\">Google Play</option>\n                <option value=\"https://pdd-drive.ru/go/appstore/\">App Store</option>\n                <option value=\"https://pdd-drive.ru/go/web/\">Веб-версия</option>\n              </optgroup>\n              <optgroup label=\"Сербия (RS)\">\n                <option value=\"https://pdd-drive.ru/go/rs-gplay/\">Google Play (Сербия)</option>\n                <option value=\"https://rs.pdd-drive.online/\">Лендинг Сербии (rs.pdd-drive.online)</option>\n              </optgroup>\n            </select>\n          </div>\n          <div>\n            <label style=\"display:block; font-size:11.5px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px;\">Соцсеть / Канал</label>\n            <select id=\"gen-source\" class=\"sidebar-select\">\n              <option value=\"yt\">YouTube (Shorts / Видео)</option>\n              <option value=\"tt\">TikTok</option>\n              <option value=\"ig\">Instagram (Reels / Bio)</option>\n              <option value=\"tg\">Telegram</option>\n              <option value=\"vk\">ВКонтакте</option>\n            </select>\n          </div>\n          <div>\n            <label style=\"display:block; font-size:11.5px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px;\">Название кампании</label>\n            <input type=\"text\" id=\"gen-camp\" placeholder=\"напр: bio, quiz_promo, post12\" style=\"width:100%; background:#ffffff; border:1px solid var(--card-border); border-radius:8px; color:var(--text); padding:8px 12px; font-size:13px;\" />\n          </div>\n        </div>\n\n        <div style=\"display:flex; align-items:center; gap:12px; background:#f8fafc; border:1px solid var(--card-border); padding:10px 14px; border-radius:10px;\">\n          <div id=\"gen-output\" class=\"code-badge\" style=\"flex:1; font-size:13px; padding:4px 8px; word-break:break-all;\">https://pdd-drive.ru/links/?ref=yt</div>\n          <button id=\"copy-link-btn\" class=\"btn-action btn-primary\">\n            <span>Скопировать</span>\n          </button>\n        </div>\n      </div>\n\n      <!-- Campaign details table -->\n      <div class=\"card\">\n        <div class=\"card-head\">\n          <div class=\"card-title\">\n            <span>Кампании и источники</span>\n          </div>\n        </div>\n        <table>\n          <thead>\n            <tr>\n              <th>Кампания</th>\n              <th>Соцсеть</th>\n              <th>Визиты</th>\n              <th>Клики</th>\n              <th>CTR</th>\n            </tr>\n          </thead>\n          <tbody id=\"table-campaigns\">\n            <tr><td colspan=\"5\" style=\"text-align:center;color:var(--text-muted);\">Нет данных по кампаниям</td></tr>\n          </tbody>\n        </table>\n      </div>\n    </div>\n\n    <!-- 3. BLOG VIEW -->\n    <div id=\"blog-view\" style=\"display:none;\">\n      <div class=\"card\">\n        <div class=\"card-head\">\n          <div class=\"card-title\">\n            <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 19.5A2.5 2.5 0 0 1 6.5 17H20\"/><path d=\"M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z\"/></svg>\n            <span>Запланированные публикации статей (<span id=\"blog-count\">0</span>)</span>\n          </div>\n          <div style=\"display:flex; gap:8px;\">\n            <button class=\"btn-action\" id=\"reset-blog-btn\" style=\"color:var(--danger); border-color:#fecaca;\">Сбросить</button>\n            <button class=\"btn-action\" id=\"refresh-blog-btn\">Обновить</button>\n          </div>\n        </div>\n        <div id=\"blog-articles-container\" style=\"display:grid; gap:12px;\">\n          <div style=\"color:var(--text-muted);text-align:center;padding:20px;\">Загрузка...</div>\n        </div>\n      </div>\n    </div>\n\n        \n    <!-- 4. USERS MANAGEMENT VIEW -->\n    <div id=\"users-view\" style=\"display:none;\">\n      <div class=\"card\" style=\"margin-bottom: 22px;\">\n        <div class=\"card-head\">\n          <div class=\"card-title\">\n            <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M23 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></svg>\n            <span>Пользователи и Премиум-доступ (<span id=\"users-count\">0</span>)</span>\n          </div>\n          <button class=\"btn-action\" id=\"refresh-users-btn\">Обновить</button>\n        </div>\n        <div style=\"overflow-x:auto;\">\n          <table>\n            <thead>\n              <tr>\n                <th>Пользователь</th>\n                <th>Провайдер</th>\n                <th>Статус</th>\n                <th>Действует до</th>\n                <th>Последний вход</th>\n                <th>Версия</th>\n                <th>Действия</th>\n              </tr>\n            </thead>\n            <tbody id=\"table-users\">\n              <tr><td colspan=\"7\" style=\"text-align:center;color:var(--text-muted);padding:24px;\">Загрузка...</td></tr>\n            </tbody>\n          </table>\n        </div>\n      </div>\n    </div>\n\n    <!-- 5. AI MANAGEMENT VIEW -->\n    <div id=\"ai-view\" style=\"display:none;\">\n      <!-- AI KPI Cards -->\n      <div class=\"kpi-grid\">\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Всего запросов к ИИ</span>\n          </div>\n          <div class=\"kpi-value\" id=\"ai-m-total\">0</div>\n          <div class=\"kpi-footer\">\n            <span>Сегодня: <b id=\"ai-m-today\" style=\"color:var(--text);font-weight:700;\">0</b></span>\n          </div>\n        </div>\n\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Расходы на ИИ</span>\n            <span class=\"kpi-badge badge-green\" id=\"ai-m-cost-rub\">~0.00 ₽</span>\n          </div>\n          <div class=\"kpi-value\" id=\"ai-m-cost-usd\">$0.00000</div>\n          <div class=\"kpi-footer\">\n            <span>По тарифам Google Gemini</span>\n          </div>\n        </div>\n\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Использовано токенов</span>\n            <span class=\"kpi-badge badge-blue\" id=\"ai-m-tokens-total\">0</span>\n          </div>\n          <div class=\"kpi-value\" id=\"ai-m-tokens-k\">0k</div>\n          <div class=\"kpi-footer\">\n            <span>Вход: <b id=\"ai-m-tokens-prompt\">0</b> · Выход: <b id=\"ai-m-tokens-cand\">0</b></span>\n          </div>\n        </div>\n\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Активная модель</span>\n            <span class=\"kpi-badge badge-green\">АКТИВНА</span>\n          </div>\n          <div class=\"kpi-value\" style=\"font-size:18px;\" id=\"ai-m-model\">Gemini 3.6 Flash</div>\n          <div class=\"kpi-footer\">\n            <span>Статус: <b style=\"color:#2BC280;\">Подключено (API)</b></span>\n          </div>\n        </div>\n      </div>\n\n      <!-- AI Model Selector Card -->\n      <div class=\"card\" style=\"margin-bottom: 22px;\">\n        <div class=\"card-head\">\n          <div class=\"card-title\">\n            <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"11\" width=\"18\" height=\"10\" rx=\"2\"/><circle cx=\"12\" cy=\"5\" r=\"2\"/><path d=\"M12 7v4\"/></svg>\n            <span>Выбор и настройка модели искусственного интеллекта</span>\n          </div>\n          <button class=\"btn-action btn-primary\" id=\"save-ai-model-btn\">\n            <svg viewBox=\"0 0 24 24\" width=\"15\" height=\"15\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z\"/><polyline points=\"17 21 17 13 7 13 7 21\"/><polyline points=\"7 3 7 8 15 8\"/></svg>\n            <span>Применить модель</span>\n          </button>\n        </div>\n        <p style=\"font-size:13px; color:var(--text-muted); margin-bottom:16px; line-height:1.5;\">\n          Если текущая модель отвечает медленно или испытывает сбои, вы можете мгновенно переключиться на резервную модель. Настройка применяется сразу для всех пользователей приложения без пересборки.\n        </p>\n\n        <div style=\"display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px;\">\n          <div>\n            <label class=\"form-label\" style=\"margin-bottom:6px;\">Основная модель генерации</label>\n            <select id=\"ai-model-select\" class=\"sidebar-select\" style=\"padding:10px 12px; font-size:13.5px; font-weight:600;\">\n              <option value=\"gemini-3.6-flash\">Gemini 3.6 Flash (Хит, супер-быстрый — $0.10/1M)</option>\n              <option value=\"gemini-2.5-flash\">Gemini 2.5 Flash ($0.10/1M)</option>\n              <option value=\"gemini-1.5-flash\">Gemini 1.5 Flash (Эконом — $0.075/1M)</option>\n              <option value=\"gemini-2.5-pro\">Gemini 2.5 Pro (Глубокое мышление — $1.25/1M)</option>\n            </select>\n          </div>\n          <div style=\"background:#EFF0F4; border:none; border-radius:12px; padding:14px 18px; display:flex; flex-direction:column; justify-content:center;\">\n            <div style=\"font-size:12px; font-weight:700; color:var(--text); margin-bottom:4px;\">Тарификация Google AI Studio</div>\n            <div style=\"font-size:12px; color:var(--text-muted); line-height:1.4;\">Первые 15 запросов в минуту бесплатны навсегда. Далее от $0.10 за 1 миллион токенов.</div>\n          </div>\n        </div>\n      </div>\n\n      <!-- Live Playground / Tester -->\n      <div class=\"card\">\n        <div class=\"card-head\">\n          <div class=\"card-title\">\n            <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"/></svg>\n            <span>Тестирование ИИ в реальном времени (Live Playground)</span>\n          </div>\n        </div>\n        <div style=\"display:flex; gap:10px; margin-bottom:14px;\">\n          <input type=\"text\" id=\"ai-test-prompt\" class=\"form-input\" placeholder=\"Введите вопрос для проверки ИИ...\" value=\"Разрешен ли разворот на пешеходном переходе?\" style=\"font-size:13.5px; width:100%;\">\n          <button class=\"btn-action btn-primary\" id=\"ai-test-send-btn\" style=\"flex-shrink:0;\">Отправить</button>\n        </div>\n        <div id=\"ai-test-result-box\" style=\"background:#EFF0F4; border:none; border-radius:12px; padding:16px; font-size:13.5px; line-height:1.55; color:var(--text); min-height:80px; white-space:pre-wrap;\">Здесь отобразится ответ нейросети...</div>\n      </div>\n    </div>\n<div id=\"threads-view\" style=\"display:none;\">\n      <div class=\"card\">\n        <div class=\"card-head\">\n          <div class=\"card-title\">\n            <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z\"/></svg>\n            <span>Очередь постов в Threads</span>\n          </div>\n          <button class=\"btn-action\" id=\"refresh-threads-btn\">Обновить</button>\n        </div>\n        <div id=\"threads-queue-container\" style=\"display:grid; gap:14px;\">\n          <div style=\"color:var(--text-muted);text-align:center;padding:20px;\">Загрузка очереди...</div>\n        </div>\n      </div>\n    </div>\n\n  </main>\n</div>\n";
+const ADMIN_HTML_HEAD = "<!DOCTYPE html>\n<html lang=\"ru\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>ПДД Аналитика — Панель управления</title>\n  <link rel=\"icon\" href=\"https://pdd-drive.ru/assets/favicon.png\">\n  <script src=\"https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js\"></script>\n  <style>\n    :root {\n      --bg: #F8F8FA;\n      --sidebar-bg: #FFFFFF;\n      --card-bg: #FFFFFF;\n      --card-border: transparent;\n      --text: #121212;\n      --text-muted: #8E92A0;\n      --text-light: #6B7280;\n      --primary: #0574F8;\n      --primary-hover: #0463D6;\n      --primary-subtle: #E8F2FE;\n      --success: #2BC280;\n      --success-subtle: #E8F8F0;\n      --danger: #ED4621;\n      --danger-subtle: #FFECE8;\n      --surface-gray: #EFF0F4;\n      --surface-hover: #E5E7EB;\n      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n    }\n    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); -webkit-font-smoothing: antialiased; }\n    body { background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; display: flex; }\n\n    /* Layout structure */\n    .admin-wrapper { display: flex; width: 100vw; min-height: 100vh; }\n    \n    /* Sidebar */\n    .sidebar {\n      width: 250px;\n      background: var(--sidebar-bg);\n      border: none;\n      display: flex;\n      flex-direction: column;\n      flex-shrink: 0;\n      position: sticky;\n      top: 0;\n      height: 100vh;\n      z-index: 50;\n    }\n    .sidebar-brand {\n      padding: 22px 20px;\n      display: flex;\n      align-items: center;\n      gap: 12px;\n      border: none;\n    }\n    .sidebar-brand img { width: 34px; height: 34px; border-radius: 10px; }\n    .brand-text, .sidebar-brand-title { font-size: 15px; font-weight: 800; color: var(--text); line-height: 1.2; letter-spacing: -0.3px; }\n    .brand-badge, .sidebar-brand-badge {\n      display: inline-flex;\n      align-items: center;\n      gap: 4px;\n      padding: 2px 7px;\n      background: var(--success-subtle);\n      color: var(--success);\n      font-size: 10.5px;\n      font-weight: 700;\n      border-radius: 6px;\n      border: none;\n      margin-left: auto;\n    }\n    .live-dot { width: 5px; height: 5px; background: var(--success); border-radius: 50%; display: inline-block; }\n    \n    .sidebar-menu { padding: 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; }\n    .nav-item {\n      display: flex;\n      align-items: center;\n      gap: 12px;\n      padding: 11px 14px;\n      border-radius: 12px;\n      font-size: 13.5px;\n      font-weight: 600;\n      color: var(--text-muted);\n      cursor: pointer;\n      border: none;\n      background: transparent;\n      transition: all 0.15s ease;\n      text-decoration: none;\n      width: 100%;\n      text-align: left;\n    }\n    .nav-item:hover { background: var(--surface-gray); color: var(--text); }\n    .nav-item.active { background: var(--primary-subtle); color: var(--primary); font-weight: 700; }\n    .nav-item svg { flex-shrink: 0; }\n\n    .sidebar-footer { padding: 16px; border: none; margin-top: auto; display: flex; flex-direction: column; gap: 10px; }\n    .project-select-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }\n    .sidebar-select, .app-selector {\n      width: 100%;\n      background: var(--surface-gray);\n      border: none;\n      color: var(--text);\n      padding: 9px 12px;\n      border-radius: 10px;\n      font-size: 12.5px;\n      font-weight: 600;\n      outline: none;\n      cursor: pointer;\n    }\n    .btn-logout {\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      gap: 8px;\n      width: 100%;\n      padding: 10px 12px;\n      background: var(--surface-gray);\n      color: var(--text);\n      border: none;\n      border-radius: 10px;\n      font-size: 13px;\n      font-weight: 600;\n      cursor: pointer;\n      transition: all 0.15s;\n    }\n    .btn-logout:hover { background: var(--danger-subtle); color: var(--danger); }\n\n    /* Main Content Area */\n    .main-area, .content { flex: 1; padding: 28px 36px; max-width: 1440px; margin: 0 auto; width: 100%; min-width: 0; }\n    .top-bar, .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; min-height: 42px; }\n    .view-title, .page-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); }\n    \n    .top-actions { display: flex; align-items: center; gap: 10px; }\n    .segmented { display: flex; background: var(--surface-gray); padding: 4px; border-radius: 12px; border: none; gap: 2px; }\n    .segmented button {\n      border: none;\n      background: transparent;\n      padding: 6px 14px;\n      border-radius: 9px;\n      font-size: 12.5px;\n      font-weight: 600;\n      color: var(--text-muted);\n      cursor: pointer;\n      transition: all 0.15s;\n    }\n    .segmented button.active { background: var(--primary); color: #ffffff; font-weight: 700; }\n    .btn-icon {\n      width: 36px;\n      height: 36px;\n      border-radius: 10px;\n      border: none;\n      background: var(--surface-gray);\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      color: var(--text-muted);\n      cursor: pointer;\n      transition: all 0.15s;\n    }\n    .btn-icon:hover { background: var(--surface-hover); color: var(--text); }\n    \n    .btn-action {\n      padding: 7px 14px;\n      border: none;\n      background: var(--surface-gray);\n      color: var(--text);\n      border-radius: 10px;\n      font-size: 12.5px;\n      font-weight: 600;\n      cursor: pointer;\n      display: inline-flex;\n      align-items: center;\n      gap: 6px;\n      transition: all 0.15s;\n    }\n    .btn-action:hover { background: var(--surface-hover); color: var(--text); }\n    .btn-primary { background: var(--primary); color: #ffffff; border: none; font-weight: 600; }\n    .btn-primary:hover { background: var(--primary-hover); color: #ffffff; }\n    .btn-danger { background: var(--danger-subtle); color: var(--danger); border: none; }\n    .btn-danger:hover { background: var(--danger); color: #ffffff; }\n\n    /* KPI Grid */\n    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 22px; }\n    .kpi-card { background: var(--card-bg); border: none; border-radius: 18px; padding: 20px 22px; }\n    .kpi-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }\n    .kpi-label { font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; }\n    .kpi-value { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); margin-bottom: 4px; }\n    .kpi-footer { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }\n    .kpi-badge { display: inline-flex; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; border: none; }\n    .badge-blue { background: var(--primary-subtle); color: var(--primary); }\n    .badge-green { background: var(--success-subtle); color: var(--success); }\n\n    /* Chart Cards */\n    .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; margin-bottom: 22px; }\n    .grid-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }\n    @media (max-width: 1000px) { .grid-2-1, .grid-1-1 { grid-template-columns: 1fr; } }\n\n    .card { background: var(--card-bg); border: none; border-radius: 18px; padding: 22px 24px; margin-bottom: 22px; }\n    .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }\n    .card-title { font-size: 15px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }\n    .chart-box { position: relative; height: 260px; width: 100%; }\n\n    /* Tables */\n    table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px; }\n    th {\n      color: var(--text-muted);\n      font-size: 11px;\n      font-weight: 700;\n      text-transform: uppercase;\n      letter-spacing: 0.5px;\n      padding: 12px 14px;\n      background: var(--bg);\n      border: none;\n    }\n    th:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }\n    th:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }\n    td { padding: 14px 14px; border: none; border-bottom: 1px solid #F4F5F8; color: var(--text); vertical-align: middle; }\n    tr:last-child td { border-bottom: none; }\n    tbody tr:hover { background: #FAFAFC; }\n\n    .code-badge { font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--primary); background: var(--primary-subtle); padding: 3px 8px; border-radius: 6px; border: none; font-weight: 600; }\n    .tag-badge { display: inline-flex; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600; background: var(--surface-gray); color: var(--text-light); border: none; }\n\n    /* Forms & Inputs */\n    input, select, textarea, .form-input, .form-textarea {\n      border: none;\n      background: var(--surface-gray);\n      color: var(--text);\n      border-radius: 10px;\n      outline: none;\n      padding: 9px 12px;\n      font-size: 13px;\n      font-family: inherit;\n    }\n    input:focus, select:focus, textarea:focus, .form-input:focus, .form-textarea:focus { background: var(--primary-subtle); }\n    .form-group { display: flex; flex-direction: column; gap: 6px; }\n    .form-label { font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.4px; }\n\n    /* Login Modal */\n    #login-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }\n    .login-box { background: #ffffff; border: none; border-radius: 20px; padding: 36px 32px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.08); }\n    .login-box img { width: 56px; height: 56px; border-radius: 14px; margin-bottom: 14px; }\n    .login-box h2 { font-size: 20px; font-weight: 800; margin-bottom: 6px; color: var(--text); }\n    .login-box p { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }\n    .login-box input { width: 100%; background: var(--surface-gray); border: none; color: var(--text); padding: 12px; border-radius: 12px; font-size: 15px; margin-bottom: 14px; text-align: center; letter-spacing: 2px; }\n    .login-box input:focus { outline: none; background: var(--primary-subtle); }\n    .login-box button { width: 100%; padding: 12px; font-size: 13.5px; font-weight: 700; border-radius: 12px; }\n    .login-err-msg { color: var(--danger); font-size: 12px; margin-top: 10px; display: none; }\n  </style>\n</head>\n<body>\n\n<!-- Login Modal -->\n<div id=\"login-overlay\">\n  <div class=\"login-box\">\n    <img src=\"https://pdd-drive.ru/assets/icon-192.png\" alt=\"PDD Logo\">\n    <h2>Вход в панель</h2>\n    <p>Введите ключ доступа к аналитике</p>\n    <div>\n      <input type=\"text\" id=\"login-pwd\" placeholder=\"••••••••••••\" autofocus autocomplete=\"off\" autocorrect=\"off\" autocapitalize=\"off\" spellcheck=\"false\" style=\"-webkit-text-security: disc; text-security: disc;\">\n      <button type=\"button\" id=\"login-submit-btn\" class=\"btn-action btn-primary\" style=\"width:100%; justify-content:center;\">Войти</button>\n      <div id=\"login-err\" class=\"login-err-msg\">Неверный ключ доступа</div>\n    </div>\n  </div>\n</div>\n\n<!-- Main App Wrapper -->\n<div class=\"admin-wrapper\" id=\"app\" style=\"display:none;\">\n\n  <!-- Sidebar -->\n  <aside class=\"sidebar\">\n    <div class=\"sidebar-brand\">\n      <img src=\"https://pdd-drive.ru/assets/icon-192.png\" alt=\"PDD\">\n      <div>\n        <div class=\"brand-text\">ПДД Аналитика</div>\n      </div>\n      <span class=\"brand-badge\"><span class=\"live-dot\"></span>LIVE</span>\n    </div>\n\n    <nav class=\"sidebar-menu\">\n      <button class=\"nav-item active\" data-feature=\"analytics\">\n        <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"18\" y1=\"20\" x2=\"18\" y2=\"10\"/><line x1=\"12\" y1=\"20\" x2=\"12\" y2=\"4\"/><line x1=\"6\" y1=\"20\" x2=\"6\" y2=\"14\"/></svg>\n        <span>Аналитика</span>\n      </button>\n      <button class=\"nav-item\" data-feature=\"links\">\n        <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/></svg>\n        <span>Генератор ссылок</span>\n      </button>\n      <button class=\"nav-item\" data-feature=\"blog\">\n        <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 19.5A2.5 2.5 0 0 1 6.5 17H20\"/><path d=\"M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z\"/></svg>\n        <span>Статьи блога</span>\n      </button>\n                  <button class=\"nav-item\" data-feature=\"users\">\n        <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M23 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></svg>\n        <span>Пользователи</span>\n      </button>\n      <button class=\"nav-item\" data-feature=\"ai\">\n        <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"11\" width=\"18\" height=\"10\" rx=\"2\"/><circle cx=\"12\" cy=\"5\" r=\"2\"/><path d=\"M12 7v4\"/><line x1=\"8\" y1=\"16\" x2=\"8.01\" y2=\"16\"/><line x1=\"16\" y1=\"16\" x2=\"16.01\" y2=\"16\"/></svg>\n        <span>Управление ИИ</span>\n      </button>\n<button class=\"nav-item\" data-feature=\"threads\">\n        <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z\"/></svg>\n        <span>Threads постер</span>\n      </button>\n    </nav>\n\n    <div class=\"sidebar-footer\">\n      <div>\n        <div class=\"project-select-label\">Проект</div>\n        <select id=\"sidebar-app-select\" class=\"sidebar-select\">\n          <option value=\"ru\">Россия (RU)</option>\n        </select>\n      </div>\n      <button class=\"btn-logout\" id=\"logout-btn\">\n        <svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"/><polyline points=\"16 17 21 12 16 7\"/><line x1=\"21\" y1=\"12\" x2=\"9\" y2=\"12\"/></svg>\n        <span>Выйти</span>\n      </button>\n    </div>\n  </aside>\n\n  <!-- Main Area -->\n  <main class=\"main-area\">\n\n    <!-- Top bar -->\n    <header class=\"top-bar\">\n      <h1 class=\"view-title\" id=\"current-view-title\">Аналитика продукта</h1>\n      <div class=\"top-actions\" id=\"top-period-actions\">\n        <div class=\"segmented\" id=\"period-buttons\">\n          <button class=\"active\" data-days=\"7\">7 дней</button>\n          <button data-days=\"1\">Сегодня</button>\n          <button data-days=\"30\">30 дней</button>\n          <button data-days=\"90\">90 дней</button>\n        </div>\n        <button class=\"btn-icon\" id=\"refresh-btn\" title=\"Обновить\">\n          <svg viewBox=\"0 0 24 24\" width=\"15\" height=\"15\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"23 4 23 10 17 10\"/><polyline points=\"1 20 1 14 7 14\"/><path d=\"M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15\"/></svg>\n        </button>\n      </div>\n    </header>\n\n    <!-- 1. ANALYTICS VIEW -->\n    <div id=\"analytics-view\">\n      <!-- KPI Cards -->\n      <div class=\"kpi-grid\">\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Установки приложения</span>\n          </div>\n          <div class=\"kpi-value\" id=\"m-installs\">0</div>\n          <div class=\"kpi-footer\">\n            <span>За всё время: <b id=\"m-grand\" style=\"color:var(--text);font-weight:700;\">0</b></span>\n          </div>\n        </div>\n\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Визиты лендинга</span>\n          </div>\n          <div class=\"kpi-value\" id=\"m-views\">0</div>\n        </div>\n\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Клики в сторы</span>\n            <span class=\"kpi-badge badge-blue\" id=\"m-ctr\">CTR: 0%</span>\n          </div>\n          <div class=\"kpi-value\" id=\"m-clicks\">0</div>\n        </div>\n\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Конверсия лендинга</span>\n            <span class=\"kpi-badge badge-green\">CR %</span>\n          </div>\n          <div class=\"kpi-value\" id=\"m-cr\">0.0%</div>\n        </div>\n      </div>\n\n      <!-- Charts Row 1: App Growth & Store Distribution -->\n      <div class=\"grid-2-1\">\n        <div class=\"card\">\n          <div class=\"card-head\">\n            <div class=\"card-title\">\n              <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"5\" y=\"2\" width=\"14\" height=\"20\" rx=\"2\" ry=\"2\"/><line x1=\"12\" y1=\"18\" x2=\"12.01\" y2=\"18\"/></svg>\n              <span>Динамика установок приложения</span>\n            </div>\n          </div>\n          <div class=\"chart-box\">\n            <canvas id=\"chart-installs\"></canvas>\n          </div>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-head\">\n            <div class=\"card-title\">\n              <span>Платформы и магазины</span>\n            </div>\n          </div>\n          <div class=\"chart-box\">\n            <canvas id=\"chart-targets\"></canvas>\n          </div>\n        </div>\n      </div>\n\n      <!-- Charts Row 2: Web Marketing Funnel & Traffic Sources -->\n      <div class=\"grid-2-1\">\n        <div class=\"card\">\n          <div class=\"card-head\">\n            <div class=\"card-title\">\n              <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"18\" y1=\"20\" x2=\"18\" y2=\"10\"/><line x1=\"12\" y1=\"20\" x2=\"12\" y2=\"4\"/><line x1=\"6\" y1=\"20\" x2=\"6\" y2=\"14\"/></svg>\n              <span>Воронка веб-маркетинга (Визиты и Клики)</span>\n            </div>\n          </div>\n          <div class=\"chart-box\">\n            <canvas id=\"chart-web-funnel\"></canvas>\n          </div>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-head\">\n            <div class=\"card-title\">\n              <span>Источники трафика</span>\n            </div>\n          </div>\n          <div class=\"chart-box\">\n            <canvas id=\"chart-sources\"></canvas>\n          </div>\n        </div>\n      </div>\n\n      <!-- Tables: Social channels & Live feed -->\n      <div class=\"grid-1-1\">\n        <div class=\"card\">\n          <div class=\"card-head\">\n            <div class=\"card-title\">\n              <span>Эффективность каналов и соцсетей</span>\n            </div>\n          </div>\n          <table>\n            <thead>\n              <tr>\n                <th>Источник</th>\n                <th>Визиты</th>\n                <th>Клики</th>\n                <th>CTR</th>\n                <th>Установки</th>\n              </tr>\n            </thead>\n            <tbody id=\"table-sources\">\n              <tr><td colspan=\"5\" style=\"text-align:center;color:var(--text-muted);\">Загрузка...</td></tr>\n            </tbody>\n          </table>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-head\">\n            <div class=\"card-title\">\n              <span>Живая лента событий</span>\n            </div>\n          </div>\n          <table>\n            <thead>\n              <tr>\n                <th>Время</th>\n                <th>Событие</th>\n                <th>Источник</th>\n                <th>Кампания</th>\n                <th>Страна</th>\n              </tr>\n            </thead>\n            <tbody id=\"table-live\">\n              <tr><td colspan=\"5\" style=\"text-align:center;color:var(--text-muted);\">Ожидание событий...</td></tr>\n            </tbody>\n          </table>\n        </div>\n      </div>\n    </div>\n\n    <!-- 2. LINKS GENERATOR VIEW -->\n    <div id=\"links-view\" style=\"display:none;\">\n      <div class=\"card\" style=\"margin-bottom: 22px;\">\n        <div class=\"card-head\">\n          <div class=\"card-title\">\n            <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/></svg>\n            <span>Генератор UTM-ссылок для соцсетей и кампаний</span>\n          </div>\n        </div>\n        <p style=\"font-size:13px; color:var(--text-muted); margin-bottom:18px; line-height:1.5;\">\n          Создавайте отслеживаемые ссылки для шапок профиля (bio), описаний видео, Shorts и постов. Переходы будут точно атрибутированы в аналитике.\n        </p>\n\n        <div style=\"display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:16px;\">\n          <div>\n            <label style=\"display:block; font-size:11.5px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px;\">Целевая страница</label>\n            <select id=\"gen-page\" class=\"sidebar-select\">\n              <optgroup label=\"Россия (RU)\">\n                <option value=\"https://pdd-drive.ru/links/\">Таплинк со всеми кнопками (/links/)</option>\n                <option value=\"https://pdd-drive.ru/\">Главный сайт (/)</option>\n                <option value=\"https://pdd-drive.ru/go/rustore/\">RuStore</option>\n                <option value=\"https://pdd-drive.ru/go/gplay/\">Google Play</option>\n                <option value=\"https://pdd-drive.ru/go/appstore/\">App Store</option>\n                <option value=\"https://pdd-drive.ru/go/web/\">Веб-версия</option>\n              </optgroup>\n              <optgroup label=\"Сербия (RS)\">\n                <option value=\"https://pdd-drive.ru/go/rs-gplay/\">Google Play (Сербия)</option>\n                <option value=\"https://rs.pdd-drive.online/\">Лендинг Сербии (rs.pdd-drive.online)</option>\n              </optgroup>\n            </select>\n          </div>\n          <div>\n            <label style=\"display:block; font-size:11.5px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px;\">Соцсеть / Канал</label>\n            <select id=\"gen-source\" class=\"sidebar-select\">\n              <option value=\"yt\">YouTube (Shorts / Видео)</option>\n              <option value=\"tt\">TikTok</option>\n              <option value=\"ig\">Instagram (Reels / Bio)</option>\n              <option value=\"tg\">Telegram</option>\n              <option value=\"vk\">ВКонтакте</option>\n            </select>\n          </div>\n          <div>\n            <label style=\"display:block; font-size:11.5px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px;\">Название кампании</label>\n            <input type=\"text\" id=\"gen-camp\" placeholder=\"напр: bio, quiz_promo, post12\" style=\"width:100%; background:#ffffff; border:1px solid var(--card-border); border-radius:8px; color:var(--text); padding:8px 12px; font-size:13px;\" />\n          </div>\n        </div>\n\n        <div style=\"display:flex; align-items:center; gap:12px; background:#f8fafc; border:1px solid var(--card-border); padding:10px 14px; border-radius:10px;\">\n          <div id=\"gen-output\" class=\"code-badge\" style=\"flex:1; font-size:13px; padding:4px 8px; word-break:break-all;\">https://pdd-drive.ru/links/?ref=yt</div>\n          <button id=\"copy-link-btn\" class=\"btn-action btn-primary\">\n            <span>Скопировать</span>\n          </button>\n        </div>\n      </div>\n\n      <!-- Campaign details table -->\n      <div class=\"card\">\n        <div class=\"card-head\">\n          <div class=\"card-title\">\n            <span>Кампании и источники</span>\n          </div>\n        </div>\n        <table>\n          <thead>\n            <tr>\n              <th>Кампания</th>\n              <th>Соцсеть</th>\n              <th>Визиты</th>\n              <th>Клики</th>\n              <th>CTR</th>\n            </tr>\n          </thead>\n          <tbody id=\"table-campaigns\">\n            <tr><td colspan=\"5\" style=\"text-align:center;color:var(--text-muted);\">Нет данных по кампаниям</td></tr>\n          </tbody>\n        </table>\n      </div>\n    </div>\n\n    <!-- 3. BLOG VIEW -->\n    <div id=\"blog-view\" style=\"display:none;\">\n      <div class=\"card\">\n        <div class=\"card-head\">\n          <div class=\"card-title\">\n            <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 19.5A2.5 2.5 0 0 1 6.5 17H20\"/><path d=\"M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z\"/></svg>\n            <span>Запланированные публикации статей (<span id=\"blog-count\">0</span>)</span>\n          </div>\n          <div style=\"display:flex; gap:8px;\">\n            <button class=\"btn-action\" id=\"reset-blog-btn\" style=\"color:var(--danger); border-color:#fecaca;\">Сбросить</button>\n            <button class=\"btn-action\" id=\"refresh-blog-btn\">Обновить</button>\n          </div>\n        </div>\n        <div id=\"blog-articles-container\" style=\"display:grid; gap:12px;\">\n          <div style=\"color:var(--text-muted);text-align:center;padding:20px;\">Загрузка...</div>\n        </div>\n      </div>\n    </div>\n\n        \n    <!-- 4. USERS MANAGEMENT VIEW -->\n    <div id=\"users-view\" style=\"display:none;\">\n      <div class=\"card\" style=\"margin-bottom: 22px;\">\n        <div class=\"card-head\">\n          <div class=\"card-title\">\n            <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M23 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></svg>\n            <span>Пользователи и Премиум-доступ (<span id=\"users-count\">0</span>)</span>\n          </div>\n          <button class=\"btn-action\" id=\"refresh-users-btn\">Обновить</button>\n        </div>\n        <div style=\"overflow-x:auto;\">\n          <table>\n            <thead>\n              <tr>\n                <th>Пользователь</th>\n                <th>Провайдер</th>\n                <th>Статус</th>\n                <th>Действует до</th>\n                <th>Последний вход</th>\n                <th>Версия</th>\n                <th>Действия</th>\n              </tr>\n            </thead>\n            <tbody id=\"table-users\">\n              <tr><td colspan=\"7\" style=\"text-align:center;color:var(--text-muted);padding:24px;\">Загрузка...</td></tr>\n            </tbody>\n          </table>\n        </div>\n      </div>\n    </div>\n\n    <!-- 5. AI MANAGEMENT VIEW -->\n    <div id=\"ai-view\" style=\"display:none;\">\n      <!-- AI KPI Cards -->\n      <div class=\"kpi-grid\">\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Всего запросов к ИИ</span>\n          </div>\n          <div class=\"kpi-value\" id=\"ai-m-total\">0</div>\n          <div class=\"kpi-footer\">\n            <span>Сегодня: <b id=\"ai-m-today\" style=\"color:var(--text);font-weight:700;\">0</b></span>\n          </div>\n        </div>\n\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Расходы на ИИ</span>\n            <span class=\"kpi-badge badge-green\" id=\"ai-m-cost-rub\">~0.00 ₽</span>\n          </div>\n          <div class=\"kpi-value\" id=\"ai-m-cost-usd\">$0.00000</div>\n          <div class=\"kpi-footer\">\n            <span>По тарифам Google Gemini</span>\n          </div>\n        </div>\n\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Использовано токенов</span>\n            <span class=\"kpi-badge badge-blue\" id=\"ai-m-tokens-total\">0</span>\n          </div>\n          <div class=\"kpi-value\" id=\"ai-m-tokens-k\">0k</div>\n          <div class=\"kpi-footer\">\n            <span>Вход: <b id=\"ai-m-tokens-prompt\">0</b> · Выход: <b id=\"ai-m-tokens-cand\">0</b></span>\n          </div>\n        </div>\n\n        <div class=\"kpi-card\">\n          <div class=\"kpi-head\">\n            <span class=\"kpi-label\">Активная модель</span>\n            <span class=\"kpi-badge badge-green\">АКТИВНА</span>\n          </div>\n          <div class=\"kpi-value\" style=\"font-size:18px;\" id=\"ai-m-model\">Gemini 3.6 Flash</div>\n          <div class=\"kpi-footer\">\n            <span>Статус: <b style=\"color:#2BC280;\">Подключено (API)</b></span>\n          </div>\n        </div>\n      </div>\n\n      <!-- AI Model Selector Card -->\n      <div class=\"card\" style=\"margin-bottom: 22px;\">\n        <div class=\"card-head\">\n          <div class=\"card-title\">\n            <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"11\" width=\"18\" height=\"10\" rx=\"2\"/><circle cx=\"12\" cy=\"5\" r=\"2\"/><path d=\"M12 7v4\"/></svg>\n            <span>Выбор и настройка модели искусственного интеллекта</span>\n          </div>\n          <button class=\"btn-action btn-primary\" id=\"save-ai-model-btn\">\n            <svg viewBox=\"0 0 24 24\" width=\"15\" height=\"15\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z\"/><polyline points=\"17 21 17 13 7 13 7 21\"/><polyline points=\"7 3 7 8 15 8\"/></svg>\n            <span>Применить модель</span>\n          </button>\n        </div>\n        <p style=\"font-size:13px; color:var(--text-muted); margin-bottom:16px; line-height:1.5;\">\n          Если текущая модель отвечает медленно или испытывает сбои, вы можете мгновенно переключиться на резервную модель. Настройка применяется сразу для всех пользователей приложения без пересборки.\n        </p>\n\n        <div style=\"display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px;\">\n          <div>\n            <label class=\"form-label\" style=\"margin-bottom:6px;\">Основная модель генерации</label>\n            <select id=\"ai-model-select\" class=\"sidebar-select\" style=\"padding:10px 12px; font-size:13.5px; font-weight:600;\">\n              <option value=\"gemini-3.6-flash\">Gemini 3.6 Flash (Хит, супер-быстрый — $0.10/1M)</option>\n              <option value=\"gemini-2.5-flash\">Gemini 2.5 Flash ($0.10/1M)</option>\n              <option value=\"gemini-1.5-flash\">Gemini 1.5 Flash (Эконом — $0.075/1M)</option>\n              <option value=\"gemini-2.5-pro\">Gemini 2.5 Pro (Глубокое мышление — $1.25/1M)</option>\n            </select>\n          </div>\n          <div style=\"background:#EFF0F4; border:none; border-radius:12px; padding:14px 18px; display:flex; flex-direction:column; justify-content:center;\">\n            <div style=\"font-size:12px; font-weight:700; color:var(--text); margin-bottom:4px;\">Тарификация Google AI Studio</div>\n            <div style=\"font-size:12px; color:var(--text-muted); line-height:1.4;\">Первые 15 запросов в минуту бесплатны навсегда. Далее от $0.10 за 1 миллион токенов.</div>\n          </div>\n        </div>\n      </div>\n\n      <!-- Live Playground / Tester -->\n      <div class=\"card\">\n        <div class=\"card-head\">\n          <div class=\"card-title\">\n            <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"/></svg>\n            <span>Тестирование ИИ в реальном времени (Live Playground)</span>\n          </div>\n        </div>\n        <div style=\"display:flex; gap:10px; margin-bottom:14px;\">\n          <input type=\"text\" id=\"ai-test-prompt\" class=\"form-input\" placeholder=\"Введите вопрос для проверки ИИ...\" value=\"Разрешен ли разворот на пешеходном переходе?\" style=\"font-size:13.5px; width:100%;\">\n          <button class=\"btn-action btn-primary\" id=\"ai-test-send-btn\" style=\"flex-shrink:0;\">Отправить</button>\n        </div>\n        <div id=\"ai-test-result-box\" style=\"background:#EFF0F4; border:none; border-radius:12px; padding:16px; font-size:13.5px; line-height:1.55; color:var(--text); min-height:80px; white-space:pre-wrap;\">Здесь отобразится ответ нейросети...</div>\n      </div>\n    </div>\n<div id=\"threads-view\" style=\"display:none;\">\n      <div class=\"card\">\n        <div class=\"card-head\">\n          <div class=\"card-title\">\n            <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z\"/></svg>\n            <span>Очередь постов в Threads</span>\n          </div>\n          <button class=\"btn-action\" id=\"refresh-threads-btn\">Обновить</button>\n        </div>\n        <div id=\"threads-queue-container\" style=\"display:grid; gap:14px;\">\n          <div style=\"color:var(--text-muted);text-align:center;padding:20px;\">Загрузка очереди...</div>\n        </div>\n      </div>\n    </div>\n\n  </main>\n</div>\n";
 
 const ADMIN_CLIENT_JS = "\n// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 State \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nlet currentFeature = 'analytics';\nlet currentDays = 7;\nlet currentApp = 'all'; // 'all' | 'ru' | 'rs'\nlet cachedBlogArticles = [];\n\nlet chartInstalls = null;\nlet chartTargets = null;\nlet chartWebFunnel = null;\nlet chartSources = null;\n\n// Brand SVG Icons\nconst BRAND_SVGS = {\n  google: '<svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" style=\"flex-shrink:0;\"><path fill=\"#4285F4\" d=\"M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z\"/><path fill=\"#34A853\" d=\"M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z\"/><path fill=\"#FBBC05\" d=\"M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z\"/><path fill=\"#EA4335\" d=\"M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z\"/></svg>',\n  gplay: '<svg viewBox=\"0 0 512 512\" width=\"14\" height=\"14\" style=\"flex-shrink:0;\"><path fill=\"#4285F4\" d=\"M82.2 28.1C73.8 37 69 49.9 69 65.8v380.4c0 15.9 4.8 28.8 13.2 37.7l1.9 1.8 214.3-214.3v-5L84.1 26.3l-1.9 1.8z\"/><path fill=\"#FFBA00\" d=\"M369.3 328.7l-70.9-70.9v-5l70.9-70.9 2 1.1 84.1 47.8c24 13.6 24 35.9 0 49.5l-84.1 47.8-2 1.1z\"/><path fill=\"#FF3A44\" d=\"M298.4 257.8L82.2 474c7.9 8.4 21 9.4 35.7 1.1l253.4-144-72.9-73.3z\"/><path fill=\"#00E676\" d=\"M298.4 252.8l72.9-73.3L117.9 35.5C103.2 27.2 90.1 28.2 82.2 36.6L298.4 252.8z\"/></svg>',\n  rustore: '<svg viewBox=\"0 0 100 100\" width=\"14\" height=\"14\" style=\"flex-shrink:0;\"><path d=\"M57.8 61.6C55.1 61 53.2 58.5 53.2 55.8V23.2c0-3.1 3-5.4 6.1-4.7L78.6 23.4c2.7.7 4.6 3.1 4.6 5.8v32.6c0 3.1-3 5.4-6.1 4.7L57.8 61.6zM21.4 76.6C18.7 76 16.8 73.5 16.8 70.8V38.2c0-3.1 3-5.4 6.1-4.7L42.2 38.4c2.7.7 4.6 3.1 4.6 5.8v32.6c0 3.1-3 5.4-6.1 4.7L21.4 76.6z\" fill=\"#0077ff\"/></svg>',\n  appstore: '<svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"#0284c7\" style=\"flex-shrink:0;\"><path d=\"M18.7 19.5c-.8 1.2-1.7 2.4-3 2.4-1.4 0-1.8-.8-3.4-.8-1.6 0-2.1.8-3.4.8-1.3 0-2.3-1.3-3.1-2.5C4.2 17 3 13.6 3 10.4c0-5.1 3.3-7.8 6.5-7.8 1.7 0 3.3 1.2 4.3 1.2 1 0 2.9-1.5 4.9-1.3.8 0 3.2.3 4.7 2.5-3.9 2.3-3.3 7.5.7 9.1-.8 2-1.9 4-3.4 5.4zM15.9 2.6c.8-1 1.3-2.3 1.2-3.6-1.1.1-2.5.7-3.3 1.7-.7.8-1.4 2.2-1.2 3.5 1.3.1 2.5-.6 3.3-1.6z\"/></svg>',\n  web: '<svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"#8b5cf6\" stroke-width=\"2\" style=\"flex-shrink:0;\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"2\" y1=\"12\" x2=\"22\" y2=\"12\"/><path d=\"M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z\"/></svg>',\n  youtube: '<svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"#ef4444\" style=\"flex-shrink:0;\"><path d=\"M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31.8 31.8 0 0 0 0 12a31.8 31.8 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.8 31.8 0 0 0 24 12a31.8 31.8 0 0 0-.5-5.8zM9.5 15.6V8.4l6.3 3.6-6.3 3.6z\"/></svg>',\n  instagram: '<svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"#ec4899\" style=\"flex-shrink:0;\"><path d=\"M12 2.2c3.2 0 3.6 0 4.9.1 3.3.1 4.8 1.7 4.9 4.9.1 1.3.1 1.7.1 4.8s0 3.6-.1 4.9c-.1 3.2-1.7 4.8-4.9 4.9-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-3.2-.1-4.8-1.7-4.9-4.9-.1-1.3-.1-1.7-.1-4.9s0-3.6.1-4.9c.1-3.2 1.7-4.8 4.9-4.9 1.3-.1 1.7-.1 4.9-.1zm0-2.2C8.7 0 8.3 0 7 .1 2.7.3.3 2.7.1 7 0 8.3 0 8.7 0 12s0 3.7.1 5c.2 4.3 2.6 6.7 6.9 6.9 1.3.1 1.7.1 5 .1s3.7 0 5-.1c4.3-.2 6.7-2.6 6.9-6.9.1-1.3.1-1.7.1-5s0-3.7-.1-5C23.8 2.7 21.4.3 17.1.1 15.8 0 15.4 0 12 0zm0 5.8a6.2 6.2 0 1 0 0 12.4 6.2 6.2 0 0 0 0-12.4zm0 10.2a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.4-11.8a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8z\"/></svg>',\n  tiktok: '<svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" style=\"flex-shrink:0;\"><path fill=\"#06b6d4\" d=\"M12.5.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z\"/><path fill=\"#ef4444\" d=\"M13.4.62c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z\"/><path fill=\"#0f172a\" d=\"M12.95.32c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z\"/></svg>',\n  telegram: '<svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"#229ed9\" style=\"flex-shrink:0;\"><path d=\"M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm5.9 8.2l-2 9.3c-.1.7-.5.8-1.1.5l-3-2.2-1.4 1.4c-.2.2-.3.3-.6.3l.2-3.1 5.6-5c.2-.2-.1-.3-.4-.1l-6.9 4.3-3-.9c-.6-.2-.7-.6.1-1l11.6-4.5c.5-.2 1 .1.8.9z\"/></svg>',\n  vk: '<svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"#0077ff\" style=\"flex-shrink:0;\"><path d=\"M15.7 0H8.3C3 0 0 3 0 8.3v7.4C0 21 3 24 8.3 24h7.4c5.3 0 8.3-3 8.3-8.3V8.3C24 3 21 0 15.7 0zm3.7 17h-1.6c-.6 0-.8-.5-1.9-1.6-1-1-1.5-1.2-1.7-1.2-.4 0-.5.1-.5.6v1.5c0 .4-.1.7-1.2.7-1.8 0-3.7-1.1-5.1-3.1C5.3 12.5 4.7 10.3 4.7 9.8c0-.2.1-.5.6-.5h1.6c.5 0 .6.2.8.7.9 2.5 2.3 4.7 2.9 4.7.2 0 .3-.1.3-.7V11.4c-.1-1.2-.7-1.3-.7-1.7 0-.2.2-.4.4-.4h2.6c.4 0 .5.2.5.6v3.5c0 .4.2.5.3.5.2 0 .4-.1.8-.6 1.3-1.5 2.2-3.7 2.2-3.7.1-.3.3-.5.8-.5h1.6c.5 0 .6.3.5.6-.2 1-2.3 4-2.4 4.1-.3.4-.3.6 0 1 .3.3.1.3 1.6 1.8 1.1 1.1 2 2.1 2.2 2.5.2.4-.1.6-.6.6z\"/></svg>',\n  yandex: '<svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"#f59e0b\" style=\"flex-shrink:0;\"><path d=\"M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm3.627 18.707h-2.52L9.27 13.067l-1.36 1.48v4.16H5.733V5.293h2.177v7.507l4.987-7.507h2.64l-4.52 6.547 4.61 6.867z\"/></svg>',\n  direct: '<svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"#64748b\" stroke-width=\"2\" style=\"flex-shrink:0;\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"2\" y1=\"12\" x2=\"22\" y2=\"12\"/><path d=\"M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z\"/></svg>',\n  other: '<svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"#64748b\" stroke-width=\"2\" style=\"flex-shrink:0;\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 8v8M8 12h8\"/></svg>'\n};\n\n// Brand configuration maps\nconst STORE_CONFIG = {\n  appstore: { name: 'App Store', color: '#0284c7', icon: BRAND_SVGS.appstore },\n  gplay: { name: 'Google Play', color: '#10b981', icon: BRAND_SVGS.gplay },\n  rustore: { name: 'RuStore', color: '#0077ff', icon: BRAND_SVGS.rustore },\n  web: { name: '\u0412\u0435\u0431-\u0432\u0435\u0440\u0441\u0438\u044f', color: '#8b5cf6', icon: BRAND_SVGS.web }\n};\n\nconst SOURCE_CONFIG = {\n  youtube: { name: 'YouTube', color: '#ef4444', icon: BRAND_SVGS.youtube },\n  instagram: { name: 'Instagram', color: '#ec4899', icon: BRAND_SVGS.instagram },\n  tiktok: { name: 'TikTok', color: '#06b6d4', icon: BRAND_SVGS.tiktok },\n  telegram: { name: 'Telegram', color: '#229ed9', icon: BRAND_SVGS.telegram },\n  vk: { name: '\u0412\u041a\u043e\u043d\u0442\u0430\u043a\u0442\u0435', color: '#0077ff', icon: BRAND_SVGS.vk },\n  yandex: { name: '\u042f\u043d\u0434\u0435\u043a\u0441', color: '#f59e0b', icon: BRAND_SVGS.yandex },\n  direct: { name: '\u041f\u0440\u044f\u043c\u043e\u0439 \u043f\u0435\u0440\u0435\u0445\u043e\u0434', color: '#64748b', icon: BRAND_SVGS.direct },\n  organic_gplay: { name: 'Google Play', color: '#10b981', icon: BRAND_SVGS.gplay },\n  organic_rustore: { name: 'RuStore', color: '#0077ff', icon: BRAND_SVGS.rustore },\n  organic_appstore: { name: 'App Store', color: '#0284c7', icon: BRAND_SVGS.appstore },\n  other: { name: '\u041f\u0440\u043e\u0447\u0435\u0435', color: '#94a3b8', icon: BRAND_SVGS.other }\n};\n\nfunction normalizeStore(raw) {\n  const s = String(raw || '').toLowerCase().trim();\n  if (s.includes('rustore') || s.includes('vk.store')) return 'rustore';\n  if (s.includes('gplay') || s.includes('google') || s.includes('vending') || s.includes('android')) return 'gplay';\n  if (s.includes('appstore') || s.includes('apple') || s.includes('ios')) return 'appstore';\n  if (s.includes('web')) return 'web';\n  return null;\n}\n\nfunction normalizeSource(raw) {\n  const s = String(raw || '').toLowerCase().trim();\n  if (s === 'yt' || s.includes('youtube')) return 'youtube';\n  if (s === 'ig' || s.includes('instagram')) return 'instagram';\n  if (s === 'tt' || s.includes('tiktok')) return 'tiktok';\n  if (s === 'tg' || s.includes('telegram')) return 'telegram';\n  if (s === 'vk' || s.includes('vkontakte')) return 'vk';\n  if (s.includes('yandex') || s.includes('ya.ru')) return 'yandex';\n  if (s.includes('rustore')) return 'organic_rustore';\n  if (s.includes('google play') || s.includes('gplay') || s.includes('vending')) return 'organic_gplay';\n  if (s.includes('app store') || s.includes('apple')) return 'organic_appstore';\n  if (s.includes('galaxy') || s.includes('samsung')) return 'organic_gplay';\n  if (s === 'google' || s.includes('google.') || s.includes('google_search')) return 'google';\n  if (s === 'direct' || !s) return 'direct';\n  return 'other';\n}\n\nfunction formatEventTime(isoString) {\n  if (!isoString) return '-';\n  try {\n    const d = new Date(isoString);\n    if (isNaN(d.getTime())) return isoString;\n    return new Intl.DateTimeFormat('ru-RU', {\n      day: '2-digit',\n      month: '2-digit',\n      hour: '2-digit',\n      minute: '2-digit',\n      second: '2-digit',\n      timeZone: 'Europe/Moscow'\n    }).format(d).replace(',', '');\n  } catch (_) {\n    return isoString;\n  }\n}\n\nfunction getCountryFlag(code) {\n  if (!code || typeof code !== 'string') return '\ud83c\udf10';\n  const c = code.trim().toUpperCase();\n  if (c === 'RU') return '\ud83c\uddf7\ud83c\uddfa';\n  if (c === 'RS') return '\ud83c\uddf7\ud83c\uddf8';\n  if (c === 'BY') return '\ud83c\udde7\ud83c\uddfe';\n  if (c === 'KZ') return '\ud83c\uddf0\ud83c\uddff';\n  if (c === 'UA') return '\ud83c\uddfa\ud83c\udde6';\n  if (c === 'US') return '\ud83c\uddfa\ud83c\uddf8';\n  if (c.length === 2) {\n    const codePoints = c.split('').map(char => 127397 + char.charCodeAt(0));\n    return String.fromCodePoint(...codePoints);\n  }\n  return '\ud83c\udf10';\n}\n\nfunction formatCountryBadge(code) {\n  const c = String(code || 'RU').toUpperCase();\n  const flag = getCountryFlag(c);\n  return '<span class=\"tag-badge\" style=\"display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;\"><span style=\"font-size:13px;line-height:1;\">' + flag + '</span> ' + c + '</span>';\n}\n\nfunction formatBrandBadge(srcRaw) {\n  const key = normalizeSource(srcRaw);\n  const conf = SOURCE_CONFIG[key] || { name: srcRaw || '\u041f\u0440\u044f\u043c\u043e\u0439', color: '#64748b', icon: BRAND_SVGS.other };\n  return '<span style=\"display:inline-flex;align-items:center;gap:7px;font-weight:600;white-space:nowrap;color:var(--text);\">'\n    + conf.icon\n    + '<span>' + conf.name + '</span>'\n    + '</span>';\n}\n\n// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 Sidebar Navigation \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nconst VIEW_TITLES = {\n  analytics: '\u0410\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0430 \u043f\u0440\u043e\u0434\u0443\u043a\u0442\u0430',\n  links: '\u0413\u0435\u043d\u0435\u0440\u0430\u0442\u043e\u0440 \u0441\u0441\u044b\u043b\u043e\u043a \u0438 \u043a\u0430\u043c\u043f\u0430\u043d\u0438\u0438',\n  blog: '\u0421\u0442\u0430\u0442\u044c\u0438 \u0431\u043b\u043e\u0433\u0430',\n  users: '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438 \u0438 \u041f\u0440\u0435\u043c\u0438\u0443\u043c-\u0434\u043e\u0441\u0442\u0443\u043f',\n  ai: '\u0423\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u0438\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u043c \u0438\u043d\u0442\u0435\u043b\u043b\u0435\u043a\u0442\u043e\u043c',\n  threads: 'Threads \u0430\u0432\u0442\u043e\u043f\u043e\u0441\u0442\u0435\u0440'\n};\n\ndocument.querySelectorAll('.sidebar-menu .nav-item').forEach(btn => {\n  btn.addEventListener('click', () => {\n    document.querySelectorAll('.sidebar-menu .nav-item').forEach(b => b.classList.remove('active'));\n    btn.classList.add('active');\n    currentFeature = btn.dataset.feature;\n    \n    document.getElementById('current-view-title').innerText = VIEW_TITLES[currentFeature] || '\u041f\u0430\u043d\u0435\u043b\u044c \u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f';\n\n    // Show period selector ONLY on Analytics tab\n    const topPeriodActions = document.getElementById('top-period-actions');\n    if (topPeriodActions) {\n      topPeriodActions.style.display = (currentFeature === 'analytics') ? 'flex' : 'none';\n    }\n\n    const allViews = ['analytics-view', 'links-view', 'blog-view', 'threads-view', 'users-view', 'ai-view'];\n    allViews.forEach(vid => {\n      const el = document.getElementById(vid);\n      if (el) {\n        el.style.display = (vid === currentFeature + '-view') ? 'block' : 'none';\n      }\n    });\n\n    if (currentFeature === 'analytics') checkAuthAndLoad();\n    else if (currentFeature === 'links') { checkAuthAndLoad(); updateGeneratedLink(); }\n    else if (currentFeature === 'blog') loadBlogArticles();\n    else if (currentFeature === 'threads') loadThreadsQueue();\n    else if (currentFeature === 'users') loadUsersList();\n    else if (currentFeature === 'ai') loadAiStats();\n  });\n});\n\n// App / Project Selector\ndocument.getElementById('sidebar-app-select').addEventListener('change', (e) => {\n  currentApp = e.target.value;\n  checkAuthAndLoad();\n});\n\n// Period Selector\ndocument.querySelectorAll('#period-buttons button').forEach(btn => {\n  btn.addEventListener('click', () => {\n    document.querySelectorAll('#period-buttons button').forEach(b => b.classList.remove('active'));\n    btn.classList.add('active');\n    currentDays = parseInt(btn.dataset.days, 10);\n    checkAuthAndLoad();\n  });\n});\n\ndocument.getElementById('refresh-btn').addEventListener('click', checkAuthAndLoad);\n\n// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 Auth \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nasync function checkAuthAndLoad() {\n  try {\n    const r = await fetch('/api/admin/stats?days=' + currentDays + '&app=' + currentApp);\n    if (r.status === 401 || r.status === 403) {\n      document.getElementById('login-overlay').style.display = 'flex';\n      document.getElementById('app').style.display = 'none';\n      return;\n    }\n    if (!r.ok) return;\n    const data = await r.json();\n    document.getElementById('login-overlay').style.display = 'none';\n    document.getElementById('app').style.display = 'flex';\n    renderDashboard(data);\n  } catch (err) {\n    console.error('checkAuthAndLoad error:', err);\n  }\n}\n\nasync function handleLoginSubmit() {\n  const pwd = (document.getElementById('login-pwd').value || '').trim();\n  const errDiv = document.getElementById('login-err');\n  errDiv.style.display = 'none';\n  if (!pwd) {\n    errDiv.style.display = 'block';\n    return;\n  }\n  try {\n    const r = await fetch('/api/admin/login', {\n      method: 'POST',\n      headers: { 'content-type': 'application/json' },\n      body: JSON.stringify({ password: pwd })\n    });\n    if (!r.ok) {\n      errDiv.style.display = 'block';\n      return;\n    }\n    document.getElementById('login-overlay').style.display = 'none';\n    document.getElementById('app').style.display = 'flex';\n    checkAuthAndLoad();\n  } catch (_) {\n    errDiv.style.display = 'block';\n  }\n}\n\ndocument.getElementById('login-submit-btn').addEventListener('click', handleLoginSubmit);\ndocument.getElementById('login-pwd').addEventListener('keydown', (e) => {\n  if (e.key === 'Enter') handleLoginSubmit();\n});\n\ndocument.getElementById('logout-btn').addEventListener('click', async () => {\n  await fetch('/api/admin/logout', { method: 'POST' });\n  location.reload();\n});\n\n// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 Dashboard Analytics Rendering \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nfunction renderDashboard(data) {\n  // 1. KPI Cards\n  document.getElementById('m-installs').innerText = (data.totals.installs || 0).toLocaleString();\n  document.getElementById('m-grand').innerText = (data.totals.grandTotal || 0).toLocaleString();\n  document.getElementById('m-views').innerText = (data.totals.views || 0).toLocaleString();\n  document.getElementById('m-clicks').innerText = (data.totals.clicks || 0).toLocaleString();\n  \n  // Real Landing CR = Clicks / Views\n  const views = data.totals.views || 0;\n  const clicks = data.totals.clicks || 0;\n  const landingCr = views > 0 ? ((clicks / views) * 100).toFixed(1) : '0.0';\n  document.getElementById('m-ctr').innerText = 'CTR: ' + landingCr + '%';\n  document.getElementById('m-cr').innerText = landingCr + '%';\n\n  const labels = data.timeline.map(t => {\n    const p = t.date.split('-');\n    return p[2] + '.' + p[1];\n  });\n\n  // 2. Chart: App Installs Growth (Line with soft emerald gradient, NO LEGEND)\n  const ctxInstalls = document.getElementById('chart-installs').getContext('2d');\n  const gradInstalls = ctxInstalls.createLinearGradient(0, 0, 0, 240);\n  gradInstalls.addColorStop(0, 'rgba(16, 185, 129, 0.18)');\n  gradInstalls.addColorStop(1, 'rgba(16, 185, 129, 0.0)');\n\n  if (chartInstalls) chartInstalls.destroy();\n  chartInstalls = new Chart(ctxInstalls, {\n    type: 'line',\n    data: {\n      labels,\n      datasets: [{\n        label: '\u0423\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0438 \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u044f',\n        data: data.timeline.map(t => t.installs),\n        borderColor: '#10b981',\n        backgroundColor: gradInstalls,\n        borderWidth: 2.5,\n        tension: 0.3,\n        fill: true,\n        pointRadius: 3.5,\n        pointHoverRadius: 6,\n        pointBackgroundColor: '#10b981'\n      }]\n    },\n    options: getChartOptions(false)\n  });\n\n  // 3. Chart: Platforms & Stores (Filtered & Mapped to Official Brand Colors)\n  const storeAgg = {};\n  (data.targets || []).forEach(t => {\n    const key = normalizeStore(t.name);\n    if (key) {\n      storeAgg[key] = (storeAgg[key] || 0) + (t.clicks || 0);\n    }\n  });\n\n  const storeKeys = Object.keys(storeAgg).length ? Object.keys(storeAgg) : ['appstore', 'gplay', 'rustore'];\n  const storeLabels = storeKeys.map(k => STORE_CONFIG[k] ? STORE_CONFIG[k].name : k);\n  const storeValues = storeKeys.map(k => storeAgg[k] || 0);\n  const storeColors = storeKeys.map(k => STORE_CONFIG[k] ? STORE_CONFIG[k].color : '#64748b');\n\n  const ctxTargets = document.getElementById('chart-targets').getContext('2d');\n  if (chartTargets) chartTargets.destroy();\n  chartTargets = new Chart(ctxTargets, {\n    type: 'doughnut',\n    data: {\n      labels: storeLabels,\n      datasets: [{\n        data: storeValues.some(v => v > 0) ? storeValues : [1, 1, 1],\n        backgroundColor: storeColors,\n        borderWidth: 2,\n        borderColor: '#ffffff',\n        hoverOffset: 4\n      }]\n    },\n    options: getDoughnutOptions()\n  });\n\n  // 4. Chart: Web Marketing Funnel (Views vs Clicks)\n  const ctxWeb = document.getElementById('chart-web-funnel').getContext('2d');\n  const gradViews = ctxWeb.createLinearGradient(0, 0, 0, 240);\n  gradViews.addColorStop(0, 'rgba(2, 132, 199, 0.15)');\n  gradViews.addColorStop(1, 'rgba(2, 132, 199, 0.0)');\n\n  if (chartWebFunnel) chartWebFunnel.destroy();\n  chartWebFunnel = new Chart(ctxWeb, {\n    type: 'line',\n    data: {\n      labels,\n      datasets: [\n        {\n          label: '\u0412\u0438\u0437\u0438\u0442\u044b \u043b\u0435\u043d\u0434\u0438\u043d\u0433\u0430',\n          data: data.timeline.map(t => t.views),\n          borderColor: '#0284c7',\n          backgroundColor: gradViews,\n          borderWidth: 2,\n          tension: 0.3,\n          fill: true,\n          pointRadius: 3,\n          pointBackgroundColor: '#0284c7'\n        },\n        {\n          label: '\u041a\u043b\u0438\u043a\u0438 \u0432 \u0441\u0442\u043e\u0440\u044b',\n          data: data.timeline.map(t => t.clicks),\n          borderColor: '#ef4444',\n          backgroundColor: 'transparent',\n          borderWidth: 2,\n          tension: 0.3,\n          pointRadius: 3,\n          pointBackgroundColor: '#ef4444'\n        }\n      ]\n    },\n    options: getChartOptions(true)\n  });\n\n  // 5. Chart: Traffic Sources (Aggregated & Colored with Official Social Brand Colors)\n  const sourceAgg = {};\n  (data.sources || []).forEach(s => {\n    const key = normalizeSource(s.name);\n    const count = s.views || s.clicks || s.installs || 0;\n    if (count > 0) {\n      sourceAgg[key] = (sourceAgg[key] || 0) + count;\n    }\n  });\n\n  const sourceKeys = Object.keys(sourceAgg).length ? Object.keys(sourceAgg) : ['direct'];\n  const srcLabels = sourceKeys.map(k => SOURCE_CONFIG[k] ? SOURCE_CONFIG[k].name : k);\n  const srcValues = sourceKeys.map(k => sourceAgg[k] || 0);\n  const srcColors = sourceKeys.map(k => SOURCE_CONFIG[k] ? SOURCE_CONFIG[k].color : '#64748b');\n\n  const ctxSources = document.getElementById('chart-sources').getContext('2d');\n  if (chartSources) chartSources.destroy();\n  chartSources = new Chart(ctxSources, {\n    type: 'doughnut',\n    data: {\n      labels: srcLabels,\n      datasets: [{\n        data: srcValues.some(v => v > 0) ? srcValues : [1],\n        backgroundColor: srcColors,\n        borderWidth: 2,\n        borderColor: '#ffffff',\n        hoverOffset: 4\n      }]\n    },\n    options: getDoughnutOptions()\n  });\n\n  // 6. Table: Channels / Sources (Aggregated with Brand Logos)\n  const tbodySources = document.getElementById('table-sources');\n  const sourceGroups = {};\n  (data.sources || []).forEach(s => {\n    const key = normalizeSource(s.name);\n    if (!sourceGroups[key]) {\n      sourceGroups[key] = { name: s.name, views: 0, clicks: 0, installs: 0 };\n    }\n    sourceGroups[key].views += s.views || 0;\n    sourceGroups[key].clicks += s.clicks || 0;\n    sourceGroups[key].installs += s.installs || 0;\n  });\n\n  const sourceGroupList = Object.entries(sourceGroups).map(([k, d]) => {\n    const ctr = d.views > 0 ? ((d.clicks / d.views) * 100).toFixed(1) : '0.0';\n    return { key: k, ...d, ctr };\n  });\n  sourceGroupList.sort((a, b) => b.clicks - a.clicks || b.views - a.views || b.installs - a.installs);\n\n  if (!sourceGroupList.length) {\n    tbodySources.innerHTML = '<tr><td colspan=\"5\" style=\"text-align:center;color:var(--text-muted);\">\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445 \u0437\u0430 \u043f\u0435\u0440\u0438\u043e\u0434</td></tr>';\n  } else {\n    tbodySources.innerHTML = sourceGroupList.map(s => {\n      return '<tr>'\n        + '<td>' + formatBrandBadge(s.key) + '</td>'\n        + '<td>' + s.views + '</td>'\n        + '<td>' + s.clicks + '</td>'\n        + '<td><span class=\"tag-badge\">' + s.ctr + '%</span></td>'\n        + '<td><span style=\"color:#059669;font-weight:600;\">' + s.installs + '</span></td>'\n        + '</tr>';\n    }).join('');\n  }\n\n  // 7. Table: Campaigns\n  const tbodyCamp = document.getElementById('table-campaigns');\n  if (!data.campaigns || !data.campaigns.length) {\n    tbodyCamp.innerHTML = '<tr><td colspan=\"5\" style=\"text-align:center;color:var(--text-muted);\">\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445 \u043f\u043e \u043a\u0430\u043c\u043f\u0430\u043d\u0438\u044f\u043c</td></tr>';\n  } else {\n    tbodyCamp.innerHTML = data.campaigns.map(c => {\n      return '<tr>'\n        + '<td><span class=\"code-badge\">' + c.name + '</span></td>'\n        + '<td>' + formatBrandBadge(c.source) + '</td>'\n        + '<td>' + c.views + '</td>'\n        + '<td>' + c.clicks + '</td>'\n        + '<td><span class=\"tag-badge\">' + c.ctr + '%</span></td>'\n        + '</tr>';\n    }).join('');\n  }\n\n  // 8. Table: Live Feed (Clean Timestamps, Brand Logos & Flags)\n  const tbodyLive = document.getElementById('table-live');\n  const liveEvents = data.recent || data.recentEvents || [];\n  if (!liveEvents.length) {\n    tbodyLive.innerHTML = '<tr><td colspan=\"5\" style=\"text-align:center;color:var(--text-muted);\">\u041e\u0436\u0438\u0434\u0430\u043d\u0438\u0435 \u0441\u043e\u0431\u044b\u0442\u0438\u0439...</td></tr>';\n  } else {\n    tbodyLive.innerHTML = liveEvents.slice(0, 20).map(ev => {\n      const typeBadge = ev.type === 'install' \n        ? '<span class=\"kpi-badge badge-green\">\u0423\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0430</span>' \n        : ev.type === 'click' \n        ? '<span class=\"kpi-badge badge-blue\">\u041a\u043b\u0438\u043a \u0432 \u0441\u0442\u043e\u0440</span>' \n        : '<span class=\"tag-badge\">\u0412\u0438\u0437\u0438\u0442</span>';\n      \n      const formattedTime = formatEventTime(ev.time || ev.createdAt);\n      const brandBadge = formatBrandBadge(ev.source);\n      const countryBadge = formatCountryBadge(ev.country || 'RU');\n\n      return '<tr>'\n        + '<td style=\"color:var(--text-muted);font-family:monospace;font-size:11.5px;white-space:nowrap;\">' + formattedTime + '</td>'\n        + '<td>' + typeBadge + '</td>'\n        + '<td>' + brandBadge + '</td>'\n        + '<td>' + (ev.campaign ? '<span class=\"code-badge\">' + ev.campaign + '</span>' : '-') + '</td>'\n        + '<td>' + countryBadge + '</td>'\n        + '</tr>';\n    }).join('');\n  }\n}\n\nfunction getChartOptions(showLegend = true) {\n  return {\n    responsive: true,\n    maintainAspectRatio: false,\n    interaction: { mode: 'index', intersect: false },\n    plugins: {\n      legend: {\n        display: showLegend,\n        labels: { color: '#475569', boxWidth: 10, usePointStyle: true, font: { size: 11.5 } }\n      },\n      tooltip: {\n        backgroundColor: '#0f172a',\n        titleColor: '#ffffff',\n        bodyColor: '#cbd5e1',\n        borderColor: '#334155',\n        borderWidth: 1,\n        padding: 10,\n        cornerRadius: 8\n      }\n    },\n    scales: {\n      x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { color: '#64748b', font: { size: 11 } } },\n      y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { color: '#64748b', font: { size: 11 } }, beginAtZero: true }\n    }\n  };\n}\n\nfunction getDoughnutOptions() {\n  return {\n    responsive: true,\n    maintainAspectRatio: false,\n    plugins: {\n      legend: { position: 'bottom', labels: { color: '#475569', boxWidth: 10, usePointStyle: true, font: { size: 11 } } }\n    },\n    cutout: '72%'\n  };\n}\n\n// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 Link Generator Module \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nfunction updateGeneratedLink() {\n  const page = document.getElementById('gen-page').value;\n  const src = document.getElementById('gen-source').value;\n  const camp = document.getElementById('gen-camp').value.trim().replace(/\\s+/g, '_');\n  let refValue = src;\n  if (camp) refValue += '_' + camp;\n  const finalUrl = page + '?ref=' + encodeURIComponent(refValue);\n  document.getElementById('gen-output').innerText = finalUrl;\n}\n\ndocument.getElementById('gen-page').addEventListener('change', updateGeneratedLink);\ndocument.getElementById('gen-source').addEventListener('change', updateGeneratedLink);\ndocument.getElementById('gen-camp').addEventListener('input', updateGeneratedLink);\n\ndocument.getElementById('copy-link-btn').addEventListener('click', () => {\n  const url = document.getElementById('gen-output').innerText;\n  navigator.clipboard.writeText(url).then(() => {\n    const btn = document.getElementById('copy-link-btn');\n    btn.innerText = '\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u043e!';\n    setTimeout(() => { btn.innerText = '\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c'; }, 1800);\n  });\n});\n\n// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 Blog Articles Module \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nasync function loadBlogArticles() {\n  const container = document.getElementById('blog-articles-container');\n  const countEl = document.getElementById('blog-count');\n  container.innerHTML = '<div style=\"color:var(--text-muted);text-align:center;padding:20px;\">\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430...</div>';\n  try {\n    const res = await fetch('/api/admin/blog/future');\n    if (res.status === 401) { checkAuthAndLoad(); return; }\n    cachedBlogArticles = await res.json();\n    countEl.innerText = cachedBlogArticles.length;\n    if (!cachedBlogArticles.length) {\n      container.innerHTML = '<div style=\"color:var(--text-muted);text-align:center;padding:30px;background:#f8fafc;border-radius:8px;border:1px dashed var(--card-border);\">\u0412\u0441\u0435 \u0441\u0442\u0430\u0442\u044c\u0438 \u0443\u0436\u0435 \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d\u044b</div>';\n      return;\n    }\n    container.innerHTML = cachedBlogArticles.map(function(a, idx) {\n      var coverUrl = a.cover ? 'https://pdd-drive.ru/blog/' + a.slug + '/' + a.cover + '?v=20260823_v3' : 'https://pdd-drive.ru/assets/og-image.png';\n      var isFirst = idx === 0;\n      var isLast = idx === cachedBlogArticles.length - 1;\n      var upDisabled = isFirst ? ' disabled style=\"opacity:0.3;cursor:not-allowed;\"' : '';\n      var downDisabled = isLast ? ' disabled style=\"opacity:0.3;cursor:not-allowed;\"' : '';\n      return '<div style=\"background:#ffffff;border:1px solid var(--card-border);border-radius:10px;padding:14px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;box-shadow:0 1px 2px rgba(0,0,0,0.03);\">'\n        + '<div style=\"width:140px;height:78px;border-radius:6px;overflow:hidden;background:#f1f5f9;flex-shrink:0;border:1px solid var(--card-border);\">'\n        + '<img src=\"' + coverUrl + '\" alt=\"\" style=\"width:100%;height:100%;object-fit:cover;\" onerror=\"this.onerror=null;this.src=\\'https://pdd-drive.ru/assets/og-image.png\\';\" />'\n        + '</div>'\n        + '<div style=\"flex:1;min-width:240px;\">'\n        + '<div style=\"font-size:14.5px;font-weight:700;color:var(--text);margin-bottom:4px;\">' + a.title + '</div>'\n        + '<div style=\"font-size:11.5px;color:var(--text-muted);margin-bottom:8px;\">' + (a.description || '') + '</div>'\n        + '<div style=\"display:flex;align-items:center;gap:10px;flex-wrap:wrap;\">'\n        + '<input type=\"date\" id=\"date-' + a.slug + '\" value=\"' + a.datePublished + '\" data-slug=\"' + a.slug + '\" onchange=\"updateArticleDate(this.dataset.slug)\" style=\"background:#f8fafc;border:1px solid var(--card-border);border-radius:6px;color:var(--primary);padding:3px 6px;font-size:12px;font-weight:600;outline:none;\" />'\n        + '<span style=\"font-size:11px;color:var(--text-muted);\">' + a.slug + ' \u00b7 ' + (a.readingMinutes || 5) + ' \u043c\u0438\u043d.</span>'\n        + '</div>'\n        + '</div>'\n        + '<div style=\"display:flex;gap:6px;align-items:center;flex-shrink:0;\">'\n        + '<button class=\"btn-icon\" style=\"width:30px;height:30px;\" title=\"\u0412\u0432\u0435\u0440\u0445\" onclick=\"swapArticle(' + idx + ', ' + (idx-1) + ')\"' + upDisabled + '>\u25b2</button>'\n        + '<button class=\"btn-icon\" style=\"width:30px;height:30px;\" title=\"\u0412\u043d\u0438\u0437\" onclick=\"swapArticle(' + idx + ', ' + (idx+1) + ')\"' + downDisabled + '>\u25bc</button>'\n        + '<button class=\"btn-action\" style=\"padding:4px 8px;font-size:11.5px;color:var(--danger);border-color:#fecaca;\" data-slug=\"' + a.slug + '\" onclick=\"deleteBlogArticle(this.dataset.slug)\">\u0423\u0434\u0430\u043b\u0438\u0442\u044c</button>'\n        + '</div>'\n        + '</div>';\n    }).join('');\n  } catch (err) {\n    container.innerHTML = '<div style=\"color:var(--danger);text-align:center;padding:20px;\">\u041e\u0448\u0438\u0431\u043a\u0430: ' + err.message + '</div>';\n  }\n}\n\nwindow.updateArticleDate = async function(slug) {\n  var newDate = document.getElementById('date-' + slug).value;\n  if (!newDate) return;\n  await fetch('/api/admin/blog/' + slug, { method: 'PUT', headers: {'content-type':'application/json'}, body: JSON.stringify({ datePublished: newDate }) });\n  loadBlogArticles();\n};\n\nwindow.swapArticle = async function(idx1, idx2) {\n  if (idx1 < 0 || idx2 < 0 || idx1 >= cachedBlogArticles.length || idx2 >= cachedBlogArticles.length) return;\n  var a1 = cachedBlogArticles[idx1], a2 = cachedBlogArticles[idx2];\n  await fetch('/api/admin/blog/' + a1.slug, { method: 'PUT', headers: {'content-type':'application/json'}, body: JSON.stringify({ datePublished: a2.datePublished }) });\n  await fetch('/api/admin/blog/' + a2.slug, { method: 'PUT', headers: {'content-type':'application/json'}, body: JSON.stringify({ datePublished: a1.datePublished }) });\n  loadBlogArticles();\n};\n\nwindow.deleteBlogArticle = async function(slug) {\n  if (confirm('\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u0441\u0442\u0430\u0442\u044c\u044e \u0438\u0437 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0439?')) {\n    await fetch('/api/admin/blog/' + slug, { method: 'DELETE' });\n    loadBlogArticles();\n  }\n};\n\ndocument.getElementById('refresh-blog-btn').addEventListener('click', loadBlogArticles);\ndocument.getElementById('reset-blog-btn').addEventListener('click', async () => {\n  if (confirm('\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c \u0441\u043f\u0438\u0441\u043e\u043a \u0441\u0442\u0430\u0442\u0435\u0439 \u043a \u0438\u0441\u0445\u043e\u0434\u043d\u043e\u043c\u0443 \u0441\u043e\u0441\u0442\u043e\u044f\u043d\u0438\u044e?')) {\n    await fetch('/api/admin/blog/reset', { method: 'POST' });\n    loadBlogArticles();\n  }\n});\n\n// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 Threads Module \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nasync function loadThreadsQueue() {\n  const container = document.getElementById('threads-queue-container');\n  container.innerHTML = '<div style=\"color:var(--text-muted);text-align:center;padding:20px;\">\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430...</div>';\n  try {\n    const res = await fetch('/api/admin/threads');\n    if (res.status === 401) { checkAuthAndLoad(); return; }\n    const queue = await res.json();\n    if (!queue.length) {\n      container.innerHTML = '<div style=\"color:var(--text-muted);text-align:center;padding:30px;background:#f8fafc;border-radius:8px;border:1px dashed var(--card-border);\">\u041e\u0447\u0435\u0440\u0435\u0434\u044c \u043f\u043e\u0441\u0442\u043e\u0432 \u043f\u0443\u0441\u0442\u0430</div>';\n      return;\n    }\n    container.innerHTML = queue.map(p => {\n      return '<div style=\"background:#ffffff;border:1px solid var(--card-border);border-radius:10px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,0.03);\">'\n        + '<div style=\"display:flex;justify-content:space-between;margin-bottom:8px;font-size:11.5px;color:var(--text-muted);\">'\n        + '<span>\u0414\u0430\u0442\u0430: ' + (p.scheduledDate || '\u0411\u0435\u0437 \u0434\u0430\u0442\u044b') + '</span>'\n        + '<span class=\"tag-badge\">' + (p.status || 'pending') + '</span>'\n        + '</div>'\n        + '<textarea id=\"text-' + p.id + '\" style=\"width:100%;min-height:70px;background:#f8fafc;border:1px solid var(--card-border);border-radius:6px;color:var(--text);padding:8px 10px;font-family:inherit;font-size:12.5px;margin-bottom:8px;\">' + (p.text || '') + '</textarea>'\n        + '<input type=\"text\" id=\"img-' + p.id + '\" value=\"' + (p.imageUrl || '') + '\" placeholder=\"Image URL\" style=\"width:100%;background:#f8fafc;border:1px solid var(--card-border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:11.5px;margin-bottom:10px;\" />'\n        + '<div style=\"display:flex;gap:8px;\">'\n        + '<button class=\"btn-action\" data-id=\"' + p.id + '\" onclick=\"savePost(this.dataset.id)\">\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c</button>'\n        + '<button class=\"btn-action\" style=\"color:var(--danger);border-color:#fecaca;\" data-id=\"' + p.id + '\" onclick=\"deletePost(this.dataset.id)\">\u0423\u0434\u0430\u043b\u0438\u0442\u044c</button>'\n        + '<button class=\"btn-action btn-primary\" data-id=\"' + p.id + '\" onclick=\"publishPostNow(this.dataset.id)\">\u041e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u0442\u044c</button>'\n        + '</div></div>';\n    }).join('');\n  } catch (err) {\n    container.innerHTML = '<div style=\"color:var(--danger);text-align:center;padding:20px;\">\u041e\u0448\u0438\u0431\u043a\u0430: ' + err.message + '</div>';\n  }\n}\n\nwindow.savePost = async (id) => {\n  const text = document.getElementById('text-' + id).value;\n  const imageUrl = document.getElementById('img-' + id).value;\n  await fetch('/api/admin/threads/' + id, { method: 'PUT', headers: {'content-type':'application/json'}, body: JSON.stringify({ text, imageUrl }) });\n  loadThreadsQueue();\n};\nwindow.deletePost = async (id) => {\n  if(confirm('\u0422\u043e\u0447\u043d\u043e \u0443\u0434\u0430\u043b\u0438\u0442\u044c?')) {\n    await fetch('/api/admin/threads/' + id, { method: 'DELETE' });\n    loadThreadsQueue();\n  }\n};\nwindow.publishPostNow = async (id) => {\n  const textEl = document.getElementById('text-' + id);\n  const text = textEl ? textEl.value : '';\n\n  const overlay = document.createElement('div');\n  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';\n  const escapedId = id;\n  overlay.innerHTML = [\n    '<div style=\"background:#ffffff;border:1px solid var(--card-border);border-radius:14px;padding:24px;width:100%;max-width:500px;box-shadow:0 20px 40px rgba(0,0,0,0.15);\">',\n      '<div style=\"font-size:16px;font-weight:700;margin-bottom:12px;color:var(--text);\">\u041f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u044f \u043f\u043e\u0441\u0442\u0430</div>',\n      '<textarea id=\"publish-modal-text\" style=\"width:100%;background:#f8fafc;border:1px solid var(--card-border);color:var(--text);padding:12px;border-radius:8px;font-size:13px;resize:vertical;min-height:120px;margin-bottom:14px;\"></textarea>',\n      '<div style=\"display:flex;gap:8px;flex-wrap:wrap;\">',\n        '<button id=\"pm-copy-btn\" class=\"btn-action btn-primary\">\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0442\u0435\u043a\u0441\u0442</button>',\n        '<button id=\"pm-tg-btn\" class=\"btn-action\" style=\"color:#059669;border-color:#a7f3d0;\">\u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u0432 Telegram</button>',\n        '<button id=\"pm-close-btn\" class=\"btn-action\">\u0417\u0430\u043a\u0440\u044b\u0442\u044c</button>',\n      '</div>',\n    '</div>'\n  ].join('');\n  document.body.appendChild(overlay);\n\n  document.getElementById('publish-modal-text').value = text;\n\n  document.getElementById('pm-copy-btn').onclick = function() {\n    const ta = document.getElementById('publish-modal-text');\n    ta.select();\n    navigator.clipboard.writeText(ta.value);\n    this.textContent = '\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u043e!';\n    setTimeout(() => { this.textContent = '\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0442\u0435\u043a\u0441\u0442'; }, 2000);\n  };\n\n  document.getElementById('pm-tg-btn').onclick = async function() {\n    this.textContent = '\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u044e...';\n    try {\n      const res = await fetch('/api/admin/threads/' + escapedId + '/publish', { method: 'POST' });\n      const j = await res.json();\n      this.textContent = j.ok ? '\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043e \u0432 Telegram!' : ('\u041e\u0448\u0438\u0431\u043a\u0430: ' + (j.error || ''));\n    } catch(e) {\n      this.textContent = '\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u0435\u0442\u0438';\n    }\n  };\n\n  document.getElementById('pm-close-btn').onclick = function() {\n    overlay.remove();\n    loadThreadsQueue();\n  };\n};\n\ndocument.getElementById('refresh-threads-btn').addEventListener('click', loadThreadsQueue);\n\n// Initial load\ncheckAuthAndLoad();\nsetInterval(checkAuthAndLoad, 30000);\n\n\n\n\n// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 Users & Premium Management \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nasync function loadUsersList() {\n  const tbody = document.getElementById('table-users');\n  const countEl = document.getElementById('users-count');\n  if (!tbody) return;\n  tbody.innerHTML = '<tr><td colspan=\"7\" style=\"text-align:center;color:var(--text-muted);padding:24px;\">\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439...</td></tr>';\n\n  try {\n    const res = await fetch('/api/admin/users');\n    if (res.status === 401 || res.status === 403) {\n      checkAuthAndLoad();\n      return;\n    }\n    const data = await res.json();\n    const users = data.users || [];\n    if (countEl) countEl.innerText = users.length;\n\n    if (!users.length) {\n      tbody.innerHTML = '<tr><td colspan=\"7\" style=\"text-align:center;color:var(--text-muted);padding:32px;\">\u041f\u043e\u043a\u0430 \u043d\u0435\u0442 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0445 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439 \u0432 \u0431\u0430\u0437\u0435</td></tr>';\n      return;\n    }\n\n    tbody.innerHTML = users.map(u => {\n      const isPrem = u.isPremium === true;\n      const isExp = u.premiumExpiresAt && new Date(u.premiumExpiresAt) < new Date();\n      const isLifetime = isPrem && !u.premiumExpiresAt;\n      const activePrem = isPrem && !isExp;\n\n      // Solid brand badges with NO borders\n      const statusBadge = activePrem\n        ? (isLifetime \n            ? '<span style=\"display:inline-flex;align-items:center;padding:4px 10px;border-radius:8px;background:#2BC280;color:#ffffff;font-weight:700;font-size:11.5px;letter-spacing:0.3px;\">PRO \u041d\u0430\u0432\u0441\u0435\u0433\u0434\u0430</span>'\n            : '<span style=\"display:inline-flex;align-items:center;padding:4px 10px;border-radius:8px;background:#2BC280;color:#ffffff;font-weight:700;font-size:11.5px;letter-spacing:0.3px;\">PRO</span>')\n        : (isPrem && isExp\n            ? '<span style=\"display:inline-flex;align-items:center;padding:4px 10px;border-radius:8px;background:#FFECE8;color:#ED4621;font-weight:600;font-size:11.5px;\">\u0418\u0441\u0442\u0451\u043a</span>'\n            : '<span style=\"display:inline-flex;align-items:center;padding:4px 10px;border-radius:8px;background:#EFF0F4;color:#6B7280;font-weight:600;font-size:11.5px;\">\u0411\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u044b\u0439</span>');\n\n      let expiresText = '-';\n      if (activePrem) {\n        if (isLifetime) {\n          expiresText = '<span style=\"color:#2BC280;font-weight:700;\">\u0411\u0435\u0441\u0441\u0440\u043e\u0447\u043d\u043e</span>';\n        } else if (u.premiumExpiresAt) {\n          expiresText = formatEventTime(u.premiumExpiresAt);\n        }\n      }\n\n      const provider = String(u.provider || 'guest').toLowerCase();\n      const provBadge = provider.includes('google')\n        ? '<span style=\"display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:12.5px;\">' + BRAND_SVGS.google + ' Google</span>'\n        : provider.includes('apple')\n        ? '<span style=\"display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:12.5px;\">' + BRAND_SVGS.appstore + ' Apple ID</span>'\n        : provider.includes('yandex')\n        ? '<span style=\"display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:12.5px;\">' + BRAND_SVGS.yandex + ' \u042f\u043d\u0434\u0435\u043a\u0441</span>'\n        : '<span style=\"color:var(--text-muted);font-size:12.5px;\">\u0413\u043e\u0441\u0442\u044c</span>';\n\n      const lastSeen = formatEventTime(u.lastSeenAt || u.createdAt);\n      const avatarHtml = u.avatarUrl\n        ? '<img src=\"' + u.avatarUrl + '\" style=\"width:32px;height:32px;border-radius:50%;object-fit:cover;\" onerror=\"this.style.display=\\'none\\'\" />'\n        : '<div style=\"width:32px;height:32px;border-radius:50%;background:#EFF0F4;color:#475569;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;\">' + (u.name ? u.name.charAt(0).toUpperCase() : 'U') + '</div>';\n\n      const versionBadge = u.appVersion\n        ? (u.platform === 'ios' ? '\ud83c\udf4e ' : u.platform === 'android' ? '\ud83e\udd16 ' : '') + 'v' + u.appVersion\n        : '\u2014';\n\n      const escapedName = (u.name || '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c').replace(/'/g, \"\\\\'\");\n      const grantBtn = activePrem\n        ? '<button class=\"btn-action\" style=\"padding:5px 10px;font-size:11.5px;color:var(--primary);background:var(--primary-subtle);border-radius:8px;\" onclick=\"showGrantModal(\\'' + u.id + '\\', \\'' + escapedName + '\\')\">\u041f\u0440\u043e\u0434\u043b\u0438\u0442\u044c PRO</button>'\n        : '<button class=\"btn-action btn-primary\" style=\"padding:5px 10px;font-size:11.5px;border-radius:8px;\" onclick=\"showGrantModal(\\'' + u.id + '\\', \\'' + escapedName + '\\')\">\u0412\u044b\u0434\u0430\u0442\u044c PRO</button>';\n\n      const revokeBtn = activePrem\n        ? '<button class=\"btn-action\" style=\"padding:5px 10px;font-size:11.5px;color:var(--danger);background:var(--danger-subtle);border-radius:8px;margin-left:6px;\" onclick=\"revokeUserPremium(\\'' + u.id + '\\')\">\u041e\u0442\u043e\u0437\u0432\u0430\u0442\u044c</button>'\n        : '';\n\n      const deleteBtn = '<button class=\"btn-action btn-danger\" style=\"padding:5px 8px;font-size:11.5px;border-radius:8px;margin-left:6px;display:inline-flex;align-items:center;justify-content:center;\" title=\"\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u0430\u043a\u043a\u0430\u0443\u043d\u0442\" onclick=\"deleteUserAccount(\\'' + u.id + '\\', \\'' + escapedName + '\\')\"><svg viewBox=\"0 0 24 24\" width=\"13\" height=\"13\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"flex-shrink:0;\"><polyline points=\"3 6 5 6 21 6\"></polyline><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"></path></svg></button>';\n\n      return '<tr>'\n        + '<td>'\n          + '<div style=\"display:flex;align-items:center;gap:10px;\">'\n            + avatarHtml\n            + '<div>'\n              + '<div style=\"font-weight:700;font-size:13px;color:var(--text);\">' + (u.name || '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c') + '</div>'\n              + '<div style=\"font-size:11.5px;color:var(--text-muted);font-family:monospace;\">' + (u.email || u.id) + '</div>'\n            + '</div>'\n          + '</div>'\n        + '</td>'\n        + '<td>' + provBadge + '</td>'\n        + '<td>' + statusBadge + '</td>'\n        + '<td>' + expiresText + '</td>'\n        + '<td style=\"color:var(--text-muted);font-size:12px;\">' + lastSeen + '</td>'\n        + '<td style=\"color:var(--text-muted);font-size:11.5px;font-family:monospace;\">' + versionBadge + '</td>'\n        + '<td><div style=\"display:flex;align-items:center;\">' + grantBtn + revokeBtn + deleteBtn + '</div></td>'\n        + '</tr>';\n    }).join('');\n  } catch (err) {\n    tbody.innerHTML = '<tr><td colspan=\"7\" style=\"text-align:center;color:var(--danger);padding:24px;\">\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438: ' + err.message + '</td></tr>';\n  }\n}\n\nwindow.showGrantModal = function(userId, userName) {\n  const overlay = document.createElement('div');\n  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.4);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';\n  overlay.innerHTML = [\n    '<div style=\"background:#ffffff;border:none;border-radius:18px;padding:26px;width:100%;max-width:440px;box-shadow:0 20px 40px rgba(0,0,0,0.12);\">' ,\n      '<div style=\"font-size:17px;font-weight:800;margin-bottom:6px;color:var(--text);letter-spacing:-0.3px;\">\u0412\u044b\u0434\u0430\u0442\u044c Premium \u0434\u043e\u0441\u0442\u0443\u043f</div>' ,\n      '<div style=\"font-size:13px;color:var(--text-muted);margin-bottom:18px;\">\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c: <b>' + userName + '</b></div>' ,\n      '<div style=\"margin-bottom:20px;\">' ,\n        '<label style=\"display:block;font-size:11.5px;font-weight:700;text-transform:uppercase;margin-bottom:8px;color:var(--text-muted);letter-spacing:0.4px;\">\u0414\u043b\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u043f\u043e\u0434\u043f\u0438\u0441\u043a\u0438:</label>' ,\n        '<select id=\"grant-duration\" style=\"width:100%;background:var(--surface-gray);border:none;border-radius:12px;padding:11px 14px;font-size:13.5px;color:var(--text);outline:none;font-weight:600;\">' ,\n          '<option value=\"7\">1 \u043d\u0435\u0434\u0435\u043b\u044f (7 \u0434\u043d\u0435\u0439)</option>' ,\n          '<option value=\"30\" selected>1 \u043c\u0435\u0441\u044f\u0446 (30 \u0434\u043d\u0435\u0439)</option>' ,\n          '<option value=\"90\">3 \u043c\u0435\u0441\u044f\u0446\u0430 (90 \u0434\u043d\u0435\u0439)</option>' ,\n          '<option value=\"365\">1 \u0433\u043e\u0434 (365 \u0434\u043d\u0435\u0439)</option>' ,\n          '<option value=\"lifetime\">\u0411\u0435\u0441\u0441\u0440\u043e\u0447\u043d\u043e (\u041d\u0430\u0432\u0441\u0435\u0433\u0434\u0430)</option>' ,\n        '</select>' ,\n      '</div>' ,\n      '<div style=\"display:flex;gap:10px;justify-content:flex-end;\">' ,\n        '<button id=\"grant-cancel-btn\" class=\"btn-action\" style=\"padding:9px 16px;border-radius:10px;\">\u041e\u0442\u043c\u0435\u043d\u0430</button>' ,\n        '<button id=\"grant-confirm-btn\" class=\"btn-action btn-primary\" style=\"padding:9px 18px;border-radius:10px;font-weight:700;\">\u0410\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c PRO</button>' ,\n      '</div>' ,\n    '</div>'\n  ].join('');\n  document.body.appendChild(overlay);\n\n  document.getElementById('grant-cancel-btn').onclick = () => overlay.remove();\n  document.getElementById('grant-confirm-btn').onclick = async function() {\n    const val = document.getElementById('grant-duration').value;\n    const isLifetime = val === 'lifetime';\n    const days = isLifetime ? null : parseInt(val, 10);\n    this.innerText = '\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435...';\n    this.disabled = true;\n    try {\n      const res = await fetch('/api/admin/users/grant-premium', {\n        method: 'POST',\n        headers: { 'content-type': 'application/json' },\n        body: JSON.stringify({ userId, days, isLifetime })\n      });\n      const data = await res.json();\n      if (data.ok) {\n        overlay.remove();\n        loadUsersList();\n      } else {\n        alert('\u041e\u0448\u0438\u0431\u043a\u0430: ' + (data.error || '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0430\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c'));\n        this.innerText = '\u0410\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c PRO';\n        this.disabled = false;\n      }\n    } catch(e) {\n      alert('\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u0435\u0442\u0438: ' + e);\n      this.innerText = '\u0410\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c PRO';\n      this.disabled = false;\n    }\n  };\n};\n\nwindow.revokeUserPremium = async function(userId) {\n  if (!confirm('\u0412\u044b \u0442\u043e\u0447\u043d\u043e \u0445\u043e\u0442\u0438\u0442\u0435 \u043e\u0442\u043e\u0437\u0432\u0430\u0442\u044c Premium-\u0434\u043e\u0441\u0442\u0443\u043f \u0443 \u044d\u0442\u043e\u0433\u043e \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f?')) return;\n  try {\n    const res = await fetch('/api/admin/users/revoke-premium', {\n      method: 'POST',\n      headers: { 'content-type': 'application/json' },\n      body: JSON.stringify({ userId })\n    });\n    const data = await res.json();\n    if (data.ok) {\n      loadUsersList();\n    } else {\n      alert('\u041e\u0448\u0438\u0431\u043a\u0430: ' + (data.error || '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043e\u0437\u0432\u0430\u0442\u044c'));\n    }\n  } catch(e) {\n    alert('\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u0435\u0442\u0438: ' + e);\n  }\n};\n\nwindow.deleteUserAccount = async function(userId, userName) {\n  if (!confirm('\u0412\u044b \u0443\u0432\u0435\u0440\u0435\u043d\u044b, \u0447\u0442\u043e \u0445\u043e\u0442\u0438\u0442\u0435 \u043d\u0430\u0432\u0441\u0435\u0433\u0434\u0430 \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0430\u043a\u043a\u0430\u0443\u043d\u0442 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \"' + userName + '\" \u0438\u0437 \u0431\u0430\u0437\u044b?')) return;\n  try {\n    const res = await fetch('/api/admin/users/delete', {\n      method: 'POST',\n      headers: { 'content-type': 'application/json' },\n      body: JSON.stringify({ userId })\n    });\n    const data = await res.json();\n    if (data.ok) {\n      loadUsersList();\n    } else {\n      alert('\u041e\u0448\u0438\u0431\u043a\u0430: ' + (data.error || '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0430\u043a\u043a\u0430\u0443\u043d\u0442'));\n    }\n  } catch(e) {\n    alert('\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u0435\u0442\u0438: ' + e);\n  }\n};\n\nconst refreshUsersBtn = document.getElementById('refresh-users-btn');\nif (refreshUsersBtn) {\n  refreshUsersBtn.addEventListener('click', loadUsersList);\n}\n\n// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 AI Management \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nasync function loadAiStats() {\n  try {\n    const res = await fetch('/api/admin/ai/stats');\n    if (res.status === 401) { checkAuthAndLoad(); return; }\n    const data = await res.json();\n    const s = data.stats || {};\n    \n    document.getElementById('ai-m-total').innerText = (s.totalRequests || 0).toLocaleString();\n    document.getElementById('ai-m-today').innerText = (s.todayRequests || 0).toLocaleString();\n    document.getElementById('ai-m-cost-usd').innerText = '$' + (s.costUsd || 0).toFixed(5);\n    document.getElementById('ai-m-cost-rub').innerText = '~' + (s.costRub || 0) + ' \u20bd';\n    document.getElementById('ai-m-tokens-total').innerText = (s.totalTokens || 0).toLocaleString();\n    document.getElementById('ai-m-tokens-k').innerText = Math.round((s.totalTokens || 0) / 1000) + 'k';\n    document.getElementById('ai-m-tokens-prompt').innerText = (s.promptTokens || 0).toLocaleString();\n    document.getElementById('ai-m-tokens-cand').innerText = (s.candidateTokens || 0).toLocaleString();\n    \n    const activeModel = s.activeModel || 'gemini-3.6-flash';\n    document.getElementById('ai-m-model').innerText = activeModel;\n    const sel = document.getElementById('ai-model-select');\n    if (sel) sel.value = activeModel;\n  } catch (err) {\n    console.error('loadAiStats error:', err);\n  }\n}\n\nconst saveAiBtn = document.getElementById('save-ai-model-btn');\nif (saveAiBtn) {\n  saveAiBtn.addEventListener('click', async () => {\n    const sel = document.getElementById('ai-model-select');\n    const model = sel ? sel.value : 'gemini-3.6-flash';\n    saveAiBtn.innerText = '\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435...';\n    try {\n      const res = await fetch('/api/admin/ai/config', {\n        method: 'POST',\n        headers: { 'content-type': 'application/json' },\n        body: JSON.stringify({ model })\n      });\n      const data = await res.json();\n      if (data.ok) {\n        saveAiBtn.innerText = '\u041f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u043e!';\n        setTimeout(() => { saveAiBtn.innerText = '\u041f\u0440\u0438\u043c\u0435\u043d\u0438\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u044c'; }, 2000);\n        loadAiStats();\n      } else {\n        alert('\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f: ' + (data.error || ''));\n        saveAiBtn.innerText = '\u041f\u0440\u0438\u043c\u0435\u043d\u0438\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u044c';\n      }\n    } catch (e) {\n      alert('\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u0435\u0442\u0438: ' + e);\n      saveAiBtn.innerText = '\u041f\u0440\u0438\u043c\u0435\u043d\u0438\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u044c';\n    }\n  });\n}\n\nconst aiSendBtn = document.getElementById('ai-test-send-btn');\nif (aiSendBtn) {\n  aiSendBtn.addEventListener('click', async () => {\n    const promptInput = document.getElementById('ai-test-prompt');\n    const resBox = document.getElementById('ai-test-result-box');\n    const prompt = promptInput ? promptInput.value.trim() : '';\n    if (!prompt) return;\n    \n    aiSendBtn.innerText = '\u0414\u0443\u043c\u0430\u0435\u0442...';\n    aiSendBtn.disabled = true;\n    resBox.innerText = '\u0417\u0430\u043f\u0440\u043e\u0441 \u043e\u0431\u0440\u0430\u0431\u0430\u0442\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u043c\u043e\u0434\u0435\u043b\u044c\u044e...';\n    \n    try {\n      const res = await fetch('/api/admin/ai/test', {\n        method: 'POST',\n        headers: { 'content-type': 'application/json' },\n        body: JSON.stringify({ prompt })\n      });\n      const data = await res.json();\n      resBox.innerText = data.reply || JSON.stringify(data);\n    } catch (e) {\n      resBox.innerText = '\u041e\u0448\u0438\u0431\u043a\u0430: ' + e;\n    } finally {\n      aiSendBtn.innerText = '\u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c';\n      aiSendBtn.disabled = false;\n    }\n  });\n}";
 
@@ -2437,9 +2570,10 @@ function renderAdminPage() {
   const withoutChartJs = withAnalytics.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/chart\.js[^"]*"><\/script>\s*/, '');
 
   const html = enhanceAdminHtml(withoutChartJs
-    .replace('</nav>', SOCIAL_NAV_HTML + '    </nav>')
-    .replace('\n\n  </main>', '\n' + SOCIAL_VIEW_HTML + '\n' + THREADS_VIEW_HTML + '\n  </main>'));
-  return html + "<script>" + clientJs + ANALYTICS_CLIENT_JS + USERS_CLIENT_JS + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + ADMIN_UI_CLIENT_JS + "</script></body></html>";
+    .replace('<button class="nav-item" data-feature="links">', TASKS_NAV_HTML + '\n      <button class="nav-item" data-feature="links">')
+    .replace('</nav>', NOTIFICATIONS_NAV_HTML + SOCIAL_NAV_HTML + '    </nav>')
+    .replace('\n\n  </main>', '\n' + TASKS_VIEW_HTML + '\n' + NOTIFICATIONS_VIEW_HTML + '\n' + SOCIAL_VIEW_HTML + '\n' + THREADS_VIEW_HTML + '\n  </main>'));
+  return html + "<script>" + clientJs + ANALYTICS_CLIENT_JS + USERS_CLIENT_JS + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + NOTIFICATIONS_CLIENT_JS + TASKS_CLIENT_JS + ADMIN_UI_CLIENT_JS + "</script></body></html>";
 }
 
 
@@ -2645,9 +2779,16 @@ async function saveUserProfile(env, user) {
     appVersion: user.appVersion || (existing ? existing.appVersion : null),
     createdAt: (existing && existing.createdAt) ? existing.createdAt : (user.createdAt || new Date().toISOString()),
     lastSeenAt: new Date().toISOString(),
+    ...metadataFields({ ...existing, ...user,
+      marketingSource: existing?.marketingSource && existing.marketingSource !== 'unknown' ? existing.marketingSource : user.marketingSource,
+      marketingCampaign: existing?.marketingSource && existing.marketingSource !== 'unknown' ? existing.marketingCampaign : user.marketingCampaign,
+      attributionMethod: existing?.marketingSource && existing.marketingSource !== 'unknown' ? existing.attributionMethod : user.attributionMethod,
+    }),
     isPremium,
     premiumExpiresAt,
     premiumSource,
+    entitlements: existing?.entitlements || undefined,
+    autoRenewEnabled: existing?.autoRenewEnabled ?? null,
     verifiedPurchase: existing?.verifiedPurchase || null,
     storeVerifiedAt: existing?.storeVerifiedAt || null,
     grantedAt: existing ? existing.grantedAt : (user.grantedAt || null),
@@ -2664,15 +2805,13 @@ async function saveUserProfile(env, user) {
     await env.INSTALLS.put('user_email:' + merged.email.toLowerCase().trim(), merged.id);
   }
 
-  let userIds = [];
-  try {
-    const rawList = await env.INSTALLS.get('users_list');
-    if (rawList) userIds = JSON.parse(rawList);
-  } catch (_) {}
-  if (!userIds.includes(merged.id)) {
-    userIds.unshift(merged.id);
-    if (userIds.length > 5000) userIds = userIds.slice(0, 5000);
-    await env.INSTALLS.put('users_list', JSON.stringify(userIds));
+  if (env.TRAFFIC && merged.provider && merged.provider !== 'guest' && !merged.suspect) {
+    try {
+      await trafficRequest(env, 'counter:registered_users', 'install', {
+        installId: merged.id, legacyKey: 'notified_reg:' + merged.id, registrationUser: merged,
+      });
+    } catch (_) { console.error('Profile saved; registration outbox unavailable'); }
+    return merged;
   }
 
   // Trigger instant Telegram notification for registered users (provider !== 'guest')
@@ -2681,17 +2820,19 @@ async function saveUserProfile(env, user) {
     try {
       const alreadyNotified = await env.INSTALLS.get(notifKey);
       if (!alreadyNotified) {
-        await env.INSTALLS.put(notifKey, '1');
         const regCount = await kvIncr(env, 'counter:registered_users');
         await trackStats(env, null, { kind: 'analytics', event: {
           type: 'registration',
+          marketingSource: merged.marketingSource,
           app: merged.app,
           platform: merged.platform,
         } });
         if (env.BOT_TOKEN && env.CHAT_ID) {
           const msg = buildUserRegistrationMessage(merged, regCount);
-          await sendTelegram(env, msg);
+          const notification = await sendTelegram(env, msg);
+          if (!notification.ok) throw new Error('registration notification queue unavailable');
         }
+        await env.INSTALLS.put(notifKey, '1');
       }
     } catch (e) {
       console.error('Registration telegram notify error:', e);
@@ -3022,6 +3163,57 @@ export default {
 
     // ────────────────────── Direct Store Redirects (/go/:store) ──────────────────────
     
+    if (url.pathname.startsWith('/api/admin/tasks')) {
+      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
+      return handleTasksAdmin(request, env, url);
+    }
+
+    if (url.pathname === '/api/admin/app-updates') {
+      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
+      if (request.method === 'GET') return notificationRequest(env, '/updates/admin');
+      if (request.method === 'POST') {
+        let body;
+        try { body = await request.json(); } catch { return jsonResponse({ error: 'invalid json' }, 400); }
+        return notificationRequest(env, '/updates/save', 'POST', body);
+      }
+      return jsonResponse({ error: 'method not allowed' }, 405);
+    }
+    if (url.pathname === '/api/app-update' && request.method === 'GET') {
+      const response = await notificationRequest(env, '/updates?app=' + encodeURIComponent(url.searchParams.get('app') || '') + '&platform=' + encodeURIComponent(url.searchParams.get('platform') || ''));
+      const headers = new Headers(response.headers);
+      for (const [key, value] of Object.entries(CORS_HEADERS)) headers.set(key, value);
+      return new Response(response.body, { status: response.status, headers });
+    }
+
+    if (url.pathname.startsWith('/api/admin/notifications')) {
+      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
+      const action = url.pathname.slice('/api/admin/notifications'.length);
+      if (action === '/image' && request.method === 'POST') return uploadNotificationImage(request, env, url.origin);
+      if ((action === '' && request.method === 'GET') || (['/config','/publish','/toggle','/delete'].includes(action) && request.method === 'POST')) {
+        if (request.method === 'GET') return notificationRequest(env, '/admin');
+        let body;
+        try { body = await request.json(); } catch { return jsonResponse({ error: 'invalid json' }, 400); }
+        return notificationRequest(env, action, 'POST', body);
+      }
+      return jsonResponse({ error: 'not found' }, 404);
+    }
+    if (url.pathname.startsWith('/api/notifications/image/') && request.method === 'GET') {
+      return serveNotificationImage(env, url.pathname.slice('/api/notifications/image/'.length));
+    }
+    if (url.pathname === '/api/notifications' && request.method === 'GET') {
+      const response = await notificationRequest(
+        env,
+        '/client?app=' + encodeURIComponent(url.searchParams.get('app') || '') +
+        '&platform=' + encodeURIComponent(url.searchParams.get('platform') || '') +
+        '&userId=' + encodeURIComponent(url.searchParams.get('userId') || '') +
+        '&email=' + encodeURIComponent(url.searchParams.get('email') || '')
+      );
+      // Responses from a Durable Object fetch have immutable headers.
+      const headers = new Headers(response.headers);
+      for (const [key, value] of Object.entries(CORS_HEADERS)) headers.set(key, value);
+      return new Response(response.body, { status: response.status, headers });
+    }
+
     // ────────────────────── Ads API Endpoints ──────────────────────
     if (url.pathname === '/api/ads/config' && request.method === 'GET') {
       const platform = (url.searchParams.get('platform') || 'all').toLowerCase();
@@ -3144,6 +3336,12 @@ export default {
       const userId = String(body?.userId || '').slice(0, 120);
       if (!userId || !env.INSTALLS) return jsonResponse({ error: 'missing userId' }, 400);
       const week = gameWeekKey();
+      if (env.TRAFFIC) {
+        const doc = await trafficRequest(env, 'game_lb:' + week, 'score', { userId, score: body });
+        const ranked = rankGameBoard(doc);
+        const me = ranked.findIndex(r => r.userId === userId);
+        return jsonResponse({ ok: true, week, rank: me + 1, total: ranked.length, weekScore: doc[userId].score });
+      }
       const doc = await readGameBoard(env, week);
       const entry = doc[userId] || { score: 0, runs: 0, best: 0 };
       entry.name = String(body?.name || entry.name || 'Игрок').slice(0, 40);
@@ -3203,8 +3401,7 @@ export default {
       if (email) await env.INSTALLS.delete('user_email:' + email.toLowerCase().trim());
       try {
         const week = gameWeekKey();
-        const board = await readGameBoard(env, week);
-        if (board[userId]) { delete board[userId]; await env.INSTALLS.put('game_lb:' + week, JSON.stringify(board)); }
+        await deleteGamePlayer(env, week, userId);
       } catch (_) {}
       try {
         const rawList = await env.INSTALLS.get('users_list');
@@ -3216,6 +3413,11 @@ export default {
       return jsonResponse({ ok: true, deleted: userId });
     }
 
+    // Выбор оплаты на сайте, пока СБП не подключена (см. payments.js).
+    if (url.pathname === '/api/user/pay-intent' && request.method === 'POST') {
+      return handlePayIntent(request, env, authenticatedUser, { jsonResponse, sendTelegram, esc });
+    }
+
     if (url.pathname === '/api/user/sync' && request.method === 'POST') {
       let body;
       try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }
@@ -3224,6 +3426,8 @@ export default {
       }
       body = { ...body, ...authenticatedUser };
       body.ipCountry = request.headers.get('cf-ipcountry') || null;
+      body.ipCity = request.cf?.city || '';
+      body.ipRegion = request.cf?.region || '';
       body.userAgent = String(request.headers.get('user-agent') || '').slice(0, 200);
       body.suspect = isSuspectRegistration(request, body);
       const updatedUser = await saveUserProfile(env, body);
@@ -3277,11 +3481,11 @@ export default {
         };
       }
 
-      user.isPremium = verified.active;
+      // Срок стора — отдельно от сайта и админки: итог берёт самый дальний.
+      setEntitlement(user, store, storeEntitlementExpiry(verified));
       user.verifiedPurchase = verified.reference;
+      user.autoRenewEnabled = verified.autoRenewEnabled;
       user.storeVerifiedAt = Date.now();
-      user.premiumSource = store;
-      user.premiumExpiresAt = expiresAt || null;
       user.purchasedAt = new Date().toISOString();
       if (platform) user.platform = platform;
       if (appVersion) user.appVersion = appVersion;
@@ -3291,44 +3495,41 @@ export default {
         await env.INSTALLS.put('user_email:' + user.email.toLowerCase().trim(), user.id);
       }
 
-      // Record in users_list
       try {
-        const rawList = await env.INSTALLS.get('users_list');
-        let userIds = rawList ? JSON.parse(rawList) : [];
-        if (!userIds.includes(user.id)) {
-          userIds.unshift(user.id);
-          if (userIds.length > 5000) userIds = userIds.slice(0, 5000);
-          await env.INSTALLS.put('users_list', JSON.stringify(userIds));
-        }
-      } catch (_) {}
+        // Anti-duplication check for purchase notification
+        const purchaseId = transactionId || `${user.id}_${tier || productId || 'premium'}_${(expiresAt || '').slice(0, 10)}`;
+        const notifPurchaseKey = 'notified_purch:' + purchaseId;
+        let alreadyNotified = false;
+        try {
+          alreadyNotified = await env.INSTALLS.get(notifPurchaseKey);
+        } catch (_) {}
 
-      // Anti-duplication check for purchase notification
-      const purchaseId = transactionId || `${user.id}_${tier || productId || 'premium'}_${(expiresAt || '').slice(0, 10)}`;
-      const notifPurchaseKey = 'notified_purch:' + purchaseId;
-      let alreadyNotified = false;
-      try {
-        alreadyNotified = await env.INSTALLS.get(notifPurchaseKey);
-      } catch (_) {}
-
-      if (!alreadyNotified) {
-        await env.INSTALLS.put(notifPurchaseKey, '1', { expirationTtl: 30 * 86400 });
-        if (env.BOT_TOKEN && env.CHAT_ID) {
-          const msg = buildPremiumPurchaseMessage({
-            name: user.name || name,
-            email: user.email || email,
-            tier,
-            tierName,
-            price,
-            store,
-            expiresAt,
-            platform: user.platform || platform,
-            appVersion: user.appVersion || appVersion,
-            country: user.country || country || 'RU',
-            app: user.app || app || 'ru',
-          });
-          await sendTelegram(env, msg);
+        if (!alreadyNotified) {
+          if (env.BOT_TOKEN && env.CHAT_ID) {
+            const msg = buildPremiumPurchaseMessage({
+              ...user,
+              name: user.name || name,
+              email: user.email || email,
+              tier,
+              tierName,
+              price,
+              store,
+              expiresAt,
+              platform: user.platform || platform,
+              appVersion: user.appVersion || appVersion,
+              country: user.country || country || 'RU',
+              app: user.app || app || 'ru',
+            });
+            const notification = await sendTelegram(env, msg, notifPurchaseKey);
+            if (!notification.ok) throw new Error('purchase notification queue unavailable');
+          }
         }
-      }
+
+        if (!alreadyNotified) {
+          await trackStats(env, null, { id: notifPurchaseKey, kind: 'analytics', event: { type: 'purchase', app: user.app || app, platform: user.platform || platform } });
+          await env.INSTALLS.put(notifPurchaseKey, '1', { expirationTtl: 30 * 86400 });
+        }
+      } catch (_) { console.error('Purchase saved; notification unavailable'); }
 
       return jsonResponse({
         ok: true,
@@ -3349,7 +3550,7 @@ export default {
       if (env.INSTALLS) raw = await env.INSTALLS.get('user:' + targetId);
       if (!raw) return jsonResponse({ ok: false, error: 'user not found', isPremium: false }, 404);
       try {
-        const user = JSON.parse(raw);
+        const user = await refreshStoreEntitlement(env, JSON.parse(raw));
         return jsonResponse({
           ok: true,
           user: publicUser(user),
@@ -3363,6 +3564,12 @@ export default {
       }
     }
 
+    if (url.pathname === '/api/admin/pay-intents' && request.method === 'GET') {
+      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
+      if (!env.INSTALLS) return jsonResponse({ error: 'storage unavailable' }, 503);
+      return jsonResponse({ ok: true, intents: await listPayIntents(env) });
+    }
+
     if (url.pathname === '/api/admin/links') {
       return handleLinksAdmin(request, env, url, { verifyAdminAuth, jsonResponse });
     }
@@ -3370,7 +3577,7 @@ export default {
     // ────────────────────── Admin Users API ──────────────────────
     if (url.pathname.startsWith('/api/admin/users')) {
       const usersResponse = await handleUsersAdmin(request, env, url, {
-        verifyAdminAuth, getAllUsers, revokeUserSessions, readGameBoard, gameWeekKey, jsonResponse,
+        verifyAdminAuth, getAllUsers, revokeUserSessions, readGameBoard, deleteGamePlayer, gameWeekKey, jsonResponse,
       });
       if (usersResponse) return usersResponse;
     }
@@ -3645,7 +3852,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
         } });
       }
 
-      return Response.redirect(destination, 302);
+      return Response.redirect(attributedDestination(destination, source, campaign), 302);
     }
 
     // ────────────────────── Landing Analytics API (/api/track) ──────────────────────
@@ -3655,6 +3862,8 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
       try { body = await request.json(); } catch (_) {
         return jsonResponse({ error: 'invalid json' }, 400);
       }
+      if (!['view', 'click'].includes(body.type)) return jsonResponse({ error: 'invalid event type' }, 400);
+
 
       if (looksLikeBot(request, body)) {
         return jsonResponse({ ok: true, bot: true });
@@ -3702,7 +3911,8 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
         const msg = await buildDailyReport(env);
 
         if (url.searchParams.get('send') === 'true') {
-          await sendTelegram(env, msg);
+          const queued = await sendDailyReport(env);
+          if (!queued.ok) return new Response('Telegram queue unavailable', { status: 502 });
           return new Response(`Sent to Telegram:\n\n${msg}`, {
             status: 200,
             headers: { 'content-type': 'text/plain; charset=utf-8' },
@@ -3762,11 +3972,12 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
         const detail = await tg.text();
         return jsonResponse({ error: 'telegram failed', detail }, 502);
       }
+      await trackStats(env, ctx, { kind: 'analytics', event: { type: 'report', app: detectAppCode(body), platform: body.platform } });
       return jsonResponse({ ok: true, reported: true });
     }
 
-    // kind: 'update' не отбрасываем: сборки до 2.1.3 помечали так и свежие
-    // установки. Отчёт шлётся один раз за жизнь установки, дубли режет assignNumber.
+    // Updates and ambiguous old first launches are recorded separately and
+    // never increment new-installation counters. IDs deduplicate every category.
 
     // Веб-пинги
     if (isWebRequest(body)) {
@@ -3779,18 +3990,26 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
       return jsonResponse({ ok: true, ignored: true, reason: 'not-a-store-install' });
     }
     body.source = store;
+    if (typeof body.install_id !== 'string' || !body.install_id || body.install_id.length > 256) {
+      return jsonResponse({ error: 'missing or invalid install_id' }, 400);
+    }
 
     const appCode = detectAppCode(body);
 
-    const number = await assignNumber(env, body.install_id, appCode);
+    const installEvent = sanitizeAnalyticsEvent({
+      type: 'install', kind: installKind(body), app: appCode, source: store,
+      marketingSource: body.marketingSource, campaign: body.marketingCampaign,
+      platform: body.platform || 'android', country: body.country || appCode,
+    });
+    const number = await assignNumber(env, body.install_id, appCode, installEvent);
 
     // Повтор того же install_id — номер уже выдан, в чат не дублируем.
     if (!number.isNew) {
       return jsonResponse({ ok: true, duplicate: true, number: number.value });
     }
 
-    // Фиксируем установку в аналитике
-    if (env.INSTALLS) {
+    // TrafficState commits the analytics outbox with the number atomically.
+    if (env.INSTALLS && !env.TRAFFIC) {
       await trackStats(env, ctx, { kind: 'analytics', event: {
         type: 'install',
         kind: installKind(body),
@@ -3819,6 +4038,14 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
       } catch (_) {}
       ctx.waitUntil(runAutoPost(env, origin, (text) => sendTelegram(env, text)));
       ctx.waitUntil(runThreadsSchedule(env, (text) => sendTelegram(env, text)));
+      if (env.NOTIFICATIONS) {
+        ctx.waitUntil(
+          env.NOTIFICATIONS.get(env.NOTIFICATIONS.idFromName('admin-notifications'))
+            .fetch('https://notifications/alarm')
+            .catch(() => {})
+        );
+      }
+      if (env.BOT_TOKEN && env.CHAT_ID) ctx.waitUntil(finishPendingDailyReport(env));
       return;
     }
 
@@ -3826,10 +4053,9 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
 
     ctx.waitUntil(pollReviews(env));
 
-    // Сначала выталкиваем буфер статистики, чтобы отчёт учёл последние события.
-    await flushStatsBuffer(env);
-    const now = event.scheduledTime ? new Date(event.scheduledTime) : new Date();
-    const msg = await buildDailyReport(env, now);
-    await sendTelegram(env, msg);
+    // If stats are still draining, preserve this report and retry from the
+    // existing five-minute cron instead of publishing incomplete totals.
+    await env.INSTALLS.put('tg:daily_pending', JSON.stringify({ scheduledTime: event.scheduledTime || Date.now() }));
+    await finishPendingDailyReport(env);
   },
 };

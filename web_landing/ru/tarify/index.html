@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <script>
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+    }
+    // GitHub Pages отдаёт /index.html как отдельный адрес — сводим к каноническому /.
+    if (/\/index\.html$/.test(location.pathname)) {
+      location.replace(location.pathname.replace(/index\.html$/, '') + location.search + location.hash);
+    }
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Тарифы Премиум — ПДД Россия 2026</title>
+  <meta name="description" content="Тарифы Премиум-доступа «ПДД Россия 2026»: 1 неделя — 99 ₽, 3 месяца — 290 ₽. Разовая оплата без автопродления, доступ открывается в аккаунте на всех устройствах.">
+  <link rel="canonical" href="https://pdd-drive.ru/tarify/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ПДД Россия 2026">
+  <meta property="og:title" content="Тарифы Премиум — ПДД Россия 2026">
+  <meta property="og:description" content="Тарифы Премиум-доступа «ПДД Россия 2026»: 1 неделя — 99 ₽, 3 месяца — 290 ₽. Разовая оплата без автопродления, доступ открывается в аккаунте на всех устройствах.">
+  <meta property="og:url" content="https://pdd-drive.ru/tarify/">
+  <meta property="og:image" content="https://pdd-drive.ru/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="ru_RU">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="preload" href="/assets/fonts/onest-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/style.css?v=5">
+  <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Тарифы Премиум — ПДД Россия 2026",
+    "url": "https://pdd-drive.ru/tarify/",
+    "inLanguage": "ru-RU",
+    "mainEntity": {
+      "@type": "Product",
+      "name": "Премиум-доступ «ПДД Россия 2026»",
+      "description": "Безлимитная умная лента вопросов, разбор от ИИ, студийная озвучка и безлимитные заезды в игре.",
+      "offers": [
+        { "@type": "Offer", "name": "1 неделя", "price": "99", "priceCurrency": "RUB", "url": "https://pdd-drive.ru/tarify/" },
+        { "@type": "Offer", "name": "3 месяца", "price": "290", "priceCurrency": "RUB", "url": "https://pdd-drive.ru/tarify/" }
+      ]
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Главная", "item": "https://pdd-drive.ru/" },
+      { "@type": "ListItem", "position": 2, "name": "Тарифы", "item": "https://pdd-drive.ru/tarify/" }
+    ]
+  }
+  </script>
+  <style>
+    .plans { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 28px 0 8px; }
+    .plan { background: var(--surface); border-radius: var(--radius-l); padding: 28px; }
+    .plan.hit { background: var(--light-accent); }
+    .prose .plan-name { font-size: 18px; font-weight: 600; margin: 0 0 6px; }
+    .prose .plan-price { font-size: 44px; font-weight: 800; letter-spacing: -.04em; line-height: 1; margin: 0 0 10px; }
+    .prose .plan-note { color: var(--text-2); font-size: 15px; margin: 0; }
+    .plan-badge { display: inline-block; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; }
+    .prose .plans-cta { margin: 20px 0 8px; }
+    @media (max-width: 640px) { .plans { grid-template-columns: 1fr; } .plan { padding: 22px; } }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="logo" href="/">
+      <img src="/assets/icon-192.png" alt="ПДД Россия 2026 — логотип" width="32" height="32" loading="eager">
+      ПДД Россия 2026
+    </a>
+    <nav class="site-nav">
+      <a href="/#features">Возможности</a>
+      <a href="/proverit-znaniya/">Проверить себя</a>
+      <a href="/blog/">Блог</a>
+      <a href="/#exam">Экзамен</a>
+      <a class="nav-cta" href="/app/">Веб-версия<span class="nav-cta-tail"> приложения</span></a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="section">
+  <div class="container">
+    <article class="prose">
+      <nav class="breadcrumbs">
+        <a href="/">Главная</a> / Тарифы
+      </nav>
+      <header>
+        <h1>Тарифы Премиум</h1>
+      </header>
+      <p>Билеты, экзамен по регламенту ГИБДД, темы, работа над ошибками и справочник по ПДД бесплатны всегда. Премиум снимает дневные лимиты и добавляет инструменты для быстрой подготовки.</p>
+
+      <div class="plans">
+        <div class="plan">
+          <p class="plan-name">1 неделя</p>
+          <p class="plan-price">99 ₽</p>
+          <p class="plan-note">Доступ на 7 дней</p>
+        </div>
+        <div class="plan hit">
+          <p class="plan-name">3 месяца<span class="plan-badge">ХИТ</span></p>
+          <p class="plan-price">290 ₽</p>
+          <p class="plan-note">Доступ на 90 дней — около 97 ₽ в месяц</p>
+        </div>
+      </div>
+      <p class="plans-cta"><a class="btn btn-primary" href="/app/">Оформить в веб-версии</a></p>
+
+      <h2>Что входит в Премиум</h2>
+      <ul>
+        <li><strong>Безлимитная умная лента.</strong> Без Премиума — 5 карточек в день, со входом в аккаунт — 10.</li>
+        <li><strong>Разбор от ИИ в один клик.</strong> Объяснение дорожной ситуации и пункта ПДД к любому вопросу. Без Премиума — 10 запросов.</li>
+        <li><strong>Студийная озвучка</strong> всех вопросов и билетов профессиональным диктором.</li>
+        <li><strong>Безлимитные заезды в игре</strong> по билетам и дополнительные машины в гараже.</li>
+      </ul>
+
+      <h2>Как это работает</h2>
+      <ul>
+        <li><strong>Разовая оплата, без автопродления.</strong> Деньги списываются один раз за выбранный срок. Когда срок закончится, доступ просто выключится — повторных списаний не будет.</li>
+        <li><strong>Способ оплаты</strong> — Система быстрых платежей (СБП): по QR-коду или по ссылке из приложения вашего банка. Оплата на сайте подключается — до запуска оставьте почту в веб-версии, и мы напишем, когда она заработает.</li>
+        <li><strong>Доступ открывается сразу после оплаты</strong> и привязывается к вашему аккаунту (вход через Google или Яндекс).</li>
+        <li><strong>Работает на всех устройствах.</strong> Войдите тем же аккаунтом в приложении на Android, iPhone или в веб-версии — Премиум будет активен везде.</li>
+        <li><strong>Продление.</strong> Если оплатить новый срок до окончания текущего, дни добавятся к уже оплаченным.</li>
+        <li><strong>Чек</strong> приходит на электронную почту, указанную при оплате.</li>
+      </ul>
+
+      <h2>Если что-то пошло не так</h2>
+      <p>Если после оплаты Премиум не включился или деньги списались дважды, напишите на <a href="mailto:degtyarik.up@gmail.com">degtyarik.up@gmail.com</a>, указав почту аккаунта и время платежа. Мы откроем доступ вручную или вернём деньги.</p>
+      <p>Покупки внутри приложений из App Store и Google Play оформляются по правилам этих магазинов, управлять ими можно в настройках магазина.</p>
+      <p>Условия использования сервиса — в <a href="/terms.html">пользовательском соглашении</a>, обработка данных — в <a href="/privacy.html">политике конфиденциальности</a>.</p>
+    </article>
+  </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <nav>
+      <a href="/blog/">Блог</a>
+      <a href="/about/">О проекте</a>
+      <a href="/tarify/">Тарифы</a>
+      <a href="/links/">Соцсети</a>
+      <a href="/slovar-pdd/">Словарь терминов</a>
+      <a href="/privacy.html">Политика конфиденциальности</a>
+      <a href="/terms.html">Пользовательское соглашение</a>
+      <a href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">Google Play</a>
+      <a href="https://apps.apple.com/ru/app/id6792369533" rel="noopener">App Store</a>
+      <a href="/app/">Веб-версия</a>
+      <a href="mailto:degtyarik.up@gmail.com">Поддержка</a>
+    </nav>
+    <div class="copy">
+      <span class="age-badge">16+</span> © 2026 ПДД Россия 2026 · <a href="https://pdd-drive.online" rel="noopener">ПДД Беларусь</a> · <a href="https://rs.pdd-drive.online" rel="noopener">Auto testovi Srbija</a></div>
+    <div class="footer-disclaimer">
+      Сайт pdd-drive.ru носит исключительно информационно-справочный и образовательный характер и не является официальным сайтом ГУОБДД МВД России или портала Госуслуг. Официальная информация и первоисточники нормативно-правовых актов РФ публикуются на гибдд.рф и pravo.gov.ru.
+    </div>
+  </div>
+</footer>
+
+<script>
+// Пока поддомен app.pdd-drive.ru не ожил (DNS), ведём на временную копию /app/.
+(function () {
+  var degrade = function () {
+    document.querySelectorAll('a[href^="/app/"]').forEach(function (a) { a.href = '/app/'; });
+  };
+  var ctl = new AbortController();
+  var t = setTimeout(function () { ctl.abort(); }, 2500);
+  fetch('/app/flutter.js', {mode: 'no-cors', signal: ctl.signal})
+    .then(function () { clearTimeout(t); }, function () { clearTimeout(t); degrade(); });
+})();
+</script>
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=111960332', 'ym');
+
+    ym(111960332, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/111960332" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+<script src="/assets/site.js" defer></script>
+</body>
+</html>

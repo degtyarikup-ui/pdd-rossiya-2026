@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart' show Color;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -36,6 +39,113 @@ class StreakNotifier {
       FlutterLocalNotificationsPlugin();
   bool _initialized = false;
   bool _tzReady = false;
+  bool _streakEnabled = true;
+  bool _userStreakEnabled = true;
+
+  Future<void> setUserStreakEnabled(bool enabled) async {
+    _userStreakEnabled = enabled;
+    if (!enabled) await cancelStreakReminder();
+  }
+
+  bool _gameEnabled = true;
+
+  Future<void> applyRemotePolicy({
+    required bool streakEnabled,
+    required bool gameEnabled,
+  }) async {
+    _streakEnabled = streakEnabled;
+    _gameEnabled = gameEnabled;
+    if (!streakEnabled) await cancelStreakReminder();
+    if (!gameEnabled) await cancelGameRunReady();
+  }
+
+  Future<void> prepareAdminChannel() async {
+    if (kIsWeb) return;
+    await init();
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(
+          AndroidNotificationChannel(
+            'admin_messages',
+            appL10n.notifAdminChannelName,
+            importance: Importance.defaultImportance,
+          ),
+        );
+  }
+
+  /// Called with the JSON payload when the user taps an admin notification
+  /// shown by this plugin (foreground pushes). Set by RemoteNotificationsService.
+  void Function(String payload)? adminTapHandler;
+
+  Future<void> showAdminMessage(
+    String title,
+    String body,
+    String campaignId, {
+    Uint8List? image,
+    Color? accent,
+    String? payload,
+  }) async {
+    if (kIsWeb) return;
+    await prepareAdminChannel();
+    final id =
+        2000 +
+        campaignId.codeUnits.fold<int>(0, (a, b) => ((a * 31) + b) & 0xffff);
+    StyleInformation? style;
+    final attachments = <DarwinNotificationAttachment>[];
+    if (image != null) {
+      final bitmap = ByteArrayAndroidBitmap(image);
+      style = BigPictureStyleInformation(
+        bitmap,
+        largeIcon: bitmap,
+        contentTitle: title,
+        summaryText: body,
+        hideExpandedLargeIcon: true,
+      );
+      try {
+        final dir = await getTemporaryDirectory();
+        final ext = image.length > 3 && image[0] == 0x89
+            ? 'png'
+            : image.length > 3 && image[0] == 0x47
+            ? 'gif'
+            : image.length > 3 && image[0] == 0x52
+            ? 'webp'
+            : 'jpg';
+        final file = File('${dir.path}/notice_$id.$ext');
+        await file.writeAsBytes(image, flush: true);
+        attachments.add(DarwinNotificationAttachment(file.path));
+      } catch (_) {
+        /* iOS attachment is optional. */
+      }
+    }
+    await _plugin.show(
+      id,
+      title,
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'admin_messages',
+          appL10n.notifAdminChannelName,
+          icon: 'ic_notification',
+          color: accent,
+          styleInformation: style ?? BigTextStyleInformation(body),
+          largeIcon: image != null ? ByteArrayAndroidBitmap(image) : null,
+        ),
+        iOS: DarwinNotificationDetails(attachments: attachments),
+      ),
+      payload: payload,
+    );
+  }
+
+  /// Payload of the admin notification that cold-started the app, if any.
+  Future<String?> launchPayload() async {
+    if (kIsWeb) return null;
+    await init();
+    final details = await _plugin.getNotificationAppLaunchDetails();
+    if (details?.didNotificationLaunchApp != true) return null;
+    return details?.notificationResponse?.payload;
+  }
 
   /// Инициализация плагина и таймзон. Idempotent. No-op на web.
   Future<void> init() async {
@@ -60,6 +170,12 @@ class StreakNotifier {
     );
     await _plugin.initialize(
       const InitializationSettings(android: androidInit, iOS: darwinInit),
+      onDidReceiveNotificationResponse: (response) {
+        final payload = response.payload;
+        if (payload != null && payload.startsWith('{')) {
+          adminTapHandler?.call(payload);
+        }
+      },
     );
     _initialized = true;
   }
@@ -85,6 +201,7 @@ class StreakNotifier {
     if (kIsWeb || !_initialized) return;
 
     await _plugin.cancel(_reminderId);
+    if (!_streakEnabled || !_userStreakEnabled) return;
     final target = computeStreakReminderTime(streak, DateTime.now());
     if (target == null) return;
 
@@ -97,7 +214,7 @@ class StreakNotifier {
   Future<void> scheduleGameRunReady(DateTime at) async {
     if (kIsWeb || !_initialized) return;
     await _plugin.cancel(_gameRunId);
-    if (!at.isAfter(DateTime.now())) return;
+    if (!_gameEnabled || !at.isAfter(DateTime.now())) return;
     final when = _tzReady
         ? tz.TZDateTime.from(at, tz.local)
         : tz.TZDateTime.from(at, tz.UTC);

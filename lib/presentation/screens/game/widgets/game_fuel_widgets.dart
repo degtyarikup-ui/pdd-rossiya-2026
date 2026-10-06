@@ -176,8 +176,8 @@ class _GameRunsPillState extends State<GameRunsPill>
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final empty = !widget.unlimited && widget.runs <= 0;
-    // White pill, black ink; red ink once no run is left.
-    final ink = empty ? colors.red : AppColors.primaryText;
+    // The garage pill is dark over the scene in both app themes.
+    final ink = empty ? colors.red : AppColors.white;
     final text = widget.unlimited
         ? appL10n.gameRunsUnlimitedPill
         : appL10n.gameRunsPill(widget.runs, widget.maxRuns);
@@ -187,7 +187,7 @@ class _GameRunsPillState extends State<GameRunsPill>
       child: ScaleTransition(
         scale: _scale,
         child: Material(
-          color: colors.cardBackground,
+          color: AppThemeColors.dark.cardBackground,
           borderRadius: BorderRadius.circular(90),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -226,8 +226,8 @@ class _GameRunsPillState extends State<GameRunsPill>
   }
 }
 
-/// No run left: one line in place of the start button — when the next run
-/// comes (live) — and a gold square for unlimited runs.
+/// No run left: a full-width premium button shows the live countdown
+/// until the next run and opens the paywall when tapped.
 class GameRunsWaitBar extends StatefulWidget {
   final DateTime? refillAt;
   final VoidCallback onBuyPremium;
@@ -273,36 +273,42 @@ class _GameRunsWaitBarState extends State<GameRunsWaitBar> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final radius = BorderRadius.circular(AppDimensions.radiusLarge);
-    return SizedBox(
-      height: 56,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Container(
-              key: const ValueKey('lobby-runs-wait'),
-              decoration: BoxDecoration(
-                color: colors.cardBackground,
-                borderRadius: radius,
-              ),
+    final text = appL10n.gameRunsNextIn(gameFuelCountdown(widget.refillAt));
+    return Semantics(
+      button: true,
+      label: text,
+      hint: appL10n.gameRunsGetPremium,
+      child: Material(
+        color: colors.premiumAmber,
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          key: const ValueKey('lobby-runs-wait'),
+          onTap: widget.onBuyPremium,
+          child: SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.schedule_rounded, size: 20, color: colors.red),
+                  const Icon(
+                    Icons.schedule_rounded,
+                    size: 20,
+                    color: AppColors.white,
+                  ),
                   const SizedBox(width: 8),
                   Flexible(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
-                        appL10n.gameRunsNextIn(
-                          gameFuelCountdown(widget.refillAt),
-                        ),
-                        style: TextStyle(
+                        text,
+                        style: const TextStyle(
                           fontFamily: 'Onest',
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: colors.primaryText,
+                          color: AppColors.white,
                         ),
                       ),
                     ),
@@ -311,29 +317,7 @@ class _GameRunsWaitBarState extends State<GameRunsWaitBar> {
               ),
             ),
           ),
-          const SizedBox(width: 10),
-          Semantics(
-            button: true,
-            label: appL10n.gameRunsGetPremium,
-            child: Material(
-              color: colors.gold,
-              borderRadius: radius,
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: widget.onBuyPremium,
-                child: const SizedBox(
-                  width: 56,
-                  height: 56,
-                  child: Icon(
-                    Icons.all_inclusive_rounded,
-                    color: AppColors.white,
-                    size: 28,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

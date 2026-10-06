@@ -7,6 +7,7 @@ import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 
 enum PurchaseResult {
   success,
@@ -23,6 +24,10 @@ class IapService extends ChangeNotifier {
   late final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   Future<void> _purchaseQueue = Future.value();
+  final Map<String, (PurchaseDetails, String?)> _pendingVerification = {};
+  Timer? _retryTimer;
+  bool _observingAuth = false;
+  Future<void>? _initializing;
 
   static String get productIdWeek =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS
@@ -79,22 +84,21 @@ class IapService extends ChangeNotifier {
   Completer<PurchaseResult>? _currentPurchaseCompleter;
   Completer<bool>? _restoreCompleter;
 
-  Future<void> init() async {
-    try {
-      _isAvailable = await _iap.isAvailable();
-      if (!_isAvailable) {
-        debugPrint('IapService: Store is not available on this device');
-        return;
-      }
+  Future<void> init() => _initializing ??= _init().whenComplete(() {
+    _initializing = null;
+  });
 
+  Future<void> _init() async {
+    try {
+      if (kIsWeb) return;
+      if (!_observingAuth) {
+        AuthService.instance.addListener(_onAuthChanged);
+        _observingAuth = true;
+      }
+      // Subscribe before querying availability: StoreKit may replay an
+      // unfinished payment as soon as its platform is initialized.
       _subscription ??= _iap.purchaseStream.listen(
-        (purchases) {
-          _purchaseQueue = _purchaseQueue
-              .then((_) => _onPurchaseUpdated(purchases))
-              .catchError((Object _) {
-                _safeCompletePurchase(PurchaseResult.error);
-              });
-        },
+        _enqueuePurchases,
         onDone: () => _subscription?.cancel(),
         onError: (error) {
           debugPrint('IapService: stream error: $error');
@@ -104,11 +108,48 @@ class IapService extends ChangeNotifier {
         },
       );
 
+      _isAvailable = await _iap.isAvailable();
+      if (!_isAvailable) return;
       await loadProducts();
     } catch (e) {
       debugPrint('IapService: init exception: $e');
       _isAvailable = false;
     }
+  }
+
+  void _enqueuePurchases(List<PurchaseDetails> purchases) {
+    _purchaseQueue = _purchaseQueue
+        .then((_) => _onPurchaseUpdated(purchases))
+        .catchError((Object _) {
+          _safeCompletePurchase(PurchaseResult.error);
+          _safeCompleteRestore(false);
+        });
+  }
+
+  void _onAuthChanged() {
+    if (AuthService.instance.hasServerSession) {
+      retryPendingPurchases();
+    }
+  }
+
+  /// Retry unacknowledged payments after reconnecting or signing in. The
+  /// store remains the durable queue across app restarts; no receipt is
+  /// persisted in application preferences.
+  void retryPendingPurchases() {
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    final auth = AuthService.instance;
+    if (!auth.hasServerSession) return;
+    final purchases = _pendingVerification.values
+        .where((entry) => entry.$2 == null || entry.$2 == auth.currentUser?.id)
+        .map((entry) => entry.$1)
+        .toList();
+    if (purchases.isNotEmpty) _enqueuePurchases(purchases);
+  }
+
+  void _scheduleRetry() {
+    if (_retryTimer != null || !AuthService.instance.hasServerSession) return;
+    _retryTimer = Timer(const Duration(seconds: 30), retryPendingPurchases);
   }
 
   Future<void> loadProducts() async {
@@ -217,11 +258,23 @@ class IapService extends ChangeNotifier {
     }
   }
 
+  bool _paymentBusy = false;
   Future<PurchaseResult> buyProduct(PremiumTier tier) async {
+    if (_paymentBusy) return PurchaseResult.error;
+    _paymentBusy = true;
+    try {
+      return await _buyNative(tier);
+    } finally {
+      _paymentBusy = false;
+    }
+  }
+
+  Future<PurchaseResult> _buyNative(PremiumTier tier) async {
     if (kIsWeb) {
       return PurchaseResult.storeUnavailable;
     }
 
+    final owner = AuthService.instance.currentUser?.id;
     _lastErrorMessage = '';
     if (!AuthService.instance.hasServerSession) return PurchaseResult.error;
     if (!await _verificationAvailable()) return PurchaseResult.storeUnavailable;
@@ -249,6 +302,11 @@ class IapService extends ChangeNotifier {
     final completer = Completer<PurchaseResult>();
     _currentPurchaseCompleter = completer;
 
+    if (AuthService.instance.currentUser?.id != owner ||
+        !AuthService.instance.hasServerSession) {
+      _currentPurchaseCompleter = null;
+      return PurchaseResult.error;
+    }
     final purchaseParam = PurchaseParam(
       productDetails: product,
       applicationUserName:
@@ -277,6 +335,16 @@ class IapService extends ChangeNotifier {
   }
 
   Future<bool> restorePurchases() async {
+    if (_paymentBusy) return false;
+    _paymentBusy = true;
+    try {
+      return await _restoreNative();
+    } finally {
+      _paymentBusy = false;
+    }
+  }
+
+  Future<bool> _restoreNative() async {
     if (kIsWeb || !AuthService.instance.hasServerSession) {
       return false;
     }
@@ -321,6 +389,10 @@ class IapService extends ChangeNotifier {
   Future<void> _onPurchaseUpdated(
     List<PurchaseDetails> purchaseDetailsList,
   ) async {
+    if (purchaseDetailsList.isEmpty) {
+      _safeCompleteRestore(false);
+      return;
+    }
     for (final purchaseDetails in purchaseDetailsList) {
       if (purchaseDetails.status == PurchaseStatus.pending) {
         // In progress
@@ -332,6 +404,16 @@ class IapService extends ChangeNotifier {
           _safeCompleteRestore(false);
         } else if (purchaseDetails.status == PurchaseStatus.purchased ||
             purchaseDetails.status == PurchaseStatus.restored) {
+          final key =
+              '${purchaseDetails.productID}:${purchaseDetails.purchaseID ?? purchaseDetails.verificationData.serverVerificationData}';
+          final auth = AuthService.instance;
+          final pending = _pendingVerification.putIfAbsent(
+            key,
+            () => (purchaseDetails, auth.currentUser?.id),
+          );
+          if (pending.$2 != null && pending.$2 != auth.currentUser?.id) {
+            continue;
+          }
           final tier = _tierFromProductId(purchaseDetails.productID);
           final price = getProductPrice(
             tier,
@@ -349,16 +431,34 @@ class IapService extends ChangeNotifier {
                 purchaseDetails.verificationData.serverVerificationData,
           );
           if (!verified) {
+            _lastErrorMessage = appL10n.purchaseVerificationPending;
             _safeCompletePurchase(PurchaseResult.error);
             // Do not acknowledge a payment we could not deliver. The store
             // can redeliver it; the user can retry restoration after reconnecting.
+            if (PremiumService.instance.purchaseVerificationFailure ==
+                PurchaseVerificationFailure.unavailable) {
+              _scheduleRetry();
+            } else {
+              // A rejected or expired subscription is not a network retry.
+              // Leave it unfinished in the store for an explicit restore.
+              _pendingVerification.remove(key);
+            }
             continue;
           }
-          if (purchaseDetails.status == PurchaseStatus.purchased) {
-            _safeCompletePurchase(PurchaseResult.success);
-          } else {
-            _safeCompleteRestore(true);
+          // StoreKit can report an already owned subscription as restored
+          // while the user is waiting for the purchase button to finish.
+          _safeCompletePurchase(PurchaseResult.success);
+          _safeCompleteRestore(true);
+          if (purchaseDetails.pendingCompletePurchase) {
+            try {
+              await _iap.completePurchase(purchaseDetails);
+            } catch (_) {
+              _scheduleRetry();
+              continue;
+            }
           }
+          _pendingVerification.remove(key);
+          continue;
         } else if (purchaseDetails.status == PurchaseStatus.canceled) {
           _safeCompletePurchase(PurchaseResult.canceled);
           _safeCompleteRestore(false);
@@ -387,6 +487,8 @@ class IapService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _retryTimer?.cancel();
+    if (_observingAuth) AuthService.instance.removeListener(_onAuthChanged);
     _subscription?.cancel();
     super.dispose();
   }

@@ -68,11 +68,6 @@ class GameLobby extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final paint = gamePaintColors[vehiclePaint] ?? colors.accent;
-    // Light paints (white, silver, yellow…) get a dark icon for contrast.
-    final onPaint = paint.computeLuminance() > 0.55
-        ? AppColors.primaryText
-        : AppColors.white;
     // A round button with its caption underneath, readable over the scene.
     // A fixed-width column keeps the round buttons on one vertical line
     // whatever the caption length.
@@ -293,23 +288,27 @@ class GameLobby extends StatelessWidget {
             children: [
               labelled(
                 round(
-                  color: paint,
+                  color: colors.cardBackground,
                   label:
                       '${appL10n.gameLobbyColour}: ${gamePaintName(vehiclePaint)}',
                   onTap: onColour,
-                  icon: Icon(Icons.palette_rounded, color: onPaint, size: 26),
+                  icon: Icon(
+                    Icons.palette_rounded,
+                    color: colors.primaryText,
+                    size: 26,
+                  ),
                 ),
                 appL10n.gameLobbyColour,
               ),
               const SizedBox(height: 12),
               labelled(
                 round(
-                  color: colors.gold,
+                  color: colors.cardBackground,
                   label: appL10n.gameWeeklyRating,
                   onTap: onLeaderboard,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.leaderboard_rounded,
-                    color: AppColors.white,
+                    color: colors.primaryText,
                     size: 26,
                   ),
                 ),

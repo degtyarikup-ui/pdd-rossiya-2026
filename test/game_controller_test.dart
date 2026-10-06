@@ -249,6 +249,14 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text(appL10n.gameRailwayViolation), findsOneWidget);
+    await hud(const GameState(phase: GamePhase.driving, lastViolation: 'stop'));
+    await tester.pumpAndSettle();
+    expect(find.text(appL10n.gameStopViolation), findsOneWidget);
+    await hud(
+      const GameState(phase: GamePhase.driving, lastViolation: 'red_light'),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(appL10n.gameRedLightViolation), findsOneWidget);
     // Driving on the oncoming side is only a warning until it becomes one.
     await hud(const GameState(phase: GamePhase.driving, oncoming: true));
     await tester.pumpAndSettle(); // the previous notice fades out
@@ -256,38 +264,42 @@ void main() {
     expect(find.byKey(const ValueKey('hud-penalty')), findsNothing);
   });
 
-  testWidgets('HUD numbers turn dark over winter snow in the light theme', (
-    tester,
-  ) async {
-    Future<Color?> speedColor({required bool snow, required bool dark}) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData(
-            brightness: dark ? Brightness.dark : Brightness.light,
-          ),
-          home: Scaffold(
-            body: GameHud(
-              state: const GameState(phase: GamePhase.driving),
-              snow: snow,
+  testWidgets(
+    'HUD numbers stay legible over unchanged winter snow in both themes',
+    (tester) async {
+      Future<Color?> speedColor({
+        required bool snow,
+        required bool dark,
+      }) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData(
+              brightness: dark ? Brightness.dark : Brightness.light,
+            ),
+            home: Scaffold(
+              body: GameHud(
+                state: const GameState(phase: GamePhase.driving),
+                snow: snow,
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle(); // MaterialApp animates theme changes
-      final text = tester.widget<RichText>(
-        find.descendant(
-          of: find.byKey(const ValueKey('hud-speed')),
-          matching: find.byType(RichText),
-        ),
-      );
-      return text.text.style?.color;
-    }
+        );
+        await tester.pumpAndSettle(); // MaterialApp animates theme changes
+        final text = tester.widget<RichText>(
+          find.descendant(
+            of: find.byKey(const ValueKey('hud-speed')),
+            matching: find.byType(RichText),
+          ),
+        );
+        return text.text.style?.color;
+      }
 
-    expect(await speedColor(snow: false, dark: false), AppColors.white);
-    expect(await speedColor(snow: true, dark: false), AppColors.primaryText);
-    // The dark theme dims the snow: white stays readable there.
-    expect(await speedColor(snow: true, dark: true), AppColors.white);
-  });
+      expect(await speedColor(snow: false, dark: false), AppColors.white);
+      expect(await speedColor(snow: true, dark: false), AppColors.primaryText);
+      // Scene lighting is independent of the UI theme.
+      expect(await speedColor(snow: true, dark: true), AppColors.primaryText);
+    },
+  );
 
   testWidgets('Simple steering lights the chosen exit and pulses the hint', (
     tester,
@@ -639,7 +651,7 @@ void main() {
   testWidgets('The U-turn button shows only where a U-turn is possible', (
     tester,
   ) async {
-    var uturns = 0;
+    final uturns = <int>[];
     Widget overlay({bool uturn = false, String? hint, String? choice}) =>
         MaterialApp(
           home: Scaffold(
@@ -652,7 +664,8 @@ void main() {
               ),
               onGasChanged: (_) {},
               onSwitchLane: (_) {},
-              onUturn: () => uturns++,
+              onUturn: () {},
+              onSteering: uturns.add,
             ),
           ),
         );
@@ -666,7 +679,7 @@ void main() {
     // The arrows stay arrows.
     expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('game-uturn')));
-    expect(uturns, 1);
+    expect(uturns, [2, 0]);
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -883,7 +896,7 @@ void main() {
     expect(failures, isEmpty);
   });
 
-  testWidgets('Simple steering: each press is one lane or exit command', (
+  testWidgets('Simple steering sends a held request and releases it', (
     tester,
   ) async {
     final steering = <int>[];
@@ -902,15 +915,16 @@ void main() {
     );
     await tester.tap(find.byIcon(Icons.arrow_back_rounded));
     await tester.pump();
-    expect(lanes, ['left']);
-    // Holding is still one command: no free steering at all.
+    expect(lanes, isEmpty);
+    expect(steering, [1, 0]);
+    // Holding preserves the request until release; the engine chooses when.
     final hold = await tester.startGesture(
       tester.getCenter(find.byIcon(Icons.arrow_forward_rounded)),
     );
     await tester.pump(const Duration(milliseconds: 600));
     await hold.up();
-    expect(lanes, ['left', 'right']);
-    expect(steering, isEmpty);
+    expect(lanes, isEmpty);
+    expect(steering, [1, 0, -1, 0]);
   });
 
   testWidgets(
@@ -1043,6 +1057,13 @@ void main() {
     controller.recordViolation('railway', 3);
     expect(controller.state.lastViolation, 'railway');
     expect(controller.state.violationCount, 3);
+    controller.recordViolation('stop', 4);
+    controller.recordViolation('red_light', 5);
+    expect(controller.state.lastViolation, 'red_light');
+    expect(controller.state.violationCount, 5);
+    // Repeated telemetry from the same episode never charges twice.
+    controller.recordViolation('red_light', 5);
+    expect(controller.state.violationCount, 5);
     await tester.pump(const Duration(seconds: 5));
     controller.dispose();
   });

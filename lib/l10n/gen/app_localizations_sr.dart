@@ -963,6 +963,12 @@ class AppLocalizationsSr extends AppLocalizations {
   String get gameOvertakingProhibited => 'Preticanje je ovde zabranjeno';
 
   @override
+  String get gameStopViolation => 'Niste se zaustavili na propisanom mestu';
+
+  @override
+  String get gameRedLightViolation => 'Prolazak na zabranjen signal';
+
+  @override
   String get gameRailwayViolation =>
       'Prelaz je zatvoren — obilaženje i ulazak su zabranjeni';
 
@@ -1118,6 +1124,47 @@ class AppLocalizationsSr extends AppLocalizations {
   @override
   String get authFailed =>
       'Prijava je otkazana ili je došlo do greške. Pokušajte ponovo.';
+
+  @override
+  String get authErrorCancelled =>
+      'Prijava nije završena. Pokušajte ponovo da izaberete nalog.';
+
+  @override
+  String get authErrorProvider =>
+      'Nije moguće dobiti podatke za prijavu od izabranog servisa.';
+
+  @override
+  String get authErrorNetwork =>
+      'Nije moguće povezati se sa serverom. Proverite internet vezu.';
+
+  @override
+  String get authErrorTimeout =>
+      'Server nije odgovorio na vreme. Pokušajte ponovo.';
+
+  @override
+  String get authErrorAppKey =>
+      'Server je odbio ovu verziju aplikacije. Ažurirajte aplikaciju iz prodavnice.';
+
+  @override
+  String get authErrorCredential =>
+      'Server nije potvrdio prijavu. Pokušajte sa drugim nalogom ili načinom prijave.';
+
+  @override
+  String get authErrorServer =>
+      'Nije moguće završiti prijavu na serveru. Pokušajte kasnije.';
+
+  @override
+  String get authErrorResponse =>
+      'Nije moguće prihvatiti sesiju prijave. Proverite datum i vreme na telefonu.';
+
+  @override
+  String get authSessionTemporary =>
+      'Prijava je uspešna. Telefon nije mogao da sačuva sesiju: posle ponovnog pokretanja morate se ponovo prijaviti.';
+
+  @override
+  String authDiagnosticCode(String code) {
+    return 'Kod za podršku: $code';
+  }
 
   @override
   String get authTitle => 'Prijava na nalog';
@@ -1301,4 +1348,112 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get gameUturn => 'Polukružno okretanje';
+
+  @override
+  String get purchaseVerificationPending =>
+      'Prodavnica je prijavila kupovinu, ali pristup još nije potvrđen. Za ponovnu proveru pritisnite „Vrati kupovine” kada internet bude dostupan.';
+
+  @override
+  String get notifAdminChannelName => 'Obaveštenja aplikacije';
+
+  @override
+  String get noticeAcknowledge => 'U redu';
+
+  @override
+  String get noticeOpen => 'Otvori';
+
+  @override
+  String get pushMessagesSetting => 'Novosti aplikacije';
+
+  @override
+  String get pushMessagesHint =>
+      'Push obaveštenja o novostima i važnim događajima';
+
+  @override
+  String get gameKeyboardHint =>
+      '↑ / W — gas · ↓ / S / razmak — kočnica · ← → / A D — skretanje';
+
+  @override
+  String get webQuarter => '3 meseca';
+
+  @override
+  String get webPaymentSoon => 'Plaćanje uskoro';
+
+  @override
+  String get webPaymentInfo =>
+      'Pristup na 3 meseca bez automatskog obnavljanja. Plaćanje na sajtu još nije dostupno.';
+
+  @override
+  String get webWeek => '1 nedelja';
+
+  @override
+  String get webPayButton => 'Plati na sajtu';
+
+  @override
+  String get webPayInfo =>
+      'Jednokratno plaćanje bez automatskog obnavljanja. Premium važi i u aplikaciji na telefonu — prijavite se istim nalogom.';
+
+  @override
+  String get webPayTariffs => 'Cene';
+
+  @override
+  String get webPayEmailTitle => 'Plaćanje';
+
+  @override
+  String get webPayEmailBody =>
+      'Plaćanje na sajtu uskoro uvodimo. Ostavite e-poštu — javićemo vam čim proradi. Na istu adresu stiže i račun.';
+
+  @override
+  String get webPayEmailHint => 'E-pošta';
+
+  @override
+  String get webPayEmailInvalid => 'Proverite adresu e-pošte';
+
+  @override
+  String get webPayNotify => 'Obavesti me';
+
+  @override
+  String get webPayFailed => 'Slanje nije uspelo, pokušajte ponovo';
+
+  @override
+  String webPaySaved(String email) {
+    return 'Hvala! Pisaćemo na $email čim plaćanje proradi';
+  }
+
+  @override
+  String premiumOneTimeInfo(String date) {
+    return 'Pristup važi do $date i ne obnavlja se automatski.';
+  }
+
+  @override
+  String get appUpdateTitle => 'Dostupno je ažuriranje';
+
+  @override
+  String get appUpdateBody =>
+      'Nova verzija donosi poboljšanja i ispravke. Ažurirajte aplikaciju da biste ih koristili.';
+
+  @override
+  String appUpdateVersion(String version) {
+    return 'Verzija $version';
+  }
+
+  @override
+  String get appUpdateAction => 'Ažuriraj';
+
+  @override
+  String get appUpdateLater => 'Kasnije';
+
+  @override
+  String get appUpdateReadyTitle => 'Ažuriranje je spremno';
+
+  @override
+  String get appUpdateReadyBody =>
+      'Nova verzija je preuzeta. Ponovo pokrenite aplikaciju da biste je instalirali.';
+
+  @override
+  String get appUpdateRestart => 'Ponovo pokreni';
+
+  @override
+  String get appUpdateOpenFailed =>
+      'Nije moguće otvoriti ažuriranje. Pokušajte kasnije.';
 }

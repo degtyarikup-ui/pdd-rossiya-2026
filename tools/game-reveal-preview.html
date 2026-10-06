@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Новая машина — предпросмотр анимации</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;background:#f3f5f9;color:#182333;font:16px/1.5 system-ui,sans-serif}
+  main{display:flex;justify-content:center;align-items:center;gap:36px;padding:24px;min-height:100dvh}
+  .phone{position:relative;width:min(390px,calc((100dvh - 48px)*.4621));aspect-ratio:390/844;flex-shrink:0;overflow:hidden;border-radius:24px;background:#c3dff1}
+  iframe{width:100%;height:100%;border:0;display:block}.chrome{position:absolute;top:9%;left:12px;right:12px;text-align:center;color:white;pointer-events:none;text-shadow:0 2px 8px #0007}
+  .chrome h2{font-size:clamp(22px,3vw,30px);margin:0 0 6px;font-weight:800}.chrome p{margin:0;font-weight:600}
+  #hint{position:absolute;bottom:4%;left:12px;right:12px;color:white;text-align:center;pointer-events:none;text-shadow:0 2px 8px #0009;font-weight:600}
+  aside{width:310px;max-width:100%}h1{font-size:26px;line-height:1.2;margin:0 0 12px}p{color:#617086;margin:0 0 24px}
+  label{display:block;margin-bottom:16px;font-size:14px;font-weight:600}select{display:block;width:100%;margin-top:6px;padding:12px;border:1px solid #d7dfe9;border-radius:12px;font:inherit;background:white;color:inherit}
+  button{width:100%;padding:13px 16px;border:0;border-radius:12px;background:#0574f8;color:white;font:600 16px system-ui;cursor:pointer;margin:4px 0}
+  button.secondary{background:#e4eaf3;color:#33465f}button:disabled{opacity:.5;cursor:wait}#status{font-size:14px;margin:18px 0 0}
+  .sound{display:flex;gap:8px;align-items:center;margin-top:14px}
+  @media(max-width:650px){main{flex-direction:column;gap:20px;padding:20px}aside{order:-1;width:390px}.phone{width:min(390px,100%)}h1{font-size:23px}aside>p{margin-bottom:16px}}
+</style>
+<main>
+  <div class="phone">
+    <iframe id="scene" title="Анимация получения автомобиля" src="/assets/game/?flutterWeb=1&reveal=clean4"></iframe>
+    <div class="chrome"><h2>Новая машина!</h2><p id="caption">Седан · оранжевый</p></div>
+    <div id="hint">Нажмите на ворота</div>
+  </div>
+  <aside>
+    <h1>Получение новой машины</h1>
+    <p>Та же 3D-анимация, что в приложении. Заезд проходить не нужно.</p>
+    <label>Машина<select id="model">
+      <option value="sedan">Седан</option><option value="hatch">Хэтчбек</option><option value="coupe">Купе</option>
+      <option value="wagon">Универсал</option><option value="suv">Внедорожник</option><option value="pickup">Пикап</option><option value="cyber">Кибертрак</option>
+    </select></label>
+    <label>Цвет<select id="paint">
+      <option value="orange">оранжевый</option><option value="red">красный</option><option value="blue">синий</option><option value="white">белый</option>
+      <option value="black">чёрный</option><option value="purple">фиолетовый</option><option value="teal">бирюзовый</option><option value="gold">золотой</option>
+    </select></label>
+    <button id="play" disabled>Запустить анимацию</button>
+    <button id="closed" class="secondary" disabled>Показать закрытый гараж</button>
+    <label class="sound"><input id="sound" type="checkbox">Со звуком</label>
+    <p id="status" role="status">Загружаю 3D-сцену…</p>
+  </aside>
+</main>
+<script>
+  const frame=document.getElementById('scene'),model=document.getElementById('model'),paint=document.getElementById('paint');
+  const play=document.getElementById('play'),closed=document.getElementById('closed'),hint=document.getElementById('hint');
+  const status=document.getElementById('status'),sound=document.getElementById('sound');let ready=false;
+  function show(open){
+    if(!ready)return;
+    const game=frame.contentWindow.game;
+    game.configure({soundEnabled:sound.checked,firstRun:true});game.setPaused(true);
+    game.showReveal(model.value,paint.value);
+    document.getElementById('caption').textContent=model.selectedOptions[0].textContent+' · '+paint.selectedOptions[0].textContent;
+    hint.textContent=open?'':'Нажмите на ворота';
+    status.textContent=open?'Быстрый выезд → дрифт с дымом → остановка':'Нажмите на ворота в сцене или запустите анимацию кнопкой.';
+    play.textContent='Повторить анимацию';if(open)game.openReveal();
+  }
+  window.addEventListener('message',event=>{
+    if(event.source!==frame.contentWindow||event.origin!==location.origin||typeof event.data!=='string')return;
+    let packet,message;try{packet=JSON.parse(event.data);if(packet.bridge!=='pdd-game'||packet.type!=='event')return;message=JSON.parse(packet.payload);}catch{return;}
+    if(message.event==='ready'){ready=true;play.disabled=closed.disabled=false;show(false);}
+    if(message.event==='reveal_shown'){hint.textContent='Машина получена!';status.textContent='Готово. Можно повторить или выбрать другую машину.';}
+    if(message.event==='engine_error')status.textContent='Сцена не загрузилась. Обновите страницу.';
+  });
+  play.onclick=()=>show(true);closed.onclick=()=>show(false);model.onchange=paint.onchange=()=>show(true);
+  sound.onchange=()=>{if(ready)frame.contentWindow.game.configure({soundEnabled:sound.checked,firstRun:true});};
+  setTimeout(()=>{if(!ready)status.textContent='Не удалось загрузить сцену. Проверьте локальный сервер и обновите страницу.';},20000);
+</script>
+</html>

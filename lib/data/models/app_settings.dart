@@ -7,6 +7,7 @@ class AppSettings {
   final bool confirmAnswerEnabled;
   final bool voiceEnabled;
   final bool notificationsEnabled;
+  final bool pushMessagesEnabled;
   final TicketCategory ticketCategory;
   final ThemeMode themeMode;
 
@@ -19,6 +20,7 @@ class AppSettings {
     this.confirmAnswerEnabled = false,
     this.voiceEnabled = false,
     this.notificationsEnabled = true,
+    this.pushMessagesEnabled = false,
     this.ticketCategory = TicketCategory.ab,
     this.themeMode = ThemeMode.system,
     this.vehicleOnboardingCompleted = true,
@@ -30,6 +32,7 @@ class AppSettings {
     bool? confirmAnswerEnabled,
     bool? voiceEnabled,
     bool? notificationsEnabled,
+    bool? pushMessagesEnabled,
     TicketCategory? ticketCategory,
     ThemeMode? themeMode,
     bool? vehicleOnboardingCompleted,
@@ -40,6 +43,7 @@ class AppSettings {
       confirmAnswerEnabled: confirmAnswerEnabled ?? this.confirmAnswerEnabled,
       voiceEnabled: voiceEnabled ?? this.voiceEnabled,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      pushMessagesEnabled: pushMessagesEnabled ?? this.pushMessagesEnabled,
       ticketCategory: ticketCategory ?? this.ticketCategory,
       themeMode: themeMode ?? this.themeMode,
       vehicleOnboardingCompleted:
@@ -71,6 +75,7 @@ class AppSettings {
       confirmAnswerEnabled: map['confirmAnswerEnabled'] as bool? ?? false,
       voiceEnabled: map['voiceEnabled'] as bool? ?? false,
       notificationsEnabled: map['notificationsEnabled'] as bool? ?? true,
+      pushMessagesEnabled: map['pushMessagesEnabled'] as bool? ?? false,
       ticketCategory: TicketCategory.parse(map['ticketCategory'] as String?),
       themeMode: parseThemeMode(map['themeMode'] as String?),
       vehicleOnboardingCompleted: migratedOnboarding,
@@ -84,6 +89,7 @@ class AppSettings {
       'confirmAnswerEnabled': confirmAnswerEnabled,
       'voiceEnabled': voiceEnabled,
       'notificationsEnabled': notificationsEnabled,
+      'pushMessagesEnabled': pushMessagesEnabled,
       'ticketCategory': ticketCategory.name,
       'themeMode': themeMode.name,
       'vehicleOnboardingCompleted': vehicleOnboardingCompleted,

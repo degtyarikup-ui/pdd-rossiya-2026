@@ -350,6 +350,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     },
                   ),
                 ),
+                if (const bool.fromEnvironment('ENABLE_REMOTE_PUSH')) ...[
+                  _buildDivider(),
+                  _buildSettingItem(
+                    icon: Icons.campaign_outlined,
+                    title: appL10n.pushMessagesSetting,
+                    subtitle: appL10n.pushMessagesHint,
+                    trailing: Switch(
+                      value: settings.pushMessagesEnabled,
+                      onChanged: (value) =>
+                          settingsController.setPushMessagesEnabled(value),
+                    ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: AppDimensions.spacingXL),

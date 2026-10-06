@@ -1748,6 +1748,18 @@ abstract class AppLocalizations {
   /// **'Обгон здесь запрещён'**
   String get gameOvertakingProhibited;
 
+  /// No description provided for @gameStopViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы не остановились в положенном месте'**
+  String get gameStopViolation;
+
+  /// No description provided for @gameRedLightViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проезд на запрещающий сигнал'**
+  String get gameRedLightViolation;
+
   /// No description provided for @gameRailwayViolation.
   ///
   /// In ru, this message translates to:
@@ -2005,6 +2017,66 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Вход отменён или возникла ошибка. Попробуйте ещё раз.'**
   String get authFailed;
+
+  /// No description provided for @authErrorCancelled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход не завершён. Попробуйте выбрать аккаунт ещё раз.'**
+  String get authErrorCancelled;
+
+  /// No description provided for @authErrorProvider.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось получить данные для входа от выбранного сервиса.'**
+  String get authErrorProvider;
+
+  /// No description provided for @authErrorNetwork.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось связаться с сервером. Проверьте подключение к интернету.'**
+  String get authErrorNetwork;
+
+  /// No description provided for @authErrorTimeout.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сервер не ответил вовремя. Попробуйте ещё раз.'**
+  String get authErrorTimeout;
+
+  /// No description provided for @authErrorAppKey.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сервер отклонил эту сборку приложения. Обновите приложение из магазина.'**
+  String get authErrorAppKey;
+
+  /// No description provided for @authErrorCredential.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сервер не подтвердил вход. Попробуйте другой аккаунт или способ входа.'**
+  String get authErrorCredential;
+
+  /// No description provided for @authErrorServer.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось завершить вход на сервере. Попробуйте позже.'**
+  String get authErrorServer;
+
+  /// No description provided for @authErrorResponse.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось принять сессию входа. Проверьте дату и время на телефоне.'**
+  String get authErrorResponse;
+
+  /// No description provided for @authSessionTemporary.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход выполнен. Телефон не смог сохранить сессию: после перезапуска потребуется войти снова.'**
+  String get authSessionTemporary;
+
+  /// No description provided for @authDiagnosticCode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код для поддержки: {code}'**
+  String authDiagnosticCode(String code);
 
   /// No description provided for @authTitle.
   ///
@@ -2281,6 +2353,192 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Разворот'**
   String get gameUturn;
+
+  /// No description provided for @purchaseVerificationPending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Магазин сообщил о покупке, но доступ пока не подтверждён. Для повторной проверки нажмите «Восстановить» при доступном интернете.'**
+  String get purchaseVerificationPending;
+
+  /// No description provided for @notifAdminChannelName.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сообщения приложения'**
+  String get notifAdminChannelName;
+
+  /// No description provided for @noticeAcknowledge.
+  ///
+  /// In ru, this message translates to:
+  /// **'Понятно'**
+  String get noticeAcknowledge;
+
+  /// No description provided for @noticeOpen.
+  ///
+  /// In ru, this message translates to:
+  /// **'Открыть'**
+  String get noticeOpen;
+
+  /// No description provided for @pushMessagesSetting.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новости приложения'**
+  String get pushMessagesSetting;
+
+  /// No description provided for @pushMessagesHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пуши об обновлениях и важных событиях'**
+  String get pushMessagesHint;
+
+  /// No description provided for @gameKeyboardHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'↑ / W — газ · ↓ / S / пробел — тормоз · ← → / A D — повороты'**
+  String get gameKeyboardHint;
+
+  /// No description provided for @webQuarter.
+  ///
+  /// In ru, this message translates to:
+  /// **'3 месяца'**
+  String get webQuarter;
+
+  /// No description provided for @webPaymentSoon.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата скоро появится'**
+  String get webPaymentSoon;
+
+  /// No description provided for @webPaymentInfo.
+  ///
+  /// In ru, this message translates to:
+  /// **'Доступ на 3 месяца без автопродления. Оплата на сайте пока не подключена.'**
+  String get webPaymentInfo;
+
+  /// No description provided for @webWeek.
+  ///
+  /// In ru, this message translates to:
+  /// **'1 неделя'**
+  String get webWeek;
+
+  /// No description provided for @webPayButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплатить через СБП'**
+  String get webPayButton;
+
+  /// No description provided for @webPayInfo.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разовая оплата без автопродления. Премиум откроется и в приложении на телефоне — войдите в нём тем же аккаунтом.'**
+  String get webPayInfo;
+
+  /// No description provided for @webPayTariffs.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тарифы'**
+  String get webPayTariffs;
+
+  /// No description provided for @webPayEmailTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата через СБП'**
+  String get webPayEmailTitle;
+
+  /// No description provided for @webPayEmailBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплату через СБП подключаем в ближайшие дни. Оставьте почту — напишем, как только она заработает. На неё же придёт чек.'**
+  String get webPayEmailBody;
+
+  /// No description provided for @webPayEmailHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Электронная почта'**
+  String get webPayEmailHint;
+
+  /// No description provided for @webPayEmailInvalid.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверьте адрес почты'**
+  String get webPayEmailInvalid;
+
+  /// No description provided for @webPayNotify.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сообщить мне'**
+  String get webPayNotify;
+
+  /// No description provided for @webPayFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось отправить, попробуйте ещё раз'**
+  String get webPayFailed;
+
+  /// No description provided for @webPaySaved.
+  ///
+  /// In ru, this message translates to:
+  /// **'Спасибо! Напишем на {email}, как только оплата заработает'**
+  String webPaySaved(String email);
+
+  /// No description provided for @premiumOneTimeInfo.
+  ///
+  /// In ru, this message translates to:
+  /// **'Доступ действует до {date} и не продлевается автоматически.'**
+  String premiumOneTimeInfo(String date);
+
+  /// No description provided for @appUpdateTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вышло обновление'**
+  String get appUpdateTitle;
+
+  /// No description provided for @appUpdateBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'В новой версии — улучшения и исправления. Обновите приложение, чтобы пользоваться ими.'**
+  String get appUpdateBody;
+
+  /// No description provided for @appUpdateVersion.
+  ///
+  /// In ru, this message translates to:
+  /// **'Версия {version}'**
+  String appUpdateVersion(String version);
+
+  /// No description provided for @appUpdateAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обновить'**
+  String get appUpdateAction;
+
+  /// No description provided for @appUpdateLater.
+  ///
+  /// In ru, this message translates to:
+  /// **'Позже'**
+  String get appUpdateLater;
+
+  /// No description provided for @appUpdateReadyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обновление готово'**
+  String get appUpdateReadyTitle;
+
+  /// No description provided for @appUpdateReadyBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новая версия уже скачана. Перезапустите приложение, чтобы установить её.'**
+  String get appUpdateReadyBody;
+
+  /// No description provided for @appUpdateRestart.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перезапустить'**
+  String get appUpdateRestart;
+
+  /// No description provided for @appUpdateOpenFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось открыть обновление. Попробуйте позже.'**
+  String get appUpdateOpenFailed;
 }
 
 class _AppLocalizationsDelegate

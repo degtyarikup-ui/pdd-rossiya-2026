@@ -1,3 +1,4 @@
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/config/country_config.dart';
@@ -9,6 +10,7 @@ import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
+import 'package:pdd_app/presentation/widgets/web_payment_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PremiumPaywallSheet extends StatefulWidget {
@@ -36,7 +38,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   void initState() {
     super.initState();
     IapService.instance.addListener(_onIapChanged);
-    IapService.instance.loadProducts();
+    if (!kIsWeb) IapService.instance.loadProducts();
   }
 
   @override
@@ -102,6 +104,27 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     }
   }
 
+  /// Веб: оплата на сайте (СБП). Пока платёжка не подключена — вход
+  /// (покупка привязывается к аккаунту и потом работает в приложении на
+  /// любом телефоне) и почта для письма о запуске оплаты и чека.
+  Future<void> _handleWebPayment() async {
+    HapticFeedbackHelper.select();
+    if (!AuthService.instance.hasServerSession) {
+      final signedIn = await AuthModalSheet.show(context);
+      if (!mounted || signedIn != true) return;
+    }
+    final email = await showWebPaymentDialog(
+      context: context,
+      tier: _selectedTier,
+    );
+    if (!mounted || email == null) return;
+    AppToast.show(
+      context,
+      appL10n.webPaySaved(email),
+      type: AppToastType.success,
+    );
+  }
+
   Future<void> _handleRestore() async {
     HapticFeedbackHelper.tap();
     setState(() => _isLoading = true);
@@ -142,7 +165,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   }
 
   String? _getOldPrice(PremiumTier tier) {
-    if (tier != PremiumTier.threeMonths) return null;
+    if (kIsWeb || tier != PremiumTier.threeMonths) return null;
     final price = _getPrice(tier);
     if (price.contains(r'$')) {
       return r'5,90 $';
@@ -158,6 +181,8 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isAuth = AuthService.instance.isAuthenticated;
     final isIOS = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+    // Оплата на сайте есть не у всех стран; без неё веб-пейвол — «скоро».
+    final webPay = kIsWeb && CountryConfig.current.hasWebPayments;
 
     final isPremium = PremiumService.instance.isPremium;
     final remaining = PremiumService.instance.remainingFreeCards;
@@ -301,7 +326,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
               // 5. Pricing Tiers
               _buildTierCard(
                 tier: PremiumTier.threeMonths,
-                title: '3 месяца',
+                title: kIsWeb ? appL10n.webQuarter : '3 месяца',
                 price: _getPrice(PremiumTier.threeMonths),
                 oldPrice: _getOldPrice(PremiumTier.threeMonths),
                 badge: 'ХИТ',
@@ -309,22 +334,28 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                 surfaceColor: surfaceColor,
                 colors: colors,
               ),
-              const SizedBox(height: 8),
-              _buildTierCard(
-                tier: PremiumTier.weekly,
-                title: '1 неделя',
-                price: _getPrice(PremiumTier.weekly),
-                accentColor: accentColor,
-                surfaceColor: surfaceColor,
-                colors: colors,
-              ),
+              if (!kIsWeb || webPay) ...[
+                const SizedBox(height: 8),
+                _buildTierCard(
+                  tier: PremiumTier.weekly,
+                  title: kIsWeb ? appL10n.webWeek : '1 неделя',
+                  price: _getPrice(PremiumTier.weekly),
+                  accentColor: accentColor,
+                  surfaceColor: surfaceColor,
+                  colors: colors,
+                ),
+              ],
               const SizedBox(height: 20),
 
               // 6. Action Button (исправлено обрезание текста)
               SizedBox(
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handlePurchase,
+                  onPressed: _isLoading || (kIsWeb && !webPay)
+                      ? null
+                      : webPay
+                      ? _handleWebPayment
+                      : _handlePurchase,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accentColor,
                     foregroundColor: Colors.white,
@@ -346,11 +377,15 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                             color: Colors.white,
                           ),
                         )
-                      : const Center(
+                      : Center(
                           child: Text(
-                            'Оформить доступ',
+                            webPay
+                                ? appL10n.webPayButton
+                                : kIsWeb
+                                ? appL10n.webPaymentSoon
+                                : 'Оформить доступ',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               height: 1.15,
@@ -364,7 +399,11 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
 
               // 7. Store Compliance Disclaimer
               Text(
-                isIOS
+                webPay
+                    ? appL10n.webPayInfo
+                    : kIsWeb
+                    ? appL10n.webPaymentInfo
+                    : isIOS
                     ? 'Подписка продлевается автоматически, пока не будет отключена в настройках Apple ID не позднее 24 часов до окончания периода.'
                     : 'Подписка продлевается автоматически, пока не будет отменена в Google Play в разделе «Платежи и подписки».',
                 textAlign: TextAlign.center,
@@ -395,6 +434,29 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                           fontSize: 11.5,
                           color: accentColor,
                           fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '•',
+                      style: TextStyle(
+                        color: colors.secondaryText,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                  if (webPay) ...[
+                    GestureDetector(
+                      onTap: () => launchUrl(
+                        Uri.parse(CountryConfig.current.tariffsUrl),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                      child: Text(
+                        appL10n.webPayTariffs,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: colors.secondaryText,
+                          decoration: TextDecoration.underline,
                         ),
                       ),
                     ),
@@ -452,17 +514,18 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                       ),
                     ),
                   ],
-                  GestureDetector(
-                    onTap: _handleRestore,
-                    child: Text(
-                      'Восстановить',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: colors.secondaryText,
-                        decoration: TextDecoration.underline,
+                  if (!kIsWeb)
+                    GestureDetector(
+                      onTap: _handleRestore,
+                      child: Text(
+                        'Восстановить',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: colors.secondaryText,
+                          decoration: TextDecoration.underline,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ],

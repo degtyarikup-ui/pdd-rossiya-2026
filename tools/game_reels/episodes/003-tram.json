@@ -1,0 +1,30 @@
+{
+  "id": "003-tram",
+  "country": "ru",
+  "ticket": 37,
+  "questionNumber": 15,
+  "sceneId": "ticket_37_15",
+  "choicesSpeech": "Ты первый? Или пропустишь трамвай?",
+  "answerSpeech": "Сначала трамвай! Вы оба на главной. Даже при повороте налево у него преимущество.",
+  "rule": "13.9",
+  "ruleSource": "https://www.mos.ru/upload/content/files/c5b2402bbee83c361271706a02447d37/1090-PPRFot23101993_Opravilahdoroj_dvij%28sizmna16072025deistvs26072025po28022029%29.pdf",
+  "motion": {
+    "playerDelay": 2.35,
+    "playerDuration": 2.7,
+    "npcDelay": 0,
+    "npcDuration": 3.7,
+    "npcSound": "tram"
+  },
+  "camera": {
+    "closeX": 0,
+    "closeY": 7,
+    "closeBehind": 18,
+    "closeTargetX": 1.5,
+    "closeTargetY": 2,
+    "highX": -4,
+    "highSize": 75,
+    "highY": 62,
+    "highFov": 42,
+    "highTargetZ": 1
+  }
+}

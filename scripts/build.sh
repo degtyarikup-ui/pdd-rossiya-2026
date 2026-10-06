@@ -87,9 +87,21 @@ fi
 # Дополнительные параметры сборки через окружение.
 # GAME_DEBUG / NOTIF_TEST / SCREEN не включают отладку в release.
 EXTRA_DEFINES_ARR=()
+if [[ "$TARGET" == "web" ]]; then
+  # Public OAuth client ID (not a client secret). Default is in AuthService.
+  if [[ -n "${GOOGLE_WEB_CLIENT_ID:-}" ]]; then
+    EXTRA_DEFINES_ARR+=(--dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID")
+  fi
+fi
+# Firebase client IDs are configured per country; sender private keys are never
+# included in the application. Builds without this optional file keep pushes off.
+FIREBASE_DEFINES="secrets/firebase/$COUNTRY.defines.json"
+if [[ "$TARGET" != "web" && -f "$FIREBASE_DEFINES" ]]; then
+  EXTRA_DEFINES_ARR+=(--dart-define-from-file="$FIREBASE_DEFINES")
+fi
 if [[ -n "${EXTRA_DEFINES:-}" ]]; then
   # shellcheck disable=SC2206
-  EXTRA_DEFINES_ARR=($EXTRA_DEFINES)
+  EXTRA_DEFINES_ARR+=($EXTRA_DEFINES)
 fi
 
 # Контент страны обязан лежать внутри артефакта. Проверка дешёвая, а цена
