@@ -13,7 +13,7 @@ const { chromium } = require('playwright');
     await page.waitForFunction(()=>typeof lab!=='undefined' && current?.id==='road_14_2');
     const catalog=await page.evaluate(()=>items.filter(i=>i.reviewed).map(i=>({id:i.id,kind:i.kind,
       checks:checks(i).slice(0,3),source:original(i)?.id})));
-    assert.equal(catalog.filter(i=>i.kind!=='event').length,166);
+    assert.equal(catalog.filter(i=>i.kind!=='event').length,165);
     assert.equal(catalog.filter(i=>i.kind==='event').length,7);
     assert.equal(new Set(catalog.map(i=>i.id)).size,catalog.length);
     for(const i of catalog.filter(i=>i.kind!=='event')) {
@@ -53,6 +53,6 @@ const { chromium } = require('playwright');
     assert.equal(surface.colors.length,1,'wet asphalt colour must agree across segment joins');
     assert.ok(surface.upward,'ribbon normals must point up');
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({questions:166,events:7,rendered:catalog.length,sourceMatched:true,phonePreview:true,roadJoin:true}));
+    console.log(JSON.stringify({questions:165,events:7,rendered:catalog.length,sourceMatched:true,phonePreview:true,roadJoin:true}));
   } finally { await browser.close(); }
 })().catch(e=>{console.error(e);process.exitCode=1;});

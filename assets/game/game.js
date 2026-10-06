@@ -109,6 +109,7 @@
   // in free driving, the chase view behind the car (perspective).
   let orthoCamera, chaseCamera;
   let dirLight, ambientLight, sunTarget;
+  const SUN_OFFSET = new THREE.Vector3(12, 70, -7);
   let playerCarGroup, playerWheels = [];
   let rainParticles = null;
   let terrainMesh = null;
@@ -5752,8 +5753,11 @@
     if(questionCameraOpen()&&z!==state.userZoom)state.questionCameraInspecting=true;
     state.userZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z)); return state.userZoom;
   }
-  window.setGameZoom = (z) => setUserZoom(Number(z) || 1);
-  window.changeGameZoom = (factor) => setUserZoom(state.userZoom * (Number(factor) || 1));
+  // Manual camera control is off: the camera frames each question by itself
+  // (a fixed, readable view; no stray zoom/pan making the scene unclear).
+  const MANUAL_CAMERA = false;
+  window.setGameZoom = (z) => MANUAL_CAMERA ? setUserZoom(Number(z) || 1) : state.userZoom;
+  window.changeGameZoom = (factor) => MANUAL_CAMERA ? setUserZoom(state.userZoom * (Number(factor) || 1)) : state.userZoom;
 
   function setupZoomControls() {
     const el = renderer.domElement;
@@ -5844,7 +5848,7 @@
 
   function setupTouchControls() {
     const el = renderer.domElement;
-    setupZoomControls();
+    if (MANUAL_CAMERA) setupZoomControls(); else state.pinching = () => false;
 
     // Acceleration on press
     el.addEventListener('touchstart', (e) => {
@@ -7496,6 +7500,12 @@
     child.position.x*=-1;child.rotation.y*=-1;
     child.traverse(o=>{
       if(o.isMesh && o.material?.isMeshLambertMaterial)o.receiveShadow=true;
+      // Low pieces (kerbs, paving, planters' rims, markings) cast no shadow
+      // anyone could see: drop them from the shadow pass.
+      if(o.isMesh && o.castShadow && o.geometry) {
+        if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
+        const b=o.geometry.boundingBox;if((b.max.y-b.min.y)*Math.abs(o.scale.y)<.45 && !o.userData.actor)o.castShadow=false;
+      }
       if(!o.userData.actor && o.material?.color?.getHex()===BRAND.sidewalk)o.userData.surface='sidewalk';
       if(!o.userData.actor && o.material?.color?.getHex()===BRAND.asphalt && o.geometry?.type==='PlaneGeometry')o.userData.surface='road';
       if(o.userData.surface==='sidewalk'){o.material.color.setHex(season().sidewalk);o.material.userData.seasonal='sidewalk';}
@@ -7713,7 +7723,7 @@
           added.forEach(registerRoadObject);
           added.forEach(o=>{const b=new THREE.Box3().setFromObject(o);if(!b.isEmpty() && b.max.y>.3)o.userData.sceneryObject=true;});
           settleStreamedScenery(seg,added);clearSceneryOffRoad(added);
-          window.PDD_ROADS.invalidate();state.weatherDirty=true;
+          window.PDD_ROADS.invalidate();added.forEach(weatherSurfaces);
         }
         yield;
       }
@@ -8106,7 +8116,8 @@
     );
     islandLawn.material.userData.seasonal = 'ground';
     islandLawn.rotation.x = -Math.PI / 2;
-    islandLawn.position.set(0, 0.205, centerZ);
+    // 2 cm above the kerb top (5 mm flickered from the game camera's distance).
+    islandLawn.position.set(0, 0.22, centerZ);
     islandLawn.receiveShadow = true;
     seg.add(islandLawn);
 
@@ -9970,7 +9981,7 @@
         // Short strolls with long pauses, a flick of the tail while sitting.
         const cycle = a.time * 0.09 + a.phase, moving = Math.abs(Math.cos(cycle)) > 0.55;
         if (moving) a.mesh.position.z = a.center + Math.sin(cycle) * 1.6;
-        a.mesh.rotation.y = Math.cos(cycle) >= 0 ? 0 : Math.PI;
+        turnToward(a.mesh, Math.cos(cycle) >= 0 ? 0 : Math.PI, dt, 3);
         a.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = moving ? Math.sin(a.time * 9 + i * Math.PI / 2) * 0.5 : 0; });
         a.mesh.userData.tail.rotation.z = Math.sin(a.time * 1.7) * 0.35;
         return;
@@ -9990,8 +10001,11 @@
       const targetX = Math.sign(a.mesh.position.x || 1) * laneX;
       a.mesh.position.x += (targetX - a.mesh.position.x) * (bayed ? 1 : Math.min(1, dt * 3));
       const direction = Math.cos(phase);
-      a.mesh.rotation.y = direction >= 0 ? 0 : Math.PI;
-      a.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(a.time * 5 + i * Math.PI) * 0.32 * Math.abs(direction); });
+      // Turning round where the stroll reverses: a gradual turn on the spot
+      // (feet stepping), never an instant flip.
+      const turning = turnToward(a.mesh, direction >= 0 ? 0 : Math.PI, dt, 2.6);
+      const stride = Math.max(Math.abs(direction), turning ? 0.35 : 0);
+      a.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(a.time * 5 + i * Math.PI) * 0.32 * stride; });
       if (a.mesh.userData.dog) a.mesh.userData.dog.userData.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(a.time * 9 + i * Math.PI / 2) * 0.55 * Math.abs(direction); });
       a.mesh.userData.arms.forEach((arm, i) => { arm.rotation.x = Math.sin(a.time * 5 + i * Math.PI) * -0.2 * Math.abs(direction); });
     });
@@ -10103,6 +10117,15 @@
     });
   }
 
+  // Eases a yaw towards a target at `rate` rad/s; true while still turning.
+  function turnToward(mesh, target, dt, rate) {
+    const diff = Math.atan2(Math.sin(target - mesh.rotation.y), Math.cos(target - mesh.rotation.y));
+    if (Math.abs(diff) < 1e-3) { mesh.rotation.y = target; return false; }
+    // Half turns always go the same way round (no left/right dithering).
+    const step = Math.min(Math.abs(diff), rate * dt) * (Math.abs(Math.abs(diff) - Math.PI) < 1e-3 ? 1 : Math.sign(diff));
+    mesh.rotation.y += step;
+    return true;
+  }
   function startActorFade(a) {
     a.fade = 1;
     a.fadeMaterials = [];
@@ -12097,27 +12120,8 @@
       const shelter=createBusShelter();shelter.position.set(sc.busBaySide*10,0,z+17);shelter.rotation.y=sc.busBaySide>0?Math.PI:0;group.add(shelter);
     }
     if(sc.busStopMarking) {
-      const bay=ev.busBay=replaceCorridorStrip(z+2,z+34,g=>{
-        const depth=q=>q<z+10?THREE.MathUtils.clamp((q-z-3)/7,0,1):q>z+26?THREE.MathUtils.clamp((z+33-q)/7,0,1):1;
-        const left=q=>-4.2-depth(q);
-        const road=addRibbon(g,z+2,z+34,left,()=>4.2,.02,new THREE.MeshLambertMaterial({color:BRAND.asphalt}));road.userData.surface='road';
-        road.userData.containsRoad=p=>p.z>=z+2&&p.z<=z+34&&p.x>=left(p.z)&&p.x<=4.2;
-        const zs=[z+2,z+3,z+10,z+26,z+33,z+34];
-        const pavement=extrudedStripZ(zs,q=>left(q)-3.2,left,.18,new THREE.MeshLambertMaterial({color:season().sidewalk}));pavement.userData.surface='sidewalk';g.add(pavement);
-        roadSurface(g,3.2,32-SEAM,5.8,z+18,true);
-        for(let q=z+3;q<z+33;q+=5)addFlatPlane(g,.13,2,0,q,.03,paint);
-        // Edge lines go on as on the road: solid opposite, broken along the stop.
-        addEdgeLineZ(g,z+2-SEAM,z+34+SEAM,()=>4.2,1,paint);
-        addEdgeLineZ(g,z+2-SEAM,z+3.5,()=>-4.2,-1,paint);addEdgeLineZ(g,z+32.5,z+34+SEAM,()=>-4.2,-1,paint);
-        for(let q=z+4.5;q<z+31.5;q+=3)addFlatPlane(g,.15,1.5,-3.95,q+.75,.028,paint);
-        const yellow=new THREE.MeshBasicMaterial({color:0xF2C635});
-        const points=[];for(let q=z+6;q<=z+30;q+=2)points.push(new THREE.Vector3(left(q)+(points.length%2?1.6:.25),.035,q));
-        for(let i=1;i<points.length;i++) {
-          const line=new THREE.LineCurve3(points[i-1],points[i]);
-          const stroke=new THREE.Mesh(new THREE.TubeGeometry(line,1,.065,4,false),yellow);stroke.userData.busStopZigzag=true;g.add(stroke);
-        }
-      },false);
-      bay.userData.busStopBay=true;
+      // The same rounded pocket as an ordinary bus stop, with marking 1.17.
+      ev.busBay=buildRoundedBusBay(z+17,-1,2.8,true);
     }
   }
 
@@ -12424,7 +12428,7 @@
 
   // A bus bay on the right with a shelter and sign 5.16: a bus pulls in,
   // waits a few seconds and merges back. No question, no gameplay rule.
-  function buildRoundedBusBay(z, side, depth=2.8) {
+  function buildRoundedBusBay(z, side, depth=2.8, zigzag=false) {
     const profile=q=>depth*(1-THREE.MathUtils.smoothstep(Math.abs(q-z),11,20));
     const bay=replaceCorridorStrip(z-26,z+26,g=>{
       const low=q=>-4.2-(side<0?profile(q):0),high=q=>4.2+(side>0?profile(q):0);
@@ -12442,6 +12446,17 @@
       addEdgeLineZ(g,z-26-SEAM,z+26+SEAM,()=>-side*4.2,-side,paint);
       addEdgeLineZ(g,z-26-SEAM,z-19.5,()=>side*4.2,side,paint);addEdgeLineZ(g,z+19.5,z+26+SEAM,()=>side*4.2,side,paint);
       for(let q=z-19;q<z+19;q+=3)addFlatPlane(g,.15,1.5,side*3.95,q,.028,paint);
+      // Marking 1.17 (yellow zigzag) of a route-vehicle stop, inside the
+      // pocket between the broken line and the kerb.
+      if(zigzag) {
+        const pts=[];for(let q=z-12;q<=z+12;q+=2)pts.push([side*(pts.length%2?4.2+profile(q)-.35:4.3),q]);
+        const quads=[];
+        for(let i=1;i<pts.length;i++){
+          const [ax,az]=pts[i-1],[bx,bz]=pts[i],len=Math.hypot(bx-ax,bz-az),nx=-(bz-az)/len*.06,nz=(bx-ax)/len*.06;
+          quads.push([[ax-nx,az-nz],[bx-nx,bz-nz],[bx+nx,bz+nz],[ax+nx,az+nz]]);
+        }
+        const zz=addBakedQuads(g,quads,.03,new THREE.MeshBasicMaterial({color:0xF2C635}));zz.userData.busStopZigzag=true;zz.userData.roadMarking=true;
+      }
     });
     bay.userData.busStopBay=true;bay.userData.baySide=side;return bay;
   }
@@ -13278,7 +13293,14 @@
     const snow = sn.precipitation === 'snow';
     weatherFx.lines.material.color.setHex(snow ? 0xFFFFFF : 0xDCE6F0);
     weatherFx.lines.material.opacity = rain * (snow ? 0.85 : 0.55);
-    scene.traverse(o => {
+    weatherSurfaces(scene);
+  }
+  // Wet roads, puddles and paving under `root` (the whole scene, or just
+  // the objects a streamed scenery step has added).
+  function weatherSurfaces(root) {
+    if (!weatherFx) return;
+    const rain = state.rain || 0, sn = season(), snow = sn.precipitation === 'snow';
+    root.traverse(o => {
       if (o.userData.puddle) o.material.opacity = rain * (snow ? 0.35 : 0.9);
       else if ((o.userData.surface === 'road' || o.material?.userData.asphalt) && o.material?.color) o.material.color.setHex(BRAND.asphalt).lerp(new THREE.Color(0x1F2228), rain * 0.8);
       // Wet paving darkens too (less than asphalt); snow keeps it light.
@@ -13297,7 +13319,13 @@
     const before = [state.rain || 0, state.overcast || 0];
     state.rain = before[0] + (targetRain - before[0]) * k;
     state.overcast = before[1] + (targetOvercast - before[1]) * k;
-    if (Math.abs(state.rain - before[0]) + Math.abs(state.overcast - before[1]) > 0.0005 || state.weatherDirty) { applyWeather(); state.weatherDirty = false; }
+    // Recolouring walks the whole scene: during a transition it runs once
+    // per 1.5 % of change (a few times a second), not on every frame.
+    const applied = state.weatherApplied || [-1, -1];
+    if (Math.abs(state.rain - applied[0]) + Math.abs(state.overcast - applied[1]) > 0.015 || state.weatherDirty ||
+      ((state.rain === targetRain || Math.abs(state.rain - targetRain) < 1e-3) && Math.abs(state.rain - applied[0]) > 1e-4)) {
+      applyWeather(); state.weatherDirty = false; state.weatherApplied = [state.rain, state.overcast];
+    }
     if (state.rain < 0.02) { if (weatherFx) weatherFx.lines.visible = false; return; }
     const fx = ensureWeatherFx();
     fx.lines.visible = true;
@@ -13996,9 +14024,12 @@
   // the lowest step the shadow map is refreshed every other frame.
   var quality = { sum: 0, frames: 0, max: 1, ratio: 1, min: 0.8, frame: 0 };
   function adaptQuality(elapsed) {
-    if (!quality.frames && !quality.sum) { quality.max = quality.ratio = renderer.getPixelRatio(); quality.min = Math.min(quality.max, state.lowEnd ? 0.75 : 0.9); }
-    quality.frame++;
-    renderer.shadowMap.autoUpdate = quality.ratio > quality.min + 0.01 || quality.frame % 2 === 0;
+    if (!quality.frames && !quality.sum) { quality.max = quality.ratio = renderer.getPixelRatio(); quality.min = Math.min(quality.max, state.lowEnd ? 1 : 1.3); }
+    // A question is a still scene to be read: always at full sharpness.
+    const reading = !!state.isAtSituation || !!state.resolution;
+    const want = reading ? quality.max : quality.ratio;
+    if (Math.abs(renderer.getPixelRatio() - want) > 0.01) renderer.setPixelRatio(want);
+    if (reading) { quality.sum = quality.frames = 0; return; }
     if (elapsed <= 0 || elapsed > 0.25) return; // pauses and resumes are not load
     quality.sum += elapsed; quality.frames++;
     if (quality.sum < 1.5) return;
@@ -14775,7 +14806,10 @@
       it.guide.visible = !it.situation.hideGuide && it === state.activeIntersection && Math.abs(playerCarGroup.position.z - it.centerZ) < 55;
     });
     state.orbitYaw = state.attract ? (state.orbitYaw || 0) : (state.orbitYaw || 0) * Math.exp(-4 * dt);
-    let desiredYaw = playerCarGroup.rotation.y + (state.orbitYaw || 0);
+    // In a question the view is square to the road (the car may stand at a
+    // slight angle after a lane change; the scene must not look skewed).
+    let desiredYaw = question ? Math.round(playerCarGroup.rotation.y / (Math.PI / 2)) * (Math.PI / 2)
+      : playerCarGroup.rotation.y + (state.orbitYaw || 0);
     let delta = Math.atan2(Math.sin(desiredYaw - cameraHeading), Math.cos(desiredYaw - cameraHeading));
     cameraHeading += delta * (1 - Math.exp(-3 * dt));
     const forward = new THREE.Vector3(Math.sin(cameraHeading), 0, Math.cos(cameraHeading));
@@ -14942,8 +14976,17 @@
         part.material.depthWrite = !faded;
       });
     });
-    sunTarget.position.copy(cameraLook);
-    dirLight.position.copy(cameraLook).add(new THREE.Vector3(12, 70, -7));
+    // The shadow frame moves in whole shadow-map texels (in the light's own
+    // axes): otherwise every step re-samples the car's shadow and its edge
+    // crawls and flickers while driving.
+    const sunDir = SUN_OFFSET.clone().normalize();
+    const sunRight = new THREE.Vector3(0, 1, 0).cross(sunDir).normalize(), sunUp = sunDir.clone().cross(sunRight);
+    const texel = (dirLight.shadow.camera.right - dirLight.shadow.camera.left) / dirLight.shadow.mapSize.width;
+    const snap = v => Math.round(v / texel) * texel;
+    const sunFocus = sunRight.clone().multiplyScalar(snap(cameraLook.dot(sunRight)))
+      .addScaledVector(sunUp, snap(cameraLook.dot(sunUp))).addScaledVector(sunDir, cameraLook.dot(sunDir));
+    sunTarget.position.copy(sunFocus);
+    dirLight.position.copy(sunFocus).add(SUN_OFFSET);
   }
 
   function onWindowResize() {
