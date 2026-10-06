@@ -14970,7 +14970,12 @@
       }
       const minX = Math.min(-6, ...boxes.map(b => b.min.x)) - 1;
       const maxX = Math.max(6, ...boxes.map(b => b.max.x)) + 1;
-      if (ev.junctionZ !== undefined && ev.junctionZ < ev.stopZ + 65) {
+      // A question about the yield-ahead triangle (1.20, 6_5) is about the
+      // marking by the car: the junction 40 m on is not framed.
+      if (ev.scene.yieldMarkingZ !== undefined) {
+        const mz = ev.stopZ + ev.scene.yieldMarkingZ;
+        boxes.push(new THREE.Box3(new THREE.Vector3(-4.2, 0, mz - 3), new THREE.Vector3(4.2, 0, mz + 4)));
+      } else if (ev.junctionZ !== undefined && ev.junctionZ < ev.stopZ + 65) {
         boxes.push(new THREE.Box3(new THREE.Vector3(-14, 0, ev.junctionZ - 7), new THREE.Vector3(14, 0, ev.junctionZ + 7)));
       }
       // Tight on what the question is about (a car and a sign next to it
