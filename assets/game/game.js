@@ -5434,7 +5434,8 @@
     // Scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color(BRAND.asphaltMarking);
-    scene.fog = new THREE.FogExp2(BRAND.asphaltMarking, 0.007);
+    // No fog: the whole frame stays crisp in every weather.
+    scene.fog = null;
 
     // Orthographic Camera looking straight forward/up
     const aspect = width / height;
@@ -6010,8 +6011,9 @@
   // Traffic and parked cars use the same detailed bodies as the player's
   // cars (hatchback, saloon or estate), in the scenario's colour.
   const NPC_MODELS = ['sedan', 'hatch', 'wagon', 'sedan'];
-  function createNpcCar(color = 0x2BC280) {
-    const id = NPC_MODELS[Math.floor(Math.random() * NPC_MODELS.length)];
+  // A scene that needs a known size (a parked car beside a turn) names the model.
+  function createNpcCar(color = 0x2BC280, model = null) {
+    const id = model || NPC_MODELS[Math.floor(Math.random() * NPC_MODELS.length)];
     return window.PDD_VEHICLES.create(id, color);
   }
 
@@ -6375,14 +6377,29 @@
   }
 
 
+  // A bus stop shelter, open towards +X (the kerb): four posts, a roof with
+  // a fascia and a route plate, a framed glass back and side panels, a
+  // slatted bench and an advertising light box. Same 2.2 x 4.5 m footprint.
   function createBusShelter() {
     const g=new THREE.Group();g.userData.busShelter=true;
-    const glass=new THREE.MeshLambertMaterial({color:0xB3CDD5,transparent:true,opacity:.6,side:THREE.DoubleSide});
-    for(const z of [-2,2])modelBox(g,[.08,2.7,.08],0x4D6672,-.9,1.35,z);
-    modelBox(g,[2.2,.16,4.5],0x496E7E,0,2.75,0);
-    const back=new THREE.Mesh(new THREE.BoxGeometry(.04,2.3,4),glass);back.position.set(-.95,1.35,0);g.add(back);
-    modelBox(g,[.55,.12,3.3],0xB08B5F,-.45,.65,0);
-    for(const z of [-1.3,1.3])modelBox(g,[.08,.65,.08],0x4D6672,-.45,.325,z);
+    const frame=new THREE.Group(),steel=0x46525C;
+    for(const x of [-.92,.85])for(const z of [-2.05,2.05])modelBox(frame,[.09,2.62,.09],steel,x,1.31,z);
+    modelBox(frame,[2.3,.12,4.6],0x3F4A53,0,2.68,0);                    // roof
+    modelBox(frame,[.08,.26,4.6],0x2F6F9F,1.13,2.6,0);                  // fascia
+    modelBox(frame,[.05,.34,.7],0xF4F6F8,1.18,2.6,-1.5);                // route plate
+    for(const y of [.32,2.46])modelBox(frame,[.06,.06,4.1],steel,-.92,y,0);   // back rails
+    for(const z of [-2.05,2.05])for(const y of [.32,2.46])modelBox(frame,[1.0,.06,.06],steel,-.42,y,z); // side rails
+    for(const x of [-.62,-.42,-.22])modelBox(frame,[.14,.05,3.1],0xA27B52,x+.12,.62,0);       // bench slats
+    for(const z of [-1.3,1.3])modelBox(frame,[.5,.6,.07],steel,-.3,.3,z);                      // bench legs
+    modelBox(frame,[.16,1.9,1.15],0x2F3A44,-.6,1.32,1.45);              // light box
+    mergeModelParts(frame);g.add(frame);
+    const glass=new THREE.MeshLambertMaterial({color:0xB3CDD5,transparent:true,opacity:.5,side:THREE.DoubleSide});
+    const back=new THREE.Mesh(new THREE.BoxGeometry(.03,2.1,4.0),glass);back.position.set(-.93,1.39,0);g.add(back);
+    for(const z of [-2.05,2.05]){const side=new THREE.Mesh(new THREE.BoxGeometry(.95,2.1,.03),glass);side.position.set(-.42,1.39,z);g.add(side);}
+    // The light box shows the same invented advert as the roundabout board.
+    if(!billboardTexture)disposeSegment(createIslandBillboard());
+    const ad=new THREE.Mesh(new THREE.PlaneGeometry(1.0,1.7),new THREE.MeshBasicMaterial({map:billboardTexture}));
+    ad.position.set(-.515,1.32,1.45);ad.rotation.y=Math.PI/2;g.add(ad);
     return g;
   }
 
@@ -6613,6 +6630,13 @@
       mergeModelParts(arm); ped.add(arm); ped.userData.arms.push(arm);
     });
     modelBox(ped, [0.42, 0.58, 0.26], color, 0, 0.92, 0);
+    // Clothing detail within the same outline: belt, collar, zip, neck, eyes.
+    const shade = k => new THREE.Color(color).multiplyScalar(k).getHex();
+    modelBox(ped, [0.43, 0.06, 0.27], 0x2B2F33, 0, 0.66, 0);
+    modelBox(ped, [0.3, 0.06, 0.24], shade(0.75), 0, 1.19, 0.01);
+    modelBox(ped, [0.025, 0.46, 0.01], shade(0.6), 0, 0.93, 0.131);
+    modelPart(ped, new THREE.CylinderGeometry(0.07, 0.07, 0.08, 8), look.skin, 0, 1.23, 0);
+    for (const ex of [-0.06, 0.06]) modelBox(ped, [0.035, 0.035, 0.02], 0x2B2F33, ex, 1.38, 0.178);
     modelPart(ped, new THREE.SphereGeometry(0.18, 8, 6), look.skin, 0, 1.36, 0);
     const hat = variant % 3;
     modelPart(ped, new THREE.SphereGeometry(0.185, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2),
@@ -7759,7 +7783,7 @@
       actorMesh = createPedestrian(cfg.color);
       badgeHeight = 2.8;
     } else {
-      actorMesh = createNpcCar(cfg.color);
+      actorMesh = createNpcCar(cfg.color, cfg.model || null);
       badgeHeight = 2.4;
     }
     if (cfg.beacon === 'amber') {
@@ -11645,7 +11669,7 @@
     }
     if(sc.busBaySide) {
       ev.busBay=buildRoundedBusBay(z+17,sc.busBaySide,3.2);
-      const shelter=createBusShelter();shelter.position.set(sc.busBaySide*10,0,z+17);group.add(shelter);
+      const shelter=createBusShelter();shelter.position.set(sc.busBaySide*10,0,z+17);shelter.rotation.y=sc.busBaySide>0?Math.PI:0;group.add(shelter);
     }
     if(sc.busStopMarking) {
       const bay=ev.busBay=replaceCorridorStrip(z+2,z+34,g=>{
@@ -12003,11 +12027,7 @@
     const bay = buildRoundedBusBay(bayZ, -1);
     clearRoadside(bayZ);
     // Shelter behind the path, bench, and the stop sign at the head of the bay.
-    const dark = sceneryMat(0x3B4450), glassMat = new THREE.MeshLambertMaterial({ color: 0x9DB8C6, transparent: true, opacity: 0.55 });
-    const roof = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.1, 4.2), dark); roof.position.set(-10.4, 2.5, bayZ); group.add(roof);
-    [-1.9, 1.9].forEach(dz => { const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.5, 0.08), dark); post.position.set(-11.0, 1.25, bayZ + dz); group.add(post); });
-    const back = new THREE.Mesh(new THREE.BoxGeometry(0.05, 2.1, 4.0), glassMat); back.position.set(-11.15, 1.3, bayZ); group.add(back);
-    const bench = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 3), sceneryMat(0x987856)); bench.position.set(-10.6, 0.55, bayZ); group.add(bench);
+    const shelter = createBusShelter(); shelter.position.set(-10.3, 0, bayZ); group.add(shelter);
     // 5.16 stands at the entry to the pocket, on the road side of the path.
     addRoadSign(group, '5.16', bayZ - 17, 'right', null, -1.9);
     refreshRoadBounds();
@@ -12815,8 +12835,7 @@
     const sn = season();
     const clearSky = new THREE.Color(sn.sky), greySky = new THREE.Color(0xC3CACF), rainSky = new THREE.Color(0xAEB6BD);
     scene.background.copy(clearSky).lerp(greySky, overcast).lerp(rainSky, rain);
-    scene.fog.color.copy(scene.background);
-    scene.fog.density = state.fogDensity = 0.007 + overcast * 0.002 + rain * 0.004;
+    state.fogDensity = 0;
     ambientLight.intensity = THREE.MathUtils.lerp(sn.ambient, sn.ambient - 0.06, overcast);
     dirLight.intensity = THREE.MathUtils.lerp(sn.sunIntensity, 0.18, overcast);
     dirLight.color.setHex(sn.sun).lerp(new THREE.Color(0xDDE4EC), overcast);
@@ -13019,7 +13038,7 @@
     grad.addColorStop(1, '#' + skyLow.toString(16).padStart(6, '0'));
     sg.fillStyle = grad; sg.fillRect(0, 0, 4, 256);
     rs.background = new THREE.CanvasTexture(skyC);
-    rs.fog = new THREE.Fog(skyLow, 45, 120);
+
     rs.add(new THREE.AmbientLight(0xFFFFFF, sn.ambient));
     const sun = new THREE.DirectionalLight(sn.sun, sn.sunIntensity + 0.2); sun.position.set(-8, 14, -10); rs.add(sun);
     const mat = c => new THREE.MeshLambertMaterial({ color: c });
@@ -13108,8 +13127,8 @@
     // The garage: siding walls with corner trims, a gable roof in shingles
     // with eaves and a gutter, a lintel with the door housing, lamps.
     const sidingT = tex(64, 256, (g, w, h) => {
-      g.fillStyle = '#9EA6AD'; g.fillRect(0, 0, w, h);
-      for (let y = 0; y < h; y += 16) { g.fillStyle = '#8A9299'; g.fillRect(0, y + 13, w, 3); g.fillStyle = '#AAB2B9'; g.fillRect(0, y, w, 2); }
+      g.fillStyle = '#8F989F'; g.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 16) { g.fillStyle = '#737C83'; g.fillRect(0, y + 12, w, 4); g.fillStyle = '#A2AAB1'; g.fillRect(0, y, w, 2); }
     }, 3, 1.4);
     const wall = texMat(sidingT), inside = mat(0x6E757D), trimM = mat(0xE9ECEF), metalDark = mat(0x3A4148);
     const back = new THREE.Mesh(new THREE.BoxGeometry(9, 4.2, 0.3), inside); back.position.set(0, 2.1, 6.2); rs.add(back);
@@ -13120,6 +13139,11 @@
       block(0.16, 4.3, 0.16, sx * 4.66, 2.15, -0.86, trimM);          // door jambs
     });
     block(9.4, 0.7, 0.5, 0, 3.85, -0.6, wall);                         // lintel
+    // Concrete plinth along the front and the near wall.
+    const plinth = texMat(tex(64, 64, (g, w, h) => { g.fillStyle = '#7D7F7C'; g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 160; i++) { g.fillStyle = shade(0x7D7F7C, 0.85 + Math.random() * 0.3); g.fillRect(Math.random() * w, Math.random() * h, 2, 2); } }, 2, 1));
+    for (const sx of [-1, 1]) block(1.46, 0.42, 0.56, sx * 5.0, 0.21, -0.6, plinth);
+    block(0.36, 0.42, 7.06, -4.5, 0.21, 2.7, plinth);
     block(8.6, 0.34, 0.34, 0, 3.52, -0.2, metalDark);                       // door roll housing
     // Gable roof: two shingled slopes over the walls, ridge front to back.
     const shinglesT = tex(128, 128, (g, w, h) => {
@@ -13172,10 +13196,20 @@
     const strip = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.08, 0.2), mat(0xFFF4D6)); strip.position.set(0, 4.0, 2.6); rs.add(strip);
     const glow = new THREE.PointLight(0xFFE2B0, 0.7, 14); glow.position.set(0, 3.7, 2.6); rs.add(glow);
     // Door: a slatted panel that rolls up under the lintel.
+    // Ribbed steel sections in a mid grey (the former near-white read as an
+    // empty bright patch), a row of small windows and a handle. Extras are
+    // children of their section so they hide with it as it rolls up.
     const door = new THREE.Group();
     for (let i = 0; i < 8; i++) {
-      const slat = new THREE.Mesh(new THREE.BoxGeometry(8.4, 0.5, 0.12), mat(i % 2 ? 0xC9CFD4 : 0xBAC1C7));
+      const slat = new THREE.Mesh(new THREE.BoxGeometry(8.4, 0.5, 0.12), mat(i % 2 ? 0xA9B1B7 : 0x9EA6AD));
+      window.PDD_ROADS.skinObject(slat, 'metal');
       slat.position.y = 0.28 + i * 0.52; door.add(slat);
+      if (i === 5) for (let k = 0; k < 4; k++) {
+        const pane = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.3), new THREE.MeshBasicMaterial({ color: 0x46596A }));
+        pane.position.set(-2.7 + k * 1.8, 0, -0.065); pane.rotation.y = Math.PI; slat.add(pane);
+        window.PDD_ROADS.skinObject(pane, 'window');
+      }
+      if (i === 1) { const handle = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.06), mat(0x3A4148)); handle.position.set(0, 0.05, -0.09); slat.add(handle); }
     }
     door.position.set(0, 0, -0.7); rs.add(door);
     const car = window.PDD_VEHICLES.create(id, paint);
@@ -14204,9 +14238,6 @@
     }
     lens.updateProjectionMatrix();
     camera = lens;
-    // Fog is measured from the lens: keep the haze of the top view across the
-    // dolly, and a light horizon haze in the chase view.
-    scene.fog.density = (state.fogDensity || scene.fog.density) * (chase ? Math.min(1, CAMERA_DISTANCE / distance) : 1);
     // Camera framing can zoom out on a short screen. Keep the ticket letters
     // readable instead of shrinking them into dots under a tall answer card.
     for (const group of [state.activeIntersection?.seg, state.roadEvent?.guide]) {

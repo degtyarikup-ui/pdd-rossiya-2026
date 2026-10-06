@@ -193,6 +193,9 @@ ROADS['9_9']['signs'][0]['offsetX']=3.2
 JUNCTIONS['12_5']['layout']['actorsConfig'][0]['rotationY']=3.141592653589793/2
 JUNCTIONS['1_9']['route']['pathRules']['paths']=[dict(maneuver=a,points=v) for a,v in JUNCTIONS['1_9']['route']['paths'].items()]
 JUNCTIONS['33_8']['layout']['actorsConfig'][0]['position'][2]=-5.4
+# The parked car is always the compact hatchback: a random longer model
+# reached into the turning path (the outcome depended on Math.random).
+JUNCTIONS['33_8']['layout']['actorsConfig'][0]['model']='hatch'
 
 # 11.2 is four lanes in the source. Removing a same-direction lane would
 # invalidate why trajectory A is forbidden; keep the original lane position.

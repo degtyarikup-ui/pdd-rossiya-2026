@@ -2050,7 +2050,8 @@ window.PDD_EXTRA_SITUATIONS = [
     ],
     "rotationY": -1.5707963267948966,
     "stationary": true,
-    "hazard": true
+    "hazard": true,
+    "model": "hatch"
    }
   ],
   "signs": [],
