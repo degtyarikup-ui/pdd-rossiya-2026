@@ -93,6 +93,9 @@
   state.resolution = null;
   state.driveFaults = new Set();
   state.lastSafePosition = new THREE.Vector3(-1.8, 0, 0);
+  // Free steering (a held arrow turns the wheel), made gentle: see
+  // integrateDriving. Simple «tap = intent» steering is kept for tests.
+  state.simpleSteering = false;
   state.driveRecovery = 0;
   state.ambient = [];
   state.occluders = [];
@@ -104,8 +107,12 @@
   const signTextureCache = new Map();
 
   // --- Three.js Globals ---
-  let scene, camera, renderer;
+  let scene, camera, renderer, skyDome = null;
+  // camera is the lens in use: the top view (orthographic) or, zoomed close
+  // in free driving, the chase view behind the car (perspective).
+  let orthoCamera, chaseCamera;
   let dirLight, ambientLight, sunTarget;
+  const SUN_OFFSET = new THREE.Vector3(12, 70, -7);
   let playerCarGroup, playerWheels = [];
   let rainParticles = null;
   let terrainMesh = null;
@@ -5093,7 +5100,31 @@
         audio.nodes.rain = loopNoise(context, 'highpass', 1600);
         audio.nodes.scrape.filter.Q.value = 1.2;
         audio.rpm = 0.15; audio.reverseBeepAt = 0;
-        audio.nodes.traffic = makeTone('triangle', 48);
+        audio.rpmValue = 850; audio.gear = 0; audio.load = 0; audio.shiftT = 0; audio.lastSpeed = 0;
+        // Other road users: a few positional voices, each lent to one of the
+        // nearest moving vehicles (engine through its own filter, a little
+        // combustion noise, panned to its side of the screen).
+        audio.voices = Array.from({ length: 4 }, () => {
+          const osc = context.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = 60;
+          const sub = context.createOscillator(); sub.type = 'square'; sub.frequency.value = 30;
+          const subGain = context.createGain(); subGain.gain.value = 0.3;
+          const filter = context.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 400; filter.Q.value = 1.1;
+          const noise = context.createBufferSource(); noise.buffer = noiseBuffer(context); noise.loop = true;
+          noise.playbackRate.value = 0.8 + Math.random() * 0.4;
+          const noiseFilter = context.createBiquadFilter(); noiseFilter.type = 'bandpass'; noiseFilter.frequency.value = 300; noiseFilter.Q.value = 0.9;
+          const noiseGain = context.createGain(); noiseGain.gain.value = 0;
+          const gain = context.createGain(); gain.gain.value = 0;
+          const pan = context.createStereoPanner ? context.createStereoPanner() : null;
+          osc.connect(filter); sub.connect(subGain).connect(filter);
+          noise.connect(noiseFilter).connect(noiseGain).connect(gain);
+          filter.connect(gain);
+          if (pan) gain.connect(pan).connect(audio.master); else gain.connect(audio.master);
+          osc.start(); sub.start(); noise.start();
+          return { osc, sub, subGain, filter, noiseFilter, noiseGain, gain, pan, actor: null, rpm: 0.2, lastSpeed: 0, load: 0 };
+        });
+        // Bicycles: a quiet freewheel/chain whir.
+        audio.nodes.bike = loopNoise(context, 'bandpass', 3200);
+        audio.nodes.bike.filter.Q.value = 3;
         audio.nodes.tram = makeTone('sawtooth', 34);
         audio.nodes.sirenLow = makeTone('sine', 620);
         audio.nodes.sirenHigh = makeTone('sine', 820);
@@ -5225,9 +5256,91 @@
         // Major arpeggio up to a held chord, bright and short.
         [[523.25, 0], [659.25, 0.11], [783.99, 0.22], [1046.5, 0.33]].forEach(([f, at]) => { tone(f, at, 0.5, 0.09, 'triangle'); tone(f * 2, at, 0.25, 0.025); });
         [523.25, 659.25, 783.99, 1046.5].forEach(f => tone(f, 0.48, 1.3, 0.06, 'triangle'));
-      } else if (kind === 'sparkle') {
-        for (let i = 0; i < 6; i++) tone(2200 + Math.random() * 2400, i * 0.07 + Math.random() * 0.03, 0.3, 0.035);
+
       }
+    };
+    // Voices of the traffic around the player. Motor vehicles each get an
+    // engine from the pool (nearest first; a vehicle keeps its voice while it
+    // stays near, so nothing clicks). Diesels (truck, bus, tractor) are low
+    // and rattly, a motorcycle buzzes; bicycles whir, people's steps and a
+    // horse's hooves are heard only close by.
+    const VOICE = {
+      car: { pitch: 1, bright: 1, noise: 0.25, level: 1, sub: 0.25 },
+      van: { pitch: 0.9, bright: 0.95, noise: 0.35, level: 1.1, sub: 0.3 },
+      special: { pitch: 1.05, bright: 1.05, noise: 0.25, level: 1, sub: 0.25 },
+      truck: { pitch: 0.58, bright: 0.75, noise: 0.9, level: 1.45, sub: 0.6, diesel: true },
+      tanker: { pitch: 0.58, bright: 0.75, noise: 0.9, level: 1.45, sub: 0.6, diesel: true },
+      bus: { pitch: 0.62, bright: 0.8, noise: 0.8, level: 1.35, sub: 0.55, diesel: true },
+      tractor: { pitch: 0.5, bright: 0.7, noise: 1.1, level: 1.3, sub: 0.7, diesel: true },
+      motorcycle: { pitch: 1.75, bright: 1.7, noise: 0.35, level: 1.05, sub: 0.1 },
+    };
+    const VOICE_RATIOS = [7, 12, 18, 25.5, 32];
+    audio.updateTraffic = (dt, nearby, elapsed) => {
+      if (!audio.voices) return;
+      const car = playerCarGroup.position;
+      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+      const loudness = a => Math.max(0, 1 - actorFootprint(a).p.distanceTo(car) / 42);
+      const motor = nearby.filter(a => VOICE[a.config.type || 'car'] && !a.crashed)
+        .map(a => ({ a, k: loudness(a) })).filter(e => e.k > 0).sort((x, y) => y.k - x.k).slice(0, audio.voices.length);
+      const wanted = new Set(motor.map(e => e.a));
+      audio.voices.forEach(v => { if (v.actor && !wanted.has(v.actor)) v.actor = null; });
+      motor.forEach(({ a }) => {
+        if (audio.voices.some(v => v.actor === a)) return;
+        const free = audio.voices.find(v => !v.actor);
+        if (free) { free.actor = a; free.lastSpeed = a.speed || 0; free.rpm = 900; free.gear = 0; }
+      });
+      let total = 0;
+      audio.voices.forEach(v => {
+        const a = v.actor;
+        if (!a) { ramp(v.gain.gain, 0, 0.25); return; }
+        const pr = VOICE[a.config.type || 'car'];
+        const speed = Math.max(0, a.speed || 0), kmh = speed * 3.6;
+        const accel = (speed - v.lastSpeed) / Math.max(dt, 1e-3); v.lastSpeed = speed;
+        v.load += ((accel > 0.3 ? THREE.MathUtils.clamp(0.3 + accel / 6, 0.3, 1) : speed > 0.5 ? 0.25 : 0.1) - v.load) * Math.min(1, dt * 4);
+        const rpmOf = g => kmh * 1000 / VOICE_RATIOS[g] * (pr.diesel ? 0.62 : 1);
+        if (v.gear < 4 && rpmOf(v.gear) > (pr.diesel ? 1700 : 2400 + 1400 * v.load)) v.gear++;
+        else if (v.gear > 0 && rpmOf(v.gear) < (pr.diesel ? 800 : 1200)) v.gear--;
+        const target = Math.max(pr.diesel ? 650 : 850, rpmOf(v.gear));
+        v.rpm += (target - v.rpm) * Math.min(1, dt * 5);
+        const f0 = v.rpm / 30 * 1.3 * pr.pitch;
+        ramp(v.osc.frequency, f0, 0.1); ramp(v.sub.frequency, f0 / 2, 0.1);
+        v.subGain.gain.value = pr.sub;
+        ramp(v.filter.frequency, (200 + v.rpm / 5000 * 500 + v.load * 500) * pr.bright, 0.1);
+        ramp(v.noiseFilter.frequency, (pr.diesel ? 180 : 260) + v.rpm / 10, 0.1);
+        ramp(v.noiseGain.gain, 0.5 * pr.noise * (0.4 + v.load), 0.1);
+        // Inverse-square-ish fade with distance; a vehicle standing still idles quietly.
+        const k = loudness(a), level = 0.05 * pr.level * k * k * (0.45 + 0.55 * Math.min(1, v.load + speed / 12));
+        total += level;
+        ramp(v.gain.gain, level, 0.12);
+        if (v.pan) {
+          const side = actorFootprint(a).p.clone().sub(car).dot(right);
+          ramp(v.pan.pan, THREE.MathUtils.clamp(side / 18, -0.85, 0.85), 0.12);
+        }
+      });
+      audio.trafficLevel = total;
+      // Bicycles nearby: a light whir with their speed.
+      const bikes = nearby.filter(a => a.config.type === 'cyclist' && !a.crashed);
+      const whir = bikes.reduce((sum, a) => sum + Math.max(0, 1 - actorFootprint(a).p.distanceTo(car) / 16) * Math.min(1, (a.speed || 0) / 5), 0);
+      ramp(audio.nodes.bike.gain.gain, Math.min(0.012, whir * 0.01), 0.15);
+      // Footsteps and hooves: one soft tick per step, close by only.
+      const stepper = (a, x, z, rate, freq, vol) => {
+        const d = Math.hypot(x - car.x, z - car.z);
+        if (d > 11) return;
+        a.audioStep = (a.audioStep || 0) + dt * rate;
+        if (a.audioStep >= 1) { a.audioStep %= 1; burst('lowpass', freq, 0.8, vol * (1 - d / 11), 0.05); }
+      };
+      nearby.forEach(a => {
+        if (a.crashed || !(a.speed > 0.2)) return;
+        const p = actorFootprint(a).p;
+        if (a.config.type === 'pedestrian') stepper(a, p.x, p.z, a.speed * 1.6, 520, 0.022);
+        else if (a.config.type === 'cart') stepper(a, p.x, p.z, a.speed * 1.4, 900, 0.04);
+      });
+      // Walkers on the pavements (not road users): the two nearest.
+      state.ambient.filter(w => w.kind !== 'cat' && w.mesh.parent).map(w => {
+        const q = w.mesh.getWorldPosition(new THREE.Vector3());
+        return { w, q, d: q.distanceTo(car) };
+      }).filter(e => e.d < 11).sort((x, y) => x.d - y.d).slice(0, 2)
+        .forEach(({ w, q }) => stepper(w, q.x, q.z, 1.7 * Math.abs(Math.cos(w.phase + w.time * 0.14)), 520, 0.014));
     };
     audio.update = (dt, elapsed) => {
       if (!audio.enabled || audio.paused) return;
@@ -5235,22 +5348,50 @@
       if (!audio.context) return;
       const speedRatio = THREE.MathUtils.clamp(Math.abs(state.speed) / state.maxSpeed, 0, 1);
       const throttle = state.isAccelerating && !state.isBraking ? 1 : 0;
-      // Three virtual gears: rpm climbs within a gear and drops at the shift,
-      // which is what makes an engine sound like it is working rather than
-      // a siren sliding up with speed.
-      const gearPos = speedRatio * 2.85, inGear = gearPos - Math.floor(Math.min(2, gearPos));
-      const targetRpm = state.speed < -0.2 ? 0.3 : 0.14 + inGear * 0.68 + throttle * 0.08;
-      audio.rpm += (targetRpm - audio.rpm) * Math.min(1, dt * (throttle ? 5 : 3));
-      const rpm = audio.rpm, pr = audio.profiles[state.vehicleId] || audio.profile;
-      const f0 = (52 + rpm * 118) * pr.pitch;
+      // A five-speed gearbox with real-world ratios (km/h per 1000 rpm) and
+      // an automatic that shifts by load: flat out it revs to ~4000 rpm in
+      // each gear, at a steady 60 km/h it sits in fifth near 2000 rpm and
+      // only hums. The old model put any steady top speed at the top of
+      // third gear, so cruising sounded like a flat-out second.
+      const kmh = Math.abs(state.speed) * 3.6;
+      const accel = (Math.abs(state.speed) - audio.lastSpeed) / Math.max(dt, 1e-3);
+      audio.lastSpeed = Math.abs(state.speed);
+      // Engine load: how hard it is actually pulling (cruising at the limit
+      // with the gas held is a light load, not full throttle).
+      const loadTarget = audio.shiftT > 0 ? 0 : throttle ? THREE.MathUtils.clamp(0.18 + accel / 9, 0.18, 1) : 0;
+      audio.load += (loadTarget - audio.load) * Math.min(1, dt * (loadTarget > audio.load ? 7 : 4));
+      const RATIOS = [7, 12, 18, 25.5, 32];
+      const upAt = 2300 + 1800 * audio.load, downAt = 1250;
+      const gearRpm = g => kmh * 1000 / RATIOS[g];
+      if (state.speed < -0.2) audio.gear = 0;
+      else if (audio.shiftT <= 0) {
+        let g = audio.gear;
+        if (g < RATIOS.length - 1 && gearRpm(g) > upAt && gearRpm(g + 1) > downAt + 150) g++;
+        else if (g > 0 && gearRpm(g) < downAt) g--;
+        if (g !== audio.gear) {
+          // A shift: throttle lifts for a moment and the rpm settles to the
+          // new gear, with a soft click of the box on an upshift.
+          if (g > audio.gear && throttle) { audio.shiftT = 0.16; burst('bandpass', 1400, 2.2, 0.012, 0.05); }
+          audio.gear = g;
+        }
+      }
+      audio.shiftT = Math.max(0, audio.shiftT - dt);
+      const idle = 850, floor = throttle && audio.gear === 0 ? 1500 : idle;
+      const targetRpm = state.speed < -0.2 ? 1500 : Math.min(5600, Math.max(floor, gearRpm(audio.gear)));
+      audio.rpmValue += (targetRpm - audio.rpmValue) * Math.min(1, dt * (audio.shiftT > 0 ? 9 : 6));
+      const rpm = THREE.MathUtils.clamp((audio.rpmValue - 700) / 5000, 0, 1), load = audio.load;
+      audio.rpm = rpm;
+      const pr = audio.profiles[state.vehicleId] || audio.profile;
+      // Four cylinders fire twice per revolution.
+      const f0 = audio.rpmValue / 30 * 1.3 * pr.pitch;
       ramp(audio.nodes.engineSub.oscillator.frequency, f0 / 2);
       ramp(audio.nodes.engine.oscillator.frequency, f0);
       ramp(audio.nodes.engineFifth.oscillator.frequency, f0 * 1.5);
-      ramp(audio.nodes.engineFilter.frequency, (240 + rpm * 900 + throttle * 260) * pr.bright);
-      audio.engineLevel = (0.05 + rpm * 0.1 + throttle * 0.04) * pr.level;
+      ramp(audio.nodes.engineFilter.frequency, (230 + rpm * 520 + load * 620) * pr.bright);
+      audio.engineLevel = (0.045 + rpm * 0.05 + load * 0.075) * pr.level;
       ramp(audio.nodes.engineBus.gain, audio.engineLevel);
-      ramp(audio.nodes.grit.filter.frequency, 160 + rpm * 260);
-      ramp(audio.nodes.grit.gain.gain, (0.012 + rpm * 0.03 + throttle * 0.012) * pr.grit);
+      ramp(audio.nodes.grit.filter.frequency, 150 + rpm * 240 + load * 80);
+      ramp(audio.nodes.grit.gain.gain, (0.008 + rpm * 0.016 + load * 0.022) * pr.grit);
       // Tyres: squeal under hard braking from speed, scrape along a curb.
       ramp(audio.nodes.squeal.gain.gain, state.isBraking && state.speed > 6 ? 0.03 + speedRatio * 0.05 : 0, 0.06);
       ramp(audio.nodes.scrape.gain.gain, state.curbClearTime === 0 && Math.abs(state.speed) > 0.5 ? 0.04 : 0, 0.05);
@@ -5264,10 +5405,7 @@
       ramp(audio.nodes.ambience.gain.gain, 0.013 + (state.district === 1 ? 0.006 : 0));
       const nearby = state.actors.filter(a => !a.done && a.mesh.visible && !a.fall &&
         actorFootprint(a).p.distanceTo(playerCarGroup.position) < 45);
-      const trafficEnergy = nearby.reduce((sum, a) => sum + Math.max(0.1, a.speed / Math.max(1, a.maxSpeed)), 0);
-      audio.trafficLevel = Math.min(0.055, trafficEnergy * 0.012);
-      ramp(audio.nodes.traffic.gain.gain, audio.trafficLevel);
-      ramp(audio.nodes.traffic.oscillator.frequency, 45 + trafficEnergy * 7);
+      audio.updateTraffic(dt, nearby, elapsed);
       const trams = nearby.filter(a => a.config.type === 'tram' || a.config.type === 'train');
       audio.tramLevel = Math.min(0.07, trams.reduce((sum, a) => sum + a.speed, 0) / 150);
       ramp(audio.nodes.tram.gain.gain, audio.tramLevel);
@@ -5299,12 +5437,32 @@
     // Scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color(BRAND.asphaltMarking);
-    scene.fog = new THREE.FogExp2(BRAND.asphaltMarking, 0.007);
+    // No fog: the whole frame stays crisp in every weather.
+    scene.fog = null;
+    // Sky dome: seen mainly from the close chase view (horizon). It is drawn
+    // at the far plane around the camera, behind everything else.
+    skyDome = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), new THREE.ShaderMaterial({
+      uniforms: { horizon: { value: new THREE.Color() }, zenith: { value: new THREE.Color() }, cloud: { value: 0.55 } },
+      vertexShader: 'varying vec3 vDir; void main(){ vDir = position; vec4 p = projectionMatrix * vec4((modelViewMatrix * vec4(position, 0.0)).xyz, 1.0); gl_Position = p.xyww; }',
+      fragmentShader: [
+        'uniform vec3 horizon; uniform vec3 zenith; uniform float cloud; varying vec3 vDir;',
+        'float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
+        'float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);',
+        '  return mix(mix(h(i), h(i + vec2(1.0, 0.0)), f.x), mix(h(i + vec2(0.0, 1.0)), h(i + vec2(1.0, 1.0)), f.x), f.y); }',
+        'void main(){ vec3 d = normalize(vDir); float up = clamp(d.y, 0.0, 1.0);',
+        '  vec3 c = mix(horizon, zenith, pow(up, 0.35));',
+        '  vec2 q = d.xz / (d.y + 0.25) * 2.2; float f = n(q) * 0.55 + n(q * 2.1) * 0.3 + n(q * 4.3) * 0.15;',
+        '  float puffs = smoothstep(0.58, 0.8, f) * smoothstep(0.0, 0.06, d.y) * cloud;',
+        '  gl_FragColor = vec4(mix(c, vec3(1.0), puffs * 0.85), 1.0); }'].join('\n'),
+      side: THREE.BackSide, depthWrite: false
+    }));
+    skyDome.frustumCulled = false; skyDome.renderOrder = -1; skyDome.userData.sky = true;
+    scene.add(skyDome);
 
     // Orthographic Camera looking straight forward/up
     const aspect = width / height;
     const viewSize = 42;
-    camera = new THREE.OrthographicCamera(
+    camera = orthoCamera = new THREE.OrthographicCamera(
       -viewSize * aspect / 2,
        viewSize * aspect / 2,
        viewSize / 2,
@@ -5312,6 +5470,7 @@
       -200,
        800
     );
+    chaseCamera = new THREE.PerspectiveCamera(30, aspect, 1, 2000);
 
     // Initial camera position (directly behind and above car looking forward)
     camera.position.set(0, 42, -36);
@@ -5350,9 +5509,11 @@
     scene.add(groundMesh);
     terrainMesh = groundMesh;
     // The same grass as the verges. The plane follows the player along Z, so
-    // its own copy of the map is shifted by that move: the grass stays put.
+    // world UVs include that move: detail and macro patterns stay put.
     window.PDD_ROADS.skinObject(groundMesh, 'grass', { world: true });
-    groundMat.map = groundMat.map.clone(); groundMat.map.userData = {}; groundMat.map.needsUpdate = true;
+    const groundUV = groundGeo.attributes.uv;
+    for (let i = 0; i < groundUV.count; i++) groundUV.setY(i, groundUV.getY(i) + 500 / window.PDD_ROADS.kinds.grass.period);
+    groundUV.needsUpdate = true;
 
     // Player Car
     playerCarGroup = createPlayerCar();
@@ -5374,6 +5535,7 @@
     sendToFlutter({ event: 'ready', season: seasonName() });
 
     // Animation Loop
+    streamScenery=true;
     animate(0);
   }
 
@@ -5429,8 +5591,10 @@
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.minFilter = THREE.LinearFilter;
-    const mat = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+    const mat = new THREE.SpriteMaterial({ map: texture, depthTest: true, depthWrite: false });
     const sprite = new THREE.Sprite(mat);
+    sprite.renderOrder = 100;
+    sprite.userData.actorBadge = true;
     sprite.scale.set(3.2, 1.25, 1);
     return sprite;
   }
@@ -5462,7 +5626,7 @@
   // Paths are already in the receiving group's coordinate frame.
   // Route guide: one smooth flat band per route ending in an arrowhead, the
   // same for the player's route and a ticket's labelled alternatives. Kinks
-  // between authored points are smoothed out; the ends stay where authored.
+  // between authored points are smoothed out; long exit tails are clipped.
   function createRouteGuide(paths) {
     const guide = new THREE.Group();
     const mat = new THREE.MeshBasicMaterial({ color: BRAND.accent, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide });
@@ -5470,8 +5634,16 @@
     headShape.moveTo(0, 0); headShape.lineTo(-0.5, -1.15); headShape.lineTo(0.5, -1.15); headShape.closePath();
     const headGeo = new THREE.ShapeGeometry(headShape); headGeo.rotateX(Math.PI / 2);
     for (const path of paths) {
-      const length = path.getLength(), n = Math.max(8, Math.ceil(length / 0.25));
-      let pts = Array.from({ length: n + 1 }, (_, i) => path.getPointAt(i / n));
+      // Stop shortly after the bend, in the receiving lane. Driving paths
+      // retain their full length; only the visual direction cue is shortened.
+      const fullLength = path.getLength(), finalDir = path.getTangentAt(1);
+      let bendEnd = 0;
+      for (let d = 0; d < fullLength; d += 0.25) {
+        if (path.getTangentAt(d / fullLength).dot(finalDir) < 0.985) bendEnd = d;
+      }
+      const length = Math.min(fullLength, bendEnd ? bendEnd + 4 : 14);
+      const n = Math.max(8, Math.ceil(length / 0.25));
+      let pts = Array.from({ length: n + 1 }, (_, i) => path.getPointAt(i / n * length / fullLength));
       for (let pass = 0; pass < 8; pass++) pts = pts.map((p, i) => i === 0 || i === n ? p :
         p.clone().lerp(pts[i - 1].clone().add(pts[i + 1]).multiplyScalar(0.5), 0.5));
       const smooth = curve(pts), total = smooth.getLength(), bodyEnd = Math.max(0.2, total - 0.95);
@@ -5541,9 +5713,10 @@
   let touchStartX = 0, touchStartY = 0;
 
   // Player camera zoom: multiplies the framed view size (<1 closer, >1 farther).
-  // Works while driving and while a question is open; pinch, wheel, +/- keys,
-  // or window.setGameZoom() for native buttons.
-  const ZOOM_MIN = 0.45, ZOOM_MAX = 1.6;
+  // Works while driving and while a question is open; a two-finger pinch,
+  // wheel, +/- keys, or window.setGameZoom() for native buttons. Closer in
+  // free driving also lowers the camera towards a view along the road.
+  const ZOOM_MIN = 0.4, ZOOM_MAX = 1.6;
   state.userZoom = 1;
   state.questionCameraPan = new THREE.Vector3();
   function questionCameraOpen() { return !reveal&&!!state.isAtSituation&&!state.isResolvingSituation&&!state.attract; }
@@ -5583,35 +5756,79 @@
     if(questionCameraOpen()&&z!==state.userZoom)state.questionCameraInspecting=true;
     state.userZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z)); return state.userZoom;
   }
-  window.setGameZoom = (z) => setUserZoom(Number(z) || 1);
-  window.changeGameZoom = (factor) => setUserZoom(state.userZoom * (Number(factor) || 1));
+  // Manual camera control is off: the camera frames each question by itself
+  // (a fixed, readable view; no stray zoom/pan making the scene unclear).
+  const MANUAL_CAMERA = false;
+  window.setGameZoom = (z) => MANUAL_CAMERA ? setUserZoom(Number(z) || 1) : state.userZoom;
+  window.changeGameZoom = (factor) => MANUAL_CAMERA ? setUserZoom(state.userZoom * (Number(factor) || 1)) : state.userZoom;
 
   function setupZoomControls() {
     const el = renderer.domElement;
-    let pinchDist = 0, lastPoint = null, cameraGesture = false;
-    const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
-    const midpoint=t=>({x:(t[0].clientX+t[1].clientX)/2,y:(t[0].clientY+t[1].clientY)/2});
+    // Fingers are tracked by their own ids, not by e.touches: a WebView can
+    // keep a lifted finger in e.touches (its touchend went to a native button
+    // over the scene), and the old count-based pinch then zoomed on every
+    // one-finger drag and ignored real two-finger pinches. A pinch starts
+    // only once BOTH fingers have actually moved, so a stale touch never
+    // takes part, and it is measured from where it started (no drift).
+    const fingers = new Map();
+    let pinch = null, panLast = null, cameraGesture = false;
+    const midpoint = () => { const [a, b] = pinch.ids.map(id => fingers.get(id)); return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; };
+    const spread = () => {
+      const [a, b] = pinch.ids.map(id => fingers.get(id));
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    };
+    const forget = (ids) => {
+      ids.forEach(id => fingers.delete(id));
+      if (pinch && pinch.ids.some(id => !fingers.has(id))) pinch = null;
+    };
     el.addEventListener('touchstart', (e) => {
-      if (reveal) { cameraGesture=false;pinchDist=0;lastPoint=null;return; }
-      if (e.touches.length === 2) { cameraGesture=true;pinchDist = dist(e.touches); lastPoint=midpoint(e.touches); state.isAccelerating = false; }
-      else if(e.touches.length===1&&questionCameraOpen()){cameraGesture=true;lastPoint={x:e.touches[0].clientX,y:e.touches[0].clientY};}
+      if (reveal) { fingers.clear(); pinch = null; panLast = null; cameraGesture = false; return; }
+      const live = new Set([...e.touches].map(t => t.identifier));
+      forget([...fingers.keys()].filter(id => !live.has(id)));
+      for (const t of e.changedTouches) fingers.set(t.identifier, { x: t.clientX, y: t.clientY, x0: t.clientX, y0: t.clientY, at: performance.now() });
+      if (fingers.size > 2) {
+        // Keep the two newest fingers: an older one is the likeliest stale.
+        const ids = [...fingers.entries()].sort((a, b) => b[1].at - a[1].at).map(([id]) => id);
+        forget(ids.slice(2));
+      }
+      if (fingers.size === 2) {
+        pinch = { ids: [...fingers.keys()], armed: false };
+        fingers.forEach(f => { f.x0 = f.x; f.y0 = f.y; });
+        state.isAccelerating = false; cameraGesture = true; panLast = null;
+      } else if (fingers.size === 1 && questionCameraOpen()) {
+        // One finger in a question pans the inspected scene.
+        const [f] = fingers.values(); panLast = { x: f.x, y: f.y }; cameraGesture = true;
+      }
     }, { passive: true });
     el.addEventListener('touchmove', (e) => {
-      if (e.touches.length === 2 && pinchDist) {
-        const d=dist(e.touches),point=midpoint(e.touches);
-        if(d>0){zoomAt(state.userZoom*pinchDist/d,lastPoint||point,point);pinchDist=d;lastPoint=point;}
-      } else if(e.touches.length===1&&questionCameraOpen()&&lastPoint) {
-        const point={x:e.touches[0].clientX,y:e.touches[0].clientY};zoomAt(state.userZoom,lastPoint,point);lastPoint=point;
-      } else return;
+      for (const t of e.changedTouches) {
+        const f = fingers.get(t.identifier);
+        if (f) { f.x = t.clientX; f.y = t.clientY; }
+      }
+      if (!pinch) {
+        if (panLast && fingers.size === 1 && questionCameraOpen()) {
+          const [f] = fingers.values(), point = { x: f.x, y: f.y };
+          zoomAt(state.userZoom, panLast, point); panLast = point; e.preventDefault();
+        }
+        return;
+      }
       e.preventDefault();
+      if (!pinch.armed) {
+        if (!pinch.ids.every(id => { const f = fingers.get(id); return Math.hypot(f.x - f.x0, f.y - f.y0) > 2; })) return;
+        pinch.armed = true; pinch.dist = spread(); pinch.zoom = state.userZoom; pinch.mid = midpoint();
+      }
+      const d = spread(), mid = midpoint();
+      if (d > 8 && pinch.dist > 8) zoomAt(pinch.zoom * pinch.dist / d, pinch.mid || mid, mid);
+      pinch.mid = mid;
     }, { passive: false });
-    const endGesture=e=>{
-      e.handledByCamera=cameraGesture;
-      if(e.touches.length<2)pinchDist=0;
-      lastPoint=e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY}:null;
-      if(!e.touches.length)cameraGesture=false;
+    const end = (e) => {
+      e.handledByCamera = cameraGesture;
+      forget([...e.changedTouches].map(t => t.identifier));
+      if (fingers.size === 1 && questionCameraOpen()) { const [f] = fingers.values(); panLast = { x: f.x, y: f.y }; } else panLast = null;
+      if (!fingers.size) cameraGesture = false;
     };
-    el.addEventListener('touchend',endGesture,{passive:true});el.addEventListener('touchcancel',endGesture,{passive:true});
+    el.addEventListener('touchend', end, { passive: true });
+    el.addEventListener('touchcancel', end, { passive: true });
     el.addEventListener('wheel', (e) => {
       if (reveal) { e.preventDefault();return; }
       zoomAt(state.userZoom*Math.exp(e.deltaY*0.0012),{x:e.clientX,y:e.clientY});
@@ -5629,11 +5846,12 @@
       if (e.key === '+' || e.key === '=') setUserZoom(state.userZoom / 1.15);
       else if (e.key === '-' || e.key === '_') setUserZoom(state.userZoom * 1.15);
     });
+    state.pinching = () => !!pinch;
   }
 
   function setupTouchControls() {
     const el = renderer.domElement;
-    setupZoomControls();
+    if (MANUAL_CAMERA) setupZoomControls(); else state.pinching = () => false;
 
     // Acceleration on press
     el.addEventListener('touchstart', (e) => {
@@ -5649,7 +5867,7 @@
     }, { passive: false });
 
     el.addEventListener('touchmove', (e) => {
-      if (!e.touches.length || !(state.attract || reveal)) return;
+      if (!e.touches.length || !(state.attract || reveal) || state.pinching?.()) return;
       const x = e.touches[0].clientX, dx = x - (state.dragX ?? x); state.dragX = x; state.dragMoved = (state.dragMoved || 0) + Math.abs(dx);
       if (reveal) { if (reveal.phase === 'shown' || reveal.phase === 'lobby') { reveal.yaw += dx * 0.012; reveal.spin = dx * 0.6; } }
       else state.orbitYaw = (state.orbitYaw || 0) + dx * 0.006;
@@ -5718,7 +5936,7 @@
     // Never silently drop a choice: while moving it is applied once stopped.
     if (!state.paused && Math.abs(state.speed) > 0.1) { state.pendingVehicle = [id, paint]; return; }
     state.pendingVehicle = null;
-    state.speed = 0; state.isAccelerating = false; state.isBraking = false; state.steering = 0; state.laneChangeX = null; state.autoPath = null; state.trail = [];
+    state.speed = 0; state.isAccelerating = false; state.isBraking = false; state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null; state.trail = [];
     if (state.vehicleId === id && (state.vehiclePaint || null) === (paint || null)) {
       sendToFlutter({ event: 'vehicle_selected', vehicleId: id, paint: state.vehiclePaint });
       return;
@@ -5898,8 +6116,9 @@
   // Traffic and parked cars use the same detailed bodies as the player's
   // cars (hatchback, saloon or estate), in the scenario's colour.
   const NPC_MODELS = ['sedan', 'hatch', 'wagon', 'sedan'];
-  function createNpcCar(color = 0x2BC280) {
-    const id = NPC_MODELS[Math.floor(Math.random() * NPC_MODELS.length)];
+  // A scene that needs a known size (a parked car beside a turn) names the model.
+  function createNpcCar(color = 0x2BC280, model = null) {
+    const id = model || NPC_MODELS[Math.floor(Math.random() * NPC_MODELS.length)];
     return window.PDD_VEHICLES.create(id, color);
   }
 
@@ -6263,14 +6482,29 @@
   }
 
 
+  // A bus stop shelter, open towards +X (the kerb): four posts, a roof with
+  // a fascia and a route plate, a framed glass back and side panels, a
+  // slatted bench and an advertising light box. Same 2.2 x 4.5 m footprint.
   function createBusShelter() {
     const g=new THREE.Group();g.userData.busShelter=true;
-    const glass=new THREE.MeshLambertMaterial({color:0xB3CDD5,transparent:true,opacity:.6,side:THREE.DoubleSide});
-    for(const z of [-2,2])modelBox(g,[.08,2.7,.08],0x4D6672,-.9,1.35,z);
-    modelBox(g,[2.2,.16,4.5],0x496E7E,0,2.75,0);
-    const back=new THREE.Mesh(new THREE.BoxGeometry(.04,2.3,4),glass);back.position.set(-.95,1.35,0);g.add(back);
-    modelBox(g,[.55,.12,3.3],0xB08B5F,-.45,.65,0);
-    for(const z of [-1.3,1.3])modelBox(g,[.08,.65,.08],0x4D6672,-.45,.325,z);
+    const frame=new THREE.Group(),steel=0x46525C;
+    for(const x of [-.92,.85])for(const z of [-2.05,2.05])modelBox(frame,[.09,2.62,.09],steel,x,1.31,z);
+    modelBox(frame,[2.3,.12,4.6],0x3F4A53,0,2.68,0);                    // roof
+    modelBox(frame,[.08,.26,4.6],0x2F6F9F,1.13,2.6,0);                  // fascia
+    modelBox(frame,[.05,.34,.7],0xF4F6F8,1.18,2.6,-1.5);                // route plate
+    for(const y of [.32,2.46])modelBox(frame,[.06,.06,4.1],steel,-.92,y,0);   // back rails
+    for(const z of [-2.05,2.05])for(const y of [.32,2.46])modelBox(frame,[1.0,.06,.06],steel,-.42,y,z); // side rails
+    for(const x of [-.62,-.42,-.22])modelBox(frame,[.14,.05,3.1],0xA27B52,x+.12,.62,0);       // bench slats
+    for(const z of [-1.3,1.3])modelBox(frame,[.5,.6,.07],steel,-.3,.3,z);                      // bench legs
+    modelBox(frame,[.16,1.9,1.15],0x2F3A44,-.6,1.32,1.45);              // light box
+    mergeModelParts(frame);g.add(frame);
+    const glass=new THREE.MeshLambertMaterial({color:0xB3CDD5,transparent:true,opacity:.5,side:THREE.DoubleSide});
+    const back=new THREE.Mesh(new THREE.BoxGeometry(.03,2.1,4.0),glass);back.position.set(-.93,1.39,0);g.add(back);
+    for(const z of [-2.05,2.05]){const side=new THREE.Mesh(new THREE.BoxGeometry(.95,2.1,.03),glass);side.position.set(-.42,1.39,z);g.add(side);}
+    // The light box shows the same invented advert as the roundabout board.
+    if(!billboardTexture)disposeSegment(createIslandBillboard());
+    const ad=new THREE.Mesh(new THREE.PlaneGeometry(1.0,1.7),new THREE.MeshBasicMaterial({map:billboardTexture}));
+    ad.position.set(-.515,1.32,1.45);ad.rotation.y=Math.PI/2;g.add(ad);
     return g;
   }
 
@@ -6501,6 +6735,13 @@
       mergeModelParts(arm); ped.add(arm); ped.userData.arms.push(arm);
     });
     modelBox(ped, [0.42, 0.58, 0.26], color, 0, 0.92, 0);
+    // Clothing detail within the same outline: belt, collar, zip, neck, eyes.
+    const shade = k => new THREE.Color(color).multiplyScalar(k).getHex();
+    modelBox(ped, [0.43, 0.06, 0.27], 0x2B2F33, 0, 0.66, 0);
+    modelBox(ped, [0.3, 0.06, 0.24], shade(0.75), 0, 1.19, 0.01);
+    modelBox(ped, [0.025, 0.46, 0.01], shade(0.6), 0, 0.93, 0.131);
+    modelPart(ped, new THREE.CylinderGeometry(0.07, 0.07, 0.08, 8), look.skin, 0, 1.23, 0);
+    for (const ex of [-0.06, 0.06]) modelBox(ped, [0.035, 0.035, 0.02], 0x2B2F33, ex, 1.38, 0.178);
     modelPart(ped, new THREE.SphereGeometry(0.18, 8, 6), look.skin, 0, 1.36, 0);
     const hat = variant % 3;
     modelPart(ped, new THREE.SphereGeometry(0.185, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2),
@@ -7239,82 +7480,80 @@
   // backdropFrom: no far background (x 30-70) in the first metres of the
   // road. A cross street starting at a junction leaves its corners to the
   // main street's background: both used to put houses on the same plots.
-  function buildStraightSegment(startZ, length = 70, preview = false, district = state.district, oneWay = null, backdropFrom = 0) {
-    const seg = new THREE.Group();
-    const roadWidth = 8.4; // 2 lanes (4.2m each)
-
-    // Asphalt
-    const asphalt = new THREE.Mesh(
-      new THREE.PlaneGeometry(roadWidth, length + 2 * SEAM),
-      new THREE.MeshLambertMaterial({ color: BRAND.asphalt })
-    );
-    asphalt.rotation.x = -Math.PI / 2;
-    asphalt.position.set(0, 0.02, startZ + length / 2);
-    asphalt.receiveShadow = true;
-    seg.add(asphalt);
-
-    // Sidewalks: exactly 4.2 ... 7.4 across, like every pavement piece. A SEAM
-    // overlap across (into the road) left a 12 cm step where the pavement
-    // meets a rounded corner; only pieces laid end to end need to overlap.
-    const swWidth = 3.2;
-    const swL = new THREE.Mesh(
-      new THREE.BoxGeometry(swWidth, 0.18, length + 2 * SEAM),
-      new THREE.MeshLambertMaterial({ color: BRAND.sidewalk })
-    );
-    swL.position.set(-(roadWidth / 2 + swWidth / 2), 0.09, startZ + length / 2);
-    swL.receiveShadow = true;
-    seg.add(swL);
-
-    const swR = new THREE.Mesh(
-      new THREE.BoxGeometry(swWidth, 0.18, length + 2 * SEAM),
-      new THREE.MeshLambertMaterial({ color: BRAND.sidewalk })
-    );
-    swR.position.set(roadWidth / 2 + swWidth / 2, 0.09, startZ + length / 2);
-    swR.receiveShadow = true;
-    seg.add(swR);
-
-    // Center Dashed Marking (1.5)
-    const dashLength = 2.0;
-    const gapLength = 3.0;
-    const markingMat = new THREE.MeshBasicMaterial({ color: BRAND.asphaltMarking });
-    const dashGeo = new THREE.PlaneGeometry(0.18, dashLength);
-    dashGeo.rotateX(-Math.PI / 2);
-
-    const dashes = [];
-    for (let z = startZ + 2; z < startZ + length - 2; z += (dashLength + gapLength)) {
-      const dash = new THREE.Mesh(dashGeo, markingMat);
-      dash.position.set(0, 0.025, z + dashLength / 2);
-      dashes.push(dash);
+  // Runtime scenery jobs yield at a roadside row, preserving local coordinates
+  // if the road is reparented/rebased while its remaining rows are in flight.
+  let streamScenery = false;
+  const sceneryJobs = [];
+  let sceneryBoundsVersion=0;
+  function enqueueScenery(owner, iterator) {
+    if(!streamScenery || state.paused || state.attract) { while(!iterator.next().done) {} return; }
+    sceneryJobs.push({owner,iterator});
+  }
+  function processSceneryJobs(budgetMs=3) {
+    const start=performance.now();let steps=0;
+    while(sceneryJobs.length && performance.now()-start<budgetMs) {
+      const job=sceneryJobs[0];
+      if(job.owner.userData.disposed) { sceneryJobs.shift();continue; }
+      if(job.iterator.next().done)sceneryJobs.shift();
+      steps++;
     }
-    seg.add(mergeStatic(dashes, markingMat));
+    return {steps,ms:performance.now()-start,pending:sceneryJobs.length};
+  }
+  function registerRoadObject(child) {
+    child.position.x*=-1;child.rotation.y*=-1;
+    child.traverse(o=>{
+      if(o.isMesh && o.material?.isMeshLambertMaterial)o.receiveShadow=true;
+      // Low pieces (kerbs, paving, planters' rims, markings) cast no shadow
+      // anyone could see: drop them from the shadow pass.
+      if(o.isMesh && o.castShadow && o.geometry) {
+        if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
+        const b=o.geometry.boundingBox;if((b.max.y-b.min.y)*Math.abs(o.scale.y)<.45 && !o.userData.actor)o.castShadow=false;
+      }
+      if(!o.userData.actor && o.material?.color?.getHex()===BRAND.sidewalk)o.userData.surface='sidewalk';
+      if(!o.userData.actor && o.material?.color?.getHex()===BRAND.asphalt && o.geometry?.type==='PlaneGeometry')o.userData.surface='road';
+      if(o.userData.surface==='sidewalk'){o.material.color.setHex(season().sidewalk);o.material.userData.seasonal='sidewalk';}
+    });
 
-    // Outer Solid Lines (1.2)
-    const solidLineGeo = new THREE.PlaneGeometry(0.15, length);
-    solidLineGeo.rotateX(-Math.PI / 2);
-    const lineL = new THREE.Mesh(solidLineGeo, markingMat);
-    lineL.position.set(-roadWidth / 2 + 0.25, 0.025, startZ + length / 2);
-    seg.add(lineL);
-
-    const lineR = new THREE.Mesh(solidLineGeo, markingMat);
-    lineR.position.set(roadWidth / 2 - 0.25, 0.025, startZ + length / 2);
-    seg.add(lineR);
-
-    if (oneWay) {
-      // Both lanes carry the same direction: the centre dashes are the lane
-      // divider 1.5. 5.5 starts the one-way stretch, 5.6 ends it before the
-      // next (two-way) junction. Against the flow the driver sees their backs.
-      const flowForward = oneWay === 'with';
-      const place = (code, z) => {
-        const sign = createRoadSign(code);
-        // On the flow's right-hand pavement (factory X = driver's right).
-        sign.position.set(flowForward ? 5.2 : -5.2, 0, z);
-        sign.rotation.y = flowForward ? 0 : Math.PI;
-        seg.add(sign);
-      };
-      place('5.5', flowForward ? startZ + 6 : startZ + length - 6);
-      place('5.6', flowForward ? startZ + length - 14 : startZ + 14);
+  }
+  function inheritSceneryClearances(road) {
+    road.updateWorldMatrix(true,false);
+    const inverse=road.matrixWorld.clone().invert();
+    for(let root=road.parent;root;root=root.parent) {
+      const boxes=root.userData.sceneryClearance;if(!boxes)continue;
+      const key=root.uuid+':'+boxes.length;
+      const copied=road.userData.inheritedClearance ||= new Set();if(copied.has(key))continue;copied.add(key);
+      const transform=inverse.clone().multiply(root.matrixWorld);
+      (road.userData.sceneryClearance ||= []).push(...boxes.map(b=>b.clone().applyMatrix4(transform)));
     }
+  }
 
+  function settleStreamedScenery(seg,added) {
+    seg.updateWorldMatrix(true,false);
+    added.forEach(o=>o.updateWorldMatrix(false,true));
+    // Clearance areas are stored in road-local coordinates, so a bus bay or
+    // driveway cannot acquire a newly generated tree after a world turn.
+    let root=seg;
+    const zones=[];
+    while(root){if(root.userData.sceneryClearance)zones.push({inverse:root.matrixWorld.clone().invert(),boxes:root.userData.sceneryClearance});root=root.parent;}
+    const houses=state.occluders.filter(o=>o.parent && o.visible && !added.includes(o)).map(o=>{
+      if(o.userData.streamBoundsVersion!==sceneryBoundsVersion){o.userData.streamBounds=new THREE.Box3().setFromObject(o);o.userData.streamBoundsVersion=sceneryBoundsVersion;}
+      return o.userData.streamBounds;
+    });
+    const overlap=(a,b)=>Math.min(a.max.x,b.max.x)-Math.max(a.min.x,b.min.x)>.3 && Math.min(a.max.z,b.max.z)-Math.max(a.min.z,b.min.z)>.3;
+    for(const o of added) {
+      const box=new THREE.Box3().setFromObject(o);
+      if(box.isEmpty() || box.max.y<.3)continue;
+      if(zones.some(z=>{const local=box.clone().applyMatrix4(z.inverse);return z.boxes.some(b=>local.intersectsBox(b));}))o.visible=false;
+      if(state.occluders.includes(o)) {if(houses.some(b=>overlap(box,b)))o.visible=false;else if(o.visible){houses.push(box);o.userData.streamBounds=box;o.userData.streamBoundsVersion=sceneryBoundsVersion;}}
+    }
+    for(const o of added) {
+      if(!o.visible || state.occluders.includes(o) || !o.userData.sceneryObject)continue;
+      const box=new THREE.Box3().setFromObject(o),center=box.getCenter(new THREE.Vector3());
+      if(houses.some(h=>center.x>h.min.x+.2 && center.x<h.max.x-.2 && center.z>h.min.z+.2 && center.z<h.max.z-.2))o.visible=false;
+    }
+  }
+  function* buildStraightScenery(seg,startZ,length,district,backdropFrom) {
+    const extra=seg.userData.avenueExtra||0; // an avenue's extra half-width
     // Districts blend over the road's length, and are built with the road,
     // never spawned in response to a camera turn: park / homes / boulevard.
     seg.userData.district = district;
@@ -7323,6 +7562,7 @@
       const next = (district + 1) % DISTRICTS;
       const style = row % 5 / 4 < t ? next : district;
       for (const side of [-1, 1]) {
+        const firstChild=seg.children.length;
         const vergeGeometry = new THREE.PlaneGeometry(22 + SEAM, 20 + SEAM);
         const verge = new THREE.Mesh(vergeGeometry, new THREE.MeshLambertMaterial({ color: season().verge[Math.min(style, 2)] }));
         verge.material.userData.seasonal = 'verge' + Math.min(style, 2);
@@ -7376,6 +7616,7 @@
         }
         const backdrop = new THREE.Group();
         bakeGroups(far).forEach(m => backdrop.add(m));
+        backdrop.userData.backdropSide = side;
         seg.add(backdrop);
         // Rows are 20 m apart; a building of depth D leaves a gap of 20 - D
         // where trees, hedges and parked cars go (never under a facade).
@@ -7471,10 +7712,139 @@
           const lane = row % 4 < 2 ? 0 : 1; // pavement has two walking lanes
           walker.position.set(side * (5.2 + lane * 1.1), 0.18, z);
           seg.add(walker);
-          state.ambient.push({ mesh: walker, center: z, phase: row * 1.7, time: 0, side, lane, targetLane: lane, seg });
+          state.ambient.push({ mesh: walker, center: z, phase: row * 1.7, time: 0, side, lane, targetLane: lane, seg, edge: 5.2 + extra });
         }
+        const added=seg.children.slice(firstChild);
+        // An avenue pushes everything beside the road out by its extra
+        // width (before registration mirrors the factory X).
+        if(extra)added.forEach(o=>{
+          if(o.userData.backdropSide)o.position.x+=o.userData.backdropSide*extra;
+          else if(Math.abs(o.position.x)>1)o.position.x+=Math.sign(o.position.x)*extra;
+          const a=state.ambient.find(w=>w.mesh===o);if(a)a.edge=5.2+extra;
+        });
+        if(seg.userData.registered) {
+          added.forEach(registerRoadObject);
+          added.forEach(o=>{const b=new THREE.Box3().setFromObject(o);if(!b.isEmpty() && b.max.y>.3)o.userData.sceneryObject=true;});
+          settleStreamedScenery(seg,added);clearSceneryOffRoad(added);
+          window.PDD_ROADS.invalidate();added.forEach(weatherSurfaces);
+        }
+        yield;
       }
     }
+
+  }
+
+  // Lightweight continuation behind the loading range: no physics, actors or
+  // question content. The real next junction replaces it before it is reached.
+  function addRoadHorizon(seg,startZ,length) {
+    const horizon=new THREE.Group();horizon.userData.distantRoad=true;
+    const mat=new THREE.MeshLambertMaterial({color:BRAND.asphalt});
+    const asphalt=addFlatPlane(horizon,8.4,420,0,startZ+length+210,.005,mat);
+    asphalt.material.userData.asphalt=true;
+
+    for(const side of [-1,1])addFlatPlane(horizon,3.2,420,side*5.8,startZ+length+210,.16,new THREE.MeshLambertMaterial({color:season().sidewalk})).material.userData.seasonal='sidewalk';
+    const paint=roadMarkingMat();
+    for(const x of [-3.95,3.95])addFlatPlane(horizon,.15,420,x,startZ+length+210,.012,paint);
+    const dashes=[];const dashGeometry=new THREE.PlaneGeometry(.13,2);dashGeometry.rotateX(-Math.PI/2);
+    for(let z=startZ+length+2;z<startZ+length+420;z+=5){const d=new THREE.Mesh(dashGeometry,paint);d.position.set(0,.012,z);dashes.push(d);}
+    horizon.add(mergeStatic(dashes,paint));dashGeometry.dispose();
+    horizon.traverse(o=>{o.userData.visualOnly=true;});
+    seg.userData.horizon=horizon;seg.add(horizon);
+  }
+
+  // width: 8.4 is the ordinary two-lane street; a wider one (14, 16.8) is
+  // a city avenue with two lanes each way that carries on between two
+  // junctions of the same width, instead of narrowing to 8.4 and widening
+  // again in between.
+  function buildStraightSegment(startZ, length = 70, preview = false, district = state.district, oneWay = null, backdropFrom = 0, width = 8.4) {
+    const seg = new THREE.Group();
+    const roadWidth = width; // 2 lanes (4.2m each) or 4 on an avenue
+    const extra = (roadWidth - 8.4) / 2, avenue = extra > 0.01;
+    seg.userData.avenueExtra = avenue ? extra : 0;
+
+    // Asphalt
+    const asphalt = new THREE.Mesh(
+      new THREE.PlaneGeometry(roadWidth, length + 2 * SEAM),
+      new THREE.MeshLambertMaterial({ color: BRAND.asphalt })
+    );
+    asphalt.rotation.x = -Math.PI / 2;
+    asphalt.position.set(0, 0.02, startZ + length / 2);
+    asphalt.receiveShadow = true;
+    seg.add(asphalt);
+
+    // Sidewalks: exactly 4.2 ... 7.4 across, like every pavement piece. A SEAM
+    // overlap across (into the road) left a 12 cm step where the pavement
+    // meets a rounded corner; only pieces laid end to end need to overlap.
+    const swWidth = 3.2;
+    const swL = new THREE.Mesh(
+      new THREE.BoxGeometry(swWidth, 0.18, length + 2 * SEAM),
+      new THREE.MeshLambertMaterial({ color: BRAND.sidewalk })
+    );
+    swL.position.set(-(roadWidth / 2 + swWidth / 2), 0.09, startZ + length / 2);
+    swL.receiveShadow = true;
+    seg.add(swL);
+
+    const swR = new THREE.Mesh(
+      new THREE.BoxGeometry(swWidth, 0.18, length + 2 * SEAM),
+      new THREE.MeshLambertMaterial({ color: BRAND.sidewalk })
+    );
+    swR.position.set(roadWidth / 2 + swWidth / 2, 0.09, startZ + length / 2);
+    swR.receiveShadow = true;
+    seg.add(swR);
+
+    // Center Dashed Marking (1.5)
+    const dashLength = 2.0;
+    const gapLength = 3.0;
+    const markingMat = new THREE.MeshBasicMaterial({ color: BRAND.asphaltMarking });
+    const dashGeo = new THREE.PlaneGeometry(0.18, dashLength);
+    dashGeo.rotateX(-Math.PI / 2);
+
+    const dashes = [];
+    // An avenue: double solid centre (1.3) and a broken lane divider (1.5)
+    // in the middle of each carriageway, in the same phase as the dashes.
+    const dashXs = avenue ? [-roadWidth / 4, roadWidth / 4] : [0];
+    for (let z = startZ + 2; z < startZ + length - 2; z += (dashLength + gapLength)) {
+      for (const x of dashXs) {
+        const dash = new THREE.Mesh(dashGeo, markingMat);
+        dash.position.set(x, 0.025, z + dashLength / 2);
+        dashes.push(dash);
+      }
+    }
+    seg.add(mergeStatic(dashes, markingMat));
+    if (avenue) for (const x of [-0.12, 0.12]) {
+      const line = new THREE.Mesh(new THREE.PlaneGeometry(0.13, length), markingMat);
+      line.rotation.x = -Math.PI / 2; line.position.set(x, 0.025, startZ + length / 2);
+      seg.add(line);
+    }
+
+    // Outer Solid Lines (1.2)
+    const solidLineGeo = new THREE.PlaneGeometry(0.15, length);
+    solidLineGeo.rotateX(-Math.PI / 2);
+    const lineL = new THREE.Mesh(solidLineGeo, markingMat);
+    lineL.position.set(-roadWidth / 2 + 0.25, 0.025, startZ + length / 2);
+    seg.add(lineL);
+
+    const lineR = new THREE.Mesh(solidLineGeo, markingMat);
+    lineR.position.set(roadWidth / 2 - 0.25, 0.025, startZ + length / 2);
+    seg.add(lineR);
+
+    if (oneWay) {
+      // Both lanes carry the same direction: the centre dashes are the lane
+      // divider 1.5. 5.5 starts the one-way stretch, 5.6 ends it before the
+      // next (two-way) junction. Against the flow the driver sees their backs.
+      const flowForward = oneWay === 'with';
+      const place = (code, z) => {
+        const sign = createRoadSign(code);
+        // On the flow's right-hand pavement (factory X = driver's right).
+        sign.position.set(flowForward ? 5.2 : -5.2, 0, z);
+        sign.rotation.y = flowForward ? 0 : Math.PI;
+        seg.add(sign);
+      };
+      place('5.5', flowForward ? startZ + 6 : startZ + length - 6);
+      place('5.6', flowForward ? startZ + length - 14 : startZ + 14);
+    }
+
+    enqueueScenery(seg,buildStraightScenery(seg,startZ,length,district,backdropFrom));
 
     // Treat each complete roadside object as one unit when clearing a junction.
     // Cutting its individual meshes leaves open facades and floating furniture.
@@ -7484,8 +7854,9 @@
     });
     registerRoadSegment(seg);
     seg.userData.oneWay = oneWay;
+    seg.userData.roadWidth = roadWidth;
     seg.userData.roadEnds = [new THREE.Vector3(0, 0, startZ), new THREE.Vector3(0, 0, startZ + length)];
-    addPuddles(seg, startZ, length);
+    addPuddles(seg, startZ, length, roadWidth);
     state.weatherDirty = true;
     if (preview) return seg;
     state.roadSegments.push(seg);
@@ -7621,7 +7992,7 @@
       actorMesh = createPedestrian(cfg.color);
       badgeHeight = 2.8;
     } else {
-      actorMesh = createNpcCar(cfg.color);
+      actorMesh = createNpcCar(cfg.color, cfg.model || null);
       badgeHeight = 2.4;
     }
     if (cfg.beacon === 'amber') {
@@ -7748,7 +8119,8 @@
     );
     islandLawn.material.userData.seasonal = 'ground';
     islandLawn.rotation.x = -Math.PI / 2;
-    islandLawn.position.set(0, 0.205, centerZ);
+    // 2 cm above the kerb top (5 mm flickered from the game camera's distance).
+    islandLawn.position.set(0, 0.22, centerZ);
     islandLawn.receiveShadow = true;
     seg.add(islandLawn);
 
@@ -7943,6 +8315,7 @@
       trafficLight: null
     };
     state.intersections.push(intersectionData);
+    actorsInScene.filter(a => a.config.type === 'tram').forEach(a => buildTramTrack(a, intersectionData));
     ensureTraffic(intersectionData);
 
     const guide = new THREE.Group();
@@ -7982,11 +8355,15 @@
       intersectionData.previews.uturn = incomingRoad;
     }
 
+    clearTramScenery(intersectionData);
     refreshRoadBounds();
     return intersectionLength;
   }
 
   function buildIntersectionSegment(startZ, situation, incomingRoad = null) {
+    if(incomingRoad?.userData.horizon) {
+      const horizon=incomingRoad.userData.horizon;disposeSegment(horizon);incomingRoad.userData.horizon=null;
+    }
     let spec = routeSpec(situation);
     situation = { ...situation, ...(spec.overrides || {}) };
     if(situation.pedestrianCount) {
@@ -8022,8 +8399,13 @@
     const crossW = situation.crossWidth || (divided ? 20.8 : roadWidth);
     const wide = crossW > roadWidth + 0.01;
     const medianHalf = divided ? 2 : 0;
+    // The city continues: an avenue arm whose width the next road keeps
+    // (avenueExits) does not narrow at all, only arms that meet an ordinary
+    // street do. x > 0 is the left arm (world X, as the ribbons are baked).
+    const exitWidths = avenueExits(situation);
+    const armW = x => x > 0 ? exitWidths.left : exitWidths.right;
     const narrow = x => THREE.MathUtils.smoothstep(Math.abs(x), 18, 33);
-    const halfW = x => crossW / 2 + (roadWidth / 2 - crossW / 2) * narrow(x);
+    const halfW = x => crossW / 2 + (armW(x) / 2 - crossW / 2) * narrow(x);
     // The island keeps its width to its round end at 28 m.
     const medHalf = x => Math.abs(x) <= 26 ? medianHalf : 0;
     const laneW = (crossW / 2 - medianHalf) / 2;
@@ -8031,7 +8413,11 @@
     // inner oncoming lane with a car beside it, both clear of the kerb.
     const mainW = situation.mainWidth || roadWidth;
     const wideMain = mainW > roadWidth + 0.01 && !tJunction;
-    const halfM = z => mainW / 2 + (roadWidth / 2 - mainW / 2) * THREE.MathUtils.smoothstep(Math.abs(z - centerZ), 13, 25);
+    // The approach keeps the width of the road the player came along; the
+    // far side that of the road going on (an avenue goes on as one).
+    const approachW = wideMain ? Math.min(mainW, incomingRoad?.userData.roadWidth || roadWidth) : roadWidth;
+    const endW = z => z < centerZ ? approachW : exitWidths.straight;
+    const halfM = z => mainW / 2 + (endW(z) / 2 - mainW / 2) * THREE.MathUtils.smoothstep(Math.abs(z - centerZ), 13, 25);
     const kerbX = mainW / 2, kerbZ = crossW / 2; // kerb lines at the junction itself
     // The same lawn colour as the roads that meet here: the approach ends and
     // every exit starts in district (state.district + 1). No colour seam.
@@ -8269,10 +8655,18 @@
       const lineZ = (a, b, xc, w) => { const m = addRibbon(seg, a, b, z => xc(z) - w / 2, z => xc(z) + w / 2, 0.032, markingMat, 0.75); return m; };
       for (const sz of [-1, 1]) {
         const span = (a, b) => sz < 0 ? [centerZ - b, centerZ - a] : [centerZ + a, centerZ + b];
+        // This side goes on as an avenue: its paint runs on to the seam like
+        // the avenue's own (double centre 1.3, lane dividers 1.5).
+        const avenue = Math.abs(endW(centerZ + sz) - mainW) < 0.01;
+        const dividerEnd = avenue ? 26 : 20;
         for (const sx of [-1, 1]) {
           lineZ(...span(kerbZ + 3.4, 26 + SEAM), z => sx * (halfM(z) - 0.25), 0.15);
-          for (const divider of (situation.mainLaneDividers || [mainW / 4]))
-            for (let d = kerbZ + 3.4; d < 20; d += 5) lineZ(...span(d, Math.min(d + 2, 20)), z => sx * divider * halfM(z) / (mainW / 2), 0.15);
+          for (const divider of (avenue ? [mainW / 4] : situation.mainLaneDividers || [mainW / 4]))
+            for (let d = kerbZ + 3.4; d < dividerEnd; d += 5) lineZ(...span(d, Math.min(d + 2, dividerEnd)), z => sx * divider * halfM(z) / (mainW / 2), 0.15);
+        }
+        if (avenue) {
+          for (const x of [-0.12, 0.12]) lineZ(...span(kerbZ + 3.4, 26 + SEAM), () => x, 0.13);
+          continue;
         }
         lineZ(...span(kerbZ + 3.4, 17), () => 0, 0.18);
         for (let d = 19; d < 26; d += 5) lineZ(...span(d, Math.min(d + 2, 26)), () => 0, 0.18);
@@ -8290,14 +8684,16 @@
       const threeWays = situation.geometry === 'three_carriageways';
       for (const sx of [-1, 1]) {
         const span = (a, b) => sx < 0 ? [-b, -a] : [a, b];
+        const avenue = !divided && !threeWays && Math.abs(armW(sx) - crossW) < 0.01;
         for (const sz of [-1, 1]) {
           line(...span(kerbX + 3.4, 35 + SEAM), x => sz * (halfW(x) - 0.25), 0.15);
           if (divided) line(...span(kerbX + 3.4, 26), x => sz * (medianHalf + 0.25), 0.15);
           // Lane divider in the middle of each outer carriageway.
           if (threeWays) dashes(...span(kerbX + 3.4, 18), x => sz * (THREE_ISLAND_Z + 1.1 + halfW(x)) / 2, 0.15);
-          else dashes(...span(kerbX + 3.4, 24), x => sz * (medHalf(x) + halfW(x)) / 2, 0.15);
+          else dashes(...span(kerbX + 3.4, avenue ? 35 : 24), x => sz * (medHalf(x) + halfW(x)) / 2, 0.15);
         }
         if (divided) dashes(...span(30, 35), () => 0, 0.18);
+        else if (avenue) for (const z of [-0.12, 0.12]) line(...span(kerbX + 3.4, 35 + SEAM), () => z, 0.13);
         else { line(...span(kerbX + 3.4, 22), () => 0, 0.18); dashes(...span(24, 35), () => 0, 0.18); }
       }
     }
@@ -8324,6 +8720,31 @@
       addCornerFillet(seg, sx, sz, kerbX, kerbZ, centerZ, markingMat);
     }
     if (situation.noRight) addEdgeLineZ(seg, centerZ - kerbZ - 3.4 - SEAM, centerZ + kerbZ + 3.4 + SEAM, () => -kerbX, -1, markingMat);
+    // Edge lines 1.2 along every arm, from the end of the road that leads in
+    // up to the rounded corner (whose own line takes over): no bare stretch
+    // between the street's line and the corner. World (baked) coordinates,
+    // like the fillets, so the sides cannot swap on registration.
+    if (!divided && !wide && !wideMain) {
+      const quads = [], w = 0.075, armEnd = crossStreetLength / 2 + SEAM;
+      const along = (x, z0, z1) => { if (z1 - z0 > .3) quads.push([[x - w, z0], [x + w, z0], [x + w, z1], [x - w, z1]]); };
+      const across = (z, x0, x1) => { if (x1 - x0 > .3) quads.push([[x0, z - w], [x1, z - w], [x1, z + w], [x0, z + w]]); };
+      for (const sx of [-1, 1]) {
+        const x = sx * (kerbX - 0.25);
+        along(x, startZ - SEAM, centerZ - kerbZ - 3.4);
+        if (!tJunction) along(x, centerZ + kerbZ + 3.4, startZ + intersectionLength + SEAM);
+        // Side arms (the right one is negative X): none where there is no
+        // road or only a dirt track.
+        // The dirt track's rounded pavement ends carry no line of their own:
+        // the main road's edge line runs along them up to the track itself.
+        if (dirtApproach && sx < 0) { along(x, centerZ - kerbZ - 3.4, centerZ - 4.4); along(x, centerZ + 4.4, centerZ + kerbZ + 3.4); }
+        if ((situation.noRight || dirtApproach) && sx < 0) continue;
+        const [x0, x1] = sx > 0 ? [kerbX + 3.4, armEnd] : [-armEnd, -kerbX - 3.4];
+        across(centerZ - (kerbZ - 0.25), x0, x1);
+        if (tJunction) across(centerZ + (kerbZ - 0.25), sx > 0 ? 7.6 : -armEnd, sx > 0 ? armEnd : -7.6);
+        else across(centerZ + (kerbZ - 0.25), x0, x1);
+      }
+      if (quads.length) { const m = addBakedQuads(seg, quads, 0.027, markingMat.clone()); m.userData.roadMarking = true; m.userData.noEditIndex = true; }
+    }
 
     // Marking 1.12 belongs only where the source has a signal or STOP sign.
     // Adding it to every unregulated junction invents legally meaningful road
@@ -8556,11 +8977,13 @@
       rightLane: wide ? crossW / 2 - laneW / 2 : 1.8,
       halfW: wide ? halfW : null,
       halfM: wideMain ? halfM : null,
+      exitWidths, approachW: incomingRoad?.userData.roadWidth || roadWidth,
       kerbZ, kerbX,
     };
     state.intersections.push(intersectionData);
     // Visible participants already occupy the road, even before their question.
     // Register them now so traffic departing an earlier task can queue behind them.
+    actorsInScene.filter(a => a.config.type === 'tram').forEach(a => buildTramTrack(a, intersectionData));
     ensureTraffic(intersectionData);
     const action = spec.maneuver;
     const L = intersectionData.leftLane, R = intersectionData.rightLane;
@@ -8605,7 +9028,8 @@
       const oneWayMode = oneWay && direction !== 'straight' ? (direction === flowExit ? 'with' : 'against') : null;
       const extension = dirtApproach && direction === 'right'
         ? buildDirtExit(200, (state.district + 1) % DISTRICTS, (crossStreetLength - roadWidth) / 2)
-        : buildStraightSegment(0, 200, true, (state.district + 1) % DISTRICTS, oneWayMode, direction === 'straight' ? 0 : 30);
+        : buildStraightSegment(0, 200, true, (state.district + 1) % DISTRICTS, oneWayMode, direction === 'straight' ? 0 : 30,
+          situation.junctionLayout ? roadWidth : exitWidths[direction] || roadWidth);
       extension.rotation.y = yaw;
       const yardSide=direction==='left'?1:-1;
       const yardExit=direction!=='straight' && (situation.yardAfter!==undefined
@@ -8627,36 +9051,35 @@
       state.roadSegments = state.roadSegments.filter(s => s !== incomingRoad);
       intersectionData.previews.uturn = incomingRoad;
     }
-    actorsInScene.filter(a => a.config.type === 'tram').forEach(a => {
-      const motion = buildActorMotion(a, intersectionData);
-      // The approach rails run along the tram's own heading (the path's first
-      // tangent can already lean into the turn and skew them).
-      const incoming = new THREE.Vector3(Math.sin(a.mesh.rotation.y), 0, Math.cos(a.mesh.rotation.y));
-      const outgoing = motion.path.getTangentAt(1);
-      const points = [a.initialPos.clone().addScaledVector(incoming, -70)];
-      for (let i = 0; i <= 60; i++) points.push(motion.path.getPointAt(i / 60));
-      // Actors continue beyond their authored curve until they have completely
-      // left the camera. Rails must cover that same visual lifetime.
-      points.push(motion.path.getPointAt(1).addScaledVector(outgoing, 320));
-      const centerline = curve(points);
-      [-0.7, 0.7].forEach(offset => {
-        const rail = [];
-        for (let i = 0; i <= 100; i++) {
-          const t = i / 100, p = centerline.getPointAt(t), v = centerline.getTangentAt(t);
-          p.add(new THREE.Vector3(-v.z, 0, v.x).multiplyScalar(offset));
-          p.y = 0.055;
-          rail.push(p);
-        }
-        const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve(rail), 120, 0.035, 5, false),
-          new THREE.MeshLambertMaterial({ color: 0x8E999C }));
-        mesh.userData.tramRail = true;
-        mesh.userData.railEnd = rail[rail.length - 1].clone();
-        seg.add(mesh);
-      });
-    });
 
+
+    clearTramScenery(intersectionData);
     refreshRoadBounds();
     return intersectionLength;
+  }
+
+  // A tram's rails run on straight past its scene (the tram keeps going
+  // until it has left the camera). Once the next junction stands there, the
+  // run-out is cut where it would first cross no carriageway: the median
+  // lawn or the island of the next junction, not laid over the grass.
+  function trimTramRuns() {
+    scene.updateMatrixWorld(true);
+    state.roadSegments.forEach(seg => seg.traverse(mesh => {
+      const rail = mesh.userData.railPoints;
+      if (!rail || mesh.userData.railTrimmed === rail.length) return;
+      let cut = rail.length;
+      for (let i = Math.max(1, mesh.userData.railRunOut); i < rail.length; i++) {
+        const w = rail[i].clone().applyMatrix4(mesh.matrixWorld);
+        if (!roadSupports(w)) { cut = i; break; }
+      }
+      if (cut >= rail.length - 1 || cut === mesh.userData.railTrimmed) return;
+      // Stop a couple of metres short of the edge.
+      const keep = Math.max(2, cut - 2);
+      mesh.geometry.dispose();
+      mesh.geometry = new THREE.TubeGeometry(curve(rail.slice(0, keep + 1)), Math.max(8, keep * 1.2 | 0), 0.035, 5, false);
+      mesh.userData.railTrimmed = cut;
+      mesh.userData.railEnd = rail[keep].clone();
+    }));
   }
 
   // Hand edits made in the game lab (tools/game_lab), per scenario id:
@@ -8705,8 +9128,12 @@
   function applySceneEdits(group, id, originZ) {
     // Stable keys for the rest of the scene's own objects (build order is
     // deterministic): trees, lamps, kiosks... Actors are never edited here.
-    group.children.forEach((o, i) => {
+    // Pieces added later (userData.noEditIndex) do not shift these keys.
+    let i = 0;
+    group.children.forEach(o => {
+      if (o.userData.noEditIndex) return;
       if (!o.userData.editKey && o.isGroup && !o.userData.actor) o.userData.editKey = 'obj:' + i;
+      i++;
     });
     const edits = (window.PDD_SCENE_EDITS || {})[id];
     if (!edits) return;
@@ -8739,18 +9166,8 @@
   function registerRoadSegment(seg) {
     // Paving joints, kerb sections and asphalt grain come from the shared road
     // textures (road-materials.js), continuous across segments.
-    seg.children.forEach(child => {
-      child.position.x *= -1;
-      child.rotation.y *= -1;
-    });
-    seg.traverse(child => {
-      if (child.isMesh && child.material && child.material.isMeshLambertMaterial) child.receiveShadow = true;
-      if (!child.userData.actor && child.material?.color?.getHex() === BRAND.sidewalk) child.userData.surface = 'sidewalk';
-      if (!child.userData.actor && child.material?.color?.getHex() === BRAND.asphalt && child.geometry?.type === 'PlaneGeometry') child.userData.surface = 'road';
-    });
-    seg.traverse(child => {
-      if (child.userData.surface === 'sidewalk') { child.material.color.setHex(season().sidewalk); child.material.userData.seasonal = 'sidewalk'; }
-    });
+    seg.children.forEach(registerRoadObject);
+    seg.userData.registered=true;
     // Its texture continues the road it was built from (a preview: the road
     // of its junction).
     window.PDD_ROADS.adopt(seg, state.exitRoad || currentCorridor);
@@ -8758,6 +9175,8 @@
   }
 
   function disposeSegment(seg) {
+    seg.traverse(o=>{o.userData.disposed=true;});
+    for(let i=sceneryJobs.length-1;i>=0;i--)if(sceneryJobs[i].owner.userData.disposed)sceneryJobs.splice(i,1);
     if (state.roadEvent?.group === seg) finishRoadEvent(state.roadEvent.phase === 'manual');
     const removed = new Set(); seg.traverse(o => removed.add(o));
     state.ambient = state.ambient.filter(a => !removed.has(a.mesh));
@@ -8791,15 +9210,52 @@
     return !!(s.regulator || spec.regulator || (spec.overrides && spec.overrides.regulator));
   }
 
-  function nextSituation() {
+  // --- One city: avenues carry on between junctions of the same width ---
+  // A wide street of a ticket (two lanes each way, 14 or 16.8 m) used to
+  // narrow to the ordinary 8.4 m right after its junction and widen again at
+  // the next wide one. Now an avenue arm usually goes on as an avenue, and
+  // the next junction on it is one of the same width: the multi-lane
+  // questions string together along real avenues of the town.
+  const AVENUE_WIDTHS = [14, 16.8], AVENUE_CHANCE = 0.75;
+  const withOverrides = sc => ({ ...sc, ...(routeSpec(sc).overrides || {}) });
+  const plainGeometry = x => (!x.geometry || x.geometry === 'cross') && !x.junctionLayout && !x.offsetTramRoad &&
+    x.yardAfter === undefined && !x.tramTracks && !x.oneWay;
+  // A junction with hand-drawn paths ends them in the lanes of an ordinary
+  // street: its arms cannot go on as avenues.
+  const authored = sc => !!routeSpec(sc).paths;
+  function avenueMain(sc) { const x = withOverrides(sc); return plainGeometry(x) && !authored(sc) && AVENUE_WIDTHS.includes(x.mainWidth) ? x.mainWidth : 0; }
+  function avenueCross(sc) { const x = withOverrides(sc); return plainGeometry(x) && !authored(sc) && AVENUE_WIDTHS.includes(x.crossWidth) ? x.crossWidth : 0; }
+  function avenueExits(situation) {
+    const out = { straight: 8.4, left: 8.4, right: 8.4 };
+    if (state.cityAvenues === false) return out;
+    const main = avenueMain(situation), cross = avenueCross(situation);
+    if (main && Math.random() < AVENUE_CHANCE) out.straight = main;
+    for (const side of ['left', 'right']) if (cross && Math.random() < AVENUE_CHANCE) out[side] = cross;
+    return out;
+  }
+
+  // width: the road the next junction is approached along. On an avenue it
+  // has to be a junction of the same width (never an ordinary one, whose
+  // two-lane approach could not meet it).
+  function nextSituation(width = 8.4) {
     // Unreviewed geometry must not silently teach an incorrect scene.
     const pool = SITUATIONS.filter(s => routeSpec(s).reviewed === true);
     if (!pool.length) throw new Error('No validated driving scenarios loaded');
 
-    if (situationBag.length) {
+    if (situationBag.length && !(width > 8.5 && avenueMain(situationBag[situationBag.length - 1]) !== width)) {
       const selected = situationBag.pop();
       lastSituationId = selected.id;
       return selected;
+    }
+    if (width > 8.5) {
+      const fits = sc => avenueMain(sc) === width && sc.id !== lastSituationId;
+      const inBag = situationBag.findIndex(fits);
+      const choices = pool.filter(fits);
+      if (inBag >= 0 || choices.length) {
+        const selected = inBag >= 0 ? situationBag.splice(inBag, 1)[0] : choices[Math.floor(Math.random() * choices.length)];
+        lastSituationId = selected.id;
+        return selected;
+      }
     }
 
     const regPool = pool.filter(isRegulatorSituation);
@@ -8872,11 +9328,15 @@
   function checkAndSpawnNext() {
     if (!state.isAtSituation && !state.resolution && maybeReverseWorld()) return;
     if (state.isResolvingSituation || state.intersections.length) return;
-    if (playerCarGroup.position.z + 110 > nextSegmentZ) {
+    // The next junction is built 150 m + 1.5 s of travel ahead: its scenery
+    // streams in before it comes into view, without keeping a whole extra
+    // junction (and its exits) alive on a weak phone.
+    if (playerCarGroup.position.z + 150 + Math.max(0,state.speed)*1.5 > nextSegmentZ) {
       situationIndex++;
-      buildIntersectionSegment(nextSegmentZ, nextSituation(), state.exitRoad);
+      buildIntersectionSegment(nextSegmentZ, nextSituation(state.exitRoad?.userData.roadWidth || 8.4), state.exitRoad);
       state.exitRoad = null;
       resolveSceneryOverlaps();
+      trimTramRuns();
     }
     trimSegments();
   }
@@ -8923,6 +9383,7 @@
     cameraHeading += Math.PI;
 
     scene.updateMatrixWorld(true);
+    inheritSceneryClearances(currentCorridor);
     const corridorWorld = currentCorridor.matrixWorld.clone();
     if (currentCorridor.parent) currentCorridor.parent.remove(currentCorridor);
     scene.add(currentCorridor);
@@ -8951,7 +9412,7 @@
     const ends = corridorWorldEnds();
     const startZ = Math.max(...ends.map(p => p.z));
     state.district = (state.district + 1) % DISTRICTS;
-    buildIntersectionSegment(startZ, nextSituation(), currentCorridor);
+    buildIntersectionSegment(startZ, nextSituation(currentCorridor.userData.roadWidth || 8.4), currentCorridor);
     nextSegmentZ = startZ + 52;
     refreshRoadBounds();
     return true;
@@ -8959,6 +9420,158 @@
 
   function curve(points) {
     return new THREE.CatmullRomCurve3(points, false, 'centripetal');
+  }
+
+  function clearTramScenery(intersection) {
+    const seg=intersection.seg,zones=seg.userData.sceneryClearance;
+    if(!zones)return;
+    seg.updateWorldMatrix(true,true);const inverse=seg.matrixWorld.clone().invert();
+    seg.traverse(o=>{
+      if(!o.userData.sceneryObject || o.userData.tramDepot || o.userData.actor)return;
+      const box=new THREE.Box3().setFromObject(o).applyMatrix4(inverse);
+      if(zones.some(z=>box.intersectsBox(z)))o.visible=false;
+    });
+  }
+
+  function railCurvePath() {
+    const path=new THREE.CurvePath();
+    // CurvePath.getPoint already uses child arc lengths. Applying the base
+    // Curve's sampled remapping a second time shifts differently nested paths.
+    path.getPointAt=function(u){return this.getPoint(u);};
+    path.getTangentAt=function(u,target){return this.getTangent(u,target);};
+    return path;
+  }
+
+  function buildTramTrack(actor, intersection) {
+    const core = buildActorMotion(actor, intersection).path;
+    const start = actor.initialPos.clone(), end = core.getPointAt(1);
+    const incoming = new THREE.Vector3(Math.sin(actor.mesh.rotation.y),0,Math.cos(actor.mesh.rotation.y));
+    const outgoing = core.getTangentAt(1).normalize();
+    const lateral = dir => new THREE.Vector3(-dir.z,0,dir.x);
+    // Beyond the teaching scene, tracks branch to a reserved corridor and
+    // into a depot. Cars have no drivable surface on this service branch.
+    const side = dir => {
+      const left=lateral(dir), q=end.clone().sub(new THREE.Vector3(0,0,intersection.centerZ));
+      return q.dot(left)<0?-1:1;
+    };
+    const outSide=lateral(outgoing).multiplyScalar(side(outgoing));
+    const inSide=lateral(incoming).multiplyScalar(-side(incoming));
+    const depotIn=start.clone().addScaledVector(incoming,-100).addScaledVector(inSide,24);depotIn.y=.18;
+    const inMouth=start.clone().addScaledVector(incoming,-35);
+    const approach=railCurvePath();
+    approach.add(new THREE.CubicBezierCurve3(depotIn,depotIn.clone().addScaledVector(incoming,35),inMouth.clone().addScaledVector(incoming,-25),inMouth));
+    approach.add(new THREE.LineCurve3(inMouth,start));
+    const outMouth=end.clone().addScaledVector(outgoing,25);
+    const depotOut=end.clone().addScaledVector(outgoing,100).addScaledVector(outSide,24);depotOut.y=.18;
+    const departure=railCurvePath();
+    departure.add(new THREE.LineCurve3(end,outMouth));
+    const branchEnd=depotOut.clone().addScaledVector(outgoing,-20);
+    departure.add(new THREE.CubicBezierCurve3(outMouth,outMouth.clone().addScaledVector(outgoing,25),branchEnd.clone().addScaledVector(outgoing,-25),branchEnd));
+    departure.add(new THREE.LineCurve3(branchEnd,depotOut));
+    const route=railCurvePath();route.add(core);route.add(departure);
+    actor.railPath=route;actor.railTerminal=true;
+    const network=railCurvePath();network.add(approach);network.add(core);network.add(departure);
+    actor.trackPath=network;
+    const length=network.getLength(), samples=Math.ceil(length/.45);
+    const railMaterial=new THREE.MeshLambertMaterial({color:0x8E999C});
+    // A ribbon sampled directly from the very same centerline avoids a
+    // second Catmull-Rom fit cutting corners away from the tram's wheels.
+    for(const offset of [-.7,.7]) {
+      const pos=[],idx=[];
+      for(let i=0;i<=samples;i++) {
+        const u=i/samples,q=network.getPointAt(u),dir=network.getTangentAt(u),left=lateral(dir).normalize();
+        for(const edge of [-.035,.035]) { const v=q.clone().addScaledVector(left,offset+edge);pos.push(v.x,v.y+.055,v.z); }
+        if(i)idx.push(i*2-2,i*2-1,i*2,i*2-1,i*2+1,i*2);
+      }
+      const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geometry.setIndex(idx);geometry.computeVertexNormals();
+      const rail=new THREE.Mesh(geometry,railMaterial);rail.userData.tramRail=true;rail.userData.trackPath=network;intersection.seg.add(rail);
+    }
+    // Reserved service track has ballast and sleepers; the question's rails
+    // remain embedded in asphalt. Depots conceal the physical rail ends.
+    for(const branch of [approach,departure]) {
+      const count=Math.ceil(branch.getLength()/1.3),sleepers=[],bedPositions=[],bedIndices=[],fenceParts=[],lastPosts=[null,null];
+      for(let i=0;i<count;i++) {
+        const u=i/count,q=branch.getPointAt(u);
+        if(q.y<.055)continue;
+        const d=branch.getTangentAt(u),left=lateral(d).normalize();
+        const base=bedPositions.length/3;
+        for(const [edge,height] of [[-1.25,q.y-.025],[1.25,q.y-.025],[-1.7,.008],[1.7,.008]]){
+          const v=q.clone().addScaledVector(left,edge);bedPositions.push(v.x,height,v.z);
+        }
+        if(base)bedIndices.push(base-4,base-3,base,base-3,base+1,base,
+          base-4,base,base-2,base-2,base,base+2,
+          base-3,base-1,base+1,base-1,base+3,base+1);
+        if(i%4===0) {
+          if(q.y>.13) for(const [j,side] of [[0,-1],[1,1]]) {
+            const p=q.clone().addScaledVector(left,side*2);p.y=.4;
+            const post=new THREE.Mesh(new THREE.BoxGeometry(.08,.8,.08),null);post.position.copy(p);fenceParts.push(post);
+            const previous=lastPosts[j];
+            if(previous) {
+              const delta=p.clone().sub(previous),bar=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,delta.length()),null);
+              bar.position.copy(p).add(previous).multiplyScalar(.5);bar.position.y=.67;bar.rotation.y=Math.atan2(delta.x,delta.z);fenceParts.push(bar);
+            }
+            lastPosts[j]=p;
+          }
+          const clearance=new THREE.Box3(q.clone().add(new THREE.Vector3(-2.2,-1,-2.2)),q.clone().add(new THREE.Vector3(2.2,8,2.2)));
+          (intersection.seg.userData.sceneryClearance ||= []).push(clearance);
+        }
+        const sleeper=new THREE.Mesh(new THREE.BoxGeometry(2.05,.055,.22),null);
+        sleeper.position.copy(q);sleeper.position.y+=.012;sleeper.rotation.y=Math.atan2(d.x,d.z);sleepers.push(sleeper);
+      }
+      if(fenceParts.length) {intersection.seg.add(mergeStatic(fenceParts,sceneryMat(0x697477)));fenceParts.forEach(m=>m.geometry.dispose());}
+      if(bedPositions.length) {
+        const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(bedPositions,3));g.setIndex(bedIndices);g.computeVertexNormals();
+        const bed=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:0x8C867C}));bed.userData.ballast=true;intersection.seg.add(bed);
+      }
+      if(sleepers.length) {intersection.seg.add(mergeStatic(sleepers,new THREE.MeshLambertMaterial({color:0x5E4B3B})));sleepers.forEach(m=>m.geometry.dispose());}
+    }
+    for(const [position,dir] of [[depotIn,incoming],[depotOut,outgoing.clone().negate()]]) {
+      const depot=createTramDepot();depot.position.copy(position);depot.rotation.y=Math.atan2(dir.x,dir.z);
+      depot.userData.sceneryObject=true;depot.userData.tramDepot=true;intersection.seg.add(depot);
+      depot.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+      state.occluders.push(depot);
+      depot.updateWorldMatrix(true,true);
+      const clearance=new THREE.Box3().setFromObject(depot).applyMatrix4(intersection.seg.matrixWorld.clone().invert());
+      (intersection.seg.userData.sceneryClearance ||= []).push(clearance);
+    }
+  }
+
+  // Tram depot: a brick shed open at the front (+Z) for one track. The whole
+  // tram fits inside (5 m wide, 26 m deep, roof at 6 m) before it retires,
+  // even if a top-down camera still contains the depot.
+  function createTramDepot() {
+    const depot=new THREE.Group(),R=window.PDD_ROADS;
+    const brick=sceneryMat(0xA65A42),trim=sceneryMat(0xD9D2C3),roofMat=sceneryMat(0x5E6B6E),steel=sceneryMat(0x4F5A5E);
+    const box=(w,h,d,x,y,z,mat,skin)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);depot.add(m);if(skin)R.skinObject(m,skin);return m;};
+    // Walls, a light plinth and cornice.
+    for(const x of [-2.75,2.75]) {box(.3,6,26,x,3,0,brick,'brick');box(.36,.5,26.1,x,.25,0,trim,'plaster');box(.4,.3,26.2,x,5.85,0,trim,'plaster');}
+    box(5.8,6,.3,0,3,-13,brick,'brick');box(5.86,.5,.36,0,.25,-13,trim,'plaster');
+    // Front portal: pilasters and a lintel with the sign.
+    for(const x of [-2.75,2.75])box(.6,6.6,.6,x,3.3,13,trim,'plaster');
+    box(6.1,1.1,.6,0,6.05,13,trim,'plaster');
+    const c=document.createElement('canvas');c.width=256;c.height=64;const g=c.getContext('2d');
+    g.fillStyle='#2F5D8A';g.fillRect(0,0,256,64);g.fillStyle='#FFFFFF';g.font='bold 40px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('ДЕПО',128,34);
+    const sign=new THREE.Mesh(new THREE.PlaneGeometry(2.6,.65),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));sign.position.set(0,6.05,13.31);depot.add(sign);
+    // Open gate leaves folded back against the portal.
+    for(const x of [-1,1]){const leaf=box(.08,4.8,2.4,x*2.95,2.4,14.2,steel,'metal');leaf.rotation.y=x*.08;}
+    // Gable roof with a glazed ridge lantern.
+    for(const x of [-1,1]){const slope=box(3.25,.18,26.6,x*1.45,6.9,0,roofMat,'roofFlat');slope.rotation.z=-x*.36;}
+    box(1.2,.7,22,0,7.75,0,trim,'plaster');
+    const lanternGlass=sceneryMat(0x9FB8C4);for(const x of [-.61,.61])box(.04,.5,21.6,x,7.75,0,lanternGlass,'window');
+    box(1.4,.12,22.2,0,8.15,0,roofMat,'roofFlat');
+    // Tall windows along both sides.
+    const panes=[],glass=sceneryMat(0x86A3B1);
+    for(const x of [-2.92,2.92])for(let z=-10.5;z<=10.5;z+=3){const w=new THREE.Mesh(new THREE.BoxGeometry(.04,2.2,1.6));w.position.set(x,3.6,z);panes.push(w);}
+    const windows=mergeStatic(panes,glass);panes.forEach(m=>m.geometry.dispose());R.skinObject(windows,'window');depot.add(windows);
+    // Office annex with a door, and a concrete floor inside.
+    box(3.2,3.4,7,4.5,1.7,-7,sceneryMat(0xD8CDB8),'plaster');box(3.5,.2,7.3,4.5,3.5,-7,roofMat,'roofFlat');
+    const door=box(.06,2.1,1,6.13,1.05,-5,sceneryMat(0x5C4A3A),'door');door.rotation.y=0;
+    const annexPanes=[];for(const z of [-9,-7.4]){const w=new THREE.Mesh(new THREE.BoxGeometry(.04,1.1,1.1));w.position.set(6.12,2.1,z);annexPanes.push(w);}
+    const annexWindows=mergeStatic(annexPanes,glass.clone());annexPanes.forEach(m=>m.geometry.dispose());R.skinObject(annexWindows,'window');depot.add(annexWindows);
+    box(5.2,.06,26,0,.03,0,sceneryMat(0x9A9790),'plaster');
+    // A lamp over the gate.
+    box(.12,.12,.7,0,5.3,13.6,steel);const bulb=box(.4,.12,.3,0,5.22,13.95,new THREE.MeshBasicMaterial({color:0xFFF3C4}));bulb.userData.lampBulb=true;
+    return depot;
   }
 
   function buildActorMotion(actor, intersection) {
@@ -9081,12 +9694,13 @@
       const raw = curve(points), n = Math.ceil(raw.getLength() / 2);
       points = Array.from({ length: n + 1 }, (_, i) => {
         const q = raw.getPointAt(i / n);
+        if(i===0)return q; // keep the staged actor and track entry continuous
         if (hw && Math.abs(q.x) > 8) q.z = z + (q.z - z) * hw(q.x) / hw(0);
         if (hm && Math.abs(q.z - z) > 12 && Math.abs(q.x) < 8) q.x = q.x * hm(q.z) / hm(z);
         return q;
       });
     }
-    const path = curve(points);
+    const path = actor.railPath || curve(points);
     // Turning traffic signals its manoeuvre until the turn is complete.
     const signalPlan = cfg.targetAction === 'turn_right' ? [{ from: 0, to: clearDistance, side: 'right' }] :
       (cfg.targetAction === 'turn_left' || cfg.targetAction === 'uturn') ? [{ from: 0, to: clearDistance, side: 'left' }] : null;
@@ -9108,6 +9722,7 @@
     if (!intersection.motions) {
       intersection.motions = intersection.actors.map(a => buildActorMotion(a, intersection));
       state.actors.push(...intersection.motions);
+      addPathCorridors(intersection.motions);
     }
     return intersection.motions;
   }
@@ -9152,7 +9767,7 @@
     state.resolution = { intersection, spec, motions, yielding, phase: 'manual', elapsed: 0,
       entry: playerCarGroup.position.clone(), entryYaw: playerCarGroup.rotation.y, faults: new Set(), recovery: 0 };
     if (spec.pathRules) state.resolution.pathAudit = buildManeuverAudit(state.resolution);
-    state.steering = 0; state.laneChangeX = null; state.autoPath = null;
+    state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null;
     startPlayerManeuver();
     const r = state.resolution;
     const intended = { path: r.path, length: r.length, clearDistance: r.length, halfWidth: 0.9, halfLength: 2 };
@@ -9225,15 +9840,26 @@
         new THREE.Vector3(-4.8, 0, z - R), new THREE.Vector3(-22, 0, z - R)];
       const hw = r.intersection.halfW;
       // On a wide street the lane closes in with the taper to the exit road.
-      if (hw) points.splice(3, 1, new THREE.Vector3(-14, 0, z - R), new THREE.Vector3(-26, 0, z - R * hw(26) / hw(0)), new THREE.Vector3(-36, 0, z - 1.8));
+      // (An avenue arm keeps its lanes: the car stays in the lane it took.)
+      if (hw) points.splice(3, 1, new THREE.Vector3(-14, 0, z - R), new THREE.Vector3(-26, 0, z - R * hw(-26) / hw(0)), new THREE.Vector3(-36, 0, z - ((r.intersection.exitWidths?.right || 8.4) > 8.5 ? R : 1.8)));
     } else if (action === 'left') {
       exitYaw = Math.PI / 2;
       const L = r.intersection.leftLane || 1.8;
       // From the lane the car is in (the left one on a wider road).
-      points = [start, new THREE.Vector3(THREE.MathUtils.clamp(start.x, -1.8, 1.8), 0, z - 1.5),
+      points = [start, new THREE.Vector3(r.intersection.situation.geometry === 'divided_main' ? start.x : THREE.MathUtils.clamp(start.x, -1.8, 1.8), 0, z - 1.5),
         new THREE.Vector3(1.5, 0, z + L), new THREE.Vector3(22, 0, z + L)];
       const hw = r.intersection.halfW;
-      if (hw) points.splice(3, 1, new THREE.Vector3(14, 0, z + L), new THREE.Vector3(26, 0, z + L * hw(26) / hw(0)), new THREE.Vector3(36, 0, z + 1.8));
+      if (hw) points.splice(3, 1, new THREE.Vector3(14, 0, z + L), new THREE.Vector3(26, 0, z + L * hw(26) / hw(0)), new THREE.Vector3(36, 0, z + ((r.intersection.exitWidths?.left || 8.4) > 8.5 ? L : 1.8)));
+    } else if (action === 'uturn' && r.intersection.situation.geometry === 'divided_main') {
+      exitYaw = Math.PI;
+      const radius = Math.max(4.1, Math.abs(start.x)), arc = [];
+      // Stay beside the median until its end; make the loop entirely in
+      // the open crossing and return beside the opposite median.
+      for (let a = Math.PI; a >= 0; a -= Math.PI / 24)
+        arc.push(new THREE.Vector3(radius * Math.cos(a), 0, z - 2 + radius * Math.sin(a)));
+      points = [start, new THREE.Vector3(-radius, 0, z - 4), ...arc,
+        new THREE.Vector3(radius, 0, z - 13), new THREE.Vector3(radius, 0, z - 24),
+        new THREE.Vector3(1.8, 0, z - 32)];
     } else if (action === 'uturn') {
       exitYaw = Math.PI;
       // A round loop in the open middle of the junction (radius 2.6 m), no
@@ -9245,7 +9871,11 @@
       points = [start, new THREE.Vector3(-1.8, 0, z - 7), new THREE.Vector3(-R, 0, zc - 2.5), ...arc,
         new THREE.Vector3(R, 0, zc - 2.5), new THREE.Vector3(1.8, 0, z - 7), new THREE.Vector3(1.8, 0, z - 22)];
     } else {
-      points = [start, new THREE.Vector3(-1.8, 0, z), new THREE.Vector3(-1.8, 0, z + 16)];
+      // Straight on along an avenue: the nearer of its two lanes (W/8, 3W/8
+      // from the centre line), not the 1.8 m of an ordinary street.
+      const W = r.intersection.exitWidths?.straight || 8.4;
+      const x = W > 8.5 ? -(Math.abs(start.x + W * 3 / 8) < Math.abs(start.x + W / 8) ? W * 3 / 8 : W / 8) : -1.8;
+      points = [start, new THREE.Vector3(x, 0, z), new THREE.Vector3(x, 0, z + 16)];
     }
     return { points, exitYaw };
   }
@@ -9256,6 +9886,14 @@
     const forward = new THREE.Vector3(Math.sin(box.yaw), 0, Math.cos(box.yaw));
     const right = new THREE.Vector3(forward.z, 0, -forward.x);
     let limit = actor.maxSpeed;
+    if (['tram','train'].includes(actor.config.type)) {
+      for(let d=box.halfLength+1;d<box.halfLength+30;d+=1) {
+        if(pointBlocked(box.p.clone().addScaledVector(forward,d),actor)) {
+          const room=Math.max(0,d-box.halfLength-2);
+          limit=Math.min(limit,Math.sqrt(12*room),room/Math.max(dt,.001));break;
+        }
+      }
+    }
     for (const [other, entry] of traffic) {
       if (other === actor || other.config.type === 'pedestrian') continue;
       const leader = entry.box, alignment = Math.cos(leader.yaw - box.yaw);
@@ -9346,7 +9984,7 @@
         // Short strolls with long pauses, a flick of the tail while sitting.
         const cycle = a.time * 0.09 + a.phase, moving = Math.abs(Math.cos(cycle)) > 0.55;
         if (moving) a.mesh.position.z = a.center + Math.sin(cycle) * 1.6;
-        a.mesh.rotation.y = Math.cos(cycle) >= 0 ? 0 : Math.PI;
+        turnToward(a.mesh, Math.cos(cycle) >= 0 ? 0 : Math.PI, dt, 3);
         a.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = moving ? Math.sin(a.time * 9 + i * Math.PI / 2) * 0.5 : 0; });
         a.mesh.userData.tail.rotation.z = Math.sin(a.time * 1.7) * 0.35;
         return;
@@ -9354,7 +9992,7 @@
       const phase = a.phase + a.time * 0.14;
       a.mesh.position.z = a.center + Math.sin(phase) * 6;
       // Near a bus bay on their side, walkers take the path behind it.
-      let laneX = 5.2 + (a.targetLane ?? a.lane ?? 0) * 1.1, bayed = false;
+      let laneX = (a.edge ?? 5.2) + (a.targetLane ?? a.lane ?? 0) * 1.1, bayed = false;
       for (const bay of state.busBays || []) {
         if (!bay.mesh.parent) continue;
         const local = a.seg.worldToLocal(bay.mesh.parent.localToWorld(bay.center.clone()));
@@ -9366,8 +10004,11 @@
       const targetX = Math.sign(a.mesh.position.x || 1) * laneX;
       a.mesh.position.x += (targetX - a.mesh.position.x) * (bayed ? 1 : Math.min(1, dt * 3));
       const direction = Math.cos(phase);
-      a.mesh.rotation.y = direction >= 0 ? 0 : Math.PI;
-      a.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(a.time * 5 + i * Math.PI) * 0.32 * Math.abs(direction); });
+      // Turning round where the stroll reverses: a gradual turn on the spot
+      // (feet stepping), never an instant flip.
+      const turning = turnToward(a.mesh, direction >= 0 ? 0 : Math.PI, dt, 2.6);
+      const stride = Math.max(Math.abs(direction), turning ? 0.35 : 0);
+      a.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(a.time * 5 + i * Math.PI) * 0.32 * stride; });
       if (a.mesh.userData.dog) a.mesh.userData.dog.userData.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(a.time * 9 + i * Math.PI / 2) * 0.55 * Math.abs(direction); });
       a.mesh.userData.arms.forEach((arm, i) => { arm.rotation.x = Math.sin(a.time * 5 + i * Math.PI) * -0.2 * Math.abs(direction); });
     });
@@ -9437,6 +10078,17 @@
         }
         if (playerContact || trafficContact) {
           a.mesh.position.copy(before); a.mesh.rotation.y = yaw; a.distance = distance; a.speed = 0;
+          // A jam: a vehicle stuck behind other traffic right in front of the
+          // player (who has to get past it to the question) does not stay a
+          // wall — after a short wait it leaves (fades out) like at a run-out.
+          if (trafficContact && !playerContact && !state.isAtSituation && a.fade == null && a.config.type !== 'pedestrian' && a.config.type !== 'tram' && !a.railTerminal) {
+            const ahead = box.p.clone().sub(playerCarGroup.position);
+            const fwd = new THREE.Vector3(Math.sin(playerCarGroup.rotation.y), 0, Math.cos(playerCarGroup.rotation.y));
+            const along = ahead.dot(fwd), side = Math.abs(ahead.x * fwd.z - ahead.z * fwd.x);
+            if (along > 0 && along < 22 && side < 3.2 && Math.abs(state.speed) < 1.5) a.jam = (a.jam || 0) + dt;
+            else a.jam = 0;
+            if (a.jam > 1.8) { a.cleared = true; startActorFade(a); }
+          }
           if (playerContact && !state.attract && (!state.isAtSituation || state.resolution?.phase === 'manual')) {
             handleCollision(a, 'collision:' + a.config.id);
           }
@@ -9456,8 +10108,47 @@
       a.cleared = a.crashed || !!a.fall || a.distance >= a.clearDistance;
       // Keep walking/riding beyond the planned path. Removal is permitted only
       // once the WHOLE actor is outside the camera, never at a fixed timer/distance.
-      if (t >= 1 && !actorInView(a.mesh)) { a.done = true; a.mesh.visible = false; }
+      if (t >= 1 && (a.railTerminal || !actorInView(a.mesh))) { a.done = true; a.mesh.visible = false; }
+      // ...except where that straight run-out would leave the carriageway
+      // (the lawn of a median, the island of the next junction): a vehicle
+      // fades away there instead of driving across the grass.
+      else if (t >= 1 && a.fade == null && a.config.type !== 'pedestrian' && a.distance - a.length > 2) {
+        const box = actorFootprint(a), ahead = box.p.clone().addScaledVector(new THREE.Vector3(Math.sin(box.yaw), 0, Math.cos(box.yaw)), box.halfLength + 3);
+        if (!roadSupports(ahead)) startActorFade(a);
+      }
+      if (a.fade != null) updateActorFade(a, dt);
     });
+  }
+
+  // Eases a yaw towards a target at `rate` rad/s; true while still turning.
+  function turnToward(mesh, target, dt, rate) {
+    const diff = Math.atan2(Math.sin(target - mesh.rotation.y), Math.cos(target - mesh.rotation.y));
+    if (Math.abs(diff) < 1e-3) { mesh.rotation.y = target; return false; }
+    // Half turns always go the same way round (no left/right dithering).
+    const step = Math.min(Math.abs(diff), rate * dt) * (Math.abs(Math.abs(diff) - Math.PI) < 1e-3 ? 1 : Math.sign(diff));
+    mesh.rotation.y += step;
+    return true;
+  }
+  function startActorFade(a) {
+    a.fade = 1;
+    a.fadeMaterials = [];
+    a.mesh.traverse(o => {
+      if (!o.material) return;
+      const own = (Array.isArray(o.material) ? o.material : [o.material]).map(m => {
+        const c = cloneMaterial(m); c.transparent = true; a.fadeMaterials.push(c); return c;
+      });
+      o.material = Array.isArray(o.material) ? own : own[0];
+      o.castShadow = false;
+    });
+    if (a.mesh.userData.badge) a.mesh.userData.badge.visible = false;
+  }
+  function updateActorFade(a, dt) {
+    a.fade = Math.max(0, a.fade - dt / 0.6);
+    a.fadeMaterials.forEach(m => { m.opacity = a.fade; m.depthWrite = a.fade > 0.5; });
+    if (a.fade <= 0) {
+      a.done = true; a.mesh.visible = false;
+      a.fadeMaterials.forEach(m => m.dispose()); a.fadeMaterials = [];
+    }
   }
 
   function actorInView(mesh) {
@@ -9723,7 +10414,7 @@
     // Simple mode keeps the planned route through the junction for after the
     // control release: the car stands still on it meanwhile (no teleport).
     if (state.resolution && state.simpleSteering && state.autoPath) state.resolution.pausedPath = state.autoPath;
-    state.steering = 0; state.laneChangeX = null; state.autoPath = null;
+    state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null;
     // A short control release makes the impact legible, but never teleports or
     // rotates the player's car. After it expires the player can immediately
     // steer around the stationary crash participant.
@@ -9855,9 +10546,11 @@
       // taken whatever the heading: the preview roads end after 200 m, and a
       // missed hand-over used to leave the player in a dead end.
       const sideExit = direction === 'left' || direction === 'right';
-      const width = sideExit && r.intersection.halfW ? r.intersection.halfW(p.x) + 0.1 : 4.3;
+      // Half the width of the road this exit leads onto (an avenue is wider).
+      const exitHalf = (direction === 'uturn' ? r.intersection.approachW : r.intersection.exitWidths?.[direction]) / 2 || 4.2;
+      const width = sideExit && r.intersection.halfW ? r.intersection.halfW(p.x) + 0.1 : exitHalf + 0.1;
       const footprintWidth=playerCarGroup.userData.halfWidth*Math.abs(Math.cos(error))+playerCarGroup.userData.halfLength*Math.abs(Math.sin(error));
-      const fitsExit=lateral+footprintWidth<=4.2+SEAM;
+      const fitsExit=lateral+footprintWidth<=exitHalf+SEAM;
       if ((beyond && fitsExit && lateral < width && Math.abs(error) < 0.7) || (farBeyond && lateral < width + 1.7 && Math.abs(error) < Math.PI / 2)) {
         r.exitDirection = direction;
         r.exitYaw = heading;
@@ -9952,6 +10645,7 @@
     state.intersections = state.intersections.filter(i => i !== r.intersection);
     const outgoingPreview = r.intersection.previews[r.exitDirection || r.spec.maneuver];
     scene.updateMatrixWorld(true);
+    inheritSceneryClearances(outgoingPreview);
     const roadWorld = outgoingPreview.matrixWorld.clone();
     const ends = outgoingPreview.userData.roadEnds.map(p => p.clone().applyMatrix4(roadWorld));
     scene.add(outgoingPreview);
@@ -10261,6 +10955,9 @@
 
   function placeRoadEvent(boundary) {
     if (state.roadEvent) return;
+    // Road events rebuild stretches of an ordinary two-lane street; an
+    // avenue between two wide junctions carries just its traffic.
+    if ((currentCorridor?.userData.roadWidth || 8.4) > 8.5) return;
     // Urban road events (a bus bay, crosswalk or a ticket with road markings)
     // start beyond the unpaved stretch, where their paved setting exists.
     if (currentCorridor?.userData.dirtPavedFrom !== undefined) {
@@ -10378,7 +11075,12 @@
         const mapMaterials = planes => Array.isArray(o.material)
           ? o.material.map(m => cloneWithPlanes(m, planes))
           : cloneWithPlanes(o.material, planes);
-        if (box.min.z < from && box.max.z > to) {
+        // A non-road piece that only pokes a seam's overlap (a few cm) past
+        // the strip is not kept as a sliver standing across the new road.
+        const stub = o.userData.surface !== 'road';
+        const beyondBefore = box.min.z < from && !(stub && from - box.min.z < 0.5);
+        const beyondAfter = box.max.z > to && !(stub && box.max.z - to < 0.5);
+        if (beyondBefore && beyondAfter) {
           // Only long surfaces such as asphalt and pavement need two halves.
           const copy = o.clone(false);
           const originals = Array.isArray(o.material) ? o.material : [o.material];
@@ -10389,9 +11091,9 @@
             ? originals.map(m => cloneWithPlanes(m, [after]))
             : cloneWithPlanes(originals[0], [after]);
           o.parent.add(copy);
-        } else if (box.min.z < from) {
+        } else if (beyondBefore) {
           o.material = mapMaterials([before]);
-        } else if (box.max.z > to) {
+        } else if (beyondAfter) {
           o.material = mapMaterials([after]);
         } else {
           // Scenery wholly inside the replacement is clipped away without
@@ -10441,8 +11143,31 @@
     return environment;
   }
 
+  // Centre dashes (1.5) for a replaced strip of the corridor, in the same
+  // phase and width as the corridor's own: a strip drawn with dashes of its
+  // own spacing left a torn line — a stub at each end and an odd gap.
+  function corridorDashes(g, from, to, y, paint) {
+    const c = state.exitRoad || currentCorridor, ends = c?.userData.roadEnds;
+    let a = null, b = null;
+    if (ends) {
+      c.updateWorldMatrix(true, false);
+      a = ends[0].clone().applyMatrix4(c.matrixWorld); b = ends[1].clone().applyMatrix4(c.matrixWorld);
+    }
+    if (!a || Math.abs(a.x - b.x) > 1 || Math.abs(a.x) > 1) {
+      for (let q = from; q < to; q += 5) addFlatPlane(g, .13, 2, 0, q, y, paint);
+      return;
+    }
+    const dir = Math.sign(b.z - a.z) || 1, length = Math.abs(b.z - a.z);
+    for (let q = 2; q < length - 2; q += 5) {
+      const lo = Math.max(from, Math.min(a.z + dir * q, a.z + dir * (q + 2)));
+      const hi = Math.min(to, Math.max(a.z + dir * q, a.z + dir * (q + 2)));
+      if (hi - lo > 0.05) addFlatPlane(g, .18, hi - lo, 0, (lo + hi) / 2, y, paint);
+    }
+  }
+
   function roadSurface(group, width, length, x, z, sidewalk = false) {
     const m = new THREE.MeshLambertMaterial({ color: sidewalk ? season().sidewalk : BRAND.asphalt });
+    if (sidewalk) m.userData.seasonal = 'sidewalk';
     // A pavement strip along the carriageway is exactly 4.2 ... 7.4 across, as
     // every other pavement piece, so its kerb never steps at a join.
     const kerbSide = sidewalk && Math.abs(Math.abs(x) - width / 2 - 4.2) < 0.1;
@@ -10965,17 +11690,28 @@
     const ground=addFlatPlane(seg,70,60,0,z,-.02,new THREE.MeshLambertMaterial({color:season().verge[lawn]}));
     ground.material.userData.seasonal='verge'+lawn;
     const geo=new THREE.ShapeGeometry(polygonShape(outline));geo.rotateX(-Math.PI/2);
-    const road=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:BRAND.asphalt}));road.position.set(0,.02,z);road.receiveShadow=true;
+    // A millimetre below the roads it joins: where they overlap at a mouth
+    // the joining road is drawn, not a flickering dotted seam of two
+    // textures fighting at one height.
+    const road=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:BRAND.asphalt}));road.position.set(0,.019,z);road.receiveShadow=true;
     road.userData.surface='road';road.userData.containsRoad=p=>polygonContains(outline,p.x,p.z);seg.add(road);
     // An offset ring gives every angled arm a full-width pavement. Clip its
     // end caps at the road mouths so it joins the straight previews exactly.
     const shape=polygonShape(outer),hole=polygonShape(outline);shape.holes.push(hole);
     const pavementGeo=new THREE.ExtrudeGeometry(shape,{depth:.18,bevelEnabled:false});pavementGeo.rotateX(-Math.PI/2);
     const mouths=[...layout.arms,{x:0,z:-26,yaw:Math.PI}];
-    const caps=mouths.map(a=>{const f=new THREE.Vector3(Math.sin(a.yaw),0,Math.cos(a.yaw));return new THREE.Plane(f.clone().negate(),a.x*f.x+(z+a.z)*f.z);});
+    // 2 cm short of the mouth: the ring's inner wall stands right on the
+    // mouth line, and a cut exactly through it left that wall half-drawn —
+    // a dotted grey line across the road at every seam.
+    const caps=mouths.map(a=>{const f=new THREE.Vector3(Math.sin(a.yaw),0,Math.cos(a.yaw));return new THREE.Plane(f.clone().negate(),a.x*f.x+(z+a.z)*f.z-.02);});
     const material=new THREE.MeshLambertMaterial({color:BRAND.sidewalk,clippingPlanes:caps});
-    const sw=new THREE.Mesh(pavementGeo,material);sw.position.z=z;sw.userData.surface='sidewalk';sw.receiveShadow=true;
-    sw.userData.noRoad=p=>polygonContains(outer,p.x,p.z)&&!polygonContains(outline,p.x,p.z);seg.add(sw);
+    const sw=new THREE.Mesh(pavementGeo,material);sw.position.set(0,-.001,z);sw.userData.surface='sidewalk';sw.receiveShadow=true;
+    // The ring's end caps are clipped off at the mouths: beyond a mouth (and
+    // on the mouth line itself) is the road it joins, never kerb. Counting
+    // the clipped cap as pavement left a hairline across each arm where the
+    // car "hit the kerb" on the seam with the next road.
+    const beyondMouth=p=>mouths.some(a=>(p.x-a.x)*Math.sin(a.yaw)+(p.z-a.z)*Math.cos(a.yaw)>-.05);
+    sw.userData.noRoad=p=>polygonContains(outer,p.x,p.z)&&!polygonContains(outline,p.x,p.z)&&!beyondMouth(p);seg.add(sw);
     const paint=roadMarkingMat();
     // A mouth edge lies across an arm's end; every other outline edge is a
     // kerb and gets the edge line 0.25 m inside it, mitred at the corners.
@@ -11001,7 +11737,7 @@
     // Each mouth overlaps the road it joins by a SEAM: no seam of ground shows.
     const patches=mouths.map(a=>{const f=[Math.sin(a.yaw),Math.cos(a.yaw)],n=[f[1],-f[0]];
       return [[-1,-1],[1,-1],[1,1],[-1,1]].map(([s,t])=>[a.x+n[0]*4.2*s+f[0]*SEAM*t,z+a.z+n[1]*4.2*s+f[1]*SEAM*t]);});
-    addBakedQuads(seg,patches,.02,new THREE.MeshLambertMaterial({color:BRAND.asphalt}));
+    addBakedQuads(seg,patches,.019,new THREE.MeshLambertMaterial({color:BRAND.asphalt}));
     for(const arm of mouths) {
       const length=Math.hypot(arm.x,arm.z),f=new THREE.Vector3(Math.sin(arm.yaw),0,Math.cos(arm.yaw));
       for(let d=11;d<length;d+=5) {
@@ -11029,7 +11765,31 @@
       addEdgeLineZ(g,z-60-SEAM,z-26+SEAM,low,-1,paint);addEdgeLineZ(g,z-60-SEAM,z-26+SEAM,high,1,paint);
     });
 
-    const k=q=>situation.offsetTramRoad&&q<z?1:1-THREE.MathUtils.smoothstep(Math.abs(q-z),13,25);
+    // The motorway (2_15) widens gently over 60 m of the road before the
+    // junction (built below in place of that stretch) and narrows over the
+    // whole far half, instead of 8.4 -> 29.2 m within 12 m.
+    if(motorway)replaceCorridorStrip(z-86,z-26,g=>{
+      const kk=q=>THREE.MathUtils.smoothstep(q,z-86,z-28),low=q=>-4.2-(width/2-4.2)*kk(q),high=q=>4.2+(width/2-4.2)*kk(q);
+      const road=addRibbon(g,z-86-SEAM,z-26+SEAM,low,high,.02,new THREE.MeshLambertMaterial({color:BRAND.asphalt}),.5);
+      road.userData.surface='road';road.userData.containsRoad=p=>p.x>=low(p.z)&&p.x<=high(p.z)&&!(Math.abs(p.x)<2*kk(p.z)-.05);
+      const zs=[];for(let q=z-86;q<=z-26;q+=.5)zs.push(q);
+      for(const side of [-1,1]){const edge=side<0?low:high;g.add(extrudedStripZ(zs,q=>edge(q)+(side<0?-3.2:0),q=>edge(q)+(side>0?3.2:0),.015,new THREE.MeshLambertMaterial({color:0xB4AD92})));}
+      const paint=roadMarkingMat();
+      addEdgeLineZ(g,z-86-SEAM,z-26+SEAM,low,-1,paint);addEdgeLineZ(g,z-86-SEAM,z-26+SEAM,high,1,paint);
+      // Centre: a broken line, then a solid one as the median opens.
+      for(let q=z-85;q<z-70;q+=5)addFlatPlane(g,.13,2,0,q,.028,paint);
+      for(const x of [-.12,.12])addRibbon(g,z-70,z-56,q=>x-.065,q=>x+.065,.028,paint,.5);
+      // Each lane's divider starts once its lane has opened up.
+      for(const x of [6.2,10.4])for(let q=z-70;q<z-27;q+=5)if(width/2*kk(q)>x+1.5)for(const side of [-1,1]){const m=addFlatPlane(g,.13,2,side*x,q,.028,paint);m.userData.roadMarking=true;}
+      const mzs=zs.filter(q=>q>=z-56);
+      const median=extrudedStripZ(mzs,q=>-2*kk(q),q=>2*kk(q),.18,new THREE.MeshLambertMaterial({color:BRAND.sidewalk}));
+      median.userData.noRoad=p=>p.z>=z-56&&p.z<=z-26&&Math.abs(p.x)<2*kk(p.z)-.05;g.add(median);
+      const turf=new THREE.MeshLambertMaterial({color:season().ground});turf.userData.seasonal='ground';
+      addRibbon(g,z-56,z-26,q=>-Math.max(0,2*kk(q)-.12),q=>Math.max(0,2*kk(q)-.12),.186,turf,.5);
+    });
+    // Past the junction the lanes the merge uses must stay paved until the
+    // drivers are back in an ordinary lane, so the far side keeps its taper.
+    const k=q=>(situation.offsetTramRoad||motorway)&&q<z?1:1-THREE.MathUtils.smoothstep(Math.abs(q-z),13,25);
     const low=q=>-4.2+(offset-width/2+4.2)*k(q),high=q=>4.2+(offset+width/2-4.2)*k(q);
     const asphalt=new THREE.MeshLambertMaterial({color:BRAND.asphalt}),paint=roadMarkingMat();
     const ground=addFlatPlane(seg,76,60,0,z,-.02,new THREE.MeshLambertMaterial({color:season().ground}));ground.material.userData.seasonal='ground';
@@ -11179,6 +11939,19 @@
       for(const end of [-1,1])addCornerFillet(seg,-side,end,4.2,w/2,yardZ,paint,r);
       addCourtyardGateway(seg,side,yardZ,w,true);
     }
+    // Edge lines 1.2 up to every rounded corner (baked world X like the
+    // fillets; the yard of factory side s is at world X -s).
+    const quads=[],hw=.075,along=(x,a,b)=>{if(b-a>.3)quads.push([[x-hw,a],[x+hw,a],[x+hw,b],[x-hw,b]]);},
+      across=(q,a,b)=>{if(b-a>.3)quads.push([[a,q-hw],[b,q-hw],[b,q+hw],[a,q+hw]]);};
+    for(const sx of [-1,1]) {
+      const x=sx*3.95;
+      along(x,start-SEAM,z-7.6);
+      if(sides.includes(-sx)){along(x,z+7.6,yardZ-w/2-3.4);along(x,yardZ+w/2+3.4,z+26+SEAM);}
+      else along(x,z+7.6,z+26+SEAM);
+      const [a,b]=sx>0?[7.6,35+SEAM]:[-35-SEAM,-7.6];
+      for(const end of [-1,1])across(z+end*3.95,a,b);
+    }
+    const lines=addBakedQuads(seg,quads,.027,paint.clone());lines.userData.roadMarking=true;lines.userData.noEditIndex=true;
   }
 
   function addLaneQuestionEvidence(seg,z,situation) {
@@ -11220,12 +11993,18 @@
       const sign=new THREE.Group(),overhead=situation.laneSignOverhead===true;
       if(overhead) {
         const half=(situation.mainWidth||8.4)/2;
-        for(const x of [-half-1,half+1])modelBox(sign,[.10,5.6,.10],0x697477,x,2.8,0);
-        modelBox(sign,[2*half+2,.10,.10],0x697477,0,5.5,0);
+        for(const x of [-half-1,half+1])modelBox(sign,[.10,6.1,.10],0x697477,x,3.05,.16);
+        modelBox(sign,[2*half+2,.10,.10],0x697477,0,6.05,.16);
       } else {
         const post=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,4.8,8),new THREE.MeshLambertMaterial({color:0x697477}));post.position.y=2.4;sign.add(post);
       }
-      const face=new THREE.Mesh(new THREE.PlaneGeometry(3,1.5),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));face.position.set(overhead?(situation.mainWidth||8.4)/4:0,overhead?5.0:4.4,-.04);face.rotation.y=Math.PI;sign.add(face);addSignBack(face);
+      const face=new THREE.Mesh(new THREE.PlaneGeometry(3,1.5),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));face.position.set(overhead?(situation.mainWidth||8.4)/4:0,overhead?5.0:4.4,-.04);face.rotation.y=Math.PI;sign.add(face);const back=addSignBack(face);
+      if(overhead) {
+        // Badges do not write depth. Draw the readable plates after badges,
+        // retaining depth tests against real vehicles and buildings.
+        for(const plate of [face,back]) { plate.material.transparent=true;plate.renderOrder=200;plate.material.depthWrite=false; }
+        face.userData.overheadSignFace=true;
+      }
       sign.position.set(overhead?0:(situation.mainWidth||8.4)/2+1.2,0,z-12);sign.userData.questionEvidence=true;sign.userData.overheadLaneSign=overhead;sign.userData.laneDirections=dirs;seg.add(sign);
     }
   }
@@ -11370,30 +12149,11 @@
     }
     if(sc.busBaySide) {
       ev.busBay=buildRoundedBusBay(z+17,sc.busBaySide,3.2);
-      const shelter=createBusShelter();shelter.position.set(sc.busBaySide*10,0,z+17);group.add(shelter);
+      const shelter=createBusShelter();shelter.position.set(sc.busBaySide*10,0,z+17);shelter.rotation.y=sc.busBaySide>0?Math.PI:0;group.add(shelter);
     }
     if(sc.busStopMarking) {
-      const bay=ev.busBay=replaceCorridorStrip(z+2,z+34,g=>{
-        const depth=q=>q<z+10?THREE.MathUtils.clamp((q-z-3)/7,0,1):q>z+26?THREE.MathUtils.clamp((z+33-q)/7,0,1):1;
-        const left=q=>-4.2-depth(q);
-        const road=addRibbon(g,z+2,z+34,left,()=>4.2,.02,new THREE.MeshLambertMaterial({color:BRAND.asphalt}));road.userData.surface='road';
-        road.userData.containsRoad=p=>p.z>=z+2&&p.z<=z+34&&p.x>=left(p.z)&&p.x<=4.2;
-        const zs=[z+2,z+3,z+10,z+26,z+33,z+34];
-        const pavement=extrudedStripZ(zs,q=>left(q)-3.2,left,.18,new THREE.MeshLambertMaterial({color:season().sidewalk}));pavement.userData.surface='sidewalk';g.add(pavement);
-        roadSurface(g,3.2,32-SEAM,5.8,z+18,true);
-        for(let q=z+3;q<z+33;q+=5)addFlatPlane(g,.13,2,0,q,.03,paint);
-        // Edge lines go on as on the road: solid opposite, broken along the stop.
-        addEdgeLineZ(g,z+2-SEAM,z+34+SEAM,()=>4.2,1,paint);
-        addEdgeLineZ(g,z+2-SEAM,z+3.5,()=>-4.2,-1,paint);addEdgeLineZ(g,z+32.5,z+34+SEAM,()=>-4.2,-1,paint);
-        for(let q=z+4.5;q<z+31.5;q+=3)addFlatPlane(g,.15,1.5,-3.95,q+.75,.028,paint);
-        const yellow=new THREE.MeshBasicMaterial({color:0xF2C635});
-        const points=[];for(let q=z+6;q<=z+30;q+=2)points.push(new THREE.Vector3(left(q)+(points.length%2?1.6:.25),.035,q));
-        for(let i=1;i<points.length;i++) {
-          const line=new THREE.LineCurve3(points[i-1],points[i]);
-          const stroke=new THREE.Mesh(new THREE.TubeGeometry(line,1,.065,4,false),yellow);stroke.userData.busStopZigzag=true;g.add(stroke);
-        }
-      },false);
-      bay.userData.busStopBay=true;
+      // The same rounded pocket as an ordinary bus stop, with marking 1.17.
+      ev.busBay=buildRoundedBusBay(z+17,-1,2.8,true);
     }
   }
 
@@ -11455,7 +12215,7 @@
   }
   function updateQuestionPolice(ev,dt) {
     const car=ev.police;
-    if(playerCarGroup.position.x<-4.5){ev.policeYielded=true;car.stopFor=0;}
+    if(playerCarGroup.position.x<-4.5 || car.fade!=null || car.done){ev.policeYielded=true;car.stopFor=0;}
     if(!ev.policeYielded){
       ev.policeWait=(ev.policeWait||0)+dt;
       if(ev.policeWait>5 && !ev.priorityPenalized){ev.priorityPenalized=true;roadViolation('priority');}
@@ -11700,7 +12460,7 @@
 
   // A bus bay on the right with a shelter and sign 5.16: a bus pulls in,
   // waits a few seconds and merges back. No question, no gameplay rule.
-  function buildRoundedBusBay(z, side, depth=2.8) {
+  function buildRoundedBusBay(z, side, depth=2.8, zigzag=false) {
     const profile=q=>depth*(1-THREE.MathUtils.smoothstep(Math.abs(q-z),11,20));
     const bay=replaceCorridorStrip(z-26,z+26,g=>{
       const low=q=>-4.2-(side<0?profile(q):0),high=q=>4.2+(side>0?profile(q):0);
@@ -11713,11 +12473,22 @@
         slab.userData.surface='sidewalk';g.add(slab);
       }
       const paint=roadMarkingMat();
-      for(let q=z-25;q<z+25;q+=5)addFlatPlane(g,.13,2,0,q,.028,paint);
+      corridorDashes(g,z-26,z+26,.028,paint);
       // Edge lines go on as on the road; along the pocket a broken line.
       addEdgeLineZ(g,z-26-SEAM,z+26+SEAM,()=>-side*4.2,-side,paint);
       addEdgeLineZ(g,z-26-SEAM,z-19.5,()=>side*4.2,side,paint);addEdgeLineZ(g,z+19.5,z+26+SEAM,()=>side*4.2,side,paint);
       for(let q=z-19;q<z+19;q+=3)addFlatPlane(g,.15,1.5,side*3.95,q,.028,paint);
+      // Marking 1.17 (yellow zigzag) of a route-vehicle stop, inside the
+      // pocket between the broken line and the kerb.
+      if(zigzag) {
+        const pts=[];for(let q=z-12;q<=z+12;q+=2)pts.push([side*(pts.length%2?4.2+profile(q)-.35:4.3),q]);
+        const quads=[];
+        for(let i=1;i<pts.length;i++){
+          const [ax,az]=pts[i-1],[bx,bz]=pts[i],len=Math.hypot(bx-ax,bz-az),nx=-(bz-az)/len*.06,nz=(bx-ax)/len*.06;
+          quads.push([[ax-nx,az-nz],[bx-nx,bz-nz],[bx+nx,bz+nz],[ax+nx,az+nz]]);
+        }
+        const zz=addBakedQuads(g,quads,.03,new THREE.MeshBasicMaterial({color:0xF2C635}));zz.userData.busStopZigzag=true;zz.userData.roadMarking=true;
+      }
     });
     bay.userData.busStopBay=true;bay.userData.baySide=side;return bay;
   }
@@ -11728,11 +12499,7 @@
     const bay = buildRoundedBusBay(bayZ, -1);
     clearRoadside(bayZ);
     // Shelter behind the path, bench, and the stop sign at the head of the bay.
-    const dark = sceneryMat(0x3B4450), glassMat = new THREE.MeshLambertMaterial({ color: 0x9DB8C6, transparent: true, opacity: 0.55 });
-    const roof = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.1, 4.2), dark); roof.position.set(-10.4, 2.5, bayZ); group.add(roof);
-    [-1.9, 1.9].forEach(dz => { const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.5, 0.08), dark); post.position.set(-11.0, 1.25, bayZ + dz); group.add(post); });
-    const back = new THREE.Mesh(new THREE.BoxGeometry(0.05, 2.1, 4.0), glassMat); back.position.set(-11.15, 1.3, bayZ); group.add(back);
-    const bench = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 3), sceneryMat(0x987856)); bench.position.set(-10.6, 0.55, bayZ); group.add(bench);
+    const shelter = createBusShelter(); shelter.position.set(-10.3, 0, bayZ); group.add(shelter);
     // 5.16 stands at the entry to the pocket, on the road side of the path.
     addRoadSign(group, '5.16', bayZ - 17, 'right', null, -1.9);
     refreshRoadBounds();
@@ -11757,6 +12524,9 @@
     const seg = state.exitRoad;
     if (!seg) return;
     seg.updateMatrixWorld(true);
+    const clearBox=new THREE.Box3(new THREE.Vector3(xMin,-1,bayZ-half),new THREE.Vector3(xMax,100,bayZ+half));
+    clearBox.applyMatrix4(seg.matrixWorld.clone().invert());
+    (seg.userData.sceneryClearance ||= []).push(clearBox);
     const doomed = [];
     // A stretch added to this road for a long question and a question's own
     // crossing are pieces of the road itself, not roadside objects: clear
@@ -12062,7 +12832,7 @@
   // Every moving vehicle keeps its route but steps out into the next lane
   // round anything standing in its own one, and back in once past.
   function applyDetour(a, travelled) {
-    if (['pedestrian'].includes(a.config.type) || a.crashed || a.config.id === 'road_obstacle_car') return;
+    if (['pedestrian', 'tram', 'train'].includes(a.config.type) || a.crashed || a.config.id === 'road_obstacle_car') return;
     if (!state.blockers?.length && !state.actors.some(o => o.crashed || o.config.id === 'road_obstacle_car')) {
       if (!a.detour) return;
     }
@@ -12142,9 +12912,12 @@
       for(const q of zs){const height=.02+.16*THREE.MathUtils.smoothstep(Math.abs(q-yardZ),1.8,4.8);positions.push(-7.4,height,q,-4.2,height,q);}
       for(let i=0;i<zs.length-1;i++){const a=2*i;indices.push(a,a+2,a+1,a+1,a+2,a+3);}
       ramp.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));ramp.setIndex(indices);ramp.computeVertexNormals();
-      const mesh=new THREE.Mesh(ramp,concrete.clone());mesh.userData.loweredDriveway=true;g.add(mesh);
+      const mesh=new THREE.Mesh(ramp,new THREE.MeshLambertMaterial({color:season().sidewalk}));mesh.userData.loweredDriveway=true;mesh.material.userData.seasonal='sidewalk';mesh.userData.surface='sidewalk';g.add(mesh);
       roadSurface(g,3.2,10,5.8,yardZ,true);
-      const paint=roadMarkingMat();for(let q=yardZ-5;q<yardZ+5;q+=5)addFlatPlane(g,.13,2,0,q,.028,paint);
+      const paint=roadMarkingMat();corridorDashes(g,yardZ-5,yardZ+5,.028,paint);
+      // The edge line (1.2) goes on along the far side: only the driveway's
+      // own side is open. The strip used to drop both lines.
+      addFlatPlane(g,.15,10,3.95,yardZ,.025,paint);
     });
     addFlatPlane(group,3.4,3.6,-5.7,yardZ,.021,concrete);
     const wall = sceneryMat(0xC9B89E), roofMat = sceneryMat(0x7A5A48), dark = sceneryMat(0x22262A);
@@ -12226,7 +12999,7 @@
     if (ev.guide) ev.guide.visible = true;
     (ev.joiners || []).forEach(join => join());
     ev.joiners = null;
-    state.speed = 0; state.isAccelerating = false; state.steering = 0; state.laneChangeX = null; state.autoPath = null;
+    state.speed = 0; state.isAccelerating = false; state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null;
     state.isAtSituation = true;
     sendToFlutter({ event: 'approach_situation', situation: ev.situation });
   }
@@ -12487,13 +13260,13 @@
   // state.rain (0..1) and state.overcast (0..1) blend sky, fog, light, the
   // wet look of the asphalt and the rain particles. No gameplay effect.
   let weatherFx = null;
+  // Two kinds of weather only: sunny or rainy (the sky greys with the rain
+  // itself). A grey day without rain read as a broken, washed-out picture.
   function pickWeather(previous) {
-    const options = previous === 'rain' ? ['clear', 'overcast'] :
-      previous === 'overcast' ? ['rain', 'rain', 'clear'] : ['overcast', 'overcast', 'rain', 'clear'];
-    return options[Math.floor(Math.random() * options.length)];
+    return previous === 'rain' ? 'clear' : 'rain';
   }
   function weatherDuration(kind) {
-    return kind === 'rain' ? 45 + Math.random() * 50 : kind === 'overcast' ? 35 + Math.random() * 45 : 60 + Math.random() * 90;
+    return kind === 'rain' ? 45 + Math.random() * 50 : 90 + Math.random() * 120;
   }
   function ensureWeatherFx() {
     if (weatherFx) return weatherFx;
@@ -12521,13 +13294,13 @@
     weatherFx = { lines, drops, count, puddleTexture, puddles: [] };
     return weatherFx;
   }
-  function addPuddles(seg, startZ, length) {
+  function addPuddles(seg, startZ, length, width = 8.4) {
     const fx = ensureWeatherFx();
     for (let z = startZ + 6 + Math.random() * 10; z < startZ + length - 6; z += 14 + Math.random() * 16) {
       const puddle = new THREE.Mesh(new THREE.PlaneGeometry(2.2 + Math.random() * 2, 1.2 + Math.random() * 1.2),
         new THREE.MeshBasicMaterial({ map: fx.puddleTexture, transparent: true, opacity: 0, depthWrite: false }));
       puddle.rotation.x = -Math.PI / 2; puddle.rotation.z = Math.random() * Math.PI;
-      puddle.position.set((Math.random() - 0.5) * 6.4, 0.031, z);
+      puddle.position.set((Math.random() - 0.5) * (width - 2), 0.031, z);
       puddle.userData.puddle = true;
       seg.add(puddle);
     }
@@ -12538,8 +13311,13 @@
     const sn = season();
     const clearSky = new THREE.Color(sn.sky), greySky = new THREE.Color(0xC3CACF), rainSky = new THREE.Color(0xAEB6BD);
     scene.background.copy(clearSky).lerp(greySky, overcast).lerp(rainSky, rain);
-    scene.fog.color.copy(scene.background);
-    scene.fog.density = 0.007 + overcast * 0.002 + rain * 0.004;
+    if (skyDome) {
+      // Horizon in the scene's sky colour, a bluer zenith on clear days.
+      skyDome.material.uniforms.horizon.value.copy(scene.background).lerp(new THREE.Color(0xB9D6EE), 0.35 * (1 - overcast));
+      skyDome.material.uniforms.zenith.value.copy(scene.background).lerp(new THREE.Color(0x6FA8DC), 0.55 * (1 - overcast));
+      skyDome.material.uniforms.cloud.value = 0.55 + 0.45 * overcast;
+    }
+    state.fogDensity = 0;
     ambientLight.intensity = THREE.MathUtils.lerp(sn.ambient, sn.ambient - 0.06, overcast);
     dirLight.intensity = THREE.MathUtils.lerp(sn.sunIntensity, 0.18, overcast);
     dirLight.color.setHex(sn.sun).lerp(new THREE.Color(0xDDE4EC), overcast);
@@ -12547,8 +13325,17 @@
     const snow = sn.precipitation === 'snow';
     weatherFx.lines.material.color.setHex(snow ? 0xFFFFFF : 0xDCE6F0);
     weatherFx.lines.material.opacity = rain * (snow ? 0.85 : 0.55);
-    scene.traverse(o => {
+    weatherSurfaces(scene);
+  }
+  // Wet roads, puddles and paving under `root` (the whole scene, or just
+  // the objects a streamed scenery step has added).
+  function weatherSurfaces(root) {
+    if (!weatherFx) return;
+    const rain = state.rain || 0, sn = season(), snow = sn.precipitation === 'snow';
+    root.traverse(o => {
       if (o.userData.puddle) o.material.opacity = rain * (snow ? 0.35 : 0.9);
+      // A dirt road keeps its own (textured) colour: only a little darker when wet.
+      else if (o.userData.dirtSurface && o.material?.color) o.material.color.setHex(0xFFFFFF).multiplyScalar(1 - rain * (snow ? 0.05 : 0.3));
       else if ((o.userData.surface === 'road' || o.material?.userData.asphalt) && o.material?.color) o.material.color.setHex(BRAND.asphalt).lerp(new THREE.Color(0x1F2228), rain * 0.8);
       // Wet paving darkens too (less than asphalt); snow keeps it light.
       else if (o.material?.userData.seasonal === 'sidewalk' && o.material.color) o.material.color.setHex(sn.sidewalk).multiplyScalar(1 - rain * (snow ? 0.08 : 0.28));
@@ -12566,7 +13353,13 @@
     const before = [state.rain || 0, state.overcast || 0];
     state.rain = before[0] + (targetRain - before[0]) * k;
     state.overcast = before[1] + (targetOvercast - before[1]) * k;
-    if (Math.abs(state.rain - before[0]) + Math.abs(state.overcast - before[1]) > 0.0005 || state.weatherDirty) { applyWeather(); state.weatherDirty = false; }
+    // Recolouring walks the whole scene: during a transition it runs once
+    // per 1.5 % of change (a few times a second), not on every frame.
+    const applied = state.weatherApplied || [-1, -1];
+    if (Math.abs(state.rain - applied[0]) + Math.abs(state.overcast - applied[1]) > 0.015 || state.weatherDirty ||
+      ((state.rain === targetRain || Math.abs(state.rain - targetRain) < 1e-3) && Math.abs(state.rain - applied[0]) > 1e-4)) {
+      applyWeather(); state.weatherDirty = false; state.weatherApplied = [state.rain, state.overcast];
+    }
     if (state.rain < 0.02) { if (weatherFx) weatherFx.lines.visible = false; return; }
     const fx = ensureWeatherFx();
     fx.lines.visible = true;
@@ -12585,6 +13378,81 @@
       p[o + 3] = cx + d.x + (snow ? 0.12 : 0); p[o + 4] = d.y + len; p[o + 5] = cz + d.z + (snow ? 0 : 0.12);
     });
     fx.lines.geometry.attributes.position.needsUpdate = true;
+  }
+
+  // --- Autumn: a few leaves drift down around the car ---
+  // Sparse and slow, in the canopy colours of the season; they tumble, land
+  // on the ground, lie there a moment and fade. A single instanced mesh.
+  let leafFx = null;
+  function ensureLeafFx() {
+    if (leafFx) return leafFx;
+    const shape = new THREE.Shape();
+    shape.moveTo(0, -0.17);
+    shape.quadraticCurveTo(0.13, -0.05, 0.02, 0.17);
+    shape.lineTo(0, 0.2);
+    shape.quadraticCurveTo(-0.13, -0.05, 0, -0.17);
+    const geometry = new THREE.ShapeGeometry(shape, 3);
+    geometry.rotateX(-Math.PI / 2);
+    const count = state.lowEnd ? 18 : 36;
+    const mesh = new THREE.InstancedMesh(geometry, new THREE.MeshLambertMaterial({ side: THREE.DoubleSide }), count);
+    mesh.frustumCulled = false; mesh.castShadow = false;
+    const leaves = [];
+    for (let i = 0; i < count; i++) leaves.push({ born: false });
+    scene.add(mesh);
+    leafFx = { mesh, leaves, count, dummy: new THREE.Object3D(), colour: new THREE.Color() };
+    return leafFx;
+  }
+  function spawnLeaf(leaf, centre, anywhereHigh) {
+    const palette = season().canopy;
+    leaf.x = centre.x + (Math.random() - 0.5) * 56;
+    leaf.z = centre.z + (Math.random() - 0.4) * 70;
+    leaf.y = anywhereHigh ? 1 + Math.random() * 13 : 12 + Math.random() * 4;
+    leaf.fall = 0.55 + Math.random() * 0.5;
+    leaf.sway = 0.6 + Math.random() * 0.9; leaf.swayRate = 1.1 + Math.random() * 1.3; leaf.phase = Math.random() * 6.3;
+    leaf.spin = (Math.random() - 0.5) * 5; leaf.tumble = 2 + Math.random() * 3;
+    leaf.rot = Math.random() * 6.3; leaf.rest = 0; leaf.scale = 1.3 + Math.random() * 0.7; leaf.time = 0;
+    leaf.colour = palette[Math.floor(Math.random() * palette.length)];
+    leaf.born = true;
+  }
+  function updateLeaves(dt) {
+    const autumn = season() === SEASONS.autumn && !reveal;
+    if (!autumn) { if (leafFx) leafFx.mesh.visible = false; return; }
+    const fx = ensureLeafFx();
+    fx.mesh.visible = true;
+    const centre = cameraLook;
+    // Rain knocks most of them down: fewer leaves in the air.
+    const active = Math.round(fx.count * (1 - 0.6 * (state.rain || 0)));
+    fx.leaves.forEach((leaf, i) => {
+      const d = fx.dummy;
+      if (!leaf.born || (i >= active && leaf.y > 0.05 && !leaf.rest)) {
+        if (!leaf.born) spawnLeaf(leaf, centre, true);
+        if (i >= active) { d.scale.setScalar(0.0001); d.updateMatrix(); fx.mesh.setMatrixAt(i, d.matrix); leaf.born = false; return; }
+      }
+      leaf.time += dt;
+      let fade = 1;
+      if (leaf.y > 0.03) {
+        // A light breeze towards the camera; the sway is the leaf rocking.
+        leaf.y = Math.max(0.03, leaf.y - leaf.fall * dt * (1 + 0.35 * Math.sin(leaf.time * leaf.swayRate * 2 + leaf.phase)));
+        leaf.x += (Math.cos(leaf.time * leaf.swayRate + leaf.phase) * leaf.sway + 0.25) * dt;
+        leaf.z += (-0.6 + Math.sin(leaf.time * leaf.swayRate * 0.7 + leaf.phase) * 0.3) * dt;
+        leaf.rot += leaf.spin * dt;
+        d.rotation.set(Math.sin(leaf.time * leaf.tumble + leaf.phase) * 0.9, leaf.rot, Math.cos(leaf.time * leaf.tumble * 0.8) * 0.7);
+      } else {
+        leaf.rest += dt;
+        d.rotation.set(0, leaf.rot, 0);
+        fade = 1 - THREE.MathUtils.smoothstep(leaf.rest, 2.5, 4);
+        if (leaf.rest > 4) spawnLeaf(leaf, centre, false);
+      }
+      // Leaves left far behind the moving view start again above it.
+      if (Math.abs(leaf.x - centre.x) > 40 || Math.abs(leaf.z - centre.z) > 50) spawnLeaf(leaf, centre, false);
+      d.position.set(leaf.x, leaf.y, leaf.z);
+      d.scale.setScalar(leaf.scale * Math.max(0.0001, fade));
+      d.updateMatrix();
+      fx.mesh.setMatrixAt(i, d.matrix);
+      fx.mesh.setColorAt(i, fx.colour.setHex(leaf.colour));
+    });
+    fx.mesh.instanceMatrix.needsUpdate = true;
+    if (fx.mesh.instanceColor) fx.mesh.instanceColor.needsUpdate = true;
   }
 
   // --- Attract mode (signed-out visitors): the city lives, the player waits ---
@@ -12668,7 +13536,7 @@
     grad.addColorStop(1, '#' + skyLow.toString(16).padStart(6, '0'));
     sg.fillStyle = grad; sg.fillRect(0, 0, 4, 256);
     rs.background = new THREE.CanvasTexture(skyC);
-    rs.fog = new THREE.Fog(skyLow, 45, 120);
+
     rs.add(new THREE.AmbientLight(0xFFFFFF, sn.ambient));
     const sun = new THREE.DirectionalLight(sn.sun, sn.sunIntensity + 0.2); sun.position.set(-8, 14, -10); rs.add(sun);
     const mat = c => new THREE.MeshLambertMaterial({ color: c });
@@ -12757,8 +13625,8 @@
     // The garage: siding walls with corner trims, a gable roof in shingles
     // with eaves and a gutter, a lintel with the door housing, lamps.
     const sidingT = tex(64, 256, (g, w, h) => {
-      g.fillStyle = '#9EA6AD'; g.fillRect(0, 0, w, h);
-      for (let y = 0; y < h; y += 16) { g.fillStyle = '#8A9299'; g.fillRect(0, y + 13, w, 3); g.fillStyle = '#AAB2B9'; g.fillRect(0, y, w, 2); }
+      g.fillStyle = '#8F989F'; g.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 16) { g.fillStyle = '#737C83'; g.fillRect(0, y + 12, w, 4); g.fillStyle = '#A2AAB1'; g.fillRect(0, y, w, 2); }
     }, 3, 1.4);
     const wall = texMat(sidingT), inside = mat(0x6E757D), trimM = mat(0xE9ECEF), metalDark = mat(0x3A4148);
     const back = new THREE.Mesh(new THREE.BoxGeometry(9, 4.2, 0.3), inside); back.position.set(0, 2.1, 6.2); rs.add(back);
@@ -12769,6 +13637,11 @@
       block(0.16, 4.3, 0.16, sx * 4.66, 2.15, -0.86, trimM);          // door jambs
     });
     block(9.4, 0.7, 0.5, 0, 3.85, -0.6, wall);                         // lintel
+    // Concrete plinth along the front and the near wall.
+    const plinth = texMat(tex(64, 64, (g, w, h) => { g.fillStyle = '#7D7F7C'; g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 160; i++) { g.fillStyle = shade(0x7D7F7C, 0.85 + Math.random() * 0.3); g.fillRect(Math.random() * w, Math.random() * h, 2, 2); } }, 2, 1));
+    for (const sx of [-1, 1]) block(1.46, 0.42, 0.56, sx * 5.0, 0.21, -0.6, plinth);
+    block(0.36, 0.42, 7.06, -4.5, 0.21, 2.7, plinth);
     block(8.6, 0.34, 0.34, 0, 3.52, -0.2, metalDark);                       // door roll housing
     // Gable roof: two shingled slopes over the walls, ridge front to back.
     const shinglesT = tex(128, 128, (g, w, h) => {
@@ -12821,17 +13694,27 @@
     const strip = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.08, 0.2), mat(0xFFF4D6)); strip.position.set(0, 4.0, 2.6); rs.add(strip);
     const glow = new THREE.PointLight(0xFFE2B0, 0.7, 14); glow.position.set(0, 3.7, 2.6); rs.add(glow);
     // Door: a slatted panel that rolls up under the lintel.
+    // Ribbed steel sections in a mid grey (the former near-white read as an
+    // empty bright patch), a row of small windows and a handle. Extras are
+    // children of their section so they hide with it as it rolls up.
     const door = new THREE.Group();
     for (let i = 0; i < 8; i++) {
-      const slat = new THREE.Mesh(new THREE.BoxGeometry(8.4, 0.5, 0.12), mat(i % 2 ? 0xC9CFD4 : 0xBAC1C7));
+      const slat = new THREE.Mesh(new THREE.BoxGeometry(8.4, 0.5, 0.12), mat(i % 2 ? 0xA9B1B7 : 0x9EA6AD));
+      window.PDD_ROADS.skinObject(slat, 'metal');
       slat.position.y = 0.28 + i * 0.52; door.add(slat);
+      if (i === 5) for (let k = 0; k < 4; k++) {
+        const pane = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.3), new THREE.MeshBasicMaterial({ color: 0x46596A }));
+        pane.position.set(-2.7 + k * 1.8, 0, -0.065); pane.rotation.y = Math.PI; slat.add(pane);
+        window.PDD_ROADS.skinObject(pane, 'window');
+      }
+      if (i === 1) { const handle = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.06), mat(0x3A4148)); handle.position.set(0, 0.05, -0.09); slat.add(handle); }
     }
     door.position.set(0, 0, -0.7); rs.add(door);
     const car = window.PDD_VEHICLES.create(id, paint);
     car.position.set(1.1, 0, 2.6); car.rotation.y = Math.PI; // room for the final parking arc
     rs.add(car);
     // Celebration: headlights, light pouring out of the opening door, a
-    // glowing pad where the car stops, sparkles round it and confetti.
+    // glowing pad where the car stops and confetti.
     const additive = (color, opacity) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
     const rays = new THREE.Group();
     for (let i = 0; i < 5; i++) {
@@ -12847,13 +13730,6 @@
     pad.rotation.x = -Math.PI / 2; pad.position.set(0, 0.045, -6.6); rs.add(pad);
     const padFill = new THREE.Mesh(new THREE.CircleGeometry(2.4, 48), additive(0x2F7BF0, 0));
     padFill.rotation.x = -Math.PI / 2; padFill.position.set(0, 0.035, -6.6); rs.add(padFill);
-    const sparkles = [];
-    for (let i = 0; i < 18; i++) {
-      const holder = new THREE.Object3D();
-      window.PDD_VEHICLES.addGlow(holder, [0xFFE27A, 0xFFFFFF, 0x9FD0FF][i % 3], 0.28 + Math.random() * 0.22);
-      holder.visible = false; rs.add(holder);
-      sparkles.push({ holder, angle: i / 18 * Math.PI * 2, radius: 2.6 + Math.random() * 1.4, height: 0.4 + Math.random() * 2.2, speed: 0.4 + Math.random() * 0.6, phase: Math.random() * 6 });
-    }
     // Two small launchers at the threshold: flat paper and long ribbons,
     // rendered in one draw call instead of round points.
     const confetti = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1),
@@ -12896,7 +13772,7 @@
     cam.position.set(-4.2, 5.2, -20.5); cam.lookAt(0, 0.1, -6.6);
     return { scene: rs, camera: cam, door, car, phase: 'closed', t: 0, yaw: 0, spin: 0,
       noseLength: (new THREE.Box3().setFromObject(car)).getSize(new THREE.Vector3()).z / 2,
-      fx: { rays, pad, padFill, sparkles, confetti, cPieces, skids, skidPrev: [], skidAge: 0, dummy: new THREE.Object3D(), smoke, smokeClock: 0, smokeIndex: 0, time: 0, burst: false, burstAge: 0 } };
+      fx: { rays, pad, padFill, confetti, cPieces, skids, skidPrev: [], skidAge: 0, dummy: new THREE.Object3D(), smoke, smokeClock: 0, smokeIndex: 0, time: 0, burst: false, burstAge: 0 } };
   }
   function burstRevealConfetti(r) {
     const fx = r.fx; fx.burst = true; fx.burstAge = 0; fx.confetti.visible = true;
@@ -12992,13 +13868,11 @@
       if (u >= 1) {
         r.car.position.set(0, 0, -6.6); r.car.rotation.set(0, Math.PI * 1.5, 0);
         r.phase = 'shown'; r.t = 0; r.yaw = r.car.rotation.y; sendToFlutter({ event: 'reveal_shown' });
-        fx.sparkles.forEach(sp => { sp.holder.visible = true; });
       }
     } else if (r.phase === 'shown') {
       // Free spin by finger; drifts slowly when idle.
       r.t += dt; r.yaw += (r.spin + (r.t > 1 ? 0.1 : 0)) * dt; r.spin *= Math.pow(0.05, dt);
       r.car.rotation.y = r.yaw;
-      if (Math.floor(fx.time * 1.4) !== Math.floor((fx.time - dt) * 1.4) && Math.random() < 0.5) gameAudio?.celebrate('sparkle');
     }
     if (r.phase === 'lobby') {
       // The garage start screen: the car waits outside, turning slowly.
@@ -13026,12 +13900,6 @@
       fx.pad.material.opacity = k * (0.16 + 0.12 * pulse); fx.padFill.material.opacity = k * (0.05 + 0.04 * pulse);
       fx.pad.scale.setScalar(1 + 0.05 * pulse);
     }
-    fx.sparkles.forEach(sp => {
-      if (!sp.holder.visible) return;
-      const a = sp.angle + fx.time * sp.speed;
-      sp.holder.position.set(r.car.position.x + Math.cos(a) * sp.radius, sp.height + 0.3 * Math.sin(fx.time * 2 + sp.phase), r.car.position.z + Math.sin(a) * sp.radius);
-      sp.holder.scale.setScalar(0.4 + 0.6 * Math.abs(Math.sin(fx.time * 4 + sp.phase)));
-    });
     fx.smoke.forEach(puff => {
       if (!puff.sprite.visible) return;
       puff.age += dt; const u = Math.min(1, puff.age / puff.life);
@@ -13145,6 +14013,7 @@
     // its smaller integration step. A background/resume gap stays bounded.
     if (reveal) { updateReveal(Math.min(elapsed, 0.1)); return; }
     if (state.paused) return;
+    processSceneryJobs(elapsed>.035?1:3);
     if (!state.paused) {
       updateAttract(dt);
       updateActors(dt);
@@ -13152,6 +14021,7 @@
       else updatePlayerMovement(dt);
       updateRoadEvent(dt);
       updateWeather(dt);
+      updateLeaves(dt);
       updateBlinkers(dt);
       updateMistakeHighlight(dt);
       gameAudio?.update(dt, time / 1000);
@@ -13160,8 +14030,16 @@
           lamp.visible = Math.floor(time / 180 + i) % 2 === 0;
         });
       }));
-      terrainMesh.position.z = playerCarGroup.position.z + 500;
-      terrainMesh.material.map.offset.y = (terrainMesh.position.z / window.PDD_ROADS.kinds.grass.period) % 1;
+      // Move only near the edge, baking world coordinates into both detail
+      // and macro UVs. Texture offsets wrap at a different macro phase.
+      const groundZ = Math.round((playerCarGroup.position.z + 500) / 100) * 100;
+      if (groundZ !== terrainMesh.position.z) {
+        const delta = (groundZ - terrainMesh.position.z) / window.PDD_ROADS.kinds.grass.period;
+        const uv = terrainMesh.geometry.attributes.uv;
+        for (let i = 0; i < uv.count; i++) uv.setY(i, uv.getY(i) + delta);
+        uv.needsUpdate = true;
+        terrainMesh.position.z = groundZ;
+      }
       updateCamera(dt);
       checkAndSpawnNext();
       telemetryElapsed += dt;
@@ -13171,7 +14049,30 @@
           distanceM: Math.round(state.distanceTraveled), limitKmH: effectiveLimitKmH() });
       }
     }
+    adaptQuality(elapsed);
     renderer.render(scene, camera);
+  }
+  // Adaptive resolution: the pixel ratio drops in small steps only while the
+  // frames are actually slow (a weak phone, a heavy scene) and climbs back
+  // when there is headroom. A fast phone never leaves its full quality. At
+  // the lowest step the shadow map is refreshed every other frame.
+  var quality = { sum: 0, frames: 0, max: 1, ratio: 1, min: 0.8, frame: 0 };
+  function adaptQuality(elapsed) {
+    if (!quality.frames && !quality.sum) { quality.max = quality.ratio = renderer.getPixelRatio(); quality.min = Math.min(quality.max, state.lowEnd ? 1 : 1.3); }
+    // A question is a still scene to be read: always at full sharpness.
+    const reading = !!state.isAtSituation || !!state.resolution;
+    const want = reading ? quality.max : quality.ratio;
+    if (Math.abs(renderer.getPixelRatio() - want) > 0.01) renderer.setPixelRatio(want);
+    if (reading) { quality.sum = quality.frames = 0; return; }
+    if (elapsed <= 0 || elapsed > 0.25) return; // pauses and resumes are not load
+    quality.sum += elapsed; quality.frames++;
+    if (quality.sum < 1.5) return;
+    const avg = quality.sum / quality.frames; quality.sum = quality.frames = 0;
+    let next = quality.ratio;
+    if (avg > 1 / 45) next = Math.max(quality.min, quality.ratio - 0.15);
+    else if (avg < 1 / 57) next = Math.min(quality.max, quality.ratio + 0.1);
+    if (Math.abs(next - quality.ratio) > 0.01) { quality.ratio = next; renderer.setPixelRatio(next); }
+    window.__pddQuality = quality.ratio;
   }
 
   function updateBlinkers(dt) {
@@ -13224,6 +14125,13 @@
     return roadSupports(new THREE.Vector3(x - 1.1, 0, z)) && roadSupports(new THREE.Vector3(x + 1.1, 0, z));
   }
 
+  // Lane width of the street the car is on: an avenue (14 or 16.8 m) has
+  // two lanes each way of W/4, an ordinary street lanes of 3.6 m.
+  function laneStep() {
+    const w = currentCorridor?.userData.roadWidth || 8.4;
+    return w > 8.5 ? w / 4 : 3.6;
+  }
+
   function nearestLaneX(x) {
     const frame=curvedRoadFrame();
     if(frame) {
@@ -13237,7 +14145,8 @@
     const heading = Math.cos(playerCarGroup.rotation.y) < 0 ? -1 : 1;
     const twoWay = !oneWayStatus();
     let best = null;
-    for (let k = 0; k < 4; k++) for (const c of [1.8 + 3.6 * k, -1.8 - 3.6 * k]) {
+    const step = laneStep();
+    for (let k = 0; k < 4; k++) for (const c of [step / 2 + step * k, -step / 2 - step * k]) {
       if (!laneFits(c)) continue;
       const oncoming = twoWay && c * heading > 0;
       if (oncoming && Math.abs(c - x) > 1) continue;
@@ -13256,7 +14165,10 @@
     const car = playerCarGroup, back = Math.cos(car.rotation.y) < 0, sign = back ? -1 : 1;
     // Never start a lane change the question stop would cut in half: the car
     // would stand diagonally across the lanes.
-    const stops = [...state.intersections.map(it => it.stopZ), state.roadEvent?.phase === 'approach' ? state.roadEvent.stopZ : null];
+    // On an avenue the car takes its lane for the junction over the last
+    // 50 m (applySteeringAssist): no lane changes there either.
+    const stops = [...state.intersections.flatMap(it => it.approachW > 8.5 ? [it.stopZ, it.centerZ - 30, it.centerZ - 50] : [it.stopZ]),
+      state.roadEvent?.phase === 'approach' ? state.roadEvent.stopZ : null];
     // Back to one's own side is always allowed: stopping for a question out
     // in the oncoming lane is worse than a stop mid-change.
     const frame=curvedRoadFrame();
@@ -13270,7 +14182,7 @@
     // Wide streets have more lanes: step one lane over if there is road.
     const from = frame && state.curveLaneTarget!=null && state.laneChangeX!=null
       ? frame.pointAt(state.curveLaneTarget,frame.local.z).x : state.laneChangeX ?? nearestLaneX(car.position.x);
-    const to = from + (direction === 'left' ? 3.6 : -3.6) * sign;
+    const to = from + (direction === 'left' ? 1 : -1) * laneStep() * sign;
     if (!laneFits(to)) { if (state.simpleSteering) refuseInput(); return; }
     state.laneChangeX = to;
     planLaneCurve(to);
@@ -13282,26 +14194,96 @@
     const frame=curvedRoadFrame();
     if(frame) {
       const sign=Math.cos(playerCarGroup.rotation.y-frame.yaw)<0?-1:1;
-      const length=Math.max(12,Math.abs(state.speed)*1.5),target=frame.offsetOf(to),points=[];
+      const target=frame.offsetOf(to),points=[];
+      // Shorter for a short move (a change of mind half-way back to the lane).
+      const length=Math.max(12,Math.abs(state.speed)*1.6)*THREE.MathUtils.clamp(Math.sqrt(Math.abs(target-frame.offset)/3.6),.8,1);
       state.curveLaneTarget=target;
+      // Leave along the car's present heading: a lane change abandoned
+      // half-way bends gently back instead of snapping the car straight.
+      const axis=frame.yaw+(sign<0?Math.PI:0),turned=Math.atan2(Math.sin(playerCarGroup.rotation.y-axis),Math.cos(playerCarGroup.rotation.y-axis));
+      const slope=THREE.MathUtils.clamp(Math.tan(turned),-.6,.6)*sign;
       const count=Math.ceil(length/.5);
       for(let i=0;i<=count;i++) {
         const t=i/count,d=length*t,e=t*t*t*(10+t*(-15+6*t));
-        points.push(frame.pointAt(frame.offset+(target-frame.offset)*e,frame.local.z+sign*d));
+        points.push(frame.pointAt(frame.offset+(target-frame.offset)*e+slope*d*Math.pow(1-t,3),frame.local.z+sign*d));
       }
       state.autoPath=planPath(curve(points));return;
     }
     const car = playerCarGroup, sign = Math.cos(car.rotation.y) < 0 ? -1 : 1;
     const start = car.position.clone();
-    const length = Math.max(9, Math.abs(state.speed) * 1.05);
+    // Shorter for a short move (a change of mind half-way back to the lane).
+    const length = Math.max(10, Math.abs(state.speed) * 1.4) * THREE.MathUtils.clamp(Math.sqrt(Math.abs(to - start.x) / 3.6), 0.8, 1);
     const end = new THREE.Vector3(to, 0, start.z + sign * length);
-    state.autoPath = planPath(new THREE.CubicBezierCurve3(start,
-      new THREE.Vector3(start.x, 0, start.z + sign * length * 0.45),
+    // The curve leaves along the car's present heading: changing one's mind
+    // half-way through a lane change bends smoothly back instead of snapping
+    // the car straight (and back) in one frame.
+    const lead = length * 0.45, yaw = car.rotation.y, axis = sign < 0 ? Math.PI : 0;
+    const turned = THREE.MathUtils.clamp(Math.atan2(Math.sin(yaw - axis), Math.cos(yaw - axis)), -0.6, 0.6);
+    const first = new THREE.Vector3(start.x + Math.sin(axis + turned) * lead, 0, start.z + Math.cos(axis + turned) * lead);
+    state.autoPath = planPath(new THREE.CubicBezierCurve3(start, first,
       new THREE.Vector3(to, 0, end.z - sign * length * 0.45), end));
   }
 
   function planPath(path) {
     return { path, length: path.getLength(), s: 0 };
+  }
+
+  // One step of the assist along a planned line (a Stanley controller): aim
+  // along the line's direction a little ahead, corrected for the sideways
+  // offset, and turn the wheel no tighter than the car's turning circle.
+  // Returns the new heading; drops the plan at its end or if the car has
+  // been taken far off it.
+  const ASSIST_MIN_RADIUS = 2.8; // the tightest planned loops (U-turns) are ~3.2 m
+  function trackPath(ap, pos, yaw, step) {
+    let best = ap.s, bestD = Infinity;
+    const to = Math.min(ap.length, ap.s + Math.max(3, step * 4 + 2));
+    for (let s = Math.max(0, ap.s - 1); s <= to; s += 0.2) {
+      const p = ap.path.getPointAt(s / ap.length), d = (p.x - pos.x) ** 2 + (p.z - pos.z) ** 2;
+      if (d < bestD) { bestD = d; best = s; }
+    }
+    ap.s = best;
+    const v = Math.abs(state.speed);
+    const u = best / ap.length, p = ap.path.getPointAt(u);
+    const lead = Math.min(ap.length, best + 0.8 + v * 0.2);
+    const t = ap.path.getTangentAt(lead / ap.length), here = ap.path.getTangentAt(u);
+    const lineYaw = Math.atan2(t.x, t.z);
+    // Positive when the car is left of the line (left of +Z is +X).
+    const e = (pos.x - p.x) * here.z - (pos.z - p.z) * here.x;
+    const target = lineYaw - Math.atan2(3.2 * e, v + 1.5);
+    const err = Math.atan2(Math.sin(target - yaw), Math.cos(target - yaw));
+    const turn = THREE.MathUtils.clamp(err, -Math.abs(step) / ASSIST_MIN_RADIUS, Math.abs(step) / ASSIST_MIN_RADIUS);
+    if (best >= ap.length - 0.3 || bestD > 3.5 * 3.5) state.autoPath = null;
+    // e and the line's left normal, for the caller's pull back onto it.
+    return { yaw: yaw + turn, e, nx: here.z, nz: -here.x };
+  }
+
+  // A held arrow (longer than a tap) is the wheel itself, as in manual
+  // driving; let go, the assist takes over again from wherever the car is.
+  const MANUAL_HOLD = 0.42;
+  function updateSteerHold(dt) {
+    const press = state.steerPress;
+    if (!press && state.manualSteer) endManualSteer(); // a release that never arrived
+    if (!press || state.manualSteer || press.uturn || state.paused || state.driveRecovery) return;
+    press.t += dt;
+    const allowed = (!state.isAtSituation || state.resolution?.phase === 'manual') && !state.resolution?.recovery;
+    if (press.t < MANUAL_HOLD || !allowed) return;
+    state.manualSteer = true;
+    state.steering = press.dir;
+    state.autoPath = null; state.laneChangeX = null; state.curveLaneTarget = null;
+    heldExit = null; heldExitDone = true;
+    state.steerHold = 0; state.steerHoldSide = press.dir;
+  }
+  function endManualSteer() {
+    state.manualSteer = false; state.steering = 0;
+    const r = state.resolution;
+    if (!r || r.phase !== 'manual' || r.recovery) return;
+    // The exit the car now points at becomes the choice (the player may have
+    // steered into another road than the one picked with a tap).
+    const yaw = Math.atan2(Math.sin(playerCarGroup.rotation.y), Math.cos(playerCarGroup.rotation.y));
+    const previews = r.intersection.previews || {};
+    const pointed = Math.abs(yaw) < 0.6 ? null : Math.abs(yaw) > 2.4 ? 'uturn' : yaw > 0 ? 'left' : 'right';
+    if (pointed && (previews[pointed] || pointed === 'uturn' && uturnFits(r))) r.simpleChoice = pointed;
+    applyJunctionChoice(r);
   }
 
   // At a junction an arrow picks the exit (only roads that exist); the car
@@ -13344,10 +14326,15 @@
   // U-turn has its own button ('uturn', pressed again — straight on).
   function chooseJunctionExit(direction) {
     const r = state.resolution, previews = r.intersection.previews || {};
-    const pz = playerCarGroup.position.z, gateFor = c => exitGate(r, c);
+    const pz = playerCarGroup.position.z;
+    // A U-turn the player thinks better of becomes a left turn while the car
+    // has not yet swung far into the loop (the left exit is the same way).
+    const fromUturn = r.simpleChoice === 'uturn' && direction === 'left' && previews.left &&
+      Math.cos(playerCarGroup.rotation.y) > 0.72 && pz <= r.intersection.centerZ + 1.5;
+    const gateFor = c => fromUturn && c === 'left' ? r.intersection.centerZ + 1.5 : exitGate(r, c);
     // A turn already under way is committed: past its gate, or already
     // turned well away from the approach (a U-turn comes back below it).
-    if (r.simpleChoice && r.simpleChoice !== 'straight' &&
+    if (!fromUturn && r.simpleChoice && r.simpleChoice !== 'straight' &&
         (pz > gateFor(r.simpleChoice) || Math.cos(playerCarGroup.rotation.y) < 0.9)) { refuseInput(); return; }
     if (direction === 'uturn' && !uturnFits(r)) { refuseInput(); return; }
     let choice = direction;
@@ -13367,10 +14354,30 @@
     if (choice === 'left' || choice === 'right' || choice === 'uturn') triggerBlinker(choice === 'right' ? 'right' : 'left');
   }
 
+  let heldExit = null, heldExitDone = false, tryingHeldExit = false;
+  function updateHeldExit() {
+    if (!heldExit || heldExitDone || state.paused || state.isAtSituation && !state.resolution) return;
+    const r = state.resolution;
+    if (r && (r.phase !== 'manual' || r.recovery)) return;
+    if (heldExit === 'uturn' && !r) return;
+    const beforePath = state.autoPath, beforeLane = state.laneChangeX;
+    tryingHeldExit = true;
+    try {
+      if (r) {
+        if (r.simpleChoice === heldExit) { heldExitDone = true; return; }
+        chooseJunctionExit(heldExit);
+        heldExitDone = r.simpleChoice === heldExit;
+      } else {
+        changeLane(heldExit);
+        heldExitDone = state.autoPath !== beforePath || state.laneChangeX !== beforeLane;
+      }
+    } finally { tryingHeldExit = false; }
+  }
+
   // An arrow press that can change nothing any more (the exit is committed,
   // no lane to move to): Flutter answers with a short vibration.
   function refuseInput() {
-    sendToFlutter({ event: 'input_refused' });
+    if (!tryingHeldExit) sendToFlutter({ event: 'input_refused' });
   }
 
   // Simple mode at a task junction: the exit chosen so far and, until the
@@ -13415,7 +14422,9 @@
       // Straight on: back to the centre of the lane the car is in (it may be
       // half-way into a turn the player changed their mind about).
       const z = r.intersection.centerZ, side = start.x < 0 ? -1 : 1;
-      const laneX = side * (Math.abs(start.x) > 3.6 ? 5.4 : 1.8);
+      // On an avenue the lanes are W/8 and 3W/8 from the centre line.
+      const W = r.intersection.exitWidths?.straight || 8.4;
+      const laneX = side * (W > 8.5 ? (Math.abs(start.x) > W / 4 ? W * 3 / 8 : W / 8) : Math.abs(start.x) > 3.6 ? 5.4 : 1.8);
       const zA = Math.max(start.z + 10, z + 2), zB = Math.max(start.z + 24, z + 18);
       const path = new THREE.CubicBezierCurve3(start, start.clone().addScaledVector(heading, 4),
         new THREE.Vector3(laneX, 0, zA), new THREE.Vector3(laneX, 0, zB));
@@ -13447,18 +14456,26 @@
   // «Простое управление»: the wheel turns only inside a junction (after the
   // answer) or in reverse; elsewhere an arrow means the neighbouring lane.
   function freeWheel() {
-    return !state.simpleSteering;
+    return !state.simpleSteering || !!state.manualSteer;
   }
 
   function applySteeringAssist(dt) {
     if (state.steering || state.autoPath || state.resolution || state.speed < 1.5) return;
     // Follow the widening carriageway before its median, rather than steering
     // toward the ordinary two-lane centre inside the new grass separator.
-    const approach=state.intersections.find(it=>(it.situation.geometry==='divided_main'||it.situation.geometry==='motorway_parallel'||(it.situation.mainWidth>8.4&&it.situation.playerStartX!==undefined)) &&
-      playerCarGroup.position.z>=it.centerZ-34 && playerCarGroup.position.z<=it.stopZ+.2);
+    // On an avenue the car may come up in any lane: it eases into the
+    // ticket's lane (or the inner one) from wherever it is, over a longer run.
+    const approach=state.intersections.find(it=>(it.situation.geometry==='divided_main'||it.situation.geometry==='motorway_parallel'||(it.situation.mainWidth>8.4&&it.situation.playerStartX!==undefined)||it.approachW>8.5) &&
+      playerCarGroup.position.z>=it.centerZ-(it.situation.geometry==='motorway_parallel'?80:it.approachW>8.5?50:34) && playerCarGroup.position.z<=it.stopZ+.2);
     if(approach && Math.cos(playerCarGroup.rotation.y)>.85 && playerCarGroup.position.x<0 && state.laneChangeX==null) {
       const car=playerCarGroup,z=car.position.z;
-      const lane=q=>-1.8+((approach.situation.playerStartX??-4.1)+1.8)*THREE.MathUtils.smoothstep(q-approach.centerZ,-26,-14);
+      const avenue=approach.approachW>8.5,goal=approach.situation.playerStartX??(avenue?-1.8:-4.1);
+      // The motorway (2_15) widens over 60 m: the car moves out with the
+      // widening, into its lane before the median opens in the middle.
+      const motorway=approach.situation.geometry==='motorway_parallel';
+      const from=avenue?car.position.x:-1.8,ease=motorway?[-76,-48]:avenue?[-46,-20]:[-26,-14];
+      if(avenue&&Math.abs(from-goal)<.05&&Math.abs(car.rotation.y)<.01)return;
+      const lane=q=>from+(goal-from)*THREE.MathUtils.smoothstep(q-approach.centerZ,...ease);
       if(state.simpleSteering) {
         const points=[car.position.clone()];
         for(let q=z+1;q<approach.stopZ;q+=1)points.push(new THREE.Vector3(lane(q),0,q));
@@ -13497,7 +14514,7 @@
       const axis = Math.cos(yaw) < 0 ? Math.PI : 0;
       const off = Math.atan2(Math.sin(axis - yaw), Math.cos(axis - yaw));
       const lane = nearestLaneX(x);
-      if (Math.abs(off) < 0.3 && (Math.abs(lane - x) > 0.08 || Math.abs(off) > 0.01)) {
+      if (!state.manualSteer && Math.abs(off) < 0.7 && (Math.abs(lane - x) > 0.08 || Math.abs(off) > 0.01)) {
         state.laneChangeX = lane;
         planLaneCurve(lane);
         return;
@@ -13508,7 +14525,9 @@
     const back = Math.cos(car.rotation.y) < 0;
     const axis = back ? Math.PI : 0;
     const err = Math.atan2(Math.sin(axis - car.rotation.y), Math.cos(axis - car.rotation.y));
-    if (Math.abs(err) > 0.45) return; // a deliberate turn: leave it alone
+    // A deliberate turn (into a side road, a U-turn) is left alone: only a
+    // car already nearly along the road is straightened and kept in lane.
+    if (Math.abs(err) > 0.4) return;
     // Nearest lane centre (driver's right is -X going forward).
     // A tapped lane change («простое управление») steers to the chosen lane,
     // otherwise the car settles into the nearest one.
@@ -13540,8 +14559,15 @@
   }
 
   function integrateDriving(dt, limit = state.maxSpeed) {
+    updateSteerHold(dt);
+    updateHeldExit();
     applySteeringAssist(dt);
     if (state.autoPath && state.resolution) limit = Math.min(limit, curveSpeedLimit(state.autoPath));
+    // Turning by hand at a junction (or a U-turn): the car eases off to
+    // ~27 km/h like a driver does, so the turn stays tight however hard the
+    // gas is held. The way is not fixed: the player steers.
+    const turningAtJunction = !state.simpleSteering && state.resolution?.phase === 'manual' && !!state.steering;
+    if (turningAtJunction) limit = Math.min(limit, 7.5);
     // Brake: firm deceleration while moving; from a standstill it becomes
     // reverse gear (slow, negative speed). Gas is ignored while braking.
     if (state.isBraking) {
@@ -13563,10 +14589,14 @@
       // Slow steering remains available when the nose is pressed against a curb.
       // In reverse the rear swings the other way, as on a real car.
       if (state.steering && !freeWheel()) state.steering = 0;
-      playerCarGroup.rotation.y += (state.steering || 0) * Math.sign(state.speed || 1) *
+      // A held arrow turns the wheel more gently at road speed (free steering).
+      const assisted = !state.simpleSteering || state.manualSteer;
+      // As responsive as before at turning speeds (tight turns, U-turns);
+      // softer at road speed, so a held arrow does not throw the car about.
+      let wheel = (state.steering || 0) * Math.sign(state.speed || 1) *
         Math.min(1.8, Math.max(state.isAccelerating ? 1 : 0, Math.abs(state.speed)) * 0.32) /
-        // Softer at speed: a held arrow does not throw the car across the road.
-        (1 + Math.max(0, Math.abs(state.speed) - 8) * 0.04) * dt / steps;
+        (turningAtJunction ? 1 : 1 + Math.max(0, Math.abs(state.speed) - (assisted ? 6 : 8)) * (assisted ? 0.09 : 0.04)) * dt / steps;
+      playerCarGroup.rotation.y += wheel;
       let desiredYaw = playerCarGroup.rotation.y;
       let dx = Math.sin(desiredYaw) * step, dz = Math.cos(desiredYaw) * step;
       const ap = state.autoPath;
@@ -13588,14 +14618,34 @@
         desiredYaw = yaw; playerCarGroup.rotation.y = yaw;
         dx = x - before.x; dz = z - before.z;
       } else if (ap && step > 0) {
-        // «Простое управление»: the car rides the planned curve exactly.
-        ap.s = Math.min(ap.length, ap.s + step);
-        const t = ap.s / ap.length, point = ap.path.getPointAt(t), tangent = ap.path.getTangentAt(t);
-        const yaw = Math.atan2(tangent.x, tangent.z);
-        desiredYaw = oldYaw + Math.atan2(Math.sin(yaw - oldYaw), Math.cos(yaw - oldYaw));
+        // Assisted steering: the planned line is a guide the wheel is turned
+        // towards (a car's turning circle, no teleporting onto the curve).
+        // Off the line the car simply steers back; kerbs and traffic act on
+        // it exactly as in manual driving.
+        const track = trackPath(ap, before, oldYaw, step);
+        desiredYaw = track.yaw;
         playerCarGroup.rotation.y = desiredYaw;
-        dx = point.x - before.x; dz = point.z - before.z;
-        if (ap.s >= ap.length) state.autoPath = null;
+        // A gentle pull onto the line (at most a quarter of the step,
+        // sideways): no visible slide, but no drift towards a kerb either.
+        const pull = THREE.MathUtils.clamp(-track.e, -0.25 * step, 0.25 * step);
+        dx = Math.sin(desiredYaw) * step + track.nx * pull; dz = Math.cos(desiredYaw) * step + track.nz * pull;
+        // Safety net: a step that would put a wheel on a kerb or touch a
+        // standing car is taken on the line itself (the plan is laid on the
+        // carriageway, clear of what stands there).
+        const nextPose = { p: new THREE.Vector3(before.x + dx, 0, before.z + dz), yaw: desiredYaw,
+          halfWidth: playerCarGroup.userData.halfWidth, halfLength: playerCarGroup.userData.halfLength };
+        const touches = !playerOnRoad(nextPose.p, desiredYaw) ||
+          state.actors.some(a => !a.done && !a.fall && a.speed < 0.3 && footprintsOverlap(nextPose, actorFootprint(a), 0.06));
+        if (touches && ap.length) {
+          const u = Math.min(1, (ap.s + step) / ap.length), point = ap.path.getPointAt(u), tangent = ap.path.getTangentAt(u);
+          const lineYaw = Math.atan2(tangent.x, tangent.z);
+          if (playerOnRoad(point, lineYaw)) {
+            ap.s = Math.min(ap.length, ap.s + step);
+            desiredYaw = oldYaw + Math.atan2(Math.sin(lineYaw - oldYaw), Math.cos(lineYaw - oldYaw));
+            playerCarGroup.rotation.y = desiredYaw;
+            dx = point.x - before.x; dz = point.z - before.z;
+          }
+        }
       }
       playerCarGroup.position.x += dx; playerCarGroup.position.z += dz;
       if (!playerOnRoad()) {
@@ -13701,6 +14751,7 @@
   }
 
   function refreshRoadBounds() {
+    sceneryBoundsVersion++;
     window.PDD_ROADS.invalidate();
     scene.updateMatrixWorld(true);
     state.roadBounds = [];
@@ -13714,7 +14765,7 @@
       if (obj.userData.noRoad && obj.visible) state.noRoad.push({ test: obj.userData.noRoad, inverse: obj.matrixWorld.clone().invert(), mesh: obj });
     }));
     state.roadSegments.forEach(seg => seg.traverse(obj => {
-      if (obj.userData.surface === 'road') state.roadBounds.push({
+      if (obj.userData.surface === 'road' && !obj.userData.visualOnly) state.roadBounds.push({
         box: new THREE.Box3().setFromObject(obj), material: obj.material,
         // A rounded corner is road only outside its kerb curve.
         fillet: obj.userData.fillet && { center: obj.userData.fillet.center.clone().applyMatrix4(obj.matrixWorld), r: obj.userData.fillet.r },
@@ -13722,6 +14773,51 @@
         inverse: obj.userData.containsRoad && obj.matrixWorld.clone().invert(),
       });
     }));
+    // Another road laid later (a bend, the next junction) may run over
+    // scenery placed for its neighbour: nothing decorative stands on it.
+    state.roadSegments.forEach(seg => clearSceneryOffRoad(seg.children));
+  }
+  // Decorative objects (houses, fences, lamps, trees, benches) whose base
+  // stands on a drivable carriageway are removed. Signs and ticket content
+  // are never touched; only the footprint is tested, not overhangs.
+  // Where traffic drives (a turn cutting a pavement corner, a tram's service
+  // branch to its depot) no lamp, tree or fence stands either.
+  function addPathCorridors(actors) {
+    const list = state.pathCorridors ||= [];
+    for (const a of actors) {
+      const route = a.trackPath || a.railPath || a.path;
+      if (!route || !a.mesh?.parent || a.config.type === 'pedestrian' || a.config.type === 'cyclist') continue;
+      a.mesh.parent.updateWorldMatrix(true, false);
+      const m = a.mesh.parent.matrixWorld, L = route.getLength(), points = [];
+      for (let u = 0; u <= L; u += 1) points.push(route.getPointAt(Math.min(1, u / L)).clone().applyMatrix4(m));
+      const r = (a.halfWidth || 1.2) + .5, box = new THREE.Box3().setFromPoints(points).expandByScalar(r);
+      list.push({ points, r, box });
+    }
+    if (list.length > 60) list.splice(0, list.length - 60);
+    state.roadSegments.forEach(seg => seg.traverse(o => { if (o.userData.sceneryObject || o.userData.editKey) clearSceneryOffRoad([o]); }));
+  }
+  const onPathCorridor = p => (state.pathCorridors || []).some(c => p.x >= c.box.min.x && p.x <= c.box.max.x && p.z >= c.box.min.z && p.z <= c.box.max.z && c.points.some(q => (q.x - p.x) ** 2 + (q.z - p.z) ** 2 < c.r * c.r));
+  function clearSceneryOffRoad(objects) {
+    if (!state.roadBounds) return;
+    for (const o of objects) {
+      if (!o.visible || !(o.userData.sceneryObject || o.userData.editKey) || o.userData.billboard || o.userData.actor) continue;
+      let sign = false; o.traverse(c => { const k = c.userData.editKey || ''; if (c.userData.signCode || c.userData.trafficLight || k === 'light' || k.startsWith('sign')) sign = true; }); if (sign) continue;
+      // Only standing objects: never a surface (a dirt arm, a pavement, a
+      // marking group), whatever key the lab has given it.
+      let surface = false; o.traverse(c => { if (c.userData.surface || c.userData.dirtSurface || c.userData.roadMarking) surface = true; }); if (surface) continue;
+      const box = new THREE.Box3().setFromObject(o);
+      if (box.isEmpty() || box.max.y - box.min.y < 0.3) continue;
+      const sx = box.max.x - box.min.x, sz = box.max.z - box.min.z;
+      if (sx > 40 || sz > 40) continue; // merged rows: their parts have no single base
+      // The object's own origin is its base (a lamp's pole, not its arm over
+      // the road); a building also by its inset corners.
+      const c = o.getWorldPosition(new THREE.Vector3()); c.y = 0;
+      if (c.x < box.min.x - .5 || c.x > box.max.x + .5 || c.z < box.min.z - .5 || c.z > box.max.z + .5) box.getCenter(c).setY(0);
+      const points = [c];
+      if (state.occluders.includes(o)) for (const fx of [.2, .8]) for (const fz of [.2, .8])
+        points.push(new THREE.Vector3(box.min.x + sx * fx, 0, box.min.z + sz * fz));
+      if (points.some(p => roadSupports(p)) || (!o.userData.tramDepot && onPathCorridor(c))) o.visible = false;
+    }
   }
 
   function curvedRoadFrame(point=playerCarGroup.position) {
@@ -13814,13 +14910,17 @@
       if (active.situation.playerStartX !== undefined) playerCarGroup.position.x = active.situation.playerStartX;
       state.speed = 0;
       state.isAccelerating = false;
-      state.steering = 0; state.laneChangeX = null; state.autoPath = null;
+      state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null;
       state.isAtSituation = true;
       sendToFlutter({ event: 'approach_situation', situation: active.situation });
     }
   }
 
   let cameraLook = new THREE.Vector3(0, 0, 14), cameraHeading = 0, cameraViewSize = 42;
+  // The default chase view: 42 m up and 44 m back (pitch ~43.7°). Framing
+  // of the questions is measured at this pitch.
+  const CAMERA_PITCH = Math.atan2(42, 44), CAMERA_DISTANCE = Math.hypot(42, 44), CAMERA_LOW_PITCH = THREE.MathUtils.degToRad(15);
+  let cameraPitch = CAMERA_PITCH, cameraZoom = 1, cameraClose = 0;
   function updateCamera(dt) {
     const question=questionCameraOpen();
     if(state.cameraQuestionActive && !question)resetQuestionCamera();
@@ -13836,7 +14936,10 @@
       it.guide.visible = !it.situation.hideGuide && it === state.activeIntersection && Math.abs(playerCarGroup.position.z - it.centerZ) < 55;
     });
     state.orbitYaw = state.attract ? (state.orbitYaw || 0) : (state.orbitYaw || 0) * Math.exp(-4 * dt);
-    let desiredYaw = playerCarGroup.rotation.y + (state.orbitYaw || 0);
+    // In a question the view is square to the road (the car may stand at a
+    // slight angle after a lane change; the scene must not look skewed).
+    let desiredYaw = question ? Math.round(playerCarGroup.rotation.y / (Math.PI / 2)) * (Math.PI / 2)
+      : playerCarGroup.rotation.y + (state.orbitYaw || 0);
     let delta = Math.atan2(Math.sin(desiredYaw - cameraHeading), Math.cos(desiredYaw - cameraHeading));
     cameraHeading += delta * (1 - Math.exp(-3 * dt));
     const forward = new THREE.Vector3(Math.sin(cameraHeading), 0, Math.cos(cameraHeading));
@@ -13866,13 +14969,22 @@
       }
       const minX = Math.min(-6, ...boxes.map(b => b.min.x)) - 1;
       const maxX = Math.max(6, ...boxes.map(b => b.max.x)) + 1;
-      if (ev.junctionZ !== undefined && ev.junctionZ < ev.stopZ + 65) {
+      // A question about the yield-ahead triangle (1.20, 6_5) is about the
+      // marking by the car: the junction 40 m on is not framed.
+      if (ev.scene.yieldMarkingZ !== undefined) {
+        const mz = ev.stopZ + ev.scene.yieldMarkingZ;
+        boxes.push(new THREE.Box3(new THREE.Vector3(-4.2, 0, mz - 3), new THREE.Vector3(4.2, 0, mz + 4)));
+      // The junction ahead is framed only where it decides the answer
+      // (overtaking before/at a junction); a question about a sign or a
+      // marking by the car (11_4, 6_5) is framed tight on it.
+      } else if (ev.scene.kind === 'overtake' && ev.junctionZ !== undefined && ev.junctionZ < ev.stopZ + 65) {
         boxes.push(new THREE.Box3(new THREE.Vector3(-14, 0, ev.junctionZ - 7), new THREE.Vector3(14, 0, ev.junctionZ + 7)));
       }
       // Tight on what the question is about (a car and a sign next to it
       // need no 40 m of road): the view only grows for evidence far ahead.
       const minZ = Math.min(playerCarGroup.position.z - 4, ...boxes.map(b => b.min.z - 2));
-      const maxZ = Math.min(ev.stopZ + 60, Math.max(ev.stopZ + 8, ...boxes.map(b => b.max.z + b.max.y * 1.05))) + 2;
+      // Badges and sign plates stand above their objects: room for them below the HUD.
+      const maxZ = Math.min(ev.stopZ + 64, Math.max(ev.stopZ + 8, ...boxes.map(b => b.max.z + b.max.y * 1.05))) + 3.5;
       const visibleFraction = Math.max(0.25, (height - state.viewportInsets.top - state.viewportInsets.bottom) / height);
       desiredViewSize = Math.max(26, (maxX - minX) / (width / height), (maxZ - minZ) * 0.69 / visibleFraction);
       focus.set((minX + maxX) / 2, 0, (minZ + maxZ) / 2);
@@ -13881,6 +14993,17 @@
       const intersection = state.activeIntersection;
       const bounds = intersection.actors.map(a => a.viewBounds);
       intersection.seg.children.filter(o => o.userData.trajectoryLabel || o.userData.questionEvidence).forEach(o => bounds.push(new THREE.Box3().setFromObject(o)));
+      // The junction's own signals and signs are evidence too (a light at
+      // the right-hand corner must not be cropped off): their posts and
+      // heads, if they stand at the junction or on its approach.
+      intersection.seg.traverse(o => {
+        const key = o.userData.editKey || '';
+        if (!(key === 'light' || key.startsWith('sign') || o.userData.signCode) || !o.visible) return;
+        for (let p = o.parent; p && p !== intersection.seg; p = p.parent) if (p.userData.signCode || p.userData.editKey === 'light') return;
+        const b = new THREE.Box3().setFromObject(o);
+        if (b.isEmpty() || b.min.z > intersection.centerZ + 16 || b.max.z < playerCarGroup.position.z - 6 || Math.abs((b.min.x + b.max.x) / 2) > 20) return;
+        bounds.push(b);
+      });
       const minX = Math.min(-7, ...bounds.map(b => b.min.x)) - 1.5;
       const maxX = Math.max(7, ...bounds.map(b => b.max.x)) + 1.5;
       const minZ = Math.min(playerCarGroup.position.z - 2.5, intersection.centerZ - 8, ...bounds.map(b => b.min.z)) - 1.5;
@@ -13892,48 +15015,81 @@
       focus.set((minX + maxX) / 2, 0, (minZ + maxZ) / 2);
       lookAhead = 0;
     }
-    const alpha = 1 - Math.exp(-5 * dt);
-    const questionFrameSize=desiredViewSize;
-    desiredViewSize *= state.userZoom || 1;
+    // The finger's zoom follows almost at once (a pinch must feel attached);
+    // framing changes of the scene itself keep their slower glide.
+    cameraZoom += ((state.userZoom || 1) - cameraZoom) * (1 - Math.exp(-18 * dt));
+    // Free driving: the closer the zoom, the lower and more "from behind" the
+    // camera, down to a view almost straight along the road (a perspective
+    // chase view). A dolly zoom keeps the car's size while the lens widens,
+    // so the change is continuous; at the default zoom the lens is so narrow
+    // that the orthographic camera takes over unnoticed. Questions always use
+    // the standard top view, which their framing is measured for.
+    const framed = lookAhead === 0;
+    const targetClose = framed ? 0 : THREE.MathUtils.smoothstep((1 - cameraZoom) / (1 - ZOOM_MIN), 0, 1);
+    cameraClose += (targetClose - cameraClose) * (1 - Math.exp(-(framed ? 4 : 14) * dt));
+    if (Math.abs(cameraClose - targetClose) < 1e-4) cameraClose = targetClose;
+    const close = cameraClose;
+    const alpha = 1 - Math.exp(-THREE.MathUtils.lerp(5, 12, close) * dt);
     cameraViewSize += (desiredViewSize - cameraViewSize) * alpha;
-    if(question){
+    const viewSize = cameraViewSize * cameraZoom;
+    if (question) {
       // The initial uncovered question frame is the inspection boundary.
       // Zooming in reveals room to pan inside it; zooming back out removes it.
-      const room=Math.max(0,Math.min(questionFrameSize-cameraViewSize,questionFrameSize*(1-(state.userZoom||1))));
-      const visibleFraction=Math.max(.25,(height-state.viewportInsets.top-state.viewportInsets.bottom)/height);
-      state.questionCameraBounds={right:new THREE.Vector3(forward.z,0,-forward.x),forward:forward.clone(),
-        side:room*width/height/2,along:room*visibleFraction/(2*.69)};
-      const previous=state.questionCameraPan.clone();constrainQuestionPan(state.questionCameraPan);
-      const correction=state.questionCameraPan.clone().sub(previous);
-      cameraLook.add(correction);camera.position.add(correction);
+      const room = Math.max(0, Math.min(cameraViewSize - viewSize, cameraViewSize * (1 - cameraZoom)));
+      const visibleFraction = Math.max(.25, (height - state.viewportInsets.top - state.viewportInsets.bottom) / height);
+      state.questionCameraBounds = { right: new THREE.Vector3(forward.z, 0, -forward.x), forward: forward.clone(),
+        side: room * width / height / 2, along: room * visibleFraction / (2 * .69) };
+      const previous = state.questionCameraPan.clone(); constrainQuestionPan(state.questionCameraPan);
+      const correction = state.questionCameraPan.clone().sub(previous);
+      cameraLook.add(correction); camera.position.add(correction);
     }
-    camera.left = -cameraViewSize * width / height / 2;
-    camera.right = -camera.left;
-    camera.top = cameraViewSize / 2; camera.bottom = -camera.top;
-    camera.updateProjectionMatrix();
+    cameraPitch = THREE.MathUtils.lerp(CAMERA_PITCH, CAMERA_LOW_PITCH, close);
+    const sinPitch = Math.sin(cameraPitch), cosPitch = Math.cos(cameraPitch);
+    const fov = THREE.MathUtils.lerp(THREE.MathUtils.degToRad(1.5), THREE.MathUtils.degToRad(46), close);
+    const chase = close > 0.004;
+    const lens = chase ? chaseCamera : orthoCamera;
+    // Distance from the look point that shows viewSize metres across it.
+    const distance = chase ? viewSize / 2 / Math.tan(fov / 2) : CAMERA_DISTANCE;
+    if (!framed) {
+      // Where the car sits below the middle of the frame (half-heights):
+      // a little below in the top view, the lower quarter in the chase view.
+      const below = THREE.MathUtils.lerp(0.33, 0.42, close);
+      if (chase) {
+        const theta = Math.atan(below * Math.tan(fov / 2));
+        lookAhead = distance * (cosPitch - sinPitch / Math.tan(cameraPitch + theta));
+      } else lookAhead = below * viewSize / 2 / sinPitch;
+    }
+    if (chase) {
+      lens.fov = THREE.MathUtils.radToDeg(fov); lens.aspect = width / height;
+      lens.near = Math.max(0.3, distance - 220); lens.far = distance + 900;
+    } else {
+      lens.left = -viewSize * width / height / 2;
+      lens.right = -lens.left;
+      lens.top = viewSize / 2; lens.bottom = -lens.top;
+    }
+    lens.updateProjectionMatrix();
+    camera = lens;
+    if (skyDome) skyDome.position.copy(camera.position);
     // Camera framing can zoom out on a short screen. Keep the ticket letters
     // readable instead of shrinking them into dots under a tall answer card.
     for (const group of [state.activeIntersection?.seg, state.roadEvent?.guide]) {
       group?.children.forEach(o => {
-        if (o.userData.trajectoryLabel) o.scale.setScalar(Math.max(1.5, 24 * cameraViewSize / height));
+        if (o.userData.trajectoryLabel) o.scale.setScalar(Math.max(1.5, 24 * viewSize / height));
       });
     }
     // Place the scene at the centre of the ACTUAL uncovered viewport, including
     // large text / tall answer sheets, rather than the centre behind the sheet.
-    const close=!question&&!state.attract?Math.max(0,(1-(state.userZoom||1))/(1-ZOOM_MIN)):0;
-    const cameraHeight=42-20*close,behind=44+8*close;
-    if(close)lookAhead+=5*close;
-    const projection=Math.max(.3,cameraHeight/Math.hypot(cameraHeight,behind));
-    const offset = (state.viewportInsets.bottom - state.viewportInsets.top) / height * cameraViewSize / (2 * projection);
-    if(question)focus.add(state.questionCameraPan);
+    // (The chase view is not covered by a question card: no shift there.)
+    const offset = (1 - close) * (state.viewportInsets.bottom - state.viewportInsets.top) / height * viewSize / (2 * sinPitch);
+    if (question) focus.add(state.questionCameraPan);
     const desiredLook = focus.clone().addScaledVector(forward, lookAhead - offset);
-    const desiredPos = desiredLook.clone().addScaledVector(forward, -behind);
-    desiredPos.y = cameraHeight;
-    // The frustum already eases the zoom. During inspection the pose must
-    // match that frustum, or a second easing would drift the gesture anchor.
-    const poseAlpha=question&&state.questionCameraInspecting?1:alpha;
-    cameraLook.lerp(desiredLook, poseAlpha);
-    camera.position.lerp(desiredPos, poseAlpha);
+    // During inspection the pose follows the fingers at once (no second easing
+    // drifting the gesture anchor).
+    cameraLook.lerp(desiredLook, question && state.questionCameraInspecting ? 1 : alpha);
+    // The camera sits on its pitch line from the look point, at once: lerping
+    // the position separately would bend the pitch while zooming.
+    camera.position.copy(cameraLook).addScaledVector(forward, -distance * cosPitch);
+    camera.position.y = distance * sinPitch;
     camera.lookAt(cameraLook);
     if(question&&state.questionZoomAnchor){
       camera.updateMatrixWorld(true);
@@ -13956,7 +15112,9 @@
     // whenever the car is not in the middle of the frame.
     const towardsCamera = camera.getWorldDirection(new THREE.Vector3()).negate();
     const car = playerCarGroup.position;
-    const sights = [0.4, 1.5].map(y => new THREE.Ray(new THREE.Vector3(car.x, y, car.z), towardsCamera));
+    // The chase view's lines of sight converge on the lens itself.
+    const sights = [0.4, 1.5].map(y => new THREE.Ray(new THREE.Vector3(car.x, y, car.z),
+      chase ? camera.position.clone().sub(new THREE.Vector3(car.x, y, car.z)).normalize() : towardsCamera));
     state.occluders.forEach(building => {
       if (!building.parent) return;
       const bounds = new THREE.Box3().setFromObject(building);
@@ -13968,8 +15126,17 @@
         part.material.depthWrite = !faded;
       });
     });
-    sunTarget.position.copy(cameraLook);
-    dirLight.position.copy(cameraLook).add(new THREE.Vector3(12, 70, -7));
+    // The shadow frame moves in whole shadow-map texels (in the light's own
+    // axes): otherwise every step re-samples the car's shadow and its edge
+    // crawls and flickers while driving.
+    const sunDir = SUN_OFFSET.clone().normalize();
+    const sunRight = new THREE.Vector3(0, 1, 0).cross(sunDir).normalize(), sunUp = sunDir.clone().cross(sunRight);
+    const texel = (dirLight.shadow.camera.right - dirLight.shadow.camera.left) / dirLight.shadow.mapSize.width;
+    const snap = v => Math.round(v / texel) * texel;
+    const sunFocus = sunRight.clone().multiplyScalar(snap(cameraLook.dot(sunRight)))
+      .addScaledVector(sunUp, snap(cameraLook.dot(sunUp))).addScaledVector(sunDir, cameraLook.dot(sunDir));
+    sunTarget.position.copy(sunFocus);
+    dirLight.position.copy(sunFocus).add(SUN_OFFSET);
   }
 
   function onWindowResize() {
@@ -13978,15 +15145,19 @@
     if (width <= 0 || height <= 0) return;
     const aspect = width / height;
     const viewSize = 42;
-    camera.left = -viewSize * aspect / 2;
-    camera.right = viewSize * aspect / 2;
-    camera.top = viewSize / 2;
-    camera.bottom = -viewSize / 2;
-    camera.updateProjectionMatrix();
+    orthoCamera.left = -viewSize * aspect / 2;
+    orthoCamera.right = viewSize * aspect / 2;
+    orthoCamera.top = viewSize / 2;
+    orthoCamera.bottom = -viewSize / 2;
+    orthoCamera.updateProjectionMatrix();
+    chaseCamera.aspect = aspect; chaseCamera.updateProjectionMatrix();
     renderer.setSize(width, height);
   }
 
   function resetGame() {
+    state.pathCorridors = [];
+    sceneryJobs.length=0;
+    heldExit = null; heldExitDone = false;
     resetQuestionCamera();state.cameraQuestionActive=false;
     state.roadSegments.forEach(disposeSegment);
     state.roadSegments = [];
@@ -14033,7 +15204,7 @@
     state.currentLaneOffset = state.targetLaneOffset = -1.8;
     state.curveLaneTarget = null;
     state.violationEpisode = 0;
-    state.steering = 0; state.laneChangeX = null; state.autoPath = null; state.trail = [];
+    state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null; state.trail = [];
     state.pendingAnswer = null;
     state.blinker = null;
     state.hazard = 0;
@@ -14042,11 +15213,14 @@
     situationBag = [];
     playerCarGroup.position.set(-1.8, 0, 0);
     playerCarGroup.rotation.set(0, 0, 0);
+    camera = orthoCamera; cameraClose = 0;
     camera.position.set(0, 42, -36);
     cameraLook.set(0, 0, 14);
     cameraHeading = 0;
     cameraViewSize = 42;
+    const previousStreaming=streamScenery;streamScenery=false;
     buildInitialTrack();
+    streamScenery=previousStreaming;
     telemetryElapsed = 0;
   }
 
@@ -14121,17 +15295,39 @@
       renderer.render(scene, camera);
     },
     thumbnail(id, paint) { try { return renderThumbnail(id, paint || null); } catch (_) { return ''; } },
-    changeLane(direction) { changeLane(direction); },
+    changeLane(direction) { heldExit = null; heldExitDone = false; changeLane(direction); },
     // The U-turn button of simple steering (shown only where one is allowed).
     chooseUturn() {
+      heldExit = null; heldExitDone = false;
       const r = state.resolution;
       if (!r || r.phase !== 'manual' || r.recovery || !state.simpleSteering) { refuseInput(); return; }
       chooseJunctionExit('uturn');
     },
-    setSimpleSteering(on) { state.simpleSteering = Boolean(on); },
+    // The app always uses the one control scheme (taps = intents, a hold =
+    // the wheel). false is kept for the engine tests' programmatic driver,
+    // which turns the wheel by fractions every frame.
+    setSimpleSteering(on) { state.simpleSteering = on !== false; state.steerPress = null; state.manualSteer = false; },
     setSteering(direction) {
       const wanted = Math.sign(Number(direction) || 0);
-      if (!freeWheel()) { state.steering = 0; return; } // simple mode: taps only (changeLane)
+      if (state.simpleSteering) {
+        if (!wanted) {
+          state.steerPress = null;
+          if (state.manualSteer) { endManualSteer(); heldExit = null; heldExitDone = false; return; }
+        } else if (!state.steerPress || state.steerPress.dir !== wanted || state.steerPress.uturn !== (Number(direction) === 2)) {
+          if (state.manualSteer) {
+            // Already steering by hand: the other arrow steers the other way at once.
+            state.steering = wanted; state.steerPress = { dir: wanted, t: MANUAL_HOLD, uturn: false }; return;
+          }
+          state.steerPress = { dir: wanted, t: 0, uturn: Number(direction) === 2 };
+        }
+      }
+      if (!freeWheel()) {
+        const next = Number(direction) === 2 ? 'uturn' : wanted > 0 ? 'left' : wanted < 0 ? 'right' : null;
+        if (next !== heldExit) { heldExit = next; heldExitDone = false; }
+        state.steering = 0;
+        updateHeldExit();
+        return;
+      }
       state.steering = !state.paused && !state.driveRecovery && (!state.isAtSituation || state.resolution?.phase === 'manual') && !state.resolution?.recovery
         ? Math.max(-1, Math.min(1, Number(direction) || 0)) : 0;
       // The indicator comes on only for a deliberate hold (see updateBlinkers):
@@ -14154,7 +15350,7 @@
       state.paused = next;
       // The planned move (a lane change, a turn) is kept: resumed, the car
       // carries on with it instead of going straight on.
-      if (next) { state.isAccelerating = false; state.isBraking = false; state.steering = 0; }
+      if (next) { heldExit = null; heldExitDone = false; state.isAccelerating = false; state.isBraking = false; state.steering = 0; }
       gameAudio?.setPaused(next);
       lastTime = null;
       if (!next && state.pendingAnswer) {
@@ -14200,10 +15396,11 @@
       });
       state.weatherDirty = true;
     },
-    // Debug/testing: force 'clear' | 'overcast' | 'rain', or null for the
-    // automatic cycle.
+    // Debug/testing: force 'clear' | 'rain', or null for the automatic cycle
+    // ('overcast' from older debug menus means sunny: there is no grey day).
     setWeather(kind) {
-      state.weatherOverride = ['clear', 'overcast', 'rain'].includes(kind) ? kind : null;
+      if (kind === 'overcast') kind = 'clear';
+      state.weatherOverride = ['clear', 'rain'].includes(kind) ? kind : null;
       if (!state.sky) state.sky = { kind: 'clear', left: 0 };
       if (state.weatherOverride) { state.sky.kind = state.weatherOverride; state.sky.left = 1e9; }
       else state.sky.left = 0;
