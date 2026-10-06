@@ -1748,6 +1748,18 @@ abstract class AppLocalizations {
   /// **'Обгон здесь запрещён'**
   String get gameOvertakingProhibited;
 
+  /// No description provided for @gameStopViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы не остановились в положенном месте'**
+  String get gameStopViolation;
+
+  /// No description provided for @gameRedLightViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проезд на запрещающий сигнал'**
+  String get gameRedLightViolation;
+
   /// No description provided for @gameRailwayViolation.
   ///
   /// In ru, this message translates to:
@@ -2005,6 +2017,66 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Вход отменён или возникла ошибка. Попробуйте ещё раз.'**
   String get authFailed;
+
+  /// No description provided for @authErrorCancelled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход не завершён. Попробуйте выбрать аккаунт ещё раз.'**
+  String get authErrorCancelled;
+
+  /// No description provided for @authErrorProvider.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось получить данные для входа от выбранного сервиса.'**
+  String get authErrorProvider;
+
+  /// No description provided for @authErrorNetwork.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось связаться с сервером. Проверьте подключение к интернету.'**
+  String get authErrorNetwork;
+
+  /// No description provided for @authErrorTimeout.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сервер не ответил вовремя. Попробуйте ещё раз.'**
+  String get authErrorTimeout;
+
+  /// No description provided for @authErrorAppKey.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сервер отклонил эту сборку приложения. Обновите приложение из магазина.'**
+  String get authErrorAppKey;
+
+  /// No description provided for @authErrorCredential.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сервер не подтвердил вход. Попробуйте другой аккаунт или способ входа.'**
+  String get authErrorCredential;
+
+  /// No description provided for @authErrorServer.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось завершить вход на сервере. Попробуйте позже.'**
+  String get authErrorServer;
+
+  /// No description provided for @authErrorResponse.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось принять сессию входа. Проверьте дату и время на телефоне.'**
+  String get authErrorResponse;
+
+  /// No description provided for @authSessionTemporary.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход выполнен. Телефон не смог сохранить сессию: после перезапуска потребуется войти снова.'**
+  String get authSessionTemporary;
+
+  /// No description provided for @authDiagnosticCode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код для поддержки: {code}'**
+  String authDiagnosticCode(String code);
 
   /// No description provided for @authTitle.
   ///
@@ -2281,6 +2353,66 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Разворот'**
   String get gameUturn;
+
+  /// No description provided for @purchaseVerificationPending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Магазин сообщил о покупке, но доступ пока не подтверждён. Для повторной проверки нажмите «Восстановить» при доступном интернете.'**
+  String get purchaseVerificationPending;
+
+  /// No description provided for @notifAdminChannelName.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сообщения приложения'**
+  String get notifAdminChannelName;
+
+  /// No description provided for @noticeAcknowledge.
+  ///
+  /// In ru, this message translates to:
+  /// **'Понятно'**
+  String get noticeAcknowledge;
+
+  /// No description provided for @noticeOpen.
+  ///
+  /// In ru, this message translates to:
+  /// **'Открыть'**
+  String get noticeOpen;
+
+  /// No description provided for @pushMessagesSetting.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новости приложения'**
+  String get pushMessagesSetting;
+
+  /// No description provided for @pushMessagesHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пуши об обновлениях и важных событиях'**
+  String get pushMessagesHint;
+
+  /// No description provided for @gameKeyboardHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'↑ / W — газ · ↓ / S / пробел — тормоз · ← → / A D — повороты'**
+  String get gameKeyboardHint;
+
+  /// No description provided for @webQuarter.
+  ///
+  /// In ru, this message translates to:
+  /// **'3 месяца'**
+  String get webQuarter;
+
+  /// No description provided for @webPaymentSoon.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата скоро появится'**
+  String get webPaymentSoon;
+
+  /// No description provided for @webPaymentInfo.
+  ///
+  /// In ru, this message translates to:
+  /// **'Доступ на 3 месяца без автопродления. Оплата на сайте пока не подключена.'**
+  String get webPaymentInfo;
 }
 
 class _AppLocalizationsDelegate

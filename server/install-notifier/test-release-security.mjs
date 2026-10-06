@@ -27,6 +27,28 @@ test('session issuing fails closed without key or valid identity', async () => {
   const e = env(); delete e.SHARED_SECRET;
   assert.equal((await handleAuth(request('/api/auth/session', {}), e)).status, 403);
 });
+test('auth diagnostics identify the failed phase without logging credentials or identity', async () => {
+  const logs = [], original = console.log;
+  console.log = text => logs.push(JSON.parse(text));
+  try {
+    const e = env();
+    const body = { provider: 'google', credential: 'PRIVATE-TOKEN', name: 'PRIVATE-NAME' };
+    const denied = await handleAuth(request('/api/auth/session', body, null, null), e);
+    assert.equal(denied.status, 403);
+    assert.equal(logs.at(-1).outcome, 'app_key_rejected');
+    const wrongClient = await handleAuth(request('/api/auth/session', body), e, async () => { throw new Error('wrong client'); });
+    assert.equal(wrongClient.status, 401);
+    assert.equal(logs.at(-1).outcome, 'oauth_client_rejected');
+    await handleAuth(request('/api/auth/session', body), e, async () => { throw new Error('PRIVATE-TOKEN PRIVATE-NAME'); });
+    assert.equal(logs.at(-1).outcome, 'credential_rejected');
+    const success = await login(e);
+    assert.equal(logs.at(-1).outcome, 'session_issued');
+    assert.equal(typeof success.token, 'string');
+    assert.equal(wrongClient.headers.get('x-auth-diagnostic-id'), logs[1].requestId);
+    const serialized = JSON.stringify(logs);
+    for (const value of ['PRIVATE-TOKEN', 'PRIVATE-NAME', 'google_123', success.token, e.SHARED_SECRET, e.SESSION_SECRET]) assert.equal(serialized.includes(value), false);
+  } finally { console.log = original; }
+});
 test('OAuth verifies signature, audience, issuer, expiry', async () => {
   const { privateKey, publicKey } = await generateKeyPair('RS256');
   const jwk = { ...await exportJWK(publicKey), kid: 'test-key', alg: 'RS256', use: 'sig' };

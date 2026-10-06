@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:pdd_app/presentation/widgets/google_web_sign_in_button.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -26,10 +28,32 @@ class AuthModalSheet extends StatefulWidget {
 
 class _AuthModalSheetState extends State<AuthModalSheet> {
   bool _isLoading = false;
+  String? _error;
+
+  String _failureMessage() {
+    final auth = AuthService.instance;
+    final message = switch (auth.lastFailure) {
+      AuthFailure.cancelled => appL10n.authErrorCancelled,
+      AuthFailure.provider => appL10n.authErrorProvider,
+      AuthFailure.network => appL10n.authErrorNetwork,
+      AuthFailure.timeout => appL10n.authErrorTimeout,
+      AuthFailure.appKey => appL10n.authErrorAppKey,
+      AuthFailure.credential => appL10n.authErrorCredential,
+      AuthFailure.server => appL10n.authErrorServer,
+      AuthFailure.response => appL10n.authErrorResponse,
+      null => appL10n.authFailed,
+    };
+    final id = auth.lastDiagnosticId;
+    return id == null ? message : '$message\n${appL10n.authDiagnosticCode(id)}';
+  }
 
   Future<void> _handleAuth(Future<bool> Function() action) async {
+    if (_isLoading) return;
     HapticFeedbackHelper.select();
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
     try {
       final success = await action();
@@ -40,17 +64,20 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
           Navigator.of(context).pop(true);
           AppToast.show(
             context,
-            appL10n.authSuccess,
+            AuthService.instance.sessionIsTemporary
+                ? appL10n.authSessionTemporary
+                : appL10n.authSuccess,
             type: AppToastType.success,
+            duration: const Duration(seconds: 6),
           );
         } else {
-          AppToast.show(context, appL10n.authFailed, type: AppToastType.error);
+          setState(() => _error = _failureMessage());
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        AppToast.show(context, appL10n.authFailed, type: AppToastType.error);
+        setState(() => _error = _failureMessage());
       }
     }
   }
@@ -67,97 +94,128 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppDimensions.screenPadding,
-            12,
-            AppDimensions.screenPadding,
-            24,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Close Button
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.close_rounded,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppDimensions.screenPadding,
+              12,
+              AppDimensions.screenPadding,
+              24,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Close Button
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: colors.secondaryText,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(false),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+
+                  Text(
+                    appL10n.authTitle,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: colors.primaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    appL10n.authDescription,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      height: 1.35,
                       color: colors.secondaryText,
                     ),
-                    onPressed: () => Navigator.of(context).pop(false),
                   ),
-                ),
-                const SizedBox(height: 4),
+                  const SizedBox(height: 24),
+                  if (_isLoading) ...[
+                    const LinearProgressIndicator(),
+                    const SizedBox(height: 12),
+                  ],
+                  if (_error != null) ...[
+                    Text(
+                      _error!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
-                Text(
-                  appL10n.authTitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: colors.primaryText,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  appL10n.authDescription,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    height: 1.35,
-                    color: colors.secondaryText,
-                  ),
-                ),
-                const SizedBox(height: 24),
+                  // OAuth Buttons
+                  if (Theme.of(context).platform == TargetPlatform.iOS) ...[
+                    _buildAuthButton(
+                      svgAsset: 'assets/icons/auth/apple.svg',
+                      svgColor: colors.primaryText,
+                      label: appL10n.authApple,
+                      onTap: () =>
+                          _handleAuth(AuthService.instance.signInWithApple),
+                      colors: colors,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
 
-                // OAuth Buttons
-                if (Theme.of(context).platform == TargetPlatform.iOS) ...[
+                  if (kIsWeb)
+                    GoogleWebSignInButton(
+                      enabled: !_isLoading,
+                      onAccount: (account) => _handleAuth(
+                        () => AuthService.instance.signInWithGoogleWebAccount(
+                          account,
+                        ),
+                      ),
+                      onError: (_) {
+                        if (mounted) {
+                          setState(() => _error = appL10n.authErrorProvider);
+                        }
+                      },
+                    )
+                  else
+                    _buildAuthButton(
+                      svgAsset: 'assets/icons/auth/google.svg',
+                      label: appL10n.authGoogle,
+                      onTap: () =>
+                          _handleAuth(AuthService.instance.signInWithGoogle),
+                      colors: colors,
+                      isDark: isDark,
+                    ),
+                  const SizedBox(height: 10),
+
                   _buildAuthButton(
-                    svgAsset: 'assets/icons/auth/apple.svg',
-                    svgColor: colors.primaryText,
-                    label: appL10n.authApple,
-                    onTap: () =>
-                        _handleAuth(AuthService.instance.signInWithApple),
+                    svgAsset: 'assets/icons/auth/yandex.svg',
+                    label: appL10n.authYandex,
+                    onTap: () => _handleAuth(
+                      () => AuthService.instance.signInWithYandex(context),
+                    ),
                     colors: colors,
                     isDark: isDark,
                   ),
-                  const SizedBox(height: 10),
+                  if (AuthService.debugSignInAvailable) ...[
+                    const SizedBox(height: 10),
+                    TextButton.icon(
+                      onPressed: _isLoading
+                          ? null
+                          : () => _handleAuth(AuthService.instance.signInDebug),
+                      icon: const Icon(Icons.bug_report_outlined),
+                      label: Text(appL10n.authDebug),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
                 ],
-
-                _buildAuthButton(
-                  svgAsset: 'assets/icons/auth/google.svg',
-                  label: appL10n.authGoogle,
-                  onTap: () =>
-                      _handleAuth(AuthService.instance.signInWithGoogle),
-                  colors: colors,
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 10),
-
-                _buildAuthButton(
-                  svgAsset: 'assets/icons/auth/yandex.svg',
-                  label: appL10n.authYandex,
-                  onTap: () => _handleAuth(
-                    () => AuthService.instance.signInWithYandex(context),
-                  ),
-                  colors: colors,
-                  isDark: isDark,
-                ),
-                if (AuthService.debugSignInAvailable) ...[
-                  const SizedBox(height: 10),
-                  TextButton.icon(
-                    onPressed: _isLoading
-                        ? null
-                        : () => _handleAuth(AuthService.instance.signInDebug),
-                    icon: const Icon(Icons.bug_report_outlined),
-                    label: Text(appL10n.authDebug),
-                  ),
-                ],
-                const SizedBox(height: 12),
-              ],
+              ),
             ),
           ),
         ),

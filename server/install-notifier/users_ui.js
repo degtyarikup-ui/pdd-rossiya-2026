@@ -129,12 +129,6 @@ export const USERS_VIEW_HTML = String.raw`
               <button data-filter="expired">Истёк</button>
               <button data-filter="free">Бесплатные</button>
             </div>
-            <select id="uv-app" aria-label="Приложение">
-              <option value="all">Все страны</option>
-              <option value="ru">Россия</option>
-              <option value="by">Беларусь</option>
-              <option value="rs">Сербия</option>
-            </select>
             <select id="uv-sort" aria-label="Сортировка">
               <option value="seen">Недавно заходили</option>
               <option value="created">Новые</option>
@@ -158,11 +152,11 @@ export const USERS_VIEW_HTML = String.raw`
 
 export const USERS_CLIENT_JS = String.raw`
 // ────────────────────── Users & Premium (users_ui.js) ──────────────────────
-var uvState = { users: [], filter: 'all', app: 'all', sort: 'seen', query: '', limit: 50, loaded: false, openId: null, detail: null, grant: null };
+var uvState = { users: [], filter: 'all', app: 'ru', sort: 'seen', query: '', limit: 50, loaded: false, openId: null, detail: null, grant: null };
 var UV_DAY = 86400000;
 var UV_PRESETS = [[7, '7 дней'], [30, '1 месяц'], [90, '3 месяца'], [180, '6 месяцев'], [365, '1 год']];
-var UV_APPS = { ru: 'Россия', by: 'Беларусь', rs: 'Сербия' };
-var UV_SOURCES = { admin_grant: 'Выдан вручную', google_play: 'Google Play', play: 'Google Play', app_store: 'App Store', apple: 'App Store', rustore: 'RuStore' };
+var UV_APPS = { ru: 'Россия' };
+var UV_SOURCES = { admin_grant: 'Выдан вручную', googleplay: 'Google Play', appstore: 'App Store', google_play: 'Google Play', play: 'Google Play', app_store: 'App Store', apple: 'App Store', rustore: 'RuStore' };
 
 function uvEsc(v) {
   return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -334,14 +328,14 @@ function uvRenderList() {
     document.getElementById('uv-more').innerHTML = '';
     return;
   }
-  var head = '<div class="uv-row uv-head"><div>Пользователь</div><div class="uv-hide-sm">Страна</div><div>Статус</div><div class="uv-hide-sm">Заходил</div><div class="uv-hide-sm">Регистрация</div><div></div></div>';
+  var head = '<div class="uv-row uv-head"><div>Пользователь</div><div class="uv-hide-sm">Устройство</div><div>Статус</div><div class="uv-hide-sm">Заходил</div><div class="uv-hide-sm">Регистрация</div><div></div></div>';
   box.innerHTML = head + list.slice(0, uvState.limit).map(function (u) {
     var sub = u.email || ('ID ' + u.id);
     var flags = u.suspect ? ' <span class="uv-chip warn" title="Похоже на бота или тестовое устройство Google Play: адрес вида имя.12345@gmail.com или запрос не из приложения. Не считается в регистрациях и не приходит в Telegram.">бот?</span>' : '';
     return '<button class="uv-row" data-user="' + uvEsc(u.id) + '">'
       + '<div class="uv-user">' + uvAvatar(u) + '<div style="min-width:0"><div class="uv-name">' + uvEsc(u.name || 'Пользователь') + flags + '</div><div class="uv-sub">' + uvEsc(sub) + '</div></div></div>'
-      + '<div class="uv-cell uv-hide-sm">' + uvEsc(uvAppCode(u).toUpperCase()) + (uvPlatform(u) ? ' · ' + uvEsc(uvPlatform(u)) : '') + '</div>'
-      + '<div>' + uvStatusChip(u) + '</div>'
+      + '<div class="uv-cell uv-hide-sm">' + uvEsc(uvPlatform(u) || '—') + '</div>'
+      + '<div>' + uvStatusChip(u) + uvPremiumDetails(u) + '</div>'
       + '<div class="uv-cell uv-hide-sm" title="' + uvEsc(uvDate(u.lastSeenAt, true)) + '">' + uvEsc(uvAgo(u.lastSeenAt || u.createdAt)) + '</div>'
       + '<div class="uv-cell uv-hide-sm">' + uvEsc(uvDate(u.createdAt)) + '</div>'
       + '<svg class="uv-chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m9 6 6 6-6 6"/></svg>'
@@ -352,9 +346,9 @@ function uvRenderList() {
 }
 
 function uvExportCsv() {
-  var rows = [['id', 'name', 'email', 'provider', 'app', 'platform', 'version', 'status', 'premium_until', 'premium_source', 'created', 'last_seen']];
+  var rows = [['id', 'name', 'email', 'provider', 'app', 'platform', 'version', 'status', 'premium_until', 'premium_source', 'auto_renew', 'store_checked_at', 'created', 'last_seen']];
   (uvState.visible || []).forEach(function (u) {
-    rows.push([u.id, u.name, u.email, uvProvider(u), uvAppCode(u), u.platform, u.appVersion, uvStatus(u), u.premiumExpiresAt, u.premiumSource, u.createdAt, u.lastSeenAt]);
+    rows.push([u.id, u.name, u.email, uvProvider(u), uvAppCode(u), u.platform, u.appVersion, uvStatus(u), u.premiumExpiresAt, u.premiumSource, u.premiumSource === 'admin_grant' ? 'n/a' : u.autoRenewEnabled ?? 'unknown', u.storeVerifiedAt ? new Date(u.storeVerifiedAt).toISOString() : '', u.createdAt, u.lastSeenAt]);
   });
   var csv = rows.map(function (r) { return r.map(function (v) { v = v == null ? '' : String(v); return /[",;\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(','); }).join('\n');
   var a = document.createElement('a');
@@ -416,8 +410,7 @@ function uvBackBtn() {
   return '<button class="uv-back" data-uv="back"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m15 18-6-6 6-6"/></svg>Все пользователи</button>';
 }
 function uvHeroHtml(u) {
-  var chips = [uvStatusChip(u), '<span class="uv-chip">' + uvEsc(uvProvider(u)) + '</span>',
-    '<span class="uv-chip">' + uvEsc(UV_APPS[uvAppCode(u)] || uvAppCode(u).toUpperCase()) + '</span>'];
+  var chips = [uvStatusChip(u), '<span class="uv-chip">' + uvEsc(uvProvider(u)) + '</span>'];
   if (uvPlatform(u)) chips.push('<span class="uv-chip">' + uvEsc(uvPlatform(u)) + (u.appVersion ? ' · v' + uvEsc(u.appVersion) : '') + '</span>');
   if (u.suspect) chips.push('<span class="uv-chip warn" title="Похоже на бота или тестовое устройство Google Play: адрес вида имя.12345@gmail.com или запрос не из приложения. Не считается в регистрациях и не приходит в Telegram.">Похоже на бота</span>');
   return '<div class="uv-hero">' + uvAvatar(u, true)
@@ -443,6 +436,17 @@ function uvRenderDetail() {
   uvUpdateGrantPreview();
 }
 
+function uvPremiumDetails(u) {
+  if (!u.premiumSource && !u.isPremium) return '';
+  var source = u.premiumSource === 'admin_grant' ? 'Выдан вручную'
+    : UV_SOURCES[u.premiumSource] ? 'Куплен · ' + UV_SOURCES[u.premiumSource] : 'Источник неизвестен';
+  var renewal = u.premiumSource === 'admin_grant' ? 'Автопродление: не применяется'
+    : 'Автопродление: ' + (u.autoRenewEnabled === true ? 'включено' : u.autoRenewEnabled === false ? 'выключено' : 'неизвестно');
+  var checked = u.storeVerifiedAt ? 'Проверено магазином: ' + uvDate(new Date(u.storeVerifiedAt).toISOString(), true) : 'Статус магазина ещё не получен';
+  return '<div style="font-size:11.5px;color:var(--text-muted);margin-top:5px;line-height:1.5;white-space:normal">'
+    + uvEsc(source) + '<br><span title="' + uvEsc(checked) + '">' + uvEsc(renewal) + '</span></div>';
+}
+
 function uvPremiumCard(u) {
   var s = uvStatus(u), g = uvState.grant, pro = uvIsPro(s);
   var title, sub = '', bar = '';
@@ -461,7 +465,7 @@ function uvPremiumCard(u) {
   else { title = 'Бесплатный доступ'; }
   if (u.isPremium && u.premiumSource) sub += (sub ? ' · ' : '') + (UV_SOURCES[u.premiumSource] || u.premiumSource);
   var storeNote = pro && u.premiumSource && u.premiumSource !== 'admin_grant'
-    ? '<div class="uv-preview" style="margin-top:12px">Подписка оплачена через магазин и продлевается им сама. Если выдать срок вручную, он заменит магазинный, и магазин перестанет его обновлять.</div>' : '';
+    ? '<div class="uv-preview" style="margin-top:12px">Подписка оплачена через магазин. Статус автопродления указан выше. Если выдать срок вручную, он заменит магазинный, и магазин перестанет его обновлять.</div>' : '';
 
   var presets = UV_PRESETS.map(function (p) {
     return '<button data-days="' + p[0] + '" class="' + (!g.lifetime && !g.until && g.days === p[0] ? 'active' : '') + '">' + p[1] + '</button>';
@@ -471,7 +475,7 @@ function uvPremiumCard(u) {
 
   return '<div class="uv-card"><div class="uv-card-title">Premium</div>'
     + '<div class="uv-prem-status" style="color:' + (pro ? '#159461' : s === 'expired' ? 'var(--danger)' : 'var(--text)') + '">' + title + '</div>'
-    + (sub ? '<div class="uv-prem-sub">' + uvEsc(sub) + '</div>' : '') + bar + storeNote
+    + (sub ? '<div class="uv-prem-sub">' + uvEsc(sub) + '</div>' : '') + uvPremiumDetails(u) + bar + storeNote
     + '<div class="uv-sep"></div>'
     + '<div class="uv-label">' + (pro ? 'Продлить или изменить срок' : 'Выдать Premium') + '</div>'
     + '<div class="uv-presets" id="uv-presets">' + presets + '</div>'
@@ -559,7 +563,6 @@ function uvInfoCard(u) {
     ['Регистрация', uvEsc(uvDate(u.createdAt, true))],
     ['Последний вход', uvEsc(uvDate(u.lastSeenAt, true)) + ' <span style="color:var(--text-muted);font-weight:500">(' + uvEsc(uvAgo(u.lastSeenAt)) + ')</span>'],
     ['Вход через', uvEsc(uvProvider(u))],
-    ['Приложение', uvEsc(UV_APPS[uvAppCode(u)] || uvAppCode(u))],
     ['Устройство', uvEsc([uvPlatform(u), u.appVersion ? 'v' + u.appVersion : ''].filter(Boolean).join(' · ') || '—')],
     ['Страна по IP', uvEsc(u.ipCountry || '—')],
     ['Push-уведомления', u.hasPushToken ? 'подключены' : 'нет'],
@@ -702,7 +705,6 @@ function uvSaveNoteSoon() {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(function () { uvState.query = e.target.value; uvState.limit = 50; uvRenderList(); }, 120);
   });
-  document.getElementById('uv-app').addEventListener('change', function (e) { uvState.app = e.target.value; uvState.limit = 50; uvRenderList(); });
   document.getElementById('uv-sort').addEventListener('change', function (e) { uvState.sort = e.target.value; uvRenderList(); });
   document.getElementById('uv-export').addEventListener('click', uvExportCsv);
   document.getElementById('refresh-users-btn').addEventListener('click', loadUsersList);

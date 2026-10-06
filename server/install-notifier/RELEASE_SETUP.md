@@ -8,7 +8,22 @@
 2. Передать JSON сервисного аккаунта в Cloudflare secret GOOGLE_PLAY_SERVICE_ACCOUNT, например через `wrangler secret put GOOGLE_PLAY_SERVICE_ACCOUNT` с вводом из локального файла. Не добавлять JSON в wrangler.toml, код, логи или чат.
 3. По умолчанию принимаются ru.pdd.pddapp.premium.week и ru.pdd.pddapp.premium.3months. Если реальные ID отличаются, настроить переменную GOOGLE_PLAY_PRODUCT_IDS (список через запятую) и согласовать выбор продуктов в клиенте.
 4. Пакеты привязаны к стране: ru.pdd.pdd_app / by.pdd.pdd_app / rs.pdd.pdd_app. Проверка идёт через purchases.subscriptionsv2.get; клиентский expiresAt не принимается.
-5. Google OAuth audience по умолчанию совпадает с AuthService.googleClientId. Дополнительные реальные client ID задаются GOOGLE_CLIENT_IDS через запятую. Не ослаблять проверку audience ради прохождения теста; зарегистрировать SHA-1/SHA-256 подписи Google Play для Android-клиента.
+5. Google OAuth audience по умолчанию включает AuthService.googleClientId (iOS) и AuthService.googleWebClientId (Web). Если задать GOOGLE_CLIENT_IDS через запятую, он заменяет список по умолчанию, поэтому сохранить оба ID. Не ослаблять проверку audience ради прохождения теста; зарегистрировать SHA-1/SHA-256 подписи Google Play для Android-клиента.
+
+## Google Web
+
+В проекте gen-lang-client-0077546469 создан отдельный OAuth client PDD Drive Web
+типа Web application с Authorized JavaScript origins `https://pdd-drive.ru`
+(без `/app/`). Его публичный ID задан в AuthService.googleWebClientId; для другой
+сборки можно переопределить GOOGLE_WEB_CLIENT_ID. Client secret в Flutter не передаётся.
+Серверные GOOGLE_CLIENT_IDS включают iOS и Web IDs. В веб-модалке используется
+официальный renderButton Google Identity Services: он выдаёт подписанный ID token
+и не требует включения People API. Старый GoogleSignIn.signIn() используется
+только нативными приложениями. Проверять полный вход и восстановление
+сессии на ПК и Android/iOS браузерах. Одного исчезновения ошибки Google недостаточно.
+Для веб-доменов BY/RS отдельно разрешить их origins в Google Cloud перед выпуском.
+Для базового входа (openid/email/profile) Google допускает обычных пользователей
+даже в статусе Testing: https://support.google.com/cloud/answer/15549945.
 
 ## Apple (до выпуска iOS)
 

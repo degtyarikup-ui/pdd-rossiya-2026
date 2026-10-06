@@ -14,9 +14,49 @@ import 'package:pdd_app/presentation/widgets/yandex_auth_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+enum AuthFailure {
+  cancelled,
+  provider,
+  network,
+  timeout,
+  appKey,
+  credential,
+  server,
+  response,
+}
+
 class AuthService extends ChangeNotifier {
   static final AuthService instance = AuthService._internal();
-  AuthService._internal();
+  AuthService._internal() : _writeSession = AuthSessionStore.write;
+  @visibleForTesting
+  AuthService.forTesting({
+    required Future<void> Function(Map<String, dynamic>) writeSession,
+  }) : _writeSession = writeSession;
+  final Future<void> Function(Map<String, dynamic>) _writeSession;
+  AuthFailure? lastFailure;
+  String? lastDiagnosticId;
+  bool sessionIsTemporary = false;
+
+  void _beginSignIn() {
+    lastFailure = AuthFailure.cancelled;
+    lastDiagnosticId = null;
+  }
+
+  void _recordSignInError(Object error) {
+    lastFailure = error is TimeoutException
+        ? AuthFailure.timeout
+        : error is http.ClientException
+        ? AuthFailure.network
+        : error is FormatException || error is TypeError
+        ? AuthFailure.response
+        : AuthFailure.provider;
+  }
+
+  @visibleForTesting
+  Future<bool> completeSignInForTesting(
+    UserProfile profile,
+    String credential,
+  ) => _completeSignIn(profile, credential);
 
   static const String _prefKeyUser = 'auth_user_profile';
 
@@ -110,6 +150,13 @@ class AuthService extends ChangeNotifier {
   static const String googleClientId =
       '513938972930-3lclc5epsnm12druv86ut2o89pj71cu9.apps.googleusercontent.com';
 
+  // A browser must use a Web application OAuth client, never the iOS client.
+  static const String googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue:
+        '513938972930-a7sh1di6odgf77ijltu31lvpuhijcis1.apps.googleusercontent.com',
+  );
+
   /// Debug builds only (`--dart-define=GAME_DEBUG=true`): a local account
   /// without an OAuth provider, so a dev-signed APK (its package and SHA-1
   /// are not registered with Google/Yandex) can still exercise the
@@ -137,38 +184,55 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<bool> signInWithGoogle() async {
+    _beginSignIn();
     try {
+      if (kIsWeb) {
+        throw StateError('Web sign-in must use the Google Identity button');
+      }
       final googleSignIn = GoogleSignIn(
         scopes: ['email', 'profile'],
-        clientId: kIsWeb || defaultTargetPlatform == TargetPlatform.iOS
+        clientId: defaultTargetPlatform == TargetPlatform.iOS
             ? googleClientId
             : null,
-        // No Web OAuth client exists for Android, so no ID token: Android
-        // sends the access token and the server checks it with Google.
+        // Android continues to use its existing access-token flow.
       );
       final account = await googleSignIn.signIn();
-      if (account != null) {
-        final authentication = await account.authentication;
-        final profile = UserProfile(
-          id: 'google_${account.id}',
-          name: account.displayName?.isNotEmpty == true
-              ? account.displayName!
-              : account.email.split('@').first,
-          email: account.email,
-          avatarUrl: account.photoUrl,
-          provider: AuthProviderType.google,
-          createdAt: DateTime.now(),
-        );
-        final credential = defaultTargetPlatform == TargetPlatform.android
-            ? authentication.accessToken
-            : authentication.idToken;
-        return await _completeSignIn(profile, credential);
-      }
-      return false;
+      return account == null ? false : await _completeGoogleAccount(account);
     } catch (e) {
-      debugPrint('AuthService: google sign in error: $e');
+      _recordSignInError(e);
       return false;
     }
+  }
+
+  /// Receives an account from Google's official web Identity button.
+  Future<bool> signInWithGoogleWebAccount(GoogleSignInAccount account) async {
+    _beginSignIn();
+    try {
+      return await _completeGoogleAccount(account);
+    } catch (e) {
+      _recordSignInError(e);
+      return false;
+    }
+  }
+
+  Future<bool> _completeGoogleAccount(GoogleSignInAccount account) async {
+    final authentication = await account.authentication;
+    final profile = UserProfile(
+      id: 'google_${account.id}',
+      name: account.displayName?.isNotEmpty == true
+          ? account.displayName!
+          : account.email.split('@').first,
+      email: account.email,
+      avatarUrl: account.photoUrl,
+      provider: AuthProviderType.google,
+      createdAt: DateTime.now(),
+    );
+    // Web always sends a signed ID token, including on Android browsers.
+    final credential =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+        ? authentication.accessToken
+        : authentication.idToken;
+    return _completeSignIn(profile, credential);
   }
 
   /// Извлечение email из identityToken (JWT) от Apple
@@ -195,6 +259,7 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<bool> signInWithApple() async {
+    _beginSignIn();
     try {
       final AuthorizationCredentialAppleID credential;
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
@@ -276,7 +341,7 @@ class AuthService extends ChangeNotifier {
 
       return await _completeSignIn(profile, credential.identityToken);
     } catch (e) {
-      debugPrint('AuthService: apple sign in error: $e');
+      _recordSignInError(e);
       return false;
     }
   }
@@ -284,6 +349,7 @@ class AuthService extends ChangeNotifier {
   static const String yandexClientId = '94aa539db4634e44bf0b209d9a2205d2';
 
   Future<bool> signInWithYandex(BuildContext context) async {
+    _beginSignIn();
     try {
       final result = await YandexAuthSheet.show(context);
       if (result != null) {
@@ -291,7 +357,7 @@ class AuthService extends ChangeNotifier {
       }
       return false;
     } catch (e) {
-      debugPrint('AuthService: yandex sign in error: $e');
+      _recordSignInError(e);
       return false;
     }
   }
@@ -300,6 +366,7 @@ class AuthService extends ChangeNotifier {
     if (credential == null ||
         credential.isEmpty ||
         !BackendConfig.hasNotifier) {
+      lastFailure = AuthFailure.provider;
       return false;
     }
     final revision = _accountRevision;
@@ -314,25 +381,53 @@ class AuthService extends ChangeNotifier {
           }),
         )
         .timeout(const Duration(seconds: 15));
-    if (response.statusCode != 200 || revision != _accountRevision) {
+    final diagnosticId = response.headers['x-auth-diagnostic-id'];
+    if (diagnosticId != null &&
+        RegExp(r'^[a-f0-9-]{36}$').hasMatch(diagnosticId)) {
+      lastDiagnosticId = diagnosticId;
+    }
+    if (response.statusCode != 200) {
+      lastFailure = response.statusCode == 403
+          ? AuthFailure.appKey
+          : response.statusCode == 401
+          ? AuthFailure.credential
+          : AuthFailure.server;
       return false;
     }
+    if (revision != _accountRevision) return false;
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     final user = UserProfile.fromMap(
       Map<String, dynamic>.from(data['user'] as Map),
     );
     final token = data['token'] as String;
     final expiry = DateTime.parse(data['expiresAt'] as String);
-    if (user.id != profile.id || !expiry.isAfter(DateTime.now())) return false;
-    await AuthSessionStore.write({
-      'userId': user.id,
-      'token': token,
-      'expiresAt': expiry.toIso8601String(),
-    });
+    if (user.id != profile.id ||
+        token.isEmpty ||
+        !expiry.isAfter(DateTime.now())) {
+      lastFailure = AuthFailure.response;
+      return false;
+    }
+    var temporarySession = false;
+    try {
+      await _writeSession({
+        'userId': user.id,
+        'token': token,
+        'expiresAt': expiry.toIso8601String(),
+      }).timeout(const Duration(seconds: 5));
+    } catch (_) {
+      // The server has verified identity. A broken Android keystore must not
+      // discard this login; keep the token in memory, never in preferences.
+      temporarySession = true;
+      debugPrint(
+        'AuthService: session storage unavailable; using memory session',
+      );
+    }
     if (revision != _accountRevision) return false;
     _sessionToken = token;
     _sessionExpiresAt = expiry;
     _currentUser = user;
+    sessionIsTemporary = temporarySession;
+    lastFailure = null;
     _accountRevision++;
     await _saveUser();
     notifyListeners();
@@ -348,6 +443,7 @@ class AuthService extends ChangeNotifier {
     _sessionToken = null;
     _sessionExpiresAt = null;
     _currentUser = null;
+    sessionIsTemporary = false;
     ProgressSyncService.instance.cancel();
     if (hadSession) {
       unawaited(
@@ -365,8 +461,10 @@ class AuthService extends ChangeNotifier {
     } catch (_) {}
     try {
       try {
-        final googleSignIn = GoogleSignIn();
-        if (await googleSignIn.isSignedIn()) {
+        final googleSignIn = GoogleSignIn(
+          clientId: kIsWeb ? googleWebClientId : null,
+        );
+        if (kIsWeb || await googleSignIn.isSignedIn()) {
           await googleSignIn.signOut();
         }
       } catch (_) {}

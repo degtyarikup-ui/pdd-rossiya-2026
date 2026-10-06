@@ -1,3 +1,4 @@
+import 'package:pdd_app/presentation/screens/game/platform/browser_game.dart';
 import 'dart:math' as math;
 import 'dart:convert';
 import 'dart:async';
@@ -56,6 +57,8 @@ class GameScreen extends ConsumerStatefulWidget {
 class _GameScreenState extends ConsumerState<GameScreen>
     with WidgetsBindingObserver {
   WebViewController? _webViewController;
+  BrowserGame? _browserGame;
+  bool get _desktopWeb => kIsWeb && (_browserGame?.desktop ?? false);
   late GameController _game;
   bool _configured = false;
   bool _active = true;
@@ -130,6 +133,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   static const _debugUnlimitedFuelKey = 'game_debug_unlimited_fuel';
 
   Future<void> _stopWebView() {
+    if (kIsWeb) return _browserGame?.dispose() ?? Future.value();
     return _cleanup ??= _stopAndDetach(_webViewController, _initialization);
   }
 
@@ -172,8 +176,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
   void _send(String method, List<Object?> args) {
     if (!_configured || _restarting || _disposing) return;
     final sessionId = _game.sessionId;
-    _webViewController
-        ?.runJavaScript(
+    (kIsWeb ? _browserGame?.runJavaScript : _webViewController?.runJavaScript)
+        ?.call(
           'if (!window.game || typeof window.game.$method !== "function") { throw new Error("Game API unavailable"); } window.game.$method(${args.map(jsonEncode).join(',')});',
         )
         .catchError((Object error) {
@@ -332,6 +336,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   void _applyActive() {
     if (!widget.visible) {
+      _releaseKeyboard();
       unawaited(_reportProgress());
       _send('setGas', [false]);
       _send('setBrake', [false]);
@@ -346,7 +351,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) unawaited(_reportProgress());
+    if (state != AppLifecycleState.resumed) {
+      _releaseKeyboard();
+      unawaited(_reportProgress());
+    }
     _appResumed = state == AppLifecycleState.resumed;
     _active = _appResumed && widget.visible;
     _game.setPaused(
@@ -366,6 +374,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     _readyTimer?.cancel();
     _fuelTimer?.cancel();
     _burstTimer?.cancel();
+    HardwareKeyboard.instance.removeHandler(_handleKeyboard);
     WidgetsBinding.instance.removeObserver(this);
     unawaited(_stopWebView());
     _game.onStopGas = null;
@@ -388,9 +397,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
     WidgetsBinding.instance.addObserver(this);
     _game = ref.read(gameControllerProvider.notifier);
     _game.onStopGas = () {
+      _heldKeys.clear();
       _send('setGas', [false]);
       _send('setBrake', [false]);
     };
+    if (kIsWeb) HardwareKeyboard.instance.addHandler(_handleKeyboard);
     _initialization = _initWebView();
   }
 
@@ -401,7 +412,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   Future<void> _initWebView() async {
-    if (kIsWeb || !CountryConfig.current.hasVerifiedGame) return;
+    if (!CountryConfig.current.hasVerifiedGame) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       await GameGarageService.instance.load();
@@ -473,34 +484,44 @@ class _GameScreenState extends ConsumerState<GameScreen>
       }
     });
     try {
-      final controller = WebViewController();
-      // Preferences load asynchronously: rebuild to mount the native view
-      // before the engine reports ready (not only after that report).
-      setState(() => _webViewController = controller);
-      await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
-      if (controller.platform is AndroidWebViewController) {
-        await (controller.platform as AndroidWebViewController)
-            .setMediaPlaybackRequiresUserGesture(false);
+      if (kIsWeb) {
+        final browser = BrowserGame(
+          onMessage: (message) =>
+              _handleJsMessage(JavaScriptMessage(message: message), sessionId),
+          onBlur: _releaseKeyboard,
+          onKey: _handleBrowserKey,
+        );
+        setState(() => _browserGame = browser);
+      } else {
+        final controller = WebViewController();
+        // Preferences load asynchronously: rebuild to mount the native view
+        // before the engine reports ready (not only after that report).
+        setState(() => _webViewController = controller);
+        await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
+        if (controller.platform is AndroidWebViewController) {
+          await (controller.platform as AndroidWebViewController)
+              .setMediaPlaybackRequiresUserGesture(false);
+        }
+        // Match the app theme so nothing flashes white behind the loader.
+        await controller.setBackgroundColor(
+          mounted && Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF252B30)
+              : const Color(0xFFF8F8FA),
+        );
+        await controller.setNavigationDelegate(
+          NavigationDelegate(
+            onWebResourceError: (error) {
+              if (error.isForMainFrame != false) _bridgeFailed(sessionId);
+            },
+          ),
+        );
+        await controller.addJavaScriptChannel(
+          'FlutterChannel',
+          onMessageReceived: (message) => _handleJsMessage(message, sessionId),
+        );
+        if (!mounted || !_game.acceptsSession(sessionId)) return;
+        await controller.loadFlutterAsset('assets/game/index.html');
       }
-      // Match the app theme so nothing flashes white behind the loader.
-      await controller.setBackgroundColor(
-        mounted && Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF252B30)
-            : const Color(0xFFF8F8FA),
-      );
-      await controller.setNavigationDelegate(
-        NavigationDelegate(
-          onWebResourceError: (error) {
-            if (error.isForMainFrame != false) _bridgeFailed(sessionId);
-          },
-        ),
-      );
-      await controller.addJavaScriptChannel(
-        'FlutterChannel',
-        onMessageReceived: (message) => _handleJsMessage(message, sessionId),
-      );
-      if (!mounted || !_game.acceptsSession(sessionId)) return;
-      await controller.loadFlutterAsset('assets/game/index.html');
     } catch (_) {
       _bridgeFailed(sessionId);
     }
@@ -591,7 +612,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
           gameNotifier.recordViolation(type, episode);
           final activeSit = ref.read(gameControllerProvider).currentSituation;
           if (activeSit != null &&
-              (type == 'priority' || type == 'wrong_maneuver')) {
+              {
+                'priority',
+                'wrong_maneuver',
+                'stop',
+                'red_light',
+                'railway',
+              }.contains(type)) {
             unawaited(
               _recordMistake(
                 activeSit,
@@ -645,6 +672,84 @@ class _GameScreenState extends ConsumerState<GameScreen>
   void _syncTheme() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     _send('setTheme', [isDark]);
+  }
+
+  final _heldKeys = <String>{};
+  void _releaseKeyboard() {
+    _heldKeys.clear();
+    _handleGas(false);
+    _send('setBrake', [false]);
+    _send('setSteering', [0]);
+  }
+
+  void _handleBrowserKey(String key, bool down, bool repeat) {
+    if (!_desktopWeb ||
+        !_active ||
+        _inLobby ||
+        _garageOpen ||
+        _enginePaused ||
+        !ref.read(gameControllerProvider).controlsEnabled ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return;
+    }
+    if (down) {
+      _heldKeys.add(key);
+    } else {
+      _heldKeys.remove(key);
+    }
+    if (key == 'ArrowUp' || key == 'KeyW') {
+      _handleGas(_heldKeys.any(['ArrowUp', 'KeyW'].contains));
+    }
+    if (key == 'ArrowDown' || key == 'KeyS' || key == 'Space') {
+      _send('setBrake', [
+        _heldKeys.any(['ArrowDown', 'KeyS', 'Space'].contains),
+      ]);
+    }
+    if (['ArrowLeft', 'KeyA', 'ArrowRight', 'KeyD'].contains(key)) {
+      final left = key == 'ArrowLeft' || key == 'KeyA';
+      if (_simpleSteering) {
+        if (down && !repeat) _handleSwitchLane(left ? 'left' : 'right');
+      } else {
+        final steering = _heldKeys
+            .where(['ArrowLeft', 'KeyA', 'ArrowRight', 'KeyD'].contains)
+            .lastOrNull;
+        _send('setSteering', [
+          steering == null
+              ? 0
+              : (['ArrowLeft', 'KeyA'].contains(steering) ? 1 : -1),
+        ]);
+      }
+    }
+  }
+
+  bool _handleKeyboard(KeyEvent event) {
+    if (!_desktopWeb ||
+        HardwareKeyboard.instance.isControlPressed ||
+        HardwareKeyboard.instance.isMetaPressed ||
+        HardwareKeyboard.instance.isAltPressed) {
+      return false;
+    }
+    final code = {
+      LogicalKeyboardKey.arrowUp: 'ArrowUp',
+      LogicalKeyboardKey.keyW: 'KeyW',
+      LogicalKeyboardKey.arrowDown: 'ArrowDown',
+      LogicalKeyboardKey.keyS: 'KeyS',
+      LogicalKeyboardKey.space: 'Space',
+      LogicalKeyboardKey.arrowLeft: 'ArrowLeft',
+      LogicalKeyboardKey.keyA: 'KeyA',
+      LogicalKeyboardKey.arrowRight: 'ArrowRight',
+      LogicalKeyboardKey.keyD: 'KeyD',
+    }[event.logicalKey];
+    if (code == null ||
+        !_active ||
+        _inLobby ||
+        _garageOpen ||
+        _enginePaused ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return false;
+    }
+    _handleBrowserKey(code, event is! KeyUpEvent, event is KeyRepeatEvent);
+    return true;
   }
 
   void _handleGas(bool isPressed) {
@@ -908,11 +1013,17 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   /// Asks the engine for a PNG of the car (a data URL), for the garage list.
   Future<String> _thumbnail(String id, String paint) async {
-    final controller = _webViewController;
-    if (controller == null || !_configured) return '';
-    final result = await controller.runJavaScriptReturningResult(
-      'window.game?.thumbnail?.(${jsonEncode(id)}, ${jsonEncode(paint)}) || ""',
-    );
+    if ((!kIsWeb && _webViewController == null) ||
+        (kIsWeb && _browserGame == null) ||
+        !_configured) {
+      return '';
+    }
+    final result =
+        await (kIsWeb
+            ? _browserGame!.runJavaScriptReturningResult
+            : _webViewController!.runJavaScriptReturningResult)(
+          'window.game?.thumbnail?.(${jsonEncode(id)}, ${jsonEncode(paint)}) || ""',
+        );
     var text = result.toString();
     // Android returns the JS string JSON-quoted.
     if (text.startsWith('"')) text = jsonDecode(text) as String;
@@ -1142,7 +1253,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
       }
     });
 
-    if (kIsWeb || !CountryConfig.current.hasVerifiedGame) {
+    if (!CountryConfig.current.hasVerifiedGame) {
       return Scaffold(
         appBar: AppBar(
           leading: IconButton(
@@ -1251,7 +1362,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
         body: Stack(
           children: [
             // 3D Canvas
-            if (_webViewController != null)
+            if (kIsWeb && _browserGame != null)
+              Positioned.fill(child: _browserGame!.widget),
+            if (!kIsWeb && _webViewController != null)
               Positioned.fill(
                 child: WebViewWidget(
                   key: ValueKey(_game.sessionId),
@@ -1403,8 +1516,18 @@ class _GameScreenState extends ConsumerState<GameScreen>
                         timedOut: gameState.selectedAnswerIndex == null,
                         onContinue: gameNotifier.continueAfterExplanation,
                       ),
-                    if (gameState.phase == GamePhase.driving ||
-                        gameState.phase == GamePhase.resolving)
+                    if (_desktopWeb && gameState.controlsEnabled)
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Text(
+                          appL10n.gameKeyboardHint,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: colors.primaryText),
+                        ),
+                      ),
+                    if (!_desktopWeb &&
+                        (gameState.phase == GamePhase.driving ||
+                            gameState.phase == GamePhase.resolving))
                       GameControlsOverlay(
                         state: gameState,
                         onGasChanged: _handleGas,
@@ -1432,7 +1555,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 child: _FirstDriveTip(step: _tipStep!, onNext: _nextTip),
               ),
 
-            if (_showGasHint &&
+            if (!_desktopWeb &&
+                _showGasHint &&
                 _tipStep == null &&
                 !_inLobby &&
                 !locked &&
@@ -1454,6 +1578,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 child: GameRevealOverlay(
                   car: _reveal!,
                   shown: _revealShown,
+                  onOpen: () => _send('openReveal', []),
                   onChoose: () => _closeReveal(choose: true),
                   onClose: () => _closeReveal(choose: false),
                 ),

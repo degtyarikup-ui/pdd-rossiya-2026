@@ -1,3 +1,4 @@
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/config/country_config.dart';
@@ -36,7 +37,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   void initState() {
     super.initState();
     IapService.instance.addListener(_onIapChanged);
-    IapService.instance.loadProducts();
+    if (!kIsWeb) IapService.instance.loadProducts();
   }
 
   @override
@@ -142,7 +143,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   }
 
   String? _getOldPrice(PremiumTier tier) {
-    if (tier != PremiumTier.threeMonths) return null;
+    if (kIsWeb || tier != PremiumTier.threeMonths) return null;
     final price = _getPrice(tier);
     if (price.contains(r'$')) {
       return r'5,90 $';
@@ -301,7 +302,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
               // 5. Pricing Tiers
               _buildTierCard(
                 tier: PremiumTier.threeMonths,
-                title: '3 месяца',
+                title: kIsWeb ? appL10n.webQuarter : '3 месяца',
                 price: _getPrice(PremiumTier.threeMonths),
                 oldPrice: _getOldPrice(PremiumTier.threeMonths),
                 badge: 'ХИТ',
@@ -309,22 +310,24 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                 surfaceColor: surfaceColor,
                 colors: colors,
               ),
-              const SizedBox(height: 8),
-              _buildTierCard(
-                tier: PremiumTier.weekly,
-                title: '1 неделя',
-                price: _getPrice(PremiumTier.weekly),
-                accentColor: accentColor,
-                surfaceColor: surfaceColor,
-                colors: colors,
-              ),
+              if (!kIsWeb) ...[
+                const SizedBox(height: 8),
+                _buildTierCard(
+                  tier: PremiumTier.weekly,
+                  title: '1 неделя',
+                  price: _getPrice(PremiumTier.weekly),
+                  accentColor: accentColor,
+                  surfaceColor: surfaceColor,
+                  colors: colors,
+                ),
+              ],
               const SizedBox(height: 20),
 
               // 6. Action Button (исправлено обрезание текста)
               SizedBox(
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handlePurchase,
+                  onPressed: kIsWeb || _isLoading ? null : _handlePurchase,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accentColor,
                     foregroundColor: Colors.white,
@@ -346,11 +349,11 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                             color: Colors.white,
                           ),
                         )
-                      : const Center(
+                      : Center(
                           child: Text(
-                            'Оформить доступ',
+                            kIsWeb ? appL10n.webPaymentSoon : 'Оформить доступ',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               height: 1.15,
@@ -364,7 +367,9 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
 
               // 7. Store Compliance Disclaimer
               Text(
-                isIOS
+                kIsWeb
+                    ? appL10n.webPaymentInfo
+                    : isIOS
                     ? 'Подписка продлевается автоматически, пока не будет отключена в настройках Apple ID не позднее 24 часов до окончания периода.'
                     : 'Подписка продлевается автоматически, пока не будет отменена в Google Play в разделе «Платежи и подписки».',
                 textAlign: TextAlign.center,
@@ -452,17 +457,18 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                       ),
                     ),
                   ],
-                  GestureDetector(
-                    onTap: _handleRestore,
-                    child: Text(
-                      'Восстановить',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: colors.secondaryText,
-                        decoration: TextDecoration.underline,
+                  if (!kIsWeb)
+                    GestureDetector(
+                      onTap: _handleRestore,
+                      child: Text(
+                        'Восстановить',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: colors.secondaryText,
+                          decoration: TextDecoration.underline,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ],

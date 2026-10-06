@@ -59,7 +59,8 @@ const sameTexel = (a, b, eps = 1e-4) => [0, 1].every(i => { const d = Math.abs(a
       uvsAt(x, z, kind) {
         scene.updateMatrixWorld(true);
         const ray = new THREE.Raycaster(new THREE.Vector3(x, 5, z), new THREE.Vector3(0, -1, 0));
-        const meshes = []; state.roadSegments.forEach(r => r.traverse(o => { if (o.isMesh && o.visible && o.userData.pddSkinned === kind) meshes.push(o); }));
+        // Distant visual continuations (no physics) are not road pieces.
+        const meshes = []; state.roadSegments.forEach(r => r.traverse(o => { if (o.isMesh && o.visible && o.userData.pddSkinned === kind && !o.userData.visualOnly) meshes.push(o); }));
         return ray.intersectObjects(meshes, false).filter(h => Math.abs(h.face.normal.clone().transformDirection(h.object.matrixWorld).y) > 0.6)
           .filter(h => !(h.object.material.clippingPlanes || []).some(p => p.distanceToPoint(h.point) < 0))
           .map(h => [h.uv.x, h.uv.y, h.object.uuid]);

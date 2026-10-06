@@ -41,7 +41,19 @@
   "examFailed": "Ispit nije položen",
   "continueSession": "Nastavi",
   "continueSessionSubtitle": "{title} · pitanje {index} od {total}",
-  "@continueSessionSubtitle": { "placeholders": { "title": { "type": "String" }, "index": { "type": "int" }, "total": { "type": "int" } } },
+  "@continueSessionSubtitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "continueSessionDismiss": "Ukloni",
   "reportQuestionTooltip": "Prijavi grešku",
   "reportQuestionBody": "Šta nije u redu sa ovim pitanjem? Greška u kucanju, netačan odgovor, pogrešna slika — napišite svojim rečima.",
@@ -52,24 +64,54 @@
   "correctAnswers": "Tačnih odgovora",
   "wrongAnswers": "Netačnih odgovora",
   "shareCardCorrectWord": "{count, plural, one{tačan} few{tačna} other{tačnih}}",
-  "@shareCardCorrectWord": { "placeholders": { "count": { "type": "int" } } },
+  "@shareCardCorrectWord": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "shareCardWrongWord": "{count, plural, one{greška} few{greške} other{grešaka}}",
-  "@shareCardWrongWord": { "placeholders": { "count": { "type": "int" } } },
+  "@shareCardWrongWord": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "timeLeft": "Preostalo vreme",
   "minutes": "min",
   "search": "Pretraga",
   "noImage": "Bez slike",
   "mistakes": "Greške",
-  "progressRemaining": "{count, plural, one{Do ispita ostalo {count}\u00A0pitanje} few{Do ispita ostalo {count}\u00A0pitanja} other{Do ispita ostalo {count}\u00A0pitanja}}",
-  "@progressRemaining": { "placeholders": { "count": { "type": "int" } } },
+  "progressRemaining": "{count, plural, one{Do ispita ostalo {count} pitanje} few{Do ispita ostalo {count} pitanja} other{Do ispita ostalo {count} pitanja}}",
+  "@progressRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "progressDone": "urađeno",
   "progressCorrect": "tačno",
   "progressWrong": "grešaka",
   "progressTickets": "testova",
   "progressStreakDays": "{count, plural, one{{count} dan} few{{count} dana} other{{count} dana}}",
-  "@progressStreakDays": { "placeholders": { "count": { "type": "int" } } },
+  "@progressStreakDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "progressRecord": "Rekord {count}",
-  "@progressRecord": { "placeholders": { "count": { "type": "int" } } },
+  "@progressRecord": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "progressAllDone": "Sva pitanja su tačno urađena",
   "homePassedQuestions": "Urađeno pitanja",
   "homeCorrectSolved": "Tačno rešeno",
@@ -165,7 +207,13 @@
   "examResultFailed": "Analizirajte greške i ponovite slabe tačke.",
   "valueOfTotal": "{value} od {total}",
   "examFailedByBlock": "Test se sastoji od tematskih blokova. {count} greške u istom bloku znače da ispit nije položen, čak i ako ukupan broj grešaka nije veći od dozvoljenog.",
-  "@examFailedByBlock": { "placeholders": { "count": { "type": "int" } } },
+  "@examFailedByBlock": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "examAdditionalBlock": "Dodatni blok",
   "examAdditionalBlockValue": "{count} pitanja, grešaka: {errors}",
   "examTimeSpent": "Utrošeno vreme",
@@ -247,7 +295,13 @@
   "gamePaintWine": "bordo",
   "gamePaintGold": "zlatna",
   "gameGarageNextCar": "{count, plural, one{Sledeći auto za {count} tačan odgovor} few{Sledeći auto za {count} tačna odgovora} other{Sledeći auto za {count} tačnih odgovora}}",
-  "@gameGarageNextCar": {"placeholders": {"count": {"type": "int"}}},
+  "@gameGarageNextCar": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "gameGaragePremiumCar": "Uz premium su otključani svi automobili i sve boje",
   "gameRevealTitle": "Novi auto!",
   "gameRevealTap": "Dodirnite vrata garaže",
@@ -282,6 +336,8 @@
   "gameYourCar": "Vaš automobil",
   "gameSpeeding": "Prekoračenje brzine",
   "gameOvertakingProhibited": "Preticanje je ovde zabranjeno",
+  "gameStopViolation": "Niste se zaustavili na propisanom mestu",
+  "gameRedLightViolation": "Prolazak na zabranjen signal",
   "gameRailwayViolation": "Prelaz je zatvoren — obilaženje i ulazak su zabranjeni",
   "gamePedestrianYield": "Propustite pešaka",
   "gameSpeedLimitLabel": "Ograničenje {limit} km/h",
@@ -325,6 +381,23 @@
   "gameLoadError": "Vožnja ne može da se nastavi. Ponovo pokrenite simulator ili se vratite u meni.",
   "authSuccess": "Uspešno ste prijavljeni",
   "authFailed": "Prijava je otkazana ili je došlo do greške. Pokušajte ponovo.",
+  "authErrorCancelled": "Prijava nije završena. Pokušajte ponovo da izaberete nalog.",
+  "authErrorProvider": "Nije moguće dobiti podatke za prijavu od izabranog servisa.",
+  "authErrorNetwork": "Nije moguće povezati se sa serverom. Proverite internet vezu.",
+  "authErrorTimeout": "Server nije odgovorio na vreme. Pokušajte ponovo.",
+  "authErrorAppKey": "Server je odbio ovu verziju aplikacije. Ažurirajte aplikaciju iz prodavnice.",
+  "authErrorCredential": "Server nije potvrdio prijavu. Pokušajte sa drugim nalogom ili načinom prijave.",
+  "authErrorServer": "Nije moguće završiti prijavu na serveru. Pokušajte kasnije.",
+  "authErrorResponse": "Nije moguće prihvatiti sesiju prijave. Proverite datum i vreme na telefonu.",
+  "authSessionTemporary": "Prijava je uspešna. Telefon nije mogao da sačuva sesiju: posle ponovnog pokretanja morate se ponovo prijaviti.",
+  "authDiagnosticCode": "Kod za podršku: {code}",
+  "@authDiagnosticCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "authTitle": "Prijava na nalog",
   "authDescription": "Sačuvajte premium pristup i statistiku pri promeni uređaja ili ponovnoj instalaciji",
   "authApple": "Nastavi sa Apple ID",
@@ -370,5 +443,15 @@
   "gameLobbyNewCar": "NOVO",
   "gameRunsReady": "Spremno",
   "gameRunsUntil": "do vožnje",
-  "gameUturn": "Polukružno okretanje"
+  "gameUturn": "Polukružno okretanje",
+  "purchaseVerificationPending": "Prodavnica je prijavila kupovinu, ali pristup još nije potvrđen. Za ponovnu proveru pritisnite „Vrati kupovine” kada internet bude dostupan.",
+  "notifAdminChannelName": "Obaveštenja aplikacije",
+  "noticeAcknowledge": "U redu",
+  "noticeOpen": "Otvori",
+  "pushMessagesSetting": "Novosti aplikacije",
+  "pushMessagesHint": "Push obaveštenja o novostima i važnim događajima",
+  "gameKeyboardHint": "↑ / W — gas · ↓ / S / razmak — kočnica · ← → / A D — skretanje",
+  "webQuarter": "3 meseca",
+  "webPaymentSoon": "Plaćanje uskoro",
+  "webPaymentInfo": "Pristup na 3 meseca bez automatskog obnavljanja. Plaćanje na sajtu još nije dostupno."
 }

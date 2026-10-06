@@ -6,6 +6,7 @@
 // входе (saveUserProfile) и лишние поля оттуда бы пропадали.
 
 import { putUserRecord } from './user_store.js';
+import { refreshStoreEntitlement } from './store_verification.js';
 
 const DAY_MS = 86400000;
 const MAX_DAYS = 3650;
@@ -132,7 +133,7 @@ async function readBody(request) {
  */
 export async function handleUsersAdmin(request, env, url, deps) {
   if (!url.pathname.startsWith('/api/admin/users')) return null;
-  const { verifyAdminAuth, getAllUsers, revokeUserSessions, readGameBoard, gameWeekKey, jsonResponse } = deps;
+  const { verifyAdminAuth, getAllUsers, revokeUserSessions, readGameBoard, deleteGamePlayer, gameWeekKey, jsonResponse } = deps;
   if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
   if (!env.INSTALLS) return jsonResponse({ error: 'storage unavailable' }, 503);
   const path = url.pathname;
@@ -146,6 +147,7 @@ export async function handleUsersAdmin(request, env, url, deps) {
     const userId = String(url.searchParams.get('id') || '');
     const user = userId ? await readJson(env, 'user:' + userId) : null;
     if (!user) return jsonResponse({ error: 'user not found' }, 404);
+    await refreshStoreEntitlement(env, user);
     const [progress, meta] = await Promise.all([
       readJson(env, 'user_progress:' + userId),
       readAdminMeta(env, userId),
@@ -173,11 +175,7 @@ export async function handleUsersAdmin(request, env, url, deps) {
     if (user?.email) await env.INSTALLS.delete('user_email:' + user.email.toLowerCase().trim());
     try {
       const week = gameWeekKey();
-      const board = await readGameBoard(env, week);
-      if (board && board[userId]) {
-        delete board[userId];
-        await env.INSTALLS.put('game_lb:' + week, JSON.stringify(board), { expirationTtl: 60 * 60 * 24 * 21 });
-      }
+      await deleteGamePlayer(env, week, userId);
     } catch (_) {}
     try {
       const list = await readJson(env, 'users_list');

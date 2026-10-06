@@ -7,11 +7,12 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
 
 /// Full-screen chrome over the engine's garage scene: the title at the top,
 /// a hint while the doors are closed, and "choose"/"close" once the car has
-/// rolled out. The middle stays transparent so touches reach the WebView
-/// (tap opens the doors, a drag spins the car).
+/// rolled out. Opening is handled here, independently of WebView gestures;
+/// after the reveal, the middle passes drags through to spin the car.
 class GameRevealOverlay extends StatelessWidget {
   final GameCar car;
   final bool shown;
+  final VoidCallback onOpen;
   final VoidCallback onChoose;
   final VoidCallback onClose;
 
@@ -19,6 +20,7 @@ class GameRevealOverlay extends StatelessWidget {
     super.key,
     required this.car,
     required this.shown,
+    required this.onOpen,
     required this.onChoose,
     required this.onClose,
   });
@@ -30,6 +32,13 @@ class GameRevealOverlay extends StatelessWidget {
     final isCyber = car.id == GameGarageService.cyber;
     return Stack(
       children: [
+        if (!shown)
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onOpen,
+            ),
+          ),
         Positioned(
           top: padding.top + 24,
           left: 20,

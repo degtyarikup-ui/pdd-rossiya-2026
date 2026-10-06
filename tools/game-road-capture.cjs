@@ -72,7 +72,9 @@ const ARCH_SCENES = [
   { id: 'ticket_21_8', label: 'Двор с аркой', close: [] },
   { id: 'event_busstop', label: 'Остановка', close: [facade('shelter', -10.5, 0, 9, 0.2)] },
 ];
-const SCENES = SET === 'architecture' ? ARCH_SCENES : ROAD_SCENES;
+// Spot checks of reported bugs (ids from IDS=…, overview only).
+const BUG_SCENES = (process.env.IDS || '').split(',').filter(Boolean).map(id => ({ id, label: id, close: JSON.parse(process.env.CLOSE || '[]') }));
+const SCENES = SET === 'architecture' ? ARCH_SCENES : SET === 'bugs' ? BUG_SCENES : ROAD_SCENES;
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });

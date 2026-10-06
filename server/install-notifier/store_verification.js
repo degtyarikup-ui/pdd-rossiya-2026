@@ -39,10 +39,11 @@ export function googleEntitlement(data, productId, now = Date.now()) {
     .sort((a, b) => Date.parse(b.expiryTime) - Date.parse(a.expiryTime))[0];
   if (!item || !Number.isFinite(Date.parse(item.expiryTime))) throw new StoreError('wrong product', 422);
   const active = activeStates.has(data.subscriptionState) && Date.parse(item.expiryTime) > now;
-  return { active, expiresAt: new Date(item.expiryTime).toISOString(), orderId: data.latestOrderId || null };
+  return { active, expiresAt: new Date(item.expiryTime).toISOString(), orderId: data.latestOrderId || null,
+    autoRenewEnabled: typeof item.autoRenewingPlan?.autoRenewEnabled === 'boolean' ? item.autoRenewingPlan.autoRenewEnabled : item.prepaidPlan ? false : null };
 }
 
-export async function verifyStorePurchase(body, env, userId) {
+export async function verifyStorePurchase(body, env, userId, { refresh = false } = {}) {
   const { store, productId, country } = body || {};
   if (!packages[country] || !defaultProducts[store]) throw new StoreError('invalid store', 400);
   const products = env[store === 'googleplay' ? 'GOOGLE_PLAY_PRODUCT_IDS' : 'APPLE_PRODUCT_IDS'];
@@ -72,7 +73,8 @@ export async function verifyStorePurchase(body, env, userId) {
   // The environment is decided by Apple's answer, never by the client.
   const url = host => `https://${host}/inApps/v1/transactions/${transactionId}`;
   let response;
-  if (env.APPLE_IAP_ENVIRONMENT === 'sandbox') {
+  let sandbox = env.APPLE_IAP_ENVIRONMENT === 'sandbox';
+  if (sandbox) {
     response = await fetchJson(url('api.storekit-sandbox.apple.com'), { headers: { Authorization: `Bearer ${token}` } });
   } else {
     try {
@@ -80,15 +82,53 @@ export async function verifyStorePurchase(body, env, userId) {
     } catch (e) {
       if (!(e instanceof StoreError && e.status === 422)) throw e; // 404 from production
       response = await fetchJson(url('api.storekit-sandbox.apple.com'), { headers: { Authorization: `Bearer ${token}` } });
+      sandbox = true;
     }
   }
   // This JWS comes directly from Apple's authenticated HTTPS API, never the client.
-  const data = decodeJwt(response.signedTransactionInfo);
+  let data = decodeJwt(response.signedTransactionInfo);
   if (data.bundleId !== bundleId || data.productId !== productId || String(data.transactionId) !== transactionId ||
-      data.environment !== (sandbox ? 'Sandbox' : 'Production') || !Number.isFinite(data.expiresDate)) throw new StoreError('wrong transaction', 422);
-  return { active: !data.revocationDate && data.expiresDate > Date.now(), expiresAt: new Date(data.expiresDate).toISOString(),
-    orderId: transactionId, key: `appstore:${data.originalTransactionId}`,
-    reference: { store, country, productId, transactionId } };
+      data.environment !== (sandbox ? 'Sandbox' : 'Production') || !Number.isFinite(data.expiresDate) ||
+      typeof data.originalTransactionId !== 'string' || !/^\d{1,40}$/.test(data.originalTransactionId)) throw new StoreError('wrong transaction', 422);
+  let active = !data.revocationDate && data.expiresDate > Date.now();
+  let expiresDate = data.expiresDate;
+  let autoRenewEnabled = null;
+  // A transaction describes one billing period. Its expiry never changes
+  // on renewal, so refresh (and restoring an older period) must look up
+  // the current subscription instead of repeatedly checking the old receipt.
+  if (refresh || (!data.revocationDate && !active)) {
+    const host = sandbox ? 'api.storekit-sandbox.apple.com' : 'api.storekit.apple.com';
+    const statuses = await fetchJson(`https://${host}/inApps/v1/subscriptions/${transactionId}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (statuses.environment !== data.environment || statuses.bundleId !== bundleId || !Array.isArray(statuses.data)) {
+      throw new StoreError('invalid subscription status');
+    }
+    const originalId = data.originalTransactionId;
+    const candidates = statuses.data.flatMap(group => group.lastTransactions || [])
+      .filter(item => item.originalTransactionId === originalId)
+      .map(item => ({ ...item, transaction: decodeJwt(item.signedTransactionInfo) }))
+      .sort((a, b) => b.transaction.expiresDate - a.transaction.expiresDate);
+    const latest = candidates[0];
+    if (!latest) throw new StoreError('subscription status unavailable');
+    data = latest.transaction;
+    if (data.bundleId !== bundleId || data.environment !== (sandbox ? 'Sandbox' : 'Production') ||
+        data.originalTransactionId !== originalId || !allowed.includes(data.productId) ||
+        !/^\d{1,40}$/.test(data.transactionId) || !Number.isFinite(data.expiresDate)) {
+      throw new StoreError('wrong subscription', 422);
+    }
+    expiresDate = data.expiresDate;
+    if (latest.signedRenewalInfo) {
+      const renewal = decodeJwt(latest.signedRenewalInfo);
+      if (renewal.originalTransactionId !== originalId || renewal.environment !== data.environment) {
+        throw new StoreError('wrong renewal', 422);
+      }
+      autoRenewEnabled = renewal.autoRenewStatus === 1 ? true : renewal.autoRenewStatus === 0 ? false : null;
+      if (latest.status === 4 && Number.isFinite(renewal.gracePeriodExpiresDate)) expiresDate = Math.max(expiresDate, renewal.gracePeriodExpiresDate);
+    }
+    active = [1, 4].includes(latest.status) && !data.revocationDate && expiresDate > Date.now();
+  }
+  return { active, autoRenewEnabled, expiresAt: new Date(expiresDate).toISOString(),
+    orderId: String(data.transactionId), key: `appstore:${data.originalTransactionId}`,
+    reference: { store, country, productId: data.productId, transactionId: String(data.transactionId) } };
 }
 
 export async function claimPurchase(env, userId, verified) {
@@ -103,12 +143,14 @@ export async function claimPurchase(env, userId, verified) {
 
 export async function refreshStoreEntitlement(env, user) {
   if (!user?.verifiedPurchase || Date.now() - (user.storeVerifiedAt || 0) < 300000) return user;
+  // Administrative access is independent, including when store lookup fails.
+  if (user.premiumSource !== user.verifiedPurchase.store) return user;
   try {
-    const verified = await verifyStorePurchase(user.verifiedPurchase, env, user.id);
-    // Preserve an independent administrative grant.
-    if (user.premiumSource !== user.verifiedPurchase.store) return user;
+    const verified = await verifyStorePurchase(user.verifiedPurchase, env, user.id, { refresh: true });
     user.isPremium = verified.active;
     user.premiumExpiresAt = verified.expiresAt;
+    user.verifiedPurchase = verified.reference;
+    user.autoRenewEnabled = verified.autoRenewEnabled;
     user.storeVerifiedAt = Date.now();
     await putUserRecord(env, user);
   } catch (error) {

@@ -10,6 +10,7 @@ import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/repositories/feed_repository.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/notification_service.dart';
+import 'package:pdd_app/data/services/remote_notifications_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
@@ -69,6 +70,7 @@ class AppSettingsController extends StateNotifier<AppSettings> {
 
   Future<void> setNotificationsEnabled(bool value) async {
     state = state.copyWith(notificationsEnabled: value);
+    await StreakNotifier.instance.setUserStreakEnabled(value);
     if (value) {
       await StreakNotifier.instance.requestPermission();
       final streak = await _dataSource.loadStreak();
@@ -77,6 +79,12 @@ class AppSettingsController extends StateNotifier<AppSettings> {
       await StreakNotifier.instance.cancelStreakReminder();
     }
     await _dataSource.saveAppSettings(state);
+  }
+
+  Future<void> setPushMessagesEnabled(bool value) async {
+    state = state.copyWith(pushMessagesEnabled: value);
+    await _dataSource.saveAppSettings(state);
+    await RemoteNotificationsService.instance.setPushConsent(value);
   }
 
   Future<void> setTicketCategory(TicketCategory value) async {

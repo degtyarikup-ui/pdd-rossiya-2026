@@ -104,7 +104,7 @@
   const signTextureCache = new Map();
 
   // --- Three.js Globals ---
-  let scene, camera, renderer;
+  let scene, camera, renderer, skyDome = null;
   // camera is the lens in use: the top view (orthographic) or, zoomed close
   // in free driving, the chase view behind the car (perspective).
   let orthoCamera, chaseCamera;
@@ -5241,19 +5241,18 @@
       };
       if (kind === 'door') {
         // A soft mechanical roll: filtered noise swelling and settling.
-        const len = 1.3, buffer = context.createBuffer(1, context.sampleRate * len, context.sampleRate);
+        const len = 0.3, buffer = context.createBuffer(1, context.sampleRate * len, context.sampleRate);
         const data = buffer.getChannelData(0); for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (0.6 + 0.4 * Math.sin(i / 900));
         const src = context.createBufferSource(); src.buffer = buffer;
         const bp = context.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 420; bp.Q.value = 1.1;
         const g = context.createGain(); g.gain.setValueAtTime(0.0001, now); g.gain.linearRampToValueAtTime(0.09, now + 0.2); g.gain.exponentialRampToValueAtTime(0.0001, now + len);
         src.connect(bp).connect(g).connect(out); src.start(now);
-        tone(196, 1.15, 0.25, 0.08, 'triangle');
+        tone(196, 0.24, 0.08, 0.08, 'triangle');
       } else if (kind === 'fanfare') {
         // Major arpeggio up to a held chord, bright and short.
         [[523.25, 0], [659.25, 0.11], [783.99, 0.22], [1046.5, 0.33]].forEach(([f, at]) => { tone(f, at, 0.5, 0.09, 'triangle'); tone(f * 2, at, 0.25, 0.025); });
         [523.25, 659.25, 783.99, 1046.5].forEach(f => tone(f, 0.48, 1.3, 0.06, 'triangle'));
-      } else if (kind === 'sparkle') {
-        for (let i = 0; i < 6; i++) tone(2200 + Math.random() * 2400, i * 0.07 + Math.random() * 0.03, 0.3, 0.035);
+
       }
     };
     // Voices of the traffic around the player. Motor vehicles each get an
@@ -5436,6 +5435,25 @@
     scene.background = new THREE.Color(BRAND.asphaltMarking);
     // No fog: the whole frame stays crisp in every weather.
     scene.fog = null;
+    // Sky dome: seen mainly from the close chase view (horizon). It is drawn
+    // at the far plane around the camera, behind everything else.
+    skyDome = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), new THREE.ShaderMaterial({
+      uniforms: { horizon: { value: new THREE.Color() }, zenith: { value: new THREE.Color() }, cloud: { value: 0.55 } },
+      vertexShader: 'varying vec3 vDir; void main(){ vDir = position; vec4 p = projectionMatrix * vec4((modelViewMatrix * vec4(position, 0.0)).xyz, 1.0); gl_Position = p.xyww; }',
+      fragmentShader: [
+        'uniform vec3 horizon; uniform vec3 zenith; uniform float cloud; varying vec3 vDir;',
+        'float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
+        'float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);',
+        '  return mix(mix(h(i), h(i + vec2(1.0, 0.0)), f.x), mix(h(i + vec2(0.0, 1.0)), h(i + vec2(1.0, 1.0)), f.x), f.y); }',
+        'void main(){ vec3 d = normalize(vDir); float up = clamp(d.y, 0.0, 1.0);',
+        '  vec3 c = mix(horizon, zenith, pow(up, 0.35));',
+        '  vec2 q = d.xz / (d.y + 0.25) * 2.2; float f = n(q) * 0.55 + n(q * 2.1) * 0.3 + n(q * 4.3) * 0.15;',
+        '  float puffs = smoothstep(0.58, 0.8, f) * smoothstep(0.0, 0.06, d.y) * cloud;',
+        '  gl_FragColor = vec4(mix(c, vec3(1.0), puffs * 0.85), 1.0); }'].join('\n'),
+      side: THREE.BackSide, depthWrite: false
+    }));
+    skyDome.frustumCulled = false; skyDome.renderOrder = -1; skyDome.userData.sky = true;
+    scene.add(skyDome);
 
     // Orthographic Camera looking straight forward/up
     const aspect = width / height;
@@ -5487,9 +5505,11 @@
     scene.add(groundMesh);
     terrainMesh = groundMesh;
     // The same grass as the verges. The plane follows the player along Z, so
-    // its own copy of the map is shifted by that move: the grass stays put.
+    // world UVs include that move: detail and macro patterns stay put.
     window.PDD_ROADS.skinObject(groundMesh, 'grass', { world: true });
-    groundMat.map = groundMat.map.clone(); groundMat.map.userData = {}; groundMat.map.needsUpdate = true;
+    const groundUV = groundGeo.attributes.uv;
+    for (let i = 0; i < groundUV.count; i++) groundUV.setY(i, groundUV.getY(i) + 500 / window.PDD_ROADS.kinds.grass.period);
+    groundUV.needsUpdate = true;
 
     // Player Car
     playerCarGroup = createPlayerCar();
@@ -5511,6 +5531,7 @@
     sendToFlutter({ event: 'ready', season: seasonName() });
 
     // Animation Loop
+    streamScenery=true;
     animate(0);
   }
 
@@ -5566,8 +5587,10 @@
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.minFilter = THREE.LinearFilter;
-    const mat = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+    const mat = new THREE.SpriteMaterial({ map: texture, depthTest: true, depthWrite: false });
     const sprite = new THREE.Sprite(mat);
+    sprite.renderOrder = 100;
+    sprite.userData.actorBadge = true;
     sprite.scale.set(3.2, 1.25, 1);
     return sprite;
   }
@@ -5599,7 +5622,7 @@
   // Paths are already in the receiving group's coordinate frame.
   // Route guide: one smooth flat band per route ending in an arrowhead, the
   // same for the player's route and a ticket's labelled alternatives. Kinks
-  // between authored points are smoothed out; the ends stay where authored.
+  // between authored points are smoothed out; long exit tails are clipped.
   function createRouteGuide(paths) {
     const guide = new THREE.Group();
     const mat = new THREE.MeshBasicMaterial({ color: BRAND.accent, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide });
@@ -5607,8 +5630,16 @@
     headShape.moveTo(0, 0); headShape.lineTo(-0.5, -1.15); headShape.lineTo(0.5, -1.15); headShape.closePath();
     const headGeo = new THREE.ShapeGeometry(headShape); headGeo.rotateX(Math.PI / 2);
     for (const path of paths) {
-      const length = path.getLength(), n = Math.max(8, Math.ceil(length / 0.25));
-      let pts = Array.from({ length: n + 1 }, (_, i) => path.getPointAt(i / n));
+      // Stop shortly after the bend, in the receiving lane. Driving paths
+      // retain their full length; only the visual direction cue is shortened.
+      const fullLength = path.getLength(), finalDir = path.getTangentAt(1);
+      let bendEnd = 0;
+      for (let d = 0; d < fullLength; d += 0.25) {
+        if (path.getTangentAt(d / fullLength).dot(finalDir) < 0.985) bendEnd = d;
+      }
+      const length = Math.min(fullLength, bendEnd ? bendEnd + 4 : 14);
+      const n = Math.max(8, Math.ceil(length / 0.25));
+      let pts = Array.from({ length: n + 1 }, (_, i) => path.getPointAt(i / n * length / fullLength));
       for (let pass = 0; pass < 8; pass++) pts = pts.map((p, i) => i === 0 || i === n ? p :
         p.clone().lerp(pts[i - 1].clone().add(pts[i + 1]).multiplyScalar(0.5), 0.5));
       const smooth = curve(pts), total = smooth.getLength(), bodyEnd = Math.max(0.2, total - 0.95);
@@ -5683,7 +5714,44 @@
   // free driving also lowers the camera towards a view along the road.
   const ZOOM_MIN = 0.4, ZOOM_MAX = 1.6;
   state.userZoom = 1;
-  function setUserZoom(z) { state.userZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z)); return state.userZoom; }
+  state.questionCameraPan = new THREE.Vector3();
+  function questionCameraOpen() { return !reveal&&!!state.isAtSituation&&!state.isResolvingSituation&&!state.attract; }
+  function resetQuestionCamera() {
+    state.userZoom = 1; state.questionCameraPan.set(0,0,0); state.questionZoomAnchor = null;state.questionCameraBounds=null;state.questionCameraInspecting=false;
+  }
+  function constrainQuestionPan(pan) {
+    const b=state.questionCameraBounds;
+    if(!b)return pan.set(0,0,0);
+    const side=THREE.MathUtils.clamp(pan.dot(b.right),-b.side,b.side);
+    const along=THREE.MathUtils.clamp(pan.dot(b.forward),-b.along,b.along);
+    return pan.copy(b.right).multiplyScalar(side).addScaledVector(b.forward,along);
+  }
+  function cameraGroundAt(clientX, clientY) {
+    const rect=renderer.domElement.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    const screen=new THREE.Vector2((clientX-rect.left)/rect.width*2-1,1-(clientY-rect.top)/rect.height*2);
+    camera.updateMatrixWorld(true);
+    const ray=new THREE.Raycaster();ray.setFromCamera(screen,camera);
+    const point=ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),new THREE.Vector3());
+    return point ? {point,screen} : null;
+  }
+  function zoomAt(z,from,to=from) {
+    if (questionCameraOpen()) {
+      state.questionCameraInspecting=true;
+      const anchor=cameraGroundAt(from.x,from.y),target=cameraGroundAt(to.x,to.y);
+      if(anchor&&target){
+        // Several touch events can arrive before the next render. Continue
+        // from the pending anchor rather than dropping the earlier movement.
+        const previous=state.questionZoomAnchor;
+        state.questionZoomAnchor={point:previous&&previous.screen.distanceTo(anchor.screen)<1e-6?previous.point:anchor.point,screen:target.screen};
+      }
+    }
+    return setUserZoom(z);
+  }
+  function setUserZoom(z) {
+    if(questionCameraOpen()&&z!==state.userZoom)state.questionCameraInspecting=true;
+    state.userZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z)); return state.userZoom;
+  }
   window.setGameZoom = (z) => setUserZoom(Number(z) || 1);
   window.changeGameZoom = (factor) => setUserZoom(state.userZoom * (Number(factor) || 1));
 
@@ -5696,7 +5764,8 @@
     // only once BOTH fingers have actually moved, so a stale touch never
     // takes part, and it is measured from where it started (no drift).
     const fingers = new Map();
-    let pinch = null;
+    let pinch = null, panLast = null, cameraGesture = false;
+    const midpoint = () => { const [a, b] = pinch.ids.map(id => fingers.get(id)); return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; };
     const spread = () => {
       const [a, b] = pinch.ids.map(id => fingers.get(id));
       return Math.hypot(a.x - b.x, a.y - b.y);
@@ -5706,6 +5775,7 @@
       if (pinch && pinch.ids.some(id => !fingers.has(id))) pinch = null;
     };
     el.addEventListener('touchstart', (e) => {
+      if (reveal) { fingers.clear(); pinch = null; panLast = null; cameraGesture = false; return; }
       const live = new Set([...e.touches].map(t => t.identifier));
       forget([...fingers.keys()].filter(id => !live.has(id)));
       for (const t of e.changedTouches) fingers.set(t.identifier, { x: t.clientX, y: t.clientY, x0: t.clientX, y0: t.clientY, at: performance.now() });
@@ -5717,7 +5787,10 @@
       if (fingers.size === 2) {
         pinch = { ids: [...fingers.keys()], armed: false };
         fingers.forEach(f => { f.x0 = f.x; f.y0 = f.y; });
-        state.isAccelerating = false;
+        state.isAccelerating = false; cameraGesture = true; panLast = null;
+      } else if (fingers.size === 1 && questionCameraOpen()) {
+        // One finger in a question pans the inspected scene.
+        const [f] = fingers.values(); panLast = { x: f.x, y: f.y }; cameraGesture = true;
       }
     }, { passive: true });
     el.addEventListener('touchmove', (e) => {
@@ -5725,22 +5798,42 @@
         const f = fingers.get(t.identifier);
         if (f) { f.x = t.clientX; f.y = t.clientY; }
       }
-      if (!pinch) return;
+      if (!pinch) {
+        if (panLast && fingers.size === 1 && questionCameraOpen()) {
+          const [f] = fingers.values(), point = { x: f.x, y: f.y };
+          zoomAt(state.userZoom, panLast, point); panLast = point; e.preventDefault();
+        }
+        return;
+      }
       e.preventDefault();
       if (!pinch.armed) {
         if (!pinch.ids.every(id => { const f = fingers.get(id); return Math.hypot(f.x - f.x0, f.y - f.y0) > 2; })) return;
-        pinch.armed = true; pinch.dist = spread(); pinch.zoom = state.userZoom;
+        pinch.armed = true; pinch.dist = spread(); pinch.zoom = state.userZoom; pinch.mid = midpoint();
       }
-      const d = spread();
-      if (d > 8 && pinch.dist > 8) setUserZoom(pinch.zoom * pinch.dist / d);
+      const d = spread(), mid = midpoint();
+      if (d > 8 && pinch.dist > 8) zoomAt(pinch.zoom * pinch.dist / d, pinch.mid || mid, mid);
+      pinch.mid = mid;
     }, { passive: false });
-    const end = (e) => forget([...e.changedTouches].map(t => t.identifier));
+    const end = (e) => {
+      e.handledByCamera = cameraGesture;
+      forget([...e.changedTouches].map(t => t.identifier));
+      if (fingers.size === 1 && questionCameraOpen()) { const [f] = fingers.values(); panLast = { x: f.x, y: f.y }; } else panLast = null;
+      if (!fingers.size) cameraGesture = false;
+    };
     el.addEventListener('touchend', end, { passive: true });
     el.addEventListener('touchcancel', end, { passive: true });
     el.addEventListener('wheel', (e) => {
-      setUserZoom(state.userZoom * Math.exp(e.deltaY * 0.0012));
+      if (reveal) { e.preventDefault();return; }
+      zoomAt(state.userZoom*Math.exp(e.deltaY*0.0012),{x:e.clientX,y:e.clientY});
       e.preventDefault();
     }, { passive: false });
+    let mousePoint=null;
+    el.addEventListener('mousedown',e=>{if(e.button===0&&questionCameraOpen())mousePoint={x:e.clientX,y:e.clientY};});
+    window.addEventListener('mousemove',e=>{
+      if(!mousePoint||!questionCameraOpen())return;
+      const point={x:e.clientX,y:e.clientY};zoomAt(state.userZoom,mousePoint,point);mousePoint=point;
+    });
+    window.addEventListener('mouseup',()=>{mousePoint=null;});
     window.addEventListener('keydown', (e) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === '+' || e.key === '=') setUserZoom(state.userZoom / 1.15);
@@ -5774,7 +5867,11 @@
       e.preventDefault();
     }, { passive: false });
     el.addEventListener('touchend', (e) => {
-      if (reveal && reveal.phase === 'closed' && (state.dragMoved || 0) < 12) { reveal.phase = 'opening'; reveal.t = 0; gameAudio?.click(); }
+      if(e.handledByCamera){state.isAccelerating=false;return;}
+      if (reveal) {
+        if (!e.touches.length && (state.dragMoved || 0) < 12) window.game.openReveal();
+        state.isAccelerating=false;return;
+      }
       if (state.nativeControls) return;
       e.preventDefault();
       state.isAccelerating = false;
@@ -5795,6 +5892,7 @@
     });
 
     // Mouse fallback for testing
+    el.addEventListener('click', () => { if (reveal) window.game.openReveal(); });
     el.addEventListener('mousedown', () => { if (!state.nativeControls && !state.paused && !state.isAtSituation && !state.isResolvingSituation) state.isAccelerating = true; });
     window.addEventListener('mouseup', () => { if (!state.nativeControls) state.isAccelerating = false; });
   }
@@ -7375,99 +7473,74 @@
   // backdropFrom: no far background (x 30-70) in the first metres of the
   // road. A cross street starting at a junction leaves its corners to the
   // main street's background: both used to put houses on the same plots.
-  // width: 8.4 is the ordinary two-lane street; a wider one (14, 16.8) is
-  // a city avenue with two lanes each way that carries on between two
-  // junctions of the same width, instead of narrowing to 8.4 and widening
-  // again in between.
-  function buildStraightSegment(startZ, length = 70, preview = false, district = state.district, oneWay = null, backdropFrom = 0, width = 8.4) {
-    const seg = new THREE.Group();
-    const roadWidth = width; // 2 lanes (4.2m each) or 4 on an avenue
-    const extra = (roadWidth - 8.4) / 2, avenue = extra > 0.01;
-    const roadParts = new Set();
-
-    // Asphalt
-    const asphalt = new THREE.Mesh(
-      new THREE.PlaneGeometry(roadWidth, length + 2 * SEAM),
-      new THREE.MeshLambertMaterial({ color: BRAND.asphalt })
-    );
-    asphalt.rotation.x = -Math.PI / 2;
-    asphalt.position.set(0, 0.02, startZ + length / 2);
-    asphalt.receiveShadow = true;
-    seg.add(asphalt); roadParts.add(asphalt);
-
-    // Sidewalks: exactly 4.2 ... 7.4 across, like every pavement piece. A SEAM
-    // overlap across (into the road) left a 12 cm step where the pavement
-    // meets a rounded corner; only pieces laid end to end need to overlap.
-    const swWidth = 3.2;
-    const swL = new THREE.Mesh(
-      new THREE.BoxGeometry(swWidth, 0.18, length + 2 * SEAM),
-      new THREE.MeshLambertMaterial({ color: BRAND.sidewalk })
-    );
-    swL.position.set(-(roadWidth / 2 + swWidth / 2), 0.09, startZ + length / 2);
-    swL.receiveShadow = true;
-    seg.add(swL); roadParts.add(swL);
-
-    const swR = new THREE.Mesh(
-      new THREE.BoxGeometry(swWidth, 0.18, length + 2 * SEAM),
-      new THREE.MeshLambertMaterial({ color: BRAND.sidewalk })
-    );
-    swR.position.set(roadWidth / 2 + swWidth / 2, 0.09, startZ + length / 2);
-    swR.receiveShadow = true;
-    seg.add(swR); roadParts.add(swR);
-
-    // Center Dashed Marking (1.5)
-    const dashLength = 2.0;
-    const gapLength = 3.0;
-    const markingMat = new THREE.MeshBasicMaterial({ color: BRAND.asphaltMarking });
-    const dashGeo = new THREE.PlaneGeometry(0.18, dashLength);
-    dashGeo.rotateX(-Math.PI / 2);
-
-    const dashes = [];
-    // An avenue: double solid centre (1.3) and a broken lane divider (1.5)
-    // in the middle of each carriageway, in the same phase as the dashes.
-    const dashXs = avenue ? [-roadWidth / 4, roadWidth / 4] : [0];
-    for (let z = startZ + 2; z < startZ + length - 2; z += (dashLength + gapLength)) {
-      for (const x of dashXs) {
-        const dash = new THREE.Mesh(dashGeo, markingMat);
-        dash.position.set(x, 0.025, z + dashLength / 2);
-        dashes.push(dash);
-      }
+  // Runtime scenery jobs yield at a roadside row, preserving local coordinates
+  // if the road is reparented/rebased while its remaining rows are in flight.
+  let streamScenery = false;
+  const sceneryJobs = [];
+  let sceneryBoundsVersion=0;
+  function enqueueScenery(owner, iterator) {
+    if(!streamScenery || state.paused || state.attract) { while(!iterator.next().done) {} return; }
+    sceneryJobs.push({owner,iterator});
+  }
+  function processSceneryJobs(budgetMs=3) {
+    const start=performance.now();let steps=0;
+    while(sceneryJobs.length && performance.now()-start<budgetMs) {
+      const job=sceneryJobs[0];
+      if(job.owner.userData.disposed) { sceneryJobs.shift();continue; }
+      if(job.iterator.next().done)sceneryJobs.shift();
+      steps++;
     }
-    const dashMesh = mergeStatic(dashes, markingMat);
-    seg.add(dashMesh); roadParts.add(dashMesh);
-    if (avenue) for (const x of [-0.12, 0.12]) {
-      const line = new THREE.Mesh(new THREE.PlaneGeometry(0.13, length), markingMat);
-      line.rotation.x = -Math.PI / 2; line.position.set(x, 0.025, startZ + length / 2);
-      seg.add(line); roadParts.add(line);
+    return {steps,ms:performance.now()-start,pending:sceneryJobs.length};
+  }
+  function registerRoadObject(child) {
+    child.position.x*=-1;child.rotation.y*=-1;
+    child.traverse(o=>{
+      if(o.isMesh && o.material?.isMeshLambertMaterial)o.receiveShadow=true;
+      if(!o.userData.actor && o.material?.color?.getHex()===BRAND.sidewalk)o.userData.surface='sidewalk';
+      if(!o.userData.actor && o.material?.color?.getHex()===BRAND.asphalt && o.geometry?.type==='PlaneGeometry')o.userData.surface='road';
+      if(o.userData.surface==='sidewalk'){o.material.color.setHex(season().sidewalk);o.material.userData.seasonal='sidewalk';}
+    });
+
+  }
+  function inheritSceneryClearances(road) {
+    road.updateWorldMatrix(true,false);
+    const inverse=road.matrixWorld.clone().invert();
+    for(let root=road.parent;root;root=root.parent) {
+      const boxes=root.userData.sceneryClearance;if(!boxes)continue;
+      const key=root.uuid+':'+boxes.length;
+      const copied=road.userData.inheritedClearance ||= new Set();if(copied.has(key))continue;copied.add(key);
+      const transform=inverse.clone().multiply(root.matrixWorld);
+      (road.userData.sceneryClearance ||= []).push(...boxes.map(b=>b.clone().applyMatrix4(transform)));
     }
+  }
 
-    // Outer Solid Lines (1.2)
-    const solidLineGeo = new THREE.PlaneGeometry(0.15, length);
-    solidLineGeo.rotateX(-Math.PI / 2);
-    const lineL = new THREE.Mesh(solidLineGeo, markingMat);
-    lineL.position.set(-roadWidth / 2 + 0.25, 0.025, startZ + length / 2);
-    seg.add(lineL); roadParts.add(lineL);
-
-    const lineR = new THREE.Mesh(solidLineGeo, markingMat);
-    lineR.position.set(roadWidth / 2 - 0.25, 0.025, startZ + length / 2);
-    seg.add(lineR); roadParts.add(lineR);
-
-    if (oneWay) {
-      // Both lanes carry the same direction: the centre dashes are the lane
-      // divider 1.5. 5.5 starts the one-way stretch, 5.6 ends it before the
-      // next (two-way) junction. Against the flow the driver sees their backs.
-      const flowForward = oneWay === 'with';
-      const place = (code, z) => {
-        const sign = createRoadSign(code);
-        // On the flow's right-hand pavement (factory X = driver's right).
-        sign.position.set(flowForward ? 5.2 : -5.2, 0, z);
-        sign.rotation.y = flowForward ? 0 : Math.PI;
-        seg.add(sign);
-      };
-      place('5.5', flowForward ? startZ + 6 : startZ + length - 6);
-      place('5.6', flowForward ? startZ + length - 14 : startZ + 14);
+  function settleStreamedScenery(seg,added) {
+    seg.updateWorldMatrix(true,false);
+    added.forEach(o=>o.updateWorldMatrix(false,true));
+    // Clearance areas are stored in road-local coordinates, so a bus bay or
+    // driveway cannot acquire a newly generated tree after a world turn.
+    let root=seg;
+    const zones=[];
+    while(root){if(root.userData.sceneryClearance)zones.push({inverse:root.matrixWorld.clone().invert(),boxes:root.userData.sceneryClearance});root=root.parent;}
+    const houses=state.occluders.filter(o=>o.parent && o.visible && !added.includes(o)).map(o=>{
+      if(o.userData.streamBoundsVersion!==sceneryBoundsVersion){o.userData.streamBounds=new THREE.Box3().setFromObject(o);o.userData.streamBoundsVersion=sceneryBoundsVersion;}
+      return o.userData.streamBounds;
+    });
+    const overlap=(a,b)=>Math.min(a.max.x,b.max.x)-Math.max(a.min.x,b.min.x)>.3 && Math.min(a.max.z,b.max.z)-Math.max(a.min.z,b.min.z)>.3;
+    for(const o of added) {
+      const box=new THREE.Box3().setFromObject(o);
+      if(box.isEmpty() || box.max.y<.3)continue;
+      if(zones.some(z=>{const local=box.clone().applyMatrix4(z.inverse);return z.boxes.some(b=>local.intersectsBox(b));}))o.visible=false;
+      if(state.occluders.includes(o)) {if(houses.some(b=>overlap(box,b)))o.visible=false;else if(o.visible){houses.push(box);o.userData.streamBounds=box;o.userData.streamBoundsVersion=sceneryBoundsVersion;}}
     }
-
+    for(const o of added) {
+      if(!o.visible || state.occluders.includes(o) || !o.userData.sceneryObject)continue;
+      const box=new THREE.Box3().setFromObject(o),center=box.getCenter(new THREE.Vector3());
+      if(houses.some(h=>center.x>h.min.x+.2 && center.x<h.max.x-.2 && center.z>h.min.z+.2 && center.z<h.max.z-.2))o.visible=false;
+    }
+  }
+  function* buildStraightScenery(seg,startZ,length,district,backdropFrom) {
+    const extra=seg.userData.avenueExtra||0; // an avenue's extra half-width
     // Districts blend over the road's length, and are built with the road,
     // never spawned in response to a camera turn: park / homes / boulevard.
     seg.userData.district = district;
@@ -7476,6 +7549,7 @@
       const next = (district + 1) % DISTRICTS;
       const style = row % 5 / 4 < t ? next : district;
       for (const side of [-1, 1]) {
+        const firstChild=seg.children.length;
         const vergeGeometry = new THREE.PlaneGeometry(22 + SEAM, 20 + SEAM);
         const verge = new THREE.Mesh(vergeGeometry, new THREE.MeshLambertMaterial({ color: season().verge[Math.min(style, 2)] }));
         verge.material.userData.seasonal = 'verge' + Math.min(style, 2);
@@ -7627,16 +7701,138 @@
           seg.add(walker);
           state.ambient.push({ mesh: walker, center: z, phase: row * 1.7, time: 0, side, lane, targetLane: lane, seg, edge: 5.2 + extra });
         }
+        const added=seg.children.slice(firstChild);
+        // An avenue pushes everything beside the road out by its extra
+        // width (before registration mirrors the factory X).
+        if(extra)added.forEach(o=>{
+          if(o.userData.backdropSide)o.position.x+=o.userData.backdropSide*extra;
+          else if(Math.abs(o.position.x)>1)o.position.x+=Math.sign(o.position.x)*extra;
+          const a=state.ambient.find(w=>w.mesh===o);if(a)a.edge=5.2+extra;
+        });
+        if(seg.userData.registered) {
+          added.forEach(registerRoadObject);
+          added.forEach(o=>{const b=new THREE.Box3().setFromObject(o);if(!b.isEmpty() && b.max.y>.3)o.userData.sceneryObject=true;});
+          settleStreamedScenery(seg,added);clearSceneryOffRoad(added);
+          window.PDD_ROADS.invalidate();state.weatherDirty=true;
+        }
+        yield;
       }
     }
 
-    // An avenue pushes everything beside the road out by its extra width:
-    // the town along it is the same, only further apart.
-    if (avenue) seg.children.forEach(o => {
-      if (roadParts.has(o)) return;
-      if (o.userData.backdropSide) o.position.x += o.userData.backdropSide * extra;
-      else if (Math.abs(o.position.x) > 1) o.position.x += Math.sign(o.position.x) * extra;
-    });
+  }
+
+  // Lightweight continuation behind the loading range: no physics, actors or
+  // question content. The real next junction replaces it before it is reached.
+  function addRoadHorizon(seg,startZ,length) {
+    const horizon=new THREE.Group();horizon.userData.distantRoad=true;
+    const mat=new THREE.MeshLambertMaterial({color:BRAND.asphalt});
+    const asphalt=addFlatPlane(horizon,8.4,420,0,startZ+length+210,.005,mat);
+    asphalt.material.userData.asphalt=true;
+
+    for(const side of [-1,1])addFlatPlane(horizon,3.2,420,side*5.8,startZ+length+210,.16,new THREE.MeshLambertMaterial({color:season().sidewalk})).material.userData.seasonal='sidewalk';
+    const paint=roadMarkingMat();
+    for(const x of [-3.95,3.95])addFlatPlane(horizon,.15,420,x,startZ+length+210,.012,paint);
+    const dashes=[];const dashGeometry=new THREE.PlaneGeometry(.13,2);dashGeometry.rotateX(-Math.PI/2);
+    for(let z=startZ+length+2;z<startZ+length+420;z+=5){const d=new THREE.Mesh(dashGeometry,paint);d.position.set(0,.012,z);dashes.push(d);}
+    horizon.add(mergeStatic(dashes,paint));dashGeometry.dispose();
+    horizon.traverse(o=>{o.userData.visualOnly=true;});
+    seg.userData.horizon=horizon;seg.add(horizon);
+  }
+
+  // width: 8.4 is the ordinary two-lane street; a wider one (14, 16.8) is
+  // a city avenue with two lanes each way that carries on between two
+  // junctions of the same width, instead of narrowing to 8.4 and widening
+  // again in between.
+  function buildStraightSegment(startZ, length = 70, preview = false, district = state.district, oneWay = null, backdropFrom = 0, width = 8.4) {
+    const seg = new THREE.Group();
+    const roadWidth = width; // 2 lanes (4.2m each) or 4 on an avenue
+    const extra = (roadWidth - 8.4) / 2, avenue = extra > 0.01;
+    seg.userData.avenueExtra = avenue ? extra : 0;
+
+    // Asphalt
+    const asphalt = new THREE.Mesh(
+      new THREE.PlaneGeometry(roadWidth, length + 2 * SEAM),
+      new THREE.MeshLambertMaterial({ color: BRAND.asphalt })
+    );
+    asphalt.rotation.x = -Math.PI / 2;
+    asphalt.position.set(0, 0.02, startZ + length / 2);
+    asphalt.receiveShadow = true;
+    seg.add(asphalt);
+
+    // Sidewalks: exactly 4.2 ... 7.4 across, like every pavement piece. A SEAM
+    // overlap across (into the road) left a 12 cm step where the pavement
+    // meets a rounded corner; only pieces laid end to end need to overlap.
+    const swWidth = 3.2;
+    const swL = new THREE.Mesh(
+      new THREE.BoxGeometry(swWidth, 0.18, length + 2 * SEAM),
+      new THREE.MeshLambertMaterial({ color: BRAND.sidewalk })
+    );
+    swL.position.set(-(roadWidth / 2 + swWidth / 2), 0.09, startZ + length / 2);
+    swL.receiveShadow = true;
+    seg.add(swL);
+
+    const swR = new THREE.Mesh(
+      new THREE.BoxGeometry(swWidth, 0.18, length + 2 * SEAM),
+      new THREE.MeshLambertMaterial({ color: BRAND.sidewalk })
+    );
+    swR.position.set(roadWidth / 2 + swWidth / 2, 0.09, startZ + length / 2);
+    swR.receiveShadow = true;
+    seg.add(swR);
+
+    // Center Dashed Marking (1.5)
+    const dashLength = 2.0;
+    const gapLength = 3.0;
+    const markingMat = new THREE.MeshBasicMaterial({ color: BRAND.asphaltMarking });
+    const dashGeo = new THREE.PlaneGeometry(0.18, dashLength);
+    dashGeo.rotateX(-Math.PI / 2);
+
+    const dashes = [];
+    // An avenue: double solid centre (1.3) and a broken lane divider (1.5)
+    // in the middle of each carriageway, in the same phase as the dashes.
+    const dashXs = avenue ? [-roadWidth / 4, roadWidth / 4] : [0];
+    for (let z = startZ + 2; z < startZ + length - 2; z += (dashLength + gapLength)) {
+      for (const x of dashXs) {
+        const dash = new THREE.Mesh(dashGeo, markingMat);
+        dash.position.set(x, 0.025, z + dashLength / 2);
+        dashes.push(dash);
+      }
+    }
+    seg.add(mergeStatic(dashes, markingMat));
+    if (avenue) for (const x of [-0.12, 0.12]) {
+      const line = new THREE.Mesh(new THREE.PlaneGeometry(0.13, length), markingMat);
+      line.rotation.x = -Math.PI / 2; line.position.set(x, 0.025, startZ + length / 2);
+      seg.add(line);
+    }
+
+    // Outer Solid Lines (1.2)
+    const solidLineGeo = new THREE.PlaneGeometry(0.15, length);
+    solidLineGeo.rotateX(-Math.PI / 2);
+    const lineL = new THREE.Mesh(solidLineGeo, markingMat);
+    lineL.position.set(-roadWidth / 2 + 0.25, 0.025, startZ + length / 2);
+    seg.add(lineL);
+
+    const lineR = new THREE.Mesh(solidLineGeo, markingMat);
+    lineR.position.set(roadWidth / 2 - 0.25, 0.025, startZ + length / 2);
+    seg.add(lineR);
+
+    if (oneWay) {
+      // Both lanes carry the same direction: the centre dashes are the lane
+      // divider 1.5. 5.5 starts the one-way stretch, 5.6 ends it before the
+      // next (two-way) junction. Against the flow the driver sees their backs.
+      const flowForward = oneWay === 'with';
+      const place = (code, z) => {
+        const sign = createRoadSign(code);
+        // On the flow's right-hand pavement (factory X = driver's right).
+        sign.position.set(flowForward ? 5.2 : -5.2, 0, z);
+        sign.rotation.y = flowForward ? 0 : Math.PI;
+        seg.add(sign);
+      };
+      place('5.5', flowForward ? startZ + 6 : startZ + length - 6);
+      place('5.6', flowForward ? startZ + length - 14 : startZ + 14);
+    }
+
+    enqueueScenery(seg,buildStraightScenery(seg,startZ,length,district,backdropFrom));
+
     // Treat each complete roadside object as one unit when clearing a junction.
     // Cutting its individual meshes leaves open facades and floating furniture.
     seg.children.forEach(o => {
@@ -8105,6 +8301,7 @@
       trafficLight: null
     };
     state.intersections.push(intersectionData);
+    actorsInScene.filter(a => a.config.type === 'tram').forEach(a => buildTramTrack(a, intersectionData));
     ensureTraffic(intersectionData);
 
     const guide = new THREE.Group();
@@ -8144,11 +8341,15 @@
       intersectionData.previews.uturn = incomingRoad;
     }
 
+    clearTramScenery(intersectionData);
     refreshRoadBounds();
     return intersectionLength;
   }
 
   function buildIntersectionSegment(startZ, situation, incomingRoad = null) {
+    if(incomingRoad?.userData.horizon) {
+      const horizon=incomingRoad.userData.horizon;disposeSegment(horizon);incomingRoad.userData.horizon=null;
+    }
     let spec = routeSpec(situation);
     situation = { ...situation, ...(spec.overrides || {}) };
     if(situation.pedestrianCount) {
@@ -8505,6 +8706,31 @@
       addCornerFillet(seg, sx, sz, kerbX, kerbZ, centerZ, markingMat);
     }
     if (situation.noRight) addEdgeLineZ(seg, centerZ - kerbZ - 3.4 - SEAM, centerZ + kerbZ + 3.4 + SEAM, () => -kerbX, -1, markingMat);
+    // Edge lines 1.2 along every arm, from the end of the road that leads in
+    // up to the rounded corner (whose own line takes over): no bare stretch
+    // between the street's line and the corner. World (baked) coordinates,
+    // like the fillets, so the sides cannot swap on registration.
+    if (!divided && !wide && !wideMain) {
+      const quads = [], w = 0.075, armEnd = crossStreetLength / 2 + SEAM;
+      const along = (x, z0, z1) => { if (z1 - z0 > .3) quads.push([[x - w, z0], [x + w, z0], [x + w, z1], [x - w, z1]]); };
+      const across = (z, x0, x1) => { if (x1 - x0 > .3) quads.push([[x0, z - w], [x1, z - w], [x1, z + w], [x0, z + w]]); };
+      for (const sx of [-1, 1]) {
+        const x = sx * (kerbX - 0.25);
+        along(x, startZ - SEAM, centerZ - kerbZ - 3.4);
+        if (!tJunction) along(x, centerZ + kerbZ + 3.4, startZ + intersectionLength + SEAM);
+        // Side arms (the right one is negative X): none where there is no
+        // road or only a dirt track.
+        // The dirt track's rounded pavement ends carry no line of their own:
+        // the main road's edge line runs along them up to the track itself.
+        if (dirtApproach && sx < 0) { along(x, centerZ - kerbZ - 3.4, centerZ - 4.4); along(x, centerZ + 4.4, centerZ + kerbZ + 3.4); }
+        if ((situation.noRight || dirtApproach) && sx < 0) continue;
+        const [x0, x1] = sx > 0 ? [kerbX + 3.4, armEnd] : [-armEnd, -kerbX - 3.4];
+        across(centerZ - (kerbZ - 0.25), x0, x1);
+        if (tJunction) across(centerZ + (kerbZ - 0.25), sx > 0 ? 7.6 : -armEnd, sx > 0 ? armEnd : -7.6);
+        else across(centerZ + (kerbZ - 0.25), x0, x1);
+      }
+      if (quads.length) { const m = addBakedQuads(seg, quads, 0.027, markingMat.clone()); m.userData.roadMarking = true; m.userData.noEditIndex = true; }
+    }
 
     // Marking 1.12 belongs only where the source has a signal or STOP sign.
     // Adding it to every unregulated junction invents legally meaningful road
@@ -8743,6 +8969,7 @@
     state.intersections.push(intersectionData);
     // Visible participants already occupy the road, even before their question.
     // Register them now so traffic departing an earlier task can queue behind them.
+    actorsInScene.filter(a => a.config.type === 'tram').forEach(a => buildTramTrack(a, intersectionData));
     ensureTraffic(intersectionData);
     const action = spec.maneuver;
     const L = intersectionData.leftLane, R = intersectionData.rightLane;
@@ -8752,9 +8979,17 @@
     if (spec.paths?.[action]) guidePoints = spec.paths[action];
     // With ticket trajectories every one of them gets the chevrons (the
     // player's route is among them), so there is one arrow style on screen.
-    const guidePaths = situation.trajectories?.length
+    let guidePaths = situation.trajectories?.length
       ? situation.trajectories.map(t => curve(t.points.map(([x, z]) => new THREE.Vector3(-x, 0.12, centerZ + z))))
       : [curve(guidePoints.map(([x, z]) => new THREE.Vector3(x, 0.12, centerZ + z)))];
+    if (situation.yardAfter !== undefined || situation.geometry?.startsWith('courtyard_')) {
+      // Show the turn into the entrance, not a route across the whole yard.
+      guidePaths=guidePaths.map(path=>{
+        const points=path.getSpacedPoints(Math.ceil(path.getLength()/.3));
+        const end=points.findIndex(p=>Math.abs(p.x)>=10);
+        return curve(end>1?points.slice(0,end+1):points);
+      });
+    }
     const guide = createRouteGuide(guidePaths);
     if (situation.trajectories?.length) guide.userData.questionEvidence = true;
     seg.add(guide); guide.visible = false;
@@ -8782,7 +9017,12 @@
         : buildStraightSegment(0, 200, true, (state.district + 1) % DISTRICTS, oneWayMode, direction === 'straight' ? 0 : 30,
           situation.junctionLayout ? roadWidth : exitWidths[direction] || roadWidth);
       extension.rotation.y = yaw;
-      extension.position.set(x, 0, z);
+      const yardSide=direction==='left'?1:-1;
+      const yardExit=direction!=='straight' && (situation.yardAfter!==undefined
+        ? spec.exitOffsets?.[direction]===situation.yardAfter && (situation.yardSides||[spec.maneuver==='left'?-1:1]).includes(-yardSide)
+        : situation.geometry?.startsWith('courtyard_'));
+      extension.position.set(yardExit?yardSide*33:x, 0, z);
+      extension.userData.courtyardExit=!!yardExit;
       seg.add(extension);
       intersectionData.previews[direction] = extension;
     }
@@ -8797,39 +9037,9 @@
       state.roadSegments = state.roadSegments.filter(s => s !== incomingRoad);
       intersectionData.previews.uturn = incomingRoad;
     }
-    actorsInScene.filter(a => a.config.type === 'tram').forEach(a => {
-      const motion = buildActorMotion(a, intersectionData);
-      // The approach rails run along the tram's own heading (the path's first
-      // tangent can already lean into the turn and skew them).
-      const incoming = new THREE.Vector3(Math.sin(a.mesh.rotation.y), 0, Math.cos(a.mesh.rotation.y));
-      const outgoing = motion.path.getTangentAt(1);
-      const points = [a.initialPos.clone().addScaledVector(incoming, -70)];
-      for (let i = 0; i <= 60; i++) points.push(motion.path.getPointAt(i / 60));
-      // Actors continue beyond their authored curve until they have completely
-      // left the camera. Rails must cover that same visual lifetime.
-      points.push(motion.path.getPointAt(1).addScaledVector(outgoing, 320));
-      const centerline = curve(points);
-      // Where the authored path ends along the rails (the straight run-out
-      // beyond it is cut back later wherever it would cross no road).
-      const runOutFrom = 1 - 320 / centerline.getLength();
-      [-0.7, 0.7].forEach(offset => {
-        const rail = [];
-        for (let i = 0; i <= 200; i++) {
-          const t = i / 200, p = centerline.getPointAt(t), v = centerline.getTangentAt(t);
-          p.add(new THREE.Vector3(-v.z, 0, v.x).multiplyScalar(offset));
-          p.y = 0.055;
-          rail.push(p);
-        }
-        const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve(rail), 240, 0.035, 5, false),
-          new THREE.MeshLambertMaterial({ color: 0x8E999C }));
-        mesh.userData.tramRail = true;
-        mesh.userData.railEnd = rail[rail.length - 1].clone();
-        mesh.userData.railPoints = rail;
-        mesh.userData.railRunOut = Math.floor(runOutFrom * 200);
-        seg.add(mesh);
-      });
-    });
 
+
+    clearTramScenery(intersectionData);
     refreshRoadBounds();
     return intersectionLength;
   }
@@ -8904,8 +9114,12 @@
   function applySceneEdits(group, id, originZ) {
     // Stable keys for the rest of the scene's own objects (build order is
     // deterministic): trees, lamps, kiosks... Actors are never edited here.
-    group.children.forEach((o, i) => {
+    // Pieces added later (userData.noEditIndex) do not shift these keys.
+    let i = 0;
+    group.children.forEach(o => {
+      if (o.userData.noEditIndex) return;
       if (!o.userData.editKey && o.isGroup && !o.userData.actor) o.userData.editKey = 'obj:' + i;
+      i++;
     });
     const edits = (window.PDD_SCENE_EDITS || {})[id];
     if (!edits) return;
@@ -8938,18 +9152,8 @@
   function registerRoadSegment(seg) {
     // Paving joints, kerb sections and asphalt grain come from the shared road
     // textures (road-materials.js), continuous across segments.
-    seg.children.forEach(child => {
-      child.position.x *= -1;
-      child.rotation.y *= -1;
-    });
-    seg.traverse(child => {
-      if (child.isMesh && child.material && child.material.isMeshLambertMaterial) child.receiveShadow = true;
-      if (!child.userData.actor && child.material?.color?.getHex() === BRAND.sidewalk) child.userData.surface = 'sidewalk';
-      if (!child.userData.actor && child.material?.color?.getHex() === BRAND.asphalt && child.geometry?.type === 'PlaneGeometry') child.userData.surface = 'road';
-    });
-    seg.traverse(child => {
-      if (child.userData.surface === 'sidewalk') { child.material.color.setHex(season().sidewalk); child.material.userData.seasonal = 'sidewalk'; }
-    });
+    seg.children.forEach(registerRoadObject);
+    seg.userData.registered=true;
     // Its texture continues the road it was built from (a preview: the road
     // of its junction).
     window.PDD_ROADS.adopt(seg, state.exitRoad || currentCorridor);
@@ -8957,6 +9161,8 @@
   }
 
   function disposeSegment(seg) {
+    seg.traverse(o=>{o.userData.disposed=true;});
+    for(let i=sceneryJobs.length-1;i>=0;i--)if(sceneryJobs[i].owner.userData.disposed)sceneryJobs.splice(i,1);
     if (state.roadEvent?.group === seg) finishRoadEvent(state.roadEvent.phase === 'manual');
     const removed = new Set(); seg.traverse(o => removed.add(o));
     state.ambient = state.ambient.filter(a => !removed.has(a.mesh));
@@ -9108,7 +9314,10 @@
   function checkAndSpawnNext() {
     if (!state.isAtSituation && !state.resolution && maybeReverseWorld()) return;
     if (state.isResolvingSituation || state.intersections.length) return;
-    if (playerCarGroup.position.z + 110 > nextSegmentZ) {
+    // The next junction is built 150 m + 1.5 s of travel ahead: its scenery
+    // streams in before it comes into view, without keeping a whole extra
+    // junction (and its exits) alive on a weak phone.
+    if (playerCarGroup.position.z + 150 + Math.max(0,state.speed)*1.5 > nextSegmentZ) {
       situationIndex++;
       buildIntersectionSegment(nextSegmentZ, nextSituation(state.exitRoad?.userData.roadWidth || 8.4), state.exitRoad);
       state.exitRoad = null;
@@ -9160,6 +9369,7 @@
     cameraHeading += Math.PI;
 
     scene.updateMatrixWorld(true);
+    inheritSceneryClearances(currentCorridor);
     const corridorWorld = currentCorridor.matrixWorld.clone();
     if (currentCorridor.parent) currentCorridor.parent.remove(currentCorridor);
     scene.add(currentCorridor);
@@ -9196,6 +9406,158 @@
 
   function curve(points) {
     return new THREE.CatmullRomCurve3(points, false, 'centripetal');
+  }
+
+  function clearTramScenery(intersection) {
+    const seg=intersection.seg,zones=seg.userData.sceneryClearance;
+    if(!zones)return;
+    seg.updateWorldMatrix(true,true);const inverse=seg.matrixWorld.clone().invert();
+    seg.traverse(o=>{
+      if(!o.userData.sceneryObject || o.userData.tramDepot || o.userData.actor)return;
+      const box=new THREE.Box3().setFromObject(o).applyMatrix4(inverse);
+      if(zones.some(z=>box.intersectsBox(z)))o.visible=false;
+    });
+  }
+
+  function railCurvePath() {
+    const path=new THREE.CurvePath();
+    // CurvePath.getPoint already uses child arc lengths. Applying the base
+    // Curve's sampled remapping a second time shifts differently nested paths.
+    path.getPointAt=function(u){return this.getPoint(u);};
+    path.getTangentAt=function(u,target){return this.getTangent(u,target);};
+    return path;
+  }
+
+  function buildTramTrack(actor, intersection) {
+    const core = buildActorMotion(actor, intersection).path;
+    const start = actor.initialPos.clone(), end = core.getPointAt(1);
+    const incoming = new THREE.Vector3(Math.sin(actor.mesh.rotation.y),0,Math.cos(actor.mesh.rotation.y));
+    const outgoing = core.getTangentAt(1).normalize();
+    const lateral = dir => new THREE.Vector3(-dir.z,0,dir.x);
+    // Beyond the teaching scene, tracks branch to a reserved corridor and
+    // into a depot. Cars have no drivable surface on this service branch.
+    const side = dir => {
+      const left=lateral(dir), q=end.clone().sub(new THREE.Vector3(0,0,intersection.centerZ));
+      return q.dot(left)<0?-1:1;
+    };
+    const outSide=lateral(outgoing).multiplyScalar(side(outgoing));
+    const inSide=lateral(incoming).multiplyScalar(-side(incoming));
+    const depotIn=start.clone().addScaledVector(incoming,-100).addScaledVector(inSide,24);depotIn.y=.18;
+    const inMouth=start.clone().addScaledVector(incoming,-35);
+    const approach=railCurvePath();
+    approach.add(new THREE.CubicBezierCurve3(depotIn,depotIn.clone().addScaledVector(incoming,35),inMouth.clone().addScaledVector(incoming,-25),inMouth));
+    approach.add(new THREE.LineCurve3(inMouth,start));
+    const outMouth=end.clone().addScaledVector(outgoing,25);
+    const depotOut=end.clone().addScaledVector(outgoing,100).addScaledVector(outSide,24);depotOut.y=.18;
+    const departure=railCurvePath();
+    departure.add(new THREE.LineCurve3(end,outMouth));
+    const branchEnd=depotOut.clone().addScaledVector(outgoing,-20);
+    departure.add(new THREE.CubicBezierCurve3(outMouth,outMouth.clone().addScaledVector(outgoing,25),branchEnd.clone().addScaledVector(outgoing,-25),branchEnd));
+    departure.add(new THREE.LineCurve3(branchEnd,depotOut));
+    const route=railCurvePath();route.add(core);route.add(departure);
+    actor.railPath=route;actor.railTerminal=true;
+    const network=railCurvePath();network.add(approach);network.add(core);network.add(departure);
+    actor.trackPath=network;
+    const length=network.getLength(), samples=Math.ceil(length/.45);
+    const railMaterial=new THREE.MeshLambertMaterial({color:0x8E999C});
+    // A ribbon sampled directly from the very same centerline avoids a
+    // second Catmull-Rom fit cutting corners away from the tram's wheels.
+    for(const offset of [-.7,.7]) {
+      const pos=[],idx=[];
+      for(let i=0;i<=samples;i++) {
+        const u=i/samples,q=network.getPointAt(u),dir=network.getTangentAt(u),left=lateral(dir).normalize();
+        for(const edge of [-.035,.035]) { const v=q.clone().addScaledVector(left,offset+edge);pos.push(v.x,v.y+.055,v.z); }
+        if(i)idx.push(i*2-2,i*2-1,i*2,i*2-1,i*2+1,i*2);
+      }
+      const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geometry.setIndex(idx);geometry.computeVertexNormals();
+      const rail=new THREE.Mesh(geometry,railMaterial);rail.userData.tramRail=true;rail.userData.trackPath=network;intersection.seg.add(rail);
+    }
+    // Reserved service track has ballast and sleepers; the question's rails
+    // remain embedded in asphalt. Depots conceal the physical rail ends.
+    for(const branch of [approach,departure]) {
+      const count=Math.ceil(branch.getLength()/1.3),sleepers=[],bedPositions=[],bedIndices=[],fenceParts=[],lastPosts=[null,null];
+      for(let i=0;i<count;i++) {
+        const u=i/count,q=branch.getPointAt(u);
+        if(q.y<.055)continue;
+        const d=branch.getTangentAt(u),left=lateral(d).normalize();
+        const base=bedPositions.length/3;
+        for(const [edge,height] of [[-1.25,q.y-.025],[1.25,q.y-.025],[-1.7,.008],[1.7,.008]]){
+          const v=q.clone().addScaledVector(left,edge);bedPositions.push(v.x,height,v.z);
+        }
+        if(base)bedIndices.push(base-4,base-3,base,base-3,base+1,base,
+          base-4,base,base-2,base-2,base,base+2,
+          base-3,base-1,base+1,base-1,base+3,base+1);
+        if(i%4===0) {
+          if(q.y>.13) for(const [j,side] of [[0,-1],[1,1]]) {
+            const p=q.clone().addScaledVector(left,side*2);p.y=.4;
+            const post=new THREE.Mesh(new THREE.BoxGeometry(.08,.8,.08),null);post.position.copy(p);fenceParts.push(post);
+            const previous=lastPosts[j];
+            if(previous) {
+              const delta=p.clone().sub(previous),bar=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,delta.length()),null);
+              bar.position.copy(p).add(previous).multiplyScalar(.5);bar.position.y=.67;bar.rotation.y=Math.atan2(delta.x,delta.z);fenceParts.push(bar);
+            }
+            lastPosts[j]=p;
+          }
+          const clearance=new THREE.Box3(q.clone().add(new THREE.Vector3(-2.2,-1,-2.2)),q.clone().add(new THREE.Vector3(2.2,8,2.2)));
+          (intersection.seg.userData.sceneryClearance ||= []).push(clearance);
+        }
+        const sleeper=new THREE.Mesh(new THREE.BoxGeometry(2.05,.055,.22),null);
+        sleeper.position.copy(q);sleeper.position.y+=.012;sleeper.rotation.y=Math.atan2(d.x,d.z);sleepers.push(sleeper);
+      }
+      if(fenceParts.length) {intersection.seg.add(mergeStatic(fenceParts,sceneryMat(0x697477)));fenceParts.forEach(m=>m.geometry.dispose());}
+      if(bedPositions.length) {
+        const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(bedPositions,3));g.setIndex(bedIndices);g.computeVertexNormals();
+        const bed=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:0x8C867C}));bed.userData.ballast=true;intersection.seg.add(bed);
+      }
+      if(sleepers.length) {intersection.seg.add(mergeStatic(sleepers,new THREE.MeshLambertMaterial({color:0x5E4B3B})));sleepers.forEach(m=>m.geometry.dispose());}
+    }
+    for(const [position,dir] of [[depotIn,incoming],[depotOut,outgoing.clone().negate()]]) {
+      const depot=createTramDepot();depot.position.copy(position);depot.rotation.y=Math.atan2(dir.x,dir.z);
+      depot.userData.sceneryObject=true;depot.userData.tramDepot=true;intersection.seg.add(depot);
+      depot.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+      state.occluders.push(depot);
+      depot.updateWorldMatrix(true,true);
+      const clearance=new THREE.Box3().setFromObject(depot).applyMatrix4(intersection.seg.matrixWorld.clone().invert());
+      (intersection.seg.userData.sceneryClearance ||= []).push(clearance);
+    }
+  }
+
+  // Tram depot: a brick shed open at the front (+Z) for one track. The whole
+  // tram fits inside (5 m wide, 26 m deep, roof at 6 m) before it retires,
+  // even if a top-down camera still contains the depot.
+  function createTramDepot() {
+    const depot=new THREE.Group(),R=window.PDD_ROADS;
+    const brick=sceneryMat(0xA65A42),trim=sceneryMat(0xD9D2C3),roofMat=sceneryMat(0x5E6B6E),steel=sceneryMat(0x4F5A5E);
+    const box=(w,h,d,x,y,z,mat,skin)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);depot.add(m);if(skin)R.skinObject(m,skin);return m;};
+    // Walls, a light plinth and cornice.
+    for(const x of [-2.75,2.75]) {box(.3,6,26,x,3,0,brick,'brick');box(.36,.5,26.1,x,.25,0,trim,'plaster');box(.4,.3,26.2,x,5.85,0,trim,'plaster');}
+    box(5.8,6,.3,0,3,-13,brick,'brick');box(5.86,.5,.36,0,.25,-13,trim,'plaster');
+    // Front portal: pilasters and a lintel with the sign.
+    for(const x of [-2.75,2.75])box(.6,6.6,.6,x,3.3,13,trim,'plaster');
+    box(6.1,1.1,.6,0,6.05,13,trim,'plaster');
+    const c=document.createElement('canvas');c.width=256;c.height=64;const g=c.getContext('2d');
+    g.fillStyle='#2F5D8A';g.fillRect(0,0,256,64);g.fillStyle='#FFFFFF';g.font='bold 40px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('ДЕПО',128,34);
+    const sign=new THREE.Mesh(new THREE.PlaneGeometry(2.6,.65),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));sign.position.set(0,6.05,13.31);depot.add(sign);
+    // Open gate leaves folded back against the portal.
+    for(const x of [-1,1]){const leaf=box(.08,4.8,2.4,x*2.95,2.4,14.2,steel,'metal');leaf.rotation.y=x*.08;}
+    // Gable roof with a glazed ridge lantern.
+    for(const x of [-1,1]){const slope=box(3.25,.18,26.6,x*1.45,6.9,0,roofMat,'roofFlat');slope.rotation.z=-x*.36;}
+    box(1.2,.7,22,0,7.75,0,trim,'plaster');
+    const lanternGlass=sceneryMat(0x9FB8C4);for(const x of [-.61,.61])box(.04,.5,21.6,x,7.75,0,lanternGlass,'window');
+    box(1.4,.12,22.2,0,8.15,0,roofMat,'roofFlat');
+    // Tall windows along both sides.
+    const panes=[],glass=sceneryMat(0x86A3B1);
+    for(const x of [-2.92,2.92])for(let z=-10.5;z<=10.5;z+=3){const w=new THREE.Mesh(new THREE.BoxGeometry(.04,2.2,1.6));w.position.set(x,3.6,z);panes.push(w);}
+    const windows=mergeStatic(panes,glass);panes.forEach(m=>m.geometry.dispose());R.skinObject(windows,'window');depot.add(windows);
+    // Office annex with a door, and a concrete floor inside.
+    box(3.2,3.4,7,4.5,1.7,-7,sceneryMat(0xD8CDB8),'plaster');box(3.5,.2,7.3,4.5,3.5,-7,roofMat,'roofFlat');
+    const door=box(.06,2.1,1,6.13,1.05,-5,sceneryMat(0x5C4A3A),'door');door.rotation.y=0;
+    const annexPanes=[];for(const z of [-9,-7.4]){const w=new THREE.Mesh(new THREE.BoxGeometry(.04,1.1,1.1));w.position.set(6.12,2.1,z);annexPanes.push(w);}
+    const annexWindows=mergeStatic(annexPanes,glass.clone());annexPanes.forEach(m=>m.geometry.dispose());R.skinObject(annexWindows,'window');depot.add(annexWindows);
+    box(5.2,.06,26,0,.03,0,sceneryMat(0x9A9790),'plaster');
+    // A lamp over the gate.
+    box(.12,.12,.7,0,5.3,13.6,steel);const bulb=box(.4,.12,.3,0,5.22,13.95,new THREE.MeshBasicMaterial({color:0xFFF3C4}));bulb.userData.lampBulb=true;
+    return depot;
   }
 
   function buildActorMotion(actor, intersection) {
@@ -9318,12 +9680,13 @@
       const raw = curve(points), n = Math.ceil(raw.getLength() / 2);
       points = Array.from({ length: n + 1 }, (_, i) => {
         const q = raw.getPointAt(i / n);
+        if(i===0)return q; // keep the staged actor and track entry continuous
         if (hw && Math.abs(q.x) > 8) q.z = z + (q.z - z) * hw(q.x) / hw(0);
         if (hm && Math.abs(q.z - z) > 12 && Math.abs(q.x) < 8) q.x = q.x * hm(q.z) / hm(z);
         return q;
       });
     }
-    const path = curve(points);
+    const path = actor.railPath || curve(points);
     // Turning traffic signals its manoeuvre until the turn is complete.
     const signalPlan = cfg.targetAction === 'turn_right' ? [{ from: 0, to: clearDistance, side: 'right' }] :
       (cfg.targetAction === 'turn_left' || cfg.targetAction === 'uturn') ? [{ from: 0, to: clearDistance, side: 'left' }] : null;
@@ -9345,6 +9708,7 @@
     if (!intersection.motions) {
       intersection.motions = intersection.actors.map(a => buildActorMotion(a, intersection));
       state.actors.push(...intersection.motions);
+      addPathCorridors(intersection.motions);
     }
     return intersection.motions;
   }
@@ -9378,6 +9742,7 @@
     const intersection = state.activeIntersection;
     if (state.paused || state.isResolvingSituation || !state.isAtSituation || !intersection) return;
     if (situationId && situationId !== intersection.situation.id) return;
+    resetQuestionCamera();
     state.isResolvingSituation = true;
     state.isAccelerating = false;
     state.speed = 0;
@@ -9467,10 +9832,20 @@
       exitYaw = Math.PI / 2;
       const L = r.intersection.leftLane || 1.8;
       // From the lane the car is in (the left one on a wider road).
-      points = [start, new THREE.Vector3(THREE.MathUtils.clamp(start.x, -1.8, 1.8), 0, z - 1.5),
+      points = [start, new THREE.Vector3(r.intersection.situation.geometry === 'divided_main' ? start.x : THREE.MathUtils.clamp(start.x, -1.8, 1.8), 0, z - 1.5),
         new THREE.Vector3(1.5, 0, z + L), new THREE.Vector3(22, 0, z + L)];
       const hw = r.intersection.halfW;
       if (hw) points.splice(3, 1, new THREE.Vector3(14, 0, z + L), new THREE.Vector3(26, 0, z + L * hw(26) / hw(0)), new THREE.Vector3(36, 0, z + ((r.intersection.exitWidths?.left || 8.4) > 8.5 ? L : 1.8)));
+    } else if (action === 'uturn' && r.intersection.situation.geometry === 'divided_main') {
+      exitYaw = Math.PI;
+      const radius = Math.max(4.1, Math.abs(start.x)), arc = [];
+      // Stay beside the median until its end; make the loop entirely in
+      // the open crossing and return beside the opposite median.
+      for (let a = Math.PI; a >= 0; a -= Math.PI / 24)
+        arc.push(new THREE.Vector3(radius * Math.cos(a), 0, z - 2 + radius * Math.sin(a)));
+      points = [start, new THREE.Vector3(-radius, 0, z - 4), ...arc,
+        new THREE.Vector3(radius, 0, z - 13), new THREE.Vector3(radius, 0, z - 24),
+        new THREE.Vector3(1.8, 0, z - 32)];
     } else if (action === 'uturn') {
       exitYaw = Math.PI;
       // A round loop in the open middle of the junction (radius 2.6 m), no
@@ -9497,6 +9872,14 @@
     const forward = new THREE.Vector3(Math.sin(box.yaw), 0, Math.cos(box.yaw));
     const right = new THREE.Vector3(forward.z, 0, -forward.x);
     let limit = actor.maxSpeed;
+    if (['tram','train'].includes(actor.config.type)) {
+      for(let d=box.halfLength+1;d<box.halfLength+30;d+=1) {
+        if(pointBlocked(box.p.clone().addScaledVector(forward,d),actor)) {
+          const room=Math.max(0,d-box.halfLength-2);
+          limit=Math.min(limit,Math.sqrt(12*room),room/Math.max(dt,.001));break;
+        }
+      }
+    }
     for (const [other, entry] of traffic) {
       if (other === actor || other.config.type === 'pedestrian') continue;
       const leader = entry.box, alignment = Math.cos(leader.yaw - box.yaw);
@@ -9678,6 +10061,17 @@
         }
         if (playerContact || trafficContact) {
           a.mesh.position.copy(before); a.mesh.rotation.y = yaw; a.distance = distance; a.speed = 0;
+          // A jam: a vehicle stuck behind other traffic right in front of the
+          // player (who has to get past it to the question) does not stay a
+          // wall — after a short wait it leaves (fades out) like at a run-out.
+          if (trafficContact && !playerContact && !state.isAtSituation && a.fade == null && a.config.type !== 'pedestrian' && a.config.type !== 'tram' && !a.railTerminal) {
+            const ahead = box.p.clone().sub(playerCarGroup.position);
+            const fwd = new THREE.Vector3(Math.sin(playerCarGroup.rotation.y), 0, Math.cos(playerCarGroup.rotation.y));
+            const along = ahead.dot(fwd), side = Math.abs(ahead.x * fwd.z - ahead.z * fwd.x);
+            if (along > 0 && along < 22 && side < 3.2 && Math.abs(state.speed) < 1.5) a.jam = (a.jam || 0) + dt;
+            else a.jam = 0;
+            if (a.jam > 1.8) { a.cleared = true; startActorFade(a); }
+          }
           if (playerContact && !state.attract && (!state.isAtSituation || state.resolution?.phase === 'manual')) {
             handleCollision(a, 'collision:' + a.config.id);
           }
@@ -9697,7 +10091,7 @@
       a.cleared = a.crashed || !!a.fall || a.distance >= a.clearDistance;
       // Keep walking/riding beyond the planned path. Removal is permitted only
       // once the WHOLE actor is outside the camera, never at a fixed timer/distance.
-      if (t >= 1 && !actorInView(a.mesh)) { a.done = true; a.mesh.visible = false; }
+      if (t >= 1 && (a.railTerminal || !actorInView(a.mesh))) { a.done = true; a.mesh.visible = false; }
       // ...except where that straight run-out would leave the carriageway
       // (the lawn of a median, the island of the next junction): a vehicle
       // fades away there instead of driving across the grass.
@@ -10225,6 +10619,7 @@
     state.intersections = state.intersections.filter(i => i !== r.intersection);
     const outgoingPreview = r.intersection.previews[r.exitDirection || r.spec.maneuver];
     scene.updateMatrixWorld(true);
+    inheritSceneryClearances(outgoingPreview);
     const roadWorld = outgoingPreview.matrixWorld.clone();
     const ends = outgoingPreview.userData.roadEnds.map(p => p.clone().applyMatrix4(roadWorld));
     scene.add(outgoingPreview);
@@ -10741,6 +11136,7 @@
 
   function roadSurface(group, width, length, x, z, sidewalk = false) {
     const m = new THREE.MeshLambertMaterial({ color: sidewalk ? season().sidewalk : BRAND.asphalt });
+    if (sidewalk) m.userData.seasonal = 'sidewalk';
     // A pavement strip along the carriageway is exactly 4.2 ... 7.4 across, as
     // every other pavement piece, so its kerb never steps at a join.
     const kerbSide = sidewalk && Math.abs(Math.abs(x) - width / 2 - 4.2) < 0.1;
@@ -11396,7 +11792,6 @@
     const paint = roadMarkingMat();
     for (const side of [-1,1]) {
       if (sides.includes(side)) {
-        roadSurface(seg, 35, drivewayWidth, side * 17.5, z);
         for (const end of [-1,1]) {
           const from=drivewayWidth/2+3.2;
           const a=end<0?z-26:z+from,b=end<0?z-from:z+26,zs=[];for(let q=a;q<b;q+=.5)zs.push(q);zs.push(b);
@@ -11446,14 +11841,23 @@
     gateway.userData.openEntrance=openEntrance;
     seg.add(gateway);state.occluders.push(gateway);
     // Narrow paved entrance, lowered kerb, and a courtyard enclosed at the back.
-    roadSurface(seg,23,drivewayWidth,side*15.5,z);
+    roadSurface(seg,17,drivewayWidth,side*12.5,z);
     roadSurface(seg,12,16,side*27,z);
     for(const end of [-1,1]) {
       const fence=createFence(12);fence.rotation.y=Math.PI/2;
       fence.position.set(side*27,0,z+end*8);seg.add(fence);
-      if(!clearYard){const tree=createTree('round');tree.position.set(side*29,0,z+end*5.5);seg.add(tree);}
+      if(!clearYard){const tree=createTree('round');tree.position.set(side*29,0,z+end*10);seg.add(tree);}
     }
-    const back=createFence(16);back.position.set(side*33,0,z);seg.add(back);
+    // The continuation begins at the yard's back edge. Fence its sides,
+    // leaving a full-width gate instead of a fence across the driving lane.
+    for(const end of [-1,1]){
+      const back=createFence(3.5);back.position.set(side*33,0,z+end*6.25);
+      back.userData.courtyardBoundary=true;seg.add(back);
+    }
+    for(const end of [-1,1])for(let x=23;x<=30;x+=3.4){
+      const line=addFlatPlane(seg,.09,2.7,side*x,z+end*6.3,.028,roadMarkingMat());
+      line.userData.parkingMarking=true;
+    }
   }
 
   function pavementRect(seg,width,length,x,z) {
@@ -11463,7 +11867,7 @@
   }
   function buildYardAfterQuestionFabric(seg,start,z,situation) {
     clearJunctionFabric(seg);
-    const yardZ=z+situation.yardAfter,sides=situation.yardSides||[-1],w=5.2,r=1.5;
+    const yardZ=z+situation.yardAfter,sides=situation.yardSides||[routeSpec(situation).maneuver==='left'?-1:1],w=5.2,r=1.5;
     const ground=addFlatPlane(seg,70,52,0,z,-.02,new THREE.MeshLambertMaterial({color:season().ground}));ground.material.userData.seasonal='ground';
     roadSurface(seg,8.4,52,0,z);roadSurface(seg,70,8.4,0,z);
     const paint=roadMarkingMat();
@@ -11477,10 +11881,22 @@
       pavementRect(seg,3.2,to-from,side*5.8,(from+to)/2);
       const after=yardZ+w/2+r;
       pavementRect(seg,3.2,z+26-after,side*5.8,(after+z+26)/2);
-      roadSurface(seg,35,w,side*17.5,yardZ);
       for(const end of [-1,1])addCornerFillet(seg,-side,end,4.2,w/2,yardZ,paint,r);
       addCourtyardGateway(seg,side,yardZ,w,true);
     }
+    // Edge lines 1.2 up to every rounded corner (baked world X like the
+    // fillets; the yard of factory side s is at world X -s).
+    const quads=[],hw=.075,along=(x,a,b)=>{if(b-a>.3)quads.push([[x-hw,a],[x+hw,a],[x+hw,b],[x-hw,b]]);},
+      across=(q,a,b)=>{if(b-a>.3)quads.push([[a,q-hw],[b,q-hw],[b,q+hw],[a,q+hw]]);};
+    for(const sx of [-1,1]) {
+      const x=sx*3.95;
+      along(x,start-SEAM,z-7.6);
+      if(sides.includes(-sx)){along(x,z+7.6,yardZ-w/2-3.4);along(x,yardZ+w/2+3.4,z+26+SEAM);}
+      else along(x,z+7.6,z+26+SEAM);
+      const [a,b]=sx>0?[7.6,35+SEAM]:[-35-SEAM,-7.6];
+      for(const end of [-1,1])across(z+end*3.95,a,b);
+    }
+    const lines=addBakedQuads(seg,quads,.027,paint.clone());lines.userData.roadMarking=true;lines.userData.noEditIndex=true;
   }
 
   function addLaneQuestionEvidence(seg,z,situation) {
@@ -11522,12 +11938,18 @@
       const sign=new THREE.Group(),overhead=situation.laneSignOverhead===true;
       if(overhead) {
         const half=(situation.mainWidth||8.4)/2;
-        for(const x of [-half-1,half+1])modelBox(sign,[.10,5.6,.10],0x697477,x,2.8,0);
-        modelBox(sign,[2*half+2,.10,.10],0x697477,0,5.5,0);
+        for(const x of [-half-1,half+1])modelBox(sign,[.10,6.1,.10],0x697477,x,3.05,.16);
+        modelBox(sign,[2*half+2,.10,.10],0x697477,0,6.05,.16);
       } else {
         const post=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,4.8,8),new THREE.MeshLambertMaterial({color:0x697477}));post.position.y=2.4;sign.add(post);
       }
-      const face=new THREE.Mesh(new THREE.PlaneGeometry(3,1.5),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));face.position.set(overhead?(situation.mainWidth||8.4)/4:0,overhead?5.0:4.4,-.04);face.rotation.y=Math.PI;sign.add(face);addSignBack(face);
+      const face=new THREE.Mesh(new THREE.PlaneGeometry(3,1.5),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));face.position.set(overhead?(situation.mainWidth||8.4)/4:0,overhead?5.0:4.4,-.04);face.rotation.y=Math.PI;sign.add(face);const back=addSignBack(face);
+      if(overhead) {
+        // Badges do not write depth. Draw the readable plates after badges,
+        // retaining depth tests against real vehicles and buildings.
+        for(const plate of [face,back]) { plate.material.transparent=true;plate.renderOrder=200;plate.material.depthWrite=false; }
+        face.userData.overheadSignFace=true;
+      }
       sign.position.set(overhead?0:(situation.mainWidth||8.4)/2+1.2,0,z-12);sign.userData.questionEvidence=true;sign.userData.overheadLaneSign=overhead;sign.userData.laneDirections=dirs;seg.add(sign);
     }
   }
@@ -11757,7 +12179,7 @@
   }
   function updateQuestionPolice(ev,dt) {
     const car=ev.police;
-    if(playerCarGroup.position.x<-4.5){ev.policeYielded=true;car.stopFor=0;}
+    if(playerCarGroup.position.x<-4.5 || car.fade!=null || car.done){ev.policeYielded=true;car.stopFor=0;}
     if(!ev.policeYielded){
       ev.policeWait=(ev.policeWait||0)+dt;
       if(ev.policeWait>5 && !ev.priorityPenalized){ev.priorityPenalized=true;roadViolation('priority');}
@@ -12055,6 +12477,9 @@
     const seg = state.exitRoad;
     if (!seg) return;
     seg.updateMatrixWorld(true);
+    const clearBox=new THREE.Box3(new THREE.Vector3(xMin,-1,bayZ-half),new THREE.Vector3(xMax,100,bayZ+half));
+    clearBox.applyMatrix4(seg.matrixWorld.clone().invert());
+    (seg.userData.sceneryClearance ||= []).push(clearBox);
     const doomed = [];
     // A stretch added to this road for a long question and a question's own
     // crossing are pieces of the road itself, not roadside objects: clear
@@ -12360,7 +12785,7 @@
   // Every moving vehicle keeps its route but steps out into the next lane
   // round anything standing in its own one, and back in once past.
   function applyDetour(a, travelled) {
-    if (['pedestrian'].includes(a.config.type) || a.crashed || a.config.id === 'road_obstacle_car') return;
+    if (['pedestrian', 'tram', 'train'].includes(a.config.type) || a.crashed || a.config.id === 'road_obstacle_car') return;
     if (!state.blockers?.length && !state.actors.some(o => o.crashed || o.config.id === 'road_obstacle_car')) {
       if (!a.detour) return;
     }
@@ -12440,7 +12865,7 @@
       for(const q of zs){const height=.02+.16*THREE.MathUtils.smoothstep(Math.abs(q-yardZ),1.8,4.8);positions.push(-7.4,height,q,-4.2,height,q);}
       for(let i=0;i<zs.length-1;i++){const a=2*i;indices.push(a,a+2,a+1,a+1,a+2,a+3);}
       ramp.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));ramp.setIndex(indices);ramp.computeVertexNormals();
-      const mesh=new THREE.Mesh(ramp,concrete.clone());mesh.userData.loweredDriveway=true;g.add(mesh);
+      const mesh=new THREE.Mesh(ramp,new THREE.MeshLambertMaterial({color:season().sidewalk}));mesh.userData.loweredDriveway=true;mesh.material.userData.seasonal='sidewalk';mesh.userData.surface='sidewalk';g.add(mesh);
       roadSurface(g,3.2,10,5.8,yardZ,true);
       const paint=roadMarkingMat();corridorDashes(g,yardZ-5,yardZ+5,.028,paint);
       // The edge line (1.2) goes on along the far side: only the driveway's
@@ -12538,6 +12963,7 @@
   function hideBadges(actors) { actors.forEach(a => { if (a.mesh.userData.badge) a.mesh.userData.badge.visible = false; }); }
   function startRoadManual() {
     const ev = state.roadEvent;
+    resetQuestionCamera();
     ev.phase = 'manual';
     ev.lanePrevious = playerCarGroup.position.clone();
     if (ev.scene.playerLane === 'left') playerCarGroup.position.x = -1.8;
@@ -12838,6 +13264,12 @@
     const sn = season();
     const clearSky = new THREE.Color(sn.sky), greySky = new THREE.Color(0xC3CACF), rainSky = new THREE.Color(0xAEB6BD);
     scene.background.copy(clearSky).lerp(greySky, overcast).lerp(rainSky, rain);
+    if (skyDome) {
+      // Horizon in the scene's sky colour, a bluer zenith on clear days.
+      skyDome.material.uniforms.horizon.value.copy(scene.background).lerp(new THREE.Color(0xB9D6EE), 0.35 * (1 - overcast));
+      skyDome.material.uniforms.zenith.value.copy(scene.background).lerp(new THREE.Color(0x6FA8DC), 0.55 * (1 - overcast));
+      skyDome.material.uniforms.cloud.value = 0.55 + 0.45 * overcast;
+    }
     state.fogDensity = 0;
     ambientLight.intensity = THREE.MathUtils.lerp(sn.ambient, sn.ambient - 0.06, overcast);
     dirLight.intensity = THREE.MathUtils.lerp(sn.sunIntensity, 0.18, overcast);
@@ -13030,6 +13462,7 @@
   // --- Garage reveal: a new car rolls out of a closed garage ---
   // Rendered in its own scene while active; the main scene is paused.
   let reveal = null;
+  const REVEAL_TIMING = { door: 0.3, launch: 0.4, drift: 0.46, settle: 0.14 };
   function buildRevealScene(id, paint) {
     const sn = season();
     const rs = new THREE.Scene();
@@ -13216,10 +13649,10 @@
     }
     door.position.set(0, 0, -0.7); rs.add(door);
     const car = window.PDD_VEHICLES.create(id, paint);
-    car.position.set(0, 0, 2.6); car.rotation.y = Math.PI; // nose towards the door
+    car.position.set(1.1, 0, 2.6); car.rotation.y = Math.PI; // room for the final parking arc
     rs.add(car);
     // Celebration: headlights, light pouring out of the opening door, a
-    // glowing pad where the car stops, sparkles round it and confetti.
+    // glowing pad where the car stops and confetti.
     const additive = (color, opacity) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
     const rays = new THREE.Group();
     for (let i = 0; i < 5; i++) {
@@ -13235,21 +13668,40 @@
     pad.rotation.x = -Math.PI / 2; pad.position.set(0, 0.045, -6.6); rs.add(pad);
     const padFill = new THREE.Mesh(new THREE.CircleGeometry(2.4, 48), additive(0x2F7BF0, 0));
     padFill.rotation.x = -Math.PI / 2; padFill.position.set(0, 0.035, -6.6); rs.add(padFill);
-    const sparkles = [];
-    for (let i = 0; i < 18; i++) {
-      const holder = new THREE.Object3D();
-      window.PDD_VEHICLES.addGlow(holder, [0xFFE27A, 0xFFFFFF, 0x9FD0FF][i % 3], 0.55 + Math.random() * 0.5);
-      holder.visible = false; rs.add(holder);
-      sparkles.push({ holder, angle: i / 18 * Math.PI * 2, radius: 2.6 + Math.random() * 1.4, height: 0.4 + Math.random() * 2.2, speed: 0.4 + Math.random() * 0.6, phase: Math.random() * 6 });
-    }
-    const confettiCount = 220, cPos = new Float32Array(confettiCount * 3), cCol = new Float32Array(confettiCount * 3);
-    const palette = [0xED4621, 0x0574F8, 0xFFA53C, 0x2BC280, 0xE8C547, 0x7A5BC6].map(c => new THREE.Color(c));
-    const cVel = [];
-    for (let i = 0; i < confettiCount; i++) { const c = palette[i % palette.length]; cCol.set([c.r, c.g, c.b], i * 3); cVel.push(new THREE.Vector3()); }
-    const cGeo = new THREE.BufferGeometry();
-    cGeo.setAttribute('position', new THREE.BufferAttribute(cPos, 3)); cGeo.setAttribute('color', new THREE.BufferAttribute(cCol, 3));
-    const confetti = new THREE.Points(cGeo, new THREE.PointsMaterial({ size: 0.22, vertexColors: true, transparent: true, opacity: 0 }));
-    confetti.frustumCulled = false; rs.add(confetti);
+    // Two small launchers at the threshold: flat paper and long ribbons,
+    // rendered in one draw call instead of round points.
+    const confetti = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, transparent: true, depthWrite: false, fog: false }), 200);
+    confetti.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    const palette = [0xFF366F, 0xFFD629, 0x18DFFF, 0xA35BFF, 0xFF8329, 0x46ED97, 0xFFFFFF];
+    const cPieces = Array.from({ length: confetti.count }, (_, i) => {
+      confetti.setColorAt(i, new THREE.Color(palette[i % palette.length]));
+      return { position: new THREE.Vector3(), velocity: new THREE.Vector3(),
+        rotation: new THREE.Vector3(), tumble: new THREE.Vector3(),
+        width: 0.09 + Math.random() * 0.07, height: i % 7 === 0 ? 0.65 : 0.17 + Math.random() * 0.12 };
+    });
+    confetti.visible = false; confetti.frustumCulled = false; rs.add(confetti);
+    // A bounded pool of soft, translucent tyre puffs; no lights or new
+    // geometry are allocated while animating.
+    const smokeMap = tex(64, 64, g => {
+      g.clearRect(0, 0, 64, 64);
+      const gradient = g.createRadialGradient(32, 32, 3, 32, 32, 30);
+      gradient.addColorStop(0, 'rgba(255,255,255,0.8)');
+      gradient.addColorStop(0.45, 'rgba(255,255,255,0.45)');
+      gradient.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gradient; g.fillRect(0, 0, 64, 64);
+    });
+    smokeMap.wrapS = smokeMap.wrapT = THREE.ClampToEdgeWrapping;
+    const smoke = Array.from({ length: 48 }, () => {
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeMap, color: 0xE6E4DF,
+        transparent: true, opacity: 0, depthWrite: false }));
+      sprite.visible = false; rs.add(sprite);
+      return { sprite, age: 1, life: 0.7, velocity: new THREE.Vector3() };
+    });
+    const skidGeometry = new THREE.PlaneGeometry(1, 1); skidGeometry.rotateX(-Math.PI / 2);
+    const skids = new THREE.InstancedMesh(skidGeometry,
+      new THREE.MeshBasicMaterial({ color: 0x282629, transparent: true, opacity: 0.2, depthWrite: false }), 128);
+    skids.instanceMatrix.setUsage(THREE.DynamicDrawUsage); skids.count = 0; skids.frustumCulled = false; rs.add(skids);
     // Three-quarter view from the driveway: the whole garage front and the
     // spot where the car stops are in frame on a portrait screen.
     // Aimed at the spot where the car stops (x 0, z -6.6): the car sits in
@@ -13257,7 +13709,49 @@
     const cam = new THREE.PerspectiveCamera(46, 1, 0.1, 160);
     cam.position.set(-4.2, 5.2, -20.5); cam.lookAt(0, 0.1, -6.6);
     return { scene: rs, camera: cam, door, car, phase: 'closed', t: 0, yaw: 0, spin: 0,
-      fx: { rays, pad, padFill, sparkles, confetti, cVel, time: 0, burst: false } };
+      noseLength: (new THREE.Box3().setFromObject(car)).getSize(new THREE.Vector3()).z / 2,
+      fx: { rays, pad, padFill, confetti, cPieces, skids, skidPrev: [], skidAge: 0, dummy: new THREE.Object3D(), smoke, smokeClock: 0, smokeIndex: 0, time: 0, burst: false, burstAge: 0 } };
+  }
+  function burstRevealConfetti(r) {
+    const fx = r.fx; fx.burst = true; fx.burstAge = 0; fx.confetti.visible = true;
+    gameAudio?.celebrate('fanfare');
+    fx.cPieces.forEach((p, i) => {
+      const side = i % 2 ? 1 : -1;
+      p.position.set(side * 3.3, 0.8, -1.5);
+      p.velocity.set(-side * (1 + Math.random() * 4), 5 + Math.random() * 4, -1 - Math.random() * 5);
+      p.rotation.set(Math.random() * 6, Math.random() * 6, Math.random() * 6);
+      p.tumble.set(4 + Math.random() * 8, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 12);
+    });
+  }
+  function emitRevealSmoke(r, dt, drifting) {
+    const fx = r.fx; fx.smokeClock += dt; r.car.updateMatrixWorld(true);
+    while (fx.smokeClock >= 0.03) {
+      fx.smokeClock -= 0.03;
+      r.car.userData.wheels.filter(wh => wh.parent.position.z < 0).forEach(wh => {
+        const puff = fx.smoke[fx.smokeIndex++ % fx.smoke.length];
+        wh.getWorldPosition(puff.sprite.position); puff.sprite.position.y = 0.14;
+        puff.age = 0; puff.life = drifting ? 0.7 : 0.4; puff.strength = drifting ? 1 : 0.65;
+        const outward = Math.sign(wh.parent.position.x) * (drifting ? 1.8 : 0.6);
+        puff.velocity.set(Math.cos(r.car.rotation.y) * outward + (Math.random() - 0.5) * 0.6,
+          1 + Math.random() * 0.5, -Math.sin(r.car.rotation.y) * outward + 0.4);
+        puff.sprite.material.rotation = Math.random() * Math.PI; puff.sprite.visible = true;
+      });
+    }
+  }
+  function updateRevealSkids(r) {
+    const fx = r.fx; r.car.updateMatrixWorld(true);
+    r.car.userData.wheels.filter(wh => wh.parent.position.z < 0).forEach((wh, i) => {
+      const point = wh.getWorldPosition(new THREE.Vector3()); point.y = 0.028;
+      const previous = fx.skidPrev[i], length = previous ? previous.distanceTo(point) : 0;
+      if (length > 0.005 && fx.skids.count < 128) {
+        fx.dummy.position.copy(previous).add(point).multiplyScalar(0.5);
+        fx.dummy.rotation.set(0, Math.atan2(previous.x - point.x, previous.z - point.z), 0);
+        fx.dummy.scale.set(0.13, 1, length + 0.015); fx.dummy.updateMatrix();
+        fx.skids.setMatrixAt(fx.skids.count++, fx.dummy.matrix);
+        fx.skids.instanceMatrix.needsUpdate = true;
+      }
+      fx.skidPrev[i] = point;
+    });
   }
   function updateReveal(dt) {
     const r = reveal; if (!r) return;
@@ -13266,37 +13760,57 @@
     const fx = r.fx; fx.time += dt;
     if (r.phase === 'opening' && r.t === 0) gameAudio?.celebrate('door');
     if (r.phase === 'opening') {
-      r.t += dt; const u = Math.min(1, r.t / 1.3);
+      r.t += dt; const u = Math.min(1, r.t / REVEAL_TIMING.door);
       fx.rays.children.forEach((ray, i) => { ray.material.opacity = 0.16 * u * (0.8 + 0.2 * Math.sin(fx.time * 3 + i)); });
       r.door.position.y = 4.3 * (1 - Math.pow(1 - u, 3));
       r.door.children.forEach(slat => { slat.visible = slat.position.y + r.door.position.y < 3.75; });
       if (u >= 1) { r.phase = 'driving'; r.t = 0; }
     } else if (r.phase === 'driving') {
-      r.t += dt; const u = Math.min(1, r.t / 2.2), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
-      r.car.position.z = 2.6 - 9.2 * e;
-      r.car.userData.wheels.forEach(wh => wh.rotateX(-dt * 6 * (1 - Math.abs(u - 0.5) * 2 + 0.2)));
-      if (u >= 1) { r.phase = 'turning'; r.t = 0; }
-    } else if (r.phase === 'turning') {
-      r.t += dt; const u = Math.min(1, r.t / 1.1), e = 1 - Math.pow(1 - u, 3);
-      r.car.rotation.y = Math.PI + (Math.PI / 2) * e; // nose towards the viewer
+      const before = r.car.position.z;
+      r.t += dt; const u = Math.min(1, r.t / REVEAL_TIMING.launch);
+      // Strong launch; exit speed matches the beginning of the slide (~11 m/s).
+      const e = u * u * (2.375 - 1.375 * u);
+      r.car.position.z = 2.6 - 7.1 * e;
+      r.car.userData.frontAxles?.forEach(axle => { axle.rotation.y = 0.32 * Math.max(0, (u - 0.8) / 0.2); });
+      r.car.rotation.x = -0.025 * Math.sin(u * Math.PI);
+      const distance = before - r.car.position.z;
+      r.car.userData.wheels.forEach(wh => wh.rotateX(-distance / Math.max(0.2, wh.parent.position.y)));
+      if (!fx.burst && r.car.position.z - r.noseLength <= -0.9) burstRevealConfetti(r);
+      if (distance > 0) emitRevealSmoke(r, dt, false);
       if (u >= 1) {
-        r.phase = 'shown'; r.yaw = r.car.rotation.y; sendToFlutter({ event: 'reveal_shown' });
-        // Ta-da: confetti bursts up round the car, sparkles appear.
-        gameAudio?.celebrate('fanfare');
-        const pos = fx.confetti.geometry.attributes.position;
-        fx.cVel.forEach((v, i) => {
-          const a = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 4;
-          v.set(Math.cos(a) * sp, 6 + Math.random() * 6, Math.sin(a) * sp);
-          pos.setXYZ(i, r.car.position.x, 1.2, r.car.position.z);
-        });
-        pos.needsUpdate = true; fx.burst = true; fx.confetti.material.opacity = 1;
-        fx.sparkles.forEach(sp => { sp.holder.visible = true; });
+        r.phase = 'drifting'; r.t = 0; r.car.rotation.x = 0;
+        updateRevealSkids(r); // capture rear tyre contacts before the slide
+      }
+    } else if (r.phase === 'drifting') {
+      const before = r.car.position.clone();
+      r.t += dt; const u = Math.min(1, r.t / REVEAL_TIMING.drift), v = 1 - u;
+      // Forward momentum continues while the rear swings out. Translation
+      // and heading are deliberately separate: a slide, not a parking arc.
+      r.car.position.set(1.1 * (1 - u * u * (3 - 2 * u)), 0,
+        -4.5 * v * v * v - 3 * 6.2 * v * v * u - 3 * 6.6 * v * u * u - 6.6 * u * u * u);
+      const turn = Math.min(1, u / 0.78);
+      r.car.rotation.y = Math.PI + (Math.PI / 2 + 0.08) * turn * turn * (3 - 2 * turn);
+      r.car.rotation.z = -0.015 * Math.sin(Math.PI * u);
+      // Countersteer into the skid, then straighten as grip returns.
+      r.car.userData.frontAxles?.forEach(axle => { axle.rotation.y = 0.32 * Math.exp(-18 * u) - 0.52 * Math.sin(Math.PI * u); });
+      const distance = before.distanceTo(r.car.position);
+      r.car.userData.wheels.forEach(wh => wh.rotateX(-distance / Math.max(0.2, wh.parent.position.y)));
+      if (u < 0.92) emitRevealSmoke(r, dt, true);
+      updateRevealSkids(r);
+      if (u >= 1) { r.phase = 'settling'; r.t = 0; }
+    } else if (r.phase === 'settling') {
+      r.t += dt; const u = Math.min(1, r.t / REVEAL_TIMING.settle);
+      r.car.rotation.y = Math.PI * 1.5 + 0.08 * (1 - u) * (1 - u);
+      r.car.rotation.z = 0.012 * Math.sin(u * Math.PI * 2) * (1 - u);
+      r.car.userData.frontAxles?.forEach(axle => { axle.rotation.y = 0; });
+      if (u >= 1) {
+        r.car.position.set(0, 0, -6.6); r.car.rotation.set(0, Math.PI * 1.5, 0);
+        r.phase = 'shown'; r.t = 0; r.yaw = r.car.rotation.y; sendToFlutter({ event: 'reveal_shown' });
       }
     } else if (r.phase === 'shown') {
       // Free spin by finger; drifts slowly when idle.
-      r.yaw += (r.spin + 0.15) * dt; r.spin *= Math.pow(0.05, dt);
+      r.t += dt; r.yaw += (r.spin + (r.t > 1 ? 0.1 : 0)) * dt; r.spin *= Math.pow(0.05, dt);
       r.car.rotation.y = r.yaw;
-      if (Math.floor(fx.time * 1.4) !== Math.floor((fx.time - dt) * 1.4) && Math.random() < 0.5) gameAudio?.celebrate('sparkle');
     }
     if (r.phase === 'lobby') {
       // The garage start screen: the car waits outside, turning slowly.
@@ -13316,31 +13830,41 @@
         }
       }
     }
-    if (r.phase === 'driving' || r.phase === 'turning' || r.phase === 'shown' || r.phase === 'lobby') {
+    if (['driving', 'drifting', 'settling', 'shown', 'lobby'].includes(r.phase)) {
       // Light keeps pouring out; the pad under the car pulses.
       fx.rays.children.forEach((ray, i) => { ray.material.opacity = 0.14 + 0.04 * Math.sin(fx.time * 2.5 + i); });
       const pulse = 0.5 + 0.5 * Math.sin(fx.time * 3);
-      const k = r.phase === 'shown' || r.phase === 'lobby' ? 1 : r.phase === 'turning' ? Math.min(1, r.t / 1.1) : 0;
+      const k = r.phase === 'shown' || r.phase === 'lobby' ? 1 : r.phase === 'settling' ? 1 : r.phase === 'drifting' ? Math.min(1, r.t / REVEAL_TIMING.drift) : 0;
       fx.pad.material.opacity = k * (0.16 + 0.12 * pulse); fx.padFill.material.opacity = k * (0.05 + 0.04 * pulse);
       fx.pad.scale.setScalar(1 + 0.05 * pulse);
     }
-    fx.sparkles.forEach(sp => {
-      if (!sp.holder.visible) return;
-      const a = sp.angle + fx.time * sp.speed;
-      sp.holder.position.set(r.car.position.x + Math.cos(a) * sp.radius, sp.height + 0.3 * Math.sin(fx.time * 2 + sp.phase), r.car.position.z + Math.sin(a) * sp.radius);
-      sp.holder.scale.setScalar(0.4 + 0.6 * Math.abs(Math.sin(fx.time * 4 + sp.phase)));
+    fx.smoke.forEach(puff => {
+      if (!puff.sprite.visible) return;
+      puff.age += dt; const u = Math.min(1, puff.age / puff.life);
+      puff.sprite.position.addScaledVector(puff.velocity, dt);
+      puff.sprite.scale.setScalar(0.45 + Math.sqrt(u) * 2.3);
+      puff.sprite.material.opacity = puff.strength * 0.8 * Math.min(1, u / 0.12) * Math.pow(1 - u, 1.5);
+      if (u >= 1) puff.sprite.visible = false;
     });
-    if (fx.burst) {
-      const pos = fx.confetti.geometry.attributes.position;
-      let alive = 0;
-      fx.cVel.forEach((v, i) => {
-        v.y -= 9 * dt; v.multiplyScalar(Math.pow(0.35, dt)); // air drag: confetti flutters down
-        const y = Math.max(0.05, pos.getY(i) + v.y * dt);
-        pos.setXYZ(i, pos.getX(i) + v.x * dt + Math.sin(fx.time * 6 + i) * 0.01, y, pos.getZ(i) + v.z * dt);
-        if (y > 0.06) alive++;
+    if (r.phase === 'shown' && fx.skids.count) {
+      fx.skidAge += dt; fx.skids.material.opacity = 0.2 * Math.max(0, 1 - fx.skidAge / 2.5);
+    }
+    if (fx.burst && fx.confetti.visible) {
+      fx.burstAge += dt;
+      const fade = Math.max(0, 1 - Math.max(0, fx.burstAge - 2) / 1.1);
+      fx.cPieces.forEach((p, i) => {
+        p.velocity.y -= 5.5 * dt;
+        p.velocity.multiplyScalar(Math.pow(0.7, dt));
+        p.position.addScaledVector(p.velocity, dt);
+        p.position.x += Math.sin(fx.burstAge * 9 + i) * dt * 0.35;
+        p.rotation.addScaledVector(p.tumble, dt);
+        if (p.position.y < 0.06) { p.position.y = 0.06; p.velocity.set(0, 0, 0); p.rotation.x = -Math.PI / 2; }
+        fx.dummy.position.copy(p.position); fx.dummy.rotation.set(p.rotation.x, p.rotation.y, p.rotation.z);
+        fx.dummy.scale.set(p.width * fade, p.height * fade, 1); fx.dummy.updateMatrix();
+        fx.confetti.setMatrixAt(i, fx.dummy.matrix);
       });
-      pos.needsUpdate = true;
-      if (!alive) fx.confetti.material.opacity = Math.max(0, fx.confetti.material.opacity - dt * 0.5);
+      fx.confetti.instanceMatrix.needsUpdate = true;
+      if (fade === 0) fx.confetti.visible = false;
     }
     renderer.render(r.scene, r.camera);
   }
@@ -13420,10 +13944,14 @@
   let lastTime = null, telemetryElapsed = 0;
   function animate(time) {
     requestAnimationFrame(animate);
-    const dt = lastTime === null ? 0 : Math.min((time - lastTime) / 1000, 0.05);
+    const elapsed = lastTime === null ? 0 : Math.max(0, (time - lastTime) / 1000);
+    const dt = Math.min(elapsed, 0.05);
     lastTime = time;
-    if (reveal) { updateReveal(dt); return; }
+    // The ceremony follows wall time even below 20 FPS; road physics retains
+    // its smaller integration step. A background/resume gap stays bounded.
+    if (reveal) { updateReveal(Math.min(elapsed, 0.1)); return; }
     if (state.paused) return;
+    processSceneryJobs(elapsed>.035?1:3);
     if (!state.paused) {
       updateAttract(dt);
       updateActors(dt);
@@ -13440,8 +13968,16 @@
           lamp.visible = Math.floor(time / 180 + i) % 2 === 0;
         });
       }));
-      terrainMesh.position.z = playerCarGroup.position.z + 500;
-      terrainMesh.material.map.offset.y = (terrainMesh.position.z / window.PDD_ROADS.kinds.grass.period) % 1;
+      // Move only near the edge, baking world coordinates into both detail
+      // and macro UVs. Texture offsets wrap at a different macro phase.
+      const groundZ = Math.round((playerCarGroup.position.z + 500) / 100) * 100;
+      if (groundZ !== terrainMesh.position.z) {
+        const delta = (groundZ - terrainMesh.position.z) / window.PDD_ROADS.kinds.grass.period;
+        const uv = terrainMesh.geometry.attributes.uv;
+        for (let i = 0; i < uv.count; i++) uv.setY(i, uv.getY(i) + delta);
+        uv.needsUpdate = true;
+        terrainMesh.position.z = groundZ;
+      }
       updateCamera(dt);
       checkAndSpawnNext();
       telemetryElapsed += dt;
@@ -13451,7 +13987,27 @@
           distanceM: Math.round(state.distanceTraveled), limitKmH: effectiveLimitKmH() });
       }
     }
+    adaptQuality(elapsed);
     renderer.render(scene, camera);
+  }
+  // Adaptive resolution: the pixel ratio drops in small steps only while the
+  // frames are actually slow (a weak phone, a heavy scene) and climbs back
+  // when there is headroom. A fast phone never leaves its full quality. At
+  // the lowest step the shadow map is refreshed every other frame.
+  var quality = { sum: 0, frames: 0, max: 1, ratio: 1, min: 0.8, frame: 0 };
+  function adaptQuality(elapsed) {
+    if (!quality.frames && !quality.sum) { quality.max = quality.ratio = renderer.getPixelRatio(); quality.min = Math.min(quality.max, state.lowEnd ? 0.75 : 0.9); }
+    quality.frame++;
+    renderer.shadowMap.autoUpdate = quality.ratio > quality.min + 0.01 || quality.frame % 2 === 0;
+    if (elapsed <= 0 || elapsed > 0.25) return; // pauses and resumes are not load
+    quality.sum += elapsed; quality.frames++;
+    if (quality.sum < 1.5) return;
+    const avg = quality.sum / quality.frames; quality.sum = quality.frames = 0;
+    let next = quality.ratio;
+    if (avg > 1 / 45) next = Math.max(quality.min, quality.ratio - 0.15);
+    else if (avg < 1 / 57) next = Math.min(quality.max, quality.ratio + 0.1);
+    if (Math.abs(next - quality.ratio) > 0.01) { quality.ratio = next; renderer.setPixelRatio(next); }
+    window.__pddQuality = quality.ratio;
   }
 
   function updateBlinkers(dt) {
@@ -13675,10 +14231,30 @@
     if (choice === 'left' || choice === 'right' || choice === 'uturn') triggerBlinker(choice === 'right' ? 'right' : 'left');
   }
 
+  let heldExit = null, heldExitDone = false, tryingHeldExit = false;
+  function updateHeldExit() {
+    if (!heldExit || heldExitDone || state.paused || state.isAtSituation && !state.resolution) return;
+    const r = state.resolution;
+    if (r && (r.phase !== 'manual' || r.recovery)) return;
+    if (heldExit === 'uturn' && !r) return;
+    const beforePath = state.autoPath, beforeLane = state.laneChangeX;
+    tryingHeldExit = true;
+    try {
+      if (r) {
+        if (r.simpleChoice === heldExit) { heldExitDone = true; return; }
+        chooseJunctionExit(heldExit);
+        heldExitDone = r.simpleChoice === heldExit;
+      } else {
+        changeLane(heldExit);
+        heldExitDone = state.autoPath !== beforePath || state.laneChangeX !== beforeLane;
+      }
+    } finally { tryingHeldExit = false; }
+  }
+
   // An arrow press that can change nothing any more (the exit is committed,
   // no lane to move to): Flutter answers with a short vibration.
   function refuseInput() {
-    sendToFlutter({ event: 'input_refused' });
+    if (!tryingHeldExit) sendToFlutter({ event: 'input_refused' });
   }
 
   // Simple mode at a task junction: the exit chosen so far and, until the
@@ -13855,6 +14431,7 @@
   }
 
   function integrateDriving(dt, limit = state.maxSpeed) {
+    updateHeldExit();
     applySteeringAssist(dt);
     if (state.autoPath && state.resolution) limit = Math.min(limit, curveSpeedLimit(state.autoPath));
     // Brake: firm deceleration while moving; from a standstill it becomes
@@ -14016,6 +14593,7 @@
   }
 
   function refreshRoadBounds() {
+    sceneryBoundsVersion++;
     window.PDD_ROADS.invalidate();
     scene.updateMatrixWorld(true);
     state.roadBounds = [];
@@ -14029,7 +14607,7 @@
       if (obj.userData.noRoad && obj.visible) state.noRoad.push({ test: obj.userData.noRoad, inverse: obj.matrixWorld.clone().invert(), mesh: obj });
     }));
     state.roadSegments.forEach(seg => seg.traverse(obj => {
-      if (obj.userData.surface === 'road') state.roadBounds.push({
+      if (obj.userData.surface === 'road' && !obj.userData.visualOnly) state.roadBounds.push({
         box: new THREE.Box3().setFromObject(obj), material: obj.material,
         // A rounded corner is road only outside its kerb curve.
         fillet: obj.userData.fillet && { center: obj.userData.fillet.center.clone().applyMatrix4(obj.matrixWorld), r: obj.userData.fillet.r },
@@ -14037,6 +14615,48 @@
         inverse: obj.userData.containsRoad && obj.matrixWorld.clone().invert(),
       });
     }));
+    // Another road laid later (a bend, the next junction) may run over
+    // scenery placed for its neighbour: nothing decorative stands on it.
+    state.roadSegments.forEach(seg => clearSceneryOffRoad(seg.children));
+  }
+  // Decorative objects (houses, fences, lamps, trees, benches) whose base
+  // stands on a drivable carriageway are removed. Signs and ticket content
+  // are never touched; only the footprint is tested, not overhangs.
+  // Where traffic drives (a turn cutting a pavement corner, a tram's service
+  // branch to its depot) no lamp, tree or fence stands either.
+  function addPathCorridors(actors) {
+    const list = state.pathCorridors ||= [];
+    for (const a of actors) {
+      const route = a.trackPath || a.railPath || a.path;
+      if (!route || !a.mesh?.parent || a.config.type === 'pedestrian' || a.config.type === 'cyclist') continue;
+      a.mesh.parent.updateWorldMatrix(true, false);
+      const m = a.mesh.parent.matrixWorld, L = route.getLength(), points = [];
+      for (let u = 0; u <= L; u += 1) points.push(route.getPointAt(Math.min(1, u / L)).clone().applyMatrix4(m));
+      const r = (a.halfWidth || 1.2) + .5, box = new THREE.Box3().setFromPoints(points).expandByScalar(r);
+      list.push({ points, r, box });
+    }
+    if (list.length > 60) list.splice(0, list.length - 60);
+    state.roadSegments.forEach(seg => seg.traverse(o => { if (o.userData.sceneryObject || o.userData.editKey) clearSceneryOffRoad([o]); }));
+  }
+  const onPathCorridor = p => (state.pathCorridors || []).some(c => p.x >= c.box.min.x && p.x <= c.box.max.x && p.z >= c.box.min.z && p.z <= c.box.max.z && c.points.some(q => (q.x - p.x) ** 2 + (q.z - p.z) ** 2 < c.r * c.r));
+  function clearSceneryOffRoad(objects) {
+    if (!state.roadBounds) return;
+    for (const o of objects) {
+      if (!o.visible || !(o.userData.sceneryObject || o.userData.editKey) || o.userData.billboard || o.userData.actor) continue;
+      let sign = false; o.traverse(c => { const k = c.userData.editKey || ''; if (c.userData.signCode || c.userData.trafficLight || k === 'light' || k.startsWith('sign')) sign = true; }); if (sign) continue;
+      const box = new THREE.Box3().setFromObject(o);
+      if (box.isEmpty()) continue;
+      const sx = box.max.x - box.min.x, sz = box.max.z - box.min.z;
+      if (sx > 40 || sz > 40) continue; // merged rows: their parts have no single base
+      // The object's own origin is its base (a lamp's pole, not its arm over
+      // the road); a building also by its inset corners.
+      const c = o.getWorldPosition(new THREE.Vector3()); c.y = 0;
+      if (c.x < box.min.x - .5 || c.x > box.max.x + .5 || c.z < box.min.z - .5 || c.z > box.max.z + .5) box.getCenter(c).setY(0);
+      const points = [c];
+      if (state.occluders.includes(o)) for (const fx of [.2, .8]) for (const fz of [.2, .8])
+        points.push(new THREE.Vector3(box.min.x + sx * fx, 0, box.min.z + sz * fz));
+      if (points.some(p => roadSupports(p)) || (!o.userData.tramDepot && onPathCorridor(c))) o.visible = false;
+    }
   }
 
   function curvedRoadFrame(point=playerCarGroup.position) {
@@ -14141,6 +14761,9 @@
   const CAMERA_PITCH = Math.atan2(42, 44), CAMERA_DISTANCE = Math.hypot(42, 44), CAMERA_LOW_PITCH = THREE.MathUtils.degToRad(15);
   let cameraPitch = CAMERA_PITCH, cameraZoom = 1, cameraClose = 0;
   function updateCamera(dt) {
+    const question=questionCameraOpen();
+    if(state.cameraQuestionActive && !question)resetQuestionCamera();
+    state.cameraQuestionActive=question;
     if (state.viewportTarget) {
       const k = 1 - Math.exp(-4 * dt), v = state.viewportInsets, t = state.viewportTarget;
       v.top += (t.top - v.top) * k; v.bottom += (t.bottom - v.bottom) * k;
@@ -14225,6 +14848,17 @@
     const alpha = 1 - Math.exp(-THREE.MathUtils.lerp(5, 12, close) * dt);
     cameraViewSize += (desiredViewSize - cameraViewSize) * alpha;
     const viewSize = cameraViewSize * cameraZoom;
+    if (question) {
+      // The initial uncovered question frame is the inspection boundary.
+      // Zooming in reveals room to pan inside it; zooming back out removes it.
+      const room = Math.max(0, Math.min(cameraViewSize - viewSize, cameraViewSize * (1 - cameraZoom)));
+      const visibleFraction = Math.max(.25, (height - state.viewportInsets.top - state.viewportInsets.bottom) / height);
+      state.questionCameraBounds = { right: new THREE.Vector3(forward.z, 0, -forward.x), forward: forward.clone(),
+        side: room * width / height / 2, along: room * visibleFraction / (2 * .69) };
+      const previous = state.questionCameraPan.clone(); constrainQuestionPan(state.questionCameraPan);
+      const correction = state.questionCameraPan.clone().sub(previous);
+      cameraLook.add(correction); camera.position.add(correction);
+    }
     cameraPitch = THREE.MathUtils.lerp(CAMERA_PITCH, CAMERA_LOW_PITCH, close);
     const sinPitch = Math.sin(cameraPitch), cosPitch = Math.cos(cameraPitch);
     const fov = THREE.MathUtils.lerp(THREE.MathUtils.degToRad(1.5), THREE.MathUtils.degToRad(46), close);
@@ -14251,6 +14885,7 @@
     }
     lens.updateProjectionMatrix();
     camera = lens;
+    if (skyDome) skyDome.position.copy(camera.position);
     // Camera framing can zoom out on a short screen. Keep the ticket letters
     // readable instead of shrinking them into dots under a tall answer card.
     for (const group of [state.activeIntersection?.seg, state.roadEvent?.guide]) {
@@ -14262,13 +14897,29 @@
     // large text / tall answer sheets, rather than the centre behind the sheet.
     // (The chase view is not covered by a question card: no shift there.)
     const offset = (1 - close) * (state.viewportInsets.bottom - state.viewportInsets.top) / height * viewSize / (2 * sinPitch);
+    if (question) focus.add(state.questionCameraPan);
     const desiredLook = focus.clone().addScaledVector(forward, lookAhead - offset);
-    cameraLook.lerp(desiredLook, alpha);
+    // During inspection the pose follows the fingers at once (no second easing
+    // drifting the gesture anchor).
+    cameraLook.lerp(desiredLook, question && state.questionCameraInspecting ? 1 : alpha);
     // The camera sits on its pitch line from the look point, at once: lerping
     // the position separately would bend the pitch while zooming.
     camera.position.copy(cameraLook).addScaledVector(forward, -distance * cosPitch);
     camera.position.y = distance * sinPitch;
     camera.lookAt(cameraLook);
+    if(question&&state.questionZoomAnchor){
+      camera.updateMatrixWorld(true);
+      const anchor=state.questionZoomAnchor,ray=new THREE.Raycaster();ray.setFromCamera(anchor.screen,camera);
+      const point=ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),new THREE.Vector3());
+      if(point){
+        const delta=anchor.point.clone().sub(point);delta.y=0;
+        const previous=state.questionCameraPan.clone();
+        state.questionCameraPan.add(delta);constrainQuestionPan(state.questionCameraPan);
+        const allowed=state.questionCameraPan.clone().sub(previous);
+        if(allowed.distanceTo(delta)>1e-5)state.questionZoomAnchor=null;
+        cameraLook.add(allowed);camera.position.add(allowed);camera.lookAt(cameraLook);
+      }
+    }
     // Free steering can put scenery between the camera and the car. Fade only
     // those buildings in front of the car; never hide the road itself. The
     // camera is orthographic: every line of sight runs along its direction,
@@ -14311,6 +14962,10 @@
   }
 
   function resetGame() {
+    state.pathCorridors = [];
+    sceneryJobs.length=0;
+    heldExit = null; heldExitDone = false;
+    resetQuestionCamera();state.cameraQuestionActive=false;
     state.roadSegments.forEach(disposeSegment);
     state.roadSegments = [];
     window.PDD_ROADS.reset();
@@ -14370,7 +15025,9 @@
     cameraLook.set(0, 0, 14);
     cameraHeading = 0;
     cameraViewSize = 42;
+    const previousStreaming=streamScenery;streamScenery=false;
     buildInitialTrack();
+    streamScenery=previousStreaming;
     telemetryElapsed = 0;
   }
 
@@ -14399,10 +15056,12 @@
     // Garage reveal of a newly unlocked car; tap opens the door, finger spins.
     showReveal(id, paint) {
       if (!window.PDD_VEHICLES.specs[id]) return;
+      if (reveal) window.game.hideReveal();
+      state.isAccelerating = false;
       reveal = buildRevealScene(id, paint || null);
       updateReveal(0);
     },
-    openReveal() { if (reveal && reveal.phase === 'closed') { reveal.phase = 'opening'; reveal.t = 0; } },
+    openReveal() { if (reveal && reveal.phase === 'closed') { reveal.phase = 'opening'; reveal.t = 0; gameAudio?.click(); } },
     // Start screen: the garage with the current car already out on its pad.
     showLobby(id, paint) {
       const vid = window.PDD_VEHICLES.specs[id] ? id : 'hatch';
@@ -14433,14 +15092,20 @@
     },
     hideReveal() {
       if (!reveal) return;
-      reveal.scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) [].concat(o.material).forEach(m => { m.map?.dispose(); m.dispose(); }); });
+      // Vehicle/road texture maps belong to the shared caches, not this scene.
+      const geometries = new Set(), materials = new Set(), maps = new Set();
+      reveal.scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material) [].concat(o.material).forEach(m => materials.add(m)); });
+      materials.forEach(m => { if (m.map && !m.map.userData?.pddVehicleShared && !m.map.userData?.pddRoadShared) maps.add(m.map); m.dispose(); });
+      maps.forEach(t => t.dispose()); geometries.forEach(g => g.dispose());
+      reveal.scene.background?.dispose();
       reveal = null;
       renderer.render(scene, camera);
     },
     thumbnail(id, paint) { try { return renderThumbnail(id, paint || null); } catch (_) { return ''; } },
-    changeLane(direction) { changeLane(direction); },
+    changeLane(direction) { heldExit = null; heldExitDone = false; changeLane(direction); },
     // The U-turn button of simple steering (shown only where one is allowed).
     chooseUturn() {
+      heldExit = null; heldExitDone = false;
       const r = state.resolution;
       if (!r || r.phase !== 'manual' || r.recovery || !state.simpleSteering) { refuseInput(); return; }
       chooseJunctionExit('uturn');
@@ -14448,7 +15113,13 @@
     setSimpleSteering(on) { state.simpleSteering = Boolean(on); },
     setSteering(direction) {
       const wanted = Math.sign(Number(direction) || 0);
-      if (!freeWheel()) { state.steering = 0; return; } // simple mode: taps only (changeLane)
+      if (!freeWheel()) {
+        const next = Number(direction) === 2 ? 'uturn' : wanted > 0 ? 'left' : wanted < 0 ? 'right' : null;
+        if (next !== heldExit) { heldExit = next; heldExitDone = false; }
+        state.steering = 0;
+        updateHeldExit();
+        return;
+      }
       state.steering = !state.paused && !state.driveRecovery && (!state.isAtSituation || state.resolution?.phase === 'manual') && !state.resolution?.recovery
         ? Math.max(-1, Math.min(1, Number(direction) || 0)) : 0;
       // The indicator comes on only for a deliberate hold (see updateBlinkers):
@@ -14471,7 +15142,7 @@
       state.paused = next;
       // The planned move (a lane change, a turn) is kept: resumed, the car
       // carries on with it instead of going straight on.
-      if (next) { state.isAccelerating = false; state.isBraking = false; state.steering = 0; }
+      if (next) { heldExit = null; heldExitDone = false; state.isAccelerating = false; state.isBraking = false; state.steering = 0; }
       gameAudio?.setPaused(next);
       lastTime = null;
       if (!next && state.pendingAnswer) {

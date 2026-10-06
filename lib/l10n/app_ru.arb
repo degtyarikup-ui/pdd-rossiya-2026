@@ -41,7 +41,19 @@
   "examFailed": "Экзамен не сдан",
   "continueSession": "Продолжить",
   "continueSessionSubtitle": "{title} · вопрос {index} из {total}",
-  "@continueSessionSubtitle": { "placeholders": { "title": { "type": "String" }, "index": { "type": "int" }, "total": { "type": "int" } } },
+  "@continueSessionSubtitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "continueSessionDismiss": "Убрать",
   "reportQuestionTooltip": "Сообщить об ошибке",
   "reportQuestionBody": "Что не так с этим вопросом? Опечатка, неверный ответ, не та картинка — напишите своими словами.",
@@ -52,38 +64,92 @@
   "correctAnswers": "Правильных ответов",
   "wrongAnswers": "Неправильных ответов",
   "shareCardCorrectWord": "{count, plural, one{правильный} few{правильных} many{правильных} other{правильных}}",
-  "@shareCardCorrectWord": { "placeholders": { "count": { "type": "int" } } },
+  "@shareCardCorrectWord": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "shareCardWrongWord": "{count, plural, one{ошибка} few{ошибки} many{ошибок} other{ошибок}}",
-  "@shareCardWrongWord": { "placeholders": { "count": { "type": "int" } } },
+  "@shareCardWrongWord": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "timeLeft": "Осталось времени",
   "minutes": "мин",
   "search": "Поиск",
   "noImage": "Без картинки",
   "mistakes": "Ошибки",
-  "progressRemaining": "{count, plural, one{До экзамена остался {count}\u00A0вопрос} few{До экзамена осталось {count}\u00A0вопроса} many{До экзамена осталось {count}\u00A0вопросов} other{До экзамена осталось {count}\u00A0вопросов}}",
-  "@progressRemaining": { "placeholders": { "count": { "type": "int" } } },
+  "progressRemaining": "{count, plural, one{До экзамена остался {count} вопрос} few{До экзамена осталось {count} вопроса} many{До экзамена осталось {count} вопросов} other{До экзамена осталось {count} вопросов}}",
+  "@progressRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "progressDone": "пройдено",
   "progressCorrect": "верно",
   "progressWrong": "ошибок",
   "progressTickets": "билетов",
   "progressStreakDays": "{count, plural, one{{count} день} few{{count} дня} many{{count} дней} other{{count} дней}}",
-  "@progressStreakDays": { "placeholders": { "count": { "type": "int" } } },
+  "@progressStreakDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "progressRecord": "Рекорд {count}",
-  "@progressRecord": { "placeholders": { "count": { "type": "int" } } },
+  "@progressRecord": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "progressAllDone": "Все вопросы пройдены верно",
   "homePassedQuestions": "Пройдено вопросов",
   "homeCorrectSolved": "Верно решено",
   "homePassedTickets": "Сдано билетов",
   "examQuestionsBadge": "{count} вопросов",
-  "@examQuestionsBadge": { "placeholders": { "count": { "type": "int" } } },
+  "@examQuestionsBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "examMinutesBadge": "{count} минут",
-  "@examMinutesBadge": { "placeholders": { "count": { "type": "int" } } },
+  "@examMinutesBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "examReadinessPercent": "{percent}% Готовность к экзамену",
-  "@examReadinessPercent": { "placeholders": { "percent": { "type": "int" } } },
+  "@examReadinessPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "streakStart": "Начните серию",
   "streakStartHint": "Ответьте на вопрос сегодня — зажжётся огонёк",
   "streakDaysWord": "{count, plural, one{день подряд} few{дня подряд} many{дней подряд} other{дней подряд}}",
-  "@streakDaysWord": { "placeholders": { "count": { "type": "num" } } },
+  "@streakDaysWord": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
   "continueButton": "Продолжить",
   "streakBarrierLabel": "Серия",
   "personalRecord": "Личный рекорд",
@@ -126,12 +192,24 @@
   "favoritesSearchEmpty": "По этому запросу ничего не найдено. Попробуй часть формулировки вопроса или название темы.",
   "favoritesSubtitle": "Личные сложные вопросы",
   "favoritesCountHint": "Сейчас в избранном {count, plural, one{{count} вопрос} few{{count} вопроса} many{{count} вопросов} other{{count} вопросов}}. Используй этот режим как персональную подборку перед экзаменом.",
-  "@favoritesCountHint": { "placeholders": { "count": { "type": "int" } } },
+  "@favoritesCountHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "practiceAllFavorites": "Пройти всё избранное",
   "noTopic": "Без темы",
   "favoriteQuestion": "Избранный вопрос",
   "ticketNumber": "Билет {number}",
-  "@ticketNumber": { "placeholders": { "number": { "type": "Object" } } },
+  "@ticketNumber": {
+    "placeholders": {
+      "number": {
+        "type": "Object"
+      }
+    }
+  },
   "mistakesTitle": "Работа над ошибками",
   "noMistakesYet": "Ошибок пока нет",
   "mistakesEmptyHint": "Когда появятся неверные ответы, здесь можно будет быстро повторить только слабые вопросы.",
@@ -148,7 +226,16 @@
   "noQuestions": "Нет вопросов",
   "hint": "Подсказка",
   "questionOfTotal": "Вопрос {current} из {total}",
-  "@questionOfTotal": { "placeholders": { "current": { "type": "int" }, "total": { "type": "int" } } },
+  "@questionOfTotal": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "finishButton": "Завершить",
   "hideHint": "Скрыть подсказку",
   "confirmAnswerButton": "Подтвердить ответ",
@@ -167,34 +254,83 @@
   "folkNameLabel": "Народное название",
   "examAdditionalTitle": "Дополнительные вопросы",
   "examAdditionalQuestionOfTotal": "Доп. вопрос {current} из {total}",
-  "@examAdditionalQuestionOfTotal": { "placeholders": { "current": { "type": "int" }, "total": { "type": "int" } } },
+  "@examAdditionalQuestionOfTotal": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "examResultTimeout": "Время вышло. Попробуйте снова в спокойном темпе.",
   "examResultPassed": "Отличный результат. Можно закрепить его билетами.",
   "examResultFailed": "Разберите ошибки и повторите слабые места.",
   "valueOfTotal": "{value} из {total}",
-  "@valueOfTotal": { "placeholders": { "value": { "type": "int" }, "total": { "type": "int" } } },
+  "@valueOfTotal": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "examFailedByBlock": "Билет состоит из 4 тематических блоков по 5 вопросов. По регламенту ГИБДД {count} ошибки в одном блоке — экзамен не сдан, даже если всего ошибок не больше двух.",
-  "@examFailedByBlock": { "placeholders": { "count": { "type": "int" } } },
+  "@examFailedByBlock": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "examAdditionalBlock": "Дополнительный блок",
   "examAdditionalBlockValue": "{count} вопросов, ошибок: {errors}",
-  "@examAdditionalBlockValue": { "placeholders": { "count": { "type": "int" }, "errors": { "type": "int" } } },
+  "@examAdditionalBlockValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "errors": {
+        "type": "int"
+      }
+    }
+  },
   "examTimeSpent": "Затраченное время",
   "examMainBlockErrors": "Ошибок в основном блоке",
   "backToTraining": "Вернуться к обучению",
   "examPointsLabel": "Набрано баллов",
   "examScoreLabel": "Ваш результат",
   "examScorePercent": "{percent}%",
-  "@examScorePercent": { "placeholders": { "percent": { "type": "int" } } },
+  "@examScorePercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "share": "Поделиться",
   "copiedToClipboard": "Скопировано в буфер обмена",
   "examShareText": "{result}\nВерных ответов: {correct} из {total}\n\n{title}\n{url}",
   "@examShareText": {
     "placeholders": {
-      "result": { "type": "String" },
-      "correct": { "type": "int" },
-      "total": { "type": "int" },
-      "title": { "type": "String" },
-      "url": { "type": "String" }
+      "result": {
+        "type": "String"
+      },
+      "correct": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
     }
   },
   "supportChooseMethod": "Выберите способ",
@@ -267,7 +403,13 @@
   "gamePaintWine": "бордовый",
   "gamePaintGold": "золотой",
   "gameGarageNextCar": "{count, plural, one{Следующая машина через {count} правильный ответ} few{Следующая машина через {count} правильных ответа} many{Следующая машина через {count} правильных ответов} other{Следующая машина через {count} правильных ответов}}",
-  "@gameGarageNextCar": {"placeholders": {"count": {"type": "int"}}},
+  "@gameGarageNextCar": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "gameGaragePremiumCar": "С премиумом открыты все машины и все цвета",
   "gameRevealTitle": "Новая машина!",
   "gameRevealTap": "Нажмите на ворота",
@@ -298,19 +440,42 @@
   "gameRoadworksHit": "Вы въехали в зону дорожных работ",
   "gameCorrectAnswers": "Верных ответов",
   "gameAnswersOf": "{correct} из {total}",
-  "@gameAnswersOf": {"placeholders": {"correct": {"type": "int"}, "total": {"type": "int"}}},
+  "@gameAnswersOf": {
+    "placeholders": {
+      "correct": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "gameNoViolations": "Без нарушений",
   "gameYourCar": "Ваш автомобиль",
   "gameSpeeding": "Превышение скорости",
   "gameOvertakingProhibited": "Обгон здесь запрещён",
+  "gameStopViolation": "Вы не остановились в положенном месте",
+  "gameRedLightViolation": "Проезд на запрещающий сигнал",
   "gameRailwayViolation": "Переезд закрыт — объезжать и выезжать нельзя",
   "gamePedestrianYield": "Уступите дорогу пешеходу",
   "gameSpeedLimitLabel": "Ограничение {limit} км/ч",
-  "@gameSpeedLimitLabel": {"placeholders": {"limit": {"type": "int"}}},
+  "@gameSpeedLimitLabel": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
   "gameBrake": "Тормоз · назад при остановке",
   "gameNewRecord": "Новый рекорд!",
   "gameBestScore": "Рекорд {score}",
-  "@gameBestScore": {"placeholders": {"score": {"type": "int"}}},
+  "@gameBestScore": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
   "gameGasHint": "Зажмите и держите — это газ",
   "gameWeeklyRating": "Рейтинг недели",
   "gameLobbyStart": "Начать заезд",
@@ -325,14 +490,32 @@
   "gameRatingUnavailable": "Не удалось загрузить рейтинг. Проверьте интернет.",
   "gameRatingYou": "Вы",
   "gameRatingRuns": "{count, plural, one{{count} заезд} few{{count} заезда} many{{count} заездов} other{{count} заезда}}",
-  "@gameRatingRuns": {"placeholders": {"count": {"type": "int"}}},
+  "@gameRatingRuns": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "gameRatingEndsIn": "До конца недели: {days} дн.",
-  "@gameRatingEndsIn": {"placeholders": {"days": {"type": "int"}}},
+  "@gameRatingEndsIn": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "gameAuthRequired": "Игра доступна после входа",
   "gameAuthRequiredHint": "Войдите, чтобы копить очки и участвовать в рейтинге недели.",
   "gameSignIn": "Войти и поехать",
   "gamePenaltyHint": "Нарушение: −{points} очков",
-  "@gamePenaltyHint": {"placeholders": {"points": {"type": "int"}}},
+  "@gamePenaltyHint": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
   "pddSettingsItem": "Правила, знаки и разметка",
   "gameLockedTitle": "Готовы сесть за руль?",
   "gameLockedHint": "Живой город, билеты ГИБДД прямо на дороге и рейтинг недели. Войдите — и поехали.",
@@ -340,7 +523,13 @@
   "gameFuelUnlimited": "Безлимитные заезды",
   "gameFuelEmptyTitle": "Заезды закончились",
   "gameFuelRefillIn": "Новый заезд через {time}",
-  "@gameFuelRefillIn": {"placeholders": {"time": {"type": "String"}}},
+  "@gameFuelRefillIn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "gameFuelPremiumPitch": "С подпиской заезды не заканчиваются",
   "gameFuelBuyPremium": "Подключить Премиум",
   "gameFuelWait": "Подождать",
@@ -352,6 +541,23 @@
   "gameLoadError": "Не удалось продолжить заезд. Перезапустите тренажёр или вернитесь в меню.",
   "authSuccess": "Вход выполнен успешно",
   "authFailed": "Вход отменён или возникла ошибка. Попробуйте ещё раз.",
+  "authErrorCancelled": "Вход не завершён. Попробуйте выбрать аккаунт ещё раз.",
+  "authErrorProvider": "Не удалось получить данные для входа от выбранного сервиса.",
+  "authErrorNetwork": "Не удалось связаться с сервером. Проверьте подключение к интернету.",
+  "authErrorTimeout": "Сервер не ответил вовремя. Попробуйте ещё раз.",
+  "authErrorAppKey": "Сервер отклонил эту сборку приложения. Обновите приложение из магазина.",
+  "authErrorCredential": "Сервер не подтвердил вход. Попробуйте другой аккаунт или способ входа.",
+  "authErrorServer": "Не удалось завершить вход на сервере. Попробуйте позже.",
+  "authErrorResponse": "Не удалось принять сессию входа. Проверьте дату и время на телефоне.",
+  "authSessionTemporary": "Вход выполнен. Телефон не смог сохранить сессию: после перезапуска потребуется войти снова.",
+  "authDiagnosticCode": "Код для поддержки: {code}",
+  "@authDiagnosticCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "authTitle": "Вход в аккаунт",
   "authDescription": "Сохраните премиум-доступ и статистику при смене или переустановке устройства",
   "authApple": "Продолжить с Apple ID",
@@ -373,38 +579,117 @@
   "gamePause": "Пауза",
   "gameLobbyControls": "Управ.",
   "gameRunProgress": "Вопрос {n} из {total}",
-  "@gameRunProgress": {"placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}},
+  "@gameRunProgress": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "gameCorrectAnswer": "Правильный ответ",
   "gameTimeUp": "Время вышло",
   "gamePenaltyPoints": "{points, plural, one{−{points} очко} few{−{points} очка} many{−{points} очков} other{−{points} очков}}",
-  "@gamePenaltyPoints": {"placeholders": {"points": {"type": "int"}}},
+  "@gamePenaltyPoints": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
   "gameRunMistakes": "{count, plural, one{{count} ошибка в заезде} few{{count} ошибки в заезде} many{{count} ошибок в заезде} other{{count} ошибки в заезде}}",
-  "@gameRunMistakes": {"placeholders": {"count": {"type": "int"}}},
+  "@gameRunMistakes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "gameReviewMistakes": "Разобрать ошибки",
   "notifGameRunTitle": "Новый заезд готов",
   "notifGameRunBody": "Садитесь за руль: перекрёстки из экзаменационных билетов ждут.",
   "notifGameChannelName": "Игра",
   "notifGameChannelDesc": "Когда восстановится заезд в игре",
   "gameRunMistakesButton": "Ошибки · {count}",
-  "@gameRunMistakesButton": {"placeholders": {"count": {"type": "int"}}},
+  "@gameRunMistakesButton": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "gameCorrectShort": "Верно",
   "gameRunsPill": "Заезды {runs} из {max}",
-  "@gameRunsPill": {"placeholders": {"runs": {"type": "int"}, "max": {"type": "int"}}},
+  "@gameRunsPill": {
+    "placeholders": {
+      "runs": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "gameRunsUnlimitedPill": "Заезды ∞",
   "gameRunsTitle": "Заезды",
   "gameRunsExplain": "Заезд — это {questions} вопросов на дороге. В запасе до {max} заездов, каждый потраченный возвращается через {minutes} минут.",
-  "@gameRunsExplain": {"placeholders": {"questions": {"type": "int"}, "max": {"type": "int"}, "minutes": {"type": "int"}}},
+  "@gameRunsExplain": {
+    "placeholders": {
+      "questions": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "gameRunsNextIn": "Следующий заезд через {time}",
-  "@gameRunsNextIn": {"placeholders": {"time": {"type": "String"}}},
+  "@gameRunsNextIn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "gameRunsFull": "Запас полный — можно ехать",
   "gameRunsPremium": "С Премиум заезды без ограничений",
   "gameRunsGetPremium": "Безлимит с Премиум",
   "gameLobbyRunLength": "{count, plural, one{{count} вопрос} few{{count} вопроса} many{{count} вопросов} other{{count} вопроса}}",
-  "@gameLobbyRunLength": {"placeholders": {"count": {"type": "int"}}},
+  "@gameLobbyRunLength": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "gameLobbyProgress": "Пройдено {n} из {total}",
-  "@gameLobbyProgress": {"placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}},
+  "@gameLobbyProgress": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "gameLobbyNewCar": "НОВАЯ",
   "gameRunsReady": "Готов",
   "gameRunsUntil": "до заезда",
-  "gameUturn": "Разворот"
+  "gameUturn": "Разворот",
+  "purchaseVerificationPending": "Магазин сообщил о покупке, но доступ пока не подтверждён. Для повторной проверки нажмите «Восстановить» при доступном интернете.",
+  "notifAdminChannelName": "Сообщения приложения",
+  "noticeAcknowledge": "Понятно",
+  "noticeOpen": "Открыть",
+  "pushMessagesSetting": "Новости приложения",
+  "pushMessagesHint": "Пуши об обновлениях и важных событиях",
+  "gameKeyboardHint": "↑ / W — газ · ↓ / S / пробел — тормоз · ← → / A D — повороты",
+  "webQuarter": "3 месяца",
+  "webPaymentSoon": "Оплата скоро появится",
+  "webPaymentInfo": "Доступ на 3 месяца без автопродления. Оплата на сайте пока не подключена."
 }

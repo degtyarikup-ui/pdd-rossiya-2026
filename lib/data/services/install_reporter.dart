@@ -1,3 +1,4 @@
+import 'package:pdd_app/data/services/acquisition_service.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
@@ -92,7 +93,7 @@ class InstallReporter {
         'kind': isExisting ? 'update' : 'new',
         'country': CountryConfig.current.code,
         'app': CountryConfig.current.appTitle,
-        ...await _deviceFields(),
+        ...await clientMetadata(),
       };
 
       final resp = await http
@@ -125,8 +126,14 @@ class InstallReporter {
   /// Flutter Web SDK с конкретным хостингом). Вместо плагина читаем те же
   /// данные напрямую: версию — из `version.json` обычным HTTP-запросом,
   /// браузер/платформу — из `navigator` (см. browser_info_web.dart).
-  static Future<Map<String, dynamic>> _deviceFields() async {
+  static Future<Map<String, dynamic>>? _metadata;
+
+  static Future<Map<String, dynamic>> clientMetadata() =>
+      _metadata ??= _collectMetadata();
+
+  static Future<Map<String, dynamic>> _collectMetadata() async {
     final result = <String, dynamic>{
+      ...await AcquisitionService.fields(),
       'platform': kIsWeb ? 'web' : defaultTargetPlatform.name,
       'locale': ui.PlatformDispatcher.instance.locale.toLanguageTag(),
       'source': kIsWeb ? 'Web' : 'unknown',
@@ -147,6 +154,7 @@ class InstallReporter {
         }
       } catch (_) {}
       result.addAll(browserInfoFields());
+      result['installStore'] = result['source'];
       return result;
     }
 
@@ -176,6 +184,7 @@ class InstallReporter {
       }
     } catch (_) {}
 
+    result['installStore'] = result['source'];
     return result;
   }
 

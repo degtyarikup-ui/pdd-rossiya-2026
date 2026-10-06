@@ -2,6 +2,15 @@ name = "pdd-install-notifier"
 main = "worker.js"
 compatibility_date = "2024-11-01"
 
+[observability]
+enabled = true
+head_sampling_rate = 1
+redact_query_string = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false
+
 # Секреты (BOT_TOKEN, CHAT_ID, SHARED_SECRET) в этот файл НЕ пишем —
 # они задаются командой `wrangler secret put <ИМЯ>` и хранятся в Cloudflare.
 
@@ -22,10 +31,10 @@ id = "2c854aacc0b7483f9cb271c19a79ba5a"
 # у каждого аккаунта своё время публикации по МСК.
 crons = ["0 19 * * *", "*/5 * * * *"]
 
-# Буфер статистики (stats_buffer.js): копит события аналитики и пишет их в KV
-# пачкой раз в 10 минут, чтобы не выходить за бесплатный лимит записей KV.
+# Аналитика (stats_buffer.js): durable-очередь, пачки раз в 5 минут.
+# TrafficState сериализует счётчики и рейтинг; TelegramQueue повторяет доставку.
 [durable_objects]
-bindings = [{ name = "STATS", class_name = "StatsBuffer" }, { name = "PURCHASE_CLAIMS", class_name = "PurchaseClaims" }]
+bindings = [{ name = "STATS", class_name = "StatsBuffer" }, { name = "PURCHASE_CLAIMS", class_name = "PurchaseClaims" }, { name = "TRAFFIC", class_name = "TrafficState" }, { name = "TELEGRAM", class_name = "TelegramQueue" }, { name = "NOTIFICATIONS", class_name = "NotificationsState" }]
 
 [[migrations]]
 tag = "v1"
@@ -34,3 +43,11 @@ new_sqlite_classes = ["StatsBuffer"]
 [[migrations]]
 tag = "v2"
 new_sqlite_classes = ["PurchaseClaims"]
+
+[[migrations]]
+tag = "v3-traffic"
+new_sqlite_classes = ["TrafficState", "TelegramQueue"]
+
+[[migrations]]
+tag = "v4-notifications"
+new_sqlite_classes = ["NotificationsState"]

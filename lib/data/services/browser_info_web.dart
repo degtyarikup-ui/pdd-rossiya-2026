@@ -26,3 +26,58 @@ String _browserNameFromUserAgent(String ua) {
   if (ua.contains('Safari/') && !ua.contains('Chrome')) return 'Safari';
   return 'Browser';
 }
+
+Map<String, String> browserAcquisitionFields() {
+  final query = Uri.base.queryParameters;
+  final ref = query['ref']?.split('_');
+  var source = (query['utm_source'] ?? ref?.first ?? '').toLowerCase();
+  var method = 'web_utm';
+  if (source.isEmpty && web.document.referrer.isNotEmpty) {
+    final host = Uri.tryParse(web.document.referrer)?.host ?? '';
+    for (final entry in const {
+      'threads.net': 'threads',
+      'threads.com': 'threads',
+      'instagram.com': 'instagram',
+      'youtube.com': 'youtube',
+      't.me': 'telegram',
+      'vk.com': 'vk',
+    }.entries) {
+      if (host == entry.key || host.endsWith('.${entry.key}')) {
+        source = entry.value;
+      }
+    }
+    method = 'web_referrer';
+  }
+  source =
+      const {
+        'th': 'threads',
+        'ig': 'instagram',
+        'yt': 'youtube',
+        'tt': 'tiktok',
+        'tg': 'telegram',
+      }[source] ??
+      source;
+  if (!const {
+    'threads',
+    'instagram',
+    'youtube',
+    'tiktok',
+    'telegram',
+    'vk',
+    'google',
+    'yandex',
+    'direct',
+    'other',
+  }.contains(source)) {
+    return {};
+  }
+  final campaign =
+      query['utm_campaign'] ??
+      (ref != null && ref.length > 1 ? ref.skip(1).join('_') : '');
+  return {
+    'marketingSource': source,
+    'attributionMethod': method,
+    if (RegExp(r'^[A-Za-z0-9._-]{1,64}$').hasMatch(campaign))
+      'marketingCampaign': campaign,
+  };
+}

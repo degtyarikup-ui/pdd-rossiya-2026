@@ -70,6 +70,24 @@ void main() {
       }),
     );
     expect(result, isFalse);
+    expect(
+      premium.purchaseVerificationFailure,
+      PurchaseVerificationFailure.unavailable,
+    );
+    expect(premium.isPremium, isFalse);
+  });
+  test('terminal store rejection does not schedule a network retry', () async {
+    expect(
+      await http.runWithClient(
+        verify,
+        () => MockClient((_) async => http.Response('{}', 403)),
+      ),
+      isFalse,
+    );
+    expect(
+      premium.purchaseVerificationFailure,
+      PurchaseVerificationFailure.rejected,
+    );
     expect(premium.isPremium, isFalse);
   });
   test(
@@ -118,6 +136,47 @@ void main() {
       expect(premium.isPremium, isTrue);
     }
   });
+  test('late pre-purchase sync cannot revoke delivered access', () async {
+    final arrived = Completer<void>(), reply = Completer<http.Response>();
+    await http.runWithClient(
+      () async {
+        final syncing = premium.syncWithServer();
+        await arrived.future;
+        expect(await verify(), isTrue);
+        reply.complete(http.Response('{"isPremium":false}', 200));
+        await syncing;
+        expect(premium.isPremium, isTrue);
+        expect(premium.expiresAt, expiry);
+      },
+      () => MockClient((request) async {
+        if (request.url.path == '/api/user/sync') {
+          arrived.complete();
+          return reply.future;
+        }
+        return granted();
+      }),
+    );
+  });
+  test(
+    'status refresh updates renewed expiry while premium remains active',
+    () async {
+      final renewedExpiry = expiry.add(const Duration(days: 7));
+      await http.runWithClient(
+        premium.checkForGrant,
+        () => MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'isPremium': true,
+              'premiumExpiresAt': renewedExpiry.toIso8601String(),
+            }),
+            200,
+          ),
+        ),
+      );
+      expect(premium.isPremium, isTrue);
+      expect(premium.expiresAt, renewedExpiry);
+    },
+  );
   test('late verification cannot re-enable premium after sign out', () async {
     final arrived = Completer<void>(), reply = Completer<http.Response>();
     await http.runWithClient(

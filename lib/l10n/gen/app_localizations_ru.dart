@@ -961,6 +961,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameOvertakingProhibited => 'Обгон здесь запрещён';
 
   @override
+  String get gameStopViolation => 'Вы не остановились в положенном месте';
+
+  @override
+  String get gameRedLightViolation => 'Проезд на запрещающий сигнал';
+
+  @override
   String get gameRailwayViolation =>
       'Переезд закрыт — объезжать и выезжать нельзя';
 
@@ -1118,6 +1124,47 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get authFailed =>
       'Вход отменён или возникла ошибка. Попробуйте ещё раз.';
+
+  @override
+  String get authErrorCancelled =>
+      'Вход не завершён. Попробуйте выбрать аккаунт ещё раз.';
+
+  @override
+  String get authErrorProvider =>
+      'Не удалось получить данные для входа от выбранного сервиса.';
+
+  @override
+  String get authErrorNetwork =>
+      'Не удалось связаться с сервером. Проверьте подключение к интернету.';
+
+  @override
+  String get authErrorTimeout =>
+      'Сервер не ответил вовремя. Попробуйте ещё раз.';
+
+  @override
+  String get authErrorAppKey =>
+      'Сервер отклонил эту сборку приложения. Обновите приложение из магазина.';
+
+  @override
+  String get authErrorCredential =>
+      'Сервер не подтвердил вход. Попробуйте другой аккаунт или способ входа.';
+
+  @override
+  String get authErrorServer =>
+      'Не удалось завершить вход на сервере. Попробуйте позже.';
+
+  @override
+  String get authErrorResponse =>
+      'Не удалось принять сессию входа. Проверьте дату и время на телефоне.';
+
+  @override
+  String get authSessionTemporary =>
+      'Вход выполнен. Телефон не смог сохранить сессию: после перезапуска потребуется войти снова.';
+
+  @override
+  String authDiagnosticCode(String code) {
+    return 'Код для поддержки: $code';
+  }
 
   @override
   String get authTitle => 'Вход в аккаунт';
@@ -1305,4 +1352,37 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameUturn => 'Разворот';
+
+  @override
+  String get purchaseVerificationPending =>
+      'Магазин сообщил о покупке, но доступ пока не подтверждён. Для повторной проверки нажмите «Восстановить» при доступном интернете.';
+
+  @override
+  String get notifAdminChannelName => 'Сообщения приложения';
+
+  @override
+  String get noticeAcknowledge => 'Понятно';
+
+  @override
+  String get noticeOpen => 'Открыть';
+
+  @override
+  String get pushMessagesSetting => 'Новости приложения';
+
+  @override
+  String get pushMessagesHint => 'Пуши об обновлениях и важных событиях';
+
+  @override
+  String get gameKeyboardHint =>
+      '↑ / W — газ · ↓ / S / пробел — тормоз · ← → / A D — повороты';
+
+  @override
+  String get webQuarter => '3 месяца';
+
+  @override
+  String get webPaymentSoon => 'Оплата скоро появится';
+
+  @override
+  String get webPaymentInfo =>
+      'Доступ на 3 месяца без автопродления. Оплата на сайте пока не подключена.';
 }

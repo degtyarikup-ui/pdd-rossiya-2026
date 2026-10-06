@@ -84,6 +84,8 @@ const { chromium } = require('playwright');
           }
           if (seconds >= 0.1) renderer.render(scene, camera);
         },
+        // Finish the roadside scenery that is streamed in over several frames.
+        drainScenery() { while (processSceneryJobs(1000).pending) {} },
         select(index) {
           resetGame();
           state.roadSegments.forEach(disposeSegment);
@@ -459,14 +461,17 @@ const { chromium } = require('playwright');
       const tram = t.state.intersections[0].actors.find(a => a.config.type === 'tram');
       const rails = [];
       t.state.intersections[0].seg.traverse(o => { if (o.userData.tramRail) rails.push(o); });
-      const continuousRails = rails.length >= 2 && rails.every(rail => rail.userData.railEnd.distanceTo(tram.initialPos) > 90);
+      // Rails follow the tram's whole track (into its depot): the far end of
+      // each rail's path is well beyond the scene.
+      const railEnd = rail => rail.userData.railEnd || rail.userData.trackPath?.getPoint(1);
+      const continuousRails = rails.length >= 2 && rails.every(rail => railEnd(rail)?.distanceTo(tram.initialPos) > 90);
       window.game.configure({ soundEnabled: false });
       const muteWorks = !t.audioSnapshot().enabled;
       window.game.configure({ soundEnabled: true });
       t.state.speed = 10; t.state.isAccelerating = true; t.updateAudio(0.1, 8);
       const dynamicAudio = t.audioSnapshot().enabled && t.audioSnapshot().engine > 0;
       t.state.isAccelerating = false;
-      t.select(0);
+      t.select(0); t.drainScenery();
       const ambient = t.state.ambient.length > 0 && t.state.ambient.every(a => Math.abs(a.mesh.position.x) > 5);
       const a = t.state.ambient[0], before = a.mesh.position.z; t.updateActors(1);
       const livingScenery = ambient && a.mesh.position.z !== before && !t.state.actors.includes(a);
@@ -605,7 +610,8 @@ const { chromium } = require('playwright');
         t.tick(1);
         const waitsForInput = t.player().position.distanceTo(entry) < 0.001;
         const keptRoad = t.state.activeIntersection.previews[window.PDD_SCENARIO_ROUTES[id].maneuver];
-        const keptTrees = keptRoad.children.map(o => o.uuid).join();
+        // The distant visual continuation is replaced by the real next junction.
+        const keptTrees = keptRoad.children.filter(o => !o.userData.distantRoad).map(o => o.uuid).join();
         const drive = t.drive();
         if (!drive?.complete) return { id, drive };
         t.tick(50, 10);
@@ -631,17 +637,19 @@ const { chromium } = require('playwright');
         const cleanRoad = joinSamples.length>=4 && joinSamples.every(s => s.surfaces.includes('road') && !s.surfaces.includes('sidewalk'));
         if(!cleanRoad) console.log('scenario:road-evidence:'+JSON.stringify({id,roadSamples,event:t.state.roadEvent?.situation?.id,eventKeys:Object.keys(t.state.roadEvent||{}),eventStart:t.state.roadEvent?.startZ}));
         const originalScenery = new Set(keptTrees.split(','));
-        const sceneryPreserved = t.state.exitRoad === keptRoad &&
+        // The next junction may already be built (and exitRoad handed over):
+        // the kept road must still be in the world with all its scenery.
+        const sceneryPreserved = (t.state.exitRoad === keptRoad || t.state.roadSegments.some(seg => seg === keptRoad || seg.children.includes(keptRoad))) &&
           [...originalScenery].every(uuid => keptRoad.children.some(o => o.uuid === uuid));
         const result = { id, framed, exitsPrebuilt, waitsForInput, cleanRoad, sceneryPreserved, staleIgnored, clearedOnce: after === before + 1,
           resolved: !t.state.isResolvingSituation,
-          actorsFinished: t.state.actors.every(a => a.done || a.road || a.config.stationary) /* parked ticket actors and road-event traffic intentionally remain */,
+          actorsFinished: t.state.actors.every(a => a.done || a.road || a.config.stationary || (a.waitsForPlayer && !a.active)) /* parked ticket actors, road-event traffic and the next (prebuilt) junction's actors waiting for the player intentionally remain */,
           finite: Number.isFinite(t.player().position.x + t.player().position.z + t.camera().position.x),
           roadAhead: !!t.state.exitRoad,
           normalLane: t.state.targetLane === 1 };
         t.state.paused = true;
         if (!result.actorsFinished) throw new Error(JSON.stringify({ id,
-          blocked: t.state.actors.filter(a => !a.done && !a.road && !a.config.stationary).map(a => ({ id: a.config.id,
+          blocked: t.state.actors.filter(a => !a.done && !a.road && !a.config.stationary && !(a.waitsForPlayer && !a.active)).map(a => ({ id: a.config.id,
             position: a.mesh.position.toArray(), distance: a.distance, active: a.active,
             cleared: a.cleared, waits: a.waitsForPlayer, dependencies: a.dependencies?.map(b => [b.config.id, b.cleared]) })) }));
         return result;

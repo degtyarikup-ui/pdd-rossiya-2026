@@ -4,7 +4,7 @@
 #
 # ru → репо pdd-rossiya-2026, ветка gh-pages, домен pdd-drive.ru
 # Источник: web_landing/ru/ — чистая статика, без сборки.
-# Веб-версия самого приложения деплоится отдельно на app.pdd-drive.ru
+# Web application: /app/, updated separately by deploy_web.sh ru.
 # (scripts/deploy_web.sh ru).
 set -euo pipefail
 

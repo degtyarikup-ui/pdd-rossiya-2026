@@ -15,7 +15,7 @@ class GameControlsOverlay extends StatefulWidget {
   /// Simple steering: the U-turn button (shown only where one is allowed).
   final VoidCallback? onUturn;
 
-  /// «Простое управление»: a tap changes lane, a hold turns the wheel.
+  /// Simple mode holds a lane/exit request; manual mode turns the wheel.
   final bool simpleSteering;
 
   const GameControlsOverlay({
@@ -37,14 +37,8 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
   final _heldDirections = <int>[];
   bool _disposing = false;
 
-  /// In simple mode every press is one command — the next lane, or the
-  /// exit at a junction; the engine drives it. Holding changes nothing.
-  void _press(int direction, bool held) {
-    if (!widget.simpleSteering) return _steer(direction, held);
-    if (held && widget.state.controlsEnabled && !_disposing) {
-      widget.onSwitchLane(direction > 0 ? 'left' : 'right');
-    }
-  }
+  /// Hold one request until the engine can safely perform it.
+  void _press(int direction, bool held) => _steer(direction, held);
 
   void _steer(int direction, bool held) {
     if (_disposing) return;
@@ -123,7 +117,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                                 icon: const Icon(Icons.u_turn_left_rounded),
                                 label: appL10n.gameUturn,
                                 onHold: (held) {
-                                  if (held) widget.onUturn?.call();
+                                  _press(2, held);
                                 },
                                 onTap: null,
                                 haptic: _ControlHaptic.steering,

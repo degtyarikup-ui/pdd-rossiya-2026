@@ -29,7 +29,6 @@ class SubscriptionManagementSheet extends StatefulWidget {
 class _SubscriptionManagementSheetState
     extends State<SubscriptionManagementSheet> {
   bool _isRestoring = false;
-
   Future<void> _openStoreSubscriptionSettings() async {
     HapticFeedbackHelper.select();
     Uri uri;

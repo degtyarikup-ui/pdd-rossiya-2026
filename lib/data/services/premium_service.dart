@@ -1,3 +1,4 @@
+import 'package:pdd_app/data/services/install_reporter.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -12,6 +13,8 @@ import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum PremiumTier { weekly, threeMonths }
+
+enum PurchaseVerificationFailure { unavailable, rejected, inactive }
 
 class PremiumService extends ChangeNotifier {
   static final PremiumService instance = PremiumService._internal();
@@ -33,9 +36,15 @@ class PremiumService extends ChangeNotifier {
 
   bool _isPremium = false;
   DateTime? _expiresAt;
+  String? _purchaseStore;
+  String? get purchaseStore => _purchaseStore;
   int _dailyCardsCount = 0;
   int _aiMessagesCount = 0;
   bool _isInitialized = false;
+  int _entitlementRevision = 0;
+  PurchaseVerificationFailure? _purchaseVerificationFailure;
+  PurchaseVerificationFailure? get purchaseVerificationFailure =>
+      _purchaseVerificationFailure;
 
   final _premiumGrantedStreamController =
       StreamController<DateTime?>.broadcast();
@@ -120,6 +129,7 @@ class PremiumService extends ChangeNotifier {
       }
 
       _currentUserId = prefs.getString(_prefKeyOwner);
+      _purchaseStore = prefs.getString('premium_purchase_store');
 
       // Check daily reset for current user / guest
       final todayStr = _getTodayString();
@@ -157,6 +167,7 @@ class PremiumService extends ChangeNotifier {
       final changedAccount = _currentUserId != user?.id;
       _currentUserId = user?.id;
       if (changedAccount) {
+        _purchaseStore = null;
         _isPremium = false;
         _expiresAt = null;
         _pendingGrantNotificationExpiresAt = null;
@@ -205,6 +216,7 @@ class PremiumService extends ChangeNotifier {
     if (user == null || !AuthService.instance.hasServerSession) return;
     if (!BackendConfig.hasNotifier) return;
     final revision = AuthService.instance.accountRevision;
+    final entitlementRevision = _entitlementRevision;
 
     try {
       String appVersion = '';
@@ -222,13 +234,14 @@ class PremiumService extends ChangeNotifier {
       } catch (_) {}
 
       final payload = {
+        ...await InstallReporter.clientMetadata(),
         'id': user.id,
         'email': user.email,
         'name': user.name,
         'avatarUrl': user.avatarUrl,
         'provider': user.provider.name,
         'country': CountryConfig.current.code,
-        'app': 'ru',
+        'app': CountryConfig.current.code,
         'isPremium': isPremium,
         'premiumExpiresAt': _expiresAt?.toIso8601String(),
         'createdAt': user.createdAt.toIso8601String(),
@@ -245,7 +258,8 @@ class PremiumService extends ChangeNotifier {
           .timeout(const Duration(seconds: 10));
 
       if (resp.statusCode == 200 &&
-          revision == AuthService.instance.accountRevision) {
+          revision == AuthService.instance.accountRevision &&
+          entitlementRevision == _entitlementRevision) {
         final data = jsonDecode(resp.body) as Map<String, dynamic>;
         final serverIsPremium = data['isPremium'] == true;
         final serverExpStr = data['premiumExpiresAt'] as String?;
@@ -258,8 +272,13 @@ class PremiumService extends ChangeNotifier {
           serverIsPremium,
           serverExpiresAt,
         );
+        if (revision != AuthService.instance.accountRevision ||
+            entitlementRevision != _entitlementRevision) {
+          return;
+        }
 
         // Сервер — единый источник правды для состояния подписки аккаунта
+        _purchaseStore = data['premiumSource'] as String?;
         _isPremium = serverIsPremium;
         _expiresAt = serverIsPremium ? serverExpiresAt : null;
         await _saveState();
@@ -297,13 +316,13 @@ class PremiumService extends ChangeNotifier {
   static const String _statusEndpoint =
       '${BackendConfig.notifierUrl}/api/user/status';
 
-  /// A read-only look at the account (no write on the server): picks up a
-  /// Premium granted from the admin panel while the app is open.
+  /// Picks up administrative grants and store renewals while the app is open.
   Future<void> checkForGrant() async {
     final user = AuthService.instance.currentUser;
     if (user == null || !AuthService.instance.hasServerSession) return;
     if (!BackendConfig.hasNotifier) return;
     final revision = AuthService.instance.accountRevision;
+    final entitlementRevision = _entitlementRevision;
     try {
       final resp = await http
           .get(
@@ -312,7 +331,8 @@ class PremiumService extends ChangeNotifier {
           )
           .timeout(const Duration(seconds: 10));
       if (resp.statusCode != 200 ||
-          revision != AuthService.instance.accountRevision) {
+          revision != AuthService.instance.accountRevision ||
+          entitlementRevision != _entitlementRevision) {
         return;
       }
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -321,7 +341,14 @@ class PremiumService extends ChangeNotifier {
         data['premiumExpiresAt'] as String? ?? '',
       );
       await _handleGrantNotice(data, user.id, serverIsPremium, serverExpiresAt);
-      if (serverIsPremium != _isPremium) {
+      if (revision != AuthService.instance.accountRevision ||
+          entitlementRevision != _entitlementRevision) {
+        return;
+      }
+      if (serverIsPremium != _isPremium ||
+          serverExpiresAt != _expiresAt ||
+          data['premiumSource'] != _purchaseStore) {
+        _purchaseStore = data['premiumSource'] as String?;
         _isPremium = serverIsPremium;
         _expiresAt = serverIsPremium ? serverExpiresAt : null;
         await _saveState();
@@ -382,6 +409,7 @@ class PremiumService extends ChangeNotifier {
     required String purchaseToken,
     String? transactionId,
   }) async {
+    _purchaseVerificationFailure = PurchaseVerificationFailure.unavailable;
     final auth = AuthService.instance;
     final user = auth.currentUser;
     if (user == null || !auth.hasServerSession || !BackendConfig.hasNotifier) {
@@ -405,7 +433,13 @@ class PremiumService extends ChangeNotifier {
             }),
           )
           .timeout(const Duration(seconds: 30));
-      if (response.statusCode != 200 || revision != auth.accountRevision) {
+      if (response.statusCode != 200) {
+        if ([400, 403, 422].contains(response.statusCode)) {
+          _purchaseVerificationFailure = PurchaseVerificationFailure.rejected;
+        }
+        return false;
+      }
+      if (revision != auth.accountRevision) {
         return false;
       }
       final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -416,10 +450,16 @@ class PremiumService extends ChangeNotifier {
           data['isPremium'] != true ||
           expiry == null ||
           !expiry.isAfter(DateTime.now())) {
+        if (data['ok'] == true && data['isPremium'] == false) {
+          _purchaseVerificationFailure = PurchaseVerificationFailure.inactive;
+        }
         return false;
       }
       _isPremium = true;
+      _purchaseStore = data['premiumSource'] as String? ?? store;
       _expiresAt = expiry;
+      _entitlementRevision++;
+      _purchaseVerificationFailure = null;
       await _saveState();
       notifyListeners();
       return true;
@@ -435,6 +475,11 @@ class PremiumService extends ChangeNotifier {
         await prefs.setString(_prefKeyOwner, _currentUserId!);
       } else {
         await prefs.remove(_prefKeyOwner);
+      }
+      if (_purchaseStore != null) {
+        await prefs.setString('premium_purchase_store', _purchaseStore!);
+      } else {
+        await prefs.remove('premium_purchase_store');
       }
       await prefs.setBool(_prefKeyIsPremium, _isPremium);
       if (_expiresAt != null) {

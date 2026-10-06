@@ -2,7 +2,7 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 const appleKeys = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
-const GOOGLE_CLIENT = '513938972930-3lclc5epsnm12druv86ut2o89pj71cu9.apps.googleusercontent.com';
+const GOOGLE_CLIENT = '513938972930-3lclc5epsnm12druv86ut2o89pj71cu9.apps.googleusercontent.com,513938972930-a7sh1di6odgf77ijltu31lvpuhijcis1.apps.googleusercontent.com';
 const YANDEX_CLIENT = '94aa539db4634e44bf0b209d9a2205d2';
 const SESSION_SECONDS = 30 * 86400;
 const audiences = (value, fallback) => String(value || fallback).split(',').map(s => s.trim()).filter(Boolean);
@@ -25,7 +25,6 @@ export async function verifyIdentity(body, env) {
     if (!info.ok) throw new Error('invalid credential');
     const tok = await info.json();
     const allowed = audiences(env.GOOGLE_ANDROID_CLIENT_IDS, '');
-    console.log('google access token aud', tok.aud || tok.azp);
     if (allowed.length && !allowed.includes(tok.aud) && !allowed.includes(tok.azp)) throw new Error('wrong client');
     if (!tok.sub || Number(tok.expires_in) <= 0) throw new Error('invalid credential');
     const user = await fetch('https://openidconnect.googleapis.com/v1/userinfo', { headers: { Authorization: 'Bearer ' + credential }, signal: AbortSignal.timeout(8000) });
@@ -119,20 +118,44 @@ export async function revokeUserSessions(env, userId) {
 export async function handleAuth(request, env, verify = verifyIdentity) {
   const path = new URL(request.url).pathname;
   if (path === '/api/auth/session' && request.method === 'POST') {
+    const started = Date.now();
+    const requestId = crypto.randomUUID();
+    let provider = 'unknown';
+    const finish = (body, status, outcome) => {
+      // Never record credentials, headers, user IDs, names or provider errors.
+      console.log(JSON.stringify({ event: 'auth_session', requestId, provider,
+        status, outcome, durationMs: Date.now() - started }));
+      const response = reply(body, status);
+      response.headers.set('x-auth-diagnostic-id', requestId);
+      return response;
+    };
     // No legacy or missing-secret bypass for issuing sessions.
-    if (!env.SHARED_SECRET || request.headers.get('x-install-secret') !== env.SHARED_SECRET) return reply({ error: 'forbidden' }, 403);
-    if (!env.INSTALLS) return reply({ error: 'unavailable' }, 503);
+    if (!env.SHARED_SECRET || request.headers.get('x-install-secret') !== env.SHARED_SECRET) return finish({ error: 'forbidden' }, 403, 'app_key_rejected');
+    if (!env.INSTALLS) return finish({ error: 'unavailable' }, 503, 'storage_not_configured');
     let body;
-    try { body = await request.json(); } catch { return reply({ error: 'invalid json' }, 400); }
+    try { body = await request.json(); } catch { return finish({ error: 'invalid json' }, 400, 'invalid_json'); }
+    if (['google', 'yandex', 'apple'].includes(body?.provider)) provider = body.provider;
     let user;
-    try { user = await verify(body, env); } catch { return reply({ error: 'invalid credentials' }, 401); }
+    try { user = await verify(body, env); } catch (error) {
+      const outcome = error?.message === 'wrong client' ? 'oauth_client_rejected'
+        : error?.name === 'TimeoutError' || error?.name === 'AbortError' ? 'provider_timeout'
+        : error?.code === 'ERR_JWT_EXPIRED' ? 'credential_expired'
+        : error?.name === 'TypeError' ? 'provider_request_failed'
+        : 'credential_rejected';
+      return finish({ error: 'invalid credentials' }, 401, outcome);
+    }
     const expiresAt = Date.now() + SESSION_SECONDS * 1000;
-    const generation = await env.INSTALLS.get('auth_generation:' + user.id) || '';
-    // Stateless signed session: issuing it needs no KV write, so sign-in keeps
-    // working when the free KV daily write quota is exhausted.
-    const token = await signSession(env, { user, expiresAt, generation });
-    if (!token) return reply({ error: 'unavailable' }, 503);
-    return reply({ ok: true, token, expiresAt: new Date(expiresAt).toISOString(), user });
+    try {
+      const generation = await env.INSTALLS.get('auth_generation:' + user.id) || '';
+      // Stateless signed session: issuing it needs no KV write, so sign-in keeps
+      // working when the free KV daily write quota is exhausted.
+      const token = await signSession(env, { user, expiresAt, generation });
+      if (!token) return finish({ error: 'unavailable' }, 503, 'session_secret_not_configured');
+      return finish({ ok: true, token, expiresAt: new Date(expiresAt).toISOString(), user }, 200, 'session_issued');
+    } catch (error) {
+      finish({ error: 'unavailable' }, 500, 'session_creation_failed');
+      throw error;
+    }
   }
   if (path === '/api/auth/logout' && request.method === 'POST') {
     const session = await readSession(request, env);

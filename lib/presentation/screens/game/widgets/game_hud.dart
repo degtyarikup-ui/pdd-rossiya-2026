@@ -22,7 +22,7 @@ class GameHud extends StatelessWidget {
   final GameThumbnailLoader? thumbnail;
   final Map<String, Uint8List> thumbnailCache;
 
-  /// The engine's season is winter: in the light theme the snow is as light
+  /// The engine's season is winter: the snow is as light
   /// as the white numbers, so they are drawn dark instead.
   final bool snow;
   const GameHud({
@@ -43,9 +43,7 @@ class GameHud extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     // Bare numbers over the scene (run progress, speed): white, dark on snow.
-    final sceneText = snow && Theme.of(context).brightness != Brightness.dark
-        ? AppColors.primaryText
-        : AppColors.white;
+    final sceneText = snow ? AppColors.primaryText : AppColors.white;
     final notice =
         state.lastViolation != null &&
             state.lastViolation != 'oncoming' &&
@@ -313,6 +311,8 @@ class GameHud extends StatelessWidget {
                                   appL10n.gameOvertakingProhibited,
                                 'pedestrian' => appL10n.gamePedestrianYield,
                                 'railway' => appL10n.gameRailwayViolation,
+                                'stop' => appL10n.gameStopViolation,
+                                'red_light' => appL10n.gameRedLightViolation,
                                 _ => appL10n.gameWrongManeuver,
                               },
                               textAlign: TextAlign.center,

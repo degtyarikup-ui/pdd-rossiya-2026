@@ -59,13 +59,216 @@ export const ADMIN_UI_STYLES = `
     outline: 3px solid rgba(5,116,248,.22);
     outline-offset: 2px;
   }
-  button:disabled { cursor: not-allowed; opacity: .55; }
+  /* Сворачивание бокового меню */
+  .sidebar {
+    transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 14px 16px 16px;
+    gap: 8px;
+    border: none;
+    box-sizing: border-box;
+  }
+  .brand-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    cursor: default;
+    overflow: hidden;
+  }
+  .brand-info img {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .brand-text, .sidebar-brand-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.2;
+    letter-spacing: -0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sidebar-toggle-btn {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+    padding: 0;
+    position: relative;
+  }
+  .sidebar-toggle-btn:hover {
+    background: var(--surface-gray, #F1F5F9);
+    color: var(--text, #1E232D);
+    border-color: var(--card-border, #E2E8F0);
+  }
+  .sidebar.collapsed {
+    width: 68px;
+  }
+  /* Полностью скрываем весь текст и лишние блоки в свернутом меню */
+  .sidebar.collapsed .brand-text,
+  .sidebar.collapsed .sidebar-brand-title,
+  .sidebar.collapsed .sidebar-brand > div:not(.brand-info),
+  .sidebar.collapsed .brand-info > div,
+  .sidebar.collapsed .brand-info .brand-text,
+  .sidebar.collapsed .sidebar-context {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+  }
+  .sidebar.collapsed .sidebar-brand {
+    padding: 14px 6px 10px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .sidebar.collapsed .brand-info {
+    display: flex !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  .sidebar.collapsed .brand-info img {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08) !important;
+    transition: transform 0.15s ease !important;
+  }
+  .sidebar.collapsed .brand-info:hover img {
+    transform: scale(1.05);
+  }
+  .sidebar.collapsed .sidebar-toggle-btn {
+    width: 36px !important;
+    height: 28px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: var(--surface-gray, #F3F4F6) !important;
+    color: var(--text, #1E232D) !important;
+    border: 1px solid var(--card-border, #E5E7EB) !important;
+    border-radius: 8px !important;
+  }
+  .sidebar.collapsed .sidebar-toggle-btn:hover {
+    background: #E5E7EB !important;
+    color: #000 !important;
+  }
+  .sidebar.collapsed .toggle-icon-collapse {
+    display: none !important;
+  }
+  .sidebar.collapsed .toggle-icon-expand {
+    display: block !important;
+  }
+  .sidebar.collapsed .sidebar-menu {
+    padding: 8px 6px;
+    align-items: center;
+    gap: 5px;
+  }
+  .sidebar.collapsed .nav-item {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 12px;
+    gap: 0;
+    position: relative;
+  }
+  .sidebar.collapsed .nav-item span {
+    display: none !important;
+  }
+  .sidebar.collapsed .nav-item svg {
+    margin: 0;
+  }
+  .sidebar.collapsed .sidebar-footer {
+    padding: 14px 6px;
+    align-items: center;
+  }
+  .sidebar.collapsed .sidebar-footer > div {
+    display: none !important;
+  }
+  .sidebar.collapsed .btn-logout {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 12px;
+    gap: 0;
+    position: relative;
+  }
+  .sidebar.collapsed .btn-logout span {
+    display: none !important;
+  }
+  /* Плавающий тултип для свернутого меню — вынесен на body, никогда не обрезается overflow */
+  #sidebar-tooltip-el {
+    position: fixed;
+    background: #1E232D;
+    color: #FFFFFF;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 999999;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-50%) translateX(-4px);
+    transition: opacity 0.12s cubic-bezier(0, 0, 0.2, 1), transform 0.12s cubic-bezier(0, 0, 0.2, 1);
+  }
+  #sidebar-tooltip-el.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) translateX(0);
+  }
+  #sidebar-tooltip-el::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 5px 5px 5px 0;
+    border-style: solid;
+    border-color: transparent #1E232D transparent transparent;
+    width: 0;
+    height: 0;
+  }
   @media (max-width: 760px) {
     /* Телефон: меню — горизонтальная лента сверху, контент на всю ширину. */
     #app { flex-direction: column; }
-    .sidebar { width: 100%; height: auto; position: static; }
+    .sidebar { width: 100% !important; height: auto; position: static; }
+    .sidebar-toggle-btn { display: none !important; }
+    .sidebar.collapsed { width: 100% !important; }
     .sidebar-menu { flex-direction: row; overflow-x: auto; padding: 8px 12px; gap: 4px; }
-    .nav-item { white-space: nowrap; flex-shrink: 0; width: auto; padding: 9px 12px; }
+    .nav-item { white-space: nowrap; flex-shrink: 0; width: auto !important; height: auto !important; padding: 9px 12px !important; }
+    .nav-item span { display: inline !important; }
     .sidebar-context { margin: 0 12px; }
     .sidebar-footer { display: none; }
     .top-bar, .header { flex-direction: column; align-items: stretch; }
@@ -74,25 +277,33 @@ export const ADMIN_UI_STYLES = `
     .main-area, .content { padding: 20px 16px; }
     .top-bar, .header { align-items: flex-start; gap: 14px; }
     .top-actions { flex-wrap: wrap; justify-content: flex-end; }
-      }
+  }
 </style>`;
 
 export function enhanceAdminHtml(html) {
   let result = html.replace('</head>', ADMIN_UI_STYLES + '\n</head>');
 
-  // Проект задаёт контекст данных, поэтому он расположен до навигации, а не
-  // рядом с выходом. Сам select переносится клиентским кодом без дублирования.
   result = result.replace(
-    '<nav class="sidebar-menu">',
-    '<div class="sidebar-context" id="sidebar-context"></div>\n    <nav class="sidebar-menu">'
+    /<div class="sidebar-brand">[\s\S]*?<\/div>(?=\s*(?:<div class="sidebar-context"|<nav class="sidebar-menu"))/,
+    `<div class="sidebar-brand">
+      <div class="brand-info" title="PDD Drive">
+        <img src="https://pdd-drive.ru/assets/icon-192.png" alt="PDD">
+      </div>
+      <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" type="button" title="Свернуть меню (Cmd+B)" aria-label="Свернуть меню">
+        <svg class="toggle-icon-collapse" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 19l-7-7 7-7"/>
+        </svg>
+        <svg class="toggle-icon-expand" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+          <path d="M9 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>`
   );
+
+  // Работаем только с российской версией — убираем переключатель проекта из сайдбара.
   result = result.replace(
-    '<div class="project-select-label">Проект</div>',
-    '<div class="project-select-label">Данные аналитики</div>'
-  );
-  result = result.replace(
-    '<option value="ru">Россия (RU)</option>',
-    '<option value="ru">Россия (RU)</option>\n          <option value="by">Беларусь (BY)</option>'
+    /\s*<div>\s*<div class="project-select-label">Проект<\/div>\s*<select id="sidebar-app-select"[\s\S]*?<\/select>\s*<\/div>/,
+    ''
   );
   result = result.replace('<span>Генератор ссылок</span>', '<span>Ссылки</span>');
   result = result.replace(
@@ -129,14 +340,14 @@ export function enhanceAdminClientJs(js) {
     .replace("links: 'Генератор ссылок и кампании',", "links: 'Ссылки',")
     .replace("let currentFeature = 'analytics';", "let currentFeature = localStorage.getItem('pdd-admin-feature') || 'analytics';")
     .replace("let currentDays = 7;", "let currentDays = parseInt(localStorage.getItem('pdd-admin-days') || '7', 10);")
-    .replace("let currentApp = 'all'; // 'all' | 'ru' | 'rs'", "let currentApp = localStorage.getItem('pdd-admin-app') || 'all'; // 'all' | 'ru' | 'by' | 'rs'")
+    .replace("let currentApp = 'all'; // 'all' | 'ru' | 'rs'", "let currentApp = 'ru';")
     .replace(
       "currentFeature = btn.dataset.feature;",
       "currentFeature = btn.dataset.feature;\n    localStorage.setItem('pdd-admin-feature', currentFeature);\n    if (history.pushState && location.hash.split('/')[0] !== '#' + currentFeature) history.pushState(null, '', '#' + currentFeature);"
     )
     .replace(
-      "currentApp = e.target.value;\n  checkAuthAndLoad();",
-      "currentApp = e.target.value;\n  localStorage.setItem('pdd-admin-app', currentApp);\n  checkAuthAndLoad();"
+      "document.getElementById('sidebar-app-select').addEventListener('change', (e) => {\n  currentApp = e.target.value;\n  checkAuthAndLoad();\n});",
+      ""
     )
     .replace(
       "currentDays = parseInt(btn.dataset.days, 10);\n    checkAuthAndLoad();",
@@ -377,7 +588,7 @@ export const ADMIN_UI_CLIENT_JS = `
 
   // #users/<id> — карточка пользователя внутри раздела «Пользователи».
   var initial = (location.hash ? location.hash.slice(1) : currentFeature).split('/')[0];
-  var allowed = ['analytics', 'links', 'blog', 'users', 'ai', 'threads', 'social'];
+  var allowed = ['analytics', 'tasks', 'links', 'blog', 'users', 'ai', 'threads', 'social', 'notifications'];
   if (allowed.indexOf(initial) === -1) initial = 'analytics';
   var initialButton = document.querySelector('.sidebar-menu .nav-item[data-feature="' + initial + '"]');
   if (initialButton) initialButton.click();
@@ -388,6 +599,120 @@ export const ADMIN_UI_CLIENT_JS = `
     var button = document.querySelector('.sidebar-menu .nav-item[data-feature="' + feature + '"]');
     if (button) button.click();
   });
+  // Сворачивание и разворачивание левого меню
+  var sidebar = document.querySelector('.sidebar');
+  var toggleBtn = document.getElementById('sidebar-toggle-btn');
+  var brandInfo = document.querySelector('.brand-info');
+  var isSidebarCollapsed = localStorage.getItem('pdd-admin-sidebar-collapsed') === 'true';
+
+  // Плавающий тултип вне сайдбара (на body), чтобы он никогда не обрезался overflow контейнеров
+  var floatingTip = document.createElement('div');
+  floatingTip.id = 'sidebar-tooltip-el';
+  document.body.appendChild(floatingTip);
+
+  var tipActiveEl = null;
+
+  function showSidebarTooltip(el, text) {
+    if (!text || !sidebar || !sidebar.classList.contains('collapsed')) {
+      hideSidebarTooltip();
+      return;
+    }
+    tipActiveEl = el;
+    floatingTip.textContent = text;
+    var rect = el.getBoundingClientRect();
+    floatingTip.style.left = (rect.right + 10) + 'px';
+    floatingTip.style.top = (rect.top + rect.height / 2) + 'px';
+    floatingTip.classList.add('visible');
+  }
+
+  function hideSidebarTooltip() {
+    tipActiveEl = null;
+    floatingTip.classList.remove('visible');
+  }
+
+  document.querySelectorAll('.sidebar-menu .nav-item').forEach(function (btn) {
+    var span = btn.querySelector('span');
+    if (span && !btn.dataset.tooltip) {
+      btn.dataset.tooltip = span.textContent.trim();
+    }
+  });
+  var logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn && !logoutBtn.dataset.tooltip) {
+    logoutBtn.dataset.tooltip = 'Выйти';
+  }
+
+  function setSidebarCollapsed(collapsed) {
+    if (!sidebar) return;
+    sidebar.classList.toggle('collapsed', collapsed);
+    localStorage.setItem('pdd-admin-sidebar-collapsed', collapsed ? 'true' : 'false');
+    hideSidebarTooltip();
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-label', collapsed ? 'Развернуть меню (Cmd+B)' : 'Свернуть меню (Cmd+B)');
+      if (collapsed) {
+        toggleBtn.removeAttribute('title');
+        toggleBtn.dataset.tooltip = 'Развернуть (Cmd+B)';
+      } else {
+        toggleBtn.title = 'Свернуть меню (Cmd+B)';
+        delete toggleBtn.dataset.tooltip;
+      }
+    }
+    if (brandInfo) {
+      if (collapsed) {
+        brandInfo.removeAttribute('title');
+        brandInfo.dataset.tooltip = 'Развернуть (Cmd+B)';
+      } else {
+        brandInfo.title = 'PDD Drive';
+        delete brandInfo.dataset.tooltip;
+      }
+    }
+  }
+
+  if (isSidebarCollapsed) {
+    setSidebarCollapsed(true);
+  } else {
+    setSidebarCollapsed(false);
+  }
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setSidebarCollapsed(!sidebar.classList.contains('collapsed'));
+    });
+  }
+
+  if (brandInfo) {
+    brandInfo.addEventListener('click', function () {
+      if (sidebar && sidebar.classList.contains('collapsed')) {
+        setSidebarCollapsed(false);
+      }
+    });
+  }
+
+  document.addEventListener('mouseover', function (e) {
+    if (!sidebar || !sidebar.classList.contains('collapsed')) return;
+    var target = e.target.closest('.sidebar [data-tooltip]');
+    if (target) {
+      showSidebarTooltip(target, target.dataset.tooltip);
+    }
+  });
+
+  document.addEventListener('mouseout', function (e) {
+    if (!tipActiveEl) return;
+    var target = e.target.closest('.sidebar [data-tooltip]');
+    if (target && target === tipActiveEl) {
+      hideSidebarTooltip();
+    }
+  });
+
+  window.addEventListener('scroll', hideSidebarTooltip, true);
+
+  document.addEventListener('keydown', function (e) {
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'b' || e.key === 'B' || e.key === 'и' || e.key === 'И')) {
+      e.preventDefault();
+      setSidebarCollapsed(!sidebar.classList.contains('collapsed'));
+    }
+  });
+
   syncProjectContext();
 })();
 `;

@@ -10,79 +10,68 @@
 // Клиентский код — String.raw без обратных кавычек и ${ внутри.
 
 import { BRAND_ICON_PATHS } from './brand_icons.js';
+import { selectGeoRows } from './analytics_geo.js';
 
 export const ANALYTICS_VIEW_HTML = String.raw`
-    <!-- 1. ANALYTICS VIEW -->
-    <div id="analytics-view">
-      <style>
-        :root { --an-accent:#0574F8; --an-green:#2BC280; --an-red:#ED4621; --an-text:#121212; --an-muted:#A1A6B7; --an-axis:#7C8190; --an-gray:#EFF0F4; }
-        .an-card { background:#fff; border-radius:16px; padding:24px; min-width:0; margin-bottom:16px; }
-        .an-title { font-size:15px; font-weight:800; line-height:20px; color:var(--an-text); margin-bottom:24px; }
-        .an-label { font-size:13px; font-weight:600; line-height:18px; color:var(--an-muted); }
-        .an-big { font-size:32px; font-weight:800; letter-spacing:-1px; line-height:40px; color:var(--an-text); font-variant-numeric:tabular-nums; margin-top:4px; }
-        .an-delta { font-size:13px; font-weight:700; line-height:18px; min-height:18px; margin-top:4px; font-variant-numeric:tabular-nums; white-space:nowrap; color:var(--an-muted); }
-        .an-delta.up { color:var(--an-green); }
-        .an-delta.down { color:var(--an-red); }
-        .an-funnel { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; }
-        .an-step { position:relative; padding-right:16px; }
-        .an-step + .an-step { padding-left:24px; border-left:1px solid var(--an-gray); }
-        .an-rate { display:inline-block; margin-top:12px; font-size:13px; font-weight:700; line-height:18px; color:var(--an-accent); background:#E8F2FE; border-radius:8px; padding:2px 8px; }
-        .an-path { display:flex; flex-direction:column; gap:12px; }
-        .an-path-row { display:grid; grid-template-columns:260px minmax(0,1fr) 56px; gap:16px; align-items:center; }
-        .an-path-name { font-size:15px; font-weight:700; line-height:20px; color:var(--an-text); white-space:nowrap; }
-        .an-path-pct { font-size:13px; font-weight:700; color:var(--an-accent); margin-left:6px; }
-        .an-path-bar { height:12px; background:var(--an-gray); border-radius:6px; overflow:hidden; }
-        .an-path-bar > div { height:100%; border-radius:6px; min-width:3px; }
-        .an-path-val { font-size:15px; font-weight:800; line-height:20px; text-align:right; color:var(--an-text); font-variant-numeric:tabular-nums; }
-        .an-row2 { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; align-items:start; }
-        .an-row2 > .an-card { margin-bottom:16px; }
-        .an-chart { position:relative; width:100%; }
-        .an-chart svg { display:block; }
-        .an-caption { font-size:13px; font-weight:600; line-height:18px; color:var(--an-muted); margin-top:12px; }
-        .an-list { display:flex; flex-direction:column; gap:16px; }
-        .an-item { display:grid; grid-template-columns:32px minmax(0,1fr) 64px; gap:12px; align-items:center; }
-        .an-item-name { font-size:15px; font-weight:700; line-height:20px; color:var(--an-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .an-item-name span { color:var(--an-muted); font-weight:600; font-size:13px; }
-        .an-item-val { font-size:15px; font-weight:800; line-height:20px; color:var(--an-text); text-align:right; font-variant-numeric:tabular-nums; }
-        .an-item-val .an-delta { margin-top:0; min-height:0; text-align:right; }
-        .an-bar { height:6px; border-radius:3px; background:var(--an-gray); margin-top:6px; overflow:hidden; }
-        .an-bar > div { height:100%; border-radius:3px; }
-        .an-logo { width:32px; height:32px; border-radius:12px; background:var(--an-gray); display:flex; align-items:center; justify-content:center; }
-        .an-logo svg { width:18px; height:18px; display:block; }
-        .an-mono { width:32px; height:32px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:15px; font-weight:800; }
-        .an-now { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
-        .an-empty { font-size:15px; font-weight:700; color:var(--an-muted); padding:32px 0; text-align:center; }
-        .an-tip { position:fixed; z-index:9999; pointer-events:none; background:#121212; color:#fff; border-radius:12px; padding:12px; font-size:13px; line-height:20px; display:none; min-width:140px; }
-        .an-tip-row { display:flex; justify-content:space-between; gap:16px; }
-        .an-tip-row b { font-weight:800; }
-        .an-tip-note { color:#A1A6B7; }
-        @media (max-width:900px) { .an-row2 { grid-template-columns:1fr; } }
-        @media (max-width:640px) {
-          .an-card { padding:16px; }
-          .an-funnel { grid-template-columns:1fr 1fr; row-gap:16px; }
-          .an-path-row { grid-template-columns:minmax(0,1fr) 56px; row-gap:6px; }
-          .an-path-bar { grid-column:1 / -1; grid-row:2; }
-          .an-step:nth-child(3) { padding-left:0; border-left:none; }
-          .an-big { font-size:24px; line-height:32px; }
-          .an-now { grid-template-columns:1fr 1fr; }
-        }
-      </style>
-      <div class="an-card"><div class="an-title">Путь пользователя</div><div class="an-path" id="an-path"></div></div>
-      <div class="an-card">
-        <div class="an-title" id="an-installs-title">Установки</div>
-        <div class="an-chart" id="an-installs-chart"></div>
-        <div class="an-caption" id="an-installs-caption"></div>
-      </div>
-      <div class="an-row2">
-        <div class="an-card"><div class="an-title">Сайт</div><div class="an-funnel" id="an-funnel" style="grid-template-columns:1fr 1fr;margin-bottom:24px"></div><div class="an-label" style="margin-bottom:16px">Откуда приходят</div><div class="an-list" id="an-sources"></div></div>
-        <div>
-          <div class="an-card"><div class="an-title">Где устанавливают</div><div class="an-list" id="an-stores"></div></div>
-          <div class="an-card" id="an-apps-card"><div class="an-title">Страны</div><div class="an-list" id="an-apps"></div></div>
-        </div>
-      </div>
-      <div class="an-card"><div class="an-title">Сейчас</div><div class="an-now" id="an-now"></div></div>
-      <div class="an-tip" id="an-tip"></div>
-    </div>
+<div id="analytics-view">
+<style>
+:root{--an-accent:#0574F8;--an-green:#22a875;--an-text:#121212;--an-muted:#737b8f;--an-gray:#EFF0F4}
+.an-card{background:#fff;border:1px solid #e9ecf2;border-radius:14px;padding:20px;min-width:0;margin-bottom:16px}
+.an-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px}
+.an-title{font-size:15px;font-weight:750;color:var(--an-text);margin:0;letter-spacing:-.2px}
+.an-period{font-size:12px;color:var(--an-muted);line-height:1.6}.an-period b{color:#344056}
+.an-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:12px 0 16px}
+.an-kpi{margin:0;padding:18px 20px}.an-big{font-size:30px;line-height:1.2;letter-spacing:-1px;font-weight:750;font-variant-numeric:tabular-nums;margin:8px 0 0}
+.an-kpi-top{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:650}.an-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.an-row2{display:grid;grid-template-columns:1fr .75fr 1.3fr;gap:16px;align-items:start}
+.an-chart{width:100%;min-height:190px;overflow:hidden}.an-chart svg{display:block;max-width:100%}
+.an-legend{display:flex;gap:18px;align-items:center;font-size:12px;color:var(--an-muted);margin-bottom:4px}.an-legend span{display:flex;align-items:center;gap:6px}
+.an-caption{font-size:11px;line-height:1.6;color:var(--an-muted);margin-top:8px}.an-caption:empty{display:none}
+.an-tabs{display:flex;gap:4px;padding:3px;background:#f1f3f7;border-radius:8px;flex-wrap:wrap}
+.an-tabs button{border:0;background:transparent;color:#657084;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:650;cursor:pointer}
+.an-tabs button.active{background:#fff;color:#0574F8;box-shadow:0 1px 3px #dde3ed}
+.an-table-wrap{overflow:auto}.an-table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.5}
+.an-table th{font-size:11px;letter-spacing:.2px;color:var(--an-muted);font-weight:650;text-align:right;padding:0 0 10px;white-space:nowrap}
+.an-table td{padding:11px 0;border-top:1px solid #f0f2f6;text-align:right;font-variant-numeric:tabular-nums;font-weight:650}
+.an-table th:first-child,.an-table td:first-child{text-align:left}.an-table td+td,.an-table th+th{padding-left:12px}
+.an-table-name{display:flex;align-items:center;gap:8px;font-weight:650}
+.an-logo,.an-mono{width:26px;height:26px;border-radius:8px;background:#f1f3f7;display:flex;align-items:center;justify-content:center;flex-shrink:0}.an-logo svg{width:16px;height:16px}.an-mono{color:#fff;font-size:12px;font-weight:750}
+.an-empty{padding:26px 12px;text-align:center;font-size:13px;color:var(--an-muted);line-height:1.7}
+.an-geo-tools{display:flex;gap:8px;align-items:center;margin:12px 0;flex-wrap:nowrap}
+.an-search{border:1px solid #dfe4ed;border-radius:7px;padding:8px 10px;font-size:12px;background:#fff;min-width:0;flex:1;outline-color:#0574F8}.an-geo-tools select{flex:0 1 160px}.an-geo-tools select[hidden]{display:none}
+.an-clear{border:1px solid #dfe4ed;background:#fff;width:30px;height:32px;border-radius:7px;color:#737b8f;font-size:20px;flex-shrink:0;cursor:pointer}.an-clear[hidden]{display:none}
+.an-geo-card .an-table td{padding:9px 0}.an-geo-card .an-table-name{display:flex;align-items:center;gap:8px}.an-flag{font-size:20px;line-height:1;width:24px;flex:0 0 24px;text-align:center}.an-geo-card .an-table td:nth-child(2){font-weight:750}.an-geo-card .an-table td:nth-child(4),.an-geo-card .an-table td:nth-child(5){color:#737b8f;font-weight:500}.an-share{display:inline-flex;flex-direction:column;align-items:flex-end;gap:4px}.an-share-track{width:36px;height:3px;background:#edf0f5;border-radius:3px;overflow:hidden}.an-share-track i{display:block;height:100%;background:#0574F8;border-radius:3px}
+.an-sort{font:inherit;letter-spacing:inherit;color:inherit;padding:0;border:0;background:none;cursor:pointer;text-transform:inherit;white-space:nowrap}.an-sort.is-sorted{color:#344056}
+.an-geo-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px;font-size:11px;color:#7a8394;min-height:28px}
+.an-pagination{display:flex;align-items:center;gap:8px;white-space:nowrap}.an-pagination button{border:1px solid #e5e8ee;background:#fff;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:15px;color:#344056}.an-pagination button:disabled{opacity:.3;cursor:default}
+.an-help{position:relative;font-size:12px;line-height:1.6;text-align:left;color:#536078}.an-help summary{list-style:none;cursor:pointer;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border:1px solid #dce1e9;border-radius:50%;font-size:11px;color:#8892a4;font-weight:600}.an-help summary::-webkit-details-marker{display:none}.an-help[open] summary{color:#0574F8;border-color:#0574F8}.an-help>div{position:absolute;right:0;top:28px;width:250px;max-width:75vw;z-index:30;padding:12px 14px;background:white;border:1px solid #e0e5ed;border-radius:9px;box-shadow:0 6px 24px #17223614}
+.an-audience{display:flex;justify-content:space-between;gap:16px;padding:4px 2px 12px;flex-wrap:wrap;font-size:12px;color:#737b8f}.an-audience b{color:#344056;margin-left:6px;font-size:14px;font-variant-numeric:tabular-nums}
+.an-tip{position:fixed;z-index:9999;pointer-events:none;background:#172236;color:white;border-radius:9px;padding:12px;font-size:12px;line-height:1.7;display:none;min-width:140px}.an-tip-row{display:flex;justify-content:space-between;gap:20px}.an-tip-note{color:#b8c4d8}
+@media(max-width:1250px){.an-row2{grid-template-columns:1fr 1fr}.an-geo-card{grid-column:1 / -1}}
+@media(max-width:1000px){.an-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:850px){.an-row2{grid-template-columns:1fr}}
+@media(max-width:640px){.an-card{padding:16px}.an-grid{gap:8px}.an-kpi{padding:14px}.an-kpi-top{min-height:32px;font-size:12px}.an-big{font-size:25px}.an-table{font-size:12px}.an-table td+td,.an-table th+th{padding-left:10px}.an-geo-card .an-table{min-width:340px}.an-audience{display:grid;grid-template-columns:1fr 1fr;gap:10px}.an-geo-footer{flex-wrap:wrap}}
+</style>
+<div class="an-period" id="an-period"></div>
+<div class="an-grid" id="an-kpis"></div>
+<div class="an-card an-chart-card">
+ <div class="an-head"><div class="an-title">Динамика</div><div class="an-tabs" id="an-chart-tabs"><button type="button" data-chart="app" class="active" aria-pressed="true">Приложение</button><button type="button" data-chart="site" aria-pressed="false">Сайт</button></div></div>
+ <div class="an-legend" id="an-chart-legend"></div><div class="an-chart" id="an-installs-chart"></div><div class="an-caption" id="an-installs-caption"></div>
+</div>
+<div class="an-row2">
+  <div class="an-card"><div class="an-head"><div class="an-title">Источники сайта</div><details class="an-help"><summary aria-label="Об источниках сайта">i</summary><div>Просмотры и нажатия на ссылки магазинов. Метка сайта не подтверждает источник установки.</div></details></div><div class="an-table-wrap" id="an-sources"></div></div>
+  <div class="an-card"><div class="an-head"><div class="an-title">Магазины</div><details class="an-help"><summary aria-label="Об установках">i</summary><div>Первые запуски приложения. Скачивания из консолей магазинов сюда не поступают.</div></details></div><div class="an-table-wrap" id="an-stores"></div></div>
+ <div class="an-card an-geo-card">
+  <div class="an-head"><div class="an-title">География</div><details class="an-help"><summary aria-label="О географии">i</summary><div>Новые аккаунты выбранного периода, по последнему сохранённому IP. VPN может менять географию. Активность и Premium показывают текущее состояние этих аккаунтов.</div></details></div>
+  <div class="an-tabs" id="an-geo-tabs"><button type="button" data-geo="countries" class="active" aria-pressed="true">Страны</button><button type="button" data-geo="regions" aria-pressed="false">Регионы</button><button type="button" data-geo="cities" aria-pressed="false">Города</button></div>
+  <div class="an-geo-tools"><input class="an-search" id="an-geo-search" placeholder="Поиск" aria-label="Поиск по географии"><select class="an-search" id="an-geo-country" aria-label="Страна географии"><option value="all">Все страны</option></select><button type="button" class="an-clear" id="an-geo-reset" title="Сбросить поиск и страну" aria-label="Сбросить фильтры">×</button></div>
+  <div class="an-table-wrap" id="an-geo"></div>
+  <div class="an-geo-footer"><span id="an-geo-coverage"></span><div class="an-pagination" id="an-geo-pages"></div></div>
+ </div>
+</div>
+<div class="an-audience" id="an-now"></div>
+<div class="an-tip" id="an-tip"></div>
+</div>
 `;
 
 const CLIENT = String.raw`
@@ -96,7 +85,6 @@ var AN_STORES = {
   'App Store': { color: '#0D96F6', icon: 'appstore' },
   'TestFlight': { color: '#0D96F6', icon: 'appstore' }
 };
-var AN_STORE_ORDER = ['Google Play', 'RuStore', 'App Store', 'TestFlight'];
 var AN_SOURCES = {
   yandex: { name: 'Яндекс', mono: 'Я', bg: '#FC3F1D' },
   google: { name: 'Google', icon: 'google' },
@@ -107,14 +95,12 @@ var AN_SOURCES = {
   vk: { name: 'ВКонтакте', icon: 'vk' },
   threads: { name: 'Threads', icon: 'threads' },
   dzen: { name: 'Дзен', mono: 'Д', bg: '#000000' },
-  direct: { name: 'Прямые заходы', glyph: 'link' },
+  direct: { name: 'Прямые / без метки', glyph: 'link' },
   other: { name: 'Другие сайты', glyph: 'globe' }
 };
-var AN_APPS = { ru: 'Россия', by: 'Беларусь', rs: 'Сербия' };
 var AN_ICON_COLORS = { googleplay: '#01875F', appstore: '#0D96F6', instagram: '#FF0069', youtube: '#FF0000', telegram: '#26A5E4', vk: '#0077FF', tiktok: '#000000', threads: '#000000', google: '#4285F4' };
 
 function anEsc(v) { return typeof adminEsc === 'function' ? adminEsc(v) : String(v == null ? '' : v); }
-function anPlural(n, one, few, many) { var a = Math.abs(n || 0) % 100, b = a % 10; if (a > 10 && a < 20) return many; if (b > 1 && b < 5) return few; if (b === 1) return one; return many; }
 function anNum(n) { return Number(n || 0).toLocaleString('ru-RU'); }
 function anSvgIcon(key) { return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="' + (AN_ICON_COLORS[key] || AN_C.muted) + '" d="' + AN_BRAND_PATHS[key] + '"/></svg>'; }
 function anGlyph(kind) {
@@ -144,17 +130,6 @@ function anSourceKey(raw) {
 // Изменение к прошлому периоду. Процент — только на базе от 10: иначе
 // «▲2033%» при росте с 3 до 64 кричит громче, чем значит. Нет базы или
 // сравнение нечестное (неполные дни, незаконченный сегодняшний день) — пусто.
-function anDelta(cur, prev, ok) {
-  if (ok === false) return '<div class="an-delta"></div>';
-  cur = Number(cur || 0); prev = Number(prev || 0);
-  if (!prev) return '<div class="an-delta"></div>';
-  var diff = cur - prev;
-  if (!diff) return '<div class="an-delta">без изменений</div>';
-  var small = prev < 10 || cur < 10;
-  var pct = prev ? Math.round(Math.abs(diff) / prev * 100) : 0;
-  var text = small || pct > 999 ? (diff > 0 ? '+' : '−') + anNum(Math.abs(diff)) : pct + '%';
-  return '<div class="an-delta ' + (small ? '' : diff > 0 ? 'up' : 'down') + '" title="Было ' + anNum(prev) + '">' + (small ? '' : diff > 0 ? '▲ ' : '▼ ') + text + '</div>';
-}
 function anDayLabel(key, withDow) {
   var p = key.split('-');
   var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
@@ -176,7 +151,7 @@ document.addEventListener('pointerdown', function (e) { if (!e.target.closest('r
 
 // Столбцы в реальных пикселях контейнера. На оси Y — только 0 и максимум.
 function anBars(el, bars, height) {
-  var W = Math.max(240, el.clientWidth), H = height, padL = 32, padB = 28, padT = 12;
+  var W = Math.max(240, el.clientWidth), H = height, padL = 54, padB = 28, padT = 12;
   var plotW = W - padL, plotH = H - padB - padT, n = bars.length;
   var max = Math.max.apply(null, bars.map(function (b) { return b.value; }).concat([1]));
   var y = function (v) { return padT + plotH - v / max * plotH; };
@@ -187,15 +162,15 @@ function anBars(el, bars, height) {
     s += '<line x1="' + padL + '" x2="' + W + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="#EFF0F4"/>';
     s += '<text x="' + (padL - 10) + '" y="' + (y(g) + 4) + '" text-anchor="end" font-size="13" font-weight="600" fill="#7C8190">' + anNum(g) + '</text>';
   });
-  var every = Math.ceil(n / Math.max(2, Math.floor(plotW / 64)));
+  var every = 2 * Math.ceil((n / 2) / Math.max(2, Math.floor(plotW / 70)));
   bars.forEach(function (b, i) {
-    var x = padL + i * slot + (slot - bw) / 2;
+    var x = padL + Math.floor(i / 2) * slot * 2 + slot + (i % 2 ? 3 : -bw - 3);
     if (b.value) {
       var top1 = y(b.value), h = padT + plotH - top1, rr = Math.min(r, h);
       s += '<path fill="' + b.color + '" d="M' + x + ',' + (padT + plotH) + 'V' + (top1 + rr) + 'Q' + x + ',' + top1 + ' ' + (x + rr) + ',' + top1
         + 'H' + (x + bw - rr) + 'Q' + (x + bw) + ',' + top1 + ' ' + (x + bw) + ',' + (top1 + rr) + 'V' + (padT + plotH) + 'Z"/>';
     }
-    if ((n - 1 - i) % every === 0) s += '<text x="' + Math.min(W - 20, padL + i * slot + slot / 2) + '" y="' + (H - 6) + '" text-anchor="middle" font-size="13" font-weight="600" fill="#7C8190">' + b.label + '</text>';
+    if (b.label && (n - 2 - i) % every === 0) s += '<text x="' + Math.min(W - 20, padL + Math.floor(i / 2) * slot * 2 + slot) + '" y="' + (H - 6) + '" text-anchor="middle" font-size="13" font-weight="600" fill="#7C8190">' + b.label + '</text>';
     s += '<rect data-i="' + i + '" x="' + (padL + i * slot) + '" y="0" width="' + slot + '" height="' + (padT + plotH) + '" fill="transparent"/>';
   });
   el.innerHTML = s + '</svg>';
@@ -219,129 +194,102 @@ function anBuckets(tl) {
 }
 function anSum(days, fn) { return days.reduce(function (a, d) { return a + (fn(d) || 0); }, 0); }
 
-function anShareList(items, total, color) {
-  return items.map(function (it) {
-    var share = total ? Math.round(it.value / total * 100) : 0;
-    return '<div class="an-item">' + anLogo(it.conf)
-      + '<div style="min-width:0"><div class="an-item-name">' + anEsc(it.name) + (it.extra ? ' <span>' + it.extra + '</span>' : '') + '</div><div class="an-bar"><div style="width:' + share + '%;background:' + (it.color || color) + '"></div></div></div>'
-      + '<div class="an-item-val">' + anNum(it.value) + '<div class="an-delta" style="margin:0">' + share + '%</div></div></div>';
-  }).join('');
+var anChartMode = 'app', anGeoMode = 'countries', anGeoPage = 0, anGeoSort = 'accounts', anGeoDescending = true;
+var AN_GEO_LABELS = {"regions": {"ru|moscow": "Москва", "ru|moscow oblast": "Московская область", "ru|st.-petersburg": "Санкт-Петербург", "ru|saint petersburg": "Санкт-Петербург", "ru|krasnodar krai": "Краснодарский край", "ru|sverdlovsk oblast": "Свердловская область", "ru|bashkortostan republic": "Башкортостан", "ru|rostov": "Ростовская область", "ru|rostov oblast": "Ростовская область", "ru|mariy-el republic": "Марий Эл", "ru|novosibirsk oblast": "Новосибирская область", "ru|leningradskaya oblast'": "Ленинградская область", "ru|leningrad oblast": "Ленинградская область", "ru|voronezh oblast": "Воронежская область", "ru|stavropol kray": "Ставропольский край", "ru|kaliningrad oblast": "Калининградская область", "ru|belgorod oblast": "Белгородская область", "ru|udmurtiya republic": "Удмуртия", "ru|kostroma oblast": "Костромская область", "ru|penza oblast": "Пензенская область", "ru|orenburg oblast": "Оренбургская область", "ru|ulyanovsk": "Ульяновская область", "ru|samara oblast": "Самарская область", "ru|perm krai": "Пермский край", "ru|tver oblast": "Тверская область", "ru|kursk oblast": "Курская область", "ru|chelyabinsk": "Челябинская область", "ru|vologda oblast": "Вологодская область"}, "cities": {"ru|moscow": "Москва", "ru|saint petersburg": "Санкт-Петербург", "ru|st petersburg": "Санкт-Петербург", "ru|khimki": "Химки", "ru|krasnodar": "Краснодар", "ru|yekaterinburg": "Екатеринбург", "ru|novosibirsk": "Новосибирск", "ru|rostov-on-don": "Ростов-на-Дону", "ru|ufa": "Уфа", "ru|kazan": "Казань", "ru|samara": "Самара", "ru|perm": "Пермь", "ru|chelyabinsk": "Челябинск", "ru|voronezh": "Воронеж", "ru|kaliningrad": "Калининград", "ru|belgorod": "Белгород", "ru|penza": "Пенза", "ru|orenburg": "Оренбург", "ru|ulyanovsk": "Ульяновск", "ru|vologda": "Вологда"}};
+function anGeoName(row) { return (AN_GEO_LABELS[anGeoMode]||{})[(row.country+'|'+row.name).toLowerCase()] || row.name; }
+function anCountryFlag(raw) {
+ var code=String(raw||'').toUpperCase();
+ if(!/^[A-Z]{2}$/.test(code)||['XX','ZZ','UN'].indexOf(code)!==-1)return '';
+ return String.fromCodePoint(127397+code.charCodeAt(0),127397+code.charCodeAt(1));
 }
-
+function anCountryName(code) { try { return new Intl.DisplayNames(['ru'], {type:'region'}).of(code) || code; } catch (_) { return code; } }
+function anTable(headers, rows) {
+ return '<table class="an-table"><thead><tr>' + headers.map(function(h){return '<th scope="col">'+h+'</th>';}).join('') + '</tr></thead><tbody>' + rows.join('') + '</tbody></table>';
+}
+function anCell(v) { return '<td>'+anNum(v)+'</td>'; }
+function anPlot(data) {
+ var tl=data.timeline||[], u=data.users||{}, site=anChartMode==='site';
+ var first=site?'Просмотры':'Первые запуски', second=site?'Переходы':'Новые аккаунты';
+ document.getElementById('an-chart-legend').innerHTML='<span><i class="an-dot" style="background:#0574F8"></i>'+first+'</span><span><i class="an-dot" style="background:#22a875"></i>'+second+'</span>';
+ var buckets=anBuckets(tl), bars=[];
+ buckets.forEach(function(bk){
+  var a=anSum(bk.days,function(d){return site?d.views:d.installs;});
+  var b=anSum(bk.days,function(d){return site?d.clicks:(u.registrationsByDay||{})[d.date];});
+  var head=anDayLabel(bk.from,true)+(bk.to!==bk.from?' — '+anDayLabel(bk.to):'');
+  var tip='<b>'+head+'</b><div class="an-tip-row"><span>'+first+'</span><b>'+anNum(a)+'</b></div><div class="an-tip-row"><span>'+second+'</span><b>'+(site||u?anNum(b):'—')+'</b></div>';
+  bars.push({value:a,color:'#0574F8',label:anDayLabel(bk.to),tip:tip});
+  bars.push({value:b,color:'#22a875',label:'',tip:tip});
+ });
+ var el=document.getElementById('an-installs-chart');
+ if(tl.length) anBars(el,bars,205); else el.innerHTML='<div class="an-empty">Нет данных за период</div>';
+ document.getElementById('an-installs-caption').textContent=tl.some(function(d){return d.date<AN_RELIABLE_FROM;})?'До 25.09 данные о первых запусках неполные.':'';
+ document.querySelectorAll('[data-chart]').forEach(function(b){b.classList.toggle('active',b.dataset.chart===anChartMode);b.setAttribute('aria-pressed',String(b.dataset.chart===anChartMode));});
+}
+function anPercent(value,total) { var pct=total?value/total*100:0;return pct>0&&pct<1?'&lt;1%':Math.round(pct)+'%'; }
+function anShare(value,total) {
+ var width=total?Math.max(0,Math.min(100,value/total*100)):0;
+ return '<span class="an-share">'+anPercent(value,total)+'<span class="an-share-track" aria-hidden="true"><i style="width:'+width+'%"></i></span></span>';
+}
+function anGeoHeader(label,key) {
+ var sorted=anGeoSort===key;
+ return '<th scope="col"'+(sorted?' aria-sort="'+(anGeoDescending?'descending':'ascending')+'"':'')+'><button type="button" class="an-sort'+(sorted?' is-sorted':'')+'" data-sort="'+key+'" title="'+(key==='active7'?'Аккаунты, активные за последние 7 дней':key==='premium'?'Действующий Premium':'Сортировать')+'">'+label+(sorted?(anGeoDescending?' ↓':' ↑'):'')+'</button></th>';
+}
+function anRenderGeo() {
+ var u=(window.__anData||{}).users, geo=u&&u.geography;
+ var el=document.getElementById('an-geo'), cover=document.getElementById('an-geo-coverage'), pager=document.getElementById('an-geo-pages');
+ if(!geo){el.innerHTML='<div class="an-empty">Нет данных</div>';cover.textContent='';pager.innerHTML='';return;}
+ var q=document.getElementById('an-geo-search').value.trim(), selector=document.getElementById('an-geo-country');
+ selector.hidden=anGeoMode==='countries';
+ var country=anGeoMode==='countries'?'all':selector.value;
+ var prepared=(geo[anGeoMode]||[]).map(function(r){var label=anGeoMode==='countries'?anCountryName(r.country):anGeoName(r);return Object.assign({},r,{label:label,search:r.name+' '+label+' '+anCountryName(r.country)+' '+r.country});});
+ var selected=AN_SELECT_GEO(prepared,{country:country,query:q,sort:anGeoSort,descending:anGeoDescending,page:anGeoPage});
+ anGeoPage=selected.page;
+ var headings=anGeoHeader(anGeoMode==='countries'?'Страна':anGeoMode==='regions'?'Регион':'Город','name')+anGeoHeader('Аккаунты','accounts')+'<th scope="col" title="Среди аккаунтов с известной географией, с учётом выбранной страны">Доля</th>'+anGeoHeader('Активны','active7')+anGeoHeader('Premium','premium');
+ el.innerHTML=selected.rows.length?'<table class="an-table"><thead><tr>'+headings+'</tr></thead><tbody>'+selected.rows.map(function(r){
+  return '<tr><td><span class="an-table-name">'+(anCountryFlag(r.country)?'<span class="an-flag" role="img" aria-label="'+anEsc(anCountryName(r.country))+'" title="'+anEsc(anCountryName(r.country))+'">'+anCountryFlag(r.country)+'</span>':'')+'<span>'+anEsc(r.label)+'</span>' +'</span></td>'+anCell(r.accounts)+'<td>'+anShare(r.accounts,selected.baseTotal)+'</td><td title="Аккаунты, обращавшиеся к серверу за последние 7 дней">'+anNum(r.active7)+'</td>'+anCell(r.premium)+'</tr>';
+ }).join('')+'</tbody></table>':'<div class="an-empty">'+(q||country!=='all'?'Ничего не найдено':'Нет данных')+'</div>';
+ var known=(geo[anGeoMode]||[]).reduce(function(n,r){return n+r.accounts;},0);
+ var coverage=geo.total?Math.round(known/geo.total*100):0;
+ cover.textContent='География известна: '+coverage+'%';
+ cover.title=anNum(known)+' из '+anNum(geo.total)+' новых аккаунтов. По IP, приблизительно. Старые профили дополняются постепенно.';
+ pager.innerHTML=selected.count?'<span>'+anNum(selected.start+1)+'–'+anNum(selected.end)+' из '+anNum(selected.count)+'</span><button type="button" data-page="-1" aria-label="Предыдущая страница"'+(selected.page===0?' disabled':'')+'>‹</button><button type="button" data-page="1" aria-label="Следующая страница"'+(selected.page===selected.pages-1?' disabled':'')+'>›</button>':'';
+ document.getElementById('an-geo-reset').hidden=!q&&selector.value==='all';
+ document.querySelectorAll('[data-geo]').forEach(function(b){b.classList.toggle('active',b.dataset.geo===anGeoMode);b.setAttribute('aria-pressed',String(b.dataset.geo===anGeoMode));});
+}
 function renderDashboard(data) {
-  if (!document.getElementById('an-path')) return;
-  window.__anData = data;
-  var t = data.totals || {}, p = data.previous || {}, u = data.users || null;
-  var tl = data.timeline || [];
-  var today = currentDays === 1;
-  // Честное сравнение: не для незаконченного сегодня и не с днями, когда
-  // установки терялись (прошлый период целиком должен быть после AN_RELIABLE_FROM).
-  var firstPrevDay = (function () { var d = new Date(); d.setDate(d.getDate() - currentDays * 2 + 1); return d.toISOString().slice(0, 10); })();
-  var cmp = !today;
-  var cmpInstalls = cmp && firstPrevDay >= AN_RELIABLE_FROM;
-
-  // 1. Путь пользователя: скачали → зарегистрировались → вернулись → купили.
-  // Шаги 3–4 считаются по тем, кто зарегистрировался в этот период.
-  var co = (u && u.cohort) || {};
-  var path = [
-    { name: 'Скачали', value: t.installs, color: '#0574F8' },
-    { name: 'Зарегистрировались', value: u ? u.registrations : 0, color: '#0574F8', of: 0, word: 'скачавших' },
-    { name: 'Вернулись на другой день', value: co.returned || 0, color: '#0574F8', of: 1, word: 'зарегистрировавшихся', hide: today },
-    { name: 'Купили Premium', value: co.paid || 0, color: '#FFA53C', of: 1, word: 'зарегистрировавшихся' }
-  ].filter(function (st) { return !st.hide; });
-  var pathMax = Math.max.apply(null, path.map(function (st) { return st.value; }).concat([1]));
-  var base = [path[0].value, u ? u.registrations : 0];
-  document.getElementById('an-path').innerHTML = path.map(function (st) {
-    var rate = '';
-    if (st.of !== undefined && base[st.of]) {
-      var pct = Math.round(st.value / base[st.of] * 100);
-      // Больше 100% бывает, пока установки до 25.09 недосчитаны, — такую долю не показываем.
-      if (pct <= 100) rate = '<span class="an-path-pct">' + pct + '%</span>';
-    }
-    return '<div class="an-path-row"><div class="an-path-name">' + st.name + rate + '</div>'
-      + '<div class="an-path-bar"><div style="width:' + (st.value / pathMax * 100) + '%;background:' + st.color + '"></div></div>'
-      + '<div class="an-path-val">' + anNum(st.value) + '</div></div>';
-  }).join('');
-
-  // Сайт: визиты → переходы в магазин
-  var steps = [
-    ['Визиты', t.views, p.views, cmp],
-    ['Перешли в магазин', t.clicks, p.clicks, cmp, 'посетителей']
-  ];
-  document.getElementById('an-funnel').innerHTML = steps.map(function (st, i) {
-    var rate = '';
-    // Доля перехода — только там, где шаг действительно вытекает из
-    // предыдущего: установки идут и мимо сайта, поэтому им доли нет.
-    if (st[4] && steps[i - 1][1]) rate = '<div class="an-rate">' + Math.round(st[1] / steps[i - 1][1] * 100) + '% ' + st[4] + '</div>';
-    return '<div class="an-step"><div class="an-label">' + st[0] + '</div><div class="an-big"' + (i === 2 ? ' style="color:#0574F8"' : '') + '>' + anNum(st[1]) + '</div>'
-      + anDelta(st[1], st[2], st[3]) + rate + '</div>';
-  }).join('');
-
-  // 2. Установки по дням / неделям
-  var chartCard = document.getElementById('an-installs-chart').parentElement;
-  chartCard.style.display = today ? 'none' : '';
-  if (!today) {
-    var buckets = anBuckets(tl);
-    var weekly = buckets.length && buckets[0].days.length > 1;
-    document.getElementById('an-installs-title').textContent = weekly ? 'Установки по неделям' : 'Установки по дням';
-    var anyOld = false;
-    anBars(document.getElementById('an-installs-chart'), buckets.map(function (bk) {
-      var v = anSum(bk.days, function (d) { return d.installs; });
-      var old = bk.from < AN_RELIABLE_FROM;
-      if (old) anyOld = true;
-      var stores = {};
-      bk.days.forEach(function (d) { Object.keys(d.stores || {}).forEach(function (s) { if (AN_STORES[s]) stores[s] = (stores[s] || 0) + d.stores[s]; }); });
-      var head = weekly ? anDayLabel(bk.from) + '–' + anDayLabel(bk.to) : anDayLabel(bk.from, true);
-      return { value: v, color: old ? '#A1A6B7' : '#0574F8', label: anDayLabel(weekly ? bk.to : bk.from),
-        tip: '<div class="an-tip-row"><span>' + head + '</span><b>' + anNum(v) + '</b></div>'
-          + AN_STORE_ORDER.filter(function (s) { return stores[s]; }).map(function (s) { return '<div class="an-tip-row"><span>' + s + '</span><b>' + stores[s] + '</b></div>'; }).join('')
-          + (old ? '<div class="an-tip-note">неполные данные</div>' : '') };
-    }), 240);
-    document.getElementById('an-installs-caption').textContent = anyOld ? 'Серым — дни до ' + anDayLabel(AN_RELIABLE_FROM) + ': часть установок тогда не записалась' : '';
-    if (!t.installs) document.getElementById('an-installs-chart').innerHTML = '<div class="an-empty">Пока нет установок за период</div>';
-  }
-
-  // 3. Источники: визиты, доля от всех визитов, сколько ушли в магазин
-  var src = {};
-  (data.sources || []).forEach(function (s) {
-    if (!s.views && !s.clicks) return;
-    var key = anSourceKey(s.name);
-    if (!src[key]) src[key] = { views: 0, clicks: 0 };
-    src[key].views += s.views || 0; src[key].clicks += s.clicks || 0;
-  });
-  var keys = Object.keys(src).sort(function (a, b) { return src[b].views - src[a].views; });
-  var totalViews = keys.reduce(function (a, k) { return a + src[k].views; }, 0);
-  var shown = keys.slice(0, 6), rest = keys.slice(6);
-  var items = shown.map(function (k) { return { conf: AN_SOURCES[k], name: AN_SOURCES[k].name, value: src[k].views, extra: src[k].clicks ? '→ ' + anNum(src[k].clicks) + ' в магазин' : '' }; });
-  if (rest.length) {
-    var rv = rest.reduce(function (a, k) { return a + src[k].views; }, 0), rc = rest.reduce(function (a, k) { return a + src[k].clicks; }, 0);
-    items.push({ conf: AN_SOURCES.other, name: 'Остальные', value: rv, extra: rc ? '→ ' + anNum(rc) + ' в магазин' : '' });
-  }
-  document.getElementById('an-sources').innerHTML = items.length ? anShareList(items, totalViews, '#0574F8') : '<div class="an-empty">Нет визитов</div>';
-
-  // 4. Магазины и страны — доля от всех установок
-  var storeTotals = {};
-  tl.forEach(function (d) { Object.keys(d.stores || {}).forEach(function (s) { if (AN_STORES[s]) storeTotals[s] = (storeTotals[s] || 0) + d.stores[s]; }); });
-  var storeNames = AN_STORE_ORDER.filter(function (s) { return storeTotals[s]; });
-  var storeSum = storeNames.reduce(function (a, s) { return a + storeTotals[s]; }, 0);
-  document.getElementById('an-stores').innerHTML = storeNames.length
-    ? anShareList(storeNames.map(function (s) { return { conf: AN_STORES[s], name: s, value: storeTotals[s], color: AN_STORES[s].color }; }), storeSum)
-    : '<div class="an-empty">Нет установок</div>';
-  var apps = data.apps || {};
-  var codes = ['ru', 'by', 'rs'].filter(function (c) { return (apps[c] || {}).installs; });
-  var appSum = codes.reduce(function (a, c) { return a + apps[c].installs; }, 0);
-  document.getElementById('an-apps-card').style.display = currentApp === 'all' && codes.length > 1 ? '' : 'none';
-  document.getElementById('an-apps').innerHTML = anShareList(codes.map(function (c) {
-    return { conf: { mono: c.toUpperCase(), bg: '#121212' }, name: AN_APPS[c], value: apps[c].installs };
-  }), appSum, '#0574F8');
-
-  // 5. Сейчас — не зависит от выбранного периода
-  document.getElementById('an-now').innerHTML = u ? [
-    ['Заходили сегодня', anNum(u.active1)],
-    ['Заходили за 7 дней', anNum(u.active7)],
-    ['Premium', anNum(u.premium) + '<span style="font-size:15px;color:#A1A6B7;letter-spacing:0"> из ' + anNum(u.registered) + '</span>']
-  ].map(function (x) { return '<div><div class="an-label">' + x[0] + '</div><div class="an-big">' + x[1] + '</div></div>'; }).join('') : '';
+ if(!document.getElementById('an-kpis'))return;
+ window.__anData=data;
+ var t=data.totals||{},u=data.users,tl=data.timeline||[],today=currentDays===1;
+ if(currentFeature==='analytics') document.getElementById('current-view-title').textContent='Аналитика';
+ document.getElementById('an-period').innerHTML='<b>'+(tl.length?anDayLabel(tl[0].date)+' — '+anDayLabel(tl[tl.length-1].date):'Выбранный период')+'</b> · МСК';
+ document.getElementById('an-period').title='Календарные дни. Сегодня — неполный день.';
+ var metrics=[['Просмотры сайта',t.views,0,'#7890b0','Открытия страниц'],['Переходы в магазины',t.clicks,0,'#7890b0','Нажатия и прямые редиректы'],['Первые запуски',t.installs,0,'#0574F8','Новые установки по сигналам приложения'],['Новые аккаунты',u?u.registrations:null,u?u.previousRegistrations:null,'#22a875','По дате создания профиля']];
+ document.getElementById('an-kpis').innerHTML=metrics.map(function(m){return '<div class="an-card an-kpi" title="'+m[4]+'"><div class="an-kpi-top"><i class="an-dot" style="background:'+m[3]+'"></i>'+m[0]+'</div><div class="an-big">'+(m[1]==null?'—':anNum(m[1]))+'</div></div>';}).join('');
+ anPlot(data);
+ var src={};(data.sources||[]).forEach(function(r){if(!r.views&&!r.clicks)return;var k=anSourceKey(r.name);if(!src[k])src[k]={views:0,clicks:0};src[k].views+=r.views||0;src[k].clicks+=r.clicks||0;});
+ var keys=Object.keys(src).sort(function(a,b){return src[b].views-src[a].views||src[b].clicks-src[a].clicks;});
+ document.getElementById('an-sources').innerHTML=keys.length?anTable(['Источник','Просмотры','Переходы'],keys.map(function(k){return '<tr><td><div class="an-table-name">'+anLogo(AN_SOURCES[k])+anEsc(AN_SOURCES[k].name)+'</div></td>'+anCell(src[k].views)+anCell(src[k].clicks)+'</tr>';})):'<div class="an-empty">Нет событий сайта</div>';
+ var stores={};tl.forEach(function(d){Object.keys(d.stores||{}).forEach(function(raw){var k=({'appstore':'App Store','app store':'App Store','gplay':'Google Play','googleplay':'Google Play','google play':'Google Play','rustore':'RuStore','testflight':'TestFlight','web':'Web'})[String(raw).toLowerCase()]||'—';stores[k]=(stores[k]||0)+d.stores[raw];});});
+ var names=Object.keys(stores).sort(function(a,b){return stores[b]-stores[a];}),known=names.reduce(function(n,k){return n+stores[k];},0);
+ if((t.installs||0)>known){stores['—']=t.installs-known;names.push('—');}
+ document.getElementById('an-stores').innerHTML=names.length?anTable(['Магазин / платформа','Запуски','Доля'],names.map(function(k){var conf=AN_STORES[k]||{glyph:'globe'};return '<tr><td><div class="an-table-name">'+anLogo(conf)+anEsc(k)+'</div></td>'+anCell(stores[k])+'<td>'+anShare(stores[k],Math.max(1,t.installs,known))+'</td></tr>';})):'<div class="an-empty">Нет первых запусков</div>';
+ var selector=document.getElementById('an-geo-country'),selected=selector.value,geo=u&&u.geography;
+ selector.innerHTML='<option value="all">Все страны</option>'+(geo?geo.countries:[]).map(function(r){return '<option value="'+anEsc(r.country)+'">'+anCountryFlag(r.country)+' '+anEsc(anCountryName(r.country))+'</option>';}).join('');
+ if(Array.from(selector.options).some(function(o){return o.value===selected;}))selector.value=selected;
+ anRenderGeo();
+ document.getElementById('an-now').innerHTML=u?[
+ ['Всего аккаунтов',u.registered,'Все сохранённые аккаунты выбранного приложения'],['Активны · 24 ч',u.active1,'Обращались к серверу за 24 часа'],['Активны · 7 дней',u.active7,'Обращались к серверу за 7 дней'],['Premium',u.premium,'Действующий Premium, включая ручную выдачу']
+ ].map(function(m){return '<span title="'+m[2]+'">'+m[0]+'<b>'+anNum(m[1])+'</b></span>';}).join(''):'';
 }
+document.getElementById('an-chart-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-chart]');if(b){anChartMode=b.dataset.chart;if(window.__anData)anPlot(window.__anData);}});
+document.getElementById('an-geo-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-geo]');if(b){anGeoMode=b.dataset.geo;anGeoPage=0;anRenderGeo();}});
+document.getElementById('an-geo-search').addEventListener('input',function(){anGeoPage=0;anRenderGeo();});
+document.getElementById('an-geo-country').addEventListener('change',function(){anGeoPage=0;anRenderGeo();});
+document.getElementById('an-geo-reset').addEventListener('click',function(){document.getElementById('an-geo-search').value='';document.getElementById('an-geo-country').value='all';anGeoPage=0;anRenderGeo();});
+document.getElementById('an-geo').addEventListener('click',function(e){var b=e.target.closest('[data-sort]');if(!b)return;var key=b.dataset.sort;if(anGeoSort===key)anGeoDescending=!anGeoDescending;else{anGeoSort=key;anGeoDescending=key!=='name';}anGeoPage=0;anRenderGeo();});
+document.getElementById('an-geo-pages').addEventListener('click',function(e){var b=e.target.closest('[data-page]');if(b&&!b.disabled){anGeoPage+=Number(b.dataset.page);anRenderGeo();}});
+document.addEventListener('pointerdown',function(e){document.querySelectorAll('.an-help[open]').forEach(function(d){if(!d.contains(e.target))d.removeAttribute('open');});});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){anTipHide();document.querySelectorAll('.an-help[open]').forEach(function(d){d.removeAttribute('open');});}});
 
 window.addEventListener('resize', function () {
   clearTimeout(window.__anResize);
@@ -349,4 +297,4 @@ window.addEventListener('resize', function () {
 });
 `;
 
-export const ANALYTICS_CLIENT_JS = 'var AN_BRAND_PATHS = ' + JSON.stringify(BRAND_ICON_PATHS) + ';\n' + CLIENT;
+export const ANALYTICS_CLIENT_JS = 'var AN_SELECT_GEO = ' + selectGeoRows.toString() + ';\n' + 'var AN_BRAND_PATHS = ' + JSON.stringify(BRAND_ICON_PATHS) + ';\n' + CLIENT;

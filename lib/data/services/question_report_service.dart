@@ -1,3 +1,4 @@
+import 'package:pdd_app/data/services/install_reporter.dart';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -44,6 +45,7 @@ class QuestionReportService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final payload = <String, dynamic>{
+        ...await InstallReporter.clientMetadata(),
         'kind': 'report',
         'message': text.length > maxMessageLength
             ? text.substring(0, maxMessageLength)

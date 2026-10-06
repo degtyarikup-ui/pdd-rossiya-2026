@@ -963,6 +963,12 @@ class AppLocalizationsSr extends AppLocalizations {
   String get gameOvertakingProhibited => 'Preticanje je ovde zabranjeno';
 
   @override
+  String get gameStopViolation => 'Niste se zaustavili na propisanom mestu';
+
+  @override
+  String get gameRedLightViolation => 'Prolazak na zabranjen signal';
+
+  @override
   String get gameRailwayViolation =>
       'Prelaz je zatvoren — obilaženje i ulazak su zabranjeni';
 
@@ -1118,6 +1124,47 @@ class AppLocalizationsSr extends AppLocalizations {
   @override
   String get authFailed =>
       'Prijava je otkazana ili je došlo do greške. Pokušajte ponovo.';
+
+  @override
+  String get authErrorCancelled =>
+      'Prijava nije završena. Pokušajte ponovo da izaberete nalog.';
+
+  @override
+  String get authErrorProvider =>
+      'Nije moguće dobiti podatke za prijavu od izabranog servisa.';
+
+  @override
+  String get authErrorNetwork =>
+      'Nije moguće povezati se sa serverom. Proverite internet vezu.';
+
+  @override
+  String get authErrorTimeout =>
+      'Server nije odgovorio na vreme. Pokušajte ponovo.';
+
+  @override
+  String get authErrorAppKey =>
+      'Server je odbio ovu verziju aplikacije. Ažurirajte aplikaciju iz prodavnice.';
+
+  @override
+  String get authErrorCredential =>
+      'Server nije potvrdio prijavu. Pokušajte sa drugim nalogom ili načinom prijave.';
+
+  @override
+  String get authErrorServer =>
+      'Nije moguće završiti prijavu na serveru. Pokušajte kasnije.';
+
+  @override
+  String get authErrorResponse =>
+      'Nije moguće prihvatiti sesiju prijave. Proverite datum i vreme na telefonu.';
+
+  @override
+  String get authSessionTemporary =>
+      'Prijava je uspešna. Telefon nije mogao da sačuva sesiju: posle ponovnog pokretanja morate se ponovo prijaviti.';
+
+  @override
+  String authDiagnosticCode(String code) {
+    return 'Kod za podršku: $code';
+  }
 
   @override
   String get authTitle => 'Prijava na nalog';
@@ -1301,4 +1348,38 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get gameUturn => 'Polukružno okretanje';
+
+  @override
+  String get purchaseVerificationPending =>
+      'Prodavnica je prijavila kupovinu, ali pristup još nije potvrđen. Za ponovnu proveru pritisnite „Vrati kupovine” kada internet bude dostupan.';
+
+  @override
+  String get notifAdminChannelName => 'Obaveštenja aplikacije';
+
+  @override
+  String get noticeAcknowledge => 'U redu';
+
+  @override
+  String get noticeOpen => 'Otvori';
+
+  @override
+  String get pushMessagesSetting => 'Novosti aplikacije';
+
+  @override
+  String get pushMessagesHint =>
+      'Push obaveštenja o novostima i važnim događajima';
+
+  @override
+  String get gameKeyboardHint =>
+      '↑ / W — gas · ↓ / S / razmak — kočnica · ← → / A D — skretanje';
+
+  @override
+  String get webQuarter => '3 meseca';
+
+  @override
+  String get webPaymentSoon => 'Plaćanje uskoro';
+
+  @override
+  String get webPaymentInfo =>
+      'Pristup na 3 meseca bez automatskog obnavljanja. Plaćanje na sajtu još nije dostupno.';
 }

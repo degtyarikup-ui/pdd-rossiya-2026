@@ -28,6 +28,7 @@
     if (!refUrl) return 'direct';
     try {
       var host = new URL(refUrl).hostname.toLowerCase();
+      if (host === 'threads.net' || host.endsWith('.threads.net') || host === 'threads.com' || host.endsWith('.threads.com')) return 'threads';
       if (host.indexOf('youtube.com') !== -1 || host.indexOf('youtu.be') !== -1) return 'youtube';
       if (host.indexOf('tiktok.com') !== -1) return 'tiktok';
       if (host.indexOf('instagram.com') !== -1) return 'instagram';
@@ -45,6 +46,7 @@
   function normalizeSource(raw) {
     if (!raw) return 'direct';
     var s = String(raw).toLowerCase().trim();
+    if (s === 'th' || s === 'thread' || s === 'threads') return 'threads';
     if (s === 'yt' || s === 'youtube') return 'youtube';
     if (s === 'tt' || s === 'tiktok') return 'tiktok';
     if (s === 'ig' || s === 'insta' || s === 'instagram') return 'instagram';
@@ -160,6 +162,16 @@
 
       var storeTarget = identifyTarget(target.href);
       if (storeTarget) {
+        // Preserve campaign in the store URL; do not match people by IP.
+        if (attribution.source !== 'direct' && /^[a-z0-9-]{1,32}$/.test(attribution.source)) {
+          var destination = new URL(target.href);
+          var tags = new URLSearchParams({ utm_source: attribution.source, utm_medium: attribution.medium || 'social' });
+          if (attribution.campaign !== 'none' && /^[A-Za-z0-9._-]{1,64}$/.test(attribution.campaign)) tags.set('utm_campaign', attribution.campaign);
+          if (destination.hostname === 'play.google.com') destination.searchParams.set('referrer', tags.toString());
+          if (destination.hostname === 'apps.apple.com') destination.searchParams.set('ct', tags.get('utm_campaign') || attribution.source);
+          if (storeTarget === 'web') tags.forEach(function (v,k) { destination.searchParams.set(k,v); });
+          target.href = destination.href;
+        }
         sendEvent({
           type: 'click',
           target: storeTarget,
