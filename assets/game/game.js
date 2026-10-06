@@ -93,6 +93,8 @@
   state.resolution = null;
   state.driveFaults = new Set();
   state.lastSafePosition = new THREE.Vector3(-1.8, 0, 0);
+  // One control scheme: arrows are intents (lane, exit), a hold steers.
+  state.simpleSteering = true;
   state.driveRecovery = 0;
   state.ambient = [];
   state.occluders = [];
@@ -5933,7 +5935,7 @@
     // Never silently drop a choice: while moving it is applied once stopped.
     if (!state.paused && Math.abs(state.speed) > 0.1) { state.pendingVehicle = [id, paint]; return; }
     state.pendingVehicle = null;
-    state.speed = 0; state.isAccelerating = false; state.isBraking = false; state.steering = 0; state.laneChangeX = null; state.autoPath = null; state.trail = [];
+    state.speed = 0; state.isAccelerating = false; state.isBraking = false; state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null; state.trail = [];
     if (state.vehicleId === id && (state.vehiclePaint || null) === (paint || null)) {
       sendToFlutter({ event: 'vehicle_selected', vehicleId: id, paint: state.vehiclePaint });
       return;
@@ -9764,7 +9766,7 @@
     state.resolution = { intersection, spec, motions, yielding, phase: 'manual', elapsed: 0,
       entry: playerCarGroup.position.clone(), entryYaw: playerCarGroup.rotation.y, faults: new Set(), recovery: 0 };
     if (spec.pathRules) state.resolution.pathAudit = buildManeuverAudit(state.resolution);
-    state.steering = 0; state.laneChangeX = null; state.autoPath = null;
+    state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null;
     startPlayerManeuver();
     const r = state.resolution;
     const intended = { path: r.path, length: r.length, clearDistance: r.length, halfWidth: 0.9, halfLength: 2 };
@@ -10411,7 +10413,7 @@
     // Simple mode keeps the planned route through the junction for after the
     // control release: the car stands still on it meanwhile (no teleport).
     if (state.resolution && state.simpleSteering && state.autoPath) state.resolution.pausedPath = state.autoPath;
-    state.steering = 0; state.laneChangeX = null; state.autoPath = null;
+    state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null;
     // A short control release makes the impact legible, but never teleports or
     // rotates the player's car. After it expires the player can immediately
     // steer around the stationary crash participant.
@@ -12996,7 +12998,7 @@
     if (ev.guide) ev.guide.visible = true;
     (ev.joiners || []).forEach(join => join());
     ev.joiners = null;
-    state.speed = 0; state.isAccelerating = false; state.steering = 0; state.laneChangeX = null; state.autoPath = null;
+    state.speed = 0; state.isAccelerating = false; state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null;
     state.isAtSituation = true;
     sendToFlutter({ event: 'approach_situation', situation: ev.situation });
   }
@@ -14225,6 +14227,64 @@
     return { path, length: path.getLength(), s: 0 };
   }
 
+  // One step of the assist along a planned line (a Stanley controller): aim
+  // along the line's direction a little ahead, corrected for the sideways
+  // offset, and turn the wheel no tighter than the car's turning circle.
+  // Returns the new heading; drops the plan at its end or if the car has
+  // been taken far off it.
+  const ASSIST_MIN_RADIUS = 2.8; // the tightest planned loops (U-turns) are ~3.2 m
+  function trackPath(ap, pos, yaw, step) {
+    let best = ap.s, bestD = Infinity;
+    const to = Math.min(ap.length, ap.s + Math.max(3, step * 4 + 2));
+    for (let s = Math.max(0, ap.s - 1); s <= to; s += 0.2) {
+      const p = ap.path.getPointAt(s / ap.length), d = (p.x - pos.x) ** 2 + (p.z - pos.z) ** 2;
+      if (d < bestD) { bestD = d; best = s; }
+    }
+    ap.s = best;
+    const v = Math.abs(state.speed);
+    const u = best / ap.length, p = ap.path.getPointAt(u);
+    const lead = Math.min(ap.length, best + 0.8 + v * 0.2);
+    const t = ap.path.getTangentAt(lead / ap.length), here = ap.path.getTangentAt(u);
+    const lineYaw = Math.atan2(t.x, t.z);
+    // Positive when the car is left of the line (left of +Z is +X).
+    const e = (pos.x - p.x) * here.z - (pos.z - p.z) * here.x;
+    const target = lineYaw - Math.atan2(3.2 * e, v + 1.5);
+    const err = Math.atan2(Math.sin(target - yaw), Math.cos(target - yaw));
+    const turn = THREE.MathUtils.clamp(err, -Math.abs(step) / ASSIST_MIN_RADIUS, Math.abs(step) / ASSIST_MIN_RADIUS);
+    if (best >= ap.length - 0.3 || bestD > 3.5 * 3.5) state.autoPath = null;
+    // e and the line's left normal, for the caller's pull back onto it.
+    return { yaw: yaw + turn, e, nx: here.z, nz: -here.x };
+  }
+
+  // A held arrow (longer than a tap) is the wheel itself, as in manual
+  // driving; let go, the assist takes over again from wherever the car is.
+  const MANUAL_HOLD = 0.42;
+  function updateSteerHold(dt) {
+    const press = state.steerPress;
+    if (!press && state.manualSteer) endManualSteer(); // a release that never arrived
+    if (!press || state.manualSteer || press.uturn || state.paused || state.driveRecovery) return;
+    press.t += dt;
+    const allowed = (!state.isAtSituation || state.resolution?.phase === 'manual') && !state.resolution?.recovery;
+    if (press.t < MANUAL_HOLD || !allowed) return;
+    state.manualSteer = true;
+    state.steering = press.dir;
+    state.autoPath = null; state.laneChangeX = null; state.curveLaneTarget = null;
+    heldExit = null; heldExitDone = true;
+    state.steerHold = 0; state.steerHoldSide = press.dir;
+  }
+  function endManualSteer() {
+    state.manualSteer = false; state.steering = 0;
+    const r = state.resolution;
+    if (!r || r.phase !== 'manual' || r.recovery) return;
+    // The exit the car now points at becomes the choice (the player may have
+    // steered into another road than the one picked with a tap).
+    const yaw = Math.atan2(Math.sin(playerCarGroup.rotation.y), Math.cos(playerCarGroup.rotation.y));
+    const previews = r.intersection.previews || {};
+    const pointed = Math.abs(yaw) < 0.6 ? null : Math.abs(yaw) > 2.4 ? 'uturn' : yaw > 0 ? 'left' : 'right';
+    if (pointed && (previews[pointed] || pointed === 'uturn' && uturnFits(r))) r.simpleChoice = pointed;
+    applyJunctionChoice(r);
+  }
+
   // At a junction an arrow picks the exit (only roads that exist); the car
   // then drives it by itself. Pressing the same arrow again goes back to
   // straight on. The choice is open until the car reaches the turn.
@@ -14395,7 +14455,7 @@
   // «Простое управление»: the wheel turns only inside a junction (after the
   // answer) or in reverse; elsewhere an arrow means the neighbouring lane.
   function freeWheel() {
-    return !state.simpleSteering;
+    return !state.simpleSteering || !!state.manualSteer;
   }
 
   function applySteeringAssist(dt) {
@@ -14453,7 +14513,7 @@
       const axis = Math.cos(yaw) < 0 ? Math.PI : 0;
       const off = Math.atan2(Math.sin(axis - yaw), Math.cos(axis - yaw));
       const lane = nearestLaneX(x);
-      if (Math.abs(off) < 0.3 && (Math.abs(lane - x) > 0.08 || Math.abs(off) > 0.01)) {
+      if (!state.manualSteer && Math.abs(off) < 0.7 && (Math.abs(lane - x) > 0.08 || Math.abs(off) > 0.01)) {
         state.laneChangeX = lane;
         planLaneCurve(lane);
         return;
@@ -14496,6 +14556,7 @@
   }
 
   function integrateDriving(dt, limit = state.maxSpeed) {
+    updateSteerHold(dt);
     updateHeldExit();
     applySteeringAssist(dt);
     if (state.autoPath && state.resolution) limit = Math.min(limit, curveSpeedLimit(state.autoPath));
@@ -14520,10 +14581,21 @@
       // Slow steering remains available when the nose is pressed against a curb.
       // In reverse the rear swings the other way, as on a real car.
       if (state.steering && !freeWheel()) state.steering = 0;
-      playerCarGroup.rotation.y += (state.steering || 0) * Math.sign(state.speed || 1) *
-        Math.min(1.8, Math.max(state.isAccelerating ? 1 : 0, Math.abs(state.speed)) * 0.32) /
+      // A held arrow in the assisted scheme turns the wheel more gently, and
+      // on an open road (not at a junction, not creeping) only up to ~30°
+      // off the road's axis: enough to change lanes or go round something,
+      // never straight into a kerb.
+      const assisted = state.simpleSteering && state.manualSteer;
+      let wheel = (state.steering || 0) * Math.sign(state.speed || 1) *
+        Math.min(assisted ? 1.0 : 1.8, Math.max(state.isAccelerating ? 1 : 0, Math.abs(state.speed)) * (assisted ? 0.2 : 0.32)) /
         // Softer at speed: a held arrow does not throw the car across the road.
         (1 + Math.max(0, Math.abs(state.speed) - 8) * 0.04) * dt / steps;
+      if (assisted && wheel && !state.resolution && Math.abs(state.speed) > 4) {
+        const axis = Math.cos(playerCarGroup.rotation.y) < 0 ? Math.PI : 0;
+        const off = Math.atan2(Math.sin(playerCarGroup.rotation.y + wheel - axis), Math.cos(playerCarGroup.rotation.y + wheel - axis));
+        if (Math.abs(off) > 0.52 && Math.sign(off) === Math.sign(wheel)) wheel = 0;
+      }
+      playerCarGroup.rotation.y += wheel;
       let desiredYaw = playerCarGroup.rotation.y;
       let dx = Math.sin(desiredYaw) * step, dz = Math.cos(desiredYaw) * step;
       const ap = state.autoPath;
@@ -14545,14 +14617,34 @@
         desiredYaw = yaw; playerCarGroup.rotation.y = yaw;
         dx = x - before.x; dz = z - before.z;
       } else if (ap && step > 0) {
-        // «Простое управление»: the car rides the planned curve exactly.
-        ap.s = Math.min(ap.length, ap.s + step);
-        const t = ap.s / ap.length, point = ap.path.getPointAt(t), tangent = ap.path.getTangentAt(t);
-        const yaw = Math.atan2(tangent.x, tangent.z);
-        desiredYaw = oldYaw + Math.atan2(Math.sin(yaw - oldYaw), Math.cos(yaw - oldYaw));
+        // Assisted steering: the planned line is a guide the wheel is turned
+        // towards (a car's turning circle, no teleporting onto the curve).
+        // Off the line the car simply steers back; kerbs and traffic act on
+        // it exactly as in manual driving.
+        const track = trackPath(ap, before, oldYaw, step);
+        desiredYaw = track.yaw;
         playerCarGroup.rotation.y = desiredYaw;
-        dx = point.x - before.x; dz = point.z - before.z;
-        if (ap.s >= ap.length) state.autoPath = null;
+        // A gentle pull onto the line (at most a quarter of the step,
+        // sideways): no visible slide, but no drift towards a kerb either.
+        const pull = THREE.MathUtils.clamp(-track.e, -0.25 * step, 0.25 * step);
+        dx = Math.sin(desiredYaw) * step + track.nx * pull; dz = Math.cos(desiredYaw) * step + track.nz * pull;
+        // Safety net: a step that would put a wheel on a kerb or touch a
+        // standing car is taken on the line itself (the plan is laid on the
+        // carriageway, clear of what stands there).
+        const nextPose = { p: new THREE.Vector3(before.x + dx, 0, before.z + dz), yaw: desiredYaw,
+          halfWidth: playerCarGroup.userData.halfWidth, halfLength: playerCarGroup.userData.halfLength };
+        const touches = !playerOnRoad(nextPose.p, desiredYaw) ||
+          state.actors.some(a => !a.done && !a.fall && a.speed < 0.3 && footprintsOverlap(nextPose, actorFootprint(a), 0.06));
+        if (touches && ap.length) {
+          const u = Math.min(1, (ap.s + step) / ap.length), point = ap.path.getPointAt(u), tangent = ap.path.getTangentAt(u);
+          const lineYaw = Math.atan2(tangent.x, tangent.z);
+          if (playerOnRoad(point, lineYaw)) {
+            ap.s = Math.min(ap.length, ap.s + step);
+            desiredYaw = oldYaw + Math.atan2(Math.sin(lineYaw - oldYaw), Math.cos(lineYaw - oldYaw));
+            playerCarGroup.rotation.y = desiredYaw;
+            dx = point.x - before.x; dz = point.z - before.z;
+          }
+        }
       }
       playerCarGroup.position.x += dx; playerCarGroup.position.z += dz;
       if (!playerOnRoad()) {
@@ -14817,7 +14909,7 @@
       if (active.situation.playerStartX !== undefined) playerCarGroup.position.x = active.situation.playerStartX;
       state.speed = 0;
       state.isAccelerating = false;
-      state.steering = 0; state.laneChangeX = null; state.autoPath = null;
+      state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null;
       state.isAtSituation = true;
       sendToFlutter({ event: 'approach_situation', situation: active.situation });
     }
@@ -15103,7 +15195,7 @@
     state.currentLaneOffset = state.targetLaneOffset = -1.8;
     state.curveLaneTarget = null;
     state.violationEpisode = 0;
-    state.steering = 0; state.laneChangeX = null; state.autoPath = null; state.trail = [];
+    state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null; state.trail = [];
     state.pendingAnswer = null;
     state.blinker = null;
     state.hazard = 0;
@@ -15202,9 +15294,24 @@
       if (!r || r.phase !== 'manual' || r.recovery || !state.simpleSteering) { refuseInput(); return; }
       chooseJunctionExit('uturn');
     },
-    setSimpleSteering(on) { state.simpleSteering = Boolean(on); },
+    // The app always uses the one control scheme (taps = intents, a hold =
+    // the wheel). false is kept for the engine tests' programmatic driver,
+    // which turns the wheel by fractions every frame.
+    setSimpleSteering(on) { state.simpleSteering = on !== false; state.steerPress = null; state.manualSteer = false; },
     setSteering(direction) {
       const wanted = Math.sign(Number(direction) || 0);
+      if (state.simpleSteering) {
+        if (!wanted) {
+          state.steerPress = null;
+          if (state.manualSteer) { endManualSteer(); heldExit = null; heldExitDone = false; return; }
+        } else if (!state.steerPress || state.steerPress.dir !== wanted || state.steerPress.uturn !== (Number(direction) === 2)) {
+          if (state.manualSteer) {
+            // Already steering by hand: the other arrow steers the other way at once.
+            state.steering = wanted; state.steerPress = { dir: wanted, t: MANUAL_HOLD, uturn: false }; return;
+          }
+          state.steerPress = { dir: wanted, t: 0, uturn: Number(direction) === 2 };
+        }
+      }
       if (!freeWheel()) {
         const next = Number(direction) === 2 ? 'uturn' : wanted > 0 ? 'left' : wanted < 0 ? 'right' : null;
         if (next !== heldExit) { heldExit = next; heldExitDone = false; }

@@ -779,7 +779,8 @@ class AppLocalizationsSr extends AppLocalizations {
   String get gameContinue => 'Nastavi vožnju';
 
   @override
-  String get gameResolving => 'Gas — vožnja · strelice — skretanje';
+  String get gameResolving =>
+      'Gas — vožnja · strelica — izbor skretanja, drži — upravljaš';
 
   @override
   String get gameGarage => 'Izbor automobila';
@@ -1213,11 +1214,12 @@ class AppLocalizationsSr extends AppLocalizations {
       'Drži pedalu gasa — auto ide. Pusti je — auto se polako zaustavlja';
 
   @override
-  String get gameTipSteer => 'Pritisni strelicu — auto prelazi u susednu traku';
+  String get gameTipSteer =>
+      'Pritisni strelicu — auto prelazi u susednu traku. Drži strelicu — upravljaš sam';
 
   @override
   String get gameTipTurn =>
-      'Na raskrsnici pritisni strelicu — auto će samo skrenuti. Levo još jednom — polukružno, još jednom — pravo';
+      'Na raskrsnici pritisni strelicu — auto će skrenuti uz pomoć asistenta. Levo još jednom — polukružno, još jednom — pravo. Drži strelicu — upravljaš sam';
 
   @override
   String get gameTipNext => 'Dalje';
