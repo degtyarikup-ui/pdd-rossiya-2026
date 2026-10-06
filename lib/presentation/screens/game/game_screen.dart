@@ -123,7 +123,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   static const _tipsSeenKey = 'game_tips_seen';
   static const _simpleSteeringKey = 'game_simple_steering';
   // Taps choose the lane or the exit, a hold steers (one scheme for all).
-  static const bool _simpleSteering = true;
+  static const bool _simpleSteering = false;
   static const _seenKey = 'game_seen';
   static const _bestScoreKey = 'game_best_score';
 
@@ -454,7 +454,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
       // One control scheme for everyone (taps choose the lane or exit, a
       // hold steers): the former «simple / manual» preference is dropped.
       prefs.remove(_simpleSteeringKey).catchError((_) => false);
-      _send('setSimpleSteering', [true]);
+      _send('setSimpleSteering', [false]);
       if (!prefs.containsKey(_tipsSeenKey) && mounted) {
         setState(() => _tipStep = 0);
       }

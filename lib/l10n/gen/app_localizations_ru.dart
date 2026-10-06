@@ -775,8 +775,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameContinue => 'Продолжить движение';
 
   @override
-  String get gameResolving =>
-      'Газ — ехать · стрелка — выбрать поворот, держать — рулить';
+  String get gameResolving => 'Газ — ехать · стрелки — рулить';
 
   @override
   String get gameGarage => 'Выбор машины';
@@ -1215,11 +1214,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameTipSteer =>
-      'Нажми стрелку — машина перестроится в соседнюю полосу. Держи стрелку — рулишь сам';
+      'Держи стрелку — машина поворачивает. Отпустишь — сама выровняется в полосе';
 
   @override
   String get gameTipTurn =>
-      'На перекрёстке нажми стрелку — машина повернёт, подруливая сама. Влево ещё раз — разворот, ещё раз — прямо. Держи стрелку — рулишь сам';
+      'На перекрёстке держи стрелку, пока машина поворачивает, затем отпусти — она выровняется сама';
 
   @override
   String get gameTipNext => 'Дальше';

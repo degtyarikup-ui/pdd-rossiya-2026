@@ -93,8 +93,9 @@
   state.resolution = null;
   state.driveFaults = new Set();
   state.lastSafePosition = new THREE.Vector3(-1.8, 0, 0);
-  // One control scheme: arrows are intents (lane, exit), a hold steers.
-  state.simpleSteering = true;
+  // Free steering (a held arrow turns the wheel), made gentle: see
+  // integrateDriving. Simple «tap = intent» steering is kept for tests.
+  state.simpleSteering = false;
   state.driveRecovery = 0;
   state.ambient = [];
   state.occluders = [];
@@ -14585,15 +14586,16 @@
       // on an open road (not at a junction, not creeping) only up to ~30°
       // off the road's axis: enough to change lanes or go round something,
       // never straight into a kerb.
-      const assisted = state.simpleSteering && state.manualSteer;
+      const assisted = !state.simpleSteering || state.manualSteer;
+      // As responsive as before at turning speeds (tight turns, U-turns);
+      // softer at road speed, so a held arrow does not throw the car about.
       let wheel = (state.steering || 0) * Math.sign(state.speed || 1) *
-        Math.min(assisted ? 1.0 : 1.8, Math.max(state.isAccelerating ? 1 : 0, Math.abs(state.speed)) * (assisted ? 0.2 : 0.32)) /
-        // Softer at speed: a held arrow does not throw the car across the road.
-        (1 + Math.max(0, Math.abs(state.speed) - 8) * 0.04) * dt / steps;
+        Math.min(1.8, Math.max(state.isAccelerating ? 1 : 0, Math.abs(state.speed)) * 0.32) /
+        (1 + Math.max(0, Math.abs(state.speed) - (assisted ? 6 : 8)) * (assisted ? 0.09 : 0.04)) * dt / steps;
       if (assisted && wheel && !state.resolution && Math.abs(state.speed) > 4) {
         const axis = Math.cos(playerCarGroup.rotation.y) < 0 ? Math.PI : 0;
         const off = Math.atan2(Math.sin(playerCarGroup.rotation.y + wheel - axis), Math.cos(playerCarGroup.rotation.y + wheel - axis));
-        if (Math.abs(off) > 0.52 && Math.sign(off) === Math.sign(wheel)) wheel = 0;
+        if (Math.abs(off) > 0.6 && Math.sign(off) === Math.sign(wheel)) wheel = 0;
       }
       playerCarGroup.rotation.y += wheel;
       let desiredYaw = playerCarGroup.rotation.y;

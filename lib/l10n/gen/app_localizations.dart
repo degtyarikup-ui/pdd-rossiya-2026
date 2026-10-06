@@ -1409,7 +1409,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameResolving.
   ///
   /// In ru, this message translates to:
-  /// **'Газ — ехать · стрелка — выбрать поворот, держать — рулить'**
+  /// **'Газ — ехать · стрелки — рулить'**
   String get gameResolving;
 
   /// No description provided for @gameGarage.
@@ -2165,13 +2165,13 @@ abstract class AppLocalizations {
   /// No description provided for @gameTipSteer.
   ///
   /// In ru, this message translates to:
-  /// **'Нажми стрелку — машина перестроится в соседнюю полосу. Держи стрелку — рулишь сам'**
+  /// **'Держи стрелку — машина поворачивает. Отпустишь — сама выровняется в полосе'**
   String get gameTipSteer;
 
   /// No description provided for @gameTipTurn.
   ///
   /// In ru, this message translates to:
-  /// **'На перекрёстке нажми стрелку — машина повернёт, подруливая сама. Влево ещё раз — разворот, ещё раз — прямо. Держи стрелку — рулишь сам'**
+  /// **'На перекрёстке держи стрелку, пока машина поворачивает, затем отпусти — она выровняется сама'**
   String get gameTipTurn;
 
   /// No description provided for @gameTipNext.
