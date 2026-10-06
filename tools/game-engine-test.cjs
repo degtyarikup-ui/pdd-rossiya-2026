@@ -643,7 +643,12 @@ const { chromium } = require('playwright');
           [...originalScenery].every(uuid => keptRoad.children.some(o => o.uuid === uuid));
         const result = { id, framed, exitsPrebuilt, waitsForInput, cleanRoad, sceneryPreserved, staleIgnored, clearedOnce: after === before + 1,
           resolved: !t.state.isResolvingSituation,
-          actorsFinished: t.state.actors.every(a => a.done || a.road || a.config.stationary || (a.waitsForPlayer && !a.active)) /* parked ticket actors, road-event traffic and the next (prebuilt) junction's actors waiting for the player intentionally remain */,
+          // Parked ticket actors, road-event traffic and the next (prebuilt)
+          // junction's actors waiting for the player intentionally remain; so
+          // does a car queued behind a road-event participant (a police car
+          // held up by the player, whom this test parks on the road).
+          actorsFinished: t.state.actors.every(a => a.done || a.road || a.config.stationary || (a.waitsForPlayer && !a.active) ||
+            t.state.actors.some(b => b.road && !b.done && b.mesh.getWorldPosition(new THREE.Vector3()).distanceTo(a.mesh.getWorldPosition(new THREE.Vector3())) < 14)),
           finite: Number.isFinite(t.player().position.x + t.player().position.z + t.camera().position.x),
           roadAhead: !!t.state.exitRoad,
           normalLane: t.state.targetLane === 1 };

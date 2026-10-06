@@ -111,7 +111,7 @@ const SCENES = SET === 'architecture' ? ARCH_SCENES : SET === 'bugs' ? BUG_SCENE
           const seg=buildStraightSegment(-45,200,true,${build && build.split(':')[1]});state.roadSegments.push(seg);state.exitRoad=currentCorridor=seg;nextSegmentZ=155;
           __lab.lab.origin=0;__lab.lab.id=${JSON.stringify(id)};playerCarGroup.visible=true;
           playerCarGroup.position.set(-1.8,0,0);playerCarGroup.rotation.set(0,0,0);state.paused=true;
-          state.viewportInsets={top:110,bottom:300};state.viewportTarget=null;
+          state.viewportInsets={top:120,bottom:360};state.viewportTarget=null;
           for(let i=0;i<200;i++)updateCamera(1/60);
         ` : build === 'straight' ? `
           resetGame();state.attract=false;state.roadSegments.forEach(disposeSegment);
@@ -119,7 +119,7 @@ const SCENES = SET === 'architecture' ? ARCH_SCENES : SET === 'bugs' ? BUG_SCENE
           const seg=buildStraightSegment(-45,200,true);state.roadSegments.push(seg);state.exitRoad=currentCorridor=seg;nextSegmentZ=155;
           __lab.lab.origin=40;__lab.lab.id='straight';playerCarGroup.visible=true;
           playerCarGroup.position.set(-1.8,0,25);playerCarGroup.rotation.set(0,0,0);state.paused=true;
-          state.viewportInsets={top:110,bottom:300};state.viewportTarget=null;
+          state.viewportInsets={top:120,bottom:360};state.viewportTarget=null;
           for(let i=0;i<200;i++)updateCamera(1/60);
         ` : build === 'uturn' ? `
           __lab.show('ticket_1_13');state.paused=true;
@@ -127,9 +127,9 @@ const SCENES = SET === 'architecture' ? ARCH_SCENES : SET === 'bugs' ? BUG_SCENE
           state.isAtSituation=false;state.resolution=null;
           maybeReverseWorld(true);
           const ends=corridorWorldEnds();window.__roadShot.seamZ=Math.max(...ends.map(p=>p.z));
-          state.viewportInsets={top:110,bottom:300};state.viewportTarget=null;for(let i=0;i<200;i++)updateCamera(1/60);
+          state.viewportInsets={top:120,bottom:360};state.viewportTarget=null;for(let i=0;i<200;i++)updateCamera(1/60);
           __lab.lab.origin=playerCarGroup.position.z;
-        ` : `__lab.show(${JSON.stringify(id)});state.paused=true;state.viewportInsets={top:110,bottom:300};state.viewportTarget=null;for(let i=0;i<200;i++)updateCamera(1/60);`}
+        ` : `__lab.show(${JSON.stringify(id)});state.paused=true;state.viewportInsets={top:120,bottom:360};state.viewportTarget=null;for(let i=0;i<200;i++)updateCamera(1/60);`}
         applyWeather();
         window.__roadShot.origin=__lab.lab.origin;window.__roadShot.seamZ=window.__roadShot.seamZ;
         window.__roadShot.crossingZ=state.roadEvent&&state.roadEvent.crossingZ;

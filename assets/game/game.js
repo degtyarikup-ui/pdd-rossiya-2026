@@ -11072,7 +11072,12 @@
         const mapMaterials = planes => Array.isArray(o.material)
           ? o.material.map(m => cloneWithPlanes(m, planes))
           : cloneWithPlanes(o.material, planes);
-        if (box.min.z < from && box.max.z > to) {
+        // A non-road piece that only pokes a seam's overlap (a few cm) past
+        // the strip is not kept as a sliver standing across the new road.
+        const stub = o.userData.surface !== 'road';
+        const beyondBefore = box.min.z < from && !(stub && from - box.min.z < 0.5);
+        const beyondAfter = box.max.z > to && !(stub && box.max.z - to < 0.5);
+        if (beyondBefore && beyondAfter) {
           // Only long surfaces such as asphalt and pavement need two halves.
           const copy = o.clone(false);
           const originals = Array.isArray(o.material) ? o.material : [o.material];
@@ -11083,9 +11088,9 @@
             ? originals.map(m => cloneWithPlanes(m, [after]))
             : cloneWithPlanes(originals[0], [after]);
           o.parent.add(copy);
-        } else if (box.min.z < from) {
+        } else if (beyondBefore) {
           o.material = mapMaterials([before]);
-        } else if (box.max.z > to) {
+        } else if (beyondAfter) {
           o.material = mapMaterials([after]);
         } else {
           // Scenery wholly inside the replacement is clipped away without
@@ -11757,7 +11762,31 @@
       addEdgeLineZ(g,z-60-SEAM,z-26+SEAM,low,-1,paint);addEdgeLineZ(g,z-60-SEAM,z-26+SEAM,high,1,paint);
     });
 
-    const k=q=>situation.offsetTramRoad&&q<z?1:1-THREE.MathUtils.smoothstep(Math.abs(q-z),13,25);
+    // The motorway (2_15) widens gently over 60 m of the road before the
+    // junction (built below in place of that stretch) and narrows over the
+    // whole far half, instead of 8.4 -> 29.2 m within 12 m.
+    if(motorway)replaceCorridorStrip(z-86,z-26,g=>{
+      const kk=q=>THREE.MathUtils.smoothstep(q,z-86,z-28),low=q=>-4.2-(width/2-4.2)*kk(q),high=q=>4.2+(width/2-4.2)*kk(q);
+      const road=addRibbon(g,z-86-SEAM,z-26+SEAM,low,high,.02,new THREE.MeshLambertMaterial({color:BRAND.asphalt}),.5);
+      road.userData.surface='road';road.userData.containsRoad=p=>p.x>=low(p.z)&&p.x<=high(p.z)&&!(Math.abs(p.x)<2*kk(p.z)-.05);
+      const zs=[];for(let q=z-86;q<=z-26;q+=.5)zs.push(q);
+      for(const side of [-1,1]){const edge=side<0?low:high;g.add(extrudedStripZ(zs,q=>edge(q)+(side<0?-3.2:0),q=>edge(q)+(side>0?3.2:0),.015,new THREE.MeshLambertMaterial({color:0xB4AD92})));}
+      const paint=roadMarkingMat();
+      addEdgeLineZ(g,z-86-SEAM,z-26+SEAM,low,-1,paint);addEdgeLineZ(g,z-86-SEAM,z-26+SEAM,high,1,paint);
+      // Centre: a broken line, then a solid one as the median opens.
+      for(let q=z-85;q<z-70;q+=5)addFlatPlane(g,.13,2,0,q,.028,paint);
+      for(const x of [-.12,.12])addRibbon(g,z-70,z-56,q=>x-.065,q=>x+.065,.028,paint,.5);
+      // Each lane's divider starts once its lane has opened up.
+      for(const x of [6.2,10.4])for(let q=z-70;q<z-27;q+=5)if(width/2*kk(q)>x+1.5)for(const side of [-1,1]){const m=addFlatPlane(g,.13,2,side*x,q,.028,paint);m.userData.roadMarking=true;}
+      const mzs=zs.filter(q=>q>=z-56);
+      const median=extrudedStripZ(mzs,q=>-2*kk(q),q=>2*kk(q),.18,new THREE.MeshLambertMaterial({color:BRAND.sidewalk}));
+      median.userData.noRoad=p=>p.z>=z-56&&p.z<=z-26&&Math.abs(p.x)<2*kk(p.z)-.05;g.add(median);
+      const turf=new THREE.MeshLambertMaterial({color:season().ground});turf.userData.seasonal='ground';
+      addRibbon(g,z-56,z-26,q=>-Math.max(0,2*kk(q)-.12),q=>Math.max(0,2*kk(q)-.12),.186,turf,.5);
+    });
+    // Past the junction the lanes the merge uses must stay paved until the
+    // drivers are back in an ordinary lane, so the far side keeps its taper.
+    const k=q=>(situation.offsetTramRoad||motorway)&&q<z?1:1-THREE.MathUtils.smoothstep(Math.abs(q-z),13,25);
     const low=q=>-4.2+(offset-width/2+4.2)*k(q),high=q=>4.2+(offset+width/2-4.2)*k(q);
     const asphalt=new THREE.MeshLambertMaterial({color:BRAND.asphalt}),paint=roadMarkingMat();
     const ground=addFlatPlane(seg,76,60,0,z,-.02,new THREE.MeshLambertMaterial({color:season().ground}));ground.material.userData.seasonal='ground';
@@ -14374,11 +14403,14 @@
     // On an avenue the car may come up in any lane: it eases into the
     // ticket's lane (or the inner one) from wherever it is, over a longer run.
     const approach=state.intersections.find(it=>(it.situation.geometry==='divided_main'||it.situation.geometry==='motorway_parallel'||(it.situation.mainWidth>8.4&&it.situation.playerStartX!==undefined)||it.approachW>8.5) &&
-      playerCarGroup.position.z>=it.centerZ-(it.approachW>8.5?50:34) && playerCarGroup.position.z<=it.stopZ+.2);
+      playerCarGroup.position.z>=it.centerZ-(it.situation.geometry==='motorway_parallel'?80:it.approachW>8.5?50:34) && playerCarGroup.position.z<=it.stopZ+.2);
     if(approach && Math.cos(playerCarGroup.rotation.y)>.85 && playerCarGroup.position.x<0 && state.laneChangeX==null) {
       const car=playerCarGroup,z=car.position.z;
       const avenue=approach.approachW>8.5,goal=approach.situation.playerStartX??(avenue?-1.8:-4.1);
-      const from=avenue?car.position.x:-1.8,ease=avenue?[-46,-20]:[-26,-14];
+      // The motorway (2_15) widens over 60 m: the car moves out with the
+      // widening, into its lane before the median opens in the middle.
+      const motorway=approach.situation.geometry==='motorway_parallel';
+      const from=avenue?car.position.x:-1.8,ease=motorway?[-76,-48]:avenue?[-46,-20]:[-26,-14];
       if(avenue&&Math.abs(from-goal)<.05&&Math.abs(car.rotation.y)<.01)return;
       const lane=q=>from+(goal-from)*THREE.MathUtils.smoothstep(q-approach.centerZ,...ease);
       if(state.simpleSteering) {
@@ -14845,7 +14877,8 @@
       // Tight on what the question is about (a car and a sign next to it
       // need no 40 m of road): the view only grows for evidence far ahead.
       const minZ = Math.min(playerCarGroup.position.z - 4, ...boxes.map(b => b.min.z - 2));
-      const maxZ = Math.min(ev.stopZ + 60, Math.max(ev.stopZ + 8, ...boxes.map(b => b.max.z + b.max.y * 1.05))) + 2;
+      // Badges and sign plates stand above their objects: room for them below the HUD.
+      const maxZ = Math.min(ev.stopZ + 64, Math.max(ev.stopZ + 8, ...boxes.map(b => b.max.z + b.max.y * 1.05))) + 3.5;
       const visibleFraction = Math.max(0.25, (height - state.viewportInsets.top - state.viewportInsets.bottom) / height);
       desiredViewSize = Math.max(26, (maxX - minX) / (width / height), (maxZ - minZ) * 0.69 / visibleFraction);
       focus.set((minX + maxX) / 2, 0, (minZ + maxZ) / 2);
@@ -14854,6 +14887,17 @@
       const intersection = state.activeIntersection;
       const bounds = intersection.actors.map(a => a.viewBounds);
       intersection.seg.children.filter(o => o.userData.trajectoryLabel || o.userData.questionEvidence).forEach(o => bounds.push(new THREE.Box3().setFromObject(o)));
+      // The junction's own signals and signs are evidence too (a light at
+      // the right-hand corner must not be cropped off): their posts and
+      // heads, if they stand at the junction or on its approach.
+      intersection.seg.traverse(o => {
+        const key = o.userData.editKey || '';
+        if (!(key === 'light' || key.startsWith('sign') || o.userData.signCode) || !o.visible) return;
+        for (let p = o.parent; p && p !== intersection.seg; p = p.parent) if (p.userData.signCode || p.userData.editKey === 'light') return;
+        const b = new THREE.Box3().setFromObject(o);
+        if (b.isEmpty() || b.min.z > intersection.centerZ + 16 || b.max.z < playerCarGroup.position.z - 6 || Math.abs((b.min.x + b.max.x) / 2) > 20) return;
+        bounds.push(b);
+      });
       const minX = Math.min(-7, ...bounds.map(b => b.min.x)) - 1.5;
       const maxX = Math.max(7, ...bounds.map(b => b.max.x)) + 1.5;
       const minZ = Math.min(playerCarGroup.position.z - 2.5, intersection.centerZ - 8, ...bounds.map(b => b.min.z)) - 1.5;
