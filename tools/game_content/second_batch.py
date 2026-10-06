@@ -144,6 +144,9 @@ for key in ['18_9','24_9']:
  for t in JUNCTIONS[key]['layout']['trajectories']:
   t['labelPosition']=[-4.5,4.2 if t['label']=='А' else -10]
 JUNCTIONS['24_9']['layout']['signs'][0]['z']=-18
+# A starts at the car like B (source picture) and turns on the junction
+# itself, ending at its mouth on the opposite side.
+JUNCTIONS['24_9']['layout']['trajectories'][0]['points']=[[1.8,-18],[2.6,-6],[2.6,1],[0,3.6],[-2.6,1],[-2.6,-4]]
 
 JUNCTIONS['16_2']['route']['pathRules']['onlyManeuvers']=['right']
 

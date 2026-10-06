@@ -1703,11 +1703,11 @@ window.PDD_EXTRA_SITUATIONS = [
     "points": [
      [
       1.8,
-      -12
+      -18
      ],
      [
       2.6,
-      -3
+      -6
      ],
      [
       2.6,
@@ -1723,15 +1723,7 @@ window.PDD_EXTRA_SITUATIONS = [
      ],
      [
       -2.6,
-      -3
-     ],
-     [
-      -1.8,
-      -12
-     ],
-     [
-      -1.8,
-      -26
+      -4
      ]
     ],
     "labelPosition": [

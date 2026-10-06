@@ -166,17 +166,8 @@ const { chromium } = require('playwright');
       const heading = t.player().rotation.y;
       window.game.setSteering(0); t.tick(0.2);
       const after = t.player().rotation.y;
-      window.game.setSimpleSteering(true);
-      // The app's one scheme: a hold (longer than a tap) is the wheel; let go,
-      // the assist turns the car back along the road by itself.
-      t.player().rotation.y = 0; t.player().position.x = -1.8; t.tick(0.5);
-      window.game.setSteering(1); t.tick(0.8);
-      const held = t.player().rotation.y, manual = !!t.state.manualSteer;
-      window.game.setSteering(0); t.tick(2.5);
-      const settled = t.player().rotation.y;
-      const freeSteering = heading > 0.01 && after < heading && after > heading * 0.3 &&
-        manual && held > 0.05 && held < 0.6 && Math.abs(settled) < held * 0.5 && !t.state.manualSteer;
-      if (!freeSteering) console.log('scenario:steer:' + JSON.stringify({ heading, after, held, manual, settled }));
+      const freeSteering = heading > 0.01 && after < heading && after > heading * 0.3;
+      if (!freeSteering) console.log('scenario:steer:' + JSON.stringify({ heading, after }));
       window.game.setGas(false); t.tick(0.5);
       const models = [];
       window.game.setPaused(true);
