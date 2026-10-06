@@ -33,12 +33,19 @@ class PremiumPaywallSheet extends StatefulWidget {
 class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   PremiumTier _selectedTier = PremiumTier.threeMonths;
   bool _isLoading = false;
+  // Подключена ли оплата на сайте (спрашиваем у сервера при открытии).
+  bool _webPayLive = false;
 
   @override
   void initState() {
     super.initState();
     IapService.instance.addListener(_onIapChanged);
     if (!kIsWeb) IapService.instance.loadProducts();
+    if (kIsWeb && CountryConfig.current.hasWebPayments) {
+      PremiumService.instance.webPaymentsAvailable().then((live) {
+        if (mounted && live) setState(() => _webPayLive = true);
+      });
+    }
   }
 
   @override
@@ -116,6 +123,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     final email = await showWebPaymentDialog(
       context: context,
       tier: _selectedTier,
+      live: _webPayLive,
     );
     if (!mounted || email == null) return;
     AppToast.show(
@@ -410,121 +418,90 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
               ),
               const SizedBox(height: 14),
 
-              // 8. Legal Links & Restore
+              // 8. Legal Links & Restore — точки только между ссылками.
               Wrap(
                 alignment: WrapAlignment.center,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 spacing: 8,
                 runSpacing: 4,
-                children: [
-                  if (!isAuth) ...[
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).pop(false);
-                        AuthModalSheet.show(context);
-                      },
-                      child: Text(
-                        'Войти в профиль',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: accentColor,
-                          fontWeight: FontWeight.w500,
+                children: _withSeparators(
+                  [
+                    if (!isAuth)
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).pop(false);
+                          AuthModalSheet.show(context);
+                        },
+                        child: Text(
+                          'Войти в профиль',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: accentColor,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    ),
-                    Text(
-                      '•',
-                      style: TextStyle(
-                        color: colors.secondaryText,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                  if (webPay) ...[
-                    GestureDetector(
-                      onTap: () => launchUrl(
-                        Uri.parse(CountryConfig.current.tariffsUrl),
-                        mode: LaunchMode.externalApplication,
-                      ),
-                      child: Text(
+                    if (webPay)
+                      _buildLink(
                         appL10n.webPayTariffs,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: colors.secondaryText,
-                          decoration: TextDecoration.underline,
-                        ),
+                        CountryConfig.current.tariffsUrl,
+                        colors,
                       ),
-                    ),
-                    Text(
-                      '•',
-                      style: TextStyle(
-                        color: colors.secondaryText,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                  if (CountryConfig.current.termsUrl.isNotEmpty) ...[
-                    GestureDetector(
-                      onTap: () => launchUrl(
-                        Uri.parse(CountryConfig.current.termsUrl),
-                        mode: LaunchMode.externalApplication,
-                      ),
-                      child: Text(
+                    if (CountryConfig.current.termsUrl.isNotEmpty)
+                      _buildLink(
                         'Условия использования',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: colors.secondaryText,
-                          decoration: TextDecoration.underline,
-                        ),
+                        CountryConfig.current.termsUrl,
+                        colors,
                       ),
-                    ),
-                    Text(
-                      '•',
-                      style: TextStyle(
-                        color: colors.secondaryText,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                  if (CountryConfig.current.privacyUrl.isNotEmpty) ...[
-                    GestureDetector(
-                      onTap: () => launchUrl(
-                        Uri.parse(CountryConfig.current.privacyUrl),
-                        mode: LaunchMode.externalApplication,
-                      ),
-                      child: Text(
+                    if (CountryConfig.current.privacyUrl.isNotEmpty)
+                      _buildLink(
                         'Конфиденциальность',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: colors.secondaryText,
-                          decoration: TextDecoration.underline,
+                        CountryConfig.current.privacyUrl,
+                        colors,
+                      ),
+                    if (!kIsWeb)
+                      GestureDetector(
+                        onTap: _handleRestore,
+                        child: Text(
+                          'Восстановить',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: colors.secondaryText,
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
                       ),
-                    ),
-                    Text(
-                      '•',
-                      style: TextStyle(
-                        color: colors.secondaryText,
-                        fontSize: 10,
-                      ),
-                    ),
                   ],
-                  if (!kIsWeb)
-                    GestureDetector(
-                      onTap: _handleRestore,
-                      child: Text(
-                        'Восстановить',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: colors.secondaryText,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                ],
+                  Text(
+                    '•',
+                    style: TextStyle(color: colors.secondaryText, fontSize: 10),
+                  ),
+                ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _withSeparators(List<Widget> items, Widget separator) => [
+    for (var i = 0; i < items.length; i++) ...[
+      if (i > 0) separator,
+      items[i],
+    ],
+  ];
+
+  Widget _buildLink(String label, String url, AppThemeColors colors) {
+    return GestureDetector(
+      onTap: () =>
+          launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11.5,
+          color: colors.secondaryText,
+          decoration: TextDecoration.underline,
         ),
       ),
     );

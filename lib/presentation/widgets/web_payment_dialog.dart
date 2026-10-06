@@ -5,25 +5,31 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-/// Оплата на сайте через СБП, пока платёжка не подключена: человек
-/// оставляет почту (для письма о запуске и чека), сервер записывает выбор
-/// тарифа — это просит банк при согласовании. Возвращает почту, если
-/// выбор сохранён, иначе null.
+/// Оплата на сайте через СБП. Человек указывает почту для чека, сервер
+/// записывает выбор тарифа (этого просит банк) и, если платёжка
+/// подключена ([live]), создаёт платёж — страница уходит на форму оплаты.
+/// Пока не подключена — заглушка: почта для письма о запуске оплаты.
+///
+/// Возвращает почту, если выбор сохранён в режиме заглушки; null — отмена,
+/// ошибка или переход на форму оплаты.
 Future<String?> showWebPaymentDialog({
   required BuildContext context,
   required PremiumTier tier,
+  required bool live,
 }) {
   return showDialog<String>(
     context: context,
-    builder: (_) => _WebPaymentDialog(tier: tier),
+    builder: (_) => _WebPaymentDialog(tier: tier, live: live),
   );
 }
 
 class _WebPaymentDialog extends StatefulWidget {
-  const _WebPaymentDialog({required this.tier});
+  const _WebPaymentDialog({required this.tier, required this.live});
 
   final PremiumTier tier;
+  final bool live;
 
   @override
   State<_WebPaymentDialog> createState() => _WebPaymentDialogState();
@@ -51,12 +57,25 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
       _sending = true;
       _failed = false;
     });
-    final ok = await PremiumService.instance.recordPayIntent(
+    final start = await PremiumService.instance.startWebPayment(
       tier: widget.tier,
       email: email,
     );
     if (!mounted) return;
-    if (ok) {
+    final url = start?.url;
+    if (url != null) {
+      // Та же вкладка: после оплаты Platega вернёт на /app/?pay=done.
+      final opened = await launchUrl(
+        Uri.parse(url),
+        webOnlyWindowName: '_self',
+      );
+      if (!mounted) return;
+      if (opened) {
+        Navigator.of(context).pop();
+        return;
+      }
+    }
+    if (start != null && url == null) {
       HapticFeedbackHelper.success();
       Navigator.of(context).pop(email);
     } else {
@@ -89,7 +108,7 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            appL10n.webPayEmailBody,
+            widget.live ? appL10n.webPayLiveBody : appL10n.webPayEmailBody,
             style: TextStyle(
               fontSize: 14,
               color: colors.secondaryText,
@@ -150,7 +169,9 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Text(appL10n.webPayNotify),
+                  : Text(
+                      widget.live ? appL10n.webPayProceed : appL10n.webPayNotify,
+                    ),
             );
           },
         ),

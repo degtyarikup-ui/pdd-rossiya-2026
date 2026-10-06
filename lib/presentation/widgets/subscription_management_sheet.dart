@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -307,8 +308,9 @@ class _SubscriptionManagementSheetState
               ),
               const SizedBox(height: 12),
 
-              // 7. Restore & Support
-              Center(
+              // 7. Restore & Support (покупки магазинов восстанавливаются
+              // только в приложениях; на сайте статус приходит с аккаунтом).
+              if (!kIsWeb) Center(
                 child: TextButton(
                   onPressed: _isRestoring ? null : _handleRestore,
                   child: _isRestoring

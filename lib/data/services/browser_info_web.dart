@@ -81,3 +81,20 @@ Map<String, String> browserAcquisitionFields() {
       'marketingCampaign': campaign,
   };
 }
+
+/// Возврат с формы оплаты на сайте: `?pay=done|failed&order=<id>`.
+/// Параметры сразу убираются из адреса, чтобы перезагрузка страницы не
+/// показывала итог оплаты повторно.
+({String result, String order})? takePaymentReturn() {
+  final base = Uri.base;
+  final result = base.queryParameters['pay'];
+  final order = base.queryParameters['order'];
+  if (result == null || order == null) return null;
+  final rest = Map.of(base.queryParameters)
+    ..remove('pay')
+    ..remove('order');
+  final query = rest.isEmpty ? '' : '?${Uri(queryParameters: rest).query}';
+  final fragment = base.hasFragment ? '#${base.fragment}' : '';
+  web.window.history.replaceState(null, '', '${base.path}$query$fragment');
+  return (result: result, order: order);
+}

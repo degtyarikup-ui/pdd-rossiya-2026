@@ -3,3 +3,6 @@
 Map<String, String> browserInfoFields() => const {};
 
 Map<String, String> browserAcquisitionFields() => const {};
+
+/// Возврат с формы оплаты бывает только на вебе.
+({String result, String order})? takePaymentReturn() => null;

@@ -1417,6 +1417,24 @@ class AppLocalizationsSr extends AppLocalizations {
   String get webPayFailed => 'Slanje nije uspelo, pokušajte ponovo';
 
   @override
+  String get webPayLiveBody =>
+      'Unesite e-poštu za račun. Zatim se otvara plaćanje. Premium se uključuje odmah nakon plaćanja.';
+
+  @override
+  String get webPayProceed => 'Nastavi na plaćanje';
+
+  @override
+  String get webPaySuccess =>
+      'Plaćanje je uspelo — Premium je uključen. Hvala!';
+
+  @override
+  String get webPayPending =>
+      'Plaćanje se obrađuje — Premium će se uključiti automatski za nekoliko minuta';
+
+  @override
+  String get webPayCanceled => 'Plaćanje nije završeno — novac nije skinut';
+
+  @override
   String webPaySaved(String email) {
     return 'Hvala! Pisaćemo na $email čim plaćanje proradi';
   }

@@ -2474,6 +2474,36 @@ abstract class AppLocalizations {
   /// **'Не удалось отправить, попробуйте ещё раз'**
   String get webPayFailed;
 
+  /// No description provided for @webPayLiveBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите почту для чека. Дальше откроется оплата через СБП — по QR-коду или в приложении банка. Премиум включится сразу после оплаты.'**
+  String get webPayLiveBody;
+
+  /// No description provided for @webPayProceed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перейти к оплате'**
+  String get webPayProceed;
+
+  /// No description provided for @webPaySuccess.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата прошла — Премиум включён. Спасибо!'**
+  String get webPaySuccess;
+
+  /// No description provided for @webPayPending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Платёж обрабатывается — Премиум включится автоматически в течение нескольких минут'**
+  String get webPayPending;
+
+  /// No description provided for @webPayCanceled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата не завершена — деньги не списаны'**
+  String get webPayCanceled;
+
   /// No description provided for @webPaySaved.
   ///
   /// In ru, this message translates to:

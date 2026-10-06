@@ -468,15 +468,33 @@ class PremiumService extends ChangeNotifier {
     }
   }
 
-  /// Выбор оплаты на сайте, пока платёжка не подключена: сервер записывает
-  /// аккаунт, тариф и почту для чека. Премиум этим не выдаётся.
-  Future<bool> recordPayIntent({
+  /// Включена ли оплата на сайте (у воркера есть ключи платёжки). Пока нет —
+  /// веб-пейвол показывает заглушку «СБП скоро» и только собирает почту.
+  Future<bool> webPaymentsAvailable() async {
+    if (!BackendConfig.hasNotifier) return false;
+    try {
+      final response = await http
+          .get(Uri.parse('${BackendConfig.notifierUrl}/api/pay/status'))
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200) return false;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return data['available'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Оплата на сайте: сервер записывает выбор (аккаунт, тариф, почта для
+  /// чека) и, если платёжка подключена, создаёт платёж. null — ошибка;
+  /// `url == null` — платёжка ещё не подключена (заглушка). Премиум этим
+  /// не выдаётся: только после подтверждения оплаты платёжным сервисом.
+  Future<({String? url, String? order})?> startWebPayment({
     required PremiumTier tier,
     required String email,
     String method = 'sbp',
   }) async {
     final auth = AuthService.instance;
-    if (!auth.hasServerSession || !BackendConfig.hasNotifier) return false;
+    if (!auth.hasServerSession || !BackendConfig.hasNotifier) return null;
     try {
       final response = await http
           .post(
@@ -489,10 +507,39 @@ class PremiumService extends ChangeNotifier {
               'app': CountryConfig.current.code,
             }),
           )
-          .timeout(const Duration(seconds: 10));
-      return response.statusCode == 200;
+          .timeout(const Duration(seconds: 25));
+      if (response.statusCode != 200) return null;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final url = data['available'] == true ? data['url'] as String? : null;
+      if (url != null && !url.startsWith('https://')) return null;
+      return (url: url, order: data['order'] as String?);
     } catch (_) {
-      return false;
+      return null;
+    }
+  }
+
+  /// Возврат с формы оплаты: сервер перепроверяет платёж у платёжного
+  /// сервиса и, если он оплачен, начисляет срок. Возвращает статус заказа
+  /// (`confirmed`, `pending`, `canceled`, …) или null при ошибке сети.
+  Future<String?> checkWebPayment(String order) async {
+    final auth = AuthService.instance;
+    if (!auth.hasServerSession || !BackendConfig.hasNotifier) return null;
+    try {
+      final response = await http
+          .post(
+            Uri.parse('${BackendConfig.notifierUrl}/api/user/pay-check'),
+            headers: auth.serverHeaders,
+            body: jsonEncode({'order': order}),
+          )
+          .timeout(const Duration(seconds: 25));
+      if (response.statusCode != 200) return null;
+      final status =
+          (jsonDecode(response.body) as Map<String, dynamic>)['status']
+              as String?;
+      if (status == 'confirmed') await syncWithServer();
+      return status;
+    } catch (_) {
+      return null;
     }
   }
 

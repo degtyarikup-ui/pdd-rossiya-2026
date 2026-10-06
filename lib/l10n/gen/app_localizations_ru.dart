@@ -1419,6 +1419,23 @@ class AppLocalizationsRu extends AppLocalizations {
   String get webPayFailed => 'Не удалось отправить, попробуйте ещё раз';
 
   @override
+  String get webPayLiveBody =>
+      'Укажите почту для чека. Дальше откроется оплата через СБП — по QR-коду или в приложении банка. Премиум включится сразу после оплаты.';
+
+  @override
+  String get webPayProceed => 'Перейти к оплате';
+
+  @override
+  String get webPaySuccess => 'Оплата прошла — Премиум включён. Спасибо!';
+
+  @override
+  String get webPayPending =>
+      'Платёж обрабатывается — Премиум включится автоматически в течение нескольких минут';
+
+  @override
+  String get webPayCanceled => 'Оплата не завершена — деньги не списаны';
+
+  @override
   String webPaySaved(String email) {
     return 'Спасибо! Напишем на $email, как только оплата заработает';
   }

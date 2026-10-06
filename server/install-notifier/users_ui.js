@@ -156,7 +156,7 @@ var uvState = { users: [], filter: 'all', app: 'ru', sort: 'seen', query: '', li
 var UV_DAY = 86400000;
 var UV_PRESETS = [[7, '7 дней'], [30, '1 месяц'], [90, '3 месяца'], [180, '6 месяцев'], [365, '1 год']];
 var UV_APPS = { ru: 'Россия' };
-var UV_SOURCES = { admin_grant: 'Выдан вручную', googleplay: 'Google Play', appstore: 'App Store', google_play: 'Google Play', play: 'Google Play', app_store: 'App Store', apple: 'App Store', rustore: 'RuStore' };
+var UV_SOURCES = { admin_grant: 'Выдан вручную', googleplay: 'Google Play', appstore: 'App Store', google_play: 'Google Play', play: 'Google Play', app_store: 'App Store', apple: 'App Store', rustore: 'RuStore', web: 'Сайт (СБП)' };
 
 function uvEsc(v) {
   return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -441,8 +441,9 @@ function uvPremiumDetails(u) {
   var source = u.premiumSource === 'admin_grant' ? 'Выдан вручную'
     : UV_SOURCES[u.premiumSource] ? 'Куплен · ' + UV_SOURCES[u.premiumSource] : 'Источник неизвестен';
   var renewal = u.premiumSource === 'admin_grant' ? 'Автопродление: не применяется'
+    : u.premiumSource === 'web' ? 'Разовая оплата, без автопродления'
     : 'Автопродление: ' + (u.autoRenewEnabled === true ? 'включено' : u.autoRenewEnabled === false ? 'выключено' : 'неизвестно');
-  var checked = u.storeVerifiedAt ? 'Проверено магазином: ' + uvDate(new Date(u.storeVerifiedAt).toISOString(), true) : 'Статус магазина ещё не получен';
+  var checked = u.premiumSource === 'web' ? 'Оплата подтверждена платёжным сервисом' : u.storeVerifiedAt ? 'Проверено магазином: ' + uvDate(new Date(u.storeVerifiedAt).toISOString(), true) : 'Статус магазина ещё не получен';
   return '<div style="font-size:11.5px;color:var(--text-muted);margin-top:5px;line-height:1.5;white-space:normal">'
     + uvEsc(source) + '<br><span title="' + uvEsc(checked) + '">' + uvEsc(renewal) + '</span></div>';
 }
@@ -465,7 +466,7 @@ function uvPremiumCard(u) {
   else { title = 'Бесплатный доступ'; }
   if (u.isPremium && u.premiumSource) sub += (sub ? ' · ' : '') + (UV_SOURCES[u.premiumSource] || u.premiumSource);
   var storeNote = pro && u.premiumSource && u.premiumSource !== 'admin_grant'
-    ? '<div class="uv-preview" style="margin-top:12px">Подписка оплачена через магазин. Статус автопродления указан выше. Если выдать срок вручную, он заменит магазинный, и магазин перестанет его обновлять.</div>' : '';
+    ? '<div class="uv-preview" style="margin-top:12px">Premium оплачен (магазин или сайт). Срок, выданный вручную, действует параллельно — доступ продлится до более поздней даты. «Отозвать» снимает все сроки, включая оплаченные.</div>' : '';
 
   var presets = UV_PRESETS.map(function (p) {
     return '<button data-days="' + p[0] + '" class="' + (!g.lifetime && !g.until && g.days === p[0] ? 'active' : '') + '">' + p[1] + '</button>';

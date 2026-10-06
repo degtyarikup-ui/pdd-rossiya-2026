@@ -28,6 +28,7 @@ import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/screens/topics/topics_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_notice_widgets.dart';
 import 'package:pdd_app/presentation/widgets/premium_granted_dialog.dart';
+import 'package:pdd_app/presentation/widgets/web_payment_return.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pdd_app/presentation/widgets/sign_in_required_view.dart';
 import 'package:pdd_app/presentation/widgets/streak_celebration_dialog.dart';
@@ -67,9 +68,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
     });
     _subscribePremiumGrant();
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => unawaited(_checkNotices()),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_checkNotices());
+      // Веб: возврат с формы оплаты (?pay=done&order=…).
+      if (mounted) unawaited(handleWebPaymentReturn(context));
+    });
     WidgetsBinding.instance.addObserver(this);
     _tapSub = RemoteNotificationsService.instance.taps.listen(
       (tap) => unawaited(_runNoticeTap(tap)),

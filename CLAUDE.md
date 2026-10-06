@@ -110,11 +110,13 @@ assets/countries/{code}/images/     questions_ab/, signs/, ...
   `user.entitlements[appstore|googleplay|web|admin_grant]`, итог
   (`isPremium/premiumExpiresAt/premiumSource`) — самый дальний срок. Писать
   только через `setEntitlement`/`extendEntitlement`, не полями напрямую.
-- Оплата на сайте (РФ, СБП через агрегатора Platega) — `payments.js`, тарифы
+- Оплата на сайте (РФ, СБП через Platega) — `payments.js`, тарифы
   `WEB_TARIFFS` (99 ₽/7 дн., 290 ₽/90 дн., разово, без автопродления) = страница
-  `web_landing/ru/tarify/` = веб-пейвол. Пока платёжка не подключена — заглушка:
-  `/api/user/pay-intent` пишет аккаунт+тариф+почту (`pay_intent:<id>`, список —
-  `/api/admin/pay-intents`). Флаг страны — `CountryConfig.tariffsUrl`.
+  `web_landing/ru/tarify/` = веб-пейвол. Включается секретами воркера
+  `PLATEGA_MERCHANT_ID`/`PLATEGA_SECRET`; без них — заглушка «СБП скоро» (только
+  почта, `pay_intent:<id>`, список — `/api/admin/pay-intents`). Срок начисляется
+  только по статусу, перечитанному у Platega. Запуск и устройство —
+  `docs/web-payments-launch.md`. Флаг страны — `CountryConfig.tariffsUrl`.
 - Google Play: требование Play Billing не действует для пользователей **в
   России** (с 02.08.2022) — СБП в Android-сборке только для них. RuStore
   сторонние платежи разрешает без комиссии. iOS — только IAP, ссылок на

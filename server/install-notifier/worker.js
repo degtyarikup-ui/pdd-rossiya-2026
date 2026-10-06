@@ -12,7 +12,7 @@ import { trafficRequest } from './traffic_state.js';
 export { PurchaseClaims } from './purchase_claims.js';
 import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntitlementExpiry, StoreError } from './store_verification.js';
 import { setEntitlement } from './entitlements.js';
-import { handlePayIntent, listPayIntents } from './payments.js';
+import { handlePayIntent, handlePayCheck, handlePlategaCallback, listPayIntents, webPaymentsLive } from './payments.js';
 import { handleAuth, authorizeUserRequest, revokeUserSessions } from './user_auth.js';
 import { handleSocialAdmin, handleVideoStream, handleVideoThumb, runAutoPost } from './social.js';
 import { SOCIAL_NAV_HTML, SOCIAL_VIEW_HTML, SOCIAL_CLIENT_JS } from './social_ui.js';
@@ -3413,9 +3413,13 @@ export default {
       return jsonResponse({ ok: true, deleted: userId });
     }
 
-    // Выбор оплаты на сайте, пока СБП не подключена (см. payments.js).
+    // Оплата на сайте (СБП через Platega, см. payments.js): выбор тарифа
+    // и создание платежа; проверка статуса после возврата с формы оплаты.
     if (url.pathname === '/api/user/pay-intent' && request.method === 'POST') {
       return handlePayIntent(request, env, authenticatedUser, { jsonResponse, sendTelegram, esc });
+    }
+    if (url.pathname === '/api/user/pay-check' && request.method === 'POST') {
+      return handlePayCheck(request, env, authenticatedUser, { jsonResponse, sendTelegram, esc, trackStats });
     }
 
     if (url.pathname === '/api/user/sync' && request.method === 'POST') {
@@ -3562,6 +3566,13 @@ export default {
       } catch (_) {
         return jsonResponse({ ok: false, error: 'parse error' }, 500);
       }
+    }
+
+    if (url.pathname === '/api/pay/status' && request.method === 'GET') {
+      return jsonResponse({ ok: true, available: webPaymentsLive(env), methods: ['sbp'] }, 200, { 'Cache-Control': 'no-store' });
+    }
+    if (url.pathname === '/api/pay/platega/callback' && request.method === 'POST') {
+      return handlePlategaCallback(request, env, { jsonResponse, sendTelegram, esc, trackStats });
     }
 
     if (url.pathname === '/api/admin/pay-intents' && request.method === 'GET') {
