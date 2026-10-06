@@ -220,17 +220,8 @@ class IapService extends ChangeNotifier {
       return product.price;
     }
 
-    if (_products.isNotEmpty) {
-      final samplePrice = _products.values.first.price;
-      if (samplePrice.contains(r'$')) {
-        return tier == PremiumTier.threeMonths ? r'2,99 $' : r'0,99 $';
-      } else if (samplePrice.contains('€')) {
-        return tier == PremiumTier.threeMonths ? '2,99 €' : '0,99 €';
-      } else if (samplePrice.contains('₽')) {
-        return tier == PremiumTier.threeMonths ? '290 ₽' : '99 ₽';
-      }
-    }
-
+    // Store policy: the price shown must be the store's own, in the buyer's
+    // currency — no price is invented from another product's currency.
     return defaultPrice;
   }
 

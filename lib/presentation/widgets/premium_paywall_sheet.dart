@@ -136,22 +136,17 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   }
 
   String _getPrice(PremiumTier tier) {
+    // In the apps only the store's own price (buyer's currency) is shown;
+    // until it has loaded — a dash. The site sells in rubles.
     return IapService.instance.getProductPrice(
       tier,
-      tier == PremiumTier.threeMonths ? '290 ₽' : '99 ₽',
+      kIsWeb ? (tier == PremiumTier.threeMonths ? '290 ₽' : '99 ₽') : '—',
     );
   }
 
-  String? _getOldPrice(PremiumTier tier) {
-    if (kIsWeb || tier != PremiumTier.threeMonths) return null;
-    final price = _getPrice(tier);
-    if (price.contains(r'$')) {
-      return r'5,90 $';
-    } else if (price.contains('€')) {
-      return '5,50 €';
-    }
-    return '490 ₽';
-  }
+  // No struck-through "old" price: a fixed amount cannot match every
+  // store currency (Google Play subscriptions policy, rejected 2026-10-04).
+  String? _getOldPrice(PremiumTier tier) => null;
 
   @override
   Widget build(BuildContext context) {
