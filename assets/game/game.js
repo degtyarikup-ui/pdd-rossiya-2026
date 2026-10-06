@@ -14525,7 +14525,9 @@
     const back = Math.cos(car.rotation.y) < 0;
     const axis = back ? Math.PI : 0;
     const err = Math.atan2(Math.sin(axis - car.rotation.y), Math.cos(axis - car.rotation.y));
-    if (Math.abs(err) > 0.45) return; // a deliberate turn: leave it alone
+    // A deliberate turn (into a side road, a U-turn) is left alone: only a
+    // car already nearly along the road is straightened and kept in lane.
+    if (Math.abs(err) > 0.4) return;
     // Nearest lane centre (driver's right is -X going forward).
     // A tapped lane change («простое управление») steers to the chosen lane,
     // otherwise the car settles into the nearest one.
@@ -14587,21 +14589,13 @@
       // Slow steering remains available when the nose is pressed against a curb.
       // In reverse the rear swings the other way, as on a real car.
       if (state.steering && !freeWheel()) state.steering = 0;
-      // A held arrow in the assisted scheme turns the wheel more gently, and
-      // on an open road (not at a junction, not creeping) only up to ~30°
-      // off the road's axis: enough to change lanes or go round something,
-      // never straight into a kerb.
+      // A held arrow turns the wheel more gently at road speed (free steering).
       const assisted = !state.simpleSteering || state.manualSteer;
       // As responsive as before at turning speeds (tight turns, U-turns);
       // softer at road speed, so a held arrow does not throw the car about.
       let wheel = (state.steering || 0) * Math.sign(state.speed || 1) *
         Math.min(1.8, Math.max(state.isAccelerating ? 1 : 0, Math.abs(state.speed)) * 0.32) /
         (turningAtJunction ? 1 : 1 + Math.max(0, Math.abs(state.speed) - (assisted ? 6 : 8)) * (assisted ? 0.09 : 0.04)) * dt / steps;
-      if (assisted && wheel && !state.resolution && Math.abs(state.speed) > 4) {
-        const axis = Math.cos(playerCarGroup.rotation.y) < 0 ? Math.PI : 0;
-        const off = Math.atan2(Math.sin(playerCarGroup.rotation.y + wheel - axis), Math.cos(playerCarGroup.rotation.y + wheel - axis));
-        if (Math.abs(off) > 0.6 && Math.sign(off) === Math.sign(wheel)) wheel = 0;
-      }
       playerCarGroup.rotation.y += wheel;
       let desiredYaw = playerCarGroup.rotation.y;
       let dx = Math.sin(desiredYaw) * step, dz = Math.cos(desiredYaw) * step;
