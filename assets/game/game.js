@@ -9455,7 +9455,11 @@
       points = [start, new THREE.Vector3(-1.8, 0, z - 7), new THREE.Vector3(-R, 0, zc - 2.5), ...arc,
         new THREE.Vector3(R, 0, zc - 2.5), new THREE.Vector3(1.8, 0, z - 7), new THREE.Vector3(1.8, 0, z - 22)];
     } else {
-      points = [start, new THREE.Vector3(-1.8, 0, z), new THREE.Vector3(-1.8, 0, z + 16)];
+      // Straight on along an avenue: the nearer of its two lanes (W/8, 3W/8
+      // from the centre line), not the 1.8 m of an ordinary street.
+      const W = r.intersection.exitWidths?.straight || 8.4;
+      const x = W > 8.5 ? -(Math.abs(start.x + W * 3 / 8) < Math.abs(start.x + W / 8) ? W * 3 / 8 : W / 8) : -1.8;
+      points = [start, new THREE.Vector3(x, 0, z), new THREE.Vector3(x, 0, z + 16)];
     }
     return { points, exitYaw };
   }

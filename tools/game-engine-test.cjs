@@ -14,10 +14,14 @@ const { chromium } = require('playwright');
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('console',message=>{if(message.text().startsWith('scenario:'))console.log(message.text());});
-    await page.addInitScript(() => {
+    // Deterministic randomness (avenue widths, traffic, the situation bag):
+    // a failure repeats with the same TEST_SEED.
+    await page.addInitScript(seed => {
+      let s = seed * 2654435761 % 2147483647 || 1;
+      if (seed) Math.random = () => (s = s * 16807 % 2147483647) / 2147483647;
       window.events = [];
       window.FlutterChannel = { postMessage: message => window.events.push(JSON.parse(message)) };
-    });
+    }, Number(process.env.TEST_SEED ?? 2));
     await page.route('**/game.js', async route => {
       const response = await route.fetch();
       const body = (await response.text()).replace('  // Run init on DOM ready', `
@@ -97,7 +101,11 @@ const { chromium } = require('playwright');
             playerCarGroup.position.z = nextSegmentZ - 100;
             checkAndSpawnNext();
           }
+          // Arrive square to the stop line: a lap that coasted to a halt
+          // half-way through the lane assist (e.g. towards the right lane of
+          // a wide street) left a yaw that put a corner over the kerb here.
           playerCarGroup.position.z = state.intersections[0].stopZ;
+          playerCarGroup.rotation.y = 0;
           updatePlayerMovement(0);
         }
       };
@@ -670,7 +678,7 @@ const { chromium } = require('playwright');
         resetTrafficWaiting: t.state.actors.every(a => !a.active && a.waitsForPlayer && a.distance === 0),
         resolution: t.state.resolution, firstId: t.state.intersections[0].situation.id };
     });
-    assert(longRun.bounded);
+    assert(longRun.bounded, JSON.stringify(longRun));
     assert.equal(longRun.count, 35);
     assert.equal(longRun.actors, longRun.initialActors);
     assert.equal(longRun.resetTrafficWaiting, true);
