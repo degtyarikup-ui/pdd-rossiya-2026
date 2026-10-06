@@ -14561,6 +14561,11 @@
     updateHeldExit();
     applySteeringAssist(dt);
     if (state.autoPath && state.resolution) limit = Math.min(limit, curveSpeedLimit(state.autoPath));
+    // Turning by hand at a junction (or a U-turn): the car eases off to
+    // ~27 km/h like a driver does, so the turn stays tight however hard the
+    // gas is held. The way is not fixed: the player steers.
+    const turningAtJunction = !state.simpleSteering && state.resolution?.phase === 'manual' && !!state.steering;
+    if (turningAtJunction) limit = Math.min(limit, 7.5);
     // Brake: firm deceleration while moving; from a standstill it becomes
     // reverse gear (slow, negative speed). Gas is ignored while braking.
     if (state.isBraking) {
@@ -14591,7 +14596,7 @@
       // softer at road speed, so a held arrow does not throw the car about.
       let wheel = (state.steering || 0) * Math.sign(state.speed || 1) *
         Math.min(1.8, Math.max(state.isAccelerating ? 1 : 0, Math.abs(state.speed)) * 0.32) /
-        (1 + Math.max(0, Math.abs(state.speed) - (assisted ? 6 : 8)) * (assisted ? 0.09 : 0.04)) * dt / steps;
+        (turningAtJunction ? 1 : 1 + Math.max(0, Math.abs(state.speed) - (assisted ? 6 : 8)) * (assisted ? 0.09 : 0.04)) * dt / steps;
       if (assisted && wheel && !state.resolution && Math.abs(state.speed) > 4) {
         const axis = Math.cos(playerCarGroup.rotation.y) < 0 ? Math.PI : 0;
         const off = Math.atan2(Math.sin(playerCarGroup.rotation.y + wheel - axis), Math.cos(playerCarGroup.rotation.y + wheel - axis));
