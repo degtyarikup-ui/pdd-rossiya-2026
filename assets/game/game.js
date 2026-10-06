@@ -13331,6 +13331,8 @@
     const rain = state.rain || 0, sn = season(), snow = sn.precipitation === 'snow';
     root.traverse(o => {
       if (o.userData.puddle) o.material.opacity = rain * (snow ? 0.35 : 0.9);
+      // A dirt road keeps its own (textured) colour: only a little darker when wet.
+      else if (o.userData.dirtSurface && o.material?.color) o.material.color.setHex(0xFFFFFF).multiplyScalar(1 - rain * (snow ? 0.05 : 0.3));
       else if ((o.userData.surface === 'road' || o.material?.userData.asphalt) && o.material?.color) o.material.color.setHex(BRAND.asphalt).lerp(new THREE.Color(0x1F2228), rain * 0.8);
       // Wet paving darkens too (less than asphalt); snow keeps it light.
       else if (o.material?.userData.seasonal === 'sidewalk' && o.material.color) o.material.color.setHex(sn.sidewalk).multiplyScalar(1 - rain * (snow ? 0.08 : 0.28));
@@ -14707,8 +14709,11 @@
     for (const o of objects) {
       if (!o.visible || !(o.userData.sceneryObject || o.userData.editKey) || o.userData.billboard || o.userData.actor) continue;
       let sign = false; o.traverse(c => { const k = c.userData.editKey || ''; if (c.userData.signCode || c.userData.trafficLight || k === 'light' || k.startsWith('sign')) sign = true; }); if (sign) continue;
+      // Only standing objects: never a surface (a dirt arm, a pavement, a
+      // marking group), whatever key the lab has given it.
+      let surface = false; o.traverse(c => { if (c.userData.surface || c.userData.dirtSurface || c.userData.roadMarking) surface = true; }); if (surface) continue;
       const box = new THREE.Box3().setFromObject(o);
-      if (box.isEmpty()) continue;
+      if (box.isEmpty() || box.max.y - box.min.y < 0.3) continue;
       const sx = box.max.x - box.min.x, sz = box.max.z - box.min.z;
       if (sx > 40 || sz > 40) continue; // merged rows: their parts have no single base
       // The object's own origin is its base (a lamp's pole, not its arm over
