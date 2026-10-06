@@ -29,6 +29,22 @@
     ballast: { period: 1.6, macro: 0.1, macroScale: 1 / 28, size: 128, side: 1.6 },
     sleeper: { period: 1.6, macro: 0, macroScale: 1 / 28, size: 64, side: 1.6 },
     deck: { local: true, panel: 1.4, macro: 0.05, macroScale: 1 / 4, w: 64, h: 256 },
+    // Buildings and street furniture (pass 3): mapped in metres of the
+    // object's own geometry (u, v: metres per tile along a wall and up it).
+    plaster: { object: true, u: 4, v: 2.7, macro: 0.07, macroScale: 1 / 3, size: 256 },
+    panel: { object: true, u: 8, v: 5.4, macro: 0.05, macroScale: 1 / 2, size: 256 },
+    brick: { object: true, u: 2, v: 1.35, macro: 0.08, macroScale: 1 / 6, size: 256 },
+    roofTile: { geometry: true, macro: 0.06, macroScale: 1 / 4, size: 256 },
+    roofFlat: { object: true, u: 4, v: 0.5, macro: 0.04, macroScale: 1 / 3, size: 128 },
+    window: { geometry: true, macro: 0, macroScale: 1, w: 128, h: 128 },
+    door: { geometry: true, macro: 0, macroScale: 1, w: 64, h: 128 },
+    wood: { object: true, u: 1.2, v: 1.2, macro: 0.06, macroScale: 1 / 4, size: 128 },
+    metal: { object: true, u: 1.2, v: 1.2, macro: 0.04, macroScale: 1 / 4, size: 128 },
+    // Nature (pass 5): lawns and verges in the road frame; bark and foliage
+    // on each plant's own geometry.
+    grass: { period: 4.8, macro: 0.16, macroScale: 1 / 6, size: 128, side: 4.8 },
+    bark: { object: true, u: 0.8, v: 1.6, macro: 0, macroScale: 1, size: 64 },
+    leaves: { object: true, u: 1.6, v: 1.6, macro: 0.08, macroScale: 1 / 3, size: 128 },
   };
   const textures = new Map();
   let renderer = null, hooks = null, dirty = true;
@@ -161,6 +177,155 @@
     },
   };
 
+  // Walls carry their pattern in B (vertical faces); R repeats it for tops.
+  const wall = (w, h, rand, paint) => { const b = new Float32Array(w * h); paint(b); centre(b); return { r: b, g: macroChannel(w, h, rand), b }; };
+  Object.assign(PAINT, {
+    plaster(w, h) {
+      const rand = rng(71), n1 = tileNoise(w, 8, rand), n2 = tileNoise(w, 32, rand), n3 = tileNoise(w, 96, rand);
+      const drips = Array.from({ length: 7 }, () => [rand() * w, 0.2 + rand() * 0.5, 2 + rand() * 4]);
+      return wall(w, h, rand, b => {
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+          const height = 1 - y / (h - 1); // canvas top = top of the storey
+          let v = 0.5 + (n1(x, y) - 0.5) * 0.06 + (n2(x, y) - 0.5) * 0.05 + (n3(x, y) - 0.5) * 0.05 + (rand() - 0.5) * 0.04;
+          for (const [dx, len, wid] of drips) { const d = Math.abs(((x - dx + w * 1.5) % w) - w / 2); if (height > 1 - len && d < wid) v -= 0.025 * (1 - d / wid) * (height - (1 - len)) / len; }
+          if (height > 0.955) v -= 0.07; else if (height > 0.93) v += 0.05; // storey cornice: shadow, lit edge
+          b[y * w + x] = v;
+        }
+      });
+    },
+    panel(w, h) {
+      // 4 x 2 panels of 2 m x 2.7 m with sealed seams and their own tone.
+      const rand = rng(83), n = tileNoise(w, 64, rand), pw = w / 4, ph = h / 2;
+      const tone = Array.from({ length: 8 }, () => (rand() - 0.5) * 0.05);
+      return wall(w, h, rand, b => {
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+          const i = Math.floor(y / ph) * 4 + Math.floor(x / pw), u = x % pw, v = y % ph;
+          const d = Math.min(u + 0.5, pw - u - 0.5, v + 0.5, ph - v - 0.5);
+          let val = 0.51 + tone[i] + (n(x, y) - 0.5) * 0.04 + (rand() - 0.5) * 0.03;
+          if (d < 1.2) val = 0.33; else if (d < 2.4) val += (u < pw / 2 || v < ph / 2) ? 0.04 : -0.04;
+          b[y * w + x] = val;
+        }
+      });
+    },
+    brick(w, h) {
+      // Running bond: 8 bricks of 0.25 m per 2 m, 18 courses per 1.35 m.
+      const rand = rng(89), rows = 18, cols = 8, bw = w / cols, bh = h / rows;
+      const tone = Array.from({ length: rows * cols }, () => (rand() - 0.5) * 0.1);
+      return wall(w, h, rand, b => {
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+          const row = Math.floor(y / bh), shift = row % 2 ? bw / 2 : 0, xx = (x + shift) % w, col = Math.floor(xx / bw);
+          const u = xx - col * bw, v = y - row * bh;
+          let val = 0.48 + tone[row * cols + col] + (rand() - 0.5) * 0.06;
+          if (u < 1.6 || v < 1.4) val = 0.66;               // mortar joints
+          else if (v > bh - 1.6) val -= 0.05;              // lower edge shadow
+          b[y * w + x] = val;
+        }
+      });
+    },
+    roofTile(w, h) {
+      // Rows of overlapping tiles: 8 rows, staggered 16 tiles per row.
+      const rand = rng(97), rows = 8, cols = 16, tw = w / cols, th = h / rows, n = tileNoise(w, 32, rand);
+      const r = new Float32Array(w * h);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const row = Math.floor(y / th), xx = (x + (row % 2) * tw / 2) % w, col = Math.floor(xx / tw), u = xx - col * tw, v = (y - row * th) / th;
+        let val = 0.5 + (((row * 31 + col * 17) % 7) - 3) * 0.012 + (n(x, y) - 0.5) * 0.05 + (rand() - 0.5) * 0.03;
+        val += 0.06 * Math.sin(Math.PI * u / tw) - 0.03;   // rounded tile
+        if (v < 0.16) val -= 0.14 * (1 - v / 0.16);          // shadow under the row above
+        if (u < 1) val -= 0.05;
+        r[y * w + x] = val;
+      }
+      centre(r);
+      return { r, g: macroChannel(w, h, rand), b: r };
+    },
+    roofFlat(w, h) {
+      // Bitumen membrane in 1 m strips (top), concrete coping (sides).
+      const rand = rng(101), n = tileNoise(w, 16, rand), r = new Float32Array(w * h), b = new Float32Array(w * h);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        let val = 0.5 + (n(x, y) - 0.5) * 0.05 + (rand() - 0.5) * 0.025;
+        if (x % (w / 4) < 1.5) val -= 0.05;
+        r[y * w + x] = val;
+        b[y * w + x] = 0.52 + (rand() - 0.5) * 0.06 + (n(x * 2, y) - 0.5) * 0.04 + (y < 3 ? 0.08 : 0) - (y > h - 4 ? 0.08 : 0);
+      }
+      speckles(r, w, h, 60, rand, [0.4, 0.8], [0.52, 0.56]);
+      centre(r); centre(b);
+      return { r, g: macroChannel(w, h, rand), b };
+    },
+    // A whole window: light frame and sill, cross mullion, glass that is
+    // darker at the bottom with a soft diagonal reflection.
+    window(w, h) {
+      const r = new Float32Array(w * h), f = 7;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const top = y / (h - 1), u = x / (w - 1);
+        let val = 0.36 + 0.14 * (1 - top) + (Math.abs((u * 0.7 + (1 - top)) % 1 - 0.55) < 0.06 ? 0.08 : 0);
+        const frame = x < f || x >= w - f || y < f || y >= h - f - 6 || Math.abs(x - w / 2) < 3 || Math.abs(y - h * 0.38) < 3;
+        if (frame) val = 0.86;
+        if (y >= h - 8) val = 0.96;                          // sill
+        else if (y >= h - f - 6 && y < h - 8) val = 0.7;
+        if (!frame && (x < f + 3 || y < f + 3)) val -= 0.08; // reveal shadow inside the frame
+        r[y * w + x] = val;
+      }
+      return { r, g: new Float32Array(w * h).fill(0.5), b: r };
+    },
+    door(w, h) {
+      const r = new Float32Array(w * h);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        let val = 0.5;
+        if (x < 4 || x >= w - 4 || y < 4) val = 0.7;                       // frame
+        else if (y > 12 && y < 48 && x > 12 && x < w - 12) val = 0.38;    // glazed upper panel
+        else if (y > 58 && y < h - 12 && x > 12 && x < w - 12) val = 0.45; // lower panel
+        if (Math.abs(x - (w - 14)) < 3 && Math.abs(y - h * 0.55) < 6) val = 0.85; // handle
+        r[y * w + x] = val;
+      }
+      return { r, g: new Float32Array(w * h).fill(0.5), b: r };
+    },
+    wood(w, h) {
+      const rand = rng(103), n = tileNoise(w, 8, rand), streak = Array.from({ length: w }, () => (rand() - 0.5) * 0.08);
+      const b = new Float32Array(w * h);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++)
+        b[y * w + x] = 0.5 + streak[x] + (n(x * 3, y * 0.4) - 0.5) * 0.1 + (rand() - 0.5) * 0.03;
+      centre(b);
+      return { r: b, g: macroChannel(w, h, rand), b };
+    },
+    metal(w, h) {
+      // Ribbed sheet: 8 ribs per 1.2 m.
+      const rand = rng(107), b = new Float32Array(w * h), rib = w / 8;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const u = (x % rib) / rib;
+        b[y * w + x] = 0.5 + 0.08 * Math.cos(u * Math.PI * 2) + (rand() - 0.5) * 0.03;
+      }
+      centre(b);
+      return { r: b, g: macroChannel(w, h, rand), b };
+    },
+  });
+
+  Object.assign(PAINT, {
+    grass(w, h) {
+      // Fine blades and clover-dark patches, no large repeating blotches.
+      const rand = rng(113), n = tileNoise(w, 8, rand), m = tileNoise(w, 24, rand), r = new Float32Array(w * h);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) r[y * w + x] = 0.5 + (n(x, y) - 0.5) * 0.08 + (m(x, y) - 0.5) * 0.07 + (rand() - 0.5) * 0.09;
+      speckles(r, w, h, 700, rand, [0.3, 0.8], [0.58, 0.66]);
+      speckles(r, w, h, 500, rand, [0.3, 0.7], [0.36, 0.42]);
+      centre(r, 0.5, 0.25, 0.75);
+      return { r, g: macroChannel(w, h, rand), b: r };
+    },
+    bark(w, h) {
+      const rand = rng(127), b = new Float32Array(w * h), streak = Array.from({ length: w }, () => (rand() - 0.5) * 0.18), n = tileNoise(w, 8, rand);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) b[y * w + x] = 0.5 + streak[x] * (0.6 + n(x, y)) + (rand() - 0.5) * 0.06;
+      centre(b);
+      return { r: b, g: new Float32Array(w * h).fill(0.5), b };
+    },
+    leaves(w, h) {
+      // Clusters of leaves: light tops, dark gaps between them.
+      const rand = rng(131), r = new Float32Array(w * h).fill(0.44);
+      for (let i = 0; i < r.length; i++) r[i] += (rand() - 0.5) * 0.06;
+      speckles(r, w, h, 260, rand, [2.5, 5.5], [0.5, 0.62]);
+      speckles(r, w, h, 200, rand, [1.2, 2.6], [0.58, 0.7]);
+      speckles(r, w, h, 120, rand, [0.8, 1.6], [0.3, 0.38]);
+      centre(r, 0.5, 0.22, 0.78);
+      return { r, g: macroChannel(w, h, rand), b: r };
+    },
+  });
+
   function texture(kind) {
     if (textures.has(kind)) return textures.get(kind);
     const k = KINDS[kind], w = k.w || k.size, h = k.h || k.size;
@@ -275,6 +440,8 @@
     if (u.surface === 'sidewalk' || m.userData.seasonal === 'sidewalk' || SIDEWALKS.has(hex)) return 'pavement';
     if (u.roadShoulder || hex === 0xB4AD92) return 'gravel';
     if (u.ballast || hex === 0x8C867C) return 'ballast';
+    // Lawns, verges and fields (season-coloured ground under the roads).
+    if (/^(ground|verge\d)$/.test(m.userData.seasonal || '') && mesh.geometry && mesh.geometry.type !== 'SphereGeometry') return 'grass';
     if (u.sleepers || hex === 0x5E4B3B) return 'sleeper';
     return null;
   }
@@ -287,6 +454,7 @@
       geometry = mesh.geometry = geometry.clone();
     }
     const k = KINDS[kind], pos = geometry.attributes.position, nor = geometry.attributes.normal;
+    if (k.object || k.geometry) return false; // baked by skinObject at creation
     mesh.updateWorldMatrix(true, false);
     const M = mesh.matrixWorld; normalMatrix.getNormalMatrix(M);
     const uv = new Float32Array(pos.count * 2), side = new Float32Array(pos.count);
@@ -352,6 +520,39 @@
     return baked;
   }
 
+  // Bake an object-mapped kind into a mesh's geometry. Box-like geometry:
+  // vertical faces get (metres along the face, metres up) in B, tops their
+  // plan position in R. Geometry kinds scale the existing uv (su, sv).
+  // opts.u0 / opts.v0 shift the pattern (panel seams between windows).
+  function skinObject(mesh, kind, opts = {}) {
+    const k = KINDS[kind], g = mesh.geometry;
+    if (!g || !g.attributes.position) return mesh;
+    decorate(mesh.material, kind);
+    const pos = g.attributes.position, nor = g.attributes.normal, count = pos.count;
+    const uv = new Float32Array(count * 2), side = new Float32Array(count);
+    if (opts.world) {
+      // A world-mapped kind on a free-standing plane: plan position in metres.
+      for (let i = 0; i < count; i++) { uv[2 * i] = pos.getX(i) / k.period; uv[2 * i + 1] = pos.getZ(i) / k.period; }
+    } else if (k.geometry) {
+      const src = g.attributes.uv;
+      for (let i = 0; i < count; i++) { uv[2 * i] = (src ? src.getX(i) : 0) * (opts.su || 1); uv[2 * i + 1] = (src ? src.getY(i) : 0) * (opts.sv || 1); }
+    } else {
+      if (!g.boundingBox) g.computeBoundingBox();
+      const min = g.boundingBox.min, u0 = opts.u0 || 0, v0 = opts.v0 || 0;
+      for (let i = 0; i < count; i++) {
+        const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+        const ny = nor ? nor.getY(i) : 1, nx = nor ? nor.getX(i) : 0;
+        if (Math.abs(ny) > 0.6) { uv[2 * i] = (x - min.x) / k.u; uv[2 * i + 1] = (z - min.z) / k.u; continue; }
+        const along = Math.abs(nx) > 0.5 ? z - min.z : x - min.x;
+        uv[2 * i] = (along + u0) / k.u; uv[2 * i + 1] = (y - min.y + v0) / k.v; side[i] = 1;
+      }
+    }
+    g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    g.setAttribute('pddSide', new THREE.BufferAttribute(side, 1));
+    mesh.userData.pddSkinned = kind;
+    return mesh;
+  }
+
   window.PDD_ROADS = {
     kinds: KINDS,
     // hooks: { roots(): live road groups, lineage(): the road being driven }
@@ -362,7 +563,7 @@
       r.render = (s, c) => { sweep(); return render(s, c); };
       r.render.pddRoads = true;
     },
-    adopt, rebase, sweep, invalidate() { dirty = true; },
+    adopt, rebase, sweep, invalidate() { dirty = true; }, skinObject,
     reset() { frames = new Map(); nextFrame = 1; makeFrame(); dirty = true; },
     texture, decorate, kindOf,
     frame: id => { const f = frames.get(id); return f && { ...f }; },

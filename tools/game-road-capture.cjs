@@ -6,13 +6,15 @@ const path = require('node:path');
 const { chromium } = require('playwright');
 
 const PASS = process.env.PASS || 'after';
-const OUT = path.join('output/game-textures/roads', PASS + (process.env.SEASON ? '-' + process.env.SEASON : ''));
+// SET=architecture captures pass 3 (houses, fences, kiosks, shelters) instead of roads.
+const SET = process.env.SET || 'roads';
+const OUT = path.join('output/game-textures', SET, PASS + (process.env.SEASON ? '-' + process.env.SEASON : ''));
 const SEASON = process.env.SEASON || 'summer';
 const URL = (process.env.GAME_LAB_URL || 'http://127.0.0.1:8941') + '/game/index.html';
 
 // Close-up cameras are orthographic like the game: size = visible height in metres.
 // z is measured from the scene origin (junction centre, question stop line or crossing).
-const SCENES = [
+const ROAD_SCENES = [
   { id: 'straight', label: 'Прямая дорога', build: 'straight', close: [
     { name: 'curb', x: -6.2, z: 0, size: 7, yaw: 0.5, pitch: 0.82 },
     { name: 'lanes', x: -1.8, z: 0, size: 8, yaw: 0.2, pitch: 0.9 } ] },
@@ -59,6 +61,19 @@ const SCENES = [
     { name: 'bay', x: 6, z: 0, size: 11, yaw: 0.4, pitch: 0.85 } ] },
 ];
 
+// Architecture: each district along a straight street, facades seen from the
+// road (yaw ±π/2, low pitch) and from the game camera.
+const facade = (name, x, z, size = 14, pitch = 0.3) => ({ name, x, z, size, yaw: x > 0 ? -Math.PI / 2 : Math.PI / 2, pitch, hideNear: true, hideActors: true });
+const ARCH_SCENES = [
+  { id: 'park', label: 'Парк (район 0)', build: 'district:0', close: [facade('far', -40, 3, 30, 0.45)] },
+  { id: 'homes', label: 'Частные дома (район 1)', build: 'district:1', close: [facade('house', -12.5, 3), facade('house2', 12.5, 23), { name: 'fence', x: -8, z: 6, size: 7, yaw: 1.2, pitch: 0.45 }] },
+  { id: 'boulevard', label: 'Бульвар (район 2)', build: 'district:2', close: [facade('block', -14, 3, 20), facade('kiosk', -9.4, -30.2, 6), facade('block2', 14, 23, 20)] },
+  { id: 'towers', label: 'Высотки (район 3)', build: 'district:3', close: [facade('tower', -19, 3, 40, 0.2), facade('tower2', 19, 23, 40, 0.2)] },
+  { id: 'ticket_21_8', label: 'Двор с аркой', close: [] },
+  { id: 'event_busstop', label: 'Остановка', close: [facade('shelter', -10.5, 0, 9, 0.2)] },
+];
+const SCENES = SET === 'architecture' ? ARCH_SCENES : ROAD_SCENES;
+
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch({ headless: true,
@@ -88,7 +103,15 @@ const SCENES = [
         window.__roadShot={};
         window.game.setSeason(${JSON.stringify(SEASON)});
         __lab.lab.freeCam=false;
-        ${build === 'straight' ? `
+        ${build && build.startsWith('district:') ? `
+          resetGame();state.attract=false;state.roadSegments.forEach(disposeSegment);
+          state.roadSegments=[];state.actors=[];state.intersections=[];state.ambient=[];state.activeIntersection=null;state.occluders=[];state.roadEvent=null;state.exitRoad=currentCorridor=null;
+          const seg=buildStraightSegment(-45,200,true,${build && build.split(':')[1]});state.roadSegments.push(seg);state.exitRoad=currentCorridor=seg;nextSegmentZ=155;
+          __lab.lab.origin=0;__lab.lab.id=${JSON.stringify(id)};playerCarGroup.visible=true;
+          playerCarGroup.position.set(-1.8,0,0);playerCarGroup.rotation.set(0,0,0);state.paused=true;
+          state.viewportInsets={top:110,bottom:300};state.viewportTarget=null;
+          for(let i=0;i<200;i++)updateCamera(1/60);
+        ` : build === 'straight' ? `
           resetGame();state.attract=false;state.roadSegments.forEach(disposeSegment);
           state.roadSegments=[];state.actors=[];state.intersections=[];state.ambient=[];state.activeIntersection=null;state.occluders=[];state.roadEvent=null;state.exitRoad=currentCorridor=null;
           const seg=buildStraightSegment(-45,200,true);state.roadSegments.push(seg);state.exitRoad=currentCorridor=seg;nextSegmentZ=155;
@@ -120,7 +143,7 @@ const SCENES = [
       for (const c of scene.close) {
         await shoot(c.name, `(()=>{const o=__lab.lab.orbit,base=${c.at ? `window.__roadShot.${c.at}` : 'window.__roadShot.origin'};
           __lab.lab.freeCam=true;o.target.set(${c.x},0,base+${c.z});o.size=${c.size};o.yaw=${c.yaw};o.pitch=${c.pitch};o.dist=80;
-          updateCamera(1/60);const hidden=[];${c.hideActors?`state.roadSegments.forEach(r=>r.traverse(o=>{if(o.userData.actor&&o.visible){o.visible=false;hidden.push(o);}}));`:''}renderer.render(scene,camera);const url=renderer.domElement.toDataURL('image/png');hidden.forEach(o=>o.visible=true);return url;})()`);
+          updateCamera(1/60);const hidden=[];${c.hideNear?`state.roadSegments.forEach(r=>r.traverse(o=>{if(!o.visible||o===r||!(o.isMesh||o.isGroup))return;if(o.parent!==r&&!(o.parent&&o.parent.userData.roadEnds))return;const b=new THREE.Box3().setFromObject(o);if(b.isEmpty())return;const cx=(b.min.x+b.max.x)/2;if(cx*Math.sign(${c.x})<-4.5&&(b.max.x-b.min.x)<60){o.visible=false;hidden.push(o);}}));`:''}${c.hideActors?`state.roadSegments.forEach(r=>r.traverse(o=>{if(o.userData.actor&&o.visible){o.visible=false;hidden.push(o);}}));`:''}renderer.render(scene,camera);const url=renderer.domElement.toDataURL('image/png');hidden.forEach(o=>o.visible=true);return url;})()`);
       }
       console.log('captured', scene.id);
     }

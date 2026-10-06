@@ -2,11 +2,12 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const sharp = require('sharp');
-const ROOT = 'output/game-textures/roads';
+const SET = process.env.SET || 'roads';
+const ROOT = 'output/game-textures/' + SET;
 const NAMES = { game: 'Игровая камера', curb: 'Тротуар и бордюр', lanes: 'Асфальт и разметка', corner: 'Скруглённый угол',
   centre: 'Центр перекрёстка', seam: 'Стык сегментов', mouth: 'Примыкание', island: 'Островок', flare: 'Въезд на кольцо',
   median: 'Разделитель', transition: 'Грунт → асфальт', driveway: 'Въезд во двор', islands: 'Островки', bend: 'Изгиб',
-  deck: 'Настил переезда', ballast: 'Балласт и шпалы', pavement: 'Тротуар у рельсов', shoulder: 'Обочина', junction: 'Угол примыкания', bay: 'Карман' };
+  deck: 'Настил переезда', ballast: 'Балласт и шпалы', pavement: 'Тротуар у рельсов', shoulder: 'Обочина', junction: 'Угол примыкания', bay: 'Карман', far: 'Дальний план', house: 'Фасад дома', house2: 'Фасад дома 2', fence: 'Забор', block: 'Фасад (панели или кирпич)', block2: 'Фасад 2', kiosk: 'Киоск', tower: 'Высотка', tower2: 'Высотка 2', shelter: 'Остановка' };
 
 (async () => {
   const capture = pass => JSON.parse(fs.readFileSync(path.join(ROOT, pass, 'capture.json'), 'utf8'));
@@ -34,7 +35,7 @@ const NAMES = { game: 'Игровая камера', curb: 'Тротуар и б
   const benchRows = bench ? bench.before.map((b, i) => { const a = bench.after[i];
     return `<tr><td>${esc(b.id)}</td><td>${b.calls} → ${a.calls}</td><td>${b.triangles} → ${a.triangles}</td><td>${b.textures} → ${a.textures}</td><td>${b.medianMs} → ${a.medianMs}</td></tr>`; }).join('') : '';
   const html = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Дорога: до и после</title><style>
+<title>${SET === 'roads' ? 'Дорога' : 'Архитектура'}: до и после</title><style>
 :root{--bg:#f4f5f7;--card:#fff;--ink:#1d2228;--muted:#69717c;--line:#dde1e6;--accent:#0574F8}
 @media (prefers-color-scheme:dark){:root{--bg:#15181c;--card:#1e2227;--ink:#e8ebef;--muted:#9aa3ad;--line:#2d333a}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,system-ui,Segoe UI,Roboto,sans-serif}
@@ -47,7 +48,7 @@ figure.none div{aspect-ratio:3/4;display:grid;place-items:center;color:var(--mut
 td,th{padding:6px 10px;border-bottom:1px solid var(--line);text-align:left}
 @media (max-width:600px){.pair{gap:6px}figcaption{font-size:12px;padding:4px 6px}}
 </style></head><body><main>
-<h1>Прогон 2: дорога — до и после</h1>
+<h1>${SET === 'roads' ? 'Прогон 2: дорога' : 'Прогон 3: архитектура'} — до и после</h1>
 <p>Снимки реального движка (лаборатория игры, лето, ясно, телефонный кадр 390×844 @2x). Слева — до прогона, справа — после. Крупные планы — ортокамера лаборатории с подписанным центром. Декор вокруг дороги может слегка отличаться: число создаваемых объектов изменилось, а Three.js тратит случайные числа на их идентификаторы.</p>
 <nav>${scenes.map(s => `<a href="#${s.id}">${esc(s.label)}</a>`).join('')}</nav>
 ${scenes.map(s => `<section id="${s.id}"><h2>${esc(s.label)} <small style="color:var(--muted);font-weight:400">${esc(s.id)}</small></h2>

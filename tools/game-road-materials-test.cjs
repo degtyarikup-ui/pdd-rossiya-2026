@@ -236,11 +236,14 @@ const sameTexel = (a, b, eps = 1e-4) => [0, 1].every(i => { const d = Math.abs(a
         counts.push(renderer.info.memory.textures); frames.push(window.PDD_ROADS.frameCount());
       }
       roadTest.clear(); roadTest.render();
-      return { disposed, counts, frames, shared: window.PDD_ROADS.sharedTextures().length, after: renderer.info.memory.textures,
+      // Road surface maps only (pass 3 adds facade, roof and window maps).
+      const roadKinds = ['asphalt', 'pavement', 'gravel', 'ballast', 'sleeper', 'deck'];
+      return { disposed, counts, frames, shared: window.PDD_ROADS.sharedTextures().filter(t => roadKinds.includes(t.name.slice(5))).length, allShared: window.PDD_ROADS.sharedTextures().length, after: renderer.info.memory.textures,
         bytes: window.PDD_ROADS.sharedTextures().reduce((s, t) => s + t.image.width * t.image.height * 4 * 4 / 3, 0) };
     });
     assert.equal(life.disposed, 0, 'a shared road map was disposed with a segment');
     assert.ok(life.shared <= 6, 'road maps: ' + life.shared);
+    assert.ok(life.allShared <= 20, 'all shared surface maps (roads, buildings, nature): ' + life.allShared);
     const firstHalf = Math.max(...life.counts.slice(10, 20)), secondHalf = Math.max(...life.counts.slice(30));
     assert.ok(secondHalf <= firstHalf + 2, 'GPU textures grow: ' + life.counts.join(','));
     assert.ok(Math.max(...life.frames) <= 6, 'road frames grow: ' + life.frames.join(','));
