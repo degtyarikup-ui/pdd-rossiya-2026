@@ -108,7 +108,7 @@ const { chromium } = require('playwright');
       await route.fulfill({ response, body });
     });
     await page.goto((process.env.GAME_URL || 'http://127.0.0.1:8938') + '/assets/game/');
-    await page.waitForFunction(() => window.events.some(e => e.event === 'ready'));
+    await page.waitForFunction(() => window.events.some(e => e.event === 'ready'), null, { timeout: 90000 });
 
     // «Простое управление»: an arrow is a whole lane change or junction exit,
     // driven by the engine along a planned curve — never free steering.

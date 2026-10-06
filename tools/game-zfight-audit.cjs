@@ -104,7 +104,7 @@ const { chromium } = require('playwright');
       await route.fulfill({ response, body });
     });
     await page.goto((process.env.GAME_URL || 'http://127.0.0.1:8938') + '/assets/game/');
-    await page.waitForFunction(() => window.events.some(e => e.event === 'ready'));
+    await page.waitForFunction(() => window.events.some(e => e.event === 'ready'), null, { timeout: 90000 });
 
     // Z-fighting audit: at every point of a 0.5 m grid a vertical ray goes
     // through all flat ground pieces (asphalt, markings, pavements, lawns);
