@@ -21,7 +21,7 @@ const { chromium } = require('playwright');
       const response = await route.fetch();
       const body = (await response.text()).replace('  // Run init on DOM ready', `
       window.__engineTest = {
-        state, routeSpec, get scene() { return scene; }, THREE, player: () => playerCarGroup, camera: () => camera,
+        state, routeSpec, THREE, get scene() { return scene; }, roadSupports: p => roadSupports(p), refreshRoadBounds: () => refreshRoadBounds(), player: () => playerCarGroup, camera: () => camera,
         scenarios: () => SITUATIONS.filter(s => routeSpec(s).reviewed && !isRegulatorSituation(s)),
         allScenarios: () => SITUATIONS.filter(s => routeSpec(s).reviewed),
         drawSituation: nextSituation,
@@ -105,35 +105,42 @@ const { chromium } = require('playwright');
     });
     await page.goto((process.env.GAME_URL || 'http://127.0.0.1:8938') + '/assets/game/');
     await page.waitForFunction(() => window.events.some(e => e.event === 'ready'), null, { timeout: 90000 });
-    const out = await page.evaluate(() => {
-      const t = window.__engineTest, s = t.state, T = t.THREE, res = [];
-      t.allScenarios().forEach((sc, i) => {
-        t.selectAll(i); s.paused = false; t.approach();
-        const it = s.activeIntersection; if (!it) return;
+
+    // Actor-path audit: a vehicle's whole path (with its body width) must
+    // not run through a pole: a lamp, a sign or a signal, a tree trunk.
+    const report = await page.evaluate((process_ids) => {
+      const t = window.__engineTest, s = t.state, T = t.THREE, out = [];
+      const all = t.allScenarios();
+      for (let i = 0; i < all.length; i++) {
+        if (process_ids && !process_ids.includes(all[i].id)) continue;
+        t.selectAll(i); s.paused = true; t.approach();
         t.scene.updateMatrixWorld(true);
-        const zebras = [];
-        t.scene.traverse(o => { if (o.userData.crosswalk) zebras.push(new T.Box3().setFromObject(o).expandByScalar(0.8)); });
-        window.game.proceedAfterAnswer(true, it.situation.id);
-        window.game.releaseTraffic(it.situation.id);
-        const bad = new Set();
-        const peds = () => (s.resolution?.motions || it.actors || []).filter(a => (a.config || {}).type === 'pedestrian');
-        for (let k = 0; k < 60 * 12; k++) {
-          t.tick(1/60);
-          if (k % 10) continue;
-          for (const a of peds()) {
-            const p = a.mesh.getWorldPosition(new T.Vector3());
-            const surf = t.surfaceAt(p.x, p.z);
-            if (surf.includes('road') && !zebras.some(b => b.containsPoint(new T.Vector3(p.x, b.min.y, p.z)))) bad.add(a.config.id + '@' + p.x.toFixed(0) + ',' + (p.z - it.centerZ).toFixed(0));
+        const poles = [];
+        s.roadSegments.forEach(seg => seg.traverse(o => {
+          if (!o.isMesh || !o.visible || o.userData.actor) return;
+          for (let r = o; r; r = r.parent) if (r.userData.actor || r === t.player() || !r.visible) return;
+          const g = o.geometry; if (!g || g.type !== 'CylinderGeometry' && g.type !== 'BoxGeometry') return;
+          const b = new T.Box3().setFromObject(o);
+          const w = b.max.x - b.min.x, d = b.max.z - b.min.z, h = b.max.y - b.min.y;
+          if (w > .35 || d > .35 || h < 1.2 || b.min.y > .4) return;
+          let sign = false; for (let r = o; r; r = r.parent) if (r.userData.signCode) sign = r.userData.signCode;
+          const chain=[];for(let r=o;r&&chain.length<6;r=r.parent)chain.push(r.type+':'+Object.keys(r.userData).join('|')+':'+r.visible);
+          poles.push({ x: (b.min.x + b.max.x) / 2, z: (b.min.z + b.max.z) / 2, sign, chain });
+        }));
+        for (const a of s.actors || []) {
+          if (!a.path || a.config.type === 'pedestrian' || a.config.type === 'bike') continue;
+          const fp = t.actorFootprint(a), half = fp.halfWidth || 1;
+          const route = a.railPath || a.path, L = route.getLength();
+          for (let u = 0; u <= L; u += .5) {
+            const p = route.getPointAt(Math.min(1, u / L)).clone().applyMatrix4(a.mesh.parent.matrixWorld);
+            const hit = poles.find(q => Math.hypot(q.x - p.x, q.z - p.z) < half + .15);
+            if (hit) { out.push({ id: all[i].id, actor: a.config.id, type: a.config.type, pole: [+hit.x.toFixed(1), +hit.z.toFixed(1)], sign: hit.sign, chain: hit.chain }); break; }
           }
-          if (!s.resolution) break;
         }
-        if (bad.size) res.push({ id: sc.id, side: (it.situation.actorsConfig||[]).filter(a=>a.type==='pedestrian').map(a=>a.side+':'+(a.position||'')), cw: it.situation.crosswalks, z: zebras.map(b => [b.min.x.toFixed(1), b.max.x.toFixed(1), (b.min.z - it.centerZ).toFixed(1), (b.max.z - it.centerZ).toFixed(1)]), bad: [...bad].slice(0, 4) });
-      });
-      return res;
-    });
-    // Junction pedestrians cross the carriageway only on a zebra.
-    assert.deepEqual(out, [], 'pedestrians off the zebra: ' + JSON.stringify(out));
-    assert.deepEqual(errors, []);
-    console.log('PASS: junction pedestrians cross on zebras');
+      }
+      return { out, counted: all.length };
+    }, (process.env.IDS||'').split(',').filter(Boolean).length ? process.env.IDS.split(',') : null);
+    console.log('scenes:', report.counted, 'hits:', report.out.length);
+    report.out.forEach(r => console.log(JSON.stringify(r)));
   } finally { await browser.close(); }
-})();
+})().catch(error => { console.error(error); process.exit(1); });

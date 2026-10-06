@@ -14,10 +14,14 @@ const { chromium } = require('playwright');
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('console',message=>{if(message.text().startsWith('scenario:'))console.log(message.text());});
-    await page.addInitScript(() => {
+    // Deterministic randomness (avenue widths, traffic, the situation bag):
+    // a failure repeats with the same TEST_SEED.
+    await page.addInitScript(seed => {
+      let s = seed * 2654435761 % 2147483647 || 1;
+      if (seed) Math.random = () => (s = s * 16807 % 2147483647) / 2147483647;
       window.events = [];
       window.FlutterChannel = { postMessage: message => window.events.push(JSON.parse(message)) };
-    });
+    }, Number(process.env.TEST_SEED ?? 2));
     await page.route('**/game.js', async route => {
       const response = await route.fetch();
       const body = (await response.text()).replace('  // Run init on DOM ready', `
@@ -44,6 +48,7 @@ const { chromium } = require('playwright');
             .map(hit => hit.object.userData.surface);
         },
         drive(maxFrames = 2400) {
+          window.game.setSimpleSteering(false); // the programmatic driver turns the wheel itself
           const r = state.resolution;
           if (!r) return;
           this.tick(20);
@@ -80,6 +85,8 @@ const { chromium } = require('playwright');
           }
           if (seconds >= 0.1) renderer.render(scene, camera);
         },
+        // Finish the roadside scenery that is streamed in over several frames.
+        drainScenery() { while (processSceneryJobs(1000).pending) {} },
         select(index) {
           resetGame();
           state.roadSegments.forEach(disposeSegment);
@@ -97,7 +104,11 @@ const { chromium } = require('playwright');
             playerCarGroup.position.z = nextSegmentZ - 100;
             checkAndSpawnNext();
           }
+          // Arrive square to the stop line: a lap that coasted to a halt
+          // half-way through the lane assist (e.g. towards the right lane of
+          // a wide street) left a yaw that put a corner over the kerb here.
           playerCarGroup.position.z = state.intersections[0].stopZ;
+          playerCarGroup.rotation.y = 0;
           updatePlayerMovement(0);
         }
       };
@@ -105,7 +116,7 @@ const { chromium } = require('playwright');
       await route.fulfill({ response, body });
     });
     await page.goto((process.env.GAME_URL || 'http://127.0.0.1:8938') + '/assets/game/');
-    await page.waitForFunction(() => window.events.some(e => e.event === 'ready'));
+    await page.waitForFunction(() => window.events.some(e => e.event === 'ready'), null, { timeout: 90000 });
     await page.evaluate(() => window.game.setPaused(true));
 
     const lanes = await page.evaluate(() => {
@@ -148,13 +159,15 @@ const { chromium } = require('playwright');
       t.player().position.x = 1.8; t.tick(2);
       t.player().position.x = -1.8; t.tick(2);
       const returnedInTime = violations() === before + 1;
+      // Programmatic (test) manual wheel: released, the driving aid
+      // straightens the car gently, never snaps it straight in 0.2 s.
+      window.game.setSimpleSteering(false);
       window.game.setGas(true); window.game.setSteering(0.4); t.tick(0.35);
       const heading = t.player().rotation.y;
       window.game.setSteering(0); t.tick(0.2);
-      // Released steering: the driving aid straightens the car gently — the
-      // heading shrinks towards the road, never snaps straight in 0.2 s.
       const after = t.player().rotation.y;
       const freeSteering = heading > 0.01 && after < heading && after > heading * 0.3;
+      if (!freeSteering) console.log('scenario:steer:' + JSON.stringify({ heading, after }));
       window.game.setGas(false); t.tick(0.5);
       const models = [];
       window.game.setPaused(true);
@@ -451,14 +464,17 @@ const { chromium } = require('playwright');
       const tram = t.state.intersections[0].actors.find(a => a.config.type === 'tram');
       const rails = [];
       t.state.intersections[0].seg.traverse(o => { if (o.userData.tramRail) rails.push(o); });
-      const continuousRails = rails.length >= 2 && rails.every(rail => rail.userData.railEnd.distanceTo(tram.initialPos) > 90);
+      // Rails follow the tram's whole track (into its depot): the far end of
+      // each rail's path is well beyond the scene.
+      const railEnd = rail => rail.userData.railEnd || rail.userData.trackPath?.getPoint(1);
+      const continuousRails = rails.length >= 2 && rails.every(rail => railEnd(rail)?.distanceTo(tram.initialPos) > 90);
       window.game.configure({ soundEnabled: false });
       const muteWorks = !t.audioSnapshot().enabled;
       window.game.configure({ soundEnabled: true });
       t.state.speed = 10; t.state.isAccelerating = true; t.updateAudio(0.1, 8);
       const dynamicAudio = t.audioSnapshot().enabled && t.audioSnapshot().engine > 0;
       t.state.isAccelerating = false;
-      t.select(0);
+      t.select(0); t.drainScenery();
       const ambient = t.state.ambient.length > 0 && t.state.ambient.every(a => Math.abs(a.mesh.position.x) > 5);
       const a = t.state.ambient[0], before = a.mesh.position.z; t.updateActors(1);
       const livingScenery = ambient && a.mesh.position.z !== before && !t.state.actors.includes(a);
@@ -597,7 +613,8 @@ const { chromium } = require('playwright');
         t.tick(1);
         const waitsForInput = t.player().position.distanceTo(entry) < 0.001;
         const keptRoad = t.state.activeIntersection.previews[window.PDD_SCENARIO_ROUTES[id].maneuver];
-        const keptTrees = keptRoad.children.map(o => o.uuid).join();
+        // The distant visual continuation is replaced by the real next junction.
+        const keptTrees = keptRoad.children.filter(o => !o.userData.distantRoad).map(o => o.uuid).join();
         const drive = t.drive();
         if (!drive?.complete) return { id, drive };
         t.tick(50, 10);
@@ -623,17 +640,24 @@ const { chromium } = require('playwright');
         const cleanRoad = joinSamples.length>=4 && joinSamples.every(s => s.surfaces.includes('road') && !s.surfaces.includes('sidewalk'));
         if(!cleanRoad) console.log('scenario:road-evidence:'+JSON.stringify({id,roadSamples,event:t.state.roadEvent?.situation?.id,eventKeys:Object.keys(t.state.roadEvent||{}),eventStart:t.state.roadEvent?.startZ}));
         const originalScenery = new Set(keptTrees.split(','));
-        const sceneryPreserved = t.state.exitRoad === keptRoad &&
+        // The next junction may already be built (and exitRoad handed over):
+        // the kept road must still be in the world with all its scenery.
+        const sceneryPreserved = (t.state.exitRoad === keptRoad || t.state.roadSegments.some(seg => seg === keptRoad || seg.children.includes(keptRoad))) &&
           [...originalScenery].every(uuid => keptRoad.children.some(o => o.uuid === uuid));
         const result = { id, framed, exitsPrebuilt, waitsForInput, cleanRoad, sceneryPreserved, staleIgnored, clearedOnce: after === before + 1,
           resolved: !t.state.isResolvingSituation,
-          actorsFinished: t.state.actors.every(a => a.done || a.road || a.config.stationary) /* parked ticket actors and road-event traffic intentionally remain */,
+          // Parked ticket actors, road-event traffic and the next (prebuilt)
+          // junction's actors waiting for the player intentionally remain; so
+          // does a car queued behind a road-event participant (a police car
+          // held up by the player, whom this test parks on the road).
+          actorsFinished: t.state.actors.every(a => a.done || a.road || a.config.stationary || (a.waitsForPlayer && !a.active) ||
+            t.state.actors.some(b => b.road && !b.done && b.mesh.getWorldPosition(new THREE.Vector3()).distanceTo(a.mesh.getWorldPosition(new THREE.Vector3())) < 14)),
           finite: Number.isFinite(t.player().position.x + t.player().position.z + t.camera().position.x),
           roadAhead: !!t.state.exitRoad,
           normalLane: t.state.targetLane === 1 };
         t.state.paused = true;
         if (!result.actorsFinished) throw new Error(JSON.stringify({ id,
-          blocked: t.state.actors.filter(a => !a.done && !a.road && !a.config.stationary).map(a => ({ id: a.config.id,
+          blocked: t.state.actors.filter(a => !a.done && !a.road && !a.config.stationary && !(a.waitsForPlayer && !a.active)).map(a => ({ id: a.config.id,
             position: a.mesh.position.toArray(), distance: a.distance, active: a.active,
             cleared: a.cleared, waits: a.waitsForPlayer, dependencies: a.dependencies?.map(b => [b.config.id, b.cleared]) })) }));
         return result;
@@ -670,7 +694,7 @@ const { chromium } = require('playwright');
         resetTrafficWaiting: t.state.actors.every(a => !a.active && a.waitsForPlayer && a.distance === 0),
         resolution: t.state.resolution, firstId: t.state.intersections[0].situation.id };
     });
-    assert(longRun.bounded);
+    assert(longRun.bounded, JSON.stringify(longRun));
     assert.equal(longRun.count, 35);
     assert.equal(longRun.actors, longRun.initialActors);
     assert.equal(longRun.resetTrafficWaiting, true);

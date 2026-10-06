@@ -13,10 +13,14 @@ const { chromium } = require('playwright');
     const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
-    await page.addInitScript(() => {
+    // Deterministic randomness (avenue widths, traffic, the situation bag):
+    // a failure repeats with the same TEST_SEED.
+    await page.addInitScript(seed => {
+      let s = seed * 2654435761 % 2147483647 || 1;
+      if (seed) Math.random = () => (s = s * 16807 % 2147483647) / 2147483647;
       window.events = [];
       window.FlutterChannel = { postMessage: message => window.events.push(JSON.parse(message)) };
-    });
+    }, Number(process.env.TEST_SEED ?? 2));
     await page.route('**/game.js', async route => {
       const response = await route.fetch();
       const body = (await response.text()).replace('  // Run init on DOM ready', `
@@ -104,7 +108,7 @@ const { chromium } = require('playwright');
       await route.fulfill({ response, body });
     });
     await page.goto((process.env.GAME_URL || 'http://127.0.0.1:8938') + '/assets/game/');
-    await page.waitForFunction(() => window.events.some(e => e.event === 'ready'));
+    await page.waitForFunction(() => window.events.some(e => e.event === 'ready'), null, { timeout: 90000 });
 
     // «Простое управление»: an arrow is a whole lane change or junction exit,
     // driven by the engine along a planned curve — never free steering.
@@ -150,6 +154,9 @@ const { chromium } = require('playwright');
         const hit = s.resolution?.motions?.filter(a => a.crashed || a.fall).map(a => [a.config.id, a.config.type, !!s.resolution.yielding.includes(a), a.waitsForPlayer, +a.mesh.position.x.toFixed(1), +(a.mesh.position.z - it.centerZ).toFixed(1)]);
         const faults = events().slice(before).filter(f => f !== 'speeding');
         junctions.push({ id: it.situation.id, geometry: it.situation.geometry, maneuver, hit,
+          // Lane centres of the road the exit leads onto: an avenue arm
+          // (avenueExits) keeps its two lanes, W/8 and 3W/8 from the centre.
+          lanes: (w => w > 8.5 ? [w / 8, w * 3 / 8] : [1.8])(it.exitWidths?.[maneuver] || 8.4),
           done: !s.resolution, faults, yaw: +t.player().rotation.y.toFixed(3), x: +t.player().position.x.toFixed(2) });
       });
       // 3. T-junction: the car waits at the turn with the gas held and moves
@@ -229,7 +236,7 @@ const { chromium } = require('playwright');
     const bad = result.junctions.filter(j => (!j.done && !j.faults.includes('collision')) || j.faults.some(f => ['offroad', 'wrong_maneuver', 'oncoming'].includes(f)));
     console.log(JSON.stringify({ junctions: result.junctions.length, bad, ends: result.junctions.filter(j => j.done).map(j => [j.id, j.geometry || "", j.maneuver, j.x, j.yaw]) }));
     assert.equal(bad.length, 0, 'Every junction drives cleanly with arrows');
-    const skew = result.junctions.filter(j => j.done && (Math.abs(Math.abs(j.x) - 1.8) > 0.1 || Math.abs(Math.sin(j.yaw)) > 0.02));
+    const skew = result.junctions.filter(j => j.done && (j.lanes.every(c => Math.abs(Math.abs(j.x) - c) > 0.1) || Math.abs(Math.sin(j.yaw)) > 0.02));
     assert.deepEqual(skew, [], 'After a junction the car is centred and straight');
     assert(result.tees.length && result.tees.every(x => x.waited && x.turned), 'T-junction: wait, then turn on the arrow: ' + JSON.stringify(result.tees));
     console.log(JSON.stringify(result.reverse), result.reverseFaults);

@@ -121,7 +121,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
   int? _tipStep;
   static const _tipsSeenKey = 'game_tips_seen';
   static const _simpleSteeringKey = 'game_simple_steering';
-  bool _simpleSteering = true;
+  // Taps choose the lane or the exit, a hold steers (one scheme for all).
+  static const bool _simpleSteering = false;
   static const _seenKey = 'game_seen';
   static const _bestScoreKey = 'game_best_score';
 
@@ -449,8 +450,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
           _scheduleFuelTick();
         }
       }
-      _simpleSteering = prefs.getBool(_simpleSteeringKey) ?? true;
-      _send('setSimpleSteering', [_simpleSteering]);
+      // One control scheme for everyone (taps choose the lane or exit, a
+      // hold steers): the former «simple / manual» preference is dropped.
+      prefs.remove(_simpleSteeringKey).catchError((_) => false);
+      _send('setSimpleSteering', [false]);
       if (!prefs.containsKey(_tipsSeenKey) && mounted) {
         setState(() => _tipStep = 0);
       }
@@ -705,10 +708,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
       ]);
     }
     if (['ArrowLeft', 'KeyA', 'ArrowRight', 'KeyD'].contains(key)) {
-      final left = key == 'ArrowLeft' || key == 'KeyA';
-      if (_simpleSteering) {
-        if (down && !repeat) _handleSwitchLane(left ? 'left' : 'right');
-      } else {
+      // A tap chooses the lane or the exit, a hold steers (the engine tells them apart).
+      {
         final steering = _heldKeys
             .where(['ArrowLeft', 'KeyA', 'ArrowRight', 'KeyD'].contains)
             .lastOrNull;
@@ -793,19 +794,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
       nextRefillAt: () => GameRunsService.instance.nextRefillAt,
       onBuyPremium: unlimited ? null : () => PremiumPaywallSheet.show(context),
     );
-  }
-
-  Future<void> _openControls() async {
-    final simple = await showGameControlsSheet(
-      context,
-      simple: _simpleSteering,
-    );
-    if (simple == null || !mounted) return;
-    setState(() => _simpleSteering = simple);
-    _send('setSimpleSteering', [simple]);
-    SharedPreferences.getInstance()
-        .then((prefs) => prefs.setBool(_simpleSteeringKey, simple))
-        .catchError((_) => false);
   }
 
   void _handleSwitchLane(String direction) {
@@ -1632,7 +1620,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
                       : null,
                   onColour: _pickColour,
                   onLeaderboard: _openLeaderboard,
-                  onControls: _openControls,
                   onSpin: (dx) => _send('lobbySpin', [dx]),
                 ),
               ),

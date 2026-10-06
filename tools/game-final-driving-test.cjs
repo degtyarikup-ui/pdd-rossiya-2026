@@ -37,7 +37,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),{chromium}=requ
   for(const id of ['ticket_2_15','ticket_40_14','ticket_31_14','ticket_32_15','ticket_34_13','ticket_39_13','ticket_3_6','ticket_1_9','ticket_12_5','ticket_11_2','ticket_33_8'])for(const simple of [true,false]) {
     const r=await page.evaluate(({id,simple})=>__lab.run(`(()=>{
       __lab.show(${JSON.stringify(id)});const it=state.intersections[0];
-      state.isAtSituation=false;state.paused=false;playerCarGroup.position.set(-1.8,0,it.centerZ-40);
+      state.isAtSituation=false;state.paused=false;playerCarGroup.position.set(-1.8,0,it.centerZ-(it.situation.geometry==='motorway_parallel'?90:40)); // the motorway widens over 60 m before it
       playerCarGroup.rotation.y=0;state.autoPath=null;state.speed=0;window.reviewEvents=[];
       window.game.setSimpleSteering(${simple});window.game.setGas(true);
       for(let i=0;i<5000&&!state.isAtSituation;i++)updatePlayerMovement(1/60);

@@ -144,6 +144,9 @@ for key in ['18_9','24_9']:
  for t in JUNCTIONS[key]['layout']['trajectories']:
   t['labelPosition']=[-4.5,4.2 if t['label']=='А' else -10]
 JUNCTIONS['24_9']['layout']['signs'][0]['z']=-18
+# A starts at the car like B (source picture) and turns on the junction
+# itself, ending at its mouth on the opposite side.
+JUNCTIONS['24_9']['layout']['trajectories'][0]['points']=[[1.8,-18],[2.6,-6],[2.6,1],[0,3.6],[-2.6,1],[-2.6,-4]]
 
 JUNCTIONS['16_2']['route']['pathRules']['onlyManeuvers']=['right']
 
@@ -175,11 +178,13 @@ JUNCTIONS['12_5']['route']['paths']['uturn']=wide_uturn
 JUNCTIONS['12_5']['route']['pathRules']['paths'][0]['points']=wide_uturn
 JUNCTIONS['12_5']['layout']['trajectories']=[trajectory('А',[[10.7,-1.8],[5,-1.8],[-3,2],[-5.4,12]]),trajectory('Б',wide_uturn[:6])]
 JUNCTIONS['1_9']['layout'].update(geometry='divided_main',mainWidth=20.8,mainLaneDividers=[6.2],playerStartX=-4.1,questionStop=-18,mainMedian=False)
-long_uturn=[[-4.1,-14],[-4.1,-5],[-3.8,1],[0,3.8],[4.1,1],[4.1,-10],[3.1,-19],[1.8,-26]]
+# A (as on the source picture) ends in the far, outer lane of the opposite
+# carriageway (8.3), then eases into the ordinary lane as the road narrows.
+long_uturn=[[-4.1,-14],[-4.1,-5],[-3.6,1.5],[0,4.6],[4.6,3.4],[7.6,0],[8.3,-5],[8.3,-10],[6.6,-16],[3.6,-21.5],[1.8,-26]]
 short_uturn=[[-4.1,-14],[-4.1,-6],[-2,-1.8],[2,-1.8],[4.1,-6]]
 JUNCTIONS['1_9']['route'].update(paths={'uturn':long_uturn,'straight':[[-4.1,-14],[-4.1,0],[-4.1,12],[-3,21],[-1.8,28]],'left':[[-4.1,-14],[-4.1,-2],[2,1.8],[16,1.8],[26,1.8]],'right':[[-4.1,-14],[-4.1,-6],[-8,-1.8],[-18,-1.8],[-36,-1.8]]})
 JUNCTIONS['1_9']['route']['pathRules']['paths'][0]['points']=long_uturn
-JUNCTIONS['1_9']['layout']['trajectories']=[trajectory('А',long_uturn[:5],labelPosition=[-5,3.8]),trajectory('Б',short_uturn,labelPosition=[-5,-3])]
+JUNCTIONS['1_9']['layout']['trajectories']=[trajectory('А',long_uturn[:8],labelPosition=[-5,4.6]),trajectory('Б',short_uturn,labelPosition=[-5,-3])]
 JUNCTIONS['28_2']['layout'].update(geometry='three_carriageways',crossWidth=29.2,questionStop=-23)
 path28=[[-1.8,-22],[-1.8,-18],[-5,-12.5],[-18,-12.5],[-26,-6],[-36,-1.8]]
 JUNCTIONS['28_2']['route']['paths']['right']=path28
@@ -193,6 +198,9 @@ ROADS['9_9']['signs'][0]['offsetX']=3.2
 JUNCTIONS['12_5']['layout']['actorsConfig'][0]['rotationY']=3.141592653589793/2
 JUNCTIONS['1_9']['route']['pathRules']['paths']=[dict(maneuver=a,points=v) for a,v in JUNCTIONS['1_9']['route']['paths'].items()]
 JUNCTIONS['33_8']['layout']['actorsConfig'][0]['position'][2]=-5.4
+# The parked car is always the compact hatchback: a random longer model
+# reached into the turning path (the outcome depended on Math.random).
+JUNCTIONS['33_8']['layout']['actorsConfig'][0]['model']='hatch'
 
 # 11.2 is four lanes in the source. Removing a same-direction lane would
 # invalidate why trajectory A is forbidden; keep the original lane position.

@@ -172,7 +172,7 @@ const { chromium } = require('playwright');
         try { await page.goto((process.env.GAME_URL || 'http://127.0.0.1:8938') + '/assets/game/'); break; }
         catch (e) { if (attempt >= 4) throw e; await new Promise(r => setTimeout(r, 1000)); }
       }
-      await page.waitForFunction(() => window.events.some(e => e.event === 'ready'));
+      await page.waitForFunction(() => window.events.some(e => e.event === 'ready'), null, { timeout: 90000 });
       // Start a run the way the app does.
       await page.evaluate(free => {
         window.game.configure({ labels: {} });

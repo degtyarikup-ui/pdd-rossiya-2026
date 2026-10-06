@@ -2165,13 +2165,13 @@ abstract class AppLocalizations {
   /// No description provided for @gameTipSteer.
   ///
   /// In ru, this message translates to:
-  /// **'Нажми стрелку — машина перестроится в соседнюю полосу'**
+  /// **'Держи стрелку — машина поворачивает. Отпустишь — сама выровняется в полосе'**
   String get gameTipSteer;
 
   /// No description provided for @gameTipTurn.
   ///
   /// In ru, this message translates to:
-  /// **'На перекрёстке нажми стрелку — машина сама повернёт. Влево ещё раз — разворот, ещё раз — прямо'**
+  /// **'На перекрёстке держи стрелку, пока машина поворачивает, затем отпусти — она выровняется сама'**
   String get gameTipTurn;
 
   /// No description provided for @gameTipNext.

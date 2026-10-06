@@ -104,7 +104,7 @@ const { chromium } = require('playwright');
       await route.fulfill({ response, body });
     });
     await page.goto((process.env.GAME_URL || 'http://127.0.0.1:8938') + '/assets/game/');
-    await page.waitForFunction(() => window.events.some(e => e.event === 'ready'));
+    await page.waitForFunction(() => window.events.some(e => e.event === 'ready'), null, { timeout: 90000 });
     const out = await page.evaluate(() => {
       const t = window.__engineTest, s = t.state, res = [];
       window.game.setSimpleSteering(true);

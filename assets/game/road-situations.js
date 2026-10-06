@@ -2226,7 +2226,8 @@ window.PDD_ROAD_SITUATIONS = [
    "signs": [
     {
      "code": "5.16",
-     "z": 17
+     "z": 17,
+     "offsetX": -2.4
     }
    ],
    "forbidUturn": [
