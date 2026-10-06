@@ -9000,8 +9000,11 @@
   const withOverrides = sc => ({ ...sc, ...(routeSpec(sc).overrides || {}) });
   const plainGeometry = x => (!x.geometry || x.geometry === 'cross') && !x.junctionLayout && !x.offsetTramRoad &&
     x.yardAfter === undefined && !x.tramTracks && !x.oneWay;
-  function avenueMain(sc) { const x = withOverrides(sc); return plainGeometry(x) && AVENUE_WIDTHS.includes(x.mainWidth) ? x.mainWidth : 0; }
-  function avenueCross(sc) { const x = withOverrides(sc); return plainGeometry(x) && AVENUE_WIDTHS.includes(x.crossWidth) ? x.crossWidth : 0; }
+  // A junction with hand-drawn paths ends them in the lanes of an ordinary
+  // street: its arms cannot go on as avenues.
+  const authored = sc => !!routeSpec(sc).paths;
+  function avenueMain(sc) { const x = withOverrides(sc); return plainGeometry(x) && !authored(sc) && AVENUE_WIDTHS.includes(x.mainWidth) ? x.mainWidth : 0; }
+  function avenueCross(sc) { const x = withOverrides(sc); return plainGeometry(x) && !authored(sc) && AVENUE_WIDTHS.includes(x.crossWidth) ? x.crossWidth : 0; }
   function avenueExits(situation) {
     const out = { straight: 8.4, left: 8.4, right: 8.4 };
     if (state.cityAvenues === false) return out;
@@ -13501,6 +13504,13 @@
     return roadSupports(new THREE.Vector3(x - 1.1, 0, z)) && roadSupports(new THREE.Vector3(x + 1.1, 0, z));
   }
 
+  // Lane width of the street the car is on: an avenue (14 or 16.8 m) has
+  // two lanes each way of W/4, an ordinary street lanes of 3.6 m.
+  function laneStep() {
+    const w = currentCorridor?.userData.roadWidth || 8.4;
+    return w > 8.5 ? w / 4 : 3.6;
+  }
+
   function nearestLaneX(x) {
     const frame=curvedRoadFrame();
     if(frame) {
@@ -13514,7 +13524,8 @@
     const heading = Math.cos(playerCarGroup.rotation.y) < 0 ? -1 : 1;
     const twoWay = !oneWayStatus();
     let best = null;
-    for (let k = 0; k < 4; k++) for (const c of [1.8 + 3.6 * k, -1.8 - 3.6 * k]) {
+    const step = laneStep();
+    for (let k = 0; k < 4; k++) for (const c of [step / 2 + step * k, -step / 2 - step * k]) {
       if (!laneFits(c)) continue;
       const oncoming = twoWay && c * heading > 0;
       if (oncoming && Math.abs(c - x) > 1) continue;
@@ -13550,7 +13561,7 @@
     // Wide streets have more lanes: step one lane over if there is road.
     const from = frame && state.curveLaneTarget!=null && state.laneChangeX!=null
       ? frame.pointAt(state.curveLaneTarget,frame.local.z).x : state.laneChangeX ?? nearestLaneX(car.position.x);
-    const to = from + (direction === 'left' ? 3.6 : -3.6) * sign;
+    const to = from + (direction === 'left' ? 1 : -1) * laneStep() * sign;
     if (!laneFits(to)) { if (state.simpleSteering) refuseInput(); return; }
     state.laneChangeX = to;
     planLaneCurve(to);
@@ -13712,7 +13723,9 @@
       // Straight on: back to the centre of the lane the car is in (it may be
       // half-way into a turn the player changed their mind about).
       const z = r.intersection.centerZ, side = start.x < 0 ? -1 : 1;
-      const laneX = side * (Math.abs(start.x) > 3.6 ? 5.4 : 1.8);
+      // On an avenue the lanes are W/8 and 3W/8 from the centre line.
+      const W = r.intersection.exitWidths?.straight || 8.4;
+      const laneX = side * (W > 8.5 ? (Math.abs(start.x) > W / 4 ? W * 3 / 8 : W / 8) : Math.abs(start.x) > 3.6 ? 5.4 : 1.8);
       const zA = Math.max(start.z + 10, z + 2), zB = Math.max(start.z + 24, z + 18);
       const path = new THREE.CubicBezierCurve3(start, start.clone().addScaledVector(heading, 4),
         new THREE.Vector3(laneX, 0, zA), new THREE.Vector3(laneX, 0, zB));
