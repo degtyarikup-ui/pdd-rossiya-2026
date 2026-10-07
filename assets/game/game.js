@@ -14581,11 +14581,11 @@
   }
 
   // Simple steering through a junction: the car slows for the curve ahead
-  // like a driver would (a turn at 30-35 km/h, a U-turn at ~25), instead of
+  // like a driver would: tighter curves get a lower comfortable speed, instead of
   // sweeping round at the full town speed with the gas held.
   function curveSpeedLimit(ap) {
     // braking: the coast-down rate integrateDriving applies with the gas held.
-    const lateral = 18, braking = 4;
+    const lateral = 4, braking = 6;
     let limit = Infinity;
     const at = s => { const t = ap.path.getTangentAt(Math.min(1, s / ap.length)); return Math.atan2(t.x, t.z); };
     for (let d = 0; d <= 30 && ap.s + d < ap.length; d += 1) {
@@ -14594,7 +14594,7 @@
       if (bend < 1e-3) continue;
       limit = Math.min(limit, Math.sqrt(lateral / bend + 2 * braking * d));
     }
-    return Math.max(5.5, limit);
+    return Math.max(3.5, limit);
   }
 
   function integrateDriving(dt, limit = state.maxSpeed) {
@@ -14602,11 +14602,17 @@
     updateHeldExit();
     applySteeringAssist(dt);
     if (state.autoPath && state.resolution) limit = Math.min(limit, curveSpeedLimit(state.autoPath));
+    // Brake from the button press, including the straight approach before
+    // the curve. Holding the accelerator must not override this assistance.
+    const turnChoice = state.resolution?.simpleChoice;
+    const turnRequested = ['left', 'right', 'uturn'].includes(turnChoice) ||
+      !!state.steerPress || !!state.steering;
+    if (turnRequested) limit = Math.min(limit, turnChoice === 'uturn' || state.steerPress?.uturn ? 4 : 5.5);
     // Turning by hand at a junction (or a U-turn): the car eases off to
-    // ~27 km/h like a driver does, so the turn stays tight however hard the
+    // ~20 km/h like a driver does, so the turn stays tight however hard the
     // gas is held. The way is not fixed: the player steers.
     const turningAtJunction = !state.simpleSteering && state.resolution?.phase === 'manual' && !!state.steering;
-    if (turningAtJunction) limit = Math.min(limit, 7.5);
+    if (turningAtJunction) limit = Math.min(limit, 5.5);
     // Brake: firm deceleration while moving; from a standstill it becomes
     // reverse gear (slow, negative speed). Gas is ignored while braking.
     if (state.isBraking) {
@@ -14616,7 +14622,7 @@
       state.speed = Math.min(0, state.speed + dt * 12);
     } else if (state.speed > limit + 0.01) {
       // Above the limit in force (it just dropped): coast down, do not snap.
-      state.speed = Math.max(limit, state.speed - dt * (state.isAccelerating ? 4 : 22));
+      state.speed = Math.max(limit, state.speed - dt * (state.isAccelerating ? (turnRequested ? 8 : 6) : 22));
     } else {
       state.speed = state.isAccelerating ? Math.min(limit, state.speed + dt * 9) : Math.max(0, state.speed - dt * 22);
     }
