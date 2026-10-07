@@ -119040,6 +119040,7 @@ r=s.style
 r.border="0"
 r.width="100%"
 r.height="100%"
+r.pointerEvents="none"
 s.setAttribute("tabindex","-1")
 s.setAttribute("title","PDD simulator")
 r=A.ef(new A.am7(o,b,a,c))
