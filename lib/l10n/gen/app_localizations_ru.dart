@@ -1466,7 +1466,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String achievementsEarnedCount(int count, int total) {
-    return 'Получено $count из $total';
+    return '$count из $total';
   }
 
   @override

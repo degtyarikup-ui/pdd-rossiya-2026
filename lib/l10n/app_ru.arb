@@ -723,7 +723,7 @@
   "signInCardTitle": "Войти в аккаунт",
   "signInCardSubtitle": "Сохранить прогресс и премиум",
   "achievements": "Достижения",
-  "achievementsEarnedCount": "Получено {count} из {total}",
+  "achievementsEarnedCount": "{count} из {total}",
   "@achievementsEarnedCount": {
     "placeholders": {
       "count": {

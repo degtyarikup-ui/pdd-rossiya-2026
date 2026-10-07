@@ -2551,7 +2551,7 @@ abstract class AppLocalizations {
   /// No description provided for @achievementsEarnedCount.
   ///
   /// In ru, this message translates to:
-  /// **'Получено {count} из {total}'**
+  /// **'{count} из {total}'**
   String achievementsEarnedCount(int count, int total);
 
   /// No description provided for @achievementLevelFormat.
