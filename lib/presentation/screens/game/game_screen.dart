@@ -438,7 +438,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
       _bestBeforeRun = _bestScore ?? 0;
       _debugUnlimitedFuel =
           AuthService.debugSignInAvailable &&
-          (prefs.getBool(_debugUnlimitedFuelKey) ?? false);
+          (prefs.getBool(_debugUnlimitedFuelKey) ?? true);
       if (!_fuelLoaded) {
         final fuel = await GameRunsService.instance.load();
         _fuelLoaded = true;
