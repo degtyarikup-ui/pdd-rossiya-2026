@@ -2691,6 +2691,54 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'1 место'**
   String get achievementRankFirst;
+
+  /// No description provided for @paywallTierWeek.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подписка · списание каждую неделю'**
+  String get paywallTierWeek;
+
+  /// No description provided for @paywallTierQuarter.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подписка · списание каждые 3 месяца'**
+  String get paywallTierQuarter;
+
+  /// No description provided for @paywallSubscribe.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оформить подписку'**
+  String get paywallSubscribe;
+
+  /// No description provided for @paywallTermsWeek.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подписка «1 неделя»: {price} списывается при оформлении и затем каждую неделю, пока вы не отмените подписку в {store}. Отменить можно в любой момент, не позднее чем за 24 часа до продления.'**
+  String paywallTermsWeek(String price, String store);
+
+  /// No description provided for @paywallTermsQuarter.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подписка «3 месяца»: {price} списывается при оформлении и затем каждые 3 месяца, пока вы не отмените подписку в {store}. Отменить можно в любой момент, не позднее чем за 24 часа до продления.'**
+  String paywallTermsQuarter(String price, String store);
+
+  /// No description provided for @paywallStoreGoogle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Google Play (Платежи и подписки)'**
+  String get paywallStoreGoogle;
+
+  /// No description provided for @paywallStoreApple.
+  ///
+  /// In ru, this message translates to:
+  /// **'настройках Apple ID'**
+  String get paywallStoreApple;
+
+  /// No description provided for @paywallNotRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подписка не обязательна: билеты, экзамен и текст ПДД доступны бесплатно.'**
+  String get paywallNotRequired;
 }
 
 class _AppLocalizationsDelegate

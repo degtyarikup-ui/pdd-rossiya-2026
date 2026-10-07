@@ -330,6 +330,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
               _buildTierCard(
                 tier: PremiumTier.threeMonths,
                 title: kIsWeb ? appL10n.webQuarter : '3 месяца',
+                subtitle: kIsWeb ? null : appL10n.paywallTierQuarter,
                 price: _getPrice(PremiumTier.threeMonths),
                 oldPrice: _getOldPrice(PremiumTier.threeMonths),
                 badge: 'ХИТ',
@@ -342,13 +343,30 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                 _buildTierCard(
                   tier: PremiumTier.weekly,
                   title: kIsWeb ? appL10n.webWeek : '1 неделя',
+                  subtitle: kIsWeb ? null : appL10n.paywallTierWeek,
                   price: _getPrice(PremiumTier.weekly),
                   accentColor: accentColor,
                   surfaceColor: surfaceColor,
                   colors: colors,
                 ),
               ],
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
+
+              // Условия выбранной подписки — до кнопки, крупно (Google Play
+              // Subscriptions policy, отказ 2026-10-07: «terms are unclear»).
+              if (!kIsWeb) ...[
+                Text(
+                  _subscriptionTerms(isIOS),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.4,
+                    color: colors.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ] else
+                const SizedBox(height: 6),
 
               // 6. Action Button (исправлено обрезание текста)
               SizedBox(
@@ -386,7 +404,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                                 ? appL10n.webPayButton
                                 : kIsWeb
                                 ? appL10n.webPaymentSoon
-                                : 'Оформить доступ',
+                                : appL10n.paywallSubscribe,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 16,
@@ -406,14 +424,12 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                     ? appL10n.webPayInfo
                     : kIsWeb
                     ? appL10n.webPaymentInfo
-                    : isIOS
-                    ? 'Подписка продлевается автоматически, пока не будет отключена в настройках Apple ID не позднее 24 часов до окончания периода.'
-                    : 'Подписка продлевается автоматически, пока не будет отменена в Google Play в разделе «Платежи и подписки».',
+                    : appL10n.paywallNotRequired,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 12,
                   height: 1.35,
-                  color: colors.secondaryText.withValues(alpha: 0.8),
+                  color: colors.secondaryText,
                 ),
               ),
               const SizedBox(height: 14),
@@ -485,11 +501,18 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     );
   }
 
+  String _subscriptionTerms(bool isIOS) {
+    final store = isIOS
+        ? appL10n.paywallStoreApple
+        : appL10n.paywallStoreGoogle;
+    final price = _getPrice(_selectedTier);
+    return _selectedTier == PremiumTier.threeMonths
+        ? appL10n.paywallTermsQuarter(price, store)
+        : appL10n.paywallTermsWeek(price, store);
+  }
+
   List<Widget> _withSeparators(List<Widget> items, Widget separator) => [
-    for (var i = 0; i < items.length; i++) ...[
-      if (i > 0) separator,
-      items[i],
-    ],
+    for (var i = 0; i < items.length; i++) ...[if (i > 0) separator, items[i]],
   ];
 
   Widget _buildLink(String label, String url, AppThemeColors colors) {
@@ -559,6 +582,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   Widget _buildTierCard({
     required PremiumTier tier,
     required String title,
+    String? subtitle,
     required String price,
     String? oldPrice,
     String? badge,
@@ -597,34 +621,49 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: colors.primaryText,
-                    ),
-                  ),
-                  if (badge != null) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: accentColor,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        badge,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
+                  Row(
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: colors.primaryText,
                         ),
+                      ),
+                      if (badge != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: accentColor,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            badge,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colors.secondaryText,
                       ),
                     ),
                   ],

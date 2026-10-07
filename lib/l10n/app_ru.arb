@@ -718,7 +718,13 @@
   "appUpdateReadyBody": "Новая версия уже скачана. Перезапустите приложение, чтобы установить её.",
   "appUpdateRestart": "Перезапустить",
   "appUpdateOpenFailed": "Не удалось открыть обновление. Попробуйте позже.",
-  "@appUpdateVersion": {"placeholders": {"version": {"type": "String"}}},
+  "@appUpdateVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "profile": "Профиль",
   "signInCardTitle": "Войти в аккаунт",
   "signInCardSubtitle": "Сохранить прогресс и премиум",
@@ -796,5 +802,33 @@
       }
     }
   },
-  "achievementRankFirst": "1 место"
+  "achievementRankFirst": "1 место",
+  "paywallTierWeek": "Подписка · списание каждую неделю",
+  "paywallTierQuarter": "Подписка · списание каждые 3 месяца",
+  "paywallSubscribe": "Оформить подписку",
+  "paywallTermsWeek": "Подписка «1 неделя»: {price} списывается при оформлении и затем каждую неделю, пока вы не отмените подписку в {store}. Отменить можно в любой момент, не позднее чем за 24 часа до продления.",
+  "@paywallTermsWeek": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "paywallTermsQuarter": "Подписка «3 месяца»: {price} списывается при оформлении и затем каждые 3 месяца, пока вы не отмените подписку в {store}. Отменить можно в любой момент, не позднее чем за 24 часа до продления.",
+  "@paywallTermsQuarter": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "paywallStoreGoogle": "Google Play (Платежи и подписки)",
+  "paywallStoreApple": "настройках Apple ID",
+  "paywallNotRequired": "Подписка не обязательна: билеты, экзамен и текст ПДД доступны бесплатно."
 }

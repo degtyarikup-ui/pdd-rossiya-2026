@@ -1546,4 +1546,33 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get achievementRankFirst => '1 место';
+
+  @override
+  String get paywallTierWeek => 'Подписка · списание каждую неделю';
+
+  @override
+  String get paywallTierQuarter => 'Подписка · списание каждые 3 месяца';
+
+  @override
+  String get paywallSubscribe => 'Оформить подписку';
+
+  @override
+  String paywallTermsWeek(String price, String store) {
+    return 'Подписка «1 неделя»: $price списывается при оформлении и затем каждую неделю, пока вы не отмените подписку в $store. Отменить можно в любой момент, не позднее чем за 24 часа до продления.';
+  }
+
+  @override
+  String paywallTermsQuarter(String price, String store) {
+    return 'Подписка «3 месяца»: $price списывается при оформлении и затем каждые 3 месяца, пока вы не отмените подписку в $store. Отменить можно в любой момент, не позднее чем за 24 часа до продления.';
+  }
+
+  @override
+  String get paywallStoreGoogle => 'Google Play (Платежи и подписки)';
+
+  @override
+  String get paywallStoreApple => 'настройках Apple ID';
+
+  @override
+  String get paywallNotRequired =>
+      'Подписка не обязательна: билеты, экзамен и текст ПДД доступны бесплатно.';
 }
