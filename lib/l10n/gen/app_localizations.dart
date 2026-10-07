@@ -2551,13 +2551,13 @@ abstract class AppLocalizations {
   /// No description provided for @profileStatQuestions.
   ///
   /// In ru, this message translates to:
-  /// **'Решено вопросов'**
+  /// **'решено вопросов'**
   String get profileStatQuestions;
 
   /// No description provided for @profileStatExams.
   ///
   /// In ru, this message translates to:
-  /// **'Сдано экзаменов'**
+  /// **'сдано экзаменов'**
   String get profileStatExams;
 
   /// No description provided for @achievements.

@@ -1475,10 +1475,10 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get profileStatQuestions => 'Решено вопросов';
+  String get profileStatQuestions => 'решено вопросов';
 
   @override
-  String get profileStatExams => 'Сдано экзаменов';
+  String get profileStatExams => 'сдано экзаменов';
 
   @override
   String get achievements => 'Достижения';

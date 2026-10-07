@@ -282,8 +282,10 @@ class ProfileScreen extends ConsumerWidget {
                     appL10n.achievementsEarnedCount(unlockedCount, totalCount),
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: colors.secondaryText,
+                      fontWeight: FontWeight.w600,
+                      color: unlockedCount > 0
+                          ? colors.accent
+                          : colors.secondaryText,
                     ),
                   ),
                 ),
@@ -539,26 +541,39 @@ class _ShortStatsCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
         color: colors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
       ),
+      // Тот же ритм, что у статистики на главной (progress_panel_card):
+      // число 17/w700, подпись строчными 11, тонкие разделители.
       child: Row(
         children: [
           Expanded(
-            child: _StatColumn(value: streakValue, label: streakLabel),
+            child: _StatColumn(
+              value: streakValue,
+              label: streakLabel,
+              color: (streakAsync.valueOrNull?.current ?? 0) > 0
+                  ? colors.gold
+                  : null,
+            ),
           ),
+          Container(width: 1, height: 28, color: colors.divider),
           Expanded(
             child: _StatColumn(
               value: questionsValue,
               label: appL10n.profileStatQuestions,
             ),
           ),
+          Container(width: 1, height: 28, color: colors.divider),
           Expanded(
             child: _StatColumn(
               value: examsValue,
               label: appL10n.profileStatExams,
+              color: examsValue != '0' && examsValue != '—'
+                  ? colors.green
+                  : null,
             ),
           ),
         ],
@@ -570,38 +585,41 @@ class _ShortStatsCard extends StatelessWidget {
 class _StatColumn extends StatelessWidget {
   final String value;
   final String label;
+  final Color? color;
 
-  const _StatColumn({required this.value, required this.label});
+  const _StatColumn({required this.value, required this.label, this.color});
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // «800 / 800» при крупном системном шрифте не влезает в треть
-        // ширины — уменьшаем, а не обрезаем.
         FittedBox(
           fit: BoxFit.scaleDown,
           child: Text(
             value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: colors.primaryText,
-            ),
-            textAlign: TextAlign.center,
             maxLines: 1,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              height: 1.1,
+              letterSpacing: -0.3,
+              color: color ?? colors.primaryText,
+            ),
           ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(fontSize: 12.5, color: colors.secondaryText),
-          textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 11,
+            height: 1.15,
+            color: colors.secondaryText,
+          ),
         ),
       ],
     );
@@ -655,10 +673,8 @@ class _AchievementGridCell extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12.5,
                     height: 1.2,
-                    fontWeight: FontWeight.w600,
-                    color: achievement.isUnlocked
-                        ? colors.primaryText
-                        : colors.secondaryText,
+                    fontWeight: FontWeight.w500,
+                    color: colors.primaryText,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 2,

@@ -2,28 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/data/models/achievement.dart';
 
-/// Стандартная luminance-матрица (0.2126 / 0.7152 / 0.0722) для перевода в оттенки серого.
+/// Приглушение неполученного значка: 75% к оттенкам серого (luminance
+/// 0.2126 / 0.7152 / 0.0722) и 25% исходного цвета — металл угадывается,
+/// но значок явно «ещё не ваш». Полный серый на белой карточке давал
+/// сплошь серый экран.
 const List<double> achievementGrayscaleMatrix = <double>[
-  0.2126,
-  0.7152,
-  0.0722,
-  0,
-  0,
-  0.2126,
-  0.7152,
-  0.0722,
-  0,
-  0,
-  0.2126,
-  0.7152,
-  0.0722,
-  0,
-  0,
-  0,
-  0,
-  0,
-  1,
-  0,
+  0.4095, 0.5364, 0.0542, 0, 0, //
+  0.1595, 0.7864, 0.0542, 0, 0, //
+  0.1595, 0.5364, 0.3042, 0, 0, //
+  0, 0, 0, 1, 0, //
 ];
 
 String achievementAsset(AchievementId id, int level) =>
@@ -76,7 +63,7 @@ class AchievementBadge extends StatelessWidget {
 
     if (!unlocked) {
       // Бледнее цветного, но символ и число ещё читаются.
-      final opacity = isDark ? 0.4 : 0.5;
+      final opacity = isDark ? 0.5 : 0.6;
       badgeWidget = Opacity(
         opacity: opacity,
         child: ColorFiltered(

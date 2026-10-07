@@ -730,8 +730,8 @@
       }
     }
   },
-  "profileStatQuestions": "Решено вопросов",
-  "profileStatExams": "Сдано экзаменов",
+  "profileStatQuestions": "решено вопросов",
+  "profileStatExams": "сдано экзаменов",
   "achievements": "Достижения",
   "achievementsEarnedCount": "Получено {count} из {total}",
   "@achievementsEarnedCount": {
