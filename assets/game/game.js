@@ -7178,7 +7178,7 @@
       yellowMat.color.setHex(0xF59E0B);
       tl.userData.beacons = [yellowLamp];
     }
-    beaconHosts.add(tl);
+    if (tl.userData.beacons) beaconHosts.add(tl);
 
     tl.setLightState = function(s) {
       lamps.forEach(lamp => { lamp.visible = true; });
@@ -9898,12 +9898,55 @@
     return { points, exitYaw };
   }
 
+  function occupiesRailway(ev, actor) {
+    if (actor.done || actor.fall || !actor.mesh.parent) return false;
+    const box = actorFootprint(actor);
+    ev.group.updateWorldMatrix(true, false);
+    const inverse = ev.group.matrixWorld.clone().invert();
+    const p = box.p.clone().applyMatrix4(inverse);
+    const f = new THREE.Vector3(Math.sin(box.yaw), 0, Math.cos(box.yaw)).transformDirection(inverse);
+    const halfZ = Math.abs(f.z) * box.halfLength + Math.abs(f.x) * box.halfWidth;
+    const halfX = Math.abs(f.x) * box.halfLength + Math.abs(f.z) * box.halfWidth;
+    const trackHalf = (ev.rail.train?.halfWidth || 1.8) + 1.4;
+    return Math.abs(p.x) < 4.2 + halfX && p.z + halfZ > ev.crossingZ - trackHalf &&
+      p.z - halfZ < ev.crossingZ + ((ev.scene.railway.tracks || 1) - 1) * 5 + trackHalf;
+  }
+
+  // Traffic inherited from an earlier task also obeys the current crossing.
+  // Stopping only on contact with the train leaves a car touching its flank:
+  // neither participant can then advance far enough to clear the other.
+  function railwayTrafficSpeed(actor, box, forward, dt) {
+    const ev = state.roadEvent;
+    if (!ev?.rail || ev.rail.open || ['tram', 'train'].includes(actor.config.type)) return actor.maxSpeed;
+    // These cars entered before the crossing was created; let them leave it.
+    if (ev.rail.clearingActors?.includes(actor)) return actor.maxSpeed;
+    ev.group.updateWorldMatrix(true, false);
+    const inverse = ev.group.matrixWorld.clone().invert();
+    const p = box.p.clone().applyMatrix4(inverse), direction = forward.clone().transformDirection(inverse);
+    if (Math.abs(direction.z) < .8 || Math.abs(p.x) > 4.2 + box.halfWidth) return actor.maxSpeed;
+    const r = ev.scene.railway, offset = ev.crossingZ - ev.railBoundaryZ;
+    const boundary = direction.z > 0 ? ev.railBoundaryZ : ev.crossingZ + ((r.tracks || 1) - 1) * 5 + offset;
+    const ahead = (boundary - p.z) / direction.z;
+    // A vehicle already beyond the stop point must clear the tracks, rather
+    // than stop on them. Vehicles approaching retain the normal queue gap.
+    if (ahead < -box.halfLength) return actor.maxSpeed;
+    const room = Math.max(0, ahead - box.halfLength - 1.4), braking = 8, headway = .8;
+    return Math.min(actor.maxSpeed,
+      Math.sqrt((braking * headway) ** 2 + 2 * braking * room) - braking * headway,
+      room / Math.max(dt, .001));
+  }
+
   function followingSpeed(actor, traffic, dt) {
     if (actor.config.type === 'pedestrian') return actor.maxSpeed;
+    const crossing = state.roadEvent;
+    if (actor === crossing?.rail?.train && crossing.rail.clearingActors?.length) {
+      crossing.rail.clearingActors = crossing.rail.clearingActors.filter(a => occupiesRailway(crossing, a));
+      if (crossing.rail.clearingActors.length) return 0;
+    }
     const box = traffic.get(actor).box;
     const forward = new THREE.Vector3(Math.sin(box.yaw), 0, Math.cos(box.yaw));
     const right = new THREE.Vector3(forward.z, 0, -forward.x);
-    let limit = actor.maxSpeed;
+    let limit = railwayTrafficSpeed(actor, box, forward, dt);
     if (['tram','train'].includes(actor.config.type)) {
       for(let d=box.halfLength+1;d<box.halfLength+30;d+=1) {
         if(pointBlocked(box.p.clone().addScaledVector(forward,d),actor)) {
@@ -10099,7 +10142,7 @@
           // A jam: a vehicle stuck behind other traffic right in front of the
           // player (who has to get past it to the question) does not stay a
           // wall — after a short wait it leaves (fades out) like at a run-out.
-          if (trafficContact && !playerContact && !state.isAtSituation && a.fade == null && a.config.type !== 'pedestrian' && a.config.type !== 'tram' && !a.railTerminal) {
+          if (trafficContact && !playerContact && !state.isAtSituation && a.fade == null && !['pedestrian', 'tram', 'train'].includes(a.config.type) && !a.railTerminal) {
             const ahead = box.p.clone().sub(playerCarGroup.position);
             const fwd = new THREE.Vector3(Math.sin(playerCarGroup.rotation.y), 0, Math.cos(playerCarGroup.rotation.y));
             const along = ahead.dot(fwd), side = Math.abs(ahead.x * fwd.z - ahead.z * fwd.x);
@@ -12040,8 +12083,18 @@
     const z=ev.crossingZ, departing=ev.scene.railway.trainDeparting, start=new THREE.Vector3(departing?-36:28,0,z);
     const train=addRoadActor(ev.group,{id:'road_train',type:'train',name:'Поезд',color:'#397BA3',tailColor:departing?0x3E759A:undefined},start,-Math.PI/2,
       [start,new THREE.Vector3(-320,0,z)],16);
+    ev.rail.train=train;
+    // A new task can meet through traffic already crossing the track. Keep
+    // the whole train outside the road until those cars have cleared it;
+    // spawning its tail through them caused an unrecoverable contact jam.
+    ev.rail.clearingActors=state.actors.filter(a=>a!==train && !['train','tram','pedestrian'].includes(a.config.type) && occupiesRailway(ev,a));
+    if(ev.rail.clearingActors.length && !departing) {
+      start.x=Math.max(start.x,train.halfLength+7.5);
+      train.mesh.position.copy(start);train.initialPos.copy(start);
+      train.path=curve([start,new THREE.Vector3(-320,0,z)]);train.length=train.path.getLength();
+    }
     train.clearCrossingDistance=Math.max(0,start.x+train.halfLength+7.5);
-    train.waitsForPlayer=true; ev.rail.train=train; ev.actors.push(train);
+    train.waitsForPlayer=true; ev.actors.push(train);
     train.mesh.userData.questionEvidence=false;
   }
 

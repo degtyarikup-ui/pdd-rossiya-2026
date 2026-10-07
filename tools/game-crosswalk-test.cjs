@@ -12,8 +12,10 @@ const { chromium } = require('playwright');
   try {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
     const errors = [];
-    page.on('pageerror', error => errors.push(error.message));
+    page.on('pageerror', error => errors.push(error.stack || error.message));
     await page.addInitScript(() => {
+      window.requestAnimationFrame = () => 0;
+      Math.random = () => 0.95; // Include the full three-person groups.
       window.events = [];
       window.FlutterChannel = { postMessage: message => window.events.push(JSON.parse(message)) };
     });
@@ -109,13 +111,23 @@ const { chromium } = require('playwright');
       const t = window.__engineTest, s = t.state, T = t.THREE, res = [];
       t.allScenarios().forEach((sc, i) => {
         t.selectAll(i); s.paused = false; t.approach();
-        const it = s.activeIntersection; if (!it) return;
+        const it = s.activeIntersection; if (!it || it.situation.unmarkedCrossings) return;
         t.scene.updateMatrixWorld(true);
         const zebras = [];
-        t.scene.traverse(o => { if (o.userData.crosswalk) zebras.push(new T.Box3().setFromObject(o).expandByScalar(0.8)); });
+        // Check the painted stripes individually: one bounding box around
+        // zebras on both arms also covers the unmarked middle of the junction.
+        t.scene.traverse(o => {
+          if (!o.userData.crosswalk) return;
+          const positions = o.geometry.attributes.position, index = o.geometry.index;
+          for (let i = 0; i < (index?.count ?? positions.count); i += 3) {
+            const points = [0, 1, 2].map(j => new T.Vector3()
+              .fromBufferAttribute(positions, index ? index.getX(i + j) : i + j).applyMatrix4(o.matrixWorld));
+            zebras.push(new T.Box3().setFromPoints(points).expandByScalar(0.8));
+          }
+        });
         window.game.proceedAfterAnswer(true, it.situation.id);
         window.game.releaseTraffic(it.situation.id);
-        const bad = new Set();
+        const bad = new Set(), crossed = new Set();
         const peds = () => (s.resolution?.motions || it.actors || []).filter(a => (a.config || {}).type === 'pedestrian');
         for (let k = 0; k < 60 * 12; k++) {
           t.tick(1/60);
@@ -123,15 +135,18 @@ const { chromium } = require('playwright');
           for (const a of peds()) {
             const p = a.mesh.getWorldPosition(new T.Vector3());
             const surf = t.surfaceAt(p.x, p.z);
-            if (surf.includes('road') && !zebras.some(b => b.containsPoint(new T.Vector3(p.x, b.min.y, p.z)))) bad.add(a.config.id + '@' + p.x.toFixed(0) + ',' + (p.z - it.centerZ).toFixed(0));
+            if (surf[0] === 'road') crossed.add(a.config.id);
+            // Asphalt under a raised pavement is not a carriageway.
+            if (surf[0] === 'road' && !zebras.some(b => b.containsPoint(new T.Vector3(p.x, b.min.y, p.z)))) bad.add(a.config.id + '@' + p.x.toFixed(0) + ',' + (p.z - it.centerZ).toFixed(0));
           }
           if (!s.resolution) break;
         }
-        if (bad.size) res.push({ id: sc.id, side: (it.situation.actorsConfig||[]).filter(a=>a.type==='pedestrian').map(a=>a.side+':'+(a.position||'')), cw: it.situation.crosswalks, z: zebras.map(b => [b.min.x.toFixed(1), b.max.x.toFixed(1), (b.min.z - it.centerZ).toFixed(1), (b.max.z - it.centerZ).toFixed(1)]), bad: [...bad].slice(0, 4) });
+        for (const a of peds()) if (!crossed.has(a.config.id)) bad.add(a.config.id + ': never crossed');
+        if (bad.size) res.push({ id: sc.id, side: (it.situation.actorsConfig||[]).filter(a=>a.type==='pedestrian').map(a=>a.side+':'+(a.position||'')), cw: it.situation.crosswalks, bad: [...bad].slice(0, 4) });
       });
       return res;
     });
-    // Junction pedestrians cross the carriageway only on a zebra.
+    // Marked junctions: pedestrians cross on the painted arms, including 20.13.
     assert.deepEqual(out, [], 'pedestrians off the zebra: ' + JSON.stringify(out));
     assert.deepEqual(errors, []);
     console.log('PASS: junction pedestrians cross on zebras');
