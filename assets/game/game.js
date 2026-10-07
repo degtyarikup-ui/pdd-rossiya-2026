@@ -15034,9 +15034,10 @@
       it.guide.visible = !it.situation.hideGuide && it === state.activeIntersection && Math.abs(playerCarGroup.position.z - it.centerZ) < 55;
     });
     state.orbitYaw = state.attract ? (state.orbitYaw || 0) : (state.orbitYaw || 0) * Math.exp(-4 * dt);
-    // In a question the view is square to the road (the car may stand at a
-    // slight angle after a lane change; the scene must not look skewed).
-    let desiredYaw = question ? Math.round(playerCarGroup.rotation.y / (Math.PI / 2)) * (Math.PI / 2)
+    // Question evidence is framed in the current road's X/Z coordinates.
+    // Always look along that road: a diagonal approach must not rotate the
+    // question by 90 degrees and crop its car, trajectories or signs.
+    let desiredYaw = question ? 0
       : playerCarGroup.rotation.y + (state.orbitYaw || 0);
     let delta = Math.atan2(Math.sin(desiredYaw - cameraHeading), Math.cos(desiredYaw - cameraHeading));
     cameraHeading += delta * (1 - Math.exp(-3 * dt));
