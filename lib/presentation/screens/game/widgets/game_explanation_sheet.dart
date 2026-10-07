@@ -59,20 +59,16 @@ class GameExplanationSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: GameTicketBadge(
-                    ticket: situation.ticket,
-                    onTap: onShowSourceImage,
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                // Mistake tag + PDD Rule badge
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                // Keep the source ticket and answer status on one line.
+                Row(
                   children: [
+                    Flexible(
+                      child: GameTicketBadge(
+                        ticket: situation.ticket,
+                        onTap: onShowSourceImage,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 9,
@@ -105,30 +101,35 @@ class GameExplanationSheet extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (situation.pddRule.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.goldLightSurface,
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusSmall,
-                          ),
-                        ),
-                        child: Text(
-                          situation.pddRule,
-                          style: TextStyle(
-                            fontFamily: 'Onest',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: colors.gold,
-                          ),
-                        ),
-                      ),
                   ],
                 ),
+                if (situation.pddRule.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.goldLightSurface,
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusSmall,
+                        ),
+                      ),
+                      child: Text(
+                        situation.pddRule,
+                        style: TextStyle(
+                          fontFamily: 'Onest',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: colors.gold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 10),
 
                 // The right answer first: the question card is gone by now,
