@@ -1,3 +1,5 @@
+import { activitySnapshot } from './analytics_activity.js';
+
 // Показатели аналитики, которые берутся из профилей пользователей, а не из
 // счётчиков событий: регистрации по дням, активные, Premium. Профили — это
 // сводки из метаданных KV (user_store.js), поэтому считать их дёшево.
@@ -96,6 +98,7 @@ export function usersSnapshot(users, days, app, dayKey, now = Date.now()) {
       regions: Object.values(geo.regions).sort((a, b) => b.accounts - a.accounts),
       cities: Object.values(geo.cities).sort((a, b) => b.accounts - a.accounts),
     },
+    activity: activitySnapshot(list, periodKeys, now),
     registered: list.length,
     registrations,
     previousRegistrations,

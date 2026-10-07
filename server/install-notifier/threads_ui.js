@@ -71,16 +71,12 @@ export const THREADS_VIEW_HTML = `
     <div id="th-list" style="display:grid; gap:10px;"></div>
   </div>
 
-  <div class="card">
-    <div class="card-head" style="margin-bottom:10px;">
-      <div class="card-title">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-        <span>Журнал</span>
-      </div>
-      <span class="sc-hint">Сервер (МСК): <b id="th-clock">—</b></span>
-    </div>
+  <details class="admin-disclosure">
+    <summary><span>Журнал</span><span class="sc-hint">МСК · <b id="th-clock">—</b></span></summary>
+    <div class="admin-disclosure-body">
     <div id="th-log" style="display:grid; gap:5px; font-size:12.5px;"></div>
-  </div>
+    </div>
+  </details>
 
 </div>
 `;
@@ -99,6 +95,7 @@ async function thApi(path, body) {
   if (res.status === 401) { checkAuthAndLoad(); throw new Error('нужно войти заново'); }
   var data = await res.json().catch(function () { return {}; });
   if (!res.ok) throw new Error(data.error || ('ошибка сервера ' + res.status));
+  if (body) document.dispatchEvent(new CustomEvent('pdd:publications-changed'));
   return data;
 }
 

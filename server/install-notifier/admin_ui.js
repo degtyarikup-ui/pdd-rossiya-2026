@@ -287,7 +287,7 @@ export function enhanceAdminHtml(html) {
     /<div class="sidebar-brand">[\s\S]*?<\/div>(?=\s*(?:<div class="sidebar-context"|<nav class="sidebar-menu"))/,
     `<div class="sidebar-brand">
       <div class="brand-info" title="PDD Drive">
-        <img src="https://pdd-drive.ru/assets/icon-192.png" alt="PDD">
+        <img src="https://pdd-drive.ru/assets/icon-192.png" alt="PDD"><span class="admin-brand-name">PDD Drive</span>
       </div>
       <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" type="button" title="Свернуть меню (Cmd+B)" aria-label="Свернуть меню">
         <svg class="toggle-icon-collapse" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -306,6 +306,9 @@ export function enhanceAdminHtml(html) {
     ''
   );
   result = result.replace('<span>Генератор ссылок</span>', '<span>Ссылки</span>');
+  result = result.replace('type="text" id="login-pwd"', 'type="password" id="login-pwd" aria-label="Пароль администратора"');
+  result = result.replace('Введите ключ доступа к аналитике', 'Панель управления PDD Drive');
+  result = result.replace('class="btn-logout" id="logout-btn"', 'class="btn-logout" id="logout-btn" aria-label="Выйти" title="Выйти"');
   result = result.replace(
     '<span class="brand-badge"><span class="live-dot"></span>LIVE</span>',
     ''
@@ -338,7 +341,10 @@ export function enhanceAdminHtml(html) {
 export function enhanceAdminClientJs(js) {
   let result = js
     .replace("links: 'Генератор ссылок и кампании',", "links: 'Ссылки',")
+    .replace("ai: 'Управление искусственным интеллектом',", "ai: 'Управление ИИ',")
+    .replace("users: 'Пользователи и Премиум-доступ',", "users: 'Пользователи',")
     .replace("let currentFeature = 'analytics';", "let currentFeature = localStorage.getItem('pdd-admin-feature') || 'analytics';")
+    .replace("let cachedBlogArticles = [];", "")
     .replace("let currentDays = 7;", "let currentDays = parseInt(localStorage.getItem('pdd-admin-days') || '7', 10);")
     .replace("let currentApp = 'all'; // 'all' | 'ru' | 'rs'", "let currentApp = 'ru';")
     .replace(
@@ -356,7 +362,12 @@ export function enhanceAdminClientJs(js) {
     .replace(
       "setInterval(checkAuthAndLoad, 30000);",
       "setInterval(() => { if (!document.hidden && currentFeature === 'analytics') checkAuthAndLoad(); }, 60000);"
-    );
+    )
+    .replace(
+      "const allViews = ['analytics-view', 'links-view', 'blog-view', 'threads-view', 'users-view', 'ai-view'];",
+      "const allViews = ['analytics-view', 'links-view', 'publications-view', 'blog-view', 'threads-view', 'users-view', 'ai-view'];"
+    )
+    .replace("else if (currentFeature === 'blog') loadBlogArticles();", "");
 
   // Кампании и источники приходят с публичных ссылок — только через adminEsc.
   result = result
@@ -371,6 +382,9 @@ export function enhanceAdminClientJs(js) {
   ).replace(
     "console.error('loadAiStats error:', err);",
     "console.error('loadAiStats error:', err);\n    if (typeof scToast === 'function') scToast('Статистика ИИ не загрузилась: ' + err.message, true);"
+  ).replace(
+    "document.getElementById('ai-m-model').innerText = activeModel;",
+    "const modelOption = Array.from(document.getElementById('ai-model-select').options).find(option => option.value === activeModel);\n    document.getElementById('ai-m-model').innerText = modelOption ? modelOption.text : activeModel;"
   );
 
   // Старая отрисовка аналитики (Chart.js) заменена модулем analytics_ui.js.
@@ -395,87 +409,12 @@ export function enhanceAdminClientJs(js) {
     result = result.slice(0, usersStart) + result.slice(usersEnd);
   }
 
-  const blogStart = result.indexOf('async function loadBlogArticles()');
+  // Статьи теперь управляются модулем blog_ui.js внутри публикаций. Удаляем старый
+  // клиент целиком: его обработчики обращаются к отсутствующим кнопкам.
+  const blogStart = result.indexOf('// ────────────────────── Blog Articles Module');
   const blogEnd = result.indexOf('// ────────────────────── Threads Module', blogStart);
   if (blogStart !== -1 && blogEnd > blogStart) {
-    let blogJs = result.slice(blogStart, blogEnd);
-    blogJs = blogJs
-      .replace(
-        "cachedBlogArticles = await res.json();",
-        "cachedBlogArticles = await res.json();\n    if (!res.ok) throw new Error(cachedBlogArticles.error || ('ошибка сервера ' + res.status));"
-      )
-      .replace("+ coverUrl +", "+ adminEsc(coverUrl) +")
-      .replace('width:140px;height:78px', 'width:112px;height:63px')
-      .replace("+ a.title +", "+ adminEsc(a.title) +")
-      .replace(/\s*\+ '<div style="font-size:11\.5px;color:var\(--text-muted\);margin-bottom:8px;">' \+ \(a\.description \|\| ''\) \+ '<\/div>'/, '')
-      .replaceAll("+ a.slug +", "+ adminEsc(a.slug) +")
-      .replace("+ a.datePublished +", "+ adminEsc(a.datePublished) +")
-      .replace("+ err.message +", "+ adminEsc(err.message) +")
-      .replace(
-        /window\.updateArticleDate = async function\(slug\) \{[\s\S]*?\n\};/,
-        `window.updateArticleDate = async function(slug) {
-  var input = document.getElementById('date-' + slug);
-  var newDate = input ? input.value : '';
-  if (!newDate || window.__blogBusy) return;
-  window.__blogBusy = true;
-  try {
-    await adminFetchJson('/api/admin/blog/' + encodeURIComponent(slug), {
-      method: 'PUT', headers: {'content-type':'application/json'}, body: JSON.stringify({ datePublished: newDate })
-    });
-    await loadBlogArticles();
-  } catch (err) {
-    adminToast('Дата не сохранилась: ' + err.message, true);
-    await loadBlogArticles();
-  } finally { window.__blogBusy = false; }
-};`
-      )
-      .replace(
-        /window\.swapArticle = async function\(idx1, idx2\) \{[\s\S]*?\n\};/,
-        `window.swapArticle = async function(idx1, idx2) {
-  if (window.__blogBusy || idx1 < 0 || idx2 < 0 || idx1 >= cachedBlogArticles.length || idx2 >= cachedBlogArticles.length) return;
-  var a1 = cachedBlogArticles[idx1], a2 = cachedBlogArticles[idx2];
-  window.__blogBusy = true;
-  try {
-    await adminFetchJson('/api/admin/blog/reorder', {
-      method: 'POST', headers: {'content-type':'application/json'},
-      body: JSON.stringify({ changes: [
-        { slug: a1.slug, datePublished: a2.datePublished },
-        { slug: a2.slug, datePublished: a1.datePublished }
-      ] })
-    });
-    await loadBlogArticles();
-  } catch (err) {
-    adminToast('Порядок статей не изменился: ' + err.message, true);
-  } finally { window.__blogBusy = false; }
-};`
-      )
-      .replace(
-        /window\.deleteBlogArticle = async function\(slug\) \{[\s\S]*?\n\};/,
-        `window.deleteBlogArticle = async function(slug) {
-  if (window.__blogBusy || !confirm('Удалить статью из публикаций?')) return;
-  window.__blogBusy = true;
-  try {
-    await adminFetchJson('/api/admin/blog/' + encodeURIComponent(slug), { method: 'DELETE' });
-    await loadBlogArticles();
-  } catch (err) {
-    adminToast('Статья не удалена: ' + err.message, true);
-  } finally { window.__blogBusy = false; }
-};`
-      )
-      .replace(
-        /document\.getElementById\('reset-blog-btn'\)\.addEventListener\('click', async \(\) => \{[\s\S]*?\n\}\);/,
-        `document.getElementById('reset-blog-btn').addEventListener('click', async () => {
-  if (window.__blogBusy || !confirm('Сбросить список статей к исходному состоянию?')) return;
-  window.__blogBusy = true;
-  try {
-    await adminFetchJson('/api/admin/blog/reset', { method: 'POST' });
-    await loadBlogArticles();
-  } catch (err) {
-    adminToast('Список не сброшен: ' + err.message, true);
-  } finally { window.__blogBusy = false; }
-});`
-      );
-    result = result.slice(0, blogStart) + blogJs + result.slice(blogEnd);
+    result = result.slice(0, blogStart) + result.slice(blogEnd);
   }
 
   const reliableLoader = `async function checkAuthAndLoad() {
@@ -519,6 +458,25 @@ async function handleLoginSubmit`;
     /async function checkAuthAndLoad\(\) \{[\s\S]*?\n\}\n\nasync function handleLoginSubmit/,
     reliableLoader
   );
+  // Начальная загрузка раздела могла получить 401 до входа. После успешного
+  // входа загружаем его заново и отменяем ответы прежней попытки.
+  const loginStart = result.indexOf('async function handleLoginSubmit()');
+  const loginEnd = result.indexOf("document.getElementById('login-submit-btn')", loginStart);
+  if (loginStart !== -1 && loginEnd > loginStart) {
+    const loginJs = result.slice(loginStart, loginEnd).replace(
+      '    checkAuthAndLoad();',
+      `    await checkAuthAndLoad();
+    if (currentFeature === 'publications' && typeof window.pubOpen === 'function') {
+      if (typeof pbLoadId !== 'undefined') pbLoadId += 1;
+      if (typeof pbLoading !== 'undefined') pbLoading = false;
+      if (typeof pbLoaded !== 'undefined') pbLoaded = false;
+      var publicationRefresh = document.getElementById('pb-refresh');
+      if (publicationRefresh) publicationRefresh.disabled = false;
+      window.pubOpen(typeof pbWorkspace !== 'undefined' ? pbWorkspace : 'plan', false);
+    }`
+    );
+    result = result.slice(0, loginStart) + loginJs + result.slice(loginEnd);
+  }
   const helpers = `window.__analyticsRequestId = 0;
 function adminEsc(value) {
   return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -568,18 +526,6 @@ export const ADMIN_UI_CLIENT_JS = `
   var retry = document.getElementById('admin-error-retry');
   if (retry) retry.addEventListener('click', checkAuthAndLoad);
 
-  var blogSearch = document.getElementById('blog-search');
-  var blogContainer = document.getElementById('blog-articles-container');
-  function filterBlogArticles() {
-    if (!blogContainer) return;
-    var query = (blogSearch ? blogSearch.value : '').trim().toLocaleLowerCase('ru');
-    Array.from(blogContainer.children).forEach(function (card) {
-      card.style.display = !query || card.textContent.toLocaleLowerCase('ru').indexOf(query) !== -1 ? '' : 'none';
-    });
-  }
-  if (blogSearch) blogSearch.addEventListener('input', filterBlogArticles);
-  if (blogContainer) new MutationObserver(filterBlogArticles).observe(blogContainer, { childList: true });
-
   document.addEventListener('keydown', function (event) {
     if (event.key !== 'Escape') return;
     var dialogs = document.querySelectorAll('.sc-modal-bg, .admin-dialog-backdrop');
@@ -587,14 +533,29 @@ export const ADMIN_UI_CLIENT_JS = `
   });
 
   // #users/<id> — карточка пользователя внутри раздела «Пользователи».
-  var initial = (location.hash ? location.hash.slice(1) : currentFeature).split('/')[0];
-  var allowed = ['analytics', 'tasks', 'links', 'blog', 'users', 'ai', 'threads', 'social', 'notifications'];
+  // Сохраняем прежние ссылки и выбранные в прошлой панели разделы.
+  var publicationAliases = Object.assign(Object.create(null), { blog: 'blog', threads: 'threads', social: 'videos' });
+  function adminRouteFeature(rawRoute) {
+    var feature = String(rawRoute || '').split('/')[0];
+    var workspace = publicationAliases[feature];
+    if (workspace) {
+      if (history.replaceState) history.replaceState(null, '', '#publications/' + workspace);
+      return 'publications';
+    }
+    return feature;
+  }
+  var initial = adminRouteFeature(location.hash ? location.hash.slice(1) : currentFeature);
+  var allowed = ['analytics', 'tasks', 'links', 'publications', 'users', 'ai', 'notifications'];
   if (allowed.indexOf(initial) === -1) initial = 'analytics';
   var initialButton = document.querySelector('.sidebar-menu .nav-item[data-feature="' + initial + '"]');
   if (initialButton) initialButton.click();
 
   window.addEventListener('popstate', function () {
-    var feature = location.hash.slice(1).split('/')[0];
+    var oldFeature = location.hash.slice(1).split('/')[0];
+    var feature = adminRouteFeature(location.hash.slice(1));
+    if (feature === 'publications' && publicationAliases[oldFeature] && typeof window.pubOpen === 'function') {
+      window.pubOpen(publicationAliases[oldFeature], false);
+    }
     if (feature === currentFeature || allowed.indexOf(feature) === -1) return;
     var button = document.querySelector('.sidebar-menu .nav-item[data-feature="' + feature + '"]');
     if (button) button.click();

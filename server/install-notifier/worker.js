@@ -16,9 +16,13 @@ import { setEntitlement } from './entitlements.js';
 import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, listPayIntents, webPaymentsLive } from './payments.js';
 import { handleAuth, authorizeUserRequest, revokeUserSessions } from './user_auth.js';
 import { handleSocialAdmin, handleVideoStream, handleVideoThumb, runAutoPost } from './social.js';
-import { SOCIAL_NAV_HTML, SOCIAL_VIEW_HTML, SOCIAL_CLIENT_JS } from './social_ui.js';
+import { SOCIAL_VIEW_HTML, SOCIAL_CLIENT_JS } from './social_ui.js';
 import { handleThreadsAdmin, runThreadsSchedule } from './threads.js';
 import { THREADS_VIEW_HTML, THREADS_CLIENT_JS } from './threads_ui.js';
+import { BLOG_VIEW_HTML, BLOG_CLIENT_JS } from './blog_ui.js';
+import { PUBLICATIONS_VIEW_HTML, PUBLICATIONS_CLIENT_JS, enhancePublicationsHtml } from './publications_ui.js';
+import { ADMIN_THEME_HTML, ADMIN_THEME_CLIENT_JS } from './admin_theme.js';
+import { AI_VIEW_HTML } from './ai_ui.js';
 import { LINKS_VIEW_HTML, LINKS_CLIENT_JS } from './links_ui.js';
 import { enhanceAdminHtml, enhanceAdminClientJs, ADMIN_UI_CLIENT_JS } from './admin_ui.js';
 import { StatsBuffer } from './stats_buffer.js';
@@ -2553,13 +2557,20 @@ function renderAdminPage() {
     ? withoutOldThreads.slice(0, linksStart) + LINKS_VIEW_HTML.trim() + '\n\n    ' + withoutOldThreads.slice(linksEnd)
     : withoutOldThreads;
 
+  // Блог — самостоятельный модуль внутри общего раздела публикаций.
+  const blogStart = withSourceInput.indexOf('<!-- 3. BLOG VIEW -->');
+  const blogEnd = withSourceInput.indexOf('<!-- 4. USERS MANAGEMENT VIEW -->');
+  const withBlog = (blogStart !== -1 && blogEnd > blogStart)
+    ? withSourceInput.slice(0, blogStart) + BLOG_VIEW_HTML.trim() + '\n\n    ' + withSourceInput.slice(blogEnd)
+    : withSourceInput;
+
   // Раздел «Пользователи» тоже заменяем целиком (users_ui.js): старую таблицу
   // и её скрипт вырезаем по границам соседних разделов.
-  const usersStart = withSourceInput.indexOf('<div id="users-view"');
-  const usersEnd = withSourceInput.indexOf('<!-- 5. AI MANAGEMENT VIEW -->');
+  const usersStart = withBlog.indexOf('<div id="users-view"');
+  const usersEnd = withBlog.indexOf('<!-- 5. AI MANAGEMENT VIEW -->');
   const withUsers = (usersStart !== -1 && usersEnd > usersStart)
-    ? withSourceInput.slice(0, usersStart) + USERS_VIEW_HTML.trim() + '\n\n    ' + withSourceInput.slice(usersEnd)
-    : withSourceInput;
+    ? withBlog.slice(0, usersStart) + USERS_VIEW_HTML.trim() + '\n\n    ' + withBlog.slice(usersEnd)
+    : withBlog;
 
   // Аналитику — тоже целиком (analytics_ui.js), вместе с Chart.js: новые
   // графики рисуются своим SVG.
@@ -2570,11 +2581,18 @@ function renderAdminPage() {
     : withUsers;
   const withoutChartJs = withAnalytics.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/chart\.js[^"]*"><\/script>\s*/, '');
 
-  const html = enhanceAdminHtml(withoutChartJs
+  // Модель и проверка ответа — отдельная компактная разметка с прежними ID.
+  const aiStart = withoutChartJs.indexOf('<!-- 5. AI MANAGEMENT VIEW -->');
+  const aiEnd = withoutChartJs.indexOf('\n\n  </main>', aiStart);
+  const withAi = (aiStart !== -1 && aiEnd > aiStart)
+    ? withoutChartJs.slice(0, aiStart) + AI_VIEW_HTML.trim() + withoutChartJs.slice(aiEnd)
+    : withoutChartJs;
+
+  const html = enhanceAdminHtml(enhancePublicationsHtml(withAi
     .replace('<button class="nav-item" data-feature="links">', TASKS_NAV_HTML + '\n      <button class="nav-item" data-feature="links">')
-    .replace('</nav>', NOTIFICATIONS_NAV_HTML + SOCIAL_NAV_HTML + '    </nav>')
-    .replace('\n\n  </main>', '\n' + TASKS_VIEW_HTML + '\n' + NOTIFICATIONS_VIEW_HTML + '\n' + SOCIAL_VIEW_HTML + '\n' + THREADS_VIEW_HTML + '\n  </main>'));
-  return html + "<script>" + clientJs + ANALYTICS_CLIENT_JS + USERS_CLIENT_JS + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + NOTIFICATIONS_CLIENT_JS + TASKS_CLIENT_JS + ADMIN_UI_CLIENT_JS + "</script></body></html>";
+    .replace('</nav>', NOTIFICATIONS_NAV_HTML + '    </nav>')
+    .replace('\n\n  </main>', '\n' + TASKS_VIEW_HTML + '\n' + NOTIFICATIONS_VIEW_HTML + '\n' + SOCIAL_VIEW_HTML + '\n' + THREADS_VIEW_HTML + '\n' + PUBLICATIONS_VIEW_HTML + '\n  </main>')));
+  return html + ADMIN_THEME_HTML + "<script>" + clientJs + ANALYTICS_CLIENT_JS + USERS_CLIENT_JS + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + NOTIFICATIONS_CLIENT_JS + TASKS_CLIENT_JS + BLOG_CLIENT_JS + PUBLICATIONS_CLIENT_JS + ADMIN_UI_CLIENT_JS + ADMIN_THEME_CLIENT_JS + "</script></body></html>";
 }
 
 
@@ -3040,6 +3058,11 @@ export default {
 
 
     // ────────────────────── Blog Management API ──────────────────────
+    if (url.pathname === '/api/admin/blog' && request.method === 'GET') {
+      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
+      return jsonResponse(await getBlogArticles(env));
+    }
+
     if (url.pathname === '/api/admin/blog/future' && request.method === 'GET') {
       if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
       const articles = await getBlogArticles(env);

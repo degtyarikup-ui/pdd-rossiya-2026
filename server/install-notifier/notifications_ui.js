@@ -27,7 +27,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 <label class="nt-control"><span><strong>Заезды восстановились</strong><small>Напоминание об игре</small></span><input class="nt-switch" type="checkbox" data-nt-config="gameEnabled" aria-label="Заезды восстановились" disabled></label>
 </div>
 <div id="nt-page-error" class="nt-error" role="alert"></div>
-${APP_UPDATES_VIEW_HTML}
+<details class="admin-disclosure"><summary>Обновления приложения</summary><div class="admin-disclosure-body">${APP_UPDATES_VIEW_HTML.replace('<h3>Обновления приложения</h3>', '')}</div></details>
 <div class="nt-grid">
 <form id="nt-form" class="nt-card"><h3>Новое сообщение</h3>
 <div class="nt-seg" id="nt-kind">
@@ -57,8 +57,7 @@ ${APP_UPDATES_VIEW_HTML}
 <div class="nt-actions"><button class="btn-action primary" id="nt-publish" type="submit">Опубликовать</button><button class="btn-action" id="nt-reset" type="button">Очистить</button><span id="nt-result" role="status" class="nt-hint"></span></div>
 </form>
 <div class="nt-card nt-sticky"><h3>Предпросмотр</h3><div class="nt-preview" id="nt-preview"></div>
-<p class="nt-hint" id="nt-format-hint"></p>
-<details class="nt-hint"><summary>Подключение и ограничения</summary><p>В режиме «Только мой аккаунт (тест)» сообщение увидят только устройства, где выполнен вход под указанным email или ID. После проверки нажмите «На всех» в списке ниже, чтобы отправить его всем пользователям. Картинка в пуше на Android показывается всегда, на iOS — при наличии Notification Service Extension в сборке. Статус «Принят Firebase» означает приём сервисом, а не доставку каждому устройству. Пуш нельзя отозвать после отправки.</p></details>
+<details class="nt-hint"><summary>Подключение и ограничения</summary><p class="nt-hint" id="nt-format-hint"></p><p>В режиме «Только мой аккаунт (тест)» сообщение увидят только устройства, где выполнен вход под указанным email или ID. После проверки нажмите «На всех» в списке ниже, чтобы отправить его всем пользователям. Картинка в пуше на Android показывается всегда, на iOS — при наличии Notification Service Extension в сборке. Статус «Принят Firebase» означает приём сервисом, а не доставку каждому устройству. Пуш нельзя отозвать после отправки.</p></details>
 </div></div>
 <div class="nt-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0">Сообщения</h3><button class="btn-action" id="nt-refresh">Обновить</button></div><div class="nt-table-wrap" id="nt-history"><div class="nt-empty">Загрузка…</div></div></div>
 <dialog class="nt-modal" id="nt-confirm"><h3 id="nt-confirm-title"></h3><p id="nt-confirm-body"></p><p class="nt-hint" id="nt-confirm-audience"></p><div class="nt-actions"><button class="btn-action" id="nt-confirm-cancel">Отмена</button><button class="btn-action primary" id="nt-confirm-send">Подтвердить</button></div></dialog>

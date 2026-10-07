@@ -1,7 +1,7 @@
 // Раздел «Ссылки» админки: создание отслеживаемой ссылки, «Мои ссылки» со
 // статистикой по каждой и все источники визитов. Заменяет старый генератор
 // из экранированной строки worker.js. Стиль и помощники (anLogo, anNum,
-// anDelta, AN_SOURCES…) — общие с analytics_ui.js, он подключается раньше.
+// AN_SOURCES…) — общие с analytics_ui.js, он подключается раньше.
 //
 // Ссылка = страница + ?ref=<канал>_<метка>. Сайт (tracker.js) и страницы
 // /go/* раскладывают ref на источник и кампанию — по метке и считаем.
@@ -63,7 +63,7 @@ export const LINKS_VIEW_HTML = String.raw`
           <div class="ln-chips" id="ln-pages"></div>
         </div>
         <div class="ln-field">
-          <div class="an-label">Метка — чтобы отличать ссылки одного канала</div>
+          <div class="an-label" title="Помогает отличать ссылки одного канала">Метка</div>
           <input class="ln-input" id="ln-campaign" placeholder="например bio или reels_12" autocomplete="off">
         </div>
         <div class="ln-result">
@@ -161,7 +161,7 @@ async function lnLoad() {
 }
 
 function lnRenderStats() {
-  var st = lnState.stats || {}, prev = (st.previous || {}).campaigns || {};
+  var st = lnState.stats || {};
   var camps = {};
   (st.campaigns || []).forEach(function (c) { camps[c.name] = c; });
   // Мои ссылки
@@ -173,12 +173,12 @@ function lnRenderStats() {
       .sort(function (a, b) { return b.views - a.views || b.clicks - a.clicks; });
     box.innerHTML = '<table class="ln-table"><thead><tr><th>Ссылка</th><th>Визиты</th><th>В магазин</th><th class="ln-hide-sm">Конверсия</th><th></th></tr></thead><tbody>'
       + rows.map(function (r) {
-        var conf = lnSourceConf(r.l.source), p = prev[r.l.campaign] || {};
+        var conf = lnSourceConf(r.l.source);
         var conv = r.views ? Math.round(r.clicks / r.views * 100) + '%' : '—';
         return '<tr><td><div class="ln-who">' + anLogo(conf) + '<div style="min-width:0"><div class="ln-name">' + anEsc(conf.name === 'Другие сайты' ? r.l.source : conf.name) + ' · ' + anEsc(r.l.campaign) + '</div>'
           + '<div class="ln-sub">' + anEsc(LN_PAGE_NAMES[r.l.page] || r.l.page) + '</div></div></div></td>'
-          + '<td>' + anNum(r.views) + anDelta(r.views, p.views) + '</td>'
-          + '<td>' + anNum(r.clicks) + anDelta(r.clicks, p.clicks) + '</td>'
+          + '<td>' + anNum(r.views) + '</td>'
+          + '<td>' + anNum(r.clicks) + '</td>'
           + '<td class="ln-hide-sm ln-conv">' + conv + '</td>'
           + '<td><span class="ln-actions">' + lnIconBtn('copy', 'data-copy="' + anEsc(r.l.page + '?ref=' + r.l.source + '_' + r.l.campaign) + '"', 'Скопировать ссылку')
           + lnIconBtn('delete', 'data-del="' + anEsc(r.l.id) + '"', 'Удалить из списка') + '</span></td></tr>';
@@ -200,14 +200,12 @@ function lnRenderStats() {
     if (src[key]) src[key].camps.push(c);
   });
   var keys = Object.keys(src).sort(function (a, b) { return src[b].views - src[a].views; });
-  var prevSrc = {};
-  Object.keys((st.previous || {}).sources || {}).forEach(function (n) { var k = anSourceKey(n), v = st.previous.sources[n]; prevSrc[k] = (prevSrc[k] || 0) + (v.views || 0); });
   document.getElementById('ln-all').innerHTML = keys.length
     ? '<table class="ln-table"><thead><tr><th>Источник</th><th>Визиты</th><th>В магазин</th><th class="ln-hide-sm">Конверсия</th></tr></thead><tbody>'
       + keys.map(function (k) {
         var s = src[k], conf = AN_SOURCES[k];
         var row = '<tr><td><div class="ln-who">' + anLogo(conf) + '<div class="ln-name">' + conf.name + '</div></div></td>'
-          + '<td>' + anNum(s.views) + anDelta(s.views, prevSrc[k]) + '</td><td>' + anNum(s.clicks) + '</td>'
+          + '<td>' + anNum(s.views) + '</td><td>' + anNum(s.clicks) + '</td>'
           + '<td class="ln-hide-sm ln-conv">' + (s.views ? Math.round(s.clicks / s.views * 100) + '%' : '—') + '</td></tr>';
         return row + s.camps.sort(function (a, b) { return b.views - a.views; }).slice(0, 5).map(function (c) {
           return '<tr class="ln-sub-row"><td>метка «' + anEsc(c.name) + '»</td><td>' + anNum(c.views) + '</td><td>' + anNum(c.clicks) + '</td><td class="ln-hide-sm"></td></tr>';

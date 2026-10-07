@@ -920,15 +920,15 @@ export const TASKS_VIEW_HTML = `
 
         <select class="tasks-select-pill" id="tasks-priority-filter" title="Фильтр по приоритету">
           <option value="all">Все приоритеты</option>
-          <option value="high">🔥 Высокий</option>
-          <option value="normal">⚡ Обычный</option>
-          <option value="low">💤 Низкий</option>
+          <option value="high">Высокий</option>
+          <option value="normal">Обычный</option>
+          <option value="low">Низкий</option>
         </select>
       </div>
 
       <div class="tasks-toolbar-right">
         <button class="tasks-archive-toggle" id="tasks-archive-btn" title="Показать или скрыть архивные задачи">
-          <span>📦 Архив</span>
+          <span>Архив</span>
           <span id="tasks-archive-count" style="font-size:11.5px; opacity:.85; font-variant-numeric:tabular-nums;">(0)</span>
         </button>
         <button class="btn-create-task" id="tasks-add-task-btn">
@@ -983,17 +983,17 @@ export const TASKS_VIEW_HTML = `
         <div class="task-form-group" style="margin:0">
           <label for="task-form-status">Статус</label>
           <select class="task-form-select" id="task-form-status">
-            <option value="idea">💡 Идея</option>
-            <option value="planned">📋 В планах</option>
-            <option value="in_progress">⚡ В работе</option>
-            <option value="ready">🧪 Готово (ждёт релиза)</option>
-            <option value="released">🚀 Выпущено в сторах</option>
-            <option value="archived">📦 Архив</option>
+            <option value="idea">Идея</option>
+            <option value="planned">В планах</option>
+            <option value="in_progress">В работе</option>
+            <option value="ready">Готово к релизу</option>
+            <option value="released">Выпущено в сторах</option>
+            <option value="archived">Архив</option>
           </select>
         </div>
 
         <div class="task-form-group" style="margin:0">
-          <label for="task-form-version">Версия игры / аппа</label>
+          <label for="task-form-version">Версия приложения</label>
           <input class="task-form-input" id="task-form-version" list="tasks-versions-datalist" placeholder="Например: v1.0.7">
           <datalist id="tasks-versions-datalist"></datalist>
         </div>
@@ -1001,9 +1001,9 @@ export const TASKS_VIEW_HTML = `
         <div class="task-form-group" style="margin:0">
           <label for="task-form-priority">Приоритет</label>
           <select class="task-form-select" id="task-form-priority">
-            <option value="high">🔥 Высокий (Срочно)</option>
-            <option value="normal" selected>⚡ Обычный</option>
-            <option value="low">💤 Низкий</option>
+            <option value="high">Высокий</option>
+            <option value="normal" selected>Обычный</option>
+            <option value="low">Низкий</option>
           </select>
         </div>
       </div>
@@ -1042,12 +1042,12 @@ VIEW_TITLES.tasks = 'Задачи';
 
 (function() {
   var STATUS_DEFS = [
-    { id: 'idea', name: 'Идея', emoji: '💡', bg: '#FEF3C7', color: '#B45309' },
-    { id: 'planned', name: 'В планах', emoji: '📋', bg: '#E0F2FE', color: '#0369A1' },
-    { id: 'in_progress', name: 'В работе', emoji: '⚡', bg: '#EDE9FE', color: '#6D28D9' },
-    { id: 'ready', name: 'Готово (ждёт релиза)', emoji: '🧪', bg: '#D1FAE5', color: '#047857' },
-    { id: 'released', name: 'Выпущено в сторах', emoji: '🚀', bg: '#DCFCE7', color: '#15803D' },
-    { id: 'archived', name: 'Архив', emoji: '📦', bg: '#F1F5F9', color: '#475569' }
+    { id: 'idea', name: 'Идея', emoji: '', bg: '#FEF3C7', color: '#B45309' },
+    { id: 'planned', name: 'В планах', emoji: '', bg: '#E0F2FE', color: '#0369A1' },
+    { id: 'in_progress', name: 'В работе', emoji: '', bg: '#EDE9FE', color: '#6D28D9' },
+    { id: 'ready', name: 'Готово к релизу', emoji: '', bg: '#D1FAE5', color: '#047857' },
+    { id: 'released', name: 'Выпущено в сторах', emoji: '', bg: '#DCFCE7', color: '#15803D' },
+    { id: 'archived', name: 'Архив', emoji: '', bg: '#F1F5F9', color: '#475569' }
   ];
 
   var allTasks = [];
@@ -1275,12 +1275,12 @@ VIEW_TITLES.tasks = 'Задачи';
 
     var badgesHtml = '';
     if (t.version) {
-      badgesHtml += '<span class="task-badge version" title="Версия">🏷️ ' + esc(t.version) + '</span>';
+      badgesHtml += '<span class="task-badge version" title="Версия">' + esc(t.version) + '</span>';
     }
     if (t.priority === 'high') {
-      badgesHtml += '<span class="task-badge prio-high">🔥 Срочно</span>';
+      badgesHtml += '<span class="task-badge prio-high">Срочно</span>';
     } else if (t.priority === 'low') {
-      badgesHtml += '<span class="task-badge prio-low">💤 Низкий</span>';
+      badgesHtml += '<span class="task-badge prio-low">Низкий</span>';
     }
 
     var imagePreviewHtml = '';
@@ -1354,7 +1354,7 @@ VIEW_TITLES.tasks = 'Задачи';
 
     var html = filtered.map(function(t) {
       var statusDef = STATUS_DEFS.find(function(s) { return s.id === (t.status || 'idea'); }) || STATUS_DEFS[0];
-      var prioLabel = t.priority === 'high' ? '🔥 Высокий' : t.priority === 'low' ? '💤 Низкий' : '⚡ Обычный';
+      var prioLabel = t.priority === 'high' ? 'Высокий' : t.priority === 'low' ? 'Низкий' : 'Обычный';
       var filesCount = Array.isArray(t.attachments) ? t.attachments.length : 0;
       var parts = splitTaskText(t.text);
 
@@ -1364,7 +1364,7 @@ VIEW_TITLES.tasks = 'Задачи';
           '<div style="font-weight:700; color:#111827; cursor:pointer;" data-edit-task="' + t.id + '">' + esc(parts.title) + '</div>' +
           (parts.body ? '<div style="font-size:12px; color:#6B7280; margin-top:2px; max-width:500px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + esc(parts.body) + '</div>' : '') +
         '</td>' +
-        '<td>' + (t.version ? '<span class="task-badge version">🏷️ ' + esc(t.version) + '</span>' : '—') + '</td>' +
+        '<td>' + (t.version ? '<span class="task-badge version">' + esc(t.version) + '</span>' : '—') + '</td>' +
         '<td>' + prioLabel + '</td>' +
         '<td>' + (filesCount ? '📎 ' + filesCount : '—') + '</td>' +
         '<td><small style="color:#9CA3AF; font-weight:600;">' + formatDate(t.updatedAt || t.createdAt) + '</small></td>' +

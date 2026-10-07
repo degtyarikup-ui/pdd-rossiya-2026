@@ -154,13 +154,12 @@ export const SOCIAL_VIEW_HTML = `
     <div id="sc-list" class="sc-grid"></div>
   </div>
 
-  <div class="card">
-    <div class="card-head" style="margin-bottom:10px;">
-      <div class="card-title"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><span>Журнал</span></div>
-      <span class="sc-hint">Сервер (МСК): <b id="sc-clock">—</b></span>
-    </div>
+  <details class="admin-disclosure">
+    <summary><span>Журнал</span><span class="sc-hint">МСК · <b id="sc-clock">—</b></span></summary>
+    <div class="admin-disclosure-body">
     <div id="sc-log" style="display:grid; gap:5px; font-size:12.5px;"></div>
-  </div>
+    </div>
+  </details>
 
 </div>
 `;
@@ -195,6 +194,7 @@ async function scApi(path, body) {
   if (res.status === 401) { checkAuthAndLoad(); throw new Error('нужно войти заново'); }
   var data = await res.json().catch(function () { return {}; });
   if (!res.ok) throw new Error(data.error || ('ошибка сервера ' + res.status));
+  if (body) document.dispatchEvent(new CustomEvent('pdd:publications-changed'));
   return data;
 }
 
@@ -266,7 +266,7 @@ function scRenderSchedule() {
   document.getElementById('sc-next').innerHTML = next
     ? ('Ближайшая: <b style="color:var(--text)">' + scMskShort(next.scheduledAt) + '</b> — '
        + scEsc(next.title || scPrettyName(next.fileName)))
-    : (queued.length ? 'Даты не расставлены — публикуется по одному в день в ' + scEsc(a.postTime || '19:00') : 'Очередь пуста');
+    : (queued.length ? 'Без отдельных дат — публикация по расписанию канала в ' + scEsc(a.postTime || '19:00') : 'Очередь пуста');
 }
 
 function scSetToggle(id, on) {
@@ -783,15 +783,15 @@ document.querySelectorAll('#social-view .sc-tabs .sc-tab').forEach(function (tab
   var aiView = document.getElementById('ai-view');
   if (!aiView) return;
 
-  var card = document.createElement('div');
-  card.className = 'card';
-  card.innerHTML = '<div class="card-head"><div class="card-title"><span>Доступ к ИИ извне</span></div>'
-    + '<span id="ai-key-state" style="font-size:12px;color:var(--text-muted);"></span></div>'
-    + '<label style="display:flex;gap:9px;align-items:flex-start;cursor:pointer;font-size:13.5px;">'
+  var card = document.createElement('details');
+  card.className = 'admin-disclosure ai-access';
+  card.innerHTML = '<summary>Доступ старых версий'
+    + '<span id="ai-key-state"></span></summary><div class="admin-disclosure-body">'
+    + '<label style="display:flex;gap:9px;align-items:flex-start;cursor:pointer;font-size:12px;">'
     + '<input type="checkbox" id="ai-legacy-toggle" style="margin-top:3px;">'
-    + '<span>Пускать приложения без ключа<br><span style="font-size:12px;color:var(--text-muted);">'
-    + 'Нужно, пока у людей стоят версии, выпущенные до появления ключа. Когда обновление разойдётся — сними галочку.'
-    + '</span></span></label>';
+    + '<span>Разрешить доступ без ключа<br><span style="font-size:11px;color:var(--text-muted);">'
+    + 'Для версий, выпущенных до появления ключа приложения.'
+    + '</span></span></label></div>';
   aiView.appendChild(card);
 
   var toggle = card.querySelector('#ai-legacy-toggle');

@@ -49,3 +49,29 @@ test('geographic filtering preserves denominator under search and supports all p
  assert.equal(selectGeoRows(rows,{sort:'active7'}).rows[0].active7,20);
  assert.equal(selectGeoRows(rows,{sort:'accounts',descending:false}).rows[0].accounts,1);
 });
+
+test('daily activity deduplicates syncs, preserves platform history and uses Moscow midnight', async () => {
+ const {recordActivity, activitySnapshot, activityDay}=await import('./analytics_activity.js');
+ const user={...base,platform:'android',lastSeenAt:'2026-10-07T20:59:00Z'};
+ const first=Date.parse(user.lastSeenAt);
+ recordActivity(user,first); recordActivity(user,first);
+ user.platform='ios';recordActivity(user,first);
+ user.lastSeenAt='2026-10-07T21:01:00Z';recordActivity(user,Date.parse(user.lastSeenAt));
+ const days=activitySnapshot([user],['2026-10-06','2026-10-07','2026-10-08'],Date.parse(user.lastSeenAt)).days;
+ assert.equal(activityDay(Date.parse(user.lastSeenAt)),'2026-10-08');
+ assert.equal(days[0].total,null);
+ assert.deepEqual(days[1],{date:'2026-10-07',total:1,android:1,ios:1,web:0,unknown:0});
+ assert.deepEqual(days[2],{date:'2026-10-08',total:1,android:0,ios:1,web:0,unknown:0});
+});
+test('activity retains 90 days and never reconstructs past days from last seen', async () => {
+ const {recordActivity,activitySnapshot}=await import('./analytics_activity.js');
+ const user={...base,platform:'android',lastSeenAt:'2026-10-07T09:00:00Z'};
+ recordActivity(user,Date.parse(user.lastSeenAt));
+ user.lastSeenAt='2027-01-05T09:00:00Z'; recordActivity(user,Date.parse(user.lastSeenAt));
+ assert.equal(user.activity.android,'1');
+ const old={...base,lastSeenAt:'2026-10-08T09:00:00Z',platform:'ios'};
+ const snapshot=activitySnapshot([old],['2026-10-07','2026-10-08'],Date.parse(old.lastSeenAt));
+ assert.equal(snapshot.days[0].total,0); assert.equal(snapshot.days[1].ios,1);
+ const result=usersSnapshot([{...old,app:'by'},{...old,provider:'guest'},{...old,suspect:true}],2,'ru',d=>d.toISOString().slice(0,10),Date.parse(old.lastSeenAt));
+ assert.equal(result.activity.days[1].total,0);
+});

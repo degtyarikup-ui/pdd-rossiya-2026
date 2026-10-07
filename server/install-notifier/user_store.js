@@ -1,3 +1,5 @@
+import { recordActivity } from './analytics_activity.js';
+
 // Запись профиля пользователя `user:<id>` вместе с краткой сводкой в
 // метаданных ключа KV. Список пользователей в админке читает только
 // метаданные через list() — одна операция на 1000 пользователей вместо
@@ -33,6 +35,7 @@ export function userSummary(user) {
     ipCountry: cut(user.ipCountry, 4),
     ipRegion: cut(user.ipRegion, 60),
     ipCity: cut(user.ipCity, 60),
+    activity: user.activity || null,
     v: 4,
   };
   if (new TextEncoder().encode(JSON.stringify(meta)).length > META_LIMIT) meta.avatarUrl = null;
@@ -45,6 +48,7 @@ export function userSummary(user) {
 }
 
 export async function putUserRecord(env, user, options = {}) {
+  recordActivity(user);
   await env.INSTALLS.put('user:' + user.id, JSON.stringify(user), { ...options, metadata: userSummary(user) });
 }
 
