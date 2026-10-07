@@ -666,6 +666,7 @@ export function buildReportMessage(b) {
 // Крон автопостинга (см. wrangler.toml). Раз в пять минут, а не раз в час:
 // он же доводит до конца публикации, которые Cloudflare оборвал на полпути.
 const HOURLY_CRON = '*/5 * * * *';
+const WEEKLY_CRON = '5 21 * * 0';
 // Крону неоткуда взять свой адрес, а Instagram скачивает ролик именно по нему.
 // Актуальное значение сохраняется в KV при каждом открытии админки.
 const DEFAULT_WORKER_ORIGIN = 'https://pdd-install-notifier.sergei-pdd.workers.dev';
@@ -4076,6 +4077,13 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
   async scheduled(event, env, ctx) {
     if (!env.INSTALLS) return;
 
+    // Закрытие недельного рейтинга (итоговые места → ачивка «Покоритель
+    // рейтинга»): раз в неделю, в пн 00:05 МСК, и страховкой в суточный запуск.
+    if (event.cron !== HOURLY_CRON) {
+      ctx.waitUntil(closeFinishedGameWeeks(env, gameWeekKey, readGameBoard, rankGameBoard).catch(() => {}));
+      if (event.cron === WEEKLY_CRON) return;
+    }
+
     // Триггер автопостинга: проверяет расписание и продолжает оборвавшиеся
     // публикации (у Instagram уходит несколько минут только на кодирование).
     if (event.cron === HOURLY_CRON) {
@@ -4084,8 +4092,6 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
         const settings = JSON.parse(await env.INSTALLS.get('social:settings'));
         if (settings && settings.workerOrigin) origin = settings.workerOrigin;
       } catch (_) {}
-      // Закрытие недельного рейтинга: итоговые места → ачивка «Покоритель рейтинга».
-      ctx.waitUntil(closeFinishedGameWeeks(env, gameWeekKey(), gameWeekKey, readGameBoard, rankGameBoard).catch(() => {}));
       ctx.waitUntil(runAutoPost(env, origin, (text) => sendTelegram(env, text)));
       ctx.waitUntil(runThreadsSchedule(env, (text) => sendTelegram(env, text)));
       if (env.NOTIFICATIONS) {

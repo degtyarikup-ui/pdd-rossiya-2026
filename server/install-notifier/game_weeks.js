@@ -68,15 +68,16 @@ export async function deleteGameBest(env, userId) {
   }
 }
 
-// Закрывает несколько последних законченных недель. Первый запуск после
-// выкладки сразу подхватывает недели, чьи таблицы ещё не удалены.
-let lastClosedFor = '';
-export async function closeFinishedGameWeeks(env, currentWeek, weekKeyAt, readBoard, rankBoard, count = 4) {
-  if (!env.INSTALLS || lastClosedFor === currentWeek) return;
+// Закрывает несколько последних законченных недель. Закрытая неделя
+// определяется по отметке, поэтому таблицу читаем только для незакрытых:
+// обычный запуск стоит `count` чтений отметок и ничего больше.
+// Запускается раз в неделю (крон «вс 21:05 UTC» = пн 00:05 МСК) и как
+// страховка раз в сутки — если недельный запуск не отработал.
+export async function closeFinishedGameWeeks(env, weekKeyAt, readBoard, rankBoard, count = 4) {
+  if (!env.INSTALLS) return;
   for (let i = 1; i <= count; i++) {
     const week = weekKeyAt(new Date(Date.now() - i * 7 * 86400000));
+    if (await env.INSTALLS.get(FINAL_PREFIX + week)) continue;
     await finalizeGameWeek(env, week, rankBoard(await readBoard(env, week)));
   }
-  lastClosedFor = currentWeek;
 }
-export function resetClosedWeekCache() { lastClosedFor = ''; }

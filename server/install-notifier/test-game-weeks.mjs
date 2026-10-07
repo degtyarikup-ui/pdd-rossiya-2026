@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   finalizeGameWeek, bestGameRank, deleteGameBest, closeFinishedGameWeeks,
-  resetClosedWeekCache, GAME_MIN_PLAYERS, GAME_BEST_TOP,
+  GAME_MIN_PLAYERS, GAME_BEST_TOP,
 } from './game_weeks.js';
 
 class KV {
@@ -62,16 +62,15 @@ test('удаление аккаунта убирает место из исто�
   assert.equal(await bestGameRank(env, 'u4'), 4);
 });
 
-test('крон закрывает прошлые недели один раз за текущую неделю', async () => {
-  resetClosedWeekCache();
+test('закрытые недели не читаются заново: только незакрытые', async () => {
   const env = { INSTALLS: new KV() };
   const reads = [];
   const weekKeyAt = d => 'W' + Math.floor(d.getTime() / (7 * 86400000));
   const readBoard = async (_e, week) => { reads.push(week); return {}; };
   const rank = () => board(15);
-  await closeFinishedGameWeeks(env, 'now', weekKeyAt, readBoard, rank);
-  assert.equal(reads.length, 4);
-  await closeFinishedGameWeeks(env, 'now', weekKeyAt, readBoard, rank);
-  assert.equal(reads.length, 4, 'в ту же неделю повторно не читаем');
+  await closeFinishedGameWeeks(env, weekKeyAt, readBoard, rank);
+  assert.equal(reads.length, 4, 'первый запуск закрывает 4 недели');
   assert.equal(await bestGameRank(env, 'u1'), 1);
+  await closeFinishedGameWeeks(env, weekKeyAt, readBoard, rank);
+  assert.equal(reads.length, 4, 'повторный запуск таблиц не читает');
 });
