@@ -584,6 +584,18 @@ class ProgressDataSource {
   /// снапшот (`game.bestScore`). «Сбросить статистику» его не трогает.
   int getGameBestScore() => _prefs.getInt('game_best_score') ?? 0;
 
+  /// Лучшее место в недельном рейтинге игры, запомненное на устройстве.
+  /// Источник правды — сервер; кэш нужен, чтобы ачивка не пропадала без сети.
+  /// Хранится по id аккаунта (на устройстве могут входить разные люди) и
+  /// «Сбросить статистику» его не трогает.
+  int? getGameBestRank(String userId) {
+    final rank = _prefs.getInt('game_best_rank:$userId');
+    return rank != null && rank > 0 ? rank : null;
+  }
+
+  Future<void> setGameBestRank(String userId, int rank) =>
+      _prefs.setInt('game_best_rank:$userId', rank);
+
   List<Map<String, dynamic>> _loadGarageCars() {
     try {
       final raw = _prefs.getString('game_garage_cars');

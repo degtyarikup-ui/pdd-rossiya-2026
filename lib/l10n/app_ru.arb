@@ -785,5 +785,16 @@
   "achievementDescExams": "Сданные пробные экзамены",
   "achievementDescFlawless": "Экзамены, сданные без ошибок",
   "achievementDescMistakes": "Вопросы, в которых ошибался, а потом ответил верно",
-  "achievementDescGame": "Лучший счёт за один заезд в игре"
+  "achievementDescGame": "Лучший счёт за один заезд в игре",
+  "achievementTitleRank": "Покоритель рейтинга",
+  "achievementDescRank": "Лучшее место в недельном рейтинге игры",
+  "achievementRankTop": "Топ-{count}",
+  "@achievementRankTop": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "achievementRankFirst": "1 место"
 }

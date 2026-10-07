@@ -2667,6 +2667,30 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Лучший счёт за один заезд в игре'**
   String get achievementDescGame;
+
+  /// No description provided for @achievementTitleRank.
+  ///
+  /// In ru, this message translates to:
+  /// **'Покоритель рейтинга'**
+  String get achievementTitleRank;
+
+  /// No description provided for @achievementDescRank.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лучшее место в недельном рейтинге игры'**
+  String get achievementDescRank;
+
+  /// No description provided for @achievementRankTop.
+  ///
+  /// In ru, this message translates to:
+  /// **'Топ-{count}'**
+  String achievementRankTop(int count);
+
+  /// No description provided for @achievementRankFirst.
+  ///
+  /// In ru, this message translates to:
+  /// **'1 место'**
+  String get achievementRankFirst;
 }
 
 class _AppLocalizationsDelegate

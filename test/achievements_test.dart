@@ -164,7 +164,7 @@ void main() {
 
         expect(list.any((a) => a.id == AchievementId.coverage), isFalse);
         expect(list.any((a) => a.id == AchievementId.tickets), isFalse);
-        expect(list.length, 6);
+        expect(list.length, 7);
       },
     );
 
@@ -314,6 +314,49 @@ void main() {
       final results = await dataSource.getExamResults(TicketCategory.ab);
       expect(results.length, 1);
       expect(results[0]['passed'], isTrue);
+    });
+
+    group('Покоритель рейтинга (лучшее место в недельном рейтинге)', () {
+      int levelFor(int? bestRank) {
+        final list = computeAchievements(
+          longestStreak: 0,
+          stats: {'totalQuestions': 800, 'totalTickets': 40},
+          questionProgress: {},
+          examResults: [],
+          gameBestScore: 0,
+          bestWeeklyRank: bestRank,
+        );
+        return list.firstWhere((a) => a.id == AchievementId.rank).level;
+      }
+
+      test('нет места (не в топ-100 или нет данных) → ни одного уровня', () {
+        expect(levelFor(null), 0);
+        expect(levelFor(0), 0);
+        expect(levelFor(101), 0);
+        expect(levelFor(500), 0);
+      });
+
+      test('границы уровней: топ-100 / топ-10 / топ-3 / 1 место', () {
+        expect(levelFor(100), 1);
+        expect(levelFor(11), 1);
+        expect(levelFor(10), 2);
+        expect(levelFor(4), 2);
+        expect(levelFor(3), 3);
+        expect(levelFor(2), 3);
+        expect(levelFor(1), 4);
+      });
+
+      test('ачивка есть в списке всегда, в том числе без места', () {
+        final list = computeAchievements(
+          longestStreak: 0,
+          stats: {'totalQuestions': 800, 'totalTickets': 40},
+          questionProgress: {},
+          examResults: [],
+          gameBestScore: 0,
+        );
+        expect(list.last.id, AchievementId.rank);
+        expect(list.last.isUnlocked, false);
+      });
     });
   });
 }

@@ -6,6 +6,7 @@ import 'package:pdd_app/data/models/achievement.dart';
 import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/models/streak.dart';
+import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/repositories/feed_repository.dart';
@@ -328,6 +329,22 @@ final streakProvider = FutureProvider<Streak>((ref) async {
   return await dataSource.loadStreak();
 });
 
+/// Лучшее место игрока в недельном рейтинге игры. Сервер — источник правды,
+/// на устройстве запоминается лучшее из виденных (место только улучшается),
+/// поэтому без сети ачивка не пропадает.
+final bestWeeklyRankProvider = FutureProvider.autoDispose<int?>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return null;
+  final dataSource = ref.watch(progressDataSourceProvider);
+  final cached = dataSource.getGameBestRank(user.id);
+  final remote = await GameLeaderboardService.instance.fetchBestRank();
+  if (remote != null && (cached == null || remote < cached)) {
+    await dataSource.setGameBestRank(user.id, remote);
+    return remote;
+  }
+  return cached;
+});
+
 final achievementsProvider =
     FutureProvider.autoDispose<List<AchievementProgress>>((ref) async {
       ref.watch(appDataRefreshProvider);
@@ -342,6 +359,13 @@ final achievementsProvider =
       );
       final examResults = await dataSource.getExamResults(category);
       final gameBestScore = dataSource.getGameBestScore();
+      // Не ждём сеть: сетка рисуется сразу по кэшу, а когда сервер ответит,
+      // провайдер пересчитается.
+      final user = ref.watch(currentUserProvider);
+      final bestWeeklyRank = user == null
+          ? null
+          : ref.watch(bestWeeklyRankProvider).valueOrNull ??
+                dataSource.getGameBestRank(user.id);
 
       return computeAchievements(
         longestStreak: streak.longest,
@@ -349,6 +373,7 @@ final achievementsProvider =
         questionProgress: questionProgress,
         examResults: examResults,
         gameBestScore: gameBestScore,
+        bestWeeklyRank: bestWeeklyRank,
       );
     });
 

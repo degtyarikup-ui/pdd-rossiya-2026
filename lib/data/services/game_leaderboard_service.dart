@@ -125,6 +125,32 @@ class GameLeaderboardService {
     }
   }
 
+  /// Лучшее место игрока за все закрытые недели (null — не был в топ-100
+  /// или нет связи). Нужно для ачивки «Покоритель рейтинга».
+  Future<int?> fetchBestRank() async {
+    final user = AuthService.instance.currentUser;
+    if (user == null ||
+        !AuthService.instance.hasServerSession ||
+        !BackendConfig.hasNotifier) {
+      return null;
+    }
+    try {
+      final uri = Uri.parse(
+        '${BackendConfig.notifierUrl}/api/game/best',
+      ).replace(queryParameters: {'userId': user.id});
+      final resp = await http
+          .get(uri, headers: _headers)
+          .timeout(const Duration(seconds: 8));
+      if (resp.statusCode != 200) return null;
+      final data = jsonDecode(resp.body);
+      final rank = data is Map ? (data['bestRank'] as num?)?.toInt() : null;
+      return rank != null && rank > 0 ? rank : null;
+    } catch (e) {
+      debugPrint('GameLeaderboardService.fetchBestRank: $e');
+      return null;
+    }
+  }
+
   Future<GameLeaderboard?> fetch() async {
     if (!BackendConfig.hasNotifier) return null;
     final user = AuthService.instance.currentUser;

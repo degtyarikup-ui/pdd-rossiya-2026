@@ -31,6 +31,7 @@ BADGES = {
     "exams": ("octagon", "cap", [("1", "ЭКЗАМЕН"), ("3", "ЭКЗАМЕНА"), ("5", "ЭКЗАМЕНОВ"), ("10", "ЭКЗАМЕНОВ")]),
     "flawless": ("rosette", "star", [("1", "БЕЗ ОШИБОК"), ("3", "БЕЗ ОШИБОК"), ("5", "БЕЗ ОШИБОК"), ("10", "БЕЗ ОШИБОК")]),
     "mistakes": ("square", "check", [("10", "ИСПРАВЛЕНО"), ("50", "ИСПРАВЛЕНО"), ("100", "ИСПРАВЛЕНО"), ("200", "ИСПРАВЛЕНО")]),
+    "rank": ("decagon", "trophy", [("100", "ТОП"), ("10", "ТОП"), ("3", "ТОП"), ("1", "МЕСТО")]),
     "game": ("pentagon", "wheel", [("1000", "ОЧКОВ"), ("2500", "ОЧКОВ"), ("5000", "ОЧКОВ"), ("7500", "ОЧКОВ")]),
 }
 
@@ -59,6 +60,8 @@ def outline(shape: str, inset: float) -> list:
         return regular(6, r, rot=0)
     if shape == "octagon":
         return regular(8, r, rot=math.pi / 8)
+    if shape == "decagon":
+        return regular(10, r, rot=math.pi / 10)
     if shape == "pentagon":
         return regular(5, r * 1.02)
     if shape == "rosette":  # 16 зубцов
@@ -124,6 +127,14 @@ def symbol(d: ImageDraw.ImageDraw, kind: str, cx: float, cy: float, s: float, in
     elif kind == "check":
         d.line([(cx - s * .8, cy), (cx - s * .2, cy + s * .6), (cx + s * .85, cy - s * .6)], fill=ink,
                width=int(s * .38), joint="curve")
+    elif kind == "trophy":
+        d.polygon([(cx - s * .62, cy - s * .8), (cx + s * .62, cy - s * .8), (cx + s * .5, cy + s * .1),
+                   (cx + s * .2, cy + s * .42), (cx - s * .2, cy + s * .42), (cx - s * .5, cy + s * .1)], fill=ink)
+        for sx in (-1, 1):
+            d.arc([cx + sx * s * .55 - s * .45, cy - s * .7, cx + sx * s * .55 + s * .45, cy], 90 if sx < 0 else -90,
+                  270 if sx < 0 else 90, fill=ink, width=int(s * .16))
+        d.rectangle([cx - s * .1, cy + s * .4, cx + s * .1, cy + s * .72], fill=ink)
+        d.rounded_rectangle([cx - s * .5, cy + s * .7, cx + s * .5, cy + s * .95], radius=s * .1, fill=ink)
     elif kind == "wheel":
         t = s * .22
         d.ellipse([cx - s, cy - s, cx + s, cy + s], outline=ink, width=int(t))

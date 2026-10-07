@@ -7,6 +7,7 @@ enum AchievementId {
   flawless,
   mistakes,
   game,
+  rank,
 }
 
 abstract final class AchievementThresholds {
@@ -18,6 +19,20 @@ abstract final class AchievementThresholds {
   static const List<int> flawless = [1, 3, 5, 10];
   static const List<int> mistakes = [10, 50, 100, 200];
   static const List<int> game = [1000, 2500, 5000, 7500];
+
+  /// «Покоритель рейтинга»: уровни — топ-100 / топ-10 / топ-3 / 1 место.
+  /// Модель считает «чем больше, тем лучше», а место — наоборот, поэтому
+  /// значение = [rankCeiling] − место: 1 место → 100, топ-3 → ≥98,
+  /// топ-10 → ≥91, топ-100 → ≥1 (см. [rankValue]).
+  static const List<int> rank = [1, 91, 98, 100];
+  static const int rankCeiling = 101;
+}
+
+/// Лучшее место в недельном рейтинге → значение для [AchievementProgress].
+/// Нет места (не в топ-100 или нет данных) → 0, то есть ни одного уровня.
+int rankValue(int? bestRank) {
+  if (bestRank == null || bestRank < 1) return 0;
+  return (AchievementThresholds.rankCeiling - bestRank).clamp(0, 100);
 }
 
 class AchievementProgress {
@@ -58,6 +73,7 @@ List<AchievementProgress> computeAchievements({
   required Map<String, dynamic> questionProgress,
   required List<Map<String, dynamic>> examResults,
   required int gameBestScore,
+  int? bestWeeklyRank,
 }) {
   final totalQuestions = stats['totalQuestions'] ?? 0;
   final totalTickets = stats['totalTickets'] ?? 0;
@@ -152,6 +168,13 @@ List<AchievementProgress> computeAchievements({
     value: gameBestScore,
   );
 
+  // 9. rank: «Покоритель рейтинга»
+  final rankAchievement = AchievementProgress(
+    id: AchievementId.rank,
+    levels: AchievementThresholds.rank,
+    value: rankValue(bestWeeklyRank),
+  );
+
   final List<AchievementProgress> result = [];
   result.add(streakAchievement);
   if (coverageAchievement != null) {
@@ -165,6 +188,7 @@ List<AchievementProgress> computeAchievements({
   result.add(flawlessAchievement);
   result.add(mistakesAchievement);
   result.add(gameAchievement);
+  result.add(rankAchievement);
 
   return result;
 }

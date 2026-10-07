@@ -1532,4 +1532,18 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get achievementDescGame => 'Лучший счёт за один заезд в игре';
+
+  @override
+  String get achievementTitleRank => 'Покоритель рейтинга';
+
+  @override
+  String get achievementDescRank => 'Лучшее место в недельном рейтинге игры';
+
+  @override
+  String achievementRankTop(int count) {
+    return 'Топ-$count';
+  }
+
+  @override
+  String get achievementRankFirst => '1 место';
 }

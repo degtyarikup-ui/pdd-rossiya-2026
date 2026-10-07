@@ -35,8 +35,18 @@ String _getAchievementTitle(AchievementId id) {
       return appL10n.achievementTitleMistakes;
     case AchievementId.game:
       return appL10n.achievementTitleGame;
+    case AchievementId.rank:
+      return appL10n.achievementTitleRank;
   }
 }
+
+/// Подпись уровня «Покорителя рейтинга»: топ-100 / топ-10 / топ-3 / 1 место.
+String _rankLevelLabel(int levelIndex) => switch (levelIndex) {
+  0 => appL10n.achievementRankTop(100),
+  1 => appL10n.achievementRankTop(10),
+  2 => appL10n.achievementRankTop(3),
+  _ => appL10n.achievementRankFirst,
+};
 
 String _getAchievementDescription(AchievementId id) {
   switch (id) {
@@ -56,6 +66,8 @@ String _getAchievementDescription(AchievementId id) {
       return appL10n.achievementDescMistakes;
     case AchievementId.game:
       return appL10n.achievementDescGame;
+    case AchievementId.rank:
+      return appL10n.achievementDescRank;
   }
 }
 
@@ -574,7 +586,10 @@ class _AchievementLevelItem extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          appL10n.achievementProgressFormat(current, target),
+          // У «Покорителя рейтинга» цель — место, а не число: «Топ-10».
+          achievement.id == AchievementId.rank
+              ? _rankLevelLabel(levelIndex)
+              : appL10n.achievementProgressFormat(current, target),
           style: TextStyle(fontSize: 12, color: colors.secondaryText),
           textAlign: TextAlign.center,
         ),

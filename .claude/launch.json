@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "rs-web",
+      "name": "app-web",
       "runtimeExecutable": "python3",
       "runtimeArgs": [
         "-m",
