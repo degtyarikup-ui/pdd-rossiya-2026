@@ -204,9 +204,9 @@ flutter test                           # тесты всех моделей (exa
     т.к. у app.pdd-drive.ru нет HTTPS-сертификата): `WEB_BASE_HREF=/app/
     ./scripts/build.sh ru web`, затем `APP_BUILD=build/web ./scripts/deploy_landing.sh ru`.
     Обычный деплой лендинга `/app/` не трогает (исключён из `--delete`).
-  - **Приложение**: `deploy_web.sh ru` → репо `pdd-rossiya-app` gh-pages →
-    app.pdd-drive.ru (robots.txt Disallow: SEO живёт на лендинге; DNS: CNAME
-    `app` → degtyarikup-ui.github.io на reg.ru).
+  - **app.pdd-drive.ru** (репо `pdd-rossiya-app`, в архиве с 2026-10-07) —
+    только перенаправление на pdd-drive.ru/app/ (HTTPS там так и не появился).
+    `deploy_web.sh ru` выкладывает приложение в `/app/` репо лендинга.
 - Веб BY: репо `pdd-belarus` gh-pages → pdd-drive.online
   (локальный клон: `/Users/sergei/Documents/pdd-belarus`).
 - Веб RS: репо `pdd-serbia` gh-pages → rs.pdd-drive.online (поддомен).
