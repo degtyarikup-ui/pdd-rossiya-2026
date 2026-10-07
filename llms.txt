@@ -30,8 +30,6 @@
 - [Google Play](https://play.google.com/store/apps/details?id=ru.pdd.pdd_app): Android-приложение
 - [App Store](https://apps.apple.com/ru/app/id6792369533): iOS-приложение
 - [Блог](https://pdd-drive.ru/blog/): разборы правил, изменения законодательства и советы по подготовке
-- [ПДД Беларусь](https://pdd-drive.online): версия приложения для Беларуси
-- [Auto testovi Srbija](https://rs.pdd-drive.online): версия приложения для Сербии
 
 ## Инструменты
 
