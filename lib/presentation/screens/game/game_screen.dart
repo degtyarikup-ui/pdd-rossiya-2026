@@ -23,6 +23,7 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_hud.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_lobby.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_over_dialog.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_question_card.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -58,6 +59,10 @@ class GameScreen extends ConsumerStatefulWidget {
 class _GameScreenState extends ConsumerState<GameScreen>
     with WidgetsBindingObserver {
   WebViewController? _webViewController;
+  // Huawei/Honor WebView (EMUI, HarmonyOS) stops updating the texture that
+  // Flutter composites: the game runs but the screen freezes on the first
+  // frame. Hybrid composition shows the native view directly.
+  bool _hybridWebView = false;
   BrowserGame? _browserGame;
   bool get _desktopWeb => kIsWeb && (_browserGame?.desktop ?? false);
   late GameController _game;
@@ -496,6 +501,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
         );
         setState(() => _browserGame = browser);
       } else {
+        if (defaultTargetPlatform == TargetPlatform.android) {
+          try {
+            final maker = (await DeviceInfoPlugin().androidInfo).manufacturer
+                .toUpperCase();
+            _hybridWebView = maker == 'HUAWEI' || maker == 'HONOR';
+          } catch (_) {}
+        }
         final controller = WebViewController();
         // Preferences load asynchronously: rebuild to mount the native view
         // before the engine reports ready (not only after that report).
@@ -1350,10 +1362,18 @@ class _GameScreenState extends ConsumerState<GameScreen>
               Positioned.fill(child: _browserGame!.widget),
             if (!kIsWeb && _webViewController != null)
               Positioned.fill(
-                child: WebViewWidget(
-                  key: ValueKey(_game.sessionId),
-                  controller: _webViewController!,
-                ),
+                child: _hybridWebView
+                    ? WebViewWidget.fromPlatformCreationParams(
+                        key: ValueKey(_game.sessionId),
+                        params: AndroidWebViewWidgetCreationParams(
+                          controller: _webViewController!.platform,
+                          displayWithHybridComposition: true,
+                        ),
+                      )
+                    : WebViewWidget(
+                        key: ValueKey(_game.sessionId),
+                        controller: _webViewController!,
+                      ),
               ),
             // Opaque, theme-coloured loading cover with a spinning wheel: the
             // WebView paints nothing useful until the engine reports ready.
