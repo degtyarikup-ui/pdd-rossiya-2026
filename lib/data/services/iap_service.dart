@@ -32,19 +32,17 @@ class IapService extends ChangeNotifier {
   static String get productIdWeek =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS
       ? 'u.pdd.pddApp.premium.week'
-      : 'ru.pdd.pddapp.premium.week';
+      : 'ru.pdd.pddapp.sub.week';
 
   static String get productId3Months =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS
       ? 'ru.pdd.pddApp.sub.3months'
-      : 'ru.pdd.pddapp.premium.3months';
+      : 'ru.pdd.pddapp.sub.3months';
 
   static const Set<String> _productIds = {
     // Standard reverse-domain iOS & Android IDs
     'ru.pdd.pddApp.premium.week',
     'ru.pdd.pddApp.premium.3months',
-    'ru.pdd.pddapp.premium.week',
-    'ru.pdd.pddapp.premium.3months',
     'ru.pdd.pddApp.week',
     'ru.pdd.pddApp.3months',
     'ru.pdd.pddapp.week',

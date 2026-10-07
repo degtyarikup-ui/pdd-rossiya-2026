@@ -18,7 +18,7 @@ void main() {
     tier: PremiumTier.weekly,
     price: 'test',
     store: 'googleplay',
-    productId: 'ru.pdd.pddapp.premium.week',
+    productId: 'ru.pdd.pddapp.sub.week',
     purchaseToken: 'receipt',
   );
   http.Response granted() => http.Response(

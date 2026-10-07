@@ -1548,31 +1548,58 @@ class AppLocalizationsRu extends AppLocalizations {
   String get achievementRankFirst => '1 место';
 
   @override
-  String get paywallTierWeek => 'Подписка · списание каждую неделю';
-
-  @override
-  String get paywallTierQuarter => 'Подписка · списание каждые 3 месяца';
-
-  @override
   String get paywallSubscribe => 'Оформить подписку';
 
   @override
-  String paywallTermsWeek(String price, String store) {
-    return 'Подписка «1 неделя»: $price списывается при оформлении и затем каждую неделю, пока вы не отмените подписку в $store. Отменить можно в любой момент, не позднее чем за 24 часа до продления.';
-  }
-
-  @override
-  String paywallTermsQuarter(String price, String store) {
-    return 'Подписка «3 месяца»: $price списывается при оформлении и затем каждые 3 месяца, пока вы не отмените подписку в $store. Отменить можно в любой момент, не позднее чем за 24 часа до продления.';
-  }
-
-  @override
-  String get paywallStoreGoogle => 'Google Play (Платежи и подписки)';
+  String get paywallStoreGoogle => 'Google Play';
 
   @override
   String get paywallStoreApple => 'настройках Apple ID';
 
   @override
-  String get paywallNotRequired =>
-      'Подписка не обязательна: билеты, экзамен и текст ПДД доступны бесплатно.';
+  String get paywallTitle => 'Готовьтесь без ограничений';
+
+  @override
+  String get paywallFreeNote => 'Билеты, экзамен и ПДД остаются бесплатными';
+
+  @override
+  String get paywallFeatureFeed => 'Безлимитная лента вопросов';
+
+  @override
+  String get paywallFeatureAi => 'Разбор ошибок от ИИ';
+
+  @override
+  String get paywallFeatureVoice => 'Студийная озвучка билетов';
+
+  @override
+  String get paywallFeatureGame => 'Безлимитные заезды в игре';
+
+  @override
+  String get paywallPlanQuarter => '3 месяца';
+
+  @override
+  String get paywallPlanWeek => '1 неделя';
+
+  @override
+  String get paywallEveryQuarter => 'каждые 3 месяца';
+
+  @override
+  String get paywallEveryWeek => 'каждую неделю';
+
+  @override
+  String get paywallBadgeBest => 'Выгодно';
+
+  @override
+  String paywallRenewal(String store) {
+    return 'Продлевается автоматически. Отменить можно в любой момент в $store.';
+  }
+
+  @override
+  String get paywallTerms => 'Условия';
+
+  @override
+  String get paywallPrivacy => 'Конфиденциальность';
+
+  @override
+  String get paywallRestore => 'Восстановить';
 }

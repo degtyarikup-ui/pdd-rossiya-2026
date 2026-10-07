@@ -803,32 +803,29 @@
     }
   },
   "achievementRankFirst": "1 место",
-  "paywallTierWeek": "Подписка · списание каждую неделю",
-  "paywallTierQuarter": "Подписка · списание каждые 3 месяца",
   "paywallSubscribe": "Оформить подписку",
-  "paywallTermsWeek": "Подписка «1 неделя»: {price} списывается при оформлении и затем каждую неделю, пока вы не отмените подписку в {store}. Отменить можно в любой момент, не позднее чем за 24 часа до продления.",
-  "@paywallTermsWeek": {
-    "placeholders": {
-      "price": {
-        "type": "String"
-      },
-      "store": {
-        "type": "String"
-      }
-    }
-  },
-  "paywallTermsQuarter": "Подписка «3 месяца»: {price} списывается при оформлении и затем каждые 3 месяца, пока вы не отмените подписку в {store}. Отменить можно в любой момент, не позднее чем за 24 часа до продления.",
-  "@paywallTermsQuarter": {
-    "placeholders": {
-      "price": {
-        "type": "String"
-      },
-      "store": {
-        "type": "String"
-      }
-    }
-  },
-  "paywallStoreGoogle": "Google Play (Платежи и подписки)",
+  "paywallStoreGoogle": "Google Play",
   "paywallStoreApple": "настройках Apple ID",
-  "paywallNotRequired": "Подписка не обязательна: билеты, экзамен и текст ПДД доступны бесплатно."
+  "paywallTitle": "Готовьтесь без ограничений",
+  "paywallFreeNote": "Билеты, экзамен и ПДД остаются бесплатными",
+  "paywallFeatureFeed": "Безлимитная лента вопросов",
+  "paywallFeatureAi": "Разбор ошибок от ИИ",
+  "paywallFeatureVoice": "Студийная озвучка билетов",
+  "paywallFeatureGame": "Безлимитные заезды в игре",
+  "paywallPlanQuarter": "3 месяца",
+  "paywallPlanWeek": "1 неделя",
+  "paywallEveryQuarter": "каждые 3 месяца",
+  "paywallEveryWeek": "каждую неделю",
+  "paywallBadgeBest": "Выгодно",
+  "paywallRenewal": "Продлевается автоматически. Отменить можно в любой момент в {store}.",
+  "@paywallRenewal": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "paywallTerms": "Условия",
+  "paywallPrivacy": "Конфиденциальность",
+  "paywallRestore": "Восстановить"
 }

@@ -5,7 +5,9 @@ import { tokenHash } from './user_auth.js';
 
 const packages = { ru: 'ru.pdd.pdd_app', by: 'by.pdd.pdd_app', rs: 'rs.pdd.pdd_app' };
 const defaultProducts = {
-  googleplay: ['ru.pdd.pddapp.premium.week', 'ru.pdd.pddapp.premium.3months'],
+  // Subscriptions (base plans weekly / three-months); the old premium.* are
+  // one-time products and cannot be checked through subscriptionsv2.
+  googleplay: ['ru.pdd.pddapp.sub.week', 'ru.pdd.pddapp.sub.3months'],
   appstore: ['u.pdd.pddApp.premium.week', 'ru.pdd.pddApp.sub.3months'],
 };
 const activeStates = new Set(['SUBSCRIPTION_STATE_ACTIVE', 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD', 'SUBSCRIPTION_STATE_CANCELED']);

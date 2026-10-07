@@ -2692,40 +2692,16 @@ abstract class AppLocalizations {
   /// **'1 место'**
   String get achievementRankFirst;
 
-  /// No description provided for @paywallTierWeek.
-  ///
-  /// In ru, this message translates to:
-  /// **'Подписка · списание каждую неделю'**
-  String get paywallTierWeek;
-
-  /// No description provided for @paywallTierQuarter.
-  ///
-  /// In ru, this message translates to:
-  /// **'Подписка · списание каждые 3 месяца'**
-  String get paywallTierQuarter;
-
   /// No description provided for @paywallSubscribe.
   ///
   /// In ru, this message translates to:
   /// **'Оформить подписку'**
   String get paywallSubscribe;
 
-  /// No description provided for @paywallTermsWeek.
-  ///
-  /// In ru, this message translates to:
-  /// **'Подписка «1 неделя»: {price} списывается при оформлении и затем каждую неделю, пока вы не отмените подписку в {store}. Отменить можно в любой момент, не позднее чем за 24 часа до продления.'**
-  String paywallTermsWeek(String price, String store);
-
-  /// No description provided for @paywallTermsQuarter.
-  ///
-  /// In ru, this message translates to:
-  /// **'Подписка «3 месяца»: {price} списывается при оформлении и затем каждые 3 месяца, пока вы не отмените подписку в {store}. Отменить можно в любой момент, не позднее чем за 24 часа до продления.'**
-  String paywallTermsQuarter(String price, String store);
-
   /// No description provided for @paywallStoreGoogle.
   ///
   /// In ru, this message translates to:
-  /// **'Google Play (Платежи и подписки)'**
+  /// **'Google Play'**
   String get paywallStoreGoogle;
 
   /// No description provided for @paywallStoreApple.
@@ -2734,11 +2710,95 @@ abstract class AppLocalizations {
   /// **'настройках Apple ID'**
   String get paywallStoreApple;
 
-  /// No description provided for @paywallNotRequired.
+  /// No description provided for @paywallTitle.
   ///
   /// In ru, this message translates to:
-  /// **'Подписка не обязательна: билеты, экзамен и текст ПДД доступны бесплатно.'**
-  String get paywallNotRequired;
+  /// **'Готовьтесь без ограничений'**
+  String get paywallTitle;
+
+  /// No description provided for @paywallFreeNote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Билеты, экзамен и ПДД остаются бесплатными'**
+  String get paywallFreeNote;
+
+  /// No description provided for @paywallFeatureFeed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Безлимитная лента вопросов'**
+  String get paywallFeatureFeed;
+
+  /// No description provided for @paywallFeatureAi.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разбор ошибок от ИИ'**
+  String get paywallFeatureAi;
+
+  /// No description provided for @paywallFeatureVoice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Студийная озвучка билетов'**
+  String get paywallFeatureVoice;
+
+  /// No description provided for @paywallFeatureGame.
+  ///
+  /// In ru, this message translates to:
+  /// **'Безлимитные заезды в игре'**
+  String get paywallFeatureGame;
+
+  /// No description provided for @paywallPlanQuarter.
+  ///
+  /// In ru, this message translates to:
+  /// **'3 месяца'**
+  String get paywallPlanQuarter;
+
+  /// No description provided for @paywallPlanWeek.
+  ///
+  /// In ru, this message translates to:
+  /// **'1 неделя'**
+  String get paywallPlanWeek;
+
+  /// No description provided for @paywallEveryQuarter.
+  ///
+  /// In ru, this message translates to:
+  /// **'каждые 3 месяца'**
+  String get paywallEveryQuarter;
+
+  /// No description provided for @paywallEveryWeek.
+  ///
+  /// In ru, this message translates to:
+  /// **'каждую неделю'**
+  String get paywallEveryWeek;
+
+  /// No description provided for @paywallBadgeBest.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выгодно'**
+  String get paywallBadgeBest;
+
+  /// No description provided for @paywallRenewal.
+  ///
+  /// In ru, this message translates to:
+  /// **'Продлевается автоматически. Отменить можно в любой момент в {store}.'**
+  String paywallRenewal(String store);
+
+  /// No description provided for @paywallTerms.
+  ///
+  /// In ru, this message translates to:
+  /// **'Условия'**
+  String get paywallTerms;
+
+  /// No description provided for @paywallPrivacy.
+  ///
+  /// In ru, this message translates to:
+  /// **'Конфиденциальность'**
+  String get paywallPrivacy;
+
+  /// No description provided for @paywallRestore.
+  ///
+  /// In ru, this message translates to:
+  /// **'Восстановить'**
+  String get paywallRestore;
 }
 
 class _AppLocalizationsDelegate

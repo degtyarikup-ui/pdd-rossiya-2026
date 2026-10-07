@@ -174,15 +174,10 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     );
   }
 
-  // No struck-through "old" price: a fixed amount cannot match every
-  // store currency (Google Play subscriptions policy, rejected 2026-10-04).
-  String? _getOldPrice(PremiumTier tier) => null;
-
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isAuth = AuthService.instance.isAuthenticated;
     final isIOS = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
     // Оплата на сайте есть не у всех стран; без неё веб-пейвол — «скоро».
     final webPay = kIsWeb && CountryConfig.current.hasWebPayments;
@@ -213,6 +208,10 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
       badgeIcon = Icons.hourglass_empty_rounded;
     }
 
+    final store = isIOS
+        ? appL10n.paywallStoreApple
+        : appL10n.paywallStoreGoogle;
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
@@ -223,15 +222,14 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(
             AppDimensions.screenPadding,
-            12,
+            8,
             AppDimensions.screenPadding,
-            24,
+            16,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Close Button
               Align(
                 alignment: Alignment.centerRight,
                 child: IconButton(
@@ -239,9 +237,8 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                   onPressed: () => Navigator.of(context).pop(false),
                 ),
               ),
-              const SizedBox(height: 2),
 
-              // 2. Clean Accent Header Badge
+              // Статус: сколько бесплатных карточек осталось.
               Center(
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -270,70 +267,71 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
 
-              // 3. Clean Header Title
               Text(
-                'Умная лента и студийная\nозвучка',
+                appL10n.paywallTitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 20,
-                  height: 1.25,
+                  fontSize: 22,
+                  height: 1.2,
                   fontWeight: FontWeight.w700,
                   color: colors.primaryText,
                   fontFamily: 'Onest',
                 ),
               ),
-              const SizedBox(height: 20),
-
-              // 4. Feature Rows
-              _buildFeatureItem(
-                icon: Icons.all_inclusive_rounded,
-                title: 'Безлимитная лента',
-                description: 'Тренируйтесь без ограничений в любое время',
-                accentColor: accentColor,
-                surfaceColor: surfaceColor,
-                colors: colors,
-              ),
-              const SizedBox(height: 12),
-              _buildFeatureItem(
-                icon: Icons.sports_score_rounded,
-                title: 'Безлимитные заезды в игре',
-                description:
-                    'Катайтесь сколько хотите — и золотой кибертрак в гараже',
-                accentColor: accentColor,
-                surfaceColor: surfaceColor,
-                colors: colors,
-              ),
-              const SizedBox(height: 12),
-              _buildFeatureItem(
-                icon: Icons.auto_awesome_rounded,
-                title: 'Разбор от ИИ в 1 клик',
-                description: 'Объяснение дорожных ситуаций и ПДД',
-                accentColor: accentColor,
-                surfaceColor: surfaceColor,
-                colors: colors,
-              ),
-              const SizedBox(height: 12),
-              _buildFeatureItem(
-                icon: Icons.record_voice_over_rounded,
-                title: 'Студийная озвучка',
-                description:
-                    'Красивый профессиональный голос для всех вопросов и билетов',
-                accentColor: accentColor,
-                surfaceColor: surfaceColor,
-                colors: colors,
+              const SizedBox(height: 6),
+              // Подписка не обязательна — говорим сразу (Google Play
+              // Subscriptions policy: «whether a subscription is required»).
+              Text(
+                appL10n.paywallFreeNote,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.3,
+                  color: colors.secondaryText,
+                ),
               ),
               const SizedBox(height: 20),
 
-              // 5. Pricing Tiers
+              _buildFeature(
+                Icons.all_inclusive_rounded,
+                appL10n.paywallFeatureFeed,
+                accentColor,
+                surfaceColor,
+                colors,
+              ),
+              _buildFeature(
+                Icons.auto_awesome_rounded,
+                appL10n.paywallFeatureAi,
+                accentColor,
+                surfaceColor,
+                colors,
+              ),
+              _buildFeature(
+                Icons.record_voice_over_rounded,
+                appL10n.paywallFeatureVoice,
+                accentColor,
+                surfaceColor,
+                colors,
+              ),
+              _buildFeature(
+                Icons.sports_score_rounded,
+                appL10n.paywallFeatureGame,
+                accentColor,
+                surfaceColor,
+                colors,
+              ),
+              const SizedBox(height: 16),
+
+              // Тарифы: цена магазина и частота списания — в самой карточке,
+              // рядом с ценой, а не мелким текстом внизу.
               _buildTierCard(
                 tier: PremiumTier.threeMonths,
-                title: kIsWeb ? appL10n.webQuarter : '3 месяца',
-                subtitle: kIsWeb ? null : appL10n.paywallTierQuarter,
+                title: kIsWeb ? appL10n.webQuarter : appL10n.paywallPlanQuarter,
                 price: _getPrice(PremiumTier.threeMonths),
-                oldPrice: _getOldPrice(PremiumTier.threeMonths),
-                badge: 'ХИТ',
+                period: kIsWeb ? null : appL10n.paywallEveryQuarter,
+                badge: appL10n.paywallBadgeBest,
                 accentColor: accentColor,
                 surfaceColor: surfaceColor,
                 colors: colors,
@@ -342,33 +340,16 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                 const SizedBox(height: 8),
                 _buildTierCard(
                   tier: PremiumTier.weekly,
-                  title: kIsWeb ? appL10n.webWeek : '1 неделя',
-                  subtitle: kIsWeb ? null : appL10n.paywallTierWeek,
+                  title: kIsWeb ? appL10n.webWeek : appL10n.paywallPlanWeek,
                   price: _getPrice(PremiumTier.weekly),
+                  period: kIsWeb ? null : appL10n.paywallEveryWeek,
                   accentColor: accentColor,
                   surfaceColor: surfaceColor,
                   colors: colors,
                 ),
               ],
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
 
-              // Условия выбранной подписки — до кнопки, крупно (Google Play
-              // Subscriptions policy, отказ 2026-10-07: «terms are unclear»).
-              if (!kIsWeb) ...[
-                Text(
-                  _subscriptionTerms(isIOS),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    height: 1.4,
-                    color: colors.primaryText,
-                  ),
-                ),
-                const SizedBox(height: 14),
-              ] else
-                const SizedBox(height: 6),
-
-              // 6. Action Button (исправлено обрезание текста)
               SizedBox(
                 height: 54,
                 child: ElevatedButton(
@@ -381,10 +362,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                     backgroundColor: accentColor,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 0,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -398,33 +376,31 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                             color: Colors.white,
                           ),
                         )
-                      : Center(
-                          child: Text(
-                            webPay
-                                ? appL10n.webPayButton
-                                : kIsWeb
-                                ? appL10n.webPaymentSoon
-                                : appL10n.paywallSubscribe,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              height: 1.15,
-                              fontFamily: 'Onest',
-                            ),
+                      : Text(
+                          webPay
+                              ? appL10n.webPayButton
+                              : kIsWeb
+                              ? appL10n.webPaymentSoon
+                              : appL10n.paywallSubscribe,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            height: 1.15,
+                            fontFamily: 'Onest',
                           ),
                         ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
 
-              // 7. Store Compliance Disclaimer
+              // Автопродление и отмена — сразу под кнопкой, читаемым цветом.
               Text(
                 webPay
                     ? appL10n.webPayInfo
                     : kIsWeb
                     ? appL10n.webPaymentInfo
-                    : appL10n.paywallNotRequired,
+                    : appL10n.paywallRenewal(store),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
@@ -432,65 +408,42 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                   color: colors.secondaryText,
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 8),
 
-              // 8. Legal Links & Restore — точки только между ссылками.
               Wrap(
                 alignment: WrapAlignment.center,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 spacing: 8,
-                runSpacing: 4,
                 children: _withSeparators(
                   [
-                    if (!isAuth)
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).pop(false);
-                          AuthModalSheet.show(context);
-                        },
-                        child: Text(
-                          'Войти в профиль',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: accentColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
                     if (webPay)
                       _buildLink(
                         appL10n.webPayTariffs,
-                        CountryConfig.current.tariffsUrl,
+                        () => _open(CountryConfig.current.tariffsUrl),
                         colors,
                       ),
                     if (CountryConfig.current.termsUrl.isNotEmpty)
                       _buildLink(
-                        'Условия использования',
-                        CountryConfig.current.termsUrl,
+                        appL10n.paywallTerms,
+                        () => _open(CountryConfig.current.termsUrl),
                         colors,
                       ),
                     if (CountryConfig.current.privacyUrl.isNotEmpty)
                       _buildLink(
-                        'Конфиденциальность',
-                        CountryConfig.current.privacyUrl,
+                        appL10n.paywallPrivacy,
+                        () => _open(CountryConfig.current.privacyUrl),
                         colors,
                       ),
                     if (!kIsWeb)
-                      GestureDetector(
-                        onTap: _handleRestore,
-                        child: Text(
-                          'Восстановить',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: colors.secondaryText,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
+                      _buildLink(
+                        appL10n.paywallRestore,
+                        _handleRestore,
+                        colors,
                       ),
                   ],
                   Text(
-                    '•',
-                    style: TextStyle(color: colors.secondaryText, fontSize: 10),
+                    '·',
+                    style: TextStyle(color: colors.secondaryText, fontSize: 12),
                   ),
                 ),
               ),
@@ -501,90 +454,68 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     );
   }
 
-  String _subscriptionTerms(bool isIOS) {
-    final store = isIOS
-        ? appL10n.paywallStoreApple
-        : appL10n.paywallStoreGoogle;
-    final price = _getPrice(_selectedTier);
-    return _selectedTier == PremiumTier.threeMonths
-        ? appL10n.paywallTermsQuarter(price, store)
-        : appL10n.paywallTermsWeek(price, store);
-  }
+  void _open(String url) =>
+      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
 
   List<Widget> _withSeparators(List<Widget> items, Widget separator) => [
     for (var i = 0; i < items.length; i++) ...[if (i > 0) separator, items[i]],
   ];
 
-  Widget _buildLink(String label, String url, AppThemeColors colors) {
+  Widget _buildLink(String label, VoidCallback onTap, AppThemeColors colors) {
     return GestureDetector(
-      onTap: () =>
-          launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11.5,
-          color: colors.secondaryText,
-          decoration: TextDecoration.underline,
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          label,
+          style: TextStyle(fontSize: 12, color: colors.secondaryText),
         ),
       ),
     );
   }
 
-  Widget _buildFeatureItem({
-    required IconData icon,
-    required String title,
-    required String description,
-    required Color accentColor,
-    required Color surfaceColor,
-    required AppThemeColors colors,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color: surfaceColor,
-            borderRadius: BorderRadius.circular(9),
+  Widget _buildFeature(
+    IconData icon,
+    String title,
+    Color accentColor,
+    Color surfaceColor,
+    AppThemeColors colors,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: surfaceColor,
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Icon(icon, color: accentColor, size: 17),
           ),
-          child: Icon(icon, color: accentColor, size: 18),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w600,
-                  color: colors.primaryText,
-                ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: colors.primaryText,
               ),
-              const SizedBox(height: 1),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 12,
-                  height: 1.3,
-                  color: colors.secondaryText,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildTierCard({
     required PremiumTier tier,
     required String title,
-    String? subtitle,
     required String price,
-    String? oldPrice,
+    String? period,
     String? badge,
     required Color accentColor,
     required Color surfaceColor,
@@ -592,105 +523,98 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   }) {
     final isSelected = _selectedTier == tier;
 
-    return GestureDetector(
-      onTap: () {
-        HapticFeedbackHelper.tap();
-        setState(() => _selectedTier = tier);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-        decoration: BoxDecoration(
-          color: isSelected ? surfaceColor : colors.cardBackground,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
+    return Semantics(
+      selected: isSelected,
+      button: true,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedbackHelper.tap();
+          setState(() => _selectedTier = tier);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
             color: isSelected
-                ? accentColor
-                : colors.divider.withValues(alpha: 0.5),
-            width: isSelected ? 1.5 : 1.0,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              isSelected
-                  ? Icons.radio_button_checked_rounded
-                  : Icons.radio_button_off_rounded,
-              color: isSelected ? accentColor : colors.secondaryText,
-              size: 20,
+                ? surfaceColor
+                : colors.secondaryText.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected ? accentColor : Colors.transparent,
+              width: 1.5,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isSelected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
+                color: isSelected ? accentColor : colors.secondaryText,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
                         title,
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: colors.primaryText,
                         ),
                       ),
-                      if (badge != null) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: accentColor,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            badge,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
+                    ),
+                    if (badge != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: accentColor,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          badge,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ],
+                      ),
                     ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    price,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: colors.primaryText,
+                    ),
                   ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
+                  if (period != null)
                     Text(
-                      subtitle,
+                      period,
                       style: TextStyle(
                         fontSize: 12,
                         color: colors.secondaryText,
                       ),
                     ),
-                  ],
                 ],
               ),
-            ),
-            if (oldPrice != null) ...[
-              Text(
-                oldPrice,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  decoration: TextDecoration.lineThrough,
-                  color: colors.secondaryText,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(width: 8),
             ],
-            Text(
-              price,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: isSelected ? accentColor : colors.primaryText,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
