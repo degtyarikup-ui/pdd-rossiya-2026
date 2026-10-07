@@ -666,7 +666,7 @@ export function buildReportMessage(b) {
 // Крон автопостинга (см. wrangler.toml). Раз в пять минут, а не раз в час:
 // он же доводит до конца публикации, которые Cloudflare оборвал на полпути.
 const HOURLY_CRON = '*/5 * * * *';
-const WEEKLY_CRON = '5 21 * * 0';
+const WEEKLY_CRON = '5 21 * * SUN';
 // Крону неоткуда взять свой адрес, а Instagram скачивает ролик именно по нему.
 // Актуальное значение сохраняется в KV при каждом открытии админки.
 const DEFAULT_WORKER_ORIGIN = 'https://pdd-install-notifier.sergei-pdd.workers.dev';
