@@ -8,6 +8,7 @@
 import { putUserRecord } from './user_store.js';
 import { refreshStoreEntitlement } from './store_verification.js';
 import { setEntitlement, clearEntitlements } from './entitlements.js';
+import { deleteGameBest } from './game_weeks.js';
 
 const DAY_MS = 86400000;
 const MAX_DAYS = 3650;
@@ -177,6 +178,7 @@ export async function handleUsersAdmin(request, env, url, deps) {
     try {
       const week = gameWeekKey();
       await deleteGamePlayer(env, week, userId);
+      await deleteGameBest(env, userId);
     } catch (_) {}
     try {
       const list = await readJson(env, 'users_list');

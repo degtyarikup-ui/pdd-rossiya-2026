@@ -9,6 +9,7 @@ import { getAdsConfig, filterAdsForClient } from './ads_config.js';
 export { TrafficState } from './traffic_state.js';
 export { TelegramQueue } from './telegram_queue.js';
 import { trafficRequest } from './traffic_state.js';
+import { closeFinishedGameWeeks, bestGameRank, deleteGameBest } from './game_weeks.js';
 export { PurchaseClaims } from './purchase_claims.js';
 import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntitlementExpiry, StoreError } from './store_verification.js';
 import { setEntitlement } from './entitlements.js';
@@ -3380,6 +3381,14 @@ export default {
         200, { 'Cache-Control': 'no-store' });
     }
 
+    // Лучшее место игрока за все закрытые недели (ачивка «Покоритель рейтинга»).
+    if (url.pathname === '/api/game/best' && request.method === 'GET') {
+      if (!(await appKeyAllowed(request, env))) return jsonResponse({ error: 'forbidden' }, 403);
+      const userId = String(url.searchParams.get('userId') || '').slice(0, 120);
+      if (!userId) return jsonResponse({ error: 'missing userId' }, 400);
+      return jsonResponse({ ok: true, bestRank: await bestGameRank(env, userId) }, 200, { 'Cache-Control': 'no-store' });
+    }
+
     // ────────────────────── User Profile & Sync API ──────────────────────
     // ────────────────────── User self-deletion ──────────────────────
     // "Удалить аккаунт и данные" in the app: profile, synced progress and
@@ -3403,6 +3412,7 @@ export default {
       try {
         const week = gameWeekKey();
         await deleteGamePlayer(env, week, userId);
+        await deleteGameBest(env, userId);
       } catch (_) {}
       try {
         const rawList = await env.INSTALLS.get('users_list');
@@ -4051,6 +4061,8 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
         const settings = JSON.parse(await env.INSTALLS.get('social:settings'));
         if (settings && settings.workerOrigin) origin = settings.workerOrigin;
       } catch (_) {}
+      // Закрытие недельного рейтинга: итоговые места → ачивка «Покоритель рейтинга».
+      ctx.waitUntil(closeFinishedGameWeeks(env, gameWeekKey(), gameWeekKey, readGameBoard, rankGameBoard).catch(() => {}));
       ctx.waitUntil(runAutoPost(env, origin, (text) => sendTelegram(env, text)));
       ctx.waitUntil(runThreadsSchedule(env, (text) => sendTelegram(env, text)));
       if (env.NOTIFICATIONS) {
