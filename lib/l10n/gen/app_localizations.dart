@@ -2523,6 +2523,216 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не удалось открыть обновление. Попробуйте позже.'**
   String get appUpdateOpenFailed;
+
+  /// No description provided for @profile.
+  ///
+  /// In ru, this message translates to:
+  /// **'Профиль'**
+  String get profile;
+
+  /// No description provided for @signInCardTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Войти в аккаунт'**
+  String get signInCardTitle;
+
+  /// No description provided for @signInCardSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сохранить прогресс и премиум'**
+  String get signInCardSubtitle;
+
+  /// No description provided for @profileStatStreakDays.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{день} few{дня} many{дней} other{дней}}'**
+  String profileStatStreakDays(int count);
+
+  /// No description provided for @profileStatQuestions.
+  ///
+  /// In ru, this message translates to:
+  /// **'Решено вопросов'**
+  String get profileStatQuestions;
+
+  /// No description provided for @profileStatExams.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сдано экзаменов'**
+  String get profileStatExams;
+
+  /// No description provided for @achievements.
+  ///
+  /// In ru, this message translates to:
+  /// **'Достижения'**
+  String get achievements;
+
+  /// No description provided for @achievementsEarnedCount.
+  ///
+  /// In ru, this message translates to:
+  /// **'Получено {count} из {total}'**
+  String achievementsEarnedCount(int count, int total);
+
+  /// No description provided for @achievementLevelFormat.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ур. {level} из {total}'**
+  String achievementLevelFormat(int level, int total);
+
+  /// No description provided for @achievementSemanticsLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'{title}, уровень {level} из {total}'**
+  String achievementSemanticsLabel(String title, int level, int total);
+
+  /// No description provided for @achievementProgressFormat.
+  ///
+  /// In ru, this message translates to:
+  /// **'{current} из {target}'**
+  String achievementProgressFormat(int current, int target);
+
+  /// No description provided for @achievementTitleStreak.
+  ///
+  /// In ru, this message translates to:
+  /// **'Без пропусков'**
+  String get achievementTitleStreak;
+
+  /// No description provided for @achievementTitleCoverage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эрудит'**
+  String get achievementTitleCoverage;
+
+  /// No description provided for @achievementTitleTickets.
+  ///
+  /// In ru, this message translates to:
+  /// **'Билет за билетом'**
+  String get achievementTitleTickets;
+
+  /// No description provided for @achievementTitleAttempts.
+  ///
+  /// In ru, this message translates to:
+  /// **'Неутомимый'**
+  String get achievementTitleAttempts;
+
+  /// No description provided for @achievementTitleExams.
+  ///
+  /// In ru, this message translates to:
+  /// **'Экзаменатор'**
+  String get achievementTitleExams;
+
+  /// No description provided for @achievementTitleFlawless.
+  ///
+  /// In ru, this message translates to:
+  /// **'Без единой ошибки'**
+  String get achievementTitleFlawless;
+
+  /// No description provided for @achievementTitleMistakes.
+  ///
+  /// In ru, this message translates to:
+  /// **'Работа над ошибками'**
+  String get achievementTitleMistakes;
+
+  /// No description provided for @achievementTitleGame.
+  ///
+  /// In ru, this message translates to:
+  /// **'Гонщик'**
+  String get achievementTitleGame;
+
+  /// No description provided for @achievementDescStreak.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лучшая серия дней подряд с занятиями'**
+  String get achievementDescStreak;
+
+  /// No description provided for @achievementDescCoverage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Решено разных вопросов из базы'**
+  String get achievementDescCoverage;
+
+  /// No description provided for @achievementDescTickets.
+  ///
+  /// In ru, this message translates to:
+  /// **'Билеты, решённые на «сдал»'**
+  String get achievementDescTickets;
+
+  /// No description provided for @achievementDescAttempts.
+  ///
+  /// In ru, this message translates to:
+  /// **'Всего ответов, включая повторные'**
+  String get achievementDescAttempts;
+
+  /// No description provided for @achievementDescExams.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сданные пробные экзамены'**
+  String get achievementDescExams;
+
+  /// No description provided for @achievementDescFlawless.
+  ///
+  /// In ru, this message translates to:
+  /// **'Экзамены, сданные без ошибок'**
+  String get achievementDescFlawless;
+
+  /// No description provided for @achievementDescMistakes.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вопросы, в которых ошибался, а потом ответил верно'**
+  String get achievementDescMistakes;
+
+  /// No description provided for @achievementDescGame.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лучший счёт за один заезд в игре'**
+  String get achievementDescGame;
+
+  /// No description provided for @achievementTargetStreak.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{Серия {count} день} few{Серия {count} дня} many{Серия {count} дней} other{Серия {count} дней}}'**
+  String achievementTargetStreak(int count);
+
+  /// No description provided for @achievementTargetCoverage.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{Решить {count} вопрос} few{Решить {count} вопроса} many{Решить {count} вопросов} other{Решить {count} вопросов}}'**
+  String achievementTargetCoverage(int count);
+
+  /// No description provided for @achievementTargetTickets.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{Сдать {count} билет} few{Сдать {count} билета} many{Сдать {count} билетов} other{Сдать {count} билетов}}'**
+  String achievementTargetTickets(int count);
+
+  /// No description provided for @achievementTargetAttempts.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{Дать {count} ответ} few{Дать {count} ответа} many{Дать {count} ответов} other{Дать {count} ответов}}'**
+  String achievementTargetAttempts(int count);
+
+  /// No description provided for @achievementTargetExams.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{Сдать {count} экзамен} few{Сдать {count} экзамена} many{Сдать {count} экзаменов} other{Сдать {count} экзаменов}}'**
+  String achievementTargetExams(int count);
+
+  /// No description provided for @achievementTargetFlawless.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{Сдать {count} экзамен без ошибок} few{Сдать {count} экзамена без ошибок} many{Сдать {count} экзаменов без ошибок} other{Сдать {count} экзаменов без ошибок}}'**
+  String achievementTargetFlawless(int count);
+
+  /// No description provided for @achievementTargetMistakes.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{Исправить {count} ошибку} few{Исправить {count} ошибки} many{Исправить {count} ошибок} other{Исправить {count} ошибок}}'**
+  String achievementTargetMistakes(int count);
+
+  /// No description provided for @achievementTargetGame.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{Набрать {count} очко} few{Набрать {count} очка} many{Набрать {count} очков} other{Набрать {count} очков}}'**
+  String achievementTargetGame(int count);
 }
 
 class _AppLocalizationsDelegate

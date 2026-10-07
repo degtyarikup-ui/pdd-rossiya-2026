@@ -507,6 +507,47 @@ class ProgressDataSource {
     ProgressSyncService.instance.scheduleSync();
   }
 
+  Future<List<Map<String, dynamic>>> getExamResults(
+    TicketCategory category,
+  ) async {
+    final ekey = _examResultsKey(category);
+    final List<dynamic> rawList;
+    try {
+      final raw = _prefs.get(ekey);
+      if (raw is List) {
+        rawList = raw;
+      } else if (raw is String) {
+        final decoded = json.decode(raw);
+        if (decoded is List) {
+          rawList = decoded;
+        } else {
+          return [];
+        }
+      } else {
+        return [];
+      }
+    } catch (_) {
+      return [];
+    }
+
+    final List<Map<String, dynamic>> results = [];
+    for (final item in rawList) {
+      try {
+        if (item is Map) {
+          results.add(Map<String, dynamic>.from(item));
+        } else if (item is String) {
+          final decoded = json.decode(item);
+          if (decoded is Map) {
+            results.add(Map<String, dynamic>.from(decoded));
+          }
+        }
+      } catch (_) {
+        // Пропускаем битые записи
+      }
+    }
+    return results;
+  }
+
   /// Экспорт полного слепка прогресса пользователя для облачной синхронизации.
   Map<String, dynamic> exportProgressSnapshot() {
     return {

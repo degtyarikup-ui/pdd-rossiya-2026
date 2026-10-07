@@ -1451,4 +1451,208 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get appUpdateOpenFailed =>
       'Не удалось открыть обновление. Попробуйте позже.';
+
+  @override
+  String get profile => 'Профиль';
+
+  @override
+  String get signInCardTitle => 'Войти в аккаунт';
+
+  @override
+  String get signInCardSubtitle => 'Сохранить прогресс и премиум';
+
+  @override
+  String profileStatStreakDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'дней',
+      many: 'дней',
+      few: 'дня',
+      one: 'день',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileStatQuestions => 'Решено вопросов';
+
+  @override
+  String get profileStatExams => 'Сдано экзаменов';
+
+  @override
+  String get achievements => 'Достижения';
+
+  @override
+  String achievementsEarnedCount(int count, int total) {
+    return 'Получено $count из $total';
+  }
+
+  @override
+  String achievementLevelFormat(int level, int total) {
+    return 'Ур. $level из $total';
+  }
+
+  @override
+  String achievementSemanticsLabel(String title, int level, int total) {
+    return '$title, уровень $level из $total';
+  }
+
+  @override
+  String achievementProgressFormat(int current, int target) {
+    return '$current из $target';
+  }
+
+  @override
+  String get achievementTitleStreak => 'Без пропусков';
+
+  @override
+  String get achievementTitleCoverage => 'Эрудит';
+
+  @override
+  String get achievementTitleTickets => 'Билет за билетом';
+
+  @override
+  String get achievementTitleAttempts => 'Неутомимый';
+
+  @override
+  String get achievementTitleExams => 'Экзаменатор';
+
+  @override
+  String get achievementTitleFlawless => 'Без единой ошибки';
+
+  @override
+  String get achievementTitleMistakes => 'Работа над ошибками';
+
+  @override
+  String get achievementTitleGame => 'Гонщик';
+
+  @override
+  String get achievementDescStreak => 'Лучшая серия дней подряд с занятиями';
+
+  @override
+  String get achievementDescCoverage => 'Решено разных вопросов из базы';
+
+  @override
+  String get achievementDescTickets => 'Билеты, решённые на «сдал»';
+
+  @override
+  String get achievementDescAttempts => 'Всего ответов, включая повторные';
+
+  @override
+  String get achievementDescExams => 'Сданные пробные экзамены';
+
+  @override
+  String get achievementDescFlawless => 'Экзамены, сданные без ошибок';
+
+  @override
+  String get achievementDescMistakes =>
+      'Вопросы, в которых ошибался, а потом ответил верно';
+
+  @override
+  String get achievementDescGame => 'Лучший счёт за один заезд в игре';
+
+  @override
+  String achievementTargetStreak(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Серия $count дней',
+      many: 'Серия $count дней',
+      few: 'Серия $count дня',
+      one: 'Серия $count день',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String achievementTargetCoverage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Решить $count вопросов',
+      many: 'Решить $count вопросов',
+      few: 'Решить $count вопроса',
+      one: 'Решить $count вопрос',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String achievementTargetTickets(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Сдать $count билетов',
+      many: 'Сдать $count билетов',
+      few: 'Сдать $count билета',
+      one: 'Сдать $count билет',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String achievementTargetAttempts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Дать $count ответов',
+      many: 'Дать $count ответов',
+      few: 'Дать $count ответа',
+      one: 'Дать $count ответ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String achievementTargetExams(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Сдать $count экзаменов',
+      many: 'Сдать $count экзаменов',
+      few: 'Сдать $count экзамена',
+      one: 'Сдать $count экзамен',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String achievementTargetFlawless(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Сдать $count экзаменов без ошибок',
+      many: 'Сдать $count экзаменов без ошибок',
+      few: 'Сдать $count экзамена без ошибок',
+      one: 'Сдать $count экзамен без ошибок',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String achievementTargetMistakes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Исправить $count ошибок',
+      many: 'Исправить $count ошибок',
+      few: 'Исправить $count ошибки',
+      one: 'Исправить $count ошибку',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String achievementTargetGame(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Набрать $count очков',
+      many: 'Набрать $count очков',
+      few: 'Набрать $count очка',
+      one: 'Набрать $count очко',
+    );
+    return '$_temp0';
+  }
 }

@@ -718,5 +718,146 @@
   "appUpdateReadyBody": "Новая версия уже скачана. Перезапустите приложение, чтобы установить её.",
   "appUpdateRestart": "Перезапустить",
   "appUpdateOpenFailed": "Не удалось открыть обновление. Попробуйте позже.",
-  "@appUpdateVersion": {"placeholders": {"version": {"type": "String"}}}
+  "@appUpdateVersion": {"placeholders": {"version": {"type": "String"}}},
+  "profile": "Профиль",
+  "signInCardTitle": "Войти в аккаунт",
+  "signInCardSubtitle": "Сохранить прогресс и премиум",
+  "profileStatStreakDays": "{count, plural, one{день} few{дня} many{дней} other{дней}}",
+  "@profileStatStreakDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileStatQuestions": "Решено вопросов",
+  "profileStatExams": "Сдано экзаменов",
+  "achievements": "Достижения",
+  "achievementsEarnedCount": "Получено {count} из {total}",
+  "@achievementsEarnedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "achievementLevelFormat": "Ур. {level} из {total}",
+  "@achievementLevelFormat": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "achievementSemanticsLabel": "{title}, уровень {level} из {total}",
+  "@achievementSemanticsLabel": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "level": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "achievementProgressFormat": "{current} из {target}",
+  "@achievementProgressFormat": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "achievementTitleStreak": "Без пропусков",
+  "achievementTitleCoverage": "Эрудит",
+  "achievementTitleTickets": "Билет за билетом",
+  "achievementTitleAttempts": "Неутомимый",
+  "achievementTitleExams": "Экзаменатор",
+  "achievementTitleFlawless": "Без единой ошибки",
+  "achievementTitleMistakes": "Работа над ошибками",
+  "achievementTitleGame": "Гонщик",
+  "achievementDescStreak": "Лучшая серия дней подряд с занятиями",
+  "achievementDescCoverage": "Решено разных вопросов из базы",
+  "achievementDescTickets": "Билеты, решённые на «сдал»",
+  "achievementDescAttempts": "Всего ответов, включая повторные",
+  "achievementDescExams": "Сданные пробные экзамены",
+  "achievementDescFlawless": "Экзамены, сданные без ошибок",
+  "achievementDescMistakes": "Вопросы, в которых ошибался, а потом ответил верно",
+  "achievementDescGame": "Лучший счёт за один заезд в игре",
+  "achievementTargetStreak": "{count, plural, one{Серия {count} день} few{Серия {count} дня} many{Серия {count} дней} other{Серия {count} дней}}",
+  "@achievementTargetStreak": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "achievementTargetCoverage": "{count, plural, one{Решить {count} вопрос} few{Решить {count} вопроса} many{Решить {count} вопросов} other{Решить {count} вопросов}}",
+  "@achievementTargetCoverage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "achievementTargetTickets": "{count, plural, one{Сдать {count} билет} few{Сдать {count} билета} many{Сдать {count} билетов} other{Сдать {count} билетов}}",
+  "@achievementTargetTickets": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "achievementTargetAttempts": "{count, plural, one{Дать {count} ответ} few{Дать {count} ответа} many{Дать {count} ответов} other{Дать {count} ответов}}",
+  "@achievementTargetAttempts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "achievementTargetExams": "{count, plural, one{Сдать {count} экзамен} few{Сдать {count} экзамена} many{Сдать {count} экзаменов} other{Сдать {count} экзаменов}}",
+  "@achievementTargetExams": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "achievementTargetFlawless": "{count, plural, one{Сдать {count} экзамен без ошибок} few{Сдать {count} экзамена без ошибок} many{Сдать {count} экзаменов без ошибок} other{Сдать {count} экзаменов без ошибок}}",
+  "@achievementTargetFlawless": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "achievementTargetMistakes": "{count, plural, one{Исправить {count} ошибку} few{Исправить {count} ошибки} many{Исправить {count} ошибок} other{Исправить {count} ошибок}}",
+  "@achievementTargetMistakes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "achievementTargetGame": "{count, plural, one{Набрать {count} очко} few{Набрать {count} очка} many{Набрать {count} очков} other{Набрать {count} очков}}",
+  "@achievementTargetGame": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -23,7 +23,7 @@ import 'package:pdd_app/presentation/screens/favorites/favorites_screen.dart';
 import 'package:pdd_app/presentation/screens/mistakes/mistakes_screen.dart';
 import 'package:pdd_app/presentation/screens/feed/feed_screen.dart';
 import 'package:pdd_app/presentation/screens/game/game_screen.dart';
-import 'package:pdd_app/presentation/screens/settings/settings_screen.dart';
+import 'package:pdd_app/presentation/screens/profile/profile_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/screens/topics/topics_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_notice_widgets.dart';
@@ -315,7 +315,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         title: appL10n.feedLockedTitle,
         body: appL10n.feedLockedBody,
       ),
-    const SettingsScreen(),
+    const ProfileScreen(),
   ];
 
   @override
@@ -385,9 +385,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         label: appL10n.video,
                       ),
                       NavigationDestination(
-                        icon: const Icon(Icons.settings_outlined),
-                        selectedIcon: const Icon(Icons.settings),
-                        label: appL10n.settings,
+                        icon: const Icon(Icons.person_outline_rounded),
+                        selectedIcon: const Icon(Icons.person_rounded),
+                        label: appL10n.profile,
                       ),
                     ],
                   ),

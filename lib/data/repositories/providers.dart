@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/config/country_config.dart';
+import 'package:pdd_app/data/models/achievement.dart';
 import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/models/streak.dart';
@@ -326,6 +327,30 @@ final streakProvider = FutureProvider<Streak>((ref) async {
   final dataSource = ref.watch(progressDataSourceProvider);
   return await dataSource.loadStreak();
 });
+
+final achievementsProvider =
+    FutureProvider.autoDispose<List<AchievementProgress>>((ref) async {
+      ref.watch(appDataRefreshProvider);
+      final category = ref.watch(
+        appSettingsProvider.select((s) => s.ticketCategory),
+      );
+      final streak = await ref.watch(streakProvider.future);
+      final stats = await ref.watch(statsProvider.future);
+      final dataSource = ref.watch(progressDataSourceProvider);
+      final questionProgress = await dataSource.getAllQuestionProgress(
+        category,
+      );
+      final examResults = await dataSource.getExamResults(category);
+      final gameBestScore = dataSource.getGameBestScore();
+
+      return computeAchievements(
+        longestStreak: streak.longest,
+        stats: stats,
+        questionProgress: questionProgress,
+        examResults: examResults,
+        gameBestScore: gameBestScore,
+      );
+    });
 
 final wrongQuestionIdsProvider = FutureProvider<List<String>>((ref) async {
   ref.watch(appDataRefreshProvider);
