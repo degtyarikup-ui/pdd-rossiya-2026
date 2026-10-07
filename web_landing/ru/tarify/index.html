@@ -67,7 +67,23 @@
     .prose .plan-price { font-size: 44px; font-weight: 800; letter-spacing: -.04em; line-height: 1; margin: 0 0 10px; }
     .prose .plan-note { color: var(--text-2); font-size: 15px; margin: 0; }
     .plan-badge { display: inline-block; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; }
-    .prose .plans-cta { margin: 20px 0 8px; }
+    .plan { display: flex; flex-direction: column; }
+    .prose .plan-note { margin-bottom: 20px; }
+    .plan-buy { margin-top: auto; width: 100%; justify-content: center; border: 0; cursor: pointer; font: inherit; font-weight: 600; }
+    .plan:not(.hit) .plan-buy { background: #fff; }
+    .pay-dialog { margin: auto; border: 0; border-radius: var(--radius-l); padding: 28px; width: min(440px, calc(100vw - 32px)); box-sizing: border-box; color: var(--text); }
+    .pay-dialog::backdrop { background: rgba(11, 13, 18, .45); }
+    .pay-close-form { position: absolute; top: 12px; right: 12px; margin: 0; }
+    .pay-close { border: 0; background: var(--surface); width: 36px; height: 36px; border-radius: 50%; font-size: 22px; line-height: 1; cursor: pointer; color: var(--text-2); }
+    .pay-kicker { color: var(--text-2); font-size: 14px; margin: 0 0 4px; }
+    .pay-title { font-size: 26px; letter-spacing: -.02em; margin: 0 0 12px; }
+    .pay-text { color: var(--text-2); font-size: 16px; line-height: 1.5; margin: 0 0 14px; }
+    .pay-form { display: grid; gap: 10px; }
+    .pay-form input[type=email] { font: inherit; font-size: 16px; padding: 14px 16px; border: 0; border-radius: 14px; background: var(--surface); color: var(--text); }
+    .pay-form input[type=email]:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+    .pay-form .btn { border: 0; cursor: pointer; font: inherit; font-weight: 600; justify-content: center; }
+    .pay-trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+    .pay-error { color: #D93025; font-size: 14px; margin: 0; min-height: 1em; }
     @media (max-width: 640px) { .plans { grid-template-columns: 1fr; } .plan { padding: 22px; } }
   </style>
 </head>
@@ -106,14 +122,38 @@
           <p class="plan-name">1 неделя</p>
           <p class="plan-price">99 ₽</p>
           <p class="plan-note">Доступ на 7 дней</p>
+          <button type="button" class="btn btn-ghost plan-buy" data-tier="weekly" data-title="1 неделя" data-price="99 ₽">Оплатить 99 ₽</button>
         </div>
         <div class="plan hit">
           <p class="plan-name">3 месяца<span class="plan-badge">ХИТ</span></p>
           <p class="plan-price">290 ₽</p>
           <p class="plan-note">Доступ на 90 дней — около 97 ₽ в месяц</p>
+          <button type="button" class="btn btn-primary plan-buy" data-tier="threeMonths" data-title="3 месяца" data-price="290 ₽">Оплатить 290 ₽</button>
         </div>
       </div>
-      <p class="plans-cta"><a class="btn btn-primary" href="/app/">Оформить в веб-версии</a></p>
+
+      <dialog class="pay-dialog" id="pay-dialog" aria-labelledby="pay-title">
+        <form method="dialog" class="pay-close-form"><button class="pay-close" aria-label="Закрыть">×</button></form>
+        <p class="pay-kicker">Оплата через СБП</p>
+        <h3 id="pay-title" class="pay-title">3 месяца — 290 ₽</h3>
+        <div id="pay-soon">
+          <p class="pay-text">Оплата скоро будет доступна. Оставьте почту — напишем, как только можно будет оплатить. На неё же придёт чек.</p>
+          <form id="pay-form" class="pay-form" novalidate>
+            <input type="email" id="pay-email" name="email" placeholder="Электронная почта" autocomplete="email" required>
+            <input type="text" name="website" class="pay-trap" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <button type="submit" class="btn btn-primary">Сообщить о запуске</button>
+            <p class="pay-error" id="pay-error" role="alert"></p>
+          </form>
+        </div>
+        <div id="pay-done" hidden>
+          <p class="pay-text">Спасибо! Напишем на <strong id="pay-done-email"></strong>, как только оплата заработает.</p>
+          <p class="pay-text">А пока можно заниматься бесплатно в <a href="/app/">веб-версии</a>.</p>
+        </div>
+        <div id="pay-live" hidden>
+          <p class="pay-text">Оплата проходит в веб-версии: войдите через Google или Яндекс, откройте Премиум и выберите этот тариф. Премиум привяжется к аккаунту и заработает на всех устройствах.</p>
+          <p><a class="btn btn-primary" href="/app/">Перейти к оплате</a></p>
+        </div>
+      </dialog>
 
       <h2>Что входит в Премиум</h2>
       <ul>
@@ -126,7 +166,7 @@
       <h2>Как это работает</h2>
       <ul>
         <li><strong>Разовая оплата, без автопродления.</strong> Деньги списываются один раз за выбранный срок. Когда срок закончится, доступ просто выключится — повторных списаний не будет.</li>
-        <li><strong>Способ оплаты</strong> — Система быстрых платежей (СБП): по QR-коду или по ссылке из приложения вашего банка. Оплата на сайте подключается — до запуска оставьте почту в веб-версии, и мы напишем, когда она заработает.</li>
+        <li><strong>Способ оплаты</strong> — Система быстрых платежей (СБП): по QR-коду или по ссылке из приложения вашего банка.<span id="pay-soon-note"> Оплата на сайте подключается — до запуска выберите тариф и оставьте почту, и мы напишем, когда она заработает.</span></li>
         <li><strong>Доступ открывается сразу после оплаты</strong> и привязывается к вашему аккаунту (вход через Google или Яндекс).</li>
         <li><strong>Работает на всех устройствах.</strong> Войдите тем же аккаунтом в приложении на Android, iPhone или в веб-версии — Премиум будет активен везде.</li>
         <li><strong>Продление.</strong> Если оплатить новый срок до окончания текущего, дни добавятся к уже оплаченным.</li>
@@ -191,5 +231,54 @@
 <noscript><div><img src="https://mc.yandex.ru/watch/111960332" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <!-- /Yandex.Metrika counter -->
 <script src="/assets/site.js" defer></script>
+<script>
+// Выбор тарифа: пока оплата не подключена — заглушка «скоро» и почта для
+// письма о запуске (POST /api/pay/lead). Когда подключена — переход в
+// веб-версию, где оплата привязывается к аккаунту.
+(function () {
+  var API = 'https://pdd-install-notifier.sergei-pdd.workers.dev';
+  var dialog = document.getElementById('pay-dialog');
+  var form = document.getElementById('pay-form');
+  var email = document.getElementById('pay-email');
+  var error = document.getElementById('pay-error');
+  var live = false, tier = null;
+  fetch(API + '/api/pay/status').then(function (r) { return r.json(); }).then(function (d) {
+    live = d && d.available === true;
+    if (live) { var note = document.getElementById('pay-soon-note'); if (note) note.hidden = true; }
+  }).catch(function () {});
+  function show(id) {
+    ['pay-soon', 'pay-done', 'pay-live'].forEach(function (x) { document.getElementById(x).hidden = x !== id; });
+  }
+  document.querySelectorAll('.plan-buy').forEach(function (button) {
+    button.addEventListener('click', function () {
+      tier = button.dataset.tier;
+      document.getElementById('pay-title').textContent = button.dataset.title + ' — ' + button.dataset.price;
+      error.textContent = '';
+      show(live ? 'pay-live' : 'pay-soon');
+      if (typeof ym === 'function') ym(111960332, 'reachGoal', 'tariff_click', { tier: tier });
+      if (dialog.showModal) dialog.showModal(); else dialog.setAttribute('open', '');
+      if (!live) email.focus();
+    });
+  });
+  dialog.addEventListener('click', function (e) { if (e.target === dialog) dialog.close(); });
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var value = email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value)) { error.textContent = 'Проверьте адрес почты'; return; }
+    var button = form.querySelector('button[type=submit]');
+    button.disabled = true; error.textContent = '';
+    fetch(API + '/api/pay/lead', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: value, tier: tier, website: form.website.value })
+    }).then(function (r) {
+      if (!r.ok) throw new Error();
+      document.getElementById('pay-done-email').textContent = value;
+      show('pay-done');
+    }).catch(function () {
+      error.textContent = 'Не удалось отправить, попробуйте ещё раз';
+    }).then(function () { button.disabled = false; });
+  });
+})();
+</script>
 </body>
 </html>

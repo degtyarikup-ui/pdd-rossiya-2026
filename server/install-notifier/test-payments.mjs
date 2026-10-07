@@ -164,3 +164,18 @@ test('оплата на сайте добавляется после дейст�
     assert.equal(u.premiumSource, 'web');
   } finally { fake.restore(); }
 });
+
+test('страница тарифов: почта без входа, проверка ввода, ловушка для ботов, без повторов', async () => {
+  const env = baseEnv(); delete env.PLATEGA_SECRET;
+  const lead = body => worker.fetch(new Request('https://app.test/api/pay/lead', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }), env);
+  assert.equal((await lead({ email: 'нет', tier: 'weekly' })).status, 400);
+  assert.equal((await lead({ email: 'a@b.ru', tier: 'year' })).status, 400);
+  assert.deepEqual(await (await lead({ email: 'a@b.ru', tier: 'weekly', website: 'spam' })).json(), { ok: true, available: false });
+  assert.equal(env.INSTALLS.data.has('pay_lead:a@b.ru'), false);
+  assert.deepEqual(await (await lead({ email: 'A@B.ru', tier: 'threeMonths' })).json(), { ok: true, available: false });
+  await lead({ email: 'a@b.ru', tier: 'threeMonths' });
+  assert.equal(JSON.parse(env.INSTALLS.data.get('pay_lead:a@b.ru')).count, 1);
+  const list = await (await worker.fetch(req('/api/admin/pay-intents', undefined, 'pw'), env)).json();
+  assert.equal(list.intents.find(i => i.source === 'tarify').email, 'a@b.ru');
+});

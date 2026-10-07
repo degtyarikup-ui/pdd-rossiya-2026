@@ -280,13 +280,58 @@ export async function handlePayCheck(request, env, user, deps) {
   return jsonResponse({ ok: true, status: order.status });
 }
 
-/** GET /api/admin/pay-intents — кто выбирал оплату на сайте (новые сверху). */
+/**
+ * POST /api/pay/lead {email, tier} — выбор тарифа на странице /tarify/
+ * лендинга (без входа в аккаунт): заглушка «оплата скоро» и почта для
+ * письма о запуске. Одна запись на почту; повтор в течение 10 минут не
+ * пишется (бесплатный KV — 1000 записей в сутки).
+ */
+export async function handlePayLead(request, env, { jsonResponse, sendTelegram, esc }) {
+  let body;
+  try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }
+  const email = String(body?.email || '').trim().toLowerCase();
+  const tier = body?.tier;
+  // Скрытое поле-ловушка: его заполняют только боты.
+  if (body?.website) return jsonResponse({ ok: true, available: webPaymentsLive(env) });
+  if (!EMAIL_RE.test(email)) return jsonResponse({ error: 'invalid email' }, 400);
+  if (!WEB_TARIFFS[tier]) return jsonResponse({ error: 'invalid tariff' }, 400);
+  if (!env.INSTALLS) return jsonResponse({ error: 'storage unavailable' }, 503);
+  const key = 'pay_lead:' + email.slice(0, 200);
+  const previous = await readJson(env, key);
+  const now = Date.now();
+  if (!(previous && previous.tier === tier && now - Date.parse(previous.at) < REPEAT_MS)) {
+    const lead = { email, tier, source: 'tarify', priceRub: WEB_TARIFFS[tier].priceRub, at: new Date(now).toISOString(),
+      firstAt: previous?.firstAt || new Date(now).toISOString(), count: (previous?.count || 0) + 1,
+      ipCountry: request.headers.get('cf-ipcountry') || null };
+    await env.INSTALLS.put(key, JSON.stringify(lead), {
+      metadata: { email: email.slice(0, 120), tier, method: 'sbp', source: 'tarify', at: lead.at, count: lead.count },
+    });
+    if (!previous && env.BOT_TOKEN && env.CHAT_ID) {
+      const tariff = WEB_TARIFFS[tier];
+      try {
+        await sendTelegram(env, [
+          '💳 <b>Хотят оплатить</b> (страница тарифов, СБП ещё не подключена)',
+          `📧 ${esc(email)}`,
+          `📦 ${esc(tariff.title)} — ${tariff.priceRub} ₽`,
+        ].join('\n'), key);
+      } catch (_) {}
+    }
+  }
+  return jsonResponse({ ok: true, available: webPaymentsLive(env) });
+}
+
+/** GET /api/admin/pay-intents — кто выбирал оплату: в веб-версии и на странице тарифов (новые сверху). */
 export async function listPayIntents(env) {
   const items = [];
   let cursor;
   do {
     const page = await env.INSTALLS.list({ prefix: 'pay_intent:', cursor });
     for (const key of page.keys) items.push({ userId: key.name.slice('pay_intent:'.length), ...(key.metadata || {}) });
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+  do {
+    const page = await env.INSTALLS.list({ prefix: 'pay_lead:', cursor });
+    for (const key of page.keys) items.push({ userId: null, source: 'tarify', ...(key.metadata || {}) });
     cursor = page.list_complete ? undefined : page.cursor;
   } while (cursor);
   items.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));

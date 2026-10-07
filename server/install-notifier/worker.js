@@ -12,7 +12,7 @@ import { trafficRequest } from './traffic_state.js';
 export { PurchaseClaims } from './purchase_claims.js';
 import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntitlementExpiry, StoreError } from './store_verification.js';
 import { setEntitlement } from './entitlements.js';
-import { handlePayIntent, handlePayCheck, handlePlategaCallback, listPayIntents, webPaymentsLive } from './payments.js';
+import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, listPayIntents, webPaymentsLive } from './payments.js';
 import { handleAuth, authorizeUserRequest, revokeUserSessions } from './user_auth.js';
 import { handleSocialAdmin, handleVideoStream, handleVideoThumb, runAutoPost } from './social.js';
 import { SOCIAL_NAV_HTML, SOCIAL_VIEW_HTML, SOCIAL_CLIENT_JS } from './social_ui.js';
@@ -2778,6 +2778,7 @@ async function saveUserProfile(env, user) {
     platform: user.platform || (existing ? existing.platform : null),
     appVersion: user.appVersion || (existing ? existing.appVersion : null),
     createdAt: (existing && existing.createdAt) ? existing.createdAt : (user.createdAt || new Date().toISOString()),
+    activity: existing?.activity || null,
     lastSeenAt: new Date().toISOString(),
     ...metadataFields({ ...existing, ...user,
       marketingSource: existing?.marketingSource && existing.marketingSource !== 'unknown' ? existing.marketingSource : user.marketingSource,
@@ -3570,6 +3571,9 @@ export default {
 
     if (url.pathname === '/api/pay/status' && request.method === 'GET') {
       return jsonResponse({ ok: true, available: webPaymentsLive(env), methods: ['sbp'] }, 200, { 'Cache-Control': 'no-store' });
+    }
+    if (url.pathname === '/api/pay/lead' && request.method === 'POST') {
+      return handlePayLead(request, env, { jsonResponse, sendTelegram, esc });
     }
     if (url.pathname === '/api/pay/platega/callback' && request.method === 'POST') {
       return handlePlategaCallback(request, env, { jsonResponse, sendTelegram, esc, trackStats });
