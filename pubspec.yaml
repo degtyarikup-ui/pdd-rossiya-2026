@@ -89,6 +89,7 @@ flutter:
     - assets/images/category_icons/
     - assets/images/tips/
     - assets/images/streaks/
+    - assets/images/achievements/
     - assets/icons/auth/
     - assets/icons/game/
     - assets/audio/

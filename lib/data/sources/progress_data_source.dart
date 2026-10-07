@@ -539,6 +539,10 @@ class ProgressDataSource {
     };
   }
 
+  /// Лучший счёт в игре — тот же ключ, что пишет игра и синхронизирует
+  /// снапшот (`game.bestScore`). «Сбросить статистику» его не трогает.
+  int getGameBestScore() => _prefs.getInt('game_best_score') ?? 0;
+
   List<Map<String, dynamic>> _loadGarageCars() {
     try {
       final raw = _prefs.getString('game_garage_cars');

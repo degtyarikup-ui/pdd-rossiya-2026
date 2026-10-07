@@ -815,7 +815,16 @@ class _GameScreenState extends ConsumerState<GameScreen>
         '${situation.id}_${situation.sourceQuestionId ?? situation.ticket}';
     if (_recordedMistakeKeys.contains(key)) return;
     _recordedMistakeKeys.add(key);
+    await _recordAnswer(situation, selected, isCorrect: false);
+  }
 
+  /// Every game answer counts in the shared progress like a training answer:
+  /// solved questions, the day streak, ticket stats and achievements.
+  Future<void> _recordAnswer(
+    GameSituation situation,
+    int? selected, {
+    required bool isCorrect,
+  }) async {
     if (situation.country != null &&
         situation.country != CountryConfig.current.code) {
       return;
@@ -832,13 +841,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
           .read(progressDataSourceProvider)
           .saveAnswer(
             questionId: questionId,
-            isCorrect: false,
+            isCorrect: isCorrect,
             selectedAnswerIndex: selected ?? -1,
             category: TicketCategory.ab,
           );
       ref.read(appDataRefreshProvider.notifier).state++;
     } catch (e) {
-      debugPrint('Game mistake not saved: $e');
+      debugPrint('Game answer not saved: $e');
     }
   }
 
@@ -1203,6 +1212,15 @@ class _GameScreenState extends ConsumerState<GameScreen>
         );
         setState(() => _correctBurst++);
         unawaited(_countCorrect());
+        if (previous?.currentSituation case final situation?) {
+          unawaited(
+            _recordAnswer(
+              situation,
+              next.selectedAnswerIndex,
+              isCorrect: true,
+            ),
+          );
+        }
         _burstTimer?.cancel();
         _burstTimer = Timer(const Duration(milliseconds: 1600), () {
           if (mounted) setState(() => _correctBurst = 0);
