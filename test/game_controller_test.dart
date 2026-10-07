@@ -19,7 +19,6 @@ import 'package:pdd_app/presentation/screens/game/game_screen.dart';
 // Native WebView seam: exercise the screen without a device platform view.
 // ignore: depend_on_referenced_packages
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
-import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_controls_overlay.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_debug_sheet.dart';
@@ -2026,12 +2025,6 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('game-gas')));
       expect(gas, isEmpty);
       expect(lanes, isEmpty);
-    });
-
-    test('Only verified country has game enabled', () {
-      expect(CountryConfig.russia.hasVerifiedGame, true);
-      expect(CountryConfig.belarus.hasVerifiedGame, false);
-      expect(CountryConfig.serbia.hasVerifiedGame, false);
     });
 
     test('Curated scenarios can repeat after another completed situation', () {

@@ -35,8 +35,7 @@ class _SilentTts implements TtsService {
 }
 
 /// Вопросы с фиксированными текстами ответов: «Верный ответ» всегда первый.
-/// [points] — вес каждого вопроса в балльной модели (по умолчанию 1).
-List<Map<String, dynamic>> buildQuestions(int n, {int points = 1}) {
+List<Map<String, dynamic>> buildQuestions(int n) {
   return List.generate(n, (i) {
     return <String, dynamic>{
       'id': 'q$i',
@@ -50,7 +49,6 @@ List<Map<String, dynamic>> buildQuestions(int n, {int points = 1}) {
       'image': null,
       'topic': <String>[],
       'ticketNumber': 1,
-      'points': points,
     };
   });
 }
@@ -376,163 +374,6 @@ void main() {
 
     expect(find.byType(ExamScreen), findsNothing);
     expect(find.text('Экзамен не сдан'), findsNothing);
-  });
-
-  // ---------------------------------------------------------------------
-  // Правила Беларуси (ГАИ РБ): 10 вопросов, 15 минут, максимум 1 ошибка,
-  // механики дополнительных вопросов нет.
-  // ---------------------------------------------------------------------
-  group('Беларусь (10 вопросов / 1 ошибка / без доп. фазы)', () {
-    final byRules = CountryConfig.belarus.examRules;
-
-    testWidgets('без ошибок: сдан после 10 ответов', (tester) async {
-      await pumpExam(tester, rules: byRules);
-
-      for (var i = 0; i < 10; i++) {
-        await answerCurrent(tester, correct: true);
-      }
-
-      expect(find.text('Экзамен сдан!'), findsOneWidget);
-    });
-
-    testWidgets('1 ошибка: доп. фаза НЕ начинается, экзамен сдан', (
-      tester,
-    ) async {
-      await pumpExam(tester, rules: byRules);
-
-      await answerCurrent(tester, correct: false);
-      for (var i = 1; i < 10; i++) {
-        await answerCurrent(tester, correct: true);
-      }
-
-      expect(find.text('Дополнительные вопросы'), findsNothing);
-      expect(find.text('Экзамен сдан!'), findsOneWidget);
-    });
-
-    testWidgets('2 ошибки: провал сразу после второй ошибки', (tester) async {
-      await pumpExam(tester, rules: byRules);
-
-      await answerCurrent(tester, correct: false);
-      await answerCurrent(tester, correct: false);
-
-      expect(find.text('Экзамен не сдан'), findsOneWidget);
-      expect(find.text('Без ответа'), findsNothing);
-    });
-
-    testWidgets('таймер стартует с 15 минут', (tester) async {
-      await pumpExam(tester, rules: byRules);
-
-      final timerText = tester
-          .widgetList<Text>(find.textContaining(':'))
-          .map((t) => t.data ?? '')
-          .firstWhere((s) => RegExp(r'^\d{2}:\d{2}$').hasMatch(s));
-      final minutes = int.parse(timerText.split(':').first);
-      expect(minutes, lessThanOrEqualTo(15));
-      expect(minutes, greaterThanOrEqualTo(14));
-    });
-
-    testWidgets('заголовок использует размер билета страны: «Вопрос 1 из 10»', (
-      tester,
-    ) async {
-      await pumpExam(tester, rules: byRules);
-
-      expect(find.text('Вопрос 1 из 10'), findsOneWidget);
-    });
-  });
-
-  // ---------------------------------------------------------------------
-  // Балльная модель (Сербия, MUP): вопрос весит 1/2/3 балла, сдал при
-  // наборе ≥ passPercent% от максимума. Доп. фазы и досрочного провала нет —
-  // отвечаешь на все вопросы, затем итог по сумме баллов.
-  // На тестах берём билет из 10 вопросов и порог 85%.
-  // ---------------------------------------------------------------------
-  group('Балльная модель (баллы / порог 85% / без доп. фазы)', () {
-    const pointsRules = ExamRules(
-      mainCount: 10,
-      totalSeconds: 45 * 60,
-      maxMistakes: 0,
-      additionalPerMistake: 0,
-      additionalSecondsPerBlock: 0,
-      scoring: ExamScoring.points,
-      passPercent: 85,
-    );
-
-    testWidgets('9/10 верных (90% ≥ 85%) — сдан, без доп. фазы', (
-      tester,
-    ) async {
-      await pumpExam(tester, rules: pointsRules);
-
-      await answerCurrent(tester, correct: false);
-      for (var i = 1; i < 10; i++) {
-        await answerCurrent(tester, correct: true);
-      }
-
-      expect(find.text('Дополнительные вопросы'), findsNothing);
-      expect(find.text('Экзамен сдан!'), findsOneWidget);
-      expect(find.text('Набрано баллов'), findsOneWidget);
-      expect(find.text('90%'), findsOneWidget);
-    });
-
-    testWidgets('8/10 верных (80% < 85%) — не сдан', (tester) async {
-      await pumpExam(tester, rules: pointsRules);
-
-      await answerCurrent(tester, correct: false);
-      await answerCurrent(tester, correct: false);
-      for (var i = 2; i < 10; i++) {
-        await answerCurrent(tester, correct: true);
-      }
-
-      expect(find.text('Дополнительные вопросы'), findsNothing);
-      expect(find.text('Экзамен не сдан'), findsOneWidget);
-      expect(find.text('80%'), findsOneWidget);
-    });
-
-    testWidgets('веса вопросов суммируются: 9×2 из 20 = 90% — сдан', (
-      tester,
-    ) async {
-      await pumpExam(
-        tester,
-        rules: pointsRules,
-        questions: buildQuestions(60, points: 2),
-      );
-
-      await answerCurrent(tester, correct: false);
-      for (var i = 1; i < 10; i++) {
-        await answerCurrent(tester, correct: true);
-      }
-
-      // 9 верных × 2 балла = 18 из 20 = 90% → сдан.
-      expect(find.text('Экзамен сдан!'), findsOneWidget);
-      expect(find.text('18 из 20'), findsOneWidget);
-      expect(find.text('90%'), findsOneWidget);
-    });
-
-    testWidgets(
-      'таймаут при наборе ≥85%: сдан (баллы), а не автоматический провал',
-      (tester) async {
-        await pumpExam(
-          tester,
-          rules: pointsRules,
-          questions: buildQuestions(60, points: 2), // макс билета = 10×2 = 20
-        );
-
-        // Отвечаем верно на 9 из 10 (18 баллов), 10-й НЕ трогаем — экзамен сам
-        // не завершится, пока не выйдет время.
-        for (var i = 0; i < 9; i++) {
-          await answerCurrent(tester, correct: true);
-        }
-
-        // Прокручиваем таймер до истечения лимита (45 мин).
-        await tester.pump(const Duration(seconds: 45 * 60 + 2));
-        await tester.pumpAndSettle();
-
-        // 18 из 20 = 90% ≥ 85%: на реальном тесте MUP это сдача, несмотря на
-        // истёкшее время (неотвеченный вопрос просто = 0 баллов).
-        expect(find.text('Экзамен сдан!'), findsOneWidget);
-        expect(find.text('Экзамен не сдан'), findsNothing);
-        expect(find.text('18 из 20'), findsOneWidget);
-      },
-    );
   });
 
   // --- Прерванный экзамен ------------------------------------------------

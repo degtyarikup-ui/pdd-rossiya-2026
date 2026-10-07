@@ -1,49 +1,39 @@
-# ПДД 2026 — мультистрановое приложение (Flutter)
+# ПДД Россия 2026 (Flutter)
 
-Один код — несколько стран. Сейчас: Россия (`ru`), Беларусь (`by`),
-Сербия (`rs`, латиница).
+Приложение одно — российское (`ru`). Версии для Беларуси и Сербии удалены
+из проекта 2026-10-07; их опубликованные приложения и сайты
+(pdd-drive.online, rs.pdd-drive.online) живут отдельно и не обновляются.
 
-## Главное правило
+## Конфигурация
 
-**Любая правка визуала/логики автоматически относится ко всем странам.**
-Страно-зависимое запрещено хардкодить в экранах — только через
-`lib/core/config/country_config.dart` (`CountryConfig.current`):
-правила экзамена (`ExamRules`), названия, пути контента, наличие C/D,
-язык интерфейса (`language`).
+Всё, что зависит от регламента и контента, — в
+`lib/core/config/country_config.dart` (`CountryConfig.current`): правила
+экзамена (`ExamRules`), названия, пути контента, наличие C/D, адреса сайта.
+В экранах это не хардкодить. Аргумент `ru` в скриптах сборки, Android
+flavor `ru` и `--dart-define=COUNTRY=ru` оставлены, чтобы не ломать
+привычные команды и подпись в сторах.
 
-Страна выбирается при сборке: `--dart-define=COUNTRY=ru|by|rs`
-(+ Android flavor с тем же именем). По умолчанию `ru`.
+## Строки интерфейса
 
-## Две независимые оси: страна и язык
+Все строки UI — в `lib/l10n/app_ru.arb` через gen-l10n (`flutter gen-l10n`),
+НЕ хардкодить текст в экранах.
 
-- **Страна** (build-time): контент, правила экзамена, идентичность, `language`.
-- **Язык UI** (`CountryConfig.language`, фиксирован под страну): RU/BY → `ru`,
-  RS → `sr`. Рантайм-переключателя нет — каждое приложение одноязычное.
-
-## Интернационализация (i18n)
-
-Все строки UI — в ARB через gen-l10n (`flutter gen-l10n`), НЕ хардкодить
-кириллицу/латиницу в экранах.
-
-- `lib/l10n/app_ru.arb` — шаблон (русский, RU/BY). `lib/l10n/app_sr.arb` —
-  сербский (латиница). Множественные формы/подстановки — ICU-плюралы
-  (у сербского формы one/few/other отличаются от русского one/few/many).
-- Доступ вне контекста (язык фиксирован сборкой): глобаль `appL10n` из
-  `lib/l10n/l10n.dart` — `appL10n.exam`, `appL10n.questionOfTotal(i, n)`.
-  Настройки gen-l10n — в `lib/l10n.yaml`; сгенерённое в `lib/l10n/gen/`.
+- Множественные формы и подстановки — ICU-плюралы (`one/few/many/other`).
+- Доступ вне контекста: глобаль `appL10n` из `lib/l10n/l10n.dart` —
+  `appL10n.exam`, `appL10n.questionOfTotal(i, n)`. Сгенерённое — в
+  `lib/l10n/gen/`, руками не править.
 - `lib/core/constants/app_strings.dart` — тонкая обёртка над `appL10n`
   (историческая совместимость `AppStrings.*`).
-- Новый язык = один ARB `app_<lang>.arb` + `language` в конфиге страны.
 
-## Контент стран
+## Контент
 
 ```
-assets/countries/{code}/questions/  questions_ab.json, topics_ab.json,
-                                    signs.json, pdd_sections.json
-assets/countries/{code}/images/     questions_ab/, signs/, ...
+assets/countries/ru/questions/  questions_{ab,cd}.json, topics_{ab,cd}.json,
+                                signs.json, pdd_sections.json, markup.json
+assets/countries/ru/images/     questions_ab/, questions_cd/, signs/, markup/
 ```
 
-- RU: 40 билетов × 20 (A/B и C/D). Текст ПДД — **официальный, дословный**
+- 40 билетов × 20 (A/B и C/D). Текст ПДД — **официальный, дословный**
   (пост. Правительства РФ №1090): 26 разделов, 200 пунктов, ~215 КБ,
   собирается `tools/ru_content/parse_pdd.py` из сохранённых страниц в
   `tools/ru_content/raw/`. Парсер падает, если нумерация пунктов разъезжается
@@ -51,63 +41,44 @@ assets/countries/{code}/images/     questions_ab/, signs/, ...
   в 9.1.1 / 13.11.1 — так их цитируют разборы вопросов.
   Народные названия знаков — `tools/ru_content/add_folk_names.py`
   (поле `folkName` в signs.json, перезапускать после пересбора знаков).
-- BY: стартовая база 7 билетов × 10 (77 вопросов), знаки СТБ (195),
-  полный официальный текст ПДД РБ (27 глав, ред. 01.09.2025). Только A/B.
-- RS: латиница, баллы (`points` 1/2/3). Только A/B. Контент из двух источников:
-  - **Официальная база MUP** (публичная, разрешено некоммерч. распространение):
-    вопросы+картинки из PDF `prezentacije.mup.gov.rs/usp/Vozacki ispit/…`
-    (Pravila saobraćaja 778, Saobraćajna signalizacija 524 и т.д.). В PDF нет
-    ключа ответов (кроме 5 спец.), поэтому правильный ответ определяется
-    отдельно (зрение) и проверяется. Картинки вопросов — JPG в `images/questions_ab`.
-  - **Знаки** — реальные SVG Венской конвенции с Wikimedia Commons (свободная
-    лицензия), файлы `Serbia_road_sign_<код>.svg` → `images/signs/<код>.svg`;
-    сербские названия/описания сгенерированы. 101 знак, 3 категории MUP.
-  - **Текст правил** (`pdd_sections.json`, вкладка «Propisi») — ⚠️ ПОКА
-    АВТОРСКИЙ пересказ: 11 коротких секций (~3 КБ), НЕ дословный закон.
-    Нужно заменить на официальный Zakon o bezbednosti saobraćaja na putevima
-    (Sl. glasnik RS 41/2009…19/2025) — по образцу BY, где лежит полный
-    официальный текст (~308 КБ, 27 глав). Пайплайна парсинга закона (аналога
-    `by_content`) для RS ещё нет.
-  - Вопросы — **только официальная база MUP** (1763 из 1764 подтверждены;
-    единственный `posledice_0159` — см. `tools/rs_content/PENDING_REVIEW.md`);
-    авторская база вопросов удалена полностью.
-  - Разметка (`markup.json`) — тоже пока авторское краткое изложение (8 пунктов),
-    не дословный источник (см. `build_reference.py`).
-- Пайплайны: `tools/by_content/`; `tools/rs_content/`:
-  `build_questions.py` (официальные → questions/topics, `TICKET_SIZE`=41),
-  `build_reference.py` (только разметка — авторская),
-  `download_signs.py`+`build_signs_final.py` (знаки Wikimedia → signs.json),
-  `extract_questions.py` (MUP PDF → структурированный JSON + картинки, кириллица→латиница),
-  `build_official_questions.py` (master+подтверждённые ответы → схема приложения),
-  `rs_official_answers_workflow.js` (не в репо — воркфлоу определения+
-  верификации ответов: 2 независимых прохода + судья при расхождении).
-  Данные пайплайна в репо: `master_dataset.json` (все 1764),
-  `confirmed_answers.json` (подтверждённые), `pending_review_questions.json`.
-  Парсера официального закона для RS пока НЕТ (см. «Текст правил» выше).
 
 ## Правила экзамена (зашиты в CountryConfig)
 
-`ExamRules.scoring` выбирает модель подсчёта:
+20 вопросов / 20 мин / ≤2 ошибки, причём только в разных тематических блоках
+(4 блока по 5 вопросов; две ошибки в одном блоке — провал сразу) / +5 вопросов
+и +5 мин за ошибку, ошибка в доп. блоке = провал (регламент ГИБДД). Тесты —
+`test/exam_flow_test.dart`.
 
-- **`mistakes`** (RU/BY) — «≤N ошибок», возможна доп. фаза.
-  - RU: 20 вопросов / 20 мин / ≤2 ошибки / +5 вопросов и +5 мин за ошибку,
-    ошибка в доп. блоке = провал (регламент ГИБДД).
-  - BY: 10 вопросов / 15 мин / ≤1 ошибка / доп. вопросов нет (регламент ГАИ РБ).
-- **`points`** (RS) — весовые баллы: вопрос `points` 1/2/3, сдал при наборе
-  ≥ `passPercent`% от максимума. Доп. фазы и досрочного провала нет.
-  - RS: 41 вопрос / 45 мин / порог 85% (регламент MUP).
-  - Поле `points` у вопроса (`Question.points`, по умолчанию 1); ветвление
-    в `exam_screen.dart` по `rules.scoring`. Тесты обеих моделей —
-    `test/exam_flow_test.dart`.
+## Премиум и оплата
+
+Премиум привязан к **аккаунту** на сервере (воркер), а не к устройству:
+купленное в одном месте работает везде, где человек вошёл тем же способом
+(Google/Яндекс/Apple — это разные аккаунты, `id = <provider>_<sub>`).
+
+- Сроки по источникам — `server/install-notifier/entitlements.js`:
+  `user.entitlements[appstore|googleplay|web|admin_grant]`, итог
+  (`isPremium/premiumExpiresAt/premiumSource`) — самый дальний срок. Писать
+  только через `setEntitlement`/`extendEntitlement`, не полями напрямую.
+- Оплата на сайте (РФ, СБП через Platega) — `payments.js`, тарифы
+  `WEB_TARIFFS` (99 ₽/7 дн., 290 ₽/90 дн., разово, без автопродления) = страница
+  `web_landing/ru/tarify/` = веб-пейвол. Включается секретами воркера
+  `PLATEGA_MERCHANT_ID`/`PLATEGA_SECRET`; без них — заглушка «СБП скоро» (только
+  почта, `pay_intent:<id>`, список — `/api/admin/pay-intents`). Срок начисляется
+  только по статусу, перечитанному у Platega. Запуск и устройство —
+  `docs/web-payments-launch.md`. Флаг — `CountryConfig.tariffsUrl`.
+- Google Play: требование Play Billing не действует для пользователей **в
+  России** (с 02.08.2022) — СБП в Android-сборке только для них. RuStore
+  сторонние платежи разрешает без комиссии. iOS — только IAP, ссылок на
+  оплату на сайте в iOS-приложении быть не должно.
 
 ## Сборка и деплой
 
 ```bash
-./scripts/build.sh ru|by|rs aab|web   # сборка страны
-./scripts/deploy_web.sh ru|by|rs      # веб-деплой приложения страны
-./scripts/deploy_landing.sh ru        # деплой лендинга/блога (только ru)
+./scripts/build.sh ru aab|apk|ipa|web  # сборка
+./scripts/deploy_web.sh ru             # веб-деплой приложения (pdd-drive.ru/app/)
+./scripts/deploy_landing.sh ru         # деплой лендинга/блога
 flutter gen-l10n                       # регенерация локализаций из ARB
-flutter test                           # тесты всех моделей (exam_flow_test)
+flutter test                           # все тесты
 ```
 
 - Тестовая сборка на своё устройство — флаг `-Pdev` (суффикс `.dev`
@@ -117,11 +88,17 @@ flutter test                           # тесты всех моделей (exa
   подпись Google (Play App Signing), локальная сборка подписана upload-ключом,
   и Android считает их разными приложениями (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`).
   На обычные сборки флаг не влияет.
-- Android: flavors `ru` (ru.pdd.pdd_app) / `by` (by.pdd.pdd_app) /
-  `rs` (rs.pdd.pdd_app), подпись одним ключом `android/upload-keystore.jks`
-  (в .gitignore). AAB: `build/app/outputs/bundle/{flavor}Release/...`.
-- Иконки flavor'ов: `flutter_launcher_icons-{ru,by,rs}.yaml`
-  → `dart run flutter_launcher_icons`.
+  Установка на Pixel по Wi‑Fi одной командой: `./scripts/install_dev.sh`
+  (`--build` — пересобрать). Скрипт сам перезапускает adb-сервер (запущенный
+  в песочнице сети не видит), ищет телефон через mDNS → порт 5555 → последний
+  адрес из `.dev-device` → сканирование портов 30000–49999 на последнем IP
+  (~20 с), затем переводит телефон на фиксированный порт 5555. На телефоне
+  нужна только включённая «Отладка по Wi‑Fi» в той же сети; IP:PORT вручную —
+  только если сменился IP.
+- Android: flavor `ru` (ru.pdd.pdd_app), подпись ключом
+  `android/upload-keystore.jks` (в .gitignore).
+  AAB: `build/app/outputs/bundle/ruRelease/app-ru-release.aab`.
+- Иконка: `flutter_launcher_icons-ru.yaml` → `dart run flutter_launcher_icons`.
 - Веб RU — два сайта:
   - **Лендинг + блог** (SEO): исходники `web_landing/ru/` (чистая статика,
     дизайн-токены = AppColors/AppDimensions в `assets/style.css`, общий
@@ -163,14 +140,48 @@ flutter test                           # тесты всех моделей (exa
       папка Google Диска, инструкция по доступам — `SOCIAL_SETUP.md`).
       HTML/JS панели лежат в worker.js экранированными строками — правки
       вносятся не руками, а через отдельные модули/скрипты.
-  - **Приложение**: `deploy_web.sh ru` обновляет только `/app/` в репо
-    `pdd-rossiya-2026` gh-pages → https://pdd-drive.ru/app/.
-    Сборка с `--base-href /app/`; опубликованные лендинг и блог сохраняются.
-    Старый `app.pdd-drive.ru` пока не имеет корректного HTTPS-сертификата.
+      **Статистика пишется в KV пачкой**: события (`/api/track`, клики по
+      ссылкам, установки, ИИ-запросы) идут через `trackStats()` в Durable
+      Object `StatsBuffer` (`stats_buffer.js`) и раз в 10 минут применяются
+      к KV одним `flushBufferedStats()` — бесплатный KV даёт 1000 put/сутки.
+      Ключи KV (`day:*`, `slot:*`, `views:*`, `recent_events`, `ai_stats_*`)
+      не менялись; цифры в админке отстают до 10 минут, перед Telegram-отчётом
+      буфер сбрасывается принудительно. Новые счётчики — только через
+      `trackStats`, никаких `put` на каждый запрос.
+  - **Копия приложения на pdd-drive.ru/app/** (на неё ведут все кнопки сайта,
+    т.к. у app.pdd-drive.ru нет HTTPS-сертификата): `WEB_BASE_HREF=/app/
+    ./scripts/build.sh ru web`, затем `APP_BUILD=build/web ./scripts/deploy_landing.sh ru`.
+    Обычный деплой лендинга `/app/` не трогает (исключён из `--delete`).
+  - **app.pdd-drive.ru** (репо `pdd-rossiya-app`, в архиве с 2026-10-07) —
+    только перенаправление на pdd-drive.ru/app/ (HTTPS там так и не появился).
+    `deploy_web.sh ru` выкладывает приложение в `/app/` репо лендинга.
 
-- Веб BY: репо `pdd-belarus` gh-pages → pdd-drive.online
-  (локальный клон: `/Users/sergei/Documents/pdd-belarus`).
-- Веб RS: репо `pdd-serbia` gh-pages → rs.pdd-drive.online (поддомен).
+## Стенд игры (проверка сцен по билетам)
+
+`./scripts/game_lab.sh` → http://127.0.0.1:8940/ (только localhost). Все сцены
+игры (перекрёстки `ticket_N_M` и дорожные `road_*`) рядом с оригиналом билета из
+`questions_ab.json` (картинка, ответы, комментарий) + автосверка текста/ответов.
+Режимы: осмотр (свободная камера), езда с клавиатуры, редактор знаков и декора.
+Правки → `assets/game/scene-edits.js` (применяет сама игра, `applySceneEdits`),
+отметки проверки → `tools/game_lab/review.json`. Мастерская моделей (цвета,
+скрытие деталей, размеры) → `assets/game/model-edits.js` (`applyModelEdits` в
+vehicles.js + обёртки фабрик в game.js). Кнопка «🚀 В игру» —
+`install_dev.sh --build` на телефон. `lab-hook.js` вставляется в
+game.js только сервером стенда, в приложение не попадает.
+
+## Три формата коротких видео
+
+1. «Успей узнать знак» — `tools/signs_reel/README.md` (подробнее ниже).
+2. «Вопрос из билета» — `tools/signs_reel/QUESTION_REELS.md`.
+3. **«3D дорожная ситуация»** — `tools/game_reels/README.md` (обязательные
+   согласованные правила оформления, камеры, озвучки, движения и промежуточной QA).
+   Сценарии: `tools/game_reels/episodes/*.json`, выпуски отдельно в
+   `output/game-reels/<id>/`. Использовать реальные проверенные игровые сцены;
+   вопрос/варианты/верный ответ из базы. Близкая камера → плавный вид сверху,
+   траектория с первого кадра исчезает позади машины, поворотник заранее,
+   тихий звук проезда. Финальная ссылка только голосом. Каждую новую ситуацию
+   сверять с оригиналом и проверять на превью до полного рендера; не копировать
+   правильный индекс и порядок проезда из предыдущего ролика.
 
 ## Ролики «Успей узнать знак» (Shorts/Reels/TikTok)
 
@@ -199,32 +210,6 @@ flutter test                           # тесты всех моделей (exa
   длины видео и звука сверяются с точностью до кадра.
 - Проект Google Cloud — из ADC (`quota_project_id`), не из константы.
 
-## Три формата коротких видео
-
-1. «Успей узнать знак» — `tools/signs_reel/README.md`.
-2. «Вопрос из билета» — `tools/signs_reel/QUESTION_REELS.md`.
-3. **«3D дорожная ситуация»** — `tools/game_reels/README.md` (обязательные
-   согласованные правила оформления, камеры, озвучки, движения и промежуточной QA).
-   Сценарии: `tools/game_reels/episodes/*.json`, выпуски отдельно в
-   `output/game-reels/<id>/`. Использовать реальные проверенные игровые сцены;
-   вопрос/варианты/верный ответ из базы. Близкая камера → плавный вид сверху,
-   траектория с первого кадра исчезает позади машины, поворотник заранее,
-   тихий звук проезда. Финальная ссылка только голосом. Каждую новую ситуацию
-   сверять с оригиналом и проверять на превью до полного рендера; не копировать
-   правильный индекс и порядок проезда из предыдущего ролика.
-
-## Добавление новой страны NN
-
-1. `CountryConfig.nn` (`language`, `scoring`, правила экзамена, названия) +
-   ветка в `current`.
-2. Язык: если новый — `lib/l10n/app_<lang>.arb` + `flutter gen-l10n`.
-3. Контент в `assets/countries/nn/` (+ пайплайн `tools/nn_content/`) +
-   регистрация в pubspec assets.
-4. Flavor в `android/app/build.gradle.kts` + `flutter_launcher_icons-nn.yaml`.
-5. Кейс в `scripts/build.sh` и `scripts/deploy_web.sh` (репо/домен/титулы).
-6. Тесты правил экзамена в `test/exam_flow_test.dart` (BY — образец для
-   `mistakes`, RS — для `points`).
-
 ## Секреты
 
 Репозиторий **публичный** — паролей и ключей в коде быть не должно, значений
@@ -234,7 +219,8 @@ flutter test                           # тесты всех моделей (exa
   `BOT_TOKEN`, `CHAT_ID`, `GEMINI_API_KEY`, `SHARED_SECRET` (ключ приложения).
 - `secrets/install_notify_secret.txt` (в .gitignore) — тот же ключ приложения
   для сборок; `scripts/build.sh` подставляет его автоматически.
-- Разбор от ИИ и пинги установок принимаются только с этим ключом; временный
+- Разбор от ИИ, пинги установок и очки игры (`/api/game/score`) принимаются
+  только с этим ключом; временный
   проход для старых сборок выключается галочкой в админке (раздел «ИИ»).
 
 Защита от случайной утечки — хук `tools/git-hooks/pre-commit`: не даёт
@@ -250,4 +236,4 @@ git config core.hooksPath tools/git-hooks   # уже включено на эт�
 ## Окружение сборки
 
 - `flutter` в `$HOME/flutter/bin`; Java: `/opt/homebrew/opt/openjdk@17`.
-- Прод-версии в `pubspec.yaml` (`version:`); versionCode общий для стран.
+- Прод-версия в `pubspec.yaml` (`version:`).

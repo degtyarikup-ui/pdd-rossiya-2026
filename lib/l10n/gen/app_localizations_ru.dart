@@ -363,12 +363,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get privacyPolicy => 'Политика конфиденциальности';
 
   @override
-  String get aboutSection => 'О приложении';
-
-  @override
-  String get dataSourceTitle => 'Источники данных';
-
-  @override
   String get preparation => 'Подготовка';
 
   @override
@@ -602,17 +596,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get backToTraining => 'Вернуться к обучению';
 
   @override
-  String get examPointsLabel => 'Набрано баллов';
-
-  @override
-  String get examScoreLabel => 'Ваш результат';
-
-  @override
-  String examScorePercent(int percent) {
-    return '$percent%';
-  }
-
-  @override
   String get share => 'Поделиться';
 
   @override
@@ -735,14 +718,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameExit => 'В гараж';
-
-  @override
-  String get gameUnavailable =>
-      'Сценарии тренажёра пока проверены только для ПДД России. Для этой страны игра станет доступна после проверки местных правил.';
-
-  @override
-  String get gameMobileOnly =>
-      '3D-тренажёр доступен в мобильном приложении на iOS и Android.';
 
   @override
   String get gameLeft => 'Левее';

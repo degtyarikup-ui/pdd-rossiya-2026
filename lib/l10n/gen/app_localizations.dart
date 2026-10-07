@@ -6,7 +6,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_ru.dart';
-import 'app_localizations_sr.dart';
 
 // ignore_for_file: type=lint
 
@@ -93,10 +92,7 @@ abstract class AppLocalizations {
       ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[
-    Locale('ru'),
-    Locale('sr'),
-  ];
+  static const List<Locale> supportedLocales = <Locale>[Locale('ru')];
 
   /// No description provided for @exam.
   ///
@@ -668,18 +664,6 @@ abstract class AppLocalizations {
   /// **'Политика конфиденциальности'**
   String get privacyPolicy;
 
-  /// No description provided for @aboutSection.
-  ///
-  /// In ru, this message translates to:
-  /// **'О приложении'**
-  String get aboutSection;
-
-  /// No description provided for @dataSourceTitle.
-  ///
-  /// In ru, this message translates to:
-  /// **'Источники данных'**
-  String get dataSourceTitle;
-
   /// No description provided for @preparation.
   ///
   /// In ru, this message translates to:
@@ -1082,24 +1066,6 @@ abstract class AppLocalizations {
   /// **'Вернуться к обучению'**
   String get backToTraining;
 
-  /// No description provided for @examPointsLabel.
-  ///
-  /// In ru, this message translates to:
-  /// **'Набрано баллов'**
-  String get examPointsLabel;
-
-  /// No description provided for @examScoreLabel.
-  ///
-  /// In ru, this message translates to:
-  /// **'Ваш результат'**
-  String get examScoreLabel;
-
-  /// No description provided for @examScorePercent.
-  ///
-  /// In ru, this message translates to:
-  /// **'{percent}%'**
-  String examScorePercent(int percent);
-
   /// No description provided for @share.
   ///
   /// In ru, this message translates to:
@@ -1333,18 +1299,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'В гараж'**
   String get gameExit;
-
-  /// No description provided for @gameUnavailable.
-  ///
-  /// In ru, this message translates to:
-  /// **'Сценарии тренажёра пока проверены только для ПДД России. Для этой страны игра станет доступна после проверки местных правил.'**
-  String get gameUnavailable;
-
-  /// No description provided for @gameMobileOnly.
-  ///
-  /// In ru, this message translates to:
-  /// **'3D-тренажёр доступен в мобильном приложении на iOS и Android.'**
-  String get gameMobileOnly;
 
   /// No description provided for @gameLeft.
   ///
@@ -2582,7 +2536,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['ru', 'sr'].contains(locale.languageCode);
+      <String>['ru'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -2593,8 +2547,6 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   switch (locale.languageCode) {
     case 'ru':
       return AppLocalizationsRu();
-    case 'sr':
-      return AppLocalizationsSr();
   }
 
   throw FlutterError(

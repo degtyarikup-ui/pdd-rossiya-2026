@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
-# Сборка приложения для страны: ./scripts/build.sh {ru|by|rs} {aab|web}
+# Сборка приложения: ./scripts/build.sh ru {aab|apk|ipa|web}
 #
-# Единый код — разные страны. Страна задаётся одновременно:
-#  - Android flavor (applicationId, имя приложения, иконка),
-#  - --dart-define=COUNTRY (правила экзамена, контент, тексты, язык UI).
+# Страна одна — Россия. Аргумент `ru` оставлен, чтобы не ломать привычные
+# команды: он задаёт Android flavor и --dart-define=COUNTRY.
 set -euo pipefail
 
-COUNTRY="${1:?usage: build.sh ru|by|rs aab|apk|web}"
-TARGET="${2:?usage: build.sh ru|by|rs aab|apk|web}"
+COUNTRY="${1:?usage: build.sh ru aab|apk|ipa|web}"
+TARGET="${2:?usage: build.sh ru aab|apk|ipa|web}"
 
 case "$COUNTRY" in
-  ru|by|rs) ;;
-  *) echo "unknown country: $COUNTRY (expected ru|by|rs)"; exit 1 ;;
+  ru) ;;
+  *) echo "unknown country: $COUNTRY (only ru)"; exit 1 ;;
 esac
 
 export PATH="/opt/homebrew/bin:$HOME/flutter/bin:$PATH"
@@ -19,49 +18,6 @@ export JAVA_HOME="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/
 export PATH="$JAVA_HOME/bin:$PATH"
 
 cd "$(dirname "$0")/.."
-
-# --- Ассеты только своей страны ------------------------------------------
-# В pubspec.yaml перечислены страны все сразу (иначе flutter run/тесты не
-# найдут контент), а Android-flavor ассеты не фильтрует — без этого шага в
-# сборку любой страны попадал бы контент всех: сербский AAB весил 142 МБ, из
-# них 80 МБ российских картинок, которые пользователь никогда не увидит.
-# Поэтому на время сборки вычищаем из pubspec.yaml чужие страны, а по выходу
-# (в т.ч. при ошибке/Ctrl-C) возвращаем файл байт-в-байт.
-PUBSPEC_BACKUP="$(mktemp -t pubspec.XXXXXX)"
-cp pubspec.yaml "$PUBSPEC_BACKUP"
-restore_pubspec() {
-  cp "$PUBSPEC_BACKUP" pubspec.yaml
-  rm -f "$PUBSPEC_BACKUP"
-}
-trap restore_pubspec EXIT INT TERM
-
-python3 - "$COUNTRY" <<'PYEOF'
-import re, sys
-
-country = sys.argv[1]
-lines = open('pubspec.yaml').read().split('\n')
-asset_re = re.compile(r'^\s*-\s*assets/countries/(\w+)/')
-
-kept, dropped, mine = [], [], []
-for line in lines:
-    m = asset_re.match(line)
-    if m and m.group(1) != country:
-        dropped.append(line.strip())
-        continue
-    if m:
-        mine.append(line.strip())
-    kept.append(line)
-
-# Раз уже был случай, когда прерванная сборка оставила pubspec без своих
-# стран, и в стор уехал AAB вообще без контента: без ассетов страны собирать
-# нечего, падаем сразу.
-if not mine:
-    sys.exit(f'pubspec.yaml: нет ни одной строки assets/countries/{country}/ '
-             '— контент страны не попадёт в сборку. Почини pubspec.yaml.')
-
-open('pubspec.yaml', 'w').write('\n'.join(kept))
-print(f'pubspec: assets -> only "{country}" ({len(mine)} entries, dropped {len(dropped)} other-country)')
-PYEOF
 
 # Опциональное уведомление о новой установке (Telegram). Параметры берутся из
 # переменных окружения и в git не попадают. Если не заданы — фича «спит» (no-op):
@@ -132,8 +88,7 @@ case "$TARGET" in
     ;;
   apk)
     # Универсальный APK (все ABI одним файлом) — для ручной установки на
-    # устройство/тестирование. Ассеты уже вычищены под страну выше, так что
-    # APK не раздувается контентом чужих стран.
+    # устройство/тестирование.
     flutter build apk --release \
       --flavor "$COUNTRY" \
       --dart-define=COUNTRY="$COUNTRY" \
@@ -143,7 +98,7 @@ case "$TARGET" in
     echo "APK: build/app/outputs/flutter-apk/app-${COUNTRY}-release.apk"
     ;;
   ipa)
-    # iOS (только RU-приложение ru.pdd.pddApp): архив + экспорт с
+    # iOS (ru.pdd.pddApp): архив + экспорт с
     # destination=upload из ios/ExportOptions.plist — сборка сразу уходит в
     # App Store Connect через аккаунт, в который вошёл Xcode.
     flutter build ipa --release \

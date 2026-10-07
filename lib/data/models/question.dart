@@ -8,10 +8,6 @@ class Question {
   final List<String> topic;
   final int ticketNumber;
 
-  /// Вес вопроса в балльной модели экзамена (Сербия: 1/2/3).
-  /// В моделях «по ошибкам» (РФ/РБ) не используется, по умолчанию 1.
-  final int points;
-
   Question({
     required this.id,
     required this.question,
@@ -21,7 +17,6 @@ class Question {
     this.image,
     this.topic = const [],
     this.ticketNumber = 0,
-    this.points = 1,
   });
 
   factory Question.fromJson(Map<String, dynamic> json) {
@@ -50,7 +45,6 @@ class Question {
               .toList() ??
           [],
       ticketNumber: (json['ticketNumber'] as num?)?.toInt() ?? 0,
-      points: (json['points'] as num?)?.toInt() ?? 1,
     );
   }
 
@@ -71,7 +65,6 @@ class Question {
       'image': image,
       'topic': topic,
       'ticketNumber': ticketNumber,
-      'points': points,
     };
   }
 

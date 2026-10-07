@@ -171,8 +171,6 @@
   "techSupport": "Тех. поддержка",
   "termsOfUse": "Условия использования",
   "privacyPolicy": "Политика конфиденциальности",
-  "aboutSection": "О приложении",
-  "dataSourceTitle": "Источники данных",
   "preparation": "Подготовка",
   "feedbackSection": "Отклики и звуки",
   "confirmAnswerSetting": "Подтверждать ответ",
@@ -301,16 +299,6 @@
   "examTimeSpent": "Затраченное время",
   "examMainBlockErrors": "Ошибок в основном блоке",
   "backToTraining": "Вернуться к обучению",
-  "examPointsLabel": "Набрано баллов",
-  "examScoreLabel": "Ваш результат",
-  "examScorePercent": "{percent}%",
-  "@examScorePercent": {
-    "placeholders": {
-      "percent": {
-        "type": "int"
-      }
-    }
-  },
   "share": "Поделиться",
   "copiedToClipboard": "Скопировано в буфер обмена",
   "examShareText": "{result}\nВерных ответов: {correct} из {total}\n\n{title}\n{url}",
@@ -368,8 +356,6 @@
   "gameOver": "Заезд завершён",
   "gameRestart": "Попробовать снова",
   "gameExit": "В гараж",
-  "gameUnavailable": "Сценарии тренажёра пока проверены только для ПДД России. Для этой страны игра станет доступна после проверки местных правил.",
-  "gameMobileOnly": "3D-тренажёр доступен в мобильном приложении на iOS и Android.",
   "gameLeft": "Левее",
   "gameRight": "Правее",
   "gameGas": "ГАЗ",

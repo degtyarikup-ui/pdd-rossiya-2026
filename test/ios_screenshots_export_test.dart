@@ -50,7 +50,6 @@ List<Map<String, dynamic>> buildSampleQuestions(int n) {
       'image': null,
       'topic': <String>['Маневрирование'],
       'ticketNumber': 1,
-      'points': 1,
     };
   });
 }

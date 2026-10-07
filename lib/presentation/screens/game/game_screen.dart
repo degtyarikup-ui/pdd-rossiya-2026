@@ -412,7 +412,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   Future<void> _initWebView() async {
-    if (!CountryConfig.current.hasVerifiedGame) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       await GameGarageService.instance.load();
@@ -1214,11 +1213,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
         unawaited(_countCorrect());
         if (previous?.currentSituation case final situation?) {
           unawaited(
-            _recordAnswer(
-              situation,
-              next.selectedAnswerIndex,
-              isCorrect: true,
-            ),
+            _recordAnswer(situation, next.selectedAnswerIndex, isCorrect: true),
           );
         }
         _burstTimer?.cancel();
@@ -1257,55 +1252,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
         _send('setViewportInsets', [insets]);
       }
     });
-
-    if (!CountryConfig.current.hasVerifiedGame) {
-      return Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            onPressed: _handleExit,
-            icon: const Icon(Icons.arrow_back),
-          ),
-        ),
-        backgroundColor: colors.homeScreenBackground,
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.sports_esports_rounded,
-                  size: 64,
-                  color: colors.accent,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  appL10n.gameSimulator,
-                  style: TextStyle(
-                    fontFamily: 'Onest',
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: colors.primaryText,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  CountryConfig.current.hasVerifiedGame
-                      ? appL10n.gameMobileOnly
-                      : appL10n.gameUnavailable,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Onest',
-                    fontSize: 14,
-                    color: colors.secondaryText,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // Not signed in: the scene is visible (paused) but the car cannot be

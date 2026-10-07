@@ -1,57 +1,39 @@
-# ПДД 2026 — мультистрановое приложение (Flutter)
+# ПДД Россия 2026 (Flutter)
 
-Один код — несколько стран. Сейчас: Россия (`ru`), Беларусь (`by`),
-Сербия (`rs`, латиница).
+Приложение одно — российское (`ru`). Версии для Беларуси и Сербии удалены
+из проекта 2026-10-07; их опубликованные приложения и сайты
+(pdd-drive.online, rs.pdd-drive.online) живут отдельно и не обновляются.
 
-## Текущий фокус — только Россия
+## Конфигурация
 
-**Развиваем только российскую версию (`COUNTRY=ru`).** Беларусь и Сербию
-сейчас не развиваем: новые строки пишем только в `app_ru.arb` (в `app_sr.arb`
-непереведённое подставится из русского шаблона), под BY/RS ничего не
-адаптируем и их сборки не проверяем. Существующий код и контент BY/RS не
-удаляем и не переделываем — общий код по-прежнему один на все страны.
+Всё, что зависит от регламента и контента, — в
+`lib/core/config/country_config.dart` (`CountryConfig.current`): правила
+экзамена (`ExamRules`), названия, пути контента, наличие C/D, адреса сайта.
+В экранах это не хардкодить. Аргумент `ru` в скриптах сборки, Android
+flavor `ru` и `--dart-define=COUNTRY=ru` оставлены, чтобы не ломать
+привычные команды и подпись в сторах.
 
-## Главное правило
+## Строки интерфейса
 
-**Любая правка визуала/логики автоматически относится ко всем странам.**
-Страно-зависимое запрещено хардкодить в экранах — только через
-`lib/core/config/country_config.dart` (`CountryConfig.current`):
-правила экзамена (`ExamRules`), названия, пути контента, наличие C/D,
-язык интерфейса (`language`).
+Все строки UI — в `lib/l10n/app_ru.arb` через gen-l10n (`flutter gen-l10n`),
+НЕ хардкодить текст в экранах.
 
-Страна выбирается при сборке: `--dart-define=COUNTRY=ru|by|rs`
-(+ Android flavor с тем же именем). По умолчанию `ru`.
-
-## Две независимые оси: страна и язык
-
-- **Страна** (build-time): контент, правила экзамена, идентичность, `language`.
-- **Язык UI** (`CountryConfig.language`, фиксирован под страну): RU/BY → `ru`,
-  RS → `sr`. Рантайм-переключателя нет — каждое приложение одноязычное.
-
-## Интернационализация (i18n)
-
-Все строки UI — в ARB через gen-l10n (`flutter gen-l10n`), НЕ хардкодить
-кириллицу/латиницу в экранах.
-
-- `lib/l10n/app_ru.arb` — шаблон (русский, RU/BY). `lib/l10n/app_sr.arb` —
-  сербский (латиница). Множественные формы/подстановки — ICU-плюралы
-  (у сербского формы one/few/other отличаются от русского one/few/many).
-- Доступ вне контекста (язык фиксирован сборкой): глобаль `appL10n` из
-  `lib/l10n/l10n.dart` — `appL10n.exam`, `appL10n.questionOfTotal(i, n)`.
-  Настройки gen-l10n — в `lib/l10n.yaml`; сгенерённое в `lib/l10n/gen/`.
+- Множественные формы и подстановки — ICU-плюралы (`one/few/many/other`).
+- Доступ вне контекста: глобаль `appL10n` из `lib/l10n/l10n.dart` —
+  `appL10n.exam`, `appL10n.questionOfTotal(i, n)`. Сгенерённое — в
+  `lib/l10n/gen/`, руками не править.
 - `lib/core/constants/app_strings.dart` — тонкая обёртка над `appL10n`
   (историческая совместимость `AppStrings.*`).
-- Новый язык = один ARB `app_<lang>.arb` + `language` в конфиге страны.
 
-## Контент стран
+## Контент
 
 ```
-assets/countries/{code}/questions/  questions_ab.json, topics_ab.json,
-                                    signs.json, pdd_sections.json
-assets/countries/{code}/images/     questions_ab/, signs/, ...
+assets/countries/ru/questions/  questions_{ab,cd}.json, topics_{ab,cd}.json,
+                                signs.json, pdd_sections.json, markup.json
+assets/countries/ru/images/     questions_ab/, questions_cd/, signs/, markup/
 ```
 
-- RU: 40 билетов × 20 (A/B и C/D). Текст ПДД — **официальный, дословный**
+- 40 билетов × 20 (A/B и C/D). Текст ПДД — **официальный, дословный**
   (пост. Правительства РФ №1090): 26 разделов, 200 пунктов, ~215 КБ,
   собирается `tools/ru_content/parse_pdd.py` из сохранённых страниц в
   `tools/ru_content/raw/`. Парсер падает, если нумерация пунктов разъезжается
@@ -59,54 +41,13 @@ assets/countries/{code}/images/     questions_ab/, signs/, ...
   в 9.1.1 / 13.11.1 — так их цитируют разборы вопросов.
   Народные названия знаков — `tools/ru_content/add_folk_names.py`
   (поле `folkName` в signs.json, перезапускать после пересбора знаков).
-- BY: стартовая база 7 билетов × 10 (77 вопросов), знаки СТБ (195),
-  полный официальный текст ПДД РБ (27 глав, ред. 01.09.2025). Только A/B.
-- RS: латиница, баллы (`points` 1/2/3). Только A/B. Контент из двух источников:
-  - **Официальная база MUP** (публичная, разрешено некоммерч. распространение):
-    вопросы+картинки из PDF `prezentacije.mup.gov.rs/usp/Vozacki ispit/…`
-    (Pravila saobraćaja 778, Saobraćajna signalizacija 524 и т.д.). В PDF нет
-    ключа ответов (кроме 5 спец.), поэтому правильный ответ определяется
-    отдельно (зрение) и проверяется. Картинки вопросов — JPG в `images/questions_ab`.
-  - **Знаки** — реальные SVG Венской конвенции с Wikimedia Commons (свободная
-    лицензия), файлы `Serbia_road_sign_<код>.svg` → `images/signs/<код>.svg`;
-    сербские названия/описания сгенерированы. 101 знак, 3 категории MUP.
-  - **Текст правил** (`pdd_sections.json`, вкладка «Propisi») — ⚠️ ПОКА
-    АВТОРСКИЙ пересказ: 11 коротких секций (~3 КБ), НЕ дословный закон.
-    Нужно заменить на официальный Zakon o bezbednosti saobraćaja na putevima
-    (Sl. glasnik RS 41/2009…19/2025) — по образцу BY, где лежит полный
-    официальный текст (~308 КБ, 27 глав). Пайплайна парсинга закона (аналога
-    `by_content`) для RS ещё нет.
-  - Вопросы — **только официальная база MUP** (1763 из 1764 подтверждены;
-    единственный `posledice_0159` — см. `tools/rs_content/PENDING_REVIEW.md`);
-    авторская база вопросов удалена полностью.
-  - Разметка (`markup.json`) — тоже пока авторское краткое изложение (8 пунктов),
-    не дословный источник (см. `build_reference.py`).
-- Пайплайны: `tools/by_content/`; `tools/rs_content/`:
-  `build_questions.py` (официальные → questions/topics, `TICKET_SIZE`=41),
-  `build_reference.py` (только разметка — авторская),
-  `download_signs.py`+`build_signs_final.py` (знаки Wikimedia → signs.json),
-  `extract_questions.py` (MUP PDF → структурированный JSON + картинки, кириллица→латиница),
-  `build_official_questions.py` (master+подтверждённые ответы → схема приложения),
-  `rs_official_answers_workflow.js` (не в репо — воркфлоу определения+
-  верификации ответов: 2 независимых прохода + судья при расхождении).
-  Данные пайплайна в репо: `master_dataset.json` (все 1764),
-  `confirmed_answers.json` (подтверждённые), `pending_review_questions.json`.
-  Парсера официального закона для RS пока НЕТ (см. «Текст правил» выше).
 
 ## Правила экзамена (зашиты в CountryConfig)
 
-`ExamRules.scoring` выбирает модель подсчёта:
-
-- **`mistakes`** (RU/BY) — «≤N ошибок», возможна доп. фаза.
-  - RU: 20 вопросов / 20 мин / ≤2 ошибки / +5 вопросов и +5 мин за ошибку,
-    ошибка в доп. блоке = провал (регламент ГИБДД).
-  - BY: 10 вопросов / 15 мин / ≤1 ошибка / доп. вопросов нет (регламент ГАИ РБ).
-- **`points`** (RS) — весовые баллы: вопрос `points` 1/2/3, сдал при наборе
-  ≥ `passPercent`% от максимума. Доп. фазы и досрочного провала нет.
-  - RS: 41 вопрос / 45 мин / порог 85% (регламент MUP).
-  - Поле `points` у вопроса (`Question.points`, по умолчанию 1); ветвление
-    в `exam_screen.dart` по `rules.scoring`. Тесты обеих моделей —
-    `test/exam_flow_test.dart`.
+20 вопросов / 20 мин / ≤2 ошибки, причём только в разных тематических блоках
+(4 блока по 5 вопросов; две ошибки в одном блоке — провал сразу) / +5 вопросов
+и +5 мин за ошибку, ошибка в доп. блоке = провал (регламент ГИБДД). Тесты —
+`test/exam_flow_test.dart`.
 
 ## Премиум и оплата
 
@@ -124,7 +65,7 @@ assets/countries/{code}/images/     questions_ab/, signs/, ...
   `PLATEGA_MERCHANT_ID`/`PLATEGA_SECRET`; без них — заглушка «СБП скоро» (только
   почта, `pay_intent:<id>`, список — `/api/admin/pay-intents`). Срок начисляется
   только по статусу, перечитанному у Platega. Запуск и устройство —
-  `docs/web-payments-launch.md`. Флаг страны — `CountryConfig.tariffsUrl`.
+  `docs/web-payments-launch.md`. Флаг — `CountryConfig.tariffsUrl`.
 - Google Play: требование Play Billing не действует для пользователей **в
   России** (с 02.08.2022) — СБП в Android-сборке только для них. RuStore
   сторонние платежи разрешает без комиссии. iOS — только IAP, ссылок на
@@ -133,11 +74,11 @@ assets/countries/{code}/images/     questions_ab/, signs/, ...
 ## Сборка и деплой
 
 ```bash
-./scripts/build.sh ru|by|rs aab|web   # сборка страны
-./scripts/deploy_web.sh ru|by|rs      # веб-деплой приложения страны
-./scripts/deploy_landing.sh ru        # деплой лендинга/блога (только ru)
+./scripts/build.sh ru aab|apk|ipa|web  # сборка
+./scripts/deploy_web.sh ru             # веб-деплой приложения (pdd-drive.ru/app/)
+./scripts/deploy_landing.sh ru         # деплой лендинга/блога
 flutter gen-l10n                       # регенерация локализаций из ARB
-flutter test                           # тесты всех моделей (exam_flow_test)
+flutter test                           # все тесты
 ```
 
 - Тестовая сборка на своё устройство — флаг `-Pdev` (суффикс `.dev`
@@ -154,11 +95,10 @@ flutter test                           # тесты всех моделей (exa
   (~20 с), затем переводит телефон на фиксированный порт 5555. На телефоне
   нужна только включённая «Отладка по Wi‑Fi» в той же сети; IP:PORT вручную —
   только если сменился IP.
-- Android: flavors `ru` (ru.pdd.pdd_app) / `by` (by.pdd.pdd_app) /
-  `rs` (rs.pdd.pdd_app), подпись одним ключом `android/upload-keystore.jks`
-  (в .gitignore). AAB: `build/app/outputs/bundle/{flavor}Release/...`.
-- Иконки flavor'ов: `flutter_launcher_icons-{ru,by,rs}.yaml`
-  → `dart run flutter_launcher_icons`.
+- Android: flavor `ru` (ru.pdd.pdd_app), подпись ключом
+  `android/upload-keystore.jks` (в .gitignore).
+  AAB: `build/app/outputs/bundle/ruRelease/app-ru-release.aab`.
+- Иконка: `flutter_launcher_icons-ru.yaml` → `dart run flutter_launcher_icons`.
 - Веб RU — два сайта:
   - **Лендинг + блог** (SEO): исходники `web_landing/ru/` (чистая статика,
     дизайн-токены = AppColors/AppDimensions в `assets/style.css`, общий
@@ -215,9 +155,6 @@ flutter test                           # тесты всех моделей (exa
   - **app.pdd-drive.ru** (репо `pdd-rossiya-app`, в архиве с 2026-10-07) —
     только перенаправление на pdd-drive.ru/app/ (HTTPS там так и не появился).
     `deploy_web.sh ru` выкладывает приложение в `/app/` репо лендинга.
-- Веб BY: репо `pdd-belarus` gh-pages → pdd-drive.online
-  (локальный клон: `/Users/sergei/Documents/pdd-belarus`).
-- Веб RS: репо `pdd-serbia` gh-pages → rs.pdd-drive.online (поддомен).
 
 ## Стенд игры (проверка сцен по билетам)
 
@@ -231,6 +168,20 @@ flutter test                           # тесты всех моделей (exa
 vehicles.js + обёртки фабрик в game.js). Кнопка «🚀 В игру» —
 `install_dev.sh --build` на телефон. `lab-hook.js` вставляется в
 game.js только сервером стенда, в приложение не попадает.
+
+## Три формата коротких видео
+
+1. «Успей узнать знак» — `tools/signs_reel/README.md` (подробнее ниже).
+2. «Вопрос из билета» — `tools/signs_reel/QUESTION_REELS.md`.
+3. **«3D дорожная ситуация»** — `tools/game_reels/README.md` (обязательные
+   согласованные правила оформления, камеры, озвучки, движения и промежуточной QA).
+   Сценарии: `tools/game_reels/episodes/*.json`, выпуски отдельно в
+   `output/game-reels/<id>/`. Использовать реальные проверенные игровые сцены;
+   вопрос/варианты/верный ответ из базы. Близкая камера → плавный вид сверху,
+   траектория с первого кадра исчезает позади машины, поворотник заранее,
+   тихий звук проезда. Финальная ссылка только голосом. Каждую новую ситуацию
+   сверять с оригиналом и проверять на превью до полного рендера; не копировать
+   правильный индекс и порядок проезда из предыдущего ролика.
 
 ## Ролики «Успей узнать знак» (Shorts/Reels/TikTok)
 
@@ -259,18 +210,6 @@ game.js только сервером стенда, в приложение не
   длины видео и звука сверяются с точностью до кадра.
 - Проект Google Cloud — из ADC (`quota_project_id`), не из константы.
 
-## Добавление новой страны NN
-
-1. `CountryConfig.nn` (`language`, `scoring`, правила экзамена, названия) +
-   ветка в `current`.
-2. Язык: если новый — `lib/l10n/app_<lang>.arb` + `flutter gen-l10n`.
-3. Контент в `assets/countries/nn/` (+ пайплайн `tools/nn_content/`) +
-   регистрация в pubspec assets.
-4. Flavor в `android/app/build.gradle.kts` + `flutter_launcher_icons-nn.yaml`.
-5. Кейс в `scripts/build.sh` и `scripts/deploy_web.sh` (репо/домен/титулы).
-6. Тесты правил экзамена в `test/exam_flow_test.dart` (BY — образец для
-   `mistakes`, RS — для `points`).
-
 ## Секреты
 
 Репозиторий **публичный** — паролей и ключей в коде быть не должно, значений
@@ -297,4 +236,4 @@ git config core.hooksPath tools/git-hooks   # уже включено на эт�
 ## Окружение сборки
 
 - `flutter` в `$HOME/flutter/bin`; Java: `/opt/homebrew/opt/openjdk@17`.
-- Прод-версии в `pubspec.yaml` (`version:`); versionCode общий для стран.
+- Прод-версия в `pubspec.yaml` (`version:`).

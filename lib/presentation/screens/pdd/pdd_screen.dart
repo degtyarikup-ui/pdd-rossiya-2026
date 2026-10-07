@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdd_app/l10n/l10n.dart';
-import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
@@ -199,8 +198,6 @@ class _PddScreenState extends State<PddScreen> {
         return ListView(
           padding: const EdgeInsets.all(AppDimensions.screenPadding),
           children: [
-            if (CountryConfig.current.notAffiliatedNote.isNotEmpty)
-              const _SourceNote(),
             ...filteredSections.map((section) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: AppDimensions.spacingM),
@@ -262,46 +259,6 @@ class _PddScreenState extends State<PddScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Заметка об источнике текста правил (показывается только там, где она
-/// задана в конфиге страны — сейчас это Сербия).
-class _SourceNote extends StatelessWidget {
-  const _SourceNote();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppDimensions.spacingM),
-      padding: const EdgeInsets.all(AppDimensions.spacingL),
-      decoration: BoxDecoration(
-        color: colors.gray,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.info_outline_rounded,
-            size: 18,
-            color: colors.secondaryText,
-          ),
-          const SizedBox(width: AppDimensions.spacingM),
-          Expanded(
-            child: Text(
-              CountryConfig.current.notAffiliatedNote,
-              style: TextStyle(
-                fontSize: 12,
-                height: 1.45,
-                color: colors.secondaryText,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

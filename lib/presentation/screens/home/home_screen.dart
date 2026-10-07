@@ -720,7 +720,6 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
               'image': q.image,
               'topic': q.topic ?? [],
               'ticketNumber': q.ticketNumber,
-              'points': q.points,
             });
           }
         }

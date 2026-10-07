@@ -48,7 +48,7 @@ android {
         applicationIdSuffix = devSuffix
     }
 
-    // Страны: одно приложение на страну, один общий код.
+    // Один flavor `ru`: команды сборки и CI собирают с --flavor ru.
     // Сборка: flutter build appbundle --flavor ru --dart-define=COUNTRY=ru
     flavorDimensions += "country"
     productFlavors {
@@ -56,16 +56,6 @@ android {
             dimension = "country"
             applicationId = "ru.pdd.pdd_app"
             resValue("string", "app_name", "ПДД Россия 2026")
-        }
-        create("by") {
-            dimension = "country"
-            applicationId = "by.pdd.pdd_app"
-            resValue("string", "app_name", "ПДД Беларусь 2026")
-        }
-        create("rs") {
-            dimension = "country"
-            applicationId = "rs.pdd.pdd_app"
-            resValue("string", "app_name", "Auto testovi Srbija 2026")
         }
     }
 

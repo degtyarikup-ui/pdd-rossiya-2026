@@ -194,17 +194,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     AppToast.show(context, appL10n.statsReset, type: AppToastType.success);
   }
 
-  Future<void> _openExternalUrl(String url) async {
-    HapticFeedbackHelper.tap();
-    final ok = await launchUrl(
-      Uri.parse(url),
-      mode: LaunchMode.externalApplication,
-    );
-    if (!ok && mounted) {
-      AppToast.show(context, appL10n.linkOpenFailed, type: AppToastType.error);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -381,42 +370,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ],
             ),
-
-            if (CountryConfig.current.dataSources.isNotEmpty ||
-                CountryConfig.current.notAffiliatedNote.isNotEmpty) ...[
-              const SizedBox(height: AppDimensions.spacingXL),
-              _buildSectionTitle(appL10n.aboutSection),
-              _buildSectionCard(
-                children: [
-                  for (final src in CountryConfig.current.dataSources) ...[
-                    _buildSettingItem(
-                      icon: Icons.link_rounded,
-                      title: src.label,
-                      subtitle: appL10n.dataSourceTitle,
-                      trailing: Icon(
-                        Icons.open_in_new_rounded,
-                        size: 18,
-                        color: colors.secondaryText,
-                      ),
-                      onTap: () => _openExternalUrl(src.url),
-                    ),
-                    _buildDivider(),
-                  ],
-                  if (CountryConfig.current.notAffiliatedNote.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-                      child: Text(
-                        CountryConfig.current.notAffiliatedNote,
-                        style: TextStyle(
-                          fontSize: 12,
-                          height: 1.4,
-                          color: colors.secondaryText,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
 
             const SizedBox(height: AppDimensions.spacingXXL),
             // Clean footer links: Tech Support, Terms of Use, and Privacy Policy

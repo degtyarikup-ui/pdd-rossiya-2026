@@ -14,10 +14,8 @@ import 'package:pdd_app/presentation/screens/signs/sign_detail_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_pill_search_field.dart';
 
-/// Иконка для категории знаков по её названию. Названия отличаются по странам
-/// (РФ: «Знаки особых предписаний»/«Информационные знаки»; РБ:
-/// «Информационно-указательные знаки»/«Дополнительные таблички»), поэтому
-/// маппинг покрывает оба набора; для неизвестной категории — запасная иконка.
+/// Иконка для категории знаков по её названию; для неизвестной категории —
+/// запасная иконка.
 const Map<String, String> _kSignCategoryIcons = {
   'Предупреждающие знаки': 'warning.svg',
   'Знаки приоритета': 'priority.svg',
@@ -25,15 +23,8 @@ const Map<String, String> _kSignCategoryIcons = {
   'Предписывающие знаки': 'mandatory.svg',
   'Знаки особых предписаний': 'special_prescriptions.svg',
   'Информационные знаки': 'information.svg',
-  'Информационно-указательные знаки': 'information.svg',
   'Знаки сервиса': 'service.svg',
   'Знаки дополнительной информации (таблички)': 'additional_info.svg',
-  'Дополнительные таблички': 'additional_info.svg',
-  // Сербия (латиница): категории MUP.
-  'Znakovi opasnosti': 'warning.svg',
-  'Znakovi izričitih naredbi': 'prohibitory.svg',
-  'Znakovi obaveštenja': 'information.svg',
-  'Dopunske table': 'additional_info.svg',
 };
 
 const String _kSignCategoryFallbackIcon = 'information.svg';
@@ -59,9 +50,6 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
   static const Map<String, String> _markupIcons = {
     'Горизонтальная разметка': 'markup_horizontal.svg',
     'Вертикальная разметка': 'markup_vertical.svg',
-    // Сербия (латиница).
-    'Horizontalna signalizacija': 'markup_horizontal.svg',
-    'Vertikalna signalizacija': 'markup_vertical.svg',
   };
 
   @override

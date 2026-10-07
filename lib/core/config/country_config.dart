@@ -1,18 +1,9 @@
-/// Конфигурация страны. Страна выбирается на этапе сборки:
-/// `--dart-define=COUNTRY=ru` (по умолчанию) или `--dart-define=COUNTRY=by`.
-///
-/// Правило проекта: код один для всех стран. Всё страно-зависимое —
-/// правила экзамена, названия, пути контента, наличие категорий C/D —
-/// живёт здесь, а не в экранах.
+/// Конфигурация приложения: правила экзамена, названия, пути контента,
+/// адреса сайта. Приложение одно — российское; всё, что зависит от
+/// регламента и контента, живёт здесь, а не в экранах.
 library;
 
-/// Модель подсчёта результата экзамена.
-/// - [mistakes] — «не больше N ошибок» (РФ/РБ; возможна доп. фаза).
-/// - [points] — весовые баллы: вопрос стоит 1/2/3, сдал при наборе
-///   ≥ [ExamRules.passPercent]% от максимума (Сербия). Доп. фазы нет.
-enum ExamScoring { mistakes, points }
-
-/// Правила теоретического экзамена конкретной страны.
+/// Правила теоретического экзамена.
 class ExamRules {
   /// Вопросов в основном блоке билета.
   final int mainCount;
@@ -21,21 +12,13 @@ class ExamRules {
   final int totalSeconds;
 
   /// Максимум ошибок, при котором экзамен ещё может быть сдан.
-  /// Актуально только для [ExamScoring.mistakes].
   final int maxMistakes;
 
-  /// Сколько доп. вопросов даётся за каждую ошибку (РФ: 5; РБ: 0 — механики нет).
+  /// Сколько доп. вопросов даётся за каждую ошибку (РФ: 5; 0 — механики нет).
   final int additionalPerMistake;
 
   /// Добавка времени за каждый доп. блок, секунд (РФ: 5 минут за блок из 5).
   final int additionalSecondsPerBlock;
-
-  /// Как считается результат экзамена (по ошибкам или по баллам).
-  final ExamScoring scoring;
-
-  /// Проходной процент баллов для [ExamScoring.points] (Сербия: 85).
-  /// Для [ExamScoring.mistakes] не используется.
-  final int passPercent;
 
   /// Размер тематического блока билета в вопросах (РФ: 5 — билет из 20
   /// вопросов делится на 4 блока по позиции: 1-5, 6-10, 11-15, 16-20).
@@ -44,7 +27,7 @@ class ExamRules {
   /// блоках, а две ошибки внутри одного блока — немедленный провал. Без этого
   /// симулятор мягче реального экзамена и растит ложную уверенность.
   ///
-  /// 0 — блочного правила нет (РБ: 10 вопросов без деления; Сербия: баллы).
+  /// 0 — блочного правила нет.
   final int blockSize;
 
   /// Максимум ошибок внутри ОДНОГО тематического блока, после которого
@@ -57,17 +40,12 @@ class ExamRules {
     required this.maxMistakes,
     required this.additionalPerMistake,
     required this.additionalSecondsPerBlock,
-    this.scoring = ExamScoring.mistakes,
-    this.passPercent = 0,
     this.blockSize = 0,
     this.maxMistakesPerBlock = 0,
   });
 
   /// Действует ли правило «две ошибки в одном блоке — провал».
-  bool get hasBlockRule =>
-      scoring == ExamScoring.mistakes &&
-      blockSize > 0 &&
-      maxMistakesPerBlock > 0;
+  bool get hasBlockRule => blockSize > 0 && maxMistakesPerBlock > 0;
 
   /// Номер тематического блока (0-based) для вопроса основной части.
   /// Без блочного правила все вопросы считаются одним блоком.
@@ -75,9 +53,7 @@ class ExamRules {
       hasBlockRule ? questionIndex ~/ blockSize : 0;
 
   /// Есть ли механика дополнительных вопросов.
-  /// В балльной модели доп. фазы нет никогда.
-  bool get hasAdditionalPhase =>
-      scoring == ExamScoring.mistakes && additionalPerMistake > 0;
+  bool get hasAdditionalPhase => additionalPerMistake > 0;
 
   /// Минут на основной блок — для бейджей на главной.
   int get totalMinutes => totalSeconds ~/ 60;
@@ -87,39 +63,25 @@ class ExamRules {
 }
 
 class CountryConfig {
-  /// Game scenarios are currently verified only against Russian rules.
-  bool get hasVerifiedGame => code == 'ru';
-
-  /// Код страны ('ru' | 'by').
+  /// Код страны ('ru'). Сверяется с полем `country` сцен игры.
   final String code;
 
   /// Название приложения (заголовок, About).
   final String appTitle;
 
-  /// Название экзаменующего органа («ГИБДД» / «ГАИ» / «MUP»).
+  /// Название экзаменующего органа («ГИБДД»).
   final String examOfficeName;
 
-  /// Язык интерфейса (локаль). Фиксирован под страну, рантайм-переключателя нет.
-  /// 'ru' — Россия/Беларусь, 'sr' — Сербия (латиница).
+  /// Язык интерфейса (локаль), рантайм-переключателя нет.
   final String language;
 
-  /// BCP-47 локаль для озвучки (TTS). Выводится из [language]: ru → ru-RU,
-  /// sr → sr-RS. Голос должен соответствовать языку контента, иначе, например,
-  /// сербский текст читается русским голосом.
-  String get ttsLocale {
-    switch (language) {
-      case 'sr':
-        return 'sr-RS';
-      case 'ru':
-      default:
-        return 'ru-RU';
-    }
-  }
+  /// BCP-47 локаль для озвучки (TTS).
+  String get ttsLocale => 'ru-RU';
 
   /// Корень контента страны в ассетах.
   final String assetsRoot;
 
-  /// Есть ли раздельные наборы билетов A/B и C/D (РФ — да, РБ на старте — нет).
+  /// Есть ли раздельные наборы билетов A/B и C/D.
   final bool hasCdCategory;
 
   final ExamRules examRules;
@@ -129,7 +91,7 @@ class CountryConfig {
 
   /// Страница политики конфиденциальности. App Store (Guideline 5.1.1(i))
   /// требует ссылку И в метаданных, И внутри приложения; Google Play — тоже.
-  /// Пусто → пункт в настройках скрыт (BY: страницы ещё нет, страна на паузе).
+  /// Пусто → пункт в настройках скрыт.
   final String privacyUrl;
 
   /// Страница пользовательского соглашения (Terms of Use / EULA).
@@ -137,7 +99,7 @@ class CountryConfig {
   final String termsUrl;
 
   /// Страница тарифов оплаты на сайте (что и за сколько покупает клиент —
-  /// требование банка). Пусто → оплаты на сайте у страны нет, веб-пейвол
+  /// требование банка). Пусто → оплаты на сайте нет, веб-пейвол
   /// показывает только «оплата скоро». РФ: СБП через агрегатора.
   final String tariffsUrl;
 
@@ -145,21 +107,11 @@ class CountryConfig {
   /// App Store / Google Play — покупки стора.
   bool get hasWebPayments => tariffsUrl.isNotEmpty;
 
-  /// Ссылки на официальные источники гос-данных (вопросы, закон) для секции
-  /// «О приложении». Google Play/App Store требуют указывать источник для
-  /// приложений с государственной информацией. Пусто → секция скрыта.
-  final List<({String label, String url})> dataSources;
-
-  /// Абзац-дисклеймер: приложение неофициальное и не связано с госорганом
-  /// (на языке страны). Пусто → не показывается.
-  final String notAffiliatedNote;
-
   /// Как в разборе вопроса выглядит ссылка на пункт правил: регулярное
   /// выражение, где группа 1 — перечисление номеров («Пункт 13.11 ПДД»,
   /// «пункты 8.1, 8.2»). По ним номера становятся кликабельными.
   ///
-  /// null — ссылки не подсвечиваются. Так у Сербии: текст правил там пока
-  /// авторский пересказ, а не закон, и вести человека по номеру некуда.
+  /// null — ссылки не подсвечиваются.
   final String? pddPointMarker;
 
   const CountryConfig({
@@ -174,13 +126,11 @@ class CountryConfig {
     this.privacyUrl = '',
     this.termsUrl = '',
     this.tariffsUrl = '',
-    this.dataSources = const [],
-    this.notAffiliatedNote = '',
     this.pddPointMarker,
   });
 
   /// Русскоязычный маркер ссылки на пункт: «Пункт 13.11 ПДД», «пункты 8.1, 8.2»,
-  /// «п. 6.2». Общий для РФ и РБ — язык интерфейса и разборов там один.
+  /// «п. 6.2».
   static const String _pddPointMarkerRu =
       r'(?:[Пп]ункт(?:ы|ов|а|е|ам|ами)?|[Пп]\.)\s*((?:\d{1,2}(?:\.\d{1,2}){1,3}(?:\s*(?:,|и)\s*)?)+)';
 
@@ -197,7 +147,7 @@ class CountryConfig {
   /// Путь к JSON текста ПДД (разделы для вкладки «ПДД»).
   String get pddSectionsJson => '$assetsRoot/questions/pdd_sections.json';
 
-  /// Путь к JSON дорожной разметки (страно-зависимая).
+  /// Путь к JSON дорожной разметки.
   String get markupJson => '$assetsRoot/questions/markup.json';
 
   /// Каталог картинок вопросов категории.
@@ -234,79 +184,7 @@ class CountryConfig {
     ),
   );
 
-  static const CountryConfig belarus = CountryConfig(
-    code: 'by',
-    appTitle: 'ПДД Беларусь 2026',
-    examOfficeName: 'ГАИ',
-    language: 'ru',
-    assetsRoot: 'assets/countries/by',
-    hasCdCategory: false,
-    webUrl: 'https://pdd-drive.online',
-    privacyUrl: 'https://pdd-drive.online/privacy.html',
-    termsUrl: 'https://pdd-drive.online/terms.html',
-    pddPointMarker: _pddPointMarkerRu,
-    // ГАИ РБ: 10 вопросов, 15 минут, максимум 1 ошибка, доп. вопросов нет.
-    examRules: ExamRules(
-      mainCount: 10,
-      totalSeconds: 15 * 60,
-      maxMistakes: 1,
-      additionalPerMistake: 0,
-      additionalSecondsPerBlock: 0,
-    ),
-  );
-
-  static const CountryConfig serbia = CountryConfig(
-    code: 'rs',
-    appTitle: 'Auto testovi Srbija 2026',
-    examOfficeName: 'MUP',
-    // Сербский, латиница. Первая страна на не-русском языке.
-    language: 'sr',
-    assetsRoot: 'assets/countries/rs',
-    // Старт — только A/B (41 вопрос на экзамене).
-    hasCdCategory: false,
-    webUrl: 'https://rs.pdd-drive.online',
-    privacyUrl: 'https://rs.pdd-drive.online/privacy.html',
-    termsUrl: 'https://rs.pdd-drive.online/terms.html',
-    dataSources: [
-      (
-        label: 'Ispitna pitanja — MUP Republike Srbije',
-        url:
-            'https://www.mup.gov.rs/wps/portal/sr/gradjani/dokumenta/vozacka+dozvola/ispitna+pitanja+i+ostala+dokumenta+za+osposobljavanje+kandidata',
-      ),
-      (
-        label: 'Zakon o bezbednosti saobraćaja — MGSI Republike Srbije',
-        url:
-            'https://www.mgsi.gov.rs/lat/dokumenti/zakon-o-bezbednosti-saobracaja-na-putevima',
-      ),
-    ],
-    notAffiliatedNote:
-        'Nezvanična aplikacija napravljena u obrazovne svrhe. Nije povezana '
-        'sa Ministarstvom unutrašnjih poslova Republike Srbije niti bilo kojim '
-        'državnim organom, i ne izdaje niti zamenjuje zvanične dokumente. '
-        'Opisi znakova su objašnjenja autora radi lakšeg učenja; merodavni su '
-        'zvanični izvori navedeni iznad.',
-    // MUP: 41 вопрос, 45 минут, балльная модель (вопрос 1/2/3),
-    // сдал при наборе ≥ 85% от максимума. Доп. вопросов нет.
-    examRules: ExamRules(
-      mainCount: 41,
-      totalSeconds: 45 * 60,
-      maxMistakes: 0,
-      additionalPerMistake: 0,
-      additionalSecondsPerBlock: 0,
-      scoring: ExamScoring.points,
-      passPercent: 85,
-    ),
-  );
-
-  static const String _countryCode = String.fromEnvironment(
-    'COUNTRY',
-    defaultValue: 'ru',
-  );
-
-  /// Конфигурация текущей сборки.
-  static const CountryConfig current = _countryCode == 'by'
-      ? belarus
-      : _countryCode == 'rs'
-      ? serbia
-      : russia;
+  /// Конфигурация текущей сборки. Страна одна, `--dart-define=COUNTRY`
+  /// других значений не принимает.
+  static const CountryConfig current = russia;
 }

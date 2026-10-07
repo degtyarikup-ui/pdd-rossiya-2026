@@ -53,41 +53,6 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   /// Размер основного блока экзамена (страно-зависимый).
   int get _mainCount => _rules.mainCount;
 
-  /// Балльная модель подсчёта (Сербия): вопрос весит 1/2/3, доп. фазы нет.
-  bool get _isPointsScoring => _rules.scoring == ExamScoring.points;
-
-  /// Вес вопроса в баллах (по умолчанию 1). Для моделей «по ошибкам» не важен.
-  int _questionPoints(int i) => _examQuestions[i]['points'] as int? ?? 1;
-
-  /// Максимум баллов за весь билет.
-  int _maxPoints() {
-    var sum = 0;
-    for (var i = 0; i < _examQuestions.length; i++) {
-      sum += _questionPoints(i);
-    }
-    return sum;
-  }
-
-  /// Набранные баллы: сумма весов верно отвеченных вопросов.
-  int _earnedPoints() {
-    var sum = 0;
-    for (var i = 0; i < _examQuestions.length; i++) {
-      final s = _savedAnswers[i];
-      if (s == null) continue;
-      if ((_examQuestions[i]['answers'] as List)[s]['correct'] as bool) {
-        sum += _questionPoints(i);
-      }
-    }
-    return sum;
-  }
-
-  /// Процент набранных баллов (0..100), округление вниз.
-  int _scorePercent() {
-    final max = _maxPoints();
-    if (max == 0) return 0;
-    return _earnedPoints() * 100 ~/ max;
-  }
-
   late List<Map<String, dynamic>> _examQuestions;
   late List<int?> _savedAnswers;
   int _currentIndex = 0;
@@ -450,22 +415,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   /// - ошибок больше [ExamRules.maxMistakes] — экзамен прекращается, не сдан;
   /// - РФ: за каждую ошибку +[ExamRules.additionalPerMistake] доп. вопросов
   ///   (и добавка времени); любая ошибка в доп. блоке — не сдан;
-  /// - РБ: механики доп. вопросов нет — при допустимом числе ошибок
-  ///   экзамен просто завершается сдачей.
   void _evaluateExamState({required bool advance}) {
     if (_examFinished || !mounted) return;
-
-    // Балльная модель (Сербия): досрочного провала и доп. фазы нет —
-    // отвечаем на все вопросы, затем подводим итог по сумме баллов.
-    if (_isPointsScoring) {
-      final pending = _firstUnansweredMainIndex(from: _currentIndex);
-      if (pending == null) {
-        _finishExam();
-        return;
-      }
-      if (advance) _goToQuestion(pending, withHaptic: false);
-      return;
-    }
 
     if (!_additionalPhase) {
       // Блочное правило проверяем ПЕРВЫМ: две ошибки в одном тематическом
@@ -564,32 +515,21 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
 
     _recomputeScoreLists();
     // Сдан, если не вышло время И:
-    // - балльная модель (Сербия) — набрано ≥ passPercent% от максимума баллов;
     // - в доп. фазе (РФ) — ни одной ошибки/неотвеченного в доп. блоке;
     // - в основном блоке — не больше допуска. При наличии механики доп.
     //   вопросов чистый финал основного блока возможен только с 0 ошибок
-    //   (1-2 уводят в доп. фазу); без механики (РБ) допуск = maxMistakes.
+    //   (1-2 уводят в доп. фазу); без механики допуск = maxMistakes.
     // Неотвеченные считаются ошибками — досрочный выход не даёт «сдал».
-    final bool passed;
-    if (_isPointsScoring) {
-      // Балльная модель (Сербия): время лишь ограничивает длительность.
-      // При истечении экзамен НЕ проваливается автоматически — оценивается
-      // по набранным баллам (неотвеченные = 0), как на реальном тесте MUP.
-      // Иначе «ответил верно на 40 из 41, но не успел последний» = провал,
-      // хотя баллов уже сильно выше порога.
-      passed = _earnedPoints() * 100 >= _rules.passPercent * _maxPoints();
-    } else {
-      final mainAllowed = _rules.hasAdditionalPhase ? 0 : _rules.maxMistakes;
-      // Блочное правило считаем и здесь: экзамен мог закончиться досрочным
-      // выходом или таймаутом, а не через _evaluateExamState.
-      _failedByBlock = _failedByBlockRule(countUnanswered: true);
-      passed =
-          !_timedOut &&
-          !_failedByBlock &&
-          (_additionalPhase
-              ? _additionalWrongTotal() == 0
-              : _mainWrongTotal() <= mainAllowed);
-    }
+    final mainAllowed = _rules.hasAdditionalPhase ? 0 : _rules.maxMistakes;
+    // Блочное правило считаем и здесь: экзамен мог закончиться досрочным
+    // выходом или таймаутом, а не через _evaluateExamState.
+    _failedByBlock = _failedByBlockRule(countUnanswered: true);
+    final passed =
+        !_timedOut &&
+        !_failedByBlock &&
+        (_additionalPhase
+            ? _additionalWrongTotal() == 0
+            : _mainWrongTotal() <= mainAllowed);
     _examPassed = passed;
 
     final dataSource = ref.read(progressDataSourceProvider);
@@ -1045,25 +985,6 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                     ),
                   ),
                   const SizedBox(height: AppDimensions.spacingXXL),
-                  if (_isPointsScoring) ...[
-                    _buildResultCard(
-                      icon: Icons.stars_outlined,
-                      label: appL10n.examPointsLabel,
-                      value: appL10n.valueOfTotal(
-                        _earnedPoints(),
-                        _maxPoints(),
-                      ),
-                      color: colors.accent,
-                    ),
-                    const SizedBox(height: AppDimensions.spacingM),
-                    _buildResultCard(
-                      icon: Icons.percent_rounded,
-                      label: appL10n.examScoreLabel,
-                      value: appL10n.examScorePercent(_scorePercent()),
-                      color: passed ? colors.green : colors.red,
-                    ),
-                    const SizedBox(height: AppDimensions.spacingM),
-                  ],
                   _buildResultCard(
                     icon: Icons.check_circle_outline,
                     label: appL10n.correctAnswers,
