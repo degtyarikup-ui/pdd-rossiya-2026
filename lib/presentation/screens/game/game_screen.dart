@@ -1496,15 +1496,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
                         timedOut: gameState.selectedAnswerIndex == null,
                         onContinue: gameNotifier.continueAfterExplanation,
                       ),
-                    if (_desktopWeb && gameState.controlsEnabled)
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Text(
-                          appL10n.gameKeyboardHint,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: colors.primaryText),
-                        ),
-                      ),
                     if (!_desktopWeb &&
                         (gameState.phase == GamePhase.driving ||
                             gameState.phase == GamePhase.resolving))
