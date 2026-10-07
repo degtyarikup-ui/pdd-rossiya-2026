@@ -1602,4 +1602,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get paywallRestore => 'Восстановить';
+
+  @override
+  String get gameSourceImage => 'Оригинальная картинка вопроса';
+
+  @override
+  String get gameSourceImageUnavailable => 'В этом вопросе нет картинки';
 }

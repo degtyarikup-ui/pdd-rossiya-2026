@@ -827,5 +827,7 @@
   },
   "paywallTerms": "Условия",
   "paywallPrivacy": "Конфиденциальность",
-  "paywallRestore": "Восстановить"
+  "paywallRestore": "Восстановить",
+  "gameSourceImage": "Оригинальная картинка вопроса",
+  "gameSourceImageUnavailable": "В этом вопросе нет картинки"
 }

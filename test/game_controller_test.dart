@@ -29,6 +29,10 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_lobby.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_explanation_sheet.dart';
 import 'package:pdd_app/data/models/game_situation.dart';
+import 'package:pdd_app/data/models/question.dart';
+import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/sources/questions_data_source.dart';
+import 'package:pdd_app/presentation/widgets/question_image.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
 
@@ -106,6 +110,11 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     SoundEffectsService.instance.setEnabled(false);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('dev.fluttercommunity.plus/device_info'),
+          (_) async => throw PlatformException(code: 'unavailable-in-test'),
+        );
   });
   tearDown(() => SoundEffectsService.instance.setEnabled(true));
 
@@ -157,8 +166,13 @@ void main() {
             currentSituation: situation,
           ),
           onSelectAnswer: (_) {},
+          onShowSourceImage: () {},
         ),
-        GameExplanationSheet(situation: situation, onContinue: () {}),
+        GameExplanationSheet(
+          situation: situation,
+          onContinue: () {},
+          onShowSourceImage: () {},
+        ),
         GameOverDialog(
           state: const GameState(phase: GamePhase.gameOver, score: 1234567),
           onRestart: () {},
@@ -1366,6 +1380,138 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final sourceId in [true, false]) {
+    testWidgets(
+      'Ticket badge opens the source image and pauses time (source id: $sourceId)',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final questions = (await tester.runAsync(
+          () => QuestionsDataSource().loadTickets(TicketCategory.ab),
+        ))!;
+        final question = questions
+            .where((q) => q.ticketNumber == 31)
+            .elementAt(3);
+        final situation = GameSituation(
+          id: 'road_31_4',
+          ticket: 'Билет 31 · Вопрос 4',
+          sourceQuestionId: sourceId ? question.id : null,
+          title: question.question,
+          explanation: question.comment!,
+          pddRule: '',
+          options: question.answers.map((a) => a.text).toList(),
+          correctAnswerIndex: question.correctAnswerIndex,
+          legend: const [],
+          type: 'road_sign',
+        );
+        final platform = _GameWebPlatform();
+        WebViewPlatform.instance = platform;
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ...signedIn,
+              questionsDataSourceProvider.overrideWithValue(
+                _SourceImageQuestions(questions),
+              ),
+            ],
+            child: const MaterialApp(home: GameScreen()),
+          ),
+        );
+        await tester.pump();
+        final engine = platform.controllers.single;
+        engine.emit('{"event":"ready"}');
+        await tester.pump();
+        await _startDrive(tester);
+        engine.emit(
+          jsonEncode({
+            'event': 'approach_situation',
+            'situation': situation.toJson(),
+          }),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        final context = tester.element(find.byType(GameScreen));
+        final container = ProviderScope.containerOf(context);
+        await tester.runAsync(
+          () => precacheImage(AssetImage(question.image!), context),
+        );
+
+        Future<void> openImage() async {
+          await tester.tap(find.text(situation.ticket));
+          await tester.pumpAndSettle();
+          expect(find.byType(InteractiveViewer), findsOneWidget);
+          expect(
+            tester.widget<QuestionImage>(find.byType(QuestionImage)).assetPath,
+            question.image,
+          );
+          expect(container.read(gameControllerProvider).paused, true);
+          expect(
+            engine.scripts.any((s) => s.contains('setPaused(true)')),
+            true,
+          );
+        }
+
+        await openImage();
+        final remaining = container
+            .read(gameControllerProvider)
+            .remainingSeconds;
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump(const Duration(seconds: 10));
+        expect(
+          container.read(gameControllerProvider).remainingSeconds,
+          remaining,
+        );
+        expect(
+          container.read(gameControllerProvider).phase,
+          GamePhase.situation,
+        );
+        await tester.tap(find.byTooltip(appL10n.close));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(container.read(gameControllerProvider).paused, false);
+        expect(
+          engine.scripts.lastWhere((s) => s.contains('setPaused(')),
+          contains('setPaused(false)'),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(
+          container.read(gameControllerProvider).remainingSeconds,
+          lessThan(remaining),
+        );
+
+        final wrong =
+            (question.correctAnswerIndex + 1) % question.answers.length;
+        container.read(gameControllerProvider.notifier).submitAnswer(wrong);
+        await tester.pumpAndSettle();
+        expect(find.byType(GameExplanationSheet), findsOneWidget);
+        expect(find.text(situation.ticket), findsOneWidget);
+        await openImage();
+        await tester.tap(find.byTooltip(appL10n.close));
+        await tester.pumpAndSettle();
+        expect(
+          container.read(gameControllerProvider).phase,
+          GamePhase.explanation,
+        );
+        expect(container.read(gameControllerProvider).paused, false);
+        expect(find.text(question.comment!), findsOneWidget);
+        await tester.ensureVisible(find.text(appL10n.gameContinue));
+        await tester.tap(find.text(appL10n.gameContinue));
+        await tester.pump();
+        expect(
+          container.read(gameControllerProvider).phase,
+          GamePhase.resolving,
+        );
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
+  }
+
   testWidgets('Countdown and telemetry do not repeatedly stop gas', (
     tester,
   ) async {
@@ -1593,6 +1739,7 @@ void main() {
                                   GameQuestionCard(
                                     state: state,
                                     onSelectAnswer: (_) {},
+                                    onShowSourceImage: () {},
                                   ),
                               ],
                             ),
@@ -2140,6 +2287,16 @@ void main() {
       }
     });
   });
+}
+
+class _SourceImageQuestions extends QuestionsDataSource {
+  _SourceImageQuestions(this.questions);
+
+  final List<Question> questions;
+
+  @override
+  Future<List<Question>> loadTickets(TicketCategory category) async =>
+      questions;
 }
 
 class _GameWebPlatform extends WebViewPlatform {

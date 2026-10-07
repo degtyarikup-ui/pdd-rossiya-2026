@@ -3,15 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_ticket_badge.dart';
 
 class GameQuestionCard extends StatelessWidget {
   final GameState state;
   final ValueChanged<int> onSelectAnswer;
+  final VoidCallback? onShowSourceImage;
 
   const GameQuestionCard({
     super.key,
     required this.state,
     required this.onSelectAnswer,
+    this.onShowSourceImage,
   });
 
   @override
@@ -50,26 +53,9 @@ class GameQuestionCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.accentSurface10,
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.smallRadius,
-                          ),
-                        ),
-                        child: Text(
-                          situation.ticket,
-                          style: TextStyle(
-                            fontFamily: 'Onest',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: colors.accent,
-                          ),
-                        ),
+                      child: GameTicketBadge(
+                        ticket: situation.ticket,
+                        onTap: onShowSourceImage,
                       ),
                     ),
                     const SizedBox(width: 8),

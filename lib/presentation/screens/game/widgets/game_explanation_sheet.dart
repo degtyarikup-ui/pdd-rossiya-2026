@@ -4,10 +4,12 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/game_situation.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_ticket_badge.dart';
 
 class GameExplanationSheet extends StatelessWidget {
   final GameSituation situation;
   final VoidCallback onContinue;
+  final VoidCallback? onShowSourceImage;
 
   /// No answer was chosen before the countdown ran out.
   final bool timedOut;
@@ -16,6 +18,7 @@ class GameExplanationSheet extends StatelessWidget {
     super.key,
     required this.situation,
     required this.onContinue,
+    this.onShowSourceImage,
     this.timedOut = false,
   });
 
@@ -55,6 +58,15 @@ class GameExplanationSheet extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
+
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: GameTicketBadge(
+                    ticket: situation.ticket,
+                    onTap: onShowSourceImage,
+                  ),
+                ),
+                const SizedBox(height: 10),
 
                 // Mistake tag + PDD Rule badge
                 Wrap(

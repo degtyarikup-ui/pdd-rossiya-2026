@@ -39,6 +39,8 @@ import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
+import 'package:pdd_app/presentation/widgets/question_image.dart';
+import 'package:pdd_app/presentation/widgets/zoomable_image_viewer.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
   final VoidCallback? onExit;
@@ -871,6 +873,37 @@ class _GameScreenState extends ConsumerState<GameScreen>
     return inTicket[number - 1];
   }
 
+  Future<void> _showSourceImage(GameSituation situation) async {
+    if (_garageOpen) return;
+    HapticFeedbackHelper.tap();
+    // Use the same pause bookkeeping as the other modal game views, including
+    // backgrounding the app or switching tabs while the image is open.
+    _garageOpen = true;
+    _applyActive();
+    try {
+      final question = await _questionFor(situation);
+      if (!mounted || _disposing) return;
+      if (question == null || !question.hasImage()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(appL10n.gameSourceImageUnavailable)),
+        );
+        return;
+      }
+      await showZoomableImage(
+        context: context,
+        heroTag: UniqueKey(),
+        image: QuestionImage(
+          assetPath: question.image!,
+          fit: BoxFit.contain,
+          zoomable: false,
+        ),
+      );
+    } finally {
+      _garageOpen = false;
+      if (mounted && !_disposing) _applyActive();
+    }
+  }
+
   /// The run's mistakes as the ticket questions, in the regular trainer.
   Future<void> _reviewMistakes(List<GameSituation> mistakes) async {
     HapticFeedbackHelper.tap();
@@ -1434,6 +1467,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
                             key: const ValueKey('question'),
                             state: gameState,
                             onSelectAnswer: gameNotifier.submitAnswer,
+                            onShowSourceImage: () =>
+                                _showSourceImage(gameState.currentSituation!),
                           )
                         : const SizedBox.shrink(key: ValueKey('none')),
                   ),
@@ -1459,6 +1494,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
                         situation: gameState.currentSituation!,
                         timedOut: gameState.selectedAnswerIndex == null,
                         onContinue: gameNotifier.continueAfterExplanation,
+                        onShowSourceImage: () =>
+                            _showSourceImage(gameState.currentSituation!),
                       ),
                     if (!_desktopWeb &&
                         (gameState.phase == GamePhase.driving ||

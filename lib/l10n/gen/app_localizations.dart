@@ -2799,6 +2799,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Восстановить'**
   String get paywallRestore;
+
+  /// No description provided for @gameSourceImage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оригинальная картинка вопроса'**
+  String get gameSourceImage;
+
+  /// No description provided for @gameSourceImageUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'В этом вопросе нет картинки'**
+  String get gameSourceImageUnavailable;
 }
 
 class _AppLocalizationsDelegate
