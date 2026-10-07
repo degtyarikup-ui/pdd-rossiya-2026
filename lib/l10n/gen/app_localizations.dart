@@ -2667,54 +2667,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Лучший счёт за один заезд в игре'**
   String get achievementDescGame;
-
-  /// No description provided for @achievementTargetStreak.
-  ///
-  /// In ru, this message translates to:
-  /// **'{count, plural, one{Серия {count} день} few{Серия {count} дня} many{Серия {count} дней} other{Серия {count} дней}}'**
-  String achievementTargetStreak(int count);
-
-  /// No description provided for @achievementTargetCoverage.
-  ///
-  /// In ru, this message translates to:
-  /// **'{count, plural, one{Решить {count} вопрос} few{Решить {count} вопроса} many{Решить {count} вопросов} other{Решить {count} вопросов}}'**
-  String achievementTargetCoverage(int count);
-
-  /// No description provided for @achievementTargetTickets.
-  ///
-  /// In ru, this message translates to:
-  /// **'{count, plural, one{Сдать {count} билет} few{Сдать {count} билета} many{Сдать {count} билетов} other{Сдать {count} билетов}}'**
-  String achievementTargetTickets(int count);
-
-  /// No description provided for @achievementTargetAttempts.
-  ///
-  /// In ru, this message translates to:
-  /// **'{count, plural, one{Дать {count} ответ} few{Дать {count} ответа} many{Дать {count} ответов} other{Дать {count} ответов}}'**
-  String achievementTargetAttempts(int count);
-
-  /// No description provided for @achievementTargetExams.
-  ///
-  /// In ru, this message translates to:
-  /// **'{count, plural, one{Сдать {count} экзамен} few{Сдать {count} экзамена} many{Сдать {count} экзаменов} other{Сдать {count} экзаменов}}'**
-  String achievementTargetExams(int count);
-
-  /// No description provided for @achievementTargetFlawless.
-  ///
-  /// In ru, this message translates to:
-  /// **'{count, plural, one{Сдать {count} экзамен без ошибок} few{Сдать {count} экзамена без ошибок} many{Сдать {count} экзаменов без ошибок} other{Сдать {count} экзаменов без ошибок}}'**
-  String achievementTargetFlawless(int count);
-
-  /// No description provided for @achievementTargetMistakes.
-  ///
-  /// In ru, this message translates to:
-  /// **'{count, plural, one{Исправить {count} ошибку} few{Исправить {count} ошибки} many{Исправить {count} ошибок} other{Исправить {count} ошибок}}'**
-  String achievementTargetMistakes(int count);
-
-  /// No description provided for @achievementTargetGame.
-  ///
-  /// In ru, this message translates to:
-  /// **'{count, plural, one{Набрать {count} очко} few{Набрать {count} очка} many{Набрать {count} очков} other{Набрать {count} очков}}'**
-  String achievementTargetGame(int count);
 }
 
 class _AppLocalizationsDelegate

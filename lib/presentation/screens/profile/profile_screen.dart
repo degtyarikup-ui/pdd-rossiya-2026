@@ -59,27 +59,6 @@ String _getAchievementDescription(AchievementId id) {
   }
 }
 
-String _getAchievementTargetLabel(AchievementId id, int target) {
-  switch (id) {
-    case AchievementId.streak:
-      return appL10n.achievementTargetStreak(target);
-    case AchievementId.coverage:
-      return appL10n.achievementTargetCoverage(target);
-    case AchievementId.tickets:
-      return appL10n.achievementTargetTickets(target);
-    case AchievementId.attempts:
-      return appL10n.achievementTargetAttempts(target);
-    case AchievementId.exams:
-      return appL10n.achievementTargetExams(target);
-    case AchievementId.flawless:
-      return appL10n.achievementTargetFlawless(target);
-    case AchievementId.mistakes:
-      return appL10n.achievementTargetMistakes(target);
-    case AchievementId.game:
-      return appL10n.achievementTargetGame(target);
-  }
-}
-
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -582,7 +561,6 @@ class _AchievementLevelItem extends StatelessWidget {
     final target = achievement.levels[levelIndex];
     final isLevelUnlocked = achievement.level >= levelNum;
     final current = math.min(achievement.value, target);
-    final targetLabel = _getAchievementTargetLabel(achievement.id, target);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -596,31 +574,22 @@ class _AchievementLevelItem extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          targetLabel,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: isLevelUnlocked ? colors.primaryText : colors.secondaryText,
-          ),
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 4),
-        Text(
           appL10n.achievementProgressFormat(current, target),
           style: TextStyle(fontSize: 12, color: colors.secondaryText),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(2),
-          child: LinearProgressIndicator(
-            value: target > 0 ? (current / target).clamp(0.0, 1.0) : 0.0,
-            minHeight: 4,
+        // Короткая полоска под значком (его ширины), а не на всю колонку.
+        SizedBox(
+          width: 72,
+          child: ClipRRect(
             borderRadius: BorderRadius.circular(2),
-            color: colors.accent,
-            backgroundColor: colors.searchFieldFill,
+            child: LinearProgressIndicator(
+              value: target > 0 ? (current / target).clamp(0.0, 1.0) : 0.0,
+              minHeight: 4,
+              color: isLevelUnlocked ? colors.green : colors.accent,
+              backgroundColor: colors.searchFieldFill,
+            ),
           ),
         ),
       ],
