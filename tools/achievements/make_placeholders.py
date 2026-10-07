@@ -84,9 +84,11 @@ def outline(shape: str, inset: float) -> list:
 
 
 def gradient(light, dark) -> Image.Image:
-    g = Image.linear_gradient("L").rotate(45, expand=True).resize((SIZE, SIZE))
-    return Image.merge("RGB", [g.point(lambda v, i=i: light[i] + (dark[i] - light[i]) * v / 255)
-                               for i in range(3)]).convert("RGBA")
+    """Ровный диагональный градиент: светлый угол сверху слева."""
+    import numpy as np
+    t = (np.add.outer(np.arange(SIZE), np.arange(SIZE)) / (2 * (SIZE - 1)))[..., None]
+    rgb = np.array(light) + (np.array(dark) - np.array(light)) * t
+    return Image.fromarray(rgb.astype("uint8")).convert("RGBA")
 
 
 def symbol(d: ImageDraw.ImageDraw, kind: str, cx: float, cy: float, s: float, ink) -> None:

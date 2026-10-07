@@ -722,16 +722,6 @@
   "profile": "Профиль",
   "signInCardTitle": "Войти в аккаунт",
   "signInCardSubtitle": "Сохранить прогресс и премиум",
-  "profileStatStreakDays": "{count, plural, one{день} few{дня} many{дней} other{дней}}",
-  "@profileStatStreakDays": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "profileStatQuestions": "решено вопросов",
-  "profileStatExams": "сдано экзаменов",
   "achievements": "Достижения",
   "achievementsEarnedCount": "Получено {count} из {total}",
   "@achievementsEarnedCount": {

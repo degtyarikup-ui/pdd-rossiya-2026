@@ -2542,24 +2542,6 @@ abstract class AppLocalizations {
   /// **'Сохранить прогресс и премиум'**
   String get signInCardSubtitle;
 
-  /// No description provided for @profileStatStreakDays.
-  ///
-  /// In ru, this message translates to:
-  /// **'{count, plural, one{день} few{дня} many{дней} other{дней}}'**
-  String profileStatStreakDays(int count);
-
-  /// No description provided for @profileStatQuestions.
-  ///
-  /// In ru, this message translates to:
-  /// **'решено вопросов'**
-  String get profileStatQuestions;
-
-  /// No description provided for @profileStatExams.
-  ///
-  /// In ru, this message translates to:
-  /// **'сдано экзаменов'**
-  String get profileStatExams;
-
   /// No description provided for @achievements.
   ///
   /// In ru, this message translates to:

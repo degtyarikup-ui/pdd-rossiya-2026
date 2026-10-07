@@ -7,7 +7,6 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/achievement.dart';
-import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -171,8 +170,6 @@ class ProfileScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final double topInset = MediaQuery.paddingOf(context).top;
     final currentUser = ref.watch(currentUserProvider);
-    final streakAsync = ref.watch(streakProvider);
-    final statsAsync = ref.watch(statsProvider);
     final achievementsAsync = ref.watch(achievementsProvider);
 
     final achievements = achievementsAsync.valueOrNull ?? const [];
@@ -244,14 +241,6 @@ class ProfileScreen extends ConsumerWidget {
 
             // Премиум-баннер
             const PremiumBannerCard(),
-            const SizedBox(height: AppDimensions.spacingM),
-
-            // Короткая статистика
-            _ShortStatsCard(
-              streakAsync: streakAsync,
-              statsAsync: statsAsync,
-              achievementsAsync: achievementsAsync,
-            ),
             const SizedBox(height: AppDimensions.spacingXL),
 
             // Раздел «Достижения»
@@ -489,139 +478,6 @@ class _SignInCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ShortStatsCard extends StatelessWidget {
-  final AsyncValue<Streak> streakAsync;
-  final AsyncValue<Map<String, int>> statsAsync;
-  final AsyncValue<List<AchievementProgress>> achievementsAsync;
-
-  const _ShortStatsCard({
-    required this.streakAsync,
-    required this.statsAsync,
-    required this.achievementsAsync,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-
-    final String streakValue;
-    final String streakLabel;
-    if (streakAsync.isLoading && !streakAsync.hasValue) {
-      streakValue = '—';
-      streakLabel = appL10n.profileStatStreakDays(0);
-    } else {
-      final current = streakAsync.valueOrNull?.current ?? 0;
-      streakValue = '$current';
-      streakLabel = appL10n.profileStatStreakDays(current);
-    }
-
-    final String questionsValue;
-    if (statsAsync.isLoading && !statsAsync.hasValue) {
-      questionsValue = '—';
-    } else {
-      final stats = statsAsync.valueOrNull;
-      final answered = stats?['answeredQuestions'] ?? 0;
-      final total = stats?['totalQuestions'] ?? 0;
-      questionsValue = '$answered / $total';
-    }
-
-    final String examsValue;
-    if (achievementsAsync.isLoading && !achievementsAsync.hasValue) {
-      examsValue = '—';
-    } else {
-      final achievements = achievementsAsync.valueOrNull ?? const [];
-      final examsAch = achievements
-          .where((a) => a.id == AchievementId.exams)
-          .firstOrNull;
-      examsValue = '${examsAch?.value ?? 0}';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-      decoration: BoxDecoration(
-        color: colors.cardBackground,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-      ),
-      // Тот же ритм, что у статистики на главной (progress_panel_card):
-      // число 17/w700, подпись строчными 11, тонкие разделители.
-      child: Row(
-        children: [
-          Expanded(
-            child: _StatColumn(
-              value: streakValue,
-              label: streakLabel,
-              color: (streakAsync.valueOrNull?.current ?? 0) > 0
-                  ? colors.gold
-                  : null,
-            ),
-          ),
-          Container(width: 1, height: 28, color: colors.divider),
-          Expanded(
-            child: _StatColumn(
-              value: questionsValue,
-              label: appL10n.profileStatQuestions,
-            ),
-          ),
-          Container(width: 1, height: 28, color: colors.divider),
-          Expanded(
-            child: _StatColumn(
-              value: examsValue,
-              label: appL10n.profileStatExams,
-              color: examsValue != '0' && examsValue != '—'
-                  ? colors.green
-                  : null,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatColumn extends StatelessWidget {
-  final String value;
-  final String label;
-  final Color? color;
-
-  const _StatColumn({required this.value, required this.label, this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            value,
-            maxLines: 1,
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              height: 1.1,
-              letterSpacing: -0.3,
-              color: color ?? colors.primaryText,
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 11,
-            height: 1.15,
-            color: colors.secondaryText,
-          ),
-        ),
-      ],
     );
   }
 }

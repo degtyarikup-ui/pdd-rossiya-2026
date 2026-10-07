@@ -1462,25 +1462,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get signInCardSubtitle => 'Сохранить прогресс и премиум';
 
   @override
-  String profileStatStreakDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'дней',
-      many: 'дней',
-      few: 'дня',
-      one: 'день',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get profileStatQuestions => 'решено вопросов';
-
-  @override
-  String get profileStatExams => 'сдано экзаменов';
-
-  @override
   String get achievements => 'Достижения';
 
   @override
