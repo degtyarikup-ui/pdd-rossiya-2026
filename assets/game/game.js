@@ -53,6 +53,8 @@
   const season = () => currentSeason;
   // The HUD draws its bare numbers dark over snow in either UI theme.
   const seasonName = () => Object.keys(SEASONS).find(k => SEASONS[k] === currentSeason);
+  // Objects with flashing lamps (userData.beacons), see animate().
+  const beaconHosts = new Set();
   const state = {
     speed: 0,
     maxSpeed: 18, // m/s, follows the speed limit in force (see effectiveLimitKmH)
@@ -5484,6 +5486,10 @@
     // Only a clearly weak device (≤2 cores or ≤3 GB) gets the cheap profile.
     const lowEnd = (navigator.hardwareConcurrency || 8) <= 2 || (navigator.deviceMemory || 8) <= 3;
     state.lowEnd = lowEnd;
+    // A wider "weak" hint (4 GB, few cores) turns on only savings that leave
+    // the picture as it is: a still question drawn at 30 FPS, the shadow map
+    // refreshed every other frame. The look is chosen by lowEnd alone.
+    state.weak = lowEnd || (navigator.deviceMemory || 8) <= 4 || (navigator.hardwareConcurrency || 8) <= 4;
     renderer = new THREE.WebGLRenderer({ antialias: !lowEnd, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
     renderer.setPixelRatio(lowEnd ? 1 : Math.min(window.devicePixelRatio, 1.75));
@@ -6541,7 +6547,7 @@
     bar.add(blueBeacon);
     bar.add(redBeacon);
     car.add(bar);
-    car.userData.beacons = [blueBeacon, redBeacon];
+    car.userData.beacons = [blueBeacon, redBeacon]; beaconHosts.add(car);
     window.PDD_VEHICLES.addGlow(blueBeacon, 0x208CFF, 1.7);
     window.PDD_VEHICLES.addGlow(redBeacon, 0xFF3434, 1.7);
 
@@ -7172,6 +7178,7 @@
       yellowMat.color.setHex(0xF59E0B);
       tl.userData.beacons = [yellowLamp];
     }
+    beaconHosts.add(tl);
 
     tl.setLightState = function(s) {
       lamps.forEach(lamp => { lamp.visible = true; });
@@ -8008,7 +8015,7 @@
         new THREE.MeshBasicMaterial({ color: 0xFFB21C }));
       beacon.position.set(0, badgeHeight - 0.4, 0);
       actorMesh.add(beacon);
-      actorMesh.userData.beacons = [beacon];
+      actorMesh.userData.beacons = [beacon]; beaconHosts.add(actorMesh);
       window.PDD_VEHICLES.addGlow(beacon, 0xFFB21C, 1.7);
     }
     if (cfg.beacon === 'blue' && actorMesh.userData.beacons) {
@@ -8382,7 +8389,10 @@
         const sx=cfg.side==='crosswalk_right'?1:-1,base=(situation.mainWidth||8.4)/2+1.9;
         for(let i=0;i<count;i++) {
           const id=i?cfg.id+'_'+(i+1):cfg.id;
-          actors.push({...cfg,id,hideBadge:i>0,concurrentWith:[...(cfg.concurrentWith||[]),...Array.from({length:count},(_,j)=>j?cfg.id+'_'+(j+1):cfg.id).filter(other=>other!==id)],position:[sx*(base+(i-(count-1)/2)*1.25),.18,-(situation.crossWidth||8.4)/2-1.4]});
+          // Two abreast inside the zebra; the third follows behind. A row of
+          // three put its inner walker across the rounded, unmarked corner.
+          const across=count>1?(i%2?.7:-.3):0, behind=Math.floor(i/2)*1.4;
+          actors.push({...cfg,id,hideBadge:i>0,concurrentWith:[...(cfg.concurrentWith||[]),...Array.from({length:count},(_,j)=>j?cfg.id+'_'+(j+1):cfg.id).filter(other=>other!==id)],position:[sx*(base+across),.18,-(situation.crossWidth||8.4)/2-1.4-behind]});
           if(i&&spec.yieldTo.includes(cfg.id))yieldTo.push(id);
         }
       }
@@ -14022,11 +14032,14 @@
     requestAnimationFrame(animate);
     const elapsed = lastTime === null ? 0 : Math.max(0, (time - lastTime) / 1000);
     const dt = Math.min(elapsed, 0.05);
-    lastTime = time;
     // The ceremony follows wall time even below 20 FPS; road physics retains
     // its smaller integration step. A background/resume gap stays bounded.
-    if (reveal) { updateReveal(Math.min(elapsed, 0.1)); return; }
-    if (state.paused) return;
+    if (reveal) { updateReveal(Math.min(elapsed, 0.1)); lastTime = time; return; }
+    if (state.paused) { lastTime = time; return; }
+    // A question waits on a standing car: on a weak phone that still picture
+    // is drawn at 30 FPS (blinkers and walkers look the same), half the work.
+    const still = Math.abs(state.speed || 0) < 0.05 && (state.isAtSituation || state.roadEvent?.phase === 'question');
+    if ((state.weak || quality.struggling) && still && elapsed < 0.03) return;
     processSceneryJobs(elapsed>.035?1:3);
     if (!state.paused) {
       updateAttract(dt);
@@ -14039,11 +14052,15 @@
       updateBlinkers(dt);
       updateMistakeHighlight(dt);
       gameAudio?.update(dt, time / 1000);
-      state.roadSegments.forEach(seg => seg.traverse(obj => {
-        if (obj.userData.beacons) obj.userData.beacons.forEach((lamp, i) => {
-          lamp.visible = Math.floor(time / 180 + i) % 2 === 0;
-        });
-      }));
+      // Flashing lamps are registered where they are made: walking every
+      // road segment's whole tree each frame only to find them cost more
+      // than drawing them. Hosts no longer on the road are dropped.
+      const segs = new Set(state.roadSegments);
+      beaconHosts.forEach(host => {
+        let root = host; while (root && !segs.has(root)) root = root.parent;
+        if (!root) { if (!host.parent) beaconHosts.delete(host); return; }
+        host.userData.beacons.forEach((lamp, i) => { lamp.visible = Math.floor(time / 180 + i) % 2 === 0; });
+      });
       // Move only near the edge, baking world coordinates into both detail
       // and macro UVs. Texture offsets wrap at a different macro phase.
       const groundZ = Math.round((playerCarGroup.position.z + 500) / 100) * 100;
@@ -14063,7 +14080,13 @@
           distanceM: Math.round(state.distanceTraveled), limitKmH: effectiveLimitKmH() });
       }
     }
+    lastTime = time;
     adaptQuality(elapsed);
+    // Shadows follow the sun frame at half rate where frames are short of
+    // time: a shadow one frame (16 ms) late is not visible.
+    const halfShadows = state.weak || quality.struggling;
+    renderer.shadowMap.autoUpdate = !halfShadows;
+    if (halfShadows && (quality.frame++ & 1) === 0) renderer.shadowMap.needsUpdate = true;
     renderer.render(scene, camera);
   }
   // Adaptive resolution: the pixel ratio drops in small steps only while the
@@ -14083,6 +14106,8 @@
     if (quality.sum < 1.5) return;
     const avg = quality.sum / quality.frames; quality.sum = quality.frames = 0;
     let next = quality.ratio;
+    if (avg > 1 / 45 && quality.ratio <= quality.min + 0.01) quality.struggling = true;
+    else if (avg < 1 / 52) quality.struggling = false;
     if (avg > 1 / 45) next = Math.max(quality.min, quality.ratio - 0.15);
     else if (avg < 1 / 57) next = Math.min(quality.max, quality.ratio + 0.1);
     if (Math.abs(next - quality.ratio) > 0.01) { quality.ratio = next; renderer.setPixelRatio(next); }
