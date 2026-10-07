@@ -5487,8 +5487,9 @@
     const lowEnd = (navigator.hardwareConcurrency || 8) <= 2 || (navigator.deviceMemory || 8) <= 3;
     state.lowEnd = lowEnd;
     // A wider "weak" hint (4 GB, few cores) turns on only savings that leave
-    // the picture as it is: a still question drawn at 30 FPS, the shadow map
-    // refreshed every other frame. The look is chosen by lowEnd alone.
+    // the picture as it is (a still question drawn at 30 FPS). The shadow map
+    // is refreshed every frame: at half rate the car's shadow jittered.
+    // The look is chosen by lowEnd alone.
     state.weak = lowEnd || (navigator.deviceMemory || 8) <= 4 || (navigator.hardwareConcurrency || 8) <= 4;
     renderer = new THREE.WebGLRenderer({ antialias: !lowEnd, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
@@ -14135,11 +14136,6 @@
     }
     lastTime = time;
     adaptQuality(elapsed);
-    // Shadows follow the sun frame at half rate where frames are short of
-    // time: a shadow one frame (16 ms) late is not visible.
-    const halfShadows = state.weak || quality.struggling;
-    renderer.shadowMap.autoUpdate = !halfShadows;
-    if (halfShadows && (quality.frame++ & 1) === 0) renderer.shadowMap.needsUpdate = true;
     renderer.render(scene, camera);
   }
   // Adaptive resolution: the pixel ratio drops in small steps only while the
