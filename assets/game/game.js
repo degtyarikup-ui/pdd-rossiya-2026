@@ -5636,11 +5636,19 @@
     for (const path of paths) {
       // Stop shortly after the bend, in the receiving lane. Driving paths
       // retain their full length; only the visual direction cue is shortened.
-      const fullLength = path.getLength(), finalDir = path.getTangentAt(1);
-      let bendEnd = 0;
-      for (let d = 0; d < fullLength; d += 0.25) {
-        if (path.getTangentAt(d / fullLength).dot(finalDir) < 0.985) bendEnd = d;
+      // A path with several bends (a bypass out and back, 130 m long) shows
+      // only its first manoeuvre: later bends count only when they follow
+      // within 20 m (a lane change straight into a turn).
+      const fullLength = path.getLength(), tangent = d => path.getTangentAt(Math.min(1, Math.max(0, d / fullLength)));
+      const bends = [];
+      for (let d = 0, open = null; d < fullLength; d += 0.25) {
+        const turning = tangent(d).dot(tangent(d + 2)) < 0.9995;
+        if (turning && !open) open = { from: d };
+        else if (!turning && open) { open.to = d; bends.push(open); open = null; }
+        if (open && d + 0.25 >= fullLength) { open.to = fullLength; bends.push(open); }
       }
+      let bendEnd = 0;
+      for (const b of bends) { if (bendEnd && b.from - bendEnd > 20) break; bendEnd = b.to; }
       const length = Math.min(fullLength, bendEnd ? bendEnd + 4 : 14);
       const n = Math.max(8, Math.ceil(length / 0.25));
       let pts = Array.from({ length: n + 1 }, (_, i) => path.getPointAt(i / n * length / fullLength));
@@ -12235,18 +12243,21 @@
     ev.bypassFrom=ev.stopZ+40;ev.bypassTo=ev.stopZ+150;
     const gap1=[ev.stopZ+42,ev.stopZ+64],gap2=[ev.stopZ+126,ev.stopZ+148];
     ev.bypass=replaceCorridorStrip(from,to,g=>{
-      const widen=z=>THREE.MathUtils.smoothstep(z,from,from+22)*(1-THREE.MathUtils.smoothstep(z,to-22,to));
+      // The carriageways part over 40 m: a 22 m split read as a broken kink.
+      const SPLIT=40,widen=z=>THREE.MathUtils.smoothstep(z,from,from+SPLIT)*(1-THREE.MathUtils.smoothstep(z,to-SPLIT,to));
       const ownAsphalt=new THREE.MeshLambertMaterial({color:BRAND.asphalt});
       for(let z=from;z<to;z+=2){const m=addRibbon(g,z,Math.min(z+2,to),q=>-4.2-4.2*widen(q),q=>4.2*(1-widen(q)),0.02,ownAsphalt);m.userData.surface="road";}
       // Second carriageway separates gradually; the median has two actual openings.
-      const offset=z=>2*THREE.MathUtils.smoothstep(z,from,from+22)*(1-THREE.MathUtils.smoothstep(z,to-22,to));
+      const offset=z=>2*widen(z);
       const asphalt=new THREE.MeshLambertMaterial({color:BRAND.asphalt}),paint=roadMarkingMat();
       for(let z=from;z<to;z+=2){const end=Math.min(z+2,to),m=addRibbon(g,z,end,q=>offset(q),q=>offset(q)+8.4,0.021,asphalt);m.userData.surface='road';}
       for(const [a,b] of [gap1,gap2]) roadSurface(g,2.05,b-a,1,(a+b)/2);
-      for(const [a,b] of [[from,gap1[0]],[gap1[1],gap2[0]],[gap2[1],to]]){
+      // The median starts with a blunt nose, not a hair-thin wedge.
+      const nose=SPLIT*0.3;
+      for(const [a,b] of [[from+nose,gap1[0]],[gap1[1],gap2[0]],[gap2[1],to-nose]]){
         const m=addRibbon(g,a,b,()=>0,offset,0.18,new THREE.MeshLambertMaterial({color:season().ground}));m.userData.surface='sidewalk';
       }
-      for(let z=from+24;z<to-24;z+=5)addFlatPlane(g,0.13,2,-4.2,z,0.029,paint);
+      for(let z=from+SPLIT+2;z<to-SPLIT-2;z+=5)addFlatPlane(g,0.13,2,-4.2,z,0.029,paint);
       // Edge lines along both outer kerbs, following the widening.
       addEdgeLineZ(g,from-SEAM,to+SEAM,q=>-4.2-4.2*widen(q),-1,paint);addEdgeLineZ(g,from-SEAM,to+SEAM,q=>offset(q)+8.4,1,paint);
       const closed=createChevronBarrier(8.4);closed.position.set(-4.2,0,ev.stopZ+58);g.add(closed);
@@ -12254,11 +12265,14 @@
       for(let z=ev.stopZ+54;z<ev.stopZ+125;z+=6){const cone=createTrafficCone();cone.position.set(-0.3,0,z);g.add(cone);}
       for(let z=gap1[0];z<=gap2[1];z+=5)addFlatPlane(g,0.13,2,6.2,z,0.028,paint);
     },true);
+    // The rural strip under the bypass keeps its pines, not its asphalt and
+    // paint: its centre dashes and edge lines showed through the new road.
+    ev.rural?.children.forEach(o=>{if(o.isMesh)o.visible=false;});
     const warning=addRoadSign(ev.group,'3.2',ev.stopZ+57,'right',null,-4.2);warning.userData.questionEvidence=true;
     const p=new THREE.Vector3(8,0,ev.stopZ+44);
     const car=addRoadActor(ev.group,{id:'bypass_oncoming',type:'car',name:'Встречный',color:'#2BC280',question:true},p,Math.PI,
       [p,new THREE.Vector3(8,0,ev.stopZ-34)],6);ev.actors.push(car);
-    ev.guide=createRouteGuide([curve([[-1.8,15],[-1.8,39],[1,50],[4,60],[4,124],[1,136],[-1.8,147]].map(([x,z])=>new THREE.Vector3(x,0.12,ev.stopZ+z)))]);
+    ev.guide=createRouteGuide([curve([[-1.8,4],[-1.8,36],[1,45],[4,53],[4,124],[1,136],[-1.8,147]].map(([x,z])=>new THREE.Vector3(x,0.12,ev.stopZ+z)))]);
     ev.guide.userData.questionEvidence=true;ev.group.add(ev.guide);ev.guide.visible=false;
   }
   function updateTemporaryBypass(ev) {
@@ -14964,7 +14978,7 @@
         .forEach(o => boxes.push(new THREE.Box3().setFromObject(o)));
       if (ev.guide?.userData.questionEvidence) {
         const b = new THREE.Box3().setFromObject(ev.guide);
-        if(ev.kind === 'temporary_bypass') b.max.z=Math.min(b.max.z,ev.stopZ+64);
+        if(ev.kind === 'temporary_bypass') b.max.z=Math.min(b.max.z,ev.stopZ+56);
         boxes.push(b);
       }
       const minX = Math.min(-6, ...boxes.map(b => b.min.x)) - 1;
@@ -14984,7 +14998,10 @@
       // need no 40 m of road): the view only grows for evidence far ahead.
       const minZ = Math.min(playerCarGroup.position.z - 4, ...boxes.map(b => b.min.z - 2));
       // Badges and sign plates stand above their objects: room for them below the HUD.
-      const maxZ = Math.min(ev.stopZ + 64, Math.max(ev.stopZ + 8, ...boxes.map(b => b.max.z + b.max.y * 1.05))) + 3.5;
+      // The bypass is framed up to the median opening: the sign, its plate and
+      // the turn into the opposing carriageway, not the closed stretch beyond.
+      const frameEnd = ev.kind === 'temporary_bypass' ? ev.stopZ + 56 : ev.stopZ + 64;
+      const maxZ = Math.min(frameEnd, Math.max(ev.stopZ + 8, ...boxes.map(b => b.max.z + b.max.y * 1.05))) + 3.5;
       const visibleFraction = Math.max(0.25, (height - state.viewportInsets.top - state.viewportInsets.bottom) / height);
       desiredViewSize = Math.max(26, (maxX - minX) / (width / height), (maxZ - minZ) * 0.69 / visibleFraction);
       focus.set((minX + maxX) / 2, 0, (minZ + maxZ) / 2);
