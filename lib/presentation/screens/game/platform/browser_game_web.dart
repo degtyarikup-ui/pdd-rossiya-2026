@@ -25,7 +25,11 @@ class BrowserGame {
     _frame.style
       ..border = '0'
       ..width = '100%'
-      ..height = '100%';
+      ..height = '100%'
+      // The frame only draws: every control (pedals, arrows, lobby, answers)
+      // is a Flutter overlay. A frame that takes pointer events swallows the
+      // clicks meant for the buttons drawn over it.
+      ..pointerEvents = 'none';
     _frame.setAttribute('tabindex', '-1');
     _frame.setAttribute('title', 'PDD simulator');
     // Input belongs to Flutter overlays; canvas keeps camera gestures only.
