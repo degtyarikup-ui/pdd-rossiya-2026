@@ -9246,6 +9246,7 @@
   function avenueCross(sc) { const x = withOverrides(sc); return plainGeometry(x) && !authored(sc) && AVENUE_WIDTHS.includes(x.crossWidth) ? x.crossWidth : 0; }
   function avenueExits(situation) {
     const out = { straight: 8.4, left: 8.4, right: 8.4 };
+    if (situation.fixedExitWidths) return { ...out, ...situation.fixedExitWidths };
     if (state.cityAvenues === false) return out;
     const main = avenueMain(situation), cross = avenueCross(situation);
     if (main && Math.random() < AVENUE_CHANCE) out.straight = main;
@@ -12036,7 +12037,7 @@
         const path=curve(pts.map(([x,q])=>new THREE.Vector3(x,0,z+q))),length=path.getLength();
         for(let d=1;d<length;d+=2) {
           const u=d/length,p=path.getPointAt(u),v=path.getTangentAt(u);
-          const m=addFlatPlane(seg,.13,1,-p.x,p.z,.034,paint);m.rotation.z=Math.atan2(v.x,v.z);m.userData.laneGuideMarking=true;
+          const m=addFlatPlane(seg,.13,1,-p.x,p.z,.034,paint);m.rotation.z=Math.atan2(v.x,v.z);m.userData.laneGuideMarking=true;m.userData.questionEvidence=true;
         }
       }
     }

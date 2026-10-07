@@ -168,9 +168,12 @@ for t in JUNCTIONS['27_9']['layout']['trajectories']:
 # Final review: drawing annotations never extend into the camera's far horizon.
 for key in ['3_8','11_8','8_8','19_8']:
  for t in JUNCTIONS[key]['layout']['trajectories']:t['points']=t['points'][:5 if key in ['8_8','19_8'] else 4]
-JUNCTIONS['7_5']['layout'].update(hideGuide=True,mainWidth=16.8,mainLaneDividers=[3.6],junctionLaneMarkingPaths=[
- [[-5.4,-9],[-5.4,-4],[0,1.8],[14,1.8]],
- [[-1.8,-9],[-1.8,-3],[2,5.4],[14,5.4]]])
+# 1.7 follows lane boundaries, not the vehicle trajectories. Both streets
+# have two lanes per direction; the question's exit must not randomly narrow.
+JUNCTIONS['7_5']['layout'].update(hideGuide=True,mainWidth=16.8,crossWidth=16.8,
+ mainLaneDividers=[4.2],fixedExitWidths=dict(straight=16.8,left=16.8,right=16.8),junctionLaneMarkingPaths=[
+ [[0,-11.8],[0,-4],[4,0],[14,0]],
+ [[-4.2,-11.8],[-4.2,-4],[2,4.2],[14,4.2]]])
 JUNCTIONS['12_5']['layout'].update(mainWidth=16.8,mainLaneDividers=[3.6],openEntrance=True,clearYard=True)
 JUNCTIONS['12_5']['layout']['actorsConfig'][0].update(position=[-10.7,0,-1.8])
 wide_uturn=[[-1.8,-12],[-1.8,-4],[-1,0],[2,3.6],[5.4,0],[5.4,-9],[3.8,-18],[1.8,-26]]
