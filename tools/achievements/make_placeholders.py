@@ -3,12 +3,15 @@
 
 Пока настоящие значки не нарисованы, приложение показывает эти. Готовую
 картинку кладут под тем же именем поверх заглушки — код менять не нужно.
-Список достижений и порогов — зеркало lib/data/models/achievement.dart;
-поменяли пороги там — поправьте BADGES и перезапустите скрипт.
+У каждого достижения своя форма и свой символ (чтобы сетка на Профиле не
+была рядом одинаковых щитов), металл зависит от уровня. Список порогов —
+зеркало lib/data/models/achievement.dart; поменяли пороги там — поправьте
+BADGES и перезапустите скрипт.
 
     python3 tools/achievements/make_placeholders.py
 """
 
+import math
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -17,96 +20,158 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "assets/images/achievements"
 FONT = ROOT / "assets/fonts/Onest-ExtraBold.ttf"
 SIZE = 512
+C = SIZE / 2
 
-# id → подписи четырёх уровней (число, слово под ним).
+# id → (форма, символ, подписи четырёх уровней: число и слово).
 BADGES = {
-    "streak": [("3", "ДНЯ"), ("7", "ДНЕЙ"), ("14", "ДНЕЙ"), ("30", "ДНЕЙ")],
-    "coverage": [("100", "ВОПРОСОВ"), ("300", "ВОПРОСОВ"), ("500", "ВОПРОСОВ"), ("800", "ВОПРОСОВ")],
-    "tickets": [("1", "БИЛЕТ"), ("10", "БИЛЕТОВ"), ("20", "БИЛЕТОВ"), ("40", "БИЛЕТОВ")],
-    "attempts": [("100", "ОТВЕТОВ"), ("500", "ОТВЕТОВ"), ("1000", "ОТВЕТОВ"), ("3000", "ОТВЕТОВ")],
-    "exams": [("1", "ЭКЗАМЕН"), ("3", "ЭКЗАМЕНА"), ("5", "ЭКЗАМЕНОВ"), ("10", "ЭКЗАМЕНОВ")],
-    "flawless": [("1", "БЕЗ ОШИБОК"), ("3", "БЕЗ ОШИБОК"), ("5", "БЕЗ ОШИБОК"), ("10", "БЕЗ ОШИБОК")],
-    "mistakes": [("10", "ИСПРАВЛЕНО"), ("50", "ИСПРАВЛЕНО"), ("100", "ИСПРАВЛЕНО"), ("200", "ИСПРАВЛЕНО")],
-    "game": [("1000", "ОЧКОВ"), ("2500", "ОЧКОВ"), ("5000", "ОЧКОВ"), ("7500", "ОЧКОВ")],
+    "streak": ("shield", "flame", [("3", "ДНЯ"), ("7", "ДНЕЙ"), ("14", "ДНЕЙ"), ("30", "ДНЕЙ")]),
+    "coverage": ("circle", "book", [("100", "ВОПРОСОВ"), ("300", "ВОПРОСОВ"), ("500", "ВОПРОСОВ"), ("800", "ВОПРОСОВ")]),
+    "tickets": ("ticket", "ticket", [("1", "БИЛЕТ"), ("10", "БИЛЕТОВ"), ("20", "БИЛЕТОВ"), ("40", "БИЛЕТОВ")]),
+    "attempts": ("hexagon", "bolt", [("100", "ОТВЕТОВ"), ("500", "ОТВЕТОВ"), ("1000", "ОТВЕТОВ"), ("3000", "ОТВЕТОВ")]),
+    "exams": ("octagon", "cap", [("1", "ЭКЗАМЕН"), ("3", "ЭКЗАМЕНА"), ("5", "ЭКЗАМЕНОВ"), ("10", "ЭКЗАМЕНОВ")]),
+    "flawless": ("rosette", "star", [("1", "БЕЗ ОШИБОК"), ("3", "БЕЗ ОШИБОК"), ("5", "БЕЗ ОШИБОК"), ("10", "БЕЗ ОШИБОК")]),
+    "mistakes": ("square", "check", [("10", "ИСПРАВЛЕНО"), ("50", "ИСПРАВЛЕНО"), ("100", "ИСПРАВЛЕНО"), ("200", "ИСПРАВЛЕНО")]),
+    "game": ("pentagon", "wheel", [("1000", "ОЧКОВ"), ("2500", "ОЧКОВ"), ("5000", "ОЧКОВ"), ("7500", "ОЧКОВ")]),
 }
 
 # Металл уровня: (светлый, тёмный). 1 бронза, 2 серебро, 3 золото, 4 платина.
 METALS = [
-    ((0xE8, 0xB0, 0x86), (0x9A, 0x5B, 0x34)),
-    ((0xF2, 0xF4, 0xF7), (0x9A, 0xA1, 0xAD)),
-    ((0xFF, 0xDD, 0x7A), (0xC2, 0x86, 0x1C)),
-    ((0xDD, 0xEB, 0xFF), (0x6F, 0x8F, 0xC9)),
+    ((0xF0, 0xBC, 0x92), (0x9A, 0x5B, 0x34)),
+    ((0xF4, 0xF6, 0xF9), (0x96, 0x9E, 0xAB)),
+    ((0xFF, 0xE0, 0x80), (0xC2, 0x86, 0x1C)),
+    ((0xE2, 0xEE, 0xFF), (0x5F, 0x82, 0xC4)),
 ]
 
 
-def shape(level: int, inset: float) -> list[tuple[float, float]]:
-    """Форма значка растёт с уровнем: щит → круг → шестиугольник → ромб."""
-    c, r = SIZE / 2, SIZE / 2 * (0.92 - inset)
-    if level == 1:  # щит
-        return [(c - r * 0.82, c - r * 0.9), (c + r * 0.82, c - r * 0.9),
-                (c + r * 0.82, c + r * 0.25), (c, c + r), (c - r * 0.82, c + r * 0.25)]
-    if level == 2:  # круг (многоугольник с большим числом сторон)
-        import math
-        return [(c + r * math.cos(a / 64 * 2 * math.pi), c + r * math.sin(a / 64 * 2 * math.pi))
-                for a in range(64)]
-    if level == 3:  # шестиугольник
-        import math
-        return [(c + r * math.cos(math.pi / 6 + k * math.pi / 3),
-                 c + r * math.sin(math.pi / 6 + k * math.pi / 3)) for k in range(6)]
-    return [(c, c - r), (c + r, c), (c, c + r), (c - r, c)]  # ромб
+def regular(n: int, r: float, rot: float = -math.pi / 2) -> list:
+    return [(C + r * math.cos(rot + k * 2 * math.pi / n), C + r * math.sin(rot + k * 2 * math.pi / n))
+            for k in range(n)]
+
+
+def outline(shape: str, inset: float) -> list:
+    r = C * (0.94 - inset)
+    if shape == "shield":
+        return [(C - r * .84, C - r * .9), (C + r * .84, C - r * .9), (C + r * .84, C + r * .2),
+                (C, C + r), (C - r * .84, C + r * .2)]
+    if shape == "circle":
+        return regular(96, r * .97)
+    if shape == "hexagon":
+        return regular(6, r, rot=0)
+    if shape == "octagon":
+        return regular(8, r, rot=math.pi / 8)
+    if shape == "pentagon":
+        return regular(5, r * 1.02)
+    if shape == "rosette":  # 16 зубцов
+        return [(C + (r if k % 2 == 0 else r * .86) * math.cos(k * math.pi / 16),
+                 C + (r if k % 2 == 0 else r * .86) * math.sin(k * math.pi / 16)) for k in range(32)]
+    if shape == "square":  # скруглённый квадрат
+        pts, R, h = [], r * .28, r * .86
+        for cx, cy, a0 in [(C + h - R, C - h + R, -90), (C + h - R, C + h - R, 0),
+                           (C - h + R, C + h - R, 90), (C - h + R, C - h + R, 180)]:
+            pts += [(cx + R * math.cos(math.radians(a0 + t)), cy + R * math.sin(math.radians(a0 + t)))
+                    for t in range(0, 91, 10)]
+        return pts
+    if shape == "ticket":  # прямоугольник с вырезами по бокам
+        w, h, n = r * .95, r * .72, r * .2
+        pts = [(C - w, C - h), (C + w, C - h)]
+        pts += [(C + w - n * math.sin(math.radians(t)), C + n * -math.cos(math.radians(t)))
+                for t in range(0, 181, 15)]
+        pts += [(C + w, C + h), (C - w, C + h)]
+        pts += [(C - w + n * math.sin(math.radians(t)), C + n * math.cos(math.radians(t)))
+                for t in range(0, 181, 15)]
+        return pts
+    raise ValueError(shape)
 
 
 def gradient(light, dark) -> Image.Image:
-    """Диагональный металлический градиент: светлый угол сверху слева."""
-    img = Image.new("RGBA", (SIZE, SIZE))
-    px = img.load()
-    for y in range(SIZE):
-        for x in range(SIZE):
-            t = (x + y) / (2 * SIZE)
-            px[x, y] = tuple(int(light[i] + (dark[i] - light[i]) * t) for i in range(3)) + (255,)
-    return img
+    g = Image.linear_gradient("L").rotate(45, expand=True).resize((SIZE, SIZE))
+    return Image.merge("RGB", [g.point(lambda v, i=i: light[i] + (dark[i] - light[i]) * v / 255)
+                               for i in range(3)]).convert("RGBA")
 
 
-def badge(level: int, number: str, word: str) -> Image.Image:
+def symbol(d: ImageDraw.ImageDraw, kind: str, cx: float, cy: float, s: float, ink) -> None:
+    """Символ достижения в квадрате ±s вокруг (cx, cy)."""
+    if kind == "flame":
+        outer = [(0, -1), (.3, -.55), (.62, -.12), (.72, .35), (.52, .78), (.2, .98), (-.2, .98),
+                 (-.55, .76), (-.72, .32), (-.6, -.12), (-.38, .1), (-.3, -.35)]
+        d.polygon([(cx + x * s, cy + y * s) for x, y in outer], fill=ink)
+        inner = [(.02, -.12), (.25, .22), (.33, .55), (.15, .8), (-.15, .8), (-.32, .55), (-.22, .28)]
+        d.polygon([(cx + x * s, cy + y * s) for x, y in inner], fill=(255, 255, 255, 110))
+    elif kind == "book":
+        w = 12
+        d.polygon([(cx, cy - s * .45), (cx - s, cy - s * .7), (cx - s, cy + s * .55), (cx, cy + s * .8)], fill=ink)
+        d.polygon([(cx, cy - s * .45), (cx + s, cy - s * .7), (cx + s, cy + s * .55), (cx, cy + s * .8)], fill=ink)
+        d.line([(cx, cy - s * .45), (cx, cy + s * .8)], fill=(255, 255, 255, 90), width=w)
+    elif kind == "ticket":
+        d.rounded_rectangle([cx - s, cy - s * .6, cx + s, cy + s * .6], radius=s * .18, fill=ink)
+        for x in (cx - s, cx + s):
+            d.ellipse([x - s * .22, cy - s * .22, x + s * .22, cy + s * .22], fill=(0, 0, 0, 0))
+        d.line([(cx + s * .35, cy - s * .45), (cx + s * .35, cy + s * .45)], fill=(255, 255, 255, 110), width=8)
+    elif kind == "bolt":
+        d.polygon([(cx + s * .25, cy - s), (cx - s * .6, cy + s * .15), (cx - s * .05, cy + s * .15),
+                   (cx - s * .3, cy + s), (cx + s * .6, cy - s * .2), (cx + s * .05, cy - s * .2)], fill=ink)
+    elif kind == "cap":
+        d.polygon([(cx, cy - s * .75), (cx + s * 1.05, cy - s * .2), (cx, cy + s * .35), (cx - s * 1.05, cy - s * .2)], fill=ink)
+        d.chord([cx - s * .6, cy - s * .35, cx + s * .6, cy + s * .75], 0, 180, fill=ink)
+        d.line([(cx + s * .85, cy - s * .2), (cx + s * .85, cy + s * .55)], fill=ink, width=10)
+        d.ellipse([cx + s * .74, cy + s * .5, cx + s * .96, cy + s * .72], fill=ink)
+    elif kind == "star":
+        pts = [(cx + (s if k % 2 == 0 else s * .42) * math.cos(-math.pi / 2 + k * math.pi / 5),
+                cy + (s if k % 2 == 0 else s * .42) * math.sin(-math.pi / 2 + k * math.pi / 5)) for k in range(10)]
+        d.polygon(pts, fill=ink)
+    elif kind == "check":
+        d.line([(cx - s * .8, cy), (cx - s * .2, cy + s * .6), (cx + s * .85, cy - s * .6)], fill=ink,
+               width=int(s * .38), joint="curve")
+    elif kind == "wheel":
+        t = s * .22
+        d.ellipse([cx - s, cy - s, cx + s, cy + s], outline=ink, width=int(t))
+        d.ellipse([cx - s * .28, cy - s * .28, cx + s * .28, cy + s * .28], fill=ink)
+        for a in (90, 210, 330):
+            ra = math.radians(a)
+            d.line([(cx, cy), (cx + s * .85 * math.cos(ra), cy + s * .85 * math.sin(ra))], fill=ink, width=int(t * .8))
+
+
+def badge(shape: str, kind: str, level: int, number: str, word: str) -> Image.Image:
     light, dark = METALS[level - 1]
     out = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
 
-    def layer(inset: float, fill: Image.Image) -> None:
+    def layer(inset: float, fill: Image.Image) -> Image.Image:
         mask = Image.new("L", (SIZE, SIZE), 0)
-        ImageDraw.Draw(mask).polygon(shape(level, inset), fill=255)
+        ImageDraw.Draw(mask).polygon(outline(shape, inset), fill=255)
         mask = mask.filter(ImageFilter.GaussianBlur(1.2))
         out.paste(fill, (0, 0), mask)
+        return mask
 
-    layer(0.0, gradient(dark, light))     # кант: градиент наоборот
-    layer(0.07, gradient(light, dark))    # поле значка
+    layer(0.0, gradient(dark, light))           # кант
+    field = layer(0.08, gradient(light, dark))  # поле
 
-    # Блик — косая полоса, как на примере.
     glare = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     ImageDraw.Draw(glare).polygon(
-        [(SIZE * 0.55, 0), (SIZE * 0.68, 0), (SIZE * 0.32, SIZE), (SIZE * 0.19, SIZE)],
-        fill=(255, 255, 255, 46))
-    clip = Image.new("L", (SIZE, SIZE), 0)
-    ImageDraw.Draw(clip).polygon(shape(level, 0.07), fill=255)
-    out.paste(Image.alpha_composite(out, glare), (0, 0), clip)
+        [(SIZE * .58, 0), (SIZE * .7, 0), (SIZE * .3, SIZE), (SIZE * .18, SIZE)], fill=(255, 255, 255, 50))
+    out.paste(Image.alpha_composite(out, glare), (0, 0), field)
 
-    draw = ImageDraw.Draw(out)
-    ink = tuple(max(0, v - 60) for v in dark)
-    size = 190 if len(number) <= 2 else (150 if len(number) == 3 else 118)
+    ink = tuple(max(0, v - 70) for v in dark) + (255,)
+    sym = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    symbol(ImageDraw.Draw(sym), kind, C, SIZE * .36, SIZE * .13, ink)
+    out.alpha_composite(sym)
+
+    d = ImageDraw.Draw(out)
+    size = 104 if len(number) <= 3 else 84
     num_font = ImageFont.truetype(str(FONT), size)
-    word_font = ImageFont.truetype(str(FONT), 44 if len(word) <= 8 else 34)
-    cy = SIZE * (0.44 if level == 1 else 0.46)
-    draw.text((SIZE / 2 + 4, cy + 4), number, font=num_font, anchor="mm", fill=(255, 255, 255, 120))
-    draw.text((SIZE / 2, cy), number, font=num_font, anchor="mm", fill=ink)
-    draw.text((SIZE / 2, cy + size * 0.62), word, font=word_font, anchor="mm", fill=ink)
+    word_font = ImageFont.truetype(str(FONT), 30 if len(word) <= 8 else 24)
+    ny = SIZE * .6
+    d.text((C + 3, ny + 3), number, font=num_font, anchor="mm", fill=(255, 255, 255, 110))
+    d.text((C, ny), number, font=num_font, anchor="mm", fill=ink)
+    d.text((C, ny + size * .62), word, font=word_font, anchor="mm", fill=ink)
     return out
 
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    for key, levels in BADGES.items():
+    for key, (shape, kind, levels) in BADGES.items():
         for i, (number, word) in enumerate(levels, start=1):
-            badge(i, number, word).save(OUT / f"{key}_{i}.png", optimize=True)
-    print(f"{sum(map(len, BADGES.values()))} заглушек → {OUT.relative_to(ROOT)}")
+            badge(shape, kind, i, number, word).save(OUT / f"{key}_{i}.png", optimize=True)
+    print(f"{sum(len(v[2]) for v in BADGES.values())} заглушек → {OUT.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

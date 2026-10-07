@@ -291,30 +291,36 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppDimensions.spacingS),
 
-            // Сетка значков (3 колонки через LayoutBuilder + Wrap)
-            LayoutBuilder(
-              builder: (context, constraints) {
-                const spacing = 12.0;
-                final itemWidth = (constraints.maxWidth - 2 * spacing) / 3;
-                return Wrap(
-                  spacing: spacing,
-                  runSpacing: AppDimensions.spacingXL,
+            // Сетка значков: 3 колонки, карточки в ряду одной высоты
+            // (IntrinsicHeight), без фиксированной высоты — крупный
+            // системный шрифт просто делает ряд выше.
+            for (var row = 0; row < achievements.length; row += 3) ...[
+              if (row > 0) const SizedBox(height: 10),
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    for (final achievement in achievements)
-                      SizedBox(
-                        width: itemWidth,
-                        child: _AchievementGridCell(
-                          achievement: achievement,
-                          onTap: () {
-                            HapticFeedbackHelper.tap();
-                            _showAchievementDetails(context, achievement);
-                          },
-                        ),
+                    for (var col = 0; col < 3; col++) ...[
+                      if (col > 0) const SizedBox(width: 10),
+                      Expanded(
+                        child: row + col < achievements.length
+                            ? _AchievementGridCell(
+                                achievement: achievements[row + col],
+                                onTap: () {
+                                  HapticFeedbackHelper.tap();
+                                  _showAchievementDetails(
+                                    context,
+                                    achievements[row + col],
+                                  );
+                                },
+                              )
+                            : const SizedBox.shrink(),
                       ),
+                    ],
                   ],
-                );
-              },
-            ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -594,7 +600,7 @@ class _StatColumn extends StatelessWidget {
           label,
           style: TextStyle(fontSize: 12.5, color: colors.secondaryText),
           textAlign: TextAlign.center,
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
       ],
@@ -618,47 +624,70 @@ class _AchievementGridCell extends StatelessWidget {
       achievement.levels.length,
     );
 
+    final next = achievement.nextTarget;
+    final progress = next == null
+        ? 1.0
+        : (achievement.value / next).clamp(0.0, 1.0).toDouble();
+
     return Semantics(
       label: semanticsLabel,
       button: true,
       excludeSemantics: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            AchievementBadge(
-              id: achievement.id,
-              imageLevel: achievement.level == 0 ? 1 : achievement.level,
-              unlocked: achievement.isUnlocked,
-              size: 72,
+      child: Material(
+        color: colors.cardBackground,
+        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 14, 8, 12),
+            child: Column(
+              children: [
+                AchievementBadge(
+                  id: achievement.id,
+                  imageLevel: achievement.level == 0 ? 1 : achievement.level,
+                  unlocked: achievement.isUnlocked,
+                  size: 68,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.2,
+                    fontWeight: FontWeight.w600,
+                    color: achievement.isUnlocked
+                        ? colors.primaryText
+                        : colors.secondaryText,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const Spacer(),
+                const SizedBox(height: 8),
+                // Прогресс до следующего уровня; на максимуме — полная.
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 4,
+                    color: achievement.isMaxed ? colors.green : colors.accent,
+                    backgroundColor: colors.searchFieldFill,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  appL10n.achievementLevelFormat(
+                    achievement.level,
+                    achievement.levels.length,
+                  ),
+                  style: TextStyle(fontSize: 11.5, color: colors.secondaryText),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: achievement.isUnlocked
-                    ? colors.primaryText
-                    : colors.secondaryText,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              appL10n.achievementLevelFormat(
-                achievement.level,
-                achievement.levels.length,
-              ),
-              style: TextStyle(fontSize: 12, color: colors.secondaryText),
-              textAlign: TextAlign.center,
-            ),
-          ],
+          ),
         ),
       ),
     );

@@ -75,7 +75,8 @@ class AchievementBadge extends StatelessWidget {
     );
 
     if (!unlocked) {
-      final opacity = isDark ? 0.25 : 0.35;
+      // Бледнее цветного, но символ и число ещё читаются.
+      final opacity = isDark ? 0.4 : 0.5;
       badgeWidget = Opacity(
         opacity: opacity,
         child: ColorFiltered(
