@@ -534,11 +534,10 @@ class _TrafficControllerScreenState
             ),
 
           // Переключатель жестов
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildPillChoice(
+          Row(
+            children: [
+              Expanded(
+                child: _buildPillChoice(
                   title: 'Рука вперёд',
                   selected: _curGesture == ControllerGesture.rightArmForward,
                   onTap: () {
@@ -548,8 +547,10 @@ class _TrafficControllerScreenState
                     _updateEngineScenario();
                   },
                 ),
-                const SizedBox(width: 6),
-                _buildPillChoice(
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildPillChoice(
                   title: 'Руки в стороны',
                   selected: _curGesture == ControllerGesture.handsDownOrSides,
                   onTap: () {
@@ -559,8 +560,10 @@ class _TrafficControllerScreenState
                     _updateEngineScenario();
                   },
                 ),
-                const SizedBox(width: 6),
-                _buildPillChoice(
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildPillChoice(
                   title: 'Рука вверх',
                   selected: _curGesture == ControllerGesture.armUp,
                   onTap: () {
@@ -568,17 +571,16 @@ class _TrafficControllerScreenState
                     _updateEngineScenario();
                   },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
 
-          // Ракурс регулировщика
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildPillChoice(
+          // Ракурс регулировщика (4 стороны подхода к перекрестку)
+          Row(
+            children: [
+              Expanded(
+                child: _buildPillChoice(
                   title: 'Слева',
                   selected: _curApproach == ApproachDirection.left,
                   onTap: () {
@@ -586,8 +588,10 @@ class _TrafficControllerScreenState
                     _updateEngineScenario();
                   },
                 ),
-                const SizedBox(width: 6),
-                _buildPillChoice(
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildPillChoice(
                   title: 'С груди',
                   selected: _curApproach == ApproachDirection.front,
                   onTap: () {
@@ -595,8 +599,10 @@ class _TrafficControllerScreenState
                     _updateEngineScenario();
                   },
                 ),
-                const SizedBox(width: 6),
-                _buildPillChoice(
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildPillChoice(
                   title: 'Справа',
                   selected: _curApproach == ApproachDirection.right,
                   onTap: () {
@@ -604,8 +610,10 @@ class _TrafficControllerScreenState
                     _updateEngineScenario();
                   },
                 ),
-                const SizedBox(width: 6),
-                _buildPillChoice(
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildPillChoice(
                   title: 'Со спины',
                   selected: _curApproach == ApproachDirection.back,
                   onTap: () {
@@ -613,9 +621,16 @@ class _TrafficControllerScreenState
                     _updateEngineScenario();
                   },
                 ),
-                const SizedBox(width: 12),
-                // Выбор: авто или трамвай
-                _buildPillChoice(
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Выбор: авто или трамвай
+          Row(
+            children: [
+              Expanded(
+                child: _buildPillChoice(
                   icon: Icons.directions_car_rounded,
                   title: appL10n.gameVehicleCar,
                   selected: _curVehicle == VehicleKind.car,
@@ -624,8 +639,10 @@ class _TrafficControllerScreenState
                     _updateEngineScenario();
                   },
                 ),
-                const SizedBox(width: 6),
-                _buildPillChoice(
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildPillChoice(
                   icon: Icons.tram_rounded,
                   title: appL10n.gameVehicleTram,
                   selected: _curVehicle == VehicleKind.tram,
@@ -634,8 +651,8 @@ class _TrafficControllerScreenState
                     _updateEngineScenario();
                   },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
 
@@ -693,12 +710,14 @@ class _TrafficControllerScreenState
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? Colors.white : Colors.white10,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
@@ -709,12 +728,17 @@ class _TrafficControllerScreenState
               ),
               const SizedBox(width: 4),
             ],
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? Colors.black : Colors.white,
+            Flexible(
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? Colors.black : Colors.white,
+                ),
               ),
             ),
           ],
@@ -885,14 +909,17 @@ class _TrafficControllerScreenState
                 color: AppColors.accent,
               ),
               const SizedBox(width: 8),
-              Text(
-                _curVehicle == VehicleKind.car
-                    ? 'Куда разрешено поехать автомобилю?'
-                    : 'Куда разрешено поехать трамваю?',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+              Flexible(
+                child: Text(
+                  _curVehicle == VehicleKind.car
+                      ? 'Куда разрешено поехать автомобилю?'
+                      : 'Куда разрешено поехать трамваю?',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],

@@ -758,7 +758,7 @@
 
     // Жезл регулировщика (высококонтрастные черно-белые полосы + красный светодиод)
     batonMesh = buildBaton();
-    batonMesh.position.set(0, -0.72, 0.16);
+    batonMesh.position.set(0, -0.72, 0);
     rightArmPivot.add(batonMesh);
 
     inspectorGroup.add(rightArmPivot);
@@ -772,24 +772,34 @@
     const whiteMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.2 });
     const redTipMat = new THREE.MeshBasicMaterial({ color: 0xFF1744 });
 
-    // Рукоятка с темляком
+    // Рукоятка жезла сидит прямо в ладони инспектора
     const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.028, 0.16, 14), handleMat);
-    handle.rotation.x = Math.PI / 2;
+    handle.position.set(0, 0, 0);
     batonGroup.add(handle);
 
-    // 4 чередующиеся полосы (ГОСТ)
+    // Темляк (ремешок на запястье у верхнего торца рукоятки)
+    const strap = new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.006, 8, 16), handleMat);
+    strap.rotation.x = Math.PI / 2;
+    strap.position.set(0, 0.07, 0);
+    batonGroup.add(strap);
+
+    // 4 чередующиеся полосы (ГОСТ) вдоль оси жезла (-Y)
     for (let i = 0; i < 4; i++) {
       const mat = (i % 2 === 0) ? whiteMat : handleMat;
-      const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.11, 14), mat);
-      stripe.position.z = 0.12 + i * 0.105;
-      stripe.rotation.x = Math.PI / 2;
+      const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.029, 0.029, 0.095, 14), mat);
+      stripe.position.set(0, -0.125 - i * 0.095, 0);
       batonGroup.add(stripe);
     }
 
-    // Красный светящийся торец
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.032, 12, 12), redTipMat);
-    tip.position.z = 0.54;
+    // Красный светящийся торец на конце жезла
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.03, 12, 12), redTipMat);
+    tip.position.set(0, -0.51, 0);
     batonGroup.add(tip);
+
+    // Легкая подсветка кончика жезла
+    const tipLight = new THREE.PointLight(0xFF1744, 0.6, 1.2);
+    tipLight.position.set(0, -0.51, 0);
+    batonGroup.add(tipLight);
 
     return batonGroup;
   }
@@ -1045,8 +1055,8 @@
 
     // Положение рук инспектора
     if (gesture === GESTURES.ARM_UP) {
-      // 1. Рука поднята вверх: правая вверх (жезл вертикально), левая опущена
-      targetRightArm.set(0, 0, Math.PI - 0.15);
+      // 1. Рука поднята вверх: правая вверх (жезл строго вертикально), левая опущена
+      targetRightArm.set(0, 0, Math.PI);
       targetLeftArm.set(0, 0, 0);
     } else if (gesture === GESTURES.HANDS_DOWN) {
       // 2. Руки опущены или вытянуты в стороны
