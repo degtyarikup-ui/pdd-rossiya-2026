@@ -176,7 +176,10 @@ export async function settleOrder(env, order, deps) {
   const details = typeof tx.paymentDetails === 'object' && tx.paymentDetails ? tx.paymentDetails : null;
 
   if (status === 'CONFIRMED' && order.status !== 'confirmed') {
-    if (!details || Number(details.amount) !== order.amount || String(details.currency).toUpperCase() !== order.currency) {
+    // Касса может добавлять покупателю комиссию сверху (99 ₽ → 106,92 ₽ при 8%):
+    // принимаем сумму не меньше цены тарифа и не больше цены плюс 15%.
+    const paid = Number(details?.amount);
+    if (!details || !(paid >= order.amount && paid <= order.amount * 1.15) || String(details.currency).toUpperCase() !== order.currency) {
       order.status = 'mismatch';
       await env.INSTALLS.put('pay_order:' + order.orderId, JSON.stringify(order));
       await notify(env, deps, `⚠️ <b>Оплата на сайте: сумма не совпала</b>\nЗаказ ${deps.esc(order.orderId)} · ожидали ${order.amount} ₽`, 'pay_mismatch:' + order.orderId);

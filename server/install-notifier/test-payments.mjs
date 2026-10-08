@@ -97,6 +97,7 @@ test('оплата: платёж, уведомление, срок один ра
     assert.ok(!user(env)?.isPremium);
 
     tx.status = 'CONFIRMED';
+    tx.paymentDetails = { amount: 313.2, currency: 'RUB' }; // 290 ₽ + 8% комиссии покупателя
     assert.equal((await callback(env, { id: tx.id, status: 'CONFIRMED', payload: start.order })).status, 200);
     const paid = user(env);
     assert.equal(paid.isPremium, true);
