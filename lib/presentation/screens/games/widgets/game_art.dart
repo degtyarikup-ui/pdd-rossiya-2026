@@ -4,25 +4,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 
-/// Обложки игр. Только настоящий контент: кадр из 3D-сцены регулировщика
-/// и знаки из базы — никаких нарисованных «по мотивам» картинок.
+/// Игровые обложки в единой обработке: реальная сцена и карточки знаков.
 
 String _sign(String file) => '${CountryConfig.current.signImagesDir}/$file';
 
-// Файлы знаков из signs.json.
-final _stopSign = _sign('2bc0f81810c66f9af28b7a7ba506aa56.svg'); // 2.5
-final _noEntrySign = _sign('9f77764c15a21428b8e6e7f5c75936e2.svg'); // 3.1
-final _yieldSign = _sign('cc8922782f1e3262ac4dfbb3fbe8cbe6.svg'); // 2.4
+// Файл знака из signs.json.
 final _roundaboutSign = _sign('58e7e696835bcc69857b61cf990b6151.svg'); // 4.3
 
-/// Кадр из сцены «Регулировщика» с места водителя.
+/// Обложка на основе настоящего кадра «Регулировщика».
 class TrafficControllerArt extends StatelessWidget {
   const TrafficControllerArt({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      'assets/images/games/traffic_controller.webp',
+      'assets/images/games/traffic_controller_cover.webp',
       fit: BoxFit.cover,
       alignment: Alignment.center,
       filterQuality: FilterQuality.high,
@@ -31,35 +27,18 @@ class TrafficControllerArt extends StatelessWidget {
   }
 }
 
-/// Веер из трёх знаков — как колода карточек «Знак-Свайпера».
+/// Карточки со знаками и направлениями свайпа.
 class SignSwiperArt extends StatelessWidget {
   const SignSwiperArt({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final side = math.min(
-          constraints.maxHeight * 0.6,
-          constraints.maxWidth * 0.22,
-        );
-        Widget sign(String path, double angle, double dx) =>
-            Transform.translate(
-              offset: Offset(dx * side, 0),
-              child: Transform.rotate(
-                angle: angle,
-                child: SvgPicture.asset(path, width: side, height: side),
-              ),
-            );
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            sign(_noEntrySign, -0.22, -1.05),
-            sign(_yieldSign, 0.22, 1.05),
-            sign(_stopSign, 0, 0),
-          ],
-        );
-      },
+    return Image.asset(
+      'assets/images/games/sign_swiper_cover.webp',
+      fit: BoxFit.cover,
+      alignment: Alignment.center,
+      filterQuality: FilterQuality.high,
+      gaplessPlayback: true,
     );
   }
 }

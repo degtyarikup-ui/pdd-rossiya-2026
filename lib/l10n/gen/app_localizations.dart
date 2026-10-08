@@ -2824,24 +2824,6 @@ abstract class AppLocalizations {
   /// **'Регулировщик 3D'**
   String get gameTrafficControllerTitle;
 
-  /// No description provided for @gameTrafficControllerSubtitle.
-  ///
-  /// In ru, this message translates to:
-  /// **'Жесты регулировщика глазами водителя: разберитесь в обучении и проверьте себя в блице.'**
-  String get gameTrafficControllerSubtitle;
-
-  /// No description provided for @gameModeTraining.
-  ///
-  /// In ru, this message translates to:
-  /// **'Обучение'**
-  String get gameModeTraining;
-
-  /// No description provided for @gameModeArcade.
-  ///
-  /// In ru, this message translates to:
-  /// **'Блиц'**
-  String get gameModeArcade;
-
   /// No description provided for @gameBestScoreLabel.
   ///
   /// In ru, this message translates to:
@@ -2961,24 +2943,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Знак-Свайпер'**
   String get gameSignSwiperTitle;
-
-  /// No description provided for @gameSignSwiperSubtitle.
-  ///
-  /// In ru, this message translates to:
-  /// **'Ситуации со знаками: свайп вправо — «да», влево — «нет». Разбор каждой ошибки.'**
-  String get gameSignSwiperSubtitle;
-
-  /// No description provided for @gameSignSwiperModeSprint.
-  ///
-  /// In ru, this message translates to:
-  /// **'Блиц'**
-  String get gameSignSwiperModeSprint;
-
-  /// No description provided for @gameSignSwiperModeTraining.
-  ///
-  /// In ru, this message translates to:
-  /// **'Обучение'**
-  String get gameSignSwiperModeTraining;
 
   /// No description provided for @gameSwipedLabel.
   ///

@@ -22,15 +22,8 @@ import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
-enum GamePlayMode { training, arcade }
-
 class TrafficControllerScreen extends ConsumerStatefulWidget {
-  final GamePlayMode initialMode;
-
-  const TrafficControllerScreen({
-    super.key,
-    this.initialMode = GamePlayMode.training,
-  });
+  const TrafficControllerScreen({super.key});
 
   @override
   ConsumerState<TrafficControllerScreen> createState() =>
@@ -39,7 +32,6 @@ class TrafficControllerScreen extends ConsumerStatefulWidget {
 
 class _TrafficControllerScreenState
     extends ConsumerState<TrafficControllerScreen> {
-  late GamePlayMode _mode;
   WebViewController? _webViewController;
   BrowserGame? _browserGame;
   bool _engineReady = false;
@@ -82,7 +74,6 @@ class _TrafficControllerScreenState
   @override
   void initState() {
     super.initState();
-    _mode = widget.initialMode;
     if (kIsWeb) {
       _initWebGame();
     } else {
@@ -140,18 +131,14 @@ class _TrafficControllerScreenState
   void _handleBridgeMessage(String raw) {
     try {
       final data = jsonDecode(raw) as Map<String, dynamic>;
-      if (data['type'] == 'ready' && mounted) {
+      if (data['type'] == 'ready' && mounted && !_engineReady) {
         setState(() => _engineReady = true);
         _sentInset = -1;
         _syncViewInset();
         unawaited(_sendPlayerCar());
         _call('setZoom($_zoom)');
         // Блиц стартует, когда сцена готова, — иначе время тратится на загрузку.
-        if (_mode == GamePlayMode.arcade) {
-          _startArcadeRound();
-        } else {
-          _updateEngineScenario();
-        }
+        _startArcadeRound();
       }
     } catch (_) {}
   }
@@ -219,42 +206,9 @@ class _TrafficControllerScreenState
       ApproachDirection.right => 'right',
     };
     final vehicle = _curVehicle == VehicleKind.tram ? 'tram' : 'car';
-    final mode = _mode == GamePlayMode.training ? 'training' : 'arcade';
-
-    _call('setMode("$mode")');
+    _call('setMode("arcade")');
     _call('setScenario("$gesture", "$approach", "$vehicle")');
     _call('setCameraView("driver")');
-  }
-
-  // --- Режимы ---
-
-  void _switchMode(GamePlayMode mode) {
-    if (_mode == mode) return;
-    _countdownTimer?.cancel();
-    _nextSituationTimer?.cancel();
-
-    setState(() {
-      _mode = mode;
-      _isGameOver = false;
-    });
-    if (_mode == GamePlayMode.arcade) {
-      _startArcadeRound();
-    } else {
-      _updateEngineScenario();
-    }
-  }
-
-  void _setScenario({
-    ControllerGesture? gesture,
-    ApproachDirection? approach,
-    VehicleKind? vehicle,
-  }) {
-    setState(() {
-      _curGesture = gesture ?? _curGesture;
-      _curApproach = approach ?? _curApproach;
-      _curVehicle = vehicle ?? _curVehicle;
-    });
-    _updateEngineScenario();
   }
 
   // --- Блиц ---
@@ -324,7 +278,7 @@ class _TrafficControllerScreenState
   }
 
   void _onArcadeMoveSelected(TrafficMove move) {
-    if (_isGameOver || _awaitingNext) return;
+    if (!_engineReady || _isGameOver || _awaitingNext) return;
 
     final isAllowed = TrafficControllerRules.isMoveAllowed(
       gesture: _curGesture,
@@ -396,7 +350,6 @@ class _TrafficControllerScreenState
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final padding = MediaQuery.paddingOf(context);
-    final arcade = _mode == GamePlayMode.arcade;
 
     // Сцена всегда дневная — значки статус-бара тёмные в любой теме.
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -442,14 +395,14 @@ class _TrafficControllerScreenState
               top: padding.top + AppDimensions.spacingS,
               left: AppDimensions.screenPadding,
               right: AppDimensions.screenPadding,
-              child: _buildTopBar(colors, arcade),
+              child: _buildTopBar(colors),
             ),
 
             Positioned(
               left: 0,
               right: 0,
               bottom: 0,
-              child: _buildPanel(colors, padding.bottom, arcade),
+              child: _buildPanel(colors, padding.bottom),
             ),
 
             if (_isGameOver) Positioned.fill(child: _buildResult(colors)),
@@ -491,8 +444,9 @@ class _TrafficControllerScreenState
         : WebViewWidget(controller: controller);
   }
 
-  Widget _buildTopBar(AppThemeColors colors, bool arcade) {
+  Widget _buildTopBar(AppThemeColors colors) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppChromeIconButton(
           icon: Icons.close_rounded,
@@ -502,12 +456,7 @@ class _TrafficControllerScreenState
           },
         ),
         const SizedBox(width: AppDimensions.spacingM),
-        if (arcade)
-          Expanded(child: _buildHud(colors))
-        else ...[
-          const Spacer(),
-          _buildVehicleToggle(colors),
-        ],
+        Expanded(child: _buildHud(colors)),
       ],
     );
   }
@@ -516,92 +465,48 @@ class _TrafficControllerScreenState
   Widget _buildHud(AppThemeColors colors) {
     final urgent = _secondsLeft <= 10;
     return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingM),
+      constraints: const BoxConstraints(minHeight: 40),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.spacingM,
+        vertical: AppDimensions.spacingS,
+      ),
       decoration: BoxDecoration(
         color: colors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
       ),
-      child: Row(
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: AppDimensions.spacingM,
+        runSpacing: AppDimensions.spacingS,
         children: [
           GameScoreLabel(score: _score, multiplier: _combo),
-          const Spacer(),
-          Icon(
-            Icons.timer_outlined,
-            size: 18,
-            color: urgent ? colors.red : colors.secondaryText,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.timer_outlined,
+                size: 18,
+                color: urgent ? colors.red : colors.secondaryText,
+              ),
+              const SizedBox(width: AppDimensions.spacingXS),
+              Text(
+                appL10n.gameSecondsLeft(_secondsLeft),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: urgent ? colors.red : colors.primaryText,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 4),
-          Text(
-            appL10n.gameSecondsLeft(_secondsLeft),
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: urgent ? colors.red : colors.primaryText,
-            ),
-          ),
-          const SizedBox(width: AppDimensions.spacingM),
           GameLives(lives: _lives),
         ],
       ),
     );
   }
 
-  Widget _buildVehicleToggle(AppThemeColors colors) {
-    Widget item(VehicleKind kind, IconData icon, String label) {
-      final selected = _curVehicle == kind;
-      return Semantics(
-        label: label,
-        button: true,
-        selected: selected,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () {
-            if (selected) return;
-            HapticFeedbackHelper.select();
-            _setScenario(vehicle: kind);
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            width: 40,
-            height: 32,
-            decoration: BoxDecoration(
-              color: selected ? colors.accentSurface10 : Colors.transparent,
-              borderRadius: BorderRadius.circular(
-                AppDimensions.smallRadius + 1,
-              ),
-            ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: selected ? colors.accent : colors.secondaryText,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: colors.cardBackground,
-        borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-      ),
-      child: Row(
-        children: [
-          item(
-            VehicleKind.car,
-            Icons.directions_car_rounded,
-            appL10n.gameVehicleCar,
-          ),
-          item(VehicleKind.tram, Icons.tram_rounded, appL10n.gameVehicleTram),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPanel(AppThemeColors colors, double bottomInset, bool arcade) {
+  Widget _buildPanel(AppThemeColors colors, double bottomInset) {
     return NotificationListener<SizeChangedLayoutNotification>(
       onNotification: (_) {
         _syncViewInset();
@@ -610,13 +515,13 @@ class _TrafficControllerScreenState
       child: SizeChangedLayoutNotifier(
         child: KeyedSubtree(
           key: _panelKey,
-          child: _panelBody(colors, bottomInset, arcade),
+          child: _panelBody(colors, bottomInset),
         ),
       ),
     );
   }
 
-  Widget _panelBody(AppThemeColors colors, double bottomInset, bool arcade) {
+  Widget _panelBody(AppThemeColors colors, double bottomInset) {
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppDimensions.screenPadding,
@@ -630,134 +535,7 @@ class _TrafficControllerScreenState
           top: Radius.circular(AppDimensions.radiusExtraLarge),
         ),
       ),
-      child: AnimatedSize(
-        duration: const Duration(milliseconds: 200),
-        alignment: Alignment.bottomCenter,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            GameModeSwitch(
-              labels: [appL10n.gameModeTraining, appL10n.gameModeArcade],
-              selected: arcade ? 1 : 0,
-              onChanged: (i) => _switchMode(
-                i == 1 ? GamePlayMode.arcade : GamePlayMode.training,
-              ),
-            ),
-            const SizedBox(height: AppDimensions.spacingL),
-            if (arcade)
-              _buildArcadeControls(colors)
-            else
-              _buildTraining(colors),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- Обучение ---
-
-  Widget _buildTraining(AppThemeColors colors) {
-    final verse = TrafficControllerRules.mnemonicVerse(
-      gesture: _curGesture,
-      approach: _curApproach,
-      vehicle: _curVehicle,
-    );
-    final allowed = TrafficControllerRules.allowedMoves(
-      gesture: _curGesture,
-      approach: _curApproach,
-      vehicle: _curVehicle,
-    );
-
-    Widget caption(String text) => Padding(
-      padding: const EdgeInsets.only(bottom: AppDimensions.spacingS),
-      child: Text(
-        text,
-        style: TextStyle(fontSize: 12, color: colors.secondaryText),
-      ),
-    );
-
-    Widget chips<T>(
-      List<(T, String)> items,
-      T selected,
-      ValueChanged<T> onSelect,
-    ) {
-      return Row(
-        children: [
-          for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) const SizedBox(width: AppDimensions.spacingS),
-            Expanded(
-              child: GameChip(
-                label: items[i].$2,
-                selected: items[i].$1 == selected,
-                onTap: () => onSelect(items[i].$1),
-              ),
-            ),
-          ],
-        ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 38),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              verse,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                height: 1.35,
-                color: colors.primaryText,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: AppDimensions.spacingL),
-        caption(appL10n.gameCaptionGesture),
-        chips<ControllerGesture>(
-          [
-            (ControllerGesture.rightArmForward, appL10n.gameGestureRightArm),
-            (ControllerGesture.handsDownOrSides, appL10n.gameGestureHandsSides),
-            (ControllerGesture.armUp, appL10n.gameGestureArmUp),
-          ],
-          _curGesture,
-          (g) => _setScenario(gesture: g),
-        ),
-        const SizedBox(height: AppDimensions.spacingM),
-        caption(appL10n.gameCaptionApproach),
-        chips<ApproachDirection>(
-          [
-            (ApproachDirection.left, appL10n.gameApproachLeft),
-            (ApproachDirection.front, appL10n.gameApproachFront),
-            (ApproachDirection.right, appL10n.gameApproachRight),
-            (ApproachDirection.back, appL10n.gameApproachBack),
-          ],
-          _curApproach,
-          (a) => _setScenario(approach: a),
-        ),
-        const SizedBox(height: AppDimensions.spacingL),
-        Row(
-          children: [
-            for (var i = 0; i < _moves.length; i++) ...[
-              if (i > 0) const SizedBox(width: AppDimensions.spacingS),
-              Expanded(
-                child: _MoveTile(
-                  move: _moves[i],
-                  allowed: allowed.contains(_moves[i].move),
-                  onTap: () {
-                    HapticFeedbackHelper.select();
-                    _call('makeMove("${_moveName(_moves[i].move)}")');
-                  },
-                ),
-              ),
-            ],
-          ],
-        ),
-      ],
+      child: _buildArcadeControls(colors),
     );
   }
 
@@ -770,7 +548,7 @@ class _TrafficControllerScreenState
       vehicle: _curVehicle,
     );
 
-    Widget button(_MoveSpec spec) {
+    Widget button(_MoveSpec spec, {required bool directional}) {
       final isLast = _lastMove == spec.move;
       Color background = colors.gray;
       Color foreground = colors.primaryText;
@@ -786,25 +564,30 @@ class _TrafficControllerScreenState
           foreground = colors.secondaryText;
         }
       }
-      return GameActionButton(
-        label: spec.label,
-        icon: spec.icon,
+      return _TrafficMoveButton(
+        spec: spec,
+        directional: directional,
         iconColor: _awaitingNext ? null : colors.accent,
-        height: 52,
         background: background,
         foreground: foreground,
-        onTap: () => _onArcadeMoveSelected(spec.move),
+        onTap: _engineReady && !_awaitingNext && !_isGameOver
+            ? () => _onArcadeMoveSelected(spec.move)
+            : null,
       );
     }
 
-    Widget row(List<_MoveSpec> specs) => Row(
-      children: [
-        for (var i = 0; i < specs.length; i++) ...[
-          if (i > 0) const SizedBox(width: AppDimensions.spacingS),
-          Expanded(child: button(specs[i])),
-        ],
-      ],
-    );
+    Widget row(List<_MoveSpec> specs, {required bool directional}) =>
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < specs.length; i++) ...[
+                if (i > 0) const SizedBox(width: AppDimensions.spacingS),
+                Expanded(child: button(specs[i], directional: directional)),
+              ],
+            ],
+          ),
+        );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -816,29 +599,37 @@ class _TrafficControllerScreenState
               _curVehicle == VehicleKind.car
                   ? Icons.directions_car_rounded
                   : Icons.tram_rounded,
-              size: 20,
+              size: AppDimensions.smallIconSize,
               color: colors.accent,
             ),
             const SizedBox(width: AppDimensions.spacingS),
-            Text(
-              appL10n.gamePromptWhereCanGo,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: colors.primaryText,
+            Flexible(
+              child: Text(
+                appL10n.gamePromptWhereCanGo,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: colors.primaryText,
+                ),
               ),
             ),
           ],
         ),
         const SizedBox(height: AppDimensions.spacingM),
-        row(_moves.sublist(0, 3)),
+        row(_moves.sublist(0, 3), directional: true),
         const SizedBox(height: AppDimensions.spacingS),
-        row(_moves.sublist(3)),
+        row(_moves.sublist(3), directional: false),
       ],
     );
   }
 
   static final List<_MoveSpec> _moves = [
+    _MoveSpec(
+      TrafficMove.left,
+      Icons.turn_left_rounded,
+      () => appL10n.gameActionLeft,
+    ),
     _MoveSpec(
       TrafficMove.straight,
       Icons.straight_rounded,
@@ -848,11 +639,6 @@ class _TrafficControllerScreenState
       TrafficMove.right,
       Icons.turn_right_rounded,
       () => appL10n.gameActionRight,
-    ),
-    _MoveSpec(
-      TrafficMove.left,
-      Icons.turn_left_rounded,
-      () => appL10n.gameActionLeft,
     ),
     _MoveSpec(
       TrafficMove.uTurn,
@@ -877,53 +663,90 @@ class _MoveSpec {
   String get label => _label();
 }
 
-/// Маневр в обучении: зелёный — разрешён, серый — нет. Нажатие — проезд.
-class _MoveTile extends StatelessWidget {
-  const _MoveTile({
-    required this.move,
-    required this.allowed,
+/// Направления идут слева направо, значок читается раньше подписи.
+/// Высота растёт вместе со шрифтом, а вся плитка остаётся зоной нажатия.
+class _TrafficMoveButton extends StatelessWidget {
+  const _TrafficMoveButton({
+    required this.spec,
+    required this.directional,
+    required this.background,
+    required this.foreground,
     required this.onTap,
+    this.iconColor,
   });
 
-  final _MoveSpec move;
-  final bool allowed;
-  final VoidCallback onTap;
+  final _MoveSpec spec;
+  final bool directional;
+  final Color background;
+  final Color foreground;
+  final Color? iconColor;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final foreground = allowed ? colors.green : colors.secondaryText;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          height: 64,
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          decoration: BoxDecoration(
-            color: allowed ? colors.greenLight : colors.gray,
+    final icon = Icon(
+      spec.icon,
+      size: directional ? AppDimensions.iconSize : AppDimensions.smallIconSize,
+      color: iconColor ?? foreground,
+    );
+    final label = Text(
+      spec.label,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: directional ? 14 : 16,
+        fontWeight: FontWeight.w600,
+        color: foreground,
+      ),
+    );
+    return Semantics(
+      button: true,
+      enabled: onTap != null,
+      label: spec.label,
+      onTap: onTap,
+      child: ExcludeSemantics(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
             borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(move.icon, size: 22, color: foreground),
-              const SizedBox(height: 4),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  move.label,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: foreground,
-                  ),
-                ),
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              constraints: BoxConstraints(
+                minHeight: directional
+                    ? AppDimensions.answerOptionHeight +
+                          AppDimensions.spacingXXL
+                    : AppDimensions.answerOptionHeight,
               ),
-            ],
+              alignment: Alignment.center,
+              padding: EdgeInsets.symmetric(
+                horizontal: AppDimensions.spacingS,
+                vertical: directional
+                    ? AppDimensions.spacingM
+                    : AppDimensions.spacingS,
+              ),
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
+              ),
+              child: directional
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        icon,
+                        const SizedBox(height: AppDimensions.spacingS),
+                        label,
+                      ],
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        icon,
+                        const SizedBox(width: AppDimensions.spacingS),
+                        Flexible(child: label),
+                      ],
+                    ),
+            ),
           ),
         ),
       ),

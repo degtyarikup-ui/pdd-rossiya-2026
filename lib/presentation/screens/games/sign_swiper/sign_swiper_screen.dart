@@ -17,22 +17,14 @@ import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 
-enum SignSwiperMode { sprint, training }
-
 class SignSwiperScreen extends ConsumerStatefulWidget {
-  final SignSwiperMode initialMode;
-
-  const SignSwiperScreen({
-    super.key,
-    this.initialMode = SignSwiperMode.training,
-  });
+  const SignSwiperScreen({super.key});
 
   @override
   ConsumerState<SignSwiperScreen> createState() => _SignSwiperScreenState();
 }
 
 class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
-  late SignSwiperMode _mode;
   SignSwiperEngine? _engine;
 
   final SwipeCardController _cardController = SwipeCardController();
@@ -41,7 +33,6 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   int _currentIndex = 0;
   bool _isProcessingSwipe = false;
 
-  // Блиц
   Timer? _timer;
   int _secondsLeft = 60;
   int _score = 0;
@@ -56,21 +47,8 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   int _previousBest = 0;
   final List<SignCardQuestion> _mistakes = [];
 
-  // Обучение: null — все категории
-  String? _selectedCategory;
-  int _trainingSolved = 0;
-
   /// Множитель очков за комбо: каждые 3 верных ответа +1, не выше x4.
   static int _multiplierFor(int combo) => 1 + (combo ~/ 3).clamp(0, 3);
-
-  String? get _categoryFilter =>
-      _mode == SignSwiperMode.training ? _selectedCategory : null;
-
-  @override
-  void initState() {
-    super.initState();
-    _mode = widget.initialMode;
-  }
 
   @override
   void dispose() {
@@ -83,15 +61,12 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   void _initEngine(Map<String, dynamic> signsJson) {
     if (_engine != null) return;
     final signs = SignSwiperEngine.parseSignsJson(signsJson);
+    if (signs.isEmpty) return;
     _engine = SignSwiperEngine(allSigns: signs);
     _resetRoundState();
-    if (_mode == SignSwiperMode.sprint) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _mode == SignSwiperMode.sprint && !_isGameOver) {
-          _startSprintTimer();
-        }
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_isGameOver) _startTimer();
+    });
   }
 
   void _resetRoundState() {
@@ -108,20 +83,17 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     _isNewRecord = false;
     _timeUp = false;
     _mistakes.clear();
-    _deck =
-        _engine?.generateDeck(categoryFilter: _categoryFilter, count: 30) ?? [];
+    _deck = _engine?.generateDeck(count: 30) ?? [];
   }
 
   void _startRound() {
     _timer?.cancel();
     setState(_resetRoundState);
 
-    if (_mode == SignSwiperMode.sprint) {
-      _startSprintTimer();
-    }
+    _startTimer();
   }
 
-  void _startSprintTimer() {
+  void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
@@ -133,7 +105,8 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
         if (_secondsLeft <= 5 && _secondsLeft > 0) {
           SoundEffectsService.instance.playTick();
         }
-      } else {
+      }
+      if (_secondsLeft == 0) {
         _timeUp = true;
         _endGame();
       }
@@ -143,6 +116,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   /// Конец раунда. Вызывается и из таймера, и из свайпа — поэтому сам делает
   /// setState. Рекорд сравниваем ДО записи, иначе он всегда «побит».
   void _endGame() {
+    if (_isGameOver) return;
     _timer?.cancel();
     final previousBest = ref.read(signSwiperProgressProvider).bestScore;
     ref
@@ -175,44 +149,27 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
       SoundEffectsService.instance.playCorrect();
       HapticFeedbackHelper.softSuccess();
 
-      if (_mode == SignSwiperMode.sprint) {
-        _correctAnswers++;
-        _combo++;
-        if (_combo > _maxCombo) _maxCombo = _combo;
-        _score += 100 * _multiplierFor(_combo);
-        _secondsLeft = (_secondsLeft + 2).clamp(1, 60);
+      _correctAnswers++;
+      _combo++;
+      if (_combo > _maxCombo) _maxCombo = _combo;
+      _score += 100 * _multiplierFor(_combo);
+      _secondsLeft = (_secondsLeft + 2).clamp(1, 60);
 
-        if (_combo == 5 || _combo == 10 || _combo == 20) {
-          SoundEffectsService.instance.playStreak();
-        }
-      } else {
-        _trainingSolved++;
-        ref
-            .read(signSwiperProgressProvider.notifier)
-            .incrementTraining(swiped: 1);
+      if (_combo == 5 || _combo == 10 || _combo == 20) {
+        SoundEffectsService.instance.playStreak();
       }
     } else {
       SoundEffectsService.instance.playIncorrect();
       HapticFeedbackHelper.error();
 
-      if (_mode == SignSwiperMode.sprint) {
-        _combo = 0;
-        _lives--;
-        _secondsLeft = (_secondsLeft - 3).clamp(0, 60);
-        _mistakes.add(card);
+      _combo = 0;
+      _lives--;
+      _secondsLeft = (_secondsLeft - 3).clamp(0, 60);
+      _mistakes.add(card);
 
-        if (_lives <= 0 || _secondsLeft <= 0) {
-          _endGame();
-          return;
-        }
-      } else {
-        // В обучении сразу разбираем знак.
-        SignExplanationSheet.show(
-          context,
-          card: card,
-          wasAnswerCorrect: false,
-          onNext: _advanceToNextCard,
-        );
+      if (_lives <= 0 || _secondsLeft <= 0) {
+        _timeUp = _secondsLeft <= 0;
+        _endGame();
         return;
       }
     }
@@ -227,32 +184,9 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
       _currentIndex++;
       // Подгружаем следующую пачку, пока колода не кончилась.
       if (_deck.length - _currentIndex < 6 && _engine != null) {
-        _deck.addAll(
-          _engine!.generateDeck(categoryFilter: _categoryFilter, count: 20),
-        );
+        _deck.addAll(_engine!.generateDeck(count: 20));
       }
     });
-  }
-
-  void _switchMode(SignSwiperMode newMode) {
-    if (_mode == newMode) return;
-    _mode = newMode;
-    _startRound();
-  }
-
-  Future<void> _pickCategory() async {
-    final categories = _engine?.availableCategories ?? const <String>[];
-    HapticFeedbackHelper.tap();
-    final picked = await showModalBottomSheet<_CategoryChoice>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) =>
-          _CategorySheet(categories: categories, selected: _selectedCategory),
-    );
-    if (picked == null || !mounted || picked.value == _selectedCategory) return;
-    _selectedCategory = picked.value;
-    _startRound();
   }
 
   // --- UI ---
@@ -271,30 +205,12 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
           error: (error, _) => _buildError(colors),
           data: (signsJson) {
             _initEngine(signsJson);
-            final sprint = _mode == SignSwiperMode.sprint;
-
+            if (_engine == null) return _buildError(colors);
             return Stack(
               children: [
                 Column(
                   children: [
-                    _buildHeader(colors, sprint),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppDimensions.screenPadding,
-                      ),
-                      child: GameModeSwitch(
-                        labels: [
-                          appL10n.gameSignSwiperModeTraining,
-                          appL10n.gameSignSwiperModeSprint,
-                        ],
-                        selected: sprint ? 1 : 0,
-                        onChanged: (i) => _switchMode(
-                          i == 1
-                              ? SignSwiperMode.sprint
-                              : SignSwiperMode.training,
-                        ),
-                      ),
-                    ),
+                    _buildHeader(colors),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(
@@ -346,54 +262,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     );
   }
 
-  /// Шапка. Блиц: закрыть · счёт · жизни, под ними полоса времени.
-  /// Обучение: закрыть · выбор категории · сколько верно.
-  Widget _buildHeader(AppThemeColors colors, bool sprint) {
-    final close = AppChromeIconButton(
-      icon: Icons.close_rounded,
-      onTap: () {
-        HapticFeedbackHelper.tap();
-        Navigator.of(context).pop();
-      },
-    );
-
-    if (sprint) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppDimensions.screenPadding,
-          AppDimensions.spacingM,
-          AppDimensions.screenPadding,
-          AppDimensions.spacingL,
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                close,
-                Expanded(
-                  child: Center(
-                    child: GameScoreLabel(
-                      score: _score,
-                      multiplier: _multiplierFor(_combo),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: 72,
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: GameLives(lives: _lives),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.spacingM),
-            GameTimeBar(secondsLeft: _secondsLeft, totalSeconds: 60),
-          ],
-        ),
-      );
-    }
-
+  Widget _buildHeader(AppThemeColors colors) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppDimensions.screenPadding,
@@ -401,48 +270,36 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
         AppDimensions.screenPadding,
         AppDimensions.spacingL,
       ),
-      child: Row(
+      child: Column(
         children: [
-          close,
-          const SizedBox(width: AppDimensions.spacingM),
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: _pickCategory,
-              child: Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      _selectedCategory ?? appL10n.gameSignSwiperCategoryAll,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: colors.primaryText,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.expand_more_rounded,
-                    size: 22,
-                    color: colors.secondaryText,
-                  ),
-                ],
+          Row(
+            children: [
+              AppChromeIconButton(
+                icon: Icons.close_rounded,
+                onTap: () {
+                  HapticFeedbackHelper.tap();
+                  Navigator.of(context).pop();
+                },
               ),
-            ),
+              Expanded(
+                child: Center(
+                  child: GameScoreLabel(
+                    score: _score,
+                    multiplier: _multiplierFor(_combo),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 72,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: GameLives(lives: _lives),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: AppDimensions.spacingS),
-          Icon(Icons.check_circle_rounded, size: 20, color: colors.green),
-          const SizedBox(width: 4),
-          Text(
-            '$_trainingSolved',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: colors.primaryText,
-            ),
-          ),
+          const SizedBox(height: AppDimensions.spacingM),
+          GameTimeBar(secondsLeft: _secondsLeft, totalSeconds: 60),
         ],
       ),
     );
@@ -454,7 +311,6 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     }
 
     final topCard = _deck[_currentIndex];
-    final training = _mode == SignSwiperMode.training;
 
     return Center(
       child: ConstrainedBox(
@@ -484,9 +340,6 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
               controller: _cardController,
               card: topCard,
               onSwiped: _onCardSwiped,
-              onCardTap: training
-                  ? () => SignExplanationSheet.show(context, card: topCard)
-                  : null,
             ),
           ],
         ),
@@ -496,7 +349,6 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
 
   Widget _buildAnswerButtons(AppThemeColors colors) {
     final card = _currentIndex < _deck.length ? _deck[_currentIndex] : null;
-    final training = _mode == SignSwiperMode.training;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppDimensions.screenPadding,
@@ -518,18 +370,6 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
               _cardController.swipeLeft();
             },
           ),
-          // В обучении — разбор знака до ответа.
-          if (training && card != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: GameRoundButton(
-                icon: Icons.menu_book_rounded,
-                color: colors.secondaryText,
-                surface: colors.cardBackground,
-                size: 52,
-                onTap: () => SignExplanationSheet.show(context, card: card),
-              ),
-            ),
           GameRoundButton(
             icon: Icons.check_rounded,
             label: card?.rightActionLabel ?? appL10n.gameSignYes,
@@ -579,80 +419,6 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => _MistakesSheet(mistakes: List.of(_mistakes)),
-    );
-  }
-}
-
-/// Результат выбора в листе категорий: `value == null` — «все категории».
-class _CategoryChoice {
-  const _CategoryChoice(this.value);
-
-  final String? value;
-}
-
-class _CategorySheet extends StatelessWidget {
-  const _CategorySheet({required this.categories, required this.selected});
-
-  final List<String> categories;
-  final String? selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final options = <String?>[null, ...categories];
-
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.7,
-      ),
-      decoration: BoxDecoration(
-        color: colors.cardBackground,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppDimensions.radiusExtraLarge),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: ListView.builder(
-          shrinkWrap: true,
-          padding: const EdgeInsets.symmetric(vertical: AppDimensions.spacingS),
-          itemCount: options.length,
-          itemBuilder: (context, i) {
-            final option = options[i];
-            final isSelected = option == selected;
-            return InkWell(
-              onTap: () => Navigator.of(context).pop(_CategoryChoice(option)),
-              child: Container(
-                height: 52,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.screenPadding,
-                ),
-                alignment: Alignment.centerLeft,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        option ?? appL10n.gameSignSwiperCategoryAll,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: isSelected
-                              ? colors.accent
-                              : colors.primaryText,
-                        ),
-                      ),
-                    ),
-                    if (isSelected)
-                      Icon(Icons.check_rounded, size: 20, color: colors.accent),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ),
     );
   }
 }

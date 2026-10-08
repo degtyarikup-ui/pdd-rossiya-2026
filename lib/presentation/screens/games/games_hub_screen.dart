@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -8,10 +11,7 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_screen.dart';
 import 'package:pdd_app/presentation/screens/games/traffic_controller/traffic_controller_screen.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
-import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
 
-/// Акцент игры — фон обложки. Всё остальное — общие токены приложения.
-const _signSwiperAccent = Color(0xFFEC4899);
 const _roundaboutAccent = Color(0xFF6366F1);
 
 class GamesHubScreen extends ConsumerWidget {
@@ -52,35 +52,16 @@ class GamesHubScreen extends ConsumerWidget {
           ),
           _GameCard(
             art: const TrafficControllerArt(),
-            artBackground: colors.accentSurface10,
             title: appL10n.gameTrafficControllerTitle,
-            summary: appL10n.gameTrafficControllerSubtitle,
             bestScore: traffic.bestScore,
-            // Кто уже играл в блиц — сразу в блиц, новичок — в обучение.
-            onTap: () => _open(
-              context,
-              TrafficControllerScreen(
-                initialMode: traffic.bestScore > 0
-                    ? GamePlayMode.arcade
-                    : GamePlayMode.training,
-              ),
-            ),
+            onTap: () => _open(context, const TrafficControllerScreen()),
           ),
           const SizedBox(height: AppDimensions.spacingL),
           _GameCard(
             art: const SignSwiperArt(),
-            artBackground: _signSwiperAccent.withValues(alpha: 0.1),
             title: appL10n.gameSignSwiperTitle,
-            summary: appL10n.gameSignSwiperSubtitle,
             bestScore: signs.bestScore,
-            onTap: () => _open(
-              context,
-              SignSwiperScreen(
-                initialMode: signs.bestScore > 0
-                    ? SignSwiperMode.sprint
-                    : SignSwiperMode.training,
-              ),
-            ),
+            onTap: () => _open(context, const SignSwiperScreen()),
           ),
           const SizedBox(height: AppDimensions.spacingL),
           _SoonTile(title: appL10n.gameRoundaboutTitle),
@@ -90,21 +71,17 @@ class GamesHubScreen extends ConsumerWidget {
   }
 }
 
-/// Карточка игры: обложка, название, одна-две строки о сути и рекорд.
+/// Название и рекорд лежат на обложке; вся карточка запускает игру.
 class _GameCard extends StatelessWidget {
   const _GameCard({
     required this.art,
-    required this.artBackground,
     required this.title,
-    required this.summary,
     required this.bestScore,
     required this.onTap,
   });
 
   final Widget art;
-  final Color artBackground;
   final String title;
-  final String summary;
   final int bestScore;
   final VoidCallback onTap;
 
@@ -112,85 +89,142 @@ class _GameCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final radius = BorderRadius.circular(AppDimensions.cardRadius);
+    final record = appL10n.gameBestScore(bestScore);
+    final scaler = MediaQuery.textScalerOf(context);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.cardBackground,
-        borderRadius: radius,
-        boxShadow: gameSoftShadow(colors),
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(
-                  height: 136,
-                  child: ColoredBox(color: artBackground, child: art),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppDimensions.spacingL,
-                    AppDimensions.spacingM,
-                    AppDimensions.spacingL,
-                    AppDimensions.spacingL,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: colors.primaryText,
-                              ),
+    return Align(
+      alignment: Alignment.center,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Большой системный шрифт получает место, сохраняя обложку сверху.
+            final height = math.max(
+              constraints.maxWidth * 9 / 16,
+              math.max(190.0, 112.0 + scaler.scale(22) * 2 + scaler.scale(13)),
+            );
+            return Semantics(
+              button: true,
+              label: '$title, $record',
+              onTap: onTap,
+              child: ExcludeSemantics(
+                child: ClipRRect(
+                  borderRadius: radius,
+                  child: SizedBox(
+                    height: height,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        art,
+                        // Мягко вводим размытие только в нижней части фото.
+                        ShaderMask(
+                          blendMode: BlendMode.dstIn,
+                          shaderCallback: (rect) => const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Colors.transparent, Colors.white],
+                            stops: [0.58, 1],
+                          ).createShader(rect),
+                          child: ImageFiltered(
+                            imageFilter: ui.ImageFilter.blur(
+                              sigmaX: 3,
+                              sigmaY: 3,
+                            ),
+                            child: art,
+                          ),
+                        ),
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Color(0x18091121),
+                                Color(0xD9091121),
+                              ],
+                              stops: [0.25, 0.45, 1],
                             ),
                           ),
-                          if (bestScore > 0) ...[
-                            Icon(
-                              Icons.star_rounded,
-                              size: 18,
-                              color: colors.gold,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              appL10n.gameBestScore(bestScore),
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: colors.secondaryText,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        summary,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.35,
-                          color: colors.secondaryText,
                         ),
-                      ),
-                    ],
+                        Positioned(
+                          left: AppDimensions.spacingL,
+                          right: AppDimensions.spacingL,
+                          bottom: AppDimensions.spacingL,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        height: 1.12,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(
+                                      height: AppDimensions.spacingS,
+                                    ),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.emoji_events_rounded,
+                                          size: 16,
+                                          color: colors.gold,
+                                        ),
+                                        const SizedBox(
+                                          width: AppDimensions.spacingXS,
+                                        ),
+                                        Flexible(
+                                          child: Text(
+                                            record,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              height: 1.2,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: AppDimensions.spacingM),
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 1),
+                                child: Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 24,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Material(
+                          type: MaterialType.transparency,
+                          child: InkWell(
+                            onTap: onTap,
+                            borderRadius: radius,
+                            splashColor: Colors.white24,
+                            highlightColor: Colors.white10,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
-            Positioned.fill(
-              child: Material(
-                type: MaterialType.transparency,
-                child: InkWell(onTap: onTap),
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );

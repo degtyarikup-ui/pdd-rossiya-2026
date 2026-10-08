@@ -115,16 +115,16 @@ class SwipeCardViewState extends State<SwipeCardView>
     );
   }
 
-  void _onPanStart(DragStartDetails details) {
+  void _onHorizontalDragStart(DragStartDetails details) {
     if (!_animatingOut) _anim.stop();
   }
 
-  void _onPanUpdate(DragUpdateDetails details) {
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
     if (_animatingOut) return;
-    setState(() => _drag += details.delta);
+    setState(() => _drag += Offset(details.delta.dx, 0));
   }
 
-  void _onPanEnd(DragEndDetails details) {
+  void _onHorizontalDragEnd(DragEndDetails details) {
     if (_animatingOut) return;
 
     final velocityX = details.velocity.pixelsPerSecond.dx;
@@ -153,7 +153,14 @@ class SwipeCardViewState extends State<SwipeCardView>
 
     return AnimatedBuilder(
       animation: _anim,
-      builder: (context, _) {
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.spacingXXL),
+        child: LayoutBuilder(
+          builder: (context, constraints) =>
+              _buildContent(context, colors, constraints),
+        ),
+      ),
+      builder: (context, child) {
         final animating =
             _anim.isAnimating && _offsetAnim != null && _rotationAnim != null;
         final offset = animating ? _offsetAnim!.value : _drag;
@@ -174,9 +181,9 @@ class SwipeCardViewState extends State<SwipeCardView>
           child: Transform.rotate(
             angle: angle,
             child: GestureDetector(
-              onPanStart: _onPanStart,
-              onPanUpdate: _onPanUpdate,
-              onPanEnd: _onPanEnd,
+              onHorizontalDragStart: _onHorizontalDragStart,
+              onHorizontalDragUpdate: _onHorizontalDragUpdate,
+              onHorizontalDragEnd: _onHorizontalDragEnd,
               onTap: widget.onCardTap,
               child: Container(
                 width: double.infinity,
@@ -191,38 +198,7 @@ class SwipeCardViewState extends State<SwipeCardView>
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.all(AppDimensions.spacingXXL),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            card.prompt,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              height: 1.35,
-                              color: colors.primaryText,
-                            ),
-                          ),
-                          const SizedBox(height: AppDimensions.spacingL),
-                          Expanded(
-                            child: Center(child: _SignImage(sign: card.sign)),
-                          ),
-                          const SizedBox(height: AppDimensions.spacingM),
-                          Text(
-                            card.sign.category,
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colors.secondaryText,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    child!,
                     if (strength > 0.15)
                       Opacity(
                         opacity: strength,
@@ -257,6 +233,69 @@ class SwipeCardViewState extends State<SwipeCardView>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    AppThemeColors colors,
+    BoxConstraints constraints,
+  ) {
+    final card = widget.card;
+    final promptStyle = TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.w600,
+      height: 1.35,
+      color: colors.primaryText,
+    );
+    final categoryStyle = TextStyle(fontSize: 12, color: colors.secondaryText);
+
+    double textHeight(String text, TextStyle style, {int? maxLines}) {
+      final painter = TextPainter(
+        text: TextSpan(
+          text: text,
+          style: DefaultTextStyle.of(context).style.merge(style),
+        ),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        maxLines: maxLines,
+      )..layout(maxWidth: constraints.maxWidth);
+      final height = painter.height;
+      painter.dispose();
+      return height;
+    }
+
+    final remainingHeight =
+        constraints.maxHeight -
+        textHeight(card.prompt, promptStyle) -
+        textHeight(card.sign.category, categoryStyle, maxLines: 1) -
+        AppDimensions.spacingL -
+        AppDimensions.spacingM;
+    // На компактном экране сохраняем размер знака и весь вопрос; вертикальный
+    // скролл не конкурирует с горизонтальным жестом ответа.
+    final signHeight = remainingHeight.clamp(144.0, double.infinity);
+
+    return SingleChildScrollView(
+      primary: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(card.prompt, style: promptStyle),
+          const SizedBox(height: AppDimensions.spacingL),
+          SizedBox(
+            height: signHeight,
+            child: Center(child: _SignImage(sign: card.sign)),
+          ),
+          const SizedBox(height: AppDimensions.spacingM),
+          Text(
+            card.sign.category,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: categoryStyle,
+          ),
+        ],
+      ),
     );
   }
 }
