@@ -57,6 +57,29 @@
     return [MOVES.NONE];
   }
 
+  // Фирменная палитра флагманской игры (BRAND)
+  const BRAND = {
+    accent: 0x0574F8,
+    accentLight: 0xE8F2FE,
+    green: 0x2BC280,
+    greenLight: 0xE8F8F0,
+    red: 0xED4621,
+    redLight: 0xFFFFECE8,
+    gold: 0xFFA53C,
+    asphalt: 0x2C2F36,
+    asphaltMarking: 0xF2F4F8,
+    asphaltMarkingYellow: 0xF5B025,
+    grass: 0x86A97A,
+    grassDark: 0x496D42,
+    sidewalk: 0x747970,
+    curb: 0x737870,
+    buildingColors: [0xF5F6FA, 0xE9ECF2, 0xDDE1EA, 0xC6CCD8, 0xB5675A, 0xA9B4C2],
+    windowColor: 0x64748B,
+    playerCar: 0x0574F8,
+    tramRed: 0xD32F2F,
+    tramWhite: 0xF5F5F5
+  };
+
   // --- Переменные сцены ---
   let scene, camera, renderer;
   let container;
@@ -64,6 +87,8 @@
   let carMesh, tramMesh;
   let activeVehicleMesh;
   let arrowsGroup;
+  let envGroup;
+  let skyDome;
   let streetLights = [];
   let isMoving = false;
   let moveProgress = 0;
@@ -102,23 +127,48 @@
     const height = container.clientHeight || window.innerHeight;
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x3B485A);
-    scene.fog = new THREE.Fog(0x3B485A, 38, 115);
+    scene.background = new THREE.Color(0xDEE4E5);
+    scene.fog = null;
 
-    camera = new THREE.PerspectiveCamera(42, width / height, 0.5, 300);
+    // Процедурный градиентный купол неба с облаками (как во флагманской игре)
+    skyDome = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), new THREE.ShaderMaterial({
+      uniforms: { horizon: { value: new THREE.Color(0xB9D6EE) }, zenith: { value: new THREE.Color(0x6FA8DC) }, cloud: { value: 0.55 } },
+      vertexShader: 'varying vec3 vDir; void main(){ vDir = position; vec4 p = projectionMatrix * vec4((modelViewMatrix * vec4(position, 0.0)).xyz, 1.0); gl_Position = p.xyww; }',
+      fragmentShader: [
+        'uniform vec3 horizon; uniform vec3 zenith; uniform float cloud; varying vec3 vDir;',
+        'float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
+        'float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);',
+        '  return mix(mix(h(i), h(i + vec2(1.0, 0.0)), f.x), mix(h(i + vec2(0.0, 1.0)), h(i + vec2(1.0, 1.0)), f.x), f.y); }',
+        'void main(){ vec3 d = normalize(vDir); float up = clamp(d.y, 0.0, 1.0);',
+        '  vec3 c = mix(horizon, zenith, pow(up, 0.35));',
+        '  vec2 q = d.xz / (d.y + 0.25) * 2.2; float f = n(q) * 0.55 + n(q * 2.1) * 0.3 + n(q * 4.3) * 0.15;',
+        '  float puffs = smoothstep(0.58, 0.8, f) * smoothstep(0.0, 0.06, d.y) * cloud;',
+        '  gl_FragColor = vec4(mix(c, vec3(1.0), puffs * 0.85), 1.0); }'].join('\n'),
+      side: THREE.BackSide, depthWrite: false
+    }));
+    skyDome.frustumCulled = false; skyDome.renderOrder = -1; skyDome.userData.sky = true;
+    scene.add(skyDome);
+
+    camera = new THREE.PerspectiveCamera(42, width / height, 0.5, 400);
     updateCameraPosition();
 
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     container.appendChild(renderer.domElement);
 
     setupLighting();
     buildEnvironment();
+
+    // Подключаем процедурные шейдерные материалы дорог и окружения
+    if (window.PDD_ROADS) {
+      window.PDD_ROADS.attach(renderer, { roots: () => [envGroup], lineage: () => null });
+    }
+
     buildInspector();
     buildVehicles();
     buildTrajectoryArrows();
@@ -135,56 +185,52 @@
   }
 
   function setupLighting() {
-    // Мягкий полусферический свет неба и земли
-    const hemiLight = new THREE.HemisphereLight(0xDFE9F8, 0x2A3546, 0.75);
-    scene.add(hemiLight);
+    // Рассеянный дневной свет (как во флагманской игре)
+    const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.75);
+    scene.add(ambientLight);
 
-    // Основной солнечный направленный свет с мягкими тенями
-    const sunLight = new THREE.DirectionalLight(0xFFF7E6, 1.25);
-    sunLight.position.set(28, 48, 24);
+    // Верхнее солнце с естественными мягкими тенями
+    const sunLight = new THREE.DirectionalLight(0xFFF9EE, 0.85);
+    sunLight.position.set(16, 68, 14);
     sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 2048;
-    sunLight.shadow.mapSize.height = 2048;
-    sunLight.shadow.camera.near = 5;
-    sunLight.shadow.camera.far = 130;
-    sunLight.shadow.bias = -0.0004;
-
-    const d = 34;
+    sunLight.shadow.mapSize.width = 1024;
+    sunLight.shadow.mapSize.height = 1024;
+    sunLight.shadow.camera.near = 10;
+    sunLight.shadow.camera.far = 180;
+    const d = 36;
     sunLight.shadow.camera.left = -d;
     sunLight.shadow.camera.right = d;
     sunLight.shadow.camera.top = d;
     sunLight.shadow.camera.bottom = -d;
+    sunLight.shadow.bias = -0.0005;
+    sunLight.shadow.radius = 4;
     scene.add(sunLight);
 
-    // Заполняющий холодный свет с противоположной стороны
-    const fillLight = new THREE.DirectionalLight(0x769ECC, 0.45);
-    fillLight.position.set(-26, 22, -26);
-    scene.add(fillLight);
+    const sunTarget = new THREE.Object3D();
+    sunTarget.position.set(0, 0, 0);
+    scene.add(sunTarget);
+    sunLight.target = sunTarget;
   }
 
   // --- Перекрёсток: дороги, тротуары, разметка, рельсы, здания ---
   function buildEnvironment() {
-    const envGroup = new THREE.Group();
+    envGroup = new THREE.Group();
     scene.add(envGroup);
 
-    // Основание / трава вокруг города
-    const groundGeo = new THREE.PlaneGeometry(240, 240);
-    const groundMat = new THREE.MeshStandardMaterial({
-      color: 0x3E543B,
-      roughness: 0.95,
-      metalness: 0.05,
-    });
+    // Ландшафт / трава вокруг города (с процедурной фактурой grass)
+    const groundGeo = new THREE.PlaneGeometry(320, 320);
+    const groundMat = new THREE.MeshLambertMaterial({ color: BRAND.grass });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.01;
     ground.receiveShadow = true;
     envGroup.add(ground);
+    if (window.PDD_ROADS) {
+      window.PDD_ROADS.skinObject(ground, 'grass', { world: true });
+    }
 
-    // Асфальтовое покрытие дорог (проезжая часть 13.6м)
-    const roadMat = new THREE.MeshStandardMaterial({
-      color: 0x272B33,
-      roughness: 0.88,
-      metalness: 0.1,
-    });
+    // Проезжая часть с фактурой асфальта (микропоры и каменная крошка)
+    const roadMat = new THREE.MeshLambertMaterial({ color: BRAND.asphalt });
     const roadWidth = 13.6;
     const roadLen = 140;
 
@@ -207,12 +253,14 @@
     centerMesh.receiveShadow = true;
     envGroup.add(centerMesh);
 
-    // Дорожная разметка (белая термопластичная краска)
-    const markMat = new THREE.MeshStandardMaterial({
-      color: 0xFDFDFD,
-      roughness: 0.5,
-      metalness: 0.05,
-    });
+    if (window.PDD_ROADS) {
+      window.PDD_ROADS.skinObject(roadNS, 'asphalt', { world: true });
+      window.PDD_ROADS.skinObject(roadEW, 'asphalt', { world: true });
+      window.PDD_ROADS.skinObject(centerMesh, 'asphalt', { world: true });
+    }
+
+    // Дорожная разметка (чистый белый базовый термопластик как во флагмане)
+    const markMat = new THREE.MeshBasicMaterial({ color: BRAND.asphaltMarking });
 
     buildRoadMarkings(envGroup, markMat, roadWidth);
     buildSidewalks(envGroup, roadWidth);
@@ -287,23 +335,17 @@
     });
   }
 
-  // Приподнятые тротуары с гранитными бордюрами
+  // Приподнятые тротуары с гранитными бордюрами и фактурными материалами
   function buildSidewalks(parent, roadWidth) {
     const halfW = roadWidth / 2;
-    const kerbMat = new THREE.MeshStandardMaterial({
-      color: 0x7E8592,
-      roughness: 0.65,
-      metalness: 0.15,
+    const kerbMat = new THREE.MeshLambertMaterial({
+      color: BRAND.curb,
     });
-    const walkMat = new THREE.MeshStandardMaterial({
-      color: 0x9FA6B2,
-      roughness: 0.78,
-      metalness: 0.08,
+    const walkMat = new THREE.MeshLambertMaterial({
+      color: BRAND.sidewalk,
     });
-    const lawnMat = new THREE.MeshStandardMaterial({
-      color: 0x426E3B,
-      roughness: 0.92,
-      metalness: 0.05,
+    const lawnMat = new THREE.MeshLambertMaterial({
+      color: BRAND.grassDark,
     });
 
     const walkSize = 50;
@@ -321,15 +363,21 @@
       const g = new THREE.Group();
       g.position.set(q.sx * (halfW + walkSize / 2), kerbH / 2, q.sz * (halfW + walkSize / 2));
 
-      // Плита тротуара
+      // Плита тротуара (процедурная плитка)
       const walk = new THREE.Mesh(new THREE.BoxGeometry(walkSize, kerbH, walkSize), walkMat);
       walk.receiveShadow = true;
+      if (window.PDD_ROADS) {
+        window.PDD_ROADS.skinObject(walk, 'pavement', { world: true });
+      }
       g.add(walk);
 
       // Газон в глубине тротуара
       const lawn = new THREE.Mesh(new THREE.BoxGeometry(walkSize - 8, 0.02, walkSize - 8), lawnMat);
       lawn.position.set(q.sx * 4, kerbH / 2 + 0.01, q.sz * 4);
       lawn.receiveShadow = true;
+      if (window.PDD_ROADS) {
+        window.PDD_ROADS.skinObject(lawn, 'grass', { world: true });
+      }
       g.add(lawn);
 
       parent.add(g);
@@ -338,88 +386,88 @@
       const kerbEW = new THREE.Mesh(new THREE.BoxGeometry(walkSize, kerbH + 0.02, 0.35), kerbMat);
       kerbEW.position.set(q.sx * (halfW + walkSize / 2), kerbH / 2 + 0.01, q.sz * (halfW + 0.17));
       kerbEW.castShadow = true;
+      if (window.PDD_ROADS) {
+        window.PDD_ROADS.skinObject(kerbEW, 'pavement', { world: true });
+      }
       parent.add(kerbEW);
 
       const kerbNS = new THREE.Mesh(new THREE.BoxGeometry(0.35, kerbH + 0.02, walkSize), kerbMat);
       kerbNS.position.set(q.sx * (halfW + 0.17), kerbH / 2 + 0.01, q.sz * (halfW + walkSize / 2));
       kerbNS.castShadow = true;
+      if (window.PDD_ROADS) {
+        window.PDD_ROADS.skinObject(kerbNS, 'pavement', { world: true });
+      }
       parent.add(kerbNS);
     });
   }
 
-  // Городские здания по углам перекрёстка (красивая архитектура с окнами и крышами)
+  // Городские здания по углам перекрёстка (архитектура с шейдерными фасадами и окнами)
   function buildCityBuildings(parent, roadWidth) {
     const halfW = roadWidth / 2;
 
     const buildingSpecs = [
-      // Северо-Запад: 3-этажный классический дом
-      { x: -(halfW + 30), z: -(halfW + 30), w: 20, d: 20, h: 14, color: 0xC8B699, roofColor: 0x3D4350 },
-      // Северо-Восток: 4-этажный современный кирпичный дом
-      { x: (halfW + 30), z: -(halfW + 30), w: 20, d: 20, h: 16, color: 0x9E5848, roofColor: 0x2A2E38 },
-      // Юго-Запад: 3-этажный дом
-      { x: -(halfW + 30), z: (halfW + 30), w: 20, d: 20, h: 13, color: 0x768A7C, roofColor: 0x3F4652 },
-      // Юго-Восток: 4-этажный светлый фасад
-      { x: (halfW + 30), z: (halfW + 30), w: 20, d: 20, h: 15, color: 0xB5BAC4, roofColor: 0x323842 },
+      // Северо-Запад: штукатурный светлый фасад
+      { x: -(halfW + 30), z: -(halfW + 30), w: 20, d: 20, h: 14, color: 0xF5F6FA, style: 'plaster' },
+      // Северо-Восток: кирпичный классический дом
+      { x: (halfW + 30), z: -(halfW + 30), w: 20, d: 20, h: 16, color: 0xB5675A, style: 'brick' },
+      // Юго-Запад: панельный городской дом
+      { x: -(halfW + 30), z: (halfW + 30), w: 20, d: 20, h: 13, color: 0xDDE1EA, style: 'panel' },
+      // Юго-Восток: панельный современный фасад
+      { x: (halfW + 30), z: (halfW + 30), w: 20, d: 20, h: 15, color: 0xE9ECF2, style: 'panel' },
     ];
 
     buildingSpecs.forEach(b => {
       const bGroup = new THREE.Group();
       bGroup.position.set(b.x, 0, b.z);
 
-      const facadeMat = new THREE.MeshStandardMaterial({
-        color: b.color,
-        roughness: 0.85,
-        metalness: 0.1,
-      });
-
-      // Основной корпус
+      const facadeMat = new THREE.MeshLambertMaterial({ color: b.color });
       const body = new THREE.Mesh(new THREE.BoxGeometry(b.w, b.h, b.d), facadeMat);
       body.position.y = b.h / 2;
-      body.castShadow = true;
       body.receiveShadow = true;
+      if (window.PDD_ROADS) {
+        if (b.style === 'plaster') window.PDD_ROADS.skinObject(body, 'plaster', { v0: -0.2 });
+        else if (b.style === 'brick') window.PDD_ROADS.skinObject(body, 'brick');
+        else window.PDD_ROADS.skinObject(body, 'panel', { u0: -0.4, v0: -0.45 });
+      }
       bGroup.add(body);
 
-      // Карниз / крыша
-      const roofMat = new THREE.MeshStandardMaterial({ color: b.roofColor, roughness: 0.7 });
-      const roof = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.8, 1.2, b.d + 0.8), roofMat);
-      roof.position.y = b.h + 0.6;
-      roof.castShadow = true;
-      bGroup.add(roof);
+      // Плоская кровля (гудрон / рубероид) с парапетом
+      const slabMat = new THREE.MeshLambertMaterial({ color: 0x6B7480 });
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(b.w - 0.2, 0.08, b.d - 0.2), slabMat);
+      slab.position.y = b.h + 0.04;
+      if (window.PDD_ROADS) window.PDD_ROADS.skinObject(slab, 'roofFlat');
+      bGroup.add(slab);
 
-      // Сетка окон на фасадных сторонах
-      const winMat = new THREE.MeshStandardMaterial({
-        color: 0x3A4D62,
-        roughness: 0.2,
-        metalness: 0.85,
-      });
-      const winFrameMat = new THREE.MeshStandardMaterial({ color: 0xF5F6F8, roughness: 0.6 });
+      const borderMat = new THREE.MeshLambertMaterial({ color: 0x94A3B8 });
+      const roofBorder = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.4, 0.4, b.d + 0.4), borderMat);
+      roofBorder.position.y = b.h + 0.2;
+      if (window.PDD_ROADS) window.PDD_ROADS.skinObject(roofBorder, 'roofFlat');
+      bGroup.add(roofBorder);
+
+      // Окна на фасадах
+      const winGeo = new THREE.PlaneGeometry(1.2, 1.4);
+      const winMat = new THREE.MeshBasicMaterial({ color: 0x647D87 });
 
       const floors = Math.floor(b.h / 3.4);
       const cols = Math.floor(b.w / 3.8);
 
       for (let f = 1; f < floors; f++) {
-        const y = f * 3.4 + 1.2;
+        const y = f * 3.4 + 0.8;
         for (let c = -Math.floor(cols / 2); c <= Math.floor(cols / 2); c++) {
           const x = c * 3.2;
 
           // Окно на южном фасаде
-          const winFrame = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.0, 0.15), winFrameMat);
-          winFrame.position.set(x, y, b.d / 2 + 0.05);
-          bGroup.add(winFrame);
+          const winS = new THREE.Mesh(winGeo, winMat);
+          winS.position.set(x, y, b.d / 2 + 0.02);
+          if (window.PDD_ROADS) window.PDD_ROADS.skinObject(winS, 'window');
+          bGroup.add(winS);
 
-          const winGlass = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.7), winMat);
-          winGlass.position.set(x, y, b.d / 2 + 0.14);
-          bGroup.add(winGlass);
-
-          // Окно на восточном/западном фасаде
-          const winFrameSide = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.0, 1.5), winFrameMat);
-          winFrameSide.position.set(b.w / 2 + 0.05, y, c * 3.2);
-          bGroup.add(winFrameSide);
-
-          const winGlassSide = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.7), winMat);
-          winGlassSide.rotation.y = Math.PI / 2;
-          winGlassSide.position.set(b.w / 2 + 0.14, y, c * 3.2);
-          bGroup.add(winGlassSide);
+          // Окно на боковом фасаде
+          const winSide = new THREE.Mesh(winGeo, winMat);
+          winSide.rotation.y = Math.PI / 2;
+          winSide.position.set(b.w / 2 + 0.02, y, c * 3.2);
+          if (window.PDD_ROADS) window.PDD_ROADS.skinObject(winSide, 'window');
+          bGroup.add(winSide);
         }
       }
 
@@ -522,25 +570,34 @@
 
   function buildTree() {
     const group = new THREE.Group();
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4A3525, roughness: 0.9 });
-    const leafMat1 = new THREE.MeshStandardMaterial({ color: 0x3D6F36, roughness: 0.85 });
-    const leafMat2 = new THREE.MeshStandardMaterial({ color: 0x4A8341, roughness: 0.85 });
+    const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5D4534 });
+    const leafMat1 = new THREE.MeshLambertMaterial({ color: 0x48793C });
+    const leafMat2 = new THREE.MeshLambertMaterial({ color: 0x568F48 });
 
-    // Ствол
+    // Ствол дерева с фактурой коры
     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.28, 3.2, 8), trunkMat);
     trunk.position.y = 1.6;
     trunk.castShadow = true;
+    if (window.PDD_ROADS) {
+      window.PDD_ROADS.skinObject(trunk, 'bark');
+    }
     group.add(trunk);
 
-    // Ярусы кроны (сочные зеленые сферы)
+    // Ярусы кроны с процедурными листьями
     const crown1 = new THREE.Mesh(new THREE.DodecahedronGeometry(1.6, 1), leafMat1);
     crown1.position.y = 3.8;
     crown1.castShadow = true;
+    if (window.PDD_ROADS) {
+      window.PDD_ROADS.skinObject(crown1, 'leaves');
+    }
     group.add(crown1);
 
     const crown2 = new THREE.Mesh(new THREE.DodecahedronGeometry(1.2, 1), leafMat2);
     crown2.position.set(0.3, 4.8, 0.2);
     crown2.castShadow = true;
+    if (window.PDD_ROADS) {
+      window.PDD_ROADS.skinObject(crown2, 'leaves');
+    }
     group.add(crown2);
 
     return group;
@@ -567,19 +624,20 @@
   // Центральный постамент регулировщика (аккуратный компактный островок под ногами)
   function buildCentralPedestal(parent) {
     const islandGeo = new THREE.CylinderGeometry(0.55, 0.60, 0.05, 32);
-    const islandMat = new THREE.MeshStandardMaterial({
-      color: 0x484E5B,
-      roughness: 0.7,
-      metalness: 0.1,
+    const islandMat = new THREE.MeshLambertMaterial({
+      color: 0x747970,
     });
     const island = new THREE.Mesh(islandGeo, islandMat);
     island.position.y = 0.025;
     island.receiveShadow = true;
+    if (window.PDD_ROADS) {
+      window.PDD_ROADS.skinObject(island, 'pavement', { world: true });
+    }
     parent.add(island);
 
     // Белая окантовка островка
     const ringGeo = new THREE.RingGeometry(0.52, 0.60, 32);
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0xFDFDFD });
+    const ringMat = new THREE.MeshBasicMaterial({ color: BRAND.asphaltMarking });
     const ring = new THREE.Mesh(ringGeo, ringMat);
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.051;
@@ -851,132 +909,136 @@
     return group;
   }
 
-  // Детализированная 3D-модель классического городского трамвая (Татра Т3 / КТМ-5)
-  function buildRussianTram() {
+  function transportMaterial(kind, color) {
+    const surfaces = window.PDD_VEHICLE_MATERIALS;
+    if (!surfaces) return new THREE.MeshLambertMaterial({ color });
+    return surfaces.material('paint', color, surfaces.transportMap(kind));
+  }
+
+  function transportMesh(geometry, material) {
+    const surfaces = window.PDD_VEHICLE_MATERIALS;
+    if (surfaces) {
+      geometry.userData = geometry.userData || {};
+      if (!geometry.userData.vehicleUV) {
+        if (material.map && material.map.name && material.map.name.startsWith('vehicle:transport:') && geometry.type === 'BoxGeometry') {
+          surfaces.transportBoxUV(geometry); geometry.userData.vehicleUV = true;
+        } else if (material.userData && ['rubber', 'rubberFarm'].includes(material.userData.vehicleSurface) && geometry.type === 'CylinderGeometry') {
+          surfaces.tyreUV(geometry); geometry.userData.vehicleUV = true;
+        }
+      }
+    }
+    return new THREE.Mesh(geometry, material);
+  }
+
+  function buildFallbackTram(color = BRAND.tramRed) {
     const tram = new THREE.Group();
+    const redMat = new THREE.MeshLambertMaterial({ color });
+    const creamMat = new THREE.MeshLambertMaterial({ color: BRAND.tramWhite });
+    const glassMat = new THREE.MeshLambertMaterial({ color: 0x374A5E });
+    const metalMat = new THREE.MeshLambertMaterial({ color: 0x88929E });
 
-    const redMat = new THREE.MeshStandardMaterial({ color: 0xD32F2F, roughness: 0.35, metalness: 0.15 });
-    const creamMat = new THREE.MeshStandardMaterial({ color: 0xF5F0E6, roughness: 0.45 });
-    const glassMat = new THREE.MeshStandardMaterial({ color: 0x374A5E, metalness: 0.85, roughness: 0.15 });
-    const metalMat = new THREE.MeshStandardMaterial({ color: 0x88929E, metalness: 0.85, roughness: 0.25 });
-    const darkMat = new THREE.MeshStandardMaterial({ color: 0x212529, roughness: 0.7 });
-    const lightGlowMat = new THREE.MeshBasicMaterial({ color: 0xFFF9E6 });
-    const redLightMat = new THREE.MeshBasicMaterial({ color: 0xFF1744 });
+    const L = 9.5;
+    const W = 2.2;
 
-    const L = 8.8; // длина кузова
-    const W = 2.3; // ширина кузова
+    const lower = new THREE.Mesh(new THREE.BoxGeometry(W, 1.0, L), redMat);
+    lower.position.y = 0.7;
+    tram.add(lower);
 
-    // 1. Нижняя красная часть кузова (сплошной закрытый бокс)
-    const lowerBody = new THREE.Mesh(new THREE.BoxGeometry(W, 1.0, L), redMat);
-    lowerBody.position.y = 0.82;
-    lowerBody.castShadow = true;
-    tram.add(lowerBody);
+    const upper = new THREE.Mesh(new THREE.BoxGeometry(W - 0.05, 1.1, L - 0.1), creamMat);
+    upper.position.y = 1.7;
+    tram.add(upper);
 
-    // Передний и задний бамперы
-    const bumperF = new THREE.Mesh(new THREE.BoxGeometry(W + 0.05, 0.22, 0.3), darkMat);
-    bumperF.position.set(0, 0.45, L / 2 + 0.05);
-    tram.add(bumperF);
+    const glass = new THREE.Mesh(new THREE.BoxGeometry(W + 0.04, 0.65, L - 0.7), glassMat);
+    glass.position.y = 1.75;
+    tram.add(glass);
 
-    const bumperR = new THREE.Mesh(new THREE.BoxGeometry(W + 0.05, 0.22, 0.3), darkMat);
-    bumperR.position.set(0, 0.45, -L / 2 - 0.05);
-    tram.add(bumperR);
+    const panto = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), metalMat);
+    panto.position.set(0, 2.7, 1.5);
+    tram.add(panto);
 
-    // 2. Оконный пояс (тонированные стекла)
-    const cabinGlass = new THREE.Mesh(new THREE.BoxGeometry(W - 0.04, 0.95, L - 0.1), glassMat);
-    cabinGlass.position.y = 1.78;
-    tram.add(cabinGlass);
+    return tram;
+  }
 
-    // 3. Вертикальные кремовые стойки между окнами вдоль обоих бортов
-    [-W / 2 - 0.01, W / 2 + 0.01].forEach(x => {
-      [-3.0, -1.5, 0.0, 1.5, 3.0].forEach(z => {
-        const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.95, 0.16), creamMat);
-        pillar.position.set(x, 1.78, z);
-        tram.add(pillar);
-      });
-    });
+  // Аутентичный российский трамвай на материалах PDD_VEHICLE_MATERIALS (как во флагманской игре)
+  function buildRussianTram(color = BRAND.tramRed) {
+    const tram = new THREE.Group(), V = window.PDD_VEHICLE_MATERIALS;
+    if (!V) return buildFallbackTram(color);
 
-    // 4. Пассажирские двери с правого борта
-    [-2.2, 2.2].forEach(z => {
-      const door = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.7, 1.1), darkMat);
-      door.position.set(W / 2 + 0.02, 1.45, z);
-      tram.add(door);
-      const doorWin = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.7, 0.8), glassMat);
-      doorWin.position.set(W / 2 + 0.02, 1.7, z);
-      tram.add(doorWin);
-    });
+    const bodyMat = transportMaterial('tram-body', color);
+    const whiteMat = transportMaterial('roof', BRAND.tramWhite);
+    const glassMat = V.material('glass', 0xffffff, V.transportMap('tram-windows'));
+    const metalMat = V.material('metal', 0x71717A);
+    const darkMat = V.material('metal', 0x23272C);
 
-    // 5. Верхний кремовый пояс кузова (сплошной бокс)
-    const upperBody = new THREE.Mesh(new THREE.BoxGeometry(W, 0.35, L), creamMat);
-    upperBody.position.y = 2.42;
-    upperBody.castShadow = true;
-    tram.add(upperBody);
+    // 1. Нижняя часть кузова (красный фирменный цвет)
+    const lowerGeo = new THREE.BoxGeometry(2.2, 1.0, 9.5);
+    const lower = transportMesh(lowerGeo, bodyMat);
+    lower.position.y = 0.7;
+    lower.castShadow = true;
+    tram.add(lower);
 
-    // 6. Крыша (сплошной объемный закрытый бокс)
-    const roof = new THREE.Mesh(new THREE.BoxGeometry(W - 0.1, 0.22, L - 0.1), creamMat);
-    roof.position.y = 2.68;
-    roof.castShadow = true;
-    tram.add(roof);
+    // 2. Верхняя часть кузова / крыша (белая)
+    const upperGeo = new THREE.BoxGeometry(2.15, 1.1, 9.4);
+    const upper = transportMesh(upperGeo, whiteMat);
+    upper.position.y = 1.7;
+    upper.castShadow = true;
+    tram.add(upper);
 
-    const roofTop = new THREE.Mesh(new THREE.BoxGeometry(W - 0.3, 0.1, L - 0.3), creamMat);
-    roofTop.position.y = 2.82;
-    tram.add(roofTop);
+    // 3. Оконный пояс с атласом окон трамвая
+    const sideWindowsGeo = new THREE.BoxGeometry(2.24, 0.65, 8.8);
+    const sideWindows = transportMesh(sideWindowsGeo, glassMat);
+    sideWindows.position.y = 1.75;
+    tram.add(sideWindows);
 
-    // 7. Маршрутное табло ("№ 3 Вокзал")
-    const routeBoard = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.28, 0.12), darkMat);
-    routeBoard.position.set(0, 2.42, L / 2 + 0.06);
-    tram.add(routeBoard);
+    // 4. Лобовое и заднее остекление
+    const frontGlassGeo = new THREE.BoxGeometry(1.9, 0.8, 0.1);
+    const fg = transportMesh(frontGlassGeo, glassMat);
+    fg.position.set(0, 1.65, 4.76);
+    tram.add(fg);
 
-    // 8. Фара трамвая спереди и габариты сзади
-    const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.1, 16), lightGlowMat);
-    lamp.rotation.x = Math.PI / 2;
-    lamp.position.set(0, 0.85, L / 2 + 0.06);
-    tram.add(lamp);
+    const bg = transportMesh(frontGlassGeo.clone(), glassMat);
+    bg.position.set(0, 1.65, -4.76);
+    tram.add(bg);
 
-    [-0.7, 0.7].forEach(x => {
-      const tailLamp = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.08, 12), redLightMat);
-      tailLamp.rotation.x = Math.PI / 2;
-      tailLamp.position.set(x, 0.85, -L / 2 - 0.06);
-      tram.add(tailLamp);
-    });
+    // 5. Пантограф (токоприёмник) на крыше
+    const pantoBase = transportMesh(new THREE.BoxGeometry(0.8, 0.15, 0.8), metalMat);
+    pantoBase.position.set(0, 2.35, 1.5);
+    tram.add(pantoBase);
 
-    // 9. Пантограф (токоприёмник) на крыше
-    const pantoGroup = new THREE.Group();
-    pantoGroup.position.set(0, 2.9, 1.2);
+    const barGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.1);
+    const bar1 = transportMesh(barGeo, metalMat);
+    bar1.position.set(0, 2.85, 1.5);
+    bar1.rotation.x = 0.35;
+    tram.add(bar1);
 
-    const baseFrame = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.08, 0.9), metalMat);
-    pantoGroup.add(baseFrame);
+    const headGeo = new THREE.BoxGeometry(1.6, 0.06, 0.2);
+    const head = transportMesh(headGeo, metalMat);
+    head.position.set(0, 3.3, 1.7);
+    tram.add(head);
 
-    const diamondArm1 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 8), metalMat);
-    diamondArm1.rotation.x = 0.55;
-    diamondArm1.position.set(0, 0.5, -0.3);
-    pantoGroup.add(diamondArm1);
-
-    const diamondArm2 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 8), metalMat);
-    diamondArm2.rotation.x = -0.55;
-    diamondArm2.position.set(0, 0.5, 0.3);
-    pantoGroup.add(diamondArm2);
-
-    const contactShoe = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 0.18), metalMat);
-    contactShoe.position.set(0, 1.0, 0);
-    pantoGroup.add(contactShoe);
-
-    tram.add(pantoGroup);
-
-    // 10. Две двухосные тележки с металлическими колесами
-    [-2.2, 2.2].forEach(z => {
-      const bogie = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.25, 1.6), darkMat);
-      bogie.position.set(0, 0.28, z);
+    // 6. Тележки под вагоном
+    [-2.6, 2.6].forEach(z => {
+      const bogie = transportMesh(new THREE.BoxGeometry(1.8, 0.25, 1.6), darkMat);
+      bogie.position.set(0, 0.25, z);
       tram.add(bogie);
-
-      [-0.85, 0.85].forEach(x => {
-        [-0.55, 0.55].forEach(wz => {
-          const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.12, 14), metalMat);
-          wheel.rotation.z = Math.PI / 2;
-          wheel.position.set(x, 0.26, z + wz);
-          tram.add(wheel);
-        });
-      });
     });
+
+    // 7. Оптика
+    const headMat = V.material('lens', 0xFFF3CC);
+    const tailMat = V.material('lens', 0xD33D38);
+    const hl = transportMesh(new THREE.CylinderGeometry(0.18, 0.18, 0.1, 16).rotateX(Math.PI / 2), headMat);
+    hl.position.set(0, 0.75, 4.76);
+    tram.add(hl);
+
+    [-0.7, 0.7].forEach(sx => {
+      const tl = transportMesh(new THREE.CylinderGeometry(0.1, 0.1, 0.08, 12).rotateX(Math.PI / 2), tailMat);
+      tl.position.set(sx, 0.75, -4.76);
+      tram.add(tl);
+    });
+
+    if (window.PDD_VEHICLES && typeof window.PDD_VEHICLES.applyModelEdits === 'function') {
+      window.PDD_VEHICLES.applyModelEdits('tram', tram);
+    }
 
     return tram;
   }
