@@ -14,6 +14,8 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/platform/browser_game.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
@@ -136,6 +138,7 @@ class _TrafficControllerScreenState
         setState(() => _engineReady = true);
         _sentInset = -1;
         _syncViewInset();
+        unawaited(_sendPlayerCar());
         // Блиц стартует, когда сцена готова, — иначе время тратится на загрузку.
         if (_mode == GamePlayMode.arcade) {
           _startArcadeRound();
@@ -166,6 +169,15 @@ class _TrafficControllerScreenState
     TrafficMove.uTurn => 'uTurn',
     TrafficMove.none => 'none',
   };
+
+  /// Та же машина, что выбрана в гараже основной игры.
+  Future<void> _sendPlayerCar() async {
+    final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getString('game_vehicle');
+    if (!mounted || id == null || !gameVehicleIds.contains(id)) return;
+    final paint = prefs.getString('game_vehicle_paint') ?? 'red';
+    _call('setPlayerCar(${jsonEncode(id)}, ${jsonEncode(paint)})');
+  }
 
   void _syncViewInset() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
