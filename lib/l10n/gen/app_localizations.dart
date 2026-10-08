@@ -1273,7 +1273,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameScore.
   ///
   /// In ru, this message translates to:
-  /// **'Очки'**
+  /// **'Счёт'**
   String get gameScore;
 
   /// No description provided for @gameDistance.
@@ -1297,7 +1297,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameExit.
   ///
   /// In ru, this message translates to:
-  /// **'В гараж'**
+  /// **'Выйти'**
   String get gameExit;
 
   /// No description provided for @gameLeft.
@@ -1351,7 +1351,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameCorrect.
   ///
   /// In ru, this message translates to:
-  /// **'Верно'**
+  /// **'Верно!'**
   String get gameCorrect;
 
   /// No description provided for @gameContinue.
@@ -2811,6 +2811,180 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'В этом вопросе нет картинки'**
   String get gameSourceImageUnavailable;
+
+  /// No description provided for @navGames.
+  ///
+  /// In ru, this message translates to:
+  /// **'Игры'**
+  String get navGames;
+
+  /// No description provided for @gamesHubTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Игры и тренажёры'**
+  String get gamesHubTitle;
+
+  /// No description provided for @gamesHubSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Закрепляйте сложные правила в интерактивных играх'**
+  String get gamesHubSubtitle;
+
+  /// No description provided for @gameTrafficControllerTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Регулировщик 3D'**
+  String get gameTrafficControllerTitle;
+
+  /// No description provided for @gameTrafficControllerSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Интерактивный 3D-тренажёр жестов инспектора ДПС'**
+  String get gameTrafficControllerSubtitle;
+
+  /// No description provided for @gameTrafficControllerDesc.
+  ///
+  /// In ru, this message translates to:
+  /// **'Освойте самую сложную тему экзамена ПДД (п. 6.10): сигналы регулировщика для автомобилей и трамваев со стишками-мнемониками и динамической аркадой.'**
+  String get gameTrafficControllerDesc;
+
+  /// No description provided for @gameModeTraining.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обучение'**
+  String get gameModeTraining;
+
+  /// No description provided for @gameModeTrainingDesc.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разбор всех жестов со стишками и подсказками траекторий'**
+  String get gameModeTrainingDesc;
+
+  /// No description provided for @gameModeArcade.
+  ///
+  /// In ru, this message translates to:
+  /// **'Блиц-аркада'**
+  String get gameModeArcade;
+
+  /// No description provided for @gameModeArcadeDesc.
+  ///
+  /// In ru, this message translates to:
+  /// **'Динамический перекрёсток на время, серии комбо и 3 жизни'**
+  String get gameModeArcadeDesc;
+
+  /// No description provided for @gameBestScoreLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Рекорд'**
+  String get gameBestScoreLabel;
+
+  /// No description provided for @gameComboLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Макс. комбо'**
+  String get gameComboLabel;
+
+  /// No description provided for @gameSolvedLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Решено'**
+  String get gameSolvedLabel;
+
+  /// No description provided for @gameCombo.
+  ///
+  /// In ru, this message translates to:
+  /// **'Комбо'**
+  String get gameCombo;
+
+  /// No description provided for @gameLives.
+  ///
+  /// In ru, this message translates to:
+  /// **'Жизни'**
+  String get gameLives;
+
+  /// No description provided for @gameActionStraight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Прямо'**
+  String get gameActionStraight;
+
+  /// No description provided for @gameActionRight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Направо'**
+  String get gameActionRight;
+
+  /// No description provided for @gameActionLeft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Налево'**
+  String get gameActionLeft;
+
+  /// No description provided for @gameActionStand.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стоять'**
+  String get gameActionStand;
+
+  /// No description provided for @gameVehicleCar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Автомобиль'**
+  String get gameVehicleCar;
+
+  /// No description provided for @gameVehicleTram.
+  ///
+  /// In ru, this message translates to:
+  /// **'Трамвай'**
+  String get gameVehicleTram;
+
+  /// No description provided for @gameCameraOverview.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обзор'**
+  String get gameCameraOverview;
+
+  /// No description provided for @gameCameraDriver.
+  ///
+  /// In ru, this message translates to:
+  /// **'За рулём'**
+  String get gameCameraDriver;
+
+  /// No description provided for @gameOverTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Игра окончена'**
+  String get gameOverTitle;
+
+  /// No description provided for @gameOverScore.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваш счёт: {score}'**
+  String gameOverScore(int score);
+
+  /// No description provided for @gameOverNewRecord.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новый рекорд!'**
+  String get gameOverNewRecord;
+
+  /// No description provided for @gamePlayAgain.
+  ///
+  /// In ru, this message translates to:
+  /// **'Играть снова'**
+  String get gamePlayAgain;
+
+  /// No description provided for @gameWrong.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нарушение!'**
+  String get gameWrong;
+
+  /// No description provided for @gameWhistleNote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Свисток инспектора: движение в этом направлении запрещено сигналом регулировщика.'**
+  String get gameWhistleNote;
 }
 
 class _AppLocalizationsDelegate

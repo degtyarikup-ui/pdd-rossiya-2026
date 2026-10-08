@@ -16,6 +16,7 @@ import 'package:pdd_app/data/services/remote_notifications_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
+import 'package:pdd_app/data/models/traffic_controller_progress.dart';
 import 'package:pdd_app/data/sources/questions_data_source.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 
@@ -479,3 +480,39 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
   final auth = ref.watch(authServiceProvider);
   return auth.isAuthenticated;
 });
+
+final trafficControllerProgressProvider = StateNotifierProvider<
+    TrafficControllerProgressController, TrafficControllerProgress>((ref) {
+  final ds = ref.watch(progressDataSourceProvider);
+  return TrafficControllerProgressController(ds);
+});
+
+class TrafficControllerProgressController
+    extends StateNotifier<TrafficControllerProgress> {
+  TrafficControllerProgressController(this._dataSource)
+      : super(_dataSource.getTrafficControllerProgress());
+
+  final ProgressDataSource _dataSource;
+
+  Future<void> recordGameResult({
+    required int score,
+    required int combo,
+    required int solved,
+  }) async {
+    final newScore = score > state.bestScore ? score : state.bestScore;
+    final newCombo = combo > state.maxCombo ? combo : state.maxCombo;
+    final newSolved = state.totalSolved + solved;
+    state = state.copyWith(
+      bestScore: newScore,
+      maxCombo: newCombo,
+      totalSolved: newSolved,
+    );
+    await _dataSource.saveTrafficControllerProgress(state);
+  }
+
+  Future<void> incrementTraining() async {
+    state = state.copyWith(trainingCount: state.trainingCount + 1);
+    await _dataSource.saveTrafficControllerProgress(state);
+  }
+}
+

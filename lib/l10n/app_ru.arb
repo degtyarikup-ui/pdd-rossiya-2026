@@ -829,5 +829,44 @@
   "paywallPrivacy": "Конфиденциальность",
   "paywallRestore": "Восстановить",
   "gameSourceImage": "Оригинальная картинка вопроса",
-  "gameSourceImageUnavailable": "В этом вопросе нет картинки"
+  "gameSourceImageUnavailable": "В этом вопросе нет картинки",
+  "navGames": "Игры",
+  "gamesHubTitle": "Игры и тренажёры",
+  "gamesHubSubtitle": "Закрепляйте сложные правила в интерактивных играх",
+  "gameTrafficControllerTitle": "Регулировщик 3D",
+  "gameTrafficControllerSubtitle": "Интерактивный 3D-тренажёр жестов инспектора ДПС",
+  "gameTrafficControllerDesc": "Освойте самую сложную тему экзамена ПДД (п. 6.10): сигналы регулировщика для автомобилей и трамваев со стишками-мнемониками и динамической аркадой.",
+  "gameModeTraining": "Обучение",
+  "gameModeTrainingDesc": "Разбор всех жестов со стишками и подсказками траекторий",
+  "gameModeArcade": "Блиц-аркада",
+  "gameModeArcadeDesc": "Динамический перекрёсток на время, серии комбо и 3 жизни",
+  "gameBestScoreLabel": "Рекорд",
+  "gameComboLabel": "Макс. комбо",
+  "gameSolvedLabel": "Решено",
+  "gameScore": "Счёт",
+  "gameCombo": "Комбо",
+  "gameLives": "Жизни",
+  "gameActionStraight": "Прямо",
+  "gameActionRight": "Направо",
+  "gameActionLeft": "Налево",
+  "gameActionStand": "Стоять",
+  "gameVehicleCar": "Автомобиль",
+  "gameVehicleTram": "Трамвай",
+  "gameCameraOverview": "Обзор",
+  "gameCameraDriver": "За рулём",
+  "gameOverTitle": "Игра окончена",
+  "gameOverScore": "Ваш счёт: {score}",
+  "@gameOverScore": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "gameOverNewRecord": "Новый рекорд!",
+  "gamePlayAgain": "Играть снова",
+  "gameExit": "Выйти",
+  "gameCorrect": "Верно!",
+  "gameWrong": "Нарушение!",
+  "gameWhistleNote": "Свисток инспектора: движение в этом направлении запрещено сигналом регулировщика."
 }

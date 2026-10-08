@@ -705,7 +705,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameLeaderboard => 'Таблица лидеров';
 
   @override
-  String get gameScore => 'Очки';
+  String get gameScore => 'Счёт';
 
   @override
   String get gameDistance => 'Дистанция';
@@ -717,7 +717,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameRestart => 'Попробовать снова';
 
   @override
-  String get gameExit => 'В гараж';
+  String get gameExit => 'Выйти';
 
   @override
   String get gameLeft => 'Левее';
@@ -744,7 +744,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameMistake => 'Ошибка';
 
   @override
-  String get gameCorrect => 'Верно';
+  String get gameCorrect => 'Верно!';
 
   @override
   String get gameContinue => 'Продолжить движение';
@@ -1608,4 +1608,99 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameSourceImageUnavailable => 'В этом вопросе нет картинки';
+
+  @override
+  String get navGames => 'Игры';
+
+  @override
+  String get gamesHubTitle => 'Игры и тренажёры';
+
+  @override
+  String get gamesHubSubtitle =>
+      'Закрепляйте сложные правила в интерактивных играх';
+
+  @override
+  String get gameTrafficControllerTitle => 'Регулировщик 3D';
+
+  @override
+  String get gameTrafficControllerSubtitle =>
+      'Интерактивный 3D-тренажёр жестов инспектора ДПС';
+
+  @override
+  String get gameTrafficControllerDesc =>
+      'Освойте самую сложную тему экзамена ПДД (п. 6.10): сигналы регулировщика для автомобилей и трамваев со стишками-мнемониками и динамической аркадой.';
+
+  @override
+  String get gameModeTraining => 'Обучение';
+
+  @override
+  String get gameModeTrainingDesc =>
+      'Разбор всех жестов со стишками и подсказками траекторий';
+
+  @override
+  String get gameModeArcade => 'Блиц-аркада';
+
+  @override
+  String get gameModeArcadeDesc =>
+      'Динамический перекрёсток на время, серии комбо и 3 жизни';
+
+  @override
+  String get gameBestScoreLabel => 'Рекорд';
+
+  @override
+  String get gameComboLabel => 'Макс. комбо';
+
+  @override
+  String get gameSolvedLabel => 'Решено';
+
+  @override
+  String get gameCombo => 'Комбо';
+
+  @override
+  String get gameLives => 'Жизни';
+
+  @override
+  String get gameActionStraight => 'Прямо';
+
+  @override
+  String get gameActionRight => 'Направо';
+
+  @override
+  String get gameActionLeft => 'Налево';
+
+  @override
+  String get gameActionStand => 'Стоять';
+
+  @override
+  String get gameVehicleCar => 'Автомобиль';
+
+  @override
+  String get gameVehicleTram => 'Трамвай';
+
+  @override
+  String get gameCameraOverview => 'Обзор';
+
+  @override
+  String get gameCameraDriver => 'За рулём';
+
+  @override
+  String get gameOverTitle => 'Игра окончена';
+
+  @override
+  String gameOverScore(int score) {
+    return 'Ваш счёт: $score';
+  }
+
+  @override
+  String get gameOverNewRecord => 'Новый рекорд!';
+
+  @override
+  String get gamePlayAgain => 'Играть снова';
+
+  @override
+  String get gameWrong => 'Нарушение!';
+
+  @override
+  String get gameWhistleNote =>
+      'Свисток инспектора: движение в этом направлении запрещено сигналом регулировщика.';
 }

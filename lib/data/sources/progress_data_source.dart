@@ -5,10 +5,12 @@ import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
+import 'package:pdd_app/data/models/traffic_controller_progress.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Локальный кэш прогресса в [SharedPreferences].
 class ProgressDataSource {
+  static const String _keyTrafficController = 'traffic_controller_progress';
   static const String _legacyProgress = 'question_progress';
   static const String _legacyTicketProgress = 'ticket_progress';
   static const String _legacyFavorites = 'favorites';
@@ -583,6 +585,25 @@ class ProgressDataSource {
   /// Лучший счёт в игре — тот же ключ, что пишет игра и синхронизирует
   /// снапшот (`game.bestScore`). «Сбросить статистику» его не трогает.
   int getGameBestScore() => _prefs.getInt('game_best_score') ?? 0;
+
+  /// Прогресс игры «Регулировщик 3D».
+  TrafficControllerProgress getTrafficControllerProgress() {
+    final raw = _prefs.getString(_keyTrafficController);
+    if (raw == null) return const TrafficControllerProgress();
+    try {
+      return TrafficControllerProgress.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+    } catch (_) {
+      return const TrafficControllerProgress();
+    }
+  }
+
+  Future<void> saveTrafficControllerProgress(
+    TrafficControllerProgress progress,
+  ) async {
+    await _prefs.setString(_keyTrafficController, jsonEncode(progress.toJson()));
+  }
 
   /// Лучшее место в недельном рейтинге игры, запомненное на устройстве.
   /// Источник правды — сервер; кэш нужен, чтобы ачивка не пропадала без сети.

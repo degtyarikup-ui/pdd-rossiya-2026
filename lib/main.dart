@@ -184,12 +184,12 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
       switch (initialScreen) {
         case 'game':
           return const HomeScreen(initialIndex: 1);
-        case 'feed':
+        case 'games':
           return const HomeScreen(initialIndex: 2);
-        case 'pdd':
-          return const HomeScreen(
-            initialIndex: 3,
-          ); // settings tab hosts the rules
+        case 'feed':
+          return const HomeScreen(initialIndex: 3);
+        case 'profile':
+          return const HomeScreen(initialIndex: 4);
         case 'tickets':
           return const TicketsScreen();
         default:
