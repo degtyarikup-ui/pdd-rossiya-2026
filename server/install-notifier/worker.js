@@ -16,6 +16,7 @@ import { setEntitlement } from './entitlements.js';
 import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, listPayIntents, webPaymentsLive } from './payments.js';
 import { handleAuth, authorizeUserRequest, revokeUserSessions, readSession } from './user_auth.js';
 import { handleClientIncident, deferIncident, errorCode } from './diagnostics.js';
+import { premiumEventSource, isPaidPremiumEvent } from './premium_analytics.js';
 import { handleSocialAdmin, handleVideoStream, handleVideoThumb, runAutoPost } from './social.js';
 import { SOCIAL_VIEW_HTML, SOCIAL_CLIENT_JS } from './social_ui.js';
 import { handleThreadsAdmin, runThreadsSchedule } from './threads.js';
@@ -257,6 +258,7 @@ function applyEventToSlot(slotData, event) {
   if (!slotData.installsByStore) slotData = emptySlotData();
 
   if (['purchase', 'report'].includes(event.type)) {
+    if (event.type === 'purchase' && !isPaidPremiumEvent(event)) return slotData;
     const key = event.type === 'purchase' ? 'purchases' : 'reports';
     slotData[key] = (slotData[key] || 0) + 1;
     return slotData;
@@ -2023,6 +2025,7 @@ export function sanitizeAnalyticsEvent(event) {
     package: analyticsToken(e.package, ''),
     path: String(e.path || '').replace(/[^A-Za-z0-9._~\/-]/g, '').slice(0, 120),
   };
+  if (e.type === 'purchase') out.purchaseSource = premiumEventSource(e);
   for (const key of Object.keys(out)) if (out[key] === '') delete out[key];
   return out;
 }
@@ -2102,6 +2105,7 @@ function normalizeDayData(dayData, dayKey) {
 // Применяет событие к данным дня. Чистая функция, без обращений к KV.
 function applyEventToDay(dayData, event) {
   if (['purchase', 'report'].includes(event.type)) {
+    if (event.type === 'purchase' && !isPaidPremiumEvent(event)) return;
     const key = event.type === 'purchase' ? 'purchases' : 'reports';
     dayData[key] = (dayData[key] || 0) + 1;
     return;
@@ -2234,6 +2238,7 @@ export async function flushBufferedStats(env, items, persistBatch = null) {
     const now = new Date(item.ts || Date.now());
     if (item.kind === 'analytics' && item.event) {
       const event = item.event;
+      if (event.type === 'purchase' && !isPaidPremiumEvent(event)) continue;
       applyEventToDay(await dayOf(now), event);
       const slotKey = `slot:${getSlotInfo(now).slotDate}:${getSlotInfo(now).slotType}`;
       slots.set(slotKey, applyEventToSlot(await slotOf(now), event));
@@ -3613,7 +3618,7 @@ const workerHandlers = {
         }
 
         if (!alreadyNotified) {
-          await trackStats(env, null, { id: notifPurchaseKey, kind: 'analytics', event: { type: 'purchase', app: user.app || app, platform: user.platform || platform } });
+          await trackStats(env, null, { id: notifPurchaseKey, kind: 'analytics', event: { type: 'purchase', purchaseSource: store, app: user.app || app, platform: user.platform || platform } });
           await env.INSTALLS.put(notifPurchaseKey, '1', { expirationTtl: 30 * 86400 });
         }
       } catch (_) { console.error('Purchase saved; notification unavailable'); }

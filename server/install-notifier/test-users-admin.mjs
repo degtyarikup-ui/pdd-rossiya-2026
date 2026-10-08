@@ -122,6 +122,7 @@ test('ручная выдача и тихое продление отправл�
   assert.notEqual(messages[0].dedupKey, messages[1].dedupKey);
   assert.ok(messages.every(m => m.dedupKey.startsWith('admin_grant:')));
   assert.ok(![...env.INSTALLS.data.keys()].some(k => k.startsWith('notified_purch:')));
+  assert.ok(![...env.INSTALLS.data.keys()].some(k => k.startsWith('slot:') || k.startsWith('day:')), 'manual grants never increment purchase analytics');
   assert.equal((await call(env, '/api/admin/users/grant-premium', { userId: 'u1', days: 0 })).status, 400);
   assert.equal((await call(env, '/api/admin/users/grant-premium', { userId: 'u1', days: 7 }, 'wrong')).status, 401);
   assert.equal(messages.length, 2);

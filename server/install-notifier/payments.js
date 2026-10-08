@@ -204,7 +204,7 @@ export async function settleOrder(env, order, deps) {
       `📧 Чек: ${deps.esc(order.email)}`,
     ].join('\n'), 'pay_paid:' + order.orderId);
     try {
-      await deps.trackStats?.(env, null, { id: 'pay_paid:' + order.orderId, kind: 'analytics', event: { type: 'purchase', app: order.app || 'ru', platform: 'web' } });
+      await deps.trackStats?.(env, null, { id: 'pay_paid:' + order.orderId, kind: 'analytics', event: { type: 'purchase', purchaseSource: 'web', app: order.app || 'ru', platform: 'web' } });
     } catch (_) {}
   } else if (status === 'CHARGEBACKED' && order.status === 'confirmed') {
     const user = await loadUser(env, order);

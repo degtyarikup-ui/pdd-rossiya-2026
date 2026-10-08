@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { inflateSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import worker, { buildUserRegistrationMessage, buildPremiumPurchaseMessage, buildReportMessage, dailyChartPoints, sendDailyReport, finishPendingDailyReport, dailyReportEnd, buildDailyReportMessage, flushBufferedStats } from './worker.js';
+import worker, { buildUserRegistrationMessage, buildPremiumPurchaseMessage, buildReportMessage, dailyChartPoints, sendDailyReport, finishPendingDailyReport, dailyReportEnd, buildDailyReportMessage, flushBufferedStats, sanitizeAnalyticsEvent } from './worker.js';
+import { isPaidPremiumEvent } from './premium_analytics.js';
 import { renderDailyChart, pngBase64 } from './daily_chart.js';
 import { metadataFields, attributedDestination } from './attribution.js';
 import { TelegramQueue } from './telegram_queue.js';
@@ -170,4 +171,26 @@ test('registration source aggregation preserves multiple channels without guessi
  const slot=JSON.parse(await env.INSTALLS.get('slot:2026-10-05:day'));
  assert.equal(slot.registrations,3);
  assert.deepEqual(slot.registrationsByMarketingSource,{threads:1,youtube:1});
+});
+
+test('daily report counts paid transactions and excludes manual grants from both slots and days', async () => {
+ const {env}=setup();
+ const events=[
+  {type:'purchase',purchaseSource:'appstore'},
+  {type:'purchase',purchaseSource:'web'},
+  {type:'purchase',purchaseSource:'admin_grant'},
+  {type:'purchase',source:'manual'},
+  {type:'purchase',kind:'admin_grant'},
+  {type:'purchase',manual:true},
+  {type:'purchase',store:'unknown_store'},
+ ].map(sanitizeAnalyticsEvent);
+ await flushBufferedStats(env,events.map(event=>({kind:'analytics',ts:Date.parse('2026-10-08T15:00Z'),event})));
+ const slot=JSON.parse(await env.INSTALLS.get('slot:2026-10-08:day'));
+ const day=JSON.parse(await env.INSTALLS.get('day:2026-10-08'));
+ assert.equal(slot.purchases,2);assert.equal(day.purchases,2);
+ assert.match(buildDailyReportMessage({data:slot,end:new Date('2026-10-08T19:00Z')}),/Покупки Premium: <b>2<\/b>/);
+ assert.ok(isPaidPremiumEvent({type:'purchase'}),'old verified purchase events remain countable');
+ assert.ok(isPaidPremiumEvent(sanitizeAnalyticsEvent({type:'purchase'})),'old events remain countable after sanitizing');
+ assert.ok(isPaidPremiumEvent({type:'purchase',purchaseSource:'appstore',premiumSource:'admin_grant'}),'a longer grant does not hide a real paid transaction');
+ assert.equal(isPaidPremiumEvent({type:'purchase',purchaseSource:'unknown'}),false);
 });
