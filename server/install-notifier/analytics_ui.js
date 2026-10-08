@@ -21,7 +21,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 .an-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0 0 18px}
 .an-kpi{margin:0;padding:24px}.an-big{font-size:38px;line-height:1.1;letter-spacing:-1.8px;font-weight:550;font-variant-numeric:tabular-nums;margin:16px 0 0}
 .an-kpi-top{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--an-muted)}.an-kpi-top .an-dot{display:none}.an-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.an-kpi.is-primary{background:var(--an-accent);color:white}.an-kpi.is-primary .an-kpi-top{color:#d4e8ff}
+.an-kpi.is-primary{background:var(--an-accent);color:white}.an-kpi.is-primary .an-kpi-top{color:#fff}
 .an-charts-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:18px;align-items:start}.an-charts-grid>.an-card{height:100%;margin:0}.an-charts-grid{margin-bottom:18px}
 .an-row2{display:grid;grid-template-columns:1fr .85fr 1.35fr;gap:18px;align-items:start}
 .an-chart{width:100%;min-height:190px;overflow:hidden}.an-chart svg{display:block;max-width:100%}
@@ -65,7 +65,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 @media(max-width:640px){.an-card{padding:20px;border-radius:18px}.an-grid{gap:10px}.an-kpi{padding:18px}.an-kpi-top{font-size:11px;min-height:28px;line-height:1.4}.an-big{font-size:32px;margin-top:10px}.an-row2{grid-template-columns:1fr}.an-geo-card{grid-column:auto}.an-head{gap:8px}.an-title{font-size:15px}.an-tabs button{padding:6px 10px;font-size:10px}.an-table{font-size:12px}.an-table td+td,.an-table th+th{padding-left:10px}.an-geo-card .an-table{min-width:340px}.an-activity-summary{gap:14px 10px;grid-template-columns:1.1fr repeat(3,1fr)}.an-activity-summary b{font-size:18px}.an-activity-summary span:first-child b{font-size:34px}.an-activity-summary span{font-size:10px;line-height:1.4}.an-dynamics-summary b{font-size:34px}.an-dynamics-summary span{font-size:10px}.an-geo-footer{flex-wrap:wrap}.an-now{padding:18px 20px;gap:16px}.an-now span{flex-direction:column;align-items:flex-start;gap:8px}.an-now b{margin:0;font-size:20px}.an-chart-card .an-head{flex-wrap:wrap}.an-caption{font-size:10px}}
 </style>
 <div class="an-period" id="an-period"></div>
-<div class="an-audience an-now" id="an-now"></div>
+<div class="an-grid" id="an-now" aria-label="Текущее состояние аккаунтов"></div>
 <div class="an-charts-grid">
  <div class="an-card an-activity-card">
   <div class="an-head"><div class="an-title">Ежедневное использование</div><details class="an-help"><summary aria-label="Об активности">i</summary><div>Уникальные зарегистрированные аккаунты, обращавшиеся к серверу за день по МСК. Повторные обращения не увеличивают число. Аккаунт с двумя платформами входит в обе группы, в общем числе учитывается один раз. Гости и использование без интернета сюда не входят. Сегодня — неполный день, среднее включает сегодня.</div></details></div>
@@ -363,8 +363,8 @@ function renderDashboard(data) {
  if(Array.from(selector.options).some(function(o){return o.value===selected;}))selector.value=selected;
  anRenderGeo();
  document.getElementById('an-now').innerHTML=[
- ['Всего аккаунтов',u?u.registered:null,'Все сохранённые аккаунты выбранного приложения'],['Активны · 24 ч',u?u.active1:null,'Обращались к серверу за последние 24 часа'],['Активны · 7 дней',u?u.active7:null,'Обращались к серверу за последние 7 дней'],['Premium',u?u.premium:null,'Действующий Premium, включая ручную выдачу']
- ].map(function(m){return '<span title="'+m[2]+'">'+m[0]+'<b>'+(m[1]==null?'—':anNum(m[1]))+'</b></span>';}).join('');
+ ['Всего аккаунтов',u?u.registered:null,'Все сохранённые аккаунты выбранного приложения'],['Активные за 24 часа',u?u.active1:null,'Обращались к серверу за последние 24 часа'],['Активные за 7 дней',u?u.active7:null,'Обращались к серверу за последние 7 дней'],['Premium',u?u.premium:null,'Действующий Premium, включая ручную выдачу']
+ ].map(function(m,i){return '<div class="an-card an-kpi'+(i===1?' is-primary':'')+'" title="'+m[2]+'"><div class="an-kpi-top">'+m[0]+'</div><div class="an-big">'+(m[1]==null?'—':anNum(m[1]))+'</div></div>';}).join('');
 }
 document.getElementById('an-chart-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-chart]');if(b){anChartMode=b.dataset.chart;if(window.__anData)anPlot(window.__anData);}});
 document.getElementById('an-geo-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-geo]');if(b){anGeoMode=b.dataset.geo;anGeoPage=0;anRenderGeo();}});
