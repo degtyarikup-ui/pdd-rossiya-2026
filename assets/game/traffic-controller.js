@@ -491,36 +491,60 @@
       parent.add(tree);
     });
 
-    // Дорожные знаки: Знак 2.1 «Главная дорога» и Знак 5.19.1 «Пешеходный переход»
-    buildRoadSigns(parent, halfW);
   }
 
   function buildStreetLamp() {
     const group = new THREE.Group();
-    const poleMat = new THREE.MeshStandardMaterial({ color: 0x242830, metalness: 0.85, roughness: 0.3 });
-    const glowMat = new THREE.MeshBasicMaterial({ color: 0xFFF4D4 });
+    const poleMat = new THREE.MeshStandardMaterial({
+      color: 0x242830,
+      metalness: 0.75,
+      roughness: 0.35,
+    });
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: 0xFFF7D6,
+    });
 
-    // Стойка
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 6.5, 12), poleMat);
-    pole.position.y = 3.25;
+    // 1. Основание столба
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.5, 12), poleMat);
+    base.position.y = 0.25;
+    base.castShadow = true;
+    group.add(base);
+
+    // 2. Вертикальная мачта
+    const poleH = 5.8;
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.14, poleH, 12), poleMat);
+    pole.position.y = 0.5 + poleH / 2;
     pole.castShadow = true;
     group.add(pole);
 
-    // Изогнутый кронштейн
-    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.6, 8), poleMat);
-    arm.rotation.z = Math.PI / 3;
-    arm.position.set(0.65, 6.7, 0);
+    // 3. Верхушка мачты (шарнир)
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 10), poleMat);
+    cap.position.set(0, 6.3, 0);
+    group.add(cap);
+
+    // 4. Изогнутый кронштейн к проезжей части
+    const armLength = 1.34;
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, armLength, 10), poleMat);
+    const armAngle = Math.atan2(1.2, 0.6);
+    arm.rotation.z = -armAngle;
+    arm.position.set(0.6, 6.6, 0);
     group.add(arm);
 
-    // Светильник
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.2, 0.35), poleMat);
-    head.position.set(1.4, 7.1, 0);
-    group.add(head);
+    // 5. Корпус светильника (строго смонтирован на кончике кронштейна в 1.2, 6.9, 0)
+    const headGroup = new THREE.Group();
+    headGroup.position.set(1.2, 6.9, 0);
+    headGroup.rotation.z = -0.18;
 
-    const bulb = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.25), glowMat);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.12, 0.28), poleMat);
+    head.position.set(0.28, 0, 0);
+    headGroup.add(head);
+
+    const bulb = new THREE.Mesh(new THREE.PlaneGeometry(0.52, 0.22), glowMat);
     bulb.rotation.x = Math.PI / 2;
-    bulb.position.set(1.4, 6.98, 0);
-    group.add(bulb);
+    bulb.position.set(0.28, -0.062, 0);
+    headGroup.add(bulb);
+
+    group.add(headGroup);
 
     return group;
   }
@@ -549,30 +573,6 @@
     group.add(crown2);
 
     return group;
-  }
-
-  function buildRoadSigns(parent, halfW) {
-    const postMat = new THREE.MeshStandardMaterial({ color: 0x8A929E, metalness: 0.8, roughness: 0.3 });
-
-    // Стойка знака на южном въезде
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 3.5, 8), postMat);
-    post.position.set(halfW + 0.6, 1.75, halfW + 4.5);
-    post.castShadow = true;
-    parent.add(post);
-
-    // Знак «Пешеходный переход» (синий квадрат с белым треугольником)
-    const signGeo = new THREE.BoxGeometry(0.8, 0.8, 0.04);
-    const signMat = new THREE.MeshStandardMaterial({ color: 0x1E88E5, roughness: 0.4 });
-    const sign = new THREE.Mesh(signGeo, signMat);
-    sign.position.set(halfW + 0.6, 3.4, halfW + 4.5);
-    parent.add(sign);
-
-    const triangleGeo = new THREE.ConeGeometry(0.3, 0.55, 3);
-    const whiteMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
-    const triangle = new THREE.Mesh(triangleGeo, whiteMat);
-    triangle.rotation.z = Math.PI;
-    triangle.position.set(halfW + 0.6, 3.4, halfW + 4.47);
-    parent.add(triangle);
   }
 
   // Трамвайные пути (аккуратные стальные рельсы с желобом)
@@ -1029,60 +1029,118 @@
     const originX = (currentVehicle === VEHICLES.CAR) ? 3.2 : -2.2;
     const originZ = 8.8;
 
-    // Стрелка прямо
     const canStraight = allowed.includes(MOVES.STRAIGHT);
-    addRoadRibbonArrow(
-      new THREE.LineCurve3(
-        new THREE.Vector3(originX, 0.046, originZ),
-        new THREE.Vector3(originX, 0.046, -11.0)
-      ),
-      canStraight
-    );
-
-    // Стрелка направо (для авто)
     const canRight = allowed.includes(MOVES.RIGHT);
-    if (currentVehicle === VEHICLES.CAR || canRight) {
+    const canLeft = allowed.includes(MOVES.LEFT);
+    const canUturn = allowed.includes(MOVES.UTURN);
+
+    // Стрелка прямо (только если разрешено)
+    if (canStraight) {
       addRoadRibbonArrow(
-        new THREE.QuadraticBezierCurve3(
-          new THREE.Vector3(originX, 0.046, originZ),
-          new THREE.Vector3(originX, 0.046, 2.4),
-          new THREE.Vector3(12.0, 0.046, 2.4)
-        ),
-        canRight
+        new THREE.LineCurve3(
+          new THREE.Vector3(originX, 0.052, originZ),
+          new THREE.Vector3(originX, 0.052, -11.0)
+        )
       );
     }
 
-    // Стрелка налево (для авто)
-    const canLeft = allowed.includes(MOVES.LEFT);
-    if (currentVehicle === VEHICLES.CAR || canLeft) {
+    // Стрелка направо (только если разрешено)
+    if (canRight) {
+      addRoadRibbonArrow(
+        new THREE.QuadraticBezierCurve3(
+          new THREE.Vector3(originX, 0.052, originZ),
+          new THREE.Vector3(originX, 0.052, 2.4),
+          new THREE.Vector3(12.0, 0.052, 2.4)
+        )
+      );
+    }
+
+    // Стрелка налево (только если разрешено)
+    if (canLeft) {
       addRoadRibbonArrow(
         new THREE.CubicBezierCurve3(
-          new THREE.Vector3(originX, 0.046, originZ),
-          new THREE.Vector3(originX, 0.046, 2.0),
-          new THREE.Vector3(0.0, 0.046, -2.4),
-          new THREE.Vector3(-12.0, 0.046, -2.4)
-        ),
-        canLeft
+          new THREE.Vector3(originX, 0.052, originZ),
+          new THREE.Vector3(originX, 0.052, 2.0),
+          new THREE.Vector3(0.0, 0.052, -2.4),
+          new THREE.Vector3(-12.0, 0.052, -2.4)
+        )
       );
+    }
+
+    // Разворот (если разрешено для автомобиля)
+    if (canUturn && currentVehicle === VEHICLES.CAR) {
+      addRoadRibbonArrow(
+        new THREE.CubicBezierCurve3(
+          new THREE.Vector3(originX, 0.052, originZ),
+          new THREE.Vector3(originX, 0.052, 2.0),
+          new THREE.Vector3(-2.8, 0.052, 2.0),
+          new THREE.Vector3(-2.8, 0.052, 12.0)
+        )
+      );
+    }
+
+    // Если движение запрещено (например, грудь/спина или поднятая рука)
+    if (allowed.length === 1 && allowed[0] === MOVES.NONE) {
+      addStopProhibitionMarker(originX, originZ);
     }
   }
 
-  function addRoadRibbonArrow(curve, isAllowed, width) {
-    const ribbonWidth = width || 0.44;
-    const numPoints = 28;
+  function addRoadRibbonArrow(curve, width = 0.72) {
+    const numPoints = 32;
     const points = curve.getPoints(numPoints);
     const ribbonPointCount = numPoints - 1;
+
+    // 1. Широкая неоново-зелёная лента (высокая контрастность на асфальте)
+    createStripMesh(points, ribbonPointCount, width, 0.052, 0x00E676);
+
+    // 2. Яркая белая осевая линия по центру ленты
+    createStripMesh(points, ribbonPointCount, width * 0.28, 0.054, 0xFFFFFF);
+
+    // 3. Большой плоский стрелочный наконечник
+    const lastP = points[ribbonPointCount];
+    const tipP = points[numPoints];
+    const atx = tipP.x - lastP.x;
+    const atz = tipP.z - lastP.z;
+    const alen = Math.hypot(atx, atz) || 1;
+    const dirX = atx / alen;
+    const dirZ = atz / alen;
+
+    const headW = width * 2.2;
+    const anx = -dirZ * (headW / 2);
+    const anz = dirX * (headW / 2);
+
+    // Внешний зелёный треугольник
+    const tipExtX = tipP.x + dirX * 0.65;
+    const tipExtZ = tipP.z + dirZ * 0.65;
+
+    createTriangleMesh(
+      [lastP.x + anx, 0.053, lastP.z + anz],
+      [lastP.x - anx, 0.053, lastP.z - anz],
+      [tipExtX, 0.053, tipExtZ],
+      0x00E676
+    );
+
+    // Внутренний белый акцентный треугольник
+    createTriangleMesh(
+      [lastP.x + anx * 0.45, 0.055, lastP.z + anz * 0.45],
+      [lastP.x - anx * 0.45, 0.055, lastP.z - anz * 0.45],
+      [tipExtX - dirX * 0.15, 0.055, tipExtZ - dirZ * 0.15],
+      0xFFFFFF
+    );
+  }
+
+  function createStripMesh(points, count, stripWidth, yElev, color) {
+    const halfW = stripWidth / 2;
     const vertices = [];
     const indices = [];
 
-    const halfW = ribbonWidth / 2;
-    for (let i = 0; i <= ribbonPointCount; i++) {
+    for (let i = 0; i <= count; i++) {
       const p = points[i];
       let tx, tz;
       if (i === 0) {
         tx = points[1].x - points[0].x;
         tz = points[1].z - points[0].z;
-      } else if (i === ribbonPointCount) {
+      } else if (i === count) {
         tx = points[i].x - points[i - 1].x;
         tz = points[i].z - points[i - 1].z;
       } else {
@@ -1093,10 +1151,10 @@
       const nx = (-tz / len) * halfW;
       const nz = (tx / len) * halfW;
 
-      vertices.push(p.x + nx, 0.046, p.z + nz);
-      vertices.push(p.x - nx, 0.046, p.z - nz);
+      vertices.push(p.x + nx, yElev, p.z + nz);
+      vertices.push(p.x - nx, yElev, p.z - nz);
 
-      if (i < ribbonPointCount) {
+      if (i < count) {
         const v0 = i * 2;
         const v1 = i * 2 + 1;
         const v2 = (i + 1) * 2;
@@ -1106,40 +1164,54 @@
       }
     }
 
-    // Плоский треугольный наконечник стрелки на проезжей части
-    const lastP = points[ribbonPointCount];
-    const tipP = points[numPoints];
-    const atx = tipP.x - lastP.x;
-    const atz = tipP.z - lastP.z;
-    const alen = Math.hypot(atx, atz) || 1;
-    const wingW = halfW * 2.2;
-    const anx = (-atz / alen) * wingW;
-    const anz = (atx / alen) * wingW;
-
-    const baseIdx = (ribbonPointCount + 1) * 2;
-    vertices.push(lastP.x + anx, 0.047, lastP.z + anz);
-    vertices.push(lastP.x - anx, 0.047, lastP.z - anz);
-    const tipExtX = tipP.x + (atx / alen) * 0.45;
-    const tipExtZ = tipP.z + (atz / alen) * 0.45;
-    vertices.push(tipExtX, 0.047, tipExtZ);
-
-    indices.push(baseIdx, baseIdx + 1, baseIdx + 2);
-
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
     geo.setIndex(indices);
     geo.computeVertexNormals();
 
     const mat = new THREE.MeshBasicMaterial({
-      color: isAllowed ? 0x00E676 : 0x525866,
-      transparent: true,
-      opacity: isAllowed ? 0.95 : 0.22,
+      color: color,
       side: THREE.DoubleSide,
       depthWrite: false,
     });
 
     const mesh = new THREE.Mesh(geo, mat);
     arrowsGroup.add(mesh);
+  }
+
+  function createTriangleMesh(p1, p2, p3, color) {
+    const vertices = [
+      p1[0], p1[1], p1[2],
+      p2[0], p2[1], p2[2],
+      p3[0], p3[1], p3[2],
+    ];
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geo.setIndex([0, 1, 2]);
+    geo.computeVertexNormals();
+
+    const mat = new THREE.MeshBasicMaterial({
+      color: color,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    arrowsGroup.add(new THREE.Mesh(geo, mat));
+  }
+
+  function addStopProhibitionMarker(x, z) {
+    // Яркая запрещающая стоп-полоса перед стоп-линией
+    const barGeo = new THREE.BoxGeometry(2.6, 0.05, 0.45);
+    const barMat = new THREE.MeshBasicMaterial({ color: 0xFF1744 });
+    const bar = new THREE.Mesh(barGeo, barMat);
+    bar.position.set(x, 0.052, z - 0.4);
+    arrowsGroup.add(bar);
+
+    const stripeInner = new THREE.Mesh(
+      new THREE.BoxGeometry(2.4, 0.052, 0.15),
+      new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
+    );
+    stripeInner.position.set(x, 0.053, z - 0.4);
+    arrowsGroup.add(stripeInner);
   }
 
   // --- Переключение сценария и поз регулировщика ---
