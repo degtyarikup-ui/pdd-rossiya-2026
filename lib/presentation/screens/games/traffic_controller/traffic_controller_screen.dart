@@ -46,7 +46,7 @@ class _TrafficControllerScreenState
   ControllerGesture _curGesture = ControllerGesture.rightArmForward;
   ApproachDirection _curApproach = ApproachDirection.left;
   VehicleKind _curVehicle = VehicleKind.car;
-  static const String _cameraMode = 'lane';
+  final String _cameraMode = 'overview'; // 'overview' | 'driver'
 
   // Режим Блиц-аркада
   int _score = 0;
@@ -325,7 +325,11 @@ class _TrafficControllerScreenState
   }
 
 
-
+  void _onPanUpdate(DragUpdateDetails details) {
+    if (_cameraMode == 'overview') {
+      _runJs('window.TrafficControllerGame && window.TrafficControllerGame.rotateCamera(${details.delta.dx});');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -336,19 +340,23 @@ class _TrafficControllerScreenState
       body: SafeArea(
         child: Stack(
           children: [
-            // 3D Canvas
+            // 3D Canvas with camera pan
             Positioned.fill(
-              child: kIsWeb
-                  ? (_browserGame != null
-                      ? _browserGame!.widget
-                      : const Center(
-                          child: CircularProgressIndicator(color: AppColors.accent),
-                        ))
-                  : (_webViewController != null
-                      ? WebViewWidget(controller: _webViewController!)
-                      : const Center(
-                          child: CircularProgressIndicator(color: AppColors.accent),
-                        )),
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragUpdate: _onPanUpdate,
+                child: kIsWeb
+                    ? (_browserGame != null
+                        ? _browserGame!.widget
+                        : const Center(
+                            child: CircularProgressIndicator(color: AppColors.accent),
+                          ))
+                    : (_webViewController != null
+                        ? WebViewWidget(controller: _webViewController!)
+                        : const Center(
+                            child: CircularProgressIndicator(color: AppColors.accent),
+                          )),
+              ),
             ),
 
             // Top HUD Overlay
@@ -415,8 +423,8 @@ class _TrafficControllerScreenState
 
         const Spacer(),
 
-        // Балансировочный отступ для идеального центрирования табов (под размер кнопки «Назад» 40x40)
-        const SizedBox(width: 40, height: 40),
+        // Балансировочный отступ для идеального центрирования табов
+        const SizedBox(width: 44, height: 44),
       ],
     );
   }

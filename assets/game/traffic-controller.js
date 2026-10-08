@@ -101,7 +101,7 @@
   let currentGesture = GESTURES.RIGHT_ARM_FORWARD;
   let currentApproach = APPROACHES.LEFT;
   let currentVehicle = VEHICLES.CAR;
-  let currentCameraMode = 'lane';     // 'lane' | 'overview' | 'driver'
+  let currentCameraMode = 'overview'; // 'overview' | 'driver'
   let currentMode = 'training';       // 'training' | 'arcade'
   let activeBlinkerSide = null;       // 'left' | 'right' | null
   let resetTimer = null;
@@ -114,15 +114,11 @@
   let targetInspectorRotY = 0;
   let curInspectorRotY = 0;
 
-  // Камера: плавное вращение, перемещение и ракурсы
+  // Камера: плавное вращение и обзор
   let camAngle = 0;
   let targetAngle = 0;
   let camDistance = 23;
   let camHeight = 18;
-  const curCamPos = new THREE.Vector3(3.2, 2.9, 18.2);
-  const curCamLook = new THREE.Vector3(0.6, 1.3, 0);
-  const targetCamPos = new THREE.Vector3(3.2, 2.9, 18.2);
-  const targetCamLook = new THREE.Vector3(0.6, 1.3, 0);
   let clock = new THREE.Clock();
 
   function init() {
@@ -155,10 +151,6 @@
 
     camera = new THREE.PerspectiveCamera(42, width / height, 0.5, 400);
     updateCameraPosition();
-    curCamPos.copy(targetCamPos);
-    curCamLook.copy(targetCamLook);
-    camera.position.copy(curCamPos);
-    camera.lookAt(curCamLook);
 
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
@@ -1389,7 +1381,7 @@
   // --- Камера: переключение ракурса и горизонтальное вращение ---
   function setCameraView(view) {
     currentCameraMode = view;
-    if (view === 'lane' || view === 'driver') {
+    if (view === 'driver') {
       targetAngle = 0;
     }
   }
@@ -1402,18 +1394,19 @@
 
   function updateCameraPosition() {
     if (currentCameraMode === 'overview') {
-      // Обзор перекрёстка с высоты на регулировщика
       const radius = camDistance;
-      targetCamPos.set(Math.sin(camAngle) * radius, camHeight, Math.cos(camAngle) * radius);
-      targetCamLook.set(0, 1.2, 0);
+      camera.position.x = Math.sin(camAngle) * radius;
+      camera.position.y = camHeight;
+      camera.position.z = Math.cos(camAngle) * radius;
+      camera.lookAt(0, 1.2, 0);
     } else {
-      // Вид с полосы, где стоит машина или трамвай
-      if (currentVehicle === VEHICLES.TRAM) {
-        targetCamPos.set(-2.2, 3.8, 19.5);
-        targetCamLook.set(-0.4, 1.4, 0);
-      } else {
-        targetCamPos.set(3.2, 2.9, 18.2);
-        targetCamLook.set(0.6, 1.3, 0);
+      // Вид из кабины водителя машины / трамвая
+      if (currentVehicle === VEHICLES.TRAM && tramMesh) {
+        camera.position.set(-2.2, 1.9, 10.4);
+        camera.lookAt(-2.2, 1.6, 0);
+      } else if (carMesh) {
+        camera.position.set(3.2, 1.45, 12.8);
+        camera.lookAt(3.2, 1.35, 0);
       }
     }
   }
@@ -1434,13 +1427,9 @@
     const delta = clock.getDelta();
     const time = clock.getElapsedTime();
 
-    // Плавное вращение и перемещение камеры
+    // Плавное вращение камеры
     camAngle += (targetAngle - camAngle) * 0.08;
     updateCameraPosition();
-    curCamPos.lerp(targetCamPos, 0.08);
-    curCamLook.lerp(targetCamLook, 0.08);
-    camera.position.copy(curCamPos);
-    camera.lookAt(curCamLook);
 
     // Плавный поворот регулировщика к целевому направлению
     curInspectorRotY += (targetInspectorRotY - curInspectorRotY) * 0.12;
