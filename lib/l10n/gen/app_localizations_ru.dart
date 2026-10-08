@@ -1687,12 +1687,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameCameraDriver => 'За рулём';
 
   @override
-  String get gameCameraLane => 'С полосы машины';
-
-  @override
-  String get gameCameraInspector => 'На регулировщика';
-
-  @override
   String get gameOverTitle => 'Игра окончена';
 
   @override

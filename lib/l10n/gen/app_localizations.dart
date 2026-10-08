@@ -2956,18 +2956,6 @@ abstract class AppLocalizations {
   /// **'За рулём'**
   String get gameCameraDriver;
 
-  /// No description provided for @gameCameraLane.
-  ///
-  /// In ru, this message translates to:
-  /// **'С полосы машины'**
-  String get gameCameraLane;
-
-  /// No description provided for @gameCameraInspector.
-  ///
-  /// In ru, this message translates to:
-  /// **'На регулировщика'**
-  String get gameCameraInspector;
-
   /// No description provided for @gameOverTitle.
   ///
   /// In ru, this message translates to:
