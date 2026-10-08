@@ -26,4 +26,3 @@ Main composition: three thick matte-white rounded playing cards hovering in a lo
 Background same soft-focus modern Russian game city at blue dusk, tasteful warm window bokeh. Keep it subtle, clean and lightly blurred; no specific recognizable landmarks. Lower 25% calm asphalt with space for real UI title later. Main subjects large enough to read at mobile thumbnail size.
 Exact only text: STOP, on the stop sign. No captions, no title, no logo, no badges, no numbers, no watermark, no invented glyphs. No flashy glows, no particles, no neon rims, no flares, no glossy plastic clutter. Professional cohesive game key art, appealing and simple.
 ```
-
