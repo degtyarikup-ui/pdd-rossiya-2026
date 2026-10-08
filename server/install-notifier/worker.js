@@ -628,6 +628,30 @@ export function buildPremiumPurchaseMessage(p) {
   return lines.join('\n');
 }
 
+export function buildPremiumGrantMessage(user, grant) {
+  const formatExpiry = value => value ? new Date(value).toLocaleString('ru-RU', {
+    timeZone: 'Europe/Moscow', day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  }) + ' МСК' : 'Навсегда';
+  const mode = grant.mode === 'lifetime' ? 'Навсегда'
+    : grant.mode === 'until' ? 'До выбранной даты'
+    : grant.mode === 'set' ? `От сегодня: ${grant.days} дн.` : `Продление: +${grant.days} дн.`;
+  return [
+    '🎁 <b>Ручная выдача Premium</b>',
+    '',
+    `• <b>Пользователь:</b> ${esc(user.name || 'Пользователь')}`,
+    `• <b>Email:</b> ${displayUserEmail(user.email)}`,
+    `• <b>ID:</b> <code>${esc(String(user.id).slice(0, 120))}</code>`,
+    `• <b>Режим:</b> ${mode}`,
+    `• <b>Выдан вручную:</b> ${formatExpiry(grant.until)}`,
+    `• <b>Итоговый доступ:</b> ${formatExpiry(user.premiumExpiresAt)}`,
+    grant.comment ? `• <b>Комментарий:</b> ${esc(grant.comment)}` : null,
+    `• <b>Уведомление в приложении:</b> ${grant.notify ? 'Да' : 'Нет'}`,
+    '',
+    `🕓 ${mskTime(new Date())} MSK`,
+  ].filter(line => line !== null).join('\n');
+}
+
 // ───────────────────── Жалобы на вопросы из приложения ─────────────────────
 // Пользователь пишет текст прямо в приложении (кнопка-флажок в карточке
 // вопроса), клиент шлёт сюда {kind:'report', ...}. Раньше это был mailto —
@@ -3627,6 +3651,7 @@ export default {
     if (url.pathname.startsWith('/api/admin/users')) {
       const usersResponse = await handleUsersAdmin(request, env, url, {
         verifyAdminAuth, getAllUsers, revokeUserSessions, readGameBoard, deleteGamePlayer, gameWeekKey, jsonResponse,
+        sendTelegram, buildPremiumGrantMessage,
       });
       if (usersResponse) return usersResponse;
     }

@@ -208,7 +208,7 @@ export async function handleUsersAdmin(request, env, url, deps) {
       };
     }
     await putUserRecord(env, user);
-    await writeAdminMeta(env, userId, meta, {
+    const grant = {
       action: 'grant',
       days: body.isLifetime || body.until ? null : Number.parseInt(body.days, 10),
       mode: body.isLifetime ? 'lifetime' : body.until ? 'until' : (body.mode === 'set' ? 'set' : 'extend'),
@@ -216,7 +216,17 @@ export async function handleUsersAdmin(request, env, url, deps) {
       until: result.expiresAt,
       comment: typeof body.comment === 'string' ? body.comment.slice(0, 200) : undefined,
       notify: body.notify !== false,
-    });
+    };
+    await writeAdminMeta(env, userId, meta, grant);
+    // The app notice toggle does not suppress the administrator's audit log.
+    // Enqueue only after the entitlement and history have been saved.
+    if (env.BOT_TOKEN && env.CHAT_ID) {
+      try {
+        const notification = await deps.sendTelegram(env, deps.buildPremiumGrantMessage(user, grant),
+          'admin_grant:' + crypto.randomUUID());
+        if (!notification.ok) throw new Error('grant notification queue unavailable');
+      } catch (_) { console.error('Manual Premium grant saved; notification unavailable'); }
+    }
     return jsonResponse({ ok: true, user: adminUser(user), admin: meta });
   }
 

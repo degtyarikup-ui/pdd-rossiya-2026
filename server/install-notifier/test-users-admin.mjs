@@ -1,7 +1,7 @@
 // Раздел «Пользователи» админки: Premium на срок, заметки, история, удаление.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import worker from './worker.js';
+import worker, { buildPremiumGrantMessage } from './worker.js';
 import { computePremiumExpiry, summarizeProgress } from './users_admin.js';
 
 class KV {
@@ -91,6 +91,65 @@ test('сводка прогресса без данных', () => {
   assert.equal(summarizeProgress({}).ab.answered, 0);
 });
 
+function captureGrantLogs(env, status = 200) {
+  const messages = [];
+  env.BOT_TOKEN = 'test';
+  env.CHAT_ID = 'test';
+  env.TELEGRAM = { idFromName: id => id, get: () => ({ fetch: async (_, options) => {
+    assert.equal(JSON.parse(await env.INSTALLS.get('user:u1')).isPremium, true);
+    assert.equal(JSON.parse(await env.INSTALLS.get('user_admin:u1')).history[0].action, 'grant');
+    messages.push(JSON.parse(options.body));
+    return new Response('{}', { status });
+  } }) };
+  return messages;
+}
+
+test('ручная выдача и тихое продление отправляют отдельные логи после сохранения', async () => {
+  const env = setup(), messages = captureGrantLogs(env);
+  const first = await call(env, '/api/admin/users/grant-premium', { userId: 'u1', days: 7, comment: '<b>конкурс</b>' });
+  assert.equal(first.status, 200);
+  assert.equal(messages.length, 1);
+  assert.match(messages[0].text, /^🎁 <b>Ручная выдача Premium<\/b>/);
+  assert.match(messages[0].text, /Анна/);
+  assert.match(messages[0].text, /a@x.ru/);
+  assert.match(messages[0].text, /&lt;b&gt;конкурс&lt;\/b&gt;/);
+  assert.doesNotMatch(messages[0].text, /Покупка|Магазин|Цена/);
+  const second = await call(env, '/api/admin/users/grant-premium', { userId: 'u1', days: 14, notify: false });
+  assert.equal(second.status, 200);
+  assert.equal(messages.length, 2);
+  assert.match(messages[1].text, /Продление: \+14 дн\./);
+  assert.match(messages[1].text, /Уведомление в приложении:<\/b> Нет/);
+  assert.notEqual(messages[0].dedupKey, messages[1].dedupKey);
+  assert.ok(messages.every(m => m.dedupKey.startsWith('admin_grant:')));
+  assert.ok(![...env.INSTALLS.data.keys()].some(k => k.startsWith('notified_purch:')));
+  assert.equal((await call(env, '/api/admin/users/grant-premium', { userId: 'u1', days: 0 })).status, 400);
+  assert.equal((await call(env, '/api/admin/users/grant-premium', { userId: 'u1', days: 7 }, 'wrong')).status, 401);
+  assert.equal(messages.length, 2);
+});
+
+test('лог различает ручной срок и более долгий доступ из магазина, дату и навсегда', () => {
+  const user = { id: '<id>', name: '<name>', email: 'a@privaterelay.appleid.com', premiumExpiresAt: '2027-01-01T00:00:00Z' };
+  const dated = buildPremiumGrantMessage(user, { mode: 'until', until: '2026-12-01T23:59:59Z', notify: true });
+  assert.match(dated, /Выдан вручную:<\/b> 02\.12\.2026, 02:59 МСК/);
+  assert.match(dated, /Итоговый доступ:<\/b> 01\.01\.2027, 03:00 МСК/);
+  assert.match(dated, /До выбранной даты/);
+  assert.match(dated, /защищённый адрес Apple/);
+  assert.doesNotMatch(dated, /<id>|<name>/);
+  const lifetime = buildPremiumGrantMessage({ ...user, premiumExpiresAt: null }, { mode: 'lifetime', until: null });
+  assert.match(lifetime, /Выдан вручную:<\/b> Навсегда/);
+  assert.match(lifetime, /Итоговый доступ:<\/b> Навсегда/);
+  assert.match(buildPremiumGrantMessage(user, { mode: 'set', days: 30 }), /От сегодня: 30 дн\./);
+});
+
+test('недоступность очереди Telegram не отменяет сохранённую выдачу', async () => {
+  const env = setup(), messages = captureGrantLogs(env, 503);
+  const result = await call(env, '/api/admin/users/grant-premium', { userId: 'u1', isLifetime: true });
+  assert.equal(result.status, 200);
+  assert.equal(result.data.user.premiumSource, 'admin_grant');
+  assert.equal(result.data.admin.history[0].mode, 'lifetime');
+  assert.equal(messages.length, 1);
+});
+
 test('события аналитики чистятся: XSS, __proto__, мусор', async () => {
   const env = setup();
   await worker.fetch(new Request('https://w.test/api/track', { method: 'POST', headers: { 'content-type': 'application/json', 'user-agent': 'Mozilla/5.0 (iPhone)', 'cf-ipcountry': 'RU' },
@@ -161,4 +220,3 @@ test('выдача с уведомлением сохраняет текст, т
   const second = JSON.parse(await env.INSTALLS.get('user:u1'));
   assert.deepEqual(second.grantNotice, first.grantNotice);
 });
-
