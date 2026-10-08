@@ -90,6 +90,7 @@
   const lowEnd = (navigator.hardwareConcurrency || 8) <= 2 || (navigator.deviceMemory || 8) <= 3;
   const weak = lowEnd || (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
   let leaves;
+  const walkers = [];
   const leafCentre = new THREE.Vector3(0, 0, 0);
   let carMesh;
   let arrowsGroup;
@@ -274,6 +275,7 @@
     buildSidewalks(envGroup, roadWidth);
     buildCity(envGroup, roadWidth);
     buildStreetFurniture(envGroup, roadWidth);
+    buildPedestrians(envGroup, roadWidth);
     buildCentralPedestal(envGroup);
   }
 
@@ -654,117 +656,83 @@
     parent.add(mesh);
   }
 
-  // Фонари вдоль улиц: все мачты одним мешем, все плафоны — другим.
-  function buildStreetLamps(parent, halfW) {
-    const poleMat = new THREE.MeshStandardMaterial({ color: 0x242830, metalness: 0.75, roughness: 0.35 });
-    const glowMat = new THREE.MeshBasicMaterial({ color: 0xFFF7D6 });
-    const poles = [], bulbs = [];
-    const line = halfW + 0.9;
-    const lamp = (x, z, rotY) => {
-      const holder = new THREE.Group();
-      holder.position.set(x, 0.18, z);
-      holder.rotation.y = rotY;
-      holder.updateMatrix();
-      const add = (geo, px, py, pz, rz, bucket, mat) => {
-        const m = new THREE.Mesh(geo, mat);
-        m.position.set(px, py, pz);
-        if (rz) m.rotation.z = rz;
-        m.updateMatrix();
-        m.matrix.premultiply(holder.matrix);
-        m.matrix.decompose(m.position, m.quaternion, m.scale);
-        bucket.push(m);
-      };
-      add(new THREE.CylinderGeometry(0.07, 0.12, 6.4, 6), 0, 3.2, 0, 0, poles, poleMat);
-      add(new THREE.BoxGeometry(1.3, 0.08, 0.1), 0.6, 6.35, 0, 0, poles, poleMat);
-      add(new THREE.BoxGeometry(0.6, 0.12, 0.28), 1.25, 6.3, 0, 0, poles, poleMat);
-      add(new THREE.BoxGeometry(0.5, 0.03, 0.22), 1.25, 6.23, 0, 0, bulbs, glowMat);
-    };
-    for (let along = halfW + 22; along < 150; along += 24) {
-      [-1, 1].forEach(dir => [-1, 1].forEach(side => {
-        lamp(side * line, dir * along, side > 0 ? Math.PI : 0);
-        lamp(dir * along, side * line, side > 0 ? Math.PI / 2 : -Math.PI / 2);
-      }));
-    }
-    parent.add(mergeMeshes(poles, poleMat));
-    parent.add(mergeMeshes(bulbs, glowMat));
-  }
-
-  // Уличная мебель: фонарные столбы, деревья, дорожные знаки
+  // Same lamp factory and workshop edits as the main game. Bake all static
+  // parts into one mesh per material (normally just grey pole + light).
   function buildStreetFurniture(parent, roadWidth) {
     const halfW = roadWidth / 2;
-
-    // 4 угловых фонарных столба с теплыми светящимися лампами
-    const lampPositions = [
-      { x: halfW + 1.2, z: halfW + 1.2, rot: Math.PI * 0.75 },
-      { x: -(halfW + 1.2), z: halfW + 1.2, rot: Math.PI * 0.25 },
-      { x: halfW + 1.2, z: -(halfW + 1.2), rot: -Math.PI * 0.75 },
-      { x: -(halfW + 1.2), z: -(halfW + 1.2), rot: -Math.PI * 0.25 },
-    ];
-
-    lampPositions.forEach(p => {
-      const lamp = buildStreetLamp();
-      lamp.position.set(p.x, 0.18, p.z);
-      lamp.rotation.y = p.rot;
-      parent.add(lamp);
+    const parts = new Map();
+    function place(x, z, angle) {
+      const model = window.PDD_VEHICLES.applyModelEdits('lamp', window.PDD_STREET.createLampPost());
+      model.position.set(x, 0.18, z); model.rotation.y = angle;
+      model.updateMatrixWorld(true);
+      model.traverse(node => {
+        if (!node.isMesh || !node.visible) return;
+        const mat = node.material;
+        const key = `${mat.type}:${mat.color.getHex()}:${mat.side}:${mat.opacity}`;
+        if (!parts.has(key)) parts.set(key, {mat, meshes: []});
+        const mesh = new THREE.Mesh(node.geometry.clone(), mat);
+        node.matrixWorld.decompose(mesh.position, mesh.quaternion, mesh.scale);
+        parts.get(key).meshes.push(mesh);
+        node.geometry.dispose();
+      });
+    }
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      place(sx * (halfW + 1.2), sz * (halfW + 1.2), Math.atan2(-sz, sx));
+    }
+    const line = halfW + 0.9;
+    for (let along = halfW + 22; along < 150; along += 24) {
+      for (const dir of [-1, 1]) for (const side of [-1, 1]) {
+        place(side * line, dir * along, side > 0 ? 0 : Math.PI);
+        place(dir * along, side * line, side > 0 ? -Math.PI / 2 : Math.PI / 2);
+      }
+    }
+    parts.forEach(({meshes, mat}) => {
+      const mesh = mergeMeshes(meshes, mat);
+      mesh.userData.streetLamp = true;
+      mesh.castShadow = mat.type !== 'MeshBasicMaterial';
+      mesh.receiveShadow = true;
+      parent.add(mesh);
     });
-
-    buildStreetLamps(parent, halfW);
   }
 
-  function buildStreetLamp() {
-    const group = new THREE.Group();
-    const poleMat = new THREE.MeshStandardMaterial({
-      color: 0x242830,
-      metalness: 0.75,
-      roughness: 0.35,
-    });
-    const glowMat = new THREE.MeshBasicMaterial({
-      color: 0xFFF7D6,
-    });
+  function buildPedestrians(parent, roadWidth) {
+    const colours = window.PDD_STREET.peopleColors;
+    const halfW = roadWidth / 2;
+    // One/two walkers per corner. Both coordinates always stay outside
+    // BOTH roads: no crossings, diagonal cuts or traffic/collision actors.
+    const corners = [[-1, -1], [1, 1], [1, -1], [-1, 1]];
+    const count = weak ? 4 : 8;
+    for (let i = 0; i < count; i++) {
+      const [sx, sz] = corners[i % 4];
+      const axis = i % 2 === Math.floor(i / 4) ? 'z' : 'x';
+      const mesh = window.PDD_VEHICLES.applyModelEdits('pedestrian',
+        window.PDD_STREET.createPedestrian(colours[i % colours.length], (i * 3 + 1) % 12));
+      mesh.position.y = 0.18;
+      mesh.userData.ambient = true; mesh.userData.noCollision = true;
+      mesh.traverse(node => { if (node.isMesh) node.castShadow = !weak; });
+      parent.add(mesh);
+      walkers.push({mesh, sx, sz, axis, curb: halfW + 1.8, centre: halfW + 17,
+        distance: 11, time: 0, phase: i * 1.9, pace: 0.075 + (i % 3) * 0.008});
+    }
+    updatePedestrians(0);
+  }
 
-    // 1. Основание столба
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.5, 12), poleMat);
-    base.position.y = 0.25;
-    base.castShadow = true;
-    group.add(base);
-
-    // 2. Вертикальная мачта
-    const poleH = 5.8;
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.14, poleH, 12), poleMat);
-    pole.position.y = 0.5 + poleH / 2;
-    pole.castShadow = true;
-    group.add(pole);
-
-    // 3. Верхушка мачты (шарнир)
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 10), poleMat);
-    cap.position.set(0, 6.3, 0);
-    group.add(cap);
-
-    // 4. Изогнутый кронштейн к проезжей части
-    const armLength = 1.34;
-    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, armLength, 10), poleMat);
-    const armAngle = Math.atan2(1.2, 0.6);
-    arm.rotation.z = -armAngle;
-    arm.position.set(0.6, 6.6, 0);
-    group.add(arm);
-
-    // 5. Корпус светильника (строго смонтирован на кончике кронштейна в 1.2, 6.9, 0)
-    const headGroup = new THREE.Group();
-    headGroup.position.set(1.2, 6.9, 0);
-    headGroup.rotation.z = -0.18;
-
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.12, 0.28), poleMat);
-    head.position.set(0.28, 0, 0);
-    headGroup.add(head);
-
-    const bulb = new THREE.Mesh(new THREE.PlaneGeometry(0.52, 0.22), glowMat);
-    bulb.rotation.x = Math.PI / 2;
-    bulb.position.set(0.28, -0.062, 0);
-    headGroup.add(bulb);
-
-    group.add(headGroup);
-
-    return group;
+  function updatePedestrians(delta) {
+    for (const walker of walkers) {
+      walker.time += delta;
+      const phase = walker.phase + walker.time * walker.pace;
+      const along = walker.centre + Math.sin(phase) * walker.distance;
+      const {mesh, sx, sz, axis, curb} = walker;
+      mesh.position.x = sx * (axis === 'x' ? along : curb);
+      mesh.position.z = sz * (axis === 'z' ? along : curb);
+      const direction = Math.cos(phase);
+      const target = axis === 'x' ? (sx * direction >= 0 ? Math.PI / 2 : -Math.PI / 2)
+        : (sz * direction >= 0 ? 0 : Math.PI);
+      const turn = Math.atan2(Math.sin(target - mesh.rotation.y), Math.cos(target - mesh.rotation.y));
+      mesh.rotation.y += THREE.MathUtils.clamp(turn, -2.6 * delta, 2.6 * delta);
+      const stride = Math.max(Math.abs(direction), Math.abs(turn) > 0.05 ? 0.35 : 0);
+      window.PDD_STREET.animateWalk(mesh, walker.time + walker.phase, stride, Math.abs(direction));
+    }
   }
 
   // Центральный постамент регулировщика (аккуратный компактный островок под ногами)
@@ -1344,6 +1312,7 @@
       }
     }
 
+    updatePedestrians(delta);
     if (leaves) leaves.update(Math.min(delta, 0.05), { enabled: seasonName === 'autumn', centre: leafCentre });
     renderer.render(scene, camera);
   }

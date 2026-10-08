@@ -6623,16 +6623,8 @@
 
 
   // Procedural appearances: no texture downloads or extra image assets.
-  const PEOPLE_COLORS = [0x3979A3, 0xB6654F, 0x66845A, 0xD5AA49, 0x865E94, 0xD4C8B3];
-  function personLook(variant) {
-    return {
-      variant,
-      skin: [0xE9AF83, 0xC58C65, 0xF2C9A5, 0x986647][variant % 4],
-      hair: [0x49372B, 0xB68A4E, 0x392D2B, 0xB4ACA1][Math.floor(variant / 3) % 4],
-      pants: [0x344759, 0x55544E, 0x37473B, 0x655066][variant % 4],
-      top: PEOPLE_COLORS[variant % PEOPLE_COLORS.length],
-    };
-  }
+  const PEOPLE_COLORS = window.PDD_STREET.peopleColors;
+  function personLook(variant) { return window.PDD_STREET.personLook(variant); }
   function modelPart(group, geometry, color, x, y, z) {
     const mesh = new THREE.Mesh(geometry, sceneryMat(color));
     mesh.position.set(x, y, z); mesh.castShadow = true; group.add(mesh);
@@ -6722,41 +6714,7 @@
   }
 
   // --- Pedestrian Model Factory ---
-  function createPedestrian(color = 0x0574F8, variant = Math.floor(Math.random() * 12)) {
-    const ped = new THREE.Group(), look = personLook(variant);
-    ped.userData.arms = []; ped.userData.legs = [];
-    [-1, 1].forEach(side => {
-      const hip = new THREE.Group(); hip.position.set(side * 0.11, 0.65, 0);
-      modelBox(hip, [0.15, 0.6, 0.16], look.pants, 0, -0.3, 0);
-      modelBox(hip, [0.17, 0.09, 0.25], 0xECE5D6, 0, -0.61, 0.035);
-      mergeModelParts(hip); ped.add(hip); ped.userData.legs.push(hip);
-      const arm = new THREE.Group(); arm.position.set(side * 0.27, 1.12, 0);
-      arm.rotation.z = side * 0.1;
-      modelBox(arm, [0.13, 0.38, 0.14], color, 0, -0.16, 0);
-      modelBox(arm, [0.12, 0.12, 0.13], look.skin, 0, -0.4, 0);
-      mergeModelParts(arm); ped.add(arm); ped.userData.arms.push(arm);
-    });
-    modelBox(ped, [0.42, 0.58, 0.26], color, 0, 0.92, 0);
-    // Clothing detail within the same outline: belt, collar, zip, neck, eyes.
-    const shade = k => new THREE.Color(color).multiplyScalar(k).getHex();
-    modelBox(ped, [0.43, 0.06, 0.27], 0x2B2F33, 0, 0.66, 0);
-    modelBox(ped, [0.3, 0.06, 0.24], shade(0.75), 0, 1.19, 0.01);
-    modelBox(ped, [0.025, 0.46, 0.01], shade(0.6), 0, 0.93, 0.131);
-    modelPart(ped, new THREE.CylinderGeometry(0.07, 0.07, 0.08, 8), look.skin, 0, 1.23, 0);
-    for (const ex of [-0.06, 0.06]) modelBox(ped, [0.035, 0.035, 0.02], 0x2B2F33, ex, 1.38, 0.178);
-    modelPart(ped, new THREE.SphereGeometry(0.18, 8, 6), look.skin, 0, 1.36, 0);
-    const hat = variant % 3;
-    modelPart(ped, new THREE.SphereGeometry(0.185, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2),
-      hat === 0 ? look.top : look.hair, 0, 1.39, 0);
-    if (hat === 0) modelBox(ped, [0.25, 0.04, 0.18], look.top, 0, 1.42, 0.14);
-    if (hat === 2) modelBox(ped, [0.3, 0.25, 0.09], look.hair, 0, 1.28, -0.14);
-    if (variant % 2) modelBox(ped, [0.3, 0.4, 0.16], look.top, 0, 0.95, -0.19);
-    mergeModelParts(ped);
-    const height = [0.94, 1.04, 1, 1.09][variant % 4];
-    ped.scale.set(variant % 3 === 1 ? 1.08 : 1, height, 1);
-    ped.userData.appearance = variant;
-    return ped;
-  }
+  function createPedestrian(...args) { return window.PDD_STREET.createPedestrian(...args); }
 
   // --- Russian Road Sign Factory (GOST 52290) ---
   // Sign faces must sit fully in front of the thickest support. Keeping this
@@ -7187,21 +7145,7 @@
     });
     return cat;
   }
-  function createLampPost() {
-    const lamp = new THREE.Group();
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 5.2, 6), null);
-    pole.position.y = 2.6;
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.08, 0.08), null);
-    arm.position.set(-0.6, 5.1, 0);
-    // A cast foot and a collar where the arm joins (same mesh as the pole).
-    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.17, 0.5, 8), null); foot.position.y = 0.25;
-    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.16, 8), null); collar.position.y = 5.1;
-    const parts = [pole, arm, foot, collar];
-    lamp.add(mergeStatic(parts, sceneryMat(0x5B646A))); parts.forEach(m => m.geometry.dispose());
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.26), new THREE.MeshBasicMaterial({ color: 0xE6E9D8 }));
-    head.position.set(-1.25, 5.05, 0); lamp.add(head);
-    return lamp;
-  }
+  function createLampPost() { return window.PDD_STREET.createLampPost(); }
   // A picket fence: posts every 1.2 m, two rails and pointed pickets, all
   // one mesh in a wood material. Same 1 m height and footprint as before.
   function createFence(length) {
@@ -9926,9 +9870,8 @@
       // (feet stepping), never an instant flip.
       const turning = turnToward(a.mesh, direction >= 0 ? 0 : Math.PI, dt, 2.6);
       const stride = Math.max(Math.abs(direction), turning ? 0.35 : 0);
-      a.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(a.time * 5 + i * Math.PI) * 0.32 * stride; });
+      window.PDD_STREET.animateWalk(a.mesh, a.time, stride, Math.abs(direction));
       if (a.mesh.userData.dog) a.mesh.userData.dog.userData.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(a.time * 9 + i * Math.PI / 2) * 0.55 * Math.abs(direction); });
-      a.mesh.userData.arms.forEach((arm, i) => { arm.rotation.x = Math.sin(a.time * 5 + i * Math.PI) * -0.2 * Math.abs(direction); });
     });
     // One world-space snapshot makes following independent of actor order and
     // works after turns/rebasing, where neighbouring tasks have different parents.

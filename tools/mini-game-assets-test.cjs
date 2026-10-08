@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '..');
 const THREE = require(path.join(root, 'assets/game/three.min.js'));
 const context = vm.createContext({ THREE, navigator: {hardwareConcurrency: 4},
   document: {}, window: {addEventListener() {}}, console });
-for (const file of ['seasons.js', 'traffic-controller-model.js', 'traffic-controller.js']) {
+for (const file of ['seasons.js', 'traffic-controller-model.js', 'street-models.js', 'traffic-controller.js']) {
   vm.runInContext(fs.readFileSync(path.join(root, 'assets/game', file), 'utf8'), context);
 }
 const api = context.window.TrafficControllerGame;
@@ -70,3 +70,41 @@ for (const lowEnd of [true, false]) {
   assert(Array.from(mini.mesh.instanceMatrix.array).every(Number.isFinite));
 }
 console.log('32 PDD scenarios, four anatomical poses, 12 calendar months, main and sparse mini-game leaves passed.');
+
+// Exercise the real mini-game layout for five minutes at both quality levels.
+// Test-only exports do not add a debugging API to the shipped scene.
+for (const weak of [true, false]) {
+  const streetContext = vm.createContext({THREE, navigator: {hardwareConcurrency: weak ? 4 : 8},
+    document: {}, window: {addEventListener() {}, PDD_VEHICLES: {applyModelEdits: (_, model) => model}}, console});
+  for (const file of ['seasons.js', 'traffic-controller-model.js', 'street-models.js', 'traffic-controller.js']) {
+    let source = fs.readFileSync(path.join(root, 'assets/game', file), 'utf8');
+    if (file === 'traffic-controller.js') source = source.replace('window.TrafficControllerGame = {',
+      'window.streetTest = {buildPedestrians, updatePedestrians, walkers, buildStreetFurniture}; window.TrafficControllerGame = {');
+    vm.runInContext(source, streetContext);
+  }
+  const street = streetContext.window.streetTest;
+  const pavement = new THREE.Group();
+  street.buildPedestrians(pavement, 13.6);
+  assert.equal(street.walkers.length, weak ? 4 : 8);
+  for (let step = 0; step < 1200; step++) {
+    street.updatePedestrians(0.25);
+    for (const {mesh} of street.walkers) {
+      assert(mesh.userData.ambient && mesh.userData.noCollision);
+      assert(Math.abs(mesh.position.x) > 7.55 && Math.abs(mesh.position.z) > 7.55);
+      assert(Number.isFinite(mesh.rotation.y));
+      if (step % 60 === 0) {
+        const box = new THREE.Box3().setFromObject(mesh);
+        assert(box.min.x > 6.8 || box.max.x < -6.8, 'Whole pedestrian stays outside the north/south road');
+        assert(box.min.z > 6.8 || box.max.z < -6.8, 'Whole pedestrian stays outside the east/west road');
+      }
+    }
+  }
+  const furniture = new THREE.Group();
+  street.buildStreetFurniture(furniture, 13.6);
+  assert.equal(furniture.children.length, 2, 'All lamps stay in two draw calls');
+  assert.equal(furniture.children[0].material.type, 'MeshLambertMaterial');
+  assert.equal(furniture.children[0].material.color.getHex(), 0x5B646A, 'Main-game grey lamp material');
+  assert.equal(furniture.children[1].material.color.getHex(), 0xE6E9D8);
+}
+assert(!/tramMesh|buildTramTracks|buildRussianTram/.test(miniSource), 'No tram models or tracks in the mini-game');
+console.log('Shared grey lamps (two batches) and 4/8 pedestrians stayed safely on pavements for five minutes.');
