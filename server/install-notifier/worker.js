@@ -4174,7 +4174,7 @@ export default {
       if (status < 500 && !session) return;
       const diagnosticId = crypto.randomUUID();
       const category = /purchase|pay-|platega/.test(path) ? 'purchase' : 'infrastructure';
-      return deferIncident(ctx, env, { category, operation, status, code, userId: session?.user?.id, diagnosticId });
+      return deferIncident(ctx, env, { category, operation, status, code, userId: session?.user?.id, user: session?.user, diagnosticId });
     };
     try {
       const response = await workerHandlers.fetch(request, env, ctx);

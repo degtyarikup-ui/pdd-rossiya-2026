@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import worker from './worker.js';
-import { reportIncident, handleClientIncident, errorCode } from './diagnostics.js';
+import { reportIncident, handleClientIncident, errorCode, buildIncidentMessage } from './diagnostics.js';
+import { incidentCopy } from './incident_copy.js';
 import { TelegramQueue } from './telegram_queue.js';
 import { handleAuth, signSession } from './user_auth.js';
 
@@ -121,4 +122,44 @@ test('rejected authenticated purchase is reported but unauthorized traffic is qu
   assert.match((await messages(state))[0], /unknown_product/);
   assert.match((await messages(state))[0], /google_real/);
   assert.doesNotMatch((await messages(state))[0], /TOP_SECRET/);
+});
+
+test('progress failures show real profile identity, plain explanation and technical details last', async () => {
+  const { env, state } = setup();
+  await env.INSTALLS.put('user:google_real', JSON.stringify({ id: 'google_real', name: 'Анна <Тест>', email: 'anna@example.org', provider: 'google', platform: 'android', appVersion: '2.1.8+47', device: 'Pixel' }));
+  await reportIncident(env, event({ category: 'infrastructure', origin: 'server', operation: 'api.user.progress.sync', code: 'operation_failed', status: 500, userId: 'google_real', platform: null, appVersion: null }));
+  const message = (await messages(state))[0];
+  assert.match(message, /Не удалось синхронизировать прогресс/);
+  assert.match(message, /Локальный прогресс сохраняется на устройстве/);
+  assert.match(message, /Точная причина пока не определена/);
+  assert.match(message, /Анна &lt;Тест&gt;/);
+  assert.match(message, /anna@example.org/);
+  assert.match(message, /Вход:<\/b> Google/);
+  assert.match(message, /Android · v2.1.8\+47/);
+  assert.ok(message.indexOf('Пользователь:') < message.indexOf('Для диагностики:'));
+  assert.ok(message.indexOf('Для диагностики:') < message.indexOf('api.user.progress.sync'));
+});
+
+test('storage outage retains trusted session context and unverified clients cannot invent a name', async () => {
+  const { env, state } = setup();
+  env.INSTALLS.get = async () => { throw new Error('unavailable'); };
+  await reportIncident(env, event({ userId: 'google_real', user: { id: 'google_real', name: 'Анна', email: 'anna@example.org', provider: 'google' } }));
+  assert.match((await messages(state))[0], /Анна/);
+  assert.match((await messages(state))[0], /anna@example.org/);
+  env.INSTALLS = new Storage();
+  await handleClientIncident(request({ installId: 'b'.repeat(32), events: [event({ id: 'd'.repeat(32), operation: 'auth.session', userId: 'google_fake', user: { id: 'google_fake', name: 'FAKE_NAME', email: 'fake@example.org' }, userName: 'FAKE_NAME' })] }), env);
+  const message = (await messages(state))[1];
+  assert.match(message, /Аккаунт ещё не определён/);
+  assert.doesNotMatch(message, /FAKE_NAME|fake@example.org|google_fake/);
+});
+
+test('known payment reasons are readable, unknown codes remain honest and message fits Telegram', () => {
+  const message = buildIncidentMessage(event({ category: 'purchase', operation: 'api.user.purchase', code: 'purchase_belongs_to_another_account', provider: 'appstore' }));
+  assert.match(message, /Эта покупка уже привязана к другому аккаунту/);
+  assert.match(message, /App Store/);
+  assert.match(buildIncidentMessage(event({ operation: 'constructor', code: '__proto__', provider: '__proto__', platform: 'constructor' })), /Точная причина пока не определена/);
+  assert.match(incidentCopy(event({ operation: 'new.unknown', code: 'sdk_error' })).reason, /Точная причина пока не определена/);
+  const longest = buildIncidentMessage(event({ category: 'infrastructure', origin: 'server', operation: 'api.user.progress.sync', code: 'storage_rate_limited', userId: '&'.repeat(200), userName: '&'.repeat(120), userEmail: '&'.repeat(160), device: '&'.repeat(100), installation: 'a'.repeat(16), diagnosticId: 'a'.repeat(36), status: 500 }), 1000000, 1000000);
+  assert.ok(longest.length < 4096);
+  assert.equal(errorCode(new Error('KV PUT failed: 429 Too Many Requests')), 'storage_rate_limited');
 });
