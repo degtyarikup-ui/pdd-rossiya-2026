@@ -220,29 +220,30 @@
     // Ландшафт / трава вокруг города (с процедурной фактурой grass)
     const groundGeo = new THREE.PlaneGeometry(320, 320);
     const groundMat = new THREE.MeshLambertMaterial({ color: BRAND.grass });
+    groundMat.userData.pddKind = 'grass';
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.01;
     ground.receiveShadow = true;
     envGroup.add(ground);
-    if (window.PDD_ROADS) {
-      window.PDD_ROADS.skinObject(ground, 'grass', { world: true });
-    }
 
     // Проезжая часть с фактурой асфальта (микропоры и каменная крошка)
     const roadMat = new THREE.MeshLambertMaterial({ color: BRAND.asphalt });
+    roadMat.userData.pddKind = 'asphalt';
     const roadWidth = 13.6;
     const roadLen = 140;
 
     const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(roadWidth, roadLen), roadMat);
     roadNS.rotation.x = -Math.PI / 2;
     roadNS.position.y = 0.02;
+    roadNS.userData.surface = 'road';
     roadNS.receiveShadow = true;
     envGroup.add(roadNS);
 
     const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(roadLen, roadWidth), roadMat);
     roadEW.rotation.x = -Math.PI / 2;
     roadEW.position.y = 0.02;
+    roadEW.userData.surface = 'road';
     roadEW.receiveShadow = true;
     envGroup.add(roadEW);
 
@@ -250,14 +251,9 @@
     const centerMesh = new THREE.Mesh(new THREE.PlaneGeometry(roadWidth, roadWidth), roadMat);
     centerMesh.rotation.x = -Math.PI / 2;
     centerMesh.position.y = 0.025;
+    centerMesh.userData.surface = 'road';
     centerMesh.receiveShadow = true;
     envGroup.add(centerMesh);
-
-    if (window.PDD_ROADS) {
-      window.PDD_ROADS.skinObject(roadNS, 'asphalt', { world: true });
-      window.PDD_ROADS.skinObject(roadEW, 'asphalt', { world: true });
-      window.PDD_ROADS.skinObject(centerMesh, 'asphalt', { world: true });
-    }
 
     // Дорожная разметка (чистый белый базовый термопластик как во флагмане)
     const markMat = new THREE.MeshBasicMaterial({ color: BRAND.asphaltMarking });
@@ -341,12 +337,15 @@
     const kerbMat = new THREE.MeshLambertMaterial({
       color: BRAND.curb,
     });
+    kerbMat.userData.pddKind = 'pavement';
     const walkMat = new THREE.MeshLambertMaterial({
       color: BRAND.sidewalk,
     });
+    walkMat.userData.pddKind = 'pavement';
     const lawnMat = new THREE.MeshLambertMaterial({
       color: BRAND.grassDark,
     });
+    lawnMat.userData.pddKind = 'grass';
 
     const walkSize = 50;
     const kerbH = 0.18;
@@ -365,19 +364,14 @@
 
       // Плита тротуара (процедурная плитка)
       const walk = new THREE.Mesh(new THREE.BoxGeometry(walkSize, kerbH, walkSize), walkMat);
+      walk.userData.surface = 'sidewalk';
       walk.receiveShadow = true;
-      if (window.PDD_ROADS) {
-        window.PDD_ROADS.skinObject(walk, 'pavement', { world: true });
-      }
       g.add(walk);
 
       // Газон в глубине тротуара
       const lawn = new THREE.Mesh(new THREE.BoxGeometry(walkSize - 8, 0.02, walkSize - 8), lawnMat);
-      lawn.position.set(q.sx * 4, kerbH / 2 + 0.01, q.sz * 4);
+      lawn.userData.surface = 'lawn';
       lawn.receiveShadow = true;
-      if (window.PDD_ROADS) {
-        window.PDD_ROADS.skinObject(lawn, 'grass', { world: true });
-      }
       g.add(lawn);
 
       parent.add(g);
@@ -385,18 +379,14 @@
       // Гранитные бордюрные камни вдоль дороги
       const kerbEW = new THREE.Mesh(new THREE.BoxGeometry(walkSize, kerbH + 0.02, 0.35), kerbMat);
       kerbEW.position.set(q.sx * (halfW + walkSize / 2), kerbH / 2 + 0.01, q.sz * (halfW + 0.17));
+      kerbEW.userData.surface = 'sidewalk';
       kerbEW.castShadow = true;
-      if (window.PDD_ROADS) {
-        window.PDD_ROADS.skinObject(kerbEW, 'pavement', { world: true });
-      }
       parent.add(kerbEW);
 
       const kerbNS = new THREE.Mesh(new THREE.BoxGeometry(0.35, kerbH + 0.02, walkSize), kerbMat);
       kerbNS.position.set(q.sx * (halfW + 0.17), kerbH / 2 + 0.01, q.sz * (halfW + walkSize / 2));
+      kerbNS.userData.surface = 'sidewalk';
       kerbNS.castShadow = true;
-      if (window.PDD_ROADS) {
-        window.PDD_ROADS.skinObject(kerbNS, 'pavement', { world: true });
-      }
       parent.add(kerbNS);
     });
   }
@@ -627,12 +617,11 @@
     const islandMat = new THREE.MeshLambertMaterial({
       color: 0x747970,
     });
+    islandMat.userData.pddKind = 'pavement';
     const island = new THREE.Mesh(islandGeo, islandMat);
     island.position.y = 0.025;
+    island.userData.surface = 'sidewalk';
     island.receiveShadow = true;
-    if (window.PDD_ROADS) {
-      window.PDD_ROADS.skinObject(island, 'pavement', { world: true });
-    }
     parent.add(island);
 
     // Белая окантовка островка
