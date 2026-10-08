@@ -41,6 +41,7 @@ class _TrafficControllerScreenState
   ApproachDirection _curApproach = ApproachDirection.left;
   static const _vehicle = VehicleKind.car;
   bool _hintOpen = false;
+  bool _hintUsed = false;
 
   // Блиц
   int _score = 0;
@@ -244,6 +245,7 @@ class _TrafficControllerScreenState
       _isNewRecord = false;
       _awaitingNext = false;
       _hintOpen = false;
+      _hintUsed = false;
       _lastMove = null;
     });
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -273,6 +275,7 @@ class _TrafficControllerScreenState
       _curApproach = approaches[_random.nextInt(approaches.length)];
       _awaitingNext = false;
       _hintOpen = false;
+      _hintUsed = false;
       _lastMove = null;
     });
 
@@ -308,7 +311,7 @@ class _TrafficControllerScreenState
         _lastWasCorrect = true;
         _combo++;
         if (_combo > _maxComboInRound) _maxComboInRound = _combo;
-        _score += 100 * _combo;
+        _score += (_hintUsed ? 50 : 100) * _combo;
         _solvedCount++;
         _secondsLeft = math.min(_secondsLeft + 3, 60);
       });
@@ -505,7 +508,10 @@ class _TrafficControllerScreenState
   void _toggleHint() {
     if (!_engineReady || _awaitingNext || _isGameOver) return;
     HapticFeedbackHelper.select();
-    setState(() => _hintOpen = !_hintOpen);
+    setState(() {
+      _hintOpen = !_hintOpen;
+      if (_hintOpen) _hintUsed = true;
+    });
   }
 
   Widget _buildScene(AppThemeColors colors) {

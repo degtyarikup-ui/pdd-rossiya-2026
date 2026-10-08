@@ -345,7 +345,7 @@ void main() {
   });
 
   testWidgets(
-    'Traffic hint toggles inline, hides on answer and keeps rounds car-only',
+    'Traffic hint toggles inline and halves points only for the assisted round',
     (tester) async {
       await open(tester, const TrafficControllerScreen());
       final controller = web.controllers.single..emitReady();
@@ -379,10 +379,23 @@ void main() {
           controller.scripts.lastWhere((s) => s.contains('setScenario(')),
           contains('"car")'),
         );
+        // Closing a viewed hint must not restore the unassisted reward.
+        if (i == 1) {
+          await tester.tap(hint);
+          await tester.pump();
+          await tester.tap(hint);
+          await tester.pump();
+        }
         final correct = controller.allowedMoves.first;
         await tester.tap(find.text(_moveLabel(correct)));
         await tester.pump();
         if (i == 0) expect(find.text(verse), findsNothing);
+        expect(
+          tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
+          100 * (i + 1) * (i + 2) ~/ 2 - (i == 0 ? 50 : 150),
+          reason:
+              'Viewed hints halve the first two rewards; later rounds restore the full combo reward',
+        );
         if (correct == TrafficMove.none) {
           await tester.pump(const Duration(milliseconds: 700));
         } else {
