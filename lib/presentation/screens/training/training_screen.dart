@@ -1,3 +1,4 @@
+import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -24,6 +25,7 @@ class TrainingScreen extends ConsumerStatefulWidget {
   final List<Map<String, dynamic>> questions;
   final String title;
   final bool isExam;
+  final UsageFeature? usageFeature;
 
   /// С какого вопроса открыть. Используется при возврате к незаконченной
   /// тренировке с главного экрана.
@@ -34,6 +36,7 @@ class TrainingScreen extends ConsumerStatefulWidget {
     required this.questions,
     required this.title,
     this.isExam = false,
+    this.usageFeature,
     this.startIndex = 0,
   });
 
@@ -58,6 +61,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.usageFeature != null) UsageReporter.track(widget.usageFeature!);
     _savedChoices = List<int?>.filled(widget.questions.length, null);
     _currentIndex = widget.startIndex.clamp(0, widget.questions.length - 1);
     _pageController = PageController(initialPage: _currentIndex);
@@ -86,6 +90,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           .read(progressDataSourceProvider)
           .saveUnfinishedSession(
             title: widget.title,
+            usageFeature: widget.usageFeature?.name,
             questionIds: ids,
             index: _currentIndex,
             category: ref.read(appSettingsProvider).ticketCategory,

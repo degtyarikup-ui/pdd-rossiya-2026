@@ -1,3 +1,4 @@
+import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/presentation/screens/game/platform/browser_game.dart';
 import 'dart:math' as math;
 import 'dart:convert';
@@ -1010,6 +1011,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     if (!_runStarted && !ended && !await _takeRun()) return;
     if (!mounted || !_inLobby) return;
     HapticFeedbackHelper.confirm();
+    if (!_runStarted && !ended) UsageReporter.track(UsageFeature.game);
     setState(() {
       _inLobby = false;
       _runStarted = true;
@@ -1136,6 +1138,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     if (!await _takeRun()) return;
     if (!mounted || _disposing) return;
     HapticFeedbackHelper.confirm();
+    UsageReporter.track(UsageFeature.game);
     _restarting = true;
     _readyTimer?.cancel();
     _game.setPaused(true);

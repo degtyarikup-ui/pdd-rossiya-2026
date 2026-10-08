@@ -178,6 +178,7 @@ final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
 
   return {
     'kind': 'training',
+    'usageFeature': saved['usageFeature'],
     'title': saved['title'] as String? ?? '',
     'questions': questions,
     'index': index,
@@ -554,4 +555,3 @@ class SignSwiperProgressController
     await _dataSource.saveSignSwiperProgress(state);
   }
 }
-

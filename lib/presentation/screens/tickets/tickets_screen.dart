@@ -1,3 +1,4 @@
+import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/config/country_config.dart';
@@ -243,6 +244,7 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
               questions: questions,
               title: '${AppStrings.ticket} $number',
               isExam: false,
+              usageFeature: UsageFeature.tickets,
             ),
           ),
         );

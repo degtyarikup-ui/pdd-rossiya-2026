@@ -74,6 +74,15 @@ export const ANALYTICS_VIEW_HTML = String.raw`
   <div class="an-legend" id="an-chart-legend"></div><div class="an-chart" id="an-installs-chart"></div><div class="an-caption" id="an-installs-caption"></div>
  </div>
 </div>
+<div class="an-card" style="margin-top:18px">
+ <div class="an-head"><div class="an-title">Использование режимов</div><details class="an-help"><summary aria-label="Об использовании режимов">i</summary><div>Запуск — открытие билета, темы, экзамена или ленты, либо начало заезда в 3D-игре. Возврат в прерванную тренировку считается запуском. Уникальные установки включают гостей: один человек на двух устройствах считается дважды. Повторы доставки не увеличивают счётчики. Данные поступают из обновлённых приложений; офлайн-события отправляются позже.</div></details></div>
+ <div class="an-table-wrap" id="an-usage-table"></div>
+ <div class="an-tabs" id="an-usage-tabs" style="margin-top:18px;flex-wrap:wrap"></div>
+ <div class="an-legend" style="margin-top:18px"><span><i class="an-dot" style="background:#0574F8"></i>Запуски</span><span><i class="an-dot" style="background:#22a875"></i>Уникальные установки за день</span></div>
+ <div class="an-chart" id="an-usage-chart"></div>
+ <div class="an-caption" id="an-usage-caption"></div>
+ <details class="an-day-details"><summary>Данные по дням</summary><div class="an-table-wrap" id="an-usage-days"></div></details>
+</div>
 <div class="an-row2">
   <div class="an-card"><div class="an-head"><div class="an-title">Источники сайта</div><details class="an-help"><summary aria-label="Об источниках сайта">i</summary><div>Просмотры и нажатия на ссылки магазинов. Метка сайта не подтверждает источник установки.</div></details></div><div class="an-table-wrap" id="an-sources"></div></div>
   <div class="an-card"><div class="an-head"><div class="an-title">Магазины</div><details class="an-help"><summary aria-label="Об установках">i</summary><div>Первые запуски приложения. Скачивания из консолей магазинов сюда не поступают.</div></details></div><div class="an-table-wrap" id="an-stores"></div></div>
@@ -289,6 +298,27 @@ function anRenderActivity(data) {
  document.getElementById('an-activity-caption').textContent=activity?'История с '+anDayLabel(activity.from)+' · МСК':'';
  document.getElementById('an-activity-table').innerHTML=days.length?anTable(['День','Всего','Android','iOS','Веб','Неизвестно'],days.slice().reverse().map(function(d){return '<tr><td>'+anDayLabel(d.date)+'</td>'+['total','android','ios','web','unknown'].map(function(k){return '<td>'+(d[k]==null?'—':anNum(d[k]))+'</td>';}).join('')+'</tr>';})):'<div class="an-empty">Нет данных</div>';
 }
+var anUsageFeature = 'tickets';
+var AN_USAGE_NAMES = {tickets:'Билеты',topics:'Темы',exam:'Экзамен',game:'3D-игра',feed:'Лента'};
+function anRenderUsage(data) {
+ var usage=data.usage, features=usage&&usage.features||{}, timeline=usage&&usage.timeline||[], keys=Object.keys(AN_USAGE_NAMES);
+ var starts=keys.reduce(function(n,k){return n+(features[k]&&features[k].starts||0);},0);
+ document.getElementById('an-usage-table').innerHTML=anTable(['Режим','Запуски','Уникальные установки','На установку','Доля запусков'],keys.map(function(k){
+  var f=features[k]||{starts:0,installations:0};
+  return '<tr><td>'+AN_USAGE_NAMES[k]+'</td>'+anCell(f.starts)+anCell(f.installations)+'<td>'+(f.installations?(f.starts/f.installations).toLocaleString('ru-RU',{maximumFractionDigits:1}):'—')+'</td><td>'+anShare(f.starts,starts)+'</td></tr>';
+ }));
+ document.getElementById('an-usage-tabs').innerHTML=keys.map(function(k){return '<button type="button" data-usage="'+k+'" class="'+(k===anUsageFeature?'active':'')+'" aria-pressed="'+(k===anUsageFeature)+'">'+AN_USAGE_NAMES[k]+'</button>';}).join('');
+ var available=timeline.filter(function(d){return d.features[anUsageFeature].starts!=null;}), bars=[];
+ available.forEach(function(d){var f=d.features[anUsageFeature],tip='<b>'+anDayLabel(d.date,true)+'</b><div class="an-tip-row"><span>Запуски</span><b>'+anNum(f.starts)+'</b></div><div class="an-tip-row"><span>Установки</span><b>'+anNum(f.installations)+'</b></div>';
+  bars.push({value:f.starts,color:AN_C.accent,label:anDayLabel(d.date),tip:tip},{value:f.installations,color:AN_C.green,label:'',tip:tip});
+ });
+ var chart=document.getElementById('an-usage-chart');
+ if(starts)anBars(chart,bars,230);else chart.innerHTML='<div class="an-empty">Пока нет событий использования. Они появятся после обновления приложения.</div>';
+ document.getElementById('an-usage-caption').textContent=usage?'Сбор с '+anDayLabel(usage.from)+' · МСК · Только обновлённые приложения · Данные поступают пакетами':'Сбор ещё не начат';
+ document.getElementById('an-usage-days').innerHTML=anTable(['День','Запуски','Уникальные установки'],timeline.slice().reverse().map(function(d){var f=d.features[anUsageFeature];return '<tr><td>'+anDayLabel(d.date)+'</td><td>'+(f.starts==null?'—':anNum(f.starts))+'</td><td>'+(f.installations==null?'—':anNum(f.installations))+'</td></tr>';}));
+}
+document.getElementById('an-usage-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-usage]');if(b){anUsageFeature=b.dataset.usage;anRenderUsage(window.__anData);}});
+
 function renderDashboard(data) {
  if(!document.getElementById('an-kpis'))return;
  window.__anData=data;
@@ -300,6 +330,7 @@ function renderDashboard(data) {
  document.getElementById('an-kpis').innerHTML=metrics.map(function(m,i){return '<div class="an-card an-kpi'+(i===2?' is-primary':'')+'" title="'+m[4]+'"><div class="an-kpi-top"><i class="an-dot" style="background:'+m[3]+'"></i>'+m[0]+'</div><div class="an-big">'+(m[1]==null?'—':anNum(m[1]))+'</div></div>';}).join('');
  anPlot(data);
  anRenderActivity(data);
+ anRenderUsage(data);
  var src={};(data.sources||[]).forEach(function(r){if(!r.views&&!r.clicks)return;var k=anSourceKey(r.name);if(!src[k])src[k]={views:0,clicks:0};src[k].views+=r.views||0;src[k].clicks+=r.clicks||0;});
  var keys=Object.keys(src).sort(function(a,b){return src[b].views-src[a].views||src[b].clicks-src[a].clicks;});
  document.getElementById('an-sources').innerHTML=keys.length?anTable(['Источник','Просмотры','Переходы'],keys.map(function(k){return '<tr><td><div class="an-table-name">'+anLogo(AN_SOURCES[k])+anEsc(AN_SOURCES[k].name)+'</div></td>'+anCell(src[k].views)+anCell(src[k].clicks)+'</tr>';})):'<div class="an-empty">Нет событий сайта</div>';

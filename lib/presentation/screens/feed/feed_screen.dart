@@ -1,3 +1,4 @@
+import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -59,6 +60,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   @override
   void initState() {
     super.initState();
+    UsageReporter.track(UsageFeature.feed);
     if (_cachedSoundEnabled != null) {
       _isSoundEnabled = _cachedSoundEnabled!;
     }

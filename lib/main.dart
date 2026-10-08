@@ -1,3 +1,4 @@
+import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -80,6 +81,7 @@ void main() async {
 
   // Уведомление о новой установке в Telegram (fire-and-forget, не блокирует старт).
   unawaited(InstallReporter.reportIfNeeded());
+  unawaited(UsageReporter.instance.flush());
 
   // Инициализация сервиса звуковых эффектов (правильный/неправильный ответ)
   unawaited(SoundEffectsService.instance.init());
@@ -148,6 +150,9 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     }
     // Пересчитываем напоминание при уходе в фон (учитывает сегодняшнюю
     // тренировку) и при возврате (держит расписание свежим).
+    if (state == AppLifecycleState.resumed) {
+      unawaited(UsageReporter.instance.flush());
+    }
     if (kIsWeb) return;
     if (state == AppLifecycleState.resumed) {
       IapService.instance.retryPendingPurchases();

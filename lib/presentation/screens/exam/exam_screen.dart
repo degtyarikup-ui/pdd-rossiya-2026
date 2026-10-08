@@ -1,3 +1,4 @@
+import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
@@ -87,6 +88,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   @override
   void initState() {
     super.initState();
+    UsageReporter.track(UsageFeature.exam);
     _ttsService = ref.read(ttsServiceProvider);
     _prepareExam();
     if (_examQuestions.isNotEmpty) {

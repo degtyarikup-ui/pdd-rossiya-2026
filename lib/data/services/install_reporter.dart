@@ -44,6 +44,19 @@ class InstallReporter {
   static const String _keyReported = 'install_reported';
 
   static bool? _isExistingAtLaunch;
+  static Future<String>? _installationId;
+
+  static Future<String> installationId() => _installationId ??=
+      _loadInstallationId().whenComplete(() => _installationId = null);
+
+  static Future<String> _loadInstallationId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getString(_keyInstallId);
+    if (existing != null) return existing;
+    final id = _generateId();
+    await prefs.setString(_keyInstallId, id);
+    return id;
+  }
 
   /// Вызывать в main() до инициализации остальных сервисов.
   static Future<void> captureLaunchState() async {
@@ -82,11 +95,7 @@ class InstallReporter {
           _isExistingAtLaunch ??
           prefs.getKeys().any((k) => k != _keyReported && k != _keyInstallId);
 
-      var installId = prefs.getString(_keyInstallId);
-      if (installId == null) {
-        installId = _generateId();
-        await prefs.setString(_keyInstallId, installId);
-      }
+      final installId = await installationId();
 
       final payload = <String, dynamic>{
         'install_id': installId,

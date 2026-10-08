@@ -407,6 +407,7 @@ class ProgressDataSource {
   /// Запоминает, где человек остановился. Вызывается по ходу тренировки,
   /// поэтому пишем без await-цепочек на каждый ответ.
   Future<void> saveUnfinishedSession({
+    String? usageFeature,
     required String title,
     required List<String> questionIds,
     required int index,
@@ -417,6 +418,7 @@ class ProgressDataSource {
       jsonEncode({
         'title': title,
         'questionIds': questionIds,
+        'usageFeature': ?usageFeature,
         'index': index,
         'category': category.name,
         'savedAt': DateTime.now().millisecondsSinceEpoch,

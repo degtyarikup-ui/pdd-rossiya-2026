@@ -29,6 +29,7 @@ import { StatsBuffer } from './stats_buffer.js';
 import { handleUsersAdmin } from './users_admin.js';
 import { putUserRecord, listUserSummaries } from './user_store.js';
 import { usersSnapshot } from './analytics_data.js';
+import { acceptUsage, applyUsage, usageSnapshot } from './usage_analytics.js';
 import { handleLinksAdmin } from './links_admin.js';
 import { USERS_VIEW_HTML, USERS_CLIENT_JS } from './users_ui.js';
 import { ANALYTICS_VIEW_HTML, ANALYTICS_CLIENT_JS } from './analytics_ui.js';
@@ -2241,6 +2242,8 @@ export async function flushBufferedStats(env, items, persistBatch = null) {
       }
       // Live Feed — только клики/установки/кампании (экономия KV).
       if (event.type !== 'registration' && !(event.type === 'install' && ['returning', 'unclassified'].includes(event.kind)) && (event.type !== 'view' || event.campaign)) feed.push(liveFeedEntry(event, now));
+    } else if (item.kind === 'usage') {
+      applyUsage(await dayOf(now), item);
     } else if (item.kind === 'ai') {
       const pricing = GEMINI_PRICING[item.model] || GEMINI_PRICING['gemini-3.6-flash'];
       const pTokens = Number(item.promptTokens) || 0;
@@ -2359,6 +2362,7 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
 
   try {
     const timeline = [];
+    const usageDays = [];
     const now = new Date();
     const dateKeys = [];
 
@@ -2380,6 +2384,7 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
     const appsMap = {};
     for (const dateKey of dateKeys) {
       const dayData = await readDayData(env, dateKey);
+      usageDays.push({ date: dateKey, data: dayData });
       const block = analyticsBlockForApp(dayData, appFilter);
 
       const views = block ? block.views || 0 : 0;
@@ -2524,6 +2529,7 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
         campaigns: previousCampaigns,
       },
       timeline,
+      usage: usageSnapshot(usageDays, appFilter),
       sources,
       targets,
       campaigns,
@@ -2965,6 +2971,13 @@ export default {
       return jsonResponse({ ok: true }, 200, {
         'Set-Cookie': 'pdd_admin_token=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax',
       });
+    }
+
+    if (url.pathname === '/api/usage' && request.method === 'POST') {
+      if (!env.SHARED_SECRET || !safeEquals(request.headers.get('x-install-secret') || '', env.SHARED_SECRET)) {
+        return jsonResponse({ error: 'unauthorized' }, 401);
+      }
+      return acceptUsage(request, env, { jsonResponse, trackStats });
     }
 
     if (url.pathname === '/api/admin/stats' && request.method === 'GET') {
