@@ -1,5 +1,5 @@
 // 3D-симулятор и игра «Регулировщик 3D» на Three.js
-// Реализует сигналы регулировщика по п. 6.10 ПДД РФ для авто и трамваев.
+// Мини-игра проверяет сигналы для автомобиля по п. 6.10 ПДД РФ.
 // Высокодетализированная городская сцена перекрёстка с аутентичными моделями.
 
 (() => {
@@ -77,8 +77,6 @@
     buildingColors: [0xF5F6FA, 0xE9ECF2, 0xDDE1EA, 0xC6CCD8, 0xB5675A, 0xA9B4C2],
     windowColor: 0x64748B,
     playerCar: 0x0574F8,
-    tramRed: 0xD32F2F,
-    tramWhite: 0xF5F5F5
   };
 
   // --- Переменные сцены ---
@@ -93,12 +91,10 @@
   const weak = lowEnd || (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
   let leaves;
   const leafCentre = new THREE.Vector3(0, 0, 0);
-  let carMesh, tramMesh;
-  let activeVehicleMesh;
+  let carMesh;
   let arrowsGroup;
   let envGroup;
   let skyDome;
-  let streetLights = [];
   let isMoving = false;
   let moveProgress = 0;
   let moveCurve = null;
@@ -107,13 +103,11 @@
   let moveDuration = 1.8;
   let activeMove = null;
   let activeMoveId = null;
-  const initialObjectPos = new THREE.Vector3();
-  let initialObjectRotY = Math.PI;
 
   // Состояние
   let currentGesture = GESTURES.RIGHT_ARM_FORWARD;
   let currentApproach = APPROACHES.LEFT;
-  let currentVehicle = VEHICLES.CAR;
+  const currentVehicle = VEHICLES.CAR;
   let currentCameraMode = 'driver';   // 'overview' | 'driver' (игрок — водитель)
   let currentMode = 'training';       // 'training' | 'arcade'
   let activeBlinkerSide = null;       // 'left' | 'right' | null
@@ -280,7 +274,6 @@
     buildSidewalks(envGroup, roadWidth);
     buildCity(envGroup, roadWidth);
     buildStreetFurniture(envGroup, roadWidth);
-    buildTramTracks(envGroup);
     buildCentralPedestal(envGroup);
   }
 
@@ -774,24 +767,6 @@
     return group;
   }
 
-  // Трамвайные пути (аккуратные стальные рельсы, утопленные в асфальт)
-  function buildTramTracks(parent) {
-    const railMat = new THREE.MeshStandardMaterial({
-      color: 0x949AA5,
-      metalness: 0.88,
-      roughness: 0.22,
-    });
-
-    // Две стальные колеи
-    const railGeo = new THREE.BoxGeometry(0.1, 0.05, CITY_REACH * 2 + 20);
-    [-0.76, 0.76].forEach(offset => {
-      const rail = new THREE.Mesh(railGeo, railMat);
-      rail.position.set(-2.2 + offset, 0.045, 0);
-      rail.receiveShadow = true;
-      parent.add(rail);
-    });
-  }
-
   // Центральный постамент регулировщика (аккуратный компактный островок под ногами)
   function buildCentralPedestal(parent) {
     const islandGeo = new THREE.CylinderGeometry(0.55, 0.60, 0.05, 32);
@@ -834,17 +809,6 @@
     carMesh.position.set(3.2, 0, 13.5);
     carMesh.rotation.y = Math.PI; // Лицом к перекрёстку (на север)
     scene.add(carMesh);
-
-    // 2. Аутентичный российский трамвай (КТМ-5 / Татра красно-бежевый)
-    tramMesh = buildRussianTram();
-    tramMesh.position.set(-2.2, 0, 14.5);
-    tramMesh.rotation.y = Math.PI;
-    scene.add(tramMesh);
-
-    // Запоминаем исходные координаты
-    initialObjectPos.copy(carMesh.position);
-    initialObjectRotY = carMesh.rotation.y;
-    activeVehicleMesh = carMesh;
   }
 
   // Машина из гаража основной игры (Flutter передаёт выбор игрока).
@@ -860,7 +824,6 @@
     if (next.blinkerL) next.blinkerL.visible = false;
     if (next.blinkerR) next.blinkerR.visible = false;
     if (movingObject === carMesh) movingObject = next;
-    if (activeVehicleMesh === carMesh) activeVehicleMesh = next;
     carMesh = next;
     scene.add(carMesh);
   }
@@ -904,140 +867,6 @@
     return group;
   }
 
-  function transportMaterial(kind, color) {
-    const surfaces = window.PDD_VEHICLE_MATERIALS;
-    if (!surfaces) return new THREE.MeshLambertMaterial({ color });
-    return surfaces.material('paint', color, surfaces.transportMap(kind));
-  }
-
-  function transportMesh(geometry, material) {
-    const surfaces = window.PDD_VEHICLE_MATERIALS;
-    if (surfaces) {
-      geometry.userData = geometry.userData || {};
-      if (!geometry.userData.vehicleUV) {
-        if (material.map && material.map.name && material.map.name.startsWith('vehicle:transport:') && geometry.type === 'BoxGeometry') {
-          surfaces.transportBoxUV(geometry); geometry.userData.vehicleUV = true;
-        } else if (material.userData && ['rubber', 'rubberFarm'].includes(material.userData.vehicleSurface) && geometry.type === 'CylinderGeometry') {
-          surfaces.tyreUV(geometry); geometry.userData.vehicleUV = true;
-        }
-      }
-    }
-    return new THREE.Mesh(geometry, material);
-  }
-
-  function buildFallbackTram(color = BRAND.tramRed) {
-    const tram = new THREE.Group();
-    const redMat = new THREE.MeshLambertMaterial({ color });
-    const creamMat = new THREE.MeshLambertMaterial({ color: BRAND.tramWhite });
-    const glassMat = new THREE.MeshLambertMaterial({ color: 0x374A5E });
-    const metalMat = new THREE.MeshLambertMaterial({ color: 0x88929E });
-
-    const L = 9.5;
-    const W = 2.2;
-
-    const lower = new THREE.Mesh(new THREE.BoxGeometry(W, 1.0, L), redMat);
-    lower.position.y = 0.7;
-    tram.add(lower);
-
-    const upper = new THREE.Mesh(new THREE.BoxGeometry(W - 0.05, 1.1, L - 0.1), creamMat);
-    upper.position.y = 1.7;
-    tram.add(upper);
-
-    const glass = new THREE.Mesh(new THREE.BoxGeometry(W + 0.04, 0.65, L - 0.7), glassMat);
-    glass.position.y = 1.75;
-    tram.add(glass);
-
-    const panto = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), metalMat);
-    panto.position.set(0, 2.7, 1.5);
-    tram.add(panto);
-
-    return tram;
-  }
-
-  // Аутентичный российский трамвай на материалах PDD_VEHICLE_MATERIALS (как во флагманской игре)
-  function buildRussianTram(color = BRAND.tramRed) {
-    const tram = new THREE.Group(), V = window.PDD_VEHICLE_MATERIALS;
-    if (!V) return buildFallbackTram(color);
-
-    const bodyMat = transportMaterial('tram-body', color);
-    const whiteMat = transportMaterial('roof', BRAND.tramWhite);
-    const glassMat = V.material('glass', 0xffffff, V.transportMap('tram-windows'));
-    const metalMat = V.material('metal', 0x71717A);
-    const darkMat = V.material('metal', 0x23272C);
-
-    // 1. Нижняя часть кузова (красный фирменный цвет)
-    const lowerGeo = new THREE.BoxGeometry(2.2, 1.0, 9.5);
-    const lower = transportMesh(lowerGeo, bodyMat);
-    lower.position.y = 0.7;
-    lower.castShadow = true;
-    tram.add(lower);
-
-    // 2. Верхняя часть кузова / крыша (белая)
-    const upperGeo = new THREE.BoxGeometry(2.15, 1.1, 9.4);
-    const upper = transportMesh(upperGeo, whiteMat);
-    upper.position.y = 1.7;
-    upper.castShadow = true;
-    tram.add(upper);
-
-    // 3. Оконный пояс с атласом окон трамвая
-    const sideWindowsGeo = new THREE.BoxGeometry(2.24, 0.65, 8.8);
-    const sideWindows = transportMesh(sideWindowsGeo, glassMat);
-    sideWindows.position.y = 1.75;
-    tram.add(sideWindows);
-
-    // 4. Лобовое и заднее остекление
-    const frontGlassGeo = new THREE.BoxGeometry(1.9, 0.8, 0.1);
-    const fg = transportMesh(frontGlassGeo, glassMat);
-    fg.position.set(0, 1.65, 4.76);
-    tram.add(fg);
-
-    const bg = transportMesh(frontGlassGeo.clone(), glassMat);
-    bg.position.set(0, 1.65, -4.76);
-    tram.add(bg);
-
-    // 5. Пантограф (токоприёмник) на крыше
-    const pantoBase = transportMesh(new THREE.BoxGeometry(0.8, 0.15, 0.8), metalMat);
-    pantoBase.position.set(0, 2.35, 1.5);
-    tram.add(pantoBase);
-
-    const barGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.1);
-    const bar1 = transportMesh(barGeo, metalMat);
-    bar1.position.set(0, 2.85, 1.5);
-    bar1.rotation.x = 0.35;
-    tram.add(bar1);
-
-    const headGeo = new THREE.BoxGeometry(1.6, 0.06, 0.2);
-    const head = transportMesh(headGeo, metalMat);
-    head.position.set(0, 3.3, 1.7);
-    tram.add(head);
-
-    // 6. Тележки под вагоном
-    [-2.6, 2.6].forEach(z => {
-      const bogie = transportMesh(new THREE.BoxGeometry(1.8, 0.25, 1.6), darkMat);
-      bogie.position.set(0, 0.25, z);
-      tram.add(bogie);
-    });
-
-    // 7. Оптика
-    const headMat = V.material('lens', 0xFFF3CC);
-    const tailMat = V.material('lens', 0xD33D38);
-    const hl = transportMesh(new THREE.CylinderGeometry(0.18, 0.18, 0.1, 16).rotateX(Math.PI / 2), headMat);
-    hl.position.set(0, 0.75, 4.76);
-    tram.add(hl);
-
-    [-0.7, 0.7].forEach(sx => {
-      const tl = transportMesh(new THREE.CylinderGeometry(0.1, 0.1, 0.08, 12).rotateX(Math.PI / 2), tailMat);
-      tl.position.set(sx, 0.75, -4.76);
-      tram.add(tl);
-    });
-
-    if (window.PDD_VEHICLES && typeof window.PDD_VEHICLES.applyModelEdits === 'function') {
-      window.PDD_VEHICLES.applyModelEdits('tram', tram);
-    }
-
-    return tram;
-  }
-
   // --- Стрелки разрешенных траекторий на асфальте ---
   function buildTrajectoryArrows() {
     arrowsGroup = new THREE.Group();
@@ -1046,16 +875,11 @@
   }
 
   // --- Траектории манёвров: прямо → дуга → прямо ---
-  // Радиусы подобраны расчётом зазора по всей траектории: кузов (машина до
-  // 5×2 м, трамвай 9,5×2,2 м) не заходит на регулировщика и его островок.
-  // Минимальный зазор: машина 1,5 м, трамвай 0,5 м (по рельсам прямо).
-  const PATHS = {
-    car: { x: 3.2, right: { r: 4, lane: 3.4 }, left: { r: 4, lane: -3.6 }, uturn: { lane: -3.4, at: 7.5 } },
-    tram: { x: -2.2, right: { r: 9, lane: 3.4 }, left: { r: 10, lane: -4.2 }, uturn: { lane: -5.8, at: 9 } },
-  };
+  // A car up to 5 x 2 m clears the officer's island by at least 1.5 m.
+  const CAR_PATH = { x: 3.2, right: { r: 4, lane: 3.4 }, left: { r: 4, lane: -3.6 }, uturn: { lane: -3.4, at: 7.5 } };
 
-  function movePath(move, vehicle, startZ, reach, y) {
-    const spec = vehicle === VEHICLES.TRAM ? PATHS.tram : PATHS.car;
+  function movePath(move, startZ, reach, y) {
+    const spec = CAR_PATH;
     const x0 = spec.x;
     const pts = [];
     const P = (x, z) => pts.push(new THREE.Vector3(x, y, z));
@@ -1097,7 +921,7 @@
     if (currentMode === 'arcade' && !isMoving) return;
 
     const allowed = getAllowedMoves(currentGesture, currentApproach, currentVehicle);
-    const originX = (currentVehicle === VEHICLES.CAR) ? 3.2 : -2.2;
+    const originX = 3.2;
     const originZ = 8.8;
 
     const canStraight = allowed.includes(MOVES.STRAIGHT);
@@ -1105,7 +929,7 @@
     const canLeft = allowed.includes(MOVES.LEFT);
     const canUturn = allowed.includes(MOVES.UTURN);
 
-    const arrow = move => addRoadRibbonArrow(movePath(move, currentVehicle, originZ, 12.0, 0.052));
+    const arrow = move => addRoadRibbonArrow(movePath(move, originZ, 12.0, 0.052));
     if (canStraight) arrow(MOVES.STRAIGHT);
     if (canRight) arrow(MOVES.RIGHT);
     if (canLeft) arrow(MOVES.LEFT);
@@ -1228,7 +1052,7 @@
   }
 
   // --- Переключение сценария и поз регулировщика ---
-  function setScenario(gesture, approach, vehicle) {
+  function setScenario(gesture, approach) {
     if (resetTimer) {
       clearTimeout(resetTimer);
       resetTimer = null;
@@ -1236,7 +1060,6 @@
 
     currentGesture = gesture;
     currentApproach = approach;
-    currentVehicle = vehicle || currentVehicle;
 
     // Вращение регулировщика в зависимости от ракурса
     switch (approach) {
@@ -1262,19 +1085,6 @@
     targetRightArm.set(...angles.right);
     inspectorGroup.userData.pose = pose;
 
-    // Переключение видимости авто/трамвая
-    if (carMesh && tramMesh) {
-      if (currentVehicle === VEHICLES.CAR) {
-        carMesh.visible = true;
-        tramMesh.visible = false;
-        activeVehicleMesh = carMesh;
-      } else {
-        carMesh.visible = false;
-        tramMesh.visible = true;
-        activeVehicleMesh = tramMesh;
-      }
-    }
-
     resetVehiclePositions();
     updateTrajectoryArrows();
   }
@@ -1289,10 +1099,6 @@
       carMesh.rotation.y = Math.PI;
       if (carMesh.blinkerL) carMesh.blinkerL.visible = false;
       if (carMesh.blinkerR) carMesh.blinkerR.visible = false;
-    }
-    if (tramMesh) {
-      tramMesh.position.set(-2.2, 0, 14.5);
-      tramMesh.rotation.y = Math.PI;
     }
     activeBlinkerSide = null;
     isMoving = false;
@@ -1340,19 +1146,18 @@
       activeBlinkerSide = null;
     }
 
-    movingObject = (currentVehicle === VEHICLES.CAR) ? carMesh : tramMesh;
+    movingObject = carMesh;
     const startZ = movingObject.position.z;
 
     // Все манёвры завершаются за перекрёстком и пешеходным переходом (на отметке ±13.5)
-    moveCurve = movePath(moveType, currentVehicle, startZ, 13.5, 0);
+    moveCurve = movePath(moveType, startZ, 13.5, 0);
 
     isMoving = true;
     moveProgress = 0;
     moveElapsed = 0;
     activeMove = moveType;
     activeMoveId = moveId;
-    moveDuration = (moveType === MOVES.STRAIGHT ? 1.8 : moveType === MOVES.UTURN ? 2.05 : 1.95)
-      + (currentVehicle === VEHICLES.TRAM ? 0.1 : 0);
+    moveDuration = moveType === MOVES.STRAIGHT ? 1.8 : moveType === MOVES.UTURN ? 2.05 : 1.95;
 
     notifyFlutter({
       type: 'move_result',

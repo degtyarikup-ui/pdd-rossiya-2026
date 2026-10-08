@@ -1825,7 +1825,59 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameTrafficSignalQuestion => 'Что разрешает сигнал?';
 
   @override
-  String get gameTrafficTramSignalQuestion => 'Что разрешено трамваю?';
+  String get gameTrafficHintButton => 'Подсказка';
+
+  @override
+  String get gameTrafficHintTitle => 'Как запомнить';
+
+  @override
+  String get gameTrafficHintPaused => 'Время на паузе';
+
+  @override
+  String get gameTrafficHintScope =>
+      'Учитывайте свою полосу, знаки и разметку.';
+
+  @override
+  String get gameTrafficHintArmUp =>
+      'Палка вверх устремлена — всем стоять велит она.';
+
+  @override
+  String get gameTrafficHintForwardFront =>
+      'Если палка смотрит в рот — делай правый поворот.';
+
+  @override
+  String get gameTrafficHintForwardRight =>
+      'Если палка смотрит вправо — ехать не имеешь права.';
+
+  @override
+  String get gameTrafficHintForwardLeft =>
+      'Если палка смотрит влево — поезжай как королева.';
+
+  @override
+  String get gameTrafficHintBack => 'Спина — стена.';
+
+  @override
+  String get gameTrafficHintWall => 'Грудь и спина — для водителя стена.';
+
+  @override
+  String get gameTrafficHintSide =>
+      'Боком встал регулировщик — прямо и направо путь открыт.';
+
+  @override
+  String get gameTrafficHintTramLeft =>
+      'Трамвай едет из рукава в рукав — только налево.';
+
+  @override
+  String get gameTrafficHintTramStraight =>
+      'Трамвай едет из рукава в рукав — только прямо.';
+
+  @override
+  String get gameTrafficHintForbidden => 'Сигнал запрещает движение.';
+
+  @override
+  String gameTrafficHintAllowed(String directions) {
+    return 'Сигнал разрешает: $directions.';
+  }
 
   @override
   String get gameSignScenario1_1_0Prompt =>

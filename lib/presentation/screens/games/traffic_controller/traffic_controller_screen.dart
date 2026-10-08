@@ -39,7 +39,8 @@ class _TrafficControllerScreenState
   // Текущая ситуация: жест, откуда едет ТС и кто едет.
   ControllerGesture _curGesture = ControllerGesture.rightArmForward;
   ApproachDirection _curApproach = ApproachDirection.left;
-  VehicleKind _curVehicle = VehicleKind.car;
+  static const _vehicle = VehicleKind.car;
+  bool _hintOpen = false;
 
   // Блиц
   int _score = 0;
@@ -65,6 +66,7 @@ class _TrafficControllerScreenState
   // Высота нижней панели: сцена ставит центр кадра над ней.
   final GlobalKey _panelKey = GlobalKey();
   double _sentInset = -1;
+  double _panelHeight = 0;
 
   // Приближение камеры щипком по сцене.
   static const double _minZoom = 0.4;
@@ -187,6 +189,9 @@ class _TrafficControllerScreenState
       final box = _panelKey.currentContext?.findRenderObject() as RenderBox?;
       final screen = MediaQuery.sizeOf(context).height;
       if (box == null || !box.hasSize || screen <= 0) return;
+      if ((box.size.height - _panelHeight).abs() > 0.5) {
+        setState(() => _panelHeight = box.size.height);
+      }
       final inset = box.size.height / screen;
       if ((inset - _sentInset).abs() < 0.005) return;
       _sentInset = inset;
@@ -214,9 +219,8 @@ class _TrafficControllerScreenState
       ApproachDirection.left => 'left',
       ApproachDirection.right => 'right',
     };
-    final vehicle = _curVehicle == VehicleKind.tram ? 'tram' : 'car';
     _call('setMode("arcade")');
-    _call('setScenario("$gesture", "$approach", "$vehicle")');
+    _call('setScenario("$gesture", "$approach", "car")');
     _call('setCameraView("driver")');
   }
 
@@ -246,6 +250,7 @@ class _TrafficControllerScreenState
         timer.cancel();
         return;
       }
+      if (_hintOpen) return;
       if (_secondsLeft > 1) {
         setState(() => _secondsLeft--);
       } else {
@@ -263,15 +268,9 @@ class _TrafficControllerScreenState
   void _nextArcadeSituation() {
     final gestures = ControllerGesture.values;
     final approaches = ApproachDirection.values;
-    // В основном авто (~88%), трамвай появляется редко (~12%) и не два раза подряд.
-    final wasTram = _curVehicle == VehicleKind.tram;
-
     setState(() {
       _curGesture = gestures[_random.nextInt(gestures.length)];
       _curApproach = approaches[_random.nextInt(approaches.length)];
-      _curVehicle = (!wasTram && _random.nextDouble() < 0.12)
-          ? VehicleKind.tram
-          : VehicleKind.car;
       _awaitingNext = false;
       _lastMove = null;
     });
@@ -292,7 +291,7 @@ class _TrafficControllerScreenState
     final isAllowed = TrafficControllerRules.isMoveAllowed(
       gesture: _curGesture,
       approach: _curApproach,
-      vehicle: _curVehicle,
+      vehicle: _vehicle,
       move: move,
     );
     _moveSequence++;
@@ -393,10 +392,13 @@ class _TrafficControllerScreenState
                 child: AnimatedOpacity(
                   duration: const Duration(milliseconds: 250),
                   opacity: _engineReady ? 0 : 1,
-                  child: ColoredBox(
-                    color: colors.background,
-                    child: Center(
-                      child: CircularProgressIndicator(color: colors.accent),
+                  child: TickerMode(
+                    enabled: !_engineReady,
+                    child: ColoredBox(
+                      color: colors.background,
+                      child: Center(
+                        child: CircularProgressIndicator(color: colors.accent),
+                      ),
                     ),
                   ),
                 ),
@@ -416,6 +418,27 @@ class _TrafficControllerScreenState
               bottom: 0,
               child: _buildPanel(colors, padding.bottom),
             ),
+
+            if (_engineReady && _panelHeight > 0 && !_isGameOver)
+              Positioned(
+                left: AppDimensions.screenPadding,
+                bottom: _panelHeight + AppDimensions.spacingM,
+                child: IconButton.filled(
+                  tooltip: appL10n.gameTrafficHintButton,
+                  onPressed: _awaitingNext || _hintOpen ? null : _showHint,
+                  icon: const Icon(Icons.lightbulb_outline_rounded, size: 22),
+                  style: IconButton.styleFrom(
+                    backgroundColor: colors.cardBackground,
+                    foregroundColor: colors.accent,
+                    disabledBackgroundColor: colors.cardBackground,
+                    disabledForegroundColor: colors.secondaryText,
+                    minimumSize: const Size.square(48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
 
             if (_isGameOver) Positioned.fill(child: _buildResult(colors)),
           ],
@@ -441,6 +464,101 @@ class _TrafficControllerScreenState
       onRestart: _startArcadeRound,
       onExit: () => Navigator.of(context).pop(),
     );
+  }
+
+  Future<void> _showHint() async {
+    if (!_engineReady || _awaitingNext || _isGameOver || _hintOpen) return;
+    HapticFeedbackHelper.select();
+    setState(() => _hintOpen = true);
+    final verse = TrafficControllerRules.mnemonicVerse(
+      gesture: _curGesture,
+      approach: _curApproach,
+      vehicle: _vehicle,
+    );
+    final rule = TrafficControllerRules.officialRuleDescription(
+      gesture: _curGesture,
+      approach: _curApproach,
+      vehicle: _vehicle,
+    );
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        backgroundColor: AppColors.of(context).cardBackground,
+        builder: (context) {
+          final colors = AppColors.of(context);
+          return SafeArea(
+            top: false,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      appL10n.gameTrafficHintTitle,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: colors.secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      verse,
+                      style: TextStyle(
+                        fontSize: 24,
+                        height: 1.25,
+                        fontWeight: FontWeight.w700,
+                        color: colors.primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      rule,
+                      style: TextStyle(
+                        fontSize: 16,
+                        height: 1.4,
+                        color: colors.primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      appL10n.gameTrafficHintScope,
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.4,
+                        color: colors.secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      appL10n.gameTrafficHintPaused,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 13, color: colors.accent),
+                    ),
+                    const SizedBox(height: 12),
+                    GameActionButton(
+                      label: appL10n.gameUnderstood,
+                      background: colors.accent,
+                      foreground: colors.white,
+                      onTap: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    } finally {
+      if (mounted) setState(() => _hintOpen = false);
+    }
   }
 
   Widget _buildScene(AppThemeColors colors) {
@@ -554,7 +672,7 @@ class _TrafficControllerScreenState
     final allowed = TrafficControllerRules.allowedMoves(
       gesture: _curGesture,
       approach: _curApproach,
-      vehicle: _curVehicle,
+      vehicle: _vehicle,
     );
 
     Widget button(_MoveSpec spec, {required bool directional}) {
@@ -602,9 +720,7 @@ class _TrafficControllerScreenState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          _curVehicle == VehicleKind.tram
-              ? appL10n.gameTrafficTramSignalQuestion
-              : appL10n.gameTrafficSignalQuestion,
+          appL10n.gameTrafficSignalQuestion,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,

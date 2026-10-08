@@ -3208,11 +3208,95 @@ abstract class AppLocalizations {
   /// **'Что разрешает сигнал?'**
   String get gameTrafficSignalQuestion;
 
-  /// No description provided for @gameTrafficTramSignalQuestion.
+  /// No description provided for @gameTrafficHintButton.
   ///
   /// In ru, this message translates to:
-  /// **'Что разрешено трамваю?'**
-  String get gameTrafficTramSignalQuestion;
+  /// **'Подсказка'**
+  String get gameTrafficHintButton;
+
+  /// No description provided for @gameTrafficHintTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как запомнить'**
+  String get gameTrafficHintTitle;
+
+  /// No description provided for @gameTrafficHintPaused.
+  ///
+  /// In ru, this message translates to:
+  /// **'Время на паузе'**
+  String get gameTrafficHintPaused;
+
+  /// No description provided for @gameTrafficHintScope.
+  ///
+  /// In ru, this message translates to:
+  /// **'Учитывайте свою полосу, знаки и разметку.'**
+  String get gameTrafficHintScope;
+
+  /// No description provided for @gameTrafficHintArmUp.
+  ///
+  /// In ru, this message translates to:
+  /// **'Палка вверх устремлена — всем стоять велит она.'**
+  String get gameTrafficHintArmUp;
+
+  /// No description provided for @gameTrafficHintForwardFront.
+  ///
+  /// In ru, this message translates to:
+  /// **'Если палка смотрит в рот — делай правый поворот.'**
+  String get gameTrafficHintForwardFront;
+
+  /// No description provided for @gameTrafficHintForwardRight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Если палка смотрит вправо — ехать не имеешь права.'**
+  String get gameTrafficHintForwardRight;
+
+  /// No description provided for @gameTrafficHintForwardLeft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Если палка смотрит влево — поезжай как королева.'**
+  String get gameTrafficHintForwardLeft;
+
+  /// No description provided for @gameTrafficHintBack.
+  ///
+  /// In ru, this message translates to:
+  /// **'Спина — стена.'**
+  String get gameTrafficHintBack;
+
+  /// No description provided for @gameTrafficHintWall.
+  ///
+  /// In ru, this message translates to:
+  /// **'Грудь и спина — для водителя стена.'**
+  String get gameTrafficHintWall;
+
+  /// No description provided for @gameTrafficHintSide.
+  ///
+  /// In ru, this message translates to:
+  /// **'Боком встал регулировщик — прямо и направо путь открыт.'**
+  String get gameTrafficHintSide;
+
+  /// No description provided for @gameTrafficHintTramLeft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Трамвай едет из рукава в рукав — только налево.'**
+  String get gameTrafficHintTramLeft;
+
+  /// No description provided for @gameTrafficHintTramStraight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Трамвай едет из рукава в рукав — только прямо.'**
+  String get gameTrafficHintTramStraight;
+
+  /// No description provided for @gameTrafficHintForbidden.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сигнал запрещает движение.'**
+  String get gameTrafficHintForbidden;
+
+  /// No description provided for @gameTrafficHintAllowed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сигнал разрешает: {directions}.'**
+  String gameTrafficHintAllowed(String directions);
 
   /// No description provided for @gameSignScenario1_1_0Prompt.
   ///

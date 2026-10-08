@@ -320,6 +320,14 @@ void main() {
     expect(turn.dx, lessThan(stop.dx));
     expect(find.byIcon(Icons.add_rounded), findsNothing);
     expect(find.byIcon(Icons.remove_rounded), findsNothing);
+    final hint = find.byTooltip(appL10n.gameTrafficHintButton);
+    final panel = find
+        .ancestor(
+          of: find.text(appL10n.gameTrafficSignalQuestion),
+          matching: find.byType(Container),
+        )
+        .last;
+    expect(tester.getRect(hint).bottom, lessThan(tester.getRect(panel).top));
     for (final move in TrafficMove.values) {
       final button = find.ancestor(
         of: find.text(_moveLabel(move)),
@@ -335,6 +343,52 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
+
+  testWidgets(
+    'Traffic hints pause time, resume on close and keep rounds car-only',
+    (tester) async {
+      await open(tester, const TrafficControllerScreen());
+      final controller = web.controllers.single..emitReady();
+      await tester.pump();
+      await tester.pump();
+      await tester.tap(find.byTooltip(appL10n.gameTrafficHintButton));
+      await tester.pumpAndSettle();
+      expect(find.text(appL10n.gameTrafficHintTitle), findsOneWidget);
+      expect(find.text(appL10n.gameTrafficHintPaused), findsOneWidget);
+      await tester.pump(const Duration(seconds: 40));
+      expect(find.byType(GameResultOverlay), findsNothing);
+      expect(find.text(appL10n.gameSecondsLeft(35)), findsOneWidget);
+      await tester.tap(find.text(appL10n.gameUnderstood));
+      await tester.pumpAndSettle();
+      final secondsAfterClose = [
+        for (var i = 1; i <= 35; i++)
+          if (find.text(appL10n.gameSecondsLeft(i)).evaluate().isNotEmpty) i,
+      ].single;
+      await tester.pump(const Duration(seconds: 1));
+      expect(
+        find.text(appL10n.gameSecondsLeft(secondsAfterClose - 1)),
+        findsOneWidget,
+      );
+
+      for (var i = 0; i < 40; i++) {
+        expect(
+          controller.scripts.lastWhere((s) => s.contains('setScenario(')),
+          contains('"car")'),
+        );
+        final correct = controller.allowedMoves.first;
+        await tester.tap(find.text(_moveLabel(correct)));
+        await tester.pump();
+        if (correct == TrafficMove.none) {
+          await tester.pump(const Duration(milliseconds: 700));
+        } else {
+          controller.emitMoveComplete();
+          await tester.pump(const Duration(milliseconds: 160));
+        }
+      }
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 
   testWidgets('Traffic scores a move once and ends after three mistakes', (
     tester,

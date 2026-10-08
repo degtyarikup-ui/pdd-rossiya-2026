@@ -3,6 +3,8 @@
 /// (принцип «трамвай едет только из рукава в рукав»).
 library;
 
+import 'package:pdd_app/l10n/l10n.dart';
+
 /// Жест регулировщика
 enum ControllerGesture {
   /// Руки вытянуты в стороны
@@ -132,22 +134,22 @@ class TrafficControllerRules {
     required VehicleKind vehicle,
   }) {
     if (gesture == ControllerGesture.armUp) {
-      return 'Палка вверх устремлена — всем стоять велит она!';
+      return appL10n.gameTrafficHintArmUp;
     }
 
     if (gesture == ControllerGesture.rightArmForward) {
       switch (approach) {
         case ApproachDirection.front:
-          return 'Если палка смотрит в рот — делай правый поворот!';
+          return appL10n.gameTrafficHintForwardFront;
         case ApproachDirection.right:
-          return 'Если палка смотрит вправо — ехать не имеешь права!';
+          return appL10n.gameTrafficHintForwardRight;
         case ApproachDirection.left:
           if (vehicle == VehicleKind.tram) {
-            return 'Трамвай едет «из рукава в рукав» — поворот только налево!';
+            return appL10n.gameTrafficHintTramLeft;
           }
-          return 'Если палка смотрит влево — поезжай как королева (в любом направлении)!';
+          return appL10n.gameTrafficHintForwardLeft;
         case ApproachDirection.back:
-          return 'Грудь и спина для водителя — стена!';
+          return appL10n.gameTrafficHintBack;
       }
     }
 
@@ -156,13 +158,13 @@ class TrafficControllerRules {
       switch (approach) {
         case ApproachDirection.front:
         case ApproachDirection.back:
-          return 'Грудь и спина для водителя — стена!';
+          return appL10n.gameTrafficHintBack;
         case ApproachDirection.left:
         case ApproachDirection.right:
           if (vehicle == VehicleKind.tram) {
-            return 'Боком встал регулировщик — трамваю только прямо («из рукава в рукав»)!';
+            return appL10n.gameTrafficHintTramStraight;
           }
-          return 'Боком встал регулировщик — прямо и направо путь открыт!';
+          return appL10n.gameTrafficHintSide;
       }
     }
 
@@ -182,26 +184,26 @@ class TrafficControllerRules {
     );
 
     if (allowed.contains(TrafficMove.none)) {
-      return 'Движение запрещено (п. 6.10 ПДД)';
+      return appL10n.gameTrafficHintForbidden;
     }
 
     final movesText = allowed
         .map((m) {
           switch (m) {
             case TrafficMove.straight:
-              return 'прямо';
+              return appL10n.gameActionStraight.toLowerCase();
             case TrafficMove.right:
-              return 'направо';
+              return appL10n.gameActionRight.toLowerCase();
             case TrafficMove.left:
-              return 'налево';
+              return appL10n.gameActionLeft.toLowerCase();
             case TrafficMove.uTurn:
-              return 'разворот';
+              return appL10n.gameActionUTurn.toLowerCase();
             case TrafficMove.none:
-              return 'стоять';
+              return appL10n.gameActionStand.toLowerCase();
           }
         })
         .join(', ');
 
-    return 'Разрешено: $movesText (п. 6.10 ПДД)';
+    return appL10n.gameTrafficHintAllowed(movesText);
   }
 }
