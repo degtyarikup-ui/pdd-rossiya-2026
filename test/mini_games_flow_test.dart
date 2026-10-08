@@ -19,6 +19,7 @@ import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_scree
 import 'package:pdd_app/presentation/screens/games/sign_swiper/widgets/swipe_card_view.dart';
 import 'package:pdd_app/presentation/screens/games/traffic_controller/traffic_controller_screen.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
+import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
 
@@ -322,6 +323,58 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  for (final (name, art) in [
+    ('Traffic', const TrafficControllerArt()),
+    ('Swiper', const SignSwiperArt()),
+  ]) {
+    testWidgets('$name result shows the full cover on a compact screen', (
+      tester,
+    ) async {
+      var restarts = 0, exits = 0;
+      await open(
+        tester,
+        Scaffold(
+          body: GameResultOverlay(
+            art: art,
+            title: appL10n.gameOverTitle,
+            score: 3900,
+            bestScore: 1500,
+            isNewRecord: false,
+            stats: [
+              GameResultStat(appL10n.gameSolvedLabel, '10'),
+              GameResultStat(appL10n.gameAccuracyLabel, '77%'),
+              GameResultStat(appL10n.gameComboLabel, 'x8'),
+            ],
+            mistakesCount: 3,
+            onMistakes: () {},
+            onRestart: () => restarts++,
+            onExit: () => exits++,
+          ),
+        ),
+        size: const Size(320, 568),
+        textScale: 1.6,
+      );
+      await tester.pumpAndSettle();
+      final image = find.byType(Image);
+      final frame = tester.getRect(image);
+      // BoxFit.cover can crop only if the box disagrees with the 16:9 source.
+      expect(frame.width / frame.height, closeTo(16 / 9, 0.001));
+      final provider = tester.widget<Image>(image).image as ResizeImage;
+      expect(
+        (provider.imageProvider as AssetImage).assetName,
+        endsWith('_cover.webp'),
+      );
+      await tester.ensureVisible(find.text(appL10n.gameRestart));
+      await tester.tap(find.text(appL10n.gameRestart));
+      expect(restarts, 1);
+      await tester.ensureVisible(find.text(appL10n.gameExit));
+      await tester.tap(find.text(appL10n.gameExit));
+      expect(exits, 1);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
   testWidgets('Hub cover cards remain readable at 320px and large text', (
     tester,
   ) async {
@@ -352,7 +405,6 @@ void main() {
     );
     expect(find.text(appL10n.gameBestScore(123456789)), findsOneWidget);
     expect(find.text(appL10n.gameBestScore(987654321)), findsOneWidget);
-    expect(find.byType(ImageFiltered), findsNWidgets(3));
     for (final titleAndRecord in [
       (appL10n.gameTrafficControllerTitle, appL10n.gameBestScore(123456789)),
       (appL10n.gameSignSwiperTitle, appL10n.gameBestScore(987654321)),
@@ -367,7 +419,7 @@ void main() {
         of: cardStack,
         matching: find.byType(Image),
       );
-      expect(photo, findsNWidgets(2));
+      expect(photo, findsOneWidget);
       final photoRect = tester.getRect(photo.first);
       expect(photoRect.height, greaterThanOrEqualTo(190));
       for (final label in [titleAndRecord.$1, titleAndRecord.$2]) {

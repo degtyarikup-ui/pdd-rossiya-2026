@@ -332,6 +332,7 @@ class GameResultOverlay extends StatelessWidget {
             vertical: 24,
           ),
           clipBehavior: Clip.antiAlias,
+          constraints: const BoxConstraints(maxWidth: 420),
           child: Stack(
             children: [
               SingleChildScrollView(
@@ -341,7 +342,12 @@ class GameResultOverlay extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      SizedBox(height: 96, child: art),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.buttonRadius,
+                        ),
+                        child: AspectRatio(aspectRatio: 16 / 9, child: art),
+                      ),
                       const SizedBox(height: 10),
                       Text(
                         title,

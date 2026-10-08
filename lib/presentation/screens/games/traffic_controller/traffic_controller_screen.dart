@@ -416,10 +416,7 @@ class _TrafficControllerScreenState
     final answered = _solvedCount + _wrongCount;
     final accuracy = answered > 0 ? (_solvedCount * 100 / answered).round() : 0;
     return GameResultOverlay(
-      art: ClipRRect(
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-        child: const TrafficControllerArt(),
-      ),
+      art: const TrafficControllerArt(),
       title: _timeUp ? appL10n.gameTimeUp : appL10n.gameOverTitle,
       score: _score,
       bestScore: _previousBest,

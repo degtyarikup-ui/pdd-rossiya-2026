@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,21 +48,21 @@ class GamesHubScreen extends ConsumerWidget {
             ),
           ),
           _GameCard(
-            art: const TrafficControllerArt(),
+            art: const TrafficControllerArt(forCard: true),
             title: appL10n.gameTrafficControllerTitle,
             bestScore: traffic.bestScore,
             onTap: () => _open(context, const TrafficControllerScreen()),
           ),
           const SizedBox(height: AppDimensions.spacingL),
           _GameCard(
-            art: const SignSwiperArt(),
+            art: const SignSwiperArt(forCard: true),
             title: appL10n.gameSignSwiperTitle,
             bestScore: signs.bestScore,
             onTap: () => _open(context, const SignSwiperScreen()),
           ),
           const SizedBox(height: AppDimensions.spacingL),
           _GameCard(
-            art: const RoundaboutArt(),
+            art: const RoundaboutArt(forCard: true),
             title: appL10n.gameRoundaboutTitle,
           ),
         ],
@@ -121,32 +120,19 @@ class _GameCard extends StatelessWidget {
                       fit: StackFit.expand,
                       children: [
                         art,
-                        // Мягко вводим размытие только в нижней части фото.
-                        ShaderMask(
-                          blendMode: BlendMode.dstIn,
-                          shaderCallback: (rect) => const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, Colors.white],
-                            stops: [0.58, 1],
-                          ).createShader(rect),
-                          child: ImageFiltered(
-                            imageFilter: ui.ImageFilter.blur(
-                              sigmaX: 3,
-                              sigmaY: 3,
-                            ),
-                            child: art,
-                          ),
-                        ),
-                        const DecoratedBox(
+                        DecoratedBox(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
                                 Colors.transparent,
-                                Color(0x18091121),
-                                Color(0xD9091121),
+                                available
+                                    ? const Color(0x18091121)
+                                    : const Color(0x18101010),
+                                available
+                                    ? const Color(0xD9091121)
+                                    : const Color(0xD9101010),
                               ],
                               stops: [0.25, 0.45, 1],
                             ),
@@ -240,34 +226,7 @@ class _GameCard extends StatelessWidget {
         ),
       ),
     );
-    if (available) return card;
-    return Opacity(
-      opacity: 0.55,
-      child: ColorFiltered(
-        colorFilter: const ColorFilter.matrix([
-          0.2126,
-          0.7152,
-          0.0722,
-          0,
-          0,
-          0.2126,
-          0.7152,
-          0.0722,
-          0,
-          0,
-          0.2126,
-          0.7152,
-          0.0722,
-          0,
-          0,
-          0,
-          0,
-          0,
-          1,
-          0,
-        ]),
-        child: card,
-      ),
-    );
+    if (available) return RepaintBoundary(child: card);
+    return Opacity(opacity: 0.55, child: RepaintBoundary(child: card));
   }
 }

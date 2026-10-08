@@ -1,6 +1,6 @@
 # Обложки мини-игр
 
-Сгенерированы встроенным imagegen 2026-10-08. Итоговые ассеты: `assets/images/games/traffic_controller_cover.webp` и `assets/images/games/sign_swiper_cover.webp`, 1280×720, WebP. Названия, рекорды, градиент и размытие накладывает Flutter — в изображения они не вшиты.
+Сгенерированы встроенным imagegen 2026-10-08. Итоговые ассеты: `assets/images/games/traffic_controller_cover.webp` и `assets/images/games/sign_swiper_cover.webp`, 960×540, WebP. Названия, рекорды, градиент и размытие накладывает Flutter — в изображения они не вшиты.
 
 Регулировщик: основа — настоящий крупный кадр `assets/game/traffic-controller.html`, снятый headless Chrome с сигналом `rightArmForward`, подходом `front` и камерой `(2.5, 2.3, 4.2)`, направленной на `(0, 1.05, 0)`. Свайпер: стиль первой обложки и SVG знаков 2.4, 2.5, 3.1 из базы приложения.
 
@@ -29,7 +29,7 @@ Exact only text: STOP, on the stop sign. No captions, no title, no logo, no badg
 
 ## Круговое движение — итоговый промпт
 
-Сохранено как `assets/images/games/roundabout_cover.webp`, 1280×720. Чёрно-белый фильтр и прозрачность 55% применяются к карточке в Flutter; цветной оригинал сохранён для будущего запуска игры. Генерация — встроенный imagegen, 2026-10-08.
+Сохранено как `assets/images/games/roundabout_cover.webp`, 960×540. Чёрно-белый фильтр и прозрачность 55% применяются к карточке в Flutter; цветной оригинал сохранён для будущего запуска игры. Генерация — встроенный imagegen, 2026-10-08.
 
 ```text
 Use case: ads-marketing. Asset type: horizontal 16:9 mobile mini-game cover, matching a series.
@@ -39,3 +39,15 @@ A single correctly shaped Russian roundabout sign 4.3 can be visible near the fo
 Same soft-focus modern buildings and trees as the reference, warm lit windows, cool blue dusk sky. Strong simple composition readable at thumbnail size. Lower quarter calm asphalt for later UI title overlay.
 Generate a FULL COLOR master image. Grayscale and reduced opacity will be applied in actual Flutter UI for the unavailable state, do not bake those effects into the image. No lettering, no words, no captions, no interface, no badge, no logo, no watermark. No particles, no neon outlines, no lens flares, no plastic toy gloss, no extra decorative floating arrows. Strict horizontal16:9.
 ```
+
+## Подготовка для слабых телефонов
+
+`tools/optimize_game_covers.cjs` готовит два WebP 960×540 для каждой игры: чёткий `_cover.webp` (результат раунда, quality 76) и `_card.webp` (нижнее размытие уже в пикселях, quality 74). У кругового движения карточка сразу чёрно-белая. Gradients, текст и прозрачность остаются в Flutter. ImageFiltered, ShaderMask и ColorFiltered больше не участвуют в прокрутке карточек.
+
+Команда (Node.js с пакетом sharp):
+
+```sh
+node tools/optimize_game_covers.cjs --source-dir output/mini-games/cover-originals
+```
+
+Каталог источников содержит PNG `traffic_controller_cover.png`, `sign_swiper_cover.png`, `roundabout_cover.png`; это полноразмерные оригиналы imagegen, в публикацию не входят. Flutter декодирует 480/720/960 px в зависимости от размеров виджета и плотности экрана, никогда не выше оригинала. Три стабильных размера позволяют переиспользовать image cache при перестроениях.
