@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -1800,4 +1801,81 @@ class AppLocalizationsRu extends AppLocalizations {
   String gameComboStreak(int combo) {
     return 'КОМБО х$combo!';
   }
+
+  @override
+  String get gamesHubSoonSection => 'Скоро в играх';
+
+  @override
+  String get gameSoonBadge => 'Скоро';
+
+  @override
+  String get gameRoundaboutTitle => 'Круговое движение 3D';
+
+  @override
+  String get gameRoundaboutSubtitle =>
+      'Въезд с любой полосы, съезд — только с крайней правой (п. 8.5 ПДД)';
+
+  @override
+  String get gameGestureRightArm => 'Рука вперёд';
+
+  @override
+  String get gameGestureHandsSides => 'Руки в стороны';
+
+  @override
+  String get gameGestureArmUp => 'Рука вверх';
+
+  @override
+  String get gameApproachLeft => 'Слева';
+
+  @override
+  String get gameApproachFront => 'С груди';
+
+  @override
+  String get gameApproachRight => 'Справа';
+
+  @override
+  String get gameApproachBack => 'Со спины';
+
+  @override
+  String get gameQuestionCarAllowed => 'Куда разрешено поехать автомобилю?';
+
+  @override
+  String get gameQuestionTramAllowed => 'Куда разрешено поехать трамваю?';
+
+  @override
+  String gameSecondsLeft(int seconds) {
+    return '$seconds с';
+  }
+
+  @override
+  String get gameSignsLoadError => 'Не удалось загрузить знаки';
+
+  @override
+  String get gameRetry => 'Повторить';
+
+  @override
+  String get gameRestartRound => 'Начать сначала';
+
+  @override
+  String get gameSignYes => 'ДА';
+
+  @override
+  String get gameSignNo => 'НЕТ';
+
+  @override
+  String get gameSignCan => 'МОЖНО';
+
+  @override
+  String get gameSignCannot => 'НЕЛЬЗЯ';
+
+  @override
+  String gameSwipeHint(String right, String left) {
+    return 'Свайп вправо — $right • влево — $left';
+  }
+
+  @override
+  String get gameUnderstood => 'Понятно';
+
+  @override
+  String get gamePddOfficialText => 'ПДД РФ:';
 }

@@ -92,15 +92,15 @@ class SignExplanationSheet extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: wasAnswerCorrect!
-                    ? const Color(0xFF10B981).withValues(alpha: 0.15)
-                    : const Color(0xFFEF4444).withValues(alpha: 0.15),
+                    ? colors.green.withValues(alpha: 0.15)
+                    : colors.red.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
                   Icon(
                     wasAnswerCorrect! ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                    color: wasAnswerCorrect! ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                    color: wasAnswerCorrect! ? colors.green : colors.red,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
@@ -110,7 +110,7 @@ class SignExplanationSheet extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
-                        color: wasAnswerCorrect! ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                        color: wasAnswerCorrect! ? colors.green : colors.red,
                       ),
                     ),
                   ),
@@ -164,15 +164,15 @@ class SignExplanationSheet extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: Colors.amber.withValues(alpha: 0.15),
+                              color: colors.gold.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               '«${sign.folkName}»',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.amber,
+                                color: colors.gold,
                               ),
                             ),
                           ),
@@ -235,7 +235,7 @@ class SignExplanationSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'ПДД РФ:',
+                  appL10n.gamePddOfficialText,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -286,7 +286,7 @@ class SignExplanationSheet extends StatelessWidget {
               onNext?.call();
             },
             child: Text(
-              onNext != null ? appL10n.gameSignSwiperNext : 'Понятно',
+              onNext != null ? appL10n.gameSignSwiperNext : appL10n.gameUnderstood,
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,

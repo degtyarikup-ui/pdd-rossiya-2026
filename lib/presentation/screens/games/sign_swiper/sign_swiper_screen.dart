@@ -49,11 +49,18 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   int _correctAnswers = 0;
   int _totalSwipedInRound = 0;
   bool _isGameOver = false;
+  bool _isNewRecord = false;
   final List<SignCardQuestion> _mistakes = [];
 
-  // Режим «Тренировка»
-  String _selectedCategory = 'Все категории';
+  // Режим «Тренировка»: null — все категории
+  String? _selectedCategory;
   int _trainingSolved = 0;
+
+  /// Множитель очков за комбо: каждые 3 верных ответа +1, не выше x4.
+  static int _multiplierFor(int combo) => 1 + (combo ~/ 3).clamp(0, 3);
+
+  String? get _categoryFilter =>
+      _mode == SignSwiperMode.training ? _selectedCategory : null;
 
   @override
   void initState() {
@@ -67,33 +74,41 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     super.dispose();
   }
 
+  /// Вызывается из build при первой загрузке знаков: состояние выставляем
+  /// без setState (нельзя перерисовывать во время build), таймер — после кадра.
   void _initEngine(Map<String, dynamic> signsJson) {
     if (_engine != null) return;
     final signs = SignSwiperEngine.parseSignsJson(signsJson);
     _engine = SignSwiperEngine(allSigns: signs);
-    _startRound();
+    _resetRoundState();
+    if (_mode == SignSwiperMode.sprint) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _mode == SignSwiperMode.sprint && !_isGameOver) {
+          _startSprintTimer();
+        }
+      });
+    }
+  }
+
+  void _resetRoundState() {
+    _isProcessingSwipe = false;
+    _currentIndex = 0;
+    _score = 0;
+    _combo = 0;
+    _maxCombo = 0;
+    _lives = 3;
+    _secondsLeft = 60;
+    _correctAnswers = 0;
+    _totalSwipedInRound = 0;
+    _isGameOver = false;
+    _isNewRecord = false;
+    _mistakes.clear();
+    _deck = _engine?.generateDeck(categoryFilter: _categoryFilter, count: 30) ?? [];
   }
 
   void _startRound() {
     _timer?.cancel();
-    setState(() {
-      _isProcessingSwipe = false;
-      _currentIndex = 0;
-      _score = 0;
-      _combo = 0;
-      _maxCombo = 0;
-      _lives = 3;
-      _secondsLeft = 60;
-      _correctAnswers = 0;
-      _totalSwipedInRound = 0;
-      _isGameOver = false;
-      _mistakes.clear();
-
-      final categoryFilter = _mode == SignSwiperMode.training && _selectedCategory != 'Все категории'
-          ? _selectedCategory
-          : null;
-      _deck = _engine?.generateDeck(categoryFilter: categoryFilter, count: 30) ?? [];
-    });
+    setState(_resetRoundState);
 
     if (_mode == SignSwiperMode.sprint) {
       _startSprintTimer();
@@ -107,30 +122,32 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
         timer.cancel();
         return;
       }
-      setState(() {
-        if (_secondsLeft > 0) {
-          _secondsLeft--;
-          if (_secondsLeft <= 5 && _secondsLeft > 0) {
-            SoundEffectsService.instance.playTick();
-          }
-        } else {
-          _endGame();
+      if (_secondsLeft > 0) {
+        setState(() => _secondsLeft--);
+        if (_secondsLeft <= 5 && _secondsLeft > 0) {
+          SoundEffectsService.instance.playTick();
         }
-      });
+      } else {
+        _endGame();
+      }
     });
   }
 
+  /// Конец раунда. Вызывается и из таймера, и из свайпа — поэтому сам делает
+  /// setState. Рекорд сравниваем ДО записи, иначе он всегда «побит».
   void _endGame() {
     _timer?.cancel();
-    _isGameOver = true;
-    _isProcessingSwipe = false;
-
-    // Сохраняем результат
+    final previousBest = ref.read(signSwiperProgressProvider).bestScore;
     ref.read(signSwiperProgressProvider.notifier).recordGameResult(
           score: _score,
           combo: _maxCombo,
           swiped: _totalSwipedInRound,
         );
+    setState(() {
+      _isNewRecord = _score > 0 && _score > previousBest;
+      _isGameOver = true;
+      _isProcessingSwipe = false;
+    });
   }
 
   void _onCardSwiped(bool userRightSwipe) {
@@ -151,8 +168,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
         _combo++;
         if (_combo > _maxCombo) _maxCombo = _combo;
 
-        final multiplier = 1 + (_combo ~/ 3).clamp(0, 3);
-        _score += 100 * multiplier;
+        _score += 100 * _multiplierFor(_combo);
         _secondsLeft = (_secondsLeft + 2).clamp(1, 60);
 
         if (_combo == 5 || _combo == 10 || _combo == 20) {
@@ -200,10 +216,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
       _currentIndex++;
       // Подгрузка следующей пачки, если колода подходит к концу
       if (_deck.length - _currentIndex < 6 && _engine != null) {
-        final categoryFilter = _mode == SignSwiperMode.training && _selectedCategory != 'Все категории'
-            ? _selectedCategory
-            : null;
-        final nextBatch = _engine!.generateDeck(categoryFilter: categoryFilter, count: 20);
+        final nextBatch = _engine!.generateDeck(categoryFilter: _categoryFilter, count: 20);
         _deck.addAll(nextBatch);
       }
     });
@@ -212,10 +225,8 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   void _switchMode(SignSwiperMode newMode) {
     if (_mode == newMode) return;
     HapticFeedbackHelper.tap();
-    setState(() {
-      _mode = newMode;
-      _startRound();
-    });
+    _mode = newMode;
+    _startRound();
   }
 
   @override
@@ -234,16 +245,16 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline_rounded, size: 48, color: Colors.red),
+                  Icon(Icons.error_outline_rounded, size: 48, color: colors.red),
                   const SizedBox(height: 12),
                   Text(
-                    'Не удалось загрузить знаки',
+                    appL10n.gameSignsLoadError,
                     style: TextStyle(fontSize: 16, color: colors.primaryText, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => ref.refresh(signsProvider),
-                    child: const Text('Повторить'),
+                    child: Text(appL10n.gameRetry),
                   ),
                 ],
               ),
@@ -331,7 +342,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             color: colors.primaryText,
-            tooltip: 'Начать сначала',
+            tooltip: appL10n.gameRestartRound,
             onPressed: () {
               HapticFeedbackHelper.tap();
               _startRound();
@@ -436,15 +447,15 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
                 Icon(
                   Icons.timer_rounded,
                   size: 20,
-                  color: _secondsLeft <= 10 ? const Color(0xFFEF4444) : colors.accent,
+                  color: _secondsLeft <= 10 ? colors.red : colors.accent,
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  '$_secondsLeft с',
+                  appL10n.gameSecondsLeft(_secondsLeft),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    color: _secondsLeft <= 10 ? const Color(0xFFEF4444) : colors.primaryText,
+                    color: _secondsLeft <= 10 ? colors.red : colors.primaryText,
                   ),
                 ),
               ],
@@ -459,7 +470,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
                   child: Icon(
                     isAlive ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                     size: 20,
-                    color: isAlive ? const Color(0xFFEF4444) : colors.secondaryText.withValues(alpha: 0.3),
+                    color: isAlive ? colors.red : colors.secondaryText.withValues(alpha: 0.3),
                   ),
                 );
               }),
@@ -477,13 +488,13 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
                     color: colors.primaryText,
                   ),
                 ),
-                if (_combo > 1)
+                if (_multiplierFor(_combo) > 1)
                   Text(
-                    'x${1 + (_combo ~/ 3)} 🔥',
-                    style: const TextStyle(
+                    'x${_multiplierFor(_combo)} 🔥',
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
-                      color: Colors.amber,
+                      color: colors.gold,
                     ),
                   ),
               ],
@@ -495,7 +506,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   }
 
   Widget _buildTrainingStatusBar(AppThemeColors colors) {
-    final categories = ['Все категории', ...?_engine?.availableCategories];
+    final List<String?> categories = [null, ...?_engine?.availableCategories];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
@@ -510,16 +521,16 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
                 border: Border.all(color: colors.divider),
               ),
               child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
+                child: DropdownButton<String?>(
                   value: _selectedCategory,
                   isExpanded: true,
                   icon: Icon(Icons.arrow_drop_down_rounded, color: colors.secondaryText),
                   dropdownColor: colors.cardBackground,
                   items: categories.map((cat) {
-                    return DropdownMenuItem(
+                    return DropdownMenuItem<String?>(
                       value: cat,
                       child: Text(
-                        cat,
+                        cat ?? appL10n.gameSignSwiperCategoryAll,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -531,11 +542,9 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
                     );
                   }).toList(),
                   onChanged: (newCat) {
-                    if (newCat != null && newCat != _selectedCategory) {
-                      setState(() {
-                        _selectedCategory = newCat;
-                        _startRound();
-                      });
+                    if (newCat != _selectedCategory) {
+                      _selectedCategory = newCat;
+                      _startRound();
                     }
                   },
                 ),
@@ -552,7 +561,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF10B981)),
+                Icon(Icons.check_circle_rounded, size: 16, color: colors.green),
                 const SizedBox(width: 6),
                 Text(
                   '$_trainingSolved',
@@ -625,8 +634,8 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
 
   Widget _buildBottomButtons(AppThemeColors colors) {
     final currentCard = (_currentIndex < _deck.length) ? _deck[_currentIndex] : null;
-    final leftLabel = currentCard?.leftActionLabel ?? 'НЕТ';
-    final rightLabel = currentCard?.rightActionLabel ?? 'ДА';
+    final leftLabel = currentCard?.leftActionLabel ?? appL10n.gameSignNo;
+    final rightLabel = currentCard?.rightActionLabel ?? appL10n.gameSignYes;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 18),
@@ -637,7 +646,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
           _buildActionButton(
             colors: colors,
             icon: Icons.close_rounded,
-            color: const Color(0xFFEF4444),
+            color: colors.red,
             label: leftLabel,
             onTap: () {
               HapticFeedbackHelper.tap();
@@ -675,7 +684,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
           _buildActionButton(
             colors: colors,
             icon: Icons.check_rounded,
-            color: const Color(0xFF10B981),
+            color: colors.green,
             label: rightLabel,
             onTap: () {
               HapticFeedbackHelper.tap();
@@ -736,8 +745,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   }
 
   Widget _buildGameOverOverlay(AppThemeColors colors) {
-    final progress = ref.watch(signSwiperProgressProvider);
-    final isNewRecord = _score > 0 && _score >= progress.bestScore;
+    final isNewRecord = _isNewRecord;
     final accuracy = _totalSwipedInRound > 0
         ? ((_correctAnswers / _totalSwipedInRound) * 100).round()
         : 0;
@@ -772,13 +780,13 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
                     height: 68,
                     decoration: BoxDecoration(
                       color: isNewRecord
-                          ? Colors.amber.withValues(alpha: 0.2)
+                          ? colors.gold.withValues(alpha: 0.2)
                           : colors.accent.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       isNewRecord ? Icons.emoji_events_rounded : Icons.flag_rounded,
-                      color: isNewRecord ? Colors.amber : colors.accent,
+                      color: isNewRecord ? colors.gold : colors.accent,
                       size: 36,
                     ),
                   ),
@@ -799,10 +807,10 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
                   Text(
                     appL10n.gameOverNewRecord,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
-                      color: Colors.amber,
+                      color: colors.gold,
                     ),
                   ),
                 ],
@@ -818,11 +826,11 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildGameOverStat(label: appL10n.gameScore, value: '$_score'),
+                      _buildGameOverStat(colors, label: appL10n.gameScore, value: '$_score'),
                       Container(width: 1, height: 28, color: colors.divider),
-                      _buildGameOverStat(label: appL10n.gameComboLabel, value: 'x$_maxCombo'),
+                      _buildGameOverStat(colors, label: appL10n.gameComboLabel, value: 'x$_maxCombo'),
                       Container(width: 1, height: 28, color: colors.divider),
-                      _buildGameOverStat(label: appL10n.gameAccuracyLabel, value: '$accuracy%'),
+                      _buildGameOverStat(colors, label: appL10n.gameAccuracyLabel, value: '$accuracy%'),
                     ],
                   ),
                 ),
@@ -867,7 +875,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFFEF4444)),
+                                Icon(Icons.info_outline_rounded, size: 16, color: colors.red),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
@@ -881,7 +889,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
                                     ),
                                   ),
                                 ),
-                                const Icon(Icons.chevron_right_rounded, size: 16, color: Colors.grey),
+                                Icon(Icons.chevron_right_rounded, size: 16, color: colors.secondaryText),
                               ],
                             ),
                           ),
@@ -952,22 +960,27 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     );
   }
 
-  Widget _buildGameOverStat({required String label, required String value}) {
+  Widget _buildGameOverStat(
+    AppThemeColors colors, {
+    required String label,
+    required String value,
+  }) {
     return Column(
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w900,
+            color: colors.primaryText,
           ),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
-            color: Colors.grey,
+            color: colors.secondaryText,
             fontWeight: FontWeight.w600,
           ),
         ),

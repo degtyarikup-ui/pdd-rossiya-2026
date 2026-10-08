@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 
 /// Контроллер для программного вызова свайпа карточки.
 class SwipeCardController {
@@ -208,18 +209,18 @@ class SwipeCardViewState extends State<SwipeCardView>
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
                     color: isSwipingRight
-                        ? const Color(0xFF10B981).withValues(alpha: swipeProgress.abs().clamp(0.2, 0.9))
+                        ? colors.green.withValues(alpha: swipeProgress.abs().clamp(0.2, 0.9))
                         : isSwipingLeft
-                            ? const Color(0xFFEF4444).withValues(alpha: swipeProgress.abs().clamp(0.2, 0.9))
+                            ? colors.red.withValues(alpha: swipeProgress.abs().clamp(0.2, 0.9))
                             : colors.divider,
                     width: swipeProgress.abs() > 0.2 ? 2.5 : 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: isSwipingRight
-                          ? const Color(0xFF10B981).withValues(alpha: 0.15 * swipeProgress.abs())
+                          ? colors.green.withValues(alpha: 0.15 * swipeProgress.abs())
                           : isSwipingLeft
-                              ? const Color(0xFFEF4444).withValues(alpha: 0.15 * swipeProgress.abs())
+                              ? colors.red.withValues(alpha: 0.15 * swipeProgress.abs())
                               : Colors.black.withValues(alpha: 0.08),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
@@ -290,7 +291,7 @@ class SwipeCardViewState extends State<SwipeCardView>
                             // Подсказка жеста с адаптивными метками
                             Center(
                               child: Text(
-                                'Свайп вправо — ${card.rightActionLabel} • влево — ${card.leftActionLabel}',
+                                appL10n.gameSwipeHint(card.rightActionLabel, card.leftActionLabel),
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: colors.secondaryText.withValues(alpha: 0.75),
@@ -314,7 +315,7 @@ class SwipeCardViewState extends State<SwipeCardView>
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981),
+                                  color: colors.green,
                                   borderRadius: BorderRadius.circular(14),
                                   boxShadow: const [
                                     BoxShadow(
@@ -357,7 +358,7 @@ class SwipeCardViewState extends State<SwipeCardView>
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEF4444),
+                                  color: colors.red,
                                   borderRadius: BorderRadius.circular(14),
                                   boxShadow: const [
                                     BoxShadow(
@@ -398,7 +399,7 @@ class SwipeCardViewState extends State<SwipeCardView>
     );
   }
 
-  Widget _buildSignImage(SignItem sign, dynamic colors) {
+  Widget _buildSignImage(SignItem sign, AppThemeColors colors) {
     if (sign.image.endsWith('.svg')) {
       return SvgPicture.asset(
         sign.assetPath,

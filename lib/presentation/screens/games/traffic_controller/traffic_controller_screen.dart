@@ -56,7 +56,11 @@ class _TrafficControllerScreenState
   int _secondsLeft = 35;
   int _solvedCount = 0;
   Timer? _countdownTimer;
+  // Пауза между ситуациями: ввод закрыт, чтобы не засчитать ответ дважды
+  Timer? _nextSituationTimer;
+  bool _awaitingNext = false;
   bool _isGameOver = false;
+  bool _isNewRecord = false;
   final _random = math.Random();
 
   @override
@@ -76,6 +80,7 @@ class _TrafficControllerScreenState
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _nextSituationTimer?.cancel();
     if (kIsWeb) {
       _browserGame?.dispose();
     }
@@ -182,21 +187,23 @@ class _TrafficControllerScreenState
     if (_mode == mode) return;
     HapticFeedbackHelper.select();
     _countdownTimer?.cancel();
+    _nextSituationTimer?.cancel();
 
     setState(() {
       _mode = mode;
-      if (_mode == GamePlayMode.arcade) {
-        _startArcadeRound();
-      } else {
-        _isGameOver = false;
-        _updateEngineScenario();
-      }
+      _isGameOver = false;
     });
+    if (_mode == GamePlayMode.arcade) {
+      _startArcadeRound();
+    } else {
+      _updateEngineScenario();
+    }
   }
 
   void _startArcadeRound() {
     HapticFeedbackHelper.select();
     _countdownTimer?.cancel();
+    _nextSituationTimer?.cancel();
     setState(() {
       _score = 0;
       _combo = 0;
@@ -205,43 +212,54 @@ class _TrafficControllerScreenState
       _secondsLeft = 35;
       _solvedCount = 0;
       _isGameOver = false;
+      _isNewRecord = false;
+      _awaitingNext = false;
     });
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
-      setState(() {
-        if (_secondsLeft > 1) {
-          _secondsLeft--;
-        } else {
-          _secondsLeft = 0;
-          _endArcadeGame();
-        }
-      });
+      if (_secondsLeft > 1) {
+        setState(() => _secondsLeft--);
+      } else {
+        setState(() => _secondsLeft = 0);
+        _endArcadeGame();
+      }
     });
 
     _nextArcadeSituation();
   }
 
   void _nextArcadeSituation() {
-    // Выбираем случайную комбинацию
     final gestures = ControllerGesture.values;
     final approaches = ApproachDirection.values;
-
-    _curGesture = gestures[_random.nextInt(gestures.length)];
-    _curApproach = approaches[_random.nextInt(approaches.length)];
     // В основном авто (~88%), трамвай появляется редко (~12%) и не два раза подряд
     final wasTram = _curVehicle == VehicleKind.tram;
-    _curVehicle = (!wasTram && _random.nextDouble() < 0.12)
-        ? VehicleKind.tram
-        : VehicleKind.car;
+
+    setState(() {
+      _curGesture = gestures[_random.nextInt(gestures.length)];
+      _curApproach = approaches[_random.nextInt(approaches.length)];
+      _curVehicle = (!wasTram && _random.nextDouble() < 0.12)
+          ? VehicleKind.tram
+          : VehicleKind.car;
+      _awaitingNext = false;
+    });
 
     _updateEngineScenario();
   }
 
+  void _scheduleNextSituation(Duration delay) {
+    _nextSituationTimer?.cancel();
+    _nextSituationTimer = Timer(delay, () {
+      if (mounted && !_isGameOver) {
+        _nextArcadeSituation();
+      }
+    });
+  }
+
   void _onArcadeMoveSelected(TrafficMove move) {
-    if (_isGameOver) return;
+    if (_isGameOver || _awaitingNext) return;
 
     final isAllowed = TrafficControllerRules.isMoveAllowed(
       gesture: _curGesture,
@@ -266,41 +284,37 @@ class _TrafficControllerScreenState
       HapticFeedbackHelper.tap();
       SoundEffectsService.instance.playCorrect();
       setState(() {
+        _awaitingNext = true;
         _combo++;
         if (_combo > _maxComboInRound) _maxComboInRound = _combo;
         _score += 100 * _combo;
         _solvedCount++;
         _secondsLeft = math.min(_secondsLeft + 3, 60);
       });
-      final delayMs = (move == TrafficMove.none) ? 700 : 1250;
-      Future.delayed(Duration(milliseconds: delayMs), () {
-        if (mounted && !_isGameOver) {
-          _nextArcadeSituation();
-        }
-      });
+      _scheduleNextSituation(
+        Duration(milliseconds: move == TrafficMove.none ? 700 : 1250),
+      );
     } else {
       HapticFeedbackHelper.error();
       SoundEffectsService.instance.playIncorrect();
       setState(() {
+        _awaitingNext = true;
         _combo = 0;
         _lives--;
-        if (_lives <= 0) {
-          _endArcadeGame();
-        }
       });
-      if (_lives > 0) {
-        Future.delayed(const Duration(milliseconds: 700), () {
-          if (mounted && !_isGameOver) {
-            _nextArcadeSituation();
-          }
-        });
+      if (_lives <= 0) {
+        _endArcadeGame();
+      } else {
+        _scheduleNextSituation(const Duration(milliseconds: 700));
       }
     }
   }
 
+  /// Конец заезда. Рекорд сравниваем ДО записи, иначе он всегда «побит».
   void _endArcadeGame() {
     _countdownTimer?.cancel();
-    setState(() => _isGameOver = true);
+    _nextSituationTimer?.cancel();
+    final previousBest = ref.read(trafficControllerProgressProvider).bestScore;
 
     ref
         .read(trafficControllerProgressProvider.notifier)
@@ -309,6 +323,11 @@ class _TrafficControllerScreenState
           combo: _maxComboInRound,
           solved: _solvedCount,
         );
+    setState(() {
+      _isNewRecord = _score > 0 && _score > previousBest;
+      _isGameOver = true;
+      _awaitingNext = false;
+    });
   }
 
   void _onTrainingMoveTest(TrafficMove move) {
@@ -530,7 +549,7 @@ class _TrafficControllerScreenState
             children: [
               Expanded(
                 child: _buildPillChoice(
-                  title: 'Рука вперёд',
+                  title: appL10n.gameGestureRightArm,
                   selected: _curGesture == ControllerGesture.rightArmForward,
                   onTap: () {
                     setState(
@@ -543,7 +562,7 @@ class _TrafficControllerScreenState
               const SizedBox(width: 6),
               Expanded(
                 child: _buildPillChoice(
-                  title: 'Руки в стороны',
+                  title: appL10n.gameGestureHandsSides,
                   selected: _curGesture == ControllerGesture.handsDownOrSides,
                   onTap: () {
                     setState(
@@ -556,7 +575,7 @@ class _TrafficControllerScreenState
               const SizedBox(width: 6),
               Expanded(
                 child: _buildPillChoice(
-                  title: 'Рука вверх',
+                  title: appL10n.gameGestureArmUp,
                   selected: _curGesture == ControllerGesture.armUp,
                   onTap: () {
                     setState(() => _curGesture = ControllerGesture.armUp);
@@ -573,7 +592,7 @@ class _TrafficControllerScreenState
             children: [
               Expanded(
                 child: _buildPillChoice(
-                  title: 'Слева',
+                  title: appL10n.gameApproachLeft,
                   selected: _curApproach == ApproachDirection.left,
                   onTap: () {
                     setState(() => _curApproach = ApproachDirection.left);
@@ -584,7 +603,7 @@ class _TrafficControllerScreenState
               const SizedBox(width: 6),
               Expanded(
                 child: _buildPillChoice(
-                  title: 'С груди',
+                  title: appL10n.gameApproachFront,
                   selected: _curApproach == ApproachDirection.front,
                   onTap: () {
                     setState(() => _curApproach = ApproachDirection.front);
@@ -595,7 +614,7 @@ class _TrafficControllerScreenState
               const SizedBox(width: 6),
               Expanded(
                 child: _buildPillChoice(
-                  title: 'Справа',
+                  title: appL10n.gameApproachRight,
                   selected: _curApproach == ApproachDirection.right,
                   onTap: () {
                     setState(() => _curApproach = ApproachDirection.right);
@@ -606,7 +625,7 @@ class _TrafficControllerScreenState
               const SizedBox(width: 6),
               Expanded(
                 child: _buildPillChoice(
-                  title: 'Со спины',
+                  title: appL10n.gameApproachBack,
                   selected: _curApproach == ApproachDirection.back,
                   onTap: () {
                     setState(() => _curApproach = ApproachDirection.back);
@@ -652,30 +671,35 @@ class _TrafficControllerScreenState
           Row(
             children: [
               _buildMoveTestBtn(
+                colors: colors,
                 label: appL10n.gameActionStraight,
                 isAllowed: allowed.contains(TrafficMove.straight),
                 onTap: () => _onTrainingMoveTest(TrafficMove.straight),
               ),
               const SizedBox(width: 4),
               _buildMoveTestBtn(
+                colors: colors,
                 label: appL10n.gameActionRight,
                 isAllowed: allowed.contains(TrafficMove.right),
                 onTap: () => _onTrainingMoveTest(TrafficMove.right),
               ),
               const SizedBox(width: 4),
               _buildMoveTestBtn(
+                colors: colors,
                 label: appL10n.gameActionLeft,
                 isAllowed: allowed.contains(TrafficMove.left),
                 onTap: () => _onTrainingMoveTest(TrafficMove.left),
               ),
               const SizedBox(width: 4),
               _buildMoveTestBtn(
+                colors: colors,
                 label: appL10n.gameActionUTurn,
                 isAllowed: allowed.contains(TrafficMove.uTurn),
                 onTap: () => _onTrainingMoveTest(TrafficMove.uTurn),
               ),
               const SizedBox(width: 4),
               _buildMoveTestBtn(
+                colors: colors,
                 label: appL10n.gameActionStand,
                 isAllowed: allowed.contains(TrafficMove.none),
                 onTap: () => _onTrainingMoveTest(TrafficMove.none),
@@ -746,6 +770,7 @@ class _TrafficControllerScreenState
   }
 
   Widget _buildMoveTestBtn({
+    required AppThemeColors colors,
     required String label,
     required bool isAllowed,
     required VoidCallback onTap,
@@ -757,11 +782,11 @@ class _TrafficControllerScreenState
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: isAllowed
-                ? const Color(0xFF00E676).withValues(alpha: 0.25)
+                ? colors.green.withValues(alpha: 0.25)
                 : Colors.white10,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isAllowed ? const Color(0xFF00E676) : Colors.white24,
+              color: isAllowed ? colors.green : Colors.white24,
             ),
           ),
           child: Column(
@@ -773,13 +798,13 @@ class _TrafficControllerScreenState
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: isAllowed ? const Color(0xFF00E676) : Colors.white60,
+                  color: isAllowed ? colors.green : Colors.white60,
                 ),
               ),
               Icon(
                 isAllowed ? Icons.check_circle_rounded : Icons.block_rounded,
                 size: 14,
-                color: isAllowed ? const Color(0xFF00E676) : Colors.white38,
+                color: isAllowed ? colors.green : Colors.white38,
               ),
             ],
           ),
@@ -820,10 +845,10 @@ class _TrafficControllerScreenState
                   if (_combo > 1)
                     Text(
                       '${appL10n.gameCombo} x$_combo 🔥',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: Colors.orangeAccent,
+                        color: colors.gold,
                       ),
                     ),
                 ],
@@ -837,12 +862,12 @@ class _TrafficControllerScreenState
                 ),
                 decoration: BoxDecoration(
                   color: _secondsLeft <= 10
-                      ? Colors.redAccent.withValues(alpha: 0.3)
+                      ? colors.red.withValues(alpha: 0.3)
                       : Colors.white12,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: _secondsLeft <= 10
-                        ? Colors.redAccent
+                        ? colors.red
                         : Colors.white24,
                   ),
                 ),
@@ -852,17 +877,17 @@ class _TrafficControllerScreenState
                       Icons.timer_outlined,
                       size: 16,
                       color: _secondsLeft <= 10
-                          ? Colors.redAccent
+                          ? colors.red
                           : Colors.white,
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '$_secondsLeft с',
+                      appL10n.gameSecondsLeft(_secondsLeft),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
                         color: _secondsLeft <= 10
-                            ? Colors.redAccent
+                            ? colors.red
                             : Colors.white,
                       ),
                     ),
@@ -881,7 +906,7 @@ class _TrafficControllerScreenState
                           ? Icons.favorite_rounded
                           : Icons.favorite_border_rounded,
                       size: 20,
-                      color: alive ? Colors.redAccent : Colors.white24,
+                      color: alive ? colors.red : Colors.white24,
                     ),
                   );
                 }),
@@ -912,8 +937,8 @@ class _TrafficControllerScreenState
               Flexible(
                 child: Text(
                   _curVehicle == VehicleKind.car
-                      ? 'Куда разрешено поехать автомобилю?'
-                      : 'Куда разрешено поехать трамваю?',
+                      ? appL10n.gameQuestionCarAllowed
+                      : appL10n.gameQuestionTramAllowed,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 13,
@@ -1004,9 +1029,6 @@ class _TrafficControllerScreenState
 
   // --- Оверлей окончания игры ---
   Widget _buildGameOverOverlay(AppThemeColors colors) {
-    final progress = ref.watch(trafficControllerProgressProvider);
-    final isNewRecord = _score > progress.bestScore;
-
     return Container(
       color: Colors.black87,
       padding: const EdgeInsets.all(AppDimensions.screenPadding),
@@ -1027,9 +1049,9 @@ class _TrafficControllerScreenState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.emoji_events_rounded,
-                color: Colors.amber,
+                color: colors.gold,
                 size: 54,
               ),
               const SizedBox(height: 12),
@@ -1041,20 +1063,20 @@ class _TrafficControllerScreenState
                 ),
               ),
               const SizedBox(height: 8),
-              if (isNewRecord)
+              if (_isNewRecord)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.2),
+                    color: colors.gold.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     appL10n.gameOverNewRecord,
-                    style: const TextStyle(
-                      color: Colors.orange,
+                    style: TextStyle(
+                      color: colors.gold,
                       fontWeight: FontWeight.w800,
                       fontSize: 13,
                     ),

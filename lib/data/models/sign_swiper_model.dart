@@ -1,4 +1,5 @@
 import 'package:pdd_app/core/config/country_config.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 
 /// Модель единичного дорожного знака из базы `signs.json`.
 class SignItem {
@@ -82,10 +83,12 @@ class SignCardQuestion {
   }
 
   /// Текст для правого свайпа / кнопки согласия («МОЖНО» или «ДА»).
-  String get rightActionLabel => isPermissionQuestion ? 'МОЖНО' : 'ДА';
+  String get rightActionLabel =>
+      isPermissionQuestion ? appL10n.gameSignCan : appL10n.gameSignYes;
 
   /// Текст для левого свайпа / кнопки несогласия («НЕЛЬЗЯ» или «НЕТ»).
-  String get leftActionLabel => isPermissionQuestion ? 'НЕЛЬЗЯ' : 'НЕТ';
+  String get leftActionLabel =>
+      isPermissionQuestion ? appL10n.gameSignCannot : appL10n.gameSignNo;
 }
 
 /// Сохранённый прогресс игрока в игре «Знак-Свайпер».

@@ -923,5 +923,31 @@
         "type": "int"
       }
     }
-  }
+  },
+  "gamesHubSoonSection": "Скоро в играх",
+  "gameSoonBadge": "Скоро",
+  "gameRoundaboutTitle": "Круговое движение 3D",
+  "gameRoundaboutSubtitle": "Въезд с любой полосы, съезд — только с крайней правой (п. 8.5 ПДД)",
+  "gameGestureRightArm": "Рука вперёд",
+  "gameGestureHandsSides": "Руки в стороны",
+  "gameGestureArmUp": "Рука вверх",
+  "gameApproachLeft": "Слева",
+  "gameApproachFront": "С груди",
+  "gameApproachRight": "Справа",
+  "gameApproachBack": "Со спины",
+  "gameQuestionCarAllowed": "Куда разрешено поехать автомобилю?",
+  "gameQuestionTramAllowed": "Куда разрешено поехать трамваю?",
+  "gameSecondsLeft": "{seconds} с",
+  "@gameSecondsLeft": {"placeholders": {"seconds": {"type": "int"}}},
+  "gameSignsLoadError": "Не удалось загрузить знаки",
+  "gameRetry": "Повторить",
+  "gameRestartRound": "Начать сначала",
+  "gameSignYes": "ДА",
+  "gameSignNo": "НЕТ",
+  "gameSignCan": "МОЖНО",
+  "gameSignCannot": "НЕЛЬЗЯ",
+  "gameSwipeHint": "Свайп вправо — {right} • влево — {left}",
+  "@gameSwipeHint": {"placeholders": {"right": {"type": "String"}, "left": {"type": "String"}}},
+  "gameUnderstood": "Понятно",
+  "gamePddOfficialText": "ПДД РФ:"
 }
