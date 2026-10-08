@@ -707,25 +707,47 @@
     headMesh.castShadow = true;
     inspectorGroup.add(headMesh);
 
-    // Очки / солнцезащитный козырек
-    const glasses = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.07, 0.06), leatherMat);
-    glasses.position.set(0, 2.16, 0.18);
-    inspectorGroup.add(glasses);
+    // Глаза, брови, нос регулировщика
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.024, 8, 8), leatherMat);
+    eyeL.position.set(-0.075, 2.14, 0.202);
+    inspectorGroup.add(eyeL);
 
-    // Фуражка ДПС (тулья, околыш, козырек, золотая кокарда)
-    const capCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.27, 0.15, 20), uniformMat);
+    const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.024, 8, 8), leatherMat);
+    eyeR.position.set(0.075, 2.14, 0.202);
+    inspectorGroup.add(eyeR);
+
+    const browL = new THREE.Mesh(new THREE.BoxGeometry(0.048, 0.012, 0.015), leatherMat);
+    browL.position.set(-0.075, 2.18, 0.204);
+    browL.rotation.z = -0.05;
+    inspectorGroup.add(browL);
+
+    const browR = new THREE.Mesh(new THREE.BoxGeometry(0.048, 0.012, 0.015), leatherMat);
+    browR.position.set(0.075, 2.18, 0.204);
+    browR.rotation.z = 0.05;
+    inspectorGroup.add(browR);
+
+    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.05, 0.035), skinMat);
+    nose.position.set(0, 2.12, 0.215);
+    inspectorGroup.add(nose);
+
+    // Фуражка ДПС (тулья, околыш, аккуратный козырек, золотая кокарда)
+    const capCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.25, 0.14, 20), uniformMat);
     capCrown.position.set(0, 2.34, -0.02);
     capCrown.rotation.x = -0.05;
     inspectorGroup.add(capCrown);
 
-    const capVisor = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.04, 18, 1, false, 0, Math.PI), leatherMat);
-    capVisor.rotation.x = 0.25;
-    capVisor.position.set(0, 2.27, 0.12);
+    const capBand = new THREE.Mesh(new THREE.CylinderGeometry(0.245, 0.245, 0.06, 20), leatherMat);
+    capBand.position.set(0, 2.25, 0.01);
+    inspectorGroup.add(capBand);
+
+    const capVisor = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.018, 0.11), leatherMat);
+    capVisor.position.set(0, 2.23, 0.21);
+    capVisor.rotation.x = 0.22;
     inspectorGroup.add(capVisor);
 
-    const cockade = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.02, 10), goldMat);
+    const cockade = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.02, 12), goldMat);
     cockade.rotation.x = Math.PI / 2;
-    cockade.position.set(0, 2.32, 0.26);
+    cockade.position.set(0, 2.30, 0.245);
     inspectorGroup.add(cockade);
 
     // Левая рука (плечо + предплечье + кисть)
@@ -995,8 +1017,13 @@
 
   function updateTrajectoryArrows() {
     while (arrowsGroup.children.length > 0) {
-      arrowsGroup.remove(arrowsGroup.children[0]);
+      const child = arrowsGroup.children[0];
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) child.material.dispose();
+      arrowsGroup.remove(child);
     }
+
+    if (currentMode === 'arcade' && !isMoving) return;
 
     const allowed = getAllowedMoves(currentGesture, currentApproach, currentVehicle);
     const originX = (currentVehicle === VEHICLES.CAR) ? 3.2 : -2.2;
@@ -1004,71 +1031,115 @@
 
     // Стрелка прямо
     const canStraight = allowed.includes(MOVES.STRAIGHT);
-    addArrowCurve(
-      originX, originZ,
-      originX, -10,
-      canStraight,
-      MOVES.STRAIGHT
+    addRoadRibbonArrow(
+      new THREE.LineCurve3(
+        new THREE.Vector3(originX, 0.046, originZ),
+        new THREE.Vector3(originX, 0.046, -11.0)
+      ),
+      canStraight
     );
 
-    // Стрелка направо
+    // Стрелка направо (для авто)
     const canRight = allowed.includes(MOVES.RIGHT);
     if (currentVehicle === VEHICLES.CAR || canRight) {
-      addArrowCurve(
-        originX, originZ,
-        originX + 12, originZ - 4,
-        canRight,
-        MOVES.RIGHT
+      addRoadRibbonArrow(
+        new THREE.QuadraticBezierCurve3(
+          new THREE.Vector3(originX, 0.046, originZ),
+          new THREE.Vector3(originX, 0.046, 2.4),
+          new THREE.Vector3(12.0, 0.046, 2.4)
+        ),
+        canRight
       );
     }
 
-    // Стрелка налево
+    // Стрелка налево (для авто)
     const canLeft = allowed.includes(MOVES.LEFT);
-    if (canLeft) {
-      addArrowCurve(
-        originX, originZ,
-        -12, 0,
-        canLeft,
-        MOVES.LEFT
+    if (currentVehicle === VEHICLES.CAR || canLeft) {
+      addRoadRibbonArrow(
+        new THREE.CubicBezierCurve3(
+          new THREE.Vector3(originX, 0.046, originZ),
+          new THREE.Vector3(originX, 0.046, 2.0),
+          new THREE.Vector3(0.0, 0.046, -2.4),
+          new THREE.Vector3(-12.0, 0.046, -2.4)
+        ),
+        canLeft
       );
     }
   }
 
-  function addArrowCurve(startX, startZ, endX, endZ, isAllowed, moveType) {
-    if (currentMode === 'arcade' && !isMoving) return;
+  function addRoadRibbonArrow(curve, isAllowed, width) {
+    const ribbonWidth = width || 0.44;
+    const numPoints = 28;
+    const points = curve.getPoints(numPoints);
+    const ribbonPointCount = numPoints - 1;
+    const vertices = [];
+    const indices = [];
 
-    const color = isAllowed ? 0x00E676 : 0x555A68;
-    const arrowMat = new THREE.MeshBasicMaterial({
-      color: color,
+    const halfW = ribbonWidth / 2;
+    for (let i = 0; i <= ribbonPointCount; i++) {
+      const p = points[i];
+      let tx, tz;
+      if (i === 0) {
+        tx = points[1].x - points[0].x;
+        tz = points[1].z - points[0].z;
+      } else if (i === ribbonPointCount) {
+        tx = points[i].x - points[i - 1].x;
+        tz = points[i].z - points[i - 1].z;
+      } else {
+        tx = points[i + 1].x - points[i - 1].x;
+        tz = points[i + 1].z - points[i - 1].z;
+      }
+      const len = Math.hypot(tx, tz) || 1;
+      const nx = (-tz / len) * halfW;
+      const nz = (tx / len) * halfW;
+
+      vertices.push(p.x + nx, 0.046, p.z + nz);
+      vertices.push(p.x - nx, 0.046, p.z - nz);
+
+      if (i < ribbonPointCount) {
+        const v0 = i * 2;
+        const v1 = i * 2 + 1;
+        const v2 = (i + 1) * 2;
+        const v3 = (i + 1) * 2 + 1;
+        indices.push(v0, v1, v2);
+        indices.push(v2, v1, v3);
+      }
+    }
+
+    // Плоский треугольный наконечник стрелки на проезжей части
+    const lastP = points[ribbonPointCount];
+    const tipP = points[numPoints];
+    const atx = tipP.x - lastP.x;
+    const atz = tipP.z - lastP.z;
+    const alen = Math.hypot(atx, atz) || 1;
+    const wingW = halfW * 2.2;
+    const anx = (-atz / alen) * wingW;
+    const anz = (atx / alen) * wingW;
+
+    const baseIdx = (ribbonPointCount + 1) * 2;
+    vertices.push(lastP.x + anx, 0.047, lastP.z + anz);
+    vertices.push(lastP.x - anx, 0.047, lastP.z - anz);
+    const tipExtX = tipP.x + (atx / alen) * 0.45;
+    const tipExtZ = tipP.z + (atz / alen) * 0.45;
+    vertices.push(tipExtX, 0.047, tipExtZ);
+
+    indices.push(baseIdx, baseIdx + 1, baseIdx + 2);
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+
+    const mat = new THREE.MeshBasicMaterial({
+      color: isAllowed ? 0x00E676 : 0x525866,
       transparent: true,
-      opacity: isAllowed ? 0.9 : 0.25,
+      opacity: isAllowed ? 0.95 : 0.22,
+      side: THREE.DoubleSide,
+      depthWrite: false,
     });
 
-    const curve = new THREE.QuadraticBezierCurve3(
-      new THREE.Vector3(startX, 0.05, startZ),
-      new THREE.Vector3((startX + endX) * 0.5, 0.05, (startZ + endZ) * 0.5),
-      new THREE.Vector3(endX, 0.05, endZ)
-    );
-
-    const points = curve.getPoints(24);
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    const lineMat = new THREE.LineBasicMaterial({
-      color: color,
-      linewidth: 3,
-      transparent: true,
-      opacity: isAllowed ? 0.95 : 0.25,
-    });
-    const line = new THREE.Line(geometry, lineMat);
-    arrowsGroup.add(line);
-
-    // Наконечник стрелки
-    const coneGeo = new THREE.ConeGeometry(0.4, 0.9, 12);
-    const cone = new THREE.Mesh(coneGeo, arrowMat);
-    cone.position.set(endX, 0.06, endZ);
-    cone.rotation.x = Math.PI / 2;
-    const dir = new THREE.Vector3(endX - startX, 0, endZ - startZ).normalize();
-    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-    arrowsGroup.add(cone);
+    const mesh = new THREE.Mesh(geo, mat);
+    arrowsGroup.add(mesh);
   }
 
   // --- Переключение сценария и поз регулировщика ---
@@ -1162,25 +1233,27 @@
     if (moveType === MOVES.STRAIGHT) {
       moveCurve = new THREE.LineCurve3(
         new THREE.Vector3(startX, 0, startZ),
-        new THREE.Vector3(startX, 0, -16)
+        new THREE.Vector3(startX, 0, -18)
       );
     } else if (moveType === MOVES.RIGHT) {
       moveCurve = new THREE.QuadraticBezierCurve3(
         new THREE.Vector3(startX, 0, startZ),
-        new THREE.Vector3(startX + 1.5, 0, 0.5),
-        new THREE.Vector3(18, 0, 0.5)
+        new THREE.Vector3(startX, 0, 2.4),
+        new THREE.Vector3(18, 0, 2.4)
       );
     } else if (moveType === MOVES.LEFT) {
-      moveCurve = new THREE.QuadraticBezierCurve3(
+      moveCurve = new THREE.CubicBezierCurve3(
         new THREE.Vector3(startX, 0, startZ),
-        new THREE.Vector3(-1.0, 0, 0.5),
-        new THREE.Vector3(-18, 0, -0.5)
+        new THREE.Vector3(startX, 0, 2.0),
+        new THREE.Vector3(0.0, 0, -2.4),
+        new THREE.Vector3(-18, 0, -2.4)
       );
     } else if (moveType === MOVES.UTURN) {
-      moveCurve = new THREE.QuadraticBezierCurve3(
+      moveCurve = new THREE.CubicBezierCurve3(
         new THREE.Vector3(startX, 0, startZ),
-        new THREE.Vector3(-1.5, 0, 2.0),
-        new THREE.Vector3(startX - 2.5, 0, 18)
+        new THREE.Vector3(startX, 0, 2.0),
+        new THREE.Vector3(-2.8, 0, 2.0),
+        new THREE.Vector3(-2.8, 0, 18)
       );
     }
 

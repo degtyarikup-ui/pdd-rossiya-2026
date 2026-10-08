@@ -404,7 +404,7 @@ class _TrafficControllerScreenState
           onTap: () => Navigator.of(context).pop(),
           backgroundColor: Colors.black.withValues(alpha: 0.55),
         ),
-        const SizedBox(width: 8),
+        const Spacer(),
 
         // Mode switch pill
         Container(

@@ -3007,7 +3007,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameSignSwiperModeSprint.
   ///
   /// In ru, this message translates to:
-  /// **'Блиц-спринт'**
+  /// **'Блиц-аркада'**
   String get gameSignSwiperModeSprint;
 
   /// No description provided for @gameSignSwiperModeSprintDesc.
@@ -3019,7 +3019,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameSignSwiperModeTraining.
   ///
   /// In ru, this message translates to:
-  /// **'Тренировка'**
+  /// **'Обучение'**
   String get gameSignSwiperModeTraining;
 
   /// No description provided for @gameSignSwiperModeTrainingDesc.

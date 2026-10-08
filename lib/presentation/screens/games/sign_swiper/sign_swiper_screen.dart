@@ -22,7 +22,7 @@ class SignSwiperScreen extends ConsumerStatefulWidget {
 
   const SignSwiperScreen({
     super.key,
-    this.initialMode = SignSwiperMode.sprint,
+    this.initialMode = SignSwiperMode.training,
   });
 
   @override
@@ -357,19 +357,19 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
             Expanded(
               child: _buildTabButton(
                 colors: colors,
-                title: appL10n.gameSignSwiperModeSprint,
-                icon: Icons.bolt_rounded,
-                isSelected: _mode == SignSwiperMode.sprint,
-                onTap: () => _switchMode(SignSwiperMode.sprint),
+                title: appL10n.gameSignSwiperModeTraining,
+                icon: Icons.school_rounded,
+                isSelected: _mode == SignSwiperMode.training,
+                onTap: () => _switchMode(SignSwiperMode.training),
               ),
             ),
             Expanded(
               child: _buildTabButton(
                 colors: colors,
-                title: appL10n.gameSignSwiperModeTraining,
-                icon: Icons.school_rounded,
-                isSelected: _mode == SignSwiperMode.training,
-                onTap: () => _switchMode(SignSwiperMode.training),
+                title: appL10n.gameSignSwiperModeSprint,
+                icon: Icons.bolt_rounded,
+                isSelected: _mode == SignSwiperMode.sprint,
+                onTap: () => _switchMode(SignSwiperMode.sprint),
               ),
             ),
           ],
