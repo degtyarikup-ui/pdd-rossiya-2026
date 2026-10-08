@@ -105,6 +105,10 @@ test('оплата: платёж, уведомление, срок один ра
     const end = Date.parse(paid.premiumExpiresAt);
     assert.ok(Math.abs(end - (Date.now() + 90 * 86400000)) < 60000);
 
+    // Синхронизация профиля приложением не стирает отметку об оплате.
+    await worker.fetch(req('/api/user/sync', { id: 'google_1', name: 'Анна', email: 'anna@example.com', provider: 'google' }, token), env);
+    assert.ok(user(env).webPayments[start.order]);
+
     // Повторное уведомление и проверка после возврата не продлевают ещё раз.
     await callback(env, { id: tx.id, status: 'CONFIRMED', payload: start.order });
     const check = await (await worker.fetch(req('/api/user/pay-check', { order: start.order }, token), env)).json();

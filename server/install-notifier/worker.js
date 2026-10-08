@@ -2840,6 +2840,10 @@ async function saveUserProfile(env, user) {
     premiumExpiresAt,
     premiumSource,
     entitlements: existing?.entitlements || undefined,
+    // Оплаты на сайте (защита от повторного начисления и снятие срока при
+    // возврате денег) и дата покупки — синхронизация профиля их не трогает.
+    webPayments: existing?.webPayments || undefined,
+    purchasedAt: existing?.purchasedAt || undefined,
     autoRenewEnabled: existing?.autoRenewEnabled ?? null,
     verifiedPurchase: existing?.verifiedPurchase || null,
     storeVerifiedAt: existing?.storeVerifiedAt || null,
