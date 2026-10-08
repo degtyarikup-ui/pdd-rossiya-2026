@@ -146,8 +146,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     _totalSwipedInRound++;
 
     if (isCorrect) {
-      SoundEffectsService.instance.playCorrect();
-      HapticFeedbackHelper.softSuccess();
+      HapticFeedbackHelper.tap();
 
       _correctAnswers++;
       _combo++;
@@ -156,11 +155,13 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
       _secondsLeft = (_secondsLeft + 2).clamp(1, 60);
 
       if (_combo == 5 || _combo == 10 || _combo == 20) {
-        SoundEffectsService.instance.playStreak();
+        SoundEffectsService.instance.playStreak(volume: 0.45);
+      } else {
+        SoundEffectsService.instance.playCorrect(volume: 0.38);
       }
     } else {
-      SoundEffectsService.instance.playIncorrect();
-      HapticFeedbackHelper.error();
+      SoundEffectsService.instance.playIncorrect(volume: 0.30);
+      HapticFeedbackHelper.warning();
 
       _combo = 0;
       _lives--;
@@ -321,12 +322,19 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
             // Следующая карточка: край колоды, без содержимого.
             Positioned.fill(
               child: Transform.translate(
-                offset: const Offset(0, 22),
+                offset: const Offset(0, 18),
                 child: Transform.scale(
-                  scale: 0.92,
+                  scale: 0.97,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: colors.cardBackground.withValues(alpha: 0.7),
+                      color: Color.lerp(
+                        colors.cardBackground,
+                        colors.accent,
+                        0.08,
+                      ),
+                      border: Border.all(
+                        color: colors.accent.withValues(alpha: 0.12),
+                      ),
                       borderRadius: BorderRadius.circular(
                         AppDimensions.radiusExtraLarge,
                       ),
@@ -366,10 +374,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
             color: colors.red,
             surface: colors.red,
             iconColor: Colors.white,
-            onTap: () {
-              HapticFeedbackHelper.tap();
-              _cardController.swipeLeft();
-            },
+            onTap: _cardController.swipeLeft,
           ),
           GameRoundButton(
             icon: Icons.check_rounded,
@@ -377,10 +382,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
             color: const Color(0xFF168A55),
             surface: const Color(0xFF168A55),
             iconColor: Colors.white,
-            onTap: () {
-              HapticFeedbackHelper.tap();
-              _cardController.swipeRight();
-            },
+            onTap: _cardController.swipeRight,
           ),
         ],
       ),

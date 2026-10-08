@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
+import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
@@ -41,15 +42,20 @@ class SwipeCardView extends StatefulWidget {
 }
 
 class SwipeCardViewState extends State<SwipeCardView>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static const double _threshold = 95.0;
 
   late final AnimationController _anim;
+  late final AnimationController _entrance;
   Animation<Offset>? _offsetAnim;
   Animation<double>? _rotationAnim;
 
-  Offset _drag = Offset.zero;
+  final _dragOffset = ValueNotifier<Offset>(Offset.zero);
+  Offset get _drag => _dragOffset.value;
+  set _drag(Offset value) => _dragOffset.value = value;
   bool _animatingOut = false;
+  bool _entered = false;
+  bool _thresholdTicked = false;
 
   @override
   void initState() {
@@ -58,7 +64,26 @@ class SwipeCardViewState extends State<SwipeCardView>
       vsync: this,
       duration: const Duration(milliseconds: 240),
     );
+    _entrance = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+    );
     widget.controller?.attach(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    _anim.duration = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 240);
+    if (reduceMotion) {
+      _entrance.value = 1;
+    } else if (!_entered) {
+      _entrance.forward();
+    }
+    _entered = true;
   }
 
   @override
@@ -74,6 +99,8 @@ class SwipeCardViewState extends State<SwipeCardView>
   void dispose() {
     widget.controller?.detach(this);
     _anim.dispose();
+    _entrance.dispose();
+    _dragOffset.dispose();
     super.dispose();
   }
 
@@ -91,17 +118,24 @@ class SwipeCardViewState extends State<SwipeCardView>
       begin: _drag.dx / 300 * 0.25,
       end: toAngle,
     ).animate(CurvedAnimation(parent: _anim, curve: curve));
-    _anim.forward(from: 0).then((_) => onDone());
+    _anim.forward(from: 0).then((_) {
+      if (mounted) onDone();
+    });
   }
 
   /// Программный свайп — по нажатию кнопки.
   void triggerSwipe(bool isRight) {
     if (_animatingOut) return;
     _animatingOut = true;
+    _entrance.value = 1;
+    if (!_thresholdTicked) HapticFeedbackHelper.select();
     _animate(
-      toOffset: Offset(isRight ? 450 : -450, _drag.dy * 0.5),
-      toAngle: isRight ? 0.35 : -0.35,
-      curve: Curves.easeOutCubic,
+      toOffset: Offset(
+        (MediaQuery.sizeOf(context).width + 100) * (isRight ? 1 : -1),
+        -38,
+      ),
+      toAngle: isRight ? 0.20 : -0.20,
+      curve: Curves.easeInQuad,
       onDone: () {
         if (mounted) {
           setState(() {
@@ -109,6 +143,7 @@ class SwipeCardViewState extends State<SwipeCardView>
             _animatingOut = false;
             _offsetAnim = null;
             _rotationAnim = null;
+            _thresholdTicked = false;
           });
         }
         widget.onSwiped(isRight);
@@ -117,12 +152,25 @@ class SwipeCardViewState extends State<SwipeCardView>
   }
 
   void _onHorizontalDragStart(DragStartDetails details) {
-    if (!_animatingOut) _anim.stop();
+    if (_animatingOut) return;
+    _entrance.value = 1;
+    // Picking up a returning card starts at its visible position.
+    if (_anim.isAnimating) _drag = _offsetAnim?.value ?? _drag;
+    _anim.stop();
+    _offsetAnim = null;
+    _rotationAnim = null;
+    _thresholdTicked = false;
   }
 
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
     if (_animatingOut) return;
-    setState(() => _drag += Offset(details.delta.dx, 0));
+    // Only the transform/answer hint follows the finger; SVG, reflection
+    // and question layout stay cached instead of rebuilding on each move.
+    _drag += Offset(details.delta.dx, 0);
+    if (!_thresholdTicked && _drag.dx.abs() >= _threshold) {
+      _thresholdTicked = true;
+      HapticFeedbackHelper.select();
+    }
   }
 
   void _onHorizontalDragEnd(DragEndDetails details) {
@@ -136,15 +184,23 @@ class SwipeCardViewState extends State<SwipeCardView>
     if (reached) {
       triggerSwipe(_drag.dx > 0);
     } else {
-      _animate(
-        toOffset: Offset.zero,
-        toAngle: 0,
-        curve: Curves.easeOutBack,
-        onDone: () {
-          if (mounted) setState(() => _drag = Offset.zero);
-        },
-      );
+      _returnToDeck();
     }
+  }
+
+  void _returnToDeck() {
+    if (_animatingOut || (_drag == Offset.zero && !_anim.isAnimating)) return;
+    _animate(
+      toOffset: Offset.zero,
+      toAngle: 0,
+      curve: Curves.easeOutCubic,
+      onDone: () => setState(() {
+        _drag = Offset.zero;
+        _offsetAnim = null;
+        _rotationAnim = null;
+        _thresholdTicked = false;
+      }),
+    );
   }
 
   @override
@@ -153,7 +209,7 @@ class SwipeCardViewState extends State<SwipeCardView>
     final card = widget.card;
 
     return AnimatedBuilder(
-      animation: _anim,
+      animation: Listenable.merge([_anim, _entrance, _dragOffset]),
       child: RepaintBoundary(
         child: Padding(
           padding: const EdgeInsets.all(AppDimensions.spacingXXL),
@@ -168,6 +224,7 @@ class SwipeCardViewState extends State<SwipeCardView>
             _anim.isAnimating && _offsetAnim != null && _rotationAnim != null;
         final offset = animating ? _offsetAnim!.value : _drag;
         final angle = animating ? _rotationAnim!.value : _drag.dx / 300 * 0.25;
+        final entrance = Curves.easeOutCubic.transform(_entrance.value);
 
         final progress = (offset.dx / _threshold).clamp(-1.0, 1.0);
         final strength = progress.abs();
@@ -180,17 +237,24 @@ class SwipeCardViewState extends State<SwipeCardView>
         )!;
 
         return Transform.translate(
-          offset: offset,
+          offset: offset + Offset(0, 16 * (1 - entrance)),
           child: Transform(
             alignment: Alignment.center,
             transform: Matrix4.identity()
               ..setEntry(3, 2, 0.001)
+              ..scaleByDouble(
+                0.97 + 0.03 * entrance,
+                0.97 + 0.03 * entrance,
+                1,
+                1,
+              )
               ..rotateY(-progress * 0.14)
-              ..rotateZ(angle),
+              ..rotateZ(angle - 0.012 * (1 - entrance)),
             child: GestureDetector(
               onHorizontalDragStart: _onHorizontalDragStart,
               onHorizontalDragUpdate: _onHorizontalDragUpdate,
               onHorizontalDragEnd: _onHorizontalDragEnd,
+              onHorizontalDragCancel: _returnToDeck,
               onTap: widget.onCardTap,
               child: Container(
                 width: double.infinity,
@@ -210,15 +274,7 @@ class SwipeCardViewState extends State<SwipeCardView>
                         : Colors.white,
                     width: 1.5,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? const Color(0xFF172536)
-                          : const Color(0xFFCCD6E5),
-                      offset: const Offset(0, 7),
-                    ),
-                    ...gameSoftShadow(colors),
-                  ],
+                  boxShadow: gameSoftShadow(colors),
                   borderRadius: BorderRadius.circular(
                     AppDimensions.radiusExtraLarge,
                   ),
@@ -271,9 +327,9 @@ class SwipeCardViewState extends State<SwipeCardView>
   ) {
     final card = widget.card;
     final promptStyle = TextStyle(
-      fontSize: 18,
-      fontWeight: FontWeight.w600,
-      height: 1.35,
+      fontSize: 22,
+      fontWeight: FontWeight.w700,
+      height: 1.25,
       color: colors.primaryText,
     );
     final scopeStyle = TextStyle(fontSize: 11, color: colors.secondaryText);
@@ -314,21 +370,23 @@ class SwipeCardViewState extends State<SwipeCardView>
             height: signHeight,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFDFEFE),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFFE2E9F2)),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0xFFCFD9E5), offset: Offset(0, 4)),
-                    BoxShadow(
-                      color: Color(0x160C2848),
-                      blurRadius: 14,
-                      offset: Offset(0, 9),
-                    ),
+              child: ShaderMask(
+                // Specular light follows the actual SVG alpha, including
+                // triangles/circles. No rectangular plate or new bitmap.
+                blendMode: BlendMode.srcATop,
+                shaderCallback: (bounds) => const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0x0A10263C),
+                    Color(0x00FFFFFF),
+                    Color(0x38FFFFFF),
+                    Color(0x0CFFFFFF),
+                    Color(0x00FFFFFF),
+                    Color(0x1010263C),
                   ],
-                ),
+                  stops: [0, 0.28, 0.42, 0.48, 0.59, 1],
+                ).createShader(bounds),
                 child: _SignImage(sign: card.sign),
               ),
             ),

@@ -72,6 +72,7 @@ void main() {
     WidgetTester tester,
     Widget screen, {
     double textScale = 1,
+    bool disableAnimations = false,
     Size size = const Size(390, 844),
     Map<String, dynamic>? signData,
   }) async {
@@ -88,9 +89,10 @@ void main() {
         child: MaterialApp(
           theme: AppTheme.lightTheme,
           builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(textScaler: TextScaler.linear(textScale)),
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(textScale),
+              disableAnimations: disableAnimations,
+            ),
             child: child!,
           ),
           home: screen,
@@ -200,6 +202,56 @@ void main() {
     await tester.pump(const Duration(seconds: 65));
     expect(find.byType(GameResultOverlay), findsNothing);
     expect(progress.getSignSwiperProgress().totalSwiped, 0);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('Swipe commits once, cancels safely and honors reduced motion', (
+    tester,
+  ) async {
+    final card = SignSwiperEngine(
+      allSigns: SignSwiperEngine.parseSignsJson(signs),
+    ).generateDeck(count: 1).single;
+    final controller = SwipeCardController();
+    final swipes = <bool>[];
+    Widget view() => Scaffold(
+      body: Center(
+        child: SizedBox(
+          width: 300,
+          height: 500,
+          child: SwipeCardView(
+            card: card,
+            controller: controller,
+            onSwiped: swipes.add,
+          ),
+        ),
+      ),
+    );
+    await open(tester, view());
+    await tester.pump(const Duration(milliseconds: 300));
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(SwipeCardView)),
+    );
+    await gesture.moveBy(const Offset(50, 0));
+    await gesture.cancel();
+    await tester.pumpAndSettle();
+    expect(swipes, isEmpty);
+    controller.swipeRight();
+    controller.swipeLeft();
+    await tester.pumpAndSettle();
+    expect(swipes, [true]);
+    controller.swipeLeft();
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 300));
+    controller.swipeRight();
+    expect(swipes, [true]);
+
+    await open(tester, view(), disableAnimations: true);
+    controller.swipeLeft();
+    await tester.pump();
+    expect(swipes, [true, false]);
+    expect(tester.hasRunningAnimations, isFalse);
+    expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
 

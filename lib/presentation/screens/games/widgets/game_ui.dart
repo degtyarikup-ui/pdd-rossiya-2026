@@ -223,7 +223,7 @@ class GameActionButton extends StatelessWidget {
 }
 
 /// Круглая кнопка ответа с подписью: «нет» слева, «да» справа.
-class GameRoundButton extends StatelessWidget {
+class GameRoundButton extends StatefulWidget {
   const GameRoundButton({
     super.key,
     required this.icon,
@@ -244,32 +244,53 @@ class GameRoundButton extends StatelessWidget {
   final double size;
 
   @override
+  State<GameRoundButton> createState() => _GameRoundButtonState();
+}
+
+class _GameRoundButtonState extends State<GameRoundButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Material(
-          color: surface,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            child: SizedBox(
-              width: size,
-              height: size,
-              child: Icon(icon, size: size * 0.46, color: iconColor ?? color),
+        AnimatedScale(
+          scale: _pressed ? 0.94 : 1,
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 110),
+          curve: Curves.easeOutCubic,
+          child: Material(
+            color: widget.surface,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTapDown: (_) => setState(() => _pressed = true),
+              onTapUp: (_) => setState(() => _pressed = false),
+              onTapCancel: () => setState(() => _pressed = false),
+              onTap: widget.onTap,
+              child: SizedBox(
+                width: widget.size,
+                height: widget.size,
+                child: Icon(
+                  widget.icon,
+                  size: widget.size * 0.46,
+                  color: widget.iconColor ?? widget.color,
+                ),
+              ),
             ),
           ),
         ),
-        if (label != null) ...[
+        if (widget.label != null) ...[
           const SizedBox(height: AppDimensions.spacingS),
           Text(
-            label!,
+            widget.label!,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.3,
-              color: color,
+              color: widget.color,
             ),
           ),
         ],
