@@ -51,6 +51,13 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 .an-day-details{margin-top:16px}.an-day-details>summary{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--an-text);cursor:pointer;list-style:none;padding-top:14px;border-top:1px solid #F2F3F5}.an-day-details>summary::-webkit-details-marker{display:none}.an-day-details>summary:after{content:'+';font-size:18px;color:var(--an-muted)}.an-day-details[open]>summary:after{content:'−'}.an-day-details .an-table-wrap{max-height:320px;margin-top:18px}
 .an-now{background:#fff;border-radius:20px;padding:20px 24px;margin-top:0;margin-bottom:18px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}.an-now span{display:flex;align-items:center;justify-content:space-between;gap:8px}.an-now b{font-size:18px;letter-spacing:-.3px;margin:0}
 .an-tip{position:fixed;z-index:9999;pointer-events:none;background:#17191E;color:white;border-radius:14px;padding:14px 16px;font-size:12px;line-height:1.8;display:none;min-width:140px}.an-tip-row{display:flex;justify-content:space-between;gap:24px}.an-tip-note{color:#b8c4d8}
+.an-usage .an-head{margin-bottom:16px}.an-usage .an-help>div{color:#fff;background:#17191E}.an-usage-heading{display:flex;align-items:center;gap:12px;min-width:0}.an-usage-total{font-size:11px;color:var(--an-muted);white-space:nowrap}.an-usage-total b{font-size:13px;color:var(--an-text);font-weight:600;margin-left:5px;font-variant-numeric:tabular-nums}
+.an-usage .an-table{table-layout:fixed}.an-usage .an-table th{white-space:normal;line-height:1.4;padding-bottom:10px;letter-spacing:0;text-transform:none}.an-usage .an-table td{padding:10px 0}.an-usage .an-table th:nth-child(2){width:80px}.an-usage .an-table th:nth-child(3){width:116px}.an-usage .an-table th:nth-child(4){width:92px}.an-usage .an-table th+th,.an-usage .an-table td+td{padding-left:16px}.an-usage .an-table td:nth-child(2){font-size:14px;font-weight:650}.an-usage .an-table td:nth-child(3),.an-usage .an-table td:nth-child(4){color:var(--an-muted);font-weight:450}.an-usage abbr{text-decoration:none;cursor:help}
+.an-usage-name{display:grid;grid-template-columns:100px minmax(0,1fr) 36px;gap:20px;align-items:center;padding-right:20px}.an-usage-mode{display:flex;align-items:center;border:0;padding:2px 0;background:none;color:var(--an-text);font:inherit;font-weight:550;text-align:left;cursor:pointer;max-width:100%;min-height:24px}.an-usage-mode:hover{color:var(--an-accent)}.an-usage-mode[aria-expanded=true]{color:var(--an-accent)}.an-usage-share{font-size:10px;color:var(--an-muted);font-weight:450;white-space:nowrap;text-align:right}.an-usage-track{height:3px;background:#F2F3F5;border-radius:3px;overflow:hidden}.an-usage-track i{display:block;height:100%;background:var(--an-accent);border-radius:3px}
+.an-usage-empty{padding:16px 0 8px;font-size:13px;color:var(--an-text);line-height:1.6}.an-usage-empty p{margin:5px 0 0;font-size:11px;color:var(--an-muted)}.an-usage [hidden]{display:none!important}
+.an-usage-details{margin-top:14px;border-top:1px solid #F2F3F5}.an-usage-details>summary{display:flex;align-items:center;justify-content:space-between;list-style:none;font-size:12px;cursor:pointer;padding:14px 0 0;color:var(--an-text)}.an-usage-details>summary::-webkit-details-marker{display:none}.an-usage-details>summary:after{content:'';width:6px;height:6px;flex-shrink:0;border-right:1.5px solid var(--an-muted);border-bottom:1.5px solid var(--an-muted);transform:rotate(45deg);margin:0 3px 4px 12px}.an-usage-details[open]>summary:after{transform:rotate(225deg);margin-bottom:0}.an-usage-details>summary .an-caption{margin:0 0 0 auto;padding-left:16px;font-size:10px;white-space:nowrap}.an-usage-controls{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:18px 0 12px}.an-usage-controls select{flex:none;width:150px;min-height:34px;padding:8px 10px}.an-usage-controls .an-legend{margin:0;flex-wrap:wrap;gap:8px 14px}.an-usage .an-chart{min-height:160px}.an-usage .an-empty{padding:24px 0}
+@media(max-width:640px){.an-usage-heading{gap:8px}.an-usage .an-head{align-items:flex-start;gap:8px}.an-usage-total{font-size:10px;display:flex;flex-direction:column;gap:4px;align-items:flex-end}.an-usage-total b{font-size:14px;margin:0}.an-usage .an-table th:nth-child(2){width:54px}.an-usage .an-table th:nth-child(3){width:78px}.an-usage .an-table th:nth-child(4){width:58px}.an-usage .an-table th+th,.an-usage .an-table td+td{padding-left:8px}.an-usage .an-table th{font-size:9px}.an-usage .an-table td{font-size:12px}.an-usage .an-table td:nth-child(2){font-size:13px}.an-usage-name{grid-template-columns:minmax(0,1fr) auto;gap:4px 6px;padding-right:0}.an-usage-track{grid-column:1 / -1;grid-row:2}.an-usage-share{grid-column:2;grid-row:1;font-size:9px}.an-usage-mode{line-height:1.3}.an-usage-controls{align-items:flex-start;gap:12px}.an-usage-controls select{width:112px;min-height:34px}.an-usage-controls .an-legend{font-size:10px;gap:7px}}
+@media(max-width:359px){.an-card.an-usage{padding:18px}.an-usage .an-table th:nth-child(2){width:50px}.an-usage .an-table th:nth-child(3){width:68px}.an-usage .an-table th:nth-child(4){width:56px}.an-usage-details>summary .an-caption{padding-left:8px}}
 #analytics-view button:focus-visible,#analytics-view summary:focus-visible,#analytics-view input:focus-visible,#analytics-view select:focus-visible{outline:2px solid var(--an-accent);outline-offset:3px}
 @media(max-width:1320px){.an-row2{grid-template-columns:1fr 1fr}.an-geo-card{grid-column:1 / -1}.an-geo-card .an-table-name{min-width:150px}}
 @media(max-width:1120px){.an-charts-grid{grid-template-columns:1fr}.an-chart-card .an-legend{margin:0 0 8px}.an-grid{gap:12px}.an-kpi{padding:20px}.an-big{font-size:34px}}
@@ -74,14 +81,16 @@ export const ANALYTICS_VIEW_HTML = String.raw`
   <div class="an-legend" id="an-chart-legend"></div><div class="an-chart" id="an-installs-chart"></div><div class="an-caption" id="an-installs-caption"></div>
  </div>
 </div>
-<div class="an-card" style="margin-top:18px">
- <div class="an-head"><div class="an-title">Использование режимов</div><details class="an-help"><summary aria-label="Об использовании режимов">i</summary><div>Запуск — открытие билета, темы, экзамена или ленты, либо начало заезда в 3D-игре. Возврат в прерванную тренировку считается запуском. Уникальные установки включают гостей: один человек на двух устройствах считается дважды. Повторы доставки не увеличивают счётчики. Данные поступают из обновлённых приложений; офлайн-события отправляются позже.</div></details></div>
- <div class="an-table-wrap" id="an-usage-table"></div>
- <div class="an-tabs" id="an-usage-tabs" style="margin-top:18px;flex-wrap:wrap"></div>
- <div class="an-legend" style="margin-top:18px"><span><i class="an-dot" style="background:#0574F8"></i>Запуски</span><span><i class="an-dot" style="background:#22a875"></i>Уникальные установки за день</span></div>
- <div class="an-chart" id="an-usage-chart"></div>
- <div class="an-caption" id="an-usage-caption"></div>
- <details class="an-day-details"><summary>Данные по дням</summary><div class="an-table-wrap" id="an-usage-days"></div></details>
+<div class="an-card an-usage" id="an-usage">
+ <div class="an-head"><div class="an-usage-heading"><div class="an-title">Использование режимов</div><details class="an-help"><summary aria-label="Об использовании режимов">i</summary><div>Запуск — открытие билета, темы, экзамена или ленты, либо начало заезда в 3D-игре. Возврат в прерванную тренировку считается запуском. Активные установки — установки приложения, в которых запускали режим за выбранный период, включая гостей. Один человек на двух устройствах считается дважды. Частота — среднее число запусков на активную установку. Полоса и процент показывают долю запусков режима. Данные поступают из обновлённых приложений; офлайн-события отправляются позже.</div></details></div><div class="an-usage-total" id="an-usage-total"></div></div>
+ <div id="an-usage-table"></div>
+ <div class="an-usage-empty" id="an-usage-empty" hidden></div>
+ <details class="an-usage-details" id="an-usage-details">
+  <summary><span>Динамика по дням</span><span class="an-caption" id="an-usage-caption"></span></summary>
+  <div class="an-usage-controls"><select class="an-search" id="an-usage-feature" aria-label="Режим для динамики"></select><div class="an-legend"><span><i class="an-dot" style="background:#0574F8"></i>Запуски</span><span><i class="an-dot" style="background:#22a875"></i>Активные установки за день</span></div></div>
+  <div class="an-chart" id="an-usage-chart"></div>
+  <details class="an-day-details"><summary>Таблица значений</summary><div class="an-table-wrap" id="an-usage-days"></div></details>
+ </details>
 </div>
 <div class="an-row2">
   <div class="an-card"><div class="an-head"><div class="an-title">Источники сайта</div><details class="an-help"><summary aria-label="Об источниках сайта">i</summary><div>Просмотры и нажатия на ссылки магазинов. Метка сайта не подтверждает источник установки.</div></details></div><div class="an-table-wrap" id="an-sources"></div></div>
@@ -303,21 +312,35 @@ var AN_USAGE_NAMES = {tickets:'Билеты',topics:'Темы',exam:'Экзам�
 function anRenderUsage(data) {
  var usage=data.usage, features=usage&&usage.features||{}, timeline=usage&&usage.timeline||[], keys=Object.keys(AN_USAGE_NAMES);
  var starts=keys.reduce(function(n,k){return n+(features[k]&&features[k].starts||0);},0);
- document.getElementById('an-usage-table').innerHTML=anTable(['Режим','Запуски','Уникальные установки','На установку','Доля запусков'],keys.map(function(k){
+ var table=document.getElementById('an-usage-table'), empty=document.getElementById('an-usage-empty'), details=document.getElementById('an-usage-details');
+ table.hidden=!starts;empty.hidden=!!starts;details.hidden=!starts;
+ document.getElementById('an-usage-total').innerHTML=starts?'Запуски <b>'+anNum(starts)+'</b>':'';
+ var beforeCollection=usage&&timeline.length&&timeline.every(function(d){return d.date<usage.from;});
+ var coverage=usage?'Сбор с '+anDayLabel(usage.from)+' · МСК':'';
+ empty.innerHTML=beforeCollection?'За этот период данных нет<p>'+coverage+'.</p>':'Пока нет данных<p>Статистика появится после обновления приложений.'+(coverage?' '+coverage+'.':'')+'</p>';
+ table.innerHTML=starts?anTable(['Режим','Запуски','<abbr title="Установки, в которых запускали режим за выбранный период">Активные установки</abbr>','<abbr title="Среднее число запусков на активную установку">На установку</abbr>'],keys.map(function(k){
   var f=features[k]||{starts:0,installations:0};
-  return '<tr><td>'+AN_USAGE_NAMES[k]+'</td>'+anCell(f.starts)+anCell(f.installations)+'<td>'+(f.installations?(f.starts/f.installations).toLocaleString('ru-RU',{maximumFractionDigits:1}):'—')+'</td><td>'+anShare(f.starts,starts)+'</td></tr>';
- }));
- document.getElementById('an-usage-tabs').innerHTML=keys.map(function(k){return '<button type="button" data-usage="'+k+'" class="'+(k===anUsageFeature?'active':'')+'" aria-pressed="'+(k===anUsageFeature)+'">'+AN_USAGE_NAMES[k]+'</button>';}).join('');
+  var share=starts?f.starts/starts*100:0, label=share>0&&share<1?'&lt;1%':Math.round(share)+'%';
+  return '<tr><td><div class="an-usage-name"><button type="button" class="an-usage-mode" data-usage="'+k+'" aria-controls="an-usage-details" aria-expanded="'+(details.open&&k===anUsageFeature)+'" aria-label="Показать динамику: '+AN_USAGE_NAMES[k]+'">'+AN_USAGE_NAMES[k]+'</button><div class="an-usage-track" aria-hidden="true"><i style="width:'+share+'%"></i></div><span class="an-usage-share">'+label+'</span></div></td>'+anCell(f.starts)+anCell(f.installations)+'<td>'+(f.installations?(f.starts/f.installations).toLocaleString('ru-RU',{maximumFractionDigits:1}):'—')+'</td></tr>';
+ })):'';
+ document.getElementById('an-usage-feature').innerHTML=keys.map(function(k){return '<option value="'+k+'">'+AN_USAGE_NAMES[k]+'</option>';}).join('');
+ document.getElementById('an-usage-feature').value=anUsageFeature;
+ document.getElementById('an-usage-caption').textContent=coverage;
+ if(starts&&details.open)anRenderUsageDetails(data);
+}
+function anRenderUsageDetails(data) {
+ var usage=data.usage, timeline=usage&&usage.timeline||[], selected=usage&&usage.features&&usage.features[anUsageFeature];
  var available=timeline.filter(function(d){return d.features[anUsageFeature].starts!=null;}), bars=[];
- available.forEach(function(d){var f=d.features[anUsageFeature],tip='<b>'+anDayLabel(d.date,true)+'</b><div class="an-tip-row"><span>Запуски</span><b>'+anNum(f.starts)+'</b></div><div class="an-tip-row"><span>Установки</span><b>'+anNum(f.installations)+'</b></div>';
+ available.forEach(function(d){var f=d.features[anUsageFeature],tip='<b>'+anDayLabel(d.date,true)+'</b><div class="an-tip-row"><span>Запуски</span><b>'+anNum(f.starts)+'</b></div><div class="an-tip-row"><span>Активные установки</span><b>'+anNum(f.installations)+'</b></div>';
   bars.push({value:f.starts,color:AN_C.accent,label:anDayLabel(d.date),tip:tip},{value:f.installations,color:AN_C.green,label:'',tip:tip});
  });
  var chart=document.getElementById('an-usage-chart');
- if(starts)anBars(chart,bars,230);else chart.innerHTML='<div class="an-empty">Пока нет событий использования. Они появятся после обновления приложения.</div>';
- document.getElementById('an-usage-caption').textContent=usage?'Сбор с '+anDayLabel(usage.from)+' · МСК · Только обновлённые приложения · Данные поступают пакетами':'Сбор ещё не начат';
- document.getElementById('an-usage-days').innerHTML=anTable(['День','Запуски','Уникальные установки'],timeline.slice().reverse().map(function(d){var f=d.features[anUsageFeature];return '<tr><td>'+anDayLabel(d.date)+'</td><td>'+(f.starts==null?'—':anNum(f.starts))+'</td><td>'+(f.installations==null?'—':anNum(f.installations))+'</td></tr>';}));
+ if(selected&&selected.starts&&bars.length)anBars(chart,bars,170);else chart.innerHTML='<div class="an-empty">В этом режиме пока нет запусков за выбранный период.</div>';
+ document.getElementById('an-usage-days').innerHTML=anTable(['День','Запуски','Активные установки'],timeline.slice().reverse().map(function(d){var f=d.features[anUsageFeature];return '<tr><td>'+anDayLabel(d.date)+'</td><td>'+(f.starts==null?'—':anNum(f.starts))+'</td><td>'+(f.installations==null?'—':anNum(f.installations))+'</td></tr>';}));
 }
-document.getElementById('an-usage-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-usage]');if(b){anUsageFeature=b.dataset.usage;anRenderUsage(window.__anData);}});
+document.getElementById('an-usage-table').addEventListener('click',function(e){var b=e.target.closest('[data-usage]');if(b){anUsageFeature=b.dataset.usage;document.getElementById('an-usage-details').open=true;anRenderUsage(window.__anData);}});
+document.getElementById('an-usage-feature').addEventListener('change',function(e){anUsageFeature=e.target.value;anRenderUsage(window.__anData);});
+document.getElementById('an-usage-details').addEventListener('toggle',function(){if(window.__anData)anRenderUsage(window.__anData);});
 
 function renderDashboard(data) {
  if(!document.getElementById('an-kpis'))return;
