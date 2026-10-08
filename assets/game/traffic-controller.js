@@ -78,6 +78,7 @@
   let currentVehicle = VEHICLES.CAR;
   let currentCameraMode = 'overview'; // 'overview' | 'driver'
   let currentMode = 'training';       // 'training' | 'arcade'
+  let activeBlinkerSide = null;       // 'left' | 'right' | null
 
   // Анимация рук регулировщика (целевые и текущие углы)
   const targetLeftArm = new THREE.Vector3();
@@ -844,6 +845,19 @@
       });
     });
 
+    const blinkerMat = new THREE.MeshBasicMaterial({ color: 0xFFAE25 });
+    const bL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.09, 0.05), blinkerMat);
+    bL.position.set(0.82, 0.61, 2.12);
+    group.add(bL);
+    group.blinkerL = bL;
+    bL.visible = false;
+
+    const bR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.09, 0.05), blinkerMat);
+    bR.position.set(-0.82, 0.61, 2.12);
+    group.add(bR);
+    group.blinkerR = bR;
+    bR.visible = false;
+
     return group;
   }
 
@@ -1222,11 +1236,14 @@
     if (carMesh) {
       carMesh.position.set(3.2, 0, 13.5);
       carMesh.rotation.y = Math.PI;
+      if (carMesh.blinkerL) carMesh.blinkerL.visible = false;
+      if (carMesh.blinkerR) carMesh.blinkerR.visible = false;
     }
     if (tramMesh) {
       tramMesh.position.set(-2.2, 0, 14.5);
       tramMesh.rotation.y = Math.PI;
     }
+    activeBlinkerSide = null;
     isMoving = false;
     moveProgress = 0;
   }
@@ -1239,6 +1256,11 @@
     const isCorrect = allowed.includes(moveType);
 
     if (moveType === MOVES.NONE) {
+      activeBlinkerSide = null;
+      if (carMesh) {
+        if (carMesh.blinkerL) carMesh.blinkerL.visible = false;
+        if (carMesh.blinkerR) carMesh.blinkerR.visible = false;
+      }
       // Если действие «Стоять»
       notifyFlutter({
         type: 'move_result',
@@ -1246,6 +1268,14 @@
         isCorrect: isCorrect,
       });
       return;
+    }
+
+    if (moveType === MOVES.RIGHT) {
+      activeBlinkerSide = 'right';
+    } else if (moveType === MOVES.LEFT || moveType === MOVES.UTURN) {
+      activeBlinkerSide = 'left';
+    } else {
+      activeBlinkerSide = null;
     }
 
     movingObject = (currentVehicle === VEHICLES.CAR) ? carMesh : tramMesh;
@@ -1382,6 +1412,17 @@
 
         const tangent = moveCurve.getTangent(moveProgress);
         movingObject.rotation.y = Math.atan2(tangent.x, tangent.z);
+      }
+    }
+
+    // Мигание поворотников автомобиля при манёвре (~3.2 Гц)
+    if (carMesh) {
+      const blinkState = (activeBlinkerSide && isMoving) ? (Math.floor(time * 6.5) % 2 === 0) : false;
+      if (carMesh.blinkerL) {
+        carMesh.blinkerL.visible = (activeBlinkerSide === 'left') && blinkState;
+      }
+      if (carMesh.blinkerR) {
+        carMesh.blinkerR.visible = (activeBlinkerSide === 'right') && blinkState;
       }
     }
 

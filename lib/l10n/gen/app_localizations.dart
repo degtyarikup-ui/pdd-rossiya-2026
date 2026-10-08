@@ -2920,6 +2920,12 @@ abstract class AppLocalizations {
   /// **'Налево'**
   String get gameActionLeft;
 
+  /// No description provided for @gameActionUTurn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разворот'**
+  String get gameActionUTurn;
+
   /// No description provided for @gameActionStand.
   ///
   /// In ru, this message translates to:

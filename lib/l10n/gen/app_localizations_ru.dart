@@ -1669,6 +1669,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameActionLeft => 'Налево';
 
   @override
+  String get gameActionUTurn => 'Разворот';
+
+  @override
   String get gameActionStand => 'Стоять';
 
   @override

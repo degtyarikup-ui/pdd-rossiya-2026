@@ -226,24 +226,44 @@ class SignExplanationSheet extends StatelessWidget {
 
           // Официальный текст ПДД
           if (sign.description.isNotEmpty) ...[
-            Text(
-              'ПДД РФ:',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: colors.secondaryText,
-              ),
-            ),
-            const SizedBox(height: 4),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 180),
-              child: SingleChildScrollView(
-                child: Text(
-                  sign.description,
+            Row(
+              children: [
+                Icon(
+                  Icons.menu_book_rounded,
+                  size: 15,
+                  color: colors.secondaryText,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'ПДД РФ:',
                   style: TextStyle(
-                    fontSize: 13,
-                    color: colors.primaryText.withValues(alpha: 0.85),
-                    height: 1.35,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: colors.secondaryText,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: colors.homeScreenBackground.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.divider),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Text(
+                    _formatPddDescription(sign.description),
+                    textAlign: TextAlign.start,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: colors.primaryText.withValues(alpha: 0.9),
+                      height: 1.45,
+                    ),
                   ),
                 ),
               ),
@@ -276,5 +296,73 @@ class SignExplanationSheet extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static String _formatPddDescription(String raw) {
+    if (raw.isEmpty) return raw;
+
+    // 1. Нормализация неразрывных пробелов и переводов строк
+    var text = raw.replaceAll('\u00a0', ' ').replaceAll('\r', '').trim();
+
+    // 2. Исправление склеенных предложений (точка/скобка перед заглавной буквой)
+    text = text.replaceAllMapped(
+      RegExp(r'(\))\.(?=[А-ЯЁ])'),
+      (m) => '). ',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(?<=[а-яё\w])\.(?=[А-ЯЁ])'),
+      (m) => '. ',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r':(?=[а-яА-Я0-9])'),
+      (m) => ': ',
+    );
+
+    // 3. Выделение стандартных смысловых разделов ПДД с новой строки
+    const sections = [
+      'Зона действия знака:',
+      'Зона действия:',
+      'От действия знака отступают:',
+      'Запрещается:',
+      'Разрешается:',
+      'Особенности:',
+      'Наказание за нарушение требований знака:',
+      'Наказание:',
+      'КоАП РФ',
+    ];
+    for (final s in sections) {
+      if (text.contains(s)) {
+        text = text.replaceAll(s, '\n\n$s\n');
+      }
+    }
+
+    // 4. Разделение нумерованных пунктов (1. 2. 3. ...)
+    text = text.replaceAllMapped(
+      RegExp(r'(?<=\S)\s*(\d+\.\s+)'),
+      (m) => '\n\n${m[1]}',
+    );
+
+    // 5. Разделение подпунктов (а) б) в) г) ...) на маркированные строки
+    text = text.replaceAllMapped(
+      RegExp(r'(?<=[:;\n])\s*([а-иa-d])\)\s*'),
+      (m) => '\n  • ',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r';\s*([а-иa-d])\)\s*'),
+      (m) => ';\n  • ',
+    );
+
+    // 6. Очистка лишних повторяющихся пустых строк
+    final lines = text.split('\n').map((l) => l.trimRight()).toList();
+    final cleaned = <String>[];
+    for (final line in lines) {
+      if (line.isNotEmpty) {
+        cleaned.add(line);
+      } else if (cleaned.isNotEmpty && cleaned.last.isNotEmpty) {
+        cleaned.add('');
+      }
+    }
+
+    return cleaned.join('\n').trim();
   }
 }

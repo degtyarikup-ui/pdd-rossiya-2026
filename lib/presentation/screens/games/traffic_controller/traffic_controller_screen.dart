@@ -46,7 +46,7 @@ class _TrafficControllerScreenState
   ControllerGesture _curGesture = ControllerGesture.rightArmForward;
   ApproachDirection _curApproach = ApproachDirection.left;
   VehicleKind _curVehicle = VehicleKind.car;
-  String _cameraMode = 'overview'; // 'overview' | 'driver'
+  final String _cameraMode = 'overview'; // 'overview' | 'driver'
 
   // Режим Блиц-аркада
   int _score = 0;
@@ -323,15 +323,6 @@ class _TrafficControllerScreenState
     );
   }
 
-  void _toggleCamera() {
-    HapticFeedbackHelper.select();
-    setState(() {
-      _cameraMode = (_cameraMode == 'overview') ? 'driver' : 'overview';
-    });
-    _runJs(
-      'window.TrafficControllerGame && window.TrafficControllerGame.setCameraView("$_cameraMode");',
-    );
-  }
 
   void _onPanUpdate(DragUpdateDetails details) {
     if (_cameraMode == 'overview') {
@@ -431,14 +422,8 @@ class _TrafficControllerScreenState
 
         const Spacer(),
 
-        // Camera toggle
-        AppChromeIconButton(
-          icon: _cameraMode == 'overview'
-              ? Icons.videocam_rounded
-              : Icons.drive_eta_rounded,
-          onTap: _toggleCamera,
-          backgroundColor: Colors.black.withValues(alpha: 0.55),
-        ),
+        // Балансировочный отступ для идеального центрирования табов
+        const SizedBox(width: 44, height: 44),
       ],
     );
   }
@@ -669,19 +654,25 @@ class _TrafficControllerScreenState
                 isAllowed: allowed.contains(TrafficMove.straight),
                 onTap: () => _onTrainingMoveTest(TrafficMove.straight),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               _buildMoveTestBtn(
                 label: appL10n.gameActionRight,
                 isAllowed: allowed.contains(TrafficMove.right),
                 onTap: () => _onTrainingMoveTest(TrafficMove.right),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               _buildMoveTestBtn(
                 label: appL10n.gameActionLeft,
                 isAllowed: allowed.contains(TrafficMove.left),
                 onTap: () => _onTrainingMoveTest(TrafficMove.left),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
+              _buildMoveTestBtn(
+                label: appL10n.gameActionUTurn,
+                isAllowed: allowed.contains(TrafficMove.uTurn),
+                onTap: () => _onTrainingMoveTest(TrafficMove.uTurn),
+              ),
+              const SizedBox(width: 4),
               _buildMoveTestBtn(
                 label: appL10n.gameActionStand,
                 isAllowed: allowed.contains(TrafficMove.none),
@@ -775,8 +766,10 @@ class _TrafficControllerScreenState
             children: [
               Text(
                 label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: isAllowed ? const Color(0xFF00E676) : Colors.white60,
                 ),
@@ -946,15 +939,21 @@ class _TrafficControllerScreenState
               icon: Icons.turn_right_rounded,
               onTap: () => _onArcadeMoveSelected(TrafficMove.right),
             ),
+            const SizedBox(width: 8),
+            _buildArcadeButton(
+              label: appL10n.gameActionLeft,
+              icon: Icons.turn_left_rounded,
+              onTap: () => _onArcadeMoveSelected(TrafficMove.left),
+            ),
           ],
         ),
         const SizedBox(height: 8),
         Row(
           children: [
             _buildArcadeButton(
-              label: appL10n.gameActionLeft,
-              icon: Icons.turn_left_rounded,
-              onTap: () => _onArcadeMoveSelected(TrafficMove.left),
+              label: appL10n.gameActionUTurn,
+              icon: Icons.u_turn_left_rounded,
+              onTap: () => _onArcadeMoveSelected(TrafficMove.uTurn),
             ),
             const SizedBox(width: 8),
             _buildArcadeButton(

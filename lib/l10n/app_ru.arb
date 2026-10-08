@@ -849,6 +849,7 @@
   "gameActionStraight": "Прямо",
   "gameActionRight": "Направо",
   "gameActionLeft": "Налево",
+  "gameActionUTurn": "Разворот",
   "gameActionStand": "Стоять",
   "gameVehicleCar": "Автомобиль",
   "gameVehicleTram": "Трамвай",
