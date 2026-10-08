@@ -345,30 +345,34 @@ void main() {
   });
 
   testWidgets(
-    'Traffic hints pause time, resume on close and keep rounds car-only',
+    'Traffic hint toggles inline, hides on answer and keeps rounds car-only',
     (tester) async {
       await open(tester, const TrafficControllerScreen());
       final controller = web.controllers.single..emitReady();
       await tester.pump();
       await tester.pump();
-      await tester.tap(find.byTooltip(appL10n.gameTrafficHintButton));
-      await tester.pumpAndSettle();
-      expect(find.text(appL10n.gameTrafficHintTitle), findsOneWidget);
-      expect(find.text(appL10n.gameTrafficHintPaused), findsOneWidget);
-      await tester.pump(const Duration(seconds: 40));
-      expect(find.byType(GameResultOverlay), findsNothing);
-      expect(find.text(appL10n.gameSecondsLeft(35)), findsOneWidget);
-      await tester.tap(find.text(appL10n.gameUnderstood));
-      await tester.pumpAndSettle();
-      final secondsAfterClose = [
-        for (var i = 1; i <= 35; i++)
-          if (find.text(appL10n.gameSecondsLeft(i)).evaluate().isNotEmpty) i,
-      ].single;
-      await tester.pump(const Duration(seconds: 1));
-      expect(
-        find.text(appL10n.gameSecondsLeft(secondsAfterClose - 1)),
-        findsOneWidget,
+      final hint = find.byTooltip(appL10n.gameTrafficHintButton);
+      await tester.tap(hint);
+      await tester.pump();
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.text(appL10n.gameTrafficHintTitle), findsNothing);
+      final scenario = RegExp(r'setScenario\("([^"]+)", "([^"]+)"').firstMatch(
+        controller.scripts.lastWhere((s) => s.contains('setScenario(')),
+      )!;
+      final verse = TrafficControllerRules.mnemonicVerse(
+        gesture: ControllerGesture.values.byName(scenario.group(1)!),
+        approach: ApproachDirection.values.byName(scenario.group(2)!),
+        vehicle: VehicleKind.car,
       );
+      expect(find.text(verse), findsOneWidget);
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text(appL10n.gameSecondsLeft(34)), findsOneWidget);
+      await tester.tap(hint);
+      await tester.pump();
+      expect(find.text(verse), findsNothing);
+      await tester.tap(hint);
+      await tester.pump();
+      expect(find.text(verse), findsOneWidget);
 
       for (var i = 0; i < 40; i++) {
         expect(
@@ -378,6 +382,7 @@ void main() {
         final correct = controller.allowedMoves.first;
         await tester.tap(find.text(_moveLabel(correct)));
         await tester.pump();
+        if (i == 0) expect(find.text(verse), findsNothing);
         if (correct == TrafficMove.none) {
           await tester.pump(const Duration(milliseconds: 700));
         } else {

@@ -243,6 +243,7 @@ class _TrafficControllerScreenState
       _timeUp = false;
       _isNewRecord = false;
       _awaitingNext = false;
+      _hintOpen = false;
       _lastMove = null;
     });
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -250,7 +251,6 @@ class _TrafficControllerScreenState
         timer.cancel();
         return;
       }
-      if (_hintOpen) return;
       if (_secondsLeft > 1) {
         setState(() => _secondsLeft--);
       } else {
@@ -272,6 +272,7 @@ class _TrafficControllerScreenState
       _curGesture = gestures[_random.nextInt(gestures.length)];
       _curApproach = approaches[_random.nextInt(approaches.length)];
       _awaitingNext = false;
+      _hintOpen = false;
       _lastMove = null;
     });
 
@@ -294,6 +295,7 @@ class _TrafficControllerScreenState
       vehicle: _vehicle,
       move: move,
     );
+    setState(() => _hintOpen = false);
     _moveSequence++;
     _call('makeMove("${_moveName(move)}", $_moveSequence)');
 
@@ -423,20 +425,54 @@ class _TrafficControllerScreenState
               Positioned(
                 left: AppDimensions.screenPadding,
                 bottom: _panelHeight + AppDimensions.spacingM,
-                child: IconButton.filled(
-                  tooltip: appL10n.gameTrafficHintButton,
-                  onPressed: _awaitingNext || _hintOpen ? null : _showHint,
-                  icon: const Icon(Icons.lightbulb_outline_rounded, size: 22),
-                  style: IconButton.styleFrom(
-                    backgroundColor: colors.cardBackground,
-                    foregroundColor: colors.accent,
-                    disabledBackgroundColor: colors.cardBackground,
-                    disabledForegroundColor: colors.secondaryText,
-                    minimumSize: const Size.square(48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                right: AppDimensions.screenPadding,
+                child: Row(
+                  children: [
+                    IconButton.filled(
+                      tooltip: appL10n.gameTrafficHintButton,
+                      onPressed: _awaitingNext ? null : _toggleHint,
+                      icon: Icon(
+                        _hintOpen
+                            ? Icons.lightbulb_rounded
+                            : Icons.lightbulb_outline_rounded,
+                        size: 22,
+                      ),
+                      style: IconButton.styleFrom(
+                        backgroundColor: colors.cardBackground,
+                        foregroundColor: colors.accent,
+                        disabledBackgroundColor: colors.cardBackground,
+                        disabledForegroundColor: colors.secondaryText,
+                        minimumSize: const Size.square(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
-                  ),
+                    if (_hintOpen) ...[
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: IgnorePointer(
+                          child: Text(
+                            TrafficControllerRules.mnemonicVerse(
+                              gesture: _curGesture,
+                              approach: _curApproach,
+                              vehicle: _vehicle,
+                            ),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              height: 1.25,
+                              fontWeight: FontWeight.w600,
+                              shadows: [
+                                Shadow(color: Colors.black87, blurRadius: 4),
+                                Shadow(color: Colors.black54, blurRadius: 8),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
 
@@ -466,99 +502,10 @@ class _TrafficControllerScreenState
     );
   }
 
-  Future<void> _showHint() async {
-    if (!_engineReady || _awaitingNext || _isGameOver || _hintOpen) return;
+  void _toggleHint() {
+    if (!_engineReady || _awaitingNext || _isGameOver) return;
     HapticFeedbackHelper.select();
-    setState(() => _hintOpen = true);
-    final verse = TrafficControllerRules.mnemonicVerse(
-      gesture: _curGesture,
-      approach: _curApproach,
-      vehicle: _vehicle,
-    );
-    final rule = TrafficControllerRules.officialRuleDescription(
-      gesture: _curGesture,
-      approach: _curApproach,
-      vehicle: _vehicle,
-    );
-    try {
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        showDragHandle: true,
-        backgroundColor: AppColors.of(context).cardBackground,
-        builder: (context) {
-          final colors = AppColors.of(context);
-          return SafeArea(
-            top: false,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * 0.75,
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      appL10n.gameTrafficHintTitle,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: colors.secondaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      verse,
-                      style: TextStyle(
-                        fontSize: 24,
-                        height: 1.25,
-                        fontWeight: FontWeight.w700,
-                        color: colors.primaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      rule,
-                      style: TextStyle(
-                        fontSize: 16,
-                        height: 1.4,
-                        color: colors.primaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      appL10n.gameTrafficHintScope,
-                      style: TextStyle(
-                        fontSize: 13,
-                        height: 1.4,
-                        color: colors.secondaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      appL10n.gameTrafficHintPaused,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: colors.accent),
-                    ),
-                    const SizedBox(height: 12),
-                    GameActionButton(
-                      label: appL10n.gameUnderstood,
-                      background: colors.accent,
-                      foreground: colors.white,
-                      onTap: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    } finally {
-      if (mounted) setState(() => _hintOpen = false);
-    }
+    setState(() => _hintOpen = !_hintOpen);
   }
 
   Widget _buildScene(AppThemeColors colors) {
