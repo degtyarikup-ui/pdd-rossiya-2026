@@ -53,6 +53,8 @@
   const season = () => currentSeason;
   // The HUD draws its bare numbers dark over snow in either UI theme.
   const seasonName = () => Object.keys(SEASONS).find(k => SEASONS[k] === currentSeason);
+  // Objects with flashing lamps (userData.beacons), see animate().
+  const beaconHosts = new Set();
   const state = {
     speed: 0,
     maxSpeed: 18, // m/s, follows the speed limit in force (see effectiveLimitKmH)
@@ -5484,6 +5486,11 @@
     // Only a clearly weak device (≤2 cores or ≤3 GB) gets the cheap profile.
     const lowEnd = (navigator.hardwareConcurrency || 8) <= 2 || (navigator.deviceMemory || 8) <= 3;
     state.lowEnd = lowEnd;
+    // A wider "weak" hint (4 GB, few cores) turns on only savings that leave
+    // the picture as it is (a still question drawn at 30 FPS). The shadow map
+    // is refreshed every frame: at half rate the car's shadow jittered.
+    // The look is chosen by lowEnd alone.
+    state.weak = lowEnd || (navigator.deviceMemory || 8) <= 4 || (navigator.hardwareConcurrency || 8) <= 4;
     renderer = new THREE.WebGLRenderer({ antialias: !lowEnd, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
     renderer.setPixelRatio(lowEnd ? 1 : Math.min(window.devicePixelRatio, 1.75));
@@ -5636,11 +5643,19 @@
     for (const path of paths) {
       // Stop shortly after the bend, in the receiving lane. Driving paths
       // retain their full length; only the visual direction cue is shortened.
-      const fullLength = path.getLength(), finalDir = path.getTangentAt(1);
-      let bendEnd = 0;
-      for (let d = 0; d < fullLength; d += 0.25) {
-        if (path.getTangentAt(d / fullLength).dot(finalDir) < 0.985) bendEnd = d;
+      // A path with several bends (a bypass out and back, 130 m long) shows
+      // only its first manoeuvre: later bends count only when they follow
+      // within 20 m (a lane change straight into a turn).
+      const fullLength = path.getLength(), tangent = d => path.getTangentAt(Math.min(1, Math.max(0, d / fullLength)));
+      const bends = [];
+      for (let d = 0, open = null; d < fullLength; d += 0.25) {
+        const turning = tangent(d).dot(tangent(d + 2)) < 0.9995;
+        if (turning && !open) open = { from: d };
+        else if (!turning && open) { open.to = d; bends.push(open); open = null; }
+        if (open && d + 0.25 >= fullLength) { open.to = fullLength; bends.push(open); }
       }
+      let bendEnd = 0;
+      for (const b of bends) { if (bendEnd && b.from - bendEnd > 20) break; bendEnd = b.to; }
       const length = Math.min(fullLength, bendEnd ? bendEnd + 4 : 14);
       const n = Math.max(8, Math.ceil(length / 0.25));
       let pts = Array.from({ length: n + 1 }, (_, i) => path.getPointAt(i / n * length / fullLength));
@@ -6533,7 +6548,7 @@
     bar.add(blueBeacon);
     bar.add(redBeacon);
     car.add(bar);
-    car.userData.beacons = [blueBeacon, redBeacon];
+    car.userData.beacons = [blueBeacon, redBeacon]; beaconHosts.add(car);
     window.PDD_VEHICLES.addGlow(blueBeacon, 0x208CFF, 1.7);
     window.PDD_VEHICLES.addGlow(redBeacon, 0xFF3434, 1.7);
 
@@ -7164,6 +7179,7 @@
       yellowMat.color.setHex(0xF59E0B);
       tl.userData.beacons = [yellowLamp];
     }
+    if (tl.userData.beacons) beaconHosts.add(tl);
 
     tl.setLightState = function(s) {
       lamps.forEach(lamp => { lamp.visible = true; });
@@ -8000,7 +8016,7 @@
         new THREE.MeshBasicMaterial({ color: 0xFFB21C }));
       beacon.position.set(0, badgeHeight - 0.4, 0);
       actorMesh.add(beacon);
-      actorMesh.userData.beacons = [beacon];
+      actorMesh.userData.beacons = [beacon]; beaconHosts.add(actorMesh);
       window.PDD_VEHICLES.addGlow(beacon, 0xFFB21C, 1.7);
     }
     if (cfg.beacon === 'blue' && actorMesh.userData.beacons) {
@@ -8374,7 +8390,10 @@
         const sx=cfg.side==='crosswalk_right'?1:-1,base=(situation.mainWidth||8.4)/2+1.9;
         for(let i=0;i<count;i++) {
           const id=i?cfg.id+'_'+(i+1):cfg.id;
-          actors.push({...cfg,id,hideBadge:i>0,concurrentWith:[...(cfg.concurrentWith||[]),...Array.from({length:count},(_,j)=>j?cfg.id+'_'+(j+1):cfg.id).filter(other=>other!==id)],position:[sx*(base+(i-(count-1)/2)*1.25),.18,-(situation.crossWidth||8.4)/2-1.4]});
+          // Two abreast inside the zebra; the third follows behind. A row of
+          // three put its inner walker across the rounded, unmarked corner.
+          const across=count>1?(i%2?.7:-.3):0, behind=Math.floor(i/2)*1.4;
+          actors.push({...cfg,id,hideBadge:i>0,concurrentWith:[...(cfg.concurrentWith||[]),...Array.from({length:count},(_,j)=>j?cfg.id+'_'+(j+1):cfg.id).filter(other=>other!==id)],position:[sx*(base+across),.18,-(situation.crossWidth||8.4)/2-1.4-behind]});
           if(i&&spec.yieldTo.includes(cfg.id))yieldTo.push(id);
         }
       }
@@ -9227,6 +9246,7 @@
   function avenueCross(sc) { const x = withOverrides(sc); return plainGeometry(x) && !authored(sc) && AVENUE_WIDTHS.includes(x.crossWidth) ? x.crossWidth : 0; }
   function avenueExits(situation) {
     const out = { straight: 8.4, left: 8.4, right: 8.4 };
+    if (situation.fixedExitWidths) return { ...out, ...situation.fixedExitWidths };
     if (state.cityAvenues === false) return out;
     const main = avenueMain(situation), cross = avenueCross(situation);
     if (main && Math.random() < AVENUE_CHANCE) out.straight = main;
@@ -9880,12 +9900,55 @@
     return { points, exitYaw };
   }
 
+  function occupiesRailway(ev, actor) {
+    if (actor.done || actor.fall || !actor.mesh.parent) return false;
+    const box = actorFootprint(actor);
+    ev.group.updateWorldMatrix(true, false);
+    const inverse = ev.group.matrixWorld.clone().invert();
+    const p = box.p.clone().applyMatrix4(inverse);
+    const f = new THREE.Vector3(Math.sin(box.yaw), 0, Math.cos(box.yaw)).transformDirection(inverse);
+    const halfZ = Math.abs(f.z) * box.halfLength + Math.abs(f.x) * box.halfWidth;
+    const halfX = Math.abs(f.x) * box.halfLength + Math.abs(f.z) * box.halfWidth;
+    const trackHalf = (ev.rail.train?.halfWidth || 1.8) + 1.4;
+    return Math.abs(p.x) < 4.2 + halfX && p.z + halfZ > ev.crossingZ - trackHalf &&
+      p.z - halfZ < ev.crossingZ + ((ev.scene.railway.tracks || 1) - 1) * 5 + trackHalf;
+  }
+
+  // Traffic inherited from an earlier task also obeys the current crossing.
+  // Stopping only on contact with the train leaves a car touching its flank:
+  // neither participant can then advance far enough to clear the other.
+  function railwayTrafficSpeed(actor, box, forward, dt) {
+    const ev = state.roadEvent;
+    if (!ev?.rail || ev.rail.open || ['tram', 'train'].includes(actor.config.type)) return actor.maxSpeed;
+    // These cars entered before the crossing was created; let them leave it.
+    if (ev.rail.clearingActors?.includes(actor)) return actor.maxSpeed;
+    ev.group.updateWorldMatrix(true, false);
+    const inverse = ev.group.matrixWorld.clone().invert();
+    const p = box.p.clone().applyMatrix4(inverse), direction = forward.clone().transformDirection(inverse);
+    if (Math.abs(direction.z) < .8 || Math.abs(p.x) > 4.2 + box.halfWidth) return actor.maxSpeed;
+    const r = ev.scene.railway, offset = ev.crossingZ - ev.railBoundaryZ;
+    const boundary = direction.z > 0 ? ev.railBoundaryZ : ev.crossingZ + ((r.tracks || 1) - 1) * 5 + offset;
+    const ahead = (boundary - p.z) / direction.z;
+    // A vehicle already beyond the stop point must clear the tracks, rather
+    // than stop on them. Vehicles approaching retain the normal queue gap.
+    if (ahead < -box.halfLength) return actor.maxSpeed;
+    const room = Math.max(0, ahead - box.halfLength - 1.4), braking = 8, headway = .8;
+    return Math.min(actor.maxSpeed,
+      Math.sqrt((braking * headway) ** 2 + 2 * braking * room) - braking * headway,
+      room / Math.max(dt, .001));
+  }
+
   function followingSpeed(actor, traffic, dt) {
     if (actor.config.type === 'pedestrian') return actor.maxSpeed;
+    const crossing = state.roadEvent;
+    if (actor === crossing?.rail?.train && crossing.rail.clearingActors?.length) {
+      crossing.rail.clearingActors = crossing.rail.clearingActors.filter(a => occupiesRailway(crossing, a));
+      if (crossing.rail.clearingActors.length) return 0;
+    }
     const box = traffic.get(actor).box;
     const forward = new THREE.Vector3(Math.sin(box.yaw), 0, Math.cos(box.yaw));
     const right = new THREE.Vector3(forward.z, 0, -forward.x);
-    let limit = actor.maxSpeed;
+    let limit = railwayTrafficSpeed(actor, box, forward, dt);
     if (['tram','train'].includes(actor.config.type)) {
       for(let d=box.halfLength+1;d<box.halfLength+30;d+=1) {
         if(pointBlocked(box.p.clone().addScaledVector(forward,d),actor)) {
@@ -10081,7 +10144,7 @@
           // A jam: a vehicle stuck behind other traffic right in front of the
           // player (who has to get past it to the question) does not stay a
           // wall — after a short wait it leaves (fades out) like at a run-out.
-          if (trafficContact && !playerContact && !state.isAtSituation && a.fade == null && a.config.type !== 'pedestrian' && a.config.type !== 'tram' && !a.railTerminal) {
+          if (trafficContact && !playerContact && !state.isAtSituation && a.fade == null && !['pedestrian', 'tram', 'train'].includes(a.config.type) && !a.railTerminal) {
             const ahead = box.p.clone().sub(playerCarGroup.position);
             const fwd = new THREE.Vector3(Math.sin(playerCarGroup.rotation.y), 0, Math.cos(playerCarGroup.rotation.y));
             const along = ahead.dot(fwd), side = Math.abs(ahead.x * fwd.z - ahead.z * fwd.x);
@@ -11974,7 +12037,7 @@
         const path=curve(pts.map(([x,q])=>new THREE.Vector3(x,0,z+q))),length=path.getLength();
         for(let d=1;d<length;d+=2) {
           const u=d/length,p=path.getPointAt(u),v=path.getTangentAt(u);
-          const m=addFlatPlane(seg,.13,1,-p.x,p.z,.034,paint);m.rotation.z=Math.atan2(v.x,v.z);m.userData.laneGuideMarking=true;
+          const m=addFlatPlane(seg,.13,1,-p.x,p.z,.034,paint);m.rotation.z=Math.atan2(v.x,v.z);m.userData.laneGuideMarking=true;m.userData.questionEvidence=true;
         }
       }
     }
@@ -12022,8 +12085,18 @@
     const z=ev.crossingZ, departing=ev.scene.railway.trainDeparting, start=new THREE.Vector3(departing?-36:28,0,z);
     const train=addRoadActor(ev.group,{id:'road_train',type:'train',name:'Поезд',color:'#397BA3',tailColor:departing?0x3E759A:undefined},start,-Math.PI/2,
       [start,new THREE.Vector3(-320,0,z)],16);
+    ev.rail.train=train;
+    // A new task can meet through traffic already crossing the track. Keep
+    // the whole train outside the road until those cars have cleared it;
+    // spawning its tail through them caused an unrecoverable contact jam.
+    ev.rail.clearingActors=state.actors.filter(a=>a!==train && !['train','tram','pedestrian'].includes(a.config.type) && occupiesRailway(ev,a));
+    if(ev.rail.clearingActors.length && !departing) {
+      start.x=Math.max(start.x,train.halfLength+7.5);
+      train.mesh.position.copy(start);train.initialPos.copy(start);
+      train.path=curve([start,new THREE.Vector3(-320,0,z)]);train.length=train.path.getLength();
+    }
     train.clearCrossingDistance=Math.max(0,start.x+train.halfLength+7.5);
-    train.waitsForPlayer=true; ev.rail.train=train; ev.actors.push(train);
+    train.waitsForPlayer=true; ev.actors.push(train);
     train.mesh.userData.questionEvidence=false;
   }
 
@@ -12235,18 +12308,21 @@
     ev.bypassFrom=ev.stopZ+40;ev.bypassTo=ev.stopZ+150;
     const gap1=[ev.stopZ+42,ev.stopZ+64],gap2=[ev.stopZ+126,ev.stopZ+148];
     ev.bypass=replaceCorridorStrip(from,to,g=>{
-      const widen=z=>THREE.MathUtils.smoothstep(z,from,from+22)*(1-THREE.MathUtils.smoothstep(z,to-22,to));
+      // The carriageways part over 40 m: a 22 m split read as a broken kink.
+      const SPLIT=40,widen=z=>THREE.MathUtils.smoothstep(z,from,from+SPLIT)*(1-THREE.MathUtils.smoothstep(z,to-SPLIT,to));
       const ownAsphalt=new THREE.MeshLambertMaterial({color:BRAND.asphalt});
       for(let z=from;z<to;z+=2){const m=addRibbon(g,z,Math.min(z+2,to),q=>-4.2-4.2*widen(q),q=>4.2*(1-widen(q)),0.02,ownAsphalt);m.userData.surface="road";}
       // Second carriageway separates gradually; the median has two actual openings.
-      const offset=z=>2*THREE.MathUtils.smoothstep(z,from,from+22)*(1-THREE.MathUtils.smoothstep(z,to-22,to));
+      const offset=z=>2*widen(z);
       const asphalt=new THREE.MeshLambertMaterial({color:BRAND.asphalt}),paint=roadMarkingMat();
       for(let z=from;z<to;z+=2){const end=Math.min(z+2,to),m=addRibbon(g,z,end,q=>offset(q),q=>offset(q)+8.4,0.021,asphalt);m.userData.surface='road';}
       for(const [a,b] of [gap1,gap2]) roadSurface(g,2.05,b-a,1,(a+b)/2);
-      for(const [a,b] of [[from,gap1[0]],[gap1[1],gap2[0]],[gap2[1],to]]){
+      // The median starts with a blunt nose, not a hair-thin wedge.
+      const nose=SPLIT*0.3;
+      for(const [a,b] of [[from+nose,gap1[0]],[gap1[1],gap2[0]],[gap2[1],to-nose]]){
         const m=addRibbon(g,a,b,()=>0,offset,0.18,new THREE.MeshLambertMaterial({color:season().ground}));m.userData.surface='sidewalk';
       }
-      for(let z=from+24;z<to-24;z+=5)addFlatPlane(g,0.13,2,-4.2,z,0.029,paint);
+      for(let z=from+SPLIT+2;z<to-SPLIT-2;z+=5)addFlatPlane(g,0.13,2,-4.2,z,0.029,paint);
       // Edge lines along both outer kerbs, following the widening.
       addEdgeLineZ(g,from-SEAM,to+SEAM,q=>-4.2-4.2*widen(q),-1,paint);addEdgeLineZ(g,from-SEAM,to+SEAM,q=>offset(q)+8.4,1,paint);
       const closed=createChevronBarrier(8.4);closed.position.set(-4.2,0,ev.stopZ+58);g.add(closed);
@@ -12254,11 +12330,14 @@
       for(let z=ev.stopZ+54;z<ev.stopZ+125;z+=6){const cone=createTrafficCone();cone.position.set(-0.3,0,z);g.add(cone);}
       for(let z=gap1[0];z<=gap2[1];z+=5)addFlatPlane(g,0.13,2,6.2,z,0.028,paint);
     },true);
+    // The rural strip under the bypass keeps its pines, not its asphalt and
+    // paint: its centre dashes and edge lines showed through the new road.
+    ev.rural?.children.forEach(o=>{if(o.isMesh)o.visible=false;});
     const warning=addRoadSign(ev.group,'3.2',ev.stopZ+57,'right',null,-4.2);warning.userData.questionEvidence=true;
     const p=new THREE.Vector3(8,0,ev.stopZ+44);
     const car=addRoadActor(ev.group,{id:'bypass_oncoming',type:'car',name:'Встречный',color:'#2BC280',question:true},p,Math.PI,
       [p,new THREE.Vector3(8,0,ev.stopZ-34)],6);ev.actors.push(car);
-    ev.guide=createRouteGuide([curve([[-1.8,15],[-1.8,39],[1,50],[4,60],[4,124],[1,136],[-1.8,147]].map(([x,z])=>new THREE.Vector3(x,0.12,ev.stopZ+z)))]);
+    ev.guide=createRouteGuide([curve([[-1.8,4],[-1.8,36],[1,45],[4,53],[4,124],[1,136],[-1.8,147]].map(([x,z])=>new THREE.Vector3(x,0.12,ev.stopZ+z)))]);
     ev.guide.userData.questionEvidence=true;ev.group.add(ev.guide);ev.guide.visible=false;
   }
   function updateTemporaryBypass(ev) {
@@ -14008,11 +14087,14 @@
     requestAnimationFrame(animate);
     const elapsed = lastTime === null ? 0 : Math.max(0, (time - lastTime) / 1000);
     const dt = Math.min(elapsed, 0.05);
-    lastTime = time;
     // The ceremony follows wall time even below 20 FPS; road physics retains
     // its smaller integration step. A background/resume gap stays bounded.
-    if (reveal) { updateReveal(Math.min(elapsed, 0.1)); return; }
-    if (state.paused) return;
+    if (reveal) { updateReveal(Math.min(elapsed, 0.1)); lastTime = time; return; }
+    if (state.paused) { lastTime = time; return; }
+    // A question waits on a standing car: on a weak phone that still picture
+    // is drawn at 30 FPS (blinkers and walkers look the same), half the work.
+    const still = Math.abs(state.speed || 0) < 0.05 && (state.isAtSituation || state.roadEvent?.phase === 'question');
+    if ((state.weak || quality.struggling) && still && elapsed < 0.03) return;
     processSceneryJobs(elapsed>.035?1:3);
     if (!state.paused) {
       updateAttract(dt);
@@ -14025,11 +14107,15 @@
       updateBlinkers(dt);
       updateMistakeHighlight(dt);
       gameAudio?.update(dt, time / 1000);
-      state.roadSegments.forEach(seg => seg.traverse(obj => {
-        if (obj.userData.beacons) obj.userData.beacons.forEach((lamp, i) => {
-          lamp.visible = Math.floor(time / 180 + i) % 2 === 0;
-        });
-      }));
+      // Flashing lamps are registered where they are made: walking every
+      // road segment's whole tree each frame only to find them cost more
+      // than drawing them. Hosts no longer on the road are dropped.
+      const segs = new Set(state.roadSegments);
+      beaconHosts.forEach(host => {
+        let root = host; while (root && !segs.has(root)) root = root.parent;
+        if (!root) { if (!host.parent) beaconHosts.delete(host); return; }
+        host.userData.beacons.forEach((lamp, i) => { lamp.visible = Math.floor(time / 180 + i) % 2 === 0; });
+      });
       // Move only near the edge, baking world coordinates into both detail
       // and macro UVs. Texture offsets wrap at a different macro phase.
       const groundZ = Math.round((playerCarGroup.position.z + 500) / 100) * 100;
@@ -14049,6 +14135,7 @@
           distanceM: Math.round(state.distanceTraveled), limitKmH: effectiveLimitKmH() });
       }
     }
+    lastTime = time;
     adaptQuality(elapsed);
     renderer.render(scene, camera);
   }
@@ -14069,6 +14156,8 @@
     if (quality.sum < 1.5) return;
     const avg = quality.sum / quality.frames; quality.sum = quality.frames = 0;
     let next = quality.ratio;
+    if (avg > 1 / 45 && quality.ratio <= quality.min + 0.01) quality.struggling = true;
+    else if (avg < 1 / 52) quality.struggling = false;
     if (avg > 1 / 45) next = Math.max(quality.min, quality.ratio - 0.15);
     else if (avg < 1 / 57) next = Math.min(quality.max, quality.ratio + 0.1);
     if (Math.abs(next - quality.ratio) > 0.01) { quality.ratio = next; renderer.setPixelRatio(next); }
@@ -14542,11 +14631,11 @@
   }
 
   // Simple steering through a junction: the car slows for the curve ahead
-  // like a driver would (a turn at 30-35 km/h, a U-turn at ~25), instead of
+  // like a driver would: tighter curves get a lower comfortable speed, instead of
   // sweeping round at the full town speed with the gas held.
   function curveSpeedLimit(ap) {
     // braking: the coast-down rate integrateDriving applies with the gas held.
-    const lateral = 18, braking = 4;
+    const lateral = 4, braking = 6;
     let limit = Infinity;
     const at = s => { const t = ap.path.getTangentAt(Math.min(1, s / ap.length)); return Math.atan2(t.x, t.z); };
     for (let d = 0; d <= 30 && ap.s + d < ap.length; d += 1) {
@@ -14555,7 +14644,7 @@
       if (bend < 1e-3) continue;
       limit = Math.min(limit, Math.sqrt(lateral / bend + 2 * braking * d));
     }
-    return Math.max(5.5, limit);
+    return Math.max(3.5, limit);
   }
 
   function integrateDriving(dt, limit = state.maxSpeed) {
@@ -14563,11 +14652,17 @@
     updateHeldExit();
     applySteeringAssist(dt);
     if (state.autoPath && state.resolution) limit = Math.min(limit, curveSpeedLimit(state.autoPath));
+    // Brake from the button press, including the straight approach before
+    // the curve. Holding the accelerator must not override this assistance.
+    const turnChoice = state.resolution?.simpleChoice;
+    const turnRequested = ['left', 'right', 'uturn'].includes(turnChoice) ||
+      !!state.steerPress || !!state.steering;
+    if (turnRequested) limit = Math.min(limit, turnChoice === 'uturn' || state.steerPress?.uturn ? 4 : 5.5);
     // Turning by hand at a junction (or a U-turn): the car eases off to
-    // ~27 km/h like a driver does, so the turn stays tight however hard the
+    // ~20 km/h like a driver does, so the turn stays tight however hard the
     // gas is held. The way is not fixed: the player steers.
     const turningAtJunction = !state.simpleSteering && state.resolution?.phase === 'manual' && !!state.steering;
-    if (turningAtJunction) limit = Math.min(limit, 7.5);
+    if (turningAtJunction) limit = Math.min(limit, 5.5);
     // Brake: firm deceleration while moving; from a standstill it becomes
     // reverse gear (slow, negative speed). Gas is ignored while braking.
     if (state.isBraking) {
@@ -14577,7 +14672,7 @@
       state.speed = Math.min(0, state.speed + dt * 12);
     } else if (state.speed > limit + 0.01) {
       // Above the limit in force (it just dropped): coast down, do not snap.
-      state.speed = Math.max(limit, state.speed - dt * (state.isAccelerating ? 4 : 22));
+      state.speed = Math.max(limit, state.speed - dt * (state.isAccelerating ? (turnRequested ? 8 : 6) : 22));
     } else {
       state.speed = state.isAccelerating ? Math.min(limit, state.speed + dt * 9) : Math.max(0, state.speed - dt * 22);
     }
@@ -14936,9 +15031,10 @@
       it.guide.visible = !it.situation.hideGuide && it === state.activeIntersection && Math.abs(playerCarGroup.position.z - it.centerZ) < 55;
     });
     state.orbitYaw = state.attract ? (state.orbitYaw || 0) : (state.orbitYaw || 0) * Math.exp(-4 * dt);
-    // In a question the view is square to the road (the car may stand at a
-    // slight angle after a lane change; the scene must not look skewed).
-    let desiredYaw = question ? Math.round(playerCarGroup.rotation.y / (Math.PI / 2)) * (Math.PI / 2)
+    // Question evidence is framed in the current road's X/Z coordinates.
+    // Always look along that road: a diagonal approach must not rotate the
+    // question by 90 degrees and crop its car, trajectories or signs.
+    let desiredYaw = question ? 0
       : playerCarGroup.rotation.y + (state.orbitYaw || 0);
     let delta = Math.atan2(Math.sin(desiredYaw - cameraHeading), Math.cos(desiredYaw - cameraHeading));
     cameraHeading += delta * (1 - Math.exp(-3 * dt));
@@ -14964,7 +15060,7 @@
         .forEach(o => boxes.push(new THREE.Box3().setFromObject(o)));
       if (ev.guide?.userData.questionEvidence) {
         const b = new THREE.Box3().setFromObject(ev.guide);
-        if(ev.kind === 'temporary_bypass') b.max.z=Math.min(b.max.z,ev.stopZ+64);
+        if(ev.kind === 'temporary_bypass') b.max.z=Math.min(b.max.z,ev.stopZ+56);
         boxes.push(b);
       }
       const minX = Math.min(-6, ...boxes.map(b => b.min.x)) - 1;
@@ -14984,7 +15080,10 @@
       // need no 40 m of road): the view only grows for evidence far ahead.
       const minZ = Math.min(playerCarGroup.position.z - 4, ...boxes.map(b => b.min.z - 2));
       // Badges and sign plates stand above their objects: room for them below the HUD.
-      const maxZ = Math.min(ev.stopZ + 64, Math.max(ev.stopZ + 8, ...boxes.map(b => b.max.z + b.max.y * 1.05))) + 3.5;
+      // The bypass is framed up to the median opening: the sign, its plate and
+      // the turn into the opposing carriageway, not the closed stretch beyond.
+      const frameEnd = ev.kind === 'temporary_bypass' ? ev.stopZ + 56 : ev.stopZ + 64;
+      const maxZ = Math.min(frameEnd, Math.max(ev.stopZ + 8, ...boxes.map(b => b.max.z + b.max.y * 1.05))) + 3.5;
       const visibleFraction = Math.max(0.25, (height - state.viewportInsets.top - state.viewportInsets.bottom) / height);
       desiredViewSize = Math.max(26, (maxX - minX) / (width / height), (maxZ - minZ) * 0.69 / visibleFraction);
       focus.set((minX + maxX) / 2, 0, (minZ + maxZ) / 2);

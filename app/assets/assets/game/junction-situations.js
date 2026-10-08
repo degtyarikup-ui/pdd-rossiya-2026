@@ -764,44 +764,50 @@ window.PDD_EXTRA_SITUATIONS = [
   ],
   "hideGuide": true,
   "mainWidth": 16.8,
+  "crossWidth": 16.8,
   "mainLaneDividers": [
-   3.6
+   4.2
   ],
+  "fixedExitWidths": {
+   "straight": 16.8,
+   "left": 16.8,
+   "right": 16.8
+  },
   "junctionLaneMarkingPaths": [
    [
     [
-     -5.4,
-     -9
-    ],
-    [
-     -5.4,
-     -4
+     0,
+     -11.8
     ],
     [
      0,
-     1.8
+     -4
+    ],
+    [
+     4,
+     0
     ],
     [
      14,
-     1.8
+     0
     ]
    ],
    [
     [
-     -1.8,
-     -9
+     -4.2,
+     -11.8
     ],
     [
-     -1.8,
-     -3
+     -4.2,
+     -4
     ],
     [
      2,
-     5.4
+     4.2
     ],
     [
      14,
-     5.4
+     4.2
     ]
    ]
   ]
