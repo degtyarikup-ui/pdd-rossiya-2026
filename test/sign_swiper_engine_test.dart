@@ -90,5 +90,25 @@ void main() {
       expect(restored.totalSwiped, equals(85));
       expect(restored.trainingCount, equals(3));
     });
+
+    test('generateDeck produces 100% practical driving questions with zero naming trivia', () {
+      final signs = SignSwiperEngine.parseSignsJson(mockJson);
+      final engine = SignSwiperEngine(allSigns: signs);
+
+      final deck = engine.generateDeck(count: 30);
+      for (final card in deck) {
+        expect(card.prompt.contains('называется'), isFalse, reason: 'Naming trivia question found');
+        expect(card.prompt.contains('Относится ли этот знак к категории'), isFalse, reason: 'Category trivia question found');
+        expect(card.prompt.contains('В народе'), isFalse, reason: 'Folk name trivia question found');
+
+        if (card.isPermissionQuestion) {
+          expect(card.rightActionLabel, equals('МОЖНО'));
+          expect(card.leftActionLabel, equals('НЕЛЬЗЯ'));
+        } else {
+          expect(card.rightActionLabel, equals('ДА'));
+          expect(card.leftActionLabel, equals('НЕТ'));
+        }
+      }
+    });
   });
 }

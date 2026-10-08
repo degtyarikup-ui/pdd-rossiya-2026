@@ -3001,7 +3001,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameSignSwiperDesc.
   ///
   /// In ru, this message translates to:
-  /// **'Сортируйте дорожные знаки жестами вправо и влево: проверяйте знания названий, категорий и запретов на скорость.'**
+  /// **'Решайте дорожные ситуации по знакам жестами вправо и влево: проверяйте знание приоритетов, запретов, зон действия и исключений в ПДД.'**
   String get gameSignSwiperDesc;
 
   /// No description provided for @gameSignSwiperModeSprint.

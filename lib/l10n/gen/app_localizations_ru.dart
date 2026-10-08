@@ -1713,7 +1713,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameSignSwiperDesc =>
-      'Сортируйте дорожные знаки жестами вправо и влево: проверяйте знания названий, категорий и запретов на скорость.';
+      'Решайте дорожные ситуации по знакам жестами вправо и влево: проверяйте знание приоритетов, запретов, зон действия и исключений в ПДД.';
 
   @override
   String get gameSignSwiperModeSprint => 'Блиц-аркада';

@@ -236,38 +236,26 @@ class SwipeCardViewState extends State<SwipeCardView>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Категория / Номер бейдж
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: colors.secondaryText.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    sign.number,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w800,
-                                      color: colors.primaryText,
-                                    ),
+                            // Категория бейдж
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: colors.secondaryText.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  sign.category,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: colors.secondaryText,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    sign.category,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: colors.secondaryText,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                             const SizedBox(height: 14),
 
@@ -299,42 +287,22 @@ class SwipeCardViewState extends State<SwipeCardView>
                             ),
                             const SizedBox(height: 14),
 
-                            // Народное имя или подсказка
-                            if (sign.folkName != null) ...[
-                              Center(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    color: Colors.amber.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    'В народе: «${sign.folkName}»',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.amber,
-                                    ),
-                                  ),
+                            // Подсказка жеста с адаптивными метками
+                            Center(
+                              child: Text(
+                                'Свайп вправо — ${card.rightActionLabel} • влево — ${card.leftActionLabel}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: colors.secondaryText.withValues(alpha: 0.75),
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                            ] else ...[
-                              Center(
-                                child: Text(
-                                  'Свайп вправо — ДА • влево — НЕТ',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: colors.secondaryText.withValues(alpha: 0.7),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ],
                         ),
                       ),
 
-                      // Оверлей бейджа «ДА / ВЕРНО» (появляется при свайпе вправо)
+                      // Оверлей бейджа вправо (появляется при свайпе вправо)
                       if (isSwipingRight)
                         Positioned(
                           top: 24,
@@ -356,15 +324,15 @@ class SwipeCardViewState extends State<SwipeCardView>
                                     ),
                                   ],
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                                    SizedBox(width: 6),
+                                    const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                                    const SizedBox(width: 6),
                                     Text(
-                                      'ДА / ВЕРНО',
-                                      style: TextStyle(
-                                        fontSize: 15,
+                                      card.rightActionLabel,
+                                      style: const TextStyle(
+                                        fontSize: 16,
                                         fontWeight: FontWeight.w900,
                                         color: Colors.white,
                                         letterSpacing: 0.5,
@@ -377,7 +345,7 @@ class SwipeCardViewState extends State<SwipeCardView>
                           ),
                         ),
 
-                      // Оверлей бейджа «НЕТ / НЕВЕРНО» (появляется при свайпе влево)
+                      // Оверлей бейджа влево (появляется при свайпе влево)
                       if (isSwipingLeft)
                         Positioned(
                           top: 24,
@@ -399,15 +367,15 @@ class SwipeCardViewState extends State<SwipeCardView>
                                     ),
                                   ],
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.cancel_rounded, color: Colors.white, size: 20),
-                                    SizedBox(width: 6),
+                                    const Icon(Icons.cancel_rounded, color: Colors.white, size: 20),
+                                    const SizedBox(width: 6),
                                     Text(
-                                      'НЕТ / НЕВЕРНО',
-                                      style: TextStyle(
-                                        fontSize: 15,
+                                      card.leftActionLabel,
+                                      style: const TextStyle(
+                                        fontSize: 16,
                                         fontWeight: FontWeight.w900,
                                         color: Colors.white,
                                         letterSpacing: 0.5,

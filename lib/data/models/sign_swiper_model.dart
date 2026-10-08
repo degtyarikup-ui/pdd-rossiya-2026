@@ -45,10 +45,11 @@ class SignItem {
 
 /// Тип вопроса на карточке свайпера.
 enum SignQuestionType {
-  nameMatch,
-  categoryMatch,
-  folkNameMatch,
-  ruleScenario,
+  actionPermission,
+  driverObligation,
+  zoneAndException,
+  speedAndLane,
+  warningNotice,
 }
 
 /// Карточка с вопросом-утверждением для свайпера.
@@ -68,6 +69,23 @@ class SignCardQuestion {
     required this.explanation,
     required this.type,
   });
+
+  /// Определяет, начинается ли вопрос с разрешения («Можно ли», «Разрешено ли»).
+  bool get isPermissionQuestion {
+    final lower = prompt.trim().toLowerCase();
+    return lower.startsWith('можно') ||
+        lower.startsWith('разрешено') ||
+        lower.startsWith('разрешена') ||
+        lower.startsWith('разрешен') ||
+        lower.startsWith('разрешён') ||
+        lower.startsWith('разрешается');
+  }
+
+  /// Текст для правого свайпа / кнопки согласия («МОЖНО» или «ДА»).
+  String get rightActionLabel => isPermissionQuestion ? 'МОЖНО' : 'ДА';
+
+  /// Текст для левого свайпа / кнопки несогласия («НЕЛЬЗЯ» или «НЕТ»).
+  String get leftActionLabel => isPermissionQuestion ? 'НЕЛЬЗЯ' : 'НЕТ';
 }
 
 /// Сохранённый прогресс игрока в игре «Знак-Свайпер».

@@ -624,17 +624,21 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   }
 
   Widget _buildBottomButtons(AppThemeColors colors) {
+    final currentCard = (_currentIndex < _deck.length) ? _deck[_currentIndex] : null;
+    final leftLabel = currentCard?.leftActionLabel ?? 'НЕТ';
+    final rightLabel = currentCard?.rightActionLabel ?? 'ДА';
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 18),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          // Кнопка НЕТ / ВЛЕВО
+          // Кнопка НЕТ / НЕЛЬЗЯ
           _buildActionButton(
             colors: colors,
             icon: Icons.close_rounded,
             color: const Color(0xFFEF4444),
-            label: appL10n.gameSignSwiperSwipeLeft,
+            label: leftLabel,
             onTap: () {
               HapticFeedbackHelper.tap();
               _cardController.swipeLeft();
@@ -667,12 +671,12 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
             ),
           ],
 
-          // Кнопка ДА / ВПРАВО
+          // Кнопка ДА / МОЖНО
           _buildActionButton(
             colors: colors,
             icon: Icons.check_rounded,
             color: const Color(0xFF10B981),
-            label: appL10n.gameSignSwiperSwipeRight,
+            label: rightLabel,
             onTap: () {
               HapticFeedbackHelper.tap();
               _cardController.swipeRight();
