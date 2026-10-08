@@ -231,10 +231,11 @@ class _TrafficControllerScreenState
 
     _curGesture = gestures[_random.nextInt(gestures.length)];
     _curApproach = approaches[_random.nextInt(approaches.length)];
-    // В 70% случаев авто, в 30% трамвай
-    _curVehicle = _random.nextDouble() < 0.7
-        ? VehicleKind.car
-        : VehicleKind.tram;
+    // В основном авто (~88%), трамвай появляется редко (~12%) и не два раза подряд
+    final wasTram = _curVehicle == VehicleKind.tram;
+    _curVehicle = (!wasTram && _random.nextDouble() < 0.12)
+        ? VehicleKind.tram
+        : VehicleKind.car;
 
     _updateEngineScenario();
   }
