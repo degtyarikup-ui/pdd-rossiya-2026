@@ -1,4 +1,5 @@
 import { updateKey, validateRelease } from './app_updates.js';
+import { reportIncident, errorCode } from './diagnostics.js';
 import { importPKCS8, SignJWT } from 'jose';
 
 export const DEFAULT_NOTIFICATION_CONFIG = Object.freeze({ pushEnabled: false, popupEnabled: true, streakEnabled: true, gameEnabled: true });
@@ -262,7 +263,10 @@ export class NotificationsState {
         // Persist sending before the network request. A restart must not repeat a broadcast.
         item.status = 'sending'; await this.state.storage.put(key, item);
         try { item.providerId = await sendPush(this.env, item); item.status = 'accepted'; item.sentAt = Date.now(); }
-        catch (error) { item.status = error.unknown ? 'unknown' : 'failed'; item.error = error.message; }
+        catch (error) {
+          item.status = error.unknown ? 'unknown' : 'failed'; item.error = error.message;
+          await reportIncident(this.env, { category: 'infrastructure', operation: 'notifications.push', code: error.unknown ? 'delivery_unknown' : errorCode(error), provider: 'firebase' });
+        }
       }
       await this.state.storage.put(key, item);
     }

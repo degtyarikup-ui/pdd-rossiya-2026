@@ -1,3 +1,4 @@
+import { reportIncident, errorCode } from './diagnostics.js';
 // Оплата премиума на сайте: СБП через агрегатора Platega (docs.platega.io).
 // Покупка периода — разовая, без автопродления; срок начисляется через
 // extendEntitlement (источник `web`) и работает на всех платформах, где
@@ -275,7 +276,9 @@ export async function handlePayCheck(request, env, user, deps) {
   const order = env.INSTALLS ? await readJson(env, 'pay_order:' + orderId) : null;
   if (!order || order.userId !== user.id) return jsonResponse({ error: 'order not found' }, 404);
   if (order.status === 'pending' && webPaymentsLive(env)) {
-    try { await settleOrder(env, order, deps); } catch (_) {}
+    try { await settleOrder(env, order, deps); } catch (error) {
+      await reportIncident(env, { category: 'purchase', operation: 'payment.check', code: errorCode(error), userId: user.id, provider: 'platega' });
+    }
   }
   return jsonResponse({ ok: true, status: order.status });
 }

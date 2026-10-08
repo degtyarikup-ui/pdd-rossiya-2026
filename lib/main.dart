@@ -12,6 +12,7 @@ import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/data/services/install_reporter.dart';
 import 'package:pdd_app/data/services/notification_service.dart';
@@ -27,6 +28,25 @@ import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final previousFlutterError = FlutterError.onError;
+  FlutterError.onError = (details) {
+    if (previousFlutterError != null) {
+      previousFlutterError(details);
+    } else {
+      FlutterError.presentError(details);
+    }
+    ErrorReporter.report(
+      ErrorCategory.app,
+      'flutter.framework',
+      error: details.exception,
+    );
+  };
+  final previousPlatformError = PlatformDispatcher.instance.onError;
+  PlatformDispatcher.instance.onError = (error, stack) {
+    ErrorReporter.report(ErrorCategory.app, 'dart.unhandled', error: error);
+    return previousPlatformError?.call(error, stack) ?? false;
+  };
 
   try {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -54,18 +74,21 @@ void main() async {
     await progressDataSource.init().timeout(const Duration(seconds: 2));
   } catch (e) {
     debugPrint('ProgressDataSource init error: $e');
+    ErrorReporter.report(ErrorCategory.app, 'startup.progress', error: e);
   }
 
   try {
     await PremiumService.instance.init().timeout(const Duration(seconds: 2));
   } catch (e) {
     debugPrint('PremiumService init error: $e');
+    ErrorReporter.report(ErrorCategory.app, 'startup.premium', error: e);
   }
 
   try {
     await AuthService.instance.init().timeout(const Duration(seconds: 2));
   } catch (e) {
     debugPrint('AuthService init error: $e');
+    ErrorReporter.report(ErrorCategory.app, 'startup.auth', error: e);
   }
 
   // Инициализация облачной синхронизации прогресса
@@ -82,6 +105,7 @@ void main() async {
   // Уведомление о новой установке в Telegram (fire-and-forget, не блокирует старт).
   unawaited(InstallReporter.reportIfNeeded());
   unawaited(UsageReporter.instance.flush());
+  unawaited(ErrorReporter.instance.flush());
 
   // Инициализация сервиса звуковых эффектов (правильный/неправильный ответ)
   unawaited(SoundEffectsService.instance.init());
@@ -152,6 +176,7 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     // тренировку) и при возврате (держит расписание свежим).
     if (state == AppLifecycleState.resumed) {
       unawaited(UsageReporter.instance.flush());
+      unawaited(ErrorReporter.instance.flush());
     }
     if (kIsWeb) return;
     if (state == AppLifecycleState.resumed) {

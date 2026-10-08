@@ -10,6 +10,7 @@ import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum PremiumTier { weekly, threeMonths }
@@ -452,6 +453,13 @@ class PremiumService extends ChangeNotifier {
           !expiry.isAfter(DateTime.now())) {
         if (data['ok'] == true && data['isPremium'] == false) {
           _purchaseVerificationFailure = PurchaseVerificationFailure.inactive;
+        } else {
+          ErrorReporter.report(
+            ErrorCategory.purchase,
+            'premium.verify',
+            code: 'invalid_response',
+            provider: store,
+          );
         }
         return false;
       }
@@ -463,7 +471,13 @@ class PremiumService extends ChangeNotifier {
       await _saveState();
       notifyListeners();
       return true;
-    } catch (_) {
+    } catch (error) {
+      ErrorReporter.report(
+        ErrorCategory.purchase,
+        'premium.verify',
+        error: error,
+        provider: store,
+      );
       return false;
     }
   }
@@ -511,9 +525,23 @@ class PremiumService extends ChangeNotifier {
       if (response.statusCode != 200) return null;
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final url = data['available'] == true ? data['url'] as String? : null;
-      if (url != null && !url.startsWith('https://')) return null;
+      if (url != null && !url.startsWith('https://')) {
+        ErrorReporter.report(
+          ErrorCategory.purchase,
+          'web_payment.start',
+          code: 'invalid_response',
+          provider: 'platega',
+        );
+        return null;
+      }
       return (url: url, order: data['order'] as String?);
-    } catch (_) {
+    } catch (error) {
+      ErrorReporter.report(
+        ErrorCategory.purchase,
+        'web_payment.start',
+        error: error,
+        provider: 'platega',
+      );
       return null;
     }
   }
@@ -538,7 +566,13 @@ class PremiumService extends ChangeNotifier {
               as String?;
       if (status == 'confirmed') await syncWithServer();
       return status;
-    } catch (_) {
+    } catch (error) {
+      ErrorReporter.report(
+        ErrorCategory.purchase,
+        'web_payment.check',
+        error: error,
+        provider: 'platega',
+      );
       return null;
     }
   }

@@ -7,6 +7,7 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class YandexAuthResult {
@@ -70,6 +71,16 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
             }
             return NavigationDecision.navigate;
           },
+          onWebResourceError: (error) {
+            if (error.isForMainFrame == true) {
+              ErrorReporter.report(
+                ErrorCategory.auth,
+                'yandex.webview',
+                code: 'page_load_failed',
+                provider: 'yandex',
+              );
+            }
+          },
         ),
       )
       ..loadRequest(authUrl);
@@ -96,10 +107,23 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
       try {
         final uri = Uri.parse(url);
         final params = Uri.splitQueryString(uri.fragment);
+        if (params['error'] == 'access_denied') {
+          if (mounted) Navigator.of(context).pop();
+          return;
+        }
         if (params['state'] != _oauthState) {
           throw const FormatException('invalid state');
         }
         final token = params['access_token'];
+
+        if (params['error'] != null && params['error'] != 'access_denied') {
+          ErrorReporter.report(
+            ErrorCategory.auth,
+            'yandex.callback',
+            code: 'provider_rejected',
+            provider: 'yandex',
+          );
+        }
 
         if (token != null && token.isNotEmpty) {
           final profile = await _fetchYandexProfile(token);
@@ -110,6 +134,12 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
         }
       } catch (e) {
         debugPrint('YandexAuthSheet: parse token error: $e');
+        ErrorReporter.report(
+          ErrorCategory.auth,
+          'yandex.callback',
+          error: e,
+          provider: 'yandex',
+        );
       }
 
       if (mounted) {
@@ -131,7 +161,15 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final id = data['id']?.toString() ?? '';
-        if (id.isEmpty) return null;
+        if (id.isEmpty) {
+          ErrorReporter.report(
+            ErrorCategory.auth,
+            'yandex.profile',
+            code: 'invalid_response',
+            provider: 'yandex',
+          );
+          return null;
+        }
 
         final realName = data['real_name'] as String?;
         final displayName = data['display_name'] as String?;
@@ -173,9 +211,22 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
           provider: AuthProviderType.yandex,
           createdAt: DateTime.now(),
         );
+      } else {
+        ErrorReporter.report(
+          ErrorCategory.auth,
+          'yandex.profile',
+          code: 'http_${response.statusCode}',
+          provider: 'yandex',
+        );
       }
     } catch (e) {
       debugPrint('YandexAuthSheet: fetch profile error: $e');
+      ErrorReporter.report(
+        ErrorCategory.auth,
+        'yandex.profile',
+        error: e,
+        provider: 'yandex',
+      );
     }
     return null;
   }

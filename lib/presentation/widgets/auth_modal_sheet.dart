@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pdd_app/presentation/widgets/google_web_sign_in_button.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -75,6 +76,7 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
         }
       }
     } catch (e) {
+      ErrorReporter.report(ErrorCategory.auth, 'auth.dialog', error: e);
       if (mounted) {
         setState(() => _isLoading = false);
         setState(() => _error = _failureMessage());
@@ -177,7 +179,13 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                           account,
                         ),
                       ),
-                      onError: (_) {
+                      onError: (error) {
+                        ErrorReporter.report(
+                          ErrorCategory.auth,
+                          'google.web_button',
+                          error: error,
+                          provider: 'google',
+                        );
                         if (mounted) {
                           setState(() => _error = appL10n.authErrorProvider);
                         }

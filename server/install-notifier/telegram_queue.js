@@ -1,3 +1,5 @@
+import { buildIncidentMessage } from './diagnostics.js';
+
 // Persist before acknowledging a notification. One chat is drained at a
 // conservative group-safe rate; Telegram retry_after survives worker restarts.
 export class TelegramQueue {
@@ -13,6 +15,7 @@ export class TelegramQueue {
   }
   fetch(request) {
     return this.serial(async () => {
+      if (new URL(request.url).pathname === '/incident') return this.enqueueIncident(await request.json());
       const { text, dedupKey, photoBase64, messages } = await request.json();
       const items = messages || [{ text, ...(photoBase64 ? { photoBase64 } : {}) }];
       if (!Array.isArray(items) || items.length < 1 || items.length > 2 || items.some(item =>
@@ -30,6 +33,38 @@ export class TelegramQueue {
       });
       return Response.json({ ok: true, queued: true });
     });
+  }
+  async enqueueIncident({ incident, fingerprint }) {
+    if (!incident || !/^[a-f0-9]{64}$/.test(fingerprint || '')) return new Response('invalid incident', { status: 400 });
+    if (!this.env.BOT_TOKEN || !this.env.CHAT_ID) return new Response('not configured', { status: 503 });
+    const now = Date.now(), windowMs = 10 * 60000;
+    const stored = await this.state.storage.get('errors:state') || { recent: [], groups: {}, window: now, count: 0, overflow: 0 };
+    stored.recent = stored.recent.filter(item => now - item.at < 86400000);
+    if (stored.recent.some(item => item.id === incident.id)) return Response.json({ ok: true, duplicate: true });
+    stored.recent.push({ id: incident.id, at: now });
+    stored.recent = stored.recent.slice(-2000);
+    for (const [key, group] of Object.entries(stored.groups)) if (now - group.at >= 86400000) delete stored.groups[key];
+    const group = stored.groups[fingerprint];
+    if (now - stored.window >= windowMs) { stored.window = now; stored.count = 0; }
+    let text = null;
+    if (group && now - group.at < windowMs) group.repeats++;
+    else if (stored.count >= 20) stored.overflow++;
+    else {
+      stored.count++;
+      stored.groups[fingerprint] = { at: now, repeats: 0 };
+      text = buildIncidentMessage(incident, group?.repeats || 0, stored.overflow);
+      stored.overflow = 0;
+    }
+    if (text && !(await this.state.storage.getAlarm())) await this.state.storage.setAlarm(now + 1000);
+    await this.state.storage.transaction(async txn => {
+      await txn.put('errors:state', stored);
+      if (text) {
+        const sequence = (await txn.get('sequence') || 0) + 1;
+        await txn.put('q:' + String(sequence).padStart(16, '0'), { text });
+        await txn.put('sequence', sequence);
+      }
+    });
+    return Response.json({ ok: true, suppressed: !text });
   }
   alarm() {
     return this.serial(async () => {

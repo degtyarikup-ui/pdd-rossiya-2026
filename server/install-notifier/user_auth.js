@@ -115,26 +115,31 @@ export async function revokeUserSessions(env, userId) {
   await env.INSTALLS.put('auth_generation:' + userId, randomToken());
 }
 
-export async function handleAuth(request, env, verify = verifyIdentity) {
+export async function handleAuth(request, env, verify = verifyIdentity, onFailure = () => {}) {
   const path = new URL(request.url).pathname;
   if (path === '/api/auth/session' && request.method === 'POST') {
     const started = Date.now();
     const requestId = crypto.randomUUID();
     let provider = 'unknown';
+    let metadata = {};
     const finish = (body, status, outcome) => {
       // Never record credentials, headers, user IDs, names or provider errors.
       console.log(JSON.stringify({ event: 'auth_session', requestId, provider,
         status, outcome, durationMs: Date.now() - started }));
+      if (status >= 400 && env.SHARED_SECRET && request.headers.get('x-install-secret') === env.SHARED_SECRET && provider !== 'unknown') {
+        onFailure({ ...metadata, category: 'auth', operation: 'auth.session', code: outcome, provider, status, diagnosticId: requestId });
+      }
       const response = reply(body, status);
       response.headers.set('x-auth-diagnostic-id', requestId);
       return response;
     };
     // No legacy or missing-secret bypass for issuing sessions.
     if (!env.SHARED_SECRET || request.headers.get('x-install-secret') !== env.SHARED_SECRET) return finish({ error: 'forbidden' }, 403, 'app_key_rejected');
-    if (!env.INSTALLS) return finish({ error: 'unavailable' }, 503, 'storage_not_configured');
     let body;
     try { body = await request.json(); } catch { return finish({ error: 'invalid json' }, 400, 'invalid_json'); }
     if (['google', 'yandex', 'apple'].includes(body?.provider)) provider = body.provider;
+    metadata = { platform: body?.platform, appVersion: body?.appVersion, device: body?.device };
+    if (!env.INSTALLS) return finish({ error: 'unavailable' }, 503, 'storage_not_configured');
     let user;
     try { user = await verify(body, env); } catch (error) {
       const outcome = error?.message === 'wrong client' ? 'oauth_client_rejected'
@@ -153,8 +158,7 @@ export async function handleAuth(request, env, verify = verifyIdentity) {
       if (!token) return finish({ error: 'unavailable' }, 503, 'session_secret_not_configured');
       return finish({ ok: true, token, expiresAt: new Date(expiresAt).toISOString(), user }, 200, 'session_issued');
     } catch (error) {
-      finish({ error: 'unavailable' }, 500, 'session_creation_failed');
-      throw error;
+      return finish({ error: 'unavailable' }, 500, 'session_creation_failed');
     }
   }
   if (path === '/api/auth/logout' && request.method === 'POST') {

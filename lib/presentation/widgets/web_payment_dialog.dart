@@ -3,6 +3,7 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -65,10 +66,25 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
     final url = start?.url;
     if (url != null) {
       // Та же вкладка: после оплаты Platega вернёт на /app/?pay=done.
-      final opened = await launchUrl(
-        Uri.parse(url),
-        webOnlyWindowName: '_self',
-      );
+      var opened = false;
+      try {
+        opened = await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
+        if (!opened) {
+          ErrorReporter.report(
+            ErrorCategory.purchase,
+            'web_payment.open',
+            code: 'page_not_opened',
+            provider: 'platega',
+          );
+        }
+      } catch (error) {
+        ErrorReporter.report(
+          ErrorCategory.purchase,
+          'web_payment.open',
+          error: error,
+          provider: 'platega',
+        );
+      }
       if (!mounted) return;
       if (opened) {
         Navigator.of(context).pop();
@@ -170,7 +186,9 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : Text(
-                      widget.live ? appL10n.webPayProceed : appL10n.webPayNotify,
+                      widget.live
+                          ? appL10n.webPayProceed
+                          : appL10n.webPayNotify,
                     ),
             );
           },

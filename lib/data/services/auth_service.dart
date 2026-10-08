@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:pdd_app/data/services/auth_session_store.dart';
+import 'package:pdd_app/data/services/error_reporter.dart';
+import 'package:pdd_app/data/services/install_reporter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -37,12 +40,26 @@ class AuthService extends ChangeNotifier {
   String? lastDiagnosticId;
   bool sessionIsTemporary = false;
 
-  void _beginSignIn() {
+  String _signInProvider = 'unknown';
+  void _beginSignIn(String provider) {
+    _signInProvider = provider;
     lastFailure = AuthFailure.cancelled;
     lastDiagnosticId = null;
   }
 
   void _recordSignInError(Object error) {
+    if ((error is SignInWithAppleAuthorizationException &&
+            error.code == AuthorizationErrorCode.canceled) ||
+        (error is PlatformException &&
+            [
+              'sign_in_canceled',
+              'sign_in_cancelled',
+              'canceled',
+              'cancelled',
+            ].contains(error.code))) {
+      lastFailure = AuthFailure.cancelled;
+      return;
+    }
     lastFailure = error is TimeoutException
         ? AuthFailure.timeout
         : error is http.ClientException
@@ -50,6 +67,12 @@ class AuthService extends ChangeNotifier {
         : error is FormatException || error is TypeError
         ? AuthFailure.response
         : AuthFailure.provider;
+    ErrorReporter.report(
+      ErrorCategory.auth,
+      'auth.provider',
+      error: error,
+      provider: _signInProvider,
+    );
   }
 
   @visibleForTesting
@@ -184,7 +207,7 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<bool> signInWithGoogle() async {
-    _beginSignIn();
+    _beginSignIn('google');
     try {
       if (kIsWeb) {
         throw StateError('Web sign-in must use the Google Identity button');
@@ -206,7 +229,7 @@ class AuthService extends ChangeNotifier {
 
   /// Receives an account from Google's official web Identity button.
   Future<bool> signInWithGoogleWebAccount(GoogleSignInAccount account) async {
-    _beginSignIn();
+    _beginSignIn('google');
     try {
       return await _completeGoogleAccount(account);
     } catch (e) {
@@ -259,7 +282,7 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<bool> signInWithApple() async {
-    _beginSignIn();
+    _beginSignIn('apple');
     try {
       final AuthorizationCredentialAppleID credential;
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
@@ -286,6 +309,13 @@ class AuthService extends ChangeNotifier {
 
       final userIdentifier = credential.userIdentifier ?? '';
       if (userIdentifier.isEmpty || credential.identityToken == null) {
+        lastFailure = AuthFailure.provider;
+        ErrorReporter.report(
+          ErrorCategory.auth,
+          'auth.provider',
+          code: 'missing_credential',
+          provider: 'apple',
+        );
         return false;
       }
       final prefs = await SharedPreferences.getInstance();
@@ -349,7 +379,7 @@ class AuthService extends ChangeNotifier {
   static const String yandexClientId = '94aa539db4634e44bf0b209d9a2205d2';
 
   Future<bool> signInWithYandex(BuildContext context) async {
-    _beginSignIn();
+    _beginSignIn('yandex');
     try {
       final result = await YandexAuthSheet.show(context);
       if (result != null) {
@@ -363,13 +393,26 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<bool> _completeSignIn(UserProfile profile, String? credential) async {
+    _signInProvider = profile.provider.name;
     if (credential == null ||
         credential.isEmpty ||
         !BackendConfig.hasNotifier) {
       lastFailure = AuthFailure.provider;
+      ErrorReporter.report(
+        ErrorCategory.auth,
+        'auth.session',
+        code: 'missing_credential',
+        provider: _signInProvider,
+      );
       return false;
     }
     final revision = _accountRevision;
+    Map<String, dynamic> metadata = {};
+    try {
+      metadata = await InstallReporter.clientMetadata().timeout(
+        const Duration(seconds: 2),
+      );
+    } catch (_) {}
     final response = await http
         .post(
           Uri.parse('${BackendConfig.notifierUrl}/api/auth/session'),
@@ -378,6 +421,9 @@ class AuthService extends ChangeNotifier {
             'provider': profile.provider.name,
             'credential': credential,
             'name': profile.name,
+            'platform': metadata['platform'],
+            'appVersion': metadata['version'],
+            'device': metadata['device'],
           }),
         )
         .timeout(const Duration(seconds: 15));
@@ -405,6 +451,12 @@ class AuthService extends ChangeNotifier {
         token.isEmpty ||
         !expiry.isAfter(DateTime.now())) {
       lastFailure = AuthFailure.response;
+      ErrorReporter.report(
+        ErrorCategory.auth,
+        'auth.session',
+        code: 'invalid_response',
+        provider: _signInProvider,
+      );
       return false;
     }
     var temporarySession = false;

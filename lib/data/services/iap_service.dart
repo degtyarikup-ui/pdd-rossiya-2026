@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:crypto/crypto.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
@@ -79,6 +80,15 @@ class IapService extends ChangeNotifier {
   Map<String, ProductDetails> get products => _products;
   String get lastErrorMessage => _lastErrorMessage;
 
+  void _report(String operation, {String? code, Object? error}) =>
+      ErrorReporter.report(
+        ErrorCategory.purchase,
+        operation,
+        code: code,
+        error: error,
+        provider: _store,
+      );
+
   Completer<PurchaseResult>? _currentPurchaseCompleter;
   Completer<bool>? _restoreCompleter;
 
@@ -99,6 +109,7 @@ class IapService extends ChangeNotifier {
         _enqueuePurchases,
         onDone: () => _subscription?.cancel(),
         onError: (error) {
+          _report('iap.stream', error: error);
           debugPrint('IapService: stream error: $error');
           _lastErrorMessage = error.toString();
           _safeCompletePurchase(PurchaseResult.error);
@@ -111,6 +122,7 @@ class IapService extends ChangeNotifier {
       await loadProducts();
     } catch (e) {
       debugPrint('IapService: init exception: $e');
+      _report('iap.init', error: e);
       _isAvailable = false;
     }
   }
@@ -118,7 +130,8 @@ class IapService extends ChangeNotifier {
   void _enqueuePurchases(List<PurchaseDetails> purchases) {
     _purchaseQueue = _purchaseQueue
         .then((_) => _onPurchaseUpdated(purchases))
-        .catchError((Object _) {
+        .catchError((Object error) {
+          _report('iap.process', error: error);
           _safeCompletePurchase(PurchaseResult.error);
           _safeCompleteRestore(false);
         });
@@ -158,6 +171,10 @@ class IapService extends ChangeNotifier {
       }
       final response = await _iap.queryProductDetails(_productIds);
       if (response.error != null) {
+        _report(
+          'iap.products',
+          code: ErrorReporter.sdkCode(response.error!.code),
+        );
         debugPrint('IapService: query error: ${response.error}');
         _lastErrorMessage = response.error!.message;
       }
@@ -169,6 +186,7 @@ class IapService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('IapService: loadProducts error: $e');
+      _report('iap.products', error: e);
       _lastErrorMessage = e.toString();
     }
   }
@@ -227,7 +245,10 @@ class IapService extends ChangeNotifier {
       ? 'appstore'
       : 'googleplay';
 
+  String _verificationError = 'verification_unavailable';
+
   Future<bool> _verificationAvailable() async {
+    _verificationError = 'verification_unavailable';
     if (!AuthService.instance.hasServerSession || !BackendConfig.hasNotifier) {
       return false;
     }
@@ -242,7 +263,8 @@ class IapService extends ChangeNotifier {
           .timeout(const Duration(seconds: 8));
       return response.statusCode == 200 &&
           jsonDecode(response.body)['configured'] == true;
-    } catch (_) {
+    } catch (error) {
+      _verificationError = ErrorReporter.codeFor(error);
       return false;
     }
   }
@@ -266,12 +288,16 @@ class IapService extends ChangeNotifier {
     final owner = AuthService.instance.currentUser?.id;
     _lastErrorMessage = '';
     if (!AuthService.instance.hasServerSession) return PurchaseResult.error;
-    if (!await _verificationAvailable()) return PurchaseResult.storeUnavailable;
+    if (!await _verificationAvailable()) {
+      _report('iap.buy', code: _verificationError);
+      return PurchaseResult.storeUnavailable;
+    }
 
     if (!_isAvailable || _subscription == null) {
       await init();
       if (!_isAvailable) {
         debugPrint('IapService: Store is not available on this device');
+        _report('iap.buy', code: 'store_unavailable');
         return PurchaseResult.storeUnavailable;
       }
     }
@@ -284,6 +310,7 @@ class IapService extends ChangeNotifier {
 
     if (product == null) {
       debugPrint('IapService: Product for tier $tier not found in Store');
+      _report('iap.buy', code: 'product_not_found');
       return PurchaseResult.productNotFound;
     }
 
@@ -310,11 +337,13 @@ class IapService extends ChangeNotifier {
         purchaseParam: purchaseParam,
       );
       if (!launched) {
+        _report('iap.buy', code: 'purchase_not_started');
         _currentPurchaseCompleter = null;
         return PurchaseResult.error;
       }
     } catch (e) {
       debugPrint('IapService: buyNonConsumable exception: $e');
+      _report('iap.buy', error: e);
       _lastErrorMessage = e.toString();
       _currentPurchaseCompleter = null;
       return PurchaseResult.error;
@@ -350,12 +379,16 @@ class IapService extends ChangeNotifier {
       await _iap.restorePurchases();
       final result = await completer.future.timeout(
         const Duration(seconds: 35),
-        onTimeout: () => false,
+        onTimeout: () {
+          _report('iap.restore', code: 'timeout');
+          return false;
+        },
       );
       _restoreCompleter = null;
       return result;
     } catch (e) {
       debugPrint('IapService: restore error: $e');
+      _report('iap.restore', error: e);
       _restoreCompleter = null;
       return false;
     }
@@ -387,6 +420,22 @@ class IapService extends ChangeNotifier {
         // In progress
       } else {
         if (purchaseDetails.status == PurchaseStatus.error) {
+          if ([
+            'purchase_cancelled',
+            'purchase_canceled',
+            'user_canceled',
+          ].contains(purchaseDetails.error?.code)) {
+            _safeCompletePurchase(PurchaseResult.canceled);
+            _safeCompleteRestore(false);
+            if (purchaseDetails.pendingCompletePurchase) {
+              await _iap.completePurchase(purchaseDetails);
+            }
+            continue;
+          }
+          _report(
+            'iap.payment',
+            code: ErrorReporter.sdkCode(purchaseDetails.error?.code),
+          );
           debugPrint('IapService: purchase error: ${purchaseDetails.error}');
           _lastErrorMessage = purchaseDetails.error?.message ?? 'Ошибка оплаты';
           _safeCompletePurchase(PurchaseResult.error);
@@ -441,7 +490,8 @@ class IapService extends ChangeNotifier {
           if (purchaseDetails.pendingCompletePurchase) {
             try {
               await _iap.completePurchase(purchaseDetails);
-            } catch (_) {
+            } catch (error) {
+              _report('iap.complete', error: error);
               _scheduleRetry();
               continue;
             }

@@ -125,7 +125,7 @@ test('expired, revoked and logged-out sessions are denied', async () => {
   const noSecret = { ...e, SESSION_SECRET: undefined };
   assert.equal((await handleAuth(request('/api/auth/session', {}), noSecret, async () => ({ id: 'google_123' }))).status, 503);
 });
-const productId = 'ru.pdd.pddapp.premium.week';
+const productId = 'ru.pdd.pddapp.sub.week';
 const subscription = (state = 'ACTIVE') => ({ subscriptionState: 'SUBSCRIPTION_STATE_' + state, lineItems: [{ productId, expiryTime: '2030-01-01T00:00:00Z' }] });
 test('replayed restore preserves store expiry rather than extending it', () => {
   const data = subscription();

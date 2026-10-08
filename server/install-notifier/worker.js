@@ -14,7 +14,8 @@ export { PurchaseClaims } from './purchase_claims.js';
 import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntitlementExpiry, StoreError } from './store_verification.js';
 import { setEntitlement } from './entitlements.js';
 import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, listPayIntents, webPaymentsLive } from './payments.js';
-import { handleAuth, authorizeUserRequest, revokeUserSessions } from './user_auth.js';
+import { handleAuth, authorizeUserRequest, revokeUserSessions, readSession } from './user_auth.js';
+import { handleClientIncident, deferIncident, errorCode } from './diagnostics.js';
 import { handleSocialAdmin, handleVideoStream, handleVideoThumb, runAutoPost } from './social.js';
 import { SOCIAL_VIEW_HTML, SOCIAL_CLIENT_JS } from './social_ui.js';
 import { handleThreadsAdmin, runThreadsSchedule } from './threads.js';
@@ -2909,13 +2910,19 @@ async function getAllUsers(env) {
 }
 
 
-export default {
+const workerHandlers = {
   async fetch(request, env, ctx) {
     // Preflight от браузера (веб-версия) — отвечаем с CORS-заголовками.
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
     const url = new URL(request.url);
+
+    if (url.pathname === '/api/diagnostics' && request.method === 'POST') {
+      const response = await handleClientIncident(request, env);
+      for (const [key, value] of Object.entries(CORS_HEADERS)) response.headers.set(key, value);
+      return response;
+    }
 
     // ────────────────────── app-ads.txt (IAB / Yandex Verification) ──────────────────────
     if (url.pathname === '/app-ads.txt') {
@@ -3306,7 +3313,7 @@ export default {
     }
 
     
-    const authResponse = await handleAuth(request, env);
+    const authResponse = await handleAuth(request, env, undefined, event => deferIncident(ctx, env, event));
     if (authResponse) {
       for (const [key, value] of Object.entries(CORS_HEADERS)) authResponse.headers.set(key, value);
       return authResponse;
@@ -4118,7 +4125,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
     // Закрытие недельного рейтинга (итоговые места → ачивка «Покоритель
     // рейтинга»): раз в неделю, в пн 00:05 МСК, и страховкой в суточный запуск.
     if (event.cron !== HOURLY_CRON) {
-      ctx.waitUntil(closeFinishedGameWeeks(env, gameWeekKey, readGameBoard, rankGameBoard).catch(() => {}));
+      ctx.waitUntil(closeFinishedGameWeeks(env, gameWeekKey, readGameBoard, rankGameBoard));
       if (event.cron === WEEKLY_CRON) return;
     }
 
@@ -4136,7 +4143,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
         ctx.waitUntil(
           env.NOTIFICATIONS.get(env.NOTIFICATIONS.idFromName('admin-notifications'))
             .fetch('https://notifications/alarm')
-            .catch(() => {})
+            .then(response => { if (!response.ok) throw new Error('notifications task failed'); })
         );
       }
       if (env.BOT_TOKEN && env.CHAT_ID) ctx.waitUntil(finishPendingDailyReport(env));
@@ -4151,5 +4158,46 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
     // existing five-minute cron instead of publishing incomplete totals.
     await env.INSTALLS.put('tg:daily_pending', JSON.stringify({ scheduledTime: event.scheduledTime || Date.now() }));
     await finishPendingDailyReport(env);
+  },
+};
+
+// Capture response failures and unexpected exceptions without reading request
+// credentials, URLs with query parameters, receipts, or exception messages.
+export default {
+  async fetch(request, env, ctx) {
+    const path = new URL(request.url).pathname;
+    const operation = /^\/api\/[a-z/-]{1,100}$/.test(path) ? path.slice(1).replaceAll('/', '.') : 'worker.request';
+    const notify = async (status, code) => {
+      if (path === '/api/diagnostics') return;
+      let session = null;
+      try { session = await readSession(request, env); } catch (_) {}
+      if (status < 500 && !session) return;
+      const diagnosticId = crypto.randomUUID();
+      const category = /purchase|pay-|platega/.test(path) ? 'purchase' : 'infrastructure';
+      return deferIncident(ctx, env, { category, operation, status, code, userId: session?.user?.id, diagnosticId });
+    };
+    try {
+      const response = await workerHandlers.fetch(request, env, ctx);
+      if (path !== '/api/auth/session' && (response.status >= 500 || (path === '/api/user/purchase' && [400, 403, 409, 422].includes(response.status)))) {
+        let code = 'http_' + response.status;
+        try {
+          const reason = (await response.clone().json()).error;
+          const allowed = ['store verification unavailable', 'store verification not configured', 'purchase ownership not configured', 'purchase ownership unavailable', 'purchase belongs to another account', 'unknown product', 'wrong product', 'wrong transaction', 'wrong subscription', 'invalid transaction', 'missing purchase token', 'payment provider unavailable', 'payment provider error'];
+          if (allowed.includes(reason)) code = reason.replaceAll(' ', '_');
+        } catch (_) {}
+        await notify(response.status, code);
+      }
+      return response;
+    } catch (error) {
+      console.error('Worker request failed', operation, errorCode(error));
+      await notify(500, errorCode(error));
+      return jsonResponse({ error: 'server unavailable' }, 500);
+    }
+  },
+  async scheduled(event, env, ctx) {
+    const notify = error => deferIncident(ctx, env, { category: 'infrastructure', operation: 'cron.' + (event.cron === HOURLY_CRON ? 'maintenance' : event.cron === WEEKLY_CRON ? 'game_week' : 'daily_report'), code: errorCode(error) });
+    const guardedContext = { waitUntil: task => ctx.waitUntil(Promise.resolve(task).catch(notify)) };
+    try { await workerHandlers.scheduled(event, env, guardedContext); }
+    catch (error) { await notify(error); }
   },
 };

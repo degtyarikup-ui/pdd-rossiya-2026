@@ -2,6 +2,7 @@
 // A persisted write plan makes partial KV failures safe to retry: counters
 // are replaced with the same totals, rather than incremented a second time.
 import { flushBufferedStats } from './worker.js';
+import { reportIncident, errorCode } from './diagnostics.js';
 
 const FLUSH_MS = 5 * 60 * 1000;
 const RETRY_MS = 65 * 1000; // KV permits only one write/second/key.
@@ -69,8 +70,9 @@ export class StatsBuffer {
           await this.state.storage.put('pending', pending);
         });
       }
-    } catch (_) {
+    } catch (error) {
       console.error('StatsBuffer prepare failed; events retained');
+      await reportIncident(this.env, { category: 'infrastructure', operation: 'analytics.prepare', code: errorCode(error) });
       await this.state.storage.setAlarm(Date.now() + RETRY_MS);
       return false;
     }
@@ -87,8 +89,9 @@ export class StatsBuffer {
         for (let i = 0; i < pending.keys.length; i += 128) await txn.delete(pending.keys.slice(i, i + 128));
         await txn.delete('pending');
       });
-    } catch (_) {
+    } catch (error) {
       console.error('StatsBuffer flush failed; persisted batch will retry');
+      await reportIncident(this.env, { category: 'infrastructure', operation: 'analytics.flush', code: errorCode(error) });
       await this.state.storage.setAlarm(Date.now() + RETRY_MS);
       return false;
     }
