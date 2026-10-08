@@ -12,6 +12,7 @@ import 'package:pdd_app/data/models/traffic_controller_rules.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/screens/game/platform/browser_game.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
@@ -38,6 +39,7 @@ class _TrafficControllerScreenState
     extends ConsumerState<TrafficControllerScreen> {
   late GamePlayMode _mode;
   WebViewController? _webViewController;
+  BrowserGame? _browserGame;
   bool _engineReady = false;
 
   // Режим обучения (выбранное состояние)
@@ -61,7 +63,9 @@ class _TrafficControllerScreenState
   void initState() {
     super.initState();
     _mode = widget.initialMode;
-    if (!kIsWeb) {
+    if (kIsWeb) {
+      _initWebGame();
+    } else {
       _initWebView();
     }
     if (_mode == GamePlayMode.arcade) {
@@ -72,7 +76,21 @@ class _TrafficControllerScreenState
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    if (kIsWeb) {
+      _browserGame?.dispose();
+    }
     super.dispose();
+  }
+
+  void _initWebGame() {
+    final browser = BrowserGame(
+      onMessage: _handleBridgeMessage,
+      onBlur: () {},
+      onKey: (_, _, _) {},
+      htmlPath: 'assets/assets/game/traffic-controller.html?flutterWeb=1',
+      allowPointerEvents: true,
+    );
+    setState(() => _browserGame = browser);
   }
 
   void _initWebView() {
@@ -104,9 +122,9 @@ class _TrafficControllerScreenState
     _webViewController = controller;
   }
 
-  void _onJsMessageReceived(JavaScriptMessage message) {
+  void _handleBridgeMessage(String raw) {
     try {
-      final data = jsonDecode(message.message) as Map<String, dynamic>;
+      final data = jsonDecode(raw) as Map<String, dynamic>;
       final type = data['type'] as String?;
       if (type == 'ready') {
         if (mounted) {
@@ -117,8 +135,16 @@ class _TrafficControllerScreenState
     } catch (_) {}
   }
 
+  void _onJsMessageReceived(JavaScriptMessage message) {
+    _handleBridgeMessage(message.message);
+  }
+
   void _runJs(String code) {
-    if (_webViewController != null && _engineReady) {
+    if (kIsWeb) {
+      if (_browserGame != null && _engineReady) {
+        _browserGame!.runJavaScript(code).ignore();
+      }
+    } else if (_webViewController != null && _engineReady) {
       _webViewController!.runJavaScript(code).ignore();
     }
   }
@@ -316,11 +342,17 @@ class _TrafficControllerScreenState
           children: [
             // 3D Canvas
             Positioned.fill(
-              child: _webViewController != null
-                  ? WebViewWidget(controller: _webViewController!)
-                  : const Center(
-                      child: CircularProgressIndicator(color: AppColors.accent),
-                    ),
+              child: kIsWeb
+                  ? (_browserGame != null
+                      ? _browserGame!.widget
+                      : const Center(
+                          child: CircularProgressIndicator(color: AppColors.accent),
+                        ))
+                  : (_webViewController != null
+                      ? WebViewWidget(controller: _webViewController!)
+                      : const Center(
+                          child: CircularProgressIndicator(color: AppColors.accent),
+                        )),
             ),
 
             // Top HUD Overlay

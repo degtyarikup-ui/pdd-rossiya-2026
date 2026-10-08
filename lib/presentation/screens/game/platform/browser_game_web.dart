@@ -20,6 +20,8 @@ class BrowserGame {
     required void Function(String) onMessage,
     required VoidCallback onBlur,
     required void Function(String, bool, bool) onKey,
+    String htmlPath = 'assets/assets/game/index.html?flutterWeb=1',
+    bool allowPointerEvents = false,
   }) {
     _viewType = 'pdd-game-${++_sequence}';
     _frame.style
@@ -29,7 +31,7 @@ class BrowserGame {
       // The frame only draws: every control (pedals, arrows, lobby, answers)
       // is a Flutter overlay. A frame that takes pointer events swallows the
       // clicks meant for the buttons drawn over it.
-      ..pointerEvents = 'none';
+      ..pointerEvents = allowPointerEvents ? 'auto' : 'none';
     _frame.setAttribute('tabindex', '-1');
     _frame.setAttribute('title', 'PDD simulator');
     // Input belongs to Flutter overlays; canvas keeps camera gestures only.
@@ -69,9 +71,7 @@ class BrowserGame {
     web.window.addEventListener('message', _listener);
     web.window.addEventListener('blur', _blur);
     ui.platformViewRegistry.registerViewFactory(_viewType, (_) => _frame);
-    _frame.src = Uri.base
-        .resolve('assets/assets/game/index.html?flutterWeb=1')
-        .toString();
+    _frame.src = Uri.base.resolve(htmlPath).toString();
   }
   Widget get widget => HtmlElementView(viewType: _viewType);
   Future<Object> runJavaScriptReturningResult(String code) async {
