@@ -638,156 +638,319 @@
     inspectorGroup = new THREE.Group();
     inspectorGroup.position.set(0, 0.05, 0);
 
-    const uniformMat = new THREE.MeshStandardMaterial({ color: 0x1B263B, roughness: 0.75 }); // Форма ДПС
-    const stripePantsMat = new THREE.MeshStandardMaterial({ color: 0xD32F2F, roughness: 0.6 });// Красный кант на брюках
-    const vestMat = new THREE.MeshStandardMaterial({ color: 0xD4E119, roughness: 0.65 });     // Кислотно-салатовый жилет
-    const scotchliteMat = new THREE.MeshStandardMaterial({ color: 0xF0F4F8, roughness: 0.15, metalness: 0.6 });// Светоотражающие полосы
-    const skinMat = new THREE.MeshStandardMaterial({ color: 0xF0C09A, roughness: 0.85 });     // Кожа лица и рук
-    const leatherMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.35, metalness: 0.2 });// Ботинки, козырек, ремень
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, metalness: 0.8, roughness: 0.3 });// Кокарда и пряжка
+    const uniformMat = new THREE.MeshStandardMaterial({ color: 0x1B263B, roughness: 0.75 }); // Темно-синяя форма ДПС
+    const stripePantsMat = new THREE.MeshStandardMaterial({ color: 0xD32F2F, roughness: 0.5 }); // Красный форменный кант
+    const vestMat = new THREE.MeshStandardMaterial({ color: 0xD0E800, roughness: 0.55 });     // Кислотно-салатовый сигнальный жилет ДПС
+    const scotchliteMat = new THREE.MeshStandardMaterial({ color: 0xF2F5F8, roughness: 0.15, metalness: 0.65 }); // Светоотражающие полосы ГОСТ
+    const skinMat = new THREE.MeshStandardMaterial({ color: 0xF3C3A0, roughness: 0.8 });     // Кожа лица и шеи
+    const gloveMat = new THREE.MeshStandardMaterial({ color: 0xF8F9FA, roughness: 0.35 });    // Белые уставные перчатки регулировщика
+    const leatherMat = new THREE.MeshStandardMaterial({ color: 0x121417, roughness: 0.3, metalness: 0.15 }); // Черная полированная кожа
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, metalness: 0.85, roughness: 0.25 }); // Золотая кокарда, шнур, бляха
+    const hairMat = new THREE.MeshStandardMaterial({ color: 0x221B16, roughness: 0.9 });      // Темные волосы
 
-    // Ботинки
-    [-0.19, 0.19].forEach(x => {
-      const boot = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.18, 0.44), leatherMat);
-      boot.position.set(x, 0.09, 0.06);
-      boot.castShadow = true;
-      inspectorGroup.add(boot);
+    // --- 1. Обувь (полированные берцы) ---
+    [-0.12, 0.12].forEach(x => {
+      // Подошва
+      const sole = new THREE.Mesh(new THREE.BoxGeometry(0.105, 0.035, 0.28), leatherMat);
+      sole.position.set(x, 0.018, 0.02);
+      sole.castShadow = true;
+      inspectorGroup.add(sole);
+
+      // Каблук
+      const heel = new THREE.Mesh(new THREE.BoxGeometry(0.105, 0.03, 0.09), leatherMat);
+      heel.position.set(x, 0.035, -0.075);
+      inspectorGroup.add(heel);
+
+      // Союзка и носок
+      const bootTop = new THREE.Mesh(new THREE.BoxGeometry(0.098, 0.08, 0.22), leatherMat);
+      bootTop.position.set(x, 0.07, 0.04);
+      bootTop.castShadow = true;
+      inspectorGroup.add(bootTop);
+
+      // Голенище берца
+      const bootAnkle = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.06, 0.12, 14), leatherMat);
+      bootAnkle.position.set(x, 0.12, -0.01);
+      inspectorGroup.add(bootAnkle);
     });
 
-    // Брюки с кантом
-    [-0.19, 0.19].forEach(x => {
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.13, 0.92, 14), uniformMat);
-      leg.position.set(x, 0.58, 0);
+    // --- 2. Брюки с кантом (стройные мужские пропорции) ---
+    [-0.12, 0.12].forEach(x => {
+      // Брючина (сужается от бедра к щиколотке)
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.068, 0.82, 16), uniformMat);
+      leg.position.set(x, 0.52, 0);
       leg.castShadow = true;
       inspectorGroup.add(leg);
 
-      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.92, 0.04), stripePantsMat);
-      stripe.position.set(x + (x > 0 ? 0.135 : -0.135), 0.58, 0);
+      // Красный форменный кант по внешнему шву
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.82, 0.02), stripePantsMat);
+      stripe.position.set(x + (x > 0 ? 0.082 : -0.082), 0.52, 0);
       inspectorGroup.add(stripe);
     });
 
-    // Ремень с кобурой и пряжкой
-    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.1, 18), leatherMat);
+    // Тазовая часть брюк (анатомический овал вместо круга)
+    const pelvis = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.165, 0.20, 18), uniformMat);
+    pelvis.scale.set(1.15, 1.0, 0.65);
+    pelvis.position.set(0, 0.96, 0);
+    pelvis.castShadow = true;
+    inspectorGroup.add(pelvis);
+
+    // --- 3. Служебный ремень и экипировка ---
+    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.185, 0.185, 0.06, 18), leatherMat);
+    belt.scale.set(1.16, 1.0, 0.66);
     belt.position.set(0, 1.05, 0);
     inspectorGroup.add(belt);
 
-    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.04), goldMat);
-    buckle.position.set(0, 1.05, 0.34);
+    // Золотая бляха ремня
+    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.02), goldMat);
+    buckle.position.set(0, 1.05, 0.185 * 0.66 + 0.008);
     inspectorGroup.add(buckle);
 
-    // Кобура на правом бедре
-    const holster = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.12), leatherMat);
-    holster.position.set(0.35, 0.96, 0.04);
+    // Кобура пистолета ПМ на правом бедре
+    const holster = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.16, 0.09), leatherMat);
+    holster.position.set(0.22, 0.98, 0.02);
     inspectorGroup.add(holster);
 
-    // Рация на левом плече
-    const radio = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, 0.08), leatherMat);
-    radio.position.set(-0.25, 1.72, 0.12);
+    // Рация на левом боку с антенной
+    const radio = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.06), leatherMat);
+    radio.position.set(-0.21, 1.04, 0.02);
     inspectorGroup.add(radio);
 
-    // Туловище (в жилете ДПС)
-    vestMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.33, 0.78, 16), vestMat);
-    vestMesh.position.set(0, 1.45, 0);
+    const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.10, 8), leatherMat);
+    antenna.position.set(-0.21, 1.15, 0.03);
+    inspectorGroup.add(antenna);
+
+    // --- 4. Торс (V-образный атлетический силуэт в куртке и жилете ДПС) ---
+    // Темно-синяя куртка
+    const jacket = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.18, 0.56, 20), uniformMat);
+    jacket.scale.set(1.08, 1.0, 0.58);
+    jacket.position.set(0, 1.35, 0);
+    jacket.castShadow = true;
+    inspectorGroup.add(jacket);
+
+    // Сигнальный жилет ДПС повышенной видимости (ГОСТ)
+    vestMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.235, 0.186, 0.54, 20), vestMat);
+    vestMesh.scale.set(1.09, 1.0, 0.59);
+    vestMesh.position.set(0, 1.35, 0);
     vestMesh.castShadow = true;
     inspectorGroup.add(vestMesh);
 
-    // Светоотражающие полосы на жилете (две горизонтальные)
-    [1.32, 1.55].forEach(y => {
-      const stripeH = new THREE.Mesh(new THREE.CylinderGeometry(0.365, 0.365, 0.07, 18), scotchliteMat);
+    // Горизонтальные светоотражающие полосы ГОСТ
+    [1.18, 1.34].forEach(y => {
+      const stripeH = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.20, 0.05, 20), scotchliteMat);
+      stripeH.scale.set(1.095, 1.0, 0.595);
       stripeH.position.set(0, y, 0);
       inspectorGroup.add(stripeH);
     });
 
-    // Шеврон / надпись ДПС (синяя плашка)
-    const dpsBadge = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.12), uniformMat);
-    dpsBadge.position.set(0, 1.68, 0.365);
-    inspectorGroup.add(dpsBadge);
+    // Вертикальные плечевые светоотражающие полосы жилета
+    [-0.09, 0.09].forEach(x => {
+      const stripeVFront = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.24, 0.015), scotchliteMat);
+      stripeVFront.position.set(x, 1.49, 0.135);
+      inspectorGroup.add(stripeVFront);
 
-    // Шея и голова
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.18, 14), skinMat);
-    neck.position.set(0, 1.92, 0);
+      const stripeVBack = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.24, 0.015), scotchliteMat);
+      stripeVBack.position.set(x, 1.49, -0.135);
+      inspectorGroup.add(stripeVBack);
+
+      const stripeVTop = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.015, 0.27), scotchliteMat);
+      stripeVTop.position.set(x, 1.625, 0);
+      inspectorGroup.add(stripeVTop);
+    });
+
+    // Световозвращающий шеврон «ДПС» на спине
+    const dpsBack = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.075, 0.015), uniformMat);
+    dpsBack.position.set(0, 1.48, -0.142);
+    inspectorGroup.add(dpsBack);
+
+    // Нагрудный жетон/шеврон инспектора слева на груди
+    const badge = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.048, 0.015), uniformMat);
+    badge.position.set(-0.09, 1.50, 0.142);
+    inspectorGroup.add(badge);
+
+    // Форменный галстук ДПС по центру рубашки
+    const tie = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.15, 0.015), uniformMat);
+    tie.position.set(0, 1.55, 0.138);
+    inspectorGroup.add(tie);
+
+    // Погоны на плечах с золотистыми лычками
+    [-0.19, 0.19].forEach(x => {
+      const epaulet = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.016, 0.13), uniformMat);
+      epaulet.position.set(x, 1.63, 0);
+      inspectorGroup.add(epaulet);
+
+      const epauletStripe = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.018, 0.018), goldMat);
+      epauletStripe.position.set(x, 1.632, 0);
+      inspectorGroup.add(epauletStripe);
+    });
+
+    // --- 5. Шея и голова ---
+    // Воротник формы
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.092, 0.06, 16), uniformMat);
+    collar.position.set(0, 1.66, 0);
+    inspectorGroup.add(collar);
+
+    // Шея
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.075, 0.10, 14), skinMat);
+    neck.position.set(0, 1.72, 0);
     inspectorGroup.add(neck);
 
-    headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 14), skinMat);
-    headMesh.position.set(0, 2.14, 0);
-    headMesh.scale.set(0.9, 1.1, 0.95);
+    // Голова (анатомический овал лица)
+    headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.125, 18, 16), skinMat);
+    headMesh.scale.set(0.88, 1.14, 0.96);
+    headMesh.position.set(0, 1.86, 0);
     headMesh.castShadow = true;
     inspectorGroup.add(headMesh);
 
-    // Глаза, брови, нос регулировщика
-    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.024, 8, 8), leatherMat);
-    eyeL.position.set(-0.075, 2.14, 0.202);
+    // Прическа / волосы под фуражкой
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.128, 16, 12), hairMat);
+    hair.scale.set(0.89, 1.05, 0.98);
+    hair.position.set(0, 1.88, -0.02);
+    inspectorGroup.add(hair);
+
+    // Уши
+    [-0.115, 0.115].forEach(x => {
+      const ear = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.042, 0.028), skinMat);
+      ear.position.set(x, 1.86, -0.01);
+      inspectorGroup.add(ear);
+    });
+
+    // Глаза
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 8), leatherMat);
+    eyeL.position.set(-0.046, 1.87, 0.115);
     inspectorGroup.add(eyeL);
 
-    const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.024, 8, 8), leatherMat);
-    eyeR.position.set(0.075, 2.14, 0.202);
+    const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 8), leatherMat);
+    eyeR.position.set(0.046, 1.87, 0.115);
     inspectorGroup.add(eyeR);
 
-    const browL = new THREE.Mesh(new THREE.BoxGeometry(0.048, 0.012, 0.015), leatherMat);
-    browL.position.set(-0.075, 2.18, 0.204);
-    browL.rotation.z = -0.05;
+    // Брови
+    const browL = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.008, 0.01), leatherMat);
+    browL.position.set(-0.046, 1.895, 0.118);
+    browL.rotation.z = -0.06;
     inspectorGroup.add(browL);
 
-    const browR = new THREE.Mesh(new THREE.BoxGeometry(0.048, 0.012, 0.015), leatherMat);
-    browR.position.set(0.075, 2.18, 0.204);
-    browR.rotation.z = 0.05;
+    const browR = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.008, 0.01), leatherMat);
+    browR.position.set(0.046, 1.895, 0.118);
+    browR.rotation.z = 0.06;
     inspectorGroup.add(browR);
 
-    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.05, 0.035), skinMat);
-    nose.position.set(0, 2.12, 0.215);
+    // Нос
+    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.038, 0.025), skinMat);
+    nose.position.set(0, 1.85, 0.128);
     inspectorGroup.add(nose);
 
-    // Фуражка ДПС (тулья, околыш, аккуратный козырек, золотая кокарда)
-    const capCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.25, 0.14, 20), uniformMat);
-    capCrown.position.set(0, 2.34, -0.02);
-    capCrown.rotation.x = -0.05;
-    inspectorGroup.add(capCrown);
-
-    const capBand = new THREE.Mesh(new THREE.CylinderGeometry(0.245, 0.245, 0.06, 20), leatherMat);
-    capBand.position.set(0, 2.25, 0.01);
+    // --- 6. Фуражка инспектора ДПС (классическая уставная фуражка РФ) ---
+    // Околыш (черная стойка фуражки)
+    const capBand = new THREE.Mesh(new THREE.CylinderGeometry(0.138, 0.138, 0.045, 22), leatherMat);
+    capBand.position.set(0, 1.94, 0);
     inspectorGroup.add(capBand);
 
-    const capVisor = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.018, 0.11), leatherMat);
-    capVisor.position.set(0, 2.23, 0.21);
-    capVisor.rotation.x = 0.22;
-    inspectorGroup.add(capVisor);
+    // Золотой филигранный витой шнур над козырьком
+    const capCord = new THREE.Mesh(new THREE.TorusGeometry(0.139, 0.006, 8, 22), goldMat);
+    capCord.rotation.x = Math.PI / 2;
+    capCord.position.set(0, 1.93, 0.018);
+    inspectorGroup.add(capCord);
 
-    const cockade = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.02, 12), goldMat);
+    // Золотая кокарда ДПС по центру
+    const cockade = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.015, 14), goldMat);
     cockade.rotation.x = Math.PI / 2;
-    cockade.position.set(0, 2.30, 0.245);
+    cockade.position.set(0, 1.95, 0.14);
     inspectorGroup.add(cockade);
 
-    // Левая рука (плечо + предплечье + кисть)
-    leftArmPivot = new THREE.Group();
-    leftArmPivot.position.set(-0.42, 1.76, 0);
+    // Тулья фуражки (расширяющаяся кверху, темно-синяя, слегка наклонена назад)
+    const capCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.14, 0.07, 22), uniformMat);
+    capCrown.position.set(0, 1.99, -0.015);
+    capCrown.rotation.x = -0.06;
+    inspectorGroup.add(capCrown);
 
-    const leftArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.1, 0.72, 12), uniformMat);
-    leftArmMesh.position.set(0, -0.34, 0);
+    // Красный кант по верхнему ободу тульи
+    const capPiping = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.006, 6, 24), stripePantsMat);
+    capPiping.rotation.x = Math.PI / 2 - 0.06;
+    capPiping.position.set(0, 2.025, -0.017);
+    inspectorGroup.add(capPiping);
+
+    // Черный лакированный козырек
+    const capVisor = new THREE.Mesh(new THREE.BoxGeometry(0.165, 0.015, 0.09), leatherMat);
+    capVisor.position.set(0, 1.92, 0.135);
+    capVisor.rotation.x = 0.28;
+    inspectorGroup.add(capVisor);
+
+    // --- 7. Левая рука (плечевой шарнир на анатомическом расстоянии) ---
+    leftArmPivot = new THREE.Group();
+    leftArmPivot.position.set(-0.25, 1.60, 0);
+
+    const leftArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.052, 0.52, 14), uniformMat);
+    leftArmMesh.position.set(0, -0.26, 0);
     leftArmMesh.castShadow = true;
     leftArmPivot.add(leftArmMesh);
 
-    const handL = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 10), skinMat);
-    handL.position.set(0, -0.72, 0);
-    leftArmPivot.add(handL);
+    // Шеврон на левом рукаве
+    const patchL = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.065, 0.05), uniformMat);
+    patchL.position.set(-0.06, -0.12, 0);
+    leftArmPivot.add(patchL);
 
+    // Светоотражающая полоса на манжете рукава
+    const armStripeL = new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.054, 0.04, 14), scotchliteMat);
+    armStripeL.position.set(0, -0.42, 0);
+    leftArmPivot.add(armStripeL);
+
+    // Кисть в белой перчатке регулировщика
+    const gloveL = new THREE.Group();
+    const cuffL = new THREE.Mesh(new THREE.CylinderGeometry(0.054, 0.050, 0.05, 14), gloveMat);
+    cuffL.position.set(0, -0.52, 0);
+    gloveL.add(cuffL);
+
+    const handPalmL = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.085, 0.042), gloveMat);
+    handPalmL.position.set(0, -0.58, 0);
+    gloveL.add(handPalmL);
+
+    const thumbL = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.045, 0.024), gloveMat);
+    thumbL.position.set(0.038, -0.56, 0.01);
+    thumbL.rotation.z = -0.25;
+    gloveL.add(thumbL);
+
+    leftArmPivot.add(gloveL);
     inspectorGroup.add(leftArmPivot);
 
-    // Правая рука с жезлом регулировщика
+    // --- 8. Правая рука с жезлом регулировщика ---
     rightArmPivot = new THREE.Group();
-    rightArmPivot.position.set(0.42, 1.76, 0);
+    rightArmPivot.position.set(0.25, 1.60, 0);
 
-    const rightArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.1, 0.72, 12), uniformMat);
-    rightArmMesh.position.set(0, -0.34, 0);
+    const rightArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.052, 0.52, 14), uniformMat);
+    rightArmMesh.position.set(0, -0.26, 0);
     rightArmMesh.castShadow = true;
     rightArmPivot.add(rightArmMesh);
 
-    const handR = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 10), skinMat);
-    handR.position.set(0, -0.72, 0);
-    rightArmPivot.add(handR);
+    // Шеврон на правом рукаве
+    const patchR = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.065, 0.05), uniformMat);
+    patchR.position.set(0.06, -0.12, 0);
+    rightArmPivot.add(patchR);
 
-    // Жезл регулировщика (высококонтрастные черно-белые полосы + красный светодиод)
+    // Светоотражающая полоса на правом рукаве
+    const armStripeR = new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.054, 0.04, 14), scotchliteMat);
+    armStripeR.position.set(0, -0.42, 0);
+    rightArmPivot.add(armStripeR);
+
+    // Кисть в белой перчатке регулировщика
+    const gloveR = new THREE.Group();
+    const cuffR = new THREE.Mesh(new THREE.CylinderGeometry(0.054, 0.050, 0.05, 14), gloveMat);
+    cuffR.position.set(0, -0.52, 0);
+    gloveR.add(cuffR);
+
+    const handPalmR = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.085, 0.042), gloveMat);
+    handPalmR.position.set(0, -0.58, 0);
+    gloveR.add(handPalmR);
+
+    const thumbR = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.045, 0.024), gloveMat);
+    thumbR.position.set(-0.038, -0.56, 0.01);
+    thumbR.rotation.z = 0.25;
+    gloveR.add(thumbR);
+
+    rightArmPivot.add(gloveR);
+
+    // Жезл регулировщика (сидит прямо в правой ладони)
     batonMesh = buildBaton();
-    batonMesh.position.set(0, -0.72, 0);
+    batonMesh.position.set(0, -0.58, 0);
     rightArmPivot.add(batonMesh);
 
     inspectorGroup.add(rightArmPivot);
@@ -801,33 +964,33 @@
     const whiteMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.2 });
     const redTipMat = new THREE.MeshBasicMaterial({ color: 0xFF1744 });
 
-    // Рукоятка жезла сидит прямо в ладони инспектора
-    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.028, 0.16, 14), handleMat);
+    // Рукоятка жезла сидит в перчатке инспектора
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.024, 0.15, 14), handleMat);
     handle.position.set(0, 0, 0);
     batonGroup.add(handle);
 
-    // Темляк (ремешок на запястье у верхнего торца рукоятки)
-    const strap = new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.006, 8, 16), handleMat);
+    // Темляк (ремешок на запястье)
+    const strap = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.005, 8, 16), handleMat);
     strap.rotation.x = Math.PI / 2;
-    strap.position.set(0, 0.07, 0);
+    strap.position.set(0, 0.065, 0);
     batonGroup.add(strap);
 
-    // 4 чередующиеся полосы (ГОСТ) вдоль оси жезла (-Y)
+    // 4 чередующиеся черно-белые полосы (ГОСТ) вдоль оси жезла (-Y)
     for (let i = 0; i < 4; i++) {
       const mat = (i % 2 === 0) ? whiteMat : handleMat;
-      const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.029, 0.029, 0.095, 14), mat);
-      stripe.position.set(0, -0.125 - i * 0.095, 0);
+      const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.09, 14), mat);
+      stripe.position.set(0, -0.12 - i * 0.09, 0);
       batonGroup.add(stripe);
     }
 
     // Красный светящийся торец на конце жезла
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.03, 12, 12), redTipMat);
-    tip.position.set(0, -0.51, 0);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.026, 12, 12), redTipMat);
+    tip.position.set(0, -0.49, 0);
     batonGroup.add(tip);
 
-    // Легкая подсветка кончика жезла
+    // Подсветка кончика жезла
     const tipLight = new THREE.PointLight(0xFF1744, 0.6, 1.2);
-    tipLight.position.set(0, -0.51, 0);
+    tipLight.position.set(0, -0.49, 0);
     batonGroup.add(tipLight);
 
     return batonGroup;
