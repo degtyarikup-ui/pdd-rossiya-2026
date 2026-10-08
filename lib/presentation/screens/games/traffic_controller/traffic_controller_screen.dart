@@ -46,7 +46,7 @@ class _TrafficControllerScreenState
   ControllerGesture _curGesture = ControllerGesture.rightArmForward;
   ApproachDirection _curApproach = ApproachDirection.left;
   VehicleKind _curVehicle = VehicleKind.car;
-  final String _cameraMode = 'overview'; // 'overview' | 'driver'
+  String _cameraMode = 'lane'; // 'lane' | 'overview'
 
   // Режим Блиц-аркада
   int _score = 0;
@@ -325,6 +325,16 @@ class _TrafficControllerScreenState
   }
 
 
+  void _toggleCameraMode() {
+    HapticFeedbackHelper.select();
+    setState(() {
+      _cameraMode = _cameraMode == 'lane' ? 'overview' : 'lane';
+    });
+    _runJs(
+      'window.TrafficControllerGame && window.TrafficControllerGame.setCameraView("$_cameraMode");',
+    );
+  }
+
   void _onPanUpdate(DragUpdateDetails details) {
     if (_cameraMode == 'overview') {
       _runJs('window.TrafficControllerGame && window.TrafficControllerGame.rotateCamera(${details.delta.dx});');
@@ -396,6 +406,19 @@ class _TrafficControllerScreenState
           onTap: () => Navigator.of(context).pop(),
           backgroundColor: Colors.black.withValues(alpha: 0.55),
         ),
+        const SizedBox(width: 8),
+        Tooltip(
+          message: _cameraMode == 'lane'
+              ? appL10n.gameCameraInspector
+              : appL10n.gameCameraLane,
+          child: AppChromeIconButton(
+            icon: _cameraMode == 'lane'
+                ? Icons.accessibility_new_rounded
+                : Icons.directions_car_rounded,
+            onTap: _toggleCameraMode,
+            backgroundColor: Colors.black.withValues(alpha: 0.55),
+          ),
+        ),
         const Spacer(),
 
         // Mode switch pill
@@ -423,8 +446,8 @@ class _TrafficControllerScreenState
 
         const Spacer(),
 
-        // Балансировочный отступ для идеального центрирования табов
-        const SizedBox(width: 44, height: 44),
+        // Балансировочный отступ для идеального центрирования табов (40 + 8 + 40 = 88)
+        const SizedBox(width: 88, height: 40),
       ],
     );
   }

@@ -855,6 +855,8 @@
   "gameVehicleTram": "Трамвай",
   "gameCameraOverview": "Обзор",
   "gameCameraDriver": "За рулём",
+  "gameCameraLane": "С полосы машины",
+  "gameCameraInspector": "На регулировщика",
   "gameOverTitle": "Игра окончена",
   "gameOverScore": "Ваш счёт: {score}",
   "@gameOverScore": {
