@@ -1823,4 +1823,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameAnswerWrong => 'Неверно';
+
+  @override
+  String get gameZoomIn => 'Приблизить';
+
+  @override
+  String get gameZoomOut => 'Отдалить';
 }

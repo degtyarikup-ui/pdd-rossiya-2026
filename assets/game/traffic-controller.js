@@ -1384,6 +1384,47 @@
     updateTrajectoryArrows();
   }
 
+  // --- Траектории манёвров: прямо → дуга → прямо ---
+  // Радиусы подобраны расчётом зазора по всей траектории: кузов (машина до
+  // 5×2 м, трамвай 9,5×2,2 м) не заходит на регулировщика и его островок.
+  // Минимальный зазор: машина 1,5 м, трамвай 0,5 м (по рельсам прямо).
+  const PATHS = {
+    car: { x: 3.2, right: { r: 4, lane: 3.4 }, left: { r: 4, lane: -3.6 }, uturn: { lane: -3.4, at: 7.5 } },
+    tram: { x: -2.2, right: { r: 9, lane: 3.4 }, left: { r: 10, lane: -4.2 }, uturn: { lane: -5.8, at: 9 } },
+  };
+
+  function movePath(move, vehicle, startZ, reach, y) {
+    const spec = vehicle === VEHICLES.TRAM ? PATHS.tram : PATHS.car;
+    const x0 = spec.x;
+    const pts = [];
+    const P = (x, z) => pts.push(new THREE.Vector3(x, y, z));
+    const line = (ax, az, bx, bz, n) => {
+      for (let i = 0; i < n; i++) { const t = i / n; P(ax + (bx - ax) * t, az + (bz - az) * t); }
+    };
+    const arc = (cx, cz, r, a0, a1, n) => {
+      for (let i = 0; i < n; i++) { const a = a0 + (a1 - a0) * i / n; P(cx + r * Math.cos(a), cz + r * Math.sin(a)); }
+    };
+    if (move === MOVES.LEFT) {
+      const { r, lane } = spec.left, cx = x0 - r, cz = lane + r;
+      line(x0, Math.max(startZ, cz), x0, cz, 6);
+      arc(cx, cz, r, 0, -Math.PI / 2, 18);
+      line(cx, lane, -reach, lane, 6); P(-reach, lane);
+    } else if (move === MOVES.RIGHT) {
+      const { r, lane } = spec.right, cx = x0 + r, cz = lane + r;
+      line(x0, Math.max(startZ, cz), x0, cz, 6);
+      arc(cx, cz, r, Math.PI, Math.PI * 1.5, 18);
+      line(cx, lane, reach, lane, 6); P(reach, lane);
+    } else if (move === MOVES.UTURN) {
+      const { lane, at } = spec.uturn, rr = (x0 - lane) / 2, cx = x0 - rr;
+      line(x0, Math.max(startZ, at), x0, at, 6);
+      arc(cx, at, rr, 0, -Math.PI, 20);
+      line(lane, at, lane, reach, 6); P(lane, reach);
+    } else {
+      line(x0, startZ, x0, -reach, 8); P(x0, -reach);
+    }
+    return new THREE.CatmullRomCurve3(pts, false, 'centripetal');
+  }
+
   function updateTrajectoryArrows() {
     while (arrowsGroup.children.length > 0) {
       const child = arrowsGroup.children[0];
@@ -1403,50 +1444,11 @@
     const canLeft = allowed.includes(MOVES.LEFT);
     const canUturn = allowed.includes(MOVES.UTURN);
 
-    // Стрелка прямо (только если разрешено)
-    if (canStraight) {
-      addRoadRibbonArrow(
-        new THREE.LineCurve3(
-          new THREE.Vector3(originX, 0.052, originZ),
-          new THREE.Vector3(originX, 0.052, -11.0)
-        )
-      );
-    }
-
-    // Стрелка направо (только если разрешено)
-    if (canRight) {
-      addRoadRibbonArrow(
-        new THREE.QuadraticBezierCurve3(
-          new THREE.Vector3(originX, 0.052, originZ),
-          new THREE.Vector3(originX, 0.052, 2.4),
-          new THREE.Vector3(12.0, 0.052, 2.4)
-        )
-      );
-    }
-
-    // Стрелка налево (только если разрешено)
-    if (canLeft) {
-      addRoadRibbonArrow(
-        new THREE.CubicBezierCurve3(
-          new THREE.Vector3(originX, 0.052, originZ),
-          new THREE.Vector3(originX, 0.052, 2.0),
-          new THREE.Vector3(0.0, 0.052, -2.4),
-          new THREE.Vector3(-12.0, 0.052, -2.4)
-        )
-      );
-    }
-
-    // Разворот (если разрешено для автомобиля)
-    if (canUturn && currentVehicle === VEHICLES.CAR) {
-      addRoadRibbonArrow(
-        new THREE.CubicBezierCurve3(
-          new THREE.Vector3(originX, 0.052, originZ),
-          new THREE.Vector3(originX, 0.052, 2.0),
-          new THREE.Vector3(-2.8, 0.052, 2.0),
-          new THREE.Vector3(-2.8, 0.052, 12.0)
-        )
-      );
-    }
+    const arrow = move => addRoadRibbonArrow(movePath(move, currentVehicle, originZ, 12.0, 0.052));
+    if (canStraight) arrow(MOVES.STRAIGHT);
+    if (canRight) arrow(MOVES.RIGHT);
+    if (canLeft) arrow(MOVES.LEFT);
+    if (canUturn && currentVehicle === VEHICLES.CAR) arrow(MOVES.UTURN);
 
     // Если движение запрещено (например, грудь/спина или поднятая рука)
     if (allowed.length === 1 && allowed[0] === MOVES.NONE) {
@@ -1456,7 +1458,7 @@
 
   function addRoadRibbonArrow(curve, width = 0.55) {
     const numPoints = 32;
-    const points = curve.getPoints(numPoints);
+    const points = curve.getSpacedPoints(numPoints);
     const ribbonPointCount = numPoints - 1;
 
     // Одиночная сплошная яркая неоново-зеленая лента
@@ -1682,36 +1684,10 @@
     }
 
     movingObject = (currentVehicle === VEHICLES.CAR) ? carMesh : tramMesh;
-    const startX = movingObject.position.x;
     const startZ = movingObject.position.z;
 
     // Все манёвры завершаются за перекрёстком и пешеходным переходом (на отметке ±13.5)
-    if (moveType === MOVES.STRAIGHT) {
-      moveCurve = new THREE.LineCurve3(
-        new THREE.Vector3(startX, 0, startZ),
-        new THREE.Vector3(startX, 0, -13.5)
-      );
-    } else if (moveType === MOVES.RIGHT) {
-      moveCurve = new THREE.QuadraticBezierCurve3(
-        new THREE.Vector3(startX, 0, startZ),
-        new THREE.Vector3(startX, 0, 2.4),
-        new THREE.Vector3(13.5, 0, 2.4)
-      );
-    } else if (moveType === MOVES.LEFT) {
-      moveCurve = new THREE.CubicBezierCurve3(
-        new THREE.Vector3(startX, 0, startZ),
-        new THREE.Vector3(startX, 0, 2.0),
-        new THREE.Vector3(0.0, 0, -2.4),
-        new THREE.Vector3(-13.5, 0, -2.4)
-      );
-    } else if (moveType === MOVES.UTURN) {
-      moveCurve = new THREE.CubicBezierCurve3(
-        new THREE.Vector3(startX, 0, startZ),
-        new THREE.Vector3(startX, 0, 2.0),
-        new THREE.Vector3(-2.8, 0, 2.0),
-        new THREE.Vector3(-2.8, 0, 13.5)
-      );
-    }
+    moveCurve = movePath(moveType, currentVehicle, startZ, 13.5, 0);
 
     isMoving = true;
     moveProgress = 0;
@@ -1749,47 +1725,50 @@
     }
   }
 
-  // Вид водителя: камера сидит за машиной (трамваем) чуть выше крыши и едет
-  // вместе с ней. Пока ТС стоит, взгляд доворачивает на регулировщика — жест
-  // должен читаться так, как его видит водитель со своей полосы.
+  // Вид водителя: камера за машиной, чуть левее — между её полосой и осью
+  // дороги — и смотрит вдоль улицы. Регулировщик чуть левее центра кадра,
+  // машина справа, перекрёсток впереди. На манёвре камера едет следом.
+  // zoom: 1 — по умолчанию, меньше — ближе и ниже, больше — дальше и выше.
   const driverCamPos = new THREE.Vector3();
   const driverCamLook = new THREE.Vector3();
   const driverWantPos = new THREE.Vector3();
   const driverWantLook = new THREE.Vector3();
-  const inspectorFocus = new THREE.Vector3(0, 1.5, 0);
   let driverCamReady = false;
+  let cameraZoom = 1;
+
+  function setZoom(value) {
+    cameraZoom = Math.min(Math.max(Number(value) || 1, 0.65), 1.5);
+  }
 
   function updateDriverCamera() {
     const vehicle = currentVehicle === VEHICLES.TRAM ? tramMesh : carMesh;
     if (!vehicle) return;
     const isTram = currentVehicle === VEHICLES.TRAM;
     const heading = vehicle.rotation.y;
-    const fx = Math.sin(heading);
-    const fz = Math.cos(heading);
-    const back = isTram ? 10.0 : 8.0;
-    const height = isTram ? 5.2 : 4.4;
+    const fx = Math.sin(heading), fz = Math.cos(heading);
+    const lx = fz, lz = -fx; // влево от направления движения
+    const back = (isTram ? 11.5 : 8.5) * cameraZoom;
+    const height = (isTram ? 2.6 : 1.9) + 2.6 * cameraZoom;
+    const side = isTram ? 0.4 : 0.8;
 
     driverWantPos.set(
-      vehicle.position.x - fx * back,
+      vehicle.position.x - fx * back + lx * side,
       height,
-      vehicle.position.z - fz * back
+      vehicle.position.z - fz * back + lz * side
     );
     driverWantLook.set(
-      vehicle.position.x + fx * 10,
-      1.3,
-      vehicle.position.z + fz * 10
+      vehicle.position.x + fx * 16 + lx * side,
+      0.9,
+      vehicle.position.z + fz * 16 + lz * side
     );
-    if (!isMoving) {
-      driverWantLook.lerp(inspectorFocus, 0.8);
-    }
 
     if (!driverCamReady) {
       driverCamPos.copy(driverWantPos);
       driverCamLook.copy(driverWantLook);
       driverCamReady = true;
     } else {
-      driverCamPos.lerp(driverWantPos, 0.12);
-      driverCamLook.lerp(driverWantLook, 0.12);
+      driverCamPos.lerp(driverWantPos, 0.1);
+      driverCamLook.lerp(driverWantLook, 0.1);
     }
     camera.position.copy(driverCamPos);
     camera.lookAt(driverCamLook);
@@ -1925,6 +1904,7 @@
     setCameraView,
     setViewInsetBottom,
     setPlayerCar,
+    setZoom,
     rotateCamera,
     reset() {
       resetVehiclePositions();

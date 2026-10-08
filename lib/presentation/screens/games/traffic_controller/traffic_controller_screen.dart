@@ -73,6 +73,12 @@ class _TrafficControllerScreenState
   final GlobalKey _panelKey = GlobalKey();
   double _sentInset = -1;
 
+  // Приближение камеры: щипок по сцене или кнопки «+ / −».
+  static const double _minZoom = 0.65;
+  static const double _maxZoom = 1.5;
+  double _zoom = 1;
+  double _zoomAtGestureStart = 1;
+
   @override
   void initState() {
     super.initState();
@@ -139,6 +145,7 @@ class _TrafficControllerScreenState
         _sentInset = -1;
         _syncViewInset();
         unawaited(_sendPlayerCar());
+        _call('setZoom($_zoom)');
         // Блиц стартует, когда сцена готова, — иначе время тратится на загрузку.
         if (_mode == GamePlayMode.arcade) {
           _startArcadeRound();
@@ -190,6 +197,13 @@ class _TrafficControllerScreenState
       _sentInset = inset;
       _call('setViewInsetBottom(${inset.toStringAsFixed(3)})');
     });
+  }
+
+  void _setZoom(double value) {
+    final zoom = value.clamp(_minZoom, _maxZoom).toDouble();
+    if ((zoom - _zoom).abs() < 0.001) return;
+    setState(() => _zoom = zoom);
+    _call('setZoom(${zoom.toStringAsFixed(3)})');
   }
 
   void _updateEngineScenario() {
@@ -395,7 +409,17 @@ class _TrafficControllerScreenState
         backgroundColor: colors.background,
         body: Stack(
           children: [
-            Positioned.fill(child: _buildScene(colors)),
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onScaleStart: (_) => _zoomAtGestureStart = _zoom,
+                onScaleUpdate: (details) {
+                  if (details.pointerCount < 2) return;
+                  _setZoom(_zoomAtGestureStart / details.scale);
+                },
+                child: _buildScene(colors),
+              ),
+            ),
 
             // Пока сцена грузится — тема приложения и спиннер.
             Positioned.fill(
@@ -420,6 +444,17 @@ class _TrafficControllerScreenState
               right: AppDimensions.screenPadding,
               child: _buildTopBar(colors, arcade),
             ),
+
+            if (_engineReady)
+              Positioned(
+                right: AppDimensions.screenPadding,
+                top:
+                    padding.top +
+                    AppDimensions.spacingS +
+                    40 +
+                    AppDimensions.spacingM,
+                child: _buildZoomControls(colors),
+              ),
 
             Positioned(
               left: 0,
@@ -518,6 +553,61 @@ class _TrafficControllerScreenState
           ),
           const SizedBox(width: AppDimensions.spacingM),
           GameLives(lives: _lives),
+        ],
+      ),
+    );
+  }
+
+  /// «+ / −» камеры: компактно у правого края, над панелью.
+  Widget _buildZoomControls(AppThemeColors colors) {
+    Widget button(IconData icon, String label, double target, bool enabled) {
+      return Semantics(
+        button: true,
+        label: label,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: enabled
+              ? () {
+                  HapticFeedbackHelper.select();
+                  _setZoom(target);
+                }
+              : null,
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(
+              icon,
+              size: 20,
+              color: enabled
+                  ? colors.primaryText
+                  : colors.secondaryText.withValues(alpha: 0.5),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.cardBackground,
+        borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          button(
+            Icons.add_rounded,
+            appL10n.gameZoomIn,
+            _zoom - 0.2,
+            _zoom > _minZoom + 0.001,
+          ),
+          Container(width: 24, height: 1, color: colors.divider),
+          button(
+            Icons.remove_rounded,
+            appL10n.gameZoomOut,
+            _zoom + 0.2,
+            _zoom < _maxZoom - 0.001,
+          ),
         ],
       ),
     );
