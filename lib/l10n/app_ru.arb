@@ -927,7 +927,5 @@
   "gamePromptWhereCanGo": "Куда можно проехать?",
   "gameCaptionGesture": "Жест",
   "gameCaptionApproach": "К вам повёрнут",
-  "gameAnswerWrong": "Неверно",
-  "gameZoomIn": "Приблизить",
-  "gameZoomOut": "Отдалить"
+  "gameAnswerWrong": "Неверно"
 }

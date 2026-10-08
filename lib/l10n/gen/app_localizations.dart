@@ -3207,18 +3207,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Неверно'**
   String get gameAnswerWrong;
-
-  /// No description provided for @gameZoomIn.
-  ///
-  /// In ru, this message translates to:
-  /// **'Приблизить'**
-  String get gameZoomIn;
-
-  /// No description provided for @gameZoomOut.
-  ///
-  /// In ru, this message translates to:
-  /// **'Отдалить'**
-  String get gameZoomOut;
 }
 
 class _AppLocalizationsDelegate

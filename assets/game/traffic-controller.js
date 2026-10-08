@@ -1728,7 +1728,7 @@
   // Вид водителя: камера за машиной, чуть левее — между её полосой и осью
   // дороги — и смотрит вдоль улицы. Регулировщик чуть левее центра кадра,
   // машина справа, перекрёсток впереди. На манёвре камера едет следом.
-  // zoom: 1 — по умолчанию, меньше — ближе и ниже, больше — дальше и выше.
+  // zoom (0,65–2,2): 1 — по умолчанию, меньше — ближе и ниже, больше — дальше и выше.
   const driverCamPos = new THREE.Vector3();
   const driverCamLook = new THREE.Vector3();
   const driverWantPos = new THREE.Vector3();
@@ -1737,7 +1737,7 @@
   let cameraZoom = 1;
 
   function setZoom(value) {
-    cameraZoom = Math.min(Math.max(Number(value) || 1, 0.65), 1.5);
+    cameraZoom = Math.min(Math.max(Number(value) || 1, 0.65), 2.2);
   }
 
   function updateDriverCamera() {

@@ -73,9 +73,9 @@ class _TrafficControllerScreenState
   final GlobalKey _panelKey = GlobalKey();
   double _sentInset = -1;
 
-  // Приближение камеры: щипок по сцене или кнопки «+ / −».
+  // Приближение камеры щипком по сцене.
   static const double _minZoom = 0.65;
-  static const double _maxZoom = 1.5;
+  static const double _maxZoom = 2.2;
   double _zoom = 1;
   double _zoomAtGestureStart = 1;
 
@@ -445,17 +445,6 @@ class _TrafficControllerScreenState
               child: _buildTopBar(colors, arcade),
             ),
 
-            if (_engineReady)
-              Positioned(
-                right: AppDimensions.screenPadding,
-                top:
-                    padding.top +
-                    AppDimensions.spacingS +
-                    40 +
-                    AppDimensions.spacingM,
-                child: _buildZoomControls(colors),
-              ),
-
             Positioned(
               left: 0,
               right: 0,
@@ -553,61 +542,6 @@ class _TrafficControllerScreenState
           ),
           const SizedBox(width: AppDimensions.spacingM),
           GameLives(lives: _lives),
-        ],
-      ),
-    );
-  }
-
-  /// «+ / −» камеры: компактно у правого края, над панелью.
-  Widget _buildZoomControls(AppThemeColors colors) {
-    Widget button(IconData icon, String label, double target, bool enabled) {
-      return Semantics(
-        button: true,
-        label: label,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: enabled
-              ? () {
-                  HapticFeedbackHelper.select();
-                  _setZoom(target);
-                }
-              : null,
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Icon(
-              icon,
-              size: 20,
-              color: enabled
-                  ? colors.primaryText
-                  : colors.secondaryText.withValues(alpha: 0.5),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.cardBackground,
-        borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          button(
-            Icons.add_rounded,
-            appL10n.gameZoomIn,
-            _zoom - 0.2,
-            _zoom > _minZoom + 0.001,
-          ),
-          Container(width: 24, height: 1, color: colors.divider),
-          button(
-            Icons.remove_rounded,
-            appL10n.gameZoomOut,
-            _zoom + 0.2,
-            _zoom < _maxZoom - 0.001,
-          ),
         ],
       ),
     );
