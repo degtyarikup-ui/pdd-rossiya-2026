@@ -283,37 +283,6 @@
       lineN.position.set(off, 0.034, -32);
       parent.add(lineN);
     });
-
-    // Стрелки направлений по полосам на асфальте
-    buildLaneArrows(parent, markMat);
-  }
-
-  // Стрелки полос движения перед перекрестком
-  function buildLaneArrows(parent, markMat) {
-    const arrowShaft = new THREE.PlaneGeometry(0.35, 2.4);
-    const arrowHead = new THREE.ConeGeometry(0.45, 0.9, 3);
-
-    // Стрелка «Прямо и Направо» на правой полосе южного въезда
-    const rightLaneArrow = new THREE.Mesh(arrowShaft, markMat);
-    rightLaneArrow.rotation.x = -Math.PI / 2;
-    rightLaneArrow.position.set(4.6, 0.036, 17);
-    parent.add(rightLaneArrow);
-
-    const headR = new THREE.Mesh(arrowHead, markMat);
-    headR.rotation.x = -Math.PI / 2;
-    headR.position.set(4.6, 0.036, 15.4);
-    parent.add(headR);
-
-    // Стрелка «Прямо и Налево» на средней полосе южного въезда
-    const midLaneArrow = new THREE.Mesh(arrowShaft, markMat);
-    midLaneArrow.rotation.x = -Math.PI / 2;
-    midLaneArrow.position.set(1.8, 0.036, 17);
-    parent.add(midLaneArrow);
-
-    const headM = new THREE.Mesh(arrowHead, markMat);
-    headM.rotation.x = -Math.PI / 2;
-    headM.position.set(1.8, 0.036, 15.4);
-    parent.add(headM);
   }
 
   // Приподнятые тротуары с гранитными бордюрами
@@ -604,32 +573,32 @@
     });
   }
 
-  // Центральный постамент регулировщика (круглый гранитный островок с диагональной полосатой разметкой)
+  // Центральный постамент регулировщика (аккуратный компактный островок под ногами)
   function buildCentralPedestal(parent) {
-    const islandGeo = new THREE.CylinderGeometry(1.6, 1.7, 0.12, 36);
+    const islandGeo = new THREE.CylinderGeometry(0.55, 0.60, 0.05, 32);
     const islandMat = new THREE.MeshStandardMaterial({
       color: 0x484E5B,
       roughness: 0.7,
       metalness: 0.1,
     });
     const island = new THREE.Mesh(islandGeo, islandMat);
-    island.position.y = 0.06;
+    island.position.y = 0.025;
     island.receiveShadow = true;
     parent.add(island);
 
-    // Окантовка островка со светоотражающей черно-белой разметкой (разметка 2.7)
-    const ringGeo = new THREE.RingGeometry(1.5, 1.68, 36);
+    // Белая окантовка островка
+    const ringGeo = new THREE.RingGeometry(0.52, 0.60, 32);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0xFDFDFD });
     const ring = new THREE.Mesh(ringGeo, ringMat);
     ring.rotation.x = -Math.PI / 2;
-    ring.position.y = 0.122;
+    ring.position.y = 0.051;
     parent.add(ring);
   }
 
   // --- 3D-модель инспектора ДПС (Регулировщик) ---
   function buildInspector() {
     inspectorGroup = new THREE.Group();
-    inspectorGroup.position.set(0, 0.12, 0);
+    inspectorGroup.position.set(0, 0.05, 0);
 
     const uniformMat = new THREE.MeshStandardMaterial({ color: 0x1B263B, roughness: 0.75 }); // Форма ДПС
     const stripePantsMat = new THREE.MeshStandardMaterial({ color: 0xD32F2F, roughness: 0.6 });// Красный кант на брюках
@@ -1085,18 +1054,15 @@
     }
   }
 
-  function addRoadRibbonArrow(curve, width = 0.72) {
+  function addRoadRibbonArrow(curve, width = 0.55) {
     const numPoints = 32;
     const points = curve.getPoints(numPoints);
     const ribbonPointCount = numPoints - 1;
 
-    // 1. Широкая неоново-зелёная лента (высокая контрастность на асфальте)
+    // Одиночная сплошная яркая неоново-зеленая лента
     createStripMesh(points, ribbonPointCount, width, 0.052, 0x00E676);
 
-    // 2. Яркая белая осевая линия по центру ленты
-    createStripMesh(points, ribbonPointCount, width * 0.28, 0.054, 0xFFFFFF);
-
-    // 3. Большой плоский стрелочный наконечник
+    // Большой плоский стрелочный наконечник на асфальте
     const lastP = points[ribbonPointCount];
     const tipP = points[numPoints];
     const atx = tipP.x - lastP.x;
@@ -1109,23 +1075,14 @@
     const anx = -dirZ * (headW / 2);
     const anz = dirX * (headW / 2);
 
-    // Внешний зелёный треугольник
-    const tipExtX = tipP.x + dirX * 0.65;
-    const tipExtZ = tipP.z + dirZ * 0.65;
+    const tipExtX = tipP.x + dirX * 0.6;
+    const tipExtZ = tipP.z + dirZ * 0.6;
 
     createTriangleMesh(
       [lastP.x + anx, 0.053, lastP.z + anz],
       [lastP.x - anx, 0.053, lastP.z - anz],
       [tipExtX, 0.053, tipExtZ],
       0x00E676
-    );
-
-    // Внутренний белый акцентный треугольник
-    createTriangleMesh(
-      [lastP.x + anx * 0.45, 0.055, lastP.z + anz * 0.45],
-      [lastP.x - anx * 0.45, 0.055, lastP.z - anz * 0.45],
-      [tipExtX - dirX * 0.15, 0.055, tipExtZ - dirZ * 0.15],
-      0xFFFFFF
     );
   }
 
@@ -1205,13 +1162,6 @@
     const bar = new THREE.Mesh(barGeo, barMat);
     bar.position.set(x, 0.052, z - 0.4);
     arrowsGroup.add(bar);
-
-    const stripeInner = new THREE.Mesh(
-      new THREE.BoxGeometry(2.4, 0.052, 0.15),
-      new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
-    );
-    stripeInner.position.set(x, 0.053, z - 0.4);
-    arrowsGroup.add(stripeInner);
   }
 
   // --- Переключение сценария и поз регулировщика ---
