@@ -2818,18 +2818,6 @@ abstract class AppLocalizations {
   /// **'Игры'**
   String get navGames;
 
-  /// No description provided for @gamesHubTitle.
-  ///
-  /// In ru, this message translates to:
-  /// **'Игры и тренажёры'**
-  String get gamesHubTitle;
-
-  /// No description provided for @gamesHubSubtitle.
-  ///
-  /// In ru, this message translates to:
-  /// **'Закрепляйте сложные правила в интерактивных играх'**
-  String get gamesHubSubtitle;
-
   /// No description provided for @gameTrafficControllerTitle.
   ///
   /// In ru, this message translates to:
@@ -2839,14 +2827,8 @@ abstract class AppLocalizations {
   /// No description provided for @gameTrafficControllerSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'Интерактивный 3D-тренажёр жестов инспектора ДПС'**
+  /// **'Жесты регулировщика глазами водителя: разберитесь в обучении и проверьте себя в блице.'**
   String get gameTrafficControllerSubtitle;
-
-  /// No description provided for @gameTrafficControllerDesc.
-  ///
-  /// In ru, this message translates to:
-  /// **'Освойте самую сложную тему экзамена ПДД (п. 6.10): сигналы регулировщика для автомобилей и трамваев со стишками-мнемониками и динамической аркадой.'**
-  String get gameTrafficControllerDesc;
 
   /// No description provided for @gameModeTraining.
   ///
@@ -2854,23 +2836,11 @@ abstract class AppLocalizations {
   /// **'Обучение'**
   String get gameModeTraining;
 
-  /// No description provided for @gameModeTrainingDesc.
-  ///
-  /// In ru, this message translates to:
-  /// **'Разбор всех жестов со стишками и подсказками траекторий'**
-  String get gameModeTrainingDesc;
-
   /// No description provided for @gameModeArcade.
   ///
   /// In ru, this message translates to:
-  /// **'Блиц-аркада'**
+  /// **'Блиц'**
   String get gameModeArcade;
-
-  /// No description provided for @gameModeArcadeDesc.
-  ///
-  /// In ru, this message translates to:
-  /// **'Динамический перекрёсток на время, серии комбо и 3 жизни'**
-  String get gameModeArcadeDesc;
 
   /// No description provided for @gameBestScoreLabel.
   ///
@@ -2962,12 +2932,6 @@ abstract class AppLocalizations {
   /// **'Игра окончена'**
   String get gameOverTitle;
 
-  /// No description provided for @gameOverScore.
-  ///
-  /// In ru, this message translates to:
-  /// **'Ваш счёт: {score}'**
-  String gameOverScore(int score);
-
   /// No description provided for @gameOverNewRecord.
   ///
   /// In ru, this message translates to:
@@ -3001,26 +2965,14 @@ abstract class AppLocalizations {
   /// No description provided for @gameSignSwiperSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'Тренажёр на распознавание знаков и реакцию'**
+  /// **'Ситуации со знаками: свайп вправо — «да», влево — «нет». Разбор каждой ошибки.'**
   String get gameSignSwiperSubtitle;
-
-  /// No description provided for @gameSignSwiperDesc.
-  ///
-  /// In ru, this message translates to:
-  /// **'Решайте дорожные ситуации по знакам жестами вправо и влево: проверяйте знание приоритетов, запретов, зон действия и исключений в ПДД.'**
-  String get gameSignSwiperDesc;
 
   /// No description provided for @gameSignSwiperModeSprint.
   ///
   /// In ru, this message translates to:
-  /// **'Блиц-аркада'**
+  /// **'Блиц'**
   String get gameSignSwiperModeSprint;
-
-  /// No description provided for @gameSignSwiperModeSprintDesc.
-  ///
-  /// In ru, this message translates to:
-  /// **'60 секунд, серии комбо и 3 жизни на выбывание'**
-  String get gameSignSwiperModeSprintDesc;
 
   /// No description provided for @gameSignSwiperModeTraining.
   ///
@@ -3028,35 +2980,11 @@ abstract class AppLocalizations {
   /// **'Обучение'**
   String get gameSignSwiperModeTraining;
 
-  /// No description provided for @gameSignSwiperModeTrainingDesc.
-  ///
-  /// In ru, this message translates to:
-  /// **'Разбор знаков по группам без таймера с подробными пояснениями'**
-  String get gameSignSwiperModeTrainingDesc;
-
   /// No description provided for @gameSwipedLabel.
   ///
   /// In ru, this message translates to:
   /// **'Свайпов'**
   String get gameSwipedLabel;
-
-  /// No description provided for @gameSignSwiperSwipeRight.
-  ///
-  /// In ru, this message translates to:
-  /// **'ДА / ВЕРНО'**
-  String get gameSignSwiperSwipeRight;
-
-  /// No description provided for @gameSignSwiperSwipeLeft.
-  ///
-  /// In ru, this message translates to:
-  /// **'НЕТ / НЕВЕРНО'**
-  String get gameSignSwiperSwipeLeft;
-
-  /// No description provided for @gameSignSwiperExplanation.
-  ///
-  /// In ru, this message translates to:
-  /// **'Пояснение к знаку'**
-  String get gameSignSwiperExplanation;
 
   /// No description provided for @gameSignSwiperNext.
   ///
@@ -3069,12 +2997,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Все категории'**
   String get gameSignSwiperCategoryAll;
-
-  /// No description provided for @gameSignSwiperFilter.
-  ///
-  /// In ru, this message translates to:
-  /// **'Фильтр категории'**
-  String get gameSignSwiperFilter;
 
   /// No description provided for @gameMistakesReview.
   ///
@@ -3148,12 +3070,6 @@ abstract class AppLocalizations {
   /// **'КОМБО х{combo}!'**
   String gameComboStreak(int combo);
 
-  /// No description provided for @gamesHubSoonSection.
-  ///
-  /// In ru, this message translates to:
-  /// **'Скоро в играх'**
-  String get gamesHubSoonSection;
-
   /// No description provided for @gameSoonBadge.
   ///
   /// In ru, this message translates to:
@@ -3165,12 +3081,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Круговое движение 3D'**
   String get gameRoundaboutTitle;
-
-  /// No description provided for @gameRoundaboutSubtitle.
-  ///
-  /// In ru, this message translates to:
-  /// **'Въезд с любой полосы, съезд — только с крайней правой (п. 8.5 ПДД)'**
-  String get gameRoundaboutSubtitle;
 
   /// No description provided for @gameGestureRightArm.
   ///
@@ -3193,38 +3103,26 @@ abstract class AppLocalizations {
   /// No description provided for @gameApproachLeft.
   ///
   /// In ru, this message translates to:
-  /// **'Слева'**
+  /// **'Левый бок'**
   String get gameApproachLeft;
 
   /// No description provided for @gameApproachFront.
   ///
   /// In ru, this message translates to:
-  /// **'С груди'**
+  /// **'Грудь'**
   String get gameApproachFront;
 
   /// No description provided for @gameApproachRight.
   ///
   /// In ru, this message translates to:
-  /// **'Справа'**
+  /// **'Правый бок'**
   String get gameApproachRight;
 
   /// No description provided for @gameApproachBack.
   ///
   /// In ru, this message translates to:
-  /// **'Со спины'**
+  /// **'Спина'**
   String get gameApproachBack;
-
-  /// No description provided for @gameQuestionCarAllowed.
-  ///
-  /// In ru, this message translates to:
-  /// **'Куда разрешено поехать автомобилю?'**
-  String get gameQuestionCarAllowed;
-
-  /// No description provided for @gameQuestionTramAllowed.
-  ///
-  /// In ru, this message translates to:
-  /// **'Куда разрешено поехать трамваю?'**
-  String get gameQuestionTramAllowed;
 
   /// No description provided for @gameSecondsLeft.
   ///
@@ -3274,12 +3172,6 @@ abstract class AppLocalizations {
   /// **'НЕЛЬЗЯ'**
   String get gameSignCannot;
 
-  /// No description provided for @gameSwipeHint.
-  ///
-  /// In ru, this message translates to:
-  /// **'Свайп вправо — {right} • влево — {left}'**
-  String gameSwipeHint(String right, String left);
-
   /// No description provided for @gameUnderstood.
   ///
   /// In ru, this message translates to:
@@ -3291,6 +3183,30 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'ПДД РФ:'**
   String get gamePddOfficialText;
+
+  /// No description provided for @gamePromptWhereCanGo.
+  ///
+  /// In ru, this message translates to:
+  /// **'Куда можно проехать?'**
+  String get gamePromptWhereCanGo;
+
+  /// No description provided for @gameCaptionGesture.
+  ///
+  /// In ru, this message translates to:
+  /// **'Жест'**
+  String get gameCaptionGesture;
+
+  /// No description provided for @gameCaptionApproach.
+  ///
+  /// In ru, this message translates to:
+  /// **'К вам повёрнут'**
+  String get gameCaptionApproach;
+
+  /// No description provided for @gameAnswerWrong.
+  ///
+  /// In ru, this message translates to:
+  /// **'Неверно'**
+  String get gameAnswerWrong;
 }
 
 class _AppLocalizationsDelegate

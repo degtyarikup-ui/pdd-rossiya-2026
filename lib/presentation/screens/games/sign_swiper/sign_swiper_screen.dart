@@ -1,7 +1,10 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
+import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
@@ -10,12 +13,11 @@ import 'package:pdd_app/domain/services/sign_swiper_engine.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/widgets/sign_explanation_sheet.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/widgets/swipe_card_view.dart';
+import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
+import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 
-enum SignSwiperMode {
-  sprint,
-  training,
-}
+enum SignSwiperMode { sprint, training }
 
 class SignSwiperScreen extends ConsumerStatefulWidget {
   final SignSwiperMode initialMode;
@@ -39,7 +41,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   int _currentIndex = 0;
   bool _isProcessingSwipe = false;
 
-  // Режим «Блиц-спринт»
+  // Блиц
   Timer? _timer;
   int _secondsLeft = 60;
   int _score = 0;
@@ -50,9 +52,11 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   int _totalSwipedInRound = 0;
   bool _isGameOver = false;
   bool _isNewRecord = false;
+  bool _timeUp = false;
+  int _previousBest = 0;
   final List<SignCardQuestion> _mistakes = [];
 
-  // Режим «Тренировка»: null — все категории
+  // Обучение: null — все категории
   String? _selectedCategory;
   int _trainingSolved = 0;
 
@@ -102,8 +106,10 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     _totalSwipedInRound = 0;
     _isGameOver = false;
     _isNewRecord = false;
+    _timeUp = false;
     _mistakes.clear();
-    _deck = _engine?.generateDeck(categoryFilter: _categoryFilter, count: 30) ?? [];
+    _deck =
+        _engine?.generateDeck(categoryFilter: _categoryFilter, count: 30) ?? [];
   }
 
   void _startRound() {
@@ -128,6 +134,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
           SoundEffectsService.instance.playTick();
         }
       } else {
+        _timeUp = true;
         _endGame();
       }
     });
@@ -138,12 +145,15 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   void _endGame() {
     _timer?.cancel();
     final previousBest = ref.read(signSwiperProgressProvider).bestScore;
-    ref.read(signSwiperProgressProvider.notifier).recordGameResult(
+    ref
+        .read(signSwiperProgressProvider.notifier)
+        .recordGameResult(
           score: _score,
           combo: _maxCombo,
           swiped: _totalSwipedInRound,
         );
     setState(() {
+      _previousBest = previousBest;
       _isNewRecord = _score > 0 && _score > previousBest;
       _isGameOver = true;
       _isProcessingSwipe = false;
@@ -151,11 +161,13 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   }
 
   void _onCardSwiped(bool userRightSwipe) {
-    if (_currentIndex >= _deck.length || _isGameOver || _isProcessingSwipe) return;
+    if (_currentIndex >= _deck.length || _isGameOver || _isProcessingSwipe) {
+      return;
+    }
     _isProcessingSwipe = true;
 
     final card = _deck[_currentIndex];
-    final isCorrect = (userRightSwipe == card.isCorrect);
+    final isCorrect = userRightSwipe == card.isCorrect;
 
     _totalSwipedInRound++;
 
@@ -167,7 +179,6 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
         _correctAnswers++;
         _combo++;
         if (_combo > _maxCombo) _maxCombo = _combo;
-
         _score += 100 * _multiplierFor(_combo);
         _secondsLeft = (_secondsLeft + 2).clamp(1, 60);
 
@@ -176,7 +187,9 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
         }
       } else {
         _trainingSolved++;
-        ref.read(signSwiperProgressProvider.notifier).incrementTraining(swiped: 1);
+        ref
+            .read(signSwiperProgressProvider.notifier)
+            .incrementTraining(swiped: 1);
       }
     } else {
       SoundEffectsService.instance.playIncorrect();
@@ -193,14 +206,12 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
           return;
         }
       } else {
-        // В тренировке сразу показываем разбор знака
+        // В обучении сразу разбираем знак.
         SignExplanationSheet.show(
           context,
           card: card,
           wasAnswerCorrect: false,
-          onNext: () {
-            _advanceToNextCard();
-          },
+          onNext: _advanceToNextCard,
         );
         return;
       }
@@ -214,20 +225,37 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     setState(() {
       _isProcessingSwipe = false;
       _currentIndex++;
-      // Подгрузка следующей пачки, если колода подходит к концу
+      // Подгружаем следующую пачку, пока колода не кончилась.
       if (_deck.length - _currentIndex < 6 && _engine != null) {
-        final nextBatch = _engine!.generateDeck(categoryFilter: _categoryFilter, count: 20);
-        _deck.addAll(nextBatch);
+        _deck.addAll(
+          _engine!.generateDeck(categoryFilter: _categoryFilter, count: 20),
+        );
       }
     });
   }
 
   void _switchMode(SignSwiperMode newMode) {
     if (_mode == newMode) return;
-    HapticFeedbackHelper.tap();
     _mode = newMode;
     _startRound();
   }
+
+  Future<void> _pickCategory() async {
+    final categories = _engine?.availableCategories ?? const <String>[];
+    HapticFeedbackHelper.tap();
+    final picked = await showModalBottomSheet<_CategoryChoice>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) =>
+          _CategorySheet(categories: categories, selected: _selectedCategory),
+    );
+    if (picked == null || !mounted || picked.value == _selectedCategory) return;
+    _selectedCategory = picked.value;
+    _startRound();
+  }
+
+  // --- UI ---
 
   @override
   Widget build(BuildContext context) {
@@ -235,65 +263,53 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     final signsAsync = ref.watch(signsProvider);
 
     return Scaffold(
-      backgroundColor: colors.homeScreenBackground,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: signsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-          error: (error, _) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error_outline_rounded, size: 48, color: colors.red),
-                  const SizedBox(height: 12),
-                  Text(
-                    appL10n.gameSignsLoadError,
-                    style: TextStyle(fontSize: 16, color: colors.primaryText, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => ref.refresh(signsProvider),
-                    child: Text(appL10n.gameRetry),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          loading: () =>
+              Center(child: CircularProgressIndicator(color: colors.accent)),
+          error: (error, _) => _buildError(colors),
           data: (signsJson) {
             _initEngine(signsJson);
+            final sprint = _mode == SignSwiperMode.sprint;
 
             return Stack(
               children: [
                 Column(
                   children: [
-                    // Верхняя панель
-                    _buildTopHeader(colors),
-
-                    // Переключатель режимов
-                    _buildModeTabs(colors),
-
-                    // Статусная строка текущего режима
-                    if (_mode == SignSwiperMode.sprint)
-                      _buildSprintStatusBar(colors)
-                    else
-                      _buildTrainingStatusBar(colors),
-
-                    // Центр: колода карточек
+                    _buildHeader(colors, sprint),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppDimensions.screenPadding,
+                      ),
+                      child: GameModeSwitch(
+                        labels: [
+                          appL10n.gameSignSwiperModeTraining,
+                          appL10n.gameSignSwiperModeSprint,
+                        ],
+                        selected: sprint ? 1 : 0,
+                        onChanged: (i) => _switchMode(
+                          i == 1
+                              ? SignSwiperMode.sprint
+                              : SignSwiperMode.training,
+                        ),
+                      ),
+                    ),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        padding: const EdgeInsets.fromLTRB(
+                          AppDimensions.screenPadding,
+                          AppDimensions.spacingXL,
+                          AppDimensions.screenPadding,
+                          AppDimensions.spacingXXXL,
+                        ),
                         child: _buildCardStack(colors),
                       ),
                     ),
-
-                    // Нижние кнопки управления
-                    _buildBottomButtons(colors),
+                    _buildAnswerButtons(colors),
                   ],
                 ),
-
-                // Оверлей окончания игры (Game Over)
-                if (_isGameOver) _buildGameOverOverlay(colors),
+                if (_isGameOver) Positioned.fill(child: _buildResult(colors)),
               ],
             );
           },
@@ -302,124 +318,26 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     );
   }
 
-  Widget _buildTopHeader(AppThemeColors colors) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: Row(
-        children: [
-          AppChromeIconButton(
-            icon: Icons.arrow_back_ios_new_rounded,
-            onTap: () {
-              HapticFeedbackHelper.tap();
-              Navigator.of(context).pop();
-            },
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  appL10n.gameSignSwiperTitle,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: colors.primaryText,
-                  ),
-                ),
-                Text(
-                  appL10n.gameSignSwiperSubtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colors.secondaryText,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Кнопка рестарта
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            color: colors.primaryText,
-            tooltip: appL10n.gameRestartRound,
-            onPressed: () {
-              HapticFeedbackHelper.tap();
-              _startRound();
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModeTabs(AppThemeColors colors) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: colors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colors.divider),
-        ),
-        child: Row(
+  Widget _buildError(AppThemeColors colors) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.screenPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: _buildTabButton(
-                colors: colors,
-                title: appL10n.gameSignSwiperModeTraining,
-                icon: Icons.school_rounded,
-                isSelected: _mode == SignSwiperMode.training,
-                onTap: () => _switchMode(SignSwiperMode.training),
-              ),
-            ),
-            Expanded(
-              child: _buildTabButton(
-                colors: colors,
-                title: appL10n.gameSignSwiperModeSprint,
-                icon: Icons.bolt_rounded,
-                isSelected: _mode == SignSwiperMode.sprint,
-                onTap: () => _switchMode(SignSwiperMode.sprint),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabButton({
-    required AppThemeColors colors,
-    required String title,
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? colors.accent : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? Colors.white : colors.secondaryText,
-            ),
-            const SizedBox(width: 6),
             Text(
-              title,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: isSelected ? Colors.white : colors.secondaryText,
+              appL10n.gameSignsLoadError,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: colors.secondaryText),
+            ),
+            const SizedBox(height: AppDimensions.spacingL),
+            SizedBox(
+              width: 200,
+              child: GameActionButton(
+                label: appL10n.gameRetry,
+                background: colors.accent,
+                foreground: colors.white,
+                onTap: () => ref.invalidate(signsProvider),
               ),
             ),
           ],
@@ -428,150 +346,101 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     );
   }
 
-  Widget _buildSprintStatusBar(AppThemeColors colors) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: colors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colors.divider),
+  /// Шапка. Блиц: закрыть · счёт · жизни, под ними полоса времени.
+  /// Обучение: закрыть · выбор категории · сколько верно.
+  Widget _buildHeader(AppThemeColors colors, bool sprint) {
+    final close = AppChromeIconButton(
+      icon: Icons.close_rounded,
+      onTap: () {
+        HapticFeedbackHelper.tap();
+        Navigator.of(context).pop();
+      },
+    );
+
+    if (sprint) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppDimensions.screenPadding,
+          AppDimensions.spacingM,
+          AppDimensions.screenPadding,
+          AppDimensions.spacingL,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
           children: [
-            // Таймер
             Row(
               children: [
-                Icon(
-                  Icons.timer_rounded,
-                  size: 20,
-                  color: _secondsLeft <= 10 ? colors.red : colors.accent,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  appL10n.gameSecondsLeft(_secondsLeft),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: _secondsLeft <= 10 ? colors.red : colors.primaryText,
-                  ),
-                ),
-              ],
-            ),
-
-            // Жизни
-            Row(
-              children: List.generate(3, (index) {
-                final isAlive = index < _lives;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: Icon(
-                    isAlive ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                    size: 20,
-                    color: isAlive ? colors.red : colors.secondaryText.withValues(alpha: 0.3),
-                  ),
-                );
-              }),
-            ),
-
-            // Счёт и Комбо
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '$_score',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: colors.primaryText,
-                  ),
-                ),
-                if (_multiplierFor(_combo) > 1)
-                  Text(
-                    'x${_multiplierFor(_combo)} 🔥',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: colors.gold,
+                close,
+                Expanded(
+                  child: Center(
+                    child: GameScoreLabel(
+                      score: _score,
+                      multiplier: _multiplierFor(_combo),
                     ),
                   ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTrainingStatusBar(AppThemeColors colors) {
-    final List<String?> categories = [null, ...?_engine?.availableCategories];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-              decoration: BoxDecoration(
-                color: colors.cardBackground,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: colors.divider),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String?>(
-                  value: _selectedCategory,
-                  isExpanded: true,
-                  icon: Icon(Icons.arrow_drop_down_rounded, color: colors.secondaryText),
-                  dropdownColor: colors.cardBackground,
-                  items: categories.map((cat) {
-                    return DropdownMenuItem<String?>(
-                      value: cat,
-                      child: Text(
-                        cat ?? appL10n.gameSignSwiperCategoryAll,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: colors.primaryText,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (newCat) {
-                    if (newCat != _selectedCategory) {
-                      _selectedCategory = newCat;
-                      _startRound();
-                    }
-                  },
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: colors.cardBackground,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: colors.divider),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.check_circle_rounded, size: 16, color: colors.green),
-                const SizedBox(width: 6),
-                Text(
-                  '$_trainingSolved',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: colors.primaryText,
+                SizedBox(
+                  width: 72,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: GameLives(lives: _lives),
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: AppDimensions.spacingM),
+            GameTimeBar(secondsLeft: _secondsLeft, totalSeconds: 60),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppDimensions.screenPadding,
+        AppDimensions.spacingM,
+        AppDimensions.screenPadding,
+        AppDimensions.spacingL,
+      ),
+      child: Row(
+        children: [
+          close,
+          const SizedBox(width: AppDimensions.spacingM),
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _pickCategory,
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      _selectedCategory ?? appL10n.gameSignSwiperCategoryAll,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: colors.primaryText,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.expand_more_rounded,
+                    size: 22,
+                    color: colors.secondaryText,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: AppDimensions.spacingS),
+          Icon(Icons.check_circle_rounded, size: 20, color: colors.green),
+          const SizedBox(width: 4),
+          Text(
+            '$_trainingSolved',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: colors.primaryText,
             ),
           ),
         ],
@@ -581,111 +450,91 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
 
   Widget _buildCardStack(AppThemeColors colors) {
     if (_currentIndex >= _deck.length) {
-      return Center(
-        child: CircularProgressIndicator.adaptive(
-          valueColor: AlwaysStoppedAnimation(colors.accent),
-        ),
-      );
+      return Center(child: CircularProgressIndicator(color: colors.accent));
     }
 
     final topCard = _deck[_currentIndex];
-    final nextCard = (_currentIndex + 1 < _deck.length) ? _deck[_currentIndex + 1] : null;
+    final training = _mode == SignSwiperMode.training;
 
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Нижняя фоновая карточка для ощущения колоды
-        if (nextCard != null)
-          Transform.scale(
-            scale: 0.94,
-            child: Transform.translate(
-              offset: const Offset(0, 16),
-              child: Opacity(
-                opacity: 0.65,
-                child: SwipeCardView(
-                  key: ValueKey(nextCard.id),
-                  card: nextCard,
-                  isTopCard: false,
-                  onSwiped: (_) {},
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 520),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Следующая карточка: край колоды, без содержимого.
+            Positioned.fill(
+              child: Transform.translate(
+                offset: const Offset(0, 22),
+                child: Transform.scale(
+                  scale: 0.92,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colors.cardBackground.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusExtraLarge,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-
-        // Верхняя активная карточка
-        SwipeCardView(
-          key: ValueKey(topCard.id),
-          controller: _cardController,
-          card: topCard,
-          isTopCard: true,
-          onSwiped: _onCardSwiped,
-          onCardTap: _mode == SignSwiperMode.training
-              ? () {
-                  SignExplanationSheet.show(
-                    context,
-                    card: topCard,
-                  );
-                }
-              : null,
+            SwipeCardView(
+              key: ValueKey(topCard.id),
+              controller: _cardController,
+              card: topCard,
+              onSwiped: _onCardSwiped,
+              onCardTap: training
+                  ? () => SignExplanationSheet.show(context, card: topCard)
+                  : null,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildBottomButtons(AppThemeColors colors) {
-    final currentCard = (_currentIndex < _deck.length) ? _deck[_currentIndex] : null;
-    final leftLabel = currentCard?.leftActionLabel ?? appL10n.gameSignNo;
-    final rightLabel = currentCard?.rightActionLabel ?? appL10n.gameSignYes;
-
+  Widget _buildAnswerButtons(AppThemeColors colors) {
+    final card = _currentIndex < _deck.length ? _deck[_currentIndex] : null;
+    final training = _mode == SignSwiperMode.training;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 18),
+      padding: const EdgeInsets.fromLTRB(
+        AppDimensions.screenPadding,
+        0,
+        AppDimensions.screenPadding,
+        AppDimensions.spacingXL,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Кнопка НЕТ / НЕЛЬЗЯ
-          _buildActionButton(
-            colors: colors,
+          GameRoundButton(
             icon: Icons.close_rounded,
+            label: card?.leftActionLabel ?? appL10n.gameSignNo,
             color: colors.red,
-            label: leftLabel,
+            surface: colors.redLight,
             onTap: () {
               HapticFeedbackHelper.tap();
               _cardController.swipeLeft();
             },
           ),
-
-          // Кнопка ПОЯСНЕНИЕ (в режиме обучения)
-          if (_mode == SignSwiperMode.training && _currentIndex < _deck.length) ...[
-            GestureDetector(
-              onTap: () {
-                SignExplanationSheet.show(
-                  context,
-                  card: _deck[_currentIndex],
-                );
-              },
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: colors.cardBackground,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: colors.divider),
-                ),
-                child: Icon(
-                  Icons.info_outline_rounded,
-                  color: colors.secondaryText,
-                  size: 22,
-                ),
+          // В обучении — разбор знака до ответа.
+          if (training && card != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: GameRoundButton(
+                icon: Icons.menu_book_rounded,
+                color: colors.secondaryText,
+                surface: colors.cardBackground,
+                size: 52,
+                onTap: () => SignExplanationSheet.show(context, card: card),
               ),
             ),
-          ],
-
-          // Кнопка ДА / МОЖНО
-          _buildActionButton(
-            colors: colors,
+          GameRoundButton(
             icon: Icons.check_rounded,
+            label: card?.rightActionLabel ?? appL10n.gameSignYes,
             color: colors.green,
-            label: rightLabel,
+            surface: colors.greenLight,
             onTap: () {
               HapticFeedbackHelper.tap();
               _cardController.swipeRight();
@@ -696,295 +545,222 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     );
   }
 
-  Widget _buildActionButton({
-    required AppThemeColors colors,
-    required IconData icon,
-    required Color color,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(36),
-            child: Container(
-              width: 66,
-              height: 66,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-                border: Border.all(color: color, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.2),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Icon(icon, color: color, size: 34),
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: color,
-            letterSpacing: 0.4,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGameOverOverlay(AppThemeColors colors) {
-    final isNewRecord = _isNewRecord;
+  Widget _buildResult(AppThemeColors colors) {
     final accuracy = _totalSwipedInRound > 0
         ? ((_correctAnswers / _totalSwipedInRound) * 100).round()
         : 0;
 
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black.withValues(alpha: 0.75),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 420),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: colors.cardBackground,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black45,
-                  blurRadius: 28,
-                  offset: Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Иконка кубка / завершения
-                Center(
-                  child: Container(
-                    width: 68,
-                    height: 68,
-                    decoration: BoxDecoration(
-                      color: isNewRecord
-                          ? colors.gold.withValues(alpha: 0.2)
-                          : colors.accent.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      isNewRecord ? Icons.emoji_events_rounded : Icons.flag_rounded,
-                      color: isNewRecord ? colors.gold : colors.accent,
-                      size: 36,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
+    return GameResultOverlay(
+      art: const SignSwiperArt(),
+      title: _timeUp ? appL10n.gameTimeUp : appL10n.gameOverTitle,
+      score: _score,
+      bestScore: _previousBest,
+      isNewRecord: _isNewRecord,
+      stats: [
+        GameResultStat(
+          appL10n.gameCorrectShort,
+          '$_correctAnswers',
+          color: colors.green,
+        ),
+        GameResultStat(appL10n.gameAccuracyLabel, '$accuracy%'),
+        GameResultStat(appL10n.gameComboLabel, 'x$_maxCombo'),
+      ],
+      mistakesCount: _mistakes.length,
+      onMistakes: _showMistakes,
+      onRestart: _startRound,
+      onExit: () => Navigator.of(context).pop(),
+    );
+  }
 
-                Text(
-                  appL10n.gameOverTitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: colors.primaryText,
-                  ),
+  void _showMistakes() {
+    HapticFeedbackHelper.tap();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _MistakesSheet(mistakes: List.of(_mistakes)),
+    );
+  }
+}
+
+/// Результат выбора в листе категорий: `value == null` — «все категории».
+class _CategoryChoice {
+  const _CategoryChoice(this.value);
+
+  final String? value;
+}
+
+class _CategorySheet extends StatelessWidget {
+  const _CategorySheet({required this.categories, required this.selected});
+
+  final List<String> categories;
+  final String? selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final options = <String?>[null, ...categories];
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+      ),
+      decoration: BoxDecoration(
+        color: colors.cardBackground,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppDimensions.radiusExtraLarge),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: ListView.builder(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: AppDimensions.spacingS),
+          itemCount: options.length,
+          itemBuilder: (context, i) {
+            final option = options[i];
+            final isSelected = option == selected;
+            return InkWell(
+              onTap: () => Navigator.of(context).pop(_CategoryChoice(option)),
+              child: Container(
+                height: 52,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimensions.screenPadding,
                 ),
-                if (isNewRecord) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    appL10n.gameOverNewRecord,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: colors.gold,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 18),
-
-                // Статистика
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: colors.homeScreenBackground,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildGameOverStat(colors, label: appL10n.gameScore, value: '$_score'),
-                      Container(width: 1, height: 28, color: colors.divider),
-                      _buildGameOverStat(colors, label: appL10n.gameComboLabel, value: 'x$_maxCombo'),
-                      Container(width: 1, height: 28, color: colors.divider),
-                      _buildGameOverStat(colors, label: appL10n.gameAccuracyLabel, value: '$accuracy%'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 18),
-
-                // Ошибки (если есть)
-                if (_mistakes.isNotEmpty) ...[
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      '${appL10n.gameMistakesReview} (${_mistakes.length}):',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: colors.secondaryText,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 120),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: _mistakes.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 6),
-                      itemBuilder: (context, i) {
-                        final mistakeCard = _mistakes[i];
-                        return InkWell(
-                          onTap: () {
-                            SignExplanationSheet.show(
-                              context,
-                              card: mistakeCard,
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: colors.cardBackground,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: colors.divider),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.info_outline_rounded, size: 16, color: colors.red),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    '${mistakeCard.sign.number} ${mistakeCard.sign.title}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: colors.primaryText,
-                                    ),
-                                  ),
-                                ),
-                                Icon(Icons.chevron_right_rounded, size: 16, color: colors.secondaryText),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                ],
-
-                // Кнопки
-                Row(
+                alignment: Alignment.centerLeft,
+                child: Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: BorderSide(color: colors.divider),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        onPressed: () {
-                          HapticFeedbackHelper.tap();
-                          Navigator.of(context).pop();
-                        },
-                        child: Text(
-                          appL10n.gameExit,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: colors.primaryText,
-                          ),
+                      child: Text(
+                        option ?? appL10n.gameSignSwiperCategoryAll,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: isSelected
+                              ? colors.accent
+                              : colors.primaryText,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colors.accent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        onPressed: () {
-                          HapticFeedbackHelper.tap();
-                          _startRound();
-                        },
-                        child: Text(
-                          appL10n.gamePlayAgain,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ),
+                    if (isSelected)
+                      Icon(Icons.check_rounded, size: 20, color: colors.accent),
                   ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
+}
 
-  Widget _buildGameOverStat(
-    AppThemeColors colors, {
-    required String label,
-    required String value,
-  }) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w900,
-            color: colors.primaryText,
-          ),
+/// Ошибки раунда: строка на знак, тап — разбор.
+class _MistakesSheet extends StatelessWidget {
+  const _MistakesSheet({required this.mistakes});
+
+  final List<SignCardQuestion> mistakes;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+      ),
+      decoration: BoxDecoration(
+        color: colors.cardBackground,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppDimensions.radiusExtraLarge),
         ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: colors.secondaryText,
-            fontWeight: FontWeight.w600,
-          ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppDimensions.screenPadding,
+                AppDimensions.spacingXL,
+                AppDimensions.screenPadding,
+                AppDimensions.spacingS,
+              ),
+              child: Text(
+                appL10n.gameMistakesReview,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: colors.primaryText,
+                ),
+              ),
+            ),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.only(bottom: AppDimensions.spacingM),
+                itemCount: mistakes.length,
+                itemBuilder: (context, i) {
+                  final card = mistakes[i];
+                  return InkWell(
+                    onTap: () => SignExplanationSheet.show(context, card: card),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppDimensions.screenPadding,
+                        vertical: AppDimensions.spacingM,
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: card.sign.image.endsWith('.svg')
+                                ? SvgPicture.asset(card.sign.assetPath)
+                                : Image.asset(card.sign.assetPath),
+                          ),
+                          const SizedBox(width: AppDimensions.spacingM),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  card.sign.number,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: colors.accent,
+                                  ),
+                                ),
+                                Text(
+                                  card.sign.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: colors.primaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: colors.secondaryText,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

@@ -194,7 +194,7 @@ class _GameOverDialogState extends State<GameOverDialog> {
                           ),
                           if (isNewRecord) ...[
                             const SizedBox(height: 6),
-                            _RecordBadge(color: colors.gold),
+                            GameRecordBadge(color: colors.gold),
                           ] else if (bestScore != null && bestScore > 0) ...[
                             const SizedBox(height: 6),
                             Text(
@@ -223,20 +223,20 @@ class _GameOverDialogState extends State<GameOverDialog> {
                     Row(
                       children: [
                         Expanded(
-                          child: _MiniStat(
+                          child: GameMiniStat(
                             value: correct,
                             label: appL10n.gameCorrectShort,
                           ),
                         ),
                         Expanded(
-                          child: _MiniStat(
+                          child: GameMiniStat(
                             value: '${state.violationCount}',
                             label: appL10n.gameViolations,
                             color: hasViolations ? colors.red : null,
                           ),
                         ),
                         Expanded(
-                          child: _MiniStat(
+                          child: GameMiniStat(
                             value: distance,
                             label: appL10n.gameDistance,
                           ),
@@ -280,7 +280,7 @@ class _GameOverDialogState extends State<GameOverDialog> {
                       children: [
                         if (state.mistakes.isNotEmpty && onReview != null)
                           Expanded(
-                            child: _SecondaryButton(
+                            child: GameSecondaryButton(
                               key: const ValueKey('game-over-mistakes'),
                               icon: Icons.error_outline_rounded,
                               label: appL10n.gameRunMistakesButton(
@@ -296,7 +296,7 @@ class _GameOverDialogState extends State<GameOverDialog> {
                           const SizedBox(width: 8),
                         if (onLeaderboard != null)
                           Expanded(
-                            child: _SecondaryButton(
+                            child: GameSecondaryButton(
                               icon: Icons.emoji_events_rounded,
                               label: appL10n.gameLobbyRating,
                               color: colors.gold,
@@ -433,7 +433,7 @@ class _FuelScoreCard extends StatelessWidget {
             ),
             if (isNewRecord) ...[
               const SizedBox(width: 8),
-              Flexible(child: _RecordBadge(color: colors.gold)),
+              Flexible(child: GameRecordBadge(color: colors.gold)),
             ] else if (bestScore != null && bestScore! > 0) ...[
               const SizedBox(width: 8),
               Flexible(
@@ -585,15 +585,15 @@ class _CompactStat extends StatelessWidget {
   }
 }
 
-class _RecordBadge extends StatefulWidget {
+class GameRecordBadge extends StatefulWidget {
   final Color color;
-  const _RecordBadge({required this.color});
+  const GameRecordBadge({super.key, required this.color});
 
   @override
-  State<_RecordBadge> createState() => _RecordBadgeState();
+  State<GameRecordBadge> createState() => _RecordBadgeState();
 }
 
-class _RecordBadgeState extends State<_RecordBadge>
+class _RecordBadgeState extends State<GameRecordBadge>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
@@ -807,12 +807,17 @@ class _ConfettiPainter extends CustomPainter {
 }
 
 /// A figure over its caption, no background (results summary).
-class _MiniStat extends StatelessWidget {
+class GameMiniStat extends StatelessWidget {
   final String value;
   final String label;
   final Color? color;
 
-  const _MiniStat({required this.value, required this.label, this.color});
+  const GameMiniStat({
+    super.key,
+    required this.value,
+    required this.label,
+    this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -850,13 +855,13 @@ class _MiniStat extends StatelessWidget {
 }
 
 /// A quiet tinted button for the results' secondary actions.
-class _SecondaryButton extends StatelessWidget {
+class GameSecondaryButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
   final VoidCallback onPressed;
 
-  const _SecondaryButton({
+  const GameSecondaryButton({
     super.key,
     required this.icon,
     required this.label,

@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -13,14 +14,13 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/platform/browser_game.dart';
+import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
+import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
-enum GamePlayMode {
-  training,
-  arcade,
-}
+enum GamePlayMode { training, arcade }
 
 class TrafficControllerScreen extends ConsumerStatefulWidget {
   final GamePlayMode initialMode;
@@ -42,13 +42,12 @@ class _TrafficControllerScreenState
   BrowserGame? _browserGame;
   bool _engineReady = false;
 
-  // Режим обучения (выбранное состояние)
+  // Текущая ситуация: жест, откуда едет ТС и кто едет.
   ControllerGesture _curGesture = ControllerGesture.rightArmForward;
   ApproachDirection _curApproach = ApproachDirection.left;
   VehicleKind _curVehicle = VehicleKind.car;
-  final String _cameraMode = 'overview'; // 'overview' | 'driver'
 
-  // Режим Блиц-аркада
+  // Блиц
   int _score = 0;
   int _combo = 0;
   int _maxComboInRound = 0;
@@ -56,12 +55,21 @@ class _TrafficControllerScreenState
   int _secondsLeft = 35;
   int _solvedCount = 0;
   Timer? _countdownTimer;
-  // Пауза между ситуациями: ввод закрыт, чтобы не засчитать ответ дважды
+  // Пауза между ситуациями: ввод закрыт, чтобы не засчитать ответ дважды.
   Timer? _nextSituationTimer;
   bool _awaitingNext = false;
+  TrafficMove? _lastMove;
+  bool _lastWasCorrect = false;
+  int _wrongCount = 0;
   bool _isGameOver = false;
+  bool _timeUp = false;
   bool _isNewRecord = false;
+  int _previousBest = 0;
   final _random = math.Random();
+
+  // Высота нижней панели: сцена ставит центр кадра над ней.
+  final GlobalKey _panelKey = GlobalKey();
+  double _sentInset = -1;
 
   @override
   void initState() {
@@ -71,9 +79,6 @@ class _TrafficControllerScreenState
       _initWebGame();
     } else {
       _initWebView();
-    }
-    if (_mode == GamePlayMode.arcade) {
-      _startArcadeRound();
     }
   }
 
@@ -87,6 +92,8 @@ class _TrafficControllerScreenState
     super.dispose();
   }
 
+  // --- Мост со сценой (Three.js) ---
+
   void _initWebGame() {
     final browser = BrowserGame(
       onMessage: _handleBridgeMessage,
@@ -99,28 +106,23 @@ class _TrafficControllerScreenState
   }
 
   void _initWebView() {
-    final params = const PlatformWebViewControllerCreationParams();
-    final controller = WebViewController.fromPlatformCreationParams(params);
+    final controller = WebViewController.fromPlatformCreationParams(
+      const PlatformWebViewControllerCreationParams(),
+    );
 
     if (controller.platform is AndroidWebViewController) {
-      final androidController =
-          controller.platform as AndroidWebViewController;
-      androidController.setMediaPlaybackRequiresUserGesture(false);
+      (controller.platform as AndroidWebViewController)
+          .setMediaPlaybackRequiresUserGesture(false);
     }
 
     controller
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFF131722))
       ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageFinished: (_) {
-            _updateEngineScenario();
-          },
-        ),
+        NavigationDelegate(onPageFinished: (_) => _updateEngineScenario()),
       )
       ..addJavaScriptChannel(
         'FlutterChannel',
-        onMessageReceived: _onJsMessageReceived,
+        onMessageReceived: (message) => _handleBridgeMessage(message.message),
       )
       ..loadFlutterAsset('assets/game/traffic-controller.html');
 
@@ -130,62 +132,78 @@ class _TrafficControllerScreenState
   void _handleBridgeMessage(String raw) {
     try {
       final data = jsonDecode(raw) as Map<String, dynamic>;
-      final type = data['type'] as String?;
-      if (type == 'ready') {
-        if (mounted) {
-          setState(() => _engineReady = true);
+      if (data['type'] == 'ready' && mounted) {
+        setState(() => _engineReady = true);
+        _sentInset = -1;
+        _syncViewInset();
+        // Блиц стартует, когда сцена готова, — иначе время тратится на загрузку.
+        if (_mode == GamePlayMode.arcade) {
+          _startArcadeRound();
+        } else {
           _updateEngineScenario();
         }
       }
     } catch (_) {}
   }
 
-  void _onJsMessageReceived(JavaScriptMessage message) {
-    _handleBridgeMessage(message.message);
-  }
-
   void _runJs(String code) {
+    if (!_engineReady) return;
     if (kIsWeb) {
-      if (_browserGame != null && _engineReady) {
-        _browserGame!.runJavaScript(code).ignore();
-      }
-    } else if (_webViewController != null && _engineReady) {
-      _webViewController!.runJavaScript(code).ignore();
+      _browserGame?.runJavaScript(code).ignore();
+    } else {
+      _webViewController?.runJavaScript(code).ignore();
     }
   }
 
+  void _call(String method) => _runJs(
+    'window.TrafficControllerGame && window.TrafficControllerGame.$method;',
+  );
+
+  static String _moveName(TrafficMove move) => switch (move) {
+    TrafficMove.straight => 'straight',
+    TrafficMove.right => 'right',
+    TrafficMove.left => 'left',
+    TrafficMove.uTurn => 'uTurn',
+    TrafficMove.none => 'none',
+  };
+
+  void _syncViewInset() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_engineReady) return;
+      final box = _panelKey.currentContext?.findRenderObject() as RenderBox?;
+      final screen = MediaQuery.sizeOf(context).height;
+      if (box == null || !box.hasSize || screen <= 0) return;
+      final inset = box.size.height / screen;
+      if ((inset - _sentInset).abs() < 0.005) return;
+      _sentInset = inset;
+      _call('setViewInsetBottom(${inset.toStringAsFixed(3)})');
+    });
+  }
+
   void _updateEngineScenario() {
-    final gestureStr = switch (_curGesture) {
+    final gesture = switch (_curGesture) {
       ControllerGesture.handsDownOrSides => 'handsDownOrSides',
       ControllerGesture.rightArmForward => 'rightArmForward',
       ControllerGesture.armUp => 'armUp',
     };
-    final approachStr = switch (_curApproach) {
+    final approach = switch (_curApproach) {
       ApproachDirection.front => 'front',
       ApproachDirection.back => 'back',
       ApproachDirection.left => 'left',
       ApproachDirection.right => 'right',
     };
-    final vehicleStr = switch (_curVehicle) {
-      VehicleKind.car => 'car',
-      VehicleKind.tram => 'tram',
-    };
-    final modeStr = _mode == GamePlayMode.training ? 'training' : 'arcade';
+    final vehicle = _curVehicle == VehicleKind.tram ? 'tram' : 'car';
+    final mode = _mode == GamePlayMode.training ? 'training' : 'arcade';
 
-    _runJs(
-      'window.TrafficControllerGame && window.TrafficControllerGame.setMode("$modeStr");',
-    );
-    _runJs(
-      'window.TrafficControllerGame && window.TrafficControllerGame.setScenario("$gestureStr", "$approachStr", "$vehicleStr");',
-    );
-    _runJs(
-      'window.TrafficControllerGame && window.TrafficControllerGame.setCameraView("$_cameraMode");',
-    );
+    _call('setMode("$mode")');
+    _call('setScenario("$gesture", "$approach", "$vehicle")');
+    _call('setCameraView("driver")');
   }
+
+  // --- Режимы ---
 
   void _switchMode(GamePlayMode mode) {
     if (_mode == mode) return;
-    HapticFeedbackHelper.select();
     _countdownTimer?.cancel();
     _nextSituationTimer?.cancel();
 
@@ -200,7 +218,23 @@ class _TrafficControllerScreenState
     }
   }
 
+  void _setScenario({
+    ControllerGesture? gesture,
+    ApproachDirection? approach,
+    VehicleKind? vehicle,
+  }) {
+    setState(() {
+      _curGesture = gesture ?? _curGesture;
+      _curApproach = approach ?? _curApproach;
+      _curVehicle = vehicle ?? _curVehicle;
+    });
+    _updateEngineScenario();
+  }
+
+  // --- Блиц ---
+
   void _startArcadeRound() {
+    if (!_engineReady) return;
     HapticFeedbackHelper.select();
     _countdownTimer?.cancel();
     _nextSituationTimer?.cancel();
@@ -211,9 +245,12 @@ class _TrafficControllerScreenState
       _lives = 3;
       _secondsLeft = 35;
       _solvedCount = 0;
+      _wrongCount = 0;
       _isGameOver = false;
+      _timeUp = false;
       _isNewRecord = false;
       _awaitingNext = false;
+      _lastMove = null;
     });
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
@@ -223,7 +260,10 @@ class _TrafficControllerScreenState
       if (_secondsLeft > 1) {
         setState(() => _secondsLeft--);
       } else {
-        setState(() => _secondsLeft = 0);
+        setState(() {
+          _secondsLeft = 0;
+          _timeUp = true;
+        });
         _endArcadeGame();
       }
     });
@@ -234,7 +274,7 @@ class _TrafficControllerScreenState
   void _nextArcadeSituation() {
     final gestures = ControllerGesture.values;
     final approaches = ApproachDirection.values;
-    // В основном авто (~88%), трамвай появляется редко (~12%) и не два раза подряд
+    // В основном авто (~88%), трамвай появляется редко (~12%) и не два раза подряд.
     final wasTram = _curVehicle == VehicleKind.tram;
 
     setState(() {
@@ -244,6 +284,7 @@ class _TrafficControllerScreenState
           ? VehicleKind.tram
           : VehicleKind.car;
       _awaitingNext = false;
+      _lastMove = null;
     });
 
     _updateEngineScenario();
@@ -252,9 +293,7 @@ class _TrafficControllerScreenState
   void _scheduleNextSituation(Duration delay) {
     _nextSituationTimer?.cancel();
     _nextSituationTimer = Timer(delay, () {
-      if (mounted && !_isGameOver) {
-        _nextArcadeSituation();
-      }
+      if (mounted && !_isGameOver) _nextArcadeSituation();
     });
   }
 
@@ -267,24 +306,15 @@ class _TrafficControllerScreenState
       vehicle: _curVehicle,
       move: move,
     );
-
-    final moveStr = switch (move) {
-      TrafficMove.straight => 'straight',
-      TrafficMove.right => 'right',
-      TrafficMove.left => 'left',
-      TrafficMove.uTurn => 'uTurn',
-      TrafficMove.none => 'none',
-    };
-
-    _runJs(
-      'window.TrafficControllerGame && window.TrafficControllerGame.makeMove("$moveStr");',
-    );
+    _call('makeMove("${_moveName(move)}")');
 
     if (isAllowed) {
       HapticFeedbackHelper.tap();
       SoundEffectsService.instance.playCorrect();
       setState(() {
         _awaitingNext = true;
+        _lastMove = move;
+        _lastWasCorrect = true;
         _combo++;
         if (_combo > _maxComboInRound) _maxComboInRound = _combo;
         _score += 100 * _combo;
@@ -299,13 +329,16 @@ class _TrafficControllerScreenState
       SoundEffectsService.instance.playIncorrect();
       setState(() {
         _awaitingNext = true;
+        _lastMove = move;
+        _lastWasCorrect = false;
         _combo = 0;
         _lives--;
+        _wrongCount++;
       });
       if (_lives <= 0) {
         _endArcadeGame();
       } else {
-        _scheduleNextSituation(const Duration(milliseconds: 700));
+        _scheduleNextSituation(const Duration(milliseconds: 1100));
       }
     }
   }
@@ -324,165 +357,272 @@ class _TrafficControllerScreenState
           solved: _solvedCount,
         );
     setState(() {
+      _previousBest = previousBest;
       _isNewRecord = _score > 0 && _score > previousBest;
       _isGameOver = true;
       _awaitingNext = false;
     });
   }
 
-  void _onTrainingMoveTest(TrafficMove move) {
-    HapticFeedbackHelper.select();
-    final moveStr = switch (move) {
-      TrafficMove.straight => 'straight',
-      TrafficMove.right => 'right',
-      TrafficMove.left => 'left',
-      TrafficMove.uTurn => 'uTurn',
-      TrafficMove.none => 'none',
-    };
-    _runJs(
-      'window.TrafficControllerGame && window.TrafficControllerGame.makeMove("$moveStr");',
-    );
-  }
-
-
-  void _onPanUpdate(DragUpdateDetails details) {
-    if (_cameraMode == 'overview') {
-      _runJs('window.TrafficControllerGame && window.TrafficControllerGame.rotateCamera(${details.delta.dx});');
-    }
-  }
+  // --- UI ---
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final padding = MediaQuery.paddingOf(context);
+    final arcade = _mode == GamePlayMode.arcade;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF11141A),
-      body: SafeArea(
-        child: Stack(
+    // Сцена всегда дневная — значки статус-бара тёмные в любой теме.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: Stack(
           children: [
-            // 3D Canvas with camera pan
+            Positioned.fill(child: _buildScene(colors)),
+
+            // Пока сцена грузится — тема приложения и спиннер.
             Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onHorizontalDragUpdate: _onPanUpdate,
-                child: kIsWeb
-                    ? (_browserGame != null
-                        ? _browserGame!.widget
-                        : const Center(
-                            child: CircularProgressIndicator(color: AppColors.accent),
-                          ))
-                    : (_webViewController != null
-                        ? WebViewWidget(controller: _webViewController!)
-                        : const Center(
-                            child: CircularProgressIndicator(color: AppColors.accent),
-                          )),
+              child: IgnorePointer(
+                ignoring: _engineReady,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 250),
+                  opacity: _engineReady ? 0 : 1,
+                  child: ColoredBox(
+                    color: colors.background,
+                    child: Center(
+                      child: CircularProgressIndicator(color: colors.accent),
+                    ),
+                  ),
+                ),
               ),
             ),
 
-            // Top HUD Overlay
             Positioned(
-              top: 8,
-              left: 12,
-              right: 12,
-              child: _buildTopBar(colors),
+              top: padding.top + AppDimensions.spacingS,
+              left: AppDimensions.screenPadding,
+              right: AppDimensions.screenPadding,
+              child: _buildTopBar(colors, arcade),
             ),
 
-            // Bottom Controls Overlay
             Positioned(
-              left: 12,
-              right: 12,
-              bottom: 12,
-              child: _mode == GamePlayMode.training
-                  ? _buildTrainingControls(colors)
-                  : _buildArcadeControls(colors),
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _buildPanel(colors, padding.bottom, arcade),
             ),
 
-            // Game Over Dialog
-            if (_isGameOver)
-              Positioned.fill(
-                child: _buildGameOverOverlay(colors),
-              ),
+            if (_isGameOver) Positioned.fill(child: _buildResult(colors)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTopBar(AppThemeColors colors) {
+  Widget _buildResult(AppThemeColors colors) {
+    final answered = _solvedCount + _wrongCount;
+    final accuracy = answered > 0 ? (_solvedCount * 100 / answered).round() : 0;
+    return GameResultOverlay(
+      art: ClipRRect(
+        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+        child: const TrafficControllerArt(),
+      ),
+      title: _timeUp ? appL10n.gameTimeUp : appL10n.gameOverTitle,
+      score: _score,
+      bestScore: _previousBest,
+      isNewRecord: _isNewRecord,
+      stats: [
+        GameResultStat(appL10n.gameSolvedLabel, '$_solvedCount'),
+        GameResultStat(appL10n.gameAccuracyLabel, '$accuracy%'),
+        GameResultStat(appL10n.gameComboLabel, 'x$_maxComboInRound'),
+      ],
+      onRestart: _startArcadeRound,
+      onExit: () => Navigator.of(context).pop(),
+    );
+  }
+
+  Widget _buildScene(AppThemeColors colors) {
+    if (kIsWeb) {
+      return _browserGame?.widget ?? const SizedBox.shrink();
+    }
+    final controller = _webViewController;
+    return controller == null
+        ? const SizedBox.shrink()
+        : WebViewWidget(controller: controller);
+  }
+
+  Widget _buildTopBar(AppThemeColors colors, bool arcade) {
     return Row(
       children: [
         AppChromeIconButton(
-          icon: Icons.arrow_back_rounded,
-          onTap: () => Navigator.of(context).pop(),
-          backgroundColor: Colors.black.withValues(alpha: 0.55),
+          icon: Icons.close_rounded,
+          onTap: () {
+            HapticFeedbackHelper.tap();
+            Navigator.of(context).pop();
+          },
         ),
-        const Spacer(),
-
-        // Mode switch pill
-        Container(
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.65),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildModeTab(
-                label: appL10n.gameModeTraining,
-                mode: GamePlayMode.training,
-              ),
-              _buildModeTab(
-                label: appL10n.gameModeArcade,
-                mode: GamePlayMode.arcade,
-              ),
-            ],
-          ),
-        ),
-
-        const Spacer(),
-
-        // Балансировочный отступ для идеального центрирования табов
-        const SizedBox(width: 44, height: 44),
+        const SizedBox(width: AppDimensions.spacingM),
+        if (arcade)
+          Expanded(child: _buildHud(colors))
+        else ...[
+          const Spacer(),
+          _buildVehicleToggle(colors),
+        ],
       ],
     );
   }
 
-  Widget _buildModeTab({
-    required String label,
-    required GamePlayMode mode,
-  }) {
-    final active = _mode == mode;
-    return GestureDetector(
-      onTap: () => _switchMode(mode),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: active ? AppColors.accent : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-            color: active ? Colors.white : Colors.white70,
+  /// Счёт, комбо, время и жизни — одной плоской плашкой.
+  Widget _buildHud(AppThemeColors colors) {
+    final urgent = _secondsLeft <= 10;
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingM),
+      decoration: BoxDecoration(
+        color: colors.cardBackground,
+        borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
+      ),
+      child: Row(
+        children: [
+          GameScoreLabel(score: _score, multiplier: _combo),
+          const Spacer(),
+          Icon(
+            Icons.timer_outlined,
+            size: 18,
+            color: urgent ? colors.red : colors.secondaryText,
           ),
+          const SizedBox(width: 4),
+          Text(
+            appL10n.gameSecondsLeft(_secondsLeft),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: urgent ? colors.red : colors.primaryText,
+            ),
+          ),
+          const SizedBox(width: AppDimensions.spacingM),
+          GameLives(lives: _lives),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVehicleToggle(AppThemeColors colors) {
+    Widget item(VehicleKind kind, IconData icon, String label) {
+      final selected = _curVehicle == kind;
+      return Semantics(
+        label: label,
+        button: true,
+        selected: selected,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            if (selected) return;
+            HapticFeedbackHelper.select();
+            _setScenario(vehicle: kind);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 40,
+            height: 32,
+            decoration: BoxDecoration(
+              color: selected ? colors.accentSurface10 : Colors.transparent,
+              borderRadius: BorderRadius.circular(
+                AppDimensions.smallRadius + 1,
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: selected ? colors.accent : colors.secondaryText,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: colors.cardBackground,
+        borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
+      ),
+      child: Row(
+        children: [
+          item(
+            VehicleKind.car,
+            Icons.directions_car_rounded,
+            appL10n.gameVehicleCar,
+          ),
+          item(VehicleKind.tram, Icons.tram_rounded, appL10n.gameVehicleTram),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPanel(AppThemeColors colors, double bottomInset, bool arcade) {
+    return NotificationListener<SizeChangedLayoutNotification>(
+      onNotification: (_) {
+        _syncViewInset();
+        return true;
+      },
+      child: SizeChangedLayoutNotifier(
+        child: KeyedSubtree(
+          key: _panelKey,
+          child: _panelBody(colors, bottomInset, arcade),
         ),
       ),
     );
   }
 
-  // --- Контролы режима «Обучение» ---
-  Widget _buildTrainingControls(AppThemeColors colors) {
-    final verse = TrafficControllerRules.mnemonicVerse(
-      gesture: _curGesture,
-      approach: _curApproach,
-      vehicle: _curVehicle,
+  Widget _panelBody(AppThemeColors colors, double bottomInset, bool arcade) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        AppDimensions.screenPadding,
+        AppDimensions.spacingL,
+        AppDimensions.screenPadding,
+        AppDimensions.spacingL + bottomInset,
+      ),
+      decoration: BoxDecoration(
+        color: colors.cardBackground,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppDimensions.radiusExtraLarge),
+        ),
+      ),
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 200),
+        alignment: Alignment.bottomCenter,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            GameModeSwitch(
+              labels: [appL10n.gameModeTraining, appL10n.gameModeArcade],
+              selected: arcade ? 1 : 0,
+              onChanged: (i) => _switchMode(
+                i == 1 ? GamePlayMode.arcade : GamePlayMode.training,
+              ),
+            ),
+            const SizedBox(height: AppDimensions.spacingL),
+            if (arcade)
+              _buildArcadeControls(colors)
+            else
+              _buildTraining(colors),
+          ],
+        ),
+      ),
     );
-    final officialRule = TrafficControllerRules.officialRuleDescription(
+  }
+
+  // --- Обучение ---
+
+  Widget _buildTraining(AppThemeColors colors) {
+    final verse = TrafficControllerRules.mnemonicVerse(
       gesture: _curGesture,
       approach: _curApproach,
       vehicle: _curVehicle,
@@ -493,643 +633,259 @@ class _TrafficControllerScreenState
       vehicle: _curVehicle,
     );
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xE61A202C),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white12),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black45,
-            blurRadius: 16,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Стишок-мнемоника
-          if (verse.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              margin: const EdgeInsets.only(bottom: 10),
-              decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.accent.withValues(alpha: 0.4)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.auto_stories_rounded,
-                    color: AppColors.accent,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      verse,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        height: 1.25,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // Переключатель жестов
-          Row(
-            children: [
-              Expanded(
-                child: _buildPillChoice(
-                  title: appL10n.gameGestureRightArm,
-                  selected: _curGesture == ControllerGesture.rightArmForward,
-                  onTap: () {
-                    setState(
-                      () => _curGesture = ControllerGesture.rightArmForward,
-                    );
-                    _updateEngineScenario();
-                  },
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _buildPillChoice(
-                  title: appL10n.gameGestureHandsSides,
-                  selected: _curGesture == ControllerGesture.handsDownOrSides,
-                  onTap: () {
-                    setState(
-                      () => _curGesture = ControllerGesture.handsDownOrSides,
-                    );
-                    _updateEngineScenario();
-                  },
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _buildPillChoice(
-                  title: appL10n.gameGestureArmUp,
-                  selected: _curGesture == ControllerGesture.armUp,
-                  onTap: () {
-                    setState(() => _curGesture = ControllerGesture.armUp);
-                    _updateEngineScenario();
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Ракурс регулировщика (4 стороны подхода к перекрестку)
-          Row(
-            children: [
-              Expanded(
-                child: _buildPillChoice(
-                  title: appL10n.gameApproachLeft,
-                  selected: _curApproach == ApproachDirection.left,
-                  onTap: () {
-                    setState(() => _curApproach = ApproachDirection.left);
-                    _updateEngineScenario();
-                  },
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _buildPillChoice(
-                  title: appL10n.gameApproachFront,
-                  selected: _curApproach == ApproachDirection.front,
-                  onTap: () {
-                    setState(() => _curApproach = ApproachDirection.front);
-                    _updateEngineScenario();
-                  },
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _buildPillChoice(
-                  title: appL10n.gameApproachRight,
-                  selected: _curApproach == ApproachDirection.right,
-                  onTap: () {
-                    setState(() => _curApproach = ApproachDirection.right);
-                    _updateEngineScenario();
-                  },
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _buildPillChoice(
-                  title: appL10n.gameApproachBack,
-                  selected: _curApproach == ApproachDirection.back,
-                  onTap: () {
-                    setState(() => _curApproach = ApproachDirection.back);
-                    _updateEngineScenario();
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Выбор: авто или трамвай
-          Row(
-            children: [
-              Expanded(
-                child: _buildPillChoice(
-                  icon: Icons.directions_car_rounded,
-                  title: appL10n.gameVehicleCar,
-                  selected: _curVehicle == VehicleKind.car,
-                  onTap: () {
-                    setState(() => _curVehicle = VehicleKind.car);
-                    _updateEngineScenario();
-                  },
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _buildPillChoice(
-                  icon: Icons.tram_rounded,
-                  title: appL10n.gameVehicleTram,
-                  selected: _curVehicle == VehicleKind.tram,
-                  onTap: () {
-                    setState(() => _curVehicle = VehicleKind.tram);
-                    _updateEngineScenario();
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // Кнопки тестового проезда
-          Row(
-            children: [
-              _buildMoveTestBtn(
-                colors: colors,
-                label: appL10n.gameActionStraight,
-                isAllowed: allowed.contains(TrafficMove.straight),
-                onTap: () => _onTrainingMoveTest(TrafficMove.straight),
-              ),
-              const SizedBox(width: 4),
-              _buildMoveTestBtn(
-                colors: colors,
-                label: appL10n.gameActionRight,
-                isAllowed: allowed.contains(TrafficMove.right),
-                onTap: () => _onTrainingMoveTest(TrafficMove.right),
-              ),
-              const SizedBox(width: 4),
-              _buildMoveTestBtn(
-                colors: colors,
-                label: appL10n.gameActionLeft,
-                isAllowed: allowed.contains(TrafficMove.left),
-                onTap: () => _onTrainingMoveTest(TrafficMove.left),
-              ),
-              const SizedBox(width: 4),
-              _buildMoveTestBtn(
-                colors: colors,
-                label: appL10n.gameActionUTurn,
-                isAllowed: allowed.contains(TrafficMove.uTurn),
-                onTap: () => _onTrainingMoveTest(TrafficMove.uTurn),
-              ),
-              const SizedBox(width: 4),
-              _buildMoveTestBtn(
-                colors: colors,
-                label: appL10n.gameActionStand,
-                isAllowed: allowed.contains(TrafficMove.none),
-                onTap: () => _onTrainingMoveTest(TrafficMove.none),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-
-          // Пояснение официального пункта
-          Text(
-            officialRule,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.white70,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+    Widget caption(String text) => Padding(
+      padding: const EdgeInsets.only(bottom: AppDimensions.spacingS),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 12, color: colors.secondaryText),
       ),
     );
-  }
 
-  Widget _buildPillChoice({
-    IconData? icon,
-    required String title,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? Colors.white : Colors.white10,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(
-                icon,
-                size: 15,
-                color: selected ? Colors.black : Colors.white,
-              ),
-              const SizedBox(width: 4),
-            ],
-            Flexible(
-              child: Text(
-                title,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected ? Colors.black : Colors.white,
-                ),
+    Widget chips<T>(
+      List<(T, String)> items,
+      T selected,
+      ValueChanged<T> onSelect,
+    ) {
+      return Row(
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0) const SizedBox(width: AppDimensions.spacingS),
+            Expanded(
+              child: GameChip(
+                label: items[i].$2,
+                selected: items[i].$1 == selected,
+                onTap: () => onSelect(items[i].$1),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
+        ],
+      );
+    }
 
-  Widget _buildMoveTestBtn({
-    required AppThemeColors colors,
-    required String label,
-    required bool isAllowed,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: isAllowed
-                ? colors.green.withValues(alpha: 0.25)
-                : Colors.white10,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isAllowed ? colors.green : Colors.white24,
-            ),
-          ),
-          child: Column(
-            children: [
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: isAllowed ? colors.green : Colors.white60,
-                ),
-              ),
-              Icon(
-                isAllowed ? Icons.check_circle_rounded : Icons.block_rounded,
-                size: 14,
-                color: isAllowed ? colors.green : Colors.white38,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // --- Контролы режима «Блиц-аркада» ---
-  Widget _buildArcadeControls(AppThemeColors colors) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Статистика: счёт, таймер, комбо, жизни
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white12),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Счёт и комбо
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${appL10n.gameScore}: $_score',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  if (_combo > 1)
-                    Text(
-                      '${appL10n.gameCombo} x$_combo 🔥',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: colors.gold,
-                      ),
-                    ),
-                ],
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 38),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              verse,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+                color: colors.primaryText,
               ),
-
-              // Таймер
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: _secondsLeft <= 10
-                      ? colors.red.withValues(alpha: 0.3)
-                      : Colors.white12,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _secondsLeft <= 10
-                        ? colors.red
-                        : Colors.white24,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.timer_outlined,
-                      size: 16,
-                      color: _secondsLeft <= 10
-                          ? colors.red
-                          : Colors.white,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      appL10n.gameSecondsLeft(_secondsLeft),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: _secondsLeft <= 10
-                            ? colors.red
-                            : Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Жизни (3 сердца)
-              Row(
-                children: List.generate(3, (i) {
-                  final alive = i < _lives;
-                  return Padding(
-                    padding: const EdgeInsets.only(left: 3),
-                    child: Icon(
-                      alive
-                          ? Icons.favorite_rounded
-                          : Icons.favorite_border_rounded,
-                      size: 20,
-                      color: alive ? colors.red : Colors.white24,
-                    ),
-                  );
-                }),
-              ),
-            ],
+            ),
           ),
         ),
-        const SizedBox(height: 10),
-
-        // Вопрос
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xE61A202C),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                _curVehicle == VehicleKind.car
-                    ? Icons.directions_car_rounded
-                    : Icons.tram_rounded,
-                size: 18,
-                color: AppColors.accent,
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  _curVehicle == VehicleKind.car
-                      ? appL10n.gameQuestionCarAllowed
-                      : appL10n.gameQuestionTramAllowed,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-
-        // Кнопки быстрого выбора
-        Row(
-          children: [
-            _buildArcadeButton(
-              label: appL10n.gameActionStraight,
-              icon: Icons.straight_rounded,
-              onTap: () => _onArcadeMoveSelected(TrafficMove.straight),
-            ),
-            const SizedBox(width: 8),
-            _buildArcadeButton(
-              label: appL10n.gameActionRight,
-              icon: Icons.turn_right_rounded,
-              onTap: () => _onArcadeMoveSelected(TrafficMove.right),
-            ),
-            const SizedBox(width: 8),
-            _buildArcadeButton(
-              label: appL10n.gameActionLeft,
-              icon: Icons.turn_left_rounded,
-              onTap: () => _onArcadeMoveSelected(TrafficMove.left),
-            ),
+        const SizedBox(height: AppDimensions.spacingL),
+        caption(appL10n.gameCaptionGesture),
+        chips<ControllerGesture>(
+          [
+            (ControllerGesture.rightArmForward, appL10n.gameGestureRightArm),
+            (ControllerGesture.handsDownOrSides, appL10n.gameGestureHandsSides),
+            (ControllerGesture.armUp, appL10n.gameGestureArmUp),
           ],
+          _curGesture,
+          (g) => _setScenario(gesture: g),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppDimensions.spacingM),
+        caption(appL10n.gameCaptionApproach),
+        chips<ApproachDirection>(
+          [
+            (ApproachDirection.left, appL10n.gameApproachLeft),
+            (ApproachDirection.front, appL10n.gameApproachFront),
+            (ApproachDirection.right, appL10n.gameApproachRight),
+            (ApproachDirection.back, appL10n.gameApproachBack),
+          ],
+          _curApproach,
+          (a) => _setScenario(approach: a),
+        ),
+        const SizedBox(height: AppDimensions.spacingL),
         Row(
           children: [
-            _buildArcadeButton(
-              label: appL10n.gameActionUTurn,
-              icon: Icons.u_turn_left_rounded,
-              onTap: () => _onArcadeMoveSelected(TrafficMove.uTurn),
-            ),
-            const SizedBox(width: 8),
-            _buildArcadeButton(
-              label: appL10n.gameActionStand,
-              icon: Icons.front_hand_rounded,
-              onTap: () => _onArcadeMoveSelected(TrafficMove.none),
-            ),
+            for (var i = 0; i < _moves.length; i++) ...[
+              if (i > 0) const SizedBox(width: AppDimensions.spacingS),
+              Expanded(
+                child: _MoveTile(
+                  move: _moves[i],
+                  allowed: allowed.contains(_moves[i].move),
+                  onTap: () {
+                    HapticFeedbackHelper.select();
+                    _call('makeMove("${_moveName(_moves[i].move)}")');
+                  },
+                ),
+              ),
+            ],
           ],
         ),
       ],
     );
   }
 
-  Widget _buildArcadeButton({
-    required String label,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF222938),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: const BorderSide(color: Colors.white24),
-          ),
-          elevation: 4,
-        ),
-        onPressed: onTap,
-        child: Row(
+  // --- Блиц ---
+
+  Widget _buildArcadeControls(AppThemeColors colors) {
+    final allowed = TrafficControllerRules.allowedMoves(
+      gesture: _curGesture,
+      approach: _curApproach,
+      vehicle: _curVehicle,
+    );
+
+    Widget button(_MoveSpec spec) {
+      final isLast = _lastMove == spec.move;
+      Color background = colors.gray;
+      Color foreground = colors.primaryText;
+      if (_awaitingNext) {
+        if (isLast) {
+          background = _lastWasCorrect ? colors.green : colors.red;
+          foreground = colors.white;
+        } else if (!_lastWasCorrect && allowed.contains(spec.move)) {
+          // Неверный ответ — подсвечиваем, как было правильно.
+          background = colors.greenLight;
+          foreground = colors.green;
+        } else {
+          foreground = colors.secondaryText;
+        }
+      }
+      return GameActionButton(
+        label: spec.label,
+        icon: spec.icon,
+        iconColor: _awaitingNext ? null : colors.accent,
+        height: 52,
+        background: background,
+        foreground: foreground,
+        onTap: () => _onArcadeMoveSelected(spec.move),
+      );
+    }
+
+    Widget row(List<_MoveSpec> specs) => Row(
+      children: [
+        for (var i = 0; i < specs.length; i++) ...[
+          if (i > 0) const SizedBox(width: AppDimensions.spacingS),
+          Expanded(child: button(specs[i])),
+        ],
+      ],
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: AppColors.accent),
-            const SizedBox(width: 8),
+            Icon(
+              _curVehicle == VehicleKind.car
+                  ? Icons.directions_car_rounded
+                  : Icons.tram_rounded,
+              size: 20,
+              color: colors.accent,
+            ),
+            const SizedBox(width: AppDimensions.spacingS),
             Text(
-              label,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              appL10n.gamePromptWhereCanGo,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: colors.primaryText,
+              ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: AppDimensions.spacingM),
+        row(_moves.sublist(0, 3)),
+        const SizedBox(height: AppDimensions.spacingS),
+        row(_moves.sublist(3)),
+      ],
     );
   }
 
-  // --- Оверлей окончания игры ---
-  Widget _buildGameOverOverlay(AppThemeColors colors) {
-    return Container(
-      color: Colors.black87,
-      padding: const EdgeInsets.all(AppDimensions.screenPadding),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.all(24),
+  static final List<_MoveSpec> _moves = [
+    _MoveSpec(
+      TrafficMove.straight,
+      Icons.straight_rounded,
+      () => appL10n.gameActionStraight,
+    ),
+    _MoveSpec(
+      TrafficMove.right,
+      Icons.turn_right_rounded,
+      () => appL10n.gameActionRight,
+    ),
+    _MoveSpec(
+      TrafficMove.left,
+      Icons.turn_left_rounded,
+      () => appL10n.gameActionLeft,
+    ),
+    _MoveSpec(
+      TrafficMove.uTurn,
+      Icons.u_turn_left_rounded,
+      () => appL10n.gameActionUTurn,
+    ),
+    _MoveSpec(
+      TrafficMove.none,
+      Icons.front_hand_rounded,
+      () => appL10n.gameActionStand,
+    ),
+  ];
+}
+
+class _MoveSpec {
+  const _MoveSpec(this.move, this.icon, this._label);
+
+  final TrafficMove move;
+  final IconData icon;
+  final String Function() _label;
+
+  String get label => _label();
+}
+
+/// Маневр в обучении: зелёный — разрешён, серый — нет. Нажатие — проезд.
+class _MoveTile extends StatelessWidget {
+  const _MoveTile({
+    required this.move,
+    required this.allowed,
+    required this.onTap,
+  });
+
+  final _MoveSpec move;
+  final bool allowed;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final foreground = allowed ? colors.green : colors.secondaryText;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: 64,
+          padding: const EdgeInsets.symmetric(horizontal: 2),
           decoration: BoxDecoration(
-            color: colors.cardBackground,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black54,
-                blurRadius: 24,
-                offset: Offset(0, 10),
-              ),
-            ],
+            color: allowed ? colors.greenLight : colors.gray,
+            borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
           ),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.emoji_events_rounded,
-                color: colors.gold,
-                size: 54,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                appL10n.gameOverTitle,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              if (_isNewRecord)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.gold.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    appL10n.gameOverNewRecord,
-                    style: TextStyle(
-                      color: colors.gold,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13,
-                    ),
+              Icon(move.icon, size: 22, color: foreground),
+              const SizedBox(height: 4),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  move.label,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: foreground,
                   ),
                 ),
-              const SizedBox(height: 14),
-              Text(
-                appL10n.gameOverScore(_score),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '${appL10n.gameComboLabel}: $_maxComboInRound  •  ${appL10n.gameSolvedLabel}: $_solvedCount',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: colors.secondaryText,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(appL10n.gameExit),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      onPressed: _startArcadeRound,
-                      child: Text(appL10n.gamePlayAgain),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),

@@ -1,32 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
+import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
-import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
 
-/// Контроллер для программного вызова свайпа карточки.
+/// Контроллер для программного свайпа карточки (кнопки внизу).
 class SwipeCardController {
   SwipeCardViewState? _state;
 
-  void attach(SwipeCardViewState state) {
-    _state = state;
-  }
+  void attach(SwipeCardViewState state) => _state = state;
 
   void detach(SwipeCardViewState state) {
-    if (_state == state) {
-      _state = null;
-    }
+    if (_state == state) _state = null;
   }
 
   void swipeLeft() => _state?.triggerSwipe(false);
   void swipeRight() => _state?.triggerSwipe(true);
 }
 
-/// Карточка свайпера с поддержкой жестов перетаскивания и наклона.
+/// Карточка знака. Тянется пальцем; вправо — «да», влево — «нет».
+/// Плоская: обратная связь — подкрашивание зелёным/красным и значок по центру.
 class SwipeCardView extends StatefulWidget {
   final SignCardQuestion card;
   final ValueChanged<bool> onSwiped; // true = вправо (ДА), false = влево (НЕТ)
-  final bool isTopCard;
   final VoidCallback? onCardTap;
   final SwipeCardController? controller;
 
@@ -34,7 +31,6 @@ class SwipeCardView extends StatefulWidget {
     super.key,
     required this.card,
     required this.onSwiped,
-    this.isTopCard = true,
     this.onCardTap,
     this.controller,
   });
@@ -45,25 +41,23 @@ class SwipeCardView extends StatefulWidget {
 
 class SwipeCardViewState extends State<SwipeCardView>
     with SingleTickerProviderStateMixin {
-  late AnimationController _animController;
+  static const double _threshold = 95.0;
+
+  late final AnimationController _anim;
   Animation<Offset>? _offsetAnim;
   Animation<double>? _rotationAnim;
 
-  Offset _dragOffset = Offset.zero;
-  bool _isAnimatingOut = false;
-
-  static const double _kSwipeThreshold = 95.0;
+  Offset _drag = Offset.zero;
+  bool _animatingOut = false;
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
+    _anim = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 240),
     );
-    if (widget.isTopCard) {
-      widget.controller?.attach(this);
-    }
+    widget.controller?.attach(this);
   }
 
   @override
@@ -71,97 +65,84 @@ class SwipeCardViewState extends State<SwipeCardView>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller?.detach(this);
-      if (widget.isTopCard) {
-        widget.controller?.attach(this);
-      }
-    }
-    if (oldWidget.card.id != widget.card.id) {
-      _animController.stop();
-      _animController.reset();
-      _dragOffset = Offset.zero;
-      _isAnimatingOut = false;
-      _offsetAnim = null;
-      _rotationAnim = null;
+      widget.controller?.attach(this);
     }
   }
 
   @override
   void dispose() {
     widget.controller?.detach(this);
-    _animController.dispose();
+    _anim.dispose();
     super.dispose();
   }
 
-  /// Программный свайп (по нажатию на кнопку внизу).
-  void triggerSwipe(bool isRight) {
-    if (_isAnimatingOut || !widget.isTopCard) return;
-    _isAnimatingOut = true;
-
-    final targetX = isRight ? 450.0 : -450.0;
+  void _animate({
+    required Offset toOffset,
+    required double toAngle,
+    required Curve curve,
+    required VoidCallback onDone,
+  }) {
     _offsetAnim = Tween<Offset>(
-      begin: _dragOffset,
-      end: Offset(targetX, _dragOffset.dy * 0.5),
-    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic));
-
+      begin: _drag,
+      end: toOffset,
+    ).animate(CurvedAnimation(parent: _anim, curve: curve));
     _rotationAnim = Tween<double>(
-      begin: _dragOffset.dx / 300 * 0.25,
-      end: (isRight ? 0.35 : -0.35),
-    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic));
+      begin: _drag.dx / 300 * 0.25,
+      end: toAngle,
+    ).animate(CurvedAnimation(parent: _anim, curve: curve));
+    _anim.forward(from: 0).then((_) => onDone());
+  }
 
-    _animController.forward(from: 0).then((_) {
-      if (mounted) {
-        setState(() {
-          _dragOffset = Offset.zero;
-          _isAnimatingOut = false;
-          _offsetAnim = null;
-          _rotationAnim = null;
-        });
-      }
-      widget.onSwiped(isRight);
-    });
+  /// Программный свайп — по нажатию кнопки.
+  void triggerSwipe(bool isRight) {
+    if (_animatingOut) return;
+    _animatingOut = true;
+    _animate(
+      toOffset: Offset(isRight ? 450 : -450, _drag.dy * 0.5),
+      toAngle: isRight ? 0.35 : -0.35,
+      curve: Curves.easeOutCubic,
+      onDone: () {
+        if (mounted) {
+          setState(() {
+            _drag = Offset.zero;
+            _animatingOut = false;
+            _offsetAnim = null;
+            _rotationAnim = null;
+          });
+        }
+        widget.onSwiped(isRight);
+      },
+    );
   }
 
   void _onPanStart(DragStartDetails details) {
-    if (!widget.isTopCard || _isAnimatingOut) return;
-    _animController.stop();
+    if (!_animatingOut) _anim.stop();
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
-    if (!widget.isTopCard || _isAnimatingOut) return;
-    setState(() {
-      _dragOffset += details.delta;
-    });
+    if (_animatingOut) return;
+    setState(() => _drag += details.delta);
   }
 
   void _onPanEnd(DragEndDetails details) {
-    if (!widget.isTopCard || _isAnimatingOut) return;
+    if (_animatingOut) return;
 
     final velocityX = details.velocity.pixelsPerSecond.dx;
-    final isRight = _dragOffset.dx > 0;
-    final reachedThreshold = _dragOffset.dx.abs() > _kSwipeThreshold ||
-        (velocityX.abs() > 450 && (_dragOffset.dx > 20 || _dragOffset.dx < -20));
+    final reached =
+        _drag.dx.abs() > _threshold ||
+        (velocityX.abs() > 450 && _drag.dx.abs() > 20);
 
-    if (reachedThreshold) {
-      triggerSwipe(isRight);
+    if (reached) {
+      triggerSwipe(_drag.dx > 0);
     } else {
-      // Возврат на место пружиной
-      _offsetAnim = Tween<Offset>(
-        begin: _dragOffset,
-        end: Offset.zero,
-      ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOutBack));
-
-      _rotationAnim = Tween<double>(
-        begin: _dragOffset.dx / 300 * 0.25,
-        end: 0.0,
-      ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOutBack));
-
-      _animController.forward(from: 0).then((_) {
-        if (mounted) {
-          setState(() {
-            _dragOffset = Offset.zero;
-          });
-        }
-      });
+      _animate(
+        toOffset: Offset.zero,
+        toAngle: 0,
+        curve: Curves.easeOutBack,
+        onDone: () {
+          if (mounted) setState(() => _drag = Offset.zero);
+        },
+      );
     }
   }
 
@@ -169,227 +150,107 @@ class SwipeCardViewState extends State<SwipeCardView>
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final card = widget.card;
-    final sign = card.sign;
-
-    // Рассчитываем текущие смещение и угол
-    Offset currentOffset = _dragOffset;
-    double currentAngle = (_dragOffset.dx / 300) * 0.25;
-
-    if (_animController.isAnimating && _offsetAnim != null && _rotationAnim != null) {
-      currentOffset = _offsetAnim!.value;
-      currentAngle = _rotationAnim!.value;
-    }
-
-    final swipeProgress = (currentOffset.dx / _kSwipeThreshold).clamp(-1.0, 1.0);
-    final isSwipingRight = currentOffset.dx > 10;
-    final isSwipingLeft = currentOffset.dx < -10;
 
     return AnimatedBuilder(
-      animation: _animController,
-      builder: (context, child) {
-        if (_animController.isAnimating && _offsetAnim != null && _rotationAnim != null) {
-          currentOffset = _offsetAnim!.value;
-          currentAngle = _rotationAnim!.value;
-        }
+      animation: _anim,
+      builder: (context, _) {
+        final animating =
+            _anim.isAnimating && _offsetAnim != null && _rotationAnim != null;
+        final offset = animating ? _offsetAnim!.value : _drag;
+        final angle = animating ? _rotationAnim!.value : _drag.dx / 300 * 0.25;
+
+        final progress = (offset.dx / _threshold).clamp(-1.0, 1.0);
+        final strength = progress.abs();
+        final isRight = progress > 0;
+        final tint = isRight ? colors.green : colors.red;
+        final background = Color.lerp(
+          colors.cardBackground,
+          tint,
+          strength * 0.18,
+        )!;
 
         return Transform.translate(
-          offset: currentOffset,
+          offset: offset,
           child: Transform.rotate(
-            angle: currentAngle,
+            angle: angle,
             child: GestureDetector(
-              onPanStart: widget.isTopCard ? _onPanStart : null,
-              onPanUpdate: widget.isTopCard ? _onPanUpdate : null,
-              onPanEnd: widget.isTopCard ? _onPanEnd : null,
+              onPanStart: _onPanStart,
+              onPanUpdate: _onPanUpdate,
+              onPanEnd: _onPanEnd,
               onTap: widget.onCardTap,
               child: Container(
                 width: double.infinity,
-                constraints: const BoxConstraints(maxHeight: 460),
+                height: double.infinity,
                 decoration: BoxDecoration(
-                  color: colors.cardBackground,
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: isSwipingRight
-                        ? colors.green.withValues(alpha: swipeProgress.abs().clamp(0.2, 0.9))
-                        : isSwipingLeft
-                            ? colors.red.withValues(alpha: swipeProgress.abs().clamp(0.2, 0.9))
-                            : colors.divider,
-                    width: swipeProgress.abs() > 0.2 ? 2.5 : 1.2,
+                  color: background,
+                  boxShadow: gameSoftShadow(colors),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusExtraLarge,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: isSwipingRight
-                          ? colors.green.withValues(alpha: 0.15 * swipeProgress.abs())
-                          : isSwipingLeft
-                              ? colors.red.withValues(alpha: 0.15 * swipeProgress.abs())
-                              : Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(28),
-                  child: Stack(
-                    children: [
-                      // Контент карточки
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Категория бейдж
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: colors.secondaryText.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  sign.category,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: colors.secondaryText,
-                                  ),
-                                ),
-                              ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(AppDimensions.spacingXXL),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            card.prompt,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              height: 1.35,
+                              color: colors.primaryText,
                             ),
-                            const SizedBox(height: 14),
-
-                            // Вопрос / Утверждение
+                          ),
+                          const SizedBox(height: AppDimensions.spacingL),
+                          Expanded(
+                            child: Center(child: _SignImage(sign: card.sign)),
+                          ),
+                          const SizedBox(height: AppDimensions.spacingM),
+                          Text(
+                            card.sign.category,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colors.secondaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (strength > 0.15)
+                      Opacity(
+                        opacity: strength,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isRight
+                                  ? Icons.check_circle_rounded
+                                  : Icons.cancel_rounded,
+                              size: 72,
+                              color: tint,
+                            ),
+                            const SizedBox(height: AppDimensions.spacingS),
                             Text(
-                              card.prompt,
-                              textAlign: TextAlign.center,
+                              isRight
+                                  ? card.rightActionLabel
+                                  : card.leftActionLabel,
                               style: TextStyle(
                                 fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                color: colors.primaryText,
-                                height: 1.25,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Графика знака
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: colors.homeScreenBackground.withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Center(
-                                  child: _buildSignImage(sign, colors),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-
-                            // Подсказка жеста с адаптивными метками
-                            Center(
-                              child: Text(
-                                appL10n.gameSwipeHint(card.rightActionLabel, card.leftActionLabel),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: colors.secondaryText.withValues(alpha: 0.75),
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                fontWeight: FontWeight.w700,
+                                color: tint,
                               ),
                             ),
                           ],
                         ),
                       ),
-
-                      // Оверлей бейджа вправо (появляется при свайпе вправо)
-                      if (isSwipingRight)
-                        Positioned(
-                          top: 24,
-                          left: 20,
-                          child: Transform.rotate(
-                            angle: -0.2,
-                            child: Opacity(
-                              opacity: swipeProgress.abs().clamp(0.0, 1.0),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: colors.green,
-                                  borderRadius: BorderRadius.circular(14),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Colors.black26,
-                                      blurRadius: 8,
-                                      offset: Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      card.rightActionLabel,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                      // Оверлей бейджа влево (появляется при свайпе влево)
-                      if (isSwipingLeft)
-                        Positioned(
-                          top: 24,
-                          right: 20,
-                          child: Transform.rotate(
-                            angle: 0.2,
-                            child: Opacity(
-                              opacity: swipeProgress.abs().clamp(0.0, 1.0),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: colors.red,
-                                  borderRadius: BorderRadius.circular(14),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Colors.black26,
-                                      blurRadius: 8,
-                                      offset: Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.cancel_rounded, color: Colors.white, size: 20),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      card.leftActionLabel,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -398,23 +259,24 @@ class SwipeCardViewState extends State<SwipeCardView>
       },
     );
   }
+}
 
-  Widget _buildSignImage(SignItem sign, AppThemeColors colors) {
+class _SignImage extends StatelessWidget {
+  const _SignImage({required this.sign});
+
+  final SignItem sign;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     if (sign.image.endsWith('.svg')) {
-      return SvgPicture.asset(
-        sign.assetPath,
-        fit: BoxFit.contain,
-        placeholderBuilder: (_) => const CircularProgressIndicator.adaptive(),
-      );
+      return SvgPicture.asset(sign.assetPath, fit: BoxFit.contain);
     }
     return Image.asset(
       sign.assetPath,
       fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) => Icon(
-        Icons.signpost_rounded,
-        size: 80,
-        color: colors.secondaryText,
-      ),
+      errorBuilder: (context, error, stackTrace) =>
+          Icon(Icons.signpost_rounded, size: 80, color: colors.secondaryText),
     );
   }
 }

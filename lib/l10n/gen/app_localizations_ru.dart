@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -1614,36 +1613,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get navGames => 'Игры';
 
   @override
-  String get gamesHubTitle => 'Игры и тренажёры';
-
-  @override
-  String get gamesHubSubtitle =>
-      'Закрепляйте сложные правила в интерактивных играх';
-
-  @override
   String get gameTrafficControllerTitle => 'Регулировщик 3D';
 
   @override
   String get gameTrafficControllerSubtitle =>
-      'Интерактивный 3D-тренажёр жестов инспектора ДПС';
-
-  @override
-  String get gameTrafficControllerDesc =>
-      'Освойте самую сложную тему экзамена ПДД (п. 6.10): сигналы регулировщика для автомобилей и трамваев со стишками-мнемониками и динамической аркадой.';
+      'Жесты регулировщика глазами водителя: разберитесь в обучении и проверьте себя в блице.';
 
   @override
   String get gameModeTraining => 'Обучение';
 
   @override
-  String get gameModeTrainingDesc =>
-      'Разбор всех жестов со стишками и подсказками траекторий';
-
-  @override
-  String get gameModeArcade => 'Блиц-аркада';
-
-  @override
-  String get gameModeArcadeDesc =>
-      'Динамический перекрёсток на время, серии комбо и 3 жизни';
+  String get gameModeArcade => 'Блиц';
 
   @override
   String get gameBestScoreLabel => 'Рекорд';
@@ -1691,11 +1671,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameOverTitle => 'Игра окончена';
 
   @override
-  String gameOverScore(int score) {
-    return 'Ваш счёт: $score';
-  }
-
-  @override
   String get gameOverNewRecord => 'Новый рекорд!';
 
   @override
@@ -1713,46 +1688,22 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameSignSwiperSubtitle =>
-      'Тренажёр на распознавание знаков и реакцию';
+      'Ситуации со знаками: свайп вправо — «да», влево — «нет». Разбор каждой ошибки.';
 
   @override
-  String get gameSignSwiperDesc =>
-      'Решайте дорожные ситуации по знакам жестами вправо и влево: проверяйте знание приоритетов, запретов, зон действия и исключений в ПДД.';
-
-  @override
-  String get gameSignSwiperModeSprint => 'Блиц-аркада';
-
-  @override
-  String get gameSignSwiperModeSprintDesc =>
-      '60 секунд, серии комбо и 3 жизни на выбывание';
+  String get gameSignSwiperModeSprint => 'Блиц';
 
   @override
   String get gameSignSwiperModeTraining => 'Обучение';
 
   @override
-  String get gameSignSwiperModeTrainingDesc =>
-      'Разбор знаков по группам без таймера с подробными пояснениями';
-
-  @override
   String get gameSwipedLabel => 'Свайпов';
-
-  @override
-  String get gameSignSwiperSwipeRight => 'ДА / ВЕРНО';
-
-  @override
-  String get gameSignSwiperSwipeLeft => 'НЕТ / НЕВЕРНО';
-
-  @override
-  String get gameSignSwiperExplanation => 'Пояснение к знаку';
 
   @override
   String get gameSignSwiperNext => 'Следующий знак';
 
   @override
   String get gameSignSwiperCategoryAll => 'Все категории';
-
-  @override
-  String get gameSignSwiperFilter => 'Фильтр категории';
 
   @override
   String get gameMistakesReview => 'Разбор ошибок';
@@ -1803,17 +1754,10 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get gamesHubSoonSection => 'Скоро в играх';
-
-  @override
   String get gameSoonBadge => 'Скоро';
 
   @override
   String get gameRoundaboutTitle => 'Круговое движение 3D';
-
-  @override
-  String get gameRoundaboutSubtitle =>
-      'Въезд с любой полосы, съезд — только с крайней правой (п. 8.5 ПДД)';
 
   @override
   String get gameGestureRightArm => 'Рука вперёд';
@@ -1825,22 +1769,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameGestureArmUp => 'Рука вверх';
 
   @override
-  String get gameApproachLeft => 'Слева';
+  String get gameApproachLeft => 'Левый бок';
 
   @override
-  String get gameApproachFront => 'С груди';
+  String get gameApproachFront => 'Грудь';
 
   @override
-  String get gameApproachRight => 'Справа';
+  String get gameApproachRight => 'Правый бок';
 
   @override
-  String get gameApproachBack => 'Со спины';
-
-  @override
-  String get gameQuestionCarAllowed => 'Куда разрешено поехать автомобилю?';
-
-  @override
-  String get gameQuestionTramAllowed => 'Куда разрешено поехать трамваю?';
+  String get gameApproachBack => 'Спина';
 
   @override
   String gameSecondsLeft(int seconds) {
@@ -1869,13 +1807,20 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameSignCannot => 'НЕЛЬЗЯ';
 
   @override
-  String gameSwipeHint(String right, String left) {
-    return 'Свайп вправо — $right • влево — $left';
-  }
-
-  @override
   String get gameUnderstood => 'Понятно';
 
   @override
   String get gamePddOfficialText => 'ПДД РФ:';
+
+  @override
+  String get gamePromptWhereCanGo => 'Куда можно проехать?';
+
+  @override
+  String get gameCaptionGesture => 'Жест';
+
+  @override
+  String get gameCaptionApproach => 'К вам повёрнут';
+
+  @override
+  String get gameAnswerWrong => 'Неверно';
 }

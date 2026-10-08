@@ -101,7 +101,7 @@
   let currentGesture = GESTURES.RIGHT_ARM_FORWARD;
   let currentApproach = APPROACHES.LEFT;
   let currentVehicle = VEHICLES.CAR;
-  let currentCameraMode = 'overview'; // 'overview' | 'driver'
+  let currentCameraMode = 'driver';   // 'overview' | 'driver' (игрок — водитель)
   let currentMode = 'training';       // 'training' | 'arcade'
   let activeBlinkerSide = null;       // 'left' | 'right' | null
   let resetTimer = null;
@@ -1563,23 +1563,81 @@
       camera.position.z = Math.cos(camAngle) * radius;
       camera.lookAt(0, 1.2, 0);
     } else {
-      // Вид из кабины водителя машины / трамвая
-      if (currentVehicle === VEHICLES.TRAM && tramMesh) {
-        camera.position.set(-2.2, 1.9, 10.4);
-        camera.lookAt(-2.2, 1.6, 0);
-      } else if (carMesh) {
-        camera.position.set(3.2, 1.45, 12.8);
-        camera.lookAt(3.2, 1.35, 0);
-      }
+      updateDriverCamera();
     }
+  }
+
+  // Вид водителя: камера сидит за машиной (трамваем) чуть выше крыши и едет
+  // вместе с ней. Пока ТС стоит, взгляд доворачивает на регулировщика — жест
+  // должен читаться так, как его видит водитель со своей полосы.
+  const driverCamPos = new THREE.Vector3();
+  const driverCamLook = new THREE.Vector3();
+  const driverWantPos = new THREE.Vector3();
+  const driverWantLook = new THREE.Vector3();
+  const inspectorFocus = new THREE.Vector3(0, 1.5, 0);
+  let driverCamReady = false;
+
+  function updateDriverCamera() {
+    const vehicle = currentVehicle === VEHICLES.TRAM ? tramMesh : carMesh;
+    if (!vehicle) return;
+    const isTram = currentVehicle === VEHICLES.TRAM;
+    const heading = vehicle.rotation.y;
+    const fx = Math.sin(heading);
+    const fz = Math.cos(heading);
+    const back = isTram ? 10.0 : 8.0;
+    const height = isTram ? 5.2 : 4.4;
+
+    driverWantPos.set(
+      vehicle.position.x - fx * back,
+      height,
+      vehicle.position.z - fz * back
+    );
+    driverWantLook.set(
+      vehicle.position.x + fx * 10,
+      1.3,
+      vehicle.position.z + fz * 10
+    );
+    if (!isMoving) {
+      driverWantLook.lerp(inspectorFocus, 0.8);
+    }
+
+    if (!driverCamReady) {
+      driverCamPos.copy(driverWantPos);
+      driverCamLook.copy(driverWantLook);
+      driverCamReady = true;
+    } else {
+      driverCamPos.lerp(driverWantPos, 0.12);
+      driverCamLook.lerp(driverWantLook, 0.12);
+    }
+    camera.position.copy(driverCamPos);
+    camera.lookAt(driverCamLook);
+  }
+
+  // Доля высоты экрана, закрытая снизу панелью Flutter. Центр перспективы
+  // ставим в середину видимой части, иначе сцена «уезжает» под панель.
+  let viewInsetBottom = 0;
+
+  function applyViewport(width, height) {
+    const visible = Math.max(height * (1 - viewInsetBottom), 1);
+    camera.aspect = width / visible;
+    camera.setViewOffset(width, visible, 0, 0, width, height);
+    camera.updateProjectionMatrix();
+  }
+
+  function setViewInsetBottom(fraction) {
+    viewInsetBottom = Math.min(Math.max(Number(fraction) || 0, 0), 0.8);
+    if (!container || !camera) return;
+    applyViewport(
+      container.clientWidth || window.innerWidth,
+      container.clientHeight || window.innerHeight
+    );
   }
 
   function onWindowResize() {
     if (!container) return;
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
+    applyViewport(width, height);
     renderer.setSize(width, height);
   }
 
@@ -1683,6 +1741,7 @@
       updateTrajectoryArrows();
     },
     setCameraView,
+    setViewInsetBottom,
     rotateCamera,
     reset() {
       resetVehiclePositions();
