@@ -868,5 +868,59 @@
   "gameExit": "Выйти",
   "gameCorrect": "Верно!",
   "gameWrong": "Нарушение!",
-  "gameWhistleNote": "Свисток инспектора: движение в этом направлении запрещено сигналом регулировщика."
+  "gameWhistleNote": "Свисток инспектора: движение в этом направлении запрещено сигналом регулировщика.",
+  "gameSignSwiperTitle": "Знак-Свайпер",
+  "gameSignSwiperSubtitle": "Тренажёр на распознавание знаков и реакцию",
+  "gameSignSwiperDesc": "Сортируйте дорожные знаки жестами вправо и влево: проверяйте знания названий, категорий и запретов на скорость.",
+  "gameSignSwiperModeSprint": "Блиц-спринт",
+  "gameSignSwiperModeSprintDesc": "60 секунд, серии комбо и 3 жизни на выбывание",
+  "gameSignSwiperModeTraining": "Тренировка",
+  "gameSignSwiperModeTrainingDesc": "Разбор знаков по группам без таймера с подробными пояснениями",
+  "gameSwipedLabel": "Свайпов",
+  "gameSignSwiperSwipeRight": "ДА / ВЕРНО",
+  "gameSignSwiperSwipeLeft": "НЕТ / НЕВЕРНО",
+  "gameSignSwiperExplanation": "Пояснение к знаку",
+  "gameSignSwiperNext": "Следующий знак",
+  "gameSignSwiperCategoryAll": "Все категории",
+  "gameSignSwiperFilter": "Фильтр категории",
+  "gameMistakesReview": "Разбор ошибок",
+  "gameNoMistakes": "Отличная работа! Ни одной ошибки.",
+  "gameAccuracyLabel": "Точность",
+  "gameQuestionCategory": "Относится ли этот знак к категории «{category}»?",
+  "@gameQuestionCategory": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "gameQuestionName": "Этот знак называется «{name}»?",
+  "@gameQuestionName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gameQuestionFolkName": "В народе этот знак называют «{name}»?",
+  "@gameQuestionFolkName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gameQuestionPriorityAdvantage": "Имеете ли вы преимущество проезда при этом знаке?",
+  "gameQuestionProhibitsEntry": "Разрешён ли въезд под этот знак?",
+  "gameQuestionProhibitsOvertaking": "Разрешён ли обгон всех транспортных средств?",
+  "gameQuestionProhibitsParking": "Разрешена ли стоянка под этот знак?",
+  "gameQuestionProhibitsStopping": "Разрешена ли остановка под этот знак?",
+  "gameComboStreak": "КОМБО х{combo}!",
+  "@gameComboStreak": {
+    "placeholders": {
+      "combo": {
+        "type": "int"
+      }
+    }
+  }
 }

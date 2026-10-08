@@ -17,6 +17,7 @@ import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/models/traffic_controller_progress.dart';
+import 'package:pdd_app/data/models/sign_swiper_model.dart';
 import 'package:pdd_app/data/sources/questions_data_source.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 
@@ -513,6 +514,44 @@ class TrafficControllerProgressController
   Future<void> incrementTraining() async {
     state = state.copyWith(trainingCount: state.trainingCount + 1);
     await _dataSource.saveTrafficControllerProgress(state);
+  }
+}
+
+final signSwiperProgressProvider = StateNotifierProvider<
+    SignSwiperProgressController, SignSwiperProgress>((ref) {
+  final ds = ref.watch(progressDataSourceProvider);
+  return SignSwiperProgressController(ds);
+});
+
+class SignSwiperProgressController
+    extends StateNotifier<SignSwiperProgress> {
+  SignSwiperProgressController(this._dataSource)
+      : super(_dataSource.getSignSwiperProgress());
+
+  final ProgressDataSource _dataSource;
+
+  Future<void> recordGameResult({
+    required int score,
+    required int combo,
+    required int swiped,
+  }) async {
+    final newScore = score > state.bestScore ? score : state.bestScore;
+    final newCombo = combo > state.maxCombo ? combo : state.maxCombo;
+    final newSwiped = state.totalSwiped + swiped;
+    state = state.copyWith(
+      bestScore: newScore,
+      maxCombo: newCombo,
+      totalSwiped: newSwiped,
+    );
+    await _dataSource.saveSignSwiperProgress(state);
+  }
+
+  Future<void> incrementTraining({int swiped = 1}) async {
+    state = state.copyWith(
+      trainingCount: state.trainingCount + 1,
+      totalSwiped: state.totalSwiped + swiped,
+    );
+    await _dataSource.saveSignSwiperProgress(state);
   }
 }
 

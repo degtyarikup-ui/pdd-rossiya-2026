@@ -2985,6 +2985,162 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Свисток инспектора: движение в этом направлении запрещено сигналом регулировщика.'**
   String get gameWhistleNote;
+
+  /// No description provided for @gameSignSwiperTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак-Свайпер'**
+  String get gameSignSwiperTitle;
+
+  /// No description provided for @gameSignSwiperSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тренажёр на распознавание знаков и реакцию'**
+  String get gameSignSwiperSubtitle;
+
+  /// No description provided for @gameSignSwiperDesc.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сортируйте дорожные знаки жестами вправо и влево: проверяйте знания названий, категорий и запретов на скорость.'**
+  String get gameSignSwiperDesc;
+
+  /// No description provided for @gameSignSwiperModeSprint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Блиц-спринт'**
+  String get gameSignSwiperModeSprint;
+
+  /// No description provided for @gameSignSwiperModeSprintDesc.
+  ///
+  /// In ru, this message translates to:
+  /// **'60 секунд, серии комбо и 3 жизни на выбывание'**
+  String get gameSignSwiperModeSprintDesc;
+
+  /// No description provided for @gameSignSwiperModeTraining.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тренировка'**
+  String get gameSignSwiperModeTraining;
+
+  /// No description provided for @gameSignSwiperModeTrainingDesc.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разбор знаков по группам без таймера с подробными пояснениями'**
+  String get gameSignSwiperModeTrainingDesc;
+
+  /// No description provided for @gameSwipedLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Свайпов'**
+  String get gameSwipedLabel;
+
+  /// No description provided for @gameSignSwiperSwipeRight.
+  ///
+  /// In ru, this message translates to:
+  /// **'ДА / ВЕРНО'**
+  String get gameSignSwiperSwipeRight;
+
+  /// No description provided for @gameSignSwiperSwipeLeft.
+  ///
+  /// In ru, this message translates to:
+  /// **'НЕТ / НЕВЕРНО'**
+  String get gameSignSwiperSwipeLeft;
+
+  /// No description provided for @gameSignSwiperExplanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пояснение к знаку'**
+  String get gameSignSwiperExplanation;
+
+  /// No description provided for @gameSignSwiperNext.
+  ///
+  /// In ru, this message translates to:
+  /// **'Следующий знак'**
+  String get gameSignSwiperNext;
+
+  /// No description provided for @gameSignSwiperCategoryAll.
+  ///
+  /// In ru, this message translates to:
+  /// **'Все категории'**
+  String get gameSignSwiperCategoryAll;
+
+  /// No description provided for @gameSignSwiperFilter.
+  ///
+  /// In ru, this message translates to:
+  /// **'Фильтр категории'**
+  String get gameSignSwiperFilter;
+
+  /// No description provided for @gameMistakesReview.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разбор ошибок'**
+  String get gameMistakesReview;
+
+  /// No description provided for @gameNoMistakes.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отличная работа! Ни одной ошибки.'**
+  String get gameNoMistakes;
+
+  /// No description provided for @gameAccuracyLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Точность'**
+  String get gameAccuracyLabel;
+
+  /// No description provided for @gameQuestionCategory.
+  ///
+  /// In ru, this message translates to:
+  /// **'Относится ли этот знак к категории «{category}»?'**
+  String gameQuestionCategory(String category);
+
+  /// No description provided for @gameQuestionName.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак называется «{name}»?'**
+  String gameQuestionName(String name);
+
+  /// No description provided for @gameQuestionFolkName.
+  ///
+  /// In ru, this message translates to:
+  /// **'В народе этот знак называют «{name}»?'**
+  String gameQuestionFolkName(String name);
+
+  /// No description provided for @gameQuestionPriorityAdvantage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Имеете ли вы преимущество проезда при этом знаке?'**
+  String get gameQuestionPriorityAdvantage;
+
+  /// No description provided for @gameQuestionProhibitsEntry.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрешён ли въезд под этот знак?'**
+  String get gameQuestionProhibitsEntry;
+
+  /// No description provided for @gameQuestionProhibitsOvertaking.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрешён ли обгон всех транспортных средств?'**
+  String get gameQuestionProhibitsOvertaking;
+
+  /// No description provided for @gameQuestionProhibitsParking.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрешена ли стоянка под этот знак?'**
+  String get gameQuestionProhibitsParking;
+
+  /// No description provided for @gameQuestionProhibitsStopping.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрешена ли остановка под этот знак?'**
+  String get gameQuestionProhibitsStopping;
+
+  /// No description provided for @gameComboStreak.
+  ///
+  /// In ru, this message translates to:
+  /// **'КОМБО х{combo}!'**
+  String gameComboStreak(int combo);
 }
 
 class _AppLocalizationsDelegate

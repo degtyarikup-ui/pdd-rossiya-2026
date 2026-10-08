@@ -4,9 +4,11 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/traffic_controller_progress.dart';
+import 'package:pdd_app/data/models/sign_swiper_model.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/traffic_controller/traffic_controller_screen.dart';
+import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_screen.dart';
 
 class GamesHubScreen extends ConsumerWidget {
   const GamesHubScreen({super.key});
@@ -20,10 +22,20 @@ class GamesHubScreen extends ConsumerWidget {
     );
   }
 
+  void _openSignSwiper(BuildContext context, SignSwiperMode mode) {
+    HapticFeedbackHelper.tap();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SignSwiperScreen(initialMode: mode),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = AppColors.of(context);
     final progress = ref.watch(trafficControllerProgressProvider);
+    final signProgress = ref.watch(signSwiperProgressProvider);
 
     return Scaffold(
       backgroundColor: colors.homeScreenBackground,
@@ -56,8 +68,13 @@ class GamesHubScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppDimensions.spacingL),
 
-            // Главная карточка: Регулировщик 3D
+            // Главная карточка 1: Регулировщик 3D
             _buildTrafficControllerCard(context, colors, progress),
+
+            const SizedBox(height: AppDimensions.spacingL),
+
+            // Главная карточка 2: Знак-Свайпер
+            _buildSignSwiperCard(context, colors, signProgress),
 
             const SizedBox(height: AppDimensions.spacingXL),
 
@@ -79,15 +96,6 @@ class GamesHubScreen extends ConsumerWidget {
               subtitle: 'Въезд с любой полосы, съезд — только с крайней правой (п. 8.5 ПДД)',
               icon: Icons.rotate_right_rounded,
               color: const Color(0xFF6366F1),
-            ),
-            const SizedBox(height: AppDimensions.spacingM),
-
-            _buildTeaserCard(
-              colors: colors,
-              title: 'Знак-Свайпер',
-              subtitle: 'Быстрая сортировка 300+ дорожных знаков на скорость реакции',
-              icon: Icons.swipe_rounded,
-              color: const Color(0xFFEC4899),
             ),
           ],
         ),
@@ -289,6 +297,212 @@ class GamesHubScreen extends ConsumerWidget {
                         style: const TextStyle(fontWeight: FontWeight.w800),
                       ),
                       onPressed: () => _openTrafficController(context, GamePlayMode.arcade),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSignSwiperCard(
+    BuildContext context,
+    AppThemeColors colors,
+    SignSwiperProgress progress,
+  ) {
+    const cardAccent = Color(0xFFEC4899);
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF1E1B4B),
+            Color(0xFF311042),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Рекорд (если есть)
+              if (progress.bestScore > 0) ...[
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.emoji_events_rounded, size: 14, color: Colors.amber),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${appL10n.gameBestScoreLabel}: ${progress.bestScore}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.amber,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+
+              // Название и описание
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: cardAccent,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: cardAccent.withValues(alpha: 0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.swipe_rounded,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appL10n.gameSignSwiperTitle,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          appL10n.gameSignSwiperSubtitle,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Краткое описание пользы
+              Text(
+                appL10n.gameSignSwiperDesc,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Colors.white60,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Статистика игрока
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStatCol(
+                      label: appL10n.gameSwipedLabel,
+                      value: '${progress.totalSwiped}',
+                    ),
+                    Container(width: 1, height: 26, color: Colors.white12),
+                    _buildStatCol(
+                      label: appL10n.gameComboLabel,
+                      value: 'x${progress.maxCombo}',
+                    ),
+                    Container(width: 1, height: 26, color: Colors.white12),
+                    _buildStatCol(
+                      label: appL10n.gameBestScoreLabel,
+                      value: '${progress.bestScore}',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Кнопки режимов
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white30),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      icon: const Icon(Icons.school_rounded, size: 18),
+                      label: Text(
+                        appL10n.gameModeTraining,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      onPressed: () => _openSignSwiper(context, SignSwiperMode.training),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: cardAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 4,
+                      ),
+                      icon: const Icon(Icons.bolt_rounded, size: 18),
+                      label: Text(
+                        appL10n.gameModeArcade,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      onPressed: () => _openSignSwiper(context, SignSwiperMode.sprint),
                     ),
                   ),
                 ],

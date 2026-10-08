@@ -1703,4 +1703,98 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get gameWhistleNote =>
       'Свисток инспектора: движение в этом направлении запрещено сигналом регулировщика.';
+
+  @override
+  String get gameSignSwiperTitle => 'Знак-Свайпер';
+
+  @override
+  String get gameSignSwiperSubtitle =>
+      'Тренажёр на распознавание знаков и реакцию';
+
+  @override
+  String get gameSignSwiperDesc =>
+      'Сортируйте дорожные знаки жестами вправо и влево: проверяйте знания названий, категорий и запретов на скорость.';
+
+  @override
+  String get gameSignSwiperModeSprint => 'Блиц-спринт';
+
+  @override
+  String get gameSignSwiperModeSprintDesc =>
+      '60 секунд, серии комбо и 3 жизни на выбывание';
+
+  @override
+  String get gameSignSwiperModeTraining => 'Тренировка';
+
+  @override
+  String get gameSignSwiperModeTrainingDesc =>
+      'Разбор знаков по группам без таймера с подробными пояснениями';
+
+  @override
+  String get gameSwipedLabel => 'Свайпов';
+
+  @override
+  String get gameSignSwiperSwipeRight => 'ДА / ВЕРНО';
+
+  @override
+  String get gameSignSwiperSwipeLeft => 'НЕТ / НЕВЕРНО';
+
+  @override
+  String get gameSignSwiperExplanation => 'Пояснение к знаку';
+
+  @override
+  String get gameSignSwiperNext => 'Следующий знак';
+
+  @override
+  String get gameSignSwiperCategoryAll => 'Все категории';
+
+  @override
+  String get gameSignSwiperFilter => 'Фильтр категории';
+
+  @override
+  String get gameMistakesReview => 'Разбор ошибок';
+
+  @override
+  String get gameNoMistakes => 'Отличная работа! Ни одной ошибки.';
+
+  @override
+  String get gameAccuracyLabel => 'Точность';
+
+  @override
+  String gameQuestionCategory(String category) {
+    return 'Относится ли этот знак к категории «$category»?';
+  }
+
+  @override
+  String gameQuestionName(String name) {
+    return 'Этот знак называется «$name»?';
+  }
+
+  @override
+  String gameQuestionFolkName(String name) {
+    return 'В народе этот знак называют «$name»?';
+  }
+
+  @override
+  String get gameQuestionPriorityAdvantage =>
+      'Имеете ли вы преимущество проезда при этом знаке?';
+
+  @override
+  String get gameQuestionProhibitsEntry => 'Разрешён ли въезд под этот знак?';
+
+  @override
+  String get gameQuestionProhibitsOvertaking =>
+      'Разрешён ли обгон всех транспортных средств?';
+
+  @override
+  String get gameQuestionProhibitsParking =>
+      'Разрешена ли стоянка под этот знак?';
+
+  @override
+  String get gameQuestionProhibitsStopping =>
+      'Разрешена ли остановка под этот знак?';
+
+  @override
+  String gameComboStreak(int combo) {
+    return 'КОМБО х$combo!';
+  }
 }
