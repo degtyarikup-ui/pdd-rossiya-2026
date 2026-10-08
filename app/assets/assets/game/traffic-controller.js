@@ -101,7 +101,7 @@
   let currentGesture = GESTURES.RIGHT_ARM_FORWARD;
   let currentApproach = APPROACHES.LEFT;
   let currentVehicle = VEHICLES.CAR;
-  let currentCameraMode = 'overview'; // 'overview' | 'driver'
+  let currentCameraMode = 'driver';   // 'overview' | 'driver' (игрок — водитель)
   let currentMode = 'training';       // 'training' | 'arcade'
   let activeBlinkerSide = null;       // 'left' | 'right' | null
   let resetTimer = null;
@@ -128,7 +128,8 @@
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xDEE4E5);
-    scene.fog = null;
+    // Дымка в цвет горизонта: дальний город растворяется, края мира не видно.
+    scene.fog = new THREE.Fog(0xB9D6EE, 120, 330);
 
     // Процедурный градиентный купол неба с облаками (как во флагманской игре)
     skyDome = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), new THREE.ShaderMaterial({
@@ -149,7 +150,7 @@
     skyDome.frustumCulled = false; skyDome.renderOrder = -1; skyDome.userData.sky = true;
     scene.add(skyDome);
 
-    camera = new THREE.PerspectiveCamera(42, width / height, 0.5, 400);
+    camera = new THREE.PerspectiveCamera(42, width / height, 0.5, 420);
     updateCameraPosition();
 
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
@@ -218,7 +219,7 @@
     scene.add(envGroup);
 
     // Ландшафт / трава вокруг города (с процедурной фактурой grass)
-    const groundGeo = new THREE.PlaneGeometry(320, 320);
+    const groundGeo = new THREE.PlaneGeometry(900, 900);
     const groundMat = new THREE.MeshLambertMaterial({ color: BRAND.grass });
     groundMat.userData.pddKind = 'grass';
     const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -231,7 +232,7 @@
     const roadMat = new THREE.MeshLambertMaterial({ color: BRAND.asphalt });
     roadMat.userData.pddKind = 'asphalt';
     const roadWidth = 13.6;
-    const roadLen = 140;
+    const roadLen = CITY_REACH * 2 + 20;
 
     const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(roadWidth, roadLen), roadMat);
     roadNS.rotation.x = -Math.PI / 2;
@@ -260,7 +261,7 @@
 
     buildRoadMarkings(envGroup, markMat, roadWidth);
     buildSidewalks(envGroup, roadWidth);
-    buildCityBuildings(envGroup, roadWidth);
+    buildCity(envGroup, roadWidth);
     buildStreetFurniture(envGroup, roadWidth);
     buildTramTracks(envGroup);
     buildCentralPedestal(envGroup);
@@ -316,17 +317,19 @@
     });
 
     // Двойная сплошная линия (разметка 1.3) вдоль южного и северного направлений
-    const doubleLineGeo = new THREE.PlaneGeometry(0.14, 50);
+    const lineLen = CITY_REACH - 14;
+    const lineCentre = 14 + lineLen / 2;
+    const doubleLineGeo = new THREE.PlaneGeometry(0.14, lineLen);
     [-0.14, 0.14].forEach(off => {
       // Южная ветка
       const lineS = new THREE.Mesh(doubleLineGeo, markMat);
       lineS.rotation.x = -Math.PI / 2;
-      lineS.position.set(off, 0.034, 32);
+      lineS.position.set(off, 0.034, lineCentre);
       parent.add(lineS);
       // Северная ветка
       const lineN = new THREE.Mesh(doubleLineGeo, markMat);
       lineN.rotation.x = -Math.PI / 2;
-      lineN.position.set(off, 0.034, -32);
+      lineN.position.set(off, 0.034, -lineCentre);
       parent.add(lineN);
     });
   }
@@ -347,7 +350,7 @@
     });
     lawnMat.userData.pddKind = 'grass';
 
-    const walkSize = 50;
+    const walkSize = CITY_REACH;
     const kerbH = 0.18;
 
     // 4 квартала перекрестка: Юго-Запад, Юго-Восток, Северо-Запад, Северо-Восток
@@ -391,78 +394,289 @@
     });
   }
 
-  // Городские здания по углам перекрёстка (архитектура с шейдерными фасадами и окнами)
-  function buildCityBuildings(parent, roadWidth) {
+  // --- Город вокруг перекрёстка ---
+  // Те же ассеты, что в основной игре: панельные, кирпичные и оштукатуренные
+  // фасады, окна, плоские кровли, кора и листва из PDD_ROADS. Каждый дом
+  // фактурируется отдельно, затем всё склеивается в несколько мешей по
+  // материалу — на весь город около двадцати вызовов отрисовки.
+  const CITY_REACH = 190;      // докуда тянутся улицы с домами
+  const SIDEWALK = 4.2;        // тротуар между бордюром и газоном двора
+
+  function cityRandom(seed) {
+    let t = seed >>> 0;
+    return () => {
+      t += 0x6D2B79F5;
+      let r = Math.imul(t ^ (t >>> 15), 1 | t);
+      r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+      return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // Склейка мешей одного материала в один (позиции и нормали — в мировых
+  // координатах группы, UV и pddSide уже запечены skinObject).
+  function mergeMeshes(meshes, material, kind) {
+    if (!meshes.length) return null;
+    const geos = meshes.map(m => {
+      m.updateMatrix();
+      const g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+      g.applyMatrix4(m.matrix);
+      return g;
+    });
+    const merged = new THREE.BufferGeometry();
+    Object.keys(geos[0].attributes).forEach(name => {
+      const size = geos[0].attributes[name].itemSize;
+      let total = 0;
+      geos.forEach(g => { if (g.attributes[name]) total += g.attributes[name].count * size; });
+      const data = new Float32Array(total);
+      let offset = 0;
+      geos.forEach(g => {
+        const a = g.attributes[name];
+        if (!a) return;
+        data.set(a.array, offset);
+        offset += a.array.length;
+      });
+      merged.setAttribute(name, new THREE.BufferAttribute(data, size));
+    });
+    geos.forEach(g => g.dispose());
+    meshes.forEach(m => m.geometry.dispose());
+    merged.computeBoundingSphere();
+    const mesh = new THREE.Mesh(merged, material);
+    if (kind) mesh.userData.pddSkinned = kind;
+    return mesh;
+  }
+
+  function skin(mesh, kind, opts) {
+    if (window.PDD_ROADS) window.PDD_ROADS.skinObject(mesh, kind, opts);
+    return mesh;
+  }
+
+  function buildCity(parent, roadWidth) {
     const halfW = roadWidth / 2;
+    const rnd = cityRandom(6100);
+    const pick = list => list[Math.floor(rnd() * list.length)];
 
-    const buildingSpecs = [
-      // Северо-Запад: штукатурный светлый фасад
-      { x: -(halfW + 30), z: -(halfW + 30), w: 20, d: 20, h: 14, color: 0xF5F6FA, style: 'plaster' },
-      // Северо-Восток: кирпичный классический дом
-      { x: (halfW + 30), z: -(halfW + 30), w: 20, d: 20, h: 16, color: 0xB5675A, style: 'brick' },
-      // Юго-Запад: панельный городской дом
-      { x: -(halfW + 30), z: (halfW + 30), w: 20, d: 20, h: 13, color: 0xDDE1EA, style: 'panel' },
-      // Юго-Восток: панельный современный фасад
-      { x: (halfW + 30), z: (halfW + 30), w: 20, d: 20, h: 15, color: 0xE9ECF2, style: 'panel' },
-    ];
-
-    buildingSpecs.forEach(b => {
-      const bGroup = new THREE.Group();
-      bGroup.position.set(b.x, 0, b.z);
-
-      const facadeMat = new THREE.MeshLambertMaterial({ color: b.color });
-      const body = new THREE.Mesh(new THREE.BoxGeometry(b.w, b.h, b.d), facadeMat);
-      body.position.y = b.h / 2;
-      body.receiveShadow = true;
-      if (window.PDD_ROADS) {
-        if (b.style === 'plaster') window.PDD_ROADS.skinObject(body, 'plaster', { v0: -0.2 });
-        else if (b.style === 'brick') window.PDD_ROADS.skinObject(body, 'brick');
-        else window.PDD_ROADS.skinObject(body, 'panel', { u0: -0.4, v0: -0.45 });
+    const bodies = new Map();      // `${kind}:${color}` -> { kind, material, meshes }
+    const bodyOf = (kind, color) => {
+      const key = kind + ':' + color;
+      if (!bodies.has(key)) {
+        bodies.set(key, { kind, material: new THREE.MeshLambertMaterial({ color }), meshes: [] });
       }
-      bGroup.add(body);
+      return bodies.get(key);
+    };
+    const roofMat = new THREE.MeshLambertMaterial({ color: 0x94A3B8 });
+    const glassMat = new THREE.MeshBasicMaterial({ color: 0x708995 });
+    const awningColors = [0xE0533F, 0x2F6F9F, 0x3E8E5E, 0xD9A441];
+    const awningMats = awningColors.map(c => new THREE.MeshLambertMaterial({ color: c }));
+    const roofs = [], windows = [], awnings = awningColors.map(() => []);
+    const winGeoNarrow = new THREE.PlaneGeometry(1, 1.25);
+    const winGeoWide = new THREE.PlaneGeometry(1.3, 1.25);
 
-      // Плоская кровля (гудрон / рубероид) с парапетом
-      const slabMat = new THREE.MeshLambertMaterial({ color: 0x6B7480 });
-      const slab = new THREE.Mesh(new THREE.BoxGeometry(b.w - 0.2, 0.08, b.d - 0.2), slabMat);
-      slab.position.y = b.h + 0.04;
-      if (window.PDD_ROADS) window.PDD_ROADS.skinObject(slab, 'roofFlat');
-      bGroup.add(slab);
+    // Один дом: корпус, парапет кровли, окна на фасаде к улице и торцах.
+    // Локально фасад к улице смотрит в +Z; place() ставит дом на место.
+    function house(width, height, depth, place) {
+      const brickColor = 0xB5675A;
+      const color = pick([...BRAND.buildingColors, brickColor, 0xA9B4C2]);
+      const kind = color === brickColor ? 'brick' : (rnd() < 0.25 ? 'plaster' : 'panel');
+      const opts = kind === 'panel' ? { u0: -0.4, v0: -0.45 } : kind === 'plaster' ? { v0: -0.2 } : undefined;
 
-      const borderMat = new THREE.MeshLambertMaterial({ color: 0x94A3B8 });
-      const roofBorder = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.4, 0.4, b.d + 0.4), borderMat);
-      roofBorder.position.y = b.h + 0.2;
-      if (window.PDD_ROADS) window.PDD_ROADS.skinObject(roofBorder, 'roofFlat');
-      bGroup.add(roofBorder);
+      const parts = [];
+      const body = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), bodyOf(kind, color).material);
+      body.position.y = height / 2;
+      skin(body, kind, opts);
+      parts.push([body, bodyOf(kind, color).meshes]);
 
-      // Окна на фасадах
-      const winGeo = new THREE.PlaneGeometry(1.2, 1.4);
-      const winMat = new THREE.MeshBasicMaterial({ color: 0x647D87 });
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(width + 0.4, 0.4, depth + 0.4), roofMat);
+      roof.position.y = height + 0.2;
+      skin(roof, 'roofFlat');
+      parts.push([roof, roofs]);
 
-      const floors = Math.floor(b.h / 3.4);
-      const cols = Math.floor(b.w / 3.8);
-
-      for (let f = 1; f < floors; f++) {
-        const y = f * 3.4 + 0.8;
-        for (let c = -Math.floor(cols / 2); c <= Math.floor(cols / 2); c++) {
-          const x = c * 3.2;
-
-          // Окно на южном фасаде
-          const winS = new THREE.Mesh(winGeo, winMat);
-          winS.position.set(x, y, b.d / 2 + 0.02);
-          if (window.PDD_ROADS) window.PDD_ROADS.skinObject(winS, 'window');
-          bGroup.add(winS);
-
-          // Окно на боковом фасаде
-          const winSide = new THREE.Mesh(winGeo, winMat);
-          winSide.rotation.y = Math.PI / 2;
-          winSide.position.set(b.w / 2 + 0.02, y, c * 3.2);
-          if (window.PDD_ROADS) window.PDD_ROADS.skinObject(winSide, 'window');
-          bGroup.add(winSide);
+      const winGeo = rnd() < 0.5 ? winGeoNarrow : winGeoWide;
+      for (let y = 1.8; y < height - 0.6; y += 2.7) {
+        for (let x = -width / 2 + 1.3; x < width / 2 - 0.6; x += 2) {
+          const w = new THREE.Mesh(winGeo.clone(), glassMat);
+          w.position.set(x, y, depth / 2 + 0.015);
+          skin(w, 'window');
+          parts.push([w, windows]);
+        }
+        for (const side of [-1, 1]) {
+          for (let z = -depth / 2 + 1.4; z < depth / 2 - 0.6; z += 2) {
+            const w = new THREE.Mesh(winGeo.clone(), glassMat);
+            w.position.set(side * (width / 2 + 0.015), y, z);
+            w.rotation.y = side * Math.PI / 2;
+            skin(w, 'window');
+            parts.push([w, windows]);
+          }
         }
       }
+      if (kind !== 'plaster' && rnd() > 0.45) {
+        const i = Math.floor(rnd() * awningColors.length);
+        const awning = new THREE.Mesh(new THREE.BoxGeometry(Math.min(width - 2, 6), 0.08, 0.9), awningMats[i]);
+        awning.position.set(0, 2.45, depth / 2 + 0.45);
+        awning.rotation.x = 0.28;
+        parts.push([awning, awnings[i]]);
+      }
 
-      parent.add(bGroup);
+      // Дом как группа: переносим каждую часть в координаты сцены.
+      const holder = new THREE.Group();
+      place(holder);
+      holder.updateMatrix();
+      parts.forEach(([mesh, bucket]) => {
+        mesh.updateMatrix();
+        mesh.matrix.premultiply(holder.matrix);
+        mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
+        bucket.push(mesh);
+      });
+    }
+
+    // Ряды домов вдоль четырёх улиц. Угловые участки — у улиц север-юг,
+    // поперечные ряды начинаются за ними, чтобы дома не пересекались.
+    const frontLine = halfW + SIDEWALK + 1.5;
+    const arms = [
+      { axis: 'z', dir: -1, start: frontLine },
+      { axis: 'z', dir: 1, start: frontLine },
+      { axis: 'x', dir: -1, start: frontLine + 18 },
+      { axis: 'x', dir: 1, start: frontLine + 18 },
+    ];
+    arms.forEach(arm => {
+      [-1, 1].forEach(side => {
+        let along = arm.start;
+        while (along < CITY_REACH) {
+          const width = 14 + rnd() * 10;
+          const depth = 12 + rnd() * 4;
+          // Ближе к перекрёстку пониже, дальше — высотки, закрывающие горизонт.
+          const far = along > 70;
+          const height = (far ? 22 : 13) + rnd() * (far ? 20 : 9);
+          const centre = along + width / 2;
+          const offset = frontLine + depth / 2;
+          house(width, height, depth, holder => {
+            if (arm.axis === 'z') {
+              holder.position.set(side * offset, 0, arm.dir * centre);
+              holder.rotation.y = side > 0 ? -Math.PI / 2 : Math.PI / 2;
+            } else {
+              holder.position.set(arm.dir * centre, 0, side * offset);
+              holder.rotation.y = side > 0 ? Math.PI : 0;
+            }
+          });
+          along += width + 3 + rnd() * 5;
+        }
+      });
     });
+
+    bodies.forEach(b => {
+      const mesh = mergeMeshes(b.meshes, b.material, b.kind);
+      mesh.receiveShadow = true;
+      parent.add(mesh);
+    });
+    const roofMesh = mergeMeshes(roofs, roofMat, 'roofFlat');
+    if (roofMesh) parent.add(roofMesh);
+    const windowMesh = mergeMeshes(windows, glassMat, 'window');
+    if (windowMesh) parent.add(windowMesh);
+    awnings.forEach((list, i) => {
+      const m = mergeMeshes(list, awningMats[i]);
+      if (m) parent.add(m);
+    });
+    winGeoNarrow.dispose();
+    winGeoWide.dispose();
+
+    buildStreetTrees(parent, halfW, rnd);
+    buildSkyline(parent, rnd);
+  }
+
+  // Деревья по тротуарам всех четырёх улиц: стволы одним мешем, кроны — двумя.
+  function buildStreetTrees(parent, halfW, rnd) {
+    const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5D4534 });
+    const leafMats = [
+      new THREE.MeshLambertMaterial({ color: 0x48793C }),
+      new THREE.MeshLambertMaterial({ color: 0x568F48 }),
+    ];
+    const trunks = [], crowns = [[], []];
+    const line = halfW + SIDEWALK - 1.4;
+    const plant = (x, z) => {
+      const s = 0.85 + rnd() * 0.35;
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16 * s, 0.26 * s, 3 * s, 6), trunkMat);
+      trunk.position.set(x, 0.18 + 1.5 * s, z);
+      skin(trunk, 'bark');
+      trunks.push(trunk);
+      const i = rnd() < 0.5 ? 0 : 1;
+      const big = new THREE.Mesh(new THREE.DodecahedronGeometry(1.5 * s, 1), leafMats[i]);
+      big.position.set(x, 0.18 + 3.6 * s, z);
+      big.rotation.y = rnd() * Math.PI;
+      skin(big, 'leaves');
+      crowns[i].push(big);
+      const top = new THREE.Mesh(new THREE.DodecahedronGeometry(1.05 * s, 1), leafMats[1 - i]);
+      top.position.set(x + 0.3 * s, 0.18 + 4.6 * s, z + 0.2 * s);
+      skin(top, 'leaves');
+      crowns[1 - i].push(top);
+    };
+    for (let along = halfW + 10; along < 125; along += 12 + rnd() * 3) {
+      [-1, 1].forEach(dir => [-1, 1].forEach(side => {
+        plant(side * line, dir * along);       // улицы север-юг
+        plant(dir * along, side * line);       // улицы запад-восток
+      }));
+    }
+    const trunkMesh = mergeMeshes(trunks, trunkMat, 'bark');
+    trunkMesh.castShadow = true;
+    parent.add(trunkMesh);
+    crowns.forEach((list, i) => {
+      const m = mergeMeshes(list, leafMats[i], 'leaves');
+      m.castShadow = true;
+      parent.add(m);
+    });
+  }
+
+  // Дальний город по кругу: простые силуэты одним мешем, которые растворяются
+  // в дымке. Закрывают пустой горизонт за последними домами улиц.
+  function buildSkyline(parent, rnd) {
+    const mat = new THREE.MeshLambertMaterial({ color: 0xB4C2CE });
+    const blocks = [];
+    const count = 46;
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2 + rnd() * 0.06;
+      const r = 235 + rnd() * 60;
+      const w = 22 + rnd() * 26, h = 26 + rnd() * 46, d = 18 + rnd() * 14;
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+      b.position.set(Math.cos(a) * r, h / 2, Math.sin(a) * r);
+      b.rotation.y = -a;
+      blocks.push(b);
+    }
+    const mesh = mergeMeshes(blocks, mat);
+    mesh.userData.distant = true;
+    parent.add(mesh);
+  }
+
+  // Фонари вдоль улиц: все мачты одним мешем, все плафоны — другим.
+  function buildStreetLamps(parent, halfW) {
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0x242830, metalness: 0.75, roughness: 0.35 });
+    const glowMat = new THREE.MeshBasicMaterial({ color: 0xFFF7D6 });
+    const poles = [], bulbs = [];
+    const line = halfW + 0.9;
+    const lamp = (x, z, rotY) => {
+      const holder = new THREE.Group();
+      holder.position.set(x, 0.18, z);
+      holder.rotation.y = rotY;
+      holder.updateMatrix();
+      const add = (geo, px, py, pz, rz, bucket, mat) => {
+        const m = new THREE.Mesh(geo, mat);
+        m.position.set(px, py, pz);
+        if (rz) m.rotation.z = rz;
+        m.updateMatrix();
+        m.matrix.premultiply(holder.matrix);
+        m.matrix.decompose(m.position, m.quaternion, m.scale);
+        bucket.push(m);
+      };
+      add(new THREE.CylinderGeometry(0.07, 0.12, 6.4, 6), 0, 3.2, 0, 0, poles, poleMat);
+      add(new THREE.BoxGeometry(1.3, 0.08, 0.1), 0.6, 6.35, 0, 0, poles, poleMat);
+      add(new THREE.BoxGeometry(0.6, 0.12, 0.28), 1.25, 6.3, 0, 0, poles, poleMat);
+      add(new THREE.BoxGeometry(0.5, 0.03, 0.22), 1.25, 6.23, 0, 0, bulbs, glowMat);
+    };
+    for (let along = halfW + 22; along < 150; along += 24) {
+      [-1, 1].forEach(dir => [-1, 1].forEach(side => {
+        lamp(side * line, dir * along, side > 0 ? Math.PI : 0);
+        lamp(dir * along, side * line, side > 0 ? Math.PI / 2 : -Math.PI / 2);
+      }));
+    }
+    parent.add(mergeMeshes(poles, poleMat));
+    parent.add(mergeMeshes(bulbs, glowMat));
   }
 
   // Уличная мебель: фонарные столбы, деревья, дорожные знаки
@@ -484,22 +698,7 @@
       parent.add(lamp);
     });
 
-    // Дорожные деревья с красивой объемной листвой
-    const treePositions = [
-      { x: halfW + 4.5, z: halfW + 12 },
-      { x: halfW + 12, z: halfW + 4.5 },
-      { x: -(halfW + 4.5), z: halfW + 12 },
-      { x: -(halfW + 12), z: halfW + 4.5 },
-      { x: halfW + 4.5, z: -(halfW + 12) },
-      { x: -(halfW + 4.5), z: -(halfW + 12) },
-    ];
-
-    treePositions.forEach(p => {
-      const tree = buildTree();
-      tree.position.set(p.x, 0.18, p.z);
-      parent.add(tree);
-    });
-
+    buildStreetLamps(parent, halfW);
   }
 
   function buildStreetLamp() {
@@ -558,41 +757,6 @@
     return group;
   }
 
-  function buildTree() {
-    const group = new THREE.Group();
-    const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5D4534 });
-    const leafMat1 = new THREE.MeshLambertMaterial({ color: 0x48793C });
-    const leafMat2 = new THREE.MeshLambertMaterial({ color: 0x568F48 });
-
-    // Ствол дерева с фактурой коры
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.28, 3.2, 8), trunkMat);
-    trunk.position.y = 1.6;
-    trunk.castShadow = true;
-    if (window.PDD_ROADS) {
-      window.PDD_ROADS.skinObject(trunk, 'bark');
-    }
-    group.add(trunk);
-
-    // Ярусы кроны с процедурными листьями
-    const crown1 = new THREE.Mesh(new THREE.DodecahedronGeometry(1.6, 1), leafMat1);
-    crown1.position.y = 3.8;
-    crown1.castShadow = true;
-    if (window.PDD_ROADS) {
-      window.PDD_ROADS.skinObject(crown1, 'leaves');
-    }
-    group.add(crown1);
-
-    const crown2 = new THREE.Mesh(new THREE.DodecahedronGeometry(1.2, 1), leafMat2);
-    crown2.position.set(0.3, 4.8, 0.2);
-    crown2.castShadow = true;
-    if (window.PDD_ROADS) {
-      window.PDD_ROADS.skinObject(crown2, 'leaves');
-    }
-    group.add(crown2);
-
-    return group;
-  }
-
   // Трамвайные пути (аккуратные стальные рельсы, утопленные в асфальт)
   function buildTramTracks(parent) {
     const railMat = new THREE.MeshStandardMaterial({
@@ -602,7 +766,7 @@
     });
 
     // Две стальные колеи
-    const railGeo = new THREE.BoxGeometry(0.1, 0.05, 140);
+    const railGeo = new THREE.BoxGeometry(0.1, 0.05, CITY_REACH * 2 + 20);
     [-0.76, 0.76].forEach(offset => {
       const rail = new THREE.Mesh(railGeo, railMat);
       rail.position.set(-2.2 + offset, 0.045, 0);
@@ -1000,7 +1164,7 @@
   function buildVehicles() {
     // 1. Легковой автомобиль (использует официальную систему моделей PDD_VEHICLES)
     if (window.PDD_VEHICLES && typeof window.PDD_VEHICLES.create === 'function') {
-      carMesh = window.PDD_VEHICLES.create('sedan', 'blue');
+      carMesh = window.PDD_VEHICLES.create('hatch', 'red');
     } else {
       carMesh = buildFallbackCar();
     }
@@ -1020,6 +1184,24 @@
     initialObjectPos.copy(carMesh.position);
     initialObjectRotY = carMesh.rotation.y;
     activeVehicleMesh = carMesh;
+  }
+
+  // Машина из гаража основной игры (Flutter передаёт выбор игрока).
+  function setPlayerCar(id, paint) {
+    if (!window.PDD_VEHICLES || typeof window.PDD_VEHICLES.create !== 'function') return;
+    const next = window.PDD_VEHICLES.create(id, paint);
+    if (carMesh) {
+      next.position.copy(carMesh.position);
+      next.rotation.copy(carMesh.rotation);
+      next.visible = carMesh.visible;
+      scene.remove(carMesh);
+    }
+    if (next.blinkerL) next.blinkerL.visible = false;
+    if (next.blinkerR) next.blinkerR.visible = false;
+    if (movingObject === carMesh) movingObject = next;
+    if (activeVehicleMesh === carMesh) activeVehicleMesh = next;
+    carMesh = next;
+    scene.add(carMesh);
   }
 
   function buildFallbackCar() {
@@ -1202,6 +1384,47 @@
     updateTrajectoryArrows();
   }
 
+  // --- Траектории манёвров: прямо → дуга → прямо ---
+  // Радиусы подобраны расчётом зазора по всей траектории: кузов (машина до
+  // 5×2 м, трамвай 9,5×2,2 м) не заходит на регулировщика и его островок.
+  // Минимальный зазор: машина 1,5 м, трамвай 0,5 м (по рельсам прямо).
+  const PATHS = {
+    car: { x: 3.2, right: { r: 4, lane: 3.4 }, left: { r: 4, lane: -3.6 }, uturn: { lane: -3.4, at: 7.5 } },
+    tram: { x: -2.2, right: { r: 9, lane: 3.4 }, left: { r: 10, lane: -4.2 }, uturn: { lane: -5.8, at: 9 } },
+  };
+
+  function movePath(move, vehicle, startZ, reach, y) {
+    const spec = vehicle === VEHICLES.TRAM ? PATHS.tram : PATHS.car;
+    const x0 = spec.x;
+    const pts = [];
+    const P = (x, z) => pts.push(new THREE.Vector3(x, y, z));
+    const line = (ax, az, bx, bz, n) => {
+      for (let i = 0; i < n; i++) { const t = i / n; P(ax + (bx - ax) * t, az + (bz - az) * t); }
+    };
+    const arc = (cx, cz, r, a0, a1, n) => {
+      for (let i = 0; i < n; i++) { const a = a0 + (a1 - a0) * i / n; P(cx + r * Math.cos(a), cz + r * Math.sin(a)); }
+    };
+    if (move === MOVES.LEFT) {
+      const { r, lane } = spec.left, cx = x0 - r, cz = lane + r;
+      line(x0, Math.max(startZ, cz), x0, cz, 6);
+      arc(cx, cz, r, 0, -Math.PI / 2, 18);
+      line(cx, lane, -reach, lane, 6); P(-reach, lane);
+    } else if (move === MOVES.RIGHT) {
+      const { r, lane } = spec.right, cx = x0 + r, cz = lane + r;
+      line(x0, Math.max(startZ, cz), x0, cz, 6);
+      arc(cx, cz, r, Math.PI, Math.PI * 1.5, 18);
+      line(cx, lane, reach, lane, 6); P(reach, lane);
+    } else if (move === MOVES.UTURN) {
+      const { lane, at } = spec.uturn, rr = (x0 - lane) / 2, cx = x0 - rr;
+      line(x0, Math.max(startZ, at), x0, at, 6);
+      arc(cx, at, rr, 0, -Math.PI, 20);
+      line(lane, at, lane, reach, 6); P(lane, reach);
+    } else {
+      line(x0, startZ, x0, -reach, 8); P(x0, -reach);
+    }
+    return new THREE.CatmullRomCurve3(pts, false, 'centripetal');
+  }
+
   function updateTrajectoryArrows() {
     while (arrowsGroup.children.length > 0) {
       const child = arrowsGroup.children[0];
@@ -1221,50 +1444,11 @@
     const canLeft = allowed.includes(MOVES.LEFT);
     const canUturn = allowed.includes(MOVES.UTURN);
 
-    // Стрелка прямо (только если разрешено)
-    if (canStraight) {
-      addRoadRibbonArrow(
-        new THREE.LineCurve3(
-          new THREE.Vector3(originX, 0.052, originZ),
-          new THREE.Vector3(originX, 0.052, -11.0)
-        )
-      );
-    }
-
-    // Стрелка направо (только если разрешено)
-    if (canRight) {
-      addRoadRibbonArrow(
-        new THREE.QuadraticBezierCurve3(
-          new THREE.Vector3(originX, 0.052, originZ),
-          new THREE.Vector3(originX, 0.052, 2.4),
-          new THREE.Vector3(12.0, 0.052, 2.4)
-        )
-      );
-    }
-
-    // Стрелка налево (только если разрешено)
-    if (canLeft) {
-      addRoadRibbonArrow(
-        new THREE.CubicBezierCurve3(
-          new THREE.Vector3(originX, 0.052, originZ),
-          new THREE.Vector3(originX, 0.052, 2.0),
-          new THREE.Vector3(0.0, 0.052, -2.4),
-          new THREE.Vector3(-12.0, 0.052, -2.4)
-        )
-      );
-    }
-
-    // Разворот (если разрешено для автомобиля)
-    if (canUturn && currentVehicle === VEHICLES.CAR) {
-      addRoadRibbonArrow(
-        new THREE.CubicBezierCurve3(
-          new THREE.Vector3(originX, 0.052, originZ),
-          new THREE.Vector3(originX, 0.052, 2.0),
-          new THREE.Vector3(-2.8, 0.052, 2.0),
-          new THREE.Vector3(-2.8, 0.052, 12.0)
-        )
-      );
-    }
+    const arrow = move => addRoadRibbonArrow(movePath(move, currentVehicle, originZ, 12.0, 0.052));
+    if (canStraight) arrow(MOVES.STRAIGHT);
+    if (canRight) arrow(MOVES.RIGHT);
+    if (canLeft) arrow(MOVES.LEFT);
+    if (canUturn && currentVehicle === VEHICLES.CAR) arrow(MOVES.UTURN);
 
     // Если движение запрещено (например, грудь/спина или поднятая рука)
     if (allowed.length === 1 && allowed[0] === MOVES.NONE) {
@@ -1274,7 +1458,7 @@
 
   function addRoadRibbonArrow(curve, width = 0.55) {
     const numPoints = 32;
-    const points = curve.getPoints(numPoints);
+    const points = curve.getSpacedPoints(numPoints);
     const ribbonPointCount = numPoints - 1;
 
     // Одиночная сплошная яркая неоново-зеленая лента
@@ -1500,36 +1684,10 @@
     }
 
     movingObject = (currentVehicle === VEHICLES.CAR) ? carMesh : tramMesh;
-    const startX = movingObject.position.x;
     const startZ = movingObject.position.z;
 
     // Все манёвры завершаются за перекрёстком и пешеходным переходом (на отметке ±13.5)
-    if (moveType === MOVES.STRAIGHT) {
-      moveCurve = new THREE.LineCurve3(
-        new THREE.Vector3(startX, 0, startZ),
-        new THREE.Vector3(startX, 0, -13.5)
-      );
-    } else if (moveType === MOVES.RIGHT) {
-      moveCurve = new THREE.QuadraticBezierCurve3(
-        new THREE.Vector3(startX, 0, startZ),
-        new THREE.Vector3(startX, 0, 2.4),
-        new THREE.Vector3(13.5, 0, 2.4)
-      );
-    } else if (moveType === MOVES.LEFT) {
-      moveCurve = new THREE.CubicBezierCurve3(
-        new THREE.Vector3(startX, 0, startZ),
-        new THREE.Vector3(startX, 0, 2.0),
-        new THREE.Vector3(0.0, 0, -2.4),
-        new THREE.Vector3(-13.5, 0, -2.4)
-      );
-    } else if (moveType === MOVES.UTURN) {
-      moveCurve = new THREE.CubicBezierCurve3(
-        new THREE.Vector3(startX, 0, startZ),
-        new THREE.Vector3(startX, 0, 2.0),
-        new THREE.Vector3(-2.8, 0, 2.0),
-        new THREE.Vector3(-2.8, 0, 13.5)
-      );
-    }
+    moveCurve = movePath(moveType, currentVehicle, startZ, 13.5, 0);
 
     isMoving = true;
     moveProgress = 0;
@@ -1563,23 +1721,84 @@
       camera.position.z = Math.cos(camAngle) * radius;
       camera.lookAt(0, 1.2, 0);
     } else {
-      // Вид из кабины водителя машины / трамвая
-      if (currentVehicle === VEHICLES.TRAM && tramMesh) {
-        camera.position.set(-2.2, 1.9, 10.4);
-        camera.lookAt(-2.2, 1.6, 0);
-      } else if (carMesh) {
-        camera.position.set(3.2, 1.45, 12.8);
-        camera.lookAt(3.2, 1.35, 0);
-      }
+      updateDriverCamera();
     }
+  }
+
+  // Вид водителя: камера за машиной, чуть левее — между её полосой и осью
+  // дороги — и смотрит вдоль улицы. Регулировщик чуть левее центра кадра,
+  // машина справа, перекрёсток впереди. На манёвре камера едет следом.
+  // zoom (0,65–2,2): 1 — по умолчанию, меньше — ближе и ниже, больше — дальше и выше.
+  const driverCamPos = new THREE.Vector3();
+  const driverCamLook = new THREE.Vector3();
+  const driverWantPos = new THREE.Vector3();
+  const driverWantLook = new THREE.Vector3();
+  let driverCamReady = false;
+  let cameraZoom = 1;
+
+  function setZoom(value) {
+    cameraZoom = Math.min(Math.max(Number(value) || 1, 0.65), 2.2);
+  }
+
+  function updateDriverCamera() {
+    const vehicle = currentVehicle === VEHICLES.TRAM ? tramMesh : carMesh;
+    if (!vehicle) return;
+    const isTram = currentVehicle === VEHICLES.TRAM;
+    const heading = vehicle.rotation.y;
+    const fx = Math.sin(heading), fz = Math.cos(heading);
+    const lx = fz, lz = -fx; // влево от направления движения
+    const back = (isTram ? 11.5 : 8.5) * cameraZoom;
+    const height = (isTram ? 2.6 : 1.9) + 2.6 * cameraZoom;
+    const side = isTram ? 0.4 : 0.8;
+
+    driverWantPos.set(
+      vehicle.position.x - fx * back + lx * side,
+      height,
+      vehicle.position.z - fz * back + lz * side
+    );
+    driverWantLook.set(
+      vehicle.position.x + fx * 16 + lx * side,
+      0.9,
+      vehicle.position.z + fz * 16 + lz * side
+    );
+
+    if (!driverCamReady) {
+      driverCamPos.copy(driverWantPos);
+      driverCamLook.copy(driverWantLook);
+      driverCamReady = true;
+    } else {
+      driverCamPos.lerp(driverWantPos, 0.1);
+      driverCamLook.lerp(driverWantLook, 0.1);
+    }
+    camera.position.copy(driverCamPos);
+    camera.lookAt(driverCamLook);
+  }
+
+  // Доля высоты экрана, закрытая снизу панелью Flutter. Центр перспективы
+  // ставим в середину видимой части, иначе сцена «уезжает» под панель.
+  let viewInsetBottom = 0;
+
+  function applyViewport(width, height) {
+    const visible = Math.max(height * (1 - viewInsetBottom), 1);
+    camera.aspect = width / visible;
+    camera.setViewOffset(width, visible, 0, 0, width, height);
+    camera.updateProjectionMatrix();
+  }
+
+  function setViewInsetBottom(fraction) {
+    viewInsetBottom = Math.min(Math.max(Number(fraction) || 0, 0), 0.8);
+    if (!container || !camera) return;
+    applyViewport(
+      container.clientWidth || window.innerWidth,
+      container.clientHeight || window.innerHeight
+    );
   }
 
   function onWindowResize() {
     if (!container) return;
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
+    applyViewport(width, height);
     renderer.setSize(width, height);
   }
 
@@ -1683,6 +1902,9 @@
       updateTrajectoryArrows();
     },
     setCameraView,
+    setViewInsetBottom,
+    setPlayerCar,
+    setZoom,
     rotateCamera,
     reset() {
       resetVehiclePositions();
