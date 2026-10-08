@@ -352,7 +352,7 @@ void main() {
     );
     expect(find.text(appL10n.gameBestScore(123456789)), findsOneWidget);
     expect(find.text(appL10n.gameBestScore(987654321)), findsOneWidget);
-    expect(find.byType(ImageFiltered), findsNWidgets(2));
+    expect(find.byType(ImageFiltered), findsNWidgets(3));
     for (final titleAndRecord in [
       (appL10n.gameTrafficControllerTitle, appL10n.gameBestScore(123456789)),
       (appL10n.gameSignSwiperTitle, appL10n.gameBestScore(987654321)),
@@ -378,7 +378,17 @@ void main() {
         expect(labelRect.bottom, lessThanOrEqualTo(photoRect.bottom));
       }
     }
+    await tester.ensureVisible(find.text(appL10n.gameRoundaboutTitle));
+    await tester.pumpAndSettle();
+    expect(find.text(appL10n.gameSoonBadge), findsOneWidget);
+    await tester.tap(find.text(appL10n.gameRoundaboutTitle));
+    await tester.pumpAndSettle();
+    expect(find.byType(GamesHubScreen), findsOneWidget);
+    expect(find.byType(TrafficControllerScreen), findsNothing);
+    expect(find.byType(SignSwiperScreen), findsNothing);
     expect(tester.takeException(), isNull);
+    await tester.ensureVisible(find.text(appL10n.gameTrafficControllerTitle));
+    await tester.pumpAndSettle();
     await tester.tapAt(
       tester.getCenter(find.text(appL10n.gameTrafficControllerTitle)),
     );

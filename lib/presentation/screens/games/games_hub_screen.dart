@@ -12,8 +12,6 @@ import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_scree
 import 'package:pdd_app/presentation/screens/games/traffic_controller/traffic_controller_screen.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
 
-const _roundaboutAccent = Color(0xFF6366F1);
-
 class GamesHubScreen extends ConsumerWidget {
   const GamesHubScreen({super.key});
 
@@ -64,35 +62,41 @@ class GamesHubScreen extends ConsumerWidget {
             onTap: () => _open(context, const SignSwiperScreen()),
           ),
           const SizedBox(height: AppDimensions.spacingL),
-          _SoonTile(title: appL10n.gameRoundaboutTitle),
+          _GameCard(
+            art: const RoundaboutArt(),
+            title: appL10n.gameRoundaboutTitle,
+          ),
         ],
       ),
     );
   }
 }
 
-/// Название и рекорд лежат на обложке; вся карточка запускает игру.
+/// Общая обложка: название и рекорд либо отметка ещё недоступной игры.
 class _GameCard extends StatelessWidget {
   const _GameCard({
     required this.art,
     required this.title,
-    required this.bestScore,
-    required this.onTap,
+    this.bestScore,
+    this.onTap,
   });
 
   final Widget art;
   final String title;
-  final int bestScore;
-  final VoidCallback onTap;
+  final int? bestScore;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final radius = BorderRadius.circular(AppDimensions.cardRadius);
-    final record = appL10n.gameBestScore(bestScore);
+    final available = onTap != null;
+    final status = bestScore == null
+        ? appL10n.gameSoonBadge
+        : appL10n.gameBestScore(bestScore!);
     final scaler = MediaQuery.textScalerOf(context);
 
-    return Align(
+    final card = Align(
       alignment: Alignment.center,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
@@ -105,7 +109,8 @@ class _GameCard extends StatelessWidget {
             );
             return Semantics(
               button: true,
-              label: '$title, $record',
+              enabled: available,
+              label: '$title, $status',
               onTap: onTap,
               child: ExcludeSemantics(
                 child: ClipRRect(
@@ -174,16 +179,20 @@ class _GameCard extends StatelessWidget {
                                     Row(
                                       children: [
                                         Icon(
-                                          Icons.emoji_events_rounded,
+                                          available
+                                              ? Icons.emoji_events_rounded
+                                              : Icons.schedule_rounded,
                                           size: 16,
-                                          color: colors.gold,
+                                          color: available
+                                              ? colors.gold
+                                              : Colors.white,
                                         ),
                                         const SizedBox(
                                           width: AppDimensions.spacingXS,
                                         ),
                                         Flexible(
                                           child: Text(
-                                            record,
+                                            status,
                                             style: const TextStyle(
                                               fontSize: 13,
                                               height: 1.2,
@@ -197,27 +206,30 @@ class _GameCard extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: AppDimensions.spacingM),
-                              const Padding(
-                                padding: EdgeInsets.only(bottom: 1),
-                                child: Icon(
-                                  Icons.arrow_forward_rounded,
-                                  size: 24,
-                                  color: Colors.white,
+                              if (available) ...[
+                                const SizedBox(width: AppDimensions.spacingM),
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 1),
+                                  child: Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 24,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                         ),
-                        Material(
-                          type: MaterialType.transparency,
-                          child: InkWell(
-                            onTap: onTap,
-                            borderRadius: radius,
-                            splashColor: Colors.white24,
-                            highlightColor: Colors.white10,
+                        if (available)
+                          Material(
+                            type: MaterialType.transparency,
+                            child: InkWell(
+                              onTap: onTap,
+                              borderRadius: radius,
+                              splashColor: Colors.white24,
+                              highlightColor: Colors.white10,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -228,59 +240,33 @@ class _GameCard extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-/// Игра, которая скоро появится: компактная строка, полупрозрачная и неактивная.
-class _SoonTile extends StatelessWidget {
-  const _SoonTile({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
+    if (available) return card;
     return Opacity(
-      opacity: 0.45,
-      child: Container(
-        padding: const EdgeInsets.all(AppDimensions.spacingM),
-        decoration: BoxDecoration(
-          color: colors.cardBackground,
-          borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: _roundaboutAccent.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-              ),
-              child: const RoundaboutArt(),
-            ),
-            const SizedBox(width: AppDimensions.spacingM),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: colors.primaryText,
-                ),
-              ),
-            ),
-            Text(
-              appL10n.gameSoonBadge,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: colors.secondaryText,
-              ),
-            ),
-            const SizedBox(width: AppDimensions.spacingXS),
-          ],
-        ),
+      opacity: 0.55,
+      child: ColorFiltered(
+        colorFilter: const ColorFilter.matrix([
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+        ]),
+        child: card,
       ),
     );
   }

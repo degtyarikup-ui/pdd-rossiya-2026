@@ -26,3 +26,16 @@ Main composition: three thick matte-white rounded playing cards hovering in a lo
 Background same soft-focus modern Russian game city at blue dusk, tasteful warm window bokeh. Keep it subtle, clean and lightly blurred; no specific recognizable landmarks. Lower 25% calm asphalt with space for real UI title later. Main subjects large enough to read at mobile thumbnail size.
 Exact only text: STOP, on the stop sign. No captions, no title, no logo, no badges, no numbers, no watermark, no invented glyphs. No flashy glows, no particles, no neon rims, no flares, no glossy plastic clutter. Professional cohesive game key art, appealing and simple.
 ```
+
+## Круговое движение — итоговый промпт
+
+Сохранено как `assets/images/games/roundabout_cover.webp`, 1280×720. Чёрно-белый фильтр и прозрачность 55% применяются к карточке в Flutter; цветной оригинал сохранён для будущего запуска игры. Генерация — встроенный imagegen, 2026-10-08.
+
+```text
+Use case: ads-marketing. Asset type: horizontal 16:9 mobile mini-game cover, matching a series.
+Input image 1 is an art-direction reference only: match the premium stylized 3D game rendering, clean modern Russian city, cobalt blue dusk, navy asphalt, warm window light, tactile matte materials and photographic depth of field. Do not include the inspector.
+Subject: a beautiful compact roundabout with a circular low landscaped central island and three recognizable modern cars following the circular road counterclockwise (right-hand traffic). Clearly legible circular road, viewed from a close elevated three-quarter angle, central island and cars in upper 70% of composition. One bold blue car in the foreground and two small tasteful contrasting cars farther around the circle. Clean lane markings and realistic entry and exit geometry, no chaotic overlapping roads.
+A single correctly shaped Russian roundabout sign 4.3 can be visible near the foreground entry: blue circle with three white curved arrows arranged counterclockwise. It should not dominate or hide the circular road.
+Same soft-focus modern buildings and trees as the reference, warm lit windows, cool blue dusk sky. Strong simple composition readable at thumbnail size. Lower quarter calm asphalt for later UI title overlay.
+Generate a FULL COLOR master image. Grayscale and reduced opacity will be applied in actual Flutter UI for the unavailable state, do not bake those effects into the image. No lettering, no words, no captions, no interface, no badge, no logo, no watermark. No particles, no neon outlines, no lens flares, no plastic toy gloss, no extra decorative floating arrows. Strict horizontal16:9.
+```
