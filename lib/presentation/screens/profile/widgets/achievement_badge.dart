@@ -42,6 +42,11 @@ class AchievementBadge extends StatelessWidget {
       width: size,
       height: size,
       fit: BoxFit.contain,
+      cacheWidth: (size * MediaQuery.devicePixelRatioOf(context)).ceil().clamp(
+        96,
+        512,
+      ),
+      filterQuality: FilterQuality.low,
       excludeFromSemantics: true,
       errorBuilder: (context, error, stackTrace) {
         return Container(

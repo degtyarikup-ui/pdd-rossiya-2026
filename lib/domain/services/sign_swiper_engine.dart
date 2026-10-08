@@ -8,13 +8,13 @@ class SignSwiperEngine {
   final Map<String, List<SignItem>> signsByCategory;
   final Random _rnd;
 
-  SignSwiperEngine({
-    required this.allSigns,
-    Random? random,
-  })  : _rnd = random ?? Random(),
-        signsByCategory = _groupSignsByCategory(allSigns);
+  SignSwiperEngine({required this.allSigns, Random? random})
+    : _rnd = random ?? Random(),
+      signsByCategory = _groupSignsByCategory(allSigns);
 
-  static Map<String, List<SignItem>> _groupSignsByCategory(List<SignItem> signs) {
+  static Map<String, List<SignItem>> _groupSignsByCategory(
+    List<SignItem> signs,
+  ) {
     final map = <String, List<SignItem>>{};
     for (final s in signs) {
       map.putIfAbsent(s.category, () => []).add(s);
@@ -58,13 +58,17 @@ class SignSwiperEngine {
     String? categoryFilter,
     int count = 25,
   }) {
-    final pool = (categoryFilter == null ||
+    final categoryPool =
+        (categoryFilter == null ||
             categoryFilter.isEmpty ||
             categoryFilter == 'Все категории' ||
             !signsByCategory.containsKey(categoryFilter))
         ? allSigns
         : signsByCategory[categoryFilter]!;
 
+    final pool = categoryPool
+        .where((s) => SignScenariosLibrary.hasScenarios(s.number))
+        .toList();
     if (pool.isEmpty) return const [];
 
     final deck = <SignCardQuestion>[];
@@ -80,45 +84,22 @@ class SignSwiperEngine {
   }
 
   SignCardQuestion _generateCardQuestion(SignItem sign, bool targetIsTrue) {
-    final id = '${sign.number}_${DateTime.now().microsecondsSinceEpoch}_${_rnd.nextInt(10000)}';
+    final id =
+        '${sign.number}_${DateTime.now().microsecondsSinceEpoch}_${_rnd.nextInt(10000)}';
 
-    // 1. Попробуем найти точный сценарий конкретного знака
-    final signScenarios = SignScenariosLibrary.getScenariosForSign(sign.number);
-    if (signScenarios != null && signScenarios.isNotEmpty) {
-      final matching = signScenarios.where((s) => s.isCorrect == targetIsTrue).toList();
-      if (matching.isNotEmpty) {
-        final chosen = matching[_rnd.nextInt(matching.length)];
-        return SignCardQuestion(
-          id: id,
-          sign: sign,
-          prompt: chosen.prompt,
-          isCorrect: chosen.isCorrect,
-          explanation: chosen.explanation,
-          type: chosen.type,
-        );
-      } else {
-        // Если нет подходящего по истинности, берем любой доступный для знака
-        final chosen = signScenarios[_rnd.nextInt(signScenarios.length)];
-        return SignCardQuestion(
-          id: id,
-          sign: sign,
-          prompt: chosen.prompt,
-          isCorrect: chosen.isCorrect,
-          explanation: chosen.explanation,
-          type: chosen.type,
-        );
-      }
-    }
-
-    // 2. Fallback: умный генератор дорожных ситуаций по категории знака
-    final fallbackScenario = SignScenariosLibrary.generateCategoryScenario(sign, targetIsTrue, _rnd);
+    final scenarios = SignScenariosLibrary.getScenariosForSign(sign.number)!;
+    final matching = scenarios
+        .where((s) => s.isCorrect == targetIsTrue)
+        .toList();
+    final choices = matching.isEmpty ? scenarios : matching;
+    final chosen = choices[_rnd.nextInt(choices.length)];
     return SignCardQuestion(
       id: id,
       sign: sign,
-      prompt: fallbackScenario.prompt,
-      isCorrect: fallbackScenario.isCorrect,
-      explanation: fallbackScenario.explanation,
-      type: fallbackScenario.type,
+      prompt: chosen.prompt,
+      isCorrect: chosen.isCorrect,
+      explanation: chosen.explanation,
+      type: chosen.type,
     );
   }
 }

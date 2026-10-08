@@ -7,7 +7,8 @@
 
   // --- Константы правил п. 6.10 ПДД ---
   const GESTURES = {
-    HANDS_DOWN: 'handsDownOrSides',
+    HANDS_DOWN: 'handsDown',
+    HANDS_SIDES: 'handsSides',
     RIGHT_ARM_FORWARD: 'rightArmForward',
     ARM_UP: 'armUp',
   };
@@ -37,7 +38,7 @@
     if (gesture === GESTURES.ARM_UP) {
       return [MOVES.NONE];
     }
-    if (gesture === GESTURES.HANDS_DOWN) {
+    if (gesture === GESTURES.HANDS_DOWN || gesture === GESTURES.HANDS_SIDES) {
       if (approach === APPROACHES.LEFT || approach === APPROACHES.RIGHT) {
         return vehicle === VEHICLES.TRAM ? [MOVES.STRAIGHT] : [MOVES.STRAIGHT, MOVES.RIGHT];
       }
@@ -83,7 +84,15 @@
   // --- Переменные сцены ---
   let scene, camera, renderer;
   let container;
-  let inspectorGroup, headMesh, leftArmPivot, rightArmPivot, batonMesh, vestMesh;
+  let inspectorGroup, leftArmPivot, rightArmPivot, vestMesh;
+  const seasonName = window.PDD_SEASONS.fromDate();
+  const season = window.PDD_SEASONS.palettes[seasonName];
+  // Match the main game: WebKit caps core counts, so four cores alone
+  // should not degrade image quality on modern iPhones.
+  const lowEnd = (navigator.hardwareConcurrency || 8) <= 2 || (navigator.deviceMemory || 8) <= 3;
+  const weak = lowEnd || (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
+  let leaves;
+  const leafCentre = new THREE.Vector3(0, 0, 7);
   let carMesh, tramMesh;
   let activeVehicleMesh;
   let arrowsGroup;
@@ -127,13 +136,13 @@
     const height = container.clientHeight || window.innerHeight;
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xDEE4E5);
+    scene.background = new THREE.Color(season.sky);
     // Дымка в цвет горизонта: дальний город растворяется, края мира не видно.
-    scene.fog = new THREE.Fog(0xB9D6EE, 120, 330);
+    scene.fog = new THREE.Fog(season.sky, 120, 330);
 
     // Процедурный градиентный купол неба с облаками (как во флагманской игре)
     skyDome = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), new THREE.ShaderMaterial({
-      uniforms: { horizon: { value: new THREE.Color(0xB9D6EE) }, zenith: { value: new THREE.Color(0x6FA8DC) }, cloud: { value: 0.55 } },
+      uniforms: { horizon: { value: new THREE.Color(season.sky) }, zenith: { value: new THREE.Color(season.sky) }, cloud: { value: 0.55 } },
       vertexShader: 'varying vec3 vDir; void main(){ vDir = position; vec4 p = projectionMatrix * vec4((modelViewMatrix * vec4(position, 0.0)).xyz, 1.0); gl_Position = p.xyww; }',
       fragmentShader: [
         'uniform vec3 horizon; uniform vec3 zenith; uniform float cloud; varying vec3 vDir;',
@@ -153,9 +162,9 @@
     camera = new THREE.PerspectiveCamera(42, width / height, 0.5, 420);
     updateCameraPosition();
 
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    renderer = new THREE.WebGLRenderer({ antialias: !lowEnd, alpha: false, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowEnd ? 1.25 : 1.75));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -182,20 +191,21 @@
     // Сообщаем Flutter о готовности
     notifyFlutter({ type: 'ready' });
 
+    if (seasonName === 'autumn') leaves = window.PDD_SEASONS.createLeaves(scene, { lowEnd, palette: () => season.canopy, spanX: 24, spanZ: 32, height: 7 });
     animate();
   }
 
   function setupLighting() {
     // Рассеянный дневной свет (как во флагманской игре)
-    const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.75);
+    const ambientLight = new THREE.AmbientLight(0xFFFFFF, season.ambient);
     scene.add(ambientLight);
 
     // Верхнее солнце с естественными мягкими тенями
-    const sunLight = new THREE.DirectionalLight(0xFFF9EE, 0.85);
+    const sunLight = new THREE.DirectionalLight(season.sun, season.sunIntensity);
     sunLight.position.set(16, 68, 14);
     sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 1024;
-    sunLight.shadow.mapSize.height = 1024;
+    sunLight.shadow.mapSize.width = lowEnd ? 512 : 1024;
+    sunLight.shadow.mapSize.height = lowEnd ? 512 : 1024;
     sunLight.shadow.camera.near = 10;
     sunLight.shadow.camera.far = 180;
     const d = 36;
@@ -220,7 +230,7 @@
 
     // Ландшафт / трава вокруг города (с процедурной фактурой grass)
     const groundGeo = new THREE.PlaneGeometry(900, 900);
-    const groundMat = new THREE.MeshLambertMaterial({ color: BRAND.grass });
+    const groundMat = new THREE.MeshLambertMaterial({ color: season.ground });
     groundMat.userData.pddKind = 'grass';
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
@@ -342,11 +352,11 @@
     });
     kerbMat.userData.pddKind = 'pavement';
     const walkMat = new THREE.MeshLambertMaterial({
-      color: BRAND.sidewalk,
+      color: season.sidewalk,
     });
     walkMat.userData.pddKind = 'pavement';
     const lawnMat = new THREE.MeshLambertMaterial({
-      color: BRAND.grassDark,
+      color: season.verge[1],
     });
     lawnMat.userData.pddKind = 'grass';
 
@@ -463,7 +473,7 @@
       }
       return bodies.get(key);
     };
-    const roofMat = new THREE.MeshLambertMaterial({ color: 0x94A3B8 });
+    const roofMat = new THREE.MeshLambertMaterial({ color: season.roof ?? 0x94A3B8 });
     const glassMat = new THREE.MeshBasicMaterial({ color: 0x708995 });
     const awningColors = [0xE0533F, 0x2F6F9F, 0x3E8E5E, 0xD9A441];
     const awningMats = awningColors.map(c => new THREE.MeshLambertMaterial({ color: c }));
@@ -586,8 +596,8 @@
   function buildStreetTrees(parent, halfW, rnd) {
     const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5D4534 });
     const leafMats = [
-      new THREE.MeshLambertMaterial({ color: 0x48793C }),
-      new THREE.MeshLambertMaterial({ color: 0x568F48 }),
+      new THREE.MeshLambertMaterial({ color: season.canopy[0] }),
+      new THREE.MeshLambertMaterial({ color: season.canopy[1] }),
     ];
     const trunks = [], crowns = [[], []];
     const line = halfW + SIDEWALK - 1.4;
@@ -799,368 +809,12 @@
 
   // --- 3D-модель инспектора ДПС (Регулировщик) ---
   function buildInspector() {
-    inspectorGroup = new THREE.Group();
-    inspectorGroup.position.set(0, 0.05, 0);
-
-    const uniformMat = new THREE.MeshStandardMaterial({ color: 0x1B263B, roughness: 0.75 }); // Темно-синяя форма ДПС
-    const stripePantsMat = new THREE.MeshStandardMaterial({ color: 0xD32F2F, roughness: 0.5 }); // Красный форменный кант
-    const vestMat = new THREE.MeshStandardMaterial({ color: 0xD0E800, roughness: 0.55 });     // Кислотно-салатовый сигнальный жилет ДПС
-    const scotchliteMat = new THREE.MeshStandardMaterial({ color: 0xF2F5F8, roughness: 0.15, metalness: 0.65 }); // Светоотражающие полосы ГОСТ
-    const skinMat = new THREE.MeshStandardMaterial({ color: 0xF3C3A0, roughness: 0.8 });     // Кожа лица и шеи
-    const gloveMat = new THREE.MeshStandardMaterial({ color: 0xF8F9FA, roughness: 0.35 });    // Белые уставные перчатки регулировщика
-    const leatherMat = new THREE.MeshStandardMaterial({ color: 0x121417, roughness: 0.3, metalness: 0.15 }); // Черная полированная кожа
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, metalness: 0.85, roughness: 0.25 }); // Золотая кокарда, шнур, бляха
-    const hairMat = new THREE.MeshStandardMaterial({ color: 0x221B16, roughness: 0.9 });      // Темные волосы
-
-    // --- 1. Обувь (полированные берцы) ---
-    [-0.12, 0.12].forEach(x => {
-      // Подошва
-      const sole = new THREE.Mesh(new THREE.BoxGeometry(0.105, 0.035, 0.28), leatherMat);
-      sole.position.set(x, 0.018, 0.02);
-      sole.castShadow = true;
-      inspectorGroup.add(sole);
-
-      // Каблук
-      const heel = new THREE.Mesh(new THREE.BoxGeometry(0.105, 0.03, 0.09), leatherMat);
-      heel.position.set(x, 0.035, -0.075);
-      inspectorGroup.add(heel);
-
-      // Союзка и носок
-      const bootTop = new THREE.Mesh(new THREE.BoxGeometry(0.098, 0.08, 0.22), leatherMat);
-      bootTop.position.set(x, 0.07, 0.04);
-      bootTop.castShadow = true;
-      inspectorGroup.add(bootTop);
-
-      // Голенище берца
-      const bootAnkle = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.06, 0.12, 14), leatherMat);
-      bootAnkle.position.set(x, 0.12, -0.01);
-      inspectorGroup.add(bootAnkle);
-    });
-
-    // --- 2. Брюки с кантом (стройные мужские пропорции) ---
-    [-0.12, 0.12].forEach(x => {
-      // Брючина (сужается от бедра к щиколотке)
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.068, 0.82, 16), uniformMat);
-      leg.position.set(x, 0.52, 0);
-      leg.castShadow = true;
-      inspectorGroup.add(leg);
-
-      // Красный форменный кант по внешнему шву
-      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.82, 0.02), stripePantsMat);
-      stripe.position.set(x + (x > 0 ? 0.082 : -0.082), 0.52, 0);
-      inspectorGroup.add(stripe);
-    });
-
-    // Тазовая часть брюк (анатомический овал вместо круга)
-    const pelvis = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.165, 0.20, 18), uniformMat);
-    pelvis.scale.set(1.15, 1.0, 0.65);
-    pelvis.position.set(0, 0.96, 0);
-    pelvis.castShadow = true;
-    inspectorGroup.add(pelvis);
-
-    // --- 3. Служебный ремень и экипировка ---
-    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.185, 0.185, 0.06, 18), leatherMat);
-    belt.scale.set(1.16, 1.0, 0.66);
-    belt.position.set(0, 1.05, 0);
-    inspectorGroup.add(belt);
-
-    // Золотая бляха ремня
-    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.02), goldMat);
-    buckle.position.set(0, 1.05, 0.185 * 0.66 + 0.008);
-    inspectorGroup.add(buckle);
-
-    // Кобура пистолета ПМ на правом бедре
-    const holster = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.16, 0.09), leatherMat);
-    holster.position.set(0.22, 0.98, 0.02);
-    inspectorGroup.add(holster);
-
-    // Рация на левом боку с антенной
-    const radio = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.06), leatherMat);
-    radio.position.set(-0.21, 1.04, 0.02);
-    inspectorGroup.add(radio);
-
-    const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.10, 8), leatherMat);
-    antenna.position.set(-0.21, 1.15, 0.03);
-    inspectorGroup.add(antenna);
-
-    // --- 4. Торс (V-образный атлетический силуэт в куртке и жилете ДПС) ---
-    // Темно-синяя куртка
-    const jacket = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.18, 0.56, 20), uniformMat);
-    jacket.scale.set(1.08, 1.0, 0.58);
-    jacket.position.set(0, 1.35, 0);
-    jacket.castShadow = true;
-    inspectorGroup.add(jacket);
-
-    // Сигнальный жилет ДПС повышенной видимости (ГОСТ)
-    vestMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.235, 0.186, 0.54, 20), vestMat);
-    vestMesh.scale.set(1.09, 1.0, 0.59);
-    vestMesh.position.set(0, 1.35, 0);
-    vestMesh.castShadow = true;
-    inspectorGroup.add(vestMesh);
-
-    // Горизонтальные светоотражающие полосы ГОСТ
-    [1.18, 1.34].forEach(y => {
-      const stripeH = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.20, 0.05, 20), scotchliteMat);
-      stripeH.scale.set(1.095, 1.0, 0.595);
-      stripeH.position.set(0, y, 0);
-      inspectorGroup.add(stripeH);
-    });
-
-    // Вертикальные плечевые светоотражающие полосы жилета
-    [-0.09, 0.09].forEach(x => {
-      const stripeVFront = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.24, 0.015), scotchliteMat);
-      stripeVFront.position.set(x, 1.49, 0.135);
-      inspectorGroup.add(stripeVFront);
-
-      const stripeVBack = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.24, 0.015), scotchliteMat);
-      stripeVBack.position.set(x, 1.49, -0.135);
-      inspectorGroup.add(stripeVBack);
-
-      const stripeVTop = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.015, 0.27), scotchliteMat);
-      stripeVTop.position.set(x, 1.625, 0);
-      inspectorGroup.add(stripeVTop);
-    });
-
-    // Световозвращающий шеврон «ДПС» на спине
-    const dpsBack = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.075, 0.015), uniformMat);
-    dpsBack.position.set(0, 1.48, -0.142);
-    inspectorGroup.add(dpsBack);
-
-    // Нагрудный жетон/шеврон инспектора слева на груди
-    const badge = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.048, 0.015), uniformMat);
-    badge.position.set(-0.09, 1.50, 0.142);
-    inspectorGroup.add(badge);
-
-    // Форменный галстук ДПС по центру рубашки
-    const tie = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.15, 0.015), uniformMat);
-    tie.position.set(0, 1.55, 0.138);
-    inspectorGroup.add(tie);
-
-    // Погоны на плечах с золотистыми лычками
-    [-0.19, 0.19].forEach(x => {
-      const epaulet = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.016, 0.13), uniformMat);
-      epaulet.position.set(x, 1.63, 0);
-      inspectorGroup.add(epaulet);
-
-      const epauletStripe = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.018, 0.018), goldMat);
-      epauletStripe.position.set(x, 1.632, 0);
-      inspectorGroup.add(epauletStripe);
-    });
-
-    // --- 5. Шея и голова ---
-    // Воротник формы
-    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.092, 0.06, 16), uniformMat);
-    collar.position.set(0, 1.66, 0);
-    inspectorGroup.add(collar);
-
-    // Шея
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.075, 0.10, 14), skinMat);
-    neck.position.set(0, 1.72, 0);
-    inspectorGroup.add(neck);
-
-    // Голова (анатомический овал лица)
-    headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.125, 18, 16), skinMat);
-    headMesh.scale.set(0.88, 1.14, 0.96);
-    headMesh.position.set(0, 1.86, 0);
-    headMesh.castShadow = true;
-    inspectorGroup.add(headMesh);
-
-    // Прическа / волосы под фуражкой
-    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.128, 16, 12), hairMat);
-    hair.scale.set(0.89, 1.05, 0.98);
-    hair.position.set(0, 1.88, -0.02);
-    inspectorGroup.add(hair);
-
-    // Уши
-    [-0.115, 0.115].forEach(x => {
-      const ear = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.042, 0.028), skinMat);
-      ear.position.set(x, 1.86, -0.01);
-      inspectorGroup.add(ear);
-    });
-
-    // Глаза
-    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 8), leatherMat);
-    eyeL.position.set(-0.046, 1.87, 0.115);
-    inspectorGroup.add(eyeL);
-
-    const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 8), leatherMat);
-    eyeR.position.set(0.046, 1.87, 0.115);
-    inspectorGroup.add(eyeR);
-
-    // Брови
-    const browL = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.008, 0.01), leatherMat);
-    browL.position.set(-0.046, 1.895, 0.118);
-    browL.rotation.z = -0.06;
-    inspectorGroup.add(browL);
-
-    const browR = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.008, 0.01), leatherMat);
-    browR.position.set(0.046, 1.895, 0.118);
-    browR.rotation.z = 0.06;
-    inspectorGroup.add(browR);
-
-    // Нос
-    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.038, 0.025), skinMat);
-    nose.position.set(0, 1.85, 0.128);
-    inspectorGroup.add(nose);
-
-    // --- 6. Фуражка инспектора ДПС (классическая уставная фуражка РФ) ---
-    // Околыш (черная стойка фуражки)
-    const capBand = new THREE.Mesh(new THREE.CylinderGeometry(0.138, 0.138, 0.045, 22), leatherMat);
-    capBand.position.set(0, 1.94, 0);
-    inspectorGroup.add(capBand);
-
-    // Золотой филигранный витой шнур над козырьком
-    const capCord = new THREE.Mesh(new THREE.TorusGeometry(0.139, 0.006, 8, 22), goldMat);
-    capCord.rotation.x = Math.PI / 2;
-    capCord.position.set(0, 1.93, 0.018);
-    inspectorGroup.add(capCord);
-
-    // Золотая кокарда ДПС по центру
-    const cockade = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.015, 14), goldMat);
-    cockade.rotation.x = Math.PI / 2;
-    cockade.position.set(0, 1.95, 0.14);
-    inspectorGroup.add(cockade);
-
-    // Тулья фуражки (расширяющаяся кверху, темно-синяя, слегка наклонена назад)
-    const capCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.14, 0.07, 22), uniformMat);
-    capCrown.position.set(0, 1.99, -0.015);
-    capCrown.rotation.x = -0.06;
-    inspectorGroup.add(capCrown);
-
-    // Красный кант по верхнему ободу тульи
-    const capPiping = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.006, 6, 24), stripePantsMat);
-    capPiping.rotation.x = Math.PI / 2 - 0.06;
-    capPiping.position.set(0, 2.025, -0.017);
-    inspectorGroup.add(capPiping);
-
-    // Черный лакированный козырек
-    const capVisor = new THREE.Mesh(new THREE.BoxGeometry(0.165, 0.015, 0.09), leatherMat);
-    capVisor.position.set(0, 1.92, 0.135);
-    capVisor.rotation.x = 0.28;
-    inspectorGroup.add(capVisor);
-
-    // --- 7. Левая рука (плечевой шарнир на анатомическом расстоянии) ---
-    leftArmPivot = new THREE.Group();
-    leftArmPivot.position.set(-0.25, 1.60, 0);
-
-    const leftArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.052, 0.52, 14), uniformMat);
-    leftArmMesh.position.set(0, -0.26, 0);
-    leftArmMesh.castShadow = true;
-    leftArmPivot.add(leftArmMesh);
-
-    // Шеврон на левом рукаве
-    const patchL = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.065, 0.05), uniformMat);
-    patchL.position.set(-0.06, -0.12, 0);
-    leftArmPivot.add(patchL);
-
-    // Светоотражающая полоса на манжете рукава
-    const armStripeL = new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.054, 0.04, 14), scotchliteMat);
-    armStripeL.position.set(0, -0.42, 0);
-    leftArmPivot.add(armStripeL);
-
-    // Кисть в белой перчатке регулировщика
-    const gloveL = new THREE.Group();
-    const cuffL = new THREE.Mesh(new THREE.CylinderGeometry(0.054, 0.050, 0.05, 14), gloveMat);
-    cuffL.position.set(0, -0.52, 0);
-    gloveL.add(cuffL);
-
-    const handPalmL = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.085, 0.042), gloveMat);
-    handPalmL.position.set(0, -0.58, 0);
-    gloveL.add(handPalmL);
-
-    const thumbL = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.045, 0.024), gloveMat);
-    thumbL.position.set(0.038, -0.56, 0.01);
-    thumbL.rotation.z = -0.25;
-    gloveL.add(thumbL);
-
-    leftArmPivot.add(gloveL);
-    inspectorGroup.add(leftArmPivot);
-
-    // --- 8. Правая рука с жезлом регулировщика ---
-    rightArmPivot = new THREE.Group();
-    rightArmPivot.position.set(0.25, 1.60, 0);
-
-    const rightArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.052, 0.52, 14), uniformMat);
-    rightArmMesh.position.set(0, -0.26, 0);
-    rightArmMesh.castShadow = true;
-    rightArmPivot.add(rightArmMesh);
-
-    // Шеврон на правом рукаве
-    const patchR = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.065, 0.05), uniformMat);
-    patchR.position.set(0.06, -0.12, 0);
-    rightArmPivot.add(patchR);
-
-    // Светоотражающая полоса на правом рукаве
-    const armStripeR = new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.054, 0.04, 14), scotchliteMat);
-    armStripeR.position.set(0, -0.42, 0);
-    rightArmPivot.add(armStripeR);
-
-    // Кисть в белой перчатке регулировщика
-    const gloveR = new THREE.Group();
-    const cuffR = new THREE.Mesh(new THREE.CylinderGeometry(0.054, 0.050, 0.05, 14), gloveMat);
-    cuffR.position.set(0, -0.52, 0);
-    gloveR.add(cuffR);
-
-    const handPalmR = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.085, 0.042), gloveMat);
-    handPalmR.position.set(0, -0.58, 0);
-    gloveR.add(handPalmR);
-
-    const thumbR = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.045, 0.024), gloveMat);
-    thumbR.position.set(-0.038, -0.56, 0.01);
-    thumbR.rotation.z = 0.25;
-    gloveR.add(thumbR);
-
-    rightArmPivot.add(gloveR);
-
-    // Жезл регулировщика (сидит прямо в правой ладони)
-    batonMesh = buildBaton();
-    batonMesh.position.set(0, -0.58, 0);
-    rightArmPivot.add(batonMesh);
-
-    inspectorGroup.add(rightArmPivot);
-
+    inspectorGroup = window.PDD_CONTROLLER.create('right_arm_forward');
+    const rig = inspectorGroup.controllerRig;
+    leftArmPivot = rig.left; rightArmPivot = rig.right; vestMesh = rig.vest;
     scene.add(inspectorGroup);
   }
 
-  function buildBaton() {
-    const batonGroup = new THREE.Group();
-    const handleMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 });
-    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.2 });
-    const redTipMat = new THREE.MeshBasicMaterial({ color: 0xFF1744 });
-
-    // Рукоятка жезла сидит в перчатке инспектора
-    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.024, 0.15, 14), handleMat);
-    handle.position.set(0, 0, 0);
-    batonGroup.add(handle);
-
-    // Темляк (ремешок на запястье)
-    const strap = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.005, 8, 16), handleMat);
-    strap.rotation.x = Math.PI / 2;
-    strap.position.set(0, 0.065, 0);
-    batonGroup.add(strap);
-
-    // 4 чередующиеся черно-белые полосы (ГОСТ) вдоль оси жезла (-Y)
-    for (let i = 0; i < 4; i++) {
-      const mat = (i % 2 === 0) ? whiteMat : handleMat;
-      const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.09, 14), mat);
-      stripe.position.set(0, -0.12 - i * 0.09, 0);
-      batonGroup.add(stripe);
-    }
-
-    // Красный светящийся торец на конце жезла
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.026, 12, 12), redTipMat);
-    tip.position.set(0, -0.49, 0);
-    batonGroup.add(tip);
-
-    // Подсветка кончика жезла
-    const tipLight = new THREE.PointLight(0xFF1744, 0.6, 1.2);
-    tipLight.position.set(0, -0.49, 0);
-    batonGroup.add(tipLight);
-
-    return batonGroup;
-  }
-
-  // --- Автомобиль игрока (модель из игры) и трамвай ---
   function buildVehicles() {
     // 1. Легковой автомобиль (использует официальную систему моделей PDD_VEHICLES)
     if (window.PDD_VEHICLES && typeof window.PDD_VEHICLES.create === 'function') {
@@ -1593,20 +1247,13 @@
         break;
     }
 
-    // Положение рук инспектора
-    if (gesture === GESTURES.ARM_UP) {
-      // 1. Рука поднята вверх: правая вверх (жезл строго вертикально), левая опущена
-      targetRightArm.set(0, 0, Math.PI);
-      targetLeftArm.set(0, 0, 0);
-    } else if (gesture === GESTURES.HANDS_DOWN) {
-      // 2. Руки опущены или вытянуты в стороны
-      targetLeftArm.set(0, 0, -Math.PI / 2);
-      targetRightArm.set(0, 0, Math.PI / 2);
-    } else if (gesture === GESTURES.RIGHT_ARM_FORWARD) {
-      // 3. Правая рука вытянута вперед, левая опущена
-      targetRightArm.set(-Math.PI / 2, 0, 0);
-      targetLeftArm.set(0, 0, 0);
-    }
+    const pose = gesture === GESTURES.ARM_UP ? 'arm_up'
+      : gesture === GESTURES.RIGHT_ARM_FORWARD ? 'right_arm_forward'
+      : gesture === GESTURES.HANDS_SIDES ? 'arms_sides' : 'arms_down';
+    const angles = window.PDD_CONTROLLER.poses[pose];
+    targetLeftArm.set(...angles.left);
+    targetRightArm.set(...angles.right);
+    inspectorGroup.userData.pose = pose;
 
     // Переключение видимости авто/трамвая
     if (carMesh && tramMesh) {
@@ -1803,18 +1450,25 @@
   }
 
   // --- Главный цикл анимации ---
-  function animate() {
+  let lastRenderedAt = 0;
+  function animate(timestamp) {
     requestAnimationFrame(animate);
+    const now = timestamp || performance.now();
+    // A stationary question needs only 30 FPS on a weak phone. Maneuvers
+    // still use every frame; interpolation below is independent of FPS.
+    if (weak && !isMoving && now - lastRenderedAt < 32) return;
+    lastRenderedAt = now;
 
-    const delta = clock.getDelta();
-    const time = clock.getElapsedTime();
+    const delta = Math.min(clock.getDelta(), 0.05);
+    const time = clock.elapsedTime;
+    const poseBlend = 1 - Math.exp(-8 * delta);
 
     // Плавное вращение камеры
     camAngle += (targetAngle - camAngle) * 0.08;
     updateCameraPosition();
 
     // Плавный поворот регулировщика к целевому направлению
-    curInspectorRotY += (targetInspectorRotY - curInspectorRotY) * 0.12;
+    curInspectorRotY += (targetInspectorRotY - curInspectorRotY) * poseBlend;
     if (inspectorGroup) {
       inspectorGroup.rotation.y = curInspectorRotY;
     }
@@ -1826,16 +1480,16 @@
     }
 
     // Плавная интерполяция рук регулировщика
-    curLeftArm.x += (targetLeftArm.x - curLeftArm.x) * 0.12;
-    curLeftArm.y += (targetLeftArm.y - curLeftArm.y) * 0.12;
-    curLeftArm.z += (targetLeftArm.z - curLeftArm.z) * 0.12;
+    curLeftArm.x += (targetLeftArm.x - curLeftArm.x) * poseBlend;
+    curLeftArm.y += (targetLeftArm.y - curLeftArm.y) * poseBlend;
+    curLeftArm.z += (targetLeftArm.z - curLeftArm.z) * poseBlend;
     if (leftArmPivot) {
       leftArmPivot.rotation.set(curLeftArm.x, curLeftArm.y, curLeftArm.z);
     }
 
-    curRightArm.x += (targetRightArm.x - curRightArm.x) * 0.12;
-    curRightArm.y += (targetRightArm.y - curRightArm.y) * 0.12;
-    curRightArm.z += (targetRightArm.z - curRightArm.z) * 0.12;
+    curRightArm.x += (targetRightArm.x - curRightArm.x) * poseBlend;
+    curRightArm.y += (targetRightArm.y - curRightArm.y) * poseBlend;
+    curRightArm.z += (targetRightArm.z - curRightArm.z) * poseBlend;
     if (rightArmPivot) {
       rightArmPivot.rotation.set(curRightArm.x, curRightArm.y, curRightArm.z);
     }
@@ -1880,6 +1534,7 @@
       }
     }
 
+    if (leaves) leaves.update(Math.min(delta, 0.05), { enabled: seasonName === 'autumn', centre: leafCentre });
     renderer.render(scene, camera);
   }
 
@@ -1896,6 +1551,8 @@
   // Экспорт API для вызова из Flutter
   window.TrafficControllerGame = {
     setScenario,
+    getAllowedMoves,
+    getState() { return {gesture: currentGesture, approach: currentApproach, vehicle: currentVehicle, season: seasonName, pose: inspectorGroup?.userData.pose, rightHandX: rightArmPivot?.position.x, leafCount: leaves?.mesh?.count || 0, drawCalls: renderer.info.render.calls}; },
     makeMove,
     setMode(mode) {
       currentMode = mode;

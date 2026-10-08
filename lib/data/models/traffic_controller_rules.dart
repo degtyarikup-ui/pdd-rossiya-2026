@@ -5,8 +5,11 @@ library;
 
 /// Жест регулировщика
 enum ControllerGesture {
-  /// Руки вытянуты в стороны или опущены
-  handsDownOrSides,
+  /// Руки вытянуты в стороны
+  handsSides,
+
+  /// Руки опущены (то же правило, отдельная визуальная поза).
+  handsDown,
 
   /// Правая рука вытянута вперёд
   rightArmForward,
@@ -63,7 +66,8 @@ class TrafficControllerRules {
     }
 
     // 2. Руки вытянуты в стороны или опущены
-    if (gesture == ControllerGesture.handsDownOrSides) {
+    if (gesture == ControllerGesture.handsSides ||
+        gesture == ControllerGesture.handsDown) {
       switch (approach) {
         case ApproachDirection.left:
         case ApproachDirection.right:
@@ -147,7 +151,8 @@ class TrafficControllerRules {
       }
     }
 
-    if (gesture == ControllerGesture.handsDownOrSides) {
+    if (gesture == ControllerGesture.handsSides ||
+        gesture == ControllerGesture.handsDown) {
       switch (approach) {
         case ApproachDirection.front:
         case ApproachDirection.back:

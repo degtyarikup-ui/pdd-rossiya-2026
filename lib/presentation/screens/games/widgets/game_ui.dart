@@ -230,6 +230,7 @@ class GameRoundButton extends StatelessWidget {
     required this.color,
     required this.surface,
     required this.onTap,
+    this.iconColor,
     this.label,
     this.size = 76,
   });
@@ -238,6 +239,7 @@ class GameRoundButton extends StatelessWidget {
   final String? label;
   final Color color;
   final Color surface;
+  final Color? iconColor;
   final VoidCallback onTap;
   final double size;
 
@@ -255,7 +257,7 @@ class GameRoundButton extends StatelessWidget {
             child: SizedBox(
               width: size,
               height: size,
-              child: Icon(icon, size: size * 0.46, color: color),
+              child: Icon(icon, size: size * 0.46, color: iconColor ?? color),
             ),
           ),
         ),

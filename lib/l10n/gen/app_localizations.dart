@@ -3195,6 +3195,1554 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Наберите 1000, 2500, 5000 и 7500 очков за одну игру в «Знак-свайпер».'**
   String get achievementDescSignSwiper;
+
+  /// No description provided for @gameSignQuestionScope.
+  ///
+  /// In ru, this message translates to:
+  /// **'Других знаков и запретов нет'**
+  String get gameSignQuestionScope;
+
+  /// No description provided for @gameTrafficSignalQuestion.
+  ///
+  /// In ru, this message translates to:
+  /// **'Что разрешает сигнал?'**
+  String get gameTrafficSignalQuestion;
+
+  /// No description provided for @gameSignScenario1_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак предупреждает о переезде со шлагбаумом?'**
+  String get gameSignScenario1_1_0Prompt;
+
+  /// No description provided for @gameSignScenario1_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Впереди железнодорожный переезд со шлагбаумом.'**
+  String get gameSignScenario1_1_0Explanation;
+
+  /// No description provided for @gameSignScenario1_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно обгонять за 80 м до переезда?'**
+  String get gameSignScenario1_1_1Prompt;
+
+  /// No description provided for @gameSignScenario1_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Обгон запрещён на переезде и за 100 м до него (п. 11.4).'**
+  String get gameSignScenario1_1_1Explanation;
+
+  /// No description provided for @gameSignScenario1_1_2Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно оставить машину в 30 м от переезда?'**
+  String get gameSignScenario1_1_2Prompt;
+
+  /// No description provided for @gameSignScenario1_1_2Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Стоянка запрещена ближе 50 м от переезда (п. 12.5).'**
+  String get gameSignScenario1_1_2Explanation;
+
+  /// No description provided for @gameSignScenario1_2_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Впереди переезд без шлагбаума?'**
+  String get gameSignScenario1_2_0Prompt;
+
+  /// No description provided for @gameSignScenario1_2_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Знак предупреждает о переезде без шлагбаума.'**
+  String get gameSignScenario1_2_0Explanation;
+
+  /// No description provided for @gameSignScenario1_2_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно развернуться на переезде?'**
+  String get gameSignScenario1_2_1Prompt;
+
+  /// No description provided for @gameSignScenario1_2_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. На переезде запрещены разворот и движение задним ходом (пп. 8.11–8.12).'**
+  String get gameSignScenario1_2_1Explanation;
+
+  /// No description provided for @gameSignScenario1_3_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'На переезде один железнодорожный путь?'**
+  String get gameSignScenario1_3_1_0Prompt;
+
+  /// No description provided for @gameSignScenario1_3_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Этот знак обозначает переезд с одним путём, без шлагбаума.'**
+  String get gameSignScenario1_3_1_0Explanation;
+
+  /// No description provided for @gameSignScenario1_3_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак ставят за 150–300 м до переезда?'**
+  String get gameSignScenario1_3_1_1Prompt;
+
+  /// No description provided for @gameSignScenario1_3_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Знак 1.3.1 ставят непосредственно перед переездом.'**
+  String get gameSignScenario1_3_1_1Explanation;
+
+  /// No description provided for @gameSignScenario1_5_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Трамвай пересекает дорогу вне перекрёстка, не из депо. Нужно уступить?'**
+  String get gameSignScenario1_5_0Prompt;
+
+  /// No description provided for @gameSignScenario1_5_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Вне перекрёстка трамвай имеет преимущество, кроме выезда из депо (п. 18.1).'**
+  String get gameSignScenario1_5_0Explanation;
+
+  /// No description provided for @gameSignScenario1_5_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Трамвай выезжает из депо. Он должен уступить автомобилям?'**
+  String get gameSignScenario1_5_1Prompt;
+
+  /// No description provided for @gameSignScenario1_5_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. При выезде из депо трамвай уступает другим транспортным средствам (п. 18.1).'**
+  String get gameSignScenario1_5_1Explanation;
+
+  /// No description provided for @gameSignScenario1_6_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Без светофора на равнозначном перекрёстке нужно уступить автомобилю справа?'**
+  String get gameSignScenario1_6_0Prompt;
+
+  /// No description provided for @gameSignScenario1_6_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. На нерегулируемом равнозначном перекрёстке уступают автомобилям справа (п. 13.11).'**
+  String get gameSignScenario1_6_0Explanation;
+
+  /// No description provided for @gameSignScenario1_6_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно обгонять на равнозначном перекрёстке без светофора?'**
+  String get gameSignScenario1_6_1Prompt;
+
+  /// No description provided for @gameSignScenario1_6_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. На нерегулируемом перекрёстке обгон разрешён только при движении по главной дороге (п. 11.4).'**
+  String get gameSignScenario1_6_1Explanation;
+
+  /// No description provided for @gameSignScenario1_7_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Впереди перекрёсток с круговым движением?'**
+  String get gameSignScenario1_7_0Prompt;
+
+  /// No description provided for @gameSignScenario1_7_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Знак предупреждает о приближении к круговому перекрёстку.'**
+  String get gameSignScenario1_7_0Explanation;
+
+  /// No description provided for @gameSignScenario1_7_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Круговое движение начинается прямо у этого знака?'**
+  String get gameSignScenario1_7_1Prompt;
+
+  /// No description provided for @gameSignScenario1_7_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Это предупреждение. Направление движения на самом круге задаёт знак 4.3.'**
+  String get gameSignScenario1_7_1Explanation;
+
+  /// No description provided for @gameSignScenario1_11_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно развернуться, если дорогу видно только на 70 м?'**
+  String get gameSignScenario1_11_1_0Prompt;
+
+  /// No description provided for @gameSignScenario1_11_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Для разворота видимость должна быть не менее 100 м в каждом направлении (п. 8.11).'**
+  String get gameSignScenario1_11_1_0Explanation;
+
+  /// No description provided for @gameSignScenario1_11_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перед опасным поворотом нужно выбрать безопасную скорость?'**
+  String get gameSignScenario1_11_1_1Prompt;
+
+  /// No description provided for @gameSignScenario1_11_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Скорость выбирают с учётом поворота и видимости дороги (п. 10.1).'**
+  String get gameSignScenario1_11_1_1Explanation;
+
+  /// No description provided for @gameSignScenario1_23_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Здесь на дорогу могут неожиданно выйти дети?'**
+  String get gameSignScenario1_23_0Prompt;
+
+  /// No description provided for @gameSignScenario1_23_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Знак предупреждает об участке, где на дороге могут появиться дети.'**
+  String get gameSignScenario1_23_0Explanation;
+
+  /// No description provided for @gameSignScenario1_23_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак разрешает детям переходить дорогу где угодно?'**
+  String get gameSignScenario1_23_1Prompt;
+
+  /// No description provided for @gameSignScenario1_23_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Знак предупреждает водителей, но не меняет правила перехода дороги.'**
+  String get gameSignScenario1_23_1Explanation;
+
+  /// No description provided for @gameSignScenario1_25_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Временный знак на жёлтом фоне важнее постоянного, если они противоречат?'**
+  String get gameSignScenario1_25_0Prompt;
+
+  /// No description provided for @gameSignScenario1_25_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. При противоречии временных и постоянных знаков выполняют требование временного.'**
+  String get gameSignScenario1_25_0Explanation;
+
+  /// No description provided for @gameSignScenario1_25_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перед знаком дорожных работ обязательно остановиться?'**
+  String get gameSignScenario1_25_1Prompt;
+
+  /// No description provided for @gameSignScenario1_25_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Сам знак не требует остановки. Нужно учитывать дорожные работы и выбрать безопасную скорость.'**
+  String get gameSignScenario1_25_1Explanation;
+
+  /// No description provided for @gameSignScenario2_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Без светофора вы имеете преимущество перед машиной со второстепенной?'**
+  String get gameSignScenario2_1_0Prompt;
+
+  /// No description provided for @gameSignScenario2_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. На нерегулируемом перекрёстке главная дорога даёт преимущество перед второстепенной (п. 13.9).'**
+  String get gameSignScenario2_1_0Explanation;
+
+  /// No description provided for @gameSignScenario2_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно ехать на красный, если вы на главной дороге?'**
+  String get gameSignScenario2_1_1Prompt;
+
+  /// No description provided for @gameSignScenario2_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. На регулируемом перекрёстке нужно выполнять сигналы светофора (п. 6.15).'**
+  String get gameSignScenario2_1_1Explanation;
+
+  /// No description provided for @gameSignScenario2_1_2Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно оставить машину на проезжей части главной дороги вне населённого пункта?'**
+  String get gameSignScenario2_1_2Prompt;
+
+  /// No description provided for @gameSignScenario2_1_2Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. На таких дорогах стоянка на проезжей части вне населённого пункта запрещена (п. 12.5).'**
+  String get gameSignScenario2_1_2Explanation;
+
+  /// No description provided for @gameSignScenario2_2_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак обозначает конец главной дороги?'**
+  String get gameSignScenario2_2_0Prompt;
+
+  /// No description provided for @gameSignScenario2_2_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Преимущество, которое давал знак «Главная дорога», заканчивается.'**
+  String get gameSignScenario2_2_0Explanation;
+
+  /// No description provided for @gameSignScenario2_2_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак сам по себе требует остановиться?'**
+  String get gameSignScenario2_2_1Prompt;
+
+  /// No description provided for @gameSignScenario2_2_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Он отменяет статус главной дороги. Порядок проезда определяют другие знаки и правила.'**
+  String get gameSignScenario2_2_1Explanation;
+
+  /// No description provided for @gameSignScenario2_3_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Без светофора машина с пересекаемой дороги должна уступить вам?'**
+  String get gameSignScenario2_3_1_0Prompt;
+
+  /// No description provided for @gameSignScenario2_3_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Знак показывает пересечение главной дороги со второстепенной (п. 13.9).'**
+  String get gameSignScenario2_3_1_0Explanation;
+
+  /// No description provided for @gameSignScenario2_3_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Без светофора нужно уступить машине справа со второстепенной дороги?'**
+  String get gameSignScenario2_3_1_1Prompt;
+
+  /// No description provided for @gameSignScenario2_3_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Преимущество у вас: вы на главной дороге. Правило «помехи справа» здесь не применяется.'**
+  String get gameSignScenario2_3_1_1Explanation;
+
+  /// No description provided for @gameSignScenario2_4_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Без светофора нужно уступить машинам на пересекаемой дороге?'**
+  String get gameSignScenario2_4_0Prompt;
+
+  /// No description provided for @gameSignScenario2_4_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Знак требует уступить машинам на пересекаемой дороге. При табличке 8.13 — машинам на главной дороге.'**
+  String get gameSignScenario2_4_0Explanation;
+
+  /// No description provided for @gameSignScenario2_4_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дорога свободна. Перед этим знаком всё равно нужно остановиться?'**
+  String get gameSignScenario2_4_1Prompt;
+
+  /// No description provided for @gameSignScenario2_4_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Обязательной остановки нет, если вы никому не мешаете.'**
+  String get gameSignScenario2_4_1Explanation;
+
+  /// No description provided for @gameSignScenario2_4_2Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оба на второстепенной: вы прямо, встречный налево. Он должен уступить?'**
+  String get gameSignScenario2_4_2Prompt;
+
+  /// No description provided for @gameSignScenario2_4_2Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. При равном приоритете встречный автомобиль, поворачивающий налево, уступает едущему прямо (п. 13.12).'**
+  String get gameSignScenario2_4_2Explanation;
+
+  /// No description provided for @gameSignScenario2_5_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перед STOP нужно остановиться, даже если дорога свободна?'**
+  String get gameSignScenario2_5_0Prompt;
+
+  /// No description provided for @gameSignScenario2_5_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Остановитесь перед стоп-линией, а если её нет — перед краем пересекаемой проезжей части. У переезда без стоп-линии — перед знаком.'**
+  String get gameSignScenario2_5_0Explanation;
+
+  /// No description provided for @gameSignScenario2_5_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно проехать STOP без остановки, если всё хорошо видно?'**
+  String get gameSignScenario2_5_1Prompt;
+
+  /// No description provided for @gameSignScenario2_5_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Знак требует полной остановки даже при свободной дороге.'**
+  String get gameSignScenario2_5_1Explanation;
+
+  /// No description provided for @gameSignScenario2_6_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Въезд помешает встречной машине. Нужно уступить?'**
+  String get gameSignScenario2_6_0Prompt;
+
+  /// No description provided for @gameSignScenario2_6_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Нельзя въезжать на узкий участок, если это затруднит встречное движение.'**
+  String get gameSignScenario2_6_0Explanation;
+
+  /// No description provided for @gameSignScenario2_6_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак даёт вам преимущество перед встречными?'**
+  String get gameSignScenario2_6_1Prompt;
+
+  /// No description provided for @gameSignScenario2_6_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Преимущество у встречного транспорта.'**
+  String get gameSignScenario2_6_1Explanation;
+
+  /// No description provided for @gameSignScenario2_7_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'На узком участке преимущество у вас?'**
+  String get gameSignScenario2_7_0Prompt;
+
+  /// No description provided for @gameSignScenario2_7_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Этот знак даёт преимущество перед встречными машинами.'**
+  String get gameSignScenario2_7_0Explanation;
+
+  /// No description provided for @gameSignScenario2_7_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак даёт преимущество встречной машине?'**
+  String get gameSignScenario2_7_1Prompt;
+
+  /// No description provided for @gameSignScenario2_7_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Преимущество у транспорта, движущегося в вашем направлении.'**
+  String get gameSignScenario2_7_1Explanation;
+
+  /// No description provided for @gameSignScenario3_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак запрещает въезд обычному такси?'**
+  String get gameSignScenario3_1_0Prompt;
+
+  /// No description provided for @gameSignScenario3_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Такси и каршеринг должны выполнять запрет. Исключение — маршрутный транспорт.'**
+  String get gameSignScenario3_1_0Explanation;
+
+  /// No description provided for @gameSignScenario3_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно въехать, только потому что вы живёте за знаком?'**
+  String get gameSignScenario3_1_1Prompt;
+
+  /// No description provided for @gameSignScenario3_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Для жителей исключения нет. Не путайте этот знак со знаком «Движение запрещено».'**
+  String get gameSignScenario3_1_1Explanation;
+
+  /// No description provided for @gameSignScenario3_1_2Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно въехать маршрутному автобусу на своём маршруте?'**
+  String get gameSignScenario3_1_2Prompt;
+
+  /// No description provided for @gameSignScenario3_1_2Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Запрет этого знака не действует на маршрутные транспортные средства.'**
+  String get gameSignScenario3_1_2Explanation;
+
+  /// No description provided for @gameSignScenario3_2_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно проехать к своему дому в зоне этого знака?'**
+  String get gameSignScenario3_2_0Prompt;
+
+  /// No description provided for @gameSignScenario3_2_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Жителям разрешён проезд к дому. Въезжать и выезжать нужно на ближайшем к нему перекрёстке.'**
+  String get gameSignScenario3_2_0Explanation;
+
+  /// No description provided for @gameSignScenario3_2_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно проехать эту зону насквозь на обычном автомобиле?'**
+  String get gameSignScenario3_2_1Prompt;
+
+  /// No description provided for @gameSignScenario3_2_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Знак запрещает движение. Проезд жителей и обслуживающих машин — исключения для доступа к месту назначения.'**
+  String get gameSignScenario3_2_1Explanation;
+
+  /// No description provided for @gameSignScenario3_2_2Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак запрещает проезд водителю с инвалидностью I группы и знаком «Инвалид»?'**
+  String get gameSignScenario3_2_2Prompt;
+
+  /// No description provided for @gameSignScenario3_2_2Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Знак не действует на машины водителей с инвалидностью I–II групп или перевозящие их и детей-инвалидов, со знаком «Инвалид».'**
+  String get gameSignScenario3_2_2Explanation;
+
+  /// No description provided for @gameSignScenario3_4_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак запрещает движение легковых автомобилей?'**
+  String get gameSignScenario3_4_0Prompt;
+
+  /// No description provided for @gameSignScenario3_4_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Он ограничивает движение грузовиков, тракторов и самоходных машин.'**
+  String get gameSignScenario3_4_0Explanation;
+
+  /// No description provided for @gameSignScenario3_4_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно обычному грузовику с разрешённой массой 5 т проехать под этот знак?'**
+  String get gameSignScenario3_4_1Prompt;
+
+  /// No description provided for @gameSignScenario3_4_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. На показанном знаке указан порог 8 т. Разрешённая максимальная масса 5 т его не превышает.'**
+  String get gameSignScenario3_4_1Explanation;
+
+  /// No description provided for @gameSignScenario3_18_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак запрещает поворот налево?'**
+  String get gameSignScenario3_18_1_0Prompt;
+
+  /// No description provided for @gameSignScenario3_18_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Он запрещает только поворот направо на ближайшем пересечении проезжих частей.'**
+  String get gameSignScenario3_18_1_0Explanation;
+
+  /// No description provided for @gameSignScenario3_18_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно повернуть направо на ближайшем пересечении?'**
+  String get gameSignScenario3_18_1_1Prompt;
+
+  /// No description provided for @gameSignScenario3_18_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Поворот направо на ближайшем пересечении запрещён.'**
+  String get gameSignScenario3_18_1_1Explanation;
+
+  /// No description provided for @gameSignScenario3_18_2_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак запрещает разворот?'**
+  String get gameSignScenario3_18_2_0Prompt;
+
+  /// No description provided for @gameSignScenario3_18_2_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Он запрещает поворот налево, но сам по себе не запрещает разворот.'**
+  String get gameSignScenario3_18_2_0Explanation;
+
+  /// No description provided for @gameSignScenario3_18_2_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно повернуть налево на ближайшем пересечении?'**
+  String get gameSignScenario3_18_2_1Prompt;
+
+  /// No description provided for @gameSignScenario3_18_2_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Поворот налево на ближайшем пересечении запрещён.'**
+  String get gameSignScenario3_18_2_1Explanation;
+
+  /// No description provided for @gameSignScenario3_19_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак запрещает поворот налево?'**
+  String get gameSignScenario3_19_0Prompt;
+
+  /// No description provided for @gameSignScenario3_19_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Он запрещает только разворот.'**
+  String get gameSignScenario3_19_0Explanation;
+
+  /// No description provided for @gameSignScenario3_19_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно развернуться в месте действия этого знака?'**
+  String get gameSignScenario3_19_1Prompt;
+
+  /// No description provided for @gameSignScenario3_19_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Разворот запрещён.'**
+  String get gameSignScenario3_19_1Explanation;
+
+  /// No description provided for @gameSignScenario3_20_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак разрешает обгон тихоходной машины с соответствующим знаком?'**
+  String get gameSignScenario3_20_0Prompt;
+
+  /// No description provided for @gameSignScenario3_20_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Тихоходные машины — исключение из запрета знака 3.20. Другие запреты обгона и разметку тоже нужно учитывать.'**
+  String get gameSignScenario3_20_0Explanation;
+
+  /// No description provided for @gameSignScenario3_20_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно обогнать обычную легковую машину, если она едет всего 25 км/ч?'**
+  String get gameSignScenario3_20_1Prompt;
+
+  /// No description provided for @gameSignScenario3_20_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Низкая скорость не делает легковой автомобиль тихоходным транспортным средством.'**
+  String get gameSignScenario3_20_1Explanation;
+
+  /// No description provided for @gameSignScenario3_20_2Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак разрешает обгон мотоцикла без коляски?'**
+  String get gameSignScenario3_20_2Prompt;
+
+  /// No description provided for @gameSignScenario3_20_2Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Двухколёсные мотоциклы без бокового прицепа — исключение из запрета этого знака.'**
+  String get gameSignScenario3_20_2Explanation;
+
+  /// No description provided for @gameSignScenario3_24_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Число на знаке — максимально разрешённая скорость?'**
+  String get gameSignScenario3_24_0Prompt;
+
+  /// No description provided for @gameSignScenario3_24_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Быстрее указанного ехать нельзя. При плохой видимости безопасная скорость может быть ниже.'**
+  String get gameSignScenario3_24_0Explanation;
+
+  /// No description provided for @gameSignScenario3_24_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак требует ехать не медленнее указанного числа?'**
+  String get gameSignScenario3_24_1Prompt;
+
+  /// No description provided for @gameSignScenario3_24_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Это ограничение максимальной скорости, а не минимальной.'**
+  String get gameSignScenario3_24_1Explanation;
+
+  /// No description provided for @gameSignScenario3_27_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно остановить обычную машину на минуту, чтобы высадить пассажира?'**
+  String get gameSignScenario3_27_0Prompt;
+
+  /// No description provided for @gameSignScenario3_27_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Знак запрещает остановку и стоянку. Высадка пассажира — тоже остановка.'**
+  String get gameSignScenario3_27_0Explanation;
+
+  /// No description provided for @gameSignScenario3_27_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак «Инвалид» сам по себе разрешает остановку здесь?'**
+  String get gameSignScenario3_27_1Prompt;
+
+  /// No description provided for @gameSignScenario3_27_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Льгота сама по себе не отменяет знак «Остановка запрещена». Исключение может обозначаться табличкой 8.18.'**
+  String get gameSignScenario3_27_1Explanation;
+
+  /// No description provided for @gameSignScenario3_27_2Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно оставить обычную машину под этим знаком?'**
+  String get gameSignScenario3_27_2Prompt;
+
+  /// No description provided for @gameSignScenario3_27_2Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Знак запрещает и остановку, и стоянку.'**
+  String get gameSignScenario3_27_2Explanation;
+
+  /// No description provided for @gameSignScenario3_28_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно остановиться, чтобы высадить пассажира?'**
+  String get gameSignScenario3_28_0Prompt;
+
+  /// No description provided for @gameSignScenario3_28_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Знак запрещает стоянку, но допускает остановку. Время, необходимое для посадки, высадки или погрузки, может превышать 5 минут.'**
+  String get gameSignScenario3_28_0Explanation;
+
+  /// No description provided for @gameSignScenario3_28_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно оставить обычную машину на 20 минут, без посадки и погрузки?'**
+  String get gameSignScenario3_28_1Prompt;
+
+  /// No description provided for @gameSignScenario3_28_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Это стоянка: остановка более 5 минут, не связанная с посадкой, высадкой или погрузкой (п. 1.2).'**
+  String get gameSignScenario3_28_1Explanation;
+
+  /// No description provided for @gameSignScenario3_28_2Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот запрет действует на машину со знаком «Инвалид», имеющую право на льготу?'**
+  String get gameSignScenario3_28_2Prompt;
+
+  /// No description provided for @gameSignScenario3_28_2Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. При наличии права на бесплатную парковку и знака «Инвалид» предусмотрено исключение, включая перевозку таких инвалидов и детей-инвалидов.'**
+  String get gameSignScenario3_28_2Explanation;
+
+  /// No description provided for @gameSignScenario3_29_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знаки запрета по чётным и нечётным дням стоят с двух сторон. Можно парковаться с 21 до 24 часов?'**
+  String get gameSignScenario3_29_0Prompt;
+
+  /// No description provided for @gameSignScenario3_29_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. При таком сочетании знаков с 21:00 до 24:00 — время перестановки, когда стоянка разрешена с обеих сторон.'**
+  String get gameSignScenario3_29_0Explanation;
+
+  /// No description provided for @gameSignScenario3_29_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак запрещает остановку на 3 минуты для посадки пассажира?'**
+  String get gameSignScenario3_29_1Prompt;
+
+  /// No description provided for @gameSignScenario3_29_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Он запрещает только стоянку по нечётным числам. Остановка разрешена.'**
+  String get gameSignScenario3_29_1Explanation;
+
+  /// No description provided for @gameSignScenario3_31_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак отменяет ограничения обгона и скорости?'**
+  String get gameSignScenario3_31_0Prompt;
+
+  /// No description provided for @gameSignScenario3_31_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Он завершает действие знаков 3.16, 3.20, 3.22, 3.24 и 3.26–3.30.'**
+  String get gameSignScenario3_31_0Explanation;
+
+  /// No description provided for @gameSignScenario3_31_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак отменяет сигналы светофора и разметку?'**
+  String get gameSignScenario3_31_1Prompt;
+
+  /// No description provided for @gameSignScenario3_31_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Светофоры и разметка продолжают действовать.'**
+  String get gameSignScenario3_31_1Explanation;
+
+  /// No description provided for @gameSignScenario4_1_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак стоит в начале участка. Можно повернуть направо во двор?'**
+  String get gameSignScenario4_1_1_0Prompt;
+
+  /// No description provided for @gameSignScenario4_1_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. В начале участка знак действует до ближайшего перекрёстка, но разрешает поворот направо на прилегающую территорию.'**
+  String get gameSignScenario4_1_1_0Explanation;
+
+  /// No description provided for @gameSignScenario4_1_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак стоит перед перекрёстком. Можно повернуть налево?'**
+  String get gameSignScenario4_1_1_1Prompt;
+
+  /// No description provided for @gameSignScenario4_1_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. На ближайшем пересечении проезжих частей разрешено только прямо.'**
+  String get gameSignScenario4_1_1_1Explanation;
+
+  /// No description provided for @gameSignScenario4_1_2_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'На ближайшем пересечении нужно повернуть направо?'**
+  String get gameSignScenario4_1_2_0Prompt;
+
+  /// No description provided for @gameSignScenario4_1_2_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Для обычного автомобиля знак разрешает только поворот направо.'**
+  String get gameSignScenario4_1_2_0Explanation;
+
+  /// No description provided for @gameSignScenario4_1_2_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно ехать прямо на ближайшем пересечении?'**
+  String get gameSignScenario4_1_2_1Prompt;
+
+  /// No description provided for @gameSignScenario4_1_2_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Знак разрешает только направо.'**
+  String get gameSignScenario4_1_2_1Explanation;
+
+  /// No description provided for @gameSignScenario4_1_3_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак разрешает разворот?'**
+  String get gameSignScenario4_1_3_0Prompt;
+
+  /// No description provided for @gameSignScenario4_1_3_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Знак, разрешающий поворот налево, разрешает и разворот.'**
+  String get gameSignScenario4_1_3_0Explanation;
+
+  /// No description provided for @gameSignScenario4_1_3_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно ехать прямо на ближайшем пересечении?'**
+  String get gameSignScenario4_1_3_1Prompt;
+
+  /// No description provided for @gameSignScenario4_1_3_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Знак разрешает налево и разворот.'**
+  String get gameSignScenario4_1_3_1Explanation;
+
+  /// No description provided for @gameSignScenario4_1_4_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно ехать прямо или направо?'**
+  String get gameSignScenario4_1_4_0Prompt;
+
+  /// No description provided for @gameSignScenario4_1_4_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Знак разрешает оба этих направления.'**
+  String get gameSignScenario4_1_4_0Explanation;
+
+  /// No description provided for @gameSignScenario4_1_4_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно развернуться на ближайшем пересечении?'**
+  String get gameSignScenario4_1_4_1Prompt;
+
+  /// No description provided for @gameSignScenario4_1_4_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Разрешены только прямо и направо.'**
+  String get gameSignScenario4_1_4_1Explanation;
+
+  /// No description provided for @gameSignScenario4_1_5_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно развернуться из крайней левой полосы?'**
+  String get gameSignScenario4_1_5_0Prompt;
+
+  /// No description provided for @gameSignScenario4_1_5_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Разрешённый поворот налево допускает и разворот.'**
+  String get gameSignScenario4_1_5_0Explanation;
+
+  /// No description provided for @gameSignScenario4_1_5_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно повернуть направо на ближайшем пересечении?'**
+  String get gameSignScenario4_1_5_1Prompt;
+
+  /// No description provided for @gameSignScenario4_1_5_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Знак разрешает прямо, налево и разворот.'**
+  String get gameSignScenario4_1_5_1Explanation;
+
+  /// No description provided for @gameSignScenario4_2_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Препятствие нужно объехать справа?'**
+  String get gameSignScenario4_2_1_0Prompt;
+
+  /// No description provided for @gameSignScenario4_2_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Объезд разрешён только с указанной стрелкой стороны.'**
+  String get gameSignScenario4_2_1_0Explanation;
+
+  /// No description provided for @gameSignScenario4_2_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно объехать препятствие слева, если встречных нет?'**
+  String get gameSignScenario4_2_1_1Prompt;
+
+  /// No description provided for @gameSignScenario4_2_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Отсутствие встречных не отменяет предписанную сторону объезда.'**
+  String get gameSignScenario4_2_1_1Explanation;
+
+  /// No description provided for @gameSignScenario4_3_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'По кругу нужно ехать в направлении стрелок?'**
+  String get gameSignScenario4_3_0Prompt;
+
+  /// No description provided for @gameSignScenario4_3_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Знак задаёт направление кругового движения.'**
+  String get gameSignScenario4_3_0Explanation;
+
+  /// No description provided for @gameSignScenario4_3_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно ехать по кругу против стрелок?'**
+  String get gameSignScenario4_3_1Prompt;
+
+  /// No description provided for @gameSignScenario4_3_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. По кругу едут только в указанном стрелками направлении.'**
+  String get gameSignScenario4_3_1Explanation;
+
+  /// No description provided for @gameSignScenario4_6_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак задаёт минимальную скорость?'**
+  String get gameSignScenario4_6_0Prompt;
+
+  /// No description provided for @gameSignScenario4_6_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Можно ехать с указанной или большей скоростью, соблюдая максимальный предел и безопасность.'**
+  String get gameSignScenario4_6_0Explanation;
+
+  /// No description provided for @gameSignScenario4_6_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак задаёт максимальную скорость?'**
+  String get gameSignScenario4_6_1Prompt;
+
+  /// No description provided for @gameSignScenario4_6_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Это минимальная скорость. Максимальную ограничивает знак 3.24.'**
+  String get gameSignScenario4_6_1Explanation;
+
+  /// No description provided for @gameSignScenario5_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Легковое авто без прицепа: общий предел на автомагистрали 110 км/ч?'**
+  String get gameSignScenario5_1_0Prompt;
+
+  /// No description provided for @gameSignScenario5_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Общий предел для легкового автомобиля без прицепа — 110 км/ч. Знаки могут устанавливать другой предел (п. 10.3).'**
+  String get gameSignScenario5_1_0Explanation;
+
+  /// No description provided for @gameSignScenario5_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно сдать назад на автомагистрали?'**
+  String get gameSignScenario5_1_1Prompt;
+
+  /// No description provided for @gameSignScenario5_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. На автомагистрали движение задним ходом запрещено (п. 16.1).'**
+  String get gameSignScenario5_1_1Explanation;
+
+  /// No description provided for @gameSignScenario5_1_2Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Мопеду можно на автомагистраль?'**
+  String get gameSignScenario5_1_2Prompt;
+
+  /// No description provided for @gameSignScenario5_1_2Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Движение мопедов по автомагистралям запрещено (п. 16.1).'**
+  String get gameSignScenario5_1_2Explanation;
+
+  /// No description provided for @gameSignScenario5_3_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'На этой дороге запрещено движение задним ходом?'**
+  String get gameSignScenario5_3_0Prompt;
+
+  /// No description provided for @gameSignScenario5_3_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. На дороге для автомобилей действуют запреты раздела 16, как на автомагистрали (п. 16.3).'**
+  String get gameSignScenario5_3_0Explanation;
+
+  /// No description provided for @gameSignScenario5_3_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно остановиться на обочине просто для отдыха?'**
+  String get gameSignScenario5_3_1Prompt;
+
+  /// No description provided for @gameSignScenario5_3_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Преднамеренная остановка допускается на специальных площадках. Вынужденная остановка — отдельный случай.'**
+  String get gameSignScenario5_3_1Explanation;
+
+  /// No description provided for @gameSignScenario5_5_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно сдать назад на односторонней дороге, если это безопасно и место разрешает?'**
+  String get gameSignScenario5_5_0Prompt;
+
+  /// No description provided for @gameSignScenario5_5_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Сам знак этого не запрещает. Нельзя сдавать назад на перекрёстках, переходах и в других местах из пп. 8.11–8.12.'**
+  String get gameSignScenario5_5_0Explanation;
+
+  /// No description provided for @gameSignScenario5_5_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно развернуться и ехать против одностороннего движения?'**
+  String get gameSignScenario5_5_1Prompt;
+
+  /// No description provided for @gameSignScenario5_5_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Это движение против установленного направления.'**
+  String get gameSignScenario5_5_1Explanation;
+
+  /// No description provided for @gameSignScenario5_5_2Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'В населённом пункте можно парковать легковое авто слева на односторонней дороге?'**
+  String get gameSignScenario5_5_2Prompt;
+
+  /// No description provided for @gameSignScenario5_5_2Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Для легкового автомобиля это разрешено, если нет других запретов (п. 12.1).'**
+  String get gameSignScenario5_5_2Explanation;
+
+  /// No description provided for @gameSignScenario5_14_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Такси и школьному автобусу можно ехать по этой полосе?'**
+  String get gameSignScenario5_14_1_0Prompt;
+
+  /// No description provided for @gameSignScenario5_14_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Пункт 18.2 допускает легковые такси и школьные автобусы. Велосипедистам можно лишь по такой полосе справа.'**
+  String get gameSignScenario5_14_1_0Explanation;
+
+  /// No description provided for @gameSignScenario5_14_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно обычной легковушке ехать по автобусной полосе вдоль дороги?'**
+  String get gameSignScenario5_14_1_1Prompt;
+
+  /// No description provided for @gameSignScenario5_14_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Обычным автомобилям движение по полосе запрещено. Перестроение для поворота, въезд и высадка при прерывистой разметке — отдельные исключения.'**
+  String get gameSignScenario5_14_1_1Explanation;
+
+  /// No description provided for @gameSignScenario5_15_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стрелка налево из крайней левой полосы разрешает и разворот?'**
+  String get gameSignScenario5_15_1_0Prompt;
+
+  /// No description provided for @gameSignScenario5_15_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Разворот разрешается из крайней левой полосы, если знак разрешает из неё поворот налево.'**
+  String get gameSignScenario5_15_1_0Explanation;
+
+  /// No description provided for @gameSignScenario5_19_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Без светофора нужно уступить пешеходу, который переходит вашу дорогу?'**
+  String get gameSignScenario5_19_1_0Prompt;
+
+  /// No description provided for @gameSignScenario5_19_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. На нерегулируемом переходе нужно уступить переходящим или вступившим на проезжую часть пешеходам (п. 14.1).'**
+  String get gameSignScenario5_19_1_0Explanation;
+
+  /// No description provided for @gameSignScenario5_19_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно сдать назад на пешеходном переходе?'**
+  String get gameSignScenario5_19_1_1Prompt;
+
+  /// No description provided for @gameSignScenario5_19_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. На переходе запрещены и движение задним ходом, и разворот (пп. 8.11–8.12).'**
+  String get gameSignScenario5_19_1_1Explanation;
+
+  /// No description provided for @gameSignScenario5_19_1_2Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно остановиться за 3 м перед переходом?'**
+  String get gameSignScenario5_19_1_2Prompt;
+
+  /// No description provided for @gameSignScenario5_19_1_2Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Остановка запрещена на переходе и ближе 5 м перед ним (п. 12.4).'**
+  String get gameSignScenario5_19_1_2Explanation;
+
+  /// No description provided for @gameSignScenario5_20_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак показывает начало искусственной неровности?'**
+  String get gameSignScenario5_20_0Prompt;
+
+  /// No description provided for @gameSignScenario5_20_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Его устанавливают на ближайшей границе искусственной неровности.'**
+  String get gameSignScenario5_20_0Explanation;
+
+  /// No description provided for @gameSignScenario5_20_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перед искусственной неровностью обязательно остановиться?'**
+  String get gameSignScenario5_20_1Prompt;
+
+  /// No description provided for @gameSignScenario5_20_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Знак не требует остановки. Выберите безопасную скорость для проезда.'**
+  String get gameSignScenario5_20_1Explanation;
+
+  /// No description provided for @gameSignScenario5_21_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'В жилой зоне пешеходы имеют преимущество?'**
+  String get gameSignScenario5_21_0Prompt;
+
+  /// No description provided for @gameSignScenario5_21_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Пешеходы могут идти и по тротуару, и по проезжей части, но не должны необоснованно мешать машинам (п. 17.1).'**
+  String get gameSignScenario5_21_0Explanation;
+
+  /// No description provided for @gameSignScenario5_21_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно ехать по жилой зоне со скоростью 30 км/ч?'**
+  String get gameSignScenario5_21_1Prompt;
+
+  /// No description provided for @gameSignScenario5_21_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. В жилой зоне и во дворе предел — 20 км/ч (п. 10.2).'**
+  String get gameSignScenario5_21_1Explanation;
+
+  /// No description provided for @gameSignScenario5_21_2Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно проехать жилую зону насквозь, чтобы сократить путь?'**
+  String get gameSignScenario5_21_2Prompt;
+
+  /// No description provided for @gameSignScenario5_21_2Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Сквозное движение в жилой зоне запрещено (п. 17.2).'**
+  String get gameSignScenario5_21_2Explanation;
+
+  /// No description provided for @gameSignScenario5_23_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'После этого знака общий предел скорости — 60 км/ч?'**
+  String get gameSignScenario5_23_1_0Prompt;
+
+  /// No description provided for @gameSignScenario5_23_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Здесь начинаются правила для населённого пункта. Общий предел — 60 км/ч, если не установлен другой (п. 10.2).'**
+  String get gameSignScenario5_23_1_0Explanation;
+
+  /// No description provided for @gameSignScenario5_23_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно сразу после этого знака ехать 90 км/ч без других знаков?'**
+  String get gameSignScenario5_23_1_1Prompt;
+
+  /// No description provided for @gameSignScenario5_23_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Действует общий предел населённого пункта — 60 км/ч.'**
+  String get gameSignScenario5_23_1_1Explanation;
+
+  /// No description provided for @gameSignScenario5_25_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак сам по себе вводит предел 60 км/ч?'**
+  String get gameSignScenario5_25_0Prompt;
+
+  /// No description provided for @gameSignScenario5_25_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. На обозначенной дороге правила для населённого пункта не действуют. Скорость зависит от дороги, машины и других знаков.'**
+  String get gameSignScenario5_25_0Explanation;
+
+  /// No description provided for @gameSignScenario5_25_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Синий знак населённого пункта отменяет ранее установленный предел скорости?'**
+  String get gameSignScenario5_25_1Prompt;
+
+  /// No description provided for @gameSignScenario5_25_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Сам знак не отменяет ограничение скорости, установленное другим знаком.'**
+  String get gameSignScenario5_25_1Explanation;
+
+  /// No description provided for @gameSignScenario6_2_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скорость на этом знаке — рекомендация?'**
+  String get gameSignScenario6_2_0Prompt;
+
+  /// No description provided for @gameSignScenario6_2_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Знак рекомендует скорость, но не отменяет обязательные ограничения и требование безопасности.'**
+  String get gameSignScenario6_2_0Explanation;
+
+  /// No description provided for @gameSignScenario6_2_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нужно обязательно ехать ровно с указанной скоростью?'**
+  String get gameSignScenario6_2_1Prompt;
+
+  /// No description provided for @gameSignScenario6_2_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Это рекомендуемая, а не обязательная скорость.'**
+  String get gameSignScenario6_2_1Explanation;
+
+  /// No description provided for @gameSignScenario6_3_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак обозначает место для разворота?'**
+  String get gameSignScenario6_3_1_0Prompt;
+
+  /// No description provided for @gameSignScenario6_3_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Здесь предусмотрено место для разворота.'**
+  String get gameSignScenario6_3_1_0Explanation;
+
+  /// No description provided for @gameSignScenario6_3_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно здесь повернуть налево во двор?'**
+  String get gameSignScenario6_3_1_1Prompt;
+
+  /// No description provided for @gameSignScenario6_3_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Знак обозначает место для разворота и запрещает поворот налево.'**
+  String get gameSignScenario6_3_1_1Explanation;
+
+  /// No description provided for @gameSignScenario6_4_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак обозначает парковку?'**
+  String get gameSignScenario6_4_0Prompt;
+
+  /// No description provided for @gameSignScenario6_4_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Знак указывает парковку. Таблички могут уточнять, кому, когда и как разрешена стоянка.'**
+  String get gameSignScenario6_4_0Explanation;
+
+  /// No description provided for @gameSignScenario6_4_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перед этим знаком нужно обязательно остановиться?'**
+  String get gameSignScenario6_4_1Prompt;
+
+  /// No description provided for @gameSignScenario6_4_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Он указывает место парковки, а не требует остановки.'**
+  String get gameSignScenario6_4_1Explanation;
+
+  /// No description provided for @gameSignScenario6_16_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак показывает, где остановиться на запрещающий сигнал?'**
+  String get gameSignScenario6_16_0Prompt;
+
+  /// No description provided for @gameSignScenario6_16_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Остановитесь перед знаком при запрещающем сигнале светофора или регулировщика (п. 6.13).'**
+  String get gameSignScenario6_16_0Explanation;
+
+  /// No description provided for @gameSignScenario6_16_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Светофор зелёный, регулировщика нет. Знак требует остановиться?'**
+  String get gameSignScenario6_16_1Prompt;
+
+  /// No description provided for @gameSignScenario6_16_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Сам знак «Стоп-линия» при разрешающем сигнале не требует остановки.'**
+  String get gameSignScenario6_16_1Explanation;
+
+  /// No description provided for @gameSignScenario7_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак указывает пункт первой медицинской помощи?'**
+  String get gameSignScenario7_1_0Prompt;
+
+  /// No description provided for @gameSignScenario7_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Он сообщает, где находится пункт первой медицинской помощи.'**
+  String get gameSignScenario7_1_0Explanation;
+
+  /// No description provided for @gameSignScenario7_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак сам по себе ограничивает скорость до 20 км/ч?'**
+  String get gameSignScenario7_1_1Prompt;
+
+  /// No description provided for @gameSignScenario7_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Знаки сервиса не вводят ограничений скорости.'**
+  String get gameSignScenario7_1_1Explanation;
+
+  /// No description provided for @gameSignScenario7_3_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак указывает автозаправку?'**
+  String get gameSignScenario7_3_0Prompt;
+
+  /// No description provided for @gameSignScenario7_3_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Знак обозначает автозаправочную станцию.'**
+  String get gameSignScenario7_3_0Explanation;
+
+  /// No description provided for @gameSignScenario7_3_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот знак даёт преимущество при выезде с заправки на дорогу?'**
+  String get gameSignScenario7_3_1Prompt;
+
+  /// No description provided for @gameSignScenario7_3_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. При выезде с прилегающей территории нужно уступить участникам движения на дороге (п. 8.3).'**
+  String get gameSignScenario7_3_1Explanation;
+
+  /// No description provided for @gameSignScenario8_1_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Табличка показывает расстояние до объекта или начала ограничения?'**
+  String get gameSignScenario8_1_1_0Prompt;
+
+  /// No description provided for @gameSignScenario8_1_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Это расстояние от знака до опасного участка, объекта или места начала ограничения.'**
+  String get gameSignScenario8_1_1_0Explanation;
+
+  /// No description provided for @gameSignScenario8_1_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Табличка показывает длину зоны действия знака?'**
+  String get gameSignScenario8_1_1_1Prompt;
+
+  /// No description provided for @gameSignScenario8_1_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Длину зоны действия показывает табличка 8.2.1.'**
+  String get gameSignScenario8_1_1_1Explanation;
+
+  /// No description provided for @gameSignScenario8_2_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Табличка показывает длину опасного участка или зоны действия?'**
+  String get gameSignScenario8_2_1_0Prompt;
+
+  /// No description provided for @gameSignScenario8_2_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Это протяжённость участка или зоны действия знака.'**
+  String get gameSignScenario8_2_1_0Explanation;
+
+  /// No description provided for @gameSignScenario8_2_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак начнёт действовать только через указанное расстояние?'**
+  String get gameSignScenario8_2_1_1Prompt;
+
+  /// No description provided for @gameSignScenario8_2_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Табличка показывает длину зоны, а не расстояние до её начала.'**
+  String get gameSignScenario8_2_1_1Explanation;
+
+  /// No description provided for @gameSignScenario8_2_3_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стрелка вниз означает конец запрета остановки или стоянки?'**
+  String get gameSignScenario8_2_3_0Prompt;
+
+  /// No description provided for @gameSignScenario8_2_3_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Она указывает конец зоны действия знаков 3.27–3.30.'**
+  String get gameSignScenario8_2_3_0Explanation;
+
+  /// No description provided for @gameSignScenario8_2_3_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'После этой таблички прежний запрет стоянки продолжается?'**
+  String get gameSignScenario8_2_3_1Prompt;
+
+  /// No description provided for @gameSignScenario8_2_3_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Зона запрета заканчивается. Другие правила остановки и стоянки сохраняются.'**
+  String get gameSignScenario8_2_3_1Explanation;
+
+  /// No description provided for @gameSignScenario8_4_1_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Табличка относится к грузовикам с разрешённой массой более 3,5 т?'**
+  String get gameSignScenario8_4_1_0Prompt;
+
+  /// No description provided for @gameSignScenario8_4_1_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. В том числе к таким грузовикам с прицепом. Учитывают разрешённую максимальную, а не фактическую массу.'**
+  String get gameSignScenario8_4_1_0Explanation;
+
+  /// No description provided for @gameSignScenario8_4_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак с этой табличкой действует на легковое авто?'**
+  String get gameSignScenario8_4_1_1Prompt;
+
+  /// No description provided for @gameSignScenario8_4_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Табличка распространяет знак на грузовики с разрешённой максимальной массой более 3,5 т.'**
+  String get gameSignScenario8_4_1_1Explanation;
+
+  /// No description provided for @gameSignScenario8_4_3_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Табличка относится к легковым авто и грузовикам до 3,5 т включительно?'**
+  String get gameSignScenario8_4_3_0Prompt;
+
+  /// No description provided for @gameSignScenario8_4_3_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Учитывается разрешённая максимальная масса грузовика.'**
+  String get gameSignScenario8_4_3_0Explanation;
+
+  /// No description provided for @gameSignScenario8_4_3_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак с этой табличкой действует на автобус?'**
+  String get gameSignScenario8_4_3_1Prompt;
+
+  /// No description provided for @gameSignScenario8_4_3_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Эта табличка относится к легковым автомобилям и грузовикам до 3,5 т включительно.'**
+  String get gameSignScenario8_4_3_1Explanation;
+
+  /// No description provided for @gameSignScenario8_17_0Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Со знаком парковки табличка выделяет места для машин со знаком «Инвалид»?'**
+  String get gameSignScenario8_17_0Prompt;
+
+  /// No description provided for @gameSignScenario8_17_0Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да. Места предназначены для машин, имеющих право на такую парковку, с опознавательным знаком «Инвалид», в том числе перевозящих детей-инвалидов.'**
+  String get gameSignScenario8_17_0Explanation;
+
+  /// No description provided for @gameSignScenario8_17_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно оставить здесь обычную машину без знака «Инвалид» на 10 минут?'**
+  String get gameSignScenario8_17_1Prompt;
+
+  /// No description provided for @gameSignScenario8_17_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Эти парковочные места предназначены для машин со знаком «Инвалид», имеющих право на льготу.'**
+  String get gameSignScenario8_17_1Explanation;
+
+  /// No description provided for @gameSignScenario5_15_1_1Prompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Из средней полосы стрелка только прямо. Можно повернуть налево?'**
+  String get gameSignScenario5_15_1_1Prompt;
+
+  /// No description provided for @gameSignScenario5_15_1_1Explanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет. Из этой полосы разрешено только прямо. Для поворота нужно заранее занять подходящую полосу.'**
+  String get gameSignScenario5_15_1_1Explanation;
 }
 
 class _AppLocalizationsDelegate

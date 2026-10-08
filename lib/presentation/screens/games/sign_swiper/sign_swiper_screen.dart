@@ -364,7 +364,8 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
             icon: Icons.close_rounded,
             label: card?.leftActionLabel ?? appL10n.gameSignNo,
             color: colors.red,
-            surface: colors.redLight,
+            surface: colors.red,
+            iconColor: Colors.white,
             onTap: () {
               HapticFeedbackHelper.tap();
               _cardController.swipeLeft();
@@ -373,8 +374,9 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
           GameRoundButton(
             icon: Icons.check_rounded,
             label: card?.rightActionLabel ?? appL10n.gameSignYes,
-            color: colors.green,
-            surface: colors.greenLight,
+            color: const Color(0xFF168A55),
+            surface: const Color(0xFF168A55),
+            iconColor: Colors.white,
             onTap: () {
               HapticFeedbackHelper.tap();
               _cardController.swipeRight();

@@ -1817,4 +1817,1025 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get achievementDescSignSwiper =>
       'Наберите 1000, 2500, 5000 и 7500 очков за одну игру в «Знак-свайпер».';
+
+  @override
+  String get gameSignQuestionScope => 'Других знаков и запретов нет';
+
+  @override
+  String get gameTrafficSignalQuestion => 'Что разрешает сигнал?';
+
+  @override
+  String get gameSignScenario1_1_0Prompt =>
+      'Знак предупреждает о переезде со шлагбаумом?';
+
+  @override
+  String get gameSignScenario1_1_0Explanation =>
+      'Да. Впереди железнодорожный переезд со шлагбаумом.';
+
+  @override
+  String get gameSignScenario1_1_1Prompt =>
+      'Можно обгонять за 80 м до переезда?';
+
+  @override
+  String get gameSignScenario1_1_1Explanation =>
+      'Нет. Обгон запрещён на переезде и за 100 м до него (п. 11.4).';
+
+  @override
+  String get gameSignScenario1_1_2Prompt =>
+      'Можно оставить машину в 30 м от переезда?';
+
+  @override
+  String get gameSignScenario1_1_2Explanation =>
+      'Нет. Стоянка запрещена ближе 50 м от переезда (п. 12.5).';
+
+  @override
+  String get gameSignScenario1_2_0Prompt => 'Впереди переезд без шлагбаума?';
+
+  @override
+  String get gameSignScenario1_2_0Explanation =>
+      'Да. Знак предупреждает о переезде без шлагбаума.';
+
+  @override
+  String get gameSignScenario1_2_1Prompt => 'Можно развернуться на переезде?';
+
+  @override
+  String get gameSignScenario1_2_1Explanation =>
+      'Нет. На переезде запрещены разворот и движение задним ходом (пп. 8.11–8.12).';
+
+  @override
+  String get gameSignScenario1_3_1_0Prompt =>
+      'На переезде один железнодорожный путь?';
+
+  @override
+  String get gameSignScenario1_3_1_0Explanation =>
+      'Да. Этот знак обозначает переезд с одним путём, без шлагбаума.';
+
+  @override
+  String get gameSignScenario1_3_1_1Prompt =>
+      'Этот знак ставят за 150–300 м до переезда?';
+
+  @override
+  String get gameSignScenario1_3_1_1Explanation =>
+      'Нет. Знак 1.3.1 ставят непосредственно перед переездом.';
+
+  @override
+  String get gameSignScenario1_5_0Prompt =>
+      'Трамвай пересекает дорогу вне перекрёстка, не из депо. Нужно уступить?';
+
+  @override
+  String get gameSignScenario1_5_0Explanation =>
+      'Да. Вне перекрёстка трамвай имеет преимущество, кроме выезда из депо (п. 18.1).';
+
+  @override
+  String get gameSignScenario1_5_1Prompt =>
+      'Трамвай выезжает из депо. Он должен уступить автомобилям?';
+
+  @override
+  String get gameSignScenario1_5_1Explanation =>
+      'Да. При выезде из депо трамвай уступает другим транспортным средствам (п. 18.1).';
+
+  @override
+  String get gameSignScenario1_6_0Prompt =>
+      'Без светофора на равнозначном перекрёстке нужно уступить автомобилю справа?';
+
+  @override
+  String get gameSignScenario1_6_0Explanation =>
+      'Да. На нерегулируемом равнозначном перекрёстке уступают автомобилям справа (п. 13.11).';
+
+  @override
+  String get gameSignScenario1_6_1Prompt =>
+      'Можно обгонять на равнозначном перекрёстке без светофора?';
+
+  @override
+  String get gameSignScenario1_6_1Explanation =>
+      'Нет. На нерегулируемом перекрёстке обгон разрешён только при движении по главной дороге (п. 11.4).';
+
+  @override
+  String get gameSignScenario1_7_0Prompt =>
+      'Впереди перекрёсток с круговым движением?';
+
+  @override
+  String get gameSignScenario1_7_0Explanation =>
+      'Да. Знак предупреждает о приближении к круговому перекрёстку.';
+
+  @override
+  String get gameSignScenario1_7_1Prompt =>
+      'Круговое движение начинается прямо у этого знака?';
+
+  @override
+  String get gameSignScenario1_7_1Explanation =>
+      'Нет. Это предупреждение. Направление движения на самом круге задаёт знак 4.3.';
+
+  @override
+  String get gameSignScenario1_11_1_0Prompt =>
+      'Можно развернуться, если дорогу видно только на 70 м?';
+
+  @override
+  String get gameSignScenario1_11_1_0Explanation =>
+      'Нет. Для разворота видимость должна быть не менее 100 м в каждом направлении (п. 8.11).';
+
+  @override
+  String get gameSignScenario1_11_1_1Prompt =>
+      'Перед опасным поворотом нужно выбрать безопасную скорость?';
+
+  @override
+  String get gameSignScenario1_11_1_1Explanation =>
+      'Да. Скорость выбирают с учётом поворота и видимости дороги (п. 10.1).';
+
+  @override
+  String get gameSignScenario1_23_0Prompt =>
+      'Здесь на дорогу могут неожиданно выйти дети?';
+
+  @override
+  String get gameSignScenario1_23_0Explanation =>
+      'Да. Знак предупреждает об участке, где на дороге могут появиться дети.';
+
+  @override
+  String get gameSignScenario1_23_1Prompt =>
+      'Этот знак разрешает детям переходить дорогу где угодно?';
+
+  @override
+  String get gameSignScenario1_23_1Explanation =>
+      'Нет. Знак предупреждает водителей, но не меняет правила перехода дороги.';
+
+  @override
+  String get gameSignScenario1_25_0Prompt =>
+      'Временный знак на жёлтом фоне важнее постоянного, если они противоречат?';
+
+  @override
+  String get gameSignScenario1_25_0Explanation =>
+      'Да. При противоречии временных и постоянных знаков выполняют требование временного.';
+
+  @override
+  String get gameSignScenario1_25_1Prompt =>
+      'Перед знаком дорожных работ обязательно остановиться?';
+
+  @override
+  String get gameSignScenario1_25_1Explanation =>
+      'Нет. Сам знак не требует остановки. Нужно учитывать дорожные работы и выбрать безопасную скорость.';
+
+  @override
+  String get gameSignScenario2_1_0Prompt =>
+      'Без светофора вы имеете преимущество перед машиной со второстепенной?';
+
+  @override
+  String get gameSignScenario2_1_0Explanation =>
+      'Да. На нерегулируемом перекрёстке главная дорога даёт преимущество перед второстепенной (п. 13.9).';
+
+  @override
+  String get gameSignScenario2_1_1Prompt =>
+      'Можно ехать на красный, если вы на главной дороге?';
+
+  @override
+  String get gameSignScenario2_1_1Explanation =>
+      'Нет. На регулируемом перекрёстке нужно выполнять сигналы светофора (п. 6.15).';
+
+  @override
+  String get gameSignScenario2_1_2Prompt =>
+      'Можно оставить машину на проезжей части главной дороги вне населённого пункта?';
+
+  @override
+  String get gameSignScenario2_1_2Explanation =>
+      'Нет. На таких дорогах стоянка на проезжей части вне населённого пункта запрещена (п. 12.5).';
+
+  @override
+  String get gameSignScenario2_2_0Prompt =>
+      'Знак обозначает конец главной дороги?';
+
+  @override
+  String get gameSignScenario2_2_0Explanation =>
+      'Да. Преимущество, которое давал знак «Главная дорога», заканчивается.';
+
+  @override
+  String get gameSignScenario2_2_1Prompt =>
+      'Этот знак сам по себе требует остановиться?';
+
+  @override
+  String get gameSignScenario2_2_1Explanation =>
+      'Нет. Он отменяет статус главной дороги. Порядок проезда определяют другие знаки и правила.';
+
+  @override
+  String get gameSignScenario2_3_1_0Prompt =>
+      'Без светофора машина с пересекаемой дороги должна уступить вам?';
+
+  @override
+  String get gameSignScenario2_3_1_0Explanation =>
+      'Да. Знак показывает пересечение главной дороги со второстепенной (п. 13.9).';
+
+  @override
+  String get gameSignScenario2_3_1_1Prompt =>
+      'Без светофора нужно уступить машине справа со второстепенной дороги?';
+
+  @override
+  String get gameSignScenario2_3_1_1Explanation =>
+      'Нет. Преимущество у вас: вы на главной дороге. Правило «помехи справа» здесь не применяется.';
+
+  @override
+  String get gameSignScenario2_4_0Prompt =>
+      'Без светофора нужно уступить машинам на пересекаемой дороге?';
+
+  @override
+  String get gameSignScenario2_4_0Explanation =>
+      'Да. Знак требует уступить машинам на пересекаемой дороге. При табличке 8.13 — машинам на главной дороге.';
+
+  @override
+  String get gameSignScenario2_4_1Prompt =>
+      'Дорога свободна. Перед этим знаком всё равно нужно остановиться?';
+
+  @override
+  String get gameSignScenario2_4_1Explanation =>
+      'Нет. Обязательной остановки нет, если вы никому не мешаете.';
+
+  @override
+  String get gameSignScenario2_4_2Prompt =>
+      'Оба на второстепенной: вы прямо, встречный налево. Он должен уступить?';
+
+  @override
+  String get gameSignScenario2_4_2Explanation =>
+      'Да. При равном приоритете встречный автомобиль, поворачивающий налево, уступает едущему прямо (п. 13.12).';
+
+  @override
+  String get gameSignScenario2_5_0Prompt =>
+      'Перед STOP нужно остановиться, даже если дорога свободна?';
+
+  @override
+  String get gameSignScenario2_5_0Explanation =>
+      'Да. Остановитесь перед стоп-линией, а если её нет — перед краем пересекаемой проезжей части. У переезда без стоп-линии — перед знаком.';
+
+  @override
+  String get gameSignScenario2_5_1Prompt =>
+      'Можно проехать STOP без остановки, если всё хорошо видно?';
+
+  @override
+  String get gameSignScenario2_5_1Explanation =>
+      'Нет. Знак требует полной остановки даже при свободной дороге.';
+
+  @override
+  String get gameSignScenario2_6_0Prompt =>
+      'Въезд помешает встречной машине. Нужно уступить?';
+
+  @override
+  String get gameSignScenario2_6_0Explanation =>
+      'Да. Нельзя въезжать на узкий участок, если это затруднит встречное движение.';
+
+  @override
+  String get gameSignScenario2_6_1Prompt =>
+      'Этот знак даёт вам преимущество перед встречными?';
+
+  @override
+  String get gameSignScenario2_6_1Explanation =>
+      'Нет. Преимущество у встречного транспорта.';
+
+  @override
+  String get gameSignScenario2_7_0Prompt =>
+      'На узком участке преимущество у вас?';
+
+  @override
+  String get gameSignScenario2_7_0Explanation =>
+      'Да. Этот знак даёт преимущество перед встречными машинами.';
+
+  @override
+  String get gameSignScenario2_7_1Prompt =>
+      'Этот знак даёт преимущество встречной машине?';
+
+  @override
+  String get gameSignScenario2_7_1Explanation =>
+      'Нет. Преимущество у транспорта, движущегося в вашем направлении.';
+
+  @override
+  String get gameSignScenario3_1_0Prompt =>
+      'Этот знак запрещает въезд обычному такси?';
+
+  @override
+  String get gameSignScenario3_1_0Explanation =>
+      'Да. Такси и каршеринг должны выполнять запрет. Исключение — маршрутный транспорт.';
+
+  @override
+  String get gameSignScenario3_1_1Prompt =>
+      'Можно въехать, только потому что вы живёте за знаком?';
+
+  @override
+  String get gameSignScenario3_1_1Explanation =>
+      'Нет. Для жителей исключения нет. Не путайте этот знак со знаком «Движение запрещено».';
+
+  @override
+  String get gameSignScenario3_1_2Prompt =>
+      'Можно въехать маршрутному автобусу на своём маршруте?';
+
+  @override
+  String get gameSignScenario3_1_2Explanation =>
+      'Да. Запрет этого знака не действует на маршрутные транспортные средства.';
+
+  @override
+  String get gameSignScenario3_2_0Prompt =>
+      'Можно проехать к своему дому в зоне этого знака?';
+
+  @override
+  String get gameSignScenario3_2_0Explanation =>
+      'Да. Жителям разрешён проезд к дому. Въезжать и выезжать нужно на ближайшем к нему перекрёстке.';
+
+  @override
+  String get gameSignScenario3_2_1Prompt =>
+      'Можно проехать эту зону насквозь на обычном автомобиле?';
+
+  @override
+  String get gameSignScenario3_2_1Explanation =>
+      'Нет. Знак запрещает движение. Проезд жителей и обслуживающих машин — исключения для доступа к месту назначения.';
+
+  @override
+  String get gameSignScenario3_2_2Prompt =>
+      'Знак запрещает проезд водителю с инвалидностью I группы и знаком «Инвалид»?';
+
+  @override
+  String get gameSignScenario3_2_2Explanation =>
+      'Нет. Знак не действует на машины водителей с инвалидностью I–II групп или перевозящие их и детей-инвалидов, со знаком «Инвалид».';
+
+  @override
+  String get gameSignScenario3_4_0Prompt =>
+      'Этот знак запрещает движение легковых автомобилей?';
+
+  @override
+  String get gameSignScenario3_4_0Explanation =>
+      'Нет. Он ограничивает движение грузовиков, тракторов и самоходных машин.';
+
+  @override
+  String get gameSignScenario3_4_1Prompt =>
+      'Можно обычному грузовику с разрешённой массой 5 т проехать под этот знак?';
+
+  @override
+  String get gameSignScenario3_4_1Explanation =>
+      'Да. На показанном знаке указан порог 8 т. Разрешённая максимальная масса 5 т его не превышает.';
+
+  @override
+  String get gameSignScenario3_18_1_0Prompt =>
+      'Этот знак запрещает поворот налево?';
+
+  @override
+  String get gameSignScenario3_18_1_0Explanation =>
+      'Нет. Он запрещает только поворот направо на ближайшем пересечении проезжих частей.';
+
+  @override
+  String get gameSignScenario3_18_1_1Prompt =>
+      'Можно повернуть направо на ближайшем пересечении?';
+
+  @override
+  String get gameSignScenario3_18_1_1Explanation =>
+      'Нет. Поворот направо на ближайшем пересечении запрещён.';
+
+  @override
+  String get gameSignScenario3_18_2_0Prompt => 'Этот знак запрещает разворот?';
+
+  @override
+  String get gameSignScenario3_18_2_0Explanation =>
+      'Нет. Он запрещает поворот налево, но сам по себе не запрещает разворот.';
+
+  @override
+  String get gameSignScenario3_18_2_1Prompt =>
+      'Можно повернуть налево на ближайшем пересечении?';
+
+  @override
+  String get gameSignScenario3_18_2_1Explanation =>
+      'Нет. Поворот налево на ближайшем пересечении запрещён.';
+
+  @override
+  String get gameSignScenario3_19_0Prompt =>
+      'Этот знак запрещает поворот налево?';
+
+  @override
+  String get gameSignScenario3_19_0Explanation =>
+      'Нет. Он запрещает только разворот.';
+
+  @override
+  String get gameSignScenario3_19_1Prompt =>
+      'Можно развернуться в месте действия этого знака?';
+
+  @override
+  String get gameSignScenario3_19_1Explanation => 'Нет. Разворот запрещён.';
+
+  @override
+  String get gameSignScenario3_20_0Prompt =>
+      'Этот знак разрешает обгон тихоходной машины с соответствующим знаком?';
+
+  @override
+  String get gameSignScenario3_20_0Explanation =>
+      'Да. Тихоходные машины — исключение из запрета знака 3.20. Другие запреты обгона и разметку тоже нужно учитывать.';
+
+  @override
+  String get gameSignScenario3_20_1Prompt =>
+      'Можно обогнать обычную легковую машину, если она едет всего 25 км/ч?';
+
+  @override
+  String get gameSignScenario3_20_1Explanation =>
+      'Нет. Низкая скорость не делает легковой автомобиль тихоходным транспортным средством.';
+
+  @override
+  String get gameSignScenario3_20_2Prompt =>
+      'Этот знак разрешает обгон мотоцикла без коляски?';
+
+  @override
+  String get gameSignScenario3_20_2Explanation =>
+      'Да. Двухколёсные мотоциклы без бокового прицепа — исключение из запрета этого знака.';
+
+  @override
+  String get gameSignScenario3_24_0Prompt =>
+      'Число на знаке — максимально разрешённая скорость?';
+
+  @override
+  String get gameSignScenario3_24_0Explanation =>
+      'Да. Быстрее указанного ехать нельзя. При плохой видимости безопасная скорость может быть ниже.';
+
+  @override
+  String get gameSignScenario3_24_1Prompt =>
+      'Этот знак требует ехать не медленнее указанного числа?';
+
+  @override
+  String get gameSignScenario3_24_1Explanation =>
+      'Нет. Это ограничение максимальной скорости, а не минимальной.';
+
+  @override
+  String get gameSignScenario3_27_0Prompt =>
+      'Можно остановить обычную машину на минуту, чтобы высадить пассажира?';
+
+  @override
+  String get gameSignScenario3_27_0Explanation =>
+      'Нет. Знак запрещает остановку и стоянку. Высадка пассажира — тоже остановка.';
+
+  @override
+  String get gameSignScenario3_27_1Prompt =>
+      'Знак «Инвалид» сам по себе разрешает остановку здесь?';
+
+  @override
+  String get gameSignScenario3_27_1Explanation =>
+      'Нет. Льгота сама по себе не отменяет знак «Остановка запрещена». Исключение может обозначаться табличкой 8.18.';
+
+  @override
+  String get gameSignScenario3_27_2Prompt =>
+      'Можно оставить обычную машину под этим знаком?';
+
+  @override
+  String get gameSignScenario3_27_2Explanation =>
+      'Нет. Знак запрещает и остановку, и стоянку.';
+
+  @override
+  String get gameSignScenario3_28_0Prompt =>
+      'Можно остановиться, чтобы высадить пассажира?';
+
+  @override
+  String get gameSignScenario3_28_0Explanation =>
+      'Да. Знак запрещает стоянку, но допускает остановку. Время, необходимое для посадки, высадки или погрузки, может превышать 5 минут.';
+
+  @override
+  String get gameSignScenario3_28_1Prompt =>
+      'Можно оставить обычную машину на 20 минут, без посадки и погрузки?';
+
+  @override
+  String get gameSignScenario3_28_1Explanation =>
+      'Нет. Это стоянка: остановка более 5 минут, не связанная с посадкой, высадкой или погрузкой (п. 1.2).';
+
+  @override
+  String get gameSignScenario3_28_2Prompt =>
+      'Этот запрет действует на машину со знаком «Инвалид», имеющую право на льготу?';
+
+  @override
+  String get gameSignScenario3_28_2Explanation =>
+      'Нет. При наличии права на бесплатную парковку и знака «Инвалид» предусмотрено исключение, включая перевозку таких инвалидов и детей-инвалидов.';
+
+  @override
+  String get gameSignScenario3_29_0Prompt =>
+      'Знаки запрета по чётным и нечётным дням стоят с двух сторон. Можно парковаться с 21 до 24 часов?';
+
+  @override
+  String get gameSignScenario3_29_0Explanation =>
+      'Да. При таком сочетании знаков с 21:00 до 24:00 — время перестановки, когда стоянка разрешена с обеих сторон.';
+
+  @override
+  String get gameSignScenario3_29_1Prompt =>
+      'Этот знак запрещает остановку на 3 минуты для посадки пассажира?';
+
+  @override
+  String get gameSignScenario3_29_1Explanation =>
+      'Нет. Он запрещает только стоянку по нечётным числам. Остановка разрешена.';
+
+  @override
+  String get gameSignScenario3_31_0Prompt =>
+      'Этот знак отменяет ограничения обгона и скорости?';
+
+  @override
+  String get gameSignScenario3_31_0Explanation =>
+      'Да. Он завершает действие знаков 3.16, 3.20, 3.22, 3.24 и 3.26–3.30.';
+
+  @override
+  String get gameSignScenario3_31_1Prompt =>
+      'Этот знак отменяет сигналы светофора и разметку?';
+
+  @override
+  String get gameSignScenario3_31_1Explanation =>
+      'Нет. Светофоры и разметка продолжают действовать.';
+
+  @override
+  String get gameSignScenario4_1_1_0Prompt =>
+      'Знак стоит в начале участка. Можно повернуть направо во двор?';
+
+  @override
+  String get gameSignScenario4_1_1_0Explanation =>
+      'Да. В начале участка знак действует до ближайшего перекрёстка, но разрешает поворот направо на прилегающую территорию.';
+
+  @override
+  String get gameSignScenario4_1_1_1Prompt =>
+      'Знак стоит перед перекрёстком. Можно повернуть налево?';
+
+  @override
+  String get gameSignScenario4_1_1_1Explanation =>
+      'Нет. На ближайшем пересечении проезжих частей разрешено только прямо.';
+
+  @override
+  String get gameSignScenario4_1_2_0Prompt =>
+      'На ближайшем пересечении нужно повернуть направо?';
+
+  @override
+  String get gameSignScenario4_1_2_0Explanation =>
+      'Да. Для обычного автомобиля знак разрешает только поворот направо.';
+
+  @override
+  String get gameSignScenario4_1_2_1Prompt =>
+      'Можно ехать прямо на ближайшем пересечении?';
+
+  @override
+  String get gameSignScenario4_1_2_1Explanation =>
+      'Нет. Знак разрешает только направо.';
+
+  @override
+  String get gameSignScenario4_1_3_0Prompt => 'Этот знак разрешает разворот?';
+
+  @override
+  String get gameSignScenario4_1_3_0Explanation =>
+      'Да. Знак, разрешающий поворот налево, разрешает и разворот.';
+
+  @override
+  String get gameSignScenario4_1_3_1Prompt =>
+      'Можно ехать прямо на ближайшем пересечении?';
+
+  @override
+  String get gameSignScenario4_1_3_1Explanation =>
+      'Нет. Знак разрешает налево и разворот.';
+
+  @override
+  String get gameSignScenario4_1_4_0Prompt => 'Можно ехать прямо или направо?';
+
+  @override
+  String get gameSignScenario4_1_4_0Explanation =>
+      'Да. Знак разрешает оба этих направления.';
+
+  @override
+  String get gameSignScenario4_1_4_1Prompt =>
+      'Можно развернуться на ближайшем пересечении?';
+
+  @override
+  String get gameSignScenario4_1_4_1Explanation =>
+      'Нет. Разрешены только прямо и направо.';
+
+  @override
+  String get gameSignScenario4_1_5_0Prompt =>
+      'Можно развернуться из крайней левой полосы?';
+
+  @override
+  String get gameSignScenario4_1_5_0Explanation =>
+      'Да. Разрешённый поворот налево допускает и разворот.';
+
+  @override
+  String get gameSignScenario4_1_5_1Prompt =>
+      'Можно повернуть направо на ближайшем пересечении?';
+
+  @override
+  String get gameSignScenario4_1_5_1Explanation =>
+      'Нет. Знак разрешает прямо, налево и разворот.';
+
+  @override
+  String get gameSignScenario4_2_1_0Prompt =>
+      'Препятствие нужно объехать справа?';
+
+  @override
+  String get gameSignScenario4_2_1_0Explanation =>
+      'Да. Объезд разрешён только с указанной стрелкой стороны.';
+
+  @override
+  String get gameSignScenario4_2_1_1Prompt =>
+      'Можно объехать препятствие слева, если встречных нет?';
+
+  @override
+  String get gameSignScenario4_2_1_1Explanation =>
+      'Нет. Отсутствие встречных не отменяет предписанную сторону объезда.';
+
+  @override
+  String get gameSignScenario4_3_0Prompt =>
+      'По кругу нужно ехать в направлении стрелок?';
+
+  @override
+  String get gameSignScenario4_3_0Explanation =>
+      'Да. Знак задаёт направление кругового движения.';
+
+  @override
+  String get gameSignScenario4_3_1Prompt =>
+      'Можно ехать по кругу против стрелок?';
+
+  @override
+  String get gameSignScenario4_3_1Explanation =>
+      'Нет. По кругу едут только в указанном стрелками направлении.';
+
+  @override
+  String get gameSignScenario4_6_0Prompt =>
+      'Этот знак задаёт минимальную скорость?';
+
+  @override
+  String get gameSignScenario4_6_0Explanation =>
+      'Да. Можно ехать с указанной или большей скоростью, соблюдая максимальный предел и безопасность.';
+
+  @override
+  String get gameSignScenario4_6_1Prompt =>
+      'Этот знак задаёт максимальную скорость?';
+
+  @override
+  String get gameSignScenario4_6_1Explanation =>
+      'Нет. Это минимальная скорость. Максимальную ограничивает знак 3.24.';
+
+  @override
+  String get gameSignScenario5_1_0Prompt =>
+      'Легковое авто без прицепа: общий предел на автомагистрали 110 км/ч?';
+
+  @override
+  String get gameSignScenario5_1_0Explanation =>
+      'Да. Общий предел для легкового автомобиля без прицепа — 110 км/ч. Знаки могут устанавливать другой предел (п. 10.3).';
+
+  @override
+  String get gameSignScenario5_1_1Prompt =>
+      'Можно сдать назад на автомагистрали?';
+
+  @override
+  String get gameSignScenario5_1_1Explanation =>
+      'Нет. На автомагистрали движение задним ходом запрещено (п. 16.1).';
+
+  @override
+  String get gameSignScenario5_1_2Prompt => 'Мопеду можно на автомагистраль?';
+
+  @override
+  String get gameSignScenario5_1_2Explanation =>
+      'Нет. Движение мопедов по автомагистралям запрещено (п. 16.1).';
+
+  @override
+  String get gameSignScenario5_3_0Prompt =>
+      'На этой дороге запрещено движение задним ходом?';
+
+  @override
+  String get gameSignScenario5_3_0Explanation =>
+      'Да. На дороге для автомобилей действуют запреты раздела 16, как на автомагистрали (п. 16.3).';
+
+  @override
+  String get gameSignScenario5_3_1Prompt =>
+      'Можно остановиться на обочине просто для отдыха?';
+
+  @override
+  String get gameSignScenario5_3_1Explanation =>
+      'Нет. Преднамеренная остановка допускается на специальных площадках. Вынужденная остановка — отдельный случай.';
+
+  @override
+  String get gameSignScenario5_5_0Prompt =>
+      'Можно сдать назад на односторонней дороге, если это безопасно и место разрешает?';
+
+  @override
+  String get gameSignScenario5_5_0Explanation =>
+      'Да. Сам знак этого не запрещает. Нельзя сдавать назад на перекрёстках, переходах и в других местах из пп. 8.11–8.12.';
+
+  @override
+  String get gameSignScenario5_5_1Prompt =>
+      'Можно развернуться и ехать против одностороннего движения?';
+
+  @override
+  String get gameSignScenario5_5_1Explanation =>
+      'Нет. Это движение против установленного направления.';
+
+  @override
+  String get gameSignScenario5_5_2Prompt =>
+      'В населённом пункте можно парковать легковое авто слева на односторонней дороге?';
+
+  @override
+  String get gameSignScenario5_5_2Explanation =>
+      'Да. Для легкового автомобиля это разрешено, если нет других запретов (п. 12.1).';
+
+  @override
+  String get gameSignScenario5_14_1_0Prompt =>
+      'Такси и школьному автобусу можно ехать по этой полосе?';
+
+  @override
+  String get gameSignScenario5_14_1_0Explanation =>
+      'Да. Пункт 18.2 допускает легковые такси и школьные автобусы. Велосипедистам можно лишь по такой полосе справа.';
+
+  @override
+  String get gameSignScenario5_14_1_1Prompt =>
+      'Можно обычной легковушке ехать по автобусной полосе вдоль дороги?';
+
+  @override
+  String get gameSignScenario5_14_1_1Explanation =>
+      'Нет. Обычным автомобилям движение по полосе запрещено. Перестроение для поворота, въезд и высадка при прерывистой разметке — отдельные исключения.';
+
+  @override
+  String get gameSignScenario5_15_1_0Prompt =>
+      'Стрелка налево из крайней левой полосы разрешает и разворот?';
+
+  @override
+  String get gameSignScenario5_15_1_0Explanation =>
+      'Да. Разворот разрешается из крайней левой полосы, если знак разрешает из неё поворот налево.';
+
+  @override
+  String get gameSignScenario5_19_1_0Prompt =>
+      'Без светофора нужно уступить пешеходу, который переходит вашу дорогу?';
+
+  @override
+  String get gameSignScenario5_19_1_0Explanation =>
+      'Да. На нерегулируемом переходе нужно уступить переходящим или вступившим на проезжую часть пешеходам (п. 14.1).';
+
+  @override
+  String get gameSignScenario5_19_1_1Prompt =>
+      'Можно сдать назад на пешеходном переходе?';
+
+  @override
+  String get gameSignScenario5_19_1_1Explanation =>
+      'Нет. На переходе запрещены и движение задним ходом, и разворот (пп. 8.11–8.12).';
+
+  @override
+  String get gameSignScenario5_19_1_2Prompt =>
+      'Можно остановиться за 3 м перед переходом?';
+
+  @override
+  String get gameSignScenario5_19_1_2Explanation =>
+      'Нет. Остановка запрещена на переходе и ближе 5 м перед ним (п. 12.4).';
+
+  @override
+  String get gameSignScenario5_20_0Prompt =>
+      'Знак показывает начало искусственной неровности?';
+
+  @override
+  String get gameSignScenario5_20_0Explanation =>
+      'Да. Его устанавливают на ближайшей границе искусственной неровности.';
+
+  @override
+  String get gameSignScenario5_20_1Prompt =>
+      'Перед искусственной неровностью обязательно остановиться?';
+
+  @override
+  String get gameSignScenario5_20_1Explanation =>
+      'Нет. Знак не требует остановки. Выберите безопасную скорость для проезда.';
+
+  @override
+  String get gameSignScenario5_21_0Prompt =>
+      'В жилой зоне пешеходы имеют преимущество?';
+
+  @override
+  String get gameSignScenario5_21_0Explanation =>
+      'Да. Пешеходы могут идти и по тротуару, и по проезжей части, но не должны необоснованно мешать машинам (п. 17.1).';
+
+  @override
+  String get gameSignScenario5_21_1Prompt =>
+      'Можно ехать по жилой зоне со скоростью 30 км/ч?';
+
+  @override
+  String get gameSignScenario5_21_1Explanation =>
+      'Нет. В жилой зоне и во дворе предел — 20 км/ч (п. 10.2).';
+
+  @override
+  String get gameSignScenario5_21_2Prompt =>
+      'Можно проехать жилую зону насквозь, чтобы сократить путь?';
+
+  @override
+  String get gameSignScenario5_21_2Explanation =>
+      'Нет. Сквозное движение в жилой зоне запрещено (п. 17.2).';
+
+  @override
+  String get gameSignScenario5_23_1_0Prompt =>
+      'После этого знака общий предел скорости — 60 км/ч?';
+
+  @override
+  String get gameSignScenario5_23_1_0Explanation =>
+      'Да. Здесь начинаются правила для населённого пункта. Общий предел — 60 км/ч, если не установлен другой (п. 10.2).';
+
+  @override
+  String get gameSignScenario5_23_1_1Prompt =>
+      'Можно сразу после этого знака ехать 90 км/ч без других знаков?';
+
+  @override
+  String get gameSignScenario5_23_1_1Explanation =>
+      'Нет. Действует общий предел населённого пункта — 60 км/ч.';
+
+  @override
+  String get gameSignScenario5_25_0Prompt =>
+      'Этот знак сам по себе вводит предел 60 км/ч?';
+
+  @override
+  String get gameSignScenario5_25_0Explanation =>
+      'Нет. На обозначенной дороге правила для населённого пункта не действуют. Скорость зависит от дороги, машины и других знаков.';
+
+  @override
+  String get gameSignScenario5_25_1Prompt =>
+      'Синий знак населённого пункта отменяет ранее установленный предел скорости?';
+
+  @override
+  String get gameSignScenario5_25_1Explanation =>
+      'Нет. Сам знак не отменяет ограничение скорости, установленное другим знаком.';
+
+  @override
+  String get gameSignScenario6_2_0Prompt =>
+      'Скорость на этом знаке — рекомендация?';
+
+  @override
+  String get gameSignScenario6_2_0Explanation =>
+      'Да. Знак рекомендует скорость, но не отменяет обязательные ограничения и требование безопасности.';
+
+  @override
+  String get gameSignScenario6_2_1Prompt =>
+      'Нужно обязательно ехать ровно с указанной скоростью?';
+
+  @override
+  String get gameSignScenario6_2_1Explanation =>
+      'Нет. Это рекомендуемая, а не обязательная скорость.';
+
+  @override
+  String get gameSignScenario6_3_1_0Prompt =>
+      'Этот знак обозначает место для разворота?';
+
+  @override
+  String get gameSignScenario6_3_1_0Explanation =>
+      'Да. Здесь предусмотрено место для разворота.';
+
+  @override
+  String get gameSignScenario6_3_1_1Prompt =>
+      'Можно здесь повернуть налево во двор?';
+
+  @override
+  String get gameSignScenario6_3_1_1Explanation =>
+      'Нет. Знак обозначает место для разворота и запрещает поворот налево.';
+
+  @override
+  String get gameSignScenario6_4_0Prompt => 'Этот знак обозначает парковку?';
+
+  @override
+  String get gameSignScenario6_4_0Explanation =>
+      'Да. Знак указывает парковку. Таблички могут уточнять, кому, когда и как разрешена стоянка.';
+
+  @override
+  String get gameSignScenario6_4_1Prompt =>
+      'Перед этим знаком нужно обязательно остановиться?';
+
+  @override
+  String get gameSignScenario6_4_1Explanation =>
+      'Нет. Он указывает место парковки, а не требует остановки.';
+
+  @override
+  String get gameSignScenario6_16_0Prompt =>
+      'Знак показывает, где остановиться на запрещающий сигнал?';
+
+  @override
+  String get gameSignScenario6_16_0Explanation =>
+      'Да. Остановитесь перед знаком при запрещающем сигнале светофора или регулировщика (п. 6.13).';
+
+  @override
+  String get gameSignScenario6_16_1Prompt =>
+      'Светофор зелёный, регулировщика нет. Знак требует остановиться?';
+
+  @override
+  String get gameSignScenario6_16_1Explanation =>
+      'Нет. Сам знак «Стоп-линия» при разрешающем сигнале не требует остановки.';
+
+  @override
+  String get gameSignScenario7_1_0Prompt =>
+      'Знак указывает пункт первой медицинской помощи?';
+
+  @override
+  String get gameSignScenario7_1_0Explanation =>
+      'Да. Он сообщает, где находится пункт первой медицинской помощи.';
+
+  @override
+  String get gameSignScenario7_1_1Prompt =>
+      'Этот знак сам по себе ограничивает скорость до 20 км/ч?';
+
+  @override
+  String get gameSignScenario7_1_1Explanation =>
+      'Нет. Знаки сервиса не вводят ограничений скорости.';
+
+  @override
+  String get gameSignScenario7_3_0Prompt => 'Знак указывает автозаправку?';
+
+  @override
+  String get gameSignScenario7_3_0Explanation =>
+      'Да. Знак обозначает автозаправочную станцию.';
+
+  @override
+  String get gameSignScenario7_3_1Prompt =>
+      'Этот знак даёт преимущество при выезде с заправки на дорогу?';
+
+  @override
+  String get gameSignScenario7_3_1Explanation =>
+      'Нет. При выезде с прилегающей территории нужно уступить участникам движения на дороге (п. 8.3).';
+
+  @override
+  String get gameSignScenario8_1_1_0Prompt =>
+      'Табличка показывает расстояние до объекта или начала ограничения?';
+
+  @override
+  String get gameSignScenario8_1_1_0Explanation =>
+      'Да. Это расстояние от знака до опасного участка, объекта или места начала ограничения.';
+
+  @override
+  String get gameSignScenario8_1_1_1Prompt =>
+      'Табличка показывает длину зоны действия знака?';
+
+  @override
+  String get gameSignScenario8_1_1_1Explanation =>
+      'Нет. Длину зоны действия показывает табличка 8.2.1.';
+
+  @override
+  String get gameSignScenario8_2_1_0Prompt =>
+      'Табличка показывает длину опасного участка или зоны действия?';
+
+  @override
+  String get gameSignScenario8_2_1_0Explanation =>
+      'Да. Это протяжённость участка или зоны действия знака.';
+
+  @override
+  String get gameSignScenario8_2_1_1Prompt =>
+      'Знак начнёт действовать только через указанное расстояние?';
+
+  @override
+  String get gameSignScenario8_2_1_1Explanation =>
+      'Нет. Табличка показывает длину зоны, а не расстояние до её начала.';
+
+  @override
+  String get gameSignScenario8_2_3_0Prompt =>
+      'Стрелка вниз означает конец запрета остановки или стоянки?';
+
+  @override
+  String get gameSignScenario8_2_3_0Explanation =>
+      'Да. Она указывает конец зоны действия знаков 3.27–3.30.';
+
+  @override
+  String get gameSignScenario8_2_3_1Prompt =>
+      'После этой таблички прежний запрет стоянки продолжается?';
+
+  @override
+  String get gameSignScenario8_2_3_1Explanation =>
+      'Нет. Зона запрета заканчивается. Другие правила остановки и стоянки сохраняются.';
+
+  @override
+  String get gameSignScenario8_4_1_0Prompt =>
+      'Табличка относится к грузовикам с разрешённой массой более 3,5 т?';
+
+  @override
+  String get gameSignScenario8_4_1_0Explanation =>
+      'Да. В том числе к таким грузовикам с прицепом. Учитывают разрешённую максимальную, а не фактическую массу.';
+
+  @override
+  String get gameSignScenario8_4_1_1Prompt =>
+      'Знак с этой табличкой действует на легковое авто?';
+
+  @override
+  String get gameSignScenario8_4_1_1Explanation =>
+      'Нет. Табличка распространяет знак на грузовики с разрешённой максимальной массой более 3,5 т.';
+
+  @override
+  String get gameSignScenario8_4_3_0Prompt =>
+      'Табличка относится к легковым авто и грузовикам до 3,5 т включительно?';
+
+  @override
+  String get gameSignScenario8_4_3_0Explanation =>
+      'Да. Учитывается разрешённая максимальная масса грузовика.';
+
+  @override
+  String get gameSignScenario8_4_3_1Prompt =>
+      'Знак с этой табличкой действует на автобус?';
+
+  @override
+  String get gameSignScenario8_4_3_1Explanation =>
+      'Нет. Эта табличка относится к легковым автомобилям и грузовикам до 3,5 т включительно.';
+
+  @override
+  String get gameSignScenario8_17_0Prompt =>
+      'Со знаком парковки табличка выделяет места для машин со знаком «Инвалид»?';
+
+  @override
+  String get gameSignScenario8_17_0Explanation =>
+      'Да. Места предназначены для машин, имеющих право на такую парковку, с опознавательным знаком «Инвалид», в том числе перевозящих детей-инвалидов.';
+
+  @override
+  String get gameSignScenario8_17_1Prompt =>
+      'Можно оставить здесь обычную машину без знака «Инвалид» на 10 минут?';
+
+  @override
+  String get gameSignScenario8_17_1Explanation =>
+      'Нет. Эти парковочные места предназначены для машин со знаком «Инвалид», имеющих право на льготу.';
+
+  @override
+  String get gameSignScenario5_15_1_1Prompt =>
+      'Из средней полосы стрелка только прямо. Можно повернуть налево?';
+
+  @override
+  String get gameSignScenario5_15_1_1Explanation =>
+      'Нет. Из этой полосы разрешено только прямо. Для поворота нужно заранее занять подходящую полосу.';
 }

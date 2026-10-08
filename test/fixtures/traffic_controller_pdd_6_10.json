@@ -1,0 +1,265 @@
+[
+  {
+    "gesture": "handsDown",
+    "approach": "front",
+    "vehicle": "car",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "handsDown",
+    "approach": "front",
+    "vehicle": "tram",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "handsDown",
+    "approach": "back",
+    "vehicle": "car",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "handsDown",
+    "approach": "back",
+    "vehicle": "tram",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "handsDown",
+    "approach": "left",
+    "vehicle": "car",
+    "moves": [
+      "straight",
+      "right"
+    ]
+  },
+  {
+    "gesture": "handsDown",
+    "approach": "left",
+    "vehicle": "tram",
+    "moves": [
+      "straight"
+    ]
+  },
+  {
+    "gesture": "handsDown",
+    "approach": "right",
+    "vehicle": "car",
+    "moves": [
+      "straight",
+      "right"
+    ]
+  },
+  {
+    "gesture": "handsDown",
+    "approach": "right",
+    "vehicle": "tram",
+    "moves": [
+      "straight"
+    ]
+  },
+  {
+    "gesture": "handsSides",
+    "approach": "front",
+    "vehicle": "car",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "handsSides",
+    "approach": "front",
+    "vehicle": "tram",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "handsSides",
+    "approach": "back",
+    "vehicle": "car",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "handsSides",
+    "approach": "back",
+    "vehicle": "tram",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "handsSides",
+    "approach": "left",
+    "vehicle": "car",
+    "moves": [
+      "straight",
+      "right"
+    ]
+  },
+  {
+    "gesture": "handsSides",
+    "approach": "left",
+    "vehicle": "tram",
+    "moves": [
+      "straight"
+    ]
+  },
+  {
+    "gesture": "handsSides",
+    "approach": "right",
+    "vehicle": "car",
+    "moves": [
+      "straight",
+      "right"
+    ]
+  },
+  {
+    "gesture": "handsSides",
+    "approach": "right",
+    "vehicle": "tram",
+    "moves": [
+      "straight"
+    ]
+  },
+  {
+    "gesture": "rightArmForward",
+    "approach": "front",
+    "vehicle": "car",
+    "moves": [
+      "right"
+    ]
+  },
+  {
+    "gesture": "rightArmForward",
+    "approach": "front",
+    "vehicle": "tram",
+    "moves": [
+      "right"
+    ]
+  },
+  {
+    "gesture": "rightArmForward",
+    "approach": "back",
+    "vehicle": "car",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "rightArmForward",
+    "approach": "back",
+    "vehicle": "tram",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "rightArmForward",
+    "approach": "left",
+    "vehicle": "car",
+    "moves": [
+      "straight",
+      "right",
+      "left",
+      "uTurn"
+    ]
+  },
+  {
+    "gesture": "rightArmForward",
+    "approach": "left",
+    "vehicle": "tram",
+    "moves": [
+      "left"
+    ]
+  },
+  {
+    "gesture": "rightArmForward",
+    "approach": "right",
+    "vehicle": "car",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "rightArmForward",
+    "approach": "right",
+    "vehicle": "tram",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "armUp",
+    "approach": "front",
+    "vehicle": "car",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "armUp",
+    "approach": "front",
+    "vehicle": "tram",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "armUp",
+    "approach": "back",
+    "vehicle": "car",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "armUp",
+    "approach": "back",
+    "vehicle": "tram",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "armUp",
+    "approach": "left",
+    "vehicle": "car",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "armUp",
+    "approach": "left",
+    "vehicle": "tram",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "armUp",
+    "approach": "right",
+    "vehicle": "car",
+    "moves": [
+      "none"
+    ]
+  },
+  {
+    "gesture": "armUp",
+    "approach": "right",
+    "vehicle": "tram",
+    "moves": [
+      "none"
+    ]
+  }
+]

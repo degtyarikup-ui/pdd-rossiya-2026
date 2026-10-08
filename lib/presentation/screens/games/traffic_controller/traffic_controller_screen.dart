@@ -195,7 +195,8 @@ class _TrafficControllerScreenState
 
   void _updateEngineScenario() {
     final gesture = switch (_curGesture) {
-      ControllerGesture.handsDownOrSides => 'handsDownOrSides',
+      ControllerGesture.handsSides => 'handsSides',
+      ControllerGesture.handsDown => 'handsDown',
       ControllerGesture.rightArmForward => 'rightArmForward',
       ControllerGesture.armUp => 'armUp',
     };
@@ -602,7 +603,7 @@ class _TrafficControllerScreenState
             const SizedBox(width: AppDimensions.spacingS),
             Flexible(
               child: Text(
-                appL10n.gamePromptWhereCanGo,
+                appL10n.gameTrafficSignalQuestion,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,

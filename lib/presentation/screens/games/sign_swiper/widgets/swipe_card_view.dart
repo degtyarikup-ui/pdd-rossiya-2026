@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
 
 /// Контроллер для программного свайпа карточки (кнопки внизу).
@@ -20,7 +21,7 @@ class SwipeCardController {
 }
 
 /// Карточка знака. Тянется пальцем; вправо — «да», влево — «нет».
-/// Плоская: обратная связь — подкрашивание зелёным/красным и значок по центру.
+/// Объёмная карточка с настоящим знаком из общей базы приложения.
 class SwipeCardView extends StatefulWidget {
   final SignCardQuestion card;
   final ValueChanged<bool> onSwiped; // true = вправо (ДА), false = влево (НЕТ)
@@ -153,11 +154,13 @@ class SwipeCardViewState extends State<SwipeCardView>
 
     return AnimatedBuilder(
       animation: _anim,
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.spacingXXL),
-        child: LayoutBuilder(
-          builder: (context, constraints) =>
-              _buildContent(context, colors, constraints),
+      child: RepaintBoundary(
+        child: Padding(
+          padding: const EdgeInsets.all(AppDimensions.spacingXXL),
+          child: LayoutBuilder(
+            builder: (context, constraints) =>
+                _buildContent(context, colors, constraints),
+          ),
         ),
       ),
       builder: (context, child) {
@@ -178,8 +181,12 @@ class SwipeCardViewState extends State<SwipeCardView>
 
         return Transform.translate(
           offset: offset,
-          child: Transform.rotate(
-            angle: angle,
+          child: Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.001)
+              ..rotateY(-progress * 0.14)
+              ..rotateZ(angle),
             child: GestureDetector(
               onHorizontalDragStart: _onHorizontalDragStart,
               onHorizontalDragUpdate: _onHorizontalDragUpdate,
@@ -189,8 +196,29 @@ class SwipeCardViewState extends State<SwipeCardView>
                 width: double.infinity,
                 height: double.infinity,
                 decoration: BoxDecoration(
-                  color: background,
-                  boxShadow: gameSoftShadow(colors),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      background,
+                      Color.lerp(background, colors.accent, 0.07)!,
+                    ],
+                  ),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF536174)
+                        : Colors.white,
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? const Color(0xFF172536)
+                          : const Color(0xFFCCD6E5),
+                      offset: const Offset(0, 7),
+                    ),
+                    ...gameSoftShadow(colors),
+                  ],
                   borderRadius: BorderRadius.circular(
                     AppDimensions.radiusExtraLarge,
                   ),
@@ -248,7 +276,7 @@ class SwipeCardViewState extends State<SwipeCardView>
       height: 1.35,
       color: colors.primaryText,
     );
-    final categoryStyle = TextStyle(fontSize: 12, color: colors.secondaryText);
+    final scopeStyle = TextStyle(fontSize: 11, color: colors.secondaryText);
 
     double textHeight(String text, TextStyle style, {int? maxLines}) {
       final painter = TextPainter(
@@ -268,12 +296,12 @@ class SwipeCardViewState extends State<SwipeCardView>
     final remainingHeight =
         constraints.maxHeight -
         textHeight(card.prompt, promptStyle) -
-        textHeight(card.sign.category, categoryStyle, maxLines: 1) -
+        textHeight(appL10n.gameSignQuestionScope, scopeStyle) -
         AppDimensions.spacingL -
         AppDimensions.spacingM;
     // На компактном экране сохраняем размер знака и весь вопрос; вертикальный
     // скролл не конкурирует с горизонтальным жестом ответа.
-    final signHeight = remainingHeight.clamp(144.0, double.infinity);
+    final signHeight = remainingHeight.clamp(160.0, 300.0);
 
     return SingleChildScrollView(
       primary: false,
@@ -284,15 +312,32 @@ class SwipeCardViewState extends State<SwipeCardView>
           const SizedBox(height: AppDimensions.spacingL),
           SizedBox(
             height: signHeight,
-            child: Center(child: _SignImage(sign: card.sign)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFDFEFE),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE2E9F2)),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0xFFCFD9E5), offset: Offset(0, 4)),
+                    BoxShadow(
+                      color: Color(0x160C2848),
+                      blurRadius: 14,
+                      offset: Offset(0, 9),
+                    ),
+                  ],
+                ),
+                child: _SignImage(sign: card.sign),
+              ),
+            ),
           ),
           const SizedBox(height: AppDimensions.spacingM),
           Text(
-            card.sign.category,
+            appL10n.gameSignQuestionScope,
             textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: categoryStyle,
+            style: scopeStyle,
           ),
         ],
       ),
