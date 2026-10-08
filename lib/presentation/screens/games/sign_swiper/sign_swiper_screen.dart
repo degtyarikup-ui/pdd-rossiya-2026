@@ -33,10 +33,11 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   late SignSwiperMode _mode;
   SignSwiperEngine? _engine;
 
-  final GlobalKey<SwipeCardViewState> _topCardKey = GlobalKey<SwipeCardViewState>();
+  final SwipeCardController _cardController = SwipeCardController();
 
   List<SignCardQuestion> _deck = [];
   int _currentIndex = 0;
+  bool _isProcessingSwipe = false;
 
   // Режим «Блиц-спринт»
   Timer? _timer;
@@ -76,6 +77,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   void _startRound() {
     _timer?.cancel();
     setState(() {
+      _isProcessingSwipe = false;
       _currentIndex = 0;
       _score = 0;
       _combo = 0;
@@ -121,6 +123,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   void _endGame() {
     _timer?.cancel();
     _isGameOver = true;
+    _isProcessingSwipe = false;
 
     // Сохраняем результат
     ref.read(signSwiperProgressProvider.notifier).recordGameResult(
@@ -131,7 +134,8 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   }
 
   void _onCardSwiped(bool userRightSwipe) {
-    if (_currentIndex >= _deck.length || _isGameOver) return;
+    if (_currentIndex >= _deck.length || _isGameOver || _isProcessingSwipe) return;
+    _isProcessingSwipe = true;
 
     final card = _deck[_currentIndex];
     final isCorrect = (userRightSwipe == card.isCorrect);
@@ -190,7 +194,9 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   }
 
   void _advanceToNextCard() {
+    if (!mounted) return;
     setState(() {
+      _isProcessingSwipe = false;
       _currentIndex++;
       // Подгрузка следующей пачки, если колода подходит к концу
       if (_deck.length - _currentIndex < 6 && _engine != null) {
@@ -599,7 +605,8 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
 
         // Верхняя активная карточка
         SwipeCardView(
-          key: _topCardKey,
+          key: ValueKey(topCard.id),
+          controller: _cardController,
           card: topCard,
           isTopCard: true,
           onSwiped: _onCardSwiped,
@@ -630,7 +637,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
             label: appL10n.gameSignSwiperSwipeLeft,
             onTap: () {
               HapticFeedbackHelper.tap();
-              _topCardKey.currentState?.triggerSwipe(false);
+              _cardController.swipeLeft();
             },
           ),
 
@@ -668,7 +675,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
             label: appL10n.gameSignSwiperSwipeRight,
             onTap: () {
               HapticFeedbackHelper.tap();
-              _topCardKey.currentState?.triggerSwipe(true);
+              _cardController.swipeRight();
             },
           ),
         ],

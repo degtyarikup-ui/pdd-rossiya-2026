@@ -23,18 +23,27 @@ class SignExplanationSheet extends StatelessWidget {
     required SignCardQuestion card,
     bool? wasAnswerCorrect,
     VoidCallback? onNext,
-  }) {
+  }) async {
     HapticFeedbackHelper.tap();
-    return showModalBottomSheet(
+    bool nextHandled = false;
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => SignExplanationSheet(
         card: card,
         wasAnswerCorrect: wasAnswerCorrect,
-        onNext: onNext,
+        onNext: onNext != null
+            ? () {
+                nextHandled = true;
+                onNext();
+              }
+            : null,
       ),
     );
+    if (!nextHandled && onNext != null) {
+      onNext();
+    }
   }
 
   @override

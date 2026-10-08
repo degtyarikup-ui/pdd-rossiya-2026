@@ -3,12 +3,31 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
 
+/// Контроллер для программного вызова свайпа карточки.
+class SwipeCardController {
+  SwipeCardViewState? _state;
+
+  void attach(SwipeCardViewState state) {
+    _state = state;
+  }
+
+  void detach(SwipeCardViewState state) {
+    if (_state == state) {
+      _state = null;
+    }
+  }
+
+  void swipeLeft() => _state?.triggerSwipe(false);
+  void swipeRight() => _state?.triggerSwipe(true);
+}
+
 /// Карточка свайпера с поддержкой жестов перетаскивания и наклона.
 class SwipeCardView extends StatefulWidget {
   final SignCardQuestion card;
   final ValueChanged<bool> onSwiped; // true = вправо (ДА), false = влево (НЕТ)
   final bool isTopCard;
   final VoidCallback? onCardTap;
+  final SwipeCardController? controller;
 
   const SwipeCardView({
     super.key,
@@ -16,6 +35,7 @@ class SwipeCardView extends StatefulWidget {
     required this.onSwiped,
     this.isTopCard = true,
     this.onCardTap,
+    this.controller,
   });
 
   @override
@@ -40,10 +60,33 @@ class SwipeCardViewState extends State<SwipeCardView>
       vsync: this,
       duration: const Duration(milliseconds: 240),
     );
+    if (widget.isTopCard) {
+      widget.controller?.attach(this);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant SwipeCardView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?.detach(this);
+      if (widget.isTopCard) {
+        widget.controller?.attach(this);
+      }
+    }
+    if (oldWidget.card.id != widget.card.id) {
+      _animController.stop();
+      _animController.reset();
+      _dragOffset = Offset.zero;
+      _isAnimatingOut = false;
+      _offsetAnim = null;
+      _rotationAnim = null;
+    }
   }
 
   @override
   void dispose() {
+    widget.controller?.detach(this);
     _animController.dispose();
     super.dispose();
   }
@@ -65,6 +108,14 @@ class SwipeCardViewState extends State<SwipeCardView>
     ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic));
 
     _animController.forward(from: 0).then((_) {
+      if (mounted) {
+        setState(() {
+          _dragOffset = Offset.zero;
+          _isAnimatingOut = false;
+          _offsetAnim = null;
+          _rotationAnim = null;
+        });
+      }
       widget.onSwiped(isRight);
     });
   }
