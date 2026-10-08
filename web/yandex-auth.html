@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex">
+<title>Вход через Яндекс</title>
+</head>
+<body style="font-family:system-ui,sans-serif;padding:24px">
+<p>Вход выполнен, окно можно закрыть.</p>
+<script>
+// Возврат из oauth.yandex.ru: токен приходит во фрагменте адреса и
+// передаётся приложению (окну того же сайта, которое открыло это).
+(function () {
+  var fragment = location.hash.replace(/^#/, '');
+  history.replaceState(null, '', location.pathname);
+  if (window.opener && fragment) {
+    window.opener.postMessage({ type: 'yandex-oauth', fragment: fragment }, location.origin);
+  }
+  window.close();
+})();
+</script>
+</body>
+</html>
