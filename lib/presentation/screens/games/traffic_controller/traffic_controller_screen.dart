@@ -195,15 +195,17 @@ class _TrafficControllerScreenState
   }
 
   void _startArcadeRound() {
-    _score = 0;
-    _combo = 0;
-    _maxComboInRound = 0;
-    _lives = 3;
-    _secondsLeft = 35;
-    _solvedCount = 0;
-    _isGameOver = false;
-
+    HapticFeedbackHelper.select();
     _countdownTimer?.cancel();
+    setState(() {
+      _score = 0;
+      _combo = 0;
+      _maxComboInRound = 0;
+      _lives = 3;
+      _secondsLeft = 35;
+      _solvedCount = 0;
+      _isGameOver = false;
+    });
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -384,7 +386,10 @@ class _TrafficControllerScreenState
             ),
 
             // Game Over Dialog
-            if (_isGameOver) _buildGameOverOverlay(colors),
+            if (_isGameOver)
+              Positioned.fill(
+                child: _buildGameOverOverlay(colors),
+              ),
           ],
         ),
       ),

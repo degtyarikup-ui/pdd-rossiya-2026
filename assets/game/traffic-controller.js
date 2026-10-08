@@ -90,8 +90,8 @@
   // Камера: плавное вращение и обзор
   let camAngle = 0;
   let targetAngle = 0;
-  let camDistance = 30;
-  let camHeight = 22;
+  let camDistance = 23;
+  let camHeight = 18;
   let clock = new THREE.Clock();
 
   function init() {
@@ -381,14 +381,14 @@
     const halfW = roadWidth / 2;
 
     const buildingSpecs = [
-      // Северо-Запад: 4-этажный классический дом с карнизом и окнами
-      { x: -(halfW + 18), z: -(halfW + 18), w: 22, d: 24, h: 18, color: 0xC8B699, roofColor: 0x3D4350 },
-      // Северо-Восток: 5-этажный современный кирпичный дом
-      { x: (halfW + 18), z: -(halfW + 18), w: 24, d: 22, h: 22, color: 0x9E5848, roofColor: 0x2A2E38 },
-      // Юго-Запад: 3-этажный дом с рустом и витринами
-      { x: -(halfW + 18), z: (halfW + 18), w: 22, d: 22, h: 14, color: 0x768A7C, roofColor: 0x3F4652 },
+      // Северо-Запад: 3-этажный классический дом
+      { x: -(halfW + 30), z: -(halfW + 30), w: 20, d: 20, h: 14, color: 0xC8B699, roofColor: 0x3D4350 },
+      // Северо-Восток: 4-этажный современный кирпичный дом
+      { x: (halfW + 30), z: -(halfW + 30), w: 20, d: 20, h: 16, color: 0x9E5848, roofColor: 0x2A2E38 },
+      // Юго-Запад: 3-этажный дом
+      { x: -(halfW + 30), z: (halfW + 30), w: 20, d: 20, h: 13, color: 0x768A7C, roofColor: 0x3F4652 },
       // Юго-Восток: 4-этажный светлый фасад
-      { x: (halfW + 18), z: (halfW + 18), w: 24, d: 24, h: 17, color: 0xB5BAC4, roofColor: 0x323842 },
+      { x: (halfW + 30), z: (halfW + 30), w: 20, d: 20, h: 15, color: 0xB5BAC4, roofColor: 0x323842 },
     ];
 
     buildingSpecs.forEach(b => {
@@ -856,61 +856,101 @@
     return group;
   }
 
-  // Детализированная 3D-модель классического городского трамвая
+  // Детализированная 3D-модель классического городского трамвая (Татра Т3 / КТМ-5)
   function buildRussianTram() {
     const tram = new THREE.Group();
 
-    const redMat = new THREE.MeshStandardMaterial({ color: 0xD32F2F, roughness: 0.4, metalness: 0.2 });
+    const redMat = new THREE.MeshStandardMaterial({ color: 0xD32F2F, roughness: 0.35, metalness: 0.15 });
     const creamMat = new THREE.MeshStandardMaterial({ color: 0xF5F0E6, roughness: 0.45 });
-    const glassMat = new THREE.MeshStandardMaterial({ color: 0x374A5E, metalness: 0.8, roughness: 0.15 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x374A5E, metalness: 0.85, roughness: 0.15 });
     const metalMat = new THREE.MeshStandardMaterial({ color: 0x88929E, metalness: 0.85, roughness: 0.25 });
     const darkMat = new THREE.MeshStandardMaterial({ color: 0x212529, roughness: 0.7 });
     const lightGlowMat = new THREE.MeshBasicMaterial({ color: 0xFFF9E6 });
+    const redLightMat = new THREE.MeshBasicMaterial({ color: 0xFF1744 });
 
-    // Нижняя красная часть кузова
-    const lowerBody = new THREE.Mesh(new THREE.BoxGeometry(2.35, 1.1, 9.4), redMat);
-    lowerBody.position.y = 0.95;
+    const L = 8.8; // длина кузова
+    const W = 2.3; // ширина кузова
+
+    // 1. Нижняя красная часть кузова (сплошной закрытый бокс)
+    const lowerBody = new THREE.Mesh(new THREE.BoxGeometry(W, 1.0, L), redMat);
+    lowerBody.position.y = 0.82;
     lowerBody.castShadow = true;
     tram.add(lowerBody);
 
-    // Остекление салона с черными стойками
-    const cabinGlass = new THREE.Mesh(new THREE.BoxGeometry(2.28, 1.15, 9.2), glassMat);
-    cabinGlass.position.y = 2.05;
+    // Передний и задний бамперы
+    const bumperF = new THREE.Mesh(new THREE.BoxGeometry(W + 0.05, 0.22, 0.3), darkMat);
+    bumperF.position.set(0, 0.45, L / 2 + 0.05);
+    tram.add(bumperF);
+
+    const bumperR = new THREE.Mesh(new THREE.BoxGeometry(W + 0.05, 0.22, 0.3), darkMat);
+    bumperR.position.set(0, 0.45, -L / 2 - 0.05);
+    tram.add(bumperR);
+
+    // 2. Оконный пояс (тонированные стекла)
+    const cabinGlass = new THREE.Mesh(new THREE.BoxGeometry(W - 0.04, 0.95, L - 0.1), glassMat);
+    cabinGlass.position.y = 1.78;
     tram.add(cabinGlass);
 
-    // Верхняя кремовая часть и скругленная крыша
-    const upperBody = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.25, 9.4), creamMat);
-    upperBody.position.y = 2.75;
-    tram.add(upperBody);
-
-    const roof = new THREE.Mesh(new THREE.CylinderGeometry(1.17, 1.17, 9.3, 16, 1, false, 0, Math.PI), creamMat);
-    roof.rotation.z = Math.PI / 2;
-    roof.rotation.y = Math.PI / 2;
-    roof.position.set(0, 2.85, 0);
-    roof.scale.set(0.3, 1.0, 1.0);
-    tram.add(roof);
-
-    // Табло маршрута над лобовым стеклом ("№ 3 Вокзал")
-    const routeBoard = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.32, 0.1), darkMat);
-    routeBoard.position.set(0, 2.75, 4.71);
-    tram.add(routeBoard);
-
-    // Круглые фары трамвая
-    [-0.6, 0.6].forEach(x => {
-      const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.08, 14), lightGlowMat);
-      lamp.rotation.x = Math.PI / 2;
-      lamp.position.set(x, 0.75, 4.71);
-      tram.add(lamp);
+    // 3. Вертикальные кремовые стойки между окнами вдоль обоих бортов
+    [-W / 2 - 0.01, W / 2 + 0.01].forEach(x => {
+      [-3.0, -1.5, 0.0, 1.5, 3.0].forEach(z => {
+        const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.95, 0.16), creamMat);
+        pillar.position.set(x, 1.78, z);
+        tram.add(pillar);
+      });
     });
 
-    // Металлический пантограф (токоприёмник) на крыше
+    // 4. Пассажирские двери с правого борта
+    [-2.2, 2.2].forEach(z => {
+      const door = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.7, 1.1), darkMat);
+      door.position.set(W / 2 + 0.02, 1.45, z);
+      tram.add(door);
+      const doorWin = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.7, 0.8), glassMat);
+      doorWin.position.set(W / 2 + 0.02, 1.7, z);
+      tram.add(doorWin);
+    });
+
+    // 5. Верхний кремовый пояс кузова (сплошной бокс)
+    const upperBody = new THREE.Mesh(new THREE.BoxGeometry(W, 0.35, L), creamMat);
+    upperBody.position.y = 2.42;
+    upperBody.castShadow = true;
+    tram.add(upperBody);
+
+    // 6. Крыша (сплошной объемный закрытый бокс)
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(W - 0.1, 0.22, L - 0.1), creamMat);
+    roof.position.y = 2.68;
+    roof.castShadow = true;
+    tram.add(roof);
+
+    const roofTop = new THREE.Mesh(new THREE.BoxGeometry(W - 0.3, 0.1, L - 0.3), creamMat);
+    roofTop.position.y = 2.82;
+    tram.add(roofTop);
+
+    // 7. Маршрутное табло ("№ 3 Вокзал")
+    const routeBoard = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.28, 0.12), darkMat);
+    routeBoard.position.set(0, 2.42, L / 2 + 0.06);
+    tram.add(routeBoard);
+
+    // 8. Фара трамвая спереди и габариты сзади
+    const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.1, 16), lightGlowMat);
+    lamp.rotation.x = Math.PI / 2;
+    lamp.position.set(0, 0.85, L / 2 + 0.06);
+    tram.add(lamp);
+
+    [-0.7, 0.7].forEach(x => {
+      const tailLamp = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.08, 12), redLightMat);
+      tailLamp.rotation.x = Math.PI / 2;
+      tailLamp.position.set(x, 0.85, -L / 2 - 0.06);
+      tram.add(tailLamp);
+    });
+
+    // 9. Пантограф (токоприёмник) на крыше
     const pantoGroup = new THREE.Group();
-    pantoGroup.position.set(0, 3.2, 2.0);
+    pantoGroup.position.set(0, 2.9, 1.2);
 
     const baseFrame = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.08, 0.9), metalMat);
     pantoGroup.add(baseFrame);
 
-    // Ромбовидные фермы пантографа
     const diamondArm1 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 8), metalMat);
     diamondArm1.rotation.x = 0.55;
     diamondArm1.position.set(0, 0.5, -0.3);
@@ -921,14 +961,14 @@
     diamondArm2.position.set(0, 0.5, 0.3);
     pantoGroup.add(diamondArm2);
 
-    const contactShoe = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.04, 0.15), metalMat);
+    const contactShoe = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 0.18), metalMat);
     contactShoe.position.set(0, 1.0, 0);
     pantoGroup.add(contactShoe);
 
     tram.add(pantoGroup);
 
-    // Две двухосные тележки с металлическими колесами
-    [-2.6, 2.6].forEach(z => {
+    // 10. Две двухосные тележки с металлическими колесами
+    [-2.2, 2.2].forEach(z => {
       const bogie = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.25, 1.6), darkMat);
       bogie.position.set(0, 0.28, z);
       tram.add(bogie);
@@ -1176,14 +1216,13 @@
       camera.position.z = Math.cos(camAngle) * radius;
       camera.lookAt(0, 1.2, 0);
     } else {
-      // Вид из кабины водителя машины
-      if (activeVehicleMesh) {
-        camera.position.set(
-          activeVehicleMesh.position.x,
-          1.65,
-          activeVehicleMesh.position.z + 0.4
-        );
-        camera.lookAt(0, 1.45, 0);
+      // Вид из кабины водителя машины / трамвая
+      if (currentVehicle === VEHICLES.TRAM && tramMesh) {
+        camera.position.set(-2.2, 1.9, 10.4);
+        camera.lookAt(-2.2, 1.6, 0);
+      } else if (carMesh) {
+        camera.position.set(3.2, 1.45, 12.8);
+        camera.lookAt(3.2, 1.35, 0);
       }
     }
   }
@@ -1235,7 +1274,7 @@
       rightArmPivot.rotation.set(curRightArm.x, curRightArm.y, curRightArm.z);
     }
 
-    // Анимация движения машины/трамвая
+    // Анимация движения машины/трамвая (движение ВПЕРЕД по траектории)
     if (isMoving && moveCurve && movingObject) {
       moveProgress += delta * 0.65;
       if (moveProgress >= 1) {
@@ -1247,7 +1286,7 @@
         movingObject.position.copy(point);
 
         const tangent = moveCurve.getTangent(moveProgress);
-        movingObject.rotation.y = Math.atan2(-tangent.x, -tangent.z);
+        movingObject.rotation.y = Math.atan2(tangent.x, tangent.z);
       }
     }
 
