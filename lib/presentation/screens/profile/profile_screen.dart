@@ -37,6 +37,10 @@ String _getAchievementTitle(AchievementId id) {
       return appL10n.achievementTitleGame;
     case AchievementId.rank:
       return appL10n.achievementTitleRank;
+    case AchievementId.trafficController:
+      return appL10n.achievementTitleTrafficController;
+    case AchievementId.signSwiper:
+      return appL10n.achievementTitleSignSwiper;
   }
 }
 
@@ -68,6 +72,10 @@ String _getAchievementDescription(AchievementId id) {
       return appL10n.achievementDescGame;
     case AchievementId.rank:
       return appL10n.achievementDescRank;
+    case AchievementId.trafficController:
+      return appL10n.achievementDescTrafficController;
+    case AchievementId.signSwiper:
+      return appL10n.achievementDescSignSwiper;
   }
 }
 
@@ -163,7 +171,9 @@ class ProfileScreen extends ConsumerWidget {
     final currentUser = ref.watch(currentUserProvider);
     final achievementsAsync = ref.watch(achievementsProvider);
 
-    final achievements = achievementsAsync.valueOrNull ?? const [];
+    final achievements = achievementsForDisplay(
+      achievementsAsync.valueOrNull ?? const [],
+    );
     final unlockedCount = achievements.where((a) => a.isUnlocked).length;
     final totalCount = achievements.length;
 

@@ -9,6 +9,59 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('mini game records unlock independent achievement tiers', () {
+    for (var i = 0; i < AchievementThresholds.miniGame.length; i++) {
+      final threshold = AchievementThresholds.miniGame[i];
+      final list = computeAchievements(
+        longestStreak: 0,
+        stats: {},
+        questionProgress: {},
+        examResults: [],
+        gameBestScore: 0,
+        trafficControllerBestScore: threshold,
+        signSwiperBestScore: threshold - 1,
+      );
+      expect(
+        list.firstWhere((a) => a.id == AchievementId.trafficController).level,
+        i + 1,
+      );
+      expect(list.firstWhere((a) => a.id == AchievementId.signSwiper).level, i);
+      expect(list.firstWhere((a) => a.id == AchievementId.game).level, 0);
+    }
+  });
+
+  test('profile puts earned badges first by tier with stable ties', () {
+    final source = [
+      const AchievementProgress(
+        id: AchievementId.streak,
+        levels: [3, 7, 14, 30],
+        value: 3,
+      ),
+      const AchievementProgress(
+        id: AchievementId.rank,
+        levels: [1, 91, 98, 100],
+        value: 0,
+      ),
+      const AchievementProgress(
+        id: AchievementId.game,
+        levels: [1000, 2500, 5000, 7500],
+        value: 2500,
+      ),
+      const AchievementProgress(
+        id: AchievementId.signSwiper,
+        levels: [1000, 2500, 5000, 7500],
+        value: 1000,
+      ),
+    ];
+    expect(achievementsForDisplay(source).map((a) => a.id), [
+      AchievementId.game,
+      AchievementId.streak,
+      AchievementId.signSwiper,
+      AchievementId.rank,
+    ]);
+    expect(source.first.id, AchievementId.streak);
+  });
+
   group('AchievementProgress thresholds and levels', () {
     test(
       'уровень считается правильно на границе порога (value == порог → уровень засчитан, value == порог − 1 → нет)',
@@ -164,7 +217,7 @@ void main() {
 
         expect(list.any((a) => a.id == AchievementId.coverage), isFalse);
         expect(list.any((a) => a.id == AchievementId.tickets), isFalse);
-        expect(list.length, 7);
+        expect(list.length, 9);
       },
     );
 

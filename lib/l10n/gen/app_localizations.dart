@@ -3171,6 +3171,30 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Неверно'**
   String get gameAnswerWrong;
+
+  /// No description provided for @achievementTitleTrafficController.
+  ///
+  /// In ru, this message translates to:
+  /// **'Мастер сигналов'**
+  String get achievementTitleTrafficController;
+
+  /// No description provided for @achievementDescTrafficController.
+  ///
+  /// In ru, this message translates to:
+  /// **'Наберите 1000, 2500, 5000 и 7500 очков за одну игру с регулировщиком.'**
+  String get achievementDescTrafficController;
+
+  /// No description provided for @achievementTitleSignSwiper.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знаток знаков'**
+  String get achievementTitleSignSwiper;
+
+  /// No description provided for @achievementDescSignSwiper.
+  ///
+  /// In ru, this message translates to:
+  /// **'Наберите 1000, 2500, 5000 и 7500 очков за одну игру в «Знак-свайпер».'**
+  String get achievementDescSignSwiper;
 }
 
 class _AppLocalizationsDelegate

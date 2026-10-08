@@ -7,6 +7,8 @@ enum AchievementId {
   flawless,
   mistakes,
   game,
+  trafficController,
+  signSwiper,
   rank,
 }
 
@@ -19,6 +21,8 @@ abstract final class AchievementThresholds {
   static const List<int> flawless = [1, 3, 5, 10];
   static const List<int> mistakes = [10, 50, 100, 200];
   static const List<int> game = [1000, 2500, 5000, 7500];
+
+  static const List<int> miniGame = [1000, 2500, 5000, 7500];
 
   /// «Покоритель рейтинга»: уровни — топ-100 / топ-10 / топ-3 / 1 место.
   /// Модель считает «чем больше, тем лучше», а место — наоборот, поэтому
@@ -74,6 +78,8 @@ List<AchievementProgress> computeAchievements({
   required List<Map<String, dynamic>> examResults,
   required int gameBestScore,
   int? bestWeeklyRank,
+  int trafficControllerBestScore = 0,
+  int signSwiperBestScore = 0,
 }) {
   final totalQuestions = stats['totalQuestions'] ?? 0;
   final totalTickets = stats['totalTickets'] ?? 0;
@@ -188,7 +194,30 @@ List<AchievementProgress> computeAchievements({
   result.add(flawlessAchievement);
   result.add(mistakesAchievement);
   result.add(gameAchievement);
+  result.add(
+    AchievementProgress(
+      id: AchievementId.trafficController,
+      levels: AchievementThresholds.miniGame,
+      value: trafficControllerBestScore,
+    ),
+  );
+  result.add(
+    AchievementProgress(
+      id: AchievementId.signSwiper,
+      levels: AchievementThresholds.miniGame,
+      value: signSwiperBestScore,
+    ),
+  );
   result.add(rankAchievement);
 
   return result;
 }
+
+/// Полученные значки сначала; при равном уровне сохраняем порядок типов.
+List<AchievementProgress> achievementsForDisplay(
+  Iterable<AchievementProgress> achievements,
+) => List<AchievementProgress>.of(achievements)
+  ..sort((a, b) {
+    final byLevel = b.level.compareTo(a.level);
+    return byLevel != 0 ? byLevel : a.id.index.compareTo(b.id.index);
+  });

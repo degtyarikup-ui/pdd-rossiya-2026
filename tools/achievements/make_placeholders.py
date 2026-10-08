@@ -32,6 +32,8 @@ BADGES = {
     "flawless": ("rosette", "star", [("1", "БЕЗ ОШИБОК"), ("3", "БЕЗ ОШИБОК"), ("5", "БЕЗ ОШИБОК"), ("10", "БЕЗ ОШИБОК")]),
     "mistakes": ("square", "check", [("10", "ИСПРАВЛЕНО"), ("50", "ИСПРАВЛЕНО"), ("100", "ИСПРАВЛЕНО"), ("200", "ИСПРАВЛЕНО")]),
     "rank": ("decagon", "trophy", [("100", "ТОП"), ("10", "ТОП"), ("3", "ТОП"), ("1", "МЕСТО")]),
+    "trafficController": ("shield", "baton", [("1000", "ОЧКОВ"), ("2500", "ОЧКОВ"), ("5000", "ОЧКОВ"), ("7500", "ОЧКОВ")]),
+    "signSwiper": ("square", "sign", [("1000", "ОЧКОВ"), ("2500", "ОЧКОВ"), ("5000", "ОЧКОВ"), ("7500", "ОЧКОВ")]),
     "game": ("pentagon", "wheel", [("1000", "ОЧКОВ"), ("2500", "ОЧКОВ"), ("5000", "ОЧКОВ"), ("7500", "ОЧКОВ")]),
 }
 
@@ -135,6 +137,15 @@ def symbol(d: ImageDraw.ImageDraw, kind: str, cx: float, cy: float, s: float, in
                   270 if sx < 0 else 90, fill=ink, width=int(s * .16))
         d.rectangle([cx - s * .1, cy + s * .4, cx + s * .1, cy + s * .72], fill=ink)
         d.rounded_rectangle([cx - s * .5, cy + s * .7, cx + s * .5, cy + s * .95], radius=s * .1, fill=ink)
+    elif kind == "baton":
+        d.line([(cx - s * .65, cy + s * .85), (cx + s * .65, cy - s * .85)], fill=ink, width=int(s * .35))
+        for t in (.2, .5, .8):
+            x, y = cx - s * .65 + t * s * 1.3, cy + s * .85 - t * s * 1.7
+            d.line([(x - s * .12, y - s * .09), (x + s * .12, y + s * .09)], fill=(255, 255, 255, 180), width=int(s * .13))
+    elif kind == "sign":
+        d.polygon([(cx, cy - s), (cx - s, cy + s * .85), (cx + s, cy + s * .85)], outline=ink, width=int(s * .2))
+        d.line([(cx, cy - s * .35), (cx, cy + s * .22)], fill=ink, width=int(s * .16))
+        d.ellipse([cx - s * .09, cy + s * .4, cx + s * .09, cy + s * .58], fill=ink)
     elif kind == "wheel":
         t = s * .22
         d.ellipse([cx - s, cy - s, cx + s, cy + s], outline=ink, width=int(t))

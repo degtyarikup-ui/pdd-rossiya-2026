@@ -1803,4 +1803,18 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameAnswerWrong => 'Неверно';
+
+  @override
+  String get achievementTitleTrafficController => 'Мастер сигналов';
+
+  @override
+  String get achievementDescTrafficController =>
+      'Наберите 1000, 2500, 5000 и 7500 очков за одну игру с регулировщиком.';
+
+  @override
+  String get achievementTitleSignSwiper => 'Знаток знаков';
+
+  @override
+  String get achievementDescSignSwiper =>
+      'Наберите 1000, 2500, 5000 и 7500 очков за одну игру в «Знак-свайпер».';
 }

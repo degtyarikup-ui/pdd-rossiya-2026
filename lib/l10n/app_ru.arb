@@ -351,11 +351,11 @@
   "game": "Игра",
   "gameSimulator": "3D Тренажёр",
   "gameLeaderboard": "Таблица лидеров",
-  "gameScore": "Очки",
+  "gameScore": "Счёт",
   "gameDistance": "Дистанция",
   "gameOver": "Заезд завершён",
   "gameRestart": "Попробовать снова",
-  "gameExit": "В гараж",
+  "gameExit": "Выйти",
   "gameLeft": "Левее",
   "gameRight": "Правее",
   "gameGas": "ГАЗ",
@@ -364,7 +364,7 @@
   "gameKilometers": "км",
   "gameSeconds": "с",
   "gameMistake": "Ошибка",
-  "gameCorrect": "Верно",
+  "gameCorrect": "Верно!",
   "gameContinue": "Продолжить движение",
   "gameResolving": "Газ — ехать · стрелки — рулить",
   "gameGarage": "Выбор машины",
@@ -835,7 +835,6 @@
   "gameBestScoreLabel": "Рекорд",
   "gameComboLabel": "Макс. комбо",
   "gameSolvedLabel": "Решено",
-  "gameScore": "Счёт",
   "gameCombo": "Комбо",
   "gameLives": "Жизни",
   "gameActionStraight": "Прямо",
@@ -850,8 +849,6 @@
   "gameOverTitle": "Игра окончена",
   "gameOverNewRecord": "Новый рекорд!",
   "gamePlayAgain": "Играть снова",
-  "gameExit": "Выйти",
-  "gameCorrect": "Верно!",
   "gameWrong": "Нарушение!",
   "gameWhistleNote": "Свисток инспектора: движение в этом направлении запрещено сигналом регулировщика.",
   "gameSignSwiperTitle": "Знак-Свайпер",
@@ -908,7 +905,13 @@
   "gameApproachRight": "Правый бок",
   "gameApproachBack": "Спина",
   "gameSecondsLeft": "{seconds} с",
-  "@gameSecondsLeft": {"placeholders": {"seconds": {"type": "int"}}},
+  "@gameSecondsLeft": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
   "gameSignsLoadError": "Не удалось загрузить знаки",
   "gameRetry": "Повторить",
   "gameRestartRound": "Начать сначала",
@@ -921,5 +924,9 @@
   "gamePromptWhereCanGo": "Куда можно проехать?",
   "gameCaptionGesture": "Жест",
   "gameCaptionApproach": "К вам повёрнут",
-  "gameAnswerWrong": "Неверно"
+  "gameAnswerWrong": "Неверно",
+  "achievementTitleTrafficController": "Мастер сигналов",
+  "achievementDescTrafficController": "Наберите 1000, 2500, 5000 и 7500 очков за одну игру с регулировщиком.",
+  "achievementTitleSignSwiper": "Знаток знаков",
+  "achievementDescSignSwiper": "Наберите 1000, 2500, 5000 и 7500 очков за одну игру в «Знак-свайпер»."
 }

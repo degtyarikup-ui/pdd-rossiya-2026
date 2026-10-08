@@ -354,6 +354,12 @@ final achievementsProvider =
       final category = ref.watch(
         appSettingsProvider.select((s) => s.ticketCategory),
       );
+      final trafficScore = ref.watch(
+        trafficControllerProgressProvider.select((s) => s.bestScore),
+      );
+      final signScore = ref.watch(
+        signSwiperProgressProvider.select((s) => s.bestScore),
+      );
       final streak = await ref.watch(streakProvider.future);
       final stats = await ref.watch(statsProvider.future);
       final dataSource = ref.watch(progressDataSourceProvider);
@@ -377,6 +383,8 @@ final achievementsProvider =
         examResults: examResults,
         gameBestScore: gameBestScore,
         bestWeeklyRank: bestWeeklyRank,
+        trafficControllerBestScore: trafficScore,
+        signSwiperBestScore: signScore,
       );
     });
 
@@ -483,16 +491,19 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
   return auth.isAuthenticated;
 });
 
-final trafficControllerProgressProvider = StateNotifierProvider<
-    TrafficControllerProgressController, TrafficControllerProgress>((ref) {
-  final ds = ref.watch(progressDataSourceProvider);
-  return TrafficControllerProgressController(ds);
-});
+final trafficControllerProgressProvider =
+    StateNotifierProvider<
+      TrafficControllerProgressController,
+      TrafficControllerProgress
+    >((ref) {
+      final ds = ref.watch(progressDataSourceProvider);
+      return TrafficControllerProgressController(ds);
+    });
 
 class TrafficControllerProgressController
     extends StateNotifier<TrafficControllerProgress> {
   TrafficControllerProgressController(this._dataSource)
-      : super(_dataSource.getTrafficControllerProgress());
+    : super(_dataSource.getTrafficControllerProgress());
 
   final ProgressDataSource _dataSource;
 
@@ -518,16 +529,17 @@ class TrafficControllerProgressController
   }
 }
 
-final signSwiperProgressProvider = StateNotifierProvider<
-    SignSwiperProgressController, SignSwiperProgress>((ref) {
-  final ds = ref.watch(progressDataSourceProvider);
-  return SignSwiperProgressController(ds);
-});
+final signSwiperProgressProvider =
+    StateNotifierProvider<SignSwiperProgressController, SignSwiperProgress>((
+      ref,
+    ) {
+      final ds = ref.watch(progressDataSourceProvider);
+      return SignSwiperProgressController(ds);
+    });
 
-class SignSwiperProgressController
-    extends StateNotifier<SignSwiperProgress> {
+class SignSwiperProgressController extends StateNotifier<SignSwiperProgress> {
   SignSwiperProgressController(this._dataSource)
-      : super(_dataSource.getSignSwiperProgress());
+    : super(_dataSource.getSignSwiperProgress());
 
   final ProgressDataSource _dataSource;
 
