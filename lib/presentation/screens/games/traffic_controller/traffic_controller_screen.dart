@@ -54,6 +54,7 @@ class _TrafficControllerScreenState
   bool _awaitingNext = false;
   TrafficMove? _lastMove;
   bool _lastWasCorrect = false;
+  int _moveSequence = 0;
   int _wrongCount = 0;
   bool _isGameOver = false;
   bool _timeUp = false;
@@ -66,8 +67,8 @@ class _TrafficControllerScreenState
   double _sentInset = -1;
 
   // Приближение камеры щипком по сцене.
-  static const double _minZoom = 0.65;
-  static const double _maxZoom = 2.2;
+  static const double _minZoom = 0.4;
+  static const double _maxZoom = 2.6;
   double _zoom = 1;
   double _zoomAtGestureStart = 1;
 
@@ -131,6 +132,7 @@ class _TrafficControllerScreenState
   void _handleBridgeMessage(String raw) {
     try {
       final data = jsonDecode(raw) as Map<String, dynamic>;
+      if (!mounted) return;
       if (data['type'] == 'ready' && mounted && !_engineReady) {
         setState(() => _engineReady = true);
         _sentInset = -1;
@@ -139,6 +141,12 @@ class _TrafficControllerScreenState
         _call('setZoom($_zoom)');
         // Блиц стартует, когда сцена готова, — иначе время тратится на загрузку.
         _startArcadeRound();
+      } else if (data['type'] == 'move_complete' &&
+          data['id'] == _moveSequence &&
+          _awaitingNext &&
+          _lastWasCorrect &&
+          !_isGameOver) {
+        _scheduleNextSituation(const Duration(milliseconds: 160));
       }
     } catch (_) {}
   }
@@ -287,11 +295,12 @@ class _TrafficControllerScreenState
       vehicle: _curVehicle,
       move: move,
     );
-    _call('makeMove("${_moveName(move)}")');
+    _moveSequence++;
+    _call('makeMove("${_moveName(move)}", $_moveSequence)');
 
     if (isAllowed) {
       HapticFeedbackHelper.tap();
-      SoundEffectsService.instance.playCorrect();
+      SoundEffectsService.instance.playCorrect(volume: 0.38);
       setState(() {
         _awaitingNext = true;
         _lastMove = move;
@@ -303,11 +312,13 @@ class _TrafficControllerScreenState
         _secondsLeft = math.min(_secondsLeft + 3, 60);
       });
       _scheduleNextSituation(
-        Duration(milliseconds: move == TrafficMove.none ? 700 : 1250),
+        // Moving answers advance on the scene's completion message. This
+        // fallback keeps input usable if a WebView loses that message.
+        Duration(milliseconds: move == TrafficMove.none ? 700 : 3300),
       );
     } else {
-      HapticFeedbackHelper.error();
-      SoundEffectsService.instance.playIncorrect();
+      HapticFeedbackHelper.warning();
+      SoundEffectsService.instance.playIncorrect(volume: 0.30);
       setState(() {
         _awaitingNext = true;
         _lastMove = move;
@@ -590,29 +601,16 @@ class _TrafficControllerScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _curVehicle == VehicleKind.car
-                  ? Icons.directions_car_rounded
-                  : Icons.tram_rounded,
-              size: AppDimensions.smallIconSize,
-              color: colors.accent,
-            ),
-            const SizedBox(width: AppDimensions.spacingS),
-            Flexible(
-              child: Text(
-                appL10n.gameTrafficSignalQuestion,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: colors.primaryText,
-                ),
-              ),
-            ),
-          ],
+        Text(
+          _curVehicle == VehicleKind.tram
+              ? appL10n.gameTrafficTramSignalQuestion
+              : appL10n.gameTrafficSignalQuestion,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: colors.primaryText,
+          ),
         ),
         const SizedBox(height: AppDimensions.spacingM),
         row(_moves.sublist(0, 3), directional: true),

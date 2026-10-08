@@ -299,7 +299,27 @@ void main() {
       tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
       100,
     );
-    await tester.pump(const Duration(milliseconds: 1300));
+    // The screen must wait for the vehicle, not cut the animation at 1.25s.
+    if (correct != TrafficMove.none) {
+      await tester.pump(const Duration(milliseconds: 1500));
+      final scenariosBefore = controller.scripts
+          .where((s) => s.contains('setScenario('))
+          .length;
+      controller.emitMoveComplete(stale: true);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(
+        controller.scripts.where((s) => s.contains('setScenario(')).length,
+        scenariosBefore,
+      );
+      controller.emitMoveComplete();
+      await tester.pump(const Duration(milliseconds: 160));
+      expect(
+        controller.scripts.where((s) => s.contains('setScenario(')).length,
+        scenariosBefore + 1,
+      );
+    } else {
+      await tester.pump(const Duration(milliseconds: 700));
+    }
 
     for (var mistakes = 1; mistakes <= 3; mistakes++) {
       final allowed = controller.allowedMoves;
@@ -584,6 +604,18 @@ class _TrafficWebController extends PlatformWebViewController {
   void emitReady() => channel.onMessageReceived(
     const JavaScriptMessage(message: '{"type":"ready"}'),
   );
+
+  void emitMoveComplete({bool stale = false}) {
+    final command = scripts.lastWhere((s) => s.contains('makeMove('));
+    final id = int.parse(
+      RegExp(r'makeMove\("[^"]+", (\d+)\)').firstMatch(command)!.group(1)!,
+    );
+    channel.onMessageReceived(
+      JavaScriptMessage(
+        message: '{"type":"move_complete","id":${stale ? id - 1 : id}}',
+      ),
+    );
+  }
 
   Set<TrafficMove> get allowedMoves {
     final scenario = scripts.lastWhere(

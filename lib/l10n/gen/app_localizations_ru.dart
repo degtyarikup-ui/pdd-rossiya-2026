@@ -1825,6 +1825,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameTrafficSignalQuestion => 'Что разрешает сигнал?';
 
   @override
+  String get gameTrafficTramSignalQuestion => 'Что разрешено трамваю?';
+
+  @override
   String get gameSignScenario1_1_0Prompt =>
       'Знак предупреждает о переезде со шлагбаумом?';
 

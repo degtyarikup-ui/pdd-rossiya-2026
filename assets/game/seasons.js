@@ -16,7 +16,8 @@
     const m = date.getMonth() + 1;
     return m >= 9 && m <= 11 ? 'autumn' : (m === 12 || m <= 2) ? 'winter' : 'summer';
   }
-  function createLeaves(scene, {lowEnd = false, palette, spanX = 56, spanZ = 70, height = 16} = {}) {
+  function createLeaves(scene, {lowEnd = false, palette, spanX = 56, spanZ = 70, height = 16,
+    count = lowEnd ? 18 : 36, scaleMin = 1.3, scaleMax = 2, spreadEvenly = false} = {}) {
   let leafFx = null;
   function ensureLeafFx() {
     if (leafFx) return leafFx;
@@ -27,7 +28,6 @@
     shape.quadraticCurveTo(-0.13, -0.05, 0, -0.17);
     const geometry = new THREE.ShapeGeometry(shape, 3);
     geometry.rotateX(-Math.PI / 2);
-    const count = lowEnd ? 18 : 36;
     const mesh = new THREE.InstancedMesh(geometry, new THREE.MeshLambertMaterial({ side: THREE.DoubleSide }), count);
     mesh.frustumCulled = false; mesh.castShadow = false;
     const leaves = [];
@@ -36,15 +36,21 @@
     leafFx = { mesh, leaves, count, dummy: new THREE.Object3D(), colour: new THREE.Color() };
     return leafFx;
   }
-  function spawnLeaf(leaf, centre, anywhereHigh) {
+  function spawnLeaf(leaf, centre, anywhereHigh, index) {
     const colours = palette();
-    leaf.x = centre.x + (Math.random() - 0.5) * spanX;
-    leaf.z = centre.z + (Math.random() - 0.4) * spanZ;
+    // Sparse effects use one random position per cell, avoiding a clump of
+    // leaves in front of the officer. Main-game defaults remain unchanged.
+    const columns = Math.ceil(Math.sqrt(count));
+    const rows = Math.ceil(count / columns);
+    const x = spreadEvenly ? ((index % columns) + Math.random()) / columns : Math.random();
+    const z = spreadEvenly ? (Math.floor(index / columns) + Math.random()) / rows : Math.random();
+    leaf.x = centre.x + (x - 0.5) * spanX;
+    leaf.z = centre.z + (z - (spreadEvenly ? 0.5 : 0.4)) * spanZ;
     leaf.y = anywhereHigh ? 0.5 + Math.random() * (height - 0.5) : height * (0.75 + Math.random() * 0.25);
     leaf.fall = 0.55 + Math.random() * 0.5;
     leaf.sway = 0.6 + Math.random() * 0.9; leaf.swayRate = 1.1 + Math.random() * 1.3; leaf.phase = Math.random() * 6.3;
     leaf.spin = (Math.random() - 0.5) * 5; leaf.tumble = 2 + Math.random() * 3;
-    leaf.rot = Math.random() * 6.3; leaf.rest = 0; leaf.scale = 1.3 + Math.random() * 0.7; leaf.time = 0;
+    leaf.rot = Math.random() * 6.3; leaf.rest = 0; leaf.scale = scaleMin + Math.random() * (scaleMax - scaleMin); leaf.time = 0;
     leaf.colour = colours[Math.floor(Math.random() * colours.length)];
     leaf.born = true;
   }
@@ -58,7 +64,7 @@
     fx.leaves.forEach((leaf, i) => {
       const d = fx.dummy;
       if (!leaf.born || (i >= active && leaf.y > 0.05 && !leaf.rest)) {
-        if (!leaf.born) spawnLeaf(leaf, centre, true);
+        if (!leaf.born) spawnLeaf(leaf, centre, true, i);
         if (i >= active) { d.scale.setScalar(0.0001); d.updateMatrix(); fx.mesh.setMatrixAt(i, d.matrix); leaf.born = false; return; }
       }
       leaf.time += dt;
@@ -74,10 +80,10 @@
         leaf.rest += dt;
         d.rotation.set(0, leaf.rot, 0);
         fade = 1 - THREE.MathUtils.smoothstep(leaf.rest, 2.5, 4);
-        if (leaf.rest > 4) spawnLeaf(leaf, centre, false);
+        if (leaf.rest > 4) spawnLeaf(leaf, centre, false, i);
       }
       // Leaves left far behind the moving view start again above it.
-      if (Math.abs(leaf.x - centre.x) > spanX * 0.72 || Math.abs(leaf.z - centre.z) > spanZ * 0.72) spawnLeaf(leaf, centre, false);
+      if (Math.abs(leaf.x - centre.x) > spanX * 0.72 || Math.abs(leaf.z - centre.z) > spanZ * 0.72) spawnLeaf(leaf, centre, false, i);
       d.position.set(leaf.x, leaf.y, leaf.z);
       d.scale.setScalar(leaf.scale * Math.max(0.0001, fade));
       d.updateMatrix();

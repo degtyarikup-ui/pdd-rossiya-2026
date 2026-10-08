@@ -931,6 +931,7 @@
   "achievementDescSignSwiper": "Наберите 1000, 2500, 5000 и 7500 очков за одну игру в «Знак-свайпер».",
   "gameSignQuestionScope": "Других знаков и запретов нет",
   "gameTrafficSignalQuestion": "Что разрешает сигнал?",
+  "gameTrafficTramSignalQuestion": "Что разрешено трамваю?",
   "gameSignScenario1_1_0Prompt": "Знак предупреждает о переезде со шлагбаумом?",
   "gameSignScenario1_1_0Explanation": "Да. Впереди железнодорожный переезд со шлагбаумом.",
   "gameSignScenario1_1_1Prompt": "Можно обгонять за 80 м до переезда?",

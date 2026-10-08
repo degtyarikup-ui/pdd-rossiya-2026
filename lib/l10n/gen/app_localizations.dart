@@ -3208,6 +3208,12 @@ abstract class AppLocalizations {
   /// **'Что разрешает сигнал?'**
   String get gameTrafficSignalQuestion;
 
+  /// No description provided for @gameTrafficTramSignalQuestion.
+  ///
+  /// In ru, this message translates to:
+  /// **'Что разрешено трамваю?'**
+  String get gameTrafficTramSignalQuestion;
+
   /// No description provided for @gameSignScenario1_1_0Prompt.
   ///
   /// In ru, this message translates to:

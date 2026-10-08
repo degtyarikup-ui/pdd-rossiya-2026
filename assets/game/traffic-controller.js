@@ -92,7 +92,7 @@
   const lowEnd = (navigator.hardwareConcurrency || 8) <= 2 || (navigator.deviceMemory || 8) <= 3;
   const weak = lowEnd || (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
   let leaves;
-  const leafCentre = new THREE.Vector3(0, 0, 7);
+  const leafCentre = new THREE.Vector3(0, 0, 0);
   let carMesh, tramMesh;
   let activeVehicleMesh;
   let arrowsGroup;
@@ -103,6 +103,10 @@
   let moveProgress = 0;
   let moveCurve = null;
   let movingObject = null;
+  let moveElapsed = 0;
+  let moveDuration = 1.8;
+  let activeMove = null;
+  let activeMoveId = null;
   const initialObjectPos = new THREE.Vector3();
   let initialObjectRotY = Math.PI;
 
@@ -191,7 +195,10 @@
     // Сообщаем Flutter о готовности
     notifyFlutter({ type: 'ready' });
 
-    if (seasonName === 'autumn') leaves = window.PDD_SEASONS.createLeaves(scene, { lowEnd, palette: () => season.canopy, spanX: 24, spanZ: 32, height: 7 });
+    if (seasonName === 'autumn') leaves = window.PDD_SEASONS.createLeaves(scene, {
+      lowEnd, palette: () => season.canopy, count: lowEnd ? 6 : 12,
+      scaleMin: 0.55, scaleMax: 0.85, spanX: 32, spanZ: 44, height: 7, spreadEvenly: true,
+    });
     animate();
   }
 
@@ -1290,10 +1297,13 @@
     activeBlinkerSide = null;
     isMoving = false;
     moveProgress = 0;
+    moveElapsed = 0;
+    activeMove = null;
+    activeMoveId = null;
   }
 
   // --- Запуск анимации движения ТС при ответе игрока ---
-  function makeMove(moveType) {
+  function makeMove(moveType, moveId) {
     if (isMoving) return;
     if (resetTimer) {
       clearTimeout(resetTimer);
@@ -1307,7 +1317,7 @@
     const allowed = getAllowedMoves(currentGesture, currentApproach, currentVehicle);
     const isCorrect = allowed.includes(moveType);
 
-    if (moveType === MOVES.NONE) {
+    if (moveType === MOVES.NONE || !isCorrect) {
       activeBlinkerSide = null;
       if (carMesh) {
         if (carMesh.blinkerL) carMesh.blinkerL.visible = false;
@@ -1338,6 +1348,11 @@
 
     isMoving = true;
     moveProgress = 0;
+    moveElapsed = 0;
+    activeMove = moveType;
+    activeMoveId = moveId;
+    moveDuration = (moveType === MOVES.STRAIGHT ? 1.8 : moveType === MOVES.UTURN ? 2.05 : 1.95)
+      + (currentVehicle === VEHICLES.TRAM ? 0.1 : 0);
 
     notifyFlutter({
       type: 'move_result',
@@ -1360,7 +1375,7 @@
     }
   }
 
-  function updateCameraPosition() {
+  function updateCameraPosition(delta = 1 / 60) {
     if (currentCameraMode === 'overview') {
       const radius = camDistance;
       camera.position.x = Math.sin(camAngle) * radius;
@@ -1368,14 +1383,13 @@
       camera.position.z = Math.cos(camAngle) * radius;
       camera.lookAt(0, 1.2, 0);
     } else {
-      updateDriverCamera();
+      updateDriverCamera(delta);
     }
   }
 
-  // Вид водителя: камера за машиной, чуть левее — между её полосой и осью
-  // дороги — и смотрит вдоль улицы. Регулировщик чуть левее центра кадра,
-  // машина справа, перекрёсток впереди. На манёвре камера едет следом.
-  // zoom (0,65–2,2): 1 — по умолчанию, меньше — ближе и ниже, больше — дальше и выше.
+  // Near: officer at eye level. Far: all junction exits. The camera keeps
+  // looking at the junction instead of swinging with the steering wheel.
+  // A maneuver gently widens the view; the next question restores user zoom.
   const driverCamPos = new THREE.Vector3();
   const driverCamLook = new THREE.Vector3();
   const driverWantPos = new THREE.Vector3();
@@ -1384,38 +1398,30 @@
   let cameraZoom = 1;
 
   function setZoom(value) {
-    cameraZoom = Math.min(Math.max(Number(value) || 1, 0.65), 2.2);
+    cameraZoom = Math.min(Math.max(Number(value) || 1, 0.4), 2.6);
   }
 
-  function updateDriverCamera() {
-    const vehicle = currentVehicle === VEHICLES.TRAM ? tramMesh : carMesh;
-    if (!vehicle) return;
-    const isTram = currentVehicle === VEHICLES.TRAM;
-    const heading = vehicle.rotation.y;
-    const fx = Math.sin(heading), fz = Math.cos(heading);
-    const lx = fz, lz = -fx; // влево от направления движения
-    const back = (isTram ? 11.5 : 8.5) * cameraZoom;
-    const height = (isTram ? 2.6 : 1.9) + 2.6 * cameraZoom;
-    const side = isTram ? 0.4 : 0.8;
-
-    driverWantPos.set(
-      vehicle.position.x - fx * back + lx * side,
-      height,
-      vehicle.position.z - fz * back + lz * side
-    );
-    driverWantLook.set(
-      vehicle.position.x + fx * 16 + lx * side,
-      0.9,
-      vehicle.position.z + fz * 16 + lz * side
-    );
+  function updateDriverCamera(delta = 1 / 60) {
+    const maneuver = THREE.MathUtils.smoothstep(moveProgress, 0, 0.65);
+    const zoom = THREE.MathUtils.lerp(cameraZoom, Math.max(cameraZoom, 2.1), maneuver);
+    if (zoom < 1) {
+      const close = THREE.MathUtils.smoothstep(zoom, 0.4, 1);
+      driverWantPos.set(1.4 + close, 2.4 + 2.1 * close, 6.8 + 15.2 * close);
+      driverWantLook.set(0.8 * close, 1.25 - 0.2 * close, 0);
+    } else {
+      const far = (zoom - 1) / 1.6;
+      driverWantPos.set(2.4, 4.5 + 33.5 * far, 22 + 28 * far);
+      driverWantLook.set(0.8 * (1 - far), 1.05 * (1 - far), 0);
+    }
 
     if (!driverCamReady) {
       driverCamPos.copy(driverWantPos);
       driverCamLook.copy(driverWantLook);
       driverCamReady = true;
     } else {
-      driverCamPos.lerp(driverWantPos, 0.1);
-      driverCamLook.lerp(driverWantLook, 0.1);
+      const blend = 1 - Math.exp(-7 * delta);
+      driverCamPos.lerp(driverWantPos, blend);
+      driverCamLook.lerp(driverWantLook, blend);
     }
     camera.position.copy(driverCamPos);
     camera.lookAt(driverCamLook);
@@ -1464,8 +1470,7 @@
     const poseBlend = 1 - Math.exp(-8 * delta);
 
     // Плавное вращение камеры
-    camAngle += (targetAngle - camAngle) * 0.08;
-    updateCameraPosition();
+    camAngle += (targetAngle - camAngle) * poseBlend;
 
     // Плавный поворот регулировщика к целевому направлению
     curInspectorRotY += (targetInspectorRotY - curInspectorRotY) * poseBlend;
@@ -1494,14 +1499,19 @@
       rightArmPivot.rotation.set(curRightArm.x, curRightArm.y, curRightArm.z);
     }
 
-    // Анимация движения машины/трамвая (движение ВПЕРЕД по траектории с постоянной скоростью)
+    // Short signal lead-in, gentle acceleration and braking; arc-length
+    // sampling keeps turns continuous and independent of render frame rate.
     if (isMoving && moveCurve && movingObject) {
-      const curveLength = moveCurve.getLength();
-      // Постоянная линейная скорость (м/с): строго одинаковая для всех направлений!
-      const moveSpeed = (currentMode === 'arcade') ? 16.0 : 10.5;
-      moveProgress += (delta * moveSpeed) / Math.max(curveLength, 1);
+      moveElapsed += delta;
+      const elapsed = THREE.MathUtils.clamp((moveElapsed - 0.12) / moveDuration, 0, 1);
+      moveProgress = (1 - Math.cos(Math.PI * elapsed)) / 2;
+      movingObject.position.copy(moveCurve.getPointAt(moveProgress));
+      const tangent = moveCurve.getTangentAt(Math.min(moveProgress + 0.006, 1));
+      const heading = Math.atan2(tangent.x, tangent.z);
+      const turn = Math.atan2(Math.sin(heading - movingObject.rotation.y), Math.cos(heading - movingObject.rotation.y));
+      movingObject.rotation.y += turn * (1 - Math.exp(-22 * delta));
 
-      if (moveProgress >= 1) {
+      if (elapsed >= 1) {
         moveProgress = 1;
         isMoving = false;
         activeBlinkerSide = null;
@@ -1513,15 +1523,10 @@
         const holdDuration = (currentMode === 'arcade') ? 700 : 2000;
         if (resetTimer) clearTimeout(resetTimer);
         resetTimer = setTimeout(resetVehiclePositions, holdDuration);
+        notifyFlutter({ type: 'move_complete', move: activeMove, id: activeMoveId });
       }
-
-      const u = Math.min(Math.max(moveProgress, 0), 1);
-      const point = moveCurve.getPointAt(u);
-      movingObject.position.copy(point);
-
-      const tangent = moveCurve.getTangentAt(u);
-      movingObject.rotation.y = Math.atan2(tangent.x, tangent.z);
     }
+    updateCameraPosition(delta);
 
     // Мигание поворотников автомобиля при манёвре (~3.2 Гц)
     if (carMesh) {

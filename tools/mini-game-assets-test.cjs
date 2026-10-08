@@ -47,5 +47,26 @@ for (const lowEnd of [true, false]) {
   assert(Array.from(leaves.mesh.instanceMatrix.array).every(Number.isFinite));
   leaves.update(0.016, {enabled: false, centre});
   assert.equal(leaves.mesh.visible, false);
+
+  const miniScene = new THREE.Scene();
+  const count = lowEnd ? 6 : 12;
+  const mini = seasons.createLeaves(miniScene, {count, scaleMin: 0.55, scaleMax: 0.85,
+    spanX: 32, spanZ: 44, height: 7, spreadEvenly: true, palette: () => seasons.palettes.autumn.canopy});
+  mini.update(0, {enabled: true, centre});
+  assert.equal(mini.mesh.count, count);
+  const columns = Math.ceil(Math.sqrt(count)), rows = Math.ceil(count / columns);
+  const matrix = new THREE.Matrix4(), position = new THREE.Vector3(), scale = new THREE.Vector3(), rotation = new THREE.Quaternion();
+  for (let i = 0; i < count; i++) {
+    mini.mesh.getMatrixAt(i, matrix);
+    matrix.decompose(position, rotation, scale);
+    assert(scale.x >= 0.549 && scale.x <= 0.851, 'Mini leaves must stay small');
+    assert(position.x >= ((i % columns) / columns - 0.5) * 32 - 0.001);
+    assert(position.x <= (((i % columns) + 1) / columns - 0.5) * 32 + 0.001);
+    assert(position.z >= (Math.floor(i / columns) / rows - 0.5) * 44 - 0.001);
+    assert(position.z <= ((Math.floor(i / columns) + 1) / rows - 0.5) * 44 + 0.001);
+  }
+  for (let i = 0; i < 1200; i++) mini.update(0.05, {enabled: true, centre});
+  assert.equal(miniScene.children.length, 1);
+  assert(Array.from(mini.mesh.instanceMatrix.array).every(Number.isFinite));
 }
-console.log('32 PDD scenarios, four anatomical poses, 12 calendar months and instanced leaves passed.');
+console.log('32 PDD scenarios, four anatomical poses, 12 calendar months, main and sparse mini-game leaves passed.');
