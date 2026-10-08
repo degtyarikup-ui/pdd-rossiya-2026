@@ -74,7 +74,13 @@ android {
         release {
             isDebuggable = false
             // Never silently sign a store release with the debug key.
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (keystorePropertiesFile.exists()) {
+                signingConfigs.getByName("release")
+            } else if (project.hasProperty("dev")) {
+                signingConfigs.getByName("debug")
+            } else {
+                signingConfigs.getByName("release")
+            }
         }
     }
 }

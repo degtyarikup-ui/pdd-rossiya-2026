@@ -16,8 +16,17 @@
 # Only requirement on the phone: Wireless debugging ON, same Wi-Fi.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-export PATH="$HOME/flutter/bin:$HOME/Library/Android/sdk/platform-tools:$PATH"
-export JAVA_HOME=${JAVA_HOME:-/opt/homebrew/opt/openjdk@17}
+export PATH="$HOME/flutter/bin:$HOME/Library/Android/sdk/platform-tools:$HOME/.local/android-env/sdk/platform-tools:$PATH"
+if [[ -z "${JAVA_HOME:-}" || ! -d "$JAVA_HOME" ]]; then
+  if [[ -d "/opt/homebrew/opt/openjdk@17" ]]; then
+    export JAVA_HOME="/opt/homebrew/opt/openjdk@17"
+  elif [[ -d "$HOME/.local/android-env/jdk" ]]; then
+    export JAVA_HOME="$HOME/.local/android-env/jdk"
+  fi
+fi
+if [[ -z "${ANDROID_HOME:-}" && -d "$HOME/.local/android-env/sdk" ]]; then
+  export ANDROID_HOME="$HOME/.local/android-env/sdk"
+fi
 APK=build/app/outputs/flutter-apk/app-ru-release.apk
 PKG=ru.pdd.pdd_app.dev
 STATE=.dev-device
