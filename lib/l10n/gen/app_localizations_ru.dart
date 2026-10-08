@@ -1616,16 +1616,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameTrafficControllerTitle => 'Регулировщик 3D';
 
   @override
-  String get gameTrafficControllerSubtitle =>
-      'Жесты регулировщика глазами водителя: разберитесь в обучении и проверьте себя в блице.';
-
-  @override
-  String get gameModeTraining => 'Обучение';
-
-  @override
-  String get gameModeArcade => 'Блиц';
-
-  @override
   String get gameBestScoreLabel => 'Рекорд';
 
   @override
@@ -1685,16 +1675,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameSignSwiperTitle => 'Знак-Свайпер';
-
-  @override
-  String get gameSignSwiperSubtitle =>
-      'Ситуации со знаками: свайп вправо — «да», влево — «нет». Разбор каждой ошибки.';
-
-  @override
-  String get gameSignSwiperModeSprint => 'Блиц';
-
-  @override
-  String get gameSignSwiperModeTraining => 'Обучение';
 
   @override
   String get gameSwipedLabel => 'Свайпов';
