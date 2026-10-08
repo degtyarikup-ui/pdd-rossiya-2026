@@ -79,6 +79,7 @@
   let currentCameraMode = 'overview'; // 'overview' | 'driver'
   let currentMode = 'training';       // 'training' | 'arcade'
   let activeBlinkerSide = null;       // 'left' | 'right' | null
+  let resetTimer = null;
 
   // Анимация рук регулировщика (целевые и текущие углы)
   const targetLeftArm = new THREE.Vector3();
@@ -545,24 +546,13 @@
     return group;
   }
 
-  // Трамвайные пути (аккуратные стальные рельсы с желобом)
+  // Трамвайные пути (аккуратные стальные рельсы, утопленные в асфальт)
   function buildTramTracks(parent) {
     const railMat = new THREE.MeshStandardMaterial({
       color: 0x949AA5,
       metalness: 0.88,
       roughness: 0.22,
     });
-    const slabMat = new THREE.MeshStandardMaterial({
-      color: 0x3E434D,
-      roughness: 0.8,
-    });
-
-    // Бетонная плита под трамвайными путями
-    const slab = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 140), slabMat);
-    slab.rotation.x = -Math.PI / 2;
-    slab.position.set(-2.2, 0.024, 0);
-    slab.receiveShadow = true;
-    parent.add(slab);
 
     // Две стальные колеи
     const railGeo = new THREE.BoxGeometry(0.1, 0.05, 140);
@@ -1180,6 +1170,11 @@
 
   // --- Переключение сценария и поз регулировщика ---
   function setScenario(gesture, approach, vehicle) {
+    if (resetTimer) {
+      clearTimeout(resetTimer);
+      resetTimer = null;
+    }
+
     currentGesture = gesture;
     currentApproach = approach;
     currentVehicle = vehicle || currentVehicle;
@@ -1233,6 +1228,10 @@
   }
 
   function resetVehiclePositions() {
+    if (resetTimer) {
+      clearTimeout(resetTimer);
+      resetTimer = null;
+    }
     if (carMesh) {
       carMesh.position.set(3.2, 0, 13.5);
       carMesh.rotation.y = Math.PI;
@@ -1251,6 +1250,14 @@
   // --- Запуск анимации движения ТС при ответе игрока ---
   function makeMove(moveType) {
     if (isMoving) return;
+    if (resetTimer) {
+      clearTimeout(resetTimer);
+      resetTimer = null;
+    }
+    // Если машина осталась в конце предыдущего манёвра, возвращаем её на старт
+    if (moveProgress >= 1) {
+      resetVehiclePositions();
+    }
 
     const allowed = getAllowedMoves(currentGesture, currentApproach, currentVehicle);
     const isCorrect = allowed.includes(moveType);
@@ -1282,30 +1289,31 @@
     const startX = movingObject.position.x;
     const startZ = movingObject.position.z;
 
+    // Все манёвры завершаются за перекрёстком и пешеходным переходом (на отметке ±13.5)
     if (moveType === MOVES.STRAIGHT) {
       moveCurve = new THREE.LineCurve3(
         new THREE.Vector3(startX, 0, startZ),
-        new THREE.Vector3(startX, 0, -18)
+        new THREE.Vector3(startX, 0, -13.5)
       );
     } else if (moveType === MOVES.RIGHT) {
       moveCurve = new THREE.QuadraticBezierCurve3(
         new THREE.Vector3(startX, 0, startZ),
         new THREE.Vector3(startX, 0, 2.4),
-        new THREE.Vector3(18, 0, 2.4)
+        new THREE.Vector3(13.5, 0, 2.4)
       );
     } else if (moveType === MOVES.LEFT) {
       moveCurve = new THREE.CubicBezierCurve3(
         new THREE.Vector3(startX, 0, startZ),
         new THREE.Vector3(startX, 0, 2.0),
         new THREE.Vector3(0.0, 0, -2.4),
-        new THREE.Vector3(-18, 0, -2.4)
+        new THREE.Vector3(-13.5, 0, -2.4)
       );
     } else if (moveType === MOVES.UTURN) {
       moveCurve = new THREE.CubicBezierCurve3(
         new THREE.Vector3(startX, 0, startZ),
         new THREE.Vector3(startX, 0, 2.0),
         new THREE.Vector3(-2.8, 0, 2.0),
-        new THREE.Vector3(-2.8, 0, 18)
+        new THREE.Vector3(-2.8, 0, 13.5)
       );
     }
 
@@ -1399,20 +1407,33 @@
       rightArmPivot.rotation.set(curRightArm.x, curRightArm.y, curRightArm.z);
     }
 
-    // Анимация движения машины/трамвая (движение ВПЕРЕД по траектории)
+    // Анимация движения машины/трамвая (движение ВПЕРЕД по траектории с постоянной скоростью)
     if (isMoving && moveCurve && movingObject) {
-      moveProgress += delta * 0.65;
-      if (moveProgress >= 1) {
-        isMoving = false;
-        moveProgress = 1;
-        setTimeout(resetVehiclePositions, 300);
-      } else {
-        const point = moveCurve.getPoint(moveProgress);
-        movingObject.position.copy(point);
+      const curveLength = moveCurve.getLength();
+      // Постоянная линейная скорость (м/с): строго одинаковая для всех направлений!
+      const moveSpeed = (currentMode === 'arcade') ? 16.0 : 10.5;
+      moveProgress += (delta * moveSpeed) / Math.max(curveLength, 1);
 
-        const tangent = moveCurve.getTangent(moveProgress);
-        movingObject.rotation.y = Math.atan2(tangent.x, tangent.z);
+      if (moveProgress >= 1) {
+        moveProgress = 1;
+        isMoving = false;
+        activeBlinkerSide = null;
+        if (carMesh) {
+          if (carMesh.blinkerL) carMesh.blinkerL.visible = false;
+          if (carMesh.blinkerR) carMesh.blinkerR.visible = false;
+        }
+        // Даём спокойно рассмотреть завершение манёвра без мгновенного исчезновения
+        const holdDuration = (currentMode === 'arcade') ? 700 : 2000;
+        if (resetTimer) clearTimeout(resetTimer);
+        resetTimer = setTimeout(resetVehiclePositions, holdDuration);
       }
+
+      const u = Math.min(Math.max(moveProgress, 0), 1);
+      const point = moveCurve.getPointAt(u);
+      movingObject.position.copy(point);
+
+      const tangent = moveCurve.getTangentAt(u);
+      movingObject.rotation.y = Math.atan2(tangent.x, tangent.z);
     }
 
     // Мигание поворотников автомобиля при манёвре (~3.2 Гц)

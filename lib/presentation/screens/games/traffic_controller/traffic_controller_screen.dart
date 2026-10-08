@@ -271,7 +271,8 @@ class _TrafficControllerScreenState
         _solvedCount++;
         _secondsLeft = math.min(_secondsLeft + 3, 60);
       });
-      Future.delayed(const Duration(milliseconds: 650), () {
+      final delayMs = (move == TrafficMove.none) ? 700 : 1250;
+      Future.delayed(Duration(milliseconds: delayMs), () {
         if (mounted && !_isGameOver) {
           _nextArcadeSituation();
         }
