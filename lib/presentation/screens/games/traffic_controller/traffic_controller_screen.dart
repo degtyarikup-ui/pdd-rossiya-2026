@@ -88,7 +88,7 @@ class _TrafficControllerScreenState
       onBlur: () {},
       onKey: (_, _, _) {},
       htmlPath: 'assets/assets/game/traffic-controller.html?flutterWeb=1',
-      allowPointerEvents: true,
+      allowPointerEvents: false,
     );
     setState(() => _browserGame = browser);
   }
@@ -331,6 +331,12 @@ class _TrafficControllerScreenState
     );
   }
 
+  void _onPanUpdate(DragUpdateDetails details) {
+    if (_cameraMode == 'overview') {
+      _runJs('window.TrafficControllerGame && window.TrafficControllerGame.rotateCamera(${details.delta.dx});');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -340,19 +346,23 @@ class _TrafficControllerScreenState
       body: SafeArea(
         child: Stack(
           children: [
-            // 3D Canvas
+            // 3D Canvas with camera pan
             Positioned.fill(
-              child: kIsWeb
-                  ? (_browserGame != null
-                      ? _browserGame!.widget
-                      : const Center(
-                          child: CircularProgressIndicator(color: AppColors.accent),
-                        ))
-                  : (_webViewController != null
-                      ? WebViewWidget(controller: _webViewController!)
-                      : const Center(
-                          child: CircularProgressIndicator(color: AppColors.accent),
-                        )),
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragUpdate: _onPanUpdate,
+                child: kIsWeb
+                    ? (_browserGame != null
+                        ? _browserGame!.widget
+                        : const Center(
+                            child: CircularProgressIndicator(color: AppColors.accent),
+                          ))
+                    : (_webViewController != null
+                        ? WebViewWidget(controller: _webViewController!)
+                        : const Center(
+                            child: CircularProgressIndicator(color: AppColors.accent),
+                          )),
+              ),
             ),
 
             // Top HUD Overlay

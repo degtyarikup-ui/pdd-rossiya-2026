@@ -127,59 +127,35 @@ class GamesHubScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Бейдж и статус
-              Row(
-                children: [
-                  Container(
+              // Рекорд (если есть)
+              if (progress.bestScore > 0) ...[
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.2),
+                      color: Colors.amber.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.accent.withValues(alpha: 0.5)),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.view_in_ar_rounded, size: 14, color: AppColors.accent),
-                        SizedBox(width: 4),
+                        const Icon(Icons.emoji_events_rounded, size: 14, color: Colors.amber),
+                        const SizedBox(width: 4),
                         Text(
-                          '3D WebGL',
-                          style: TextStyle(
-                            fontSize: 11,
+                          '${appL10n.gameBestScoreLabel}: ${progress.bestScore}',
+                          style: const TextStyle(
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.accent,
+                            color: Colors.amber,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const Spacer(),
-                  if (progress.bestScore > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.emoji_events_rounded, size: 14, color: Colors.amber),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${appL10n.gameBestScoreLabel}: ${progress.bestScore}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.amber,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 14),
+                ),
+                const SizedBox(height: 10),
+              ],
 
               // Название и описание
               Row(
