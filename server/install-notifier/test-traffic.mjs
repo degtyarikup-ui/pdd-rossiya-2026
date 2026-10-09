@@ -174,7 +174,19 @@ test('authenticated leaderboard response and deletion retain compatibility with 
   const score = await call('/api/game/score', { userId, delta: 14, newRun: true, runScore: 14 });
   assert.equal(score.status, 200); const result = await score.json(); assert.equal(result.weekScore, 14);
   const board = await call('/api/game/leaderboard?userId=' + userId);
-  assert.equal((await board.json()).me.score, 14);
+  const publicBoard = await board.json();
+  assert.equal(publicBoard.me.score, 14);
+  assert.equal(publicBoard.me.isPremium, false);
+  assert.equal(publicBoard.me.avatarUrl, null);
+  await e.INSTALLS.put('user:' + userId, JSON.stringify({
+    avatarUrl: 'https://example.test/picture.jpg', useDefaultAvatar: false,
+    entitlements: { admin_grant: { expiresAt: null } }, email: 'private@example.test',
+  }));
+  const premiumBoard = await (await call('/api/game/leaderboard?userId=' + userId)).json();
+  assert.equal(premiumBoard.me.isPremium, true);
+  assert.equal(premiumBoard.me.avatarUrl, 'https://example.test/picture.jpg');
+  assert.equal(premiumBoard.me.email, undefined);
+  assert.equal(premiumBoard.me.userId, undefined);
   assert.equal((await call('/api/user/delete', { userId })).status, 200);
   assert.equal((await trafficRequest(e, 'game_lb:' + result.week, 'read'))[userId], undefined);
 });

@@ -1,3 +1,5 @@
+import 'package:pdd_app/core/config/game_economy.dart';
+import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -49,7 +51,6 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   final List<SignCardQuestion> _mistakes = [];
 
   /// Множитель очков за комбо: каждые 3 верных ответа +1, не выше x4.
-  static int _multiplierFor(int combo) => 1 + (combo ~/ 3).clamp(0, 3);
 
   @override
   void dispose() {
@@ -122,6 +123,15 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     if (_isGameOver) return;
     _timer?.cancel();
     final previousBest = ref.read(signSwiperProgressProvider).bestScore;
+    unawaited(
+      GameLeaderboardService.instance.submitRun(
+        GameEconomy.rankedScore(
+          _score,
+          correct: _correctAnswers,
+          wrong: _totalSwipedInRound - _correctAnswers,
+        ),
+      ),
+    );
     ref
         .read(signSwiperProgressProvider.notifier)
         .recordGameResult(
@@ -154,7 +164,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
       _correctAnswers++;
       _combo++;
       if (_combo > _maxCombo) _maxCombo = _combo;
-      _score += 100 * _multiplierFor(_combo);
+      _score += GameEconomy.signs(_combo);
       _secondsLeft = (_secondsLeft + 2).clamp(1, 60);
 
       if (_combo == 5 || _combo == 10 || _combo == 20) {
@@ -166,6 +176,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
       SoundEffectsService.instance.playIncorrect(volume: 0.30);
       HapticFeedbackHelper.warning();
 
+      _score = (_score - GameEconomy.signsMistake).clamp(0, 1000000);
       _combo = 0;
       _lives--;
       _secondsLeft = (_secondsLeft - 3).clamp(0, 60);
@@ -287,10 +298,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
               ),
               Expanded(
                 child: Center(
-                  child: GameScoreLabel(
-                    score: _score,
-                    multiplier: _multiplierFor(_combo),
-                  ),
+                  child: GameScoreLabel(score: _score, streak: _combo),
                 ),
               ),
               SizedBox(

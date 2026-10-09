@@ -7,24 +7,23 @@ enum PaymentMode {
 
   /// Покупка магазина (Google Play Billing).
   storeBilling,
+
+  /// This distribution has no supported payment method in this region.
+  unavailable,
 }
 
-/// Способ оплаты для Android.
-///
-/// RuStore — оплата через СБП без ограничений: сторонние платёжные системы
-/// там разрешены, комиссии магазина нет.
-///
-/// Google Play — СБП только для пользователей в России. Правило Google о
-/// Play Billing для России не действует (с 02.08.2022, «на данный момент»),
-/// а для остальных стран остаётся обычная покупка через Play. Страна
-/// определяется по устройству ([deviceCountry], ISO-код), а не по IP:
-/// VPN её не меняет. Если страну определить не удалось, покупка идёт
-/// через Play — это безопасный вариант по правилам магазина.
+/// СБП разрешена только на российских Android-устройствах.
+/// Google Play вне России использует Billing; в RuStore такой покупки нет.
+/// Неизвестная страна не разрешает внешние платежи.
 PaymentMode androidPaymentMode({
   required AppStore store,
   required String? deviceCountry,
 }) {
-  if (store == AppStore.rustore) return PaymentMode.sbp;
+  if (store == AppStore.rustore) {
+    return deviceCountry?.toUpperCase() == 'RU'
+        ? PaymentMode.sbp
+        : PaymentMode.unavailable;
+  }
   return deviceCountry?.toUpperCase() == 'RU'
       ? PaymentMode.sbp
       : PaymentMode.storeBilling;
@@ -34,12 +33,14 @@ PaymentMode androidPaymentMode({
 ///
 /// Google Play, российское устройство: на выбор СБП (работает у всех
 /// российских карт) и покупка через Play. Остальные страны — только Play,
-/// как требуют правила магазина. RuStore — только СБП.
+/// как требуют правила магазина. RuStore — СБП только в России.
 List<PaymentMode> androidPaymentModes({
   required AppStore store,
   required String? deviceCountry,
 }) {
-  if (store == AppStore.rustore) return const [PaymentMode.sbp];
+  if (store == AppStore.rustore) {
+    return [androidPaymentMode(store: store, deviceCountry: deviceCountry)];
+  }
   return deviceCountry?.toUpperCase() == 'RU'
       ? const [PaymentMode.sbp, PaymentMode.storeBilling]
       : const [PaymentMode.storeBilling];

@@ -307,9 +307,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     super.dispose();
   }
 
-  // Only the game is kept alive off-screen (paused) so a run survives a tab
-  // switch; every other tab is built only while shown, so e.g. the feed's
-  // autoplay, voice-over and sounds stop the moment you leave it.
+  // Keep the games catalogue and its fuel timer across tab switches.
+  // Other tabs rebuild on demand so their audio and autoplay stop when hidden.
   static const _gameTab = 1;
   bool _gameVisited = false;
 

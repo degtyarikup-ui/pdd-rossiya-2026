@@ -59,9 +59,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   /// RuStore; остальные покупают через Play (см. payment_mode.dart).
   Future<void> _resolveAndroidMode() async {
     final store = StoreConfig.current;
-    final country = store == AppStore.googlePlay
-        ? await DeviceRegion.countryCode()
-        : null;
+    final country = await DeviceRegion.countryCode();
     final modes = androidPaymentModes(store: store, deviceCountry: country);
     if (!mounted) return;
     setState(() {
@@ -157,6 +155,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   /// привязывается к аккаунту и работает на всех устройствах. Пока платёжка
   /// не подключена — заглушка: почта для письма о запуске оплаты.
   Future<void> _handleSbpPayment() async {
+    if (!kIsWeb && !_androidSbp) return;
     HapticFeedbackHelper.select();
     if (!AuthService.instance.hasServerSession) {
       final signedIn = await AuthModalSheet.show(context);
@@ -424,7 +423,10 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                 height: 54,
                 child: ElevatedButton(
                   onPressed:
-                      _isLoading || _androidUnresolved || (kIsWeb && !sbpPay)
+                      _isLoading ||
+                          _androidUnresolved ||
+                          _androidMode == PaymentMode.unavailable ||
+                          (kIsWeb && !sbpPay)
                       ? null
                       : sbpPay
                       ? _handleSbpPayment
@@ -448,7 +450,9 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                           ),
                         )
                       : Text(
-                          sbpPay
+                          _androidMode == PaymentMode.unavailable
+                              ? appL10n.paymentRegionUnavailable
+                              : sbpPay
                               ? appL10n.webPayButton
                               : kIsWeb
                               ? appL10n.webPaymentSoon

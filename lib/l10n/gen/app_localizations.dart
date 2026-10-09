@@ -4977,6 +4977,24 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'ГазЛукПук'**
   String get gasStationName;
+
+  /// No description provided for @gameRatingAllGames.
+  ///
+  /// In ru, this message translates to:
+  /// **'Очки всех игр · мини-игры: от 5 верных ответов и 75% точности'**
+  String get gameRatingAllGames;
+
+  /// No description provided for @paymentRegionUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата недоступна в вашем регионе'**
+  String get paymentRegionUnavailable;
+
+  /// No description provided for @gameCurrentCombo.
+  ///
+  /// In ru, this message translates to:
+  /// **'Комбо {count}'**
+  String gameCurrentCombo(int count);
 }
 
 class _AppLocalizationsDelegate

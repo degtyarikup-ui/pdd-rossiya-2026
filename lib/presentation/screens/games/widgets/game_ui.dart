@@ -54,10 +54,10 @@ class GameLives extends StatelessWidget {
 
 /// Счёт блица: число и множитель серии, если он есть.
 class GameScoreLabel extends StatelessWidget {
-  const GameScoreLabel({super.key, required this.score, this.multiplier = 1});
+  const GameScoreLabel({super.key, required this.score, this.streak = 0});
 
   final int score;
-  final int multiplier;
+  final int streak;
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +76,7 @@ class GameScoreLabel extends StatelessWidget {
             color: colors.primaryText,
           ),
         ),
-        if (multiplier > 1) ...[
+        if (streak > 1) ...[
           const SizedBox(width: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -85,7 +85,7 @@ class GameScoreLabel extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
-              'x$multiplier',
+              appL10n.gameCurrentCombo(streak),
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,

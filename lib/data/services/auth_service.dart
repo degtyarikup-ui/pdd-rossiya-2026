@@ -712,6 +712,17 @@ class AuthService extends ChangeNotifier {
     _currentUser = user.withAvatarChoice(useDefault);
     await _saveUser();
     notifyListeners();
+    if (hasServerSession && BackendConfig.hasNotifier) {
+      try {
+        await http
+            .post(
+              Uri.parse('${BackendConfig.notifierUrl}/api/user/sync'),
+              headers: serverHeaders,
+              body: jsonEncode(_currentUser!.toMap()),
+            )
+            .timeout(const Duration(seconds: 8));
+      } catch (_) {}
+    }
   }
 
   Future<void> _saveUser() async {

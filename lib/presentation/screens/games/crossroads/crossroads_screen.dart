@@ -1,3 +1,5 @@
+import 'package:pdd_app/core/config/game_economy.dart';
+import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -228,6 +230,7 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     final pddArticle = data['pddArticle'] as String? ?? '';
 
     setState(() {
+      _score = (_score - GameEconomy.crossroadsMistake).clamp(0, 1000000);
       _combo = 0;
       _collisionReason = reason;
       _collisionPddArticle = pddArticle;
@@ -245,8 +248,7 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     HapticFeedbackHelper.success();
     SoundEffectsService.instance.playCorrect();
 
-    final comboBonus = (_combo * 25);
-    final gainedScore = 100 + comboBonus;
+    final gainedScore = GameEconomy.crossroads(_combo + 1);
 
     setState(() {
       _solvedCount++;
@@ -269,6 +271,18 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
   }
 
   void _endGame() {
+    if (_isGameOver) return;
+    if (_mode == CrossroadsGameMode.arcade) {
+      unawaited(
+        GameLeaderboardService.instance.submitRun(
+          GameEconomy.rankedScore(
+            _score,
+            correct: _solvedCount,
+            wrong: 3 - _lives,
+          ),
+        ),
+      );
+    }
     _countdownTimer?.cancel();
     final progress = ref.read(crossroadsPriorityProgressProvider);
     final isNewRecord = _score > progress.bestScore;
@@ -335,12 +349,11 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                   }
                 }
               },
-              child:
-                  kIsWeb
-                      ? (_browserGame?.widget ?? const SizedBox())
-                      : (_webViewController != null
-                          ? WebViewWidget(controller: _webViewController!)
-                          : const SizedBox()),
+              child: kIsWeb
+                  ? (_browserGame?.widget ?? const SizedBox())
+                  : (_webViewController != null
+                        ? WebViewWidget(controller: _webViewController!)
+                        : const SizedBox()),
             ),
           ),
 
@@ -477,10 +490,7 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
         spacing: AppDimensions.spacingM,
         runSpacing: AppDimensions.spacingS,
         children: [
-          GameScoreLabel(
-            score: _score,
-            multiplier: _combo > 1 ? _combo : 1,
-          ),
+          GameScoreLabel(score: _score, streak: _combo),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -574,68 +584,62 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children:
-                _curScenario.actors.map((actor) {
-                  final isDone = actor.priorityOrder < _currentStep;
-                  return InkWell(
-                    onTap: isDone
-                        ? null
-                        : () {
-                            HapticFeedbackHelper.tap();
-                            _call('selectVehicle("${actor.id}")');
-                          },
+            children: _curScenario.actors.map((actor) {
+              final isDone = actor.priorityOrder < _currentStep;
+              return InkWell(
+                onTap: isDone
+                    ? null
+                    : () {
+                        HapticFeedbackHelper.tap();
+                        _call('selectVehicle("${actor.id}")');
+                      },
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDone
+                        ? colors.green.withValues(alpha: 0.12)
+                        : colors.background,
                     borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            isDone
-                                ? colors.green.withValues(alpha: 0.12)
-                                : colors.background,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color:
-                              isDone
-                                  ? colors.green
-                                  : colors.divider.withValues(alpha: 0.5),
-                          width: 1.2,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isDone
-                                ? Icons.check_circle_rounded
-                                : (actor.type == CrossroadsVehicleType.tram
-                                    ? Icons.tram_rounded
-                                    : (actor.type ==
+                    border: Border.all(
+                      color: isDone
+                          ? colors.green
+                          : colors.divider.withValues(alpha: 0.5),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isDone
+                            ? Icons.check_circle_rounded
+                            : (actor.type == CrossroadsVehicleType.tram
+                                  ? Icons.tram_rounded
+                                  : (actor.type ==
                                             CrossroadsVehicleType.emergency
                                         ? Icons.emergency_rounded
                                         : Icons.directions_car_rounded)),
-                            size: 16,
-                            color: isDone ? colors.green : colors.primaryText,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            actor.name,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color:
-                                  isDone
-                                      ? colors.green
-                                      : colors.primaryText,
-                            ),
-                          ),
-                        ],
+                        size: 16,
+                        color: isDone ? colors.green : colors.primaryText,
                       ),
-                    ),
-                  );
-                }).toList(),
+                      const SizedBox(width: 6),
+                      Text(
+                        actor.name,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isDone ? colors.green : colors.primaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),

@@ -2230,14 +2230,17 @@ void main() {
       expect(controller.state.runs, GameState.maxRuns);
     });
 
-    test('Telemetry updates distance, speed and score', () {
-      controller.onEngineReady();
-      controller.updateTelemetry(speedKmH: 42, distanceM: 250);
+    test(
+      'Telemetry updates distance and speed without farming rating points',
+      () {
+        controller.onEngineReady();
+        controller.updateTelemetry(speedKmH: 42, distanceM: 250);
 
-      expect(controller.state.speedKmH, 42);
-      expect(controller.state.distanceM, 250);
-      expect(controller.state.score, 125);
-    });
+        expect(controller.state.speedKmH, 42);
+        expect(controller.state.distanceM, 250);
+        expect(controller.state.score, 0);
+      },
+    );
 
     test(
       'Telemetry preserves streak bonus and rejects distance regression',
@@ -2247,9 +2250,9 @@ void main() {
         controller.onApproachSituation(dummySituation);
         controller.submitAnswer(1);
         controller.updateTelemetry(speedKmH: 20, distanceM: 102);
-        expect(controller.state.score, 176);
+        expect(controller.state.score, 40);
         controller.updateTelemetry(speedKmH: 20, distanceM: 0);
-        expect(controller.state.score, 176);
+        expect(controller.state.score, 40);
       },
     );
 

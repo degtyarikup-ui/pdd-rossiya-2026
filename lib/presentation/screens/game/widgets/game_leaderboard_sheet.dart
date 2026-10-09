@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+import 'package:pdd_app/presentation/widgets/user_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -59,6 +61,11 @@ class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
                   ),
                 ],
               ),
+              const SizedBox(height: 6),
+              Text(
+                appL10n.gameRatingAllGames,
+                style: TextStyle(fontSize: 12, color: colors.secondaryText),
+              ),
               const SizedBox(height: 12),
               Expanded(
                 child: FutureBuilder<GameLeaderboard?>(
@@ -110,12 +117,12 @@ class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
                             separatorBuilder: (_, _) =>
                                 const SizedBox(height: 6),
                             itemBuilder: (context, i) =>
-                                _Row(entry: board.top[i]),
+                                GameLeaderboardRow(entry: board.top[i]),
                           ),
                         ),
                         if (pinMe) ...[
                           const SizedBox(height: 8),
-                          _Row(entry: me),
+                          GameLeaderboardRow(entry: me),
                         ],
                       ],
                     );
@@ -130,9 +137,9 @@ class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
   }
 }
 
-class _Row extends StatelessWidget {
+class GameLeaderboardRow extends StatelessWidget {
   final GameLeaderboardEntry entry;
-  const _Row({required this.entry});
+  const GameLeaderboardRow({super.key, required this.entry});
 
   @override
   Widget build(BuildContext context) {
@@ -144,66 +151,96 @@ class _Row extends StatelessWidget {
       _ => null,
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
-        color: entry.isMe ? colors.accentSurface10 : colors.searchFieldFill,
+        color: entry.isMe ? colors.accentSurface10 : colors.background,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
       ),
       child: Row(
         children: [
-          SizedBox(
-            width: 34,
-            child: medal != null
-                ? Icon(Icons.emoji_events_rounded, color: medal, size: 22)
-                : Text(
-                    '${entry.rank}',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Onest',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: colors.secondaryText,
-                    ),
-                  ),
+          Container(
+            width: 32,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: medal?.withValues(alpha: .22) ?? colors.searchFieldFill,
+            ),
+            child: Text(
+              '${entry.rank}',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: colors.primaryText,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 9),
+          UserAvatar(url: entry.avatarUrl, size: 38),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  entry.isMe
-                      ? '${entry.name} · ${appL10n.gameRatingYou}'
-                      : entry.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Onest',
-                    fontSize: 14,
-                    fontWeight: entry.isMe ? FontWeight.w800 : FontWeight.w600,
-                    color: colors.primaryText,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        entry.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Onest',
+                          fontSize: 14,
+                          fontWeight: entry.isMe
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                          color: colors.primaryText,
+                        ),
+                      ),
+                    ),
+                    if (entry.isPremium) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.verified_rounded,
+                        color: colors.gold,
+                        size: 15,
+                      ),
+                    ],
+                  ],
                 ),
                 Text(
-                  appL10n.gameRatingRuns(entry.runs),
-                  style: TextStyle(
-                    fontFamily: 'Onest',
-                    fontSize: 11,
-                    color: colors.secondaryText,
-                  ),
+                  entry.isMe
+                      ? appL10n.gameRatingYou
+                      : appL10n.gameRatingRuns(entry.runs),
+                  style: TextStyle(fontSize: 11, color: colors.secondaryText),
                 ),
               ],
             ),
           ),
-          Icon(Icons.star_rounded, size: 18, color: colors.gold),
-          const SizedBox(width: 3),
-          Text(
-            '${entry.score}',
-            style: TextStyle(
-              fontFamily: 'Onest',
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: colors.gold,
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(
+              color: colors.searchFieldFill,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * .28,
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                NumberFormat.decimalPattern('ru').format(entry.score),
+                style: TextStyle(
+                  fontFamily: 'Onest',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: colors.primaryText,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
             ),
           ),
         ],

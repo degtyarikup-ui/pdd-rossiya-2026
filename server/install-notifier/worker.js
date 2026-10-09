@@ -1,3 +1,4 @@
+import { gameProfile } from './game_profile.js';
 import { notificationRequest, uploadNotificationImage, serveNotificationImage } from './notifications.js';
 export { NotificationsState } from './notifications.js';
 import { NOTIFICATIONS_NAV_HTML, NOTIFICATIONS_VIEW_HTML, NOTIFICATIONS_CLIENT_JS } from './notifications_ui.js';
@@ -2853,6 +2854,7 @@ async function saveUserProfile(env, user) {
     name: user.name || (existing ? existing.name : 'Пользователь'),
     email: user.email || (existing ? existing.email : null),
     avatarUrl: user.avatarUrl !== undefined ? user.avatarUrl : (existing ? existing.avatarUrl : null),
+    useDefaultAvatar: typeof user.useDefaultAvatar === 'boolean' ? user.useDefaultAvatar : existing?.useDefaultAvatar === true,
     provider: user.provider || (existing ? existing.provider : 'guest'),
     country: user.country || (existing ? existing.country : 'RU'),
     app: user.app || (existing ? existing.app : 'ru'),
@@ -3483,10 +3485,15 @@ const workerHandlers = {
       const userId = url.searchParams.get('userId') || '';
       const ranked = rankGameBoard(await readGameBoard(env, week));
       const meIndex = userId ? ranked.findIndex(r => r.userId === userId) : -1;
-      const publicRow = r => ({ name: r.name, score: r.score, runs: r.runs, isMe: r.userId === userId });
-      return jsonResponse({ ok: true, week, endsAt: gameWeekEnd(), total: ranked.length,
-        top: ranked.slice(0, 100).map((r, i) => ({ rank: i + 1, ...publicRow(r) })),
-        me: meIndex >= 0 ? { rank: meIndex + 1, ...publicRow(ranked[meIndex]) } : null },
+      const publicRow = async (r, rank) => {
+        let user = null;
+        try { user = JSON.parse(await env.INSTALLS.get('user:' + r.userId)); } catch (_) {}
+        return { rank, name: r.name, score: r.score, runs: r.runs,
+          isMe: r.userId === userId, ...gameProfile(user) };
+      };
+      const top = await Promise.all(ranked.slice(0, 100).map((r,i) => publicRow(r,i+1)));
+      const me = meIndex < 0 ? null : meIndex < top.length ? top[meIndex] : await publicRow(ranked[meIndex],meIndex+1);
+      return jsonResponse({ ok: true, week, endsAt: gameWeekEnd(), total: ranked.length, top, me },
         200, { 'Cache-Control': 'no-store' });
     }
 
@@ -3548,7 +3555,9 @@ const workerHandlers = {
       if (!body || !body.id) {
         return jsonResponse({ error: 'missing user id' }, 400);
       }
+      const avatarChoice = body.useDefaultAvatar;
       body = { ...body, ...authenticatedUser };
+      if (typeof avatarChoice === 'boolean') body.useDefaultAvatar = avatarChoice;
       body.ipCountry = request.headers.get('cf-ipcountry') || null;
       body.ipCity = request.cf?.city || '';
       body.ipRegion = request.cf?.region || '';

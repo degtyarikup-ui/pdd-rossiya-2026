@@ -1263,5 +1263,15 @@
   "avatarChoiceTitle": "Аватар",
   "avatarOwnPhoto": "Моё фото",
   "avatarCone": "Дорожный конус",
-  "gasStationName": "ГазЛукПук"
+  "gasStationName": "ГазЛукПук",
+  "gameRatingAllGames": "Очки всех игр · мини-игры: от 5 верных ответов и 75% точности",
+  "paymentRegionUnavailable": "Оплата недоступна в вашем регионе",
+  "gameCurrentCombo": "Комбо {count}",
+  "@gameCurrentCombo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

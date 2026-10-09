@@ -1,3 +1,4 @@
+import 'package:pdd_app/core/config/game_economy.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
@@ -288,7 +289,7 @@ class GameController extends StateNotifier<GameState> {
     state = state.copyWith(
       speedKmH: speedKmH.clamp(0, 400),
       distanceM: distance,
-      score: state.score + distance ~/ 2 - state.distanceM ~/ 2,
+
       limitKmH: limitKmH,
       clearLimit: limitKmH == null,
     );
@@ -383,7 +384,7 @@ class GameController extends StateNotifier<GameState> {
       HapticFeedbackHelper.softSuccess();
 
       final newStreak = state.consecutiveCorrect + 1;
-      final addedScore = 100 + (newStreak * 25);
+      final addedScore = GameEconomy.city(newStreak);
 
       state = state.copyWith(
         selectedAnswerIndex: answerIndex,
@@ -410,6 +411,7 @@ class GameController extends StateNotifier<GameState> {
         consecutiveCorrect: 0,
         totalAnswered: state.totalAnswered + 1,
         totalMistakes: newMistakes,
+        score: (state.score - GameEconomy.cityMistake).clamp(0, 1000000),
         phase: GamePhase.explanation,
         mistakes: [...state.mistakes, sit],
       );

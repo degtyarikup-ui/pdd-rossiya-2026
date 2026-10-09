@@ -2984,4 +2984,16 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gasStationName => 'ГазЛукПук';
+
+  @override
+  String get gameRatingAllGames =>
+      'Очки всех игр · мини-игры: от 5 верных ответов и 75% точности';
+
+  @override
+  String get paymentRegionUnavailable => 'Оплата недоступна в вашем регионе';
+
+  @override
+  String gameCurrentCombo(int count) {
+    return 'Комбо $count';
+  }
 }

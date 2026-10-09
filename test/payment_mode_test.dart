@@ -42,11 +42,11 @@ void main() {
       );
     });
 
-    test('RuStore: СБП без ограничений, какая бы ни была страна', () {
+    test('RuStore: СБП только для российских устройств', () {
       for (final country in ['RU', 'BY', 'DE', null]) {
         expect(
           androidPaymentMode(store: AppStore.rustore, deviceCountry: country),
-          PaymentMode.sbp,
+          country == 'RU' ? PaymentMode.sbp : PaymentMode.unavailable,
           reason: '$country',
         );
       }
@@ -77,7 +77,7 @@ void main() {
     test('RuStore: только СБП', () {
       expect(
         androidPaymentModes(store: AppStore.rustore, deviceCountry: 'DE'),
-        [PaymentMode.sbp],
+        [PaymentMode.unavailable],
       );
     });
   });

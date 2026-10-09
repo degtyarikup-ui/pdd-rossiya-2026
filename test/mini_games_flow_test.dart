@@ -170,7 +170,7 @@ void main() {
     await answerSign(tester, correct: true);
     expect(
       tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
-      100,
+      8,
     );
     for (var mistakes = 1; mistakes <= 3; mistakes++) {
       await answerSign(tester, correct: false);
@@ -180,7 +180,7 @@ void main() {
       );
     }
     expect(find.byType(GameResultOverlay), findsOneWidget);
-    expect(progress.getSignSwiperProgress().bestScore, 100);
+    expect(progress.getSignSwiperProgress().bestScore, 0);
     expect(progress.getSignSwiperProgress().totalSwiped, 4);
     expect(progress.getSignSwiperProgress().trainingCount, 0);
 
@@ -392,7 +392,7 @@ void main() {
         if (i == 0) expect(find.text(verse), findsNothing);
         expect(
           tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
-          100 * (i + 1) * (i + 2) ~/ 2 - (i == 0 ? 50 : 150),
+          i < 4 ? [9, 19, 43, 70][i] : 100 + (i - 4) * 30,
           reason:
               'Viewed hints halve the first two rewards; later rounds restore the full combo reward',
         );
@@ -421,7 +421,7 @@ void main() {
     await tester.pump();
     expect(
       tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
-      100,
+      18,
     );
     // The screen must wait for the vehicle, not cut the animation at 1.25s.
     if (correct != TrafficMove.none) {
@@ -461,7 +461,7 @@ void main() {
       }
     }
     expect(find.byType(GameResultOverlay), findsOneWidget);
-    expect(progress.getTrafficControllerProgress().bestScore, 100);
+    expect(progress.getTrafficControllerProgress().bestScore, 0);
     expect(progress.getTrafficControllerProgress().totalSolved, 1);
     expect(progress.getTrafficControllerProgress().trainingCount, 0);
     await tester.pumpWidget(const SizedBox());

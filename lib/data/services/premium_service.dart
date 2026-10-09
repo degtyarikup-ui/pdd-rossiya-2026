@@ -1,3 +1,4 @@
+import 'package:pdd_app/data/services/device_region.dart';
 import 'package:pdd_app/data/services/install_reporter.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -516,6 +517,12 @@ class PremiumService extends ChangeNotifier {
     required String email,
     String method = 'sbp',
   }) async {
+    if (!kIsWeb) {
+      if (defaultTargetPlatform != TargetPlatform.android ||
+          (await DeviceRegion.countryCode())?.toUpperCase() != 'RU') {
+        return null;
+      }
+    }
     final auth = AuthService.instance;
     if (!auth.hasServerSession || !BackendConfig.hasNotifier) return null;
     try {

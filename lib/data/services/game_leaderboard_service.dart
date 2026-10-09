@@ -12,6 +12,8 @@ class GameLeaderboardEntry {
   final int score;
   final int runs;
   final bool isMe;
+  final bool isPremium;
+  final String? avatarUrl;
 
   const GameLeaderboardEntry({
     required this.rank,
@@ -19,6 +21,8 @@ class GameLeaderboardEntry {
     required this.score,
     required this.runs,
     required this.isMe,
+    this.isPremium = false,
+    this.avatarUrl,
   });
 
   factory GameLeaderboardEntry.fromJson(Map<String, dynamic> json) {
@@ -30,6 +34,8 @@ class GameLeaderboardEntry {
       score: (json['score'] as num?)?.toInt() ?? 0,
       runs: (json['runs'] as num?)?.toInt() ?? 0,
       isMe: json['isMe'] == true,
+      isPremium: json['isPremium'] == true,
+      avatarUrl: json['avatarUrl'] as String?,
     );
   }
 }

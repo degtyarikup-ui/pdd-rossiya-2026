@@ -1,3 +1,5 @@
+import 'package:pdd_app/core/config/game_economy.dart';
+import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -314,7 +316,7 @@ class _TrafficControllerScreenState
         _lastWasCorrect = true;
         _combo++;
         if (_combo > _maxComboInRound) _maxComboInRound = _combo;
-        _score += (_hintUsed ? 50 : 100) * _combo;
+        _score += GameEconomy.regulator(_combo, hint: _hintUsed);
         _solvedCount++;
         _secondsLeft = math.min(_secondsLeft + 3, 60);
       });
@@ -330,6 +332,7 @@ class _TrafficControllerScreenState
         _awaitingNext = true;
         _lastMove = move;
         _lastWasCorrect = false;
+        _score = (_score - GameEconomy.regulatorMistake).clamp(0, 1000000);
         _combo = 0;
         _lives--;
         _wrongCount++;
@@ -344,6 +347,16 @@ class _TrafficControllerScreenState
 
   /// Конец заезда. Рекорд сравниваем ДО записи, иначе он всегда «побит».
   void _endArcadeGame() {
+    if (_isGameOver) return;
+    unawaited(
+      GameLeaderboardService.instance.submitRun(
+        GameEconomy.rankedScore(
+          _score,
+          correct: _solvedCount,
+          wrong: _wrongCount,
+        ),
+      ),
+    );
     _countdownTimer?.cancel();
     _nextSituationTimer?.cancel();
     final previousBest = ref.read(trafficControllerProgressProvider).bestScore;
@@ -563,7 +576,7 @@ class _TrafficControllerScreenState
         spacing: AppDimensions.spacingM,
         runSpacing: AppDimensions.spacingS,
         children: [
-          GameScoreLabel(score: _score, multiplier: _combo),
+          GameScoreLabel(score: _score, streak: _combo),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
