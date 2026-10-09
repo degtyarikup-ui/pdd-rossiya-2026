@@ -169,6 +169,9 @@ case "$TARGET" in
     # iOS (ru.pdd.pddApp): архив + экспорт с
     # destination=upload из ios/ExportOptions.plist — сборка сразу уходит в
     # App Store Connect через аккаунт, в который вошёл Xcode.
+    # При upload Xcode не создаёт локальную IPA, но Flutter всё равно
+    # перечисляет каталог экспорта. В чистой рабочей копии он должен быть.
+    mkdir -p build/ios/ipa
     IOS_BUILD_STARTED="$(date +%s)"
     flutter build ipa --release \
       --dart-define=COUNTRY="$COUNTRY" \
