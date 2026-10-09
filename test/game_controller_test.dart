@@ -40,6 +40,8 @@ import 'package:pdd_app/presentation/screens/game/controllers/game_controller.da
 final signedIn = [isAuthenticatedProvider.overrideWithValue(true)];
 
 void main() {
+  setUp(() => GameScreen.quietRecoveries = 0);
+  tearDown(() => GameScreen.quietRecoveries = 3);
   test('Garage unlocks cars after 5, 15, 35, 55 correct answers', () async {
     final garage = GameGarageService.instance..resetForTest();
     final unlockedAt = <int>[];
@@ -457,6 +459,40 @@ void main() {
     expect(controller.state.mistakes.map((s) => s.id), ['m2']);
     controller.restartGame();
     expect(controller.state.mistakes, isEmpty);
+  });
+
+  test('A reloaded engine keeps the run and drops the open question', () {
+    const situation = GameSituation(
+      id: 'r1',
+      ticket: 'Билет 1 · Вопрос 13',
+      title: 'Кому уступить?',
+      explanation: '',
+      pddRule: '',
+      options: ['Никому', 'Пешеходу'],
+      correctAnswerIndex: 1,
+      legend: [],
+      type: 'crossroad',
+    );
+    final controller = GameController();
+    addTearDown(controller.dispose);
+    controller.onEngineReady();
+    controller.onApproachSituation(situation);
+    controller.submitAnswer(1);
+    controller.onSituationClearedFromEngine('r1');
+    controller.onApproachSituation(
+      GameSituation.fromJson({...situation.toJson(), 'id': 'r2'}),
+    );
+    final oldSession = controller.sessionId;
+    final answered = controller.state.totalAnswered;
+    controller.engineReloaded();
+    expect(controller.acceptsSession(oldSession), isFalse);
+    expect(controller.state.totalAnswered, answered);
+    expect(controller.state.currentSituation, isNull);
+    expect(controller.state.phase, GamePhase.ready);
+    controller.onEngineReady();
+    expect(controller.state.phase, GamePhase.driving);
+    controller.onApproachSituation(situation);
+    expect(controller.state.phase, GamePhase.situation);
   });
 
   testWidgets('After a mistake the explanation names the right answer', (
@@ -1827,6 +1863,42 @@ void main() {
       findsNothing,
     );
     expect(exits, 0);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('A dropped engine is reloaded quietly and the run goes on', (
+    tester,
+  ) async {
+    GameScreen.quietRecoveries = 3;
+    final platform = _GameWebPlatform();
+    WebViewPlatform.instance = platform;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: signedIn,
+        child: const MaterialApp(home: GameScreen()),
+      ),
+    );
+    await tester.pump();
+    final first = platform.controllers.single;
+    first.emit('{"event":"ready"}');
+    await tester.pump();
+    await _startDrive(tester);
+    // iOS killed the page process: no error screen, a fresh engine instead.
+    platform.controllers.single.navigation.error!(
+      WebResourceError(
+        errorCode: 2,
+        description: 'terminated',
+        isForMainFrame: true,
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text(appL10n.gameLoadError), findsNothing);
+    expect(platform.controllers.length, 2);
+    platform.controllers.last.emit('{"event":"ready"}');
+    await tester.pump();
+    expect(find.text(appL10n.gameLoadError), findsNothing);
+    expect(find.text(appL10n.gameRestart), findsNothing);
     await tester.pumpWidget(const SizedBox());
   });
 

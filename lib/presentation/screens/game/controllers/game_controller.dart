@@ -445,6 +445,28 @@ class GameController extends StateNotifier<GameState> {
     );
   }
 
+  /// The engine document was replaced mid-run (the OS dropped its WebView):
+  /// the run goes on with its score, answers and mistakes. Only the question
+  /// on screen is dropped, and the new engine drives from the start.
+  void engineReloaded() {
+    _noticeTimer?.cancel();
+    _timer?.cancel();
+    onStopGas?.call();
+    _lastTickSecond = -1;
+    _lastSituationId = null;
+    sessionId =
+        '${DateTime.now().microsecondsSinceEpoch}-${_sessionSequence++}';
+    if (state.phase == GamePhase.gameOver) return;
+    state = state.copyWith(
+      phase: GamePhase.ready,
+      clearSituation: true,
+      clearExit: true,
+      recovering: false,
+      oncoming: false,
+      speedKmH: 0,
+    );
+  }
+
   void restartGame() {
     _noticeTimer?.cancel();
     _timer?.cancel();

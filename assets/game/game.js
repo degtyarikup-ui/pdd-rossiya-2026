@@ -5488,6 +5488,12 @@
     // Road surfaces get their texture phase from the road they continue.
     window.PDD_ROADS.attach(renderer, { roots: () => state.roadSegments, lineage: () => state.exitRoad || currentCorridor });
     container.appendChild(renderer.domElement);
+    // The OS can take the GL context away (app interrupted): three.js then
+    // just stops drawing. Tell the host so it reloads the engine.
+    renderer.domElement.addEventListener('webglcontextlost', event => {
+      event.preventDefault();
+      sendToFlutter({ event: 'engine_error' });
+    });
 
     // Lights
     setupLights();

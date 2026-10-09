@@ -53,6 +53,11 @@ class GameScreen extends ConsumerStatefulWidget {
 
   const GameScreen({super.key, this.onExit, this.visible = true});
 
+  /// How many times in two minutes a dropped engine is reloaded silently
+  /// before the error screen appears.
+  @visibleForTesting
+  static int quietRecoveries = 3;
+
   @override
   ConsumerState<GameScreen> createState() => _GameScreenState();
 }
@@ -175,10 +180,44 @@ class _GameScreenState extends ConsumerState<GameScreen>
     if (!mounted || _disposing || _failed || !_game.acceptsSession(sessionId)) {
       return;
     }
+    if (_restarting) return; // the engine is being replaced right now
+    if (_canRecoverQuietly()) {
+      unawaited(_recoverEngine());
+      return;
+    }
     setState(() => _failed = true);
     _readyTimer?.cancel();
     _game.setPaused(true);
     _send('setPaused', [true]);
+  }
+
+  // iOS drops the game's WebView (or its WebGL context) while the app is
+  // interrupted. The first few times the engine is reloaded without a word:
+  // the run, its score and its paid attempt stay. Failing again and again
+  // (a broken device) falls back to the error screen.
+  final _recoveries = <DateTime>[];
+
+  bool _canRecoverQuietly() {
+    if (_restarting) return false;
+    final now = DateTime.now();
+    _recoveries.removeWhere((t) => now.difference(t).inMinutes >= 2);
+    return _recoveries.length < GameScreen.quietRecoveries;
+  }
+
+  Future<void> _recoverEngine() async {
+    _recoveries.add(DateTime.now());
+    _restarting = true;
+    _readyTimer?.cancel();
+    _game.setPaused(true);
+    await _stopWebView();
+    if (!mounted || _disposing) return;
+    _game.engineReloaded();
+    _configured = false;
+    _restarting = false;
+    _cleanup = null;
+    _lastInsets = null;
+    _initialization = _initWebView();
+    _game.setPaused(_inLobby || !_active);
   }
 
   void _send(String method, List<Object?> args) {
