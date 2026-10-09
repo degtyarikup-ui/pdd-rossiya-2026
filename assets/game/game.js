@@ -7914,13 +7914,13 @@
       seg.add(bush);
     }
 
-    const garageL = createVillageHouse(1);
+    const garageL = createBuilding(6, 3.2, 5, 1);
     garageL.position.set(-(turnaroundWidth / 2 + 5.0), 0, 36);
     garageL.rotation.y = Math.PI / 2;
     garageL.userData.sceneryObject = true;
     seg.add(garageL);
 
-    const garageR = createVillageHouse(2);
+    const garageR = createBuilding(6, 3.2, 5, 2);
     garageR.position.set(turnaroundWidth / 2 + 5.0, 0, 36);
     garageR.rotation.y = -Math.PI / 2;
     garageR.userData.sceneryObject = true;
@@ -15279,10 +15279,8 @@
     telemetryElapsed = 0;
   }
 
-  // What the host (Flutter) last asked for. The page also pauses itself while
-  // hidden, but that must never outlive the host's own decision: a late
-  // 'hidden' event after a quick background/resume used to leave the engine
-  // paused for good while the controls looked alive.
+  // What the host (Flutter) last asked for. Once configured, Flutter owns
+  // the lifecycle; the standalone page also uses its document visibility.
   let hostPaused = Boolean(state.paused);
   function applyPaused(next) {
     if (next === state.paused) return;
@@ -15425,9 +15423,8 @@
       resolveSituationAnimation(isCorrect, situationId);
     },
     setPaused(paused) {
-      // The host's word is final: document.hidden is only consulted when the
-      // visibility actually changes (an embedded WebView may report hidden
-      // while it is on screen).
+      // The host's word is final: an embedded WebView can report hidden
+      // while it is on screen, even after Flutter has resumed it.
       hostPaused = Boolean(paused);
       applyPaused(hostPaused);
     },
@@ -15482,7 +15479,10 @@
     clearMistakeHighlight
   };
   document.addEventListener('visibilitychange', () => {
-    applyPaused(hostPaused || document.hidden);
+    // Flutter already sends setPaused for every app/route lifecycle change.
+    // A late WKWebView hidden event must not override its resume and leave
+    // the engine permanently paused while Flutter's controls remain active.
+    if (!state.nativeControls) applyPaused(hostPaused || document.hidden);
   });
 
   // Run init on DOM ready
