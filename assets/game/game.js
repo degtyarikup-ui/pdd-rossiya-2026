@@ -6625,8 +6625,8 @@
     g.userData.wheels=[...bike.userData.wheels,wheel];g.userData.modelVersion=2;
     g.userData.lampSpec = {
       sidecar: true,
-      left: { front: { x: -1.05, y: 0.68, z: 0.25 }, rear: { x: -1.05, y: 0.68, z: -0.65 } },
-      right: { front: { x: 0.72, y: 0.90, z: 0.83 }, rear: { x: 0.72, y: 0.85, z: -0.91 } }
+      left: { front: { x: 0.72, y: 0.90, z: 0.83 }, rear: { x: 0.72, y: 0.85, z: -0.91 } },
+      right: { front: { x: -1.05, y: 0.68, z: 0.25 }, rear: { x: -1.05, y: 0.68, z: -0.65 } }
     };
     mergeTransportParts(g);
     return g;
