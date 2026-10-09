@@ -12,6 +12,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/traffic_controller_rules.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
+import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/platform/browser_game.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
@@ -229,6 +230,7 @@ class _TrafficControllerScreenState
 
   void _startArcadeRound() {
     if (!_engineReady) return;
+    UsageReporter.track(UsageFeature.trafficController);
     HapticFeedbackHelper.select();
     _countdownTimer?.cancel();
     _nextSituationTimer?.cancel();

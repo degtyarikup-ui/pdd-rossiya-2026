@@ -8,7 +8,21 @@ import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/data/services/install_reporter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum UsageFeature { tickets, topics, exam, game, feed }
+enum UsageFeature {
+  tickets,
+  topics,
+  exam,
+  feed,
+  game,
+  signSwiper('sign_swiper'),
+  trafficController('traffic_controller'),
+  roundabout('roundabout');
+
+  const UsageFeature([this.wireName]);
+  final String? wireName;
+
+  String get key => wireName ?? name;
+}
 
 /// Durable local outbox. Network failures never interrupt learning. Retries
 /// keep the original IDs and timestamps so the server deduplicates delivery.
@@ -55,7 +69,7 @@ class UsageReporter {
               (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0'),
             ).join(),
             'ts': now,
-            'feature': feature.name,
+            'feature': feature.key,
           });
         }
         // Bound offline storage to the 500 most recent starts.

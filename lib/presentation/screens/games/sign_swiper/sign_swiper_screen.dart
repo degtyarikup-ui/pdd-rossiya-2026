@@ -9,6 +9,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
+import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/domain/services/sign_swiper_engine.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/widgets/sign_explanation_sheet.dart';
@@ -63,6 +64,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     final signs = SignSwiperEngine.parseSignsJson(signsJson);
     if (signs.isEmpty) return;
     _engine = SignSwiperEngine(allSigns: signs);
+    UsageReporter.track(UsageFeature.signSwiper);
     _resetRoundState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_isGameOver) _startTimer();
@@ -88,6 +90,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
 
   void _startRound() {
     _timer?.cancel();
+    UsageReporter.track(UsageFeature.signSwiper);
     setState(_resetRoundState);
 
     _startTimer();
