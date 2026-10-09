@@ -314,10 +314,10 @@
     pddArticle: 'Пункт 13.10 ПДД РФ',
     isEqual: false,
     signs: [
-      { code: '2.1', side: 'south', table8_13: 'left' },
-      { code: '2.1', side: 'west', table8_13: 'right' },
-      { code: '2.4', side: 'north', table8_13: 'left' },
-      { code: '2.4', side: 'east', table8_13: 'left' }
+      { code: '2.1', side: 'south', table8_13: 'bottom_left' },
+      { code: '2.1', side: 'west', table8_13: 'bottom_right' },
+      { code: '2.4', side: 'north', table8_13: 'top_right' },
+      { code: '2.4', side: 'east', table8_13: 'left_top' }
     ],
     actors: [
       {
@@ -990,10 +990,10 @@
   function createSignMesh(code, sideName, table8_13) {
     const group = new THREE.Group();
 
-    // Металлическая оцинкованная стойка знака
+    // Металлическая оцинкованная стойка знака (расположена сзади щита, не пересекая лицевую панель)
     const poleMat = new THREE.MeshLambertMaterial({ color: 0x9FA3A9 });
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.5, 12), poleMat);
-    pole.position.y = 1.75;
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 3.5, 12), poleMat);
+    pole.position.set(0, 1.75, -0.06);
     pole.castShadow = true;
     group.add(pole);
 
@@ -1004,67 +1004,71 @@
       const loader = new THREE.TextureLoader();
       const tex = loader.load(signTexUrl);
       tex.anisotropy = 4;
-      signMat = new THREE.MeshLambertMaterial({ map: tex, transparent: true });
+      signMat = new THREE.MeshLambertMaterial({ map: tex, transparent: true, alphaTest: 0.12 });
     } else {
       signMat = new THREE.MeshLambertMaterial({ color: 0xFFCC00 });
     }
 
-    // Лицевая панель знака (крупная, четкая)
+    // Лицевая панель знака (крупная, четкая, строго перед стойкой)
     const faceGeo = new THREE.PlaneGeometry(1.65, 1.45);
     const face = new THREE.Mesh(faceGeo, signMat);
-    face.position.set(0, 2.85, 0.035);
+    face.position.set(0, 2.85, 0.02);
     group.add(face);
 
-    // Задняя панель знака (дублирует знак для отличной читаемости со всех сторон в изометрии)
-    const backFace = new THREE.Mesh(faceGeo, signMat);
-    backFace.position.set(0, 2.85, -0.035);
-    backFace.rotation.y = Math.PI;
-    group.add(backFace);
-
-    // Серая металлическая основа знака
-    const backMat = new THREE.MeshLambertMaterial({ color: 0x5C6068 });
-    const backGeo = new THREE.CylinderGeometry(0.85, 0.85, 0.05, 20);
-    const back = new THREE.Mesh(backGeo, backMat);
-    back.rotation.x = Math.PI / 2;
-    back.position.set(0, 2.85, 0);
+    // Тыльная серая панель знака (строго по контуру знака через альфа-маску, без круглых блинов)
+    const backMat = new THREE.MeshLambertMaterial({
+      color: 0x7E858E,
+      map: signMat.map,
+      transparent: true,
+      alphaTest: 0.12,
+    });
+    if (signMat.map) {
+      backMat.onBeforeCompile = shader => {
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <map_fragment>',
+          'diffuseColor.a *= texture2D( map, vUv ).a;'
+        );
+      };
+    }
+    const back = new THREE.Mesh(faceGeo, backMat);
+    back.position.set(0, 2.85, 0.00);
+    back.rotation.y = Math.PI;
     group.add(back);
 
     // Табличка 8.13 «Направление главной дороги» (если указана)
     if (table8_13) {
       const plateTex = createTable8_13Texture(table8_13);
       const plateMat = new THREE.MeshLambertMaterial({ map: plateTex });
-      const plateGeo = new THREE.PlaneGeometry(1.2, 1.2);
+      const plateGeo = new THREE.PlaneGeometry(1.25, 1.25);
 
       const plate = new THREE.Mesh(plateGeo, plateMat);
-      plate.position.set(0, 1.95, 0.035);
+      plate.position.set(0, 1.95, 0.02);
       group.add(plate);
 
-      const plateBackFace = new THREE.Mesh(plateGeo, plateMat);
-      plateBackFace.position.set(0, 1.95, -0.035);
-      plateBackFace.rotation.y = Math.PI;
-      group.add(plateBackFace);
-
-      const plateBack = new THREE.Mesh(new THREE.BoxGeometry(1.22, 1.22, 0.05), backMat);
-      plateBack.position.set(0, 1.95, 0);
+      const plateBackMat = new THREE.MeshLambertMaterial({ color: 0x7E858E });
+      const plateBack = new THREE.Mesh(plateGeo, plateBackMat);
+      plateBack.position.set(0, 1.95, 0.00);
+      plateBack.rotation.y = Math.PI;
       group.add(plateBack);
     }
 
-    // Позиционирование знака: у правого угла тротуара перед стоп-линией, без перекрытия фонарей
+    // Позиционирование знака: у правого угла тротуара перед стоп-линией
+    // Разворот лицевой стороной к изометрической камере и подъезду для идеальной читаемости всех 4 знаков
     const curbX = HALF_ROAD + 1.2;
     const curbZ = 11.0;
 
     if (sideName === 'south') {
       group.position.set(curbX, 0, curbZ);
-      group.rotation.y = 0.35;
+      group.rotation.y = 0.45;
     } else if (sideName === 'north') {
       group.position.set(-curbX, 0, -curbZ);
-      group.rotation.y = Math.PI + 0.35;
+      group.rotation.y = 0.85;
     } else if (sideName === 'east') {
       group.position.set(curbZ, 0, -curbX);
-      group.rotation.y = Math.PI / 2 - 0.35;
+      group.rotation.y = 0.60;
     } else if (sideName === 'west') {
       group.position.set(-curbZ, 0, curbX);
-      group.rotation.y = -Math.PI / 2 - 0.35;
+      group.rotation.y = 1.05;
     }
 
     group.traverse(child => {
@@ -1076,7 +1080,7 @@
     return group;
   }
 
-  // Динамическая генерация четкой векторной текстуры для таблички 8.13
+  // Динамическая генерация четкой векторной текстуры для таблички 8.13 по ГОСТ Р 52290
   function createTable8_13Texture(type) {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
@@ -1086,44 +1090,69 @@
     // Белый фон с черной каймой
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, 256, 256);
-    ctx.lineWidth = 10;
+    ctx.lineWidth = 12;
     ctx.strokeStyle = '#000000';
-    ctx.strokeRect(5, 5, 246, 246);
+    ctx.strokeRect(6, 6, 244, 244);
 
     const c = 128;
-    // Тонкие линии второстепенных дорог
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = '#222222';
+    const pad = 24;
+    const end = 256 - pad;
+
+    // Тонкие черные линии второстепенных дорог (крест дорог)
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = '#1A1A1A';
     ctx.beginPath();
-    // 4 луча креста
-    ctx.moveTo(c, 24); ctx.lineTo(c, 232);
-    ctx.moveTo(24, c); ctx.lineTo(232, c);
+    ctx.moveTo(c, pad); ctx.lineTo(c, end);
+    ctx.moveTo(pad, c); ctx.lineTo(end, c);
     ctx.stroke();
 
-    // Жирная черная линия главной дороги (поворот)
-    ctx.lineWidth = 32;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    // Жирная черная линия главной дороги (поворот по ГОСТ)
+    ctx.lineWidth = 36;
+    ctx.strokeStyle = '#000000';
+    ctx.lineCap = 'square';
+    ctx.lineJoin = 'miter';
     ctx.beginPath();
 
-    if (type === 'left') {
-      // Снизу налево (относительно водителя с юга)
-      ctx.moveTo(c, 232);
+    if (type === 'left' || type === 'bottom_left') {
+      // Снизу налево (водитель на главной, поворот налево)
+      ctx.moveTo(c, end);
       ctx.lineTo(c, c);
-      ctx.lineTo(24, c);
-    } else if (type === 'right') {
-      // Снизу направо
-      ctx.moveTo(c, 232);
+      ctx.lineTo(pad, c);
+    } else if (type === 'right' || type === 'bottom_right') {
+      // Снизу направо (водитель на главной, поворот направо)
+      ctx.moveTo(c, end);
       ctx.lineTo(c, c);
-      ctx.lineTo(232, c);
+      ctx.lineTo(end, c);
+    } else if (type === 'top_right') {
+      // Сверху направо (водитель на второстепенной, главная соединяет встречную и правую дороги)
+      ctx.moveTo(c, pad);
+      ctx.lineTo(c, c);
+      ctx.lineTo(end, c);
+    } else if (type === 'left_top') {
+      // Слева наверх (водитель на второстепенной, главная соединяет левую и встречную дороги)
+      ctx.moveTo(pad, c);
+      ctx.lineTo(c, c);
+      ctx.lineTo(c, pad);
+    } else if (type === 'top_left') {
+      // Сверху налево
+      ctx.moveTo(c, pad);
+      ctx.lineTo(c, c);
+      ctx.lineTo(pad, c);
+    } else if (type === 'right_top') {
+      // Справа наверх
+      ctx.moveTo(end, c);
+      ctx.lineTo(c, c);
+      ctx.lineTo(c, pad);
     } else {
       // Прямо
-      ctx.moveTo(c, 232);
-      ctx.lineTo(c, 24);
+      ctx.moveTo(c, end);
+      ctx.lineTo(c, pad);
     }
     ctx.stroke();
 
-    return new THREE.CanvasTexture(canvas);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.anisotropy = 4;
+    return tex;
   }
 
   // --- Создание участников движения (машины, трамвай, скорая) ---
@@ -2005,6 +2034,7 @@
   }
 
   // --- API для Flutter моста ---
+  window.getCamera = () => camera;
   window.setZoom = zoom => {
     camZoom = THREE.MathUtils.clamp(zoom, 0.5, 2.5);
     updateCameraPosition();

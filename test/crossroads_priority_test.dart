@@ -63,6 +63,33 @@ void main() {
         expect(actorsList.length, equals(s.actors.length));
       }
     });
+
+    test('cross_main_turns_left has 4 distinct and valid table8_13 signs', () {
+      final scenario = CrossroadsScenariosLibrary.allScenarios
+          .firstWhere((s) => s.id == 'cross_main_turns_left');
+      expect(scenario.signs.length, equals(4));
+
+      final south = scenario.signs.firstWhere((s) => s.side == CrossroadsSide.south);
+      final west = scenario.signs.firstWhere((s) => s.side == CrossroadsSide.west);
+      final north = scenario.signs.firstWhere((s) => s.side == CrossroadsSide.north);
+      final east = scenario.signs.firstWhere((s) => s.side == CrossroadsSide.east);
+
+      expect(south.code, equals('2.1'));
+      expect(south.table8_13, equals('bottom_left'));
+
+      expect(west.code, equals('2.1'));
+      expect(west.table8_13, equals('bottom_right'));
+
+      expect(north.code, equals('2.4'));
+      expect(north.table8_13, equals('top_right'));
+
+      expect(east.code, equals('2.4'));
+      expect(east.table8_13, equals('left_top'));
+
+      // Все 4 таблички 8.13 уникальны и не дублируются
+      final tableSet = scenario.signs.map((s) => s.table8_13).toSet();
+      expect(tableSet.length, equals(4));
+    });
   });
 
   group('Crossroads Priority Progress Tests', () {

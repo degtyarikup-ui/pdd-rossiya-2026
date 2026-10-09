@@ -165,10 +165,10 @@ class CrossroadsScenariosLibrary {
       subtitle: 'Водители на главной разъезжаются по помехе справа, затем второстепенные.',
       pddArticle: 'Пункт 13.10 ПДД РФ',
       signs: [
-        CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.south, table8_13: 'left'),
-        CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.west, table8_13: 'right'),
-        CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.north, table8_13: 'left'),
-        CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.east, table8_13: 'left'),
+        CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.south, table8_13: 'bottom_left'),
+        CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.west, table8_13: 'bottom_right'),
+        CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.north, table8_13: 'top_right'),
+        CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.east, table8_13: 'left_top'),
       ],
       actors: [
         CrossroadsActor(
