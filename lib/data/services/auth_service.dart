@@ -242,6 +242,28 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<bool> signInWithGoogleWeb(Future<String> Function() request) async {
+    _beginSignIn('google');
+    try {
+      // request opens Google's window synchronously from the button gesture.
+      return await _completeCredential('google', await request());
+    } catch (e) {
+      _recordSignInError(e);
+      return false;
+    }
+  }
+
+  /// The server resolves the account from Google's verified OAuth token.
+  Future<bool> signInWithGoogleWebToken(String credential) async {
+    _beginSignIn('google');
+    try {
+      return await _completeCredential('google', credential);
+    } catch (e) {
+      _recordSignInError(e);
+      return false;
+    }
+  }
+
   Future<bool> _completeGoogleAccount(GoogleSignInAccount account) async {
     final authentication = await account.authentication;
     final profile = UserProfile(
@@ -481,8 +503,21 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<bool> _completeSignIn(UserProfile profile, String? credential) async {
-    _signInProvider = profile.provider.name;
+  Future<bool> _completeSignIn(UserProfile profile, String? credential) =>
+      _completeCredential(
+        profile.provider.name,
+        credential,
+        expectedUserId: profile.id,
+        name: profile.name,
+      );
+
+  Future<bool> _completeCredential(
+    String provider,
+    String? credential, {
+    String? expectedUserId,
+    String? name,
+  }) async {
+    _signInProvider = provider;
     if (credential == null ||
         credential.isEmpty ||
         !BackendConfig.hasNotifier) {
@@ -507,9 +542,9 @@ class AuthService extends ChangeNotifier {
           Uri.parse('${BackendConfig.notifierUrl}/api/auth/session'),
           headers: serverHeaders,
           body: jsonEncode({
-            'provider': profile.provider.name,
+            'provider': provider,
             'credential': credential,
-            'name': profile.name,
+            'name': ?name,
             'platform': metadata['platform'],
             'appVersion': metadata['version'],
             'device': metadata['device'],
@@ -536,7 +571,10 @@ class AuthService extends ChangeNotifier {
     );
     final token = data['token'] as String;
     final expiry = DateTime.parse(data['expiresAt'] as String);
-    if (user.id != profile.id ||
+    if (user.provider.name != provider ||
+        !user.id.startsWith('${provider}_') ||
+        user.id.length <= provider.length + 1 ||
+        (expectedUserId != null && user.id != expectedUserId) ||
         token.isEmpty ||
         !expiry.isAfter(DateTime.now())) {
       lastFailure = AuthFailure.response;

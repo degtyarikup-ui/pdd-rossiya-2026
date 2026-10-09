@@ -103,3 +103,17 @@ SDK ошибки не логируются: они могут содержать
 не может вызвать нативный AuthenticationServices из чужого браузера.
 Пользователям iOS вне Safari показывается подсказка открыть сайт в Safari.
 Нативный Apple-вход в приложении сохранён.
+
+## Кнопка Google
+
+Все провайдеры используют `AuthProviderButton`: одинаковая геометрия и
+оформление без HTML iframe внутри формы. Google GIS OAuth2 TokenClient
+открывается синхронно по нажатию (сохраняется user activation iOS), с
+`openid email profile`, случайным state и выбором аккаунта. SDK загружается
+через существующий GoogleSignIn plugin один раз; загрузка и отмена окна
+не меняют размеры кнопок. Сервер сам получает Google sub из проверенного
+access token; `google_<sub>` и привязка премиума сохраняются. При заданном
+`GOOGLE_ANDROID_CLIENT_IDS` allowlist включает и существующие web/iOS
+`GOOGLE_CLIENT_IDS`. Прежний Android fallback без списка не изменён.
+Проверки: `test/auth_provider_button_test.dart`,
+`test/auth_login_recovery_test.dart`, `test-google-web-auth.mjs`.

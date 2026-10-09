@@ -27,13 +27,15 @@ export async function verifyIdentity(body, env) {
   if (typeof credential !== 'string' || !credential || credential.length > 16384) throw authFailure('invalid credential', 'credential_format');
   let claims;
   if (provider === 'google' && credential.split('.').length !== 3) {
-    // Android: an OAuth access token (no Web client is configured for the app,
-    // so there is no ID token). Google itself validates it; the audience must
-    // be one of our Android client IDs once GOOGLE_ANDROID_CLIENT_IDS is set.
+    // Android and the custom web button use OAuth access tokens. Google
+    // validates the token; the configured allowlist includes the web client.
     const info = await fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(credential), { signal: AbortSignal.timeout(8000) });
     if (!info.ok) throw authFailure('invalid credential', 'google_tokeninfo_' + info.status);
     const tok = await info.json();
-    const allowed = audiences(env.GOOGLE_ANDROID_CLIENT_IDS, '');
+    const androidClients = audiences(env.GOOGLE_ANDROID_CLIENT_IDS, '');
+    const allowed = androidClients.length
+      ? [...androidClients, ...audiences(env.GOOGLE_CLIENT_IDS, GOOGLE_CLIENT)]
+      : []; // Preserve the existing fallback for unconfigured Android clients.
     if (allowed.length && !allowed.includes(tok.aud) && !allowed.includes(tok.azp)) throw new Error('wrong client');
     if (!tok.sub || Number(tok.expires_in) <= 0) throw authFailure('invalid credential', 'google_tokeninfo_claims');
     const user = await fetch('https://openidconnect.googleapis.com/v1/userinfo', { headers: { Authorization: 'Bearer ' + credential }, signal: AbortSignal.timeout(8000) });

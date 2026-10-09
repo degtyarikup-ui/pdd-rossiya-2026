@@ -3,7 +3,7 @@ import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pdd_app/presentation/widgets/google_web_sign_in_button.dart';
 import 'package:pdd_app/l10n/l10n.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:pdd_app/presentation/widgets/auth_provider_button.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
@@ -158,11 +158,12 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                       color: colors.secondaryText,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  if (_isLoading) ...[
-                    const LinearProgressIndicator(),
-                    const SizedBox(height: 12),
-                  ],
+                  SizedBox(
+                    height: 24,
+                    child: _isLoading
+                        ? const Center(child: LinearProgressIndicator())
+                        : null,
+                  ),
                   if (_error != null) ...[
                     Text(
                       _error!,
@@ -183,8 +184,6 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                       label: appL10n.authApple,
                       onTap: () =>
                           _handleAuth(AuthService.instance.signInWithApple),
-                      colors: colors,
-                      isDark: isDark,
                     ),
                     if (appleWebNeedsSafariHint) ...[
                       const SizedBox(height: 8),
@@ -203,10 +202,8 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                   if (kIsWeb)
                     GoogleWebSignInButton(
                       enabled: !_isLoading,
-                      onAccount: (account) => _handleAuth(
-                        () => AuthService.instance.signInWithGoogleWebAccount(
-                          account,
-                        ),
+                      onSignIn: (request) => _handleAuth(
+                        () => AuthService.instance.signInWithGoogleWeb(request),
                       ),
                       onError: (error) {
                         ErrorReporter.report(
@@ -226,8 +223,6 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                       label: appL10n.authGoogle,
                       onTap: () =>
                           _handleAuth(AuthService.instance.signInWithGoogle),
-                      colors: colors,
-                      isDark: isDark,
                     ),
                   const SizedBox(height: 10),
 
@@ -237,8 +232,6 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                     onTap: () => _handleAuth(
                       () => AuthService.instance.signInWithYandex(context),
                     ),
-                    colors: colors,
-                    isDark: isDark,
                   ),
                   if (AuthService.debugSignInAvailable) ...[
                     const SizedBox(height: 10),
@@ -265,44 +258,12 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
     Color? svgColor,
     required String label,
     required VoidCallback onTap,
-    required AppThemeColors colors,
-    required bool isDark,
   }) {
-    return InkWell(
+    return AuthProviderButton(
+      svgAsset: svgAsset,
+      svgColor: svgColor,
+      label: label,
       onTap: _isLoading ? null : onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        decoration: BoxDecoration(
-          color: colors.searchFieldFill,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(
-              svgAsset,
-              width: 22,
-              height: 22,
-              colorFilter: svgColor != null
-                  ? ColorFilter.mode(svgColor, BlendMode.srcIn)
-                  : null,
-            ),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: colors.primaryText,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

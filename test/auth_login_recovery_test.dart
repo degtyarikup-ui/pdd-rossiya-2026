@@ -139,4 +139,63 @@ void main() {
       expect(writes, 0);
     },
   );
+  test('web Google resolves the same provider account on the server', () async {
+    Map<String, dynamic>? sent;
+    final auth = AuthService.forTesting(writeSession: (_) async {});
+    final success = await http.runWithClient(
+      () => auth.signInWithGoogleWeb(() async => 'google-access-token'),
+      () => MockClient((request) async {
+        sent = jsonDecode(request.body) as Map<String, dynamic>;
+        return http.Response(
+          jsonEncode({
+            'user': user.toMap(),
+            'token': token,
+            'expiresAt': DateTime.now()
+                .add(const Duration(days: 30))
+                .toIso8601String(),
+          }),
+          200,
+        );
+      }),
+    );
+    expect(success, isTrue);
+    expect(sent?['provider'], 'google');
+    expect(sent?['credential'], 'google-access-token');
+    expect(sent?.containsKey('userId'), isFalse);
+    expect(auth.currentUser?.id, user.id);
+  });
+  test(
+    'Google web cancellation and foreign server accounts create no session',
+    () async {
+      final auth = AuthService.forTesting(writeSession: (_) async {});
+      expect(
+        await auth.signInWithGoogleWeb(
+          () => throw PlatformException(code: 'sign_in_cancelled'),
+        ),
+        isFalse,
+      );
+      expect(auth.lastFailure, AuthFailure.cancelled);
+      for (final id in ['apple_123', 'google_']) {
+        expect(
+          await http.runWithClient(
+            () => auth.signInWithGoogleWebToken('google-access-token'),
+            () => MockClient(
+              (_) async => http.Response(
+                jsonEncode({
+                  'user': {...user.toMap(), 'id': id},
+                  'token': token,
+                  'expiresAt': DateTime.now()
+                      .add(const Duration(days: 30))
+                      .toIso8601String(),
+                }),
+                200,
+              ),
+            ),
+          ),
+          isFalse,
+        );
+        expect(auth.hasServerSession, isFalse);
+      }
+    },
+  );
 }
