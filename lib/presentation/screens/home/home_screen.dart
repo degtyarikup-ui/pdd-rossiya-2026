@@ -22,7 +22,7 @@ import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
 import 'package:pdd_app/presentation/screens/favorites/favorites_screen.dart';
 import 'package:pdd_app/presentation/screens/mistakes/mistakes_screen.dart';
 import 'package:pdd_app/presentation/screens/feed/feed_screen.dart';
-import 'package:pdd_app/presentation/screens/game/game_screen.dart';
+import 'package:pdd_app/presentation/screens/games/games_hub_screen.dart';
 import 'package:pdd_app/presentation/screens/profile/profile_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/screens/topics/topics_screen.dart';
@@ -315,15 +315,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   List<Widget> get _screens => [
     _HomeTab(onNoticeTap: _runNoticeTap),
-    GameScreen(
-      onExit: () {
-        setState(() => _currentIndex = 0);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) unawaited(_checkNotices());
-        });
-      },
-      visible: _currentIndex == 1,
-    ),
+    const GamesHubScreen(),
     if (ref.watch(isAuthenticatedProvider))
       const FeedScreen()
     else
@@ -394,7 +386,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       NavigationDestination(
                         icon: const Icon(Icons.sports_esports_outlined),
                         selectedIcon: const Icon(Icons.sports_esports_rounded),
-                        label: appL10n.game,
+                        label: appL10n.navGames,
                       ),
                       NavigationDestination(
                         icon: const Icon(Icons.style_outlined),

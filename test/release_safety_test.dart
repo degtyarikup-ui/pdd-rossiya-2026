@@ -59,7 +59,7 @@ void main() {
   });
 
   testWidgets(
-    'release navigation keeps the driving game and hides the unfinished games hub',
+    'release navigation exposes the games hub without shifting profile',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
       final source = ProgressDataSource();
@@ -79,9 +79,9 @@ void main() {
         bar.destinations.cast<NavigationDestination>().map(
           (item) => item.label,
         ),
-        [appL10n.training, appL10n.game, appL10n.video, appL10n.profile],
+        [appL10n.training, appL10n.navGames, appL10n.video, appL10n.profile],
       );
-      expect(find.text(appL10n.navGames), findsNothing);
+      expect(find.text(appL10n.navGames), findsOneWidget);
       // Removing the hub must not shift the profile to the game's old index.
       await tester.tap(find.text(appL10n.profile));
       await tester.pump();

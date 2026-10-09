@@ -10,6 +10,7 @@ import 'package:pdd_app/data/models/achievement.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/widgets/user_avatar.dart';
 import 'package:pdd_app/presentation/screens/profile/widgets/achievement_badge.dart';
 import 'package:pdd_app/presentation/screens/settings/settings_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
@@ -338,47 +339,9 @@ class _UserProfileCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: colors.lightAccent,
-                shape: BoxShape.circle,
-              ),
-              child: ClipOval(
-                child:
-                    profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty
-                    ? Image.network(
-                        profile.avatarUrl!,
-                        width: 42,
-                        height: 42,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Center(
-                          child: Text(
-                            profile.name.isNotEmpty
-                                ? profile.name[0].toUpperCase()
-                                : 'U',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: colors.accent,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Center(
-                        child: Text(
-                          profile.name.isNotEmpty
-                              ? profile.name[0].toUpperCase()
-                              : 'U',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: colors.accent,
-                          ),
-                        ),
-                      ),
-              ),
+            UserAvatar(
+              url: profile.avatarUrl,
+              useDefault: profile.useDefaultAvatar,
             ),
             const SizedBox(width: 12),
             Expanded(

@@ -7,6 +7,7 @@ class UserProfile {
   final String name;
   final String email;
   final String? avatarUrl;
+  final bool useDefaultAvatar;
   final AuthProviderType provider;
   final DateTime createdAt;
 
@@ -15,6 +16,7 @@ class UserProfile {
     required this.name,
     required this.email,
     this.avatarUrl,
+    this.useDefaultAvatar = false,
     required this.provider,
     required this.createdAt,
   });
@@ -25,6 +27,7 @@ class UserProfile {
       'name': name,
       'email': email,
       'avatarUrl': avatarUrl,
+      'useDefaultAvatar': useDefaultAvatar,
       'provider': provider.name,
       'createdAt': createdAt.toIso8601String(),
     };
@@ -36,6 +39,7 @@ class UserProfile {
       name: map['name'] as String,
       email: map['email'] as String,
       avatarUrl: map['avatarUrl'] as String?,
+      useDefaultAvatar: map['useDefaultAvatar'] == true,
       provider: AuthProviderType.values.firstWhere(
         (p) => p.name == map['provider'],
         orElse: () => AuthProviderType.google,
@@ -45,6 +49,16 @@ class UserProfile {
           DateTime.now(),
     );
   }
+
+  UserProfile withAvatarChoice(bool useDefault) => UserProfile(
+    id: id,
+    name: name,
+    email: email,
+    avatarUrl: avatarUrl,
+    useDefaultAvatar: useDefault,
+    provider: provider,
+    createdAt: createdAt,
+  );
 
   String toJson() => jsonEncode(toMap());
 

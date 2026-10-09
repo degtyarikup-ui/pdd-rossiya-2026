@@ -1,4 +1,8 @@
 import 'dart:math' as math;
+import 'dart:async';
+import 'package:pdd_app/data/services/game_runs_service.dart';
+import 'package:pdd_app/presentation/screens/game/game_screen.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_leaderboard_sheet.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,16 +16,53 @@ import 'package:pdd_app/presentation/screens/games/traffic_controller/traffic_co
 import 'package:pdd_app/presentation/screens/games/crossroads/crossroads_screen.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
 
-class GamesHubScreen extends ConsumerWidget {
+class GamesHubScreen extends ConsumerStatefulWidget {
   const GamesHubScreen({super.key});
+  @override
+  ConsumerState<GamesHubScreen> createState() => _GamesHubScreenState();
+}
 
-  void _open(BuildContext context, Widget screen) {
-    HapticFeedbackHelper.tap();
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
+    with WidgetsBindingObserver {
+  int _runs = GameRunsService.maxRuns;
+  Timer? _timer;
+  Future<int>? _loadedRuns;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    unawaited(_refreshRuns());
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) => _refreshRuns());
+  }
+
+  Future<void> _refreshRuns() async {
+    await (_loadedRuns ??= GameRunsService.instance.load());
+    final runs = GameRunsService.instance.refresh();
+    if (mounted) setState(() => _runs = runs);
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(_refreshRuns());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  Future<void> _open(BuildContext context, Widget screen) async {
+    HapticFeedbackHelper.tap();
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => screen));
+    await _refreshRuns();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final traffic = ref.watch(trafficControllerProgressProvider);
     final signs = ref.watch(signSwiperProgressProvider);
@@ -40,15 +81,57 @@ class GamesHubScreen extends ConsumerWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(bottom: AppDimensions.spacingL),
-            child: Text(
-              appL10n.navGames,
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w700,
-                color: colors.primaryText,
-              ),
+            child: Row(
+              children: [
+                Text(
+                  appL10n.navGames,
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: colors.primaryText,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.searchFieldFill,
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Text(
+                    appL10n.gamesBeta,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: colors.secondaryText,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  tooltip: appL10n.gameLobbyRating,
+                  onPressed: () => GameLeaderboardSheet.show(context),
+                  icon: Icon(
+                    Icons.emoji_events_outlined,
+                    color: colors.primaryText,
+                  ),
+                ),
+              ],
             ),
           ),
+          _GameCard(
+            art: const CityArt(forCard: true),
+            title: appL10n.gameCityTitle,
+            status: ref.watch(isPremiumProvider)
+                ? appL10n.gameRunsUnlimitedPill
+                : appL10n.gamesRunsAvailable(_runs),
+            statusIcon: Icons.local_gas_station_rounded,
+            onTap: () => _open(context, const GameScreen()),
+          ),
+          const SizedBox(height: AppDimensions.spacingL),
           _GameCard(
             art: const CrossroadsArt(forCard: true),
             title: appL10n.gameCrossroadsPriorityTitle,
@@ -87,21 +170,27 @@ class _GameCard extends StatelessWidget {
     required this.title,
     this.bestScore,
     this.onTap,
+    this.status,
+    this.statusIcon,
   });
 
   final Widget art;
   final String title;
   final int? bestScore;
   final VoidCallback? onTap;
+  final String? status;
+  final IconData? statusIcon;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final radius = BorderRadius.circular(AppDimensions.cardRadius);
     final available = onTap != null;
-    final status = bestScore == null
-        ? appL10n.gameSoonBadge
-        : appL10n.gameBestScore(bestScore!);
+    final status =
+        this.status ??
+        (bestScore == null
+            ? appL10n.gameSoonBadge
+            : appL10n.gameBestScore(bestScore!));
     final scaler = MediaQuery.textScalerOf(context);
 
     final card = Align(
@@ -174,9 +263,10 @@ class _GameCard extends StatelessWidget {
                                     Row(
                                       children: [
                                         Icon(
-                                          available
-                                              ? Icons.emoji_events_rounded
-                                              : Icons.schedule_rounded,
+                                          statusIcon ??
+                                              (available
+                                                  ? Icons.emoji_events_rounded
+                                                  : Icons.schedule_rounded),
                                           size: 16,
                                           color: available
                                               ? colors.gold

@@ -4935,6 +4935,48 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Нет. Из этой полосы разрешено только прямо. Для поворота нужно заранее занять подходящую полосу.'**
   String get gameSignScenario5_15_1_1Explanation;
+
+  /// No description provided for @gamesBeta.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бета'**
+  String get gamesBeta;
+
+  /// No description provided for @gameCityTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Живой город'**
+  String get gameCityTitle;
+
+  /// No description provided for @gamesRunsAvailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{# заезд доступен} few{# заезда доступны} many{# заездов доступны} other{# заезда доступны}}'**
+  String gamesRunsAvailable(int count);
+
+  /// No description provided for @avatarChoiceTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Аватар'**
+  String get avatarChoiceTitle;
+
+  /// No description provided for @avatarOwnPhoto.
+  ///
+  /// In ru, this message translates to:
+  /// **'Моё фото'**
+  String get avatarOwnPhoto;
+
+  /// No description provided for @avatarCone.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дорожный конус'**
+  String get avatarCone;
+
+  /// No description provided for @gasStationName.
+  ///
+  /// In ru, this message translates to:
+  /// **'ГазЛукПук'**
+  String get gasStationName;
 }
 
 class _AppLocalizationsDelegate

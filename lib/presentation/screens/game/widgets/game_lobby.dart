@@ -300,20 +300,6 @@ class GameLobby extends StatelessWidget {
                 ),
                 appL10n.gameLobbyColour,
               ),
-              const SizedBox(height: 12),
-              labelled(
-                round(
-                  color: colors.cardBackground,
-                  label: appL10n.gameWeeklyRating,
-                  onTap: onLeaderboard,
-                  icon: Icon(
-                    Icons.leaderboard_rounded,
-                    color: colors.primaryText,
-                    size: 26,
-                  ),
-                ),
-                appL10n.gameLobbyRating,
-              ),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,

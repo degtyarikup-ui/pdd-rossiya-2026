@@ -547,12 +547,13 @@ void main() {
       ),
       findsNothing,
     );
-    expect(find.text(appL10n.gameBestScore(123456789)), findsOneWidget);
-    expect(find.text(appL10n.gameBestScore(987654321)), findsOneWidget);
     for (final titleAndRecord in [
       (appL10n.gameTrafficControllerTitle, appL10n.gameBestScore(123456789)),
       (appL10n.gameSignSwiperTitle, appL10n.gameBestScore(987654321)),
     ]) {
+      await tester.scrollUntilVisible(find.text(titleAndRecord.$1), 200);
+      await tester.pumpAndSettle();
+      expect(find.text(titleAndRecord.$2), findsOneWidget);
       final cardStack = find
           .ancestor(
             of: find.text(titleAndRecord.$1),
@@ -667,6 +668,8 @@ void main() {
     tester,
   ) async {
     await open(tester, const GamesHubScreen());
+    await tester.scrollUntilVisible(find.text(appL10n.gameSignSwiperTitle), 200);
+    await tester.pumpAndSettle();
     await tester.tapAt(
       tester.getCenter(find.text(appL10n.gameSignSwiperTitle)),
     );

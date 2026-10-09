@@ -2953,4 +2953,35 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get gameSignScenario5_15_1_1Explanation =>
       'Нет. Из этой полосы разрешено только прямо. Для поворота нужно заранее занять подходящую полосу.';
+
+  @override
+  String get gamesBeta => 'Бета';
+
+  @override
+  String get gameCityTitle => 'Живой город';
+
+  @override
+  String gamesRunsAvailable(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# заезда доступны',
+      many: '# заездов доступны',
+      few: '# заезда доступны',
+      one: '# заезд доступен',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get avatarChoiceTitle => 'Аватар';
+
+  @override
+  String get avatarOwnPhoto => 'Моё фото';
+
+  @override
+  String get avatarCone => 'Дорожный конус';
+
+  @override
+  String get gasStationName => 'ГазЛукПук';
 }

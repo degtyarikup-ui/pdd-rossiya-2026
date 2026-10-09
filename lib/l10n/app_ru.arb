@@ -987,7 +987,13 @@
   "gameTrafficHintTramStraight": "Трамвай едет из рукава в рукав — только прямо.",
   "gameTrafficHintForbidden": "Сигнал запрещает движение.",
   "gameTrafficHintAllowed": "Сигнал разрешает: {directions}.",
-  "@gameTrafficHintAllowed": {"placeholders": {"directions": {"type": "String"}}},
+  "@gameTrafficHintAllowed": {
+    "placeholders": {
+      "directions": {
+        "type": "String"
+      }
+    }
+  },
   "gameSignScenario1_1_0Prompt": "Знак предупреждает о переезде со шлагбаумом?",
   "gameSignScenario1_1_0Explanation": "Да. Впереди железнодорожный переезд со шлагбаумом.",
   "gameSignScenario1_1_1Prompt": "Можно обгонять за 80 м до переезда?",
@@ -1243,5 +1249,19 @@
   "gameSignScenario8_17_1Prompt": "Можно оставить здесь обычную машину без знака «Инвалид» на 10 минут?",
   "gameSignScenario8_17_1Explanation": "Нет. Эти парковочные места предназначены для машин со знаком «Инвалид», имеющих право на льготу.",
   "gameSignScenario5_15_1_1Prompt": "Из средней полосы стрелка только прямо. Можно повернуть налево?",
-  "gameSignScenario5_15_1_1Explanation": "Нет. Из этой полосы разрешено только прямо. Для поворота нужно заранее занять подходящую полосу."
+  "gameSignScenario5_15_1_1Explanation": "Нет. Из этой полосы разрешено только прямо. Для поворота нужно заранее занять подходящую полосу.",
+  "gamesBeta": "Бета",
+  "gameCityTitle": "Живой город",
+  "gamesRunsAvailable": "{count, plural, one{# заезд доступен} few{# заезда доступны} many{# заездов доступны} other{# заезда доступны}}",
+  "@gamesRunsAvailable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "avatarChoiceTitle": "Аватар",
+  "avatarOwnPhoto": "Моё фото",
+  "avatarCone": "Дорожный конус",
+  "gasStationName": "ГазЛукПук"
 }

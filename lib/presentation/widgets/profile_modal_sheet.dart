@@ -1,4 +1,7 @@
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/presentation/widgets/user_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -7,7 +10,7 @@ import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 
-class ProfileModalSheet extends StatelessWidget {
+class ProfileModalSheet extends ConsumerWidget {
   final UserProfile profile;
 
   const ProfileModalSheet({super.key, required this.profile});
@@ -81,7 +84,9 @@ class ProfileModalSheet extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = ref.watch(currentUserProvider);
+    final profile = current?.id == this.profile.id ? current! : this.profile;
     final colors = AppColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -113,53 +118,34 @@ class ProfileModalSheet extends StatelessWidget {
               ),
               const SizedBox(height: 4),
 
-              // Avatar Circle
               Center(
-                child: Container(
-                  width: 68,
-                  height: 68,
-                  decoration: BoxDecoration(
-                    color: colors.lightAccent,
-                    shape: BoxShape.circle,
-                  ),
-                  child: ClipOval(
-                    child:
-                        profile.avatarUrl != null &&
-                            profile.avatarUrl!.isNotEmpty
-                        ? Image.network(
-                            profile.avatarUrl!,
-                            width: 68,
-                            height: 68,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Center(
-                                  child: Text(
-                                    profile.name.isNotEmpty
-                                        ? profile.name[0].toUpperCase()
-                                        : 'U',
-                                    style: TextStyle(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w700,
-                                      color: colors.accent,
-                                    ),
-                                  ),
-                                ),
-                          )
-                        : Center(
-                            child: Text(
-                              profile.name.isNotEmpty
-                                  ? profile.name[0].toUpperCase()
-                                  : 'U',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w700,
-                                color: colors.accent,
-                              ),
-                            ),
-                          ),
-                  ),
+                child: UserAvatar(
+                  url: profile.avatarUrl,
+                  useDefault: profile.useDefaultAvatar,
+                  size: 68,
                 ),
               ),
+              if (profile.avatarUrl?.isNotEmpty == true) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  children: [
+                    ChoiceChip(
+                      label: Text(appL10n.avatarOwnPhoto),
+                      selected: !profile.useDefaultAvatar,
+                      onSelected: (_) =>
+                          AuthService.instance.setDefaultAvatar(false),
+                    ),
+                    ChoiceChip(
+                      label: Text(appL10n.avatarCone),
+                      selected: profile.useDefaultAvatar,
+                      onSelected: (_) =>
+                          AuthService.instance.setDefaultAvatar(true),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 12),
 
               Text(

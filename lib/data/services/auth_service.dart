@@ -605,9 +605,13 @@ class AuthService extends ChangeNotifier {
       );
     }
     if (revision != _accountRevision) return false;
+    final avatarPrefs = await SharedPreferences.getInstance();
+    if (revision != _accountRevision) return false;
     _sessionToken = token;
     _sessionExpiresAt = expiry;
-    _currentUser = user;
+    _currentUser = user.withAvatarChoice(
+      avatarPrefs.getBool('default_avatar_${user.id}') ?? false,
+    );
     sessionIsTemporary = temporarySession;
     lastFailure = null;
     _accountRevision++;
@@ -697,6 +701,17 @@ class AuthService extends ChangeNotifier {
       debugPrint('AuthService: sign out after delete error: $e');
     }
     return deleted;
+  }
+
+  Future<void> setDefaultAvatar(bool useDefault) async {
+    final user = _currentUser;
+    if (user == null || user.avatarUrl?.isNotEmpty != true) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('default_avatar_${user.id}', useDefault);
+    if (_currentUser?.id != user.id) return;
+    _currentUser = user.withAvatarChoice(useDefault);
+    await _saveUser();
+    notifyListeners();
   }
 
   Future<void> _saveUser() async {
