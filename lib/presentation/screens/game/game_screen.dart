@@ -96,6 +96,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
   String _vehicleId = 'hatch';
   String _vehiclePaint = 'red';
   bool _garageOpen = false;
+  // Bumped on resume: rebuilds the controls and drops their stale press state.
+  int _controlsEpoch = 0;
   // Engine-rendered car previews for the garage, per model+paint.
   final _thumbnails = <String, Uint8List>{};
   // A freshly unlocked car being shown in the 3D garage.
@@ -410,6 +412,20 @@ class _GameScreenState extends ConsumerState<GameScreen>
     // JS pauses on document.hidden; Flutter explicitly resumes the renderer.
     // A completed run must remain paused even after the app regains focus.
     _send('setPaused', [_enginePaused]);
+    if (_appResumed) _resetControls();
+  }
+
+  /// Back from the background the pedal and arrows must work at once. A press
+  /// or a crash recovery that was open when the app was interrupted may never
+  /// get its release/finish event, which left the controls dead. Drop those
+  /// leftovers and rebuild the overlay.
+  void _resetControls() {
+    if (!mounted || _disposing) return;
+    setState(() => _controlsEpoch++);
+    _game.setRecovering(false);
+    _send('setGas', [false]);
+    _send('setBrake', [false]);
+    _send('setSteering', [0]);
   }
 
   @override
@@ -1567,6 +1583,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                         (gameState.phase == GamePhase.driving ||
                             gameState.phase == GamePhase.resolving))
                       GameControlsOverlay(
+                        key: ValueKey('game-controls-$_controlsEpoch'),
                         state: gameState,
                         onGasChanged: _handleGas,
                         onSwitchLane: _handleSwitchLane,

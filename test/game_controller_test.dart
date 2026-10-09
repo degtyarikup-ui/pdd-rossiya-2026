@@ -1866,6 +1866,44 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('Controls work again after returning from the background', (
+    tester,
+  ) async {
+    final platform = _GameWebPlatform();
+    WebViewPlatform.instance = platform;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: signedIn,
+        child: const MaterialApp(home: GameScreen()),
+      ),
+    );
+    await tester.pump();
+    final engine = platform.controllers.single;
+    engine.emit('{"event":"ready"}');
+    await tester.pump();
+    await _startDrive(tester);
+    // A crash recovery opens, and the app is interrupted before it closes.
+    engine.emit('{"event":"maneuver_reset"}');
+    await tester.pump();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    await tester.pump();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    final controls = tester.widget<GameControlsOverlay>(
+      find.byType(GameControlsOverlay),
+    );
+    expect(controls.state.controlsEnabled, true);
+    engine.scripts.clear();
+    final press = await tester.startGesture(
+      tester.getCenter(find.byKey(const ValueKey('game-gas'))),
+    );
+    expect(engine.scripts.any((s) => s.contains('setGas(true)')), true);
+    await press.up();
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('A dropped engine is reloaded quietly and the run goes on', (
     tester,
   ) async {
