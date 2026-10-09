@@ -284,7 +284,7 @@ class _LaneButtonState extends State<_LaneButton>
 
     return Listener(
       onPointerDown: (event) {
-        if (widget.onHold == null || _pointer != null) return;
+        if (!mounted || widget.onHold == null || _pointer != null) return;
         switch (widget.haptic) {
           case _ControlHaptic.steering:
             HapticFeedbackHelper.select();
@@ -298,13 +298,15 @@ class _LaneButtonState extends State<_LaneButton>
         setState(() => _pointer = event.pointer);
         widget.onHold!(true);
       },
+      // The overlay is rebuilt on resume while a finger may still be down: the
+      // release then reaches a State that is already gone.
       onPointerUp: (event) {
-        if (_pointer != event.pointer) return;
+        if (!mounted || _pointer != event.pointer) return;
         setState(() => _pointer = null);
         widget.onHold?.call(false);
       },
       onPointerCancel: (event) {
-        if (_pointer != event.pointer) return;
+        if (!mounted || _pointer != event.pointer) return;
         setState(() => _pointer = null);
         widget.onHold?.call(false);
       },
@@ -437,7 +439,7 @@ class _GasPedalState extends State<_GasPedal> {
   int? _pointer;
 
   void _setPressed(bool val) {
-    if (_isPressed != val) {
+    if (mounted && _isPressed != val) {
       setState(() => _isPressed = val);
       widget.onGasChanged(val);
     }

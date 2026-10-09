@@ -1928,6 +1928,35 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('Releasing the pedal after the controls were rebuilt is safe', (
+    tester,
+  ) async {
+    final platform = _GameWebPlatform();
+    WebViewPlatform.instance = platform;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: signedIn,
+        child: const MaterialApp(home: GameScreen()),
+      ),
+    );
+    await tester.pump();
+    final engine = platform.controllers.single;
+    engine.emit('{"event":"ready"}');
+    await tester.pump();
+    await _startDrive(tester);
+    final press = await tester.startGesture(
+      tester.getCenter(find.byKey(const ValueKey('game-gas'))),
+    );
+    // The app is interrupted and resumed while the finger is still down.
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    await press.up();
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('A dropped engine is reloaded quietly and the run goes on', (
     tester,
   ) async {
