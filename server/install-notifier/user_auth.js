@@ -11,25 +11,34 @@ export async function tokenHash(token) {
   return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))), b => b.toString(16).padStart(2, '0')).join('');
 }
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
+// Причина отказа для журнала: техническая метка (код ошибки библиотеки или
+// статус ответа провайдера), без текста ошибки, токенов и данных пользователя.
+const authFailure = (message, authReason) => Object.assign(new Error(message), { authReason });
+export function credentialReason(error) {
+  const raw = typeof error?.authReason === 'string'
+    ? error.authReason
+    : [error?.code, error?.claim].filter(value => typeof value === 'string').join(':');
+  return raw.replace(/[^A-Za-z0-9_.:-]/g, '').slice(0, 60) || null;
+}
 
 // Identity always comes from the provider, never from a client-supplied userId.
 export async function verifyIdentity(body, env) {
   const { provider, credential } = body || {};
-  if (typeof credential !== 'string' || !credential || credential.length > 16384) throw new Error('invalid credential');
+  if (typeof credential !== 'string' || !credential || credential.length > 16384) throw authFailure('invalid credential', 'credential_format');
   let claims;
   if (provider === 'google' && credential.split('.').length !== 3) {
     // Android: an OAuth access token (no Web client is configured for the app,
     // so there is no ID token). Google itself validates it; the audience must
     // be one of our Android client IDs once GOOGLE_ANDROID_CLIENT_IDS is set.
     const info = await fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(credential), { signal: AbortSignal.timeout(8000) });
-    if (!info.ok) throw new Error('invalid credential');
+    if (!info.ok) throw authFailure('invalid credential', 'google_tokeninfo_' + info.status);
     const tok = await info.json();
     const allowed = audiences(env.GOOGLE_ANDROID_CLIENT_IDS, '');
     if (allowed.length && !allowed.includes(tok.aud) && !allowed.includes(tok.azp)) throw new Error('wrong client');
-    if (!tok.sub || Number(tok.expires_in) <= 0) throw new Error('invalid credential');
+    if (!tok.sub || Number(tok.expires_in) <= 0) throw authFailure('invalid credential', 'google_tokeninfo_claims');
     const user = await fetch('https://openidconnect.googleapis.com/v1/userinfo', { headers: { Authorization: 'Bearer ' + credential }, signal: AbortSignal.timeout(8000) });
     const profile = user.ok ? await user.json() : {};
-    if (profile.sub && profile.sub !== tok.sub) throw new Error('invalid credential');
+    if (profile.sub && profile.sub !== tok.sub) throw authFailure('invalid credential', 'google_userinfo_subject');
     claims = { sub: tok.sub, name: profile.name, email: tok.email || profile.email || '',
       email_verified: tok.email_verified === 'true' || profile.email_verified === true, picture: profile.picture };
   } else if (provider === 'google') {
@@ -47,7 +56,7 @@ export async function verifyIdentity(body, env) {
     const response = await fetch('https://login.yandex.ru/info?format=json', {
       headers: { Authorization: `OAuth ${credential}` }, signal: AbortSignal.timeout(8000),
     });
-    if (!response.ok) throw new Error('invalid credential');
+    if (!response.ok) throw authFailure('invalid credential', 'yandex_status_' + response.status);
     const info = await response.json();
     if (info.client_id !== (env.YANDEX_CLIENT_ID || YANDEX_CLIENT) || !info.id) throw new Error('wrong client');
     claims = { sub: String(info.id), name: info.real_name || info.display_name,
@@ -55,7 +64,7 @@ export async function verifyIdentity(body, env) {
       picture: !info.is_avatar_empty && info.default_avatar_id
         ? `https://avatars.yandex.net/get-yapic/${encodeURIComponent(info.default_avatar_id)}/islands-200` : null };
   } else throw new Error('invalid provider');
-  if (typeof claims.sub !== 'string' || !claims.sub || claims.sub.length > 180) throw new Error('invalid identity');
+  if (typeof claims.sub !== 'string' || !claims.sub || claims.sub.length > 180) throw authFailure('invalid identity', 'identity_subject');
   return {
     id: `${provider}_${claims.sub}`, provider,
     name: String(claims.name || (provider === 'apple' && body.name) || claims.email?.split('@')[0] || provider).slice(0, 120),
@@ -122,12 +131,12 @@ export async function handleAuth(request, env, verify = verifyIdentity, onFailur
     const requestId = crypto.randomUUID();
     let provider = 'unknown';
     let metadata = {};
-    const finish = (body, status, outcome) => {
+    const finish = (body, status, outcome, reason = null) => {
       // Never record credentials, headers, user IDs, names or provider errors.
       console.log(JSON.stringify({ event: 'auth_session', requestId, provider,
-        status, outcome, durationMs: Date.now() - started }));
+        status, outcome, durationMs: Date.now() - started, ...(reason ? { reason } : {}) }));
       if (status >= 400 && env.SHARED_SECRET && request.headers.get('x-install-secret') === env.SHARED_SECRET && provider !== 'unknown') {
-        onFailure({ ...metadata, category: 'auth', operation: 'auth.session', code: outcome, provider, status, diagnosticId: requestId });
+        onFailure({ ...metadata, category: 'auth', operation: 'auth.session', code: reason ? `${outcome}:${reason}` : outcome, provider, status, diagnosticId: requestId });
       }
       const response = reply(body, status);
       response.headers.set('x-auth-diagnostic-id', requestId);
@@ -147,7 +156,7 @@ export async function handleAuth(request, env, verify = verifyIdentity, onFailur
         : error?.code === 'ERR_JWT_EXPIRED' ? 'credential_expired'
         : error?.name === 'TypeError' ? 'provider_request_failed'
         : 'credential_rejected';
-      return finish({ error: 'invalid credentials' }, 401, outcome);
+      return finish({ error: 'invalid credentials' }, 401, outcome, credentialReason(error));
     }
     const expiresAt = Date.now() + SESSION_SECONDS * 1000;
     try {

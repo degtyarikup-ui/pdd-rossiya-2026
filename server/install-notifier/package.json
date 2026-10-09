@@ -8,7 +8,7 @@
     "test:traffic": "node --test test-traffic.mjs",
     "test:logging": "node --test test-logging.mjs",
     "test:usage": "node --test test-usage.mjs test-analytics.mjs test-traffic.mjs",
-    "test:security": "node --test test-release-security.mjs test-users-admin.mjs test-apple-purchases.mjs test-entitlements.mjs test-payments.mjs",
+    "test:security": "node --test test-release-security.mjs test-users-admin.mjs test-apple-purchases.mjs test-entitlements.mjs test-payments.mjs test-auth-reasons.mjs",
     "test:publications": "node --test test-publications.mjs test-blog-ui.mjs"
   },
   "dependencies": {

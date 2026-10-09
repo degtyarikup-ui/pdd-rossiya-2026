@@ -93,7 +93,9 @@ export function incidentCopy(event) {
   const action = Object.hasOwn(ACTIONS, event.operation) ? ACTIONS[event.operation] : null;
   const [title, description] = action || (Object.hasOwn(GROUPS, event.category) ? GROUPS[event.category] : GROUPS.infrastructure);
   const http = event.status || Number(event.code?.match(/^http_(\d{3})$/)?.[1]);
-  const reason = (Object.hasOwn(REASONS, event.code) ? REASONS[event.code] : null)
+  // Код может нести метку через двоеточие (credential_rejected:<причина>) — текст берём по базовой части.
+  const baseCode = String(event.code ?? '').split(':')[0];
+  const reason = (Object.hasOwn(REASONS, baseCode) ? REASONS[baseCode] : null)
     || (http === 429 ? 'Сервис временно ограничил частоту запросов.' : null)
     || (http === 401 ? 'Сессия входа не подтверждена или истекла.' : null)
     || (http === 403 ? 'Сервис отклонил доступ к операции.' : null)
