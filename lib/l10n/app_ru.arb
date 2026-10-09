@@ -807,6 +807,8 @@
   "achievementRankFirst": "1 место",
   "paywallSubscribe": "Оформить подписку",
   "paywallStoreGoogle": "Google Play",
+  "paywallPayMethod": "Способ оплаты",
+  "paywallMethodSbp": "СБП",
   "paywallStoreApple": "настройках Apple ID",
   "paywallTitle": "Готовьтесь без ограничений",
   "paywallFreeNote": "Билеты, экзамен и ПДД остаются бесплатными",

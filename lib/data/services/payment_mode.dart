@@ -29,3 +29,18 @@ PaymentMode androidPaymentMode({
       ? PaymentMode.sbp
       : PaymentMode.storeBilling;
 }
+
+/// Какие способы оплаты показать в Android-приложении, лучший — первым.
+///
+/// Google Play, российское устройство: на выбор СБП (работает у всех
+/// российских карт) и покупка через Play. Остальные страны — только Play,
+/// как требуют правила магазина. RuStore — только СБП.
+List<PaymentMode> androidPaymentModes({
+  required AppStore store,
+  required String? deviceCountry,
+}) {
+  if (store == AppStore.rustore) return const [PaymentMode.sbp];
+  return deviceCountry?.toUpperCase() == 'RU'
+      ? const [PaymentMode.sbp, PaymentMode.storeBilling]
+      : const [PaymentMode.storeBilling];
+}

@@ -1562,6 +1562,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get paywallStoreGoogle => 'Google Play';
 
   @override
+  String get paywallPayMethod => 'Способ оплаты';
+
+  @override
+  String get paywallMethodSbp => 'СБП';
+
+  @override
   String get paywallStoreApple => 'настройках Apple ID';
 
   @override

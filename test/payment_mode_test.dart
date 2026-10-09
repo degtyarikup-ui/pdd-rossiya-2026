@@ -15,15 +15,21 @@ void main() {
       );
     });
 
-    test('Google Play: устройство за пределами России — покупка через Play', () {
-      for (final country in ['BY', 'KZ', 'DE', 'US']) {
-        expect(
-          androidPaymentMode(store: AppStore.googlePlay, deviceCountry: country),
-          PaymentMode.storeBilling,
-          reason: country,
-        );
-      }
-    });
+    test(
+      'Google Play: устройство за пределами России — покупка через Play',
+      () {
+        for (final country in ['BY', 'KZ', 'DE', 'US']) {
+          expect(
+            androidPaymentMode(
+              store: AppStore.googlePlay,
+              deviceCountry: country,
+            ),
+            PaymentMode.storeBilling,
+            reason: country,
+          );
+        }
+      },
+    );
 
     test('Google Play: страна не определилась — покупка через Play', () {
       expect(
@@ -44,6 +50,35 @@ void main() {
           reason: '$country',
         );
       }
+    });
+  });
+
+  group('Android: способы на выбор', () {
+    test('Google Play, российское устройство: СБП и Play, СБП первым', () {
+      expect(
+        androidPaymentModes(store: AppStore.googlePlay, deviceCountry: 'ru'),
+        [PaymentMode.sbp, PaymentMode.storeBilling],
+      );
+    });
+
+    test('Google Play вне России или без страны: только Play', () {
+      for (final country in ['BY', 'DE', null, '']) {
+        expect(
+          androidPaymentModes(
+            store: AppStore.googlePlay,
+            deviceCountry: country,
+          ),
+          [PaymentMode.storeBilling],
+          reason: '$country',
+        );
+      }
+    });
+
+    test('RuStore: только СБП', () {
+      expect(
+        androidPaymentModes(store: AppStore.rustore, deviceCountry: 'DE'),
+        [PaymentMode.sbp],
+      );
     });
   });
 }

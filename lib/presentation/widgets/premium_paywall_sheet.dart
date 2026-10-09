@@ -40,6 +40,8 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   bool _sbpLive = false;
   // Android: как платить — СБП или магазин. null — ещё определяем.
   PaymentMode? _androidMode;
+  // Способы, между которыми можно выбирать (российское устройство в Play).
+  List<PaymentMode> _androidModes = const [];
 
   @override
   void initState() {
@@ -60,10 +62,13 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     final country = store == AppStore.googlePlay
         ? await DeviceRegion.countryCode()
         : null;
-    final mode = androidPaymentMode(store: store, deviceCountry: country);
+    final modes = androidPaymentModes(store: store, deviceCountry: country);
     if (!mounted) return;
-    setState(() => _androidMode = mode);
-    if (mode == PaymentMode.sbp) _loadSbpAvailability();
+    setState(() {
+      _androidModes = modes;
+      _androidMode = modes.first;
+    });
+    if (modes.contains(PaymentMode.sbp)) _loadSbpAvailability();
   }
 
   void _loadSbpAvailability() {
@@ -224,9 +229,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     final isIOS = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
     // СБП: на сайте (если страна её поддерживает) и в Android-сборке, где
     // СБП выбран по стране устройства или магазину RuStore.
-    final sbpPay = kIsWeb
-        ? CountryConfig.current.hasWebPayments
-        : _androidSbp;
+    final sbpPay = kIsWeb ? CountryConfig.current.hasWebPayments : _androidSbp;
 
     final isPremium = PremiumService.instance.isPremium;
     final remaining = PremiumService.instance.remainingFreeCards;
@@ -372,13 +375,19 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
 
               // Тарифы: цена магазина и частота списания — в самой карточке,
               // рядом с ценой, а не мелким текстом внизу.
+              if (_androidModes.length > 1) ...[
+                _buildMethodSelector(accentColor, surfaceColor, colors),
+                const SizedBox(height: 12),
+              ],
               _buildTierCard(
                 tier: PremiumTier.threeMonths,
                 title: kIsWeb || _androidSbp
                     ? appL10n.webQuarter
                     : appL10n.paywallPlanQuarter,
                 price: _getPrice(PremiumTier.threeMonths),
-                period: kIsWeb || _androidSbp ? null : appL10n.paywallEveryQuarter,
+                period: kIsWeb || _androidSbp
+                    ? null
+                    : appL10n.paywallEveryQuarter,
                 badge: appL10n.paywallBadgeBest,
                 accentColor: accentColor,
                 surfaceColor: surfaceColor,
@@ -392,7 +401,9 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                       ? appL10n.webWeek
                       : appL10n.paywallPlanWeek,
                   price: _getPrice(PremiumTier.weekly),
-                  period: kIsWeb || _androidSbp ? null : appL10n.paywallEveryWeek,
+                  period: kIsWeb || _androidSbp
+                      ? null
+                      : appL10n.paywallEveryWeek,
                   accentColor: accentColor,
                   surfaceColor: surfaceColor,
                   colors: colors,
@@ -403,7 +414,8 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
               SizedBox(
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: _isLoading || _androidUnresolved || (kIsWeb && !sbpPay)
+                  onPressed:
+                      _isLoading || _androidUnresolved || (kIsWeb && !sbpPay)
                       ? null
                       : sbpPay
                       ? _handleSbpPayment
@@ -448,7 +460,9 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
               Text(
                 kIsWeb
                     ? (sbpPay ? appL10n.webPayInfo : appL10n.webPaymentInfo)
-                    : (sbpPay ? appL10n.sbpPayInfoApp : appL10n.paywallRenewal(store)),
+                    : (sbpPay
+                          ? appL10n.sbpPayInfoApp
+                          : appL10n.paywallRenewal(store)),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
@@ -554,6 +568,72 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// Android, российское устройство в Google Play: СБП или покупка в Play.
+  Widget _buildMethodSelector(
+    Color accentColor,
+    Color surfaceColor,
+    AppThemeColors colors,
+  ) {
+    Widget option(PaymentMode mode, String label) {
+      final selected = _androidMode == mode;
+      return Expanded(
+        child: Semantics(
+          selected: selected,
+          button: true,
+          child: GestureDetector(
+            onTap: _isLoading
+                ? null
+                : () {
+                    HapticFeedbackHelper.tap();
+                    setState(() => _androidMode = mode);
+                  },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(vertical: 11),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected ? surfaceColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(11),
+                border: Border.all(
+                  color: selected ? accentColor : Colors.transparent,
+                  width: 1.5,
+                ),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'Onest',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? accentColor : colors.secondaryText,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: colors.secondaryText.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          for (final mode in _androidModes)
+            option(
+              mode,
+              mode == PaymentMode.sbp
+                  ? appL10n.paywallMethodSbp
+                  : appL10n.paywallStoreGoogle,
+            ),
         ],
       ),
     );

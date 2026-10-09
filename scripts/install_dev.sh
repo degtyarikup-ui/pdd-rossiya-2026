@@ -46,7 +46,11 @@ if [[ $build -eq 1 || ! -f $APK ]]; then
   # Dev builds get a date-hour build number (yyMMddHH) so a newer dev APK
   # always installs over an older one, whoever built it; the dev app is a
   # separate package (.dev), store versions are unaffected.
-  flutter build apk --flavor ru --release --dart-define=COUNTRY=ru --dart-define=GAME_DEBUG=true "${key_define[@]}" -Pdev --build-number="$(date +%y%m%d%H)"
+  # DEVICE_REGION=RU ./scripts/install_dev.sh --build — показать российский
+  # пейволл (СБП + Google Play на выбор), когда телефон не в России.
+  region_define=()
+  [[ -n "${DEVICE_REGION:-}" ]] && region_define=(--dart-define=DEVICE_REGION="$DEVICE_REGION")
+  flutter build apk --flavor ru --release --dart-define=COUNTRY=ru --dart-define=GAME_DEBUG=true "${key_define[@]}" ${region_define[@]+"${region_define[@]}"} -Pdev --build-number="$(date +%y%m%d%H)"
 fi
 
 connected() { adb devices | awk 'NR>1 && $2=="device" {print $1; exit}'; }

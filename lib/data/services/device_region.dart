@@ -9,8 +9,14 @@ class DeviceRegion {
 
   static const MethodChannel _channel = MethodChannel('pdd/device_region');
 
+  /// Только для тестовых сборок: `--dart-define=DEVICE_REGION=RU` подменяет
+  /// страну, чтобы увидеть российский пейволл не из России. В магазинных
+  /// сборках не задаётся.
+  static const String _override = String.fromEnvironment('DEVICE_REGION');
+
   static Future<String?> countryCode() async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return null;
+    if (_override.isNotEmpty) return _override.toUpperCase();
     try {
       final code = await _channel.invokeMethod<String>('countryCode');
       return code == null || code.isEmpty ? null : code.toUpperCase();

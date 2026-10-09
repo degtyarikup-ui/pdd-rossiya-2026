@@ -2716,6 +2716,18 @@ abstract class AppLocalizations {
   /// **'Google Play'**
   String get paywallStoreGoogle;
 
+  /// No description provided for @paywallPayMethod.
+  ///
+  /// In ru, this message translates to:
+  /// **'Способ оплаты'**
+  String get paywallPayMethod;
+
+  /// No description provided for @paywallMethodSbp.
+  ///
+  /// In ru, this message translates to:
+  /// **'СБП'**
+  String get paywallMethodSbp;
+
   /// No description provided for @paywallStoreApple.
   ///
   /// In ru, this message translates to:
