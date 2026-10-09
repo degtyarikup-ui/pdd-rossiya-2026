@@ -8272,7 +8272,7 @@
         const ringRadius = cfg.ringRadius || 12.0;
         const ringAngle = cfg.ringAngle !== undefined ? cfg.ringAngle : (cfg.id.includes('moto') ? 0.8 : 2.1);
         actorMesh.position.set(ringRadius * Math.sin(ringAngle), 0, centerZ + ringRadius * Math.cos(ringAngle));
-        actorMesh.rotation.y = ringAngle + Math.PI / 2;
+        actorMesh.rotation.y = cfg.rotationY !== undefined ? cfg.rotationY : (ringAngle - Math.PI / 2);
       } else if (cfg.side === 'cross_left') {
         actorMesh.position.set(-18, 0, centerZ - 2.05);
         actorMesh.rotation.y = Math.PI / 2;
@@ -9618,23 +9618,21 @@
         clearDistance = 26;
       } else if (cfg.side === 'ring' || cfg.roundabout) {
         // Round the ring counter-clockwise and leave by the arm nearest to
-        // three quarters of a turn, along that arm's exit lane. (Leaving on
-        // the tangent drove straight across an arm and its verge, and the
-        // vehicle counted as passed while it was still circling towards the
-        // player's entry.)
+        // half a turn or three quarters of a turn, along that arm's exit lane.
         const ringRadius = cfg.ringRadius || 12.0;
         const startAngle = Math.atan2(p.x, p.z - z);
-        const exitArm = Math.round((startAngle + Math.PI * 1.5) / (Math.PI / 2)) * (Math.PI / 2);
-        const arcEnd = exitArm - 0.35;
+        const exitArm = Math.round((startAngle - Math.PI) / (Math.PI / 2)) * (Math.PI / 2);
+        const arcEnd = exitArm + 0.35;
         const onRing = a => new THREE.Vector3(ringRadius * Math.sin(a), 0, z + ringRadius * Math.cos(a));
         const arcPoints = [p];
-        for (let a = startAngle + 0.35; a < arcEnd - 0.1; a += 0.35) arcPoints.push(onRing(a));
+        for (let a = startAngle - 0.35; a > arcEnd + 0.1; a -= 0.35) arcPoints.push(onRing(a));
         arcPoints.push(onRing(arcEnd));
         const out = new THREE.Vector3(Math.sin(exitArm), 0, Math.cos(exitArm));
-        const right = new THREE.Vector3(-Math.cos(exitArm), 0, Math.sin(exitArm));
-        const lane = r => new THREE.Vector3(0, 0, z).addScaledVector(out, r).addScaledVector(right, 1.8);
+        const right = new THREE.Vector3(Math.cos(exitArm), 0, -Math.sin(exitArm));
+        const laneOffset = ringRadius < 11.5 ? -1.8 : 1.8;
+        const lane = r => new THREE.Vector3(0, 0, z).addScaledVector(out, r).addScaledVector(right, laneOffset);
         points = [...arcPoints, lane(16.5), lane(24), lane(60)];
-        clearDistance = ringRadius * (arcEnd - startAngle) + 9 + actor.halfLength;
+        clearDistance = ringRadius * (startAngle - arcEnd) + 9 + actor.halfLength;
       } else if (cfg.targetAction === 'uturn') {
         const side = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
         const entry = p.clone().addScaledVector(forward, 5);
