@@ -30,11 +30,15 @@ class GameQuestionCard extends StatelessWidget {
         state.phase == GamePhase.explanation ||
         state.phase == GamePhase.resolving;
 
-    return Container(
+    // The photo slides out above the card: its top corners go square so the
+    // two read as one surface, and round again when the photo closes.
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 340),
+      curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         color: colors.cardBackground,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppDimensions.cardRadius),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(sourceOpen ? 0 : AppDimensions.cardRadius),
         ),
       ),
       child: SafeArea(

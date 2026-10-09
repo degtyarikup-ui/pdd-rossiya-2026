@@ -28,12 +28,14 @@ class GameExplanationSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 340),
+      curve: Curves.easeOutCubic,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
         color: colors.cardBackground,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppDimensions.cardRadius),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(sourceOpen ? 0 : AppDimensions.cardRadius),
         ),
       ),
       child: SafeArea(
