@@ -59,7 +59,9 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   /// RuStore; остальные покупают через Play (см. payment_mode.dart).
   Future<void> _resolveAndroidMode() async {
     final store = StoreConfig.current;
-    final country = await DeviceRegion.countryCode();
+    final country = store == AppStore.rustore
+        ? null
+        : await DeviceRegion.countryCode();
     final modes = androidPaymentModes(store: store, deviceCountry: country);
     if (!mounted) return;
     setState(() {

@@ -12,17 +12,14 @@ enum PaymentMode {
   unavailable,
 }
 
-/// СБП разрешена только на российских Android-устройствах.
-/// Google Play вне России использует Billing; в RuStore такой покупки нет.
-/// Неизвестная страна не разрешает внешние платежи.
+/// RuStore использует СБП без проверки страны.
+/// Google Play: СБП только в России; вне России и без страны — Billing.
 PaymentMode androidPaymentMode({
   required AppStore store,
   required String? deviceCountry,
 }) {
   if (store == AppStore.rustore) {
-    return deviceCountry?.toUpperCase() == 'RU'
-        ? PaymentMode.sbp
-        : PaymentMode.unavailable;
+    return PaymentMode.sbp;
   }
   return deviceCountry?.toUpperCase() == 'RU'
       ? PaymentMode.sbp
@@ -33,7 +30,7 @@ PaymentMode androidPaymentMode({
 ///
 /// Google Play, российское устройство: на выбор СБП (работает у всех
 /// российских карт) и покупка через Play. Остальные страны — только Play,
-/// как требуют правила магазина. RuStore — СБП только в России.
+/// как требуют правила магазина. RuStore — СБП без ограничений по стране.
 List<PaymentMode> androidPaymentModes({
   required AppStore store,
   required String? deviceCountry,
