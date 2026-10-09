@@ -78,6 +78,59 @@ verify_archive() {
   echo "проверка: контент страны $COUNTRY в артефакте есть"
 }
 
+# Flutter считает успешным архив, даже если последующий экспорт/загрузка
+# xcodebuild завершились ошибкой. Для destination=upload нужен отдельный
+# положительный результат загрузки именно этой сборки, а не старого архива.
+verify_ios_upload() {
+  python3 - "$COUNTRY" "$1" "$2" <<'PY'
+from datetime import datetime, timezone
+from pathlib import Path
+import plistlib
+import sys
+
+country, archive_path, started = sys.argv[1:]
+archive = Path(archive_path)
+started = int(started)
+
+def fail(message):
+    print(f"СБОРКА БРАКОВАННАЯ: {message}", file=sys.stderr)
+    raise SystemExit(1)
+
+def timestamp(value):
+    if isinstance(value, str):
+        try:
+            value = datetime.fromisoformat(value.replace('Z', '+00:00'))
+        except ValueError:
+            return 0
+    if not isinstance(value, datetime):
+        return 0
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.timestamp()
+
+app = archive / 'Products/Applications/Runner.app'
+content = app / f'Frameworks/App.framework/flutter_assets/assets/countries/{country}/questions/questions_ab.json'
+if not content.is_file():
+    fail(f"в {archive} нет контента страны {country}")
+try:
+    info = plistlib.loads((archive / 'Info.plist').read_bytes())
+except (OSError, plistlib.InvalidFileException):
+    fail(f"не удалось прочитать метаданные {archive}")
+if timestamp(info.get('CreationDate')) < started:
+    fail('архив остался от предыдущей сборки')
+uploaded = any(
+    item.get('destination') == 'upload'
+    and item.get('uploadEvent', {}).get('state') == 'success'
+    and not item.get('uploadEvent', {}).get('errors')
+    and timestamp(item.get('uploadEvent', {}).get('date')) >= started
+    for item in info.get('Distributions', [])
+)
+if not uploaded:
+    fail('App Store Connect не подтвердил загрузку этой сборки; проверьте ошибку экспорта выше')
+print(f'проверка: контент страны {country} в архиве есть, загрузка в App Store Connect подтверждена')
+PY
+}
+
 case "$TARGET" in
   aab)
     flutter build appbundle --release \
@@ -116,11 +169,13 @@ case "$TARGET" in
     # iOS (ru.pdd.pddApp): архив + экспорт с
     # destination=upload из ios/ExportOptions.plist — сборка сразу уходит в
     # App Store Connect через аккаунт, в который вошёл Xcode.
+    IOS_BUILD_STARTED="$(date +%s)"
     flutter build ipa --release \
       --dart-define=COUNTRY="$COUNTRY" \
       --export-options-plist=ios/ExportOptions.plist \
       ${NOTIFY_DEFINES[@]+"${NOTIFY_DEFINES[@]}"} \
       ${EXTRA_DEFINES_ARR[@]+"${EXTRA_DEFINES_ARR[@]}"}
+    verify_ios_upload "build/ios/archive/Runner.xcarchive" "$IOS_BUILD_STARTED"
     echo "IPA: загружено в App Store Connect (build/ios/archive/Runner.xcarchive)"
     ;;
   web)

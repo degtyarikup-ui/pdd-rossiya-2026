@@ -56,14 +56,18 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   String? _lastSpokenQuestionId;
   int _voiceScheduleGen = 0;
   late final PageController _pageController;
+  late final TtsService _ttsService;
   final ScrollController _questionStripController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    _ttsService = ref.read(ttsServiceProvider);
     if (widget.usageFeature != null) UsageReporter.track(widget.usageFeature!);
     _savedChoices = List<int?>.filled(widget.questions.length, null);
-    _currentIndex = widget.startIndex.clamp(0, widget.questions.length - 1);
+    _currentIndex = widget.questions.isEmpty
+        ? 0
+        : widget.startIndex.clamp(0, widget.questions.length - 1);
     _pageController = PageController(initialPage: _currentIndex);
     _checkFavorite();
     _rememberPosition();
@@ -250,7 +254,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     // не ответит, человек останется на последнем вопросе с нажатой кнопкой.
     // Прекращение речи — вспомогательное действие, переход от него зависеть
     // не должен.
-    unawaited(TtsService.instance.stop());
+    unawaited(_ttsService.stop());
 
     if (widget.questions.length < 2) {
       Navigator.of(context).pop();
@@ -315,12 +319,13 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
 
   void _invalidateVoicePlayback() {
     _voiceScheduleGen++;
-    unawaited(TtsService.instance.stop());
+    unawaited(_ttsService.stop());
   }
 
-  Future<void> _stopVoiceAndPop([Object? result]) async {
+  void _stopVoiceAndPop([Object? result]) {
     _voiceScheduleGen++;
-    await TtsService.instance.stop();
+    // Navigation must finish even if the native audio plugin stops replying.
+    unawaited(_ttsService.stop());
     if (!mounted) return;
     Navigator.of(context).pop(result);
   }
@@ -355,7 +360,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
       final answerTexts = answers
           .map((answer) => (answer as Map)['text'] as String)
           .toList();
-      TtsService.instance.speakQuestion(
+      _ttsService.speakQuestion(
         rawQuestionId: questionId,
         question: questionText,
         answers: answerTexts,
@@ -366,7 +371,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   @override
   void dispose() {
     _voiceScheduleGen++;
-    unawaited(TtsService.instance.stop());
+    unawaited(_ttsService.stop());
     _questionStripController.dispose();
     _pageController.dispose();
     super.dispose();
@@ -377,9 +382,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     if (widget.questions.isEmpty) {
       return PopScope(
         canPop: false,
-        onPopInvokedWithResult: (bool didPop, Object? result) async {
+        onPopInvokedWithResult: (bool didPop, Object? result) {
           if (didPop) return;
-          await _stopVoiceAndPop(result);
+          _stopVoiceAndPop(result);
         },
         child: Scaffold(
           appBar: AppBar(title: Text(widget.title)),
@@ -410,9 +415,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
 
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (bool didPop, Object? result) async {
+      onPopInvokedWithResult: (bool didPop, Object? result) {
         if (didPop) return;
-        await _stopVoiceAndPop(result);
+        _stopVoiceAndPop(result);
       },
       child: Scaffold(
         backgroundColor: colors.background,

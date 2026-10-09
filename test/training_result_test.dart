@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,6 +29,12 @@ class _SilentTts implements TtsService {
   Future<void> stop() async {}
   @override
   Future<void> dispose() async {}
+}
+
+class _HungStopTts extends _SilentTts {
+  final pendingStop = Completer<void>();
+  @override
+  Future<void> stop() => pendingStop.future;
 }
 
 List<Map<String, dynamic>> buildQuestions(int n) => List.generate(
@@ -174,5 +181,56 @@ void main() {
 
     // Подводить итог по единственному вопросу — издевательство.
     expect(find.byType(TrainingResultScreen), findsNothing);
+  });
+
+  testWidgets('пустая тренировка показывает заглушку без ошибки индекса', (
+    tester,
+  ) async {
+    await pumpTraining(tester, questions: 0);
+    expect(find.text('Нет вопросов'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('закрытие тренировки не ждёт зависший плагин озвучки', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final data = ProgressDataSource();
+    await data.init();
+    final tts = _HungStopTts();
+    addTearDown(() => tts.pendingStop.complete());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          progressDataSourceProvider.overrideWithValue(data),
+          ttsServiceProvider.overrideWithValue(tts),
+        ],
+        child: MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => TrainingScreen(
+                      questions: buildQuestions(1),
+                      title: 'Билет 1',
+                    ),
+                  ),
+                ),
+                child: const Text('Открыть тренировку'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Открыть тренировку'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.close_rounded).first);
+    await tester.pumpAndSettle();
+    expect(find.byType(TrainingScreen), findsNothing);
+    expect(find.text('Открыть тренировку'), findsOneWidget);
+    expect(tts.pendingStop.isCompleted, isFalse);
+    expect(tester.takeException(), isNull);
   });
 }

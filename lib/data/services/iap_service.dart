@@ -26,6 +26,7 @@ class IapService extends ChangeNotifier {
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   Future<void> _purchaseQueue = Future.value();
   final Map<String, (PurchaseDetails, String?)> _pendingVerification = {};
+  final Map<String, String> _pendingStoreOwners = {};
   Timer? _retryTimer;
   bool _observingAuth = false;
   Future<void>? _initializing;
@@ -90,7 +91,10 @@ class IapService extends ChangeNotifier {
       );
 
   Completer<PurchaseResult>? _currentPurchaseCompleter;
+  String? _currentPurchaseOwner;
+  String? _currentPurchaseProductId;
   Completer<bool>? _restoreCompleter;
+  String? _restoreOwner;
 
   Future<void> init() => _initializing ??= _init().whenComplete(() {
     _initializing = null;
@@ -128,6 +132,24 @@ class IapService extends ChangeNotifier {
   }
 
   void _enqueuePurchases(List<PurchaseDetails> purchases) {
+    // Capture ownership when StoreKit delivers the event. Queue processing
+    // may wait for another verification while the signed-in account changes.
+    final ownedPurchases = purchases.map((purchase) {
+      final owner =
+          _pendingStoreOwners[purchase.productID] ??
+          (purchase.productID == _currentPurchaseProductId
+              ? _currentPurchaseOwner
+              : _restoreOwner ?? AuthService.instance.currentUser?.id);
+      if (purchase.status == PurchaseStatus.pending && owner != null) {
+        // Ask to Buy can complete after a temporary purchase-stream error.
+        _pendingStoreOwners.putIfAbsent(purchase.productID, () => owner);
+      }
+      return (purchase, owner);
+    }).toList();
+    _enqueueOwnedPurchases(ownedPurchases);
+  }
+
+  void _enqueueOwnedPurchases(List<(PurchaseDetails, String?)> purchases) {
     _purchaseQueue = _purchaseQueue
         .then((_) => _onPurchaseUpdated(purchases))
         .catchError((Object error) {
@@ -153,9 +175,8 @@ class IapService extends ChangeNotifier {
     if (!auth.hasServerSession) return;
     final purchases = _pendingVerification.values
         .where((entry) => entry.$2 == null || entry.$2 == auth.currentUser?.id)
-        .map((entry) => entry.$1)
         .toList();
-    if (purchases.isNotEmpty) _enqueuePurchases(purchases);
+    if (purchases.isNotEmpty) _enqueueOwnedPurchases(purchases);
   }
 
   void _scheduleRetry() {
@@ -314,6 +335,11 @@ class IapService extends ChangeNotifier {
       return PurchaseResult.productNotFound;
     }
 
+    final pendingOwner = _pendingStoreOwners[product.id];
+    if (pendingOwner != null && pendingOwner != owner) {
+      return PurchaseResult.error;
+    }
+
     if (_currentPurchaseCompleter != null) return PurchaseResult.error;
     final completer = Completer<PurchaseResult>();
     _currentPurchaseCompleter = completer;
@@ -332,20 +358,22 @@ class IapService extends ChangeNotifier {
                 .toString()
           : null,
     );
+    _currentPurchaseOwner = owner;
+    _currentPurchaseProductId = product.id;
     try {
       final launched = await _iap.buyNonConsumable(
         purchaseParam: purchaseParam,
       );
       if (!launched) {
         _report('iap.buy', code: 'purchase_not_started');
-        _currentPurchaseCompleter = null;
+        _safeCompletePurchase(PurchaseResult.error);
         return PurchaseResult.error;
       }
     } catch (e) {
       debugPrint('IapService: buyNonConsumable exception: $e');
       _report('iap.buy', error: e);
       _lastErrorMessage = e.toString();
-      _currentPurchaseCompleter = null;
+      _safeCompletePurchase(PurchaseResult.error);
       return PurchaseResult.error;
     }
 
@@ -363,6 +391,7 @@ class IapService extends ChangeNotifier {
   }
 
   Future<bool> _restoreNative() async {
+    final owner = AuthService.instance.currentUser?.id;
     if (kIsWeb || !AuthService.instance.hasServerSession) {
       return false;
     }
@@ -372,10 +401,16 @@ class IapService extends ChangeNotifier {
       if (!_isAvailable) return false;
     }
 
+    if (AuthService.instance.currentUser?.id != owner ||
+        !AuthService.instance.hasServerSession) {
+      return false;
+    }
+
     try {
       if (_restoreCompleter != null) return false;
       final completer = Completer<bool>();
       _restoreCompleter = completer;
+      _restoreOwner = owner;
       await _iap.restorePurchases();
       final result = await completer.future.timeout(
         const Duration(seconds: 35),
@@ -385,11 +420,13 @@ class IapService extends ChangeNotifier {
         },
       );
       _restoreCompleter = null;
+      _restoreOwner = null;
       return result;
     } catch (e) {
       debugPrint('IapService: restore error: $e');
       _report('iap.restore', error: e);
       _restoreCompleter = null;
+      _restoreOwner = null;
       return false;
     }
   }
@@ -409,13 +446,13 @@ class IapService extends ChangeNotifier {
   }
 
   Future<void> _onPurchaseUpdated(
-    List<PurchaseDetails> purchaseDetailsList,
+    List<(PurchaseDetails, String?)> purchaseDetailsList,
   ) async {
     if (purchaseDetailsList.isEmpty) {
       _safeCompleteRestore(false);
       return;
     }
-    for (final purchaseDetails in purchaseDetailsList) {
+    for (final (purchaseDetails, owner) in purchaseDetailsList) {
       if (purchaseDetails.status == PurchaseStatus.pending) {
         // In progress
       } else {
@@ -425,6 +462,7 @@ class IapService extends ChangeNotifier {
             'purchase_canceled',
             'user_canceled',
           ].contains(purchaseDetails.error?.code)) {
+            _pendingStoreOwners.remove(purchaseDetails.productID);
             _safeCompletePurchase(PurchaseResult.canceled);
             _safeCompleteRestore(false);
             if (purchaseDetails.pendingCompletePurchase) {
@@ -447,9 +485,12 @@ class IapService extends ChangeNotifier {
           final auth = AuthService.instance;
           final pending = _pendingVerification.putIfAbsent(
             key,
-            () => (purchaseDetails, auth.currentUser?.id),
+            () => (purchaseDetails, owner),
           );
+          _pendingStoreOwners.remove(purchaseDetails.productID);
           if (pending.$2 != null && pending.$2 != auth.currentUser?.id) {
+            _safeCompletePurchase(PurchaseResult.error);
+            _safeCompleteRestore(false);
             continue;
           }
           final tier = _tierFromProductId(purchaseDetails.productID);
@@ -499,6 +540,7 @@ class IapService extends ChangeNotifier {
           _pendingVerification.remove(key);
           continue;
         } else if (purchaseDetails.status == PurchaseStatus.canceled) {
+          _pendingStoreOwners.remove(purchaseDetails.productID);
           _safeCompletePurchase(PurchaseResult.canceled);
           _safeCompleteRestore(false);
         }
@@ -516,6 +558,8 @@ class IapService extends ChangeNotifier {
       _currentPurchaseCompleter!.complete(result);
     }
     _currentPurchaseCompleter = null;
+    _currentPurchaseOwner = null;
+    _currentPurchaseProductId = null;
   }
 
   void _safeCompleteRestore(bool result) {
