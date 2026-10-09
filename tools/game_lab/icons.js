@@ -1,0 +1,73 @@
+// Small, local outline icon set. No fonts, network requests or emoji glyphs.
+(() => {
+  const paths = {
+    eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+    edit: '<path d="m16 3 5 5-12 12-6 1 1-6Z M14 5l5 5"/>',
+    car: '<path d="m5 7 2-4h10l2 4 2 3v8H3v-8Z M3 10h18 M7 14h1 M16 14h1 M5 18v3 M19 18v3"/>',
+    bus: '<rect x="5" y="2" width="14" height="19" rx="3"/><path d="M5 11h14 M8 6h8 M8 16h1 M15 16h1 M8 21v1 M16 21v1"/>',
+    truck: '<path d="M2 5h12v12H2Z M14 9h4l4 4v4h-8"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>',
+    bike: '<circle cx="5" cy="17" r="4"/><circle cx="19" cy="17" r="4"/><path d="m5 17 5-9 5 9H5 M10 8H7 M19 17l-4-13h-3"/>',
+    person: '<circle cx="12" cy="4" r="2"/><path d="m9 22 3-7 3 7 M7 12l5-5 5 5 M12 7v8"/>',
+    box: '<path d="m12 2 9 5v10l-9 5-9-5V7Z M3 7l9 5 9-5 M12 12v10 M7 4l10 6"/>',
+    camera: '<path d="M3 7h11v12H3Z m11 4 7-4v12l-7-4"/>',
+    refresh: '<path d="M20 8a8 8 0 1 0 1 7 M20 3v5h-5"/>',
+    undo: '<path d="m8 3-5 5 5 5 M3 8h10a7 7 0 0 1 0 14"/>',
+    redo: '<path d="m16 3 5 5-5 5 M21 8H11a7 7 0 0 0 0 14"/>',
+    shuffle: '<path d="m3 4 18 16 M17 20h4v-4 M3 20l7-7 M14 10l7-6 M17 4h4v4"/>',
+    phone: '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/>',
+    tablet: '<rect x="3" y="2" width="18" height="20" rx="2"/><path d="M10 18h4"/>',
+    monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M12 17v4 M7 21h10"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2 M12 20v2 M2 12h2 M20 12h2 M5 5l1 1 M18 18l1 1 M5 19l1-1 M18 6l1-1"/>',
+    cloud: '<path d="M6 18a4 4 0 1 1 0-8 6 6 0 0 1 12-1 4.5 4.5 0 0 1 0 9Z"/>',
+    rain: '<path d="M5 15a4 4 0 0 1 1-8 6 6 0 0 1 11-1 4 4 0 0 1 3 9 M7 18l-1 3 M13 18l-1 3 M19 18l-1 3"/>',
+    leaf: '<path d="M20 3C5 2 2 10 6 17s15 4 14-14Z M4 21 16 9"/>',
+    snow: '<path d="M12 2v20 M3 7l18 10 M3 17 21 7 M9 3l3 3 3-3 M9 21l3-3 3 3 M3 10l4-1-1-4 M21 14l-4 1 1 4 M3 14l4 1-1 4 M21 10l-4-1 1-4"/>',
+    tree: '<path d="m12 2 6 8h-3l5 7H4l5-7H6Z M12 17v5"/>',
+    flower: '<circle cx="12" cy="12" r="3"/><path d="M9 9C1 1 13 0 12 7c1-7 13-6 3 2 9-3 12 8 3 6 7 6-3 12-6 3-3 9-13 3-6-3-9 2-6-9 3-6Z"/>',
+    search: '<circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/>',
+    left: '<path d="M20 12H4 m6-6-6 6 6 6"/>',
+    right: '<path d="M4 12h16 m-6-6 6 6-6 6"/>',
+    up: '<path d="M12 20V4 m-6 6 6-6 6 6"/>',
+    down: '<path d="M12 4v16 m-6-6 6 6 6-6"/>',
+    route: '<path d="M5 21v-7a6 6 0 0 1 6-6h9 m-5-5 5 5-5 5"/>',
+    road: '<path d="m6 2-4 20 M18 2l4 20 M12 2v4 M12 10v4 M12 18v4"/>',
+    junction: '<path d="M9 2v7H2 M15 2v7h7 M9 22v-7H2 M15 22v-7h7"/>',
+    plus: '<path d="M12 5v14 M5 12h14"/>',
+    minus: '<path d="M5 12h14"/>',
+    check: '<path d="m4 12 5 5L20 6"/>',
+    close: '<path d="m6 6 12 12 M6 18 18 6"/>',
+    warning: '<path d="m12 3 10 18H2Z M12 9v5 M12 17h.01"/>',
+    ban: '<circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    note: '<path d="M5 3h14v18H5Z M8 7h8 M8 11h8 M8 15h5"/>',
+    flag: '<path d="M4 22V3h15l-2 5 2 5H4"/>',
+    save: '<path d="M3 3h15l3 3v15H3Z M7 3v6h10V3 M7 21v-7h10v7"/>',
+    trash: '<path d="M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7"/>',
+    focus: '<circle cx="12" cy="12" r="5"/><path d="M12 2v4 M12 18v4 M2 12h4 M18 12h4"/>',
+    cursor: '<path d="m4 3 6 18 3-7 7-3Z"/>',
+    move: '<path d="M12 2v20 M2 12h20 m-13-7 3-3 3 3 m-6 14 3 3 3-3 M5 9l-3 3 3 3 m14-6 3 3-3 3"/>',
+    sign: '<path d="M12 2v20 M4 4h14l3 4-3 4H4Z"/>',
+    cone: '<path d="m12 2 7 18H5Z M7 20H3v2h18v-2h-2 M8 12h8"/>',
+    barrier: '<path d="M2 7h20v7H2Z M5 14v8 M19 14v8 M5 7l7 7 M12 7l7 7"/>',
+    lamp: '<path d="M9 22h6 M10 18h4 M9 15C3 10 6 3 12 3s9 7 3 12v3H9Z"/>',
+    house: '<path d="m2 11 10-9 10 9 M5 9v13h14V9 M10 22v-8h4v8"/>',
+    store: '<path d="M3 8V3h18v5 M2 8h20v4H2Z M4 12v10h16V12 M8 22v-7h8v7"/>',
+    fence: '<path d="m4 2 2 2v18H2V4Z m8 0 2 2v18h-4V4Z m8 0 2 2v18h-4V4Z M6 8h4 M14 8h4 M6 16h4 M14 16h4"/>',
+    palette: '<path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1-4c-2-1-1-3 1-3h3c6 0 4-11-6-11Z"/><circle cx="7" cy="10" r=".6"/><circle cx="11" cy="7" r=".6"/><circle cx="16" cy="8" r=".6"/>',
+    ruler: '<path d="m3 15 12-12 6 6L9 21Z M12 6l3 3 M9 9l3 3 M6 12l3 3"/>',
+    settings: '<path d="M3 6h18 M3 12h18 M3 18h18"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="9" cy="18" r="2"/>',
+    panel: '<rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 3v18"/>',
+    download: '<path d="M12 2v13 m-5-5 5 5 5-5 M3 16v6h18v-6"/>',
+    help: '<circle cx="12" cy="12" r="9"/><path d="M9 8a3 3 0 1 1 4 3c-1 1-1 2-1 3 M12 17h.01"/>',
+    moon: '<path d="M20 15A9 9 0 0 1 9 3a9 9 0 1 0 11 12Z"/>',
+    traffic: '<rect x="7" y="2" width="10" height="19" rx="2"/><circle cx="12" cy="6" r="1"/><circle cx="12" cy="11" r="1"/><circle cx="12" cy="16" r="1"/><path d="M12 21v2"/>',
+  };
+  class LabIcon extends HTMLElement {
+    connectedCallback() {
+      if (this.firstChild) return;
+      this.setAttribute('aria-hidden', 'true');
+      this.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false">${paths[this.getAttribute('name')] || paths.box}</svg>`;
+    }
+  }
+  customElements.define('lab-icon', LabIcon);
+})();

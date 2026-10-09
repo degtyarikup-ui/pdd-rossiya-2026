@@ -75,6 +75,14 @@
           clearMistakeHighlight();
         }
       }
+      const pBlinker = lab.group?.userData?.playerBlinker || null;
+      lab.playerBlinker = pBlinker;
+      if (pBlinker) {
+        state.blinker = { side: pBlinker, remaining: Infinity, elapsed: 0, fromSituation: true };
+      } else {
+        state.blinker = null;
+        playerCarGroup.blinkerL.visible = playerCarGroup.blinkerR.visible = false;
+      }
       lab.orbit.target.set(0, 0, lab.origin);
       for (let i = 0; i < 120; i++) baseUpdateCamera(1 / 60);
       applyWeather();
@@ -82,6 +90,12 @@
     }
     function describe(o) {
       if (!o) return null;
+      if (o === playerCarGroup) {
+        return { key: 'player', isPlayer: true, isActor: false, label: 'Моё авто', actorName: 'Моё авто', actorType: 'car',
+          blinker: lab.playerBlinker || 'none',
+          x: +playerCarGroup.position.x.toFixed(2), z: +(playerCarGroup.position.z - lab.origin).toFixed(2), rotY: +playerCarGroup.rotation.y.toFixed(3),
+          visible: true };
+      }
       const isActor = !!(o.userData.isActorRoot || (o.userData.editKey && o.userData.editKey.startsWith('actor:')));
       const actorType = o.userData.actorType || o.userData.actorConfig?.type || (isActor ? 'car' : null);
       const actorName = o.userData.actorName || o.userData.actorConfig?.name;
@@ -90,8 +104,9 @@
       else if (isActor) label = actorName || ('Участник ' + (actorType || ''));
       else if (o.userData.isRoute) label = 'Синяя стрелка ' + (Number(o.userData.editKey.split(':')[1]) + 1);
       else label = o.userData.decorKind || o.userData.editKey;
+      const blinker = isActor ? (o.userData.blinkerOverride !== undefined ? (o.userData.blinkerOverride || 'none') : (o.userData.blinkerSide || 'none')) : null;
       return { key: o.userData.editKey, code: o.userData.signCode || null, kind: isActor ? 'actor' : (o.userData.decorKind || null),
-        isActor, actorType, actorName, isRoute: !!o.userData.isRoute, length: o.userData.routeLength,
+        isActor, actorType, actorName, blinker, isRoute: !!o.userData.isRoute, length: o.userData.routeLength,
         x: +o.position.x.toFixed(2), z: +(o.position.z - lab.origin).toFixed(2), rotY: +o.rotation.y.toFixed(3),
         visible: o.visible, label };
     }
@@ -101,6 +116,7 @@
       lab.helper = new THREE.BoxHelper(o, 0x0574F8); scene.add(lab.helper);
     }
     function find(key) {
+      if (key === 'player') return playerCarGroup;
       let hit = null;
       lab.group?.traverse(o => { if (o.userData.editKey === key && (o.parent === lab.group || o.userData.isRoute)) hit = o; });
       return hit;
@@ -119,11 +135,26 @@
     function pick(nx, ny) {
       if (!lab.group) return null;
       ray.setFromCamera(new THREE.Vector2(nx, ny), camera);
-      const hits = ray.intersectObjects(lab.group.children, true);
+      const targets = [playerCarGroup, ...lab.group.children];
+      const hits = ray.intersectObjects(targets, true);
       for (const h of hits) {
         let o = h.object;
-        while (o && o.parent !== lab.group && !o.userData.isRoute) o = o.parent;
-        if (o && o.userData.editKey) { lab.selected = o; setHelper(o); return describe(o); }
+        let isPlayer = false;
+        while (o) {
+          if (o === playerCarGroup) { isPlayer = true; break; }
+          if (o.parent === lab.group || o.userData.isRoute) break;
+          o = o.parent;
+        }
+        if (isPlayer) {
+          lab.selected = playerCarGroup;
+          setHelper(playerCarGroup);
+          return describe(playerCarGroup);
+        }
+        if (o && o.userData.editKey) {
+          lab.selected = o;
+          setHelper(o);
+          return describe(o);
+        }
       }
       lab.selected = null; setHelper(null); return null;
     }
@@ -135,6 +166,20 @@
     function update(props) {
       let o = lab.selected;
       if (!o) return null;
+      if (o === playerCarGroup) {
+        if (props.blinker !== undefined) {
+          lab.playerBlinker = props.blinker === 'none' ? null : props.blinker;
+          if (lab.group) lab.group.userData.playerBlinker = lab.playerBlinker;
+          if (lab.playerBlinker) {
+            state.blinker = { side: lab.playerBlinker, remaining: Infinity, elapsed: 0, fromSituation: true };
+          } else {
+            state.blinker = null;
+            playerCarGroup.blinkerL.visible = playerCarGroup.blinkerR.visible = false;
+          }
+        }
+        setHelper(playerCarGroup);
+        return describe(playerCarGroup);
+      }
       if (props.code && o.userData.signCode && props.code !== o.userData.signCode) {
         const sign = createRoadSign(props.code);
         sign.position.copy(o.position); sign.rotation.copy(o.rotation); sign.scale.copy(o.scale);
@@ -142,6 +187,9 @@
         lab.group.add(sign); lab.group.remove(o); o = lab.selected = sign;
       }
       if (o.userData.isRoute && props.length !== undefined) setRouteLength(o, props.length);
+      if (props.blinker !== undefined) {
+        o.userData.blinkerOverride = props.blinker === 'none' ? null : props.blinker;
+      }
       if (props.x !== undefined) o.position.x = props.x;
       if (props.z !== undefined) o.position.z = lab.origin + props.z;
       if (props.rotY !== undefined) o.rotation.y = props.rotY;

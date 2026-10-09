@@ -9170,9 +9170,19 @@
     });
     const edits = (window.PDD_SCENE_EDITS || {})[id];
     if (!edits) return;
+    if (edits.playerBlinker !== undefined) {
+      group.userData.playerBlinker = edits.playerBlinker === 'none' ? null : edits.playerBlinker;
+    }
     const keyed = new Map();
     group.traverse(o => { if (o.userData.editKey) keyed.set(o.userData.editKey, o); });
     for (const e of edits.objects || []) {
+      if (e.key === 'player') {
+        const pb = e.blinker || e.playerBlinker;
+        if (pb !== undefined) {
+          group.userData.playerBlinker = pb === 'none' ? null : pb;
+        }
+        continue;
+      }
       let obj = keyed.get(e.key);
       if (!obj && e.add) {
         obj = createEditable(e.add);
@@ -9181,6 +9191,9 @@
         group.add(obj);
       }
       if (!obj) continue;
+      if (e.blinker !== undefined) {
+        obj.userData.blinkerOverride = e.blinker === 'none' ? null : e.blinker;
+      }
       if (e.code && obj.userData.signCode && e.code !== obj.userData.signCode) {
         const sign = createRoadSign(e.code);
         sign.position.copy(obj.position); sign.rotation.copy(obj.rotation); sign.scale.copy(obj.scale);
@@ -10789,6 +10802,10 @@
     state.isResolvingSituation = false;
     state.activeIntersection = null;
     state.resolution = null;
+    if (state.blinker?.fromSituation) {
+      state.blinker = null;
+      playerCarGroup.blinkerL.visible = playerCarGroup.blinkerR.visible = false;
+    }
     if (!state.speedZoneActive) state.speedLimitKmH = null;
     else {
       state.carriedZoneEndZ = playerCarGroup.position.z + 120;
@@ -13105,6 +13122,10 @@
     ev.joiners = null;
     state.speed = 0; state.isAccelerating = false; state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null;
     state.isAtSituation = true;
+    const pBlinker = ev.group?.userData?.playerBlinker;
+    if (pBlinker) {
+      state.blinker = { side: pBlinker, remaining: Infinity, elapsed: 0, fromSituation: true };
+    }
     sendToFlutter({ event: 'approach_situation', situation: ev.situation });
   }
 
@@ -13133,6 +13154,10 @@
     state.isAtSituation = false;
     state.isResolvingSituation = false;
     state.speed = 0;
+    if (state.blinker?.fromSituation) {
+      state.blinker.fromSituation = false;
+      state.blinker.remaining = 2.0;
+    }
   }
 
   function finishRoadEvent(cleared = true) {
@@ -13143,6 +13168,10 @@
     ev.phase = 'done';
     state.roadEvent = null;
     state.isAtSituation = false;
+    if (state.blinker?.fromSituation) {
+      state.blinker = null;
+      playerCarGroup.blinkerL.visible = playerCarGroup.blinkerR.visible = false;
+    }
     if (cleared && id) sendToFlutter({ event: 'situation_cleared', situationId: id });
   }
 
@@ -13197,11 +13226,7 @@
     sendToFlutter({ event: 'violation', type, episode: ++state.violationEpisode });
   }
 
-  function updateRoadEvent(dt) {
-    updateProps(dt);
-    updateCrews(dt);
-    const ev = state.roadEvent;
-    // Simulated time, so signals freeze on pause and stay deterministic in tests.
+  function updateActorBlinkers(dt) {
     state.signalClock = (state.signalClock || 0) + dt;
     const now = state.signalClock * 1000;
     // Parked junction traffic (not yet released) signals too: use the
@@ -13209,15 +13234,29 @@
     const parked = state.intersections.flatMap(it => it.motions ? [] : it.actors.map(a => ({ mesh: a.mesh, distance: 0,
       signalPlan: a.config.targetAction === 'turn_right' ? [{ from: 0, to: 1, side: 'right' }] :
         (a.config.targetAction === 'turn_left' || a.config.targetAction === 'uturn') ? [{ from: 0, to: 1, side: 'left' }] : null })));
-    [...state.actors, ...parked].forEach(a => {
-      const lamps = a.mesh.userData.blinkerLamps;
+    const roadActors = state.roadEvent?.actors || [];
+    const all = [...state.actors, ...parked, ...roadActors];
+    const seen = new Set();
+    const on = Math.floor(now / 380) % 2 === 0;
+    all.forEach(a => {
+      const mesh = a.mesh || a.actorMesh;
+      if (!mesh || seen.has(mesh)) return;
+      seen.add(mesh);
+      const lamps = mesh.userData.blinkerLamps;
       if (!lamps) return;
-      const planned = a.signalPlan ? a.signalPlan.find(p => a.distance >= p.from && a.distance < p.to)?.side || null
-        : a.mesh.userData.blinkerSide;
-      const on = Math.floor(now / 380) % 2 === 0;
+      const planned = mesh.userData.blinkerOverride !== undefined
+        ? mesh.userData.blinkerOverride
+        : (a.signalPlan ? a.signalPlan.find(p => a.distance >= p.from && a.distance < p.to)?.side || null
+          : mesh.userData.blinkerSide);
       lamps.left.forEach(l => { l.visible = on && (planned === 'left' || planned === 'hazard'); });
       lamps.right.forEach(l => { l.visible = on && (planned === 'right' || planned === 'hazard'); });
     });
+  }
+
+  function updateRoadEvent(dt) {
+    updateProps(dt);
+    updateCrews(dt);
+    const ev = state.roadEvent;
     // The car can always exceed the limit (that is what a violation is); its
     // top speed only rises where a higher limit allows it: 65 km/h in town,
     // up to 120 past a motorway sign. Over the limit by 5+ km/h for 0.8 s is
@@ -14144,6 +14183,7 @@
     playerCarGroup.brakeLights.forEach(light => {
       light.material.color.setHex(state.isBraking || state.speed === 0 || !state.isAccelerating ? 0xF04438 : 0x7F1D1D);
     });
+    updateActorBlinkers(dt);
     if (state.hazard > 0) {
       // The player's own hazard lights after a crash, for a few seconds.
       state.hazard = Math.max(0, state.hazard - dt);
@@ -14161,12 +14201,16 @@
     }
     const b = state.blinker;
     if (b) {
-      b.remaining = state.steering && b.side === (state.steering > 0 ? 'left' : 'right') ? 2.2 : b.remaining - dt;
+      if (!b.fromSituation) {
+        b.remaining = state.steering && b.side === (state.steering > 0 ? 'left' : 'right') ? 2.2 : b.remaining - dt;
+      }
       b.elapsed += dt;
-      if (b.remaining <= 0) state.blinker = null;
+      if (!b.fromSituation && b.remaining <= 0) state.blinker = null;
     }
-    playerCarGroup.blinkerL.visible = !!(state.blinker && b.side === 'left' && Math.floor(b.elapsed * 3) % 2 === 0);
-    playerCarGroup.blinkerR.visible = !!(state.blinker && b.side === 'right' && Math.floor(b.elapsed * 3) % 2 === 0);
+    const blinkerSide = state.blinker ? b.side : null;
+    const isFlashing = !!(b && Math.floor(b.elapsed * 3) % 2 === 0);
+    playerCarGroup.blinkerL.visible = !!(blinkerSide && (blinkerSide === 'left' || blinkerSide === 'hazard') && isFlashing);
+    playerCarGroup.blinkerR.visible = !!(blinkerSide && (blinkerSide === 'right' || blinkerSide === 'hazard') && isFlashing);
     const blinkerOn = playerCarGroup.blinkerL.visible || playerCarGroup.blinkerR.visible;
     if (blinkerOn && !gameAudio?.blinkerOn) gameAudio?.click();
     if (gameAudio) gameAudio.blinkerOn = blinkerOn;
@@ -14997,6 +15041,10 @@
       state.isAccelerating = false;
       state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null;
       state.isAtSituation = true;
+      const pBlinker = active.seg?.userData?.playerBlinker;
+      if (pBlinker) {
+        state.blinker = { side: pBlinker, remaining: Infinity, elapsed: 0, fromSituation: true };
+      }
       sendToFlutter({ event: 'approach_situation', situation: active.situation });
     }
   }
@@ -15296,6 +15344,7 @@
     state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null; state.trail = [];
     state.pendingAnswer = null;
     state.blinker = null;
+    playerCarGroup.blinkerL.visible = playerCarGroup.blinkerR.visible = false;
     state.hazard = 0;
     clearOncoming();
     situationIndex = 0;
