@@ -24,6 +24,7 @@ import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/home/home_screen.dart';
+import 'package:pdd_app/presentation/screens/games/games_hub_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
 import 'package:pdd_app/data/services/web_oauth_redirect_stub.dart'
@@ -231,17 +232,17 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
         : 'home';
     Widget getInitialWidget() {
       if (widget.webAuthReturn != null) {
-        return const HomeScreen(initialIndex: 4);
+        return const HomeScreen(initialIndex: 3);
       }
       switch (initialScreen) {
         case 'game':
           return const HomeScreen(initialIndex: 1);
         case 'games':
-          return const HomeScreen(initialIndex: 2);
+          return const GamesHubScreen();
         case 'feed':
-          return const HomeScreen(initialIndex: 3);
+          return const HomeScreen(initialIndex: 2);
         case 'profile':
-          return const HomeScreen(initialIndex: 4);
+          return const HomeScreen(initialIndex: 3);
         case 'tickets':
           return const TicketsScreen();
         default:
