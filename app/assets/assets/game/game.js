@@ -5488,6 +5488,12 @@
     // Road surfaces get their texture phase from the road they continue.
     window.PDD_ROADS.attach(renderer, { roots: () => state.roadSegments, lineage: () => state.exitRoad || currentCorridor });
     container.appendChild(renderer.domElement);
+    // The OS can take the GL context away (app interrupted): three.js then
+    // just stops drawing. Tell the host so it reloads the engine.
+    renderer.domElement.addEventListener('webglcontextlost', event => {
+      event.preventDefault();
+      sendToFlutter({ event: 'engine_error' });
+    });
 
     // Lights
     setupLights();
@@ -7764,6 +7770,174 @@
     return seg;
   }
 
+  function buildDeadEndSegment(length = 50, district = (state.district + 1) % DISTRICTS) {
+    const seg = new THREE.Group();
+    const roadWidth = 8.4;
+    const turnaroundWidth = 15.6;
+    const straightLength = 32;
+
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(36, length + 2 * SEAM),
+      new THREE.MeshLambertMaterial({ color: season().verge[Math.min(district, 2)] })
+    );
+    ground.material.userData.seasonal = 'verge' + Math.min(district, 2);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.set(0, -0.015, length / 2);
+    seg.add(ground);
+
+    const straightAsphalt = new THREE.Mesh(
+      new THREE.PlaneGeometry(roadWidth, straightLength + 2 * SEAM),
+      new THREE.MeshLambertMaterial({ color: BRAND.asphalt })
+    );
+    straightAsphalt.rotation.x = -Math.PI / 2;
+    straightAsphalt.position.set(0, 0.02, straightLength / 2);
+    straightAsphalt.receiveShadow = true;
+    seg.add(straightAsphalt);
+
+    const turnaroundLength = length - 30;
+    const padAsphalt = new THREE.Mesh(
+      new THREE.PlaneGeometry(turnaroundWidth, turnaroundLength + 2 * SEAM),
+      new THREE.MeshLambertMaterial({ color: BRAND.asphalt })
+    );
+    padAsphalt.rotation.x = -Math.PI / 2;
+    padAsphalt.position.set(0, 0.021, 30 + turnaroundLength / 2);
+    padAsphalt.receiveShadow = true;
+    seg.add(padAsphalt);
+
+    const swMat = new THREE.MeshLambertMaterial({ color: BRAND.sidewalk });
+    const swWidth = 3.2;
+
+    const swStraightL = new THREE.Mesh(new THREE.BoxGeometry(swWidth, 0.18, straightLength), swMat);
+    swStraightL.position.set(-(roadWidth / 2 + swWidth / 2), 0.09, straightLength / 2);
+    swStraightL.receiveShadow = true;
+    seg.add(swStraightL);
+
+    const swStraightR = new THREE.Mesh(new THREE.BoxGeometry(swWidth, 0.18, straightLength), swMat);
+    swStraightR.position.set(roadWidth / 2 + swWidth / 2, 0.09, straightLength / 2);
+    swStraightR.receiveShadow = true;
+    seg.add(swStraightR);
+
+    const stepL = new THREE.Mesh(new THREE.BoxGeometry((turnaroundWidth - roadWidth) / 2 + swWidth, 0.18, swWidth), swMat);
+    stepL.position.set(-(roadWidth / 2 + (turnaroundWidth - roadWidth) / 4), 0.09, straightLength);
+    seg.add(stepL);
+
+    const stepR = new THREE.Mesh(new THREE.BoxGeometry((turnaroundWidth - roadWidth) / 2 + swWidth, 0.18, swWidth), swMat);
+    stepR.position.set(roadWidth / 2 + (turnaroundWidth - roadWidth) / 4, 0.09, straightLength);
+    seg.add(stepR);
+
+    const padSideL = new THREE.Mesh(new THREE.BoxGeometry(swWidth, 0.18, turnaroundLength), swMat);
+    padSideL.position.set(-(turnaroundWidth / 2 + swWidth / 2), 0.09, 30 + turnaroundLength / 2);
+    padSideL.receiveShadow = true;
+    seg.add(padSideL);
+
+    const padSideR = new THREE.Mesh(new THREE.BoxGeometry(swWidth, 0.18, turnaroundLength), swMat);
+    padSideR.position.set(turnaroundWidth / 2 + swWidth / 2, 0.09, 30 + turnaroundLength / 2);
+    padSideR.receiveShadow = true;
+    seg.add(padSideR);
+
+    const backSw = new THREE.Mesh(new THREE.BoxGeometry(turnaroundWidth + 2 * swWidth, 0.22, swWidth), swMat);
+    backSw.position.set(0, 0.11, length + swWidth / 2);
+    backSw.receiveShadow = true;
+    seg.add(backSw);
+
+    const markingMat = new THREE.MeshBasicMaterial({ color: BRAND.asphaltMarking });
+    const dashLength = 2.0, gapLength = 3.0;
+    const dashGeo = new THREE.PlaneGeometry(0.18, dashLength);
+    dashGeo.rotateX(-Math.PI / 2);
+    const dashes = [];
+    for (let z = 2; z < straightLength - 2; z += (dashLength + gapLength)) {
+      const dash = new THREE.Mesh(dashGeo, markingMat);
+      dash.position.set(0, 0.025, z + dashLength / 2);
+      dashes.push(dash);
+    }
+    seg.add(mergeStatic(dashes, markingMat));
+
+    const lineL = new THREE.Mesh(new THREE.PlaneGeometry(0.15, straightLength), markingMat);
+    lineL.rotation.x = -Math.PI / 2;
+    lineL.position.set(-roadWidth / 2 + 0.25, 0.025, straightLength / 2);
+    seg.add(lineL);
+
+    const lineR = new THREE.Mesh(new THREE.PlaneGeometry(0.15, straightLength), markingMat);
+    lineR.rotation.x = -Math.PI / 2;
+    lineR.position.set(roadWidth / 2 - 0.25, 0.025, straightLength / 2);
+    seg.add(lineR);
+
+    const barrierGroup = new THREE.Group();
+    const barrierZ = length - 2;
+    const postMat = new THREE.MeshLambertMaterial({ color: 0x555D65 });
+    const whiteBoardMat = new THREE.MeshLambertMaterial({ color: 0xEAEAEA });
+    const redBoardMat = new THREE.MeshLambertMaterial({ color: 0xD32F2F });
+
+    for (let x = -turnaroundWidth / 2 + 1.2; x <= turnaroundWidth / 2 - 1.2; x += 2.4) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.3, 8), postMat);
+      post.position.set(x, 0.65, barrierZ);
+      post.castShadow = true;
+      barrierGroup.add(post);
+    }
+    for (const y of [0.55, 0.95]) {
+      const beamSegments = 14;
+      const beamStep = (turnaroundWidth - 2) / beamSegments;
+      for (let i = 0; i < beamSegments; i++) {
+        const segX = -turnaroundWidth / 2 + 1.0 + (i + 0.5) * beamStep;
+        const beam = new THREE.Mesh(
+          new THREE.BoxGeometry(beamStep, 0.22, 0.08),
+          i % 2 === 0 ? redBoardMat : whiteBoardMat
+        );
+        beam.position.set(segX, y, barrierZ);
+        beam.castShadow = true;
+        barrierGroup.add(beam);
+      }
+    }
+
+    const deadEndSign = createRoadSign('6.8.2', 3.0);
+    deadEndSign.position.set(roadWidth / 2 + 1.4, 0, 8);
+    deadEndSign.rotation.y = 0;
+    seg.add(deadEndSign);
+
+    const stopBarrier = new THREE.Mesh(
+      new THREE.BoxGeometry(turnaroundWidth + 4, 3.0, 1.2),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    stopBarrier.position.set(0, 1.5, length);
+    stopBarrier.userData.sceneryObject = true;
+    seg.add(stopBarrier);
+    seg.add(barrierGroup);
+
+    for (const [side, z] of [[-1, 10], [1, 12], [-1, 24], [1, 26]]) {
+      const tree = createTree(z % 2 ? 'round' : 'poplar');
+      tree.position.set(side * (roadWidth / 2 + 4.5), 0, z);
+      tree.userData.sceneryObject = true;
+      seg.add(tree);
+      const bush = createBush();
+      bush.position.set(side * (roadWidth / 2 + 3.0), 0, z + 3);
+      bush.userData.sceneryObject = true;
+      seg.add(bush);
+    }
+
+    const garageL = createVillageHouse(1);
+    garageL.position.set(-(turnaroundWidth / 2 + 5.0), 0, 36);
+    garageL.rotation.y = Math.PI / 2;
+    garageL.userData.sceneryObject = true;
+    seg.add(garageL);
+
+    const garageR = createVillageHouse(2);
+    garageR.position.set(turnaroundWidth / 2 + 5.0, 0, 36);
+    garageR.rotation.y = -Math.PI / 2;
+    garageR.userData.sceneryObject = true;
+    seg.add(garageR);
+
+    seg.children.forEach(o => {
+      const box = new THREE.Box3().setFromObject(o);
+      if (!box.isEmpty() && box.max.y > 0.3) o.userData.sceneryObject = true;
+    });
+
+    registerRoadSegment(seg);
+    seg.userData.roadWidth = roadWidth;
+    seg.userData.deadEnd = true;
+    seg.userData.roadEnds = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, length)];
+    return seg;
+  }
+
   // One model per actor config, with beacons, badge and measured collision half-sizes.
   function createActorMesh(cfg) {
     let actorMesh;
@@ -8844,7 +9018,10 @@
       // it is driving against the flow, never an ordinary "oncoming lane".
       const flowExit = oneWay === 'to_right' ? 'right' : 'left';
       const oneWayMode = oneWay && direction !== 'straight' ? (direction === flowExit ? 'with' : 'against') : null;
-      const extension = dirtApproach && direction === 'right'
+      const isDeadEnd = situation.deadEnd === direction;
+      const extension = isDeadEnd
+        ? buildDeadEndSegment(50, (state.district + 1) % DISTRICTS)
+        : dirtApproach && direction === 'right'
         ? buildDirtExit(200, (state.district + 1) % DISTRICTS, (crossStreetLength - roadWidth) / 2)
         : buildStraightSegment(0, 200, true, (state.district + 1) % DISTRICTS, oneWayMode, direction === 'straight' ? 0 : 30,
           situation.junctionLayout ? roadWidth : exitWidths[direction] || roadWidth);
@@ -9221,6 +9398,7 @@
     state.actors = state.actors.filter(a => !a.done && inKept(a));
     // Their question/event is over: anyone waiting for the player moves on.
     state.actors.forEach(a => { a.waitsForPlayer = false; if (a.stopFor === Infinity) a.stopFor = 1.2; });
+    if (currentCorridor?.userData.deadEnd) currentCorridor.userData.deadEnd = false;
     state.exitRoad = currentCorridor;
     state.sideJunction = null;
     clearOncoming();
@@ -11738,6 +11916,7 @@
     const gateway=new THREE.Group();
     gateway.position.set(side*(openEntrance?13.5:10.4),0,z);
     gateway.userData.cameraOccluder=true;
+    gateway.userData.questionEvidence=true;
     for(const end of [-1,1]) {
       const wing=createBuilding(6,openEntrance?3.2:7,openEntrance?8:11,2);
       wing.position.z=end*(drivewayWidth/2+(openEntrance?6:5.5));gateway.add(wing);
@@ -14146,6 +14325,24 @@
 
   // Arrows: «←» left, «→» right, the same arrow again — straight on. The
   // U-turn has its own button ('uturn', pressed again — straight on).
+  function performDeadEndUturn() {
+    if (!playerCarGroup || state.paused || state.autoPath) return;
+    const car = playerCarGroup;
+    const start = car.position.clone();
+    const z = Math.min(Math.max(start.z, 26), 36);
+    const p0 = start.clone();
+    const p1 = new THREE.Vector3(THREE.MathUtils.clamp(start.x + 2.0, -2, 5.0), 0, z + 3);
+    const p2 = new THREE.Vector3(3.2, 0, z + 7);
+    const p3 = new THREE.Vector3(-0.5, 0, z + 8.5);
+    const p4 = new THREE.Vector3(-4.0, 0, z + 6.5);
+    const p5 = new THREE.Vector3(-3.5, 0, z + 2.5);
+    const p6 = new THREE.Vector3(-1.8, 0, z - 2);
+    const p7 = new THREE.Vector3(-1.8, 0, z - 12);
+    const path = curve([p0, p1, p2, p3, p4, p5, p6, p7]);
+    state.autoPath = planPath(path);
+    triggerBlinker('left');
+  }
+
   function chooseJunctionExit(direction) {
     const r = state.resolution, previews = r.intersection.previews || {};
     const pz = playerCarGroup.position.z;
@@ -14216,7 +14413,11 @@
         hint = task;
       }
     }
-    const uturn = uturnOffered(r);
+    let uturn = uturnOffered(r);
+    if (!r && currentCorridor?.userData.deadEnd && playerCarGroup && playerCarGroup.position.z >= 18) {
+      uturn = true;
+      hint = 'uturn';
+    }
     const key = choice + '|' + hint + '|' + uturn;
     if (key === state.exitReported) return;
     state.exitReported = key;
@@ -14706,6 +14907,7 @@
     const contactsBefore = playerContacts();
     integrateDriving(dt, limit);
     updateBodyOverHumps();
+    if (currentCorridor?.userData.deadEnd) reportExit(null);
     if (state.driveRecovery > 0) return;
     const laneFrame=curvedRoadFrame();
     state.currentLaneOffset = laneFrame?laneFrame.offset:playerCarGroup.position.x;
@@ -15132,7 +15334,13 @@
     chooseUturn() {
       heldExit = null; heldExitDone = false;
       const r = state.resolution;
-      if (!r || r.phase !== 'manual' || r.recovery || !state.simpleSteering) { refuseInput(); return; }
+      if (!r || r.phase !== 'manual' || r.recovery || !state.simpleSteering) {
+        if (currentCorridor?.userData.deadEnd && playerCarGroup && playerCarGroup.position.z >= 18) {
+          performDeadEndUturn();
+          return;
+        }
+        refuseInput(); return;
+      }
       chooseJunctionExit('uturn');
     },
     // The app always uses the one control scheme (taps = intents, a hold =
