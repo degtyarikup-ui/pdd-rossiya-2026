@@ -1422,6 +1422,16 @@
       camera.position.y = camHeight;
       camera.position.z = Math.cos(camAngle) * radius;
       camera.lookAt(0, 1.2, 0);
+    } else if (currentCameraMode === 'portrait') {
+      const rot = inspectorGroup ? inspectorGroup.rotation.y : 0;
+      const dist = 0.92;
+      camera.position.set(Math.sin(rot) * dist, 1.73, Math.cos(rot) * dist);
+      camera.lookAt(0, 1.72, 0);
+    } else if (currentCameraMode === 'portrait_angle') {
+      const rot = (inspectorGroup ? inspectorGroup.rotation.y : 0) + 0.42;
+      const dist = 1.05;
+      camera.position.set(Math.sin(rot) * dist, 1.76, Math.cos(rot) * dist);
+      camera.lookAt(0, 1.71, 0);
     } else {
       updateDriverCamera(delta);
     }
@@ -1617,6 +1627,8 @@
     getWeather() {
       return { weather: currentTargetWeather, rain: curRain, fog: curFog, overcast: curOvercast };
     },
+    getCamera() { return camera; },
+    getInspector() { return inspectorGroup; },
     reset() {
       resetVehiclePositions();
       updateTrajectoryArrows();

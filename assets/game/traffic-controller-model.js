@@ -14,6 +14,11 @@
     const whiteMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
     const blackMat = new THREE.MeshLambertMaterial({ color: 0x111827 });
 
+    const hairMat = new THREE.MeshLambertMaterial({ color: 0x3E2723 });
+    const noseMat = new THREE.MeshLambertMaterial({ color: 0xD89962 });
+    const lipMat = new THREE.MeshLambertMaterial({ color: 0xB66E58 });
+    const eyeIrisMat = new THREE.MeshLambertMaterial({ color: 0x224263 });
+
     // Boots
     [-0.14, 0.14].forEach(x => {
       const boot = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 0.32), blackMat);
@@ -44,10 +49,90 @@
       group.add(vStripe);
     });
 
-    // Head
+    // Neck & Shirt Collar (воротничок форменной рубашки и галстук ДПС)
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.085, 0.12, 8), skinMat);
+    neck.position.set(0, 1.62, 0);
+    group.add(neck);
+
+    [-0.05, 0.05].forEach(x => {
+      const collar = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.035, 0.02), whiteMat);
+      collar.position.set(x, 1.58, 0.145);
+      collar.rotation.z = (x < 0 ? 0.35 : -0.35);
+      group.add(collar);
+    });
+    const tie = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.11, 0.015), darkUniform);
+    tie.position.set(0, 1.53, 0.148);
+    group.add(tie);
+
+    // Head base
     const head = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.26, 0.24), skinMat);
     head.position.set(0, 1.73, 0);
     group.add(head);
+
+    // Eyes: Sclera (белки глаз), Iris (радужка) & Catchlight (блик)
+    [-0.055, 0.055].forEach(x => {
+      const eyeWhite = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.024, 0.012), whiteMat);
+      eyeWhite.position.set(x, 1.745, 0.121);
+      group.add(eyeWhite);
+
+      const pupil = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.022, 0.008), eyeIrisMat);
+      pupil.position.set(x, 1.745, 0.126);
+      group.add(pupil);
+
+      const glint = new THREE.Mesh(new THREE.BoxGeometry(0.007, 0.007, 0.006), whiteMat);
+      glint.position.set(x + 0.004, 1.751, 0.129);
+      group.add(glint);
+
+      // Eyebrows (аккуратные мужские брови)
+      const brow = new THREE.Mesh(new THREE.BoxGeometry(0.046, 0.012, 0.014), hairMat);
+      brow.position.set(x, 1.772, 0.124);
+      brow.rotation.z = (x < 0 ? -0.06 : 0.06);
+      group.add(brow);
+    });
+
+    // Nose (прямой аккуратный нос)
+    const noseBridge = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.052, 0.036), noseMat);
+    noseBridge.position.set(0, 1.705, 0.136);
+    group.add(noseBridge);
+
+    const noseTip = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.018, 0.022), noseMat);
+    noseTip.position.set(0, 1.684, 0.144);
+    group.add(noseTip);
+
+    // Mouth (губы и линия рта)
+    const lips = new THREE.Mesh(new THREE.BoxGeometry(0.054, 0.014, 0.012), lipMat);
+    lips.position.set(0, 1.648, 0.122);
+    group.add(lips);
+
+    const mouthLine = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.004, 0.006), new THREE.MeshLambertMaterial({ color: 0x8C4A3A }));
+    mouthLine.position.set(0, 1.648, 0.127);
+    group.add(mouthLine);
+
+    // Chin (подбородок)
+    const chin = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.026, 0.020), skinMat);
+    chin.position.set(0, 1.616, 0.123);
+    group.add(chin);
+
+    // Ears (ушные раковины)
+    [-0.124, 0.124].forEach(x => {
+      const ear = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.052, 0.032), skinMat);
+      ear.position.set(x, 1.722, -0.015);
+      group.add(ear);
+    });
+
+    // Hair & Sideburns (виски, чёлка из-под фуражки и затылок)
+    [-0.122, 0.122].forEach(x => {
+      const sideburn = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.055, 0.032), hairMat);
+      sideburn.position.set(x, 1.762, 0.030);
+      group.add(sideburn);
+    });
+    const hairFringe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.018, 0.012), hairMat);
+    hairFringe.position.set(0, 1.822, 0.121);
+    group.add(hairFringe);
+
+    const backHair = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.075, 0.015), hairMat);
+    backHair.position.set(0, 1.710, -0.121);
+    group.add(backHair);
 
     // Police Cap
     const capBand = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.08, 12), capMat);
