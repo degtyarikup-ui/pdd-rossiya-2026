@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
+import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
@@ -153,9 +154,24 @@ class GameLobby extends StatelessWidget {
           child: SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+              padding: const EdgeInsets.fromLTRB(
+                AppDimensions.screenPadding,
+                AppDimensions.spacingM,
+                AppDimensions.screenPadding,
+                0,
+              ),
               child: Row(
                 children: [
+                  if (onClose != null) ...[
+                    AppChromeIconButton(
+                      icon: Icons.close_rounded,
+                      onTap: () {
+                        HapticFeedbackHelper.tap();
+                        onClose!();
+                      },
+                    ),
+                    const SizedBox(width: AppDimensions.spacingM),
+                  ],
                   if (onControls != null) ...[
                     Semantics(
                       button: true,
@@ -241,14 +257,6 @@ class GameLobby extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (onClose != null) ...[
-                    IconButton.filledTonal(
-                      tooltip: appL10n.close,
-                      onPressed: onClose,
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
                 ],
               ),
             ),

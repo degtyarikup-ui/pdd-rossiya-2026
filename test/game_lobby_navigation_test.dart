@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_lobby.dart';
 
 void main() {
@@ -30,6 +31,7 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     expect(find.byType(GameLobby), findsOneWidget);
+    expect(find.byType(AppChromeIconButton), findsOneWidget);
     await tester.tap(find.byIcon(Icons.close_rounded));
     await tester.pumpAndSettle();
     expect(find.byType(GameLobby), findsNothing);
