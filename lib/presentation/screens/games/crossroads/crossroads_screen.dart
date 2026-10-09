@@ -314,6 +314,7 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     return Scaffold(
       backgroundColor: colors.background,
       body: Stack(
+        fit: StackFit.expand,
         children: [
           // 1. Центральная 3D-сцена
           Positioned.fill(
@@ -343,14 +344,39 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
             ),
           ),
 
-          // 2. Верхняя панель (Header)
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.screenPadding,
-                vertical: 8,
+          // Пока сцена грузится — тема приложения и спиннер.
+          Positioned.fill(
+            child: IgnorePointer(
+              ignoring: _engineReady,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 250),
+                opacity: _engineReady ? 0 : 1,
+                child: TickerMode(
+                  enabled: !_engineReady,
+                  child: ColoredBox(
+                    color: colors.background,
+                    child: Center(
+                      child: CircularProgressIndicator(color: colors.accent),
+                    ),
+                  ),
+                ),
               ),
-              child: Row(
+            ),
+          ),
+
+          // 2. Верхняя панель (Header)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimensions.screenPadding,
+                  vertical: 8,
+                ),
+                child: Row(
                 children: [
                   AppChromeIconButton(
                     icon: Icons.arrow_back_rounded,
@@ -452,6 +478,7 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
               ),
             ),
           ),
+        ),
 
           // 3. Нижняя панель управления и подсказок
           Positioned(
@@ -543,9 +570,12 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                 _curScenario.actors.map((actor) {
                   final isDone = actor.priorityOrder < _currentStep;
                   return InkWell(
-                    onTap: () {
-                      _call('notifyFlutter({type:"dummy"})');
-                    },
+                    onTap: isDone
+                        ? null
+                        : () {
+                            HapticFeedbackHelper.tap();
+                            _call('selectVehicle("${actor.id}")');
+                          },
                     borderRadius: BorderRadius.circular(10),
                     child: Container(
                       padding: const EdgeInsets.symmetric(

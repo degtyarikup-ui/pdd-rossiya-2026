@@ -239,7 +239,6 @@
 
   function buildTramRails(parent) {
     const railMat = new THREE.MeshLambertMaterial({ color: 0x90949C });
-    railMat.userData.pddKind = 'metal';
     const gauge = 1.524; // ГОСТ колея трамвая в РФ
     const railWidth = 0.08;
     const railLength = CITY_REACH * 2;
@@ -334,7 +333,7 @@
     const swMat = new THREE.MeshLambertMaterial({ color: 0x767B82 });
     swMat.userData.pddKind = 'pavement';
     const curbMat = new THREE.MeshLambertMaterial({ color: 0x8C9098 });
-    curbMat.userData.pddKind = 'curb';
+    curbMat.userData.pddKind = 'pavement';
 
     const swWidth = 6.0;
     const corners = [
@@ -1264,6 +1263,11 @@
 
   window.resetCurrentScenario = () => {
     if (currentScenario) loadScenario(currentScenario);
+  };
+
+  window.selectVehicle = actorId => {
+    if (isResolving || !currentScenario) return;
+    handleVehicleChoice(actorId);
   };
 
   function notifyFlutter(payload) {
