@@ -232,6 +232,7 @@ class _TrafficControllerScreenState
     HapticFeedbackHelper.select();
     _countdownTimer?.cancel();
     _nextSituationTimer?.cancel();
+    _call('randomizeWeather()');
     setState(() {
       _score = 0;
       _combo = 0;
