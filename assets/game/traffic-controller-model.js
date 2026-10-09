@@ -9,15 +9,18 @@
     const darkUniform = new THREE.MeshLambertMaterial({ color: 0x1E293B });
     const vestLime = new THREE.MeshLambertMaterial({ color: 0x84CC16 });
     const stripeSilver = new THREE.MeshLambertMaterial({ color: 0xF1F5F9 });
-    const skinMat = new THREE.MeshLambertMaterial({ color: 0xE2A76F });
+    const skinMat = new THREE.MeshLambertMaterial({ color: 0xE2A76F, emissive: 0x241408 });
     const capMat = new THREE.MeshLambertMaterial({ color: 0x0F172A });
     const whiteMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
     const blackMat = new THREE.MeshLambertMaterial({ color: 0x111827 });
 
-    const hairMat = new THREE.MeshLambertMaterial({ color: 0x3E2723 });
-    const noseMat = new THREE.MeshLambertMaterial({ color: 0xD89962 });
-    const lipMat = new THREE.MeshLambertMaterial({ color: 0xB66E58 });
-    const eyeIrisMat = new THREE.MeshLambertMaterial({ color: 0x224263 });
+    const hairMat = new THREE.MeshLambertMaterial({ color: 0x2E1B14 });
+    const noseMat = new THREE.MeshLambertMaterial({ color: 0xC88652, emissive: 0x1A0E06 });
+    const lipMat = new THREE.MeshLambertMaterial({ color: 0x9B4D3C });
+    const eyeWhiteMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF, emissive: 0x444444 });
+    const eyeIrisMat = new THREE.MeshLambertMaterial({ color: 0x102A45, emissive: 0x081525 });
+    const eyeGlintMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
+    const cockadeMat = new THREE.MeshLambertMaterial({ color: 0xF59E0B, emissive: 0x553300 });
 
     // Boots
     [-0.14, 0.14].forEach(x => {
@@ -49,19 +52,64 @@
       group.add(vStripe);
     });
 
+    // Обозначение «ДПС» на спине жилета (сзади регулировщика)
+    const dpsMat = new THREE.MeshLambertMaterial({ color: 0x1E3A8A });
+    const backStripe = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.12, 0.012), stripeSilver);
+    backStripe.position.set(0, 1.38, -0.158);
+    group.add(backStripe);
+
+    // Буква Д (+0.08 в локальных координатах — при повороте спиной оказывается слева для читателя)
+    const dGroup = new THREE.Group();
+    dGroup.position.set(0.08, 1.38, -0.165);
+    const dTop = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.008, 0.006), dpsMat);
+    dTop.position.set(0, 0.032, 0); dGroup.add(dTop);
+    const dLeft = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.038, 0.006), dpsMat);
+    dLeft.position.set(-0.012, 0.012, 0); dGroup.add(dLeft);
+    const dRight = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.038, 0.006), dpsMat);
+    dRight.position.set(0.012, 0.012, 0); dGroup.add(dRight);
+    const dMid = new THREE.Mesh(new THREE.BoxGeometry(0.044, 0.008, 0.006), dpsMat);
+    dMid.position.set(0, -0.012, 0); dGroup.add(dMid);
+    const dLegL = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.016, 0.006), dpsMat);
+    dLegL.position.set(-0.018, -0.024, 0); dGroup.add(dLegL);
+    const dLegR = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.016, 0.006), dpsMat);
+    dLegR.position.set(0.018, -0.024, 0); dGroup.add(dLegR);
+    group.add(dGroup);
+
+    // Буква П (0.0)
+    const pGroup = new THREE.Group();
+    pGroup.position.set(0, 1.38, -0.165);
+    const pTop = new THREE.Mesh(new THREE.BoxGeometry(0.036, 0.008, 0.006), dpsMat);
+    pTop.position.set(0, 0.032, 0); pGroup.add(pTop);
+    const pLeft = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.060, 0.006), dpsMat);
+    pLeft.position.set(-0.014, -0.002, 0); pGroup.add(pLeft);
+    const pRight = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.060, 0.006), dpsMat);
+    pRight.position.set(0.014, -0.002, 0); pGroup.add(pRight);
+    group.add(pGroup);
+
+    // Буква С (-0.08 в локальных координатах — при повороте спиной оказывается справа для читателя)
+    const sGroup = new THREE.Group();
+    sGroup.position.set(-0.08, 1.38, -0.165);
+    const sLeft = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.060, 0.006), dpsMat);
+    sLeft.position.set(0.014, -0.002, 0); sGroup.add(sLeft);
+    const sTop = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.008, 0.006), dpsMat);
+    sTop.position.set(-0.004, 0.032, 0); sGroup.add(sTop);
+    const sBot = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.008, 0.006), dpsMat);
+    sBot.position.set(-0.004, -0.028, 0); sGroup.add(sBot);
+    group.add(sGroup);
+
     // Neck & Shirt Collar (воротничок форменной рубашки и галстук ДПС)
     const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.085, 0.12, 8), skinMat);
     neck.position.set(0, 1.62, 0);
     group.add(neck);
 
-    [-0.05, 0.05].forEach(x => {
-      const collar = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.035, 0.02), whiteMat);
-      collar.position.set(x, 1.58, 0.145);
-      collar.rotation.z = (x < 0 ? 0.35 : -0.35);
+    [-0.055, 0.055].forEach(x => {
+      const collar = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.042, 0.024), whiteMat);
+      collar.position.set(x, 1.58, 0.148);
+      collar.rotation.z = (x < 0 ? 0.38 : -0.38);
       group.add(collar);
     });
-    const tie = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.11, 0.015), darkUniform);
-    tie.position.set(0, 1.53, 0.148);
+    const tie = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.13, 0.018), darkUniform);
+    tie.position.set(0, 1.52, 0.152);
     group.add(tie);
 
     // Head base
@@ -70,47 +118,51 @@
     group.add(head);
 
     // Eyes: Sclera (белки глаз), Iris (радужка) & Catchlight (блик)
-    [-0.055, 0.055].forEach(x => {
-      const eyeWhite = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.024, 0.012), whiteMat);
-      eyeWhite.position.set(x, 1.745, 0.121);
+    [-0.056, 0.056].forEach(x => {
+      const eyeLid = new THREE.Mesh(new THREE.BoxGeometry(0.062, 0.038, 0.010), noseMat);
+      eyeLid.position.set(x, 1.745, 0.120);
+      group.add(eyeLid);
+
+      const eyeWhite = new THREE.Mesh(new THREE.BoxGeometry(0.052, 0.030, 0.012), eyeWhiteMat);
+      eyeWhite.position.set(x, 1.745, 0.124);
       group.add(eyeWhite);
 
-      const pupil = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.022, 0.008), eyeIrisMat);
-      pupil.position.set(x, 1.745, 0.126);
+      const pupil = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.028, 0.010), eyeIrisMat);
+      pupil.position.set(x, 1.745, 0.129);
       group.add(pupil);
 
-      const glint = new THREE.Mesh(new THREE.BoxGeometry(0.007, 0.007, 0.006), whiteMat);
-      glint.position.set(x + 0.004, 1.751, 0.129);
+      const glint = new THREE.Mesh(new THREE.BoxGeometry(0.010, 0.010, 0.008), eyeGlintMat);
+      glint.position.set(x + 0.007, 1.753, 0.133);
       group.add(glint);
 
-      // Eyebrows (аккуратные мужские брови)
-      const brow = new THREE.Mesh(new THREE.BoxGeometry(0.046, 0.012, 0.014), hairMat);
-      brow.position.set(x, 1.772, 0.124);
-      brow.rotation.z = (x < 0 ? -0.06 : 0.06);
+      // Eyebrows (выразительные мужские брови)
+      const brow = new THREE.Mesh(new THREE.BoxGeometry(0.060, 0.016, 0.018), hairMat);
+      brow.position.set(x, 1.776, 0.127);
+      brow.rotation.z = (x < 0 ? -0.08 : 0.08);
       group.add(brow);
     });
 
-    // Nose (прямой аккуратный нос)
-    const noseBridge = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.052, 0.036), noseMat);
-    noseBridge.position.set(0, 1.705, 0.136);
+    // Nose (прямой выразительный нос со светотенью)
+    const noseBridge = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.056, 0.042), noseMat);
+    noseBridge.position.set(0, 1.705, 0.138);
     group.add(noseBridge);
 
-    const noseTip = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.018, 0.022), noseMat);
-    noseTip.position.set(0, 1.684, 0.144);
+    const noseTip = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.026, 0.028), noseMat);
+    noseTip.position.set(0, 1.682, 0.150);
     group.add(noseTip);
 
-    // Mouth (губы и линия рта)
-    const lips = new THREE.Mesh(new THREE.BoxGeometry(0.054, 0.014, 0.012), lipMat);
-    lips.position.set(0, 1.648, 0.122);
+    // Mouth (губы и четкая линия рта)
+    const lips = new THREE.Mesh(new THREE.BoxGeometry(0.070, 0.018, 0.016), lipMat);
+    lips.position.set(0, 1.644, 0.125);
     group.add(lips);
 
-    const mouthLine = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.004, 0.006), new THREE.MeshLambertMaterial({ color: 0x8C4A3A }));
-    mouthLine.position.set(0, 1.648, 0.127);
+    const mouthLine = new THREE.Mesh(new THREE.BoxGeometry(0.056, 0.005, 0.008), new THREE.MeshLambertMaterial({ color: 0x6E291C }));
+    mouthLine.position.set(0, 1.644, 0.131);
     group.add(mouthLine);
 
     // Chin (подбородок)
-    const chin = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.026, 0.020), skinMat);
-    chin.position.set(0, 1.616, 0.123);
+    const chin = new THREE.Mesh(new THREE.BoxGeometry(0.090, 0.032, 0.024), skinMat);
+    chin.position.set(0, 1.612, 0.125);
     group.add(chin);
 
     // Ears (ушные раковины)
@@ -120,19 +172,15 @@
       group.add(ear);
     });
 
-    // Hair & Sideburns (виски, чёлка из-под фуражки и затылок)
+    // Hair & Sideburns (виски и чёлка из-под фуражки; затылок чистый без пятен)
     [-0.122, 0.122].forEach(x => {
       const sideburn = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.055, 0.032), hairMat);
       sideburn.position.set(x, 1.762, 0.030);
       group.add(sideburn);
     });
     const hairFringe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.018, 0.012), hairMat);
-    hairFringe.position.set(0, 1.822, 0.121);
+    hairFringe.position.set(0, 1.822, 0.122);
     group.add(hairFringe);
-
-    const backHair = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.075, 0.015), hairMat);
-    backHair.position.set(0, 1.710, -0.121);
-    group.add(backHair);
 
     // Police Cap
     const capBand = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.08, 12), capMat);
@@ -145,8 +193,8 @@
     visor.position.set(0, 1.84, 0.18);
     visor.rotation.x = 0.2;
     group.add(visor);
-    const cockade = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.02), new THREE.MeshLambertMaterial({ color: 0xF59E0B }));
-    cockade.position.set(0, 1.88, 0.15);
+    const cockade = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.065, 0.025), cockadeMat);
+    cockade.position.set(0, 1.88, 0.155);
     group.add(cockade);
 
     // The model faces +Z: anatomical RIGHT is -X, LEFT is +X.

@@ -2827,7 +2827,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameTrafficControllerTitle.
   ///
   /// In ru, this message translates to:
-  /// **'Регулировщик 3D'**
+  /// **'Регулировщик'**
   String get gameTrafficControllerTitle;
 
   /// No description provided for @gameBestScoreLabel.

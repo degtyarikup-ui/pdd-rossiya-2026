@@ -592,7 +592,7 @@ class ProgressDataSource {
   /// снапшот (`game.bestScore`). «Сбросить статистику» его не трогает.
   int getGameBestScore() => _prefs.getInt('game_best_score') ?? 0;
 
-  /// Прогресс игры «Регулировщик 3D».
+  /// Прогресс игры «Регулировщик».
   TrafficControllerProgress getTrafficControllerProgress() {
     final raw = _prefs.getString(_keyTrafficController);
     if (raw == null) return const TrafficControllerProgress();

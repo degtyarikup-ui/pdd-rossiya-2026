@@ -1617,7 +1617,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get navGames => 'Игры';
 
   @override
-  String get gameTrafficControllerTitle => 'Регулировщик 3D';
+  String get gameTrafficControllerTitle => 'Регулировщик';
 
   @override
   String get gameBestScoreLabel => 'Рекорд';

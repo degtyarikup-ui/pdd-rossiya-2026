@@ -295,7 +295,9 @@
     if (skyDome) {
       skyDome.material.uniforms.horizon.value.copy(scene.background);
       skyDome.material.uniforms.zenith.value.copy(scene.background).lerp(new THREE.Color(0x76A3D4), 0.45 * (1 - curOvercast));
-      skyDome.material.uniforms.cloud.value = 0.45 + 0.5 * curOvercast;
+      // В дождь и туман облака полностью растворяются в сплошной атмосферной дымке/пасмурности
+      const cloudVisibility = Math.max(0, 1.0 - curRain * 1.6 - curFog * 1.6);
+      skyDome.material.uniforms.cloud.value = 0.45 * cloudVisibility;
     }
 
     if (scene.fog) {

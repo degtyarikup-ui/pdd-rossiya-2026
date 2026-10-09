@@ -832,7 +832,7 @@
   "gameSourceImage": "Оригинальная картинка вопроса",
   "gameSourceImageUnavailable": "В этом вопросе нет картинки",
   "navGames": "Игры",
-  "gameTrafficControllerTitle": "Регулировщик 3D",
+  "gameTrafficControllerTitle": "Регулировщик",
   "gameBestScoreLabel": "Рекорд",
   "gameComboLabel": "Макс. комбо",
   "gameSolvedLabel": "Решено",
