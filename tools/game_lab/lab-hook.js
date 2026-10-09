@@ -82,9 +82,17 @@
     }
     function describe(o) {
       if (!o) return null;
-      return { key: o.userData.editKey, code: o.userData.signCode || null, kind: o.userData.decorKind || null,
+      const isActor = !!(o.userData.isActorRoot || (o.userData.editKey && o.userData.editKey.startsWith('actor:')));
+      const actorType = o.userData.actorType || o.userData.actorConfig?.type || (isActor ? 'car' : null);
+      const actorName = o.userData.actorName || o.userData.actorConfig?.name;
+      let label;
+      if (o.userData.signCode) label = 'Знак ' + o.userData.signCode;
+      else if (isActor) label = actorName || ('Участник ' + (actorType || ''));
+      else label = o.userData.decorKind || o.userData.editKey;
+      return { key: o.userData.editKey, code: o.userData.signCode || null, kind: isActor ? 'actor' : (o.userData.decorKind || null),
+        isActor, actorType, actorName,
         x: +o.position.x.toFixed(2), z: +(o.position.z - lab.origin).toFixed(2), rotY: +o.rotation.y.toFixed(3),
-        visible: o.visible, label: o.userData.signCode ? 'Знак ' + o.userData.signCode : o.userData.decorKind || o.userData.editKey };
+        visible: o.visible, label };
     }
     function setHelper(o) {
       if (lab.helper) { scene.remove(lab.helper); lab.helper = null; }
@@ -96,6 +104,16 @@
       lab.group?.traverse(o => { if (o.userData.editKey === key && o.parent === lab.group) hit = o; });
       return hit;
     }
+    function actors() {
+      if (!lab.group) return [];
+      const list = [];
+      lab.group.children.forEach(o => {
+        if (o.userData.isActorRoot || (o.userData.editKey && o.userData.editKey.startsWith('actor:'))) {
+          list.push(describe(o));
+        }
+      });
+      return list;
+    }
     const ray = new THREE.Raycaster();
     function pick(nx, ny) {
       if (!lab.group) return null;
@@ -104,7 +122,7 @@
       for (const h of hits) {
         let o = h.object;
         while (o && o.parent !== lab.group) o = o.parent;
-        if (o && o.userData.editKey && !o.userData.actor) { lab.selected = o; setHelper(o); return describe(o); }
+        if (o && o.userData.editKey) { lab.selected = o; setHelper(o); return describe(o); }
       }
       lab.selected = null; setHelper(null); return null;
     }
@@ -126,6 +144,20 @@
       if (props.z !== undefined) o.position.z = lab.origin + props.z;
       if (props.rotY !== undefined) o.rotation.y = props.rotY;
       if (props.visible !== undefined) o.visible = props.visible;
+      if (o.userData.isActorRoot || (o.userData.editKey && o.userData.editKey.startsWith('actor:'))) {
+        const findActor = a => a.mesh === o;
+        const actor = state.actors?.find(findActor) || state.intersections?.flatMap(it => it.actors || []).find(findActor);
+        if (actor) {
+          const dx = o.position.x - actor.initialPos.x;
+          const dz = o.position.z - actor.initialPos.z;
+          actor.initialPos.copy(o.position);
+          if (actor.viewBounds) actor.viewBounds.setFromObject(o);
+          if (actor.path && actor.path.points && (Math.abs(dx) > 0.001 || Math.abs(dz) > 0.001)) {
+            actor.path.points.forEach(p => { p.x += dx; p.z += dz; });
+            actor.length = actor.path.getLength();
+          }
+        }
+      }
       setHelper(o);
       return describe(o);
     }
@@ -208,6 +240,7 @@
       select(key) { lab.selected = find(key); setHelper(lab.selected); return describe(lab.selected); },
       signCodes: () => Object.keys(window.PDD_SIGN_TEXTURES || {}).sort(),
       decorKinds: () => Object.keys(EDITABLE_DECOR),
+      actors: () => actors(),
       player: () => ({ x: playerCarGroup.position.x, z: playerCarGroup.position.z }),
       tick: () => {
         // Freeze traffic in inspection mode, but keep the canvas and camera live.

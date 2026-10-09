@@ -8038,6 +8038,11 @@
     actorMesh.userData.badge = badge;
     if(cfg.hideBadge)badge.visible=false;
     actorMesh.traverse(obj => { obj.userData.actor = true; });
+    actorMesh.userData.isActorRoot = true;
+    actorMesh.userData.actorConfig = cfg;
+    actorMesh.userData.actorName = cfg.name || badgeLabel || 'Авто';
+    actorMesh.userData.actorType = cfg.type || 'car';
+    actorMesh.userData.editKey = 'actor:' + (cfg.id || cfg.type || 'car');
     // Every motor vehicle has indicators: junction traffic signals its
     // targetAction exactly as the ticket picture shows it.
     if (cfg.blinker || cfg.maneuver || !['pedestrian', 'cyclist', 'cart', 'train'].includes(cfg.type)) {
@@ -12505,6 +12510,17 @@
       o.rotation.y+=Math.atan(ev.curve.slopeAt(z));
     });
     applySceneEdits(group, situation.id, stopZ);
+    (ev.actors || []).forEach(a => {
+      const dx = a.mesh.position.x - a.initialPos.x;
+      const dz = a.mesh.position.z - a.initialPos.z;
+      if (Math.abs(dx) > 0.001 || Math.abs(dz) > 0.001) {
+        if (a.path && a.path.points) {
+          a.path.points.forEach(p => { p.x += dx; p.z += dz; });
+          a.length = a.path.getLength();
+        }
+      }
+      a.initialPos.copy(a.mesh.position);
+    });
     const crossTraffic = ev.actors.filter(a => a.config.approach === 'right' && sc.junction?.priority === 'equal');
     if (crossTraffic.length) ev.actors.filter(a => !crossTraffic.includes(a)).forEach(a => { a.dependencies = crossTraffic; });
     state.weatherDirty = true;
