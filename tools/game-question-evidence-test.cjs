@@ -18,7 +18,7 @@ function referencedLetters(situation) {
   try {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
     const errors = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', e => errors.push(e.stack || e.message));
     await page.addInitScript(() => {
       window.requestAnimationFrame = () => 0;
       window.events = [];
@@ -103,7 +103,13 @@ function referencedLetters(situation) {
     });
     await page.goto((process.env.GAME_URL || 'http://127.0.0.1:8938') + '/assets/game/');
     // RAF is disabled for deterministic renders, so readiness must poll on a timer.
-    await page.waitForFunction(() => window.questionEvidence && window.events.some(e => e.event === 'ready'), null, {polling: 100});
+    try {
+    await page.waitForFunction(() => window.questionEvidence && window.events.some(e => e.event === 'ready' || e.event === 'engine_error'), null, {polling: 100});
+    } catch (error) {
+      throw new Error('Evidence harness initialization: '+JSON.stringify({errors, state:await page.evaluate(()=>({hook:!!window.questionEvidence,events:window.events}))}), {cause:error});
+    }
+    assert.deepEqual(errors, [], 'engine initialization must succeed');
+    assert(!await page.evaluate(()=>events.some(e=>e.event==='engine_error')), 'engine must signal readiness');
     const catalog = await page.evaluate(() => questionEvidence.catalog());
     const source = JSON.parse(fs.readFileSync('assets/countries/ru/questions/questions_ab.json', 'utf8'));
     const labelled = [];
@@ -143,7 +149,13 @@ function referencedLetters(situation) {
           assert(result.arrows.length > 5, s.id + ': visible alternatives');
           assert(result.labels.every(l => l.rx * 2 >= 23.9), s.id + ': readable trajectory letters');
           const trajectories = s.scene?.trajectories || s.trajectories;
-          for (const t of trajectories) {
+          for (const [index, t] of trajectories.entries()) {
+            // The lab deliberately shortens explanatory alternatives. Their
+            // original far endpoint is then not meant to be drawn; labels,
+            // visible geometry and non-overlap are still checked above/below.
+            const edits = await page.evaluate(id => (window.PDD_SCENE_EDITS || {})[id]?.objects || [], s.id);
+            const edited = edits.find(e => e.key === 'route:' + index);
+            if (edited && (edited.length !== undefined || edited.points || edited.startOffset !== undefined)) continue;
             const [x, z] = t.points.at(-1), worldX = s.scene ? x : -x;
             assert(result.arrows.some(p => Math.hypot(p[0] - worldX, p[2] - result.originZ - z) < 2.5), s.id + ': arrows reach alternative ' + t.label);
           }

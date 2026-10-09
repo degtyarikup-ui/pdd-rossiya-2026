@@ -247,6 +247,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
           'stop': appL10n.gameStop,
           'oncoming': appL10n.gameOncoming,
           'resolving': appL10n.gameResolving,
+          'gasStation': appL10n.gasStationName,
         },
       },
     ]);

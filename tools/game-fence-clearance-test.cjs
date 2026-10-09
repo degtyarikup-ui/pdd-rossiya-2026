@@ -103,6 +103,51 @@ const { chromium } = require('playwright');
             return { id, deferred, fences: fences.length, preserved: fences.filter(o => o.visible).length,
               blocking: overlaps.length, nestedIncoming: incoming.parent === it.seg };
           },
+          retainedSideStreet() {
+            this.fresh();
+            const incoming=buildStraightSegment(-100,550,true);state.roadSegments.push(incoming);currentCorridor=state.exitRoad=incoming;nextSegmentZ=450;
+            const g=new THREE.Group();scene.add(g);state.roadSegments.push(g);
+            const ev=state.roadEvent=buildQuestionEvent(g,-45,window.PDD_ROAD_SITUATIONS.find(s=>s.id==='road_27_10'));
+            const road=ev.junctionPreviews.left;scene.updateMatrixWorld(true);
+            finishRoadEvent(false);state.sideJunction=null;
+            playerCarGroup.position.copy(road.localToWorld(new THREE.Vector3(-1.8,0,35)));
+            const axis=new THREE.Vector3(0,0,1).transformDirection(road.matrixWorld);
+            playerCarGroup.rotation.y=Math.atan2(axis.x,axis.z);
+            const recovered=recoverSideRoadContinuation();
+            playerCarGroup.position.z=nextSegmentZ-140;checkAndSpawnNext();refreshRoadBounds();
+            const pavements=[];scene.traverse(o=>{if(o.userData.surface==='sidewalk')pavements.push(o);});
+            const blocked=[];
+            for(let z=0;z<130;z+=1){
+              const ray=new THREE.Raycaster(new THREE.Vector3(-1.8,10,z),new THREE.Vector3(0,-1,0));
+              if(ray.intersectObjects(pavements,false).some(h=>{
+                for(let o=h.object;o;o=o.parent)if(!o.visible)return false;
+                return !clippedAway(h.object.material,h.point);
+              }))blocked.push(z);
+            }
+            return {recovered,corridor:currentCorridor===road,onRoad:playerOnRoad(),nextJunction:state.intersections.length>0,blocked};
+          },
+          regulatorSelection() {
+            this.fresh();situationBag=[];state.junctionsDrawn=0;state.regulatorAt=4;state.regulatorShown=false;
+            const draws=Array.from({length:10},()=>nextSituation());
+            return { count:draws.filter(isRegulatorSituation).length, scheduled:isRegulatorSituation(draws[3]),
+              reviewed:draws.every(s=>routeSpec(s).reviewed) };
+          },
+          gasStation() {
+            this.fresh();state.labels.gasStation='ГазЛукПук';
+            const road=buildStraightSegment(-100,400,true);state.roadSegments.push(road);currentCorridor=state.exitRoad=road;nextSegmentZ=300;
+            const g=new THREE.Group();scene.add(g);state.roadSegments.push(g);
+            const ev=state.roadEvent=buildGasStationEvent(g,70);scene.updateMatrixWorld(true);
+            const surfaces=[];scene.traverse(o=>{if(o.userData.surface)surfaces.push(o);});
+            const at=(x,z)=>new THREE.Raycaster(new THREE.Vector3(x,10,z),new THREE.Vector3(0,-1,0)).intersectObjects(surfaces,false).filter(h=>{
+              for(let o=h.object;o;o=o.parent)if(!o.visible)return false;
+              return (h.object.material.clippingPlanes||[]).every(p=>p.distanceToPoint(h.point)>=-.001);
+            }).map(h=>h.object.userData.surface);
+            const result={entrances:[59,81].every(z=>at(-5.8,z).includes('road')&&!at(-5.8,z).includes('sidewalk')),
+              middle:at(-5.8,70).includes('sidewalk'),forecourt:roadSupports(new THREE.Vector3(-22,0,70)),
+              question:!!ev.situation,actors:ev.actors.length};
+            camera.position.set(36,44,40);camera.lookAt(-12,0,70);renderer.render(scene,camera);
+            return result;
+          },
           evidence(id) {
             this.fresh();
             const incoming = buildStraightSegment(-100,150,true);
@@ -143,6 +188,10 @@ const { chromium } = require('playwright');
       nested: fenceTest.fixture(0,true), clipped: fenceTest.fixture(0,false,true),
       long: fenceTest.longFence(), path: fenceTest.pathFence(), bend: fenceTest.bend(), reverse: fenceTest.reverseCorridor()
     }));
+    assert.deepEqual(await page.evaluate(()=>fenceTest.retainedSideStreet()),{recovered:true,corridor:true,onRoad:true,nextJunction:true,blocked:[]});
+    assert.deepEqual(await page.evaluate(()=>fenceTest.regulatorSelection()),{count:1,scheduled:true,reviewed:true});
+    assert.deepEqual(await page.evaluate(()=>fenceTest.gasStation()),{entrances:true,middle:true,forecourt:true,question:false,actors:0});
+    if(process.env.GAS_CAPTURE)await page.screenshot({path:process.env.GAS_CAPTURE});
     const regulators = [];
     for (const id of ['ticket_5_13','ticket_12_13','ticket_23_13','ticket_34_13','ticket_36_13'])
       regulators.push(await page.evaluate(id=>fenceTest.evidence(id),id));

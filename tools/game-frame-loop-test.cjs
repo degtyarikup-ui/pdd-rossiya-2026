@@ -130,7 +130,7 @@ const { chromium, webkit } = require('playwright');
     assert.deepEqual(recovery, { completed: true, ready: 1 }, 'crash recovery finishes while the next question is displayed');
 
     const deadEnd = await page.evaluate(() => frameTest.deadEnd());
-    assert.deepEqual(deadEnd, { deadEnd: true, length: 50, houses: 2, decorated: true },
+    assert.deepEqual(deadEnd, { deadEnd: true, length: 38, houses: 3, decorated: true },
       'a randomly offered dead-end exit builds without a missing scenery factory');
 
     const visibility = await page.evaluate(() => {
