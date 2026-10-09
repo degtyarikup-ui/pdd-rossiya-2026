@@ -29,6 +29,7 @@ flutter_ios_podfile_setup
 
 target 'Runner' do
   use_frameworks!
+  pod 'YandexLoginSDK', '3.2.0'
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   target 'RunnerTests' do
@@ -39,5 +40,21 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    if target.name == 'YandexLoginSDK'
+      # SDK 3.2.0 treats its legacy Security APIs as errors on newer Xcode.
+      target.build_configurations.each do |config|
+        flags = config.build_settings['OTHER_CFLAGS'] || ['$(inherited)']
+        flags = flags.is_a?(Array) ? flags : [flags]
+        config.build_settings['OTHER_CFLAGS'] = flags + ['-Wno-error=deprecated-declarations']
+      end
+      # The podspec includes the privacy manifest as source instead of resource.
+      target.source_build_phase.files.dup.each do |file|
+        reference = file.file_ref
+        if reference && reference.path.end_with?('PrivacyInfo.xcprivacy')
+          file.remove_from_project
+          target.resources_build_phase.add_file_reference(reference)
+        end
+      end
+    end
   end
 end

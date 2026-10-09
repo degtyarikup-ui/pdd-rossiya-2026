@@ -3,6 +3,17 @@ import 'dart:math';
 const webOAuthStorageKey = 'pdd_web_oauth_pending';
 const webOAuthFragmentPrefix = '#pdd-oauth=';
 
+bool needsAppleSafariHint(String userAgent, {int maxTouchPoints = 0}) {
+  final ios =
+      RegExp(r'iPhone|iPad|iPod').hasMatch(userAgent) ||
+      (userAgent.contains('Macintosh') && maxTouchPoints > 1);
+  final safari =
+      userAgent.contains('Safari/') &&
+      userAgent.contains('Version/') &&
+      !RegExp(r'Telegram|CriOS|FxiOS|EdgiOS|OPiOS').hasMatch(userAgent);
+  return ios && !safari;
+}
+
 String newWebOAuthState() => List.generate(
   32,
   (_) => Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0'),

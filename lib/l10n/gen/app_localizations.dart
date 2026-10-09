@@ -2044,6 +2044,12 @@ abstract class AppLocalizations {
   /// **'Сохраните премиум-доступ и статистику при смене или переустановке устройства'**
   String get authDescription;
 
+  /// No description provided for @authAppleSafariHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Чтобы войти с Face ID без ввода данных, откройте сайт в Safari через меню браузера. Встроенный браузер может попросить email и пароль Apple.'**
+  String get authAppleSafariHint;
+
   /// No description provided for @authApple.
   ///
   /// In ru, this message translates to:

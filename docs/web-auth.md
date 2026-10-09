@@ -68,3 +68,38 @@ GitHub Pages отдаёт JavaScript с max-age=600. `tools/version_web_build.py
 Callback возвращает на `/app/?oauth=2`, чтобы загрузить свежий HTML.
 Для уже открытой старой вкладки можно открыть новый адрес
 `https://pdd-drive.ru/app/?update=20261009-auth2` и повторить вход.
+
+## Нативный Яндекс на iOS
+
+`YandexLoginSDK` 3.2.0 подключён через CocoaPods. `PddYandexAuth`
+в AppDelegate регистрируется при создании implicit Flutter engine и
+передаёт callback через application/scene lifecycle. Схемы
+`primaryyandexloginsdk` и `secondaryyandexloginsdk` доступны для проверки
+установленных приложений; URL scheme возврата — `yx94aa539db4634e44bf0b209d9a2205d2`.
+В entitlement добавлен
+`applinks:yx94aa539db4634e44bf0b209d9a2205d2.oauth.yandex.ru`;
+Associated Domains включён в Apple Developer для `ru.pdd.pddApp`.
+При следующей подписанной сборке профиль нужно обновить (automatic signing).
+
+SDK использует приложение Яндекса при наличии, иначе
+ASWebAuthenticationSession. Flutter получает credential через
+`pdd/yandex_auth`, затем сервер проверяет токен и выдаёт сессию.
+После выдачи credential кэш токена SDK очищается; при выходе тоже.
+SDK ошибки не логируются: они могут содержать callback URL.
+Регистрация платформы сама по себе не меняет опубликованное приложение:
+новый способ входа появится только в следующем релизе iOS.
+
+В Podfile две адресные поправки для SDK 3.2.0 на новом Xcode:
+устаревшие Security API остаются предупреждениями (SDK включает -Werror),
+а PrivacyInfo.xcprivacy копируется как resource, не компилируется как source.
+Сборка симулятора проверяет Swift bridge и интеграцию CocoaPods;
+вход через установленное приложение Яндекса нужно проверить на реальном
+подписанном iPhone до публикации.
+
+## Apple во встроенных браузерах
+
+На сайте вход Apple через Face ID и возврат в профиль проверены владельцем
+в Safari на iPhone. Telegram открывал форму ручного ввода Apple; сайт
+не может вызвать нативный AuthenticationServices из чужого браузера.
+Пользователям iOS вне Safari показывается подсказка открыть сайт в Safari.
+Нативный Apple-вход в приложении сохранён.

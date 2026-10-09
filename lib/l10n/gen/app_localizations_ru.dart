@@ -1149,6 +1149,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Сохраните премиум-доступ и статистику при смене или переустановке устройства';
 
   @override
+  String get authAppleSafariHint =>
+      'Чтобы войти с Face ID без ввода данных, откройте сайт в Safari через меню браузера. Встроенный браузер может попросить email и пароль Apple.';
+
+  @override
   String get authApple => 'Продолжить с Apple ID';
 
   @override

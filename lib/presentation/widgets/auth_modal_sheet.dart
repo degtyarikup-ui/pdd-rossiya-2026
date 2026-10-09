@@ -8,6 +8,8 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/web_oauth_redirect_stub.dart'
+    if (dart.library.js_interop) 'package:pdd_app/data/services/web_oauth_redirect.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 
 class AuthModalSheet extends StatefulWidget {
@@ -184,6 +186,17 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                       colors: colors,
                       isDark: isDark,
                     ),
+                    if (appleWebNeedsSafariHint) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        appL10n.authAppleSafariHint,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colors.secondaryText,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                     const SizedBox(height: 10),
                   ],
 

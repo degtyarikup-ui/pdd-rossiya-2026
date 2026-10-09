@@ -17,6 +17,7 @@ import 'package:pdd_app/presentation/widgets/yandex_auth_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:pdd_app/data/services/web_oauth_state.dart';
+import 'package:pdd_app/data/services/yandex_native_auth.dart';
 import 'package:pdd_app/data/services/web_oauth_redirect_stub.dart'
     if (dart.library.js_interop) 'package:pdd_app/data/services/web_oauth_redirect.dart';
 
@@ -599,6 +600,11 @@ class AuthService extends ChangeNotifier {
     try {
       await AuthSessionStore.clear();
     } catch (_) {}
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      try {
+        await YandexNativeAuth.signOut();
+      } catch (_) {}
+    }
     try {
       try {
         final googleSignIn = GoogleSignIn(

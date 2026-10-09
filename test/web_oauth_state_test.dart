@@ -2,6 +2,30 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/data/services/web_oauth_state.dart';
 
 void main() {
+  test(
+    'Safari guidance appears on iOS embedded browsers, not Safari or Android',
+    () {
+      const ios =
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) AppleWebKit/605.1.15';
+      expect(needsAppleSafariHint('$ios Mobile/15E148'), isTrue);
+      expect(
+        needsAppleSafariHint('$ios Version/17.0 Mobile/15E148 Safari/604.1'),
+        isFalse,
+      );
+      expect(
+        needsAppleSafariHint('$ios CriOS/120 Mobile/15E148 Safari/604.1'),
+        isTrue,
+      );
+      expect(needsAppleSafariHint('Android Chrome/120 Safari/537.36'), isFalse);
+      expect(
+        needsAppleSafariHint(
+          'Macintosh AppleWebKit/605.1.15',
+          maxTouchPoints: 5,
+        ),
+        isTrue,
+      );
+    },
+  );
   final now = DateTime.utc(2026, 10, 9);
   final state = newWebOAuthState();
   Map<String, dynamic> pending(String provider) => {

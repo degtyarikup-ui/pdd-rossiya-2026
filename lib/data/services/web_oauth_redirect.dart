@@ -4,6 +4,11 @@ import 'dart:convert';
 import 'package:web/web.dart' as web;
 import 'package:pdd_app/data/services/web_oauth_state.dart';
 
+bool get appleWebNeedsSafariHint => needsAppleSafariHint(
+  web.window.navigator.userAgent,
+  maxTouchPoints: web.window.navigator.maxTouchPoints,
+);
+
 Future<Never> startWebOAuth(String provider, Uri authorizationUrl) {
   // Only state/nonce are stored, never provider tokens or account information.
   web.window.sessionStorage.setItem(

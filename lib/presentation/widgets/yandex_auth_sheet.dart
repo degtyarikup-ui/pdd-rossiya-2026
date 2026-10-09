@@ -9,6 +9,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
+import 'package:pdd_app/data/services/yandex_native_auth.dart';
 import 'package:pdd_app/data/services/web_oauth_redirect_stub.dart'
     if (dart.library.js_interop) 'package:pdd_app/data/services/web_oauth_redirect.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -26,6 +27,7 @@ class YandexAuthSheet extends StatefulWidget {
     HapticFeedbackHelper.tap();
     // В браузере — переход в той же вкладке, без всплывающих окон.
     if (kIsWeb) return _signInOnWeb();
+    if (defaultTargetPlatform == TargetPlatform.iOS) return _signInOnIos();
     return showModalBottomSheet<YandexAuthResult>(
       context: context,
       isScrollControlled: true,
@@ -53,6 +55,13 @@ class YandexAuthSheet extends StatefulWidget {
 
   static Future<UserProfile?> profileForToken(String token) =>
       _YandexAuthSheetState._fetchYandexProfile(token);
+
+  static Future<YandexAuthResult?> _signInOnIos() async {
+    final token = await YandexNativeAuth.signIn();
+    if (token == null) return null;
+    final profile = await profileForToken(token);
+    return profile == null ? null : YandexAuthResult(profile, token);
+  }
 
   static String _randomState() => List.generate(
     32,
