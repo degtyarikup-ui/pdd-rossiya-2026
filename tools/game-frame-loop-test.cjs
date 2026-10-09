@@ -67,7 +67,7 @@ const { chromium, webkit } = require('playwright');
     });
     await page.goto((process.env.GAME_URL || 'http://127.0.0.1:8938') + '/assets/game/');
     await page.waitForFunction(() => events.some(e => e.event === 'engine_error') ||
-      window.frameTest && events.some(e => e.event === 'ready'), null, { timeout: 90000 });
+      window.frameTest && events.some(e => e.event === 'ready'), null, { polling: 100, timeout: 90000 });
     assert.deepEqual(errors, [], 'engine initializes without exceptions');
 
     const timing = await page.evaluate(() => {
@@ -85,6 +85,10 @@ const { chromium, webkit } = require('playwright');
           const seededClock = Number.isFinite(t.lastTime);
           t.frames(fps, fps);
           const elapsed = t.state.resolution?.elapsed ?? 0;
+          window.game.setPaused(true);
+          t.time += 3600 * 1000; // backgrounded with no animation frames
+          window.game.setPaused(false); t.frame(1 / fps);
+          const backgroundGapIgnored = Math.abs(t.state.resolution.elapsed - elapsed) < 1e-9;
           const startDistance = t.state.distanceTraveled;
           window.game.releaseTraffic(id);
           for (let f = 0; f < fps * 40 && t.state.resolution; f++) {
@@ -92,7 +96,7 @@ const { chromium, webkit } = require('playwright');
             t.frame(1 / fps);
           }
           window.game.setGas(false);
-          results.push({ id, fps, profile, queued, resumed, seededClock, elapsed,
+          results.push({ id, fps, profile, queued, resumed, seededClock, elapsed, backgroundGapIgnored,
             moved: t.state.distanceTraveled - startDistance,
             remaining: t.state.resolution && { elapsed: t.state.resolution.elapsed,
               recovery: t.state.resolution.recovery, faults: [...t.state.resolution.faults] },
@@ -107,6 +111,7 @@ const { chromium, webkit } = require('playwright');
       assert(result.queued && result.resumed, 'paused answer survives resume: ' + label);
       assert(result.seededClock, 'first resumed frame establishes the clock: ' + label);
       assert(result.elapsed > 0.8, 'standing resolution advances after resume: ' + label);
+      assert(result.backgroundGapIgnored, 'background wall time does not advance the maneuver: ' + label);
       assert(result.moved > 30 && result.finished, 'gas completes the resumed maneuver: ' + label);
       assert.equal(result.cleared, 1, 'Flutter receives exactly one matching situation_cleared: ' + label);
     }

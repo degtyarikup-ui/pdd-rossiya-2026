@@ -41,9 +41,12 @@ const { chromium } = require('playwright');
             return a;
           },
           approach() { playerCarGroup.position.z = state.intersections[0].stopZ; updatePlayerMovement(0); },
-          recover() { for (let i = 0; i < 30; i++) {
-            if (state.resolution) updateResolution(1/60); else updatePlayerMovement(1/60);
-          } }
+          recover() {
+            // Recovery now ticks in the production frame loop even when a
+            // question prevents updatePlayerMovement from running.
+            let time = lastTime ?? 0;
+            for (let i = 0; i < 30; i++) animate(time += 1000/60);
+          }
         };
         // Run init on DOM ready`);
       await route.fulfill({ response, body });

@@ -25,6 +25,7 @@ const { chromium } = require('playwright');
         scenarios: () => SITUATIONS.filter(s => routeSpec(s).reviewed && !isRegulatorSituation(s)),
         allScenarios: () => SITUATIONS.filter(s => routeSpec(s).reviewed),
         drawSituation: nextSituation,
+        drainScenery() { while (processSceneryJobs(1000).pending) {} },
         randomSequence(n) { situationBag = []; state.regulatorAt = Infinity; return Array.from({ length: n }, () => nextSituation().id); },
         updateActors, updateCamera,
         roadQueue(ids) { roadBag = ids.map(id => window.PDD_ROAD_SITUATIONS.find(r => r.id === id)).reverse(); },
@@ -153,6 +154,7 @@ const { chromium } = require('playwright');
       // 4. A building between the camera and the car is faded, wherever the
       // car is in the frame (the camera is orthographic).
       t.select(0); s.paused = false;
+      t.drainScenery();
       t.tick(0.5);
       const building = s.occluders.find(b => b.parent);
       const box = new T.Box3().setFromObject(building), c = box.getCenter(new T.Vector3());
