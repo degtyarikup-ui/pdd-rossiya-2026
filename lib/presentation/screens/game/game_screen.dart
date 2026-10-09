@@ -1135,10 +1135,14 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   Future<void> _handleRestart() async {
     if (_restarting || _disposing) return;
-    if (!await _takeRun()) return;
+    // Only a new run after the game over is paid here. A restart after an
+    // engine failure replays the run that was paid when it started (or, in the
+    // lobby, is paid at «Начать заезд»): charging it again burned the attempt.
+    final newRun = ref.read(gameControllerProvider).phase == GamePhase.gameOver;
+    if (newRun && !await _takeRun()) return;
     if (!mounted || _disposing) return;
     HapticFeedbackHelper.confirm();
-    UsageReporter.track(UsageFeature.game);
+    if (newRun) UsageReporter.track(UsageFeature.game);
     _restarting = true;
     _readyTimer?.cancel();
     _game.setPaused(true);
