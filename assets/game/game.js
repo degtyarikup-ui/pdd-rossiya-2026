@@ -15260,6 +15260,25 @@
     telemetryElapsed = 0;
   }
 
+  // What the host (Flutter) last asked for. The page also pauses itself while
+  // hidden, but that must never outlive the host's own decision: a late
+  // 'hidden' event after a quick background/resume used to leave the engine
+  // paused for good while the controls looked alive.
+  let hostPaused = Boolean(state.paused);
+  function applyPaused(next) {
+    if (next === state.paused) return;
+    state.paused = next;
+    // The planned move (a lane change, a turn) is kept: resumed, the car
+    // carries on with it instead of going straight on.
+    if (next) { heldExit = null; heldExitDone = false; state.isAccelerating = false; state.isBraking = false; state.steering = 0; }
+    gameAudio?.setPaused(next);
+    lastTime = null;
+    if (!next && state.pendingAnswer) {
+      const [isCorrect, situationId] = state.pendingAnswer;
+      state.pendingAnswer = null;
+      resolveSituationAnimation(isCorrect, situationId);
+    }
+  }
   window.game = {
     releaseTraffic,
     setGas(isPressed) {
@@ -15387,19 +15406,8 @@
       resolveSituationAnimation(isCorrect, situationId);
     },
     setPaused(paused) {
-      const next = Boolean(paused);
-      if (next === state.paused) return;
-      state.paused = next;
-      // The planned move (a lane change, a turn) is kept: resumed, the car
-      // carries on with it instead of going straight on.
-      if (next) { heldExit = null; heldExitDone = false; state.isAccelerating = false; state.isBraking = false; state.steering = 0; }
-      gameAudio?.setPaused(next);
-      lastTime = null;
-      if (!next && state.pendingAnswer) {
-        const [isCorrect, situationId] = state.pendingAnswer;
-        state.pendingAnswer = null;
-        resolveSituationAnimation(isCorrect, situationId);
-      }
+      hostPaused = Boolean(paused);
+      applyPaused(hostPaused || document.hidden);
     },
     // Overlays come and go (question card, pedals): the camera eases to the
     // new framing instead of jumping. The very first value is applied at once.
@@ -15452,7 +15460,7 @@
     clearMistakeHighlight
   };
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) window.game.setPaused(true);
+    applyPaused(hostPaused || document.hidden);
   });
 
   // Run init on DOM ready
