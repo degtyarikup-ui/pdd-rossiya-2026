@@ -168,7 +168,10 @@ class AuthService extends ChangeNotifier {
       }
       _isInitialized = true;
       notifyListeners();
-      await PremiumService.instance.onAuthChanged(_currentUser);
+      await PremiumService.instance.onAuthChanged(
+        _currentUser,
+        waitForSync: false,
+      );
     } catch (e) {
       debugPrint('AuthService: init error: $e');
     }

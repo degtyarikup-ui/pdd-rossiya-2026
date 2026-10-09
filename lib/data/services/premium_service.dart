@@ -164,7 +164,10 @@ class PremiumService extends ChangeNotifier {
 
   /// Вызывается при авторизации, выходе или смене аккаунта,
   /// чтобы загрузить индивидуальный счетчик карточек, лимит ИИ и статус Premium.
-  Future<void> onAuthChanged([UserProfile? user]) async {
+  Future<void> onAuthChanged(
+    UserProfile? user, {
+    bool waitForSync = true,
+  }) async {
     try {
       final changedAccount = _currentUserId != user?.id;
       _currentUserId = user?.id;
@@ -196,7 +199,12 @@ class PremiumService extends ChangeNotifier {
 
       if (user != null) {
         // Синхронизируем статус подписки аккаунта с сервером
-        await syncWithServer();
+        if (waitForSync) {
+          await syncWithServer();
+        } else {
+          // Restoring a valid local session must not wait for the network.
+          unawaited(syncWithServer());
+        }
       } else {
         // При выходе из аккаунта — сбрасываем премиум-состояние.
         // Гостевой режим не наследует подписку предыдущего пользователя.

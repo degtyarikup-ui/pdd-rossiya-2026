@@ -117,3 +117,11 @@ access token; `google_<sub>` и привязка премиума сохраня
 `GOOGLE_CLIENT_IDS`. Прежний Android fallback без списка не изменён.
 Проверки: `test/auth_provider_button_test.dart`,
 `test/auth_login_recovery_test.dart`, `test-google-web-auth.mjs`.
+
+## Восстановление сессии при запуске
+
+`AuthService.init` восстанавливает профиль и действующую локальную сессию,
+затем обновляет локальное состояние Premium. Серверная проверка Premium
+идёт в фоне (`waitForSync: false`), поэтому медленный `/api/user/sync`
+не вызывает ложный `startup.auth: timeout` после успешного входа.
+Регрессия — `test/auth_startup_sync_test.dart` с зависшим HTTP-запросом.
