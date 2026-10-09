@@ -162,6 +162,15 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
       final signedIn = await AuthModalSheet.show(context);
       if (!mounted || signedIn != true) return;
     }
+    // The test sign-in has no server session: payment needs a real account.
+    if (!AuthService.instance.hasServerSession) {
+      AppToast.show(
+        context,
+        appL10n.webPayNeedsAccount,
+        type: AppToastType.error,
+      );
+      return;
+    }
     final result = await showWebPaymentDialog(
       context: context,
       tier: _selectedTier,

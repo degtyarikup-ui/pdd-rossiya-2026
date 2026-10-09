@@ -2440,6 +2440,12 @@ abstract class AppLocalizations {
   /// **'Не удалось отправить, попробуйте ещё раз'**
   String get webPayFailed;
 
+  /// No description provided for @webPayNeedsAccount.
+  ///
+  /// In ru, this message translates to:
+  /// **'Для оплаты войдите через Google, Яндекс или Apple: тестовый вход оплату не принимает.'**
+  String get webPayNeedsAccount;
+
   /// No description provided for @webPayLiveBody.
   ///
   /// In ru, this message translates to:

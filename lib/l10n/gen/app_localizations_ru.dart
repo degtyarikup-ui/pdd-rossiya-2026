@@ -1402,6 +1402,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get webPayFailed => 'Не удалось отправить, попробуйте ещё раз';
 
   @override
+  String get webPayNeedsAccount =>
+      'Для оплаты войдите через Google, Яндекс или Apple: тестовый вход оплату не принимает.';
+
+  @override
   String get webPayLiveBody =>
       'Укажите почту для чека. Дальше откроется оплата через СБП — по QR-коду или в приложении банка. Премиум включится сразу после оплаты.';
 
