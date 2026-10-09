@@ -2965,10 +2965,10 @@ class AppLocalizationsRu extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '# заезда доступны',
-      many: '# заездов доступны',
-      few: '# заезда доступны',
-      one: '# заезд доступен',
+      other: '$count заезда доступны',
+      many: '$count заездов доступны',
+      few: '$count заезда доступны',
+      one: '$count заезд доступен',
     );
     return '$_temp0';
   }

@@ -4951,7 +4951,7 @@ abstract class AppLocalizations {
   /// No description provided for @gamesRunsAvailable.
   ///
   /// In ru, this message translates to:
-  /// **'{count, plural, one{# заезд доступен} few{# заезда доступны} many{# заездов доступны} other{# заезда доступны}}'**
+  /// **'{count, plural, one{{count} заезд доступен} few{{count} заезда доступны} many{{count} заездов доступны} other{{count} заезда доступны}}'**
   String gamesRunsAvailable(int count);
 
   /// No description provided for @avatarChoiceTitle.

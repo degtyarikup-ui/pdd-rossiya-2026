@@ -1252,7 +1252,7 @@
   "gameSignScenario5_15_1_1Explanation": "Нет. Из этой полосы разрешено только прямо. Для поворота нужно заранее занять подходящую полосу.",
   "gamesBeta": "Бета",
   "gameCityTitle": "Живой город",
-  "gamesRunsAvailable": "{count, plural, one{# заезд доступен} few{# заезда доступны} many{# заездов доступны} other{# заезда доступны}}",
+  "gamesRunsAvailable": "{count, plural, one{{count} заезд доступен} few{{count} заезда доступны} many{{count} заездов доступны} other{{count} заезда доступны}}",
   "@gamesRunsAvailable": {
     "placeholders": {
       "count": {
