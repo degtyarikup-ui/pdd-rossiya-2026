@@ -25,9 +25,13 @@ import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/home/home_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
+import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
+import 'package:pdd_app/data/services/web_oauth_redirect_stub.dart'
+    if (dart.library.js_interop) 'package:pdd_app/data/services/web_oauth_redirect.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final webAuthReturn = takeWebOAuthReturn();
 
   final previousFlutterError = FlutterError.onError;
   FlutterError.onError = (details) {
@@ -115,7 +119,7 @@ void main() async {
       overrides: [
         progressDataSourceProvider.overrideWithValue(progressDataSource),
       ],
-      child: const PddApp(),
+      child: PddApp(webAuthReturn: webAuthReturn),
     ),
   );
 }
@@ -147,17 +151,32 @@ Future<void> _initStreakNotifications(ProgressDataSource ds) async {
 }
 
 class PddApp extends ConsumerStatefulWidget {
-  const PddApp({super.key});
+  const PddApp({super.key, this.webAuthReturn});
+  final Map<String, String>? webAuthReturn;
 
   @override
   ConsumerState<PddApp> createState() => _PddAppState();
 }
 
 class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
+  final _navigatorKey = GlobalKey<NavigatorState>();
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    final returned = widget.webAuthReturn;
+    if (returned != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final navigatorContext = _navigatorKey.currentContext;
+        if (mounted && navigatorContext != null) {
+          AuthModalSheet.show(
+            navigatorContext,
+            initialAction: () =>
+                AuthService.instance.completeWebSignIn(returned),
+          );
+        }
+      });
+    }
   }
 
   @override
@@ -211,6 +230,9 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
         ? const String.fromEnvironment('SCREEN', defaultValue: 'home')
         : 'home';
     Widget getInitialWidget() {
+      if (widget.webAuthReturn != null) {
+        return const HomeScreen(initialIndex: 4);
+      }
       switch (initialScreen) {
         case 'game':
           return const HomeScreen(initialIndex: 1);
@@ -228,6 +250,7 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     }
 
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: CountryConfig.current.appTitle,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

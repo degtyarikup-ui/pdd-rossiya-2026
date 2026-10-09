@@ -19,6 +19,7 @@ import { setEntitlement } from './entitlements.js';
 import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, listPayIntents, webPaymentsLive } from './payments.js';
 import { handleAuth, authorizeUserRequest, revokeUserSessions, readSession } from './user_auth.js';
 import { handleClientIncident, deferIncident, errorCode } from './diagnostics.js';
+import { APPLE_WEB_CALLBACK_PATH, handleAppleWebCallback } from './apple_web_callback.js';
 import { premiumEventSource, isPaidPremiumEvent } from './premium_analytics.js';
 import { handleSocialAdmin, handleVideoStream, handleVideoThumb, runAutoPost } from './social.js';
 import { SOCIAL_VIEW_HTML, SOCIAL_CLIENT_JS } from './social_ui.js';
@@ -2950,6 +2951,8 @@ const workerHandlers = {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
     const url = new URL(request.url);
+
+    if (url.pathname === APPLE_WEB_CALLBACK_PATH) return handleAppleWebCallback(request);
 
     if (url.pathname === '/api/diagnostics' && request.method === 'POST') {
       const response = await handleClientIncident(request, env);

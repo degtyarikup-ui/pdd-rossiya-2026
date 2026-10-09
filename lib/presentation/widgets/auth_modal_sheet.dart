@@ -11,15 +11,19 @@ import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 
 class AuthModalSheet extends StatefulWidget {
-  const AuthModalSheet({super.key});
+  const AuthModalSheet({super.key, this.initialAction});
+  final Future<bool> Function()? initialAction;
 
-  static Future<bool?> show(BuildContext context) {
+  static Future<bool?> show(
+    BuildContext context, {
+    Future<bool> Function()? initialAction,
+  }) {
     HapticFeedbackHelper.tap();
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const AuthModalSheet(),
+      builder: (_) => AuthModalSheet(initialAction: initialAction),
     );
   }
 
@@ -30,6 +34,17 @@ class AuthModalSheet extends StatefulWidget {
 class _AuthModalSheetState extends State<AuthModalSheet> {
   bool _isLoading = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final action = widget.initialAction;
+    if (action != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _handleAuth(action);
+      });
+    }
+  }
 
   String _failureMessage() {
     final auth = AuthService.instance;

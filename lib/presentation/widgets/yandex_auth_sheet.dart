@@ -9,8 +9,8 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
-import 'package:pdd_app/presentation/widgets/yandex_web_popup_stub.dart'
-    if (dart.library.js_interop) 'package:pdd_app/presentation/widgets/yandex_web_popup.dart';
+import 'package:pdd_app/data/services/web_oauth_redirect_stub.dart'
+    if (dart.library.js_interop) 'package:pdd_app/data/services/web_oauth_redirect.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class YandexAuthResult {
@@ -24,7 +24,7 @@ class YandexAuthSheet extends StatefulWidget {
 
   static Future<YandexAuthResult?> show(BuildContext context) {
     HapticFeedbackHelper.tap();
-    // В браузере WebView нет: вход через всплывающее окно Яндекса.
+    // В браузере — переход в той же вкладке, без всплывающих окон.
     if (kIsWeb) return _signInOnWeb();
     return showModalBottomSheet<YandexAuthResult>(
       context: context,
@@ -34,9 +34,7 @@ class YandexAuthSheet extends StatefulWidget {
     );
   }
 
-  /// Веб: окно oauth.yandex.ru → `yandex-auth.html` рядом с приложением
-  /// передаёт фрагмент с токеном обратно (postMessage того же сайта).
-  /// Адрес возврата должен быть разрешён в настройках приложения Яндекс ID.
+  /// The same-tab flow works in iPhone browsers that block OAuth popups.
   static Future<YandexAuthResult?> _signInOnWeb() async {
     final state = _randomState();
     final redirect = Uri.base.resolve('yandex-auth.html').toString();
@@ -45,34 +43,12 @@ class YandexAuthSheet extends StatefulWidget {
       'client_id': AuthService.yandexClientId,
       'redirect_uri': redirect,
       'state': state,
-    }).toString();
-    final fragment = await openYandexPopup(url);
-    if (fragment == null) return null;
-    final params = Uri.splitQueryString(fragment);
-    if (params['error'] != null) {
-      if (params['error'] != 'access_denied') {
-        ErrorReporter.report(
-          ErrorCategory.auth,
-          'yandex.callback',
-          code: 'provider_rejected',
-          provider: 'yandex',
-        );
-      }
-      return null;
-    }
-    final token = params['access_token'];
-    if (params['state'] != state || token == null || token.isEmpty) {
-      ErrorReporter.report(
-        ErrorCategory.auth,
-        'yandex.callback',
-        code: 'invalid_state',
-        provider: 'yandex',
-      );
-      return null;
-    }
-    final profile = await _YandexAuthSheetState._fetchYandexProfile(token);
-    return profile == null ? null : YandexAuthResult(profile, token);
+    });
+    await startWebOAuth('yandex', url);
   }
+
+  static Future<UserProfile?> profileForToken(String token) =>
+      _YandexAuthSheetState._fetchYandexProfile(token);
 
   static String _randomState() => List.generate(
     32,

@@ -16,6 +16,9 @@ import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/presentation/widgets/yandex_auth_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:pdd_app/data/services/web_oauth_state.dart';
+import 'package:pdd_app/data/services/web_oauth_redirect_stub.dart'
+    if (dart.library.js_interop) 'package:pdd_app/data/services/web_oauth_redirect.dart';
 
 enum AuthFailure {
   cancelled,
@@ -290,6 +293,21 @@ class AuthService extends ChangeNotifier {
   Future<bool> signInWithApple() async {
     _beginSignIn('apple');
     try {
+      if (kIsWeb) {
+        final state = newWebOAuthState();
+        await startWebOAuth(
+          'apple',
+          Uri.https('appleid.apple.com', '/auth/authorize', {
+            'client_id': 'ru.pdd.pddapp.auth',
+            'redirect_uri': '${BackendConfig.notifierUrl}/auth/apple/callback',
+            'response_type': 'code id_token',
+            'response_mode': 'form_post',
+            'scope': 'name email',
+            'state': state,
+            'nonce': newWebOAuthState(),
+          }),
+        );
+      }
       final AuthorizationCredentialAppleID credential;
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
         credential = await SignInWithApple.getAppleIDCredential(
@@ -313,74 +331,133 @@ class AuthService extends ChangeNotifier {
         );
       }
 
-      // The web popup flow returns no userIdentifier: the token's `sub` is the
-      // same Apple user id (the server verifies it and keys the account by it).
-      final userIdentifier =
-          credential.userIdentifier ??
-          jwtClaim(credential.identityToken, 'sub') ??
-          '';
-      if (userIdentifier.isEmpty || credential.identityToken == null) {
-        lastFailure = AuthFailure.provider;
-        ErrorReporter.report(
-          ErrorCategory.auth,
-          'auth.provider',
-          code: 'missing_credential',
-          provider: 'apple',
-        );
+      return await _completeAppleSignIn(credential);
+    } catch (e) {
+      _recordSignInError(e);
+      return false;
+    }
+  }
+
+  Future<bool> _completeAppleSignIn(
+    AuthorizationCredentialAppleID credential,
+  ) async {
+    // The web flow returns no userIdentifier: the token's `sub` is the
+    // same Apple user id (the server verifies it and keys the account by it).
+    final userIdentifier =
+        credential.userIdentifier ??
+        jwtClaim(credential.identityToken, 'sub') ??
+        '';
+    if (userIdentifier.isEmpty || credential.identityToken == null) {
+      lastFailure = AuthFailure.provider;
+      ErrorReporter.report(
+        ErrorCategory.auth,
+        'auth.provider',
+        code: 'missing_credential',
+        provider: 'apple',
+      );
+      return false;
+    }
+    final prefs = await SharedPreferences.getInstance();
+
+    // 1. Имя пользователя (Apple возвращает fullName только при первом входе)
+    String? rawName = [
+      credential.givenName,
+      credential.familyName,
+    ].where((s) => s != null && s.trim().isNotEmpty).join(' ').trim();
+    if (rawName.isNotEmpty && userIdentifier.isNotEmpty) {
+      await prefs.setString('apple_name_$userIdentifier', rawName);
+    } else if (rawName.isEmpty && userIdentifier.isNotEmpty) {
+      rawName = prefs.getString('apple_name_$userIdentifier') ?? '';
+    }
+
+    // 2. Email пользователя (из credential, JWT identityToken или кэша)
+    String? email = credential.email?.trim();
+    if (email == null || email.isEmpty) {
+      email = _extractEmailFromJwt(credential.identityToken);
+    }
+    if (email != null && email.isNotEmpty && userIdentifier.isNotEmpty) {
+      await prefs.setString('apple_email_$userIdentifier', email);
+    } else if ((email == null || email.isEmpty) && userIdentifier.isNotEmpty) {
+      email = prefs.getString('apple_email_$userIdentifier') ?? '';
+    }
+
+    // 3. Формирование отображаемого имени
+    String displayName = rawName.isNotEmpty ? rawName : '';
+    if (displayName.isEmpty) {
+      if (email != null &&
+          email.isNotEmpty &&
+          !email.contains('privaterelay')) {
+        final prefix = email.split('@').first;
+        displayName = prefix.isNotEmpty
+            ? prefix[0].toUpperCase() + prefix.substring(1)
+            : 'Apple ID';
+      } else {
+        displayName = 'Apple ID';
+      }
+    }
+
+    final finalEmail = email ?? '';
+
+    final profile = UserProfile(
+      id: 'apple_$userIdentifier',
+      name: displayName,
+      email: finalEmail,
+      avatarUrl: null,
+      provider: AuthProviderType.apple,
+      createdAt: DateTime.now(),
+    );
+
+    return await _completeSignIn(profile, credential.identityToken);
+  }
+
+  Future<bool> completeWebSignIn(Map<String, String> params) async {
+    final provider = params['provider'] ?? 'unknown';
+    _beginSignIn(provider);
+    try {
+      if (params['error'] != null) {
+        lastFailure = params['error'] == 'access_denied'
+            ? AuthFailure.cancelled
+            : params['error'] == 'invalid_state'
+            ? AuthFailure.response
+            : AuthFailure.provider;
         return false;
       }
-      final prefs = await SharedPreferences.getInstance();
-
-      // 1. Имя пользователя (Apple возвращает fullName только при первом входе)
-      String? rawName = [
-        credential.givenName,
-        credential.familyName,
-      ].where((s) => s != null && s.trim().isNotEmpty).join(' ').trim();
-      if (rawName.isNotEmpty && userIdentifier.isNotEmpty) {
-        await prefs.setString('apple_name_$userIdentifier', rawName);
-      } else if (rawName.isEmpty && userIdentifier.isNotEmpty) {
-        rawName = prefs.getString('apple_name_$userIdentifier') ?? '';
-      }
-
-      // 2. Email пользователя (из credential, JWT identityToken или кэша)
-      String? email = credential.email?.trim();
-      if (email == null || email.isEmpty) {
-        email = _extractEmailFromJwt(credential.identityToken);
-      }
-      if (email != null && email.isNotEmpty && userIdentifier.isNotEmpty) {
-        await prefs.setString('apple_email_$userIdentifier', email);
-      } else if ((email == null || email.isEmpty) &&
-          userIdentifier.isNotEmpty) {
-        email = prefs.getString('apple_email_$userIdentifier') ?? '';
-      }
-
-      // 3. Формирование отображаемого имени
-      String displayName = rawName.isNotEmpty ? rawName : '';
-      if (displayName.isEmpty) {
-        if (email != null &&
-            email.isNotEmpty &&
-            !email.contains('privaterelay')) {
-          final prefix = email.split('@').first;
-          displayName = prefix.isNotEmpty
-              ? prefix[0].toUpperCase() + prefix.substring(1)
-              : 'Apple ID';
-        } else {
-          displayName = 'Apple ID';
+      if (provider == 'apple') {
+        final token = params['id_token'];
+        final nonce = params['expected_nonce'];
+        if (nonce == null ||
+            nonce.isEmpty ||
+            jwtClaim(token, 'nonce') != nonce) {
+          lastFailure = AuthFailure.response;
+          return false;
         }
+        return await _completeAppleSignIn(
+          AuthorizationCredentialAppleID(
+            authorizationCode: params['code'] ?? '',
+            identityToken: token,
+            userIdentifier: null,
+            givenName: params['firstName'],
+            familyName: params['lastName'],
+            email: null,
+            state: params['state'],
+          ),
+        );
       }
-
-      final finalEmail = email ?? '';
-
-      final profile = UserProfile(
-        id: 'apple_$userIdentifier',
-        name: displayName,
-        email: finalEmail,
-        avatarUrl: null,
-        provider: AuthProviderType.apple,
-        createdAt: DateTime.now(),
-      );
-
-      return await _completeSignIn(profile, credential.identityToken);
+      if (provider == 'yandex') {
+        final token = params['access_token'];
+        if (token == null || token.isEmpty) {
+          lastFailure = AuthFailure.provider;
+          return false;
+        }
+        final profile = await YandexAuthSheet.profileForToken(token);
+        if (profile == null) {
+          lastFailure = AuthFailure.provider;
+          return false;
+        }
+        return await _completeSignIn(profile, token);
+      }
+      lastFailure = AuthFailure.response;
+      return false;
     } catch (e) {
       _recordSignInError(e);
       return false;
