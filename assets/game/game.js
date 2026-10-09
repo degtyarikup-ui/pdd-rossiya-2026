@@ -14004,7 +14004,10 @@
     // A question waits on a standing car: on a weak phone that still picture
     // is drawn at 30 FPS (blinkers and walkers look the same), half the work.
     const still = Math.abs(state.speed || 0) < 0.05 && (state.isAtSituation || state.roadEvent?.phase === 'question');
-    if ((state.weak || quality.struggling) && still && elapsed < 0.03) return;
+    // lastTime is null right after a pause/resume (elapsed reads 0). Skipping
+    // then would leave it null: every later frame would read 0 too and be
+    // skipped for good, freezing the engine at a question on a weak phone.
+    if (lastTime !== null && (state.weak || quality.struggling) && still && elapsed < 0.03) return;
     processSceneryJobs(elapsed>.035?1:3);
     // The release after a violation runs on its own clock: it used to tick
     // inside updatePlayerMovement only, which is skipped at a question and
