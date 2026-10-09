@@ -6,7 +6,8 @@
 <title>Вход через Яндекс</title>
 </head>
 <body style="font-family:system-ui,sans-serif;padding:24px">
-<p>Вход выполнен, окно можно закрыть.</p>
+<p>Возвращаемся в ПДД…</p>
+<a href="./?oauth=2">Вернуться в ПДД</a>
 <script>
 // Возврат из oauth.yandex.ru: токен приходит во фрагменте адреса и
 // передаётся приложению (окну того же сайта, которое открыло это).
@@ -17,7 +18,7 @@
     window.opener.postMessage({ type: 'yandex-oauth', fragment: fragment }, location.origin);
     window.close();
   } else if (fragment) {
-    location.replace('./#pdd-oauth=' + encodeURIComponent('provider=yandex&' + fragment));
+    location.replace('./?oauth=2#pdd-oauth=' + encodeURIComponent('provider=yandex&' + fragment));
   }
 })();
 </script>
