@@ -430,9 +430,11 @@
       window.PDD_ROADS.attach(renderer, { roots: () => [envGroup], lineage: () => null });
     }
 
-    // Инициализация погодных эффектов и случайный стартовый выбор погоды
+    // Инициализация погодных эффектов (по умолчанию ясно, затем ротация)
     ensureWeatherFx();
-    setWeather(pickNextWeather(), true);
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialWeather = urlParams.get('weather') || 'clear';
+    setWeather(initialWeather, true);
 
     // Обработчики событий
     window.addEventListener('resize', onWindowResize);
@@ -696,7 +698,7 @@
   }
 
   function buildCityDecor(parent) {
-    // 1. Фонарные столбы по 4 углам перекрестка
+    // 1. Фонарные столбы по 4 углам перекрестка и вдоль улиц
     if (window.PDD_STREET && window.PDD_STREET.createLampPost) {
       const corners = [[-1, -1], [1, -1], [-1, 1], [1, 1]];
       corners.forEach(([sx, sz]) => {
@@ -705,49 +707,110 @@
         lamp.rotation.y = Math.atan2(-sz, sx);
         parent.add(lamp);
       });
-    }
 
-    // 2. Деревья по тротуарам
-    const treeMat = new THREE.MeshLambertMaterial({ color: season.canopy[0] });
-    const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5D4534 });
-
-    for (const dir of [-1, 1]) {
-      for (const dist of [18, 30, 44]) {
-        [[-1, 1], [1, 1], [-1, -1], [1, -1]].forEach(([sx, sz]) => {
-          const tree = new THREE.Group();
-          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.24, 2.4, 8), trunkMat);
-          trunk.position.y = 1.2;
-          trunk.castShadow = true;
-          tree.add(trunk);
-
-          const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(1.6, 1), treeMat);
-          crown.position.y = 2.9;
-          crown.castShadow = true;
-          tree.add(crown);
-
-          tree.position.set(sx * (HALF_ROAD + 3.8), 0.16, sz * (HALF_ROAD + dist));
-          parent.add(tree);
+      // Фонари вдоль улиц
+      for (const dist of [24, 48, 72]) {
+        [-1, 1].forEach(sx => {
+          const l = window.PDD_STREET.createLampPost();
+          l.position.set(sx * (HALF_ROAD + 1.8), 0.16, -dist);
+          l.rotation.y = sx > 0 ? -Math.PI / 2 : Math.PI / 2;
+          parent.add(l);
+        });
+        [-1, 1].forEach(sz => {
+          const l = window.PDD_STREET.createLampPost();
+          l.position.set(-dist, 0.16, sz * (HALF_ROAD + 1.8));
+          l.rotation.y = sz > 0 ? 0 : Math.PI;
+          parent.add(l);
+        });
+        [-1, 1].forEach(sz => {
+          const l = window.PDD_STREET.createLampPost();
+          l.position.set(dist, 0.16, sz * (HALF_ROAD + 1.8));
+          l.rotation.y = sz > 0 ? 0 : Math.PI;
+          parent.add(l);
         });
       }
     }
 
-    // 3. Реалистичные городские здания на заднем плане (только в безопасных для обзора секторах)
+    // 2. Деревья по тротуарам (двухуровневые пышные кроны с сезонными оттенками + кора)
+    const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5D4534 });
+    const canopyColors = (season.canopy && season.canopy.length >= 2)
+      ? [season.canopy[0], season.canopy[1]]
+      : [0xDE9B26, 0xCA5E2A];
+    const leafMats = [
+      new THREE.MeshLambertMaterial({ color: canopyColors[0] }),
+      new THREE.MeshLambertMaterial({ color: canopyColors[1] }),
+    ];
+
+    function createStreetTree(x, z, s = 1.0) {
+      const tree = new THREE.Group();
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16 * s, 0.25 * s, 2.6 * s, 8), trunkMat);
+      trunk.position.y = 1.3 * s;
+      trunk.castShadow = true;
+      if (window.PDD_ROADS && window.PDD_ROADS.skinObject) {
+        window.PDD_ROADS.skinObject(trunk, 'bark');
+      }
+      tree.add(trunk);
+
+      // Нижняя пышная крона
+      const crownBig = new THREE.Mesh(new THREE.DodecahedronGeometry(1.65 * s, 1), leafMats[0]);
+      crownBig.position.y = 3.2 * s;
+      crownBig.castShadow = true;
+      if (window.PDD_ROADS && window.PDD_ROADS.skinObject) {
+        window.PDD_ROADS.skinObject(crownBig, 'leaves');
+      }
+      tree.add(crownBig);
+
+      // Верхняя крона со вторым оттенком
+      const crownTop = new THREE.Mesh(new THREE.DodecahedronGeometry(1.2 * s, 1), leafMats[1]);
+      crownTop.position.set(0.28 * s, 4.3 * s, 0.18 * s);
+      crownTop.castShadow = true;
+      if (window.PDD_ROADS && window.PDD_ROADS.skinObject) {
+        window.PDD_ROADS.skinObject(crownTop, 'leaves');
+      }
+      tree.add(crownTop);
+
+      tree.position.set(x, 0.16, z);
+      parent.add(tree);
+    }
+
+    // Высаживаем деревья вдоль тротуаров
+    const treeDists = [16, 28, 42, 56, 70, 84];
+    treeDists.forEach((dist, idx) => {
+      const scale = 0.95 + (idx % 3) * 0.12;
+      // Вдоль северной улицы (видны в перспективе по центру экрана)
+      [-1, 1].forEach(sx => createStreetTree(sx * (HALF_ROAD + 3.4), -dist, scale));
+      // Вдоль западной улицы
+      [-1, 1].forEach(sz => createStreetTree(-dist, sz * (HALF_ROAD + 3.4), scale));
+      // Вдоль восточной улицы
+      [-1, 1].forEach(sz => createStreetTree(dist, sz * (HALF_ROAD + 3.4), scale));
+      // Вдоль южной улицы
+      if (dist <= 42) {
+        [-1, 1].forEach(sx => createStreetTree(sx * (HALF_ROAD + 3.4), dist, scale));
+      }
+    });
+
+    // 3. Реалистичные городские здания на заднем плане (красный кирпич, панели, окна, маркизы)
     buildDetailedBuildings(parent);
+    buildSkyline(parent);
   }
 
   function buildDetailedBuildings(parent) {
-    const buildingColors = [0xF2F4F8, 0xE5E9F0, 0xD8DEE9, 0xB48270, 0xA9B4C2];
     const roofMat = new THREE.MeshLambertMaterial({ color: season.roof ?? 0x94A3B8 });
-    const winMat = new THREE.MeshBasicMaterial({ color: 0x64748B });
+    const winMat = new THREE.MeshBasicMaterial({ color: 0x708995 });
+    const awningMats = [0xE0533F, 0x2F6F9F, 0x3E8E5E, 0xD9A441].map(
+      c => new THREE.MeshLambertMaterial({ color: c })
+    );
 
-    function createHouse(w, h, d, x, y, z, rotY = 0) {
+    function createHouse(w, h, d, x, y, z, rotY = 0, forcedKind, forcedColor) {
       const group = new THREE.Group();
       group.position.set(x, y, z);
       group.rotation.y = rotY;
 
-      // Корпус здания
-      const color = buildingColors[Math.abs(Math.round(x + z)) % buildingColors.length];
-      const kind = color === 0xB48270 ? 'brick' : (Math.random() < 0.5 ? 'plaster' : 'panel');
+      const brickColor = 0xB5675A;
+      const palette = [brickColor, 0x8F9AA6, brickColor, 0xC6CCD8, 0x937F6A, 0xE9ECF2];
+      const color = forcedColor ?? palette[Math.abs(Math.round(x * 3 + z * 5)) % palette.length];
+      const kind = forcedKind ?? (color === brickColor ? 'brick' : (Math.abs(Math.round(x + z)) % 3 === 0 ? 'plaster' : 'panel'));
+
       const bodyMat = new THREE.MeshLambertMaterial({ color });
       const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bodyMat);
       body.position.y = h / 2;
@@ -758,17 +821,17 @@
       }
       group.add(body);
 
-      // Парапет / кровля
-      const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.4, d + 0.3), roofMat);
+      // Кровля / парапет
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 0.4, 0.4, d + 0.4), roofMat);
       roof.position.y = h + 0.2;
       if (window.PDD_ROADS && window.PDD_ROADS.skinObject) {
         window.PDD_ROADS.skinObject(roof, 'roofFlat');
       }
       group.add(roof);
 
-      // Ряды окон на главном фасаде (к улице)
-      const winGeo = new THREE.PlaneGeometry(1.1, 1.3);
-      for (let wy = 2.4; wy < h - 1.2; wy += 2.6) {
+      // Окна на главном фасаде (+Z)
+      const winGeo = new THREE.PlaneGeometry(1.15, 1.35);
+      for (let wy = 2.4; wy < h - 1.2; wy += 2.7) {
         for (let wx = -w / 2 + 1.4; wx <= w / 2 - 1.4; wx += 2.1) {
           const win = new THREE.Mesh(winGeo, winMat);
           win.position.set(wx, wy, d / 2 + 0.02);
@@ -777,44 +840,94 @@
           }
           group.add(win);
         }
+        // Окна на боковых фасадах (+X и -X)
+        for (const side of [-1, 1]) {
+          for (let wz = -d / 2 + 1.4; wz <= d / 2 - 1.4; wz += 2.1) {
+            const winSide = new THREE.Mesh(winGeo, winMat);
+            winSide.position.set(side * (w / 2 + 0.02), wy, wz);
+            winSide.rotation.y = side * Math.PI / 2;
+            if (window.PDD_ROADS && window.PDD_ROADS.skinObject) {
+              window.PDD_ROADS.skinObject(winSide, 'window');
+            }
+            group.add(winSide);
+          }
+        }
       }
+
+      // Магазинный козырек / маркиза на первом этаже
+      if (kind !== 'plaster') {
+        const awningMat = awningMats[Math.abs(Math.round(x + z)) % awningMats.length];
+        const awning = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w - 2, 7.5), 0.08, 1.1), awningMat);
+        awning.position.set(0, 2.65, d / 2 + 0.55);
+        awning.rotation.x = 0.28;
+        group.add(awning);
+      }
+
       parent.add(group);
     }
 
-    // Дома на севере (вдоль северного проспекта): NW и NE квадранты
-    [-1, 1].forEach(side => {
-      for (let along = HALF_ROAD + 18; along < 95; along += 22) {
-        const w = 18, d = 14, h = 18 + (along % 14);
-        createHouse(w, h, d, side * (HALF_ROAD + 15), 0, -along, side > 0 ? -Math.PI / 2 : Math.PI / 2);
-      }
-    });
+    const BRICK = 0xB5675A;
+    const PANEL = 0x8F9AA6;
+    const PANEL_LIGHT = 0xC6CCD8;
+    const STONE = 0x937F6A;
 
-    // Дома вдоль поперечной улицы (Запад и Восток)
-    [-1, 1].forEach(side => {
-      for (let along = HALF_ROAD + 18; along < 80; along += 24) {
-        const w = 20, d = 14, h = 16 + (along % 10);
-        // Задняя линия (северная сторона улицы)
-        createHouse(w, h, d, side * along, 0, -(HALF_ROAD + 15), 0);
-      }
-    });
+    // 1. СЕВЕРО-ЗАПАДНЫЙ УГОЛ (NW) — прямо перед камерой слева (в точности как на скриншоте!)
+    // Главное высотное здание из красного кирпича
+    createHouse(22, 28, 16, -(HALF_ROAD + 16), 0, -(HALF_ROAD + 18), 0, 'brick', BRICK);
+    // Здания рядом вдоль западной улицы
+    createHouse(20, 22, 16, -(HALF_ROAD + 38), 0, -(HALF_ROAD + 18), 0, 'panel', PANEL);
+    createHouse(20, 26, 16, -(HALF_ROAD + 60), 0, -(HALF_ROAD + 18), 0, 'brick', BRICK);
 
-    // В дальнем юге (позади камеры, z > 68): фоновые высотки
-    [-1, 1].forEach(side => {
-      createHouse(20, 24, 16, side * (HALF_ROAD + 18), 0, 75, side > 0 ? -Math.PI / 2 : Math.PI / 2);
-    });
+    // Здания вдоль северной улицы (западная сторона)
+    createHouse(18, 32, 18, -(HALF_ROAD + 16), 0, -(HALF_ROAD + 40), -Math.PI / 2, 'brick', BRICK);
+    createHouse(20, 36, 18, -(HALF_ROAD + 16), 0, -(HALF_ROAD + 62), -Math.PI / 2, 'panel', PANEL_LIGHT);
+    createHouse(20, 30, 18, -(HALF_ROAD + 16), 0, -(HALF_ROAD + 84), -Math.PI / 2, 'brick', BRICK);
 
-    // В ближнем правом секторе (SE перед камерой) — аккуратный зеленый сквер/газон:
+    // 2. СЕВЕРО-ВОСТОЧНЫЙ УГОЛ (NE) — справа за перекрестком
+    createHouse(20, 25, 16, HALF_ROAD + 16, 0, -(HALF_ROAD + 18), 0, 'panel', PANEL);
+    createHouse(18, 28, 18, HALF_ROAD + 16, 0, -(HALF_ROAD + 40), Math.PI / 2, 'brick', BRICK);
+    createHouse(20, 34, 18, HALF_ROAD + 16, 0, -(HALF_ROAD + 62), Math.PI / 2, 'brick', BRICK);
+    createHouse(18, 26, 18, HALF_ROAD + 16, 0, -(HALF_ROAD + 84), Math.PI / 2, 'panel', PANEL_LIGHT);
+
+    // Вдоль восточной улицы (северная сторона)
+    createHouse(20, 22, 16, HALF_ROAD + 38, 0, -(HALF_ROAD + 18), 0, 'brick', BRICK);
+    createHouse(20, 26, 16, HALF_ROAD + 60, 0, -(HALF_ROAD + 18), 0, 'panel', STONE);
+
+    // 3. ЮГО-ЗАПАДНЫЙ УГОЛ (SW) — слева внизу
+    createHouse(20, 20, 16, -(HALF_ROAD + 18), 0, HALF_ROAD + 18, Math.PI / 2, 'brick', BRICK);
+    createHouse(20, 18, 16, -(HALF_ROAD + 40), 0, HALF_ROAD + 18, 0, 'panel', PANEL);
+
+    // 4. ЮЖНЫЙ ПЛАН (позади камеры, закрывает горизонт)
+    createHouse(24, 26, 16, -(HALF_ROAD + 18), 0, 75, -Math.PI / 2, 'brick', BRICK);
+    createHouse(24, 26, 16, HALF_ROAD + 18, 0, 75, Math.PI / 2, 'panel', PANEL);
+
+    // В ближнем правом секторе (SE перед камерой) — аккуратный зеленый сквер/газон
     const parkLawn = new THREE.Mesh(
-      new THREE.PlaneGeometry(32, 32),
+      new THREE.PlaneGeometry(36, 36),
       new THREE.MeshLambertMaterial({ color: season.ground })
     );
     parkLawn.rotation.x = -Math.PI / 2;
-    parkLawn.position.set(HALF_ROAD + 18, 0.04, HALF_ROAD + 18);
+    parkLawn.position.set(HALF_ROAD + 20, 0.04, HALF_ROAD + 20);
     parkLawn.receiveShadow = true;
     if (window.PDD_ROADS && window.PDD_ROADS.skinObject) {
       window.PDD_ROADS.skinObject(parkLawn, 'grass');
     }
     parent.add(parkLawn);
+  }
+
+  // Дальний силуэт города на горизонте
+  function buildSkyline(parent) {
+    const mat = new THREE.MeshLambertMaterial({ color: 0x9BAEC0 });
+    const count = 38;
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2;
+      const r = 210 + (i % 4) * 20;
+      const w = 24 + (i % 5) * 6, h = 32 + (i % 7) * 8, d = 20;
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+      b.position.set(Math.cos(a) * r, h / 2, Math.sin(a) * r);
+      b.rotation.y = -a;
+      parent.add(b);
+    }
   }
 
   function buildPedestrians(parent) {

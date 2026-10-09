@@ -52,50 +52,7 @@
       group.add(vStripe);
     });
 
-    // Обозначение «ДПС» на спине жилета (сзади регулировщика)
-    const dpsMat = new THREE.MeshLambertMaterial({ color: 0x1E3A8A });
-    const backStripe = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.12, 0.012), stripeSilver);
-    backStripe.position.set(0, 1.38, -0.158);
-    group.add(backStripe);
 
-    // Буква Д (+0.08 в локальных координатах — при повороте спиной оказывается слева для читателя)
-    const dGroup = new THREE.Group();
-    dGroup.position.set(0.08, 1.38, -0.165);
-    const dTop = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.008, 0.006), dpsMat);
-    dTop.position.set(0, 0.032, 0); dGroup.add(dTop);
-    const dLeft = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.038, 0.006), dpsMat);
-    dLeft.position.set(-0.012, 0.012, 0); dGroup.add(dLeft);
-    const dRight = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.038, 0.006), dpsMat);
-    dRight.position.set(0.012, 0.012, 0); dGroup.add(dRight);
-    const dMid = new THREE.Mesh(new THREE.BoxGeometry(0.044, 0.008, 0.006), dpsMat);
-    dMid.position.set(0, -0.012, 0); dGroup.add(dMid);
-    const dLegL = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.016, 0.006), dpsMat);
-    dLegL.position.set(-0.018, -0.024, 0); dGroup.add(dLegL);
-    const dLegR = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.016, 0.006), dpsMat);
-    dLegR.position.set(0.018, -0.024, 0); dGroup.add(dLegR);
-    group.add(dGroup);
-
-    // Буква П (0.0)
-    const pGroup = new THREE.Group();
-    pGroup.position.set(0, 1.38, -0.165);
-    const pTop = new THREE.Mesh(new THREE.BoxGeometry(0.036, 0.008, 0.006), dpsMat);
-    pTop.position.set(0, 0.032, 0); pGroup.add(pTop);
-    const pLeft = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.060, 0.006), dpsMat);
-    pLeft.position.set(-0.014, -0.002, 0); pGroup.add(pLeft);
-    const pRight = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.060, 0.006), dpsMat);
-    pRight.position.set(0.014, -0.002, 0); pGroup.add(pRight);
-    group.add(pGroup);
-
-    // Буква С (-0.08 в локальных координатах — при повороте спиной оказывается справа для читателя)
-    const sGroup = new THREE.Group();
-    sGroup.position.set(-0.08, 1.38, -0.165);
-    const sLeft = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.060, 0.006), dpsMat);
-    sLeft.position.set(0.014, -0.002, 0); sGroup.add(sLeft);
-    const sTop = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.008, 0.006), dpsMat);
-    sTop.position.set(-0.004, 0.032, 0); sGroup.add(sTop);
-    const sBot = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.008, 0.006), dpsMat);
-    sBot.position.set(-0.004, -0.028, 0); sGroup.add(sBot);
-    group.add(sGroup);
 
     // Neck & Shirt Collar (воротничок форменной рубашки и галстук ДПС)
     const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.085, 0.12, 8), skinMat);
