@@ -30,7 +30,8 @@
   // --- Переменные сцены ---
   let scene, camera, renderer, container;
   let envGroup, vehiclesGroup, signsGroup, fxGroup;
-  let skyDome, sunLight;
+  let skyDome, sunLight, ambientLight;
+  let cachedRoadMat = null, cachedWalkMat = null;
   let clock = new THREE.Clock();
 
   // Окружение по сезону
@@ -66,46 +67,295 @@
   let activeFx = []; // активные частицы и спецэффекты
   let activeSigns = [];
 
+  // --- Погодная система (процедурная симуляция: ясно, дождь, туман) ---
+  const WEATHERS = ['clear', 'rain', 'fog'];
+  let currentTargetWeather = 'clear';
+  let curRain = 0, curFog = 0, curOvercast = 0;
+  let weatherAutoTimer = 45 + Math.random() * 30;
+  let weatherFx = null;
+
+  function pickNextWeather() {
+    const pool = WEATHERS.filter(w => w !== currentTargetWeather);
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function setWeather(kind, immediate) {
+    if (!WEATHERS.includes(kind)) return;
+    currentTargetWeather = kind;
+    if (immediate) {
+      curRain = kind === 'rain' ? 1 : 0;
+      curFog = kind === 'fog' ? 1 : 0;
+      curOvercast = kind === 'clear' ? 0 : (kind === 'rain' ? 1 : 0.85);
+      applyWeather(0);
+    }
+    notifyFlutter({ type: 'weather_changed', weather: currentTargetWeather });
+  }
+
+  function ensureWeatherFx() {
+    if (weatherFx) return weatherFx;
+
+    const isWeak = !!weak;
+    const dropCount = isWeak ? 1000 : 2100;
+    const dropPositions = new Float32Array(dropCount * 2 * 3);
+    const drops = [];
+
+    const nearCount = Math.floor(dropCount * 0.22);
+    const midCount = Math.floor(dropCount * 0.42);
+    const farCount = dropCount - nearCount - midCount;
+
+    // 1. Ближний план: капли перед камерой с параллаксом
+    for (let i = 0; i < nearCount; i++) {
+      drops.push({
+        x: (Math.random() - 0.5) * 26,
+        y: Math.random() * 26,
+        z: 4 + Math.random() * 24,
+        speed: 15.0 + Math.random() * 3.5,
+        len: 1.2 + Math.random() * 0.6,
+        layer: 'near',
+      });
+    }
+
+    // 2. Средний план: капли над перекрёстком и автомобилями
+    for (let i = 0; i < midCount; i++) {
+      drops.push({
+        x: (Math.random() - 0.5) * 52,
+        y: Math.random() * 28,
+        z: (Math.random() - 0.5) * 44,
+        speed: 14.0 + Math.random() * 3.0,
+        len: 0.75 + Math.random() * 0.35,
+        layer: 'mid',
+      });
+    }
+
+    // 3. Дальний план: мягкая плотная сетка дождя на фоне зданий
+    for (let i = 0; i < farCount; i++) {
+      drops.push({
+        x: (Math.random() - 0.5) * 88,
+        y: Math.random() * 30,
+        z: -12 - Math.random() * 45,
+        speed: 12.8 + Math.random() * 2.8,
+        len: 0.45 + Math.random() * 0.25,
+        layer: 'far',
+      });
+    }
+
+    const rainGeo = new THREE.BufferGeometry();
+    rainGeo.setAttribute('position', new THREE.BufferAttribute(dropPositions, 3));
+    const rainMat = new THREE.LineBasicMaterial({
+      color: 0xB2C6D8,
+      transparent: true,
+      opacity: 0,
+    });
+    const rainLines = new THREE.LineSegments(rainGeo, rainMat);
+    rainLines.frustumCulled = false;
+    scene.add(rainLines);
+
+    weatherFx = {
+      rainLines,
+      drops,
+      dropCount,
+      headlights: [],
+    };
+    return weatherFx;
+  }
+
+  function attachCarHeadlights(carMesh) {
+    if (!carMesh) return;
+    ensureWeatherFx();
+    if (carMesh.userData.headlightsAttached) return;
+    carMesh.userData.headlightsAttached = true;
+
+    // 1. Светящиеся линзы фар на переднем бампере
+    const lensMat = new THREE.MeshBasicMaterial({ color: 0xFFFEE8, transparent: true, opacity: 0 });
+    const lensL = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.12, 0.04), lensMat);
+    lensL.position.set(0.55, 0.65, 2.15);
+    carMesh.add(lensL);
+
+    const lensR = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.12, 0.04), lensMat);
+    lensR.position.set(-0.55, 0.65, 2.15);
+    carMesh.add(lensR);
+
+    // 2. Мягкий рассеянный свет фар
+    const spot = new THREE.SpotLight(0xFFF5DD, 0, 30, Math.PI / 4.0, 0.95, 1.2);
+    spot.position.set(0, 0.70, 2.10);
+    const spotTarget = new THREE.Object3D();
+    spotTarget.position.set(0, 0, 16.0);
+    spot.target = spotTarget;
+    carMesh.add(spot);
+    carMesh.add(spotTarget);
+
+    weatherFx.headlights.push({ car: carMesh, lensMat, spot });
+  }
+
+  function applyWeather(dt) {
+    if (!weatherFx) return;
+
+    const targetRain = currentTargetWeather === 'rain' ? 1 : 0;
+    const targetFog = currentTargetWeather === 'fog' ? 1 : 0;
+    const targetOvercast = currentTargetWeather === 'clear' ? 0 : (currentTargetWeather === 'rain' ? 1 : 0.85);
+
+    const k = Math.min(1, dt * 0.22);
+    curRain += (targetRain - curRain) * k;
+    curFog += (targetFog - curFog) * k;
+    curOvercast += (targetOvercast - curOvercast) * k;
+
+    // 1. Цвет неба и атмосфера
+    const clearSky = new THREE.Color(season.sky);
+    const rainSky = new THREE.Color(0x8E9CA8);
+    const fogSky = new THREE.Color(0xC2CCD5);
+
+    scene.background.copy(clearSky).lerp(rainSky, curRain).lerp(fogSky, curFog);
+
+    if (skyDome && skyDome.material && skyDome.material.uniforms) {
+      skyDome.material.uniforms.horizon.value.copy(scene.background);
+      skyDome.material.uniforms.zenith.value.copy(scene.background).lerp(new THREE.Color(0x76A3D4), 0.45 * (1 - curOvercast));
+      skyDome.material.uniforms.cloud.value = 0.45 + 0.5 * curOvercast;
+    }
+
+    if (scene.fog) {
+      scene.fog.color.copy(scene.background);
+      const targetNear = THREE.MathUtils.lerp(120, THREE.MathUtils.lerp(45, 26, curFog), Math.max(curRain, curFog));
+      const targetFar = THREE.MathUtils.lerp(330, THREE.MathUtils.lerp(180, 110, curFog), Math.max(curRain, curFog));
+      scene.fog.near = targetNear;
+      scene.fog.far = targetFar;
+    }
+
+    // 2. Освещение
+    if (ambientLight) {
+      ambientLight.intensity = THREE.MathUtils.lerp(season.ambient, 0.62, curRain * 0.85 + curFog * 0.45);
+    }
+    if (sunLight) {
+      const sunInt = THREE.MathUtils.lerp(season.sunIntensity, THREE.MathUtils.lerp(0.20, 0.08, curFog), Math.max(curRain, curFog));
+      sunLight.intensity = sunInt;
+      sunLight.color.setHex(season.sun).lerp(new THREE.Color(0xCCD8E4), Math.max(curRain, curFog));
+    }
+
+    // 3. Потемнение мокрого асфальта и тротуаров
+    if (cachedRoadMat) {
+      const dryAsphalt = new THREE.Color(BRAND.asphalt);
+      const wetAsphalt = new THREE.Color(0x181A20);
+      cachedRoadMat.color.copy(dryAsphalt).lerp(wetAsphalt, curRain * 0.90 + curFog * 0.25);
+    }
+    if (cachedWalkMat) {
+      const dryWalk = new THREE.Color(season.sidewalk);
+      const wetWalk = new THREE.Color(season.sidewalk).multiplyScalar(0.72);
+      cachedWalkMat.color.copy(dryWalk).lerp(wetWalk, curRain * 0.35 + curFog * 0.15);
+    }
+
+    // 4. Дождь
+    if (curRain > 0.01) {
+      weatherFx.rainLines.visible = true;
+      weatherFx.rainLines.material.opacity = curRain * 0.62;
+      const pos = weatherFx.rainLines.geometry.attributes.position.array;
+      let ptr = 0;
+      const windX = 1.1;
+      const windZ = -1.5;
+      weatherFx.drops.forEach(d => {
+        d.y -= d.speed * dt;
+        d.x += windX * dt;
+        d.z += windZ * dt;
+        if (d.y < 0) {
+          d.y = 22 + Math.random() * 4;
+          if (d.layer === 'near') {
+            d.x = (Math.random() - 0.5) * 26;
+            d.z = 4 + Math.random() * 24;
+          } else if (d.layer === 'mid') {
+            d.x = (Math.random() - 0.5) * 52;
+            d.z = (Math.random() - 0.5) * 44;
+          } else {
+            d.x = (Math.random() - 0.5) * 88;
+            d.z = -12 - Math.random() * 45;
+          }
+        }
+        pos[ptr++] = d.x;
+        pos[ptr++] = d.y;
+        pos[ptr++] = d.z;
+        pos[ptr++] = d.x - 0.06 * d.len;
+        pos[ptr++] = d.y - 1.15 * d.len;
+        pos[ptr++] = d.z + 0.08 * d.len;
+      });
+      weatherFx.rainLines.geometry.attributes.position.needsUpdate = true;
+    } else {
+      weatherFx.rainLines.visible = false;
+    }
+
+    // 5. Фары автомобилей
+    const targetHeadlight = Math.max(curRain * 0.85, curFog * 0.95);
+    weatherFx.headlights = weatherFx.headlights.filter(h => h.car.parent);
+    weatherFx.headlights.forEach(h => {
+      h.lensMat.opacity = targetHeadlight;
+      h.spot.intensity = targetHeadlight * 3.6;
+    });
+  }
+
+  function updateWeather(dt) {
+    if (!weatherFx) return;
+
+    weatherAutoTimer -= dt;
+    if (weatherAutoTimer <= 0) {
+      weatherAutoTimer = 55 + Math.random() * 30;
+      setWeather(pickNextWeather());
+    }
+
+    applyWeather(dt);
+  }
+
   const DEFAULT_SCENARIO = {
-    id: 'cross_equal_3_cars',
-    title: 'Равнозначный перекресток: 3 автомобиля',
-    subtitle: 'При равных условиях уступают помехе справа.',
-    pddArticle: 'Пункт 13.11 ПДД РФ',
-    isEqual: true,
-    signs: [],
+    id: 'cross_main_turns_left',
+    title: 'Главная дорога поворачивает налево (знак 8.13)',
+    subtitle: 'Водители на главной разъезжаются по помехе справа.',
+    pddArticle: 'Пункт 13.10 ПДД РФ',
+    isEqual: false,
+    signs: [
+      { code: '2.1', side: 'south', table8_13: 'left' },
+      { code: '2.1', side: 'west', table8_13: 'right' },
+      { code: '2.4', side: 'north', table8_13: 'left' },
+      { code: '2.4', side: 'east', table8_13: 'left' }
+    ],
     actors: [
       {
-        id: 'car_east',
+        id: 'car_west',
         type: 'car',
-        name: 'Желтый седан',
-        color: '#F08A24',
-        side: 'east',
+        name: 'Белый седан',
+        color: '#F2F3F5',
+        side: 'west',
         maneuver: 'straight',
         order: 1,
-        ruleExplanation: 'У желтого автомобиля справа нет помехи. Он начинает движение первым.',
+        ruleExplanation: 'Белый седан на главной дороге и для южного автомобиля является помехой справа. Проезжает первым.',
         model: 'sedan'
+      },
+      {
+        id: 'car_south',
+        type: 'car',
+        name: 'Синий хэтчбек',
+        color: '#317ED4',
+        side: 'south',
+        maneuver: 'left',
+        order: 2,
+        ruleExplanation: 'Синий автомобиль на главной дороге, уступает белому справа и проезжает вторым.',
+        model: 'hatch'
+      },
+      {
+        id: 'car_east',
+        type: 'suv',
+        name: 'Зеленый кроссовер',
+        color: '#4D7768',
+        side: 'east',
+        maneuver: 'straight',
+        order: 3,
+        ruleExplanation: 'Зеленый на второстепенной дороге. Среди второстепенных у него нет помехи справа от северного.',
+        model: 'suv'
       },
       {
         id: 'car_north',
         type: 'car',
-        name: 'Синий хэтчбек',
-        color: '#317ED4',
+        name: 'Оранжевый седан',
+        color: '#F08A24',
         side: 'north',
         maneuver: 'straight',
-        order: 2,
-        ruleExplanation: 'Синий автомобиль уступает желтому справа. После его проезда освобождается.',
-        model: 'hatch'
-      },
-      {
-        id: 'car_west',
-        type: 'suv',
-        name: 'Зеленый кроссовер',
-        color: '#4D7768',
-        side: 'west',
-        maneuver: 'straight',
-        order: 3,
-        ruleExplanation: 'Зеленый кроссовер имеет помеху справа (синий авто) и проезжает последним.',
-        model: 'suv'
+        order: 4,
+        ruleExplanation: 'Оранжевый на второстепенной дороге, уступает зеленому кроссоверу справа и проезжает последним.',
+        model: 'sedan'
       }
     ]
   };
@@ -179,6 +429,10 @@
       window.PDD_ROADS.attach(renderer, { roots: () => [envGroup], lineage: () => null });
     }
 
+    // Инициализация погодных эффектов и случайный стартовый выбор погоды
+    ensureWeatherFx();
+    setWeather(pickNextWeather(), true);
+
     // Обработчики событий
     window.addEventListener('resize', onWindowResize);
     renderer.domElement.addEventListener('pointerdown', onPointerDown);
@@ -197,7 +451,7 @@
   }
 
   function setupLighting() {
-    const ambientLight = new THREE.AmbientLight(0xFFFFFF, season.ambient);
+    ambientLight = new THREE.AmbientLight(0xFFFFFF, season.ambient);
     scene.add(ambientLight);
 
     sunLight = new THREE.DirectionalLight(season.sun, season.sunIntensity);
@@ -224,15 +478,15 @@
 
   function updateCameraPosition() {
     if (!camera) return;
-    // Оптимальная изометрическая перспектива (угол ~55°), идеально кадрирующая все 4 подъезда
-    // перекрестка над нижней шторкой Flutter на узких мобильных экранах (390×844)
-    camera.fov = 50;
-    const baseHeight = 65 / camZoom;
-    const baseDistanceX = 77.8 / camZoom;
-    const baseDistanceZ = 54.5 / camZoom;
+    // Оптимальная приближенная изометрическая перспектива (угол ~55°), идеально кадрирующая все 4 подъезда
+    // перекрестка крупным планом над нижней шторкой Flutter на мобильных экранах
+    camera.fov = 48;
+    const baseHeight = 38 / camZoom;
+    const baseDistanceX = 44 / camZoom;
+    const baseDistanceZ = 31 / camZoom;
 
     // Смещение центра кадра вверх для учёта нижней шторки Flutter
-    const targetY = 2.0 + (viewInsetBottom || 0) * 0.008;
+    const targetY = 1.6 + (viewInsetBottom || 0) * 0.008;
 
     let shakeX = 0, shakeZ = 0;
     if (camShake > 0) {
@@ -260,6 +514,7 @@
     // 2. Асфальтовые дороги (Север-Юг и Восток-Запад)
     const roadMat = new THREE.MeshLambertMaterial({ color: BRAND.asphalt });
     roadMat.userData.pddKind = 'asphalt';
+    cachedRoadMat = roadMat;
 
     const roadLen = CITY_REACH * 2;
     const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_WIDTH, roadLen), roadMat);
@@ -390,6 +645,7 @@
   function buildSidewalks(parent) {
     const swMat = new THREE.MeshLambertMaterial({ color: 0x767B82 });
     swMat.userData.pddKind = 'pavement';
+    cachedWalkMat = swMat;
     const curbMat = new THREE.MeshLambertMaterial({ color: 0x8C9098 });
     curbMat.userData.pddKind = 'pavement';
 
@@ -616,8 +872,8 @@
 
     // Металлическая оцинкованная стойка знака
     const poleMat = new THREE.MeshLambertMaterial({ color: 0x9FA3A9 });
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 3.4, 12), poleMat);
-    pole.position.y = 1.7;
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.5, 12), poleMat);
+    pole.position.y = 1.75;
     pole.castShadow = true;
     group.add(pole);
 
@@ -633,49 +889,62 @@
       signMat = new THREE.MeshLambertMaterial({ color: 0xFFCC00 });
     }
 
-    // Геометрия лицевой панели знака (в sign-textures.js все знаки уже правильной формы)
-    const faceGeo = new THREE.PlaneGeometry(1.25, 1.05);
+    // Лицевая панель знака (крупная, четкая)
+    const faceGeo = new THREE.PlaneGeometry(1.65, 1.45);
     const face = new THREE.Mesh(faceGeo, signMat);
-    face.position.set(0, 2.9, 0.03);
+    face.position.set(0, 2.85, 0.035);
     group.add(face);
 
-    // Серая задняя крышка знака
+    // Задняя панель знака (дублирует знак для отличной читаемости со всех сторон в изометрии)
+    const backFace = new THREE.Mesh(faceGeo, signMat);
+    backFace.position.set(0, 2.85, -0.035);
+    backFace.rotation.y = Math.PI;
+    group.add(backFace);
+
+    // Серая металлическая основа знака
     const backMat = new THREE.MeshLambertMaterial({ color: 0x5C6068 });
-    const backGeo = new THREE.CylinderGeometry(0.58, 0.58, 0.02, 16);
+    const backGeo = new THREE.CylinderGeometry(0.85, 0.85, 0.05, 20);
     const back = new THREE.Mesh(backGeo, backMat);
     back.rotation.x = Math.PI / 2;
-    back.position.set(0, 2.9, 0);
+    back.position.set(0, 2.85, 0);
     group.add(back);
 
     // Табличка 8.13 «Направление главной дороги» (если указана)
     if (table8_13) {
       const plateTex = createTable8_13Texture(table8_13);
       const plateMat = new THREE.MeshLambertMaterial({ map: plateTex });
-      const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), plateMat);
-      plate.position.set(0, 2.05, 0.03);
+      const plateGeo = new THREE.PlaneGeometry(1.2, 1.2);
+
+      const plate = new THREE.Mesh(plateGeo, plateMat);
+      plate.position.set(0, 1.95, 0.035);
       group.add(plate);
 
-      const plateBack = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.92, 0.02), backMat);
-      plateBack.position.set(0, 2.05, 0);
+      const plateBackFace = new THREE.Mesh(plateGeo, plateMat);
+      plateBackFace.position.set(0, 1.95, -0.035);
+      plateBackFace.rotation.y = Math.PI;
+      group.add(plateBackFace);
+
+      const plateBack = new THREE.Mesh(new THREE.BoxGeometry(1.22, 1.22, 0.05), backMat);
+      plateBack.position.set(0, 1.95, 0);
       group.add(plateBack);
     }
 
-    // Позиционирование знака: у правого тротуара перед стоп-линией
-    const signSideX = HALF_ROAD + 1.8;
-    const signStopZ = 13.8;
+    // Позиционирование знака: у правого угла тротуара перед стоп-линией, без перекрытия фонарей
+    const curbX = HALF_ROAD + 1.2;
+    const curbZ = 11.0;
 
     if (sideName === 'south') {
-      group.position.set(signSideX, 0, signStopZ);
-      group.rotation.y = 0; // смотрит на юг (на приближающийся транспорт)
+      group.position.set(curbX, 0, curbZ);
+      group.rotation.y = 0.35;
     } else if (sideName === 'north') {
-      group.position.set(-signSideX, 0, -signStopZ);
-      group.rotation.y = Math.PI;
+      group.position.set(-curbX, 0, -curbZ);
+      group.rotation.y = Math.PI + 0.35;
     } else if (sideName === 'east') {
-      group.position.set(signStopZ, 0, -signSideX);
-      group.rotation.y = Math.PI / 2;
+      group.position.set(curbZ, 0, -curbX);
+      group.rotation.y = Math.PI / 2 - 0.35;
     } else if (sideName === 'west') {
-      group.position.set(-signStopZ, 0, signSideX);
-      group.rotation.y = -Math.PI / 2;
+      group.position.set(-curbZ, 0, curbX);
+      group.rotation.y = -Math.PI / 2 - 0.35;
     }
 
     group.traverse(child => {
@@ -1042,6 +1311,9 @@
     activeActors.forEach(({ mesh }) => vehiclesGroup.remove(mesh));
     activeActors.clear();
     clearSigns();
+    if (weatherFx) {
+      weatherFx.headlights = weatherFx.headlights.filter(h => h.car && h.car.parent);
+    }
 
     // Создаем дорожные знаки
     if (scenarioData.signs && scenarioData.signs.length > 0) {
@@ -1058,6 +1330,7 @@
         const mesh = createVehicleMesh(a);
         placeActorAtStart(mesh, a.side);
         vehiclesGroup.add(mesh);
+        attachCarHeadlights(mesh);
 
         activeActors.set(a.id, {
           mesh,
@@ -1590,6 +1863,9 @@
       }
     }
 
+    // Обновление погодных эффектов
+    updateWeather(dt);
+
     renderer.render(scene, camera);
   }
 
@@ -1612,6 +1888,15 @@
     viewInsetBottom = bottomPixels;
     updateCameraPosition();
   };
+
+  window.setWeather = (kind, immediate) => setWeather(kind, immediate);
+  window.getWeather = () => ({
+    current: currentTargetWeather,
+    rain: curRain,
+    fog: curFog,
+    overcast: curOvercast,
+  });
+  window.randomizeWeather = () => setWeather(pickNextWeather(), false);
 
   window.loadScenarioData = rawJson => {
     try {
