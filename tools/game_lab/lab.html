@@ -355,9 +355,18 @@ function record(d, extra = {}) {
   let r = sceneEdits().find(e => e.key === d.key);
   if (!r) { r = { key: d.key }; sceneEdits().push(r); }
   if (d.key === 'player') {
-    if (extra.blinker !== undefined) r.blinker = extra.blinker;
-    else if (d.blinker) r.blinker = d.blinker;
-    if (!r.blinker || r.blinker === 'none') {
+    if (extra.blinker !== undefined) {
+      if (extra.blinker === 'none') delete r.blinker;
+      else r.blinker = extra.blinker;
+    } else if (d.blinker !== undefined && d.blinker !== 'none') {
+      r.blinker = d.blinker;
+    }
+    if (d.posEdited || extra.x !== undefined || extra.z !== undefined || extra.rotY !== undefined || r.x !== undefined) {
+      r.x = d.x;
+      r.z = d.z;
+      r.rotY = d.rotY;
+    }
+    if (!r.blinker && r.x === undefined && r.z === undefined && r.rotY === undefined) {
       const idx = sceneEdits().findIndex(e => e.key === 'player');
       if (idx >= 0) sceneEdits().splice(idx, 1);
     }
@@ -401,7 +410,7 @@ function renderEditPanel() {
   if (d?.isPlayer) {
     selTitle = 'Моё авто';
     const bNames = { left: 'левый указатель поворота', right: 'правый указатель поворота', none: 'поворотник выключен' };
-    selSub = bNames[d.blinker] || 'поворотник выключен';
+    selSub = `Стартовая позиция в вопросе · ${bNames[d.blinker] || 'поворотник выключен'} · Перемещение мышью · поворот Q / E`;
   } else if (d?.isRoute) selTitle = d.label;
   else if (d?.isLabel) {
     selTitle = 'Метка «' + d.labelText + '»';
@@ -419,12 +428,12 @@ function renderEditPanel() {
     <div class="sec reference">${imgOf(current) ? `<img class="ticketImg" tabindex="0" role="button" aria-label="Увеличить картинку билета" src="${imgOf(current)}" alt="Картинка вопроса"><div class="qhead"><span class="badge">Билет ${short(current.ticket)}</span></div>` : '<div class="muted mini">У этой сцены нет картинки вопроса</div>'}</div>
     <div class="sec"><h4><lab-icon name="cursor"></lab-icon> Выбрано</h4>${d ? `
       <div class="selcard">${icon}<div><b>${esc(selTitle)}</b><div class="muted mini">${esc(selSub)}</div></div></div>
-      ${!d.isPlayer ? `
       <div class="nums">
         <label>X, м<input id="sx" type="number" step="0.1" value="${d.x}"></label>
         <label>Z, м<input id="sz" type="number" step="0.1" value="${d.z}"></label>
         ${!d.isLabel ? `<label>Угол, °<input id="sr" type="number" step="15" value="${Math.round(d.rotY * 180 / Math.PI)}"></label>` : ''}
-      </div>` : ''}
+      </div>
+      ${d.isPlayer ? '<p class="muted mini" style="margin:4px 0 6px 0">Точка старта вопроса: определяет, где останавливается авто перед перекрёстком и откуда начинается вопрос.</p>' : ''}
       ${(d.isActor || d.isPlayer) ? `
       <div class="sec" style="padding:8px 0;margin:6px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
         <h4 style="margin:0 0 6px 0;font-size:12px;font-weight:600"><lab-icon name="route"></lab-icon> Поворотник</h4>
@@ -480,7 +489,7 @@ function renderEditPanel() {
         </div>
       </details>` : ''}
       <div class="selection-actions">
-        ${(!d.isPlayer && !d.isLabel) ? `
+        ${!d.isLabel ? `
         <button class="btn" id="rotL" title="Повернуть влево на 15°"><lab-icon name="undo"></lab-icon>15°</button>
         <button class="btn" id="rotR" title="Повернуть вправо на 15°"><lab-icon name="redo"></lab-icon>15°</button>
         <button class="btn" id="rot180" title="Развернуть на 180°">180°</button>` : ''}
@@ -943,7 +952,7 @@ function key(down) {
     const k = e.key.toLowerCase();
     if (down && mode === 'edit' && selection) {
       if (k === 'q' || k === 'e') return record(lab.update({ rotY: selection.rotY + (k === 'q' ? 1 : -1) * Math.PI / 12 }));
-      if (k === 'delete' || k === 'backspace') { e.preventDefault(); return record(lab.update({ visible: false })); }
+      if ((k === 'delete' || k === 'backspace') && !selection.isPlayer) { e.preventDefault(); return record(lab.update({ visible: false })); }
     }
     const map = { arrowup: 'gas', w: 'gas', arrowdown: 'brake', s: 'brake', arrowleft: 'left', a: 'left', arrowright: 'right', d: 'right' };
     if (!map[k] || mode === 'edit' || mode === 'models') return;
@@ -963,6 +972,7 @@ frame.onload = async () => {
   gameWin = frame.contentWindow;
   await new Promise(r => { const t = setInterval(() => { if (gameWin.__lab && gameWin.game) { clearInterval(t); r(); } }, 50); });
   lab = gameWin.__lab;
+  window.lab = lab; window.setMode = setMode; window.record = record; window.openScene = open; window.sceneEdits = sceneEdits; window.saveScene = saveScene; window.rebuildScene = rebuildScene;
   await loadData();
   const num = s => (/(\d+)\D+(\d+)/.exec(s.ticket || '') || [0, 999, 999]).slice(1).map(Number);
   items = [...lab.junctions(), ...lab.roads(), ...lab.events()].sort((a, b) => { const [a1, a2] = num(a), [b1, b2] = num(b); return a1 - b1 || a2 - b2; });

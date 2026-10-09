@@ -6610,6 +6610,11 @@
     box([1.40,.07,.075],metal,-.28,.36,-.20);
     box([.95,.07,.075],metal,-.02,.44,.23);
     g.userData.wheels=[...bike.userData.wheels,wheel];g.userData.modelVersion=2;
+    g.userData.lampSpec = {
+      sidecar: true,
+      left: { front: { x: -1.05, y: 0.68, z: 0.25 }, rear: { x: -1.05, y: 0.68, z: -0.65 } },
+      right: { front: { x: 0.72, y: 0.90, z: 0.83 }, rear: { x: 0.72, y: 0.85, z: -0.91 } }
+    };
     mergeTransportParts(g);
     return g;
   }
@@ -8183,6 +8188,11 @@
       const spec = actorMesh.userData.lampSpec;
       const lampAt = (side, end) => {
         if (!spec) return [side * (modelSize.x / 2 - 0.02) / k, 0.85 / k, end * (halfLength + 0.04) / k];
+        if (spec.sidecar) {
+          const l = side > 0 ? spec.left : spec.right;
+          const pos = end > 0 ? l.front : l.rear;
+          return [pos.x, pos.y, pos.z];
+        }
         const l = end > 0 ? spec.front : spec.rear;
         return [side * (spec.single ? 0.22 : l.x + 0.2), l.y, l.z + end * 0.06];
       };
@@ -8424,11 +8434,14 @@
     });
     state.roadSegments.push(seg);
 
+    const pe = seg.userData.playerEdit;
     const intersectionData = {
       seg,
       startZ,
       centerZ,
-      stopZ: centerZ - 17.5,
+      stopZ: pe?.z !== undefined ? centerZ + pe.z : (centerZ - 17.5),
+      playerStartX: pe?.x !== undefined ? pe.x : situation.playerStartX,
+      playerStartRotY: pe?.rotY !== undefined ? pe.rotY : 0,
       situation,
       actors: actorsInScene,
       trafficLight: null
@@ -9089,11 +9102,14 @@
     });
     state.roadSegments.push(seg);
 
+    const pe = seg.userData.playerEdit;
     const intersectionData = {
       seg,
       startZ,
       centerZ,
-      stopZ: situation.questionStop !== undefined ? centerZ + situation.questionStop : stopLineZ - 2.2,
+      stopZ: pe?.z !== undefined ? centerZ + pe.z : (situation.questionStop !== undefined ? centerZ + situation.questionStop : stopLineZ - 2.2),
+      playerStartX: pe?.x !== undefined ? pe.x : situation.playerStartX,
+      playerStartRotY: pe?.rotY !== undefined ? pe.rotY : 0,
       situation,
       actors: actorsInScene,
       trafficLight: tlMesh,
@@ -9277,6 +9293,9 @@
         const pb = e.blinker || e.playerBlinker;
         if (pb !== undefined) {
           group.userData.playerBlinker = pb === 'none' ? null : pb;
+        }
+        if (e.x !== undefined || e.z !== undefined || e.rotY !== undefined) {
+          group.userData.playerEdit = { x: e.x, z: e.z, rotY: e.rotY };
         }
         continue;
       }
@@ -12669,6 +12688,11 @@
       o.rotation.y+=Math.atan(ev.curve.slopeAt(z));
     });
     applySceneEdits(group, situation.id, stopZ);
+    group.userData.stopZ = stopZ;
+    const pe = group.userData.playerEdit;
+    if (pe?.z !== undefined) ev.stopZ = stopZ + pe.z;
+    if (pe?.x !== undefined) ev.playerStartX = pe.x;
+    if (pe?.rotY !== undefined) ev.playerStartRotY = pe.rotY;
     (ev.actors || []).forEach(a => {
       const dx = a.mesh.position.x - a.initialPos.x;
       const dz = a.mesh.position.z - a.initialPos.z;
@@ -13225,6 +13249,9 @@
       car.stopAtDistance=car.distance;car.stopFor=Infinity;car.speed=0;car.maxSpeed=18;
     }
     ev.phase = 'question';
+    if (ev.playerStartX !== undefined) playerCarGroup.position.x = ev.playerStartX;
+    if (ev.playerStartRotY !== undefined) playerCarGroup.rotation.y = ev.playerStartRotY;
+    if (ev.stopZ !== undefined) playerCarGroup.position.z = ev.stopZ;
     if (ev.guide) ev.guide.visible = true;
     (ev.joiners || []).forEach(join => join());
     ev.joiners = null;
@@ -15144,7 +15171,10 @@
       return;
     }
     if (active && active.stopZ - playerCarGroup.position.z <= 0.18) {
-      if (active.situation.playerStartX !== undefined) playerCarGroup.position.x = active.situation.playerStartX;
+      if (active.playerStartX !== undefined) playerCarGroup.position.x = active.playerStartX;
+      else if (active.situation.playerStartX !== undefined) playerCarGroup.position.x = active.situation.playerStartX;
+      if (active.playerStartRotY !== undefined) playerCarGroup.rotation.y = active.playerStartRotY;
+      playerCarGroup.position.z = active.stopZ;
       state.speed = 0;
       state.isAccelerating = false;
       state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null;

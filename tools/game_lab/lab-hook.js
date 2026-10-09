@@ -65,16 +65,20 @@
         const group = new THREE.Group(); scene.add(group); state.roadSegments.push(group);
         state.roadTurn = 1;
         const ev = state.roadEvent = buildQuestionEvent(group, -45, road);
-        lab.group = group; lab.origin = ev.stopZ;
-        playerCarGroup.position.set(-1.8, 0, drive ? -40 : ev.stopZ); playerCarGroup.rotation.set(0, 0, 0);
+        lab.group = group; lab.origin = group.userData.stopZ ?? ev.stopZ;
+        playerCarGroup.userData.posEdited = !!group.userData.playerEdit;
+        playerCarGroup.position.set(ev.playerStartX ?? -1.8, 0, drive ? -40 : ev.stopZ);
+        playerCarGroup.rotation.set(0, ev.playerStartRotY || 0, 0);
         if (!drive) startRoadQuestion();
       } else {
         const s = SITUATIONS.find(x => x.id === id);
         situationBag = [s]; buildInitialTrack();
         const it = state.intersections[0];
         lab.group = it.seg; lab.origin = it.centerZ;
+        playerCarGroup.userData.posEdited = !!it.seg?.userData?.playerEdit;
         if (!drive) {
-          playerCarGroup.position.set(it.situation.playerStartX ?? -1.8,0,it.stopZ);
+          playerCarGroup.position.set(it.playerStartX ?? it.situation.playerStartX ?? -1.8, 0, it.stopZ);
+          playerCarGroup.rotation.set(0, it.playerStartRotY || 0, 0);
           updatePlayerMovement(0);
           clearMistakeHighlight();
         }
@@ -98,6 +102,7 @@
         return { key: 'player', isPlayer: true, isActor: false, label: 'Моё авто', actorName: 'Моё авто', actorType: 'car',
           blinker: lab.playerBlinker || 'none',
           x: +playerCarGroup.position.x.toFixed(2), z: +(playerCarGroup.position.z - lab.origin).toFixed(2), rotY: +playerCarGroup.rotation.y.toFixed(3),
+          posEdited: !!(lab.group?.userData?.playerEdit || playerCarGroup.userData.posEdited),
           visible: true };
       }
       const isActor = !!(o.userData.isActorRoot || (o.userData.editKey && o.userData.editKey.startsWith('actor:')));
@@ -277,6 +282,29 @@
           } else {
             state.blinker = null;
             playerCarGroup.blinkerL.visible = playerCarGroup.blinkerR.visible = false;
+          }
+        }
+        if (props.x !== undefined || props.z !== undefined || props.rotY !== undefined) {
+          playerCarGroup.userData.posEdited = true;
+          if (props.x !== undefined) playerCarGroup.position.x = props.x;
+          if (props.z !== undefined) playerCarGroup.position.z = lab.origin + props.z;
+          if (props.rotY !== undefined) playerCarGroup.rotation.y = props.rotY;
+          if (lab.group) {
+            lab.group.userData.playerEdit = {
+              x: +playerCarGroup.position.x.toFixed(2),
+              z: +(playerCarGroup.position.z - lab.origin).toFixed(2),
+              rotY: +playerCarGroup.rotation.y.toFixed(3)
+            };
+          }
+          if (state.intersections?.[0]) {
+            state.intersections[0].stopZ = playerCarGroup.position.z;
+            state.intersections[0].playerStartX = playerCarGroup.position.x;
+            state.intersections[0].playerStartRotY = playerCarGroup.rotation.y;
+          }
+          if (state.roadEvent) {
+            state.roadEvent.stopZ = playerCarGroup.position.z;
+            state.roadEvent.playerStartX = playerCarGroup.position.x;
+            state.roadEvent.playerStartRotY = playerCarGroup.rotation.y;
           }
         }
         setHelper(playerCarGroup);
