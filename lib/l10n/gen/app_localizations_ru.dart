@@ -1130,7 +1130,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get authErrorResponse =>
-      'Не удалось принять сессию входа. Проверьте дату и время на телефоне.';
+      'Не удалось завершить вход. Обновите страницу или перезапустите приложение и попробуйте снова.';
 
   @override
   String get authSessionTemporary =>

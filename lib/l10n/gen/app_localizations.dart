@@ -2017,7 +2017,7 @@ abstract class AppLocalizations {
   /// No description provided for @authErrorResponse.
   ///
   /// In ru, this message translates to:
-  /// **'Не удалось принять сессию входа. Проверьте дату и время на телефоне.'**
+  /// **'Не удалось завершить вход. Обновите страницу или перезапустите приложение и попробуйте снова.'**
   String get authErrorResponse;
 
   /// No description provided for @authSessionTemporary.
