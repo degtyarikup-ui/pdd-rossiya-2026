@@ -54,7 +54,7 @@
     <div><span>Переместить камеру</span><span><kbd>Shift</kbd> + мышь</span></div>
     <div><span>Приблизить / отдалить</span><kbd>Колесо мыши</kbd></div>
     <div><span>Повернуть выбранный объект</span><kbd>Q / E</kbd></div>
-    <div><span>Скрыть выбранный объект</span><kbd>Delete</kbd></div>
+    <div><span>Скрыть объект / удалить точку стрелки</span><kbd>Delete / ⌫</kbd></div>
     <div><span>Сохранить правки</span><kbd>⌘ / Ctrl + S</kbd></div>
     <div><span>Отмена / повтор</span><kbd>⌘ / Ctrl + Z / Shift + Z</kbd></div>
     <div><span>Управление машиной</span><kbd>WASD / стрелки</kbd></div>
@@ -470,21 +470,44 @@ function renderEditPanel() {
           <button class="btn" id="bendR" title="Изогнуть вправо">➡️ Вправо</button>
         </div>
       </div>
-      <details class="palette-section" id="routePointsSec" style="margin-bottom:8px">
+      <details class="palette-section" id="routePointsSec" open style="margin-bottom:8px">
         <summary><lab-icon name="route"></lab-icon>Опорные точки траектории (${d.points?.length || 0})</summary>
         <div style="padding:6px 0">
-          <p class="muted mini" style="margin:0 0 6px 0">Точки можно перетаскивать мышью прямо на дороге (жёлтые сферы) или вводить координаты X и Z:</p>
+          ${d.selectedPointIndex !== undefined && d.points?.[d.selectedPointIndex] ? `
+            <div style="background:var(--card);border:1px solid var(--accent);border-radius:6px;padding:8px;margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-weight:700;font-size:12px;color:var(--accent);display:flex;align-items:center;gap:5px">
+                  <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#FF0055"></span>
+                  Точка №${d.selectedPointIndex + 1} (выбрана)
+                </span>
+                ${(d.points || []).length > 2 ? `<button class="btn danger mini" id="delSelPtBtn" style="padding:2px 8px;font-size:11px" title="Удалить выбранную точку (клавиша Delete)"><lab-icon name="trash"></lab-icon> Удалить</button>` : ''}
+              </div>
+              <div style="display:flex;gap:6px;align-items:center">
+                <label style="flex:1;margin:0;font-size:11px">X <input class="pt-input" data-pti="${d.selectedPointIndex}" data-coord="x" type="number" step="0.1" value="${d.points[d.selectedPointIndex][0]}" style="width:100%"></label>
+                <label style="flex:1;margin:0;font-size:11px">Z <input class="pt-input" data-pti="${d.selectedPointIndex}" data-coord="z" type="number" step="0.1" value="${d.points[d.selectedPointIndex][1]}" style="width:100%"></label>
+              </div>
+              <div style="margin-top:6px;display:flex;gap:4px">
+                <button class="btn mini" id="insertAfterSelBtn" style="flex:1;font-size:11px" title="Вставить новую точку сразу после выбранной">+ Вставить точку после</button>
+              </div>
+            </div>
+          ` : ''}
+          <p class="muted mini" style="margin:0 0 6px 0">Точки можно перетаскивать мышью в 3D (розовая = выбранная) или редактировать в списке:</p>
+          <div style="max-height:220px;overflow-y:auto;padding-right:2px">
           ${(d.points || []).map((pt, i) => `
-            <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:11px">
-              <span style="width:16px;font-weight:700;color:${d.selectedPointIndex === i ? 'var(--accent)' : 'var(--muted)'}">${i + 1}</span>
+            <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:11px;padding:2px 4px;border-radius:4px;background:${d.selectedPointIndex === i ? 'rgba(5, 116, 248, 0.12)' : 'transparent'}">
+              <button class="ib pt-sel" data-pti="${i}" title="Выбрать точку №${i + 1}" style="width:22px;height:22px;font-weight:700;color:${d.selectedPointIndex === i ? '#FF0055' : 'var(--text)'};border:1px solid ${d.selectedPointIndex === i ? '#FF0055' : 'var(--border)'};border-radius:4px;background:${d.selectedPointIndex === i ? 'rgba(255,0,85,0.1)' : 'var(--card)'};padding:0;cursor:pointer">${i + 1}</button>
               <label style="flex:1;margin:0">X<input class="pt-input" data-pti="${i}" data-coord="x" type="number" step="0.1" value="${pt[0]}" style="width:100%"></label>
               <label style="flex:1;margin:0">Z<input class="pt-input" data-pti="${i}" data-coord="z" type="number" step="0.1" value="${pt[1]}" style="width:100%"></label>
-              ${(d.points || []).length > 2 ? `<button class="ib pt-del" data-pti="${i}" title="Удалить точку" style="padding:2px 6px">✕</button>` : ''}
+              <button class="ib pt-ins" data-pti="${i}" title="Вставить точку после этой (+)" style="padding:2px 6px;font-weight:700;color:var(--accent);cursor:pointer">+</button>
+              ${(d.points || []).length > 2 ? `<button class="ib pt-del" data-pti="${i}" title="Удалить точку" style="padding:2px 6px;color:var(--danger);cursor:pointer">✕</button>` : ''}
             </div>
           `).join('')}
+          </div>
           <div class="acts" style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
-            <button class="btn" id="addPtBtn">+ Добавить точку</button>
-            ${d.hasCustomPoints ? `<button class="btn" id="resetPtsBtn">Сбросить точки</button>` : ''}
+            <button class="btn" id="addPtStartBtn" title="Добавить точку в начало траектории">+ В начало</button>
+            <button class="btn" id="addPtEndBtn" title="Добавить точку в конец траектории">+ В конец</button>
+            ${(d.points || []).length > 4 ? `<button class="btn" id="simplifyPtsBtn" title="Упростить траекторию, оставив 4 плавные точки">⚡ Оставить 4 точки</button>` : ''}
+            ${d.hasCustomPoints ? `<button class="btn" id="resetPtsBtn" title="Сбросить точки к исходным">Сбросить точки</button>` : ''}
           </div>
         </div>
       </details>` : ''}
@@ -547,6 +570,13 @@ function renderEditPanel() {
       $('#bendL').onclick = () => apply({ bend: (d.bend || 0) - 1 });
       $('#bend0').onclick = () => apply({ bend: 0 });
       $('#bendR').onclick = () => apply({ bend: (d.bend || 0) + 1 });
+      $('#panel').querySelectorAll('.pt-sel').forEach(btn => {
+        btn.onclick = () => {
+          const idx = +btn.dataset.pti;
+          selection = lab.update({ selectPointIndex: idx });
+          renderEditPanel();
+        };
+      });
       $('#panel').querySelectorAll('.pt-input').forEach(inp => {
         inp.onchange = () => {
           const idx = +inp.dataset.pti;
@@ -557,29 +587,35 @@ function renderEditPanel() {
           apply({ points: curPts });
         };
       });
+      $('#panel').querySelectorAll('.pt-ins').forEach(btn => {
+        btn.onclick = () => {
+          const idx = +btn.dataset.pti;
+          apply({ insertPointAfter: idx });
+        };
+      });
       $('#panel').querySelectorAll('.pt-del').forEach(btn => {
         btn.onclick = () => {
           const idx = +btn.dataset.pti;
-          const curPts = d.points.slice().map(p => p.slice());
-          curPts.splice(idx, 1);
-          apply({ points: curPts });
+          apply({ deletePointIndex: idx });
         };
       });
-      if ($('#addPtBtn')) {
-        $('#addPtBtn').onclick = () => {
-          const curPts = d.points.slice().map(p => p.slice());
-          const last = curPts[curPts.length - 1];
-          const prev = curPts[curPts.length - 2] || [last[0], last[1] - 4];
-          const dx = last[0] - prev[0], dz = last[1] - prev[1];
-          const len = Math.hypot(dx, dz) || 1;
-          curPts.push([+(last[0] + dx / len * 4).toFixed(2), +(last[1] + dz / len * 4).toFixed(2)]);
-          apply({ points: curPts });
-        };
+      if ($('#delSelPtBtn')) {
+        $('#delSelPtBtn').onclick = () => apply({ deletePointIndex: d.selectedPointIndex });
+      }
+      if ($('#insertAfterSelBtn')) {
+        $('#insertAfterSelBtn').onclick = () => apply({ insertPointAfter: d.selectedPointIndex });
+      }
+      if ($('#addPtStartBtn')) {
+        $('#addPtStartBtn').onclick = () => apply({ addPointAtStart: true });
+      }
+      if ($('#addPtEndBtn')) {
+        $('#addPtEndBtn').onclick = () => apply({ addPointAtEnd: true });
+      }
+      if ($('#simplifyPtsBtn')) {
+        $('#simplifyPtsBtn').onclick = () => apply({ simplifyPoints: true });
       }
       if ($('#resetPtsBtn')) {
-        $('#resetPtsBtn').onclick = () => {
-          apply({ resetPoints: true });
-        };
+        $('#resetPtsBtn').onclick = () => apply({ resetPoints: true });
       }
     }
     if ($('#sx')) {
@@ -952,7 +988,14 @@ function key(down) {
     const k = e.key.toLowerCase();
     if (down && mode === 'edit' && selection) {
       if (k === 'q' || k === 'e') return record(lab.update({ rotY: selection.rotY + (k === 'q' ? 1 : -1) * Math.PI / 12 }));
-      if ((k === 'delete' || k === 'backspace') && !selection.isPlayer) { e.preventDefault(); return record(lab.update({ visible: false })); }
+      if ((k === 'delete' || k === 'backspace') && !selection.isPlayer) {
+        if (selection.isRoute && selection.selectedPointIndex !== undefined && (selection.points?.length || 0) > 2) {
+          e.preventDefault();
+          return record(lab.update({ deletePointIndex: selection.selectedPointIndex }));
+        }
+        e.preventDefault();
+        return record(lab.update({ visible: false }));
+      }
     }
     const map = { arrowup: 'gas', w: 'gas', arrowdown: 'brake', s: 'brake', arrowleft: 'left', a: 'left', arrowright: 'right', d: 'right' };
     if (!map[k] || mode === 'edit' || mode === 'models') return;

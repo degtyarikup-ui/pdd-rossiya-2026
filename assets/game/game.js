@@ -5760,8 +5760,21 @@
     setRouteRange(route, route.userData.routeLength, route.userData.routeStart);
   }
 
+  function simplifyRoutePoints(points, targetCount = 4) {
+    if (!Array.isArray(points) || points.length <= targetCount) return points;
+    const pts = points.map(([x, z]) => new THREE.Vector3(Number(x), 0.12, Number(z)));
+    const tempCurve = curve(pts);
+    const result = [];
+    for (let i = 0; i < targetCount; i++) {
+      const p = tempCurve.getPointAt(i / (targetCount - 1));
+      result.push([+p.x.toFixed(2), +p.z.toFixed(2)]);
+    }
+    return result;
+  }
+
   function setRoutePoints(route, points, originZ = 0) {
     if (!Array.isArray(points) || points.length < 2) return;
+    if (points.length > 10) points = simplifyRoutePoints(points, 4);
     route.userData.customPoints = points.map(([x, z]) => [+Number(x).toFixed(2), +Number(z).toFixed(2)]);
     route.userData.hasCustomPoints = true;
     const newPts = points.map(([x, z]) => new THREE.Vector3(Number(x), 0.12, originZ + Number(z)));
@@ -9140,10 +9153,17 @@
       : [curve(guidePoints.map(([x, z]) => new THREE.Vector3(x, 0.12, centerZ + z)))];
     if (situation.yardAfter !== undefined || situation.geometry?.startsWith('courtyard_')) {
       // Show the turn into the entrance, not a route across the whole yard.
-      guidePaths=guidePaths.map(path=>{
-        const points=path.getSpacedPoints(Math.ceil(path.getLength()/.3));
-        const end=points.findIndex(p=>Math.abs(p.x)>=10);
-        return curve(end>1?points.slice(0,end+1):points);
+      guidePaths = guidePaths.map(path => {
+        let maxT = 1.0;
+        for (let i = 1; i <= 50; i++) {
+          const t = i / 50;
+          if (Math.abs(path.getPointAt(t).x) >= 10) { maxT = t; break; }
+        }
+        const cleanPoints = [];
+        for (let i = 0; i < 4; i++) {
+          cleanPoints.push(path.getPointAt((i / 3) * maxT));
+        }
+        return curve(cleanPoints);
       });
     }
     const guide = createRouteGuide(guidePaths);

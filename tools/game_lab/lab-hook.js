@@ -137,6 +137,7 @@
         bend: isRoute ? (o.userData.routeBend || 0) : undefined,
         hasCustomPoints: isRoute ? !!o.userData.hasCustomPoints : undefined,
         points: isRoute ? (o.userData.customPoints || curPts) : undefined,
+        selectedPointIndex: (isRoute && lab.selectedPoint && lab.selectedPoint.route === o) ? lab.selectedPoint.index : undefined,
         x: +o.position.x.toFixed(2), z: +(o.position.z - lab.origin).toFixed(2), rotY: +o.rotation.y.toFixed(3),
         visible: o.visible, label };
     }
@@ -160,9 +161,9 @@
         const box = new THREE.BoxHelper(o, 0x0574F8);
         group.add(box);
         const pts = o.userData.routePath?.points || [];
-        const handleGeo = new THREE.SphereGeometry(0.4, 16, 16);
         pts.forEach((p, idx) => {
           const isSel = lab.selectedPoint && lab.selectedPoint.route === o && lab.selectedPoint.index === idx;
+          const handleGeo = new THREE.SphereGeometry(isSel ? 0.55 : 0.38, 16, 16);
           const handleMat = new THREE.MeshBasicMaterial({ color: isSel ? 0xFF0055 : 0xFFB703, depthTest: false });
           const m = new THREE.Mesh(handleGeo, handleMat);
           m.position.copy(p);
@@ -333,6 +334,7 @@
             o.position.set(o.userData.origPoints[0].x, 0, o.userData.origPoints[0].z);
             setRouteBend(o, o.userData.routeBend || 0);
           }
+          lab.selectedPoint = null;
         }
         if (props.points !== undefined && Array.isArray(props.points)) {
           setRoutePoints(o, props.points, lab.origin);
@@ -340,6 +342,77 @@
         if (props.pointIndex !== undefined && props.pointX !== undefined && props.pointZ !== undefined) {
           setRoutePoint(o, props.pointIndex, props.pointX, props.pointZ, lab.origin);
           lab.selectedPoint = { route: o, index: props.pointIndex };
+        }
+        if (props.selectPointIndex !== undefined) {
+          lab.selectedPoint = props.selectPointIndex === null ? null : { route: o, index: props.selectPointIndex };
+        }
+        if (props.deletePointIndex !== undefined) {
+          const cur = (o.userData.customPoints || o.userData.routePath?.points?.map(p => [+p.x.toFixed(2), +(p.z - lab.origin).toFixed(2)])) || [];
+          const pts = cur.map(p => p.slice());
+          if (pts.length > 2 && props.deletePointIndex >= 0 && props.deletePointIndex < pts.length) {
+            pts.splice(props.deletePointIndex, 1);
+            setRoutePoints(o, pts, lab.origin);
+            if (lab.selectedPoint && lab.selectedPoint.route === o) {
+              const newIdx = Math.min(props.deletePointIndex, pts.length - 1);
+              lab.selectedPoint = { route: o, index: newIdx };
+            }
+          }
+        }
+        if (props.addPointAtEnd) {
+          const cur = (o.userData.customPoints || o.userData.routePath?.points?.map(p => [+p.x.toFixed(2), +(p.z - lab.origin).toFixed(2)])) || [];
+          const pts = cur.map(p => p.slice());
+          if (pts.length >= 2) {
+            const last = pts[pts.length - 1];
+            const prev = pts[pts.length - 2];
+            const dx = last[0] - prev[0], dz = last[1] - prev[1];
+            const len = Math.hypot(dx, dz) || 1;
+            pts.push([+(last[0] + dx / len * 3.5).toFixed(2), +(last[1] + dz / len * 3.5).toFixed(2)]);
+            setRoutePoints(o, pts, lab.origin);
+            lab.selectedPoint = { route: o, index: pts.length - 1 };
+          }
+        }
+        if (props.addPointAtStart) {
+          const cur = (o.userData.customPoints || o.userData.routePath?.points?.map(p => [+p.x.toFixed(2), +(p.z - lab.origin).toFixed(2)])) || [];
+          const pts = cur.map(p => p.slice());
+          if (pts.length >= 2) {
+            const p0 = pts[0];
+            const p1 = pts[1];
+            const dx = p0[0] - p1[0], dz = p0[1] - p1[1];
+            const len = Math.hypot(dx, dz) || 1;
+            pts.unshift([+(p0[0] + dx / len * 3.5).toFixed(2), +(p0[1] + dz / len * 3.5).toFixed(2)]);
+            setRoutePoints(o, pts, lab.origin);
+            lab.selectedPoint = { route: o, index: 0 };
+          }
+        }
+        if (props.insertPointAfter !== undefined) {
+          const cur = (o.userData.customPoints || o.userData.routePath?.points?.map(p => [+p.x.toFixed(2), +(p.z - lab.origin).toFixed(2)])) || [];
+          const pts = cur.map(p => p.slice());
+          const idx = props.insertPointAfter;
+          if (idx >= 0 && idx < pts.length) {
+            if (idx === pts.length - 1) {
+              const last = pts[pts.length - 1];
+              const prev = pts[pts.length - 2] || [last[0], last[1] - 4];
+              const dx = last[0] - prev[0], dz = last[1] - prev[1];
+              const len = Math.hypot(dx, dz) || 1;
+              pts.push([+(last[0] + dx / len * 3.5).toFixed(2), +(last[1] + dz / len * 3.5).toFixed(2)]);
+              setRoutePoints(o, pts, lab.origin);
+              lab.selectedPoint = { route: o, index: pts.length - 1 };
+            } else {
+              const pA = pts[idx], pB = pts[idx + 1];
+              const mid = [+((pA[0] + pB[0]) / 2).toFixed(2), +((pA[1] + pB[1]) / 2).toFixed(2)];
+              pts.splice(idx + 1, 0, mid);
+              setRoutePoints(o, pts, lab.origin);
+              lab.selectedPoint = { route: o, index: idx + 1 };
+            }
+          }
+        }
+        if (props.simplifyPoints) {
+          const cur = (o.userData.customPoints || o.userData.routePath?.points?.map(p => [+p.x.toFixed(2), +(p.z - lab.origin).toFixed(2)])) || [];
+          if (cur.length > 4) {
+            const pts = simplifyRoutePoints(cur, 4);
+            setRoutePoints(o, pts, lab.origin);
+            lab.selectedPoint = { route: o, index: 0 };
+          }
         }
       }
       if (props.blinker !== undefined) {
