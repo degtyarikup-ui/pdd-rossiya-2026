@@ -34,21 +34,8 @@
   // Seasons follow the player's calendar (debug override via setSeason).
   // Each one tints ground, pavement, roofs and tree canopies, sets the light
   // and sky mood and decides what falls from the sky.
-  const SEASONS = {
-    summer: { ground: 0x86A97A, verge: [0x86A97A, 0x86A97A, 0x86A97A], sky: 0xDEE4E5, skyDark: 0x252B30,
-      sun: 0xFFF9EE, sunIntensity: 0.6, ambient: 0.72, canopy: [0x4C9A4F, 0x3F8A46, 0x7FB069, 0x5FA85A],
-      birch: 0x7FB069, pine: [0x388E3C, 0x43A047], roof: null, sidewalk: 0x747970, precipitation: 'rain', hillColor: 0x6E8F63 },
-    autumn: { ground: 0x9CA56A, verge: [0x9CA56A, 0x9CA56A, 0x9CA56A], sky: 0xE8E1D1, skyDark: 0x2A2823,
-      sun: 0xFFE3B8, sunIntensity: 0.56, ambient: 0.7, canopy: [0xD98A2B, 0xC94F2B, 0xE0B33C, 0xB86A2A, 0xC7A24A],
-      birch: 0xE0B33C, pine: [0x3E7C42, 0x467E3C], roof: null, sidewalk: 0x7A776F, precipitation: 'rain', hillColor: 0x8E8A55 },
-    winter: { ground: 0xE4E8EC, verge: [0xE4E8EC, 0xE4E8EC, 0xE4E8EC], sky: 0xE1E6EB, skyDark: 0x20262C,
-      sun: 0xEAF1FA, sunIntensity: 0.5, ambient: 0.82, canopy: [0x8A7A66, 0x9C8B78, 0xBDC6CC, 0x8C8578],
-      birch: 0xB9C4CC, pine: [0x3A6B45, 0x40704A], roof: 0xC7D0D8, sidewalk: 0xB9C0C6, precipitation: 'snow', hillColor: 0xD8DEE3 },
-  };
-  function seasonFromDate() {
-    const m = new Date().getMonth() + 1;
-    return m >= 9 && m <= 11 ? 'autumn' : (m === 12 || m <= 2) ? 'winter' : 'summer';
-  }
+  const SEASONS = window.PDD_SEASONS.palettes;
+  const seasonFromDate = window.PDD_SEASONS.fromDate;
   let currentSeason = SEASONS[seasonFromDate()];
   const season = () => currentSeason;
   // The HUD draws its bare numbers dark over snow in either UI theme.
@@ -6636,16 +6623,8 @@
 
 
   // Procedural appearances: no texture downloads or extra image assets.
-  const PEOPLE_COLORS = [0x3979A3, 0xB6654F, 0x66845A, 0xD5AA49, 0x865E94, 0xD4C8B3];
-  function personLook(variant) {
-    return {
-      variant,
-      skin: [0xE9AF83, 0xC58C65, 0xF2C9A5, 0x986647][variant % 4],
-      hair: [0x49372B, 0xB68A4E, 0x392D2B, 0xB4ACA1][Math.floor(variant / 3) % 4],
-      pants: [0x344759, 0x55544E, 0x37473B, 0x655066][variant % 4],
-      top: PEOPLE_COLORS[variant % PEOPLE_COLORS.length],
-    };
-  }
+  const PEOPLE_COLORS = window.PDD_STREET.peopleColors;
+  function personLook(variant) { return window.PDD_STREET.personLook(variant); }
   function modelPart(group, geometry, color, x, y, z) {
     const mesh = new THREE.Mesh(geometry, sceneryMat(color));
     mesh.position.set(x, y, z); mesh.castShadow = true; group.add(mesh);
@@ -6735,41 +6714,7 @@
   }
 
   // --- Pedestrian Model Factory ---
-  function createPedestrian(color = 0x0574F8, variant = Math.floor(Math.random() * 12)) {
-    const ped = new THREE.Group(), look = personLook(variant);
-    ped.userData.arms = []; ped.userData.legs = [];
-    [-1, 1].forEach(side => {
-      const hip = new THREE.Group(); hip.position.set(side * 0.11, 0.65, 0);
-      modelBox(hip, [0.15, 0.6, 0.16], look.pants, 0, -0.3, 0);
-      modelBox(hip, [0.17, 0.09, 0.25], 0xECE5D6, 0, -0.61, 0.035);
-      mergeModelParts(hip); ped.add(hip); ped.userData.legs.push(hip);
-      const arm = new THREE.Group(); arm.position.set(side * 0.27, 1.12, 0);
-      arm.rotation.z = side * 0.1;
-      modelBox(arm, [0.13, 0.38, 0.14], color, 0, -0.16, 0);
-      modelBox(arm, [0.12, 0.12, 0.13], look.skin, 0, -0.4, 0);
-      mergeModelParts(arm); ped.add(arm); ped.userData.arms.push(arm);
-    });
-    modelBox(ped, [0.42, 0.58, 0.26], color, 0, 0.92, 0);
-    // Clothing detail within the same outline: belt, collar, zip, neck, eyes.
-    const shade = k => new THREE.Color(color).multiplyScalar(k).getHex();
-    modelBox(ped, [0.43, 0.06, 0.27], 0x2B2F33, 0, 0.66, 0);
-    modelBox(ped, [0.3, 0.06, 0.24], shade(0.75), 0, 1.19, 0.01);
-    modelBox(ped, [0.025, 0.46, 0.01], shade(0.6), 0, 0.93, 0.131);
-    modelPart(ped, new THREE.CylinderGeometry(0.07, 0.07, 0.08, 8), look.skin, 0, 1.23, 0);
-    for (const ex of [-0.06, 0.06]) modelBox(ped, [0.035, 0.035, 0.02], 0x2B2F33, ex, 1.38, 0.178);
-    modelPart(ped, new THREE.SphereGeometry(0.18, 8, 6), look.skin, 0, 1.36, 0);
-    const hat = variant % 3;
-    modelPart(ped, new THREE.SphereGeometry(0.185, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2),
-      hat === 0 ? look.top : look.hair, 0, 1.39, 0);
-    if (hat === 0) modelBox(ped, [0.25, 0.04, 0.18], look.top, 0, 1.42, 0.14);
-    if (hat === 2) modelBox(ped, [0.3, 0.25, 0.09], look.hair, 0, 1.28, -0.14);
-    if (variant % 2) modelBox(ped, [0.3, 0.4, 0.16], look.top, 0, 0.95, -0.19);
-    mergeModelParts(ped);
-    const height = [0.94, 1.04, 1, 1.09][variant % 4];
-    ped.scale.set(variant % 3 === 1 ? 1.08 : 1, height, 1);
-    ped.userData.appearance = variant;
-    return ped;
-  }
+  function createPedestrian(...args) { return window.PDD_STREET.createPedestrian(...args); }
 
   // --- Russian Road Sign Factory (GOST 52290) ---
   // Sign faces must sit fully in front of the thickest support. Keeping this
@@ -6877,131 +6822,8 @@
 
   // --- Traffic Controller Factory (Регулировщик, ГОСТ / ПДД 6.10) ---
   function createTrafficController(pose = 'arms_down', orientation = 'front') {
-    const group = new THREE.Group();
-    group.userData.isRegulator = true;
-    group.userData.pose = pose;
+    const group = window.PDD_CONTROLLER.create(pose);
     group.userData.orientation = orientation;
-
-    const darkUniform = new THREE.MeshLambertMaterial({ color: 0x1E293B });
-    const vestLime = new THREE.MeshLambertMaterial({ color: 0x84CC16 });
-    const stripeSilver = new THREE.MeshLambertMaterial({ color: 0xF1F5F9 });
-    const skinMat = new THREE.MeshLambertMaterial({ color: 0xE2A76F });
-    const capMat = new THREE.MeshLambertMaterial({ color: 0x0F172A });
-    const whiteMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
-    const blackMat = new THREE.MeshLambertMaterial({ color: 0x111827 });
-
-    // Boots
-    [-0.14, 0.14].forEach(x => {
-      const boot = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 0.32), blackMat);
-      boot.position.set(x, 0.08, 0.04);
-      group.add(boot);
-    });
-
-    // Legs
-    [-0.14, 0.14].forEach(x => {
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.85, 8), darkUniform);
-      leg.position.set(x, 0.58, 0);
-      group.add(leg);
-    });
-
-    // Torso with vest
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.65, 0.3), vestLime);
-    torso.position.set(0, 1.28, 0);
-    group.add(torso);
-
-    // Reflective stripes on vest
-    const hStripe = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.08, 0.32), stripeSilver);
-    hStripe.position.set(0, 1.18, 0);
-    group.add(hStripe);
-
-    [-0.15, 0.15].forEach(x => {
-      const vStripe = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.45, 0.32), stripeSilver);
-      vStripe.position.set(x, 1.38, 0);
-      group.add(vStripe);
-    });
-
-    // Head
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.26, 0.24), skinMat);
-    head.position.set(0, 1.73, 0);
-    group.add(head);
-
-    // Police Cap
-    const capBand = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.08, 12), capMat);
-    capBand.position.set(0, 1.86, 0);
-    group.add(capBand);
-    const capCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.15, 0.06, 12), capMat);
-    capCrown.position.set(0, 1.92, 0);
-    group.add(capCrown);
-    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.02, 0.14), blackMat);
-    visor.position.set(0, 1.84, 0.18);
-    visor.rotation.x = 0.2;
-    group.add(visor);
-    const cockade = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.02), new THREE.MeshLambertMaterial({ color: 0xF59E0B }));
-    cockade.position.set(0, 1.88, 0.15);
-    group.add(cockade);
-
-    function createBaton() {
-      const batonGroup = new THREE.Group();
-      const bWhite = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.44, 8), whiteMat);
-      batonGroup.add(bWhite);
-      for (let i = -1; i <= 1; i++) {
-        const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.023, 0.023, 0.07, 8), blackMat);
-        stripe.position.y = i * 0.12;
-        batonGroup.add(stripe);
-      }
-      return batonGroup;
-    }
-
-    // He faces +Z, so his right hand is on -X (6.10 is about the RIGHT arm:
-    // a mirrored figure turns «left side, right arm forward» into a
-    // prohibiting right side).
-    const RX = -1;
-    if (pose === 'right_arm_forward') {
-      const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.65), darkUniform);
-      rArm.position.set(RX * 0.32, 1.45, 0.32);
-      group.add(rArm);
-      const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), skinMat);
-      rHand.position.set(RX * 0.32, 1.45, 0.66);
-      group.add(rHand);
-      const baton = createBaton();
-      baton.rotation.x = Math.PI / 2;
-      baton.position.set(RX * 0.32, 1.45, 0.88);
-      group.add(baton);
-
-      const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), darkUniform);
-      lArm.position.set(-RX * 0.32, 1.25, 0);
-      group.add(lArm);
-    } else if (pose === 'arm_up') {
-      const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 0.12), darkUniform);
-      rArm.position.set(RX * 0.32, 1.8, 0);
-      group.add(rArm);
-      const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), skinMat);
-      rHand.position.set(RX * 0.32, 2.15, 0);
-      group.add(rHand);
-      const baton = createBaton();
-      baton.position.set(RX * 0.32, 2.4, 0);
-      group.add(baton);
-
-      const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), darkUniform);
-      lArm.position.set(-RX * 0.32, 1.25, 0);
-      group.add(lArm);
-    } else {
-      const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), darkUniform);
-      lArm.position.set(-RX * 0.32, 1.25, 0);
-      group.add(lArm);
-
-      const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), darkUniform);
-      rArm.position.set(RX * 0.32, 1.25, 0);
-      group.add(rArm);
-      const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), skinMat);
-      rHand.position.set(RX * 0.32, 0.94, 0);
-      group.add(rHand);
-      const baton = createBaton();
-      baton.rotation.z = -0.3 * RX;
-      baton.position.set(RX * 0.36, 0.8, 0);
-      group.add(baton);
-    }
-
     // Which side of him the player sees. The junction factory frame is
     // mirrored when the segment is registered (x and rotation.y flip), so
     // facing the player's left (his left side towards the player) is -π/2
@@ -7010,15 +6832,6 @@
     else if (orientation === 'back') group.rotation.y = 0;
     else if (orientation === 'left_side') group.rotation.y = -Math.PI / 2;
     else if (orientation === 'right_side') group.rotation.y = Math.PI / 2;
-
-    const pedestal = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.2, 1.3, 0.06, 24),
-      new THREE.MeshLambertMaterial({ color: 0xE2E8F0 })
-    );
-    pedestal.position.y = 0.03;
-    pedestal.receiveShadow = true;
-    pedestal.visible = false; // Controller stands directly on the carriageway.
-    group.add(pedestal);
 
     return group;
   }
@@ -7332,21 +7145,7 @@
     });
     return cat;
   }
-  function createLampPost() {
-    const lamp = new THREE.Group();
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 5.2, 6), null);
-    pole.position.y = 2.6;
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.08, 0.08), null);
-    arm.position.set(-0.6, 5.1, 0);
-    // A cast foot and a collar where the arm joins (same mesh as the pole).
-    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.17, 0.5, 8), null); foot.position.y = 0.25;
-    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.16, 8), null); collar.position.y = 5.1;
-    const parts = [pole, arm, foot, collar];
-    lamp.add(mergeStatic(parts, sceneryMat(0x5B646A))); parts.forEach(m => m.geometry.dispose());
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.26), new THREE.MeshBasicMaterial({ color: 0xE6E9D8 }));
-    head.position.set(-1.25, 5.05, 0); lamp.add(head);
-    return lamp;
-  }
+  function createLampPost() { return window.PDD_STREET.createLampPost(); }
   // A picket fence: posts every 1.2 m, two rails and pointed pickets, all
   // one mesh in a wood material. Same 1 m height and footprint as before.
   function createFence(length) {
@@ -10071,9 +9870,8 @@
       // (feet stepping), never an instant flip.
       const turning = turnToward(a.mesh, direction >= 0 ? 0 : Math.PI, dt, 2.6);
       const stride = Math.max(Math.abs(direction), turning ? 0.35 : 0);
-      a.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(a.time * 5 + i * Math.PI) * 0.32 * stride; });
+      window.PDD_STREET.animateWalk(a.mesh, a.time, stride, Math.abs(direction));
       if (a.mesh.userData.dog) a.mesh.userData.dog.userData.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(a.time * 9 + i * Math.PI / 2) * 0.55 * Math.abs(direction); });
-      a.mesh.userData.arms.forEach((arm, i) => { arm.rotation.x = Math.sin(a.time * 5 + i * Math.PI) * -0.2 * Math.abs(direction); });
     });
     // One world-space snapshot makes following independent of actor order and
     // works after turns/rebasing, where neighbouring tasks have different parents.
@@ -13463,75 +13261,10 @@
   // Sparse and slow, in the canopy colours of the season; they tumble, land
   // on the ground, lie there a moment and fade. A single instanced mesh.
   let leafFx = null;
-  function ensureLeafFx() {
-    if (leafFx) return leafFx;
-    const shape = new THREE.Shape();
-    shape.moveTo(0, -0.17);
-    shape.quadraticCurveTo(0.13, -0.05, 0.02, 0.17);
-    shape.lineTo(0, 0.2);
-    shape.quadraticCurveTo(-0.13, -0.05, 0, -0.17);
-    const geometry = new THREE.ShapeGeometry(shape, 3);
-    geometry.rotateX(-Math.PI / 2);
-    const count = state.lowEnd ? 18 : 36;
-    const mesh = new THREE.InstancedMesh(geometry, new THREE.MeshLambertMaterial({ side: THREE.DoubleSide }), count);
-    mesh.frustumCulled = false; mesh.castShadow = false;
-    const leaves = [];
-    for (let i = 0; i < count; i++) leaves.push({ born: false });
-    scene.add(mesh);
-    leafFx = { mesh, leaves, count, dummy: new THREE.Object3D(), colour: new THREE.Color() };
-    return leafFx;
-  }
-  function spawnLeaf(leaf, centre, anywhereHigh) {
-    const palette = season().canopy;
-    leaf.x = centre.x + (Math.random() - 0.5) * 56;
-    leaf.z = centre.z + (Math.random() - 0.4) * 70;
-    leaf.y = anywhereHigh ? 1 + Math.random() * 13 : 12 + Math.random() * 4;
-    leaf.fall = 0.55 + Math.random() * 0.5;
-    leaf.sway = 0.6 + Math.random() * 0.9; leaf.swayRate = 1.1 + Math.random() * 1.3; leaf.phase = Math.random() * 6.3;
-    leaf.spin = (Math.random() - 0.5) * 5; leaf.tumble = 2 + Math.random() * 3;
-    leaf.rot = Math.random() * 6.3; leaf.rest = 0; leaf.scale = 1.3 + Math.random() * 0.7; leaf.time = 0;
-    leaf.colour = palette[Math.floor(Math.random() * palette.length)];
-    leaf.born = true;
-  }
   function updateLeaves(dt) {
-    const autumn = season() === SEASONS.autumn && !reveal;
-    if (!autumn) { if (leafFx) leafFx.mesh.visible = false; return; }
-    const fx = ensureLeafFx();
-    fx.mesh.visible = true;
-    const centre = cameraLook;
-    // Rain knocks most of them down: fewer leaves in the air.
-    const active = Math.round(fx.count * (1 - 0.6 * (state.rain || 0)));
-    fx.leaves.forEach((leaf, i) => {
-      const d = fx.dummy;
-      if (!leaf.born || (i >= active && leaf.y > 0.05 && !leaf.rest)) {
-        if (!leaf.born) spawnLeaf(leaf, centre, true);
-        if (i >= active) { d.scale.setScalar(0.0001); d.updateMatrix(); fx.mesh.setMatrixAt(i, d.matrix); leaf.born = false; return; }
-      }
-      leaf.time += dt;
-      let fade = 1;
-      if (leaf.y > 0.03) {
-        // A light breeze towards the camera; the sway is the leaf rocking.
-        leaf.y = Math.max(0.03, leaf.y - leaf.fall * dt * (1 + 0.35 * Math.sin(leaf.time * leaf.swayRate * 2 + leaf.phase)));
-        leaf.x += (Math.cos(leaf.time * leaf.swayRate + leaf.phase) * leaf.sway + 0.25) * dt;
-        leaf.z += (-0.6 + Math.sin(leaf.time * leaf.swayRate * 0.7 + leaf.phase) * 0.3) * dt;
-        leaf.rot += leaf.spin * dt;
-        d.rotation.set(Math.sin(leaf.time * leaf.tumble + leaf.phase) * 0.9, leaf.rot, Math.cos(leaf.time * leaf.tumble * 0.8) * 0.7);
-      } else {
-        leaf.rest += dt;
-        d.rotation.set(0, leaf.rot, 0);
-        fade = 1 - THREE.MathUtils.smoothstep(leaf.rest, 2.5, 4);
-        if (leaf.rest > 4) spawnLeaf(leaf, centre, false);
-      }
-      // Leaves left far behind the moving view start again above it.
-      if (Math.abs(leaf.x - centre.x) > 40 || Math.abs(leaf.z - centre.z) > 50) spawnLeaf(leaf, centre, false);
-      d.position.set(leaf.x, leaf.y, leaf.z);
-      d.scale.setScalar(leaf.scale * Math.max(0.0001, fade));
-      d.updateMatrix();
-      fx.mesh.setMatrixAt(i, d.matrix);
-      fx.mesh.setColorAt(i, fx.colour.setHex(leaf.colour));
-    });
-    fx.mesh.instanceMatrix.needsUpdate = true;
-    if (fx.mesh.instanceColor) fx.mesh.instanceColor.needsUpdate = true;
+    if (!leafFx && season() !== SEASONS.autumn) return;
+    if (!leafFx) leafFx = window.PDD_SEASONS.createLeaves(scene, { lowEnd: state.lowEnd, palette: () => season().canopy });
+    leafFx.update(dt, { enabled: season() === SEASONS.autumn && !reveal, centre: cameraLook, rain: state.rain || 0 });
   }
 
   // --- Attract mode (signed-out visitors): the city lives, the player waits ---

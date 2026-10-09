@@ -1,5 +1,5 @@
 // 3D-симулятор и игра «Регулировщик 3D» на Three.js
-// Реализует сигналы регулировщика по п. 6.10 ПДД РФ для авто и трамваев.
+// Мини-игра проверяет сигналы для автомобиля по п. 6.10 ПДД РФ.
 // Высокодетализированная городская сцена перекрёстка с аутентичными моделями.
 
 (() => {
@@ -7,7 +7,8 @@
 
   // --- Константы правил п. 6.10 ПДД ---
   const GESTURES = {
-    HANDS_DOWN: 'handsDownOrSides',
+    HANDS_DOWN: 'handsDown',
+    HANDS_SIDES: 'handsSides',
     RIGHT_ARM_FORWARD: 'rightArmForward',
     ARM_UP: 'armUp',
   };
@@ -37,7 +38,7 @@
     if (gesture === GESTURES.ARM_UP) {
       return [MOVES.NONE];
     }
-    if (gesture === GESTURES.HANDS_DOWN) {
+    if (gesture === GESTURES.HANDS_DOWN || gesture === GESTURES.HANDS_SIDES) {
       if (approach === APPROACHES.LEFT || approach === APPROACHES.RIGHT) {
         return vehicle === VEHICLES.TRAM ? [MOVES.STRAIGHT] : [MOVES.STRAIGHT, MOVES.RIGHT];
       }
@@ -76,31 +77,38 @@
     buildingColors: [0xF5F6FA, 0xE9ECF2, 0xDDE1EA, 0xC6CCD8, 0xB5675A, 0xA9B4C2],
     windowColor: 0x64748B,
     playerCar: 0x0574F8,
-    tramRed: 0xD32F2F,
-    tramWhite: 0xF5F5F5
   };
 
   // --- Переменные сцены ---
   let scene, camera, renderer;
   let container;
-  let inspectorGroup, headMesh, leftArmPivot, rightArmPivot, batonMesh, vestMesh;
-  let carMesh, tramMesh;
-  let activeVehicleMesh;
+  let inspectorGroup, leftArmPivot, rightArmPivot, vestMesh;
+  const seasonName = window.PDD_SEASONS.fromDate();
+  const season = window.PDD_SEASONS.palettes[seasonName];
+  // Match the main game: WebKit caps core counts, so four cores alone
+  // should not degrade image quality on modern iPhones.
+  const lowEnd = (navigator.hardwareConcurrency || 8) <= 2 || (navigator.deviceMemory || 8) <= 3;
+  const weak = lowEnd || (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
+  let leaves;
+  const walkers = [];
+  const leafCentre = new THREE.Vector3(0, 0, 0);
+  let carMesh;
   let arrowsGroup;
   let envGroup;
   let skyDome;
-  let streetLights = [];
   let isMoving = false;
   let moveProgress = 0;
   let moveCurve = null;
   let movingObject = null;
-  const initialObjectPos = new THREE.Vector3();
-  let initialObjectRotY = Math.PI;
+  let moveElapsed = 0;
+  let moveDuration = 1.8;
+  let activeMove = null;
+  let activeMoveId = null;
 
   // Состояние
   let currentGesture = GESTURES.RIGHT_ARM_FORWARD;
   let currentApproach = APPROACHES.LEFT;
-  let currentVehicle = VEHICLES.CAR;
+  const currentVehicle = VEHICLES.CAR;
   let currentCameraMode = 'driver';   // 'overview' | 'driver' (игрок — водитель)
   let currentMode = 'training';       // 'training' | 'arcade'
   let activeBlinkerSide = null;       // 'left' | 'right' | null
@@ -127,13 +135,13 @@
     const height = container.clientHeight || window.innerHeight;
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xDEE4E5);
+    scene.background = new THREE.Color(season.sky);
     // Дымка в цвет горизонта: дальний город растворяется, края мира не видно.
-    scene.fog = new THREE.Fog(0xB9D6EE, 120, 330);
+    scene.fog = new THREE.Fog(season.sky, 120, 330);
 
     // Процедурный градиентный купол неба с облаками (как во флагманской игре)
     skyDome = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), new THREE.ShaderMaterial({
-      uniforms: { horizon: { value: new THREE.Color(0xB9D6EE) }, zenith: { value: new THREE.Color(0x6FA8DC) }, cloud: { value: 0.55 } },
+      uniforms: { horizon: { value: new THREE.Color(season.sky) }, zenith: { value: new THREE.Color(season.sky) }, cloud: { value: 0.55 } },
       vertexShader: 'varying vec3 vDir; void main(){ vDir = position; vec4 p = projectionMatrix * vec4((modelViewMatrix * vec4(position, 0.0)).xyz, 1.0); gl_Position = p.xyww; }',
       fragmentShader: [
         'uniform vec3 horizon; uniform vec3 zenith; uniform float cloud; varying vec3 vDir;',
@@ -153,9 +161,9 @@
     camera = new THREE.PerspectiveCamera(42, width / height, 0.5, 420);
     updateCameraPosition();
 
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    renderer = new THREE.WebGLRenderer({ antialias: !lowEnd, alpha: false, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowEnd ? 1.25 : 1.75));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -182,20 +190,24 @@
     // Сообщаем Flutter о готовности
     notifyFlutter({ type: 'ready' });
 
+    if (seasonName === 'autumn') leaves = window.PDD_SEASONS.createLeaves(scene, {
+      lowEnd, palette: () => season.canopy, count: lowEnd ? 6 : 12,
+      scaleMin: 0.55, scaleMax: 0.85, spanX: 32, spanZ: 44, height: 7, spreadEvenly: true,
+    });
     animate();
   }
 
   function setupLighting() {
     // Рассеянный дневной свет (как во флагманской игре)
-    const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.75);
+    const ambientLight = new THREE.AmbientLight(0xFFFFFF, season.ambient);
     scene.add(ambientLight);
 
     // Верхнее солнце с естественными мягкими тенями
-    const sunLight = new THREE.DirectionalLight(0xFFF9EE, 0.85);
+    const sunLight = new THREE.DirectionalLight(season.sun, season.sunIntensity);
     sunLight.position.set(16, 68, 14);
     sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 1024;
-    sunLight.shadow.mapSize.height = 1024;
+    sunLight.shadow.mapSize.width = lowEnd ? 512 : 1024;
+    sunLight.shadow.mapSize.height = lowEnd ? 512 : 1024;
     sunLight.shadow.camera.near = 10;
     sunLight.shadow.camera.far = 180;
     const d = 36;
@@ -220,7 +232,7 @@
 
     // Ландшафт / трава вокруг города (с процедурной фактурой grass)
     const groundGeo = new THREE.PlaneGeometry(900, 900);
-    const groundMat = new THREE.MeshLambertMaterial({ color: BRAND.grass });
+    const groundMat = new THREE.MeshLambertMaterial({ color: season.ground });
     groundMat.userData.pddKind = 'grass';
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
@@ -263,7 +275,7 @@
     buildSidewalks(envGroup, roadWidth);
     buildCity(envGroup, roadWidth);
     buildStreetFurniture(envGroup, roadWidth);
-    buildTramTracks(envGroup);
+    buildPedestrians(envGroup, roadWidth);
     buildCentralPedestal(envGroup);
   }
 
@@ -342,11 +354,11 @@
     });
     kerbMat.userData.pddKind = 'pavement';
     const walkMat = new THREE.MeshLambertMaterial({
-      color: BRAND.sidewalk,
+      color: season.sidewalk,
     });
     walkMat.userData.pddKind = 'pavement';
     const lawnMat = new THREE.MeshLambertMaterial({
-      color: BRAND.grassDark,
+      color: season.verge[1],
     });
     lawnMat.userData.pddKind = 'grass';
 
@@ -463,7 +475,7 @@
       }
       return bodies.get(key);
     };
-    const roofMat = new THREE.MeshLambertMaterial({ color: 0x94A3B8 });
+    const roofMat = new THREE.MeshLambertMaterial({ color: season.roof ?? 0x94A3B8 });
     const glassMat = new THREE.MeshBasicMaterial({ color: 0x708995 });
     const awningColors = [0xE0533F, 0x2F6F9F, 0x3E8E5E, 0xD9A441];
     const awningMats = awningColors.map(c => new THREE.MeshLambertMaterial({ color: c }));
@@ -586,8 +598,8 @@
   function buildStreetTrees(parent, halfW, rnd) {
     const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5D4534 });
     const leafMats = [
-      new THREE.MeshLambertMaterial({ color: 0x48793C }),
-      new THREE.MeshLambertMaterial({ color: 0x568F48 }),
+      new THREE.MeshLambertMaterial({ color: season.canopy[0] }),
+      new THREE.MeshLambertMaterial({ color: season.canopy[1] }),
     ];
     const trunks = [], crowns = [[], []];
     const line = halfW + SIDEWALK - 1.4;
@@ -644,135 +656,83 @@
     parent.add(mesh);
   }
 
-  // Фонари вдоль улиц: все мачты одним мешем, все плафоны — другим.
-  function buildStreetLamps(parent, halfW) {
-    const poleMat = new THREE.MeshStandardMaterial({ color: 0x242830, metalness: 0.75, roughness: 0.35 });
-    const glowMat = new THREE.MeshBasicMaterial({ color: 0xFFF7D6 });
-    const poles = [], bulbs = [];
-    const line = halfW + 0.9;
-    const lamp = (x, z, rotY) => {
-      const holder = new THREE.Group();
-      holder.position.set(x, 0.18, z);
-      holder.rotation.y = rotY;
-      holder.updateMatrix();
-      const add = (geo, px, py, pz, rz, bucket, mat) => {
-        const m = new THREE.Mesh(geo, mat);
-        m.position.set(px, py, pz);
-        if (rz) m.rotation.z = rz;
-        m.updateMatrix();
-        m.matrix.premultiply(holder.matrix);
-        m.matrix.decompose(m.position, m.quaternion, m.scale);
-        bucket.push(m);
-      };
-      add(new THREE.CylinderGeometry(0.07, 0.12, 6.4, 6), 0, 3.2, 0, 0, poles, poleMat);
-      add(new THREE.BoxGeometry(1.3, 0.08, 0.1), 0.6, 6.35, 0, 0, poles, poleMat);
-      add(new THREE.BoxGeometry(0.6, 0.12, 0.28), 1.25, 6.3, 0, 0, poles, poleMat);
-      add(new THREE.BoxGeometry(0.5, 0.03, 0.22), 1.25, 6.23, 0, 0, bulbs, glowMat);
-    };
-    for (let along = halfW + 22; along < 150; along += 24) {
-      [-1, 1].forEach(dir => [-1, 1].forEach(side => {
-        lamp(side * line, dir * along, side > 0 ? Math.PI : 0);
-        lamp(dir * along, side * line, side > 0 ? Math.PI / 2 : -Math.PI / 2);
-      }));
-    }
-    parent.add(mergeMeshes(poles, poleMat));
-    parent.add(mergeMeshes(bulbs, glowMat));
-  }
-
-  // Уличная мебель: фонарные столбы, деревья, дорожные знаки
+  // Same lamp factory and workshop edits as the main game. Bake all static
+  // parts into one mesh per material (normally just grey pole + light).
   function buildStreetFurniture(parent, roadWidth) {
     const halfW = roadWidth / 2;
-
-    // 4 угловых фонарных столба с теплыми светящимися лампами
-    const lampPositions = [
-      { x: halfW + 1.2, z: halfW + 1.2, rot: Math.PI * 0.75 },
-      { x: -(halfW + 1.2), z: halfW + 1.2, rot: Math.PI * 0.25 },
-      { x: halfW + 1.2, z: -(halfW + 1.2), rot: -Math.PI * 0.75 },
-      { x: -(halfW + 1.2), z: -(halfW + 1.2), rot: -Math.PI * 0.25 },
-    ];
-
-    lampPositions.forEach(p => {
-      const lamp = buildStreetLamp();
-      lamp.position.set(p.x, 0.18, p.z);
-      lamp.rotation.y = p.rot;
-      parent.add(lamp);
+    const parts = new Map();
+    function place(x, z, angle) {
+      const model = window.PDD_VEHICLES.applyModelEdits('lamp', window.PDD_STREET.createLampPost());
+      model.position.set(x, 0.18, z); model.rotation.y = angle;
+      model.updateMatrixWorld(true);
+      model.traverse(node => {
+        if (!node.isMesh || !node.visible) return;
+        const mat = node.material;
+        const key = `${mat.type}:${mat.color.getHex()}:${mat.side}:${mat.opacity}`;
+        if (!parts.has(key)) parts.set(key, {mat, meshes: []});
+        const mesh = new THREE.Mesh(node.geometry.clone(), mat);
+        node.matrixWorld.decompose(mesh.position, mesh.quaternion, mesh.scale);
+        parts.get(key).meshes.push(mesh);
+        node.geometry.dispose();
+      });
+    }
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      place(sx * (halfW + 1.2), sz * (halfW + 1.2), Math.atan2(-sz, sx));
+    }
+    const line = halfW + 0.9;
+    for (let along = halfW + 22; along < 150; along += 24) {
+      for (const dir of [-1, 1]) for (const side of [-1, 1]) {
+        place(side * line, dir * along, side > 0 ? 0 : Math.PI);
+        place(dir * along, side * line, side > 0 ? -Math.PI / 2 : Math.PI / 2);
+      }
+    }
+    parts.forEach(({meshes, mat}) => {
+      const mesh = mergeMeshes(meshes, mat);
+      mesh.userData.streetLamp = true;
+      mesh.castShadow = mat.type !== 'MeshBasicMaterial';
+      mesh.receiveShadow = true;
+      parent.add(mesh);
     });
-
-    buildStreetLamps(parent, halfW);
   }
 
-  function buildStreetLamp() {
-    const group = new THREE.Group();
-    const poleMat = new THREE.MeshStandardMaterial({
-      color: 0x242830,
-      metalness: 0.75,
-      roughness: 0.35,
-    });
-    const glowMat = new THREE.MeshBasicMaterial({
-      color: 0xFFF7D6,
-    });
-
-    // 1. Основание столба
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.5, 12), poleMat);
-    base.position.y = 0.25;
-    base.castShadow = true;
-    group.add(base);
-
-    // 2. Вертикальная мачта
-    const poleH = 5.8;
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.14, poleH, 12), poleMat);
-    pole.position.y = 0.5 + poleH / 2;
-    pole.castShadow = true;
-    group.add(pole);
-
-    // 3. Верхушка мачты (шарнир)
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 10), poleMat);
-    cap.position.set(0, 6.3, 0);
-    group.add(cap);
-
-    // 4. Изогнутый кронштейн к проезжей части
-    const armLength = 1.34;
-    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, armLength, 10), poleMat);
-    const armAngle = Math.atan2(1.2, 0.6);
-    arm.rotation.z = -armAngle;
-    arm.position.set(0.6, 6.6, 0);
-    group.add(arm);
-
-    // 5. Корпус светильника (строго смонтирован на кончике кронштейна в 1.2, 6.9, 0)
-    const headGroup = new THREE.Group();
-    headGroup.position.set(1.2, 6.9, 0);
-    headGroup.rotation.z = -0.18;
-
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.12, 0.28), poleMat);
-    head.position.set(0.28, 0, 0);
-    headGroup.add(head);
-
-    const bulb = new THREE.Mesh(new THREE.PlaneGeometry(0.52, 0.22), glowMat);
-    bulb.rotation.x = Math.PI / 2;
-    bulb.position.set(0.28, -0.062, 0);
-    headGroup.add(bulb);
-
-    group.add(headGroup);
-
-    return group;
+  function buildPedestrians(parent, roadWidth) {
+    const colours = window.PDD_STREET.peopleColors;
+    const halfW = roadWidth / 2;
+    // One/two walkers per corner. Both coordinates always stay outside
+    // BOTH roads: no crossings, diagonal cuts or traffic/collision actors.
+    const corners = [[-1, -1], [1, 1], [1, -1], [-1, 1]];
+    const count = weak ? 4 : 8;
+    for (let i = 0; i < count; i++) {
+      const [sx, sz] = corners[i % 4];
+      const axis = i % 2 === Math.floor(i / 4) ? 'z' : 'x';
+      const mesh = window.PDD_VEHICLES.applyModelEdits('pedestrian',
+        window.PDD_STREET.createPedestrian(colours[i % colours.length], (i * 3 + 1) % 12));
+      mesh.position.y = 0.18;
+      mesh.userData.ambient = true; mesh.userData.noCollision = true;
+      mesh.traverse(node => { if (node.isMesh) node.castShadow = !weak; });
+      parent.add(mesh);
+      walkers.push({mesh, sx, sz, axis, curb: halfW + 1.8, centre: halfW + 17,
+        distance: 11, time: 0, phase: i * 1.9, pace: 0.075 + (i % 3) * 0.008});
+    }
+    updatePedestrians(0);
   }
 
-  // Трамвайные пути (аккуратные стальные рельсы, утопленные в асфальт)
-  function buildTramTracks(parent) {
-    const railMat = new THREE.MeshStandardMaterial({
-      color: 0x949AA5,
-      metalness: 0.88,
-      roughness: 0.22,
-    });
-
-    // Две стальные колеи
-    const railGeo = new THREE.BoxGeometry(0.1, 0.05, CITY_REACH * 2 + 20);
-    [-0.76, 0.76].forEach(offset => {
-      const rail = new THREE.Mesh(railGeo, railMat);
-      rail.position.set(-2.2 + offset, 0.045, 0);
-      rail.receiveShadow = true;
-      parent.add(rail);
-    });
+  function updatePedestrians(delta) {
+    for (const walker of walkers) {
+      walker.time += delta;
+      const phase = walker.phase + walker.time * walker.pace;
+      const along = walker.centre + Math.sin(phase) * walker.distance;
+      const {mesh, sx, sz, axis, curb} = walker;
+      mesh.position.x = sx * (axis === 'x' ? along : curb);
+      mesh.position.z = sz * (axis === 'z' ? along : curb);
+      const direction = Math.cos(phase);
+      const target = axis === 'x' ? (sx * direction >= 0 ? Math.PI / 2 : -Math.PI / 2)
+        : (sz * direction >= 0 ? 0 : Math.PI);
+      const turn = Math.atan2(Math.sin(target - mesh.rotation.y), Math.cos(target - mesh.rotation.y));
+      mesh.rotation.y += THREE.MathUtils.clamp(turn, -2.6 * delta, 2.6 * delta);
+      const stride = Math.max(Math.abs(direction), Math.abs(turn) > 0.05 ? 0.35 : 0);
+      window.PDD_STREET.animateWalk(mesh, walker.time + walker.phase, stride, Math.abs(direction));
+    }
   }
 
   // Центральный постамент регулировщика (аккуратный компактный островок под ногами)
@@ -799,368 +759,12 @@
 
   // --- 3D-модель инспектора ДПС (Регулировщик) ---
   function buildInspector() {
-    inspectorGroup = new THREE.Group();
-    inspectorGroup.position.set(0, 0.05, 0);
-
-    const uniformMat = new THREE.MeshStandardMaterial({ color: 0x1B263B, roughness: 0.75 }); // Темно-синяя форма ДПС
-    const stripePantsMat = new THREE.MeshStandardMaterial({ color: 0xD32F2F, roughness: 0.5 }); // Красный форменный кант
-    const vestMat = new THREE.MeshStandardMaterial({ color: 0xD0E800, roughness: 0.55 });     // Кислотно-салатовый сигнальный жилет ДПС
-    const scotchliteMat = new THREE.MeshStandardMaterial({ color: 0xF2F5F8, roughness: 0.15, metalness: 0.65 }); // Светоотражающие полосы ГОСТ
-    const skinMat = new THREE.MeshStandardMaterial({ color: 0xF3C3A0, roughness: 0.8 });     // Кожа лица и шеи
-    const gloveMat = new THREE.MeshStandardMaterial({ color: 0xF8F9FA, roughness: 0.35 });    // Белые уставные перчатки регулировщика
-    const leatherMat = new THREE.MeshStandardMaterial({ color: 0x121417, roughness: 0.3, metalness: 0.15 }); // Черная полированная кожа
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, metalness: 0.85, roughness: 0.25 }); // Золотая кокарда, шнур, бляха
-    const hairMat = new THREE.MeshStandardMaterial({ color: 0x221B16, roughness: 0.9 });      // Темные волосы
-
-    // --- 1. Обувь (полированные берцы) ---
-    [-0.12, 0.12].forEach(x => {
-      // Подошва
-      const sole = new THREE.Mesh(new THREE.BoxGeometry(0.105, 0.035, 0.28), leatherMat);
-      sole.position.set(x, 0.018, 0.02);
-      sole.castShadow = true;
-      inspectorGroup.add(sole);
-
-      // Каблук
-      const heel = new THREE.Mesh(new THREE.BoxGeometry(0.105, 0.03, 0.09), leatherMat);
-      heel.position.set(x, 0.035, -0.075);
-      inspectorGroup.add(heel);
-
-      // Союзка и носок
-      const bootTop = new THREE.Mesh(new THREE.BoxGeometry(0.098, 0.08, 0.22), leatherMat);
-      bootTop.position.set(x, 0.07, 0.04);
-      bootTop.castShadow = true;
-      inspectorGroup.add(bootTop);
-
-      // Голенище берца
-      const bootAnkle = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.06, 0.12, 14), leatherMat);
-      bootAnkle.position.set(x, 0.12, -0.01);
-      inspectorGroup.add(bootAnkle);
-    });
-
-    // --- 2. Брюки с кантом (стройные мужские пропорции) ---
-    [-0.12, 0.12].forEach(x => {
-      // Брючина (сужается от бедра к щиколотке)
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.068, 0.82, 16), uniformMat);
-      leg.position.set(x, 0.52, 0);
-      leg.castShadow = true;
-      inspectorGroup.add(leg);
-
-      // Красный форменный кант по внешнему шву
-      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.82, 0.02), stripePantsMat);
-      stripe.position.set(x + (x > 0 ? 0.082 : -0.082), 0.52, 0);
-      inspectorGroup.add(stripe);
-    });
-
-    // Тазовая часть брюк (анатомический овал вместо круга)
-    const pelvis = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.165, 0.20, 18), uniformMat);
-    pelvis.scale.set(1.15, 1.0, 0.65);
-    pelvis.position.set(0, 0.96, 0);
-    pelvis.castShadow = true;
-    inspectorGroup.add(pelvis);
-
-    // --- 3. Служебный ремень и экипировка ---
-    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.185, 0.185, 0.06, 18), leatherMat);
-    belt.scale.set(1.16, 1.0, 0.66);
-    belt.position.set(0, 1.05, 0);
-    inspectorGroup.add(belt);
-
-    // Золотая бляха ремня
-    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.02), goldMat);
-    buckle.position.set(0, 1.05, 0.185 * 0.66 + 0.008);
-    inspectorGroup.add(buckle);
-
-    // Кобура пистолета ПМ на правом бедре
-    const holster = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.16, 0.09), leatherMat);
-    holster.position.set(0.22, 0.98, 0.02);
-    inspectorGroup.add(holster);
-
-    // Рация на левом боку с антенной
-    const radio = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.06), leatherMat);
-    radio.position.set(-0.21, 1.04, 0.02);
-    inspectorGroup.add(radio);
-
-    const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.10, 8), leatherMat);
-    antenna.position.set(-0.21, 1.15, 0.03);
-    inspectorGroup.add(antenna);
-
-    // --- 4. Торс (V-образный атлетический силуэт в куртке и жилете ДПС) ---
-    // Темно-синяя куртка
-    const jacket = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.18, 0.56, 20), uniformMat);
-    jacket.scale.set(1.08, 1.0, 0.58);
-    jacket.position.set(0, 1.35, 0);
-    jacket.castShadow = true;
-    inspectorGroup.add(jacket);
-
-    // Сигнальный жилет ДПС повышенной видимости (ГОСТ)
-    vestMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.235, 0.186, 0.54, 20), vestMat);
-    vestMesh.scale.set(1.09, 1.0, 0.59);
-    vestMesh.position.set(0, 1.35, 0);
-    vestMesh.castShadow = true;
-    inspectorGroup.add(vestMesh);
-
-    // Горизонтальные светоотражающие полосы ГОСТ
-    [1.18, 1.34].forEach(y => {
-      const stripeH = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.20, 0.05, 20), scotchliteMat);
-      stripeH.scale.set(1.095, 1.0, 0.595);
-      stripeH.position.set(0, y, 0);
-      inspectorGroup.add(stripeH);
-    });
-
-    // Вертикальные плечевые светоотражающие полосы жилета
-    [-0.09, 0.09].forEach(x => {
-      const stripeVFront = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.24, 0.015), scotchliteMat);
-      stripeVFront.position.set(x, 1.49, 0.135);
-      inspectorGroup.add(stripeVFront);
-
-      const stripeVBack = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.24, 0.015), scotchliteMat);
-      stripeVBack.position.set(x, 1.49, -0.135);
-      inspectorGroup.add(stripeVBack);
-
-      const stripeVTop = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.015, 0.27), scotchliteMat);
-      stripeVTop.position.set(x, 1.625, 0);
-      inspectorGroup.add(stripeVTop);
-    });
-
-    // Световозвращающий шеврон «ДПС» на спине
-    const dpsBack = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.075, 0.015), uniformMat);
-    dpsBack.position.set(0, 1.48, -0.142);
-    inspectorGroup.add(dpsBack);
-
-    // Нагрудный жетон/шеврон инспектора слева на груди
-    const badge = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.048, 0.015), uniformMat);
-    badge.position.set(-0.09, 1.50, 0.142);
-    inspectorGroup.add(badge);
-
-    // Форменный галстук ДПС по центру рубашки
-    const tie = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.15, 0.015), uniformMat);
-    tie.position.set(0, 1.55, 0.138);
-    inspectorGroup.add(tie);
-
-    // Погоны на плечах с золотистыми лычками
-    [-0.19, 0.19].forEach(x => {
-      const epaulet = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.016, 0.13), uniformMat);
-      epaulet.position.set(x, 1.63, 0);
-      inspectorGroup.add(epaulet);
-
-      const epauletStripe = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.018, 0.018), goldMat);
-      epauletStripe.position.set(x, 1.632, 0);
-      inspectorGroup.add(epauletStripe);
-    });
-
-    // --- 5. Шея и голова ---
-    // Воротник формы
-    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.092, 0.06, 16), uniformMat);
-    collar.position.set(0, 1.66, 0);
-    inspectorGroup.add(collar);
-
-    // Шея
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.075, 0.10, 14), skinMat);
-    neck.position.set(0, 1.72, 0);
-    inspectorGroup.add(neck);
-
-    // Голова (анатомический овал лица)
-    headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.125, 18, 16), skinMat);
-    headMesh.scale.set(0.88, 1.14, 0.96);
-    headMesh.position.set(0, 1.86, 0);
-    headMesh.castShadow = true;
-    inspectorGroup.add(headMesh);
-
-    // Прическа / волосы под фуражкой
-    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.128, 16, 12), hairMat);
-    hair.scale.set(0.89, 1.05, 0.98);
-    hair.position.set(0, 1.88, -0.02);
-    inspectorGroup.add(hair);
-
-    // Уши
-    [-0.115, 0.115].forEach(x => {
-      const ear = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.042, 0.028), skinMat);
-      ear.position.set(x, 1.86, -0.01);
-      inspectorGroup.add(ear);
-    });
-
-    // Глаза
-    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 8), leatherMat);
-    eyeL.position.set(-0.046, 1.87, 0.115);
-    inspectorGroup.add(eyeL);
-
-    const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 8), leatherMat);
-    eyeR.position.set(0.046, 1.87, 0.115);
-    inspectorGroup.add(eyeR);
-
-    // Брови
-    const browL = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.008, 0.01), leatherMat);
-    browL.position.set(-0.046, 1.895, 0.118);
-    browL.rotation.z = -0.06;
-    inspectorGroup.add(browL);
-
-    const browR = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.008, 0.01), leatherMat);
-    browR.position.set(0.046, 1.895, 0.118);
-    browR.rotation.z = 0.06;
-    inspectorGroup.add(browR);
-
-    // Нос
-    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.038, 0.025), skinMat);
-    nose.position.set(0, 1.85, 0.128);
-    inspectorGroup.add(nose);
-
-    // --- 6. Фуражка инспектора ДПС (классическая уставная фуражка РФ) ---
-    // Околыш (черная стойка фуражки)
-    const capBand = new THREE.Mesh(new THREE.CylinderGeometry(0.138, 0.138, 0.045, 22), leatherMat);
-    capBand.position.set(0, 1.94, 0);
-    inspectorGroup.add(capBand);
-
-    // Золотой филигранный витой шнур над козырьком
-    const capCord = new THREE.Mesh(new THREE.TorusGeometry(0.139, 0.006, 8, 22), goldMat);
-    capCord.rotation.x = Math.PI / 2;
-    capCord.position.set(0, 1.93, 0.018);
-    inspectorGroup.add(capCord);
-
-    // Золотая кокарда ДПС по центру
-    const cockade = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.015, 14), goldMat);
-    cockade.rotation.x = Math.PI / 2;
-    cockade.position.set(0, 1.95, 0.14);
-    inspectorGroup.add(cockade);
-
-    // Тулья фуражки (расширяющаяся кверху, темно-синяя, слегка наклонена назад)
-    const capCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.14, 0.07, 22), uniformMat);
-    capCrown.position.set(0, 1.99, -0.015);
-    capCrown.rotation.x = -0.06;
-    inspectorGroup.add(capCrown);
-
-    // Красный кант по верхнему ободу тульи
-    const capPiping = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.006, 6, 24), stripePantsMat);
-    capPiping.rotation.x = Math.PI / 2 - 0.06;
-    capPiping.position.set(0, 2.025, -0.017);
-    inspectorGroup.add(capPiping);
-
-    // Черный лакированный козырек
-    const capVisor = new THREE.Mesh(new THREE.BoxGeometry(0.165, 0.015, 0.09), leatherMat);
-    capVisor.position.set(0, 1.92, 0.135);
-    capVisor.rotation.x = 0.28;
-    inspectorGroup.add(capVisor);
-
-    // --- 7. Левая рука (плечевой шарнир на анатомическом расстоянии) ---
-    leftArmPivot = new THREE.Group();
-    leftArmPivot.position.set(-0.25, 1.60, 0);
-
-    const leftArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.052, 0.52, 14), uniformMat);
-    leftArmMesh.position.set(0, -0.26, 0);
-    leftArmMesh.castShadow = true;
-    leftArmPivot.add(leftArmMesh);
-
-    // Шеврон на левом рукаве
-    const patchL = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.065, 0.05), uniformMat);
-    patchL.position.set(-0.06, -0.12, 0);
-    leftArmPivot.add(patchL);
-
-    // Светоотражающая полоса на манжете рукава
-    const armStripeL = new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.054, 0.04, 14), scotchliteMat);
-    armStripeL.position.set(0, -0.42, 0);
-    leftArmPivot.add(armStripeL);
-
-    // Кисть в белой перчатке регулировщика
-    const gloveL = new THREE.Group();
-    const cuffL = new THREE.Mesh(new THREE.CylinderGeometry(0.054, 0.050, 0.05, 14), gloveMat);
-    cuffL.position.set(0, -0.52, 0);
-    gloveL.add(cuffL);
-
-    const handPalmL = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.085, 0.042), gloveMat);
-    handPalmL.position.set(0, -0.58, 0);
-    gloveL.add(handPalmL);
-
-    const thumbL = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.045, 0.024), gloveMat);
-    thumbL.position.set(0.038, -0.56, 0.01);
-    thumbL.rotation.z = -0.25;
-    gloveL.add(thumbL);
-
-    leftArmPivot.add(gloveL);
-    inspectorGroup.add(leftArmPivot);
-
-    // --- 8. Правая рука с жезлом регулировщика ---
-    rightArmPivot = new THREE.Group();
-    rightArmPivot.position.set(0.25, 1.60, 0);
-
-    const rightArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.052, 0.52, 14), uniformMat);
-    rightArmMesh.position.set(0, -0.26, 0);
-    rightArmMesh.castShadow = true;
-    rightArmPivot.add(rightArmMesh);
-
-    // Шеврон на правом рукаве
-    const patchR = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.065, 0.05), uniformMat);
-    patchR.position.set(0.06, -0.12, 0);
-    rightArmPivot.add(patchR);
-
-    // Светоотражающая полоса на правом рукаве
-    const armStripeR = new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.054, 0.04, 14), scotchliteMat);
-    armStripeR.position.set(0, -0.42, 0);
-    rightArmPivot.add(armStripeR);
-
-    // Кисть в белой перчатке регулировщика
-    const gloveR = new THREE.Group();
-    const cuffR = new THREE.Mesh(new THREE.CylinderGeometry(0.054, 0.050, 0.05, 14), gloveMat);
-    cuffR.position.set(0, -0.52, 0);
-    gloveR.add(cuffR);
-
-    const handPalmR = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.085, 0.042), gloveMat);
-    handPalmR.position.set(0, -0.58, 0);
-    gloveR.add(handPalmR);
-
-    const thumbR = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.045, 0.024), gloveMat);
-    thumbR.position.set(-0.038, -0.56, 0.01);
-    thumbR.rotation.z = 0.25;
-    gloveR.add(thumbR);
-
-    rightArmPivot.add(gloveR);
-
-    // Жезл регулировщика (сидит прямо в правой ладони)
-    batonMesh = buildBaton();
-    batonMesh.position.set(0, -0.58, 0);
-    rightArmPivot.add(batonMesh);
-
-    inspectorGroup.add(rightArmPivot);
-
+    inspectorGroup = window.PDD_CONTROLLER.create('right_arm_forward');
+    const rig = inspectorGroup.controllerRig;
+    leftArmPivot = rig.left; rightArmPivot = rig.right; vestMesh = rig.vest;
     scene.add(inspectorGroup);
   }
 
-  function buildBaton() {
-    const batonGroup = new THREE.Group();
-    const handleMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 });
-    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.2 });
-    const redTipMat = new THREE.MeshBasicMaterial({ color: 0xFF1744 });
-
-    // Рукоятка жезла сидит в перчатке инспектора
-    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.024, 0.15, 14), handleMat);
-    handle.position.set(0, 0, 0);
-    batonGroup.add(handle);
-
-    // Темляк (ремешок на запястье)
-    const strap = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.005, 8, 16), handleMat);
-    strap.rotation.x = Math.PI / 2;
-    strap.position.set(0, 0.065, 0);
-    batonGroup.add(strap);
-
-    // 4 чередующиеся черно-белые полосы (ГОСТ) вдоль оси жезла (-Y)
-    for (let i = 0; i < 4; i++) {
-      const mat = (i % 2 === 0) ? whiteMat : handleMat;
-      const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.09, 14), mat);
-      stripe.position.set(0, -0.12 - i * 0.09, 0);
-      batonGroup.add(stripe);
-    }
-
-    // Красный светящийся торец на конце жезла
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.026, 12, 12), redTipMat);
-    tip.position.set(0, -0.49, 0);
-    batonGroup.add(tip);
-
-    // Подсветка кончика жезла
-    const tipLight = new THREE.PointLight(0xFF1744, 0.6, 1.2);
-    tipLight.position.set(0, -0.49, 0);
-    batonGroup.add(tipLight);
-
-    return batonGroup;
-  }
-
-  // --- Автомобиль игрока (модель из игры) и трамвай ---
   function buildVehicles() {
     // 1. Легковой автомобиль (использует официальную систему моделей PDD_VEHICLES)
     if (window.PDD_VEHICLES && typeof window.PDD_VEHICLES.create === 'function') {
@@ -1173,17 +777,6 @@
     carMesh.position.set(3.2, 0, 13.5);
     carMesh.rotation.y = Math.PI; // Лицом к перекрёстку (на север)
     scene.add(carMesh);
-
-    // 2. Аутентичный российский трамвай (КТМ-5 / Татра красно-бежевый)
-    tramMesh = buildRussianTram();
-    tramMesh.position.set(-2.2, 0, 14.5);
-    tramMesh.rotation.y = Math.PI;
-    scene.add(tramMesh);
-
-    // Запоминаем исходные координаты
-    initialObjectPos.copy(carMesh.position);
-    initialObjectRotY = carMesh.rotation.y;
-    activeVehicleMesh = carMesh;
   }
 
   // Машина из гаража основной игры (Flutter передаёт выбор игрока).
@@ -1199,7 +792,6 @@
     if (next.blinkerL) next.blinkerL.visible = false;
     if (next.blinkerR) next.blinkerR.visible = false;
     if (movingObject === carMesh) movingObject = next;
-    if (activeVehicleMesh === carMesh) activeVehicleMesh = next;
     carMesh = next;
     scene.add(carMesh);
   }
@@ -1243,140 +835,6 @@
     return group;
   }
 
-  function transportMaterial(kind, color) {
-    const surfaces = window.PDD_VEHICLE_MATERIALS;
-    if (!surfaces) return new THREE.MeshLambertMaterial({ color });
-    return surfaces.material('paint', color, surfaces.transportMap(kind));
-  }
-
-  function transportMesh(geometry, material) {
-    const surfaces = window.PDD_VEHICLE_MATERIALS;
-    if (surfaces) {
-      geometry.userData = geometry.userData || {};
-      if (!geometry.userData.vehicleUV) {
-        if (material.map && material.map.name && material.map.name.startsWith('vehicle:transport:') && geometry.type === 'BoxGeometry') {
-          surfaces.transportBoxUV(geometry); geometry.userData.vehicleUV = true;
-        } else if (material.userData && ['rubber', 'rubberFarm'].includes(material.userData.vehicleSurface) && geometry.type === 'CylinderGeometry') {
-          surfaces.tyreUV(geometry); geometry.userData.vehicleUV = true;
-        }
-      }
-    }
-    return new THREE.Mesh(geometry, material);
-  }
-
-  function buildFallbackTram(color = BRAND.tramRed) {
-    const tram = new THREE.Group();
-    const redMat = new THREE.MeshLambertMaterial({ color });
-    const creamMat = new THREE.MeshLambertMaterial({ color: BRAND.tramWhite });
-    const glassMat = new THREE.MeshLambertMaterial({ color: 0x374A5E });
-    const metalMat = new THREE.MeshLambertMaterial({ color: 0x88929E });
-
-    const L = 9.5;
-    const W = 2.2;
-
-    const lower = new THREE.Mesh(new THREE.BoxGeometry(W, 1.0, L), redMat);
-    lower.position.y = 0.7;
-    tram.add(lower);
-
-    const upper = new THREE.Mesh(new THREE.BoxGeometry(W - 0.05, 1.1, L - 0.1), creamMat);
-    upper.position.y = 1.7;
-    tram.add(upper);
-
-    const glass = new THREE.Mesh(new THREE.BoxGeometry(W + 0.04, 0.65, L - 0.7), glassMat);
-    glass.position.y = 1.75;
-    tram.add(glass);
-
-    const panto = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), metalMat);
-    panto.position.set(0, 2.7, 1.5);
-    tram.add(panto);
-
-    return tram;
-  }
-
-  // Аутентичный российский трамвай на материалах PDD_VEHICLE_MATERIALS (как во флагманской игре)
-  function buildRussianTram(color = BRAND.tramRed) {
-    const tram = new THREE.Group(), V = window.PDD_VEHICLE_MATERIALS;
-    if (!V) return buildFallbackTram(color);
-
-    const bodyMat = transportMaterial('tram-body', color);
-    const whiteMat = transportMaterial('roof', BRAND.tramWhite);
-    const glassMat = V.material('glass', 0xffffff, V.transportMap('tram-windows'));
-    const metalMat = V.material('metal', 0x71717A);
-    const darkMat = V.material('metal', 0x23272C);
-
-    // 1. Нижняя часть кузова (красный фирменный цвет)
-    const lowerGeo = new THREE.BoxGeometry(2.2, 1.0, 9.5);
-    const lower = transportMesh(lowerGeo, bodyMat);
-    lower.position.y = 0.7;
-    lower.castShadow = true;
-    tram.add(lower);
-
-    // 2. Верхняя часть кузова / крыша (белая)
-    const upperGeo = new THREE.BoxGeometry(2.15, 1.1, 9.4);
-    const upper = transportMesh(upperGeo, whiteMat);
-    upper.position.y = 1.7;
-    upper.castShadow = true;
-    tram.add(upper);
-
-    // 3. Оконный пояс с атласом окон трамвая
-    const sideWindowsGeo = new THREE.BoxGeometry(2.24, 0.65, 8.8);
-    const sideWindows = transportMesh(sideWindowsGeo, glassMat);
-    sideWindows.position.y = 1.75;
-    tram.add(sideWindows);
-
-    // 4. Лобовое и заднее остекление
-    const frontGlassGeo = new THREE.BoxGeometry(1.9, 0.8, 0.1);
-    const fg = transportMesh(frontGlassGeo, glassMat);
-    fg.position.set(0, 1.65, 4.76);
-    tram.add(fg);
-
-    const bg = transportMesh(frontGlassGeo.clone(), glassMat);
-    bg.position.set(0, 1.65, -4.76);
-    tram.add(bg);
-
-    // 5. Пантограф (токоприёмник) на крыше
-    const pantoBase = transportMesh(new THREE.BoxGeometry(0.8, 0.15, 0.8), metalMat);
-    pantoBase.position.set(0, 2.35, 1.5);
-    tram.add(pantoBase);
-
-    const barGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.1);
-    const bar1 = transportMesh(barGeo, metalMat);
-    bar1.position.set(0, 2.85, 1.5);
-    bar1.rotation.x = 0.35;
-    tram.add(bar1);
-
-    const headGeo = new THREE.BoxGeometry(1.6, 0.06, 0.2);
-    const head = transportMesh(headGeo, metalMat);
-    head.position.set(0, 3.3, 1.7);
-    tram.add(head);
-
-    // 6. Тележки под вагоном
-    [-2.6, 2.6].forEach(z => {
-      const bogie = transportMesh(new THREE.BoxGeometry(1.8, 0.25, 1.6), darkMat);
-      bogie.position.set(0, 0.25, z);
-      tram.add(bogie);
-    });
-
-    // 7. Оптика
-    const headMat = V.material('lens', 0xFFF3CC);
-    const tailMat = V.material('lens', 0xD33D38);
-    const hl = transportMesh(new THREE.CylinderGeometry(0.18, 0.18, 0.1, 16).rotateX(Math.PI / 2), headMat);
-    hl.position.set(0, 0.75, 4.76);
-    tram.add(hl);
-
-    [-0.7, 0.7].forEach(sx => {
-      const tl = transportMesh(new THREE.CylinderGeometry(0.1, 0.1, 0.08, 12).rotateX(Math.PI / 2), tailMat);
-      tl.position.set(sx, 0.75, -4.76);
-      tram.add(tl);
-    });
-
-    if (window.PDD_VEHICLES && typeof window.PDD_VEHICLES.applyModelEdits === 'function') {
-      window.PDD_VEHICLES.applyModelEdits('tram', tram);
-    }
-
-    return tram;
-  }
-
   // --- Стрелки разрешенных траекторий на асфальте ---
   function buildTrajectoryArrows() {
     arrowsGroup = new THREE.Group();
@@ -1385,16 +843,11 @@
   }
 
   // --- Траектории манёвров: прямо → дуга → прямо ---
-  // Радиусы подобраны расчётом зазора по всей траектории: кузов (машина до
-  // 5×2 м, трамвай 9,5×2,2 м) не заходит на регулировщика и его островок.
-  // Минимальный зазор: машина 1,5 м, трамвай 0,5 м (по рельсам прямо).
-  const PATHS = {
-    car: { x: 3.2, right: { r: 4, lane: 3.4 }, left: { r: 4, lane: -3.6 }, uturn: { lane: -3.4, at: 7.5 } },
-    tram: { x: -2.2, right: { r: 9, lane: 3.4 }, left: { r: 10, lane: -4.2 }, uturn: { lane: -5.8, at: 9 } },
-  };
+  // A car up to 5 x 2 m clears the officer's island by at least 1.5 m.
+  const CAR_PATH = { x: 3.2, right: { r: 4, lane: 3.4 }, left: { r: 4, lane: -3.6 }, uturn: { lane: -3.4, at: 7.5 } };
 
-  function movePath(move, vehicle, startZ, reach, y) {
-    const spec = vehicle === VEHICLES.TRAM ? PATHS.tram : PATHS.car;
+  function movePath(move, startZ, reach, y) {
+    const spec = CAR_PATH;
     const x0 = spec.x;
     const pts = [];
     const P = (x, z) => pts.push(new THREE.Vector3(x, y, z));
@@ -1436,7 +889,7 @@
     if (currentMode === 'arcade' && !isMoving) return;
 
     const allowed = getAllowedMoves(currentGesture, currentApproach, currentVehicle);
-    const originX = (currentVehicle === VEHICLES.CAR) ? 3.2 : -2.2;
+    const originX = 3.2;
     const originZ = 8.8;
 
     const canStraight = allowed.includes(MOVES.STRAIGHT);
@@ -1444,7 +897,7 @@
     const canLeft = allowed.includes(MOVES.LEFT);
     const canUturn = allowed.includes(MOVES.UTURN);
 
-    const arrow = move => addRoadRibbonArrow(movePath(move, currentVehicle, originZ, 12.0, 0.052));
+    const arrow = move => addRoadRibbonArrow(movePath(move, originZ, 12.0, 0.052));
     if (canStraight) arrow(MOVES.STRAIGHT);
     if (canRight) arrow(MOVES.RIGHT);
     if (canLeft) arrow(MOVES.LEFT);
@@ -1567,7 +1020,7 @@
   }
 
   // --- Переключение сценария и поз регулировщика ---
-  function setScenario(gesture, approach, vehicle) {
+  function setScenario(gesture, approach) {
     if (resetTimer) {
       clearTimeout(resetTimer);
       resetTimer = null;
@@ -1575,7 +1028,6 @@
 
     currentGesture = gesture;
     currentApproach = approach;
-    currentVehicle = vehicle || currentVehicle;
 
     // Вращение регулировщика в зависимости от ракурса
     switch (approach) {
@@ -1593,33 +1045,13 @@
         break;
     }
 
-    // Положение рук инспектора
-    if (gesture === GESTURES.ARM_UP) {
-      // 1. Рука поднята вверх: правая вверх (жезл строго вертикально), левая опущена
-      targetRightArm.set(0, 0, Math.PI);
-      targetLeftArm.set(0, 0, 0);
-    } else if (gesture === GESTURES.HANDS_DOWN) {
-      // 2. Руки опущены или вытянуты в стороны
-      targetLeftArm.set(0, 0, -Math.PI / 2);
-      targetRightArm.set(0, 0, Math.PI / 2);
-    } else if (gesture === GESTURES.RIGHT_ARM_FORWARD) {
-      // 3. Правая рука вытянута вперед, левая опущена
-      targetRightArm.set(-Math.PI / 2, 0, 0);
-      targetLeftArm.set(0, 0, 0);
-    }
-
-    // Переключение видимости авто/трамвая
-    if (carMesh && tramMesh) {
-      if (currentVehicle === VEHICLES.CAR) {
-        carMesh.visible = true;
-        tramMesh.visible = false;
-        activeVehicleMesh = carMesh;
-      } else {
-        carMesh.visible = false;
-        tramMesh.visible = true;
-        activeVehicleMesh = tramMesh;
-      }
-    }
+    const pose = gesture === GESTURES.ARM_UP ? 'arm_up'
+      : gesture === GESTURES.RIGHT_ARM_FORWARD ? 'right_arm_forward'
+      : gesture === GESTURES.HANDS_SIDES ? 'arms_sides' : 'arms_down';
+    const angles = window.PDD_CONTROLLER.poses[pose];
+    targetLeftArm.set(...angles.left);
+    targetRightArm.set(...angles.right);
+    inspectorGroup.userData.pose = pose;
 
     resetVehiclePositions();
     updateTrajectoryArrows();
@@ -1636,17 +1068,16 @@
       if (carMesh.blinkerL) carMesh.blinkerL.visible = false;
       if (carMesh.blinkerR) carMesh.blinkerR.visible = false;
     }
-    if (tramMesh) {
-      tramMesh.position.set(-2.2, 0, 14.5);
-      tramMesh.rotation.y = Math.PI;
-    }
     activeBlinkerSide = null;
     isMoving = false;
     moveProgress = 0;
+    moveElapsed = 0;
+    activeMove = null;
+    activeMoveId = null;
   }
 
   // --- Запуск анимации движения ТС при ответе игрока ---
-  function makeMove(moveType) {
+  function makeMove(moveType, moveId) {
     if (isMoving) return;
     if (resetTimer) {
       clearTimeout(resetTimer);
@@ -1660,7 +1091,7 @@
     const allowed = getAllowedMoves(currentGesture, currentApproach, currentVehicle);
     const isCorrect = allowed.includes(moveType);
 
-    if (moveType === MOVES.NONE) {
+    if (moveType === MOVES.NONE || !isCorrect) {
       activeBlinkerSide = null;
       if (carMesh) {
         if (carMesh.blinkerL) carMesh.blinkerL.visible = false;
@@ -1683,14 +1114,18 @@
       activeBlinkerSide = null;
     }
 
-    movingObject = (currentVehicle === VEHICLES.CAR) ? carMesh : tramMesh;
+    movingObject = carMesh;
     const startZ = movingObject.position.z;
 
     // Все манёвры завершаются за перекрёстком и пешеходным переходом (на отметке ±13.5)
-    moveCurve = movePath(moveType, currentVehicle, startZ, 13.5, 0);
+    moveCurve = movePath(moveType, startZ, 13.5, 0);
 
     isMoving = true;
     moveProgress = 0;
+    moveElapsed = 0;
+    activeMove = moveType;
+    activeMoveId = moveId;
+    moveDuration = moveType === MOVES.STRAIGHT ? 1.8 : moveType === MOVES.UTURN ? 2.05 : 1.95;
 
     notifyFlutter({
       type: 'move_result',
@@ -1713,7 +1148,7 @@
     }
   }
 
-  function updateCameraPosition() {
+  function updateCameraPosition(delta = 1 / 60) {
     if (currentCameraMode === 'overview') {
       const radius = camDistance;
       camera.position.x = Math.sin(camAngle) * radius;
@@ -1721,14 +1156,13 @@
       camera.position.z = Math.cos(camAngle) * radius;
       camera.lookAt(0, 1.2, 0);
     } else {
-      updateDriverCamera();
+      updateDriverCamera(delta);
     }
   }
 
-  // Вид водителя: камера за машиной, чуть левее — между её полосой и осью
-  // дороги — и смотрит вдоль улицы. Регулировщик чуть левее центра кадра,
-  // машина справа, перекрёсток впереди. На манёвре камера едет следом.
-  // zoom (0,65–2,2): 1 — по умолчанию, меньше — ближе и ниже, больше — дальше и выше.
+  // Near: officer at eye level. Far: all junction exits. The camera keeps
+  // looking at the junction instead of swinging with the steering wheel.
+  // A maneuver gently widens the view; the next question restores user zoom.
   const driverCamPos = new THREE.Vector3();
   const driverCamLook = new THREE.Vector3();
   const driverWantPos = new THREE.Vector3();
@@ -1737,38 +1171,30 @@
   let cameraZoom = 1;
 
   function setZoom(value) {
-    cameraZoom = Math.min(Math.max(Number(value) || 1, 0.65), 2.2);
+    cameraZoom = Math.min(Math.max(Number(value) || 1, 0.4), 2.6);
   }
 
-  function updateDriverCamera() {
-    const vehicle = currentVehicle === VEHICLES.TRAM ? tramMesh : carMesh;
-    if (!vehicle) return;
-    const isTram = currentVehicle === VEHICLES.TRAM;
-    const heading = vehicle.rotation.y;
-    const fx = Math.sin(heading), fz = Math.cos(heading);
-    const lx = fz, lz = -fx; // влево от направления движения
-    const back = (isTram ? 11.5 : 8.5) * cameraZoom;
-    const height = (isTram ? 2.6 : 1.9) + 2.6 * cameraZoom;
-    const side = isTram ? 0.4 : 0.8;
-
-    driverWantPos.set(
-      vehicle.position.x - fx * back + lx * side,
-      height,
-      vehicle.position.z - fz * back + lz * side
-    );
-    driverWantLook.set(
-      vehicle.position.x + fx * 16 + lx * side,
-      0.9,
-      vehicle.position.z + fz * 16 + lz * side
-    );
+  function updateDriverCamera(delta = 1 / 60) {
+    const maneuver = THREE.MathUtils.smoothstep(moveProgress, 0, 0.65);
+    const zoom = THREE.MathUtils.lerp(cameraZoom, Math.max(cameraZoom, 2.1), maneuver);
+    if (zoom < 1) {
+      const close = THREE.MathUtils.smoothstep(zoom, 0.4, 1);
+      driverWantPos.set(1.4 + close, 2.4 + 2.1 * close, 6.8 + 15.2 * close);
+      driverWantLook.set(0.8 * close, 1.25 - 0.2 * close, 0);
+    } else {
+      const far = (zoom - 1) / 1.6;
+      driverWantPos.set(2.4, 4.5 + 33.5 * far, 22 + 28 * far);
+      driverWantLook.set(0.8 * (1 - far), 1.05 * (1 - far), 0);
+    }
 
     if (!driverCamReady) {
       driverCamPos.copy(driverWantPos);
       driverCamLook.copy(driverWantLook);
       driverCamReady = true;
     } else {
-      driverCamPos.lerp(driverWantPos, 0.1);
-      driverCamLook.lerp(driverWantLook, 0.1);
+      const blend = 1 - Math.exp(-7 * delta);
+      driverCamPos.lerp(driverWantPos, blend);
+      driverCamLook.lerp(driverWantLook, blend);
     }
     camera.position.copy(driverCamPos);
     camera.lookAt(driverCamLook);
@@ -1803,18 +1229,24 @@
   }
 
   // --- Главный цикл анимации ---
-  function animate() {
+  let lastRenderedAt = 0;
+  function animate(timestamp) {
     requestAnimationFrame(animate);
+    const now = timestamp || performance.now();
+    // A stationary question needs only 30 FPS on a weak phone. Maneuvers
+    // still use every frame; interpolation below is independent of FPS.
+    if (weak && !isMoving && now - lastRenderedAt < 32) return;
+    lastRenderedAt = now;
 
-    const delta = clock.getDelta();
-    const time = clock.getElapsedTime();
+    const delta = Math.min(clock.getDelta(), 0.05);
+    const time = clock.elapsedTime;
+    const poseBlend = 1 - Math.exp(-8 * delta);
 
     // Плавное вращение камеры
-    camAngle += (targetAngle - camAngle) * 0.08;
-    updateCameraPosition();
+    camAngle += (targetAngle - camAngle) * poseBlend;
 
     // Плавный поворот регулировщика к целевому направлению
-    curInspectorRotY += (targetInspectorRotY - curInspectorRotY) * 0.12;
+    curInspectorRotY += (targetInspectorRotY - curInspectorRotY) * poseBlend;
     if (inspectorGroup) {
       inspectorGroup.rotation.y = curInspectorRotY;
     }
@@ -1826,28 +1258,33 @@
     }
 
     // Плавная интерполяция рук регулировщика
-    curLeftArm.x += (targetLeftArm.x - curLeftArm.x) * 0.12;
-    curLeftArm.y += (targetLeftArm.y - curLeftArm.y) * 0.12;
-    curLeftArm.z += (targetLeftArm.z - curLeftArm.z) * 0.12;
+    curLeftArm.x += (targetLeftArm.x - curLeftArm.x) * poseBlend;
+    curLeftArm.y += (targetLeftArm.y - curLeftArm.y) * poseBlend;
+    curLeftArm.z += (targetLeftArm.z - curLeftArm.z) * poseBlend;
     if (leftArmPivot) {
       leftArmPivot.rotation.set(curLeftArm.x, curLeftArm.y, curLeftArm.z);
     }
 
-    curRightArm.x += (targetRightArm.x - curRightArm.x) * 0.12;
-    curRightArm.y += (targetRightArm.y - curRightArm.y) * 0.12;
-    curRightArm.z += (targetRightArm.z - curRightArm.z) * 0.12;
+    curRightArm.x += (targetRightArm.x - curRightArm.x) * poseBlend;
+    curRightArm.y += (targetRightArm.y - curRightArm.y) * poseBlend;
+    curRightArm.z += (targetRightArm.z - curRightArm.z) * poseBlend;
     if (rightArmPivot) {
       rightArmPivot.rotation.set(curRightArm.x, curRightArm.y, curRightArm.z);
     }
 
-    // Анимация движения машины/трамвая (движение ВПЕРЕД по траектории с постоянной скоростью)
+    // Short signal lead-in, gentle acceleration and braking; arc-length
+    // sampling keeps turns continuous and independent of render frame rate.
     if (isMoving && moveCurve && movingObject) {
-      const curveLength = moveCurve.getLength();
-      // Постоянная линейная скорость (м/с): строго одинаковая для всех направлений!
-      const moveSpeed = (currentMode === 'arcade') ? 16.0 : 10.5;
-      moveProgress += (delta * moveSpeed) / Math.max(curveLength, 1);
+      moveElapsed += delta;
+      const elapsed = THREE.MathUtils.clamp((moveElapsed - 0.12) / moveDuration, 0, 1);
+      moveProgress = (1 - Math.cos(Math.PI * elapsed)) / 2;
+      movingObject.position.copy(moveCurve.getPointAt(moveProgress));
+      const tangent = moveCurve.getTangentAt(Math.min(moveProgress + 0.006, 1));
+      const heading = Math.atan2(tangent.x, tangent.z);
+      const turn = Math.atan2(Math.sin(heading - movingObject.rotation.y), Math.cos(heading - movingObject.rotation.y));
+      movingObject.rotation.y += turn * (1 - Math.exp(-22 * delta));
 
-      if (moveProgress >= 1) {
+      if (elapsed >= 1) {
         moveProgress = 1;
         isMoving = false;
         activeBlinkerSide = null;
@@ -1859,15 +1296,10 @@
         const holdDuration = (currentMode === 'arcade') ? 700 : 2000;
         if (resetTimer) clearTimeout(resetTimer);
         resetTimer = setTimeout(resetVehiclePositions, holdDuration);
+        notifyFlutter({ type: 'move_complete', move: activeMove, id: activeMoveId });
       }
-
-      const u = Math.min(Math.max(moveProgress, 0), 1);
-      const point = moveCurve.getPointAt(u);
-      movingObject.position.copy(point);
-
-      const tangent = moveCurve.getTangentAt(u);
-      movingObject.rotation.y = Math.atan2(tangent.x, tangent.z);
     }
+    updateCameraPosition(delta);
 
     // Мигание поворотников автомобиля при манёвре (~3.2 Гц)
     if (carMesh) {
@@ -1880,6 +1312,8 @@
       }
     }
 
+    updatePedestrians(delta);
+    if (leaves) leaves.update(Math.min(delta, 0.05), { enabled: seasonName === 'autumn', centre: leafCentre });
     renderer.render(scene, camera);
   }
 
@@ -1896,6 +1330,8 @@
   // Экспорт API для вызова из Flutter
   window.TrafficControllerGame = {
     setScenario,
+    getAllowedMoves,
+    getState() { return {gesture: currentGesture, approach: currentApproach, vehicle: currentVehicle, season: seasonName, pose: inspectorGroup?.userData.pose, rightHandX: rightArmPivot?.position.x, leafCount: leaves?.mesh?.count || 0, drawCalls: renderer.info.render.calls}; },
     makeMove,
     setMode(mode) {
       currentMode = mode;
