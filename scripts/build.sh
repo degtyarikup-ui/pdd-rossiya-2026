@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Сборка приложения: ./scripts/build.sh ru {aab|apk|ipa|web}
+# Сборка приложения: ./scripts/build.sh ru {aab|apk|rustore-apk|ipa|web}
+#   aab          — Google Play (оплата: СБП только для России, остальное — Play)
+#   rustore-apk  — RuStore (оплата: СБП без ограничений)
 #
 # Страна одна — Россия. Аргумент `ru` оставлен, чтобы не ломать привычные
 # команды: он задаёт Android flavor и --dart-define=COUNTRY.
@@ -81,6 +83,7 @@ case "$TARGET" in
     flutter build appbundle --release \
       --flavor "$COUNTRY" \
       --dart-define=COUNTRY="$COUNTRY" \
+      --dart-define=STORE=play \
       ${NOTIFY_DEFINES[@]+"${NOTIFY_DEFINES[@]}"} \
       ${EXTRA_DEFINES_ARR[@]+"${EXTRA_DEFINES_ARR[@]}"}
     verify_archive "build/app/outputs/bundle/${COUNTRY}Release/app-${COUNTRY}-release.aab"
@@ -96,6 +99,18 @@ case "$TARGET" in
       ${EXTRA_DEFINES_ARR[@]+"${EXTRA_DEFINES_ARR[@]}"}
     verify_archive "build/app/outputs/flutter-apk/app-${COUNTRY}-release.apk"
     echo "APK: build/app/outputs/flutter-apk/app-${COUNTRY}-release.apk"
+    ;;
+  rustore-apk)
+    # RuStore: тот же пакет и ключ подписи, но оплата через СБП для всех
+    # (STORE=rustore, см. lib/data/services/payment_mode.dart).
+    flutter build apk --release \
+      --flavor "$COUNTRY" \
+      --dart-define=COUNTRY="$COUNTRY" \
+      --dart-define=STORE=rustore \
+      ${NOTIFY_DEFINES[@]+"${NOTIFY_DEFINES[@]}"} \
+      ${EXTRA_DEFINES_ARR[@]+"${EXTRA_DEFINES_ARR[@]}"}
+    verify_archive "build/app/outputs/flutter-apk/app-${COUNTRY}-release.apk"
+    echo "APK для RuStore: build/app/outputs/flutter-apk/app-${COUNTRY}-release.apk"
     ;;
   ipa)
     # iOS (ru.pdd.pddApp): архив + экспорт с
@@ -115,5 +130,5 @@ case "$TARGET" in
       ${EXTRA_DEFINES_ARR[@]+"${EXTRA_DEFINES_ARR[@]}"}
     echo "Web: build/web (COUNTRY=$COUNTRY)"
     ;;
-  *) echo "unknown target: $TARGET (expected aab|apk|ipa|web)"; exit 1 ;;
+  *) echo "unknown target: $TARGET (expected aab|apk|rustore-apk|ipa|web)"; exit 1 ;;
 esac

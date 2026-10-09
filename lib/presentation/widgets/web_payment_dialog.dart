@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
+import 'package:pdd_app/data/services/pending_payment.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -13,14 +15,15 @@ import 'package:url_launcher/url_launcher.dart';
 /// подключена ([live]), создаёт платёж — страница уходит на форму оплаты.
 /// Пока не подключена — заглушка: почта для письма о запуске оплаты.
 ///
-/// Возвращает почту, если выбор сохранён в режиме заглушки; null — отмена,
-/// ошибка или переход на форму оплаты.
-Future<String?> showWebPaymentDialog({
+/// Возвращает почту и признак [opened]: true — страница оплаты открыта
+/// (в этой вкладке на вебе, в браузере на Android); false — выбор сохранён
+/// в режиме заглушки. null — отмена или ошибка.
+Future<({String email, bool opened})?> showWebPaymentDialog({
   required BuildContext context,
   required PremiumTier tier,
   required bool live,
 }) {
-  return showDialog<String>(
+  return showDialog<({String email, bool opened})>(
     context: context,
     builder: (_) => _WebPaymentDialog(tier: tier, live: live),
   );
@@ -65,10 +68,20 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
     if (!mounted) return;
     final url = start?.url;
     if (url != null) {
-      // Та же вкладка: после оплаты Platega вернёт на /app/?pay=done.
+      // Веб — та же вкладка, после оплаты Platega вернёт на /app/?pay=done.
+      // Android — внешний браузер: заказ запоминаем, приложение проверит его
+      // при возврате (см. PremiumService.checkPendingPayment).
+      final order = start?.order;
+      if (!kIsWeb && order != null) await PendingPayment.remember(order);
       var opened = false;
       try {
-        opened = await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
+        opened = await launchUrl(
+          Uri.parse(url),
+          mode: kIsWeb
+              ? LaunchMode.platformDefault
+              : LaunchMode.externalApplication,
+          webOnlyWindowName: '_self',
+        );
         if (!opened) {
           ErrorReporter.report(
             ErrorCategory.purchase,
@@ -87,13 +100,17 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
       }
       if (!mounted) return;
       if (opened) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop((email: email, opened: true));
         return;
+      }
+      if (!kIsWeb) {
+        await PendingPayment.clear();
+        if (!mounted) return;
       }
     }
     if (start != null && url == null) {
       HapticFeedbackHelper.success();
-      Navigator.of(context).pop(email);
+      Navigator.of(context).pop((email: email, opened: false));
     } else {
       HapticFeedbackHelper.error();
       setState(() {

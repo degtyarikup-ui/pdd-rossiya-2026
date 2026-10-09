@@ -30,6 +30,9 @@ const PLATEGA_METHODS = { sbp: 2 }; // 2 — СБП (QR и оплата из п�
 // Куда Platega возвращает человека после оплаты: веб-версия приложения РФ.
 // Адрес фиксирован на сервере — клиент не может подставить свой.
 export const PAY_RETURN_URL = 'https://pdd-drive.ru/app/';
+// Для приложения Android: после оплаты человек попадает на нейтральную
+// страницу «вернитесь в приложение» — веб-версия в браузере ему не нужна.
+export const PAY_DONE_URL = 'https://pdd-drive.ru/pay-done/';
 
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$/;
 const ORDER_RE = /^[0-9a-f-]{36}$/;
@@ -91,6 +94,8 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
   if (!WEB_TARIFFS[tier] || !PLATEGA_METHODS[method]) return jsonResponse({ error: 'invalid tariff' }, 400);
   if (!env.INSTALLS) return jsonResponse({ error: 'storage unavailable' }, 503);
 
+  // С какого клиента платят: от этого зависит, куда вернуть человека.
+  const client = body.client === 'android' ? 'android' : 'web';
   const live = webPaymentsLive(env);
   const key = 'pay_intent:' + user.id;
   const previous = await readJson(env, key);
@@ -98,7 +103,7 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
   const repeat = previous && previous.email === email && previous.tier === tier && previous.method === method &&
     now - Date.parse(previous.at) < REPEAT_MS;
   if (repeat && !live) return jsonResponse({ ok: true, available: false });
-  if (repeat && previous.lastOrder?.url && previous.lastOrder.tier === tier) {
+  if (repeat && previous.lastOrder?.url && previous.lastOrder.tier === tier && previous.lastOrder.client === client) {
     // Только неоплаченный заказ: после оплаты новая покупка — новый платёж.
     const last = await readJson(env, 'pay_order:' + previous.lastOrder.orderId);
     if (last?.status === 'pending' && last.userId === user.id) {
@@ -109,7 +114,7 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
   const tariff = WEB_TARIFFS[tier];
   const app = typeof body.app === 'string' ? body.app.slice(0, 4) : 'ru';
   const intent = {
-    userId: user.id, name: user.name || '', accountEmail: user.email || '', email, tier, method, app,
+    userId: user.id, name: user.name || '', accountEmail: user.email || '', email, tier, method, app, client,
     priceRub: tariff.priceRub, at: new Date(now).toISOString(),
     firstAt: previous?.firstAt || new Date(now).toISOString(), count: (previous?.count || 0) + 1,
   };
@@ -117,14 +122,17 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
   let order = null;
   if (live) {
     const orderId = crypto.randomUUID();
+    const back = client === 'android'
+      ? { ok: `${PAY_DONE_URL}?order=${orderId}`, fail: `${PAY_DONE_URL}?order=${orderId}&failed=1` }
+      : { ok: `${PAY_RETURN_URL}?pay=done&order=${orderId}`, fail: `${PAY_RETURN_URL}?pay=failed&order=${orderId}` };
     let tx;
     try {
       tx = await platega(env, '/transaction/process', {
         paymentMethod: PLATEGA_METHODS[method],
         paymentDetails: { amount: tariff.priceRub, currency: 'RUB' },
         description: `Премиум «ПДД Россия 2026» — ${tariff.title}`,
-        return: `${PAY_RETURN_URL}?pay=done&order=${orderId}`,
-        failedUrl: `${PAY_RETURN_URL}?pay=failed&order=${orderId}`,
+        return: back.ok,
+        failedUrl: back.fail,
         payload: orderId,
         metadata: { userId: user.id },
       });
@@ -138,11 +146,11 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
     order = {
       orderId, txId: tx.transactionId, userId: user.id, name: user.name || '', accountEmail: user.email || '',
       provider: user.provider || null, email, tier, days: tariff.days, amount: tariff.priceRub, currency: 'RUB',
-      method, app, status: 'pending', url, createdAt: new Date(now).toISOString(),
+      method, app, client, status: 'pending', url, createdAt: new Date(now).toISOString(),
     };
     await env.INSTALLS.put('pay_order:' + orderId, JSON.stringify(order));
     await env.INSTALLS.put('pay_tx:' + tx.transactionId, orderId);
-    intent.lastOrder = { orderId, url, tier };
+    intent.lastOrder = { orderId, url, tier, client };
   }
 
   // Сводка в метаданных — список в админке читается одним list() без get.

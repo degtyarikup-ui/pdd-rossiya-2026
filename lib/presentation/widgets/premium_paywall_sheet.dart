@@ -2,10 +2,13 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/config/country_config.dart';
+import 'package:pdd_app/core/config/store_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/device_region.dart';
+import 'package:pdd_app/data/services/payment_mode.dart';
 import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
@@ -33,20 +36,54 @@ class PremiumPaywallSheet extends StatefulWidget {
 class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   PremiumTier _selectedTier = PremiumTier.threeMonths;
   bool _isLoading = false;
-  // Подключена ли оплата на сайте (спрашиваем у сервера при открытии).
-  bool _webPayLive = false;
+  // Подключена ли оплата СБП на сервере (спрашиваем при открытии).
+  bool _sbpLive = false;
+  // Android: как платить — СБП или магазин. null — ещё определяем.
+  PaymentMode? _androidMode;
 
   @override
   void initState() {
     super.initState();
     IapService.instance.addListener(_onIapChanged);
     if (!kIsWeb) IapService.instance.loadProducts();
-    if (kIsWeb && CountryConfig.current.hasWebPayments) {
-      PremiumService.instance.webPaymentsAvailable().then((live) {
-        if (mounted && live) setState(() => _webPayLive = true);
-      });
+    if (kIsWeb) {
+      _loadSbpAvailability();
+    } else if (defaultTargetPlatform == TargetPlatform.android) {
+      _resolveAndroidMode();
     }
   }
+
+  /// Android: СБП для российских устройств в Google Play и для всех в
+  /// RuStore; остальные покупают через Play (см. payment_mode.dart).
+  Future<void> _resolveAndroidMode() async {
+    final store = StoreConfig.current;
+    final country = store == AppStore.googlePlay
+        ? await DeviceRegion.countryCode()
+        : null;
+    final mode = androidPaymentMode(store: store, deviceCountry: country);
+    if (!mounted) return;
+    setState(() => _androidMode = mode);
+    if (mode == PaymentMode.sbp) _loadSbpAvailability();
+  }
+
+  void _loadSbpAvailability() {
+    if (!CountryConfig.current.hasWebPayments) return;
+    PremiumService.instance.webPaymentsAvailable().then((live) {
+      if (mounted && live) setState(() => _sbpLive = true);
+    });
+  }
+
+  /// Android платит через СБП (не через магазин).
+  bool get _androidSbp =>
+      !kIsWeb &&
+      defaultTargetPlatform == TargetPlatform.android &&
+      _androidMode == PaymentMode.sbp;
+
+  /// Способ определяется — кнопку можно нажимать (Android ждёт ответа).
+  bool get _androidUnresolved =>
+      !kIsWeb &&
+      defaultTargetPlatform == TargetPlatform.android &&
+      _androidMode == null;
 
   @override
   void dispose() {
@@ -111,24 +148,30 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     }
   }
 
-  /// Веб: оплата на сайте (СБП). Пока платёжка не подключена — вход
-  /// (покупка привязывается к аккаунту и потом работает в приложении на
-  /// любом телефоне) и почта для письма о запуске оплаты и чека.
-  Future<void> _handleWebPayment() async {
+  /// Оплата через СБП — на сайте и в Android-приложении. Нужен вход: покупка
+  /// привязывается к аккаунту и работает на всех устройствах. Пока платёжка
+  /// не подключена — заглушка: почта для письма о запуске оплаты.
+  Future<void> _handleSbpPayment() async {
     HapticFeedbackHelper.select();
     if (!AuthService.instance.hasServerSession) {
       final signedIn = await AuthModalSheet.show(context);
       if (!mounted || signedIn != true) return;
     }
-    final email = await showWebPaymentDialog(
+    final result = await showWebPaymentDialog(
       context: context,
       tier: _selectedTier,
-      live: _webPayLive,
+      live: _sbpLive,
     );
-    if (!mounted || email == null) return;
+    if (!mounted || result == null) return;
+    if (result.opened) {
+      // В Android страница оплаты открыта в браузере; когда человек вернётся,
+      // приложение проверит заказ и покажет итог.
+      if (!kIsWeb) Navigator.of(context).pop(false);
+      return;
+    }
     AppToast.show(
       context,
-      appL10n.webPaySaved(email),
+      appL10n.webPaySaved(result.email),
       type: AppToastType.success,
     );
   }
@@ -166,12 +209,12 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   }
 
   String _getPrice(PremiumTier tier) {
-    // In the apps only the store's own price (buyer's currency) is shown;
-    // until it has loaded — a dash. The site sells in rubles.
-    return IapService.instance.getProductPrice(
-      tier,
-      kIsWeb ? (tier == PremiumTier.threeMonths ? '290 ₽' : '99 ₽') : '—',
-    );
+    // Через СБП (сайт и Android) — рубли. В магазине — цена магазина
+    // (валюта покупателя); пока не загрузилась — прочерк.
+    if (kIsWeb || _androidSbp) {
+      return tier == PremiumTier.threeMonths ? '290 ₽' : '99 ₽';
+    }
+    return IapService.instance.getProductPrice(tier, '—');
   }
 
   @override
@@ -179,8 +222,11 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     final colors = AppColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isIOS = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
-    // Оплата на сайте есть не у всех стран; без неё веб-пейвол — «скоро».
-    final webPay = kIsWeb && CountryConfig.current.hasWebPayments;
+    // СБП: на сайте (если страна её поддерживает) и в Android-сборке, где
+    // СБП выбран по стране устройства или магазину RuStore.
+    final sbpPay = kIsWeb
+        ? CountryConfig.current.hasWebPayments
+        : _androidSbp;
 
     final isPremium = PremiumService.instance.isPremium;
     final remaining = PremiumService.instance.remainingFreeCards;
@@ -328,21 +374,25 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
               // рядом с ценой, а не мелким текстом внизу.
               _buildTierCard(
                 tier: PremiumTier.threeMonths,
-                title: kIsWeb ? appL10n.webQuarter : appL10n.paywallPlanQuarter,
+                title: kIsWeb || _androidSbp
+                    ? appL10n.webQuarter
+                    : appL10n.paywallPlanQuarter,
                 price: _getPrice(PremiumTier.threeMonths),
-                period: kIsWeb ? null : appL10n.paywallEveryQuarter,
+                period: kIsWeb || _androidSbp ? null : appL10n.paywallEveryQuarter,
                 badge: appL10n.paywallBadgeBest,
                 accentColor: accentColor,
                 surfaceColor: surfaceColor,
                 colors: colors,
               ),
-              if (!kIsWeb || webPay) ...[
+              if (!kIsWeb || sbpPay) ...[
                 const SizedBox(height: 8),
                 _buildTierCard(
                   tier: PremiumTier.weekly,
-                  title: kIsWeb ? appL10n.webWeek : appL10n.paywallPlanWeek,
+                  title: kIsWeb || _androidSbp
+                      ? appL10n.webWeek
+                      : appL10n.paywallPlanWeek,
                   price: _getPrice(PremiumTier.weekly),
-                  period: kIsWeb ? null : appL10n.paywallEveryWeek,
+                  period: kIsWeb || _androidSbp ? null : appL10n.paywallEveryWeek,
                   accentColor: accentColor,
                   surfaceColor: surfaceColor,
                   colors: colors,
@@ -353,10 +403,10 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
               SizedBox(
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: _isLoading || (kIsWeb && !webPay)
+                  onPressed: _isLoading || _androidUnresolved || (kIsWeb && !sbpPay)
                       ? null
-                      : webPay
-                      ? _handleWebPayment
+                      : sbpPay
+                      ? _handleSbpPayment
                       : _handlePurchase,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accentColor,
@@ -377,7 +427,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                           ),
                         )
                       : Text(
-                          webPay
+                          sbpPay
                               ? appL10n.webPayButton
                               : kIsWeb
                               ? appL10n.webPaymentSoon
@@ -396,11 +446,9 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
 
               // Автопродление и отмена — сразу под кнопкой, читаемым цветом.
               Text(
-                webPay
-                    ? appL10n.webPayInfo
-                    : kIsWeb
-                    ? appL10n.webPaymentInfo
-                    : appL10n.paywallRenewal(store),
+                kIsWeb
+                    ? (sbpPay ? appL10n.webPayInfo : appL10n.webPaymentInfo)
+                    : (sbpPay ? appL10n.sbpPayInfoApp : appL10n.paywallRenewal(store)),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
@@ -416,7 +464,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                 spacing: 8,
                 children: _withSeparators(
                   [
-                    if (webPay)
+                    if (sbpPay)
                       _buildLink(
                         appL10n.webPayTariffs,
                         () => _open(CountryConfig.current.tariffsUrl),
@@ -434,7 +482,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                         () => _open(CountryConfig.current.privacyUrl),
                         colors,
                       ),
-                    if (!kIsWeb)
+                    if (!kIsWeb && !sbpPay)
                       _buildLink(
                         appL10n.paywallRestore,
                         _handleRestore,

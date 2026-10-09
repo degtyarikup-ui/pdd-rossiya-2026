@@ -1372,6 +1372,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Разовая оплата без автопродления. Премиум откроется и в приложении на телефоне — войдите в нём тем же аккаунтом.';
 
   @override
+  String get sbpPayInfoApp =>
+      'Разовая оплата без автопродления. Премиум включится сразу после оплаты и будет работать на всех ваших устройствах с этим аккаунтом.';
+
+  @override
   String get webPayTariffs => 'Тарифы';
 
   @override

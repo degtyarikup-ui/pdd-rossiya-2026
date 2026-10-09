@@ -81,15 +81,25 @@ assets/countries/ru/images/     questions_ab/, questions_cd/, signs/, markup/
   почта, `pay_intent:<id>`, список — `/api/admin/pay-intents`). Срок начисляется
   только по статусу, перечитанному у Platega. Запуск и устройство —
   `docs/web-payments-launch.md`. Флаг — `CountryConfig.tariffsUrl`.
-- Google Play: требование Play Billing не действует для пользователей **в
-  России** (с 02.08.2022) — СБП в Android-сборке только для них. RuStore
-  сторонние платежи разрешает без комиссии. iOS — только IAP, ссылок на
-  оплату на сайте в iOS-приложении быть не должно.
+- **Способ оплаты по сборке** (`payment_mode.dart`, `store_config.dart`):
+  - Android, Google Play (`--dart-define=STORE=play`, по умолчанию): СБП
+    только для устройств в России, остальные — Play Billing. Страна — по сети
+    оператора, SIM или локали (`pdd/device_region` в MainActivity), **не по
+    IP**: VPN не меняет устройство. Правило Google о Play Billing для России
+    действует с 02.08.2022 «на данный момент».
+  - Android, RuStore (`STORE=rustore`): СБП для всех, без проверки страны
+    (сторонние платежи разрешены, комиссии нет).
+  - Веб: СБП для всех, Google-правила на сайт не распространяются.
+  - iOS: только IAP, ссылок на оплату на сайте в приложении быть не должно.
+  - Android-СБП: открывается страница Platega во внешнем браузере; заказ
+    запоминается (`PendingPayment`), при возврате в приложение проверяется
+    через `/api/user/pay-check`. Со страницы `pay-done/` человек возвращается
+    в приложение.
 
 ## Сборка и деплой
 
 ```bash
-./scripts/build.sh ru aab|apk|ipa|web  # сборка
+./scripts/build.sh ru aab|apk|rustore-apk|ipa|web  # сборка (rustore-apk — для RuStore)
 ./scripts/deploy_web.sh ru             # веб-деплой приложения (pdd-drive.ru/app/)
 ./scripts/deploy_landing.sh ru         # деплой лендинга/блога
 flutter gen-l10n                       # регенерация локализаций из ARB

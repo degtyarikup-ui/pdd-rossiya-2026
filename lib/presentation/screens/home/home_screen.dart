@@ -29,6 +29,7 @@ import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/screens/topics/topics_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_notice_widgets.dart';
 import 'package:pdd_app/presentation/widgets/premium_granted_dialog.dart';
+import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/web_payment_return.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pdd_app/presentation/widgets/sign_in_required_view.dart';
@@ -71,6 +72,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _subscribePremiumGrant();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_checkNotices());
+      unawaited(_checkPendingPayment());
       // Веб: возврат с формы оплаты (?pay=done&order=…).
       if (mounted) unawaited(handleWebPaymentReturn(context));
     });
@@ -83,6 +85,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _grantPoll = Timer.periodic(const Duration(minutes: 5), (_) {
       unawaited(PremiumService.instance.checkForGrant());
       unawaited(_checkNotices());
+      unawaited(_checkPendingPayment());
     });
   }
 
@@ -91,6 +94,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (state == AppLifecycleState.resumed) {
       unawaited(PremiumService.instance.checkForGrant());
       unawaited(_checkNotices());
+      unawaited(_checkPendingPayment());
+    }
+  }
+
+  /// Android: оплата СБП, которую человек начал в браузере. Когда он вернулся
+  /// в приложение, сервер перепроверяет заказ у Platega и начисляет срок.
+  Future<void> _checkPendingPayment() async {
+    final status = await PremiumService.instance.checkPendingPayment();
+    if (!mounted) return;
+    if (status == 'confirmed') {
+      HapticFeedbackHelper.success();
+      AppToast.show(context, appL10n.webPaySuccess, type: AppToastType.success);
+    } else if (status == 'canceled') {
+      AppToast.show(context, appL10n.webPayCanceled);
     }
   }
 

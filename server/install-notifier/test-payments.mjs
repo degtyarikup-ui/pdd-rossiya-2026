@@ -184,3 +184,22 @@ test('страница тарифов: почта без входа, прове�
   const list = await (await worker.fetch(req('/api/admin/pay-intents', undefined, 'pw'), env)).json();
   assert.equal(list.intents.find(i => i.source === 'tarify').email, 'a@b.ru');
 });
+
+test('Android: после оплаты возврат на страницу «вернитесь в приложение», веб — как раньше', async () => {
+  const fake = fakePlatega();
+  try {
+    const env = baseEnv();
+    const token = await login(env);
+    const android = await (await worker.fetch(req('/api/user/pay-intent', { email: 'a@b.ru', tier: 'weekly', method: 'sbp', client: 'android' }, token), env)).json();
+    const [txA] = [...fake.txs.values()].slice(-1);
+    assert.equal(txA.body.return, `https://pdd-drive.ru/pay-done/?order=${android.order}`);
+    assert.equal(txA.body.failedUrl, `https://pdd-drive.ru/pay-done/?order=${android.order}&failed=1`);
+    assert.equal(JSON.parse(env.INSTALLS.data.get('pay_order:' + android.order)).client, 'android');
+
+    // Тот же тариф в вебе в пределах 10 минут — свой платёж, а не ссылка из Android.
+    const web = await (await worker.fetch(req('/api/user/pay-intent', { email: 'a@b.ru', tier: 'weekly', method: 'sbp' }, token), env)).json();
+    assert.notEqual(web.order, android.order);
+    const txW = [...fake.txs.values()].slice(-1)[0];
+    assert.equal(txW.body.return, `https://pdd-drive.ru/app/?pay=done&order=${web.order}`);
+  } finally { fake.restore(); }
+});

@@ -2386,6 +2386,12 @@ abstract class AppLocalizations {
   /// **'Разовая оплата без автопродления. Премиум откроется и в приложении на телефоне — войдите в нём тем же аккаунтом.'**
   String get webPayInfo;
 
+  /// No description provided for @sbpPayInfoApp.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разовая оплата без автопродления. Премиум включится сразу после оплаты и будет работать на всех ваших устройствах с этим аккаунтом.'**
+  String get sbpPayInfoApp;
+
   /// No description provided for @webPayTariffs.
   ///
   /// In ru, this message translates to:

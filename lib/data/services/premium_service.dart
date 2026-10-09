@@ -11,6 +11,7 @@ import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
+import 'package:pdd_app/data/services/pending_payment.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum PremiumTier { weekly, threeMonths }
@@ -519,6 +520,8 @@ class PremiumService extends ChangeNotifier {
               'email': email.trim(),
               'method': method,
               'app': CountryConfig.current.code,
+              // Android возвращает человека в приложение, а не на сайт.
+              'client': kIsWeb ? 'web' : 'android',
             }),
           )
           .timeout(const Duration(seconds: 25));
@@ -575,6 +578,17 @@ class PremiumService extends ChangeNotifier {
       );
       return null;
     }
+  }
+
+  /// Android: оплата, которую человек начал в браузере. Проверяется при
+  /// возврате в приложение; заказ закрывается, когда сервер получил
+  /// окончательный статус (подтверждён, отменён, возврат).
+  Future<String?> checkPendingPayment() async {
+    final order = await PendingPayment.current();
+    if (order == null) return null;
+    final status = await checkWebPayment(order);
+    if (status != null && status != 'pending') await PendingPayment.clear();
+    return status;
   }
 
   Future<void> _saveState() async {
