@@ -15406,8 +15406,11 @@
       resolveSituationAnimation(isCorrect, situationId);
     },
     setPaused(paused) {
+      // The host's word is final: document.hidden is only consulted when the
+      // visibility actually changes (an embedded WebView may report hidden
+      // while it is on screen).
       hostPaused = Boolean(paused);
-      applyPaused(hostPaused || document.hidden);
+      applyPaused(hostPaused);
     },
     // Overlays come and go (question card, pedals): the camera eases to the
     // new framing instead of jumping. The very first value is applied at once.
