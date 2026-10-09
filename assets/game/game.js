@@ -5615,9 +5615,15 @@
     ctx.fillText(letter, 48, 49);
     const texture = new THREE.CanvasTexture(canvas);
     texture.minFilter = THREE.LinearFilter;
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false }));
+    texture.needsUpdate = true;
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: texture,
+      depthTest: false,
+      depthWrite: false,
+      transparent: true
+    }));
     sprite.renderOrder = 1000;
-    sprite.scale.set(1.5, 1.5, 1);
+    sprite.scale.set(2.2, 2.2, 1);
     sprite.userData = {
       editKey: 'label:' + letter,
       trajectoryLabel: letter,
@@ -8973,7 +8979,7 @@
       const sgn = others.length && sideScore(-1) > sideScore(1) ? -1 : 1;
       const label = createLetterToken(t.label);
       label.position.set(t.labelPosition?.[0] ?? (at.x + perp.x * sgn * 1.25), 0.8, t.labelPosition ? centerZ + t.labelPosition[1] : at.z + perp.z * sgn * 1.25); // child position: mirrored with the segment
-      label.userData = { editKey: 'label:' + (t.label || n), isLabel: true, labelText: t.label, noEditIndex: true };
+      label.userData = { editKey: 'label:' + (t.label || n), trajectoryLabel: t.label, isLabel: true, labelText: t.label, noEditIndex: true };
       seg.add(label);
     });
 
@@ -8985,7 +8991,7 @@
         marker.userData.questionEvidence = true;
         const label = createLetterToken(choice.label);
         label.position.set(-0.8, 0.8, centerZ + choice.z);
-        label.userData = { editKey: 'label:stop:' + (choice.label || ''), isLabel: true, labelText: choice.label, noEditIndex: true };
+        label.userData = { editKey: 'label:stop:' + (choice.label || ''), trajectoryLabel: choice.label, isLabel: true, labelText: choice.label, noEditIndex: true };
         seg.add(label);
       }
     }
@@ -12571,7 +12577,7 @@
           ? new THREE.Vector3(t.labelPosition[0], 0.8, stopZ + t.labelPosition[1])
           : paths[i].getPointAt(1).add(new THREE.Vector3(0, 0.8, 2));
         label.position.copy(at);
-        label.userData = { editKey: 'label:' + (t.label || i), isLabel: true, labelText: t.label, noEditIndex: true };
+        label.userData = { editKey: 'label:' + (t.label || i), trajectoryLabel: t.label, isLabel: true, labelText: t.label, noEditIndex: true };
         guide.add(label);
       });
       // Include the complete alternatives in camera framing, not just the sign.
@@ -15037,8 +15043,8 @@
   function clearSceneryOffRoad(objects) {
     if (!state.roadBounds) return;
     for (const o of objects) {
-      if (!o.visible || !(o.userData.sceneryObject || o.userData.editKey) || o.userData.billboard || o.userData.actor) continue;
-      let sign = false; o.traverse(c => { const k = c.userData.editKey || ''; if (c.userData.signCode || c.userData.trafficLight || k === 'light' || k.startsWith('sign')) sign = true; }); if (sign) continue;
+      if (!o.visible || !(o.userData.sceneryObject || o.userData.editKey) || o.userData.billboard || o.userData.actor || o.userData.isLabel || o.userData.trajectoryLabel) continue;
+      let sign = false; o.traverse(c => { const k = c.userData.editKey || ''; if (c.userData.signCode || c.userData.trafficLight || c.userData.isLabel || c.userData.trajectoryLabel || k === 'light' || k.startsWith('sign') || k.startsWith('label')) sign = true; }); if (sign) continue;
       // Only standing objects: never a surface (a dirt arm, a pavement, a
       // marking group), whatever key the lab has given it.
       let surface = false; o.traverse(c => { if (c.userData.surface || c.userData.dirtSurface || c.userData.roadMarking) surface = true; }); if (surface) continue;
@@ -15313,7 +15319,7 @@
     // readable instead of shrinking them into dots under a tall answer card.
     for (const group of [state.activeIntersection?.seg, state.roadEvent?.guide]) {
       group?.children.forEach(o => {
-        if (o.userData.trajectoryLabel) o.scale.setScalar(Math.max(1.5, 24 * viewSize / height));
+        if (o.userData.trajectoryLabel || o.userData.isLabel) o.scale.setScalar(Math.max(2.0, 32 * viewSize / height));
       });
     }
     // Place the scene at the centre of the ACTUAL uncovered viewport, including

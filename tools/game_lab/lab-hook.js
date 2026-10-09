@@ -17,6 +17,10 @@
       camera.position.set(o.target.x + Math.sin(o.yaw) * Math.cos(o.pitch) * o.dist,
         o.target.y + Math.sin(o.pitch) * o.dist, o.target.z - Math.cos(o.yaw) * Math.cos(o.pitch) * o.dist);
       camera.lookAt(o.target);
+      const labelScale = Math.max(2.2, 34 * o.size / h);
+      lab.group?.traverse(c => {
+        if (c.userData?.isLabel || c.userData?.trajectoryLabel) c.scale.setScalar(labelScale);
+      });
     };
     const junctions = () => SITUATIONS.map(s => {
       const spec = routeSpec(s);
@@ -135,7 +139,8 @@
       if (lab.helper) { scene.remove(lab.helper); lab.helper = null; }
       if (!o) return;
       if (o.userData?.isLabel || o.userData?.editKey?.startsWith('label:')) {
-        const ringGeo = new THREE.RingGeometry(0.8, 1.05, 32);
+        const radius = Math.max(1.15, (o.scale.x || 2.2) * 0.55);
+        const ringGeo = new THREE.RingGeometry(radius, radius + 0.35, 32);
         ringGeo.rotateX(-Math.PI / 2);
         const ringMat = new THREE.MeshBasicMaterial({ color: 0x0574F8, side: THREE.DoubleSide });
         const ring = new THREE.Mesh(ringGeo, ringMat);
@@ -236,9 +241,9 @@
       }
       const gp = ground(nx, ny);
       if (gp) {
-        let nearestLabel = null, minDist = 2.0;
+        let nearestLabel = null, minDist = 2.5;
         lab.group.traverse(o => {
-          if (o.userData?.isLabel || (o.userData?.editKey && o.userData.editKey.startsWith('label:'))) {
+          if (o.visible !== false && (o.userData?.isLabel || (o.userData?.editKey && o.userData.editKey.startsWith('label:')))) {
             const dist = Math.hypot(o.position.x - gp.x, o.position.z - gp.z);
             if (dist < minDist) { minDist = dist; nearestLabel = o; }
           }

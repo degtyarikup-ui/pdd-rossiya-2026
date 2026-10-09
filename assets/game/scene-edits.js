@@ -44,6 +44,65 @@ window.PDD_SCENE_EDITS = {
    }
   ]
  },
+ "road_26_9": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 22.46606070876648,
+    "points": [
+     [
+      -1.84,
+      2.74
+     ],
+     [
+      -3.25,
+      6.2
+     ],
+     [
+      -4.75,
+      15.42
+     ],
+     [
+      1.04,
+      16.37
+     ],
+     [
+      1.75,
+      10.85
+     ]
+    ],
+    "rotY": 0,
+    "startOffset": -2,
+    "x": -1.84,
+    "z": 2.74
+   }
+  ]
+ },
+ "road_27_10": {
+  "objects": [
+   {
+    "blinker": "none",
+    "key": "actor:road_1_car",
+    "rotY": 3.142,
+    "x": 2.01,
+    "z": 52
+   }
+  ]
+ },
+ "road_31_4": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 22.75,
+    "removed": true,
+    "rotY": 0,
+    "x": -1.8,
+    "z": 4
+   }
+  ]
+ },
  "ticket_10_14": {
   "objects": [
    {
@@ -753,6 +812,462 @@ window.PDD_SCENE_EDITS = {
    }
   ]
  },
+ "ticket_24_9": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:1",
+    "length": 20.470021132146478,
+    "points": [
+     [
+      -2.06,
+      -15.97
+     ],
+     [
+      -2.16,
+      -7.59
+     ],
+     [
+      0.31,
+      -5.4
+     ],
+     [
+      2.25,
+      -7.18
+     ],
+     [
+      2.19,
+      -12.16
+     ]
+    ],
+    "rotY": 0,
+    "x": -2.06,
+    "z": -15.97
+   },
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 28.756811405071097,
+    "points": [
+     [
+      -2.11,
+      -13.19
+     ],
+     [
+      -2.59,
+      -8.78
+     ],
+     [
+      -2.73,
+      1.12
+     ],
+     [
+      0,
+      3.6
+     ],
+     [
+      2.51,
+      1.76
+     ],
+     [
+      2.25,
+      -5.75
+     ]
+    ],
+    "rotY": 0,
+    "startOffset": 3,
+    "x": -2.11,
+    "z": -13.19
+   },
+   {
+    "blinker": null,
+    "code": "5.7.2",
+    "key": "sign:0",
+    "rotY": 0,
+    "x": -5.4,
+    "z": -18.06
+   },
+   {
+    "key": "label:А",
+    "x": 1.91,
+    "z": 2.32
+   },
+   {
+    "key": "label:Б",
+    "x": 2.29,
+    "z": -10.18
+   }
+  ]
+ },
+ "ticket_25_14": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 6.282001236141898,
+    "rotY": 0,
+    "startOffset": -2,
+    "x": -1.76,
+    "z": -7
+   }
+  ]
+ },
+ "ticket_25_15": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 15.963383999375658,
+    "rotY": 0,
+    "startOffset": -2,
+    "x": -1.8,
+    "z": -7
+   },
+   {
+    "blinker": "left",
+    "key": "player"
+   }
+  ]
+ },
+ "ticket_26_13": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 27.5,
+    "points": [
+     [
+      -4.1,
+      -14.64
+     ],
+     [
+      -4.1,
+      -5.64
+     ],
+     [
+      -4.1,
+      -1.64
+     ],
+     [
+      1.8,
+      1.16
+     ],
+     [
+      10.01,
+      2.15
+     ],
+     [
+      36,
+      1.16
+     ]
+    ],
+    "rotY": 0,
+    "startOffset": -1,
+    "x": -4.1,
+    "z": -14.64
+   },
+   {
+    "blinker": "left",
+    "key": "player"
+   }
+  ]
+ },
+ "ticket_26_14": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 18.963383999375658,
+    "points": [
+     [
+      -1.76,
+      -8.86
+     ],
+     [
+      -1.8,
+      -1
+     ],
+     [
+      2,
+      1.8
+     ],
+     [
+      7.67,
+      2.09
+     ]
+    ],
+    "rotY": 0,
+    "x": -1.76,
+    "z": -8.86
+   }
+  ]
+ },
+ "ticket_26_15": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 14,
+    "points": [
+     [
+      -1.8,
+      -8.68
+     ],
+     [
+      -1.89,
+      6.95
+     ]
+    ],
+    "rotY": 0,
+    "x": -1.8,
+    "z": -8.68
+   }
+  ]
+ },
+ "ticket_27_14": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 36.85475924836667,
+    "rotY": 0,
+    "x": -1.8,
+    "z": -18
+   }
+  ]
+ },
+ "ticket_27_15": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 17.963383999375658,
+    "points": [
+     [
+      -1.76,
+      -8.74
+     ],
+     [
+      -1.8,
+      -1
+     ],
+     [
+      2,
+      1.8
+     ],
+     [
+      8.28,
+      2.03
+     ]
+    ],
+    "rotY": 0,
+    "startOffset": 1,
+    "x": -1.76,
+    "z": -8.74
+   },
+   {
+    "blinker": "left",
+    "key": "player"
+   },
+   {
+    "blinker": "none",
+    "key": "actor:npc_bus",
+    "rotY": -3.142,
+    "x": 1.8,
+    "z": 9
+   }
+  ]
+ },
+ "ticket_28_13": {
+  "objects": [
+   {
+    "blinker": "left",
+    "key": "actor:tram_1",
+    "rotY": -3.142,
+    "x": 1.75,
+    "z": 13
+   },
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 19.963383999375658,
+    "points": [
+     [
+      -1.72,
+      -9.13
+     ],
+     [
+      -1.28,
+      -0.87
+     ],
+     [
+      2,
+      1.8
+     ],
+     [
+      10.43,
+      2.11
+     ]
+    ],
+    "rotY": 0,
+    "x": -1.72,
+    "z": -9.13
+   },
+   {
+    "blinker": "left",
+    "key": "player"
+   }
+  ]
+ },
+ "ticket_28_15": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 20.568969464659176,
+    "points": [
+     [
+      -1.76,
+      -8.86
+     ],
+     [
+      -2.59,
+      0.03
+     ],
+     [
+      0,
+      2.5
+     ],
+     [
+      2.63,
+      0.64
+     ],
+     [
+      2.17,
+      -5.02
+     ]
+    ],
+    "rotY": 0,
+    "x": -1.76,
+    "z": -8.86
+   }
+  ]
+ },
+ "ticket_28_2": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 12.675020919497609,
+    "points": [
+     [
+      -1.8,
+      -22
+     ],
+     [
+      -1.8,
+      -18
+     ],
+     [
+      -3.13,
+      -13.14
+     ],
+     [
+      -6.79,
+      -12.19
+     ]
+    ],
+    "rotY": 0,
+    "startOffset": 1,
+    "x": -1.8,
+    "z": -22
+   },
+   {
+    "blinker": null,
+    "key": "route:1",
+    "length": 22.860031937873956,
+    "points": [
+     [
+      -1.8,
+      -22
+     ],
+     [
+      -1.66,
+      -8.14
+     ],
+     [
+      -2.64,
+      -3.02
+     ],
+     [
+      -6.01,
+      -2.02
+     ]
+    ],
+    "rotY": 0,
+    "x": -1.8,
+    "z": -22
+   }
+  ]
+ },
+ "ticket_29_15": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 14,
+    "points": [
+     [
+      -1.84,
+      -9.14
+     ],
+     [
+      -1.84,
+      6.66
+     ]
+    ],
+    "rotY": 0,
+    "x": -1.84,
+    "z": -9.14
+   },
+   {
+    "blinker": "left",
+    "key": "actor:npc_bus",
+    "rotY": -3.142,
+    "x": 1.8,
+    "z": 9
+   },
+   {
+    "blinker": "left",
+    "key": "actor:npc_car",
+    "rotY": 1.571,
+    "x": -10,
+    "z": 2.05
+   }
+  ]
+ },
+ "ticket_29_6": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 14,
+    "points": [
+     [
+      -1.76,
+      -8.91
+     ],
+     [
+      -1.84,
+      6.31
+     ]
+    ],
+    "rotY": 0,
+    "x": -1.76,
+    "z": -8.91
+   }
+  ]
+ },
  "ticket_2_13": {
   "objects": [
    {
@@ -773,6 +1288,196 @@ window.PDD_SCENE_EDITS = {
     "rotY": 0,
     "x": -8.3,
     "z": -12
+   }
+  ]
+ },
+ "ticket_30_14": {
+  "objects": [
+   {
+    "blinker": "none",
+    "key": "actor:npc_cart",
+    "rotY": 1.309,
+    "x": -7.17,
+    "z": 2.17
+   }
+  ]
+ },
+ "ticket_30_15": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 17.963383999375658,
+    "points": [
+     [
+      -1.71,
+      -8.91
+     ],
+     [
+      -1.8,
+      -1
+     ],
+     [
+      2,
+      1.8
+     ],
+     [
+      6.93,
+      2.21
+     ]
+    ],
+    "rotY": 0,
+    "x": -1.71,
+    "z": -8.91
+   },
+   {
+    "blinker": "left",
+    "key": "player"
+   }
+  ]
+ },
+ "ticket_31_14": {
+  "objects": [
+   {
+    "blinker": "left",
+    "key": "actor:npc_truck",
+    "rotY": 1.571,
+    "x": -10,
+    "z": 2.05
+   },
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 22.5,
+    "points": [
+     [
+      -5.36,
+      -16
+     ],
+     [
+      -5.58,
+      -10.56
+     ],
+     [
+      -5.8,
+      -0.07
+     ],
+     [
+      -5.9,
+      6.45
+     ],
+     [
+      -5.74,
+      12.58
+     ]
+    ],
+    "rotY": 0,
+    "x": -5.36,
+    "z": -16
+   }
+  ]
+ },
+ "ticket_31_15": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 14,
+    "points": [
+     [
+      -1.76,
+      -8.8
+     ],
+     [
+      -1.8,
+      16
+     ]
+    ],
+    "rotY": 0,
+    "x": -1.76,
+    "z": -8.8
+   }
+  ]
+ },
+ "ticket_32_13": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 16.963383999375658,
+    "points": [
+     [
+      -1.71,
+      -9.21
+     ],
+     [
+      -1.8,
+      -1
+     ],
+     [
+      2,
+      1.8
+     ],
+     [
+      6.8,
+      2.15
+     ]
+    ],
+    "rotY": 0,
+    "x": -1.71,
+    "z": -9.21
+   },
+   {
+    "blinker": "left",
+    "key": "player"
+   }
+  ]
+ },
+ "ticket_32_15": {
+  "objects": [
+   {
+    "blinker": "left",
+    "key": "actor:npc_car",
+    "rotY": 1.571,
+    "x": -10,
+    "z": 2.05
+   },
+   {
+    "blinker": "left",
+    "key": "actor:npc_moto",
+    "rotY": -3.142,
+    "x": 1.8,
+    "z": 9
+   },
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 22.5,
+    "points": [
+     [
+      -5.4,
+      -16
+     ],
+     [
+      -5.73,
+      -10.61
+     ],
+     [
+      -6.12,
+      -2.67
+     ],
+     [
+      -5.98,
+      3.9
+     ],
+     [
+      -5.92,
+      9.76
+     ]
+    ],
+    "rotY": 0,
+    "x": -5.4,
+    "z": -16
    }
   ]
  },
