@@ -86,7 +86,7 @@
       curRain = kind === 'rain' ? 1 : 0;
       curFog = kind === 'fog' ? 1 : 0;
       curOvercast = kind === 'clear' ? 0 : (kind === 'rain' ? 1 : 0.85);
-      applyWeather(0);
+      applyWeather(100);
     }
     notifyFlutter({ type: 'weather_changed', weather: currentTargetWeather });
   }
@@ -159,27 +159,33 @@
     return weatherFx;
   }
 
-  function attachCarHeadlights(carMesh) {
+  function attachCarHeadlights(carMesh, actorType) {
     if (!carMesh) return;
     ensureWeatherFx();
     if (carMesh.userData.headlightsAttached) return;
     carMesh.userData.headlightsAttached = true;
 
-    // 1. Светящиеся линзы фар на переднем бампере
-    const lensMat = new THREE.MeshBasicMaterial({ color: 0xFFFEE8, transparent: true, opacity: 0 });
+    const isTram = actorType === 'tram' || !!carMesh.userData.isTram;
+    const zOffset = isTram ? 4.75 : 2.15;
+    const yOffset = isTram ? 0.85 : 0.65;
+    const xOffset = isTram ? 0.70 : 0.55;
+
+    // 1. Светящиеся линзы фар на передней части
+    const targetHeadlight = Math.max(curRain * 0.85, curFog * 0.95);
+    const lensMat = new THREE.MeshBasicMaterial({ color: 0xFFFEE8, transparent: true, opacity: targetHeadlight });
     const lensL = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.12, 0.04), lensMat);
-    lensL.position.set(0.55, 0.65, 2.15);
+    lensL.position.set(xOffset, yOffset, zOffset);
     carMesh.add(lensL);
 
     const lensR = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.12, 0.04), lensMat);
-    lensR.position.set(-0.55, 0.65, 2.15);
+    lensR.position.set(-xOffset, yOffset, zOffset);
     carMesh.add(lensR);
 
     // 2. Мягкий рассеянный свет фар
-    const spot = new THREE.SpotLight(0xFFF5DD, 0, 30, Math.PI / 4.0, 0.95, 1.2);
-    spot.position.set(0, 0.70, 2.10);
+    const spot = new THREE.SpotLight(0xFFF5DD, targetHeadlight * 3.6, 30, Math.PI / 4.0, 0.95, 1.2);
+    spot.position.set(0, yOffset + 0.05, zOffset - 0.05);
     const spotTarget = new THREE.Object3D();
-    spotTarget.position.set(0, 0, 16.0);
+    spotTarget.position.set(0, 0, zOffset + 14.0);
     spot.target = spotTarget;
     carMesh.add(spot);
     carMesh.add(spotTarget);
@@ -194,7 +200,7 @@
     const targetFog = currentTargetWeather === 'fog' ? 1 : 0;
     const targetOvercast = currentTargetWeather === 'clear' ? 0 : (currentTargetWeather === 'rain' ? 1 : 0.85);
 
-    const k = Math.min(1, dt * 0.22);
+    const k = Math.min(1, dt * 0.85);
     curRain += (targetRain - curRain) * k;
     curFog += (targetFog - curFog) * k;
     curOvercast += (targetOvercast - curOvercast) * k;
@@ -215,8 +221,8 @@
 
     if (scene.fog) {
       scene.fog.color.copy(scene.background);
-      const targetNear = THREE.MathUtils.lerp(120, THREE.MathUtils.lerp(45, 26, curFog), Math.max(curRain, curFog));
-      const targetFar = THREE.MathUtils.lerp(330, THREE.MathUtils.lerp(180, 110, curFog), Math.max(curRain, curFog));
+      const targetNear = THREE.MathUtils.lerp(120, THREE.MathUtils.lerp(55, 38, curFog), Math.max(curRain, curFog));
+      const targetFar = THREE.MathUtils.lerp(330, THREE.MathUtils.lerp(210, 155, curFog), Math.max(curRain, curFog));
       scene.fog.near = targetNear;
       scene.fog.far = targetFar;
     }
@@ -282,7 +288,7 @@
 
     // 5. Фары автомобилей
     const targetHeadlight = Math.max(curRain * 0.85, curFog * 0.95);
-    weatherFx.headlights = weatherFx.headlights.filter(h => h.car.parent);
+    weatherFx.headlights = weatherFx.headlights.filter(h => h.car && h.car.parent);
     weatherFx.headlights.forEach(h => {
       h.lensMat.opacity = targetHeadlight;
       h.spot.intensity = targetHeadlight * 3.6;
@@ -294,7 +300,7 @@
 
     weatherAutoTimer -= dt;
     if (weatherAutoTimer <= 0) {
-      weatherAutoTimer = 55 + Math.random() * 30;
+      weatherAutoTimer = 40 + Math.random() * 30;
       setWeather(pickNextWeather());
     }
 
@@ -430,10 +436,10 @@
       window.PDD_ROADS.attach(renderer, { roots: () => [envGroup], lineage: () => null });
     }
 
-    // Инициализация погодных эффектов (по умолчанию ясно, затем ротация)
+    // Инициализация погодных эффектов: случайная выборка (ясно, дождь, туман)
     ensureWeatherFx();
     const urlParams = new URLSearchParams(window.location.search);
-    const initialWeather = urlParams.get('weather') || 'clear';
+    const initialWeather = urlParams.get('weather') || WEATHERS[Math.floor(Math.random() * WEATHERS.length)];
     setWeather(initialWeather, true);
 
     // Обработчики событий
@@ -1444,7 +1450,7 @@
         const mesh = createVehicleMesh(a);
         placeActorAtStart(mesh, a.side);
         vehiclesGroup.add(mesh);
-        attachCarHeadlights(mesh);
+        attachCarHeadlights(mesh, a.type);
 
         activeActors.set(a.id, {
           mesh,
@@ -1453,6 +1459,12 @@
           state: 'waiting',
         });
       });
+    }
+
+    // С вероятностью 35% плавно обновляем погоду между перекрёстками
+    if (Math.random() < 0.35) {
+      weatherAutoTimer = 40 + Math.random() * 30;
+      setWeather(pickNextWeather(), false);
     }
 
     // Обновляем камеру

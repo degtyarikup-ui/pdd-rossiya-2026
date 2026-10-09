@@ -377,108 +377,67 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                   vertical: 8,
                 ),
                 child: Row(
-                children: [
-                  AppChromeIconButton(
-                    icon: Icons.arrow_back_rounded,
-                    onTap: () => Navigator.of(context).pop(),
-                  ),
-                  const SizedBox(width: AppDimensions.spacingM),
-                  if (_mode == CrossroadsGameMode.arcade) ...[
-                    GameLives(lives: _lives),
-                    const Spacer(),
-                    GameScoreLabel(
-                      score: _score,
-                      multiplier: _combo > 1 ? _combo : 1,
+                  children: [
+                    AppChromeIconButton(
+                      icon: Icons.close_rounded,
+                      onTap: () {
+                        HapticFeedbackHelper.tap();
+                        Navigator.of(context).pop();
+                      },
                     ),
                     const SizedBox(width: AppDimensions.spacingM),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.cardBackground.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.radiusSmall,
+                    if (_mode == CrossroadsGameMode.arcade)
+                      Expanded(child: _buildHud(colors))
+                    else ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
                         ),
-                        boxShadow: gameSoftShadow(colors),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.timer_outlined,
-                            size: 16,
-                            color:
-                                _secondsLeft <= 10
-                                    ? colors.red
-                                    : colors.accent,
+                        decoration: BoxDecoration(
+                          color: colors.cardBackground,
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.buttonRadius,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            appL10n.gameSecondsLeft(_secondsLeft),
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color:
-                                  _secondsLeft <= 10
-                                      ? colors.red
-                                      : colors.primaryText,
-                            ),
+                          boxShadow: gameSoftShadow(colors),
+                        ),
+                        child: Text(
+                          appL10n.gameCrossroadsModeTraining,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: colors.accent,
                           ),
-                        ],
-                      ),
-                    ),
-                  ] else ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.cardBackground.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.radiusSmall,
-                        ),
-                        boxShadow: gameSoftShadow(colors),
-                      ),
-                      child: Text(
-                        appL10n.gameCrossroadsModeTraining,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: colors.accent,
                         ),
                       ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                      onPressed: () {
-                        setState(() {
-                          _scenarioIndex =
-                              (_scenarioIndex - 1 + _scenarios.length) %
-                              _scenarios.length;
-                        });
-                        _sendScenarioToEngine();
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_forward_ios_rounded),
-                      onPressed: () {
-                        setState(() {
-                          _scenarioIndex =
-                              (_scenarioIndex + 1) % _scenarios.length;
-                        });
-                        _sendScenarioToEngine();
-                      },
-                    ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                        onPressed: () {
+                          setState(() {
+                            _scenarioIndex =
+                                (_scenarioIndex - 1 + _scenarios.length) %
+                                _scenarios.length;
+                          });
+                          _sendScenarioToEngine();
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.arrow_forward_ios_rounded),
+                        onPressed: () {
+                          setState(() {
+                            _scenarioIndex =
+                                (_scenarioIndex + 1) % _scenarios.length;
+                          });
+                          _sendScenarioToEngine();
+                        },
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
-        ),
 
           // 3. Нижняя панель управления и подсказок
           Positioned(
@@ -493,6 +452,55 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
 
           // 5. Финальный экран GameOver / NewRecord
           if (_isGameOver) _buildGameOverDialog(colors),
+        ],
+      ),
+    );
+  }
+
+  /// Счёт (звёзды), время и жизни (сердца) — единой плоской плашкой с фоном (как в Регулировщике).
+  Widget _buildHud(AppThemeColors colors) {
+    final urgent = _secondsLeft <= 10;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 40),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.spacingM,
+        vertical: AppDimensions.spacingS,
+      ),
+      decoration: BoxDecoration(
+        color: colors.cardBackground,
+        borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
+        boxShadow: gameSoftShadow(colors),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: AppDimensions.spacingM,
+        runSpacing: AppDimensions.spacingS,
+        children: [
+          GameScoreLabel(
+            score: _score,
+            multiplier: _combo > 1 ? _combo : 1,
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.timer_outlined,
+                size: 18,
+                color: urgent ? colors.red : colors.secondaryText,
+              ),
+              const SizedBox(width: AppDimensions.spacingXS),
+              Text(
+                appL10n.gameSecondsLeft(_secondsLeft),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: urgent ? colors.red : colors.primaryText,
+                ),
+              ),
+            ],
+          ),
+          GameLives(lives: _lives),
         ],
       ),
     );
