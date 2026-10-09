@@ -11738,6 +11738,7 @@
     const gateway=new THREE.Group();
     gateway.position.set(side*(openEntrance?13.5:10.4),0,z);
     gateway.userData.cameraOccluder=true;
+    gateway.userData.questionEvidence=true;
     for(const end of [-1,1]) {
       const wing=createBuilding(6,openEntrance?3.2:7,openEntrance?8:11,2);
       wing.position.z=end*(drivewayWidth/2+(openEntrance?6:5.5));gateway.add(wing);
