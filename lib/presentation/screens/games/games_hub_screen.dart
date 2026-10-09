@@ -130,21 +130,22 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
                   ),
                 ),
                 const Spacer(),
-                TextButton.icon(
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.gold,
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: () async {
                     await GameLeaderboardSheet.show(context);
                     await _refreshRating();
                   },
-                  icon: Icon(
-                    Icons.emoji_events_outlined,
-                    color: colors.primaryText,
-                  ),
+                  icon: Icon(Icons.emoji_events_outlined, color: Colors.white),
                   label: Text(
                     _me == null
                         ? '—'
                         : NumberFormat.decimalPattern('ru').format(_me!.score),
                     style: TextStyle(
-                      color: colors.primaryText,
+                      color: Colors.white,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -248,7 +249,36 @@ class _GameCard extends StatelessWidget {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        art,
+                        ColorFiltered(
+                          colorFilter: available
+                              ? const ColorFilter.mode(
+                                  Colors.transparent,
+                                  BlendMode.dst,
+                                )
+                              : const ColorFilter.matrix([
+                                  .2126,
+                                  .7152,
+                                  .0722,
+                                  0,
+                                  0,
+                                  .2126,
+                                  .7152,
+                                  .0722,
+                                  0,
+                                  0,
+                                  .2126,
+                                  .7152,
+                                  .0722,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  1,
+                                  0,
+                                ]),
+                          child: art,
+                        ),
                         DecoratedBox(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
