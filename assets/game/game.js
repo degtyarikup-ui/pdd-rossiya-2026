@@ -6973,6 +6973,9 @@
   function createTrafficController(pose = 'arms_down', orientation = 'front') {
     const group = window.PDD_CONTROLLER.create(pose);
     group.userData.orientation = orientation;
+    group.userData.questionEvidence = true;
+    group.userData.trafficController = true;
+    group.userData.editKey = 'regulator';
     // Which side of him the player sees. The junction factory frame is
     // mirrored when the segment is registered (x and rotation.y flip), so
     // facing the player's left (his left side towards the player) is -π/2
@@ -7307,6 +7310,8 @@
     for (let z = -length / 2 + 0.11; z < length / 2 - 0.05; z += 0.17) { add(board, 0.1, 0.41, z); add(tip, 0.1, 0.87, z); }
     const mesh = mergeStatic(parts, sceneryMat(0x8A7660));
     window.PDD_ROADS.skinObject(mesh, 'wood'); fence.add(mesh);
+    mesh.geometry.computeBoundingBox();
+    fence.userData.fenceFootprint = mesh.geometry.boundingBox.clone();
     [postGeo, railGeo, board, tip].forEach(g => g.dispose());
     return fence;
   }
@@ -9509,7 +9514,7 @@
     }
     const houseSet = new Set(houses.map(h => h.building));
     state.roadSegments.forEach(seg => seg.traverse(o => {
-      if (!o.userData.sceneryObject || houseSet.has(o) || !o.visible) return;
+      if (!o.userData.sceneryObject || o.userData.questionEvidence || houseSet.has(o) || !o.visible) return;
       if (state.occluders.includes(o)) return;
       const box = new THREE.Box3().setFromObject(o);
       if (box.isEmpty()) return;
@@ -9564,6 +9569,7 @@
       .multiply(new THREE.Matrix4().makeTranslation(-pivot.x, 0, -pivot.z));
     state.roadSegments.forEach(seg => seg.applyMatrix4(transform));
     window.PDD_ROADS.rebase(transform);
+    rebasePathCorridors(transform);
     const planes = new Set();
     state.roadSegments.forEach(seg => seg.traverse(o => {
       const materials = Array.isArray(o.material) ? o.material : [o.material];
@@ -9621,7 +9627,7 @@
     if(!zones)return;
     seg.updateWorldMatrix(true,true);const inverse=seg.matrixWorld.clone().invert();
     seg.traverse(o=>{
-      if(!o.userData.sceneryObject || o.userData.tramDepot || o.userData.actor)return;
+      if(!o.userData.sceneryObject || o.userData.tramDepot || o.userData.actor || o.userData.questionEvidence)return;
       const box=new THREE.Box3().setFromObject(o).applyMatrix4(inverse);
       if(zones.some(z=>box.intersectsBox(z)))o.visible=false;
     });
@@ -10117,6 +10123,9 @@
       crossing.rail.clearingActors = crossing.rail.clearingActors.filter(a => occupiesRailway(crossing, a));
       if (crossing.rail.clearingActors.length) return 0;
     }
+    // Wait for inherited traffic before departing; a moving train never
+    // brakes for the player parked on its tracks.
+    if (actor.config.type === 'train') return actor.maxSpeed;
     const box = traffic.get(actor).box;
     const forward = new THREE.Vector3(Math.sin(box.yaw), 0, Math.cos(box.yaw));
     const right = new THREE.Vector3(forward.z, 0, -forward.x);
@@ -10309,6 +10318,13 @@
         let trafficContact = false;
         for (const [b, other] of currentBoxes) {
           if (b !== a && !b.done && footprintsOverlap(box, other, 0.04)) { trafficContact = true; break; }
+        }
+        if (a.config.type === 'train') {
+          if (playerContact && !a.playerContactReported && !state.attract && (!state.isAtSituation || state.resolution?.phase === 'manual'))
+            handleCollision(a, 'collision:' + a.config.id);
+          a.playerContactReported = playerContact;
+          currentBoxes.set(a, box);
+          continue;
         }
         if (playerContact || trafficContact) {
           a.mesh.position.copy(before); a.mesh.rotation.y = yaw; a.distance = distance; a.speed = 0;
@@ -10620,7 +10636,7 @@
   }
 
   function parkCrashedActor(actor) {
-    if (!actor || actor.crashed || ['pedestrian', 'cyclist'].includes(actor.config.type)) return;
+    if (!actor || actor.crashed || ['pedestrian', 'cyclist', 'train'].includes(actor.config.type)) return;
     separateCrashedActor(actor);
     // After a crash: turn signals off, hazard lights on (п. 7.1).
     actor.signalPlan = null;
@@ -10896,6 +10912,7 @@
       transform = rotation.multiply(new THREE.Matrix4().makeTranslation(-endpoint.x, 0, -endpoint.z));
       state.roadSegments.forEach(seg => seg.applyMatrix4(transform));
       window.PDD_ROADS.rebase(transform);
+    rebasePathCorridors(transform);
       const oldPlanes = new Set();
       state.roadSegments.forEach(seg => seg.traverse(obj => {
         for (const p of obj.material?.clippingPlanes || []) oldPlanes.add(p);
@@ -13561,10 +13578,10 @@
   // Two kinds of weather only: sunny or rainy (the sky greys with the rain
   // itself). A grey day without rain read as a broken, washed-out picture.
   function pickWeather(previous) {
-    return previous === 'rain' ? 'clear' : 'rain';
+    return previous === 'rain' || Math.random() >= .15 ? 'clear' : 'rain';
   }
   function weatherDuration(kind) {
-    return kind === 'rain' ? 45 + Math.random() * 50 : 90 + Math.random() * 120;
+    return kind === 'rain' ? 25 + Math.random() * 20 : 240 + Math.random() * 180;
   }
   function ensureWeatherFx() {
     if (weatherFx) return weatherFx;
@@ -15060,12 +15077,15 @@
         // A rounded corner is road only outside its kerb curve.
         fillet: obj.userData.fillet && { center: obj.userData.fillet.center.clone().applyMatrix4(obj.matrixWorld), r: obj.userData.fillet.r },
         containsRoad: obj.userData.containsRoad,
-        inverse: obj.userData.containsRoad && obj.matrixWorld.clone().invert(),
+        inverse: obj.matrixWorld.clone().invert(),
+        localBox: obj.geometry && (obj.geometry.computeBoundingBox(), obj.geometry.boundingBox.clone().expandByScalar(.1)),
       });
     }));
     // Another road laid later (a bend, the next junction) may run over
     // scenery placed for its neighbour: nothing decorative stands on it.
-    state.roadSegments.forEach(seg => clearSceneryOffRoad(seg.children));
+    state.roadSegments.forEach(seg => seg.traverse(o => {
+      if (o.userData.sceneryObject || o.userData.editKey) clearSceneryOffRoad([o]);
+    }));
   }
   // Decorative objects (houses, fences, lamps, trees, benches) whose base
   // stands on a drivable carriageway are removed. Signs and ticket content
@@ -15086,11 +15106,17 @@
     if (list.length > 60) list.splice(0, list.length - 60);
     state.roadSegments.forEach(seg => seg.traverse(o => { if (o.userData.sceneryObject || o.userData.editKey) clearSceneryOffRoad([o]); }));
   }
+  function rebasePathCorridors(transform) {
+    for (const corridor of state.pathCorridors || []) {
+      corridor.points.forEach(p => p.applyMatrix4(transform));
+      corridor.box.setFromPoints(corridor.points).expandByScalar(corridor.r);
+    }
+  }
   const onPathCorridor = p => (state.pathCorridors || []).some(c => p.x >= c.box.min.x && p.x <= c.box.max.x && p.z >= c.box.min.z && p.z <= c.box.max.z && c.points.some(q => (q.x - p.x) ** 2 + (q.z - p.z) ** 2 < c.r * c.r));
   function clearSceneryOffRoad(objects) {
     if (!state.roadBounds) return;
     for (const o of objects) {
-      if (!o.visible || !(o.userData.sceneryObject || o.userData.editKey) || o.userData.billboard || o.userData.actor || o.userData.isLabel || o.userData.trajectoryLabel) continue;
+      if (!o.visible || !(o.userData.sceneryObject || o.userData.editKey) || o.userData.billboard || o.userData.actor || o.userData.questionEvidence || o.userData.isLabel || o.userData.trajectoryLabel) continue;
       let sign = false; o.traverse(c => { const k = c.userData.editKey || ''; if (c.userData.signCode || c.userData.trafficLight || c.userData.isLabel || c.userData.trajectoryLabel || k === 'light' || k.startsWith('sign') || k.startsWith('label')) sign = true; }); if (sign) continue;
       // Only standing objects: never a surface (a dirt arm, a pavement, a
       // marking group), whatever key the lab has given it.
@@ -15098,15 +15124,26 @@
       const box = new THREE.Box3().setFromObject(o);
       if (box.isEmpty() || box.max.y - box.min.y < 0.3) continue;
       const sx = box.max.x - box.min.x, sz = box.max.z - box.min.z;
-      if (sx > 40 || sz > 40) continue; // merged rows: their parts have no single base
+      if (!o.userData.fenceFootprint && (sx > 40 || sz > 40)) continue; // merged rows: their parts have no single base
       // The object's own origin is its base (a lamp's pole, not its arm over
       // the road); a building also by its inset corners.
       const c = o.getWorldPosition(new THREE.Vector3()); c.y = 0;
       if (c.x < box.min.x - .5 || c.x > box.max.x + .5 || c.z < box.min.z - .5 || c.z > box.max.z + .5) box.getCenter(c).setY(0);
       const points = [c];
+      const footprint = o.userData.fenceFootprint;
+      if (footprint) {
+        // Test the standing strip, including its ends, in world coordinates.
+        // Yard origins can be on grass while a long end crosses a side exit.
+        const scale = o.getWorldScale(new THREE.Vector3());
+        const nx = Math.max(1, Math.ceil((footprint.max.x-footprint.min.x)*Math.abs(scale.x)/.25));
+        const nz = Math.max(1, Math.ceil((footprint.max.z-footprint.min.z)*Math.abs(scale.z)/.25));
+        for (let ix=0;ix<=nx;ix++) for(let iz=0;iz<=nz;iz++)
+          points.push(new THREE.Vector3(THREE.MathUtils.lerp(footprint.min.x,footprint.max.x,ix/nx),0,
+            THREE.MathUtils.lerp(footprint.min.z,footprint.max.z,iz/nz)).applyMatrix4(o.matrixWorld).setY(0));
+      }
       if (state.occluders.includes(o)) for (const fx of [.2, .8]) for (const fz of [.2, .8])
         points.push(new THREE.Vector3(box.min.x + sx * fx, 0, box.min.z + sz * fz));
-      if (points.some(p => roadSupports(p)) || (!o.userData.tramDepot && onPathCorridor(c))) o.visible = false;
+      if (points.some(p => roadSupports(p)) || (!o.userData.tramDepot && points.some(onPathCorridor))) o.visible = false;
     }
   }
 
@@ -15125,10 +15162,11 @@
 
   function roadSupports(point) {
     if ((state.noRoad || []).some(({ test, inverse, mesh }) => !clippedAway(mesh.material, point) && test(point.clone().applyMatrix4(inverse)))) return false;
-    return (state.roadBounds || []).some(({box, material, fillet, containsRoad, inverse}) =>
+    return (state.roadBounds || []).some(({box, material, fillet, containsRoad, inverse, localBox}) =>
       point.x >= box.min.x - 0.1 && point.x <= box.max.x + 0.1 &&
       point.z >= box.min.z - 0.1 && point.z <= box.max.z + 0.1 &&
       (!fillet || Math.hypot(point.x - fillet.center.x, point.z - fillet.center.z) >= fillet.r - 0.05) &&
+      (!localBox || localBox.containsPoint(point.clone().applyMatrix4(inverse))) &&
       (!containsRoad || containsRoad(point.clone().applyMatrix4(inverse))) &&
       (material.clippingPlanes || []).every(plane => plane.distanceToPoint(point) >= -0.01));
   }
@@ -15410,6 +15448,15 @@
     // The chase view's lines of sight converge on the lens itself.
     const sights = [0.4, 1.5].map(y => new THREE.Ray(new THREE.Vector3(car.x, y, car.z),
       chase ? camera.position.clone().sub(new THREE.Vector3(car.x, y, car.z)).normalize() : towardsCamera));
+    // Ticket evidence must stay readable too (not only the player's car).
+    if (question) {
+      const group = state.activeIntersection?.seg || state.roadEvent?.group;
+      group?.traverse(o => {
+        if (!o.visible || !(o.userData.trafficLight || o.userData.trafficController || o.userData.signCode)) return;
+        const target = new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3());
+        sights.push(new THREE.Ray(target, chase ? camera.position.clone().sub(target).normalize() : towardsCamera));
+      });
+    }
     state.occluders.forEach(building => {
       if (!building.parent) return;
       const bounds = new THREE.Box3().setFromObject(building);

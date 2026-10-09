@@ -8,6 +8,7 @@ const { chromium } = require('playwright');
 const hook = `
 window.railTest = {
   state, actorFootprint, footprintsOverlap,
+  player: () => playerCarGroup,
   cases() { return window.PDD_ROAD_SITUATIONS.filter(s => s.scene.railway?.train).map(s => s.id); },
   show(id, inheritedType = null) {
     resetGame(); state.attract = false;
@@ -117,6 +118,21 @@ window.railTest = {
         for (let i = 0; i < fps * 25; i++) { t.tick(dt); check(); }
         out.push({id: 'already-on-tracks/' + inheritedType, fps, waiting: true,
           open: ev.rail.open, passed: t.actorFootprint(onTrack).p.z < ev.crossingZ - 15, violations: [...violations]});
+      }
+      for (const fps of [30, 60]) {
+        const {ev} = t.show('road_27_16');
+        window.game.proceedAfterAnswer(true, ev.situation.id);
+        const train = ev.rail.train;
+        for (let i = 0; i < fps * 2; i++) t.tick(1 / fps);
+        const before = train.distance;
+        // Deliberately put the player on the moving train, rather than in
+        // the ordinary queue which correctly waits before the crossing.
+        t.player().position.copy(t.actorFootprint(train).p);
+        t.player().rotation.y = 0;
+        for (let i = 0; i < fps; i++) t.tick(1 / fps);
+        out.push({id: 'player-impact', fps, waiting: true, open: true,
+          passed: train.distance > before + 5 && !train.crashed && train.speed > 1,
+          violations: []});
       }
       return out;
     });
