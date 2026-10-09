@@ -18,6 +18,7 @@ import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/models/traffic_controller_progress.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
+import 'package:pdd_app/data/models/crossroads_priority_progress.dart';
 import 'package:pdd_app/data/sources/questions_data_source.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 
@@ -565,5 +566,42 @@ class SignSwiperProgressController extends StateNotifier<SignSwiperProgress> {
       totalSwiped: state.totalSwiped + swiped,
     );
     await _dataSource.saveSignSwiperProgress(state);
+  }
+}
+
+final crossroadsPriorityProgressProvider = StateNotifierProvider<
+  CrossroadsPriorityProgressController,
+  CrossroadsPriorityProgress
+>((ref) {
+  final ds = ref.watch(progressDataSourceProvider);
+  return CrossroadsPriorityProgressController(ds);
+});
+
+class CrossroadsPriorityProgressController
+    extends StateNotifier<CrossroadsPriorityProgress> {
+  CrossroadsPriorityProgressController(this._dataSource)
+    : super(_dataSource.getCrossroadsPriorityProgress());
+
+  final ProgressDataSource _dataSource;
+
+  Future<void> recordGameResult({
+    required int score,
+    required int combo,
+    required int solved,
+  }) async {
+    final newScore = score > state.bestScore ? score : state.bestScore;
+    final newCombo = combo > state.maxCombo ? combo : state.maxCombo;
+    final newSolved = state.totalSolved + solved;
+    state = state.copyWith(
+      bestScore: newScore,
+      maxCombo: newCombo,
+      totalSolved: newSolved,
+    );
+    await _dataSource.saveCrossroadsPriorityProgress(state);
+  }
+
+  Future<void> incrementTraining() async {
+    state = state.copyWith(trainingCount: state.trainingCount + 1);
+    await _dataSource.saveCrossroadsPriorityProgress(state);
   }
 }

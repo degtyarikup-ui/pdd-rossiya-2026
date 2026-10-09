@@ -1740,6 +1740,48 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameRoundaboutTitle => 'Круговое движение 3D';
 
   @override
+  String get gameCrossroadsPriorityTitle => 'Разрули перекресток';
+
+  @override
+  String get gameCrossroadsPromptWhoGoesFirst => 'Кто проедет первым?';
+
+  @override
+  String gameCrossroadsPromptWhoGoesNext(int step) {
+    return 'Кто проедет следующим ($step-м)?';
+  }
+
+  @override
+  String gameCrossroadsStepOf(int current, int total) {
+    return 'Шаг $current из $total';
+  }
+
+  @override
+  String get gameCrossroadsCollision => 'ДТП! Нарушение очередности';
+
+  @override
+  String get gameCrossroadsNextCrossroad => 'Следующий перекресток';
+
+  @override
+  String get gameCrossroadsRepeatCrossroad => 'Попробовать снова';
+
+  @override
+  String get gameCrossroadsModeArcade => 'Аркада';
+
+  @override
+  String get gameCrossroadsModeTraining => 'Обучение';
+
+  @override
+  String gameCrossroadsSolvedCount(int count) {
+    return 'Разрулено: $count';
+  }
+
+  @override
+  String get gameCrossroadsExplanationTitle => 'Разбор ситуации по ПДД РФ';
+
+  @override
+  String get gameCrossroadsCompleteTitle => 'Перекресток разрулен!';
+
+  @override
   String get gameGestureRightArm => 'Рука вперёд';
 
   @override

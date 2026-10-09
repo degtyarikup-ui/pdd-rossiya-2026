@@ -3046,6 +3046,78 @@ abstract class AppLocalizations {
   /// **'Круговое движение 3D'**
   String get gameRoundaboutTitle;
 
+  /// No description provided for @gameCrossroadsPriorityTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрули перекресток'**
+  String get gameCrossroadsPriorityTitle;
+
+  /// No description provided for @gameCrossroadsPromptWhoGoesFirst.
+  ///
+  /// In ru, this message translates to:
+  /// **'Кто проедет первым?'**
+  String get gameCrossroadsPromptWhoGoesFirst;
+
+  /// No description provided for @gameCrossroadsPromptWhoGoesNext.
+  ///
+  /// In ru, this message translates to:
+  /// **'Кто проедет следующим ({step}-м)?'**
+  String gameCrossroadsPromptWhoGoesNext(int step);
+
+  /// No description provided for @gameCrossroadsStepOf.
+  ///
+  /// In ru, this message translates to:
+  /// **'Шаг {current} из {total}'**
+  String gameCrossroadsStepOf(int current, int total);
+
+  /// No description provided for @gameCrossroadsCollision.
+  ///
+  /// In ru, this message translates to:
+  /// **'ДТП! Нарушение очередности'**
+  String get gameCrossroadsCollision;
+
+  /// No description provided for @gameCrossroadsNextCrossroad.
+  ///
+  /// In ru, this message translates to:
+  /// **'Следующий перекресток'**
+  String get gameCrossroadsNextCrossroad;
+
+  /// No description provided for @gameCrossroadsRepeatCrossroad.
+  ///
+  /// In ru, this message translates to:
+  /// **'Попробовать снова'**
+  String get gameCrossroadsRepeatCrossroad;
+
+  /// No description provided for @gameCrossroadsModeArcade.
+  ///
+  /// In ru, this message translates to:
+  /// **'Аркада'**
+  String get gameCrossroadsModeArcade;
+
+  /// No description provided for @gameCrossroadsModeTraining.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обучение'**
+  String get gameCrossroadsModeTraining;
+
+  /// No description provided for @gameCrossroadsSolvedCount.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрулено: {count}'**
+  String gameCrossroadsSolvedCount(int count);
+
+  /// No description provided for @gameCrossroadsExplanationTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разбор ситуации по ПДД РФ'**
+  String get gameCrossroadsExplanationTitle;
+
+  /// No description provided for @gameCrossroadsCompleteTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перекресток разрулен!'**
+  String get gameCrossroadsCompleteTitle;
+
   /// No description provided for @gameGestureRightArm.
   ///
   /// In ru, this message translates to:

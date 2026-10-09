@@ -26,6 +26,17 @@ class SignSwiperArt extends StatelessWidget {
   );
 }
 
+class CrossroadsArt extends StatelessWidget {
+  const CrossroadsArt({super.key, this.forCard = false});
+
+  final bool forCard;
+
+  @override
+  Widget build(BuildContext context) => _GameCoverImage(
+    asset: 'assets/images/games/crossroads_${forCard ? 'card' : 'cover'}.webp',
+  );
+}
+
 /// Неактивная карточка уже обесцвечена при подготовке ассета.
 class RoundaboutArt extends StatelessWidget {
   const RoundaboutArt({super.key, this.forCard = false});

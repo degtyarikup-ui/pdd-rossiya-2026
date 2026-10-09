@@ -7,12 +7,14 @@ import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/data/models/traffic_controller_progress.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
+import 'package:pdd_app/data/models/crossroads_priority_progress.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Локальный кэш прогресса в [SharedPreferences].
 class ProgressDataSource {
   static const String _keyTrafficController = 'traffic_controller_progress';
   static const String _keySignSwiper = 'sign_swiper_progress';
+  static const String _keyCrossroadsPriority = 'crossroads_priority_progress';
   static const String _legacyProgress = 'question_progress';
   static const String _legacyTicketProgress = 'ticket_progress';
   static const String _legacyFavorites = 'favorites';
@@ -627,6 +629,26 @@ class ProgressDataSource {
     SignSwiperProgress progress,
   ) async {
     await _prefs.setString(_keySignSwiper, jsonEncode(progress.toJson()));
+  }
+
+  CrossroadsPriorityProgress getCrossroadsPriorityProgress() {
+    final raw = _prefs.getString(_keyCrossroadsPriority);
+    if (raw == null || raw.isEmpty) {
+      return const CrossroadsPriorityProgress();
+    }
+    try {
+      return CrossroadsPriorityProgress.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+    } catch (_) {
+      return const CrossroadsPriorityProgress();
+    }
+  }
+
+  Future<void> saveCrossroadsPriorityProgress(
+    CrossroadsPriorityProgress progress,
+  ) async {
+    await _prefs.setString(_keyCrossroadsPriority, jsonEncode(progress.toJson()));
   }
 
   /// Лучшее место в недельном рейтинге игры, запомненное на устройстве.

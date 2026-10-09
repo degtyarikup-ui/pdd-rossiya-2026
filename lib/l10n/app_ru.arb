@@ -897,6 +897,42 @@
   },
   "gameSoonBadge": "Скоро",
   "gameRoundaboutTitle": "Круговое движение 3D",
+  "gameCrossroadsPriorityTitle": "Разрули перекресток",
+  "gameCrossroadsPromptWhoGoesFirst": "Кто проедет первым?",
+  "gameCrossroadsPromptWhoGoesNext": "Кто проедет следующим ({step}-м)?",
+  "@gameCrossroadsPromptWhoGoesNext": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      }
+    }
+  },
+  "gameCrossroadsStepOf": "Шаг {current} из {total}",
+  "@gameCrossroadsStepOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "gameCrossroadsCollision": "ДТП! Нарушение очередности",
+  "gameCrossroadsNextCrossroad": "Следующий перекресток",
+  "gameCrossroadsRepeatCrossroad": "Попробовать снова",
+  "gameCrossroadsModeArcade": "Аркада",
+  "gameCrossroadsModeTraining": "Обучение",
+  "gameCrossroadsSolvedCount": "Разрулено: {count}",
+  "@gameCrossroadsSolvedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gameCrossroadsExplanationTitle": "Разбор ситуации по ПДД РФ",
+  "gameCrossroadsCompleteTitle": "Перекресток разрулен!",
   "gameGestureRightArm": "Рука вперёд",
   "gameGestureHandsSides": "Руки в стороны",
   "gameGestureArmUp": "Рука вверх",

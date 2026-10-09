@@ -574,7 +574,7 @@ void main() {
         expect(labelRect.bottom, lessThanOrEqualTo(photoRect.bottom));
       }
     }
-    await tester.ensureVisible(find.text(appL10n.gameRoundaboutTitle));
+    await tester.scrollUntilVisible(find.text(appL10n.gameRoundaboutTitle), 200);
     await tester.pumpAndSettle();
     expect(find.text(appL10n.gameSoonBadge), findsOneWidget);
     await tester.tap(find.text(appL10n.gameRoundaboutTitle));
@@ -583,7 +583,10 @@ void main() {
     expect(find.byType(TrafficControllerScreen), findsNothing);
     expect(find.byType(SignSwiperScreen), findsNothing);
     expect(tester.takeException(), isNull);
-    await tester.ensureVisible(find.text(appL10n.gameTrafficControllerTitle));
+    await tester.scrollUntilVisible(
+      find.text(appL10n.gameTrafficControllerTitle),
+      -200,
+    );
     await tester.pumpAndSettle();
     await tester.tapAt(
       tester.getCenter(find.text(appL10n.gameTrafficControllerTitle)),
