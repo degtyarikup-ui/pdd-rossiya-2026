@@ -128,6 +128,15 @@ function lnIconBtn(kind, attrs, title) {
   return '<button class="ln-icon' + (kind === 'delete' ? ' danger' : '') + '" ' + attrs + ' title="' + title + '">' + icon + '</button>';
 }
 
+function lnPageIcon(url) {
+  if (typeof BRAND_SVGS === 'undefined' || !BRAND_SVGS) return '';
+  if (url.indexOf('gplay') !== -1) return BRAND_SVGS.gplay || '';
+  if (url.indexOf('rustore') !== -1) return BRAND_SVGS.rustore || '';
+  if (url.indexOf('appstore') !== -1) return BRAND_SVGS.appstore || '';
+  if (url === 'https://pdd-drive.ru/') return BRAND_SVGS.web || '';
+  return '';
+}
+
 function lnRenderForm() {
   document.getElementById('ln-sources').innerHTML = LN_SOURCES.map(function (s) {
     var conf = AN_SOURCES[s[1]];
@@ -135,7 +144,10 @@ function lnRenderForm() {
   }).join('') + '<button class="ln-chip text' + (lnState.source === 'custom' ? ' active' : '') + '" data-src="custom">Другое</button>';
   document.getElementById('ln-source-custom').style.display = lnState.source === 'custom' ? '' : 'none';
   document.getElementById('ln-pages').innerHTML = LN_PAGES.map(function (p) {
-    return '<button class="ln-chip text' + (lnState.page === p[0] ? ' active' : '') + '" data-page="' + p[0] + '">' + p[1] + '</button>';
+    var icon = lnPageIcon(p[0]);
+    return '<button class="ln-chip text' + (lnState.page === p[0] ? ' active' : '') + '" data-page="' + p[0] + '">'
+      + (icon ? '<span style="display:inline-flex;align-items:center;margin-right:6px;">' + icon + '</span>' : '')
+      + p[1] + '</button>';
   }).join('');
   lnRenderUrl();
 }

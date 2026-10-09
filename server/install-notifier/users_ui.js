@@ -224,9 +224,38 @@ function uvProvider(u) {
   if (p.indexOf('yandex') !== -1) return 'Яндекс';
   return 'Гость';
 }
+function uvProviderIcon(u) {
+  if (typeof BRAND_SVGS === 'undefined' || !BRAND_SVGS) return '';
+  var p = String(u.provider || '').toLowerCase();
+  if (p.indexOf('google') !== -1) return BRAND_SVGS.google || '';
+  if (p.indexOf('apple') !== -1) return BRAND_SVGS.apple || '';
+  if (p.indexOf('yandex') !== -1) return BRAND_SVGS.yandex || '';
+  return '';
+}
 function uvPlatform(u) {
   var p = String(u.platform || '').toLowerCase();
   return p === 'ios' ? 'iOS' : p === 'android' ? 'Android' : p === 'web' ? 'Веб' : (u.platform || '');
+}
+function uvPlatformBadge(u) {
+  var name = uvPlatform(u);
+  if (!name || name === '—') return '—';
+  var p = String(u.platform || '').toLowerCase();
+  var icon = '';
+  if (typeof BRAND_SVGS !== 'undefined' && BRAND_SVGS) {
+    if (p === 'ios') icon = BRAND_SVGS.apple || '';
+    else if (p === 'android') icon = BRAND_SVGS.android || '';
+    else if (p === 'web') icon = BRAND_SVGS.web || '';
+  }
+  return '<span style="display:inline-flex;align-items:center;gap:6px;">' + icon + '<span>' + uvEsc(name) + '</span></span>';
+}
+function uvStoreLogo(sourceKey) {
+  if (!sourceKey || typeof BRAND_SVGS === 'undefined' || !BRAND_SVGS) return '';
+  var s = String(sourceKey).toLowerCase();
+  if (s === 'appstore' || s === 'apple' || s === 'app_store') return BRAND_SVGS.appstore || '';
+  if (s === 'rustore') return BRAND_SVGS.rustore || '';
+  if (s === 'googleplay' || s === 'gplay' || s === 'play' || s === 'google_play') return BRAND_SVGS.gplay || '';
+  if (s === 'web' || s === 'sbp') return BRAND_SVGS.sbp || '';
+  return '';
 }
 function uvAppCode(u) { return String(u.app || 'ru').toLowerCase(); }
 
@@ -330,11 +359,12 @@ function uvRenderList() {
   }
   var head = '<div class="uv-row uv-head"><div>Пользователь</div><div class="uv-hide-sm">Устройство</div><div>Статус</div><div class="uv-hide-sm">Заходил</div><div class="uv-hide-sm">Регистрация</div><div></div></div>';
   box.innerHTML = head + list.slice(0, uvState.limit).map(function (u) {
+    var pIcon = uvProviderIcon(u);
     var sub = u.email || ('ID ' + u.id);
     var flags = u.suspect ? ' <span class="uv-chip warn" title="Похоже на бота или тестовое устройство Google Play: адрес вида имя.12345@gmail.com или запрос не из приложения. Не считается в регистрациях и не приходит в Telegram.">бот?</span>' : '';
     return '<button class="uv-row" data-user="' + uvEsc(u.id) + '">'
-      + '<div class="uv-user">' + uvAvatar(u) + '<div style="min-width:0"><div class="uv-name">' + uvEsc(u.name || 'Пользователь') + flags + '</div><div class="uv-sub">' + uvEsc(sub) + '</div></div></div>'
-      + '<div class="uv-cell uv-hide-sm">' + uvEsc(uvPlatform(u) || '—') + '</div>'
+      + '<div class="uv-user">' + uvAvatar(u) + '<div style="min-width:0"><div class="uv-name">' + uvEsc(u.name || 'Пользователь') + flags + '</div><div class="uv-sub" style="display:flex;align-items:center;gap:5px;">' + (pIcon ? '<span style="display:inline-flex;flex-shrink:0;">' + pIcon + '</span>' : '') + '<span style="overflow:hidden;text-overflow:ellipsis;">' + uvEsc(sub) + '</span></div></div></div>'
+      + '<div class="uv-cell uv-hide-sm">' + uvPlatformBadge(u) + '</div>'
       + '<div>' + uvStatusChip(u) + uvPremiumDetails(u) + '</div>'
       + '<div class="uv-cell uv-hide-sm" title="' + uvEsc(uvDate(u.lastSeenAt, true)) + '">' + uvEsc(uvAgo(u.lastSeenAt || u.createdAt)) + '</div>'
       + '<div class="uv-cell uv-hide-sm">' + uvEsc(uvDate(u.createdAt)) + '</div>'
@@ -410,8 +440,9 @@ function uvBackBtn() {
   return '<button class="uv-back" data-uv="back"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m15 18-6-6 6-6"/></svg>Все пользователи</button>';
 }
 function uvHeroHtml(u) {
-  var chips = [uvStatusChip(u), '<span class="uv-chip">' + uvEsc(uvProvider(u)) + '</span>'];
-  if (uvPlatform(u)) chips.push('<span class="uv-chip">' + uvEsc(uvPlatform(u)) + (u.appVersion ? ' · v' + uvEsc(u.appVersion) : '') + '</span>');
+  var pIcon = uvProviderIcon(u);
+  var chips = [uvStatusChip(u), '<span class="uv-chip" style="display:inline-flex;align-items:center;gap:6px;">' + (pIcon ? '<span style="display:inline-flex;">' + pIcon + '</span>' : '') + uvEsc(uvProvider(u)) + '</span>'];
+  if (uvPlatform(u)) chips.push('<span class="uv-chip">' + uvPlatformBadge(u) + (u.appVersion ? ' · v' + uvEsc(u.appVersion) : '') + '</span>');
   if (u.suspect) chips.push('<span class="uv-chip warn" title="Похоже на бота или тестовое устройство Google Play: адрес вида имя.12345@gmail.com или запрос не из приложения. Не считается в регистрациях и не приходит в Telegram.">Похоже на бота</span>');
   return '<div class="uv-hero">' + uvAvatar(u, true)
     + '<div style="min-width:0"><div class="uv-hero-name">' + uvEsc(u.name || 'Пользователь') + '</div>'
@@ -438,6 +469,7 @@ function uvRenderDetail() {
 
 function uvPremiumDetails(u) {
   if (!u.premiumSource && !u.isPremium) return '';
+  var logo = typeof uvStoreLogo === 'function' ? uvStoreLogo(u.premiumSource) : '';
   var source = u.premiumSource === 'admin_grant' ? 'Выдан вручную'
     : UV_SOURCES[u.premiumSource] ? 'Куплен · ' + UV_SOURCES[u.premiumSource] : 'Источник неизвестен';
   var renewal = u.premiumSource === 'admin_grant' ? 'Автопродление: не применяется'
@@ -445,6 +477,7 @@ function uvPremiumDetails(u) {
     : 'Автопродление: ' + (u.autoRenewEnabled === true ? 'включено' : u.autoRenewEnabled === false ? 'выключено' : 'неизвестно');
   var checked = u.premiumSource === 'web' ? 'Оплата подтверждена платёжным сервисом' : u.storeVerifiedAt ? 'Проверено магазином: ' + uvDate(new Date(u.storeVerifiedAt).toISOString(), true) : 'Статус магазина ещё не получен';
   return '<div style="font-size:11.5px;color:var(--text-muted);margin-top:5px;line-height:1.5;white-space:normal">'
+    + (logo ? '<span style="display:inline-block;vertical-align:middle;margin-right:4px;">' + logo + '</span>' : '')
     + uvEsc(source) + '<br><span title="' + uvEsc(checked) + '">' + uvEsc(renewal) + '</span></div>';
 }
 
@@ -559,12 +592,13 @@ function uvExamsCard(p) {
     }).join('') + '</div></div>';
 }
 function uvInfoCard(u) {
+  var pIcon = uvProviderIcon(u);
   var rows = [
     ['ID', uvEsc(u.id) + '<button class="uv-copy" data-copy="' + uvEsc(u.id) + '">копировать</button>'],
     ['Регистрация', uvEsc(uvDate(u.createdAt, true))],
     ['Последний вход', uvEsc(uvDate(u.lastSeenAt, true)) + ' <span style="color:var(--text-muted);font-weight:500">(' + uvEsc(uvAgo(u.lastSeenAt)) + ')</span>'],
-    ['Вход через', uvEsc(uvProvider(u))],
-    ['Устройство', uvEsc([uvPlatform(u), u.appVersion ? 'v' + u.appVersion : ''].filter(Boolean).join(' · ') || '—')],
+    ['Вход через', '<span style="display:inline-flex;align-items:center;gap:6px;">' + (pIcon ? '<span style="display:inline-flex;">' + pIcon + '</span>' : '') + uvEsc(uvProvider(u)) + '</span>'],
+    ['Устройство', uvPlatformBadge(u) + (u.appVersion ? ' <span style="color:var(--text-muted);font-weight:500">· v' + uvEsc(u.appVersion) + '</span>' : '')],
     ['Страна по IP', uvEsc(u.ipCountry || '—')],
     ['Push-уведомления', u.hasPushToken ? 'подключены' : 'нет'],
   ];

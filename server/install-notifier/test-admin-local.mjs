@@ -41,11 +41,11 @@ async function runTests() {
   assert.match(adminHtml, /id="admin-data-state"/);
   assert.match(adminHtml, /География/);
   assert.doesNotMatch(adminHtml, /chart\.js/);
-  assert.match(adminHtml, /Данные аналитики/);
+  assert.match(adminHtml, /Использование режимов/);
   assert.match(adminHtml, /id="sidebar-toggle-btn"/);
   assert.match(adminHtml, /class="toggle-icon-collapse"/);
   assert.doesNotMatch(adminHtml, /<div class="brand-text">ПДД Аналитика<\/div>/);
-  assert.equal((adminHtml.match(/id="sidebar-app-select"/g) || []).length, 1);
+  assert.match(adminHtml, /AN_USAGE_NAMES/);
   console.log('   Status:', adminRes.status, 'оболочка и состояния встроены: YES');
 
   console.log('2. Тестируем POST /api/track (просмотр из YouTube Shorts)...');

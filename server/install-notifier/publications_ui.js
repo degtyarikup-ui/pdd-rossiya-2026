@@ -134,8 +134,13 @@ var pbState={blog:[],threads:{posts:[]},social:{posts:[],accounts:[]}}, pbItems=
 var PB_CHANNELS={blog:{name:'Блог',color:'#0574F8'},threads:{name:'Threads',color:'#374151'},instagram:{name:'Instagram',color:'#cc3887'},youtube:{name:'YouTube',color:'#e34a3e'}};
 var PB_STATUS={scheduled:'Запланировано',queued:'Без отдельной даты',processing:'Публикуется',published:'Опубликовано',failed:'Ошибка',draft:'Черновик',dated:'Дата статьи'};
 function pbEsc(v){return adminEsc(v);}
+function pbChannelIcon(k){
+  if(typeof BRAND_SVGS!=='undefined'&&BRAND_SVGS&&BRAND_SVGS[k])return BRAND_SVGS[k];
+  var c=PB_CHANNELS[k];
+  return '<i class="pb-dot" style="background:'+(c?c.color:'#747b88')+'"></i>';
+}
 function pbDate(date,full){return new Date(date+'T12:00:00Z').toLocaleDateString('ru-RU',{day:'numeric',month:full?'long':'short',weekday:full?'long':undefined,timeZone:'Europe/Moscow'});}
-function pbTags(item){return item.channels.map(function(k){var c=PB_CHANNELS[k];return '<span class="pb-platform-tag" title="'+pbEsc(PB_STATUS[(item.channelStatuses||{})[k]]||c.name)+'"><i class="pb-dot" style="background:'+c.color+'"></i>'+c.name+((item.channelStatuses||{})[k]==='published'?' ✓':(item.channelStatuses||{})[k]==='failed'?' !':'')+'</span>';}).join('');}
+function pbTags(item){return item.channels.map(function(k){var c=PB_CHANNELS[k], icon=pbChannelIcon(k);return '<span class="pb-platform-tag" title="'+pbEsc(PB_STATUS[(item.channelStatuses||{})[k]]||c.name)+'" style="display:inline-flex;align-items:center;gap:5px;">'+icon+'<span>'+c.name+((item.channelStatuses||{})[k]==='published'?' ✓':(item.channelStatuses||{})[k]==='failed'?' !':'')+'</span></span>';}).join('');}
 function pbStatus(item){var label=item.overdue?'Дата прошла':item.status==='queued'&&item.scheduleMode==='automatic'?(item.paused?'Канал на паузе':'По расписанию'):PB_STATUS[item.status]||item.status;return '<span class="pb-status '+(item.overdue?'overdue':item.status)+'">'+pbEsc(label)+'</span>';}
 function pbRouteWorkspace(){var route=location.hash.slice(1).split('/');return route[0]==='publications'&&['blog','threads','videos'].indexOf(route[1])!==-1?route[1]:'plan';}
 window.pubOpen=function(workspace,updateHistory){
@@ -186,7 +191,7 @@ function pbRender(){
  document.getElementById('pb-month').textContent=new Date(pbMonth+'-15T12:00:00Z').toLocaleDateString('ru-RU',{month:'long',year:'numeric',timeZone:'Europe/Moscow'});
  if(pbRange==='all')document.getElementById('pb-month').textContent='Все даты';
  if(pbRange==='week')document.getElementById('pb-month').textContent=pbDate(PB_DAY(Date.now()))+' — '+pbDate(PB_DAY(Date.now()+6*86400000));
- document.getElementById('pb-channels').innerHTML='<button type="button" class="pb-channel '+(pbChannel==='all'?'active':'')+'" data-pb-channel="all" aria-pressed="'+(pbChannel==='all')+'">Все площадки</button>'+Object.keys(PB_CHANNELS).map(function(k){var c=PB_CHANNELS[k];return '<button type="button" class="pb-channel '+(pbChannel===k?'active':'')+'" data-pb-channel="'+k+'" aria-pressed="'+(pbChannel===k)+'"><i class="pb-dot" style="background:'+c.color+'"></i>'+c.name+'</button>';}).join('');
+ document.getElementById('pb-channels').innerHTML='<button type="button" class="pb-channel '+(pbChannel==='all'?'active':'')+'" data-pb-channel="all" aria-pressed="'+(pbChannel==='all')+'">Все площадки</button>'+Object.keys(PB_CHANNELS).map(function(k){var c=PB_CHANNELS[k], icon=pbChannelIcon(k);return '<button type="button" class="pb-channel '+(pbChannel===k?'active':'')+'" data-pb-channel="'+k+'" aria-pressed="'+(pbChannel===k)+'">'+icon+'<span>'+c.name+'</span></button>';}).join('');
  document.querySelectorAll('[data-pb-mode]').forEach(function(b){b.classList.toggle('active',b.dataset.pbMode===pbMode);b.setAttribute('aria-pressed',String(b.dataset.pbMode===pbMode));});
  document.getElementById('pb-reset').hidden=!pbRange&&!pbFocusDate&&pbChannel==='all'&&!document.getElementById('pb-search').value&&document.getElementById('pb-status').value==='upcoming';
  if(!pbLoaded){if(!pbLoading)document.getElementById('pb-plan-content').innerHTML='<div class="pb-empty"><strong>План не загрузился</strong>Нажмите «Обновить», чтобы повторить.</div>';return;}
@@ -194,7 +199,7 @@ function pbRender(){
  if(pbMode==='calendar')pbCalendar(items);else pbList(items);
 }
 function pbRow(item){
- var symbol=item.sourceType==='blog'?'A':item.sourceType==='threads'?'@':'▶';
+ var symbol=item.sourceType==='blog'?'A':(typeof BRAND_SVGS!=='undefined'&&BRAND_SVGS&&BRAND_SVGS[item.sourceType==='threads'?'threads':(item.channels&&item.channels[0])])?BRAND_SVGS[item.sourceType==='threads'?'threads':item.channels[0]]:(item.sourceType==='threads'?'@':'▶');
  return '<div class="pb-plan-row" tabindex="0" role="button" data-pb-item="'+pbEsc(item.id)+'" aria-label="'+pbEsc('Открыть: '+item.title)+'">'+(item.thumbnail?'<img class="pb-thumb" src="'+pbEsc(item.thumbnail)+'" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'https://pdd-drive.ru/assets/og-image.png\';">':'<span class="pb-thumb" aria-hidden="true">'+symbol+'</span>')+'<div><div class="pb-row-title">'+pbEsc(item.title)+'</div><div class="pb-row-meta">'+pbEsc(item.time?item.time+' МСК':item.scheduleMode==='automatic'?'Расписание канала · '+(item.autoTime||'время не задано')+' МСК':item.date?'Дата статьи':item.sourceType==='threads'?'Назначьте дату для публикации':'Без даты')+'</div></div><div class="pb-row-platforms">'+pbTags(item)+'</div>'+pbStatus(item)+'<span class="pb-row-arrow" aria-hidden="true">›</span></div>';
 }
 function pbList(items){

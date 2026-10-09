@@ -194,3 +194,53 @@ test('daily report counts paid transactions and excludes manual grants from both
  assert.ok(isPaidPremiumEvent({type:'purchase',purchaseSource:'appstore',premiumSource:'admin_grant'}),'a longer grant does not hide a real paid transaction');
  assert.equal(isPaidPremiumEvent({type:'purchase',purchaseSource:'unknown'}),false);
 });
+
+test('Telegram topics route errors, purchases and registrations to configured thread IDs with resilient fallback', async () => {
+  const { env, state, queue } = setup();
+  env.TELEGRAM_TOPIC_REGISTRATIONS = 101;
+  env.TELEGRAM_TOPIC_PURCHASES = 202;
+  env.TELEGRAM_TOPIC_ERRORS = 303;
+
+  // 1. Registrations
+  await queue.fetch(new Request('https://queue/enqueue', {
+    method: 'POST',
+    body: JSON.stringify({ text: 'New user registered', topic: 'registrations' }),
+  }));
+  const regItem = (await state.storage.list({ prefix: 'q:' })).values().next().value;
+  assert.equal(regItem.threadId, 101);
+
+  // 2. Alarm sends with message_thread_id in payload
+  let sentBody = null;
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (_, opts) => {
+      sentBody = JSON.parse(opts.body);
+      return Response.json({ ok: true });
+    };
+    await queue.alarm();
+    assert.equal(sentBody.message_thread_id, 101);
+    assert.equal(sentBody.text, 'New user registered');
+
+    // 3. Fallback when topic is deleted (Telegram returns 400 Bad Request with thread error)
+    await queue.fetch(new Request('https://queue/enqueue', {
+      method: 'POST',
+      body: JSON.stringify({ text: 'Deleted topic message', threadId: 999 }),
+    }));
+    let attempts = 0;
+    globalThis.fetch = async (_, opts) => {
+      attempts++;
+      const parsed = JSON.parse(opts.body);
+      if (parsed.message_thread_id) {
+        return Response.json({ ok: false, description: 'Bad Request: message thread not found' }, { status: 400 });
+      }
+      return Response.json({ ok: true });
+    };
+    await queue.alarm(); // first attempt fails with 400 thread not found and strips threadId
+    await queue.alarm(); // second attempt sends without threadId and succeeds
+    assert.equal(attempts, 2);
+    assert.equal((await state.storage.list({ prefix: 'q:' })).size, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+

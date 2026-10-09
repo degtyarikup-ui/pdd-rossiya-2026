@@ -1,6 +1,6 @@
 // Usage is stored alongside existing day counters: no extra KV writes per event.
 export const USAGE_FROM = '2026-10-08';
-export const USAGE_FEATURES = ['tickets', 'topics', 'exam', 'game', 'feed'];
+export const USAGE_FEATURES = ['tickets', 'topics', 'exam', 'feed', 'game', 'sign_swiper', 'traffic_controller', 'roundabout'];
 const DAY = 86400000;
 
 export async function acceptUsage(request, env, { jsonResponse, trackStats }, now = Date.now()) {

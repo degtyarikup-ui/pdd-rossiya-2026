@@ -52,7 +52,7 @@ export class TrafficState {
           if (body.analytics || body.registrationUser) {
             const event = body.analytics || { type: 'registration', marketingSource: body.registrationUser.marketingSource, app: body.registrationUser.app, platform: body.registrationUser.platform };
             const outbox = { id: key + ':' + (body.installId || next), ts: Date.now(), kind: 'analytics', event };
-            if (body.registrationUser) outbox.telegram = { text: buildUserRegistrationMessage(body.registrationUser, next), dedupKey: body.legacyKey };
+            if (body.registrationUser) outbox.telegram = { text: buildUserRegistrationMessage(body.registrationUser, next), dedupKey: body.legacyKey, topic: 'registrations' };
             await txn.put('out:' + (nonNew ? crypto.randomUUID() : String(next).padStart(16, '0')), outbox);
           }
           return next;

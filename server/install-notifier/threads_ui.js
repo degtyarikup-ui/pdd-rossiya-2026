@@ -114,8 +114,8 @@ function thRenderStatus() {
   var posts = thState.posts || [];
   document.getElementById('th-status').innerHTML =
     (s.hasToken
-      ? '<span class="sc-chip ok">Threads' + (s.username ? ' @' + scEsc(s.username) : '') + '</span>'
-      : '<span class="sc-chip bad">Threads не подключён</span>')
+      ? '<span class="sc-chip ok" style="display:inline-flex;align-items:center;gap:6px;">' + (typeof BRAND_SVGS !== 'undefined' ? BRAND_SVGS.threads + ' ' : '') + 'Threads' + (s.username ? ' @' + scEsc(s.username) : '') + '</span>'
+      : '<span class="sc-chip bad" style="display:inline-flex;align-items:center;gap:6px;">' + (typeof BRAND_SVGS !== 'undefined' ? BRAND_SVGS.threads + ' ' : '') + 'Threads не подключён</span>')
     + '<span class="sc-chip">Постов: ' + posts.length + '</span>'
     + '<span class="sc-chip">Запланировано: ' + posts.filter(function (p) { return p.status === 'queued' && p.scheduledAt; }).length + '</span>';
 

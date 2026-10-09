@@ -1,5 +1,41 @@
 import { buildIncidentMessage } from './diagnostics.js';
 
+export function telegramChatId(env) {
+  const id = env?.CHAT_ID ? String(env.CHAT_ID) : '';
+  if (id === '-5556420560') return '-1004472386966';
+  return id;
+}
+
+export function resolveTopicThreadId(env, topic) {
+  if (!topic) return null;
+  const key = 'TELEGRAM_TOPIC_' + String(topic).toUpperCase();
+  const altKey = 'TG_TOPIC_' + String(topic).toUpperCase();
+  const val = env?.[key] ?? env?.[altKey];
+  if (val !== undefined && val !== null && val !== '') {
+    const num = Number(val);
+    if (Number.isInteger(num) && num > 0) return num;
+  }
+  return null;
+}
+
+export async function getTopicThreadId(env, topic, fallback = null) {
+  if (!topic) return fallback;
+  const fromEnv = resolveTopicThreadId(env, topic);
+  if (fromEnv) return fromEnv;
+  if (env?.INSTALLS) {
+    try {
+      const raw = await env.INSTALLS.get('telegram_topics');
+      if (raw) {
+        const map = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        const val = map?.[topic];
+        const num = Number(val);
+        if (Number.isInteger(num) && num > 0) return num;
+      }
+    } catch (_) {}
+  }
+  return fallback;
+}
+
 // Persist before acknowledging a notification. One chat is drained at a
 // conservative group-safe rate; Telegram retry_after survives worker restarts.
 export class TelegramQueue {
@@ -16,7 +52,10 @@ export class TelegramQueue {
   fetch(request) {
     return this.serial(async () => {
       if (new URL(request.url).pathname === '/incident') return this.enqueueIncident(await request.json());
-      const { text, dedupKey, photoBase64, messages } = await request.json();
+      const body = await request.json();
+      const { text, dedupKey, photoBase64, messages, topic } = body;
+      const explicitThreadId = body.threadId ?? body.message_thread_id;
+      const resolvedThreadId = explicitThreadId ? Number(explicitThreadId) : await getTopicThreadId(this.env, topic);
       const items = messages || [{ text, ...(photoBase64 ? { photoBase64 } : {}) }];
       if (!Array.isArray(items) || items.length < 1 || items.length > 2 || items.some(item =>
         typeof item.text !== 'string' || !item.text || item.text.length > (item.photoBase64 ? 1024 : 4096) ||
@@ -27,7 +66,14 @@ export class TelegramQueue {
       if (!(await this.state.storage.getAlarm())) await this.state.storage.setAlarm(Date.now() + 1000);
       const sequence = (await this.state.storage.get('sequence') || 0) + 1;
       await this.state.storage.transaction(async txn => {
-        for (let i=0; i<items.length; i++) await txn.put('q:' + String(sequence+i).padStart(16, '0'), { text: items[i].text, ...(items[i].photoBase64 ? { photoBase64: items[i].photoBase64 } : {}) });
+        for (let i=0; i<items.length; i++) {
+          const itemThreadId = items[i].threadId ?? items[i].message_thread_id ?? resolvedThreadId;
+          await txn.put('q:' + String(sequence+i).padStart(16, '0'), {
+            text: items[i].text,
+            ...(items[i].photoBase64 ? { photoBase64: items[i].photoBase64 } : {}),
+            ...(itemThreadId ? { threadId: Number(itemThreadId) } : {})
+          });
+        }
         await txn.put('sequence', sequence+items.length-1);
         if (dedupKey) await txn.put('seen:' + dedupKey, Date.now());
       });
@@ -37,6 +83,7 @@ export class TelegramQueue {
   async enqueueIncident({ incident, fingerprint }) {
     if (!incident || !/^[a-f0-9]{64}$/.test(fingerprint || '')) return new Response('invalid incident', { status: 400 });
     if (!this.env.BOT_TOKEN || !this.env.CHAT_ID) return new Response('not configured', { status: 503 });
+    const threadId = await getTopicThreadId(this.env, 'errors');
     const now = Date.now(), windowMs = 10 * 60000;
     const stored = await this.state.storage.get('errors:state') || { recent: [], groups: {}, window: now, count: 0, overflow: 0 };
     stored.recent = stored.recent.filter(item => now - item.at < 86400000);
@@ -60,7 +107,7 @@ export class TelegramQueue {
       await txn.put('errors:state', stored);
       if (text) {
         const sequence = (await txn.get('sequence') || 0) + 1;
-        await txn.put('q:' + String(sequence).padStart(16, '0'), { text });
+        await txn.put('q:' + String(sequence).padStart(16, '0'), { text, ...(threadId ? { threadId: Number(threadId) } : {}) });
         await txn.put('sequence', sequence);
       }
     });
@@ -74,14 +121,21 @@ export class TelegramQueue {
       let delay = 3100;
       try {
         let body, headers = {}, method = 'sendMessage';
+        const chatId = telegramChatId(this.env);
+        const threadId = item.threadId ?? item.message_thread_id;
         if (item.photoBase64) {
           method = 'sendPhoto';
           body = new FormData();
-          body.set('chat_id', this.env.CHAT_ID); body.set('caption', item.text); body.set('parse_mode', 'HTML');
+          body.set('chat_id', chatId);
+          if (threadId) body.set('message_thread_id', String(threadId));
+          body.set('caption', item.text);
+          body.set('parse_mode', 'HTML');
           body.set('photo', new Blob([Uint8Array.from(atob(item.photoBase64), c => c.charCodeAt(0))], { type: 'image/png' }), 'pdd-daily.png');
         } else {
           headers = { 'content-type': 'application/json' };
-          body = JSON.stringify({ chat_id: this.env.CHAT_ID, text: item.text, parse_mode: 'HTML', disable_web_page_preview: true });
+          const payload = { chat_id: chatId, text: item.text, parse_mode: 'HTML', disable_web_page_preview: true };
+          if (threadId) payload.message_thread_id = Number(threadId);
+          body = JSON.stringify(payload);
         }
         const response = await fetch(`https://api.telegram.org/bot${this.env.BOT_TOKEN}/${method}`, {
           method: 'POST', headers, body,
@@ -90,9 +144,14 @@ export class TelegramQueue {
         const result = await response.json();
         if (response.ok && result.ok) await this.state.storage.delete(key);
         else if (response.status === 429) delay = Math.max(delay, (Number(result.parameters?.retry_after) || 60) * 1000 + 1000);
-        else if (response.status === 400 && item.photoBase64) {
+        else if (response.status === 400 && threadId && (result.description?.includes('thread') || result.description?.includes('topic'))) {
+          // If the topic was deleted or threadId is invalid in Telegram, retry once without topic so notification is never lost!
+          delete item.threadId;
+          delete item.message_thread_id;
+          await this.state.storage.put(key, item);
+        } else if (response.status === 400 && item.photoBase64) {
           // Preserve the report even if Telegram rejects an image.
-          await this.state.storage.put(key, { text: item.text });
+          await this.state.storage.put(key, { text: item.text, ...(threadId ? { threadId: Number(threadId) } : {}) });
         } else if (response.status === 400) {
           // A malformed message must not block purchases/reports behind it.
           await this.state.storage.put('failed:' + key, { ...item, status: 400, at: Date.now() });

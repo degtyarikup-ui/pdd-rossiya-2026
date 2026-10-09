@@ -165,7 +165,7 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
       `📧 Почта для чека: ${esc(email)}`,
       `📦 ${esc(tariff.title)} — ${tariff.priceRub} ₽`,
     ].join('\n');
-    try { await sendTelegram(env, text, 'pay_intent:' + user.id); } catch (_) {}
+    try { await sendTelegram(env, text, 'pay_intent:' + user.id, { topic: 'purchases' }); } catch (_) {}
   }
   return jsonResponse(order
     ? { ok: true, available: true, url: order.url, order: order.orderId }
@@ -242,7 +242,7 @@ async function loadUser(env, order) {
 
 async function notify(env, deps, text, dedupKey) {
   if (!env.BOT_TOKEN || !env.CHAT_ID) return;
-  try { await deps.sendTelegram(env, text, dedupKey); } catch (_) {}
+  try { await deps.sendTelegram(env, text, dedupKey, { topic: 'purchases' }); } catch (_) {}
 }
 
 /**
@@ -327,7 +327,7 @@ export async function handlePayLead(request, env, { jsonResponse, sendTelegram, 
           '💳 <b>Хотят оплатить</b> (страница тарифов, СБП ещё не подключена)',
           `📧 ${esc(email)}`,
           `📦 ${esc(tariff.title)} — ${tariff.priceRub} ₽`,
-        ].join('\n'), key);
+        ].join('\n'), key, { topic: 'purchases' });
       } catch (_) {}
     }
   }

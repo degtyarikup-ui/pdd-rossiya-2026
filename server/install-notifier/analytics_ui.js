@@ -7,7 +7,7 @@
 //
 // Клиентский код — String.raw без обратных кавычек и ${ внутри.
 
-import { BRAND_ICON_PATHS } from './brand_icons.js';
+import { BRAND_ICON_PATHS, BRAND_SVGS } from './brand_icons.js';
 import { selectGeoRows } from './analytics_geo.js';
 
 export const ANALYTICS_VIEW_HTML = String.raw`
@@ -35,7 +35,8 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 .an-table td{padding:14px 0;border-top:1px solid #F2F3F5;text-align:right;font-variant-numeric:tabular-nums;font-weight:550}
 .an-table th:first-child,.an-table td:first-child{text-align:left}.an-table td+td,.an-table th+th{padding-left:12px}
 .an-table-name{display:flex;align-items:center;gap:10px;font-weight:550}
-.an-logo,.an-mono{width:28px;height:28px;border-radius:9px;background:#F4F5F7;display:flex;align-items:center;justify-content:center;flex-shrink:0}.an-logo svg{width:16px;height:16px}.an-mono{color:#fff;font-size:12px;font-weight:600}
+.an-logo{width:20px;height:20px;background:transparent;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}.an-logo svg{width:18px;height:18px}
+.an-mono{width:20px;height:20px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;font-size:12px;font-weight:600}
 .an-empty{padding:36px 12px;text-align:center;font-size:12px;color:var(--an-muted);line-height:1.7}
 .an-geo-tools{display:flex;gap:8px;align-items:center;margin:18px 0;flex-wrap:nowrap}
 .an-search{border:0;border-radius:10px;padding:10px 12px;font-size:12px;background:#F4F5F7;min-width:0;flex:1;outline-color:var(--an-accent);min-height:38px;color:var(--an-text)}.an-geo-tools select{flex:0 1 160px}.an-geo-tools select[hidden]{display:none}
@@ -46,14 +47,15 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 .an-pagination{display:flex;align-items:center;gap:8px;white-space:nowrap}.an-pagination button{border:0;background:#F4F5F7;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;color:var(--an-text)}.an-pagination button:disabled{opacity:.3;cursor:default}
 .an-help{position:relative;font-size:12px;line-height:1.65;text-align:left;color:var(--an-muted);flex-shrink:0}.an-help summary{list-style:none;cursor:pointer;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:0;background:#F4F5F7;border-radius:50%;font-size:11px;color:var(--an-muted);font-weight:500}.an-help summary::-webkit-details-marker{display:none}.an-help[open] summary{color:white;background:var(--an-text)}.an-help>div{position:absolute;right:0;top:32px;width:280px;max-width:75vw;z-index:30;padding:16px 18px;background:var(--an-text);color:white;border:0;border-radius:16px;box-shadow:0 12px 40px #17191e25}
 .an-audience{display:flex;justify-content:space-between;gap:16px;padding:0 2px 12px;flex-wrap:wrap;font-size:11px;color:var(--an-muted)}.an-audience b{color:var(--an-text);margin-left:6px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
-.an-activity-summary{display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:16px;align-items:end;margin:4px 0 24px}.an-activity-summary span{display:flex;flex-direction:column;gap:10px;font-size:11px;color:var(--an-muted)}.an-activity-summary b{color:var(--an-text);font-size:21px;font-weight:550;line-height:1;letter-spacing:-.6px;font-variant-numeric:tabular-nums}.an-activity-summary span:first-child b{font-size:40px;letter-spacing:-1.8px;color:var(--an-accent)}
+.an-activity-summary{display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:16px;align-items:end;margin:4px 0 24px}.an-activity-summary>span{display:flex;flex-direction:column;gap:10px;font-size:11px;color:var(--an-muted)}.an-activity-summary b{color:var(--an-text);font-size:21px;font-weight:550;line-height:1;letter-spacing:-.6px;font-variant-numeric:tabular-nums}.an-activity-summary>span:first-child b{font-size:40px;letter-spacing:-1.8px;color:var(--an-accent)}
+.an-act-label{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:6px;font-size:11px;color:var(--an-muted);line-height:1}.an-act-label svg{display:inline-block;vertical-align:middle;flex-shrink:0}
 .an-activity-card .an-head{margin-bottom:24px}.an-chart-card .an-head{margin-bottom:24px}.an-dynamics-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:4px 0 24px}.an-dynamics-summary span{display:flex;flex-direction:column;gap:10px;font-size:11px;color:var(--an-muted)}.an-dynamics-summary b{color:var(--an-text);font-size:40px;font-weight:550;line-height:1;letter-spacing:-1.8px;font-variant-numeric:tabular-nums}
 .an-day-details{margin-top:16px}.an-day-details>summary{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--an-text);cursor:pointer;list-style:none;padding-top:14px;border-top:1px solid #F2F3F5}.an-day-details>summary::-webkit-details-marker{display:none}.an-day-details>summary:after{content:'+';font-size:18px;color:var(--an-muted)}.an-day-details[open]>summary:after{content:'−'}.an-day-details .an-table-wrap{max-height:320px;margin-top:18px}
 .an-now{background:#fff;border-radius:20px;padding:20px 24px;margin-top:0;margin-bottom:18px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}.an-now span{display:flex;align-items:center;justify-content:space-between;gap:8px}.an-now b{font-size:18px;letter-spacing:-.3px;margin:0}
 .an-tip{position:fixed;z-index:9999;pointer-events:none;background:#17191E;color:white;border-radius:14px;padding:14px 16px;font-size:12px;line-height:1.8;display:none;min-width:140px}.an-tip-row{display:flex;justify-content:space-between;gap:24px}.an-tip-note{color:#b8c4d8}
 .an-usage .an-head{margin-bottom:16px}.an-usage .an-help>div{color:#fff;background:#17191E}.an-usage-heading{display:flex;align-items:center;gap:12px;min-width:0}.an-usage-total{font-size:11px;color:var(--an-muted);white-space:nowrap}.an-usage-total b{font-size:13px;color:var(--an-text);font-weight:600;margin-left:5px;font-variant-numeric:tabular-nums}
 .an-usage .an-table{table-layout:fixed}.an-usage .an-table th{white-space:normal;line-height:1.4;padding-bottom:10px;letter-spacing:0;text-transform:none}.an-usage .an-table td{padding:10px 0}.an-usage .an-table th:nth-child(2){width:80px}.an-usage .an-table th:nth-child(3){width:116px}.an-usage .an-table th:nth-child(4){width:92px}.an-usage .an-table th+th,.an-usage .an-table td+td{padding-left:16px}.an-usage .an-table td:nth-child(2){font-size:14px;font-weight:650}.an-usage .an-table td:nth-child(3),.an-usage .an-table td:nth-child(4){color:var(--an-muted);font-weight:450}.an-usage abbr{text-decoration:none;cursor:help}
-.an-usage-name{display:grid;grid-template-columns:100px minmax(0,1fr) 36px;gap:20px;align-items:center;padding-right:20px}.an-usage-mode{display:flex;align-items:center;border:0;padding:2px 0;background:none;color:var(--an-text);font:inherit;font-weight:550;text-align:left;cursor:pointer;max-width:100%;min-height:24px}.an-usage-mode:hover{color:var(--an-accent)}.an-usage-mode[aria-expanded=true]{color:var(--an-accent)}.an-usage-share{font-size:10px;color:var(--an-muted);font-weight:450;white-space:nowrap;text-align:right}.an-usage-track{height:3px;background:#F2F3F5;border-radius:3px;overflow:hidden}.an-usage-track i{display:block;height:100%;background:var(--an-accent);border-radius:3px}
+.an-usage .an-table td{padding:8px 0}.an-usage-name{display:grid;grid-template-columns:135px minmax(0,1fr) 42px;gap:14px;align-items:center;padding-right:14px}.an-usage-mode{display:flex;align-items:center;gap:8px;border:0;padding:2px 0;background:none;color:var(--an-text);font:inherit;font-weight:600;text-align:left;cursor:pointer;max-width:100%;min-height:22px;white-space:nowrap}.an-usage-mode:hover{color:var(--an-mode-color,var(--an-accent))}.an-usage-mode[aria-expanded=true]{color:var(--an-mode-color,var(--an-accent))}.an-usage-mode-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--an-mode-color,var(--an-accent));box-shadow:0 0 0 2px rgba(0,0,0,.04)}.an-usage-share{font-size:11px;color:var(--an-muted);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}.an-usage-track{height:8px;background:#EEF0F4;border-radius:999px;overflow:hidden;position:relative}.an-usage-track i{display:block;height:100%;background:var(--an-mode-color,var(--an-accent));border-radius:999px;transition:width .3s ease}
 .an-usage-empty{padding:16px 0 8px;font-size:13px;color:var(--an-text);line-height:1.6}.an-usage-empty p{margin:5px 0 0;font-size:11px;color:var(--an-muted)}.an-usage [hidden]{display:none!important}
 .an-usage-details{margin-top:14px;border-top:1px solid #F2F3F5}.an-usage-details>summary{display:flex;align-items:center;justify-content:space-between;list-style:none;font-size:12px;cursor:pointer;padding:14px 0 0;color:var(--an-text)}.an-usage-details>summary::-webkit-details-marker{display:none}.an-usage-details>summary:after{content:'';width:6px;height:6px;flex-shrink:0;border-right:1.5px solid var(--an-muted);border-bottom:1.5px solid var(--an-muted);transform:rotate(45deg);margin:0 3px 4px 12px}.an-usage-details[open]>summary:after{transform:rotate(225deg);margin-bottom:0}.an-usage-details>summary .an-caption{margin:0 0 0 auto;padding-left:16px;font-size:10px;white-space:nowrap}.an-usage-controls{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:18px 0 12px}.an-usage-controls select{flex:none;width:150px;min-height:34px;padding:8px 10px}.an-usage-controls .an-legend{margin:0;flex-wrap:wrap;gap:8px 14px}.an-usage .an-chart{min-height:160px}.an-usage .an-empty{padding:24px 0}
 @media(max-width:640px){.an-usage-heading{gap:8px}.an-usage .an-head{align-items:flex-start;gap:8px}.an-usage-total{font-size:10px;display:flex;flex-direction:column;gap:4px;align-items:flex-end}.an-usage-total b{font-size:14px;margin:0}.an-usage .an-table th:nth-child(2){width:54px}.an-usage .an-table th:nth-child(3){width:78px}.an-usage .an-table th:nth-child(4){width:58px}.an-usage .an-table th+th,.an-usage .an-table td+td{padding-left:8px}.an-usage .an-table th{font-size:9px}.an-usage .an-table td{font-size:12px}.an-usage .an-table td:nth-child(2){font-size:13px}.an-usage-name{grid-template-columns:minmax(0,1fr) auto;gap:4px 6px;padding-right:0}.an-usage-track{grid-column:1 / -1;grid-row:2}.an-usage-share{grid-column:2;grid-row:1;font-size:9px}.an-usage-mode{line-height:1.3}.an-usage-controls{align-items:flex-start;gap:12px}.an-usage-controls select{width:112px;min-height:34px}.an-usage-controls .an-legend{font-size:10px;gap:7px}}
@@ -62,7 +64,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 @media(max-width:1320px){.an-row2{grid-template-columns:1fr 1fr}.an-geo-card{grid-column:1 / -1}.an-geo-card .an-table-name{min-width:150px}}
 @media(max-width:1120px){.an-charts-grid{grid-template-columns:1fr}.an-chart-card .an-legend{margin:0 0 8px}.an-grid{gap:12px}.an-kpi{padding:20px}.an-big{font-size:34px}}
 @media(max-width:900px){.an-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.an-now{grid-template-columns:repeat(2,minmax(0,1fr))}.an-now span{justify-content:flex-start}.an-now b{margin-left:auto}}
-@media(max-width:640px){.an-card{padding:20px;border-radius:18px}.an-grid{gap:10px}.an-kpi{padding:18px}.an-kpi-top{font-size:11px;min-height:28px;line-height:1.4}.an-big{font-size:32px;margin-top:10px}.an-row2{grid-template-columns:1fr}.an-geo-card{grid-column:auto}.an-head{gap:8px}.an-title{font-size:15px}.an-tabs button{padding:6px 10px;font-size:10px}.an-table{font-size:12px}.an-table td+td,.an-table th+th{padding-left:10px}.an-geo-card .an-table{min-width:340px}.an-activity-summary{gap:14px 10px;grid-template-columns:1.1fr repeat(3,1fr)}.an-activity-summary b{font-size:18px}.an-activity-summary span:first-child b{font-size:34px}.an-activity-summary span{font-size:10px;line-height:1.4}.an-dynamics-summary b{font-size:34px}.an-dynamics-summary span{font-size:10px}.an-geo-footer{flex-wrap:wrap}.an-now{padding:18px 20px;gap:16px}.an-now span{flex-direction:column;align-items:flex-start;gap:8px}.an-now b{margin:0;font-size:20px}.an-chart-card .an-head{flex-wrap:wrap}.an-caption{font-size:10px}}
+@media(max-width:640px){.an-card{padding:20px;border-radius:18px}.an-grid{gap:10px}.an-kpi{padding:18px}.an-kpi-top{font-size:11px;min-height:28px;line-height:1.4}.an-big{font-size:32px;margin-top:10px}.an-row2{grid-template-columns:1fr}.an-geo-card{grid-column:auto}.an-head{gap:8px}.an-title{font-size:15px}.an-tabs button{padding:6px 10px;font-size:10px}.an-table{font-size:12px}.an-table td+td,.an-table th+th{padding-left:10px}.an-geo-card .an-table{min-width:340px}.an-activity-summary{gap:14px 10px;grid-template-columns:1.1fr repeat(3,1fr)}.an-activity-summary b{font-size:18px}.an-activity-summary>span:first-child b{font-size:34px}.an-activity-summary>span{font-size:10px;line-height:1.4}.an-dynamics-summary b{font-size:34px}.an-dynamics-summary span{font-size:10px}.an-geo-footer{flex-wrap:wrap}.an-now{padding:18px 20px;gap:16px}.an-now span{flex-direction:column;align-items:flex-start;gap:8px}.an-now b{margin:0;font-size:20px}.an-chart-card .an-head{flex-wrap:wrap}.an-caption{font-size:10px}}
 </style>
 <div class="an-period" id="an-period"></div>
 <div class="an-grid" id="an-now" aria-label="Текущее состояние аккаунтов"></div>
@@ -70,7 +72,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
  <div class="an-card an-activity-card">
   <div class="an-head"><div class="an-title">Ежедневное использование</div><details class="an-help"><summary aria-label="Об активности">i</summary><div>Уникальные зарегистрированные аккаунты, обращавшиеся к серверу за день по МСК. Повторные обращения не увеличивают число. Аккаунт с двумя платформами входит в обе группы, в общем числе учитывается один раз. Гости и использование без интернета сюда не входят. Сегодня — неполный день, среднее включает сегодня.</div></details></div>
   <div class="an-activity-summary" id="an-activity-summary"></div>
-  <div class="an-legend"><span><i class="an-dot" style="background:#0574F8"></i>Android</span><span><i class="an-dot" style="background:#22a875"></i>iOS</span></div>
+  <div class="an-legend"><span style="display:inline-flex;align-items:center;gap:6px"><i class="an-dot" style="background:#0574F8"></i><svg viewBox="0 0 24 24" width="14" height="14" fill="#3DDC84" style="display:inline-block;vertical-align:middle"><path d="M6 18c0 .55.45 1 1 1h1v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h2v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h1c.55 0 1-.45 1-1V8H6v10zM3.5 8C2.67 8 2 8.67 2 9.5v7c0 .83.67 1.5 1.5 1.5S5 17.33 5 16.5v-7C5 8.67 4.33 8 3.5 8zm17 0c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-7c0-.83-.67-1.5-1.5-1.5zm-4.97-4.84l1.3-1.3c.2-.2.2-.51 0-.71-.2-.2-.51-.2-.71 0l-1.48 1.48C13.72 2.24 12.88 2 12 2c-.88 0-1.72.24-2.64.63L7.88 1.15c-.2-.2-.51-.2-.71 0-.2.2-.2.51 0 .71l1.3 1.3C6.75 4.3 5.5 6.01 5.2 8h13.6c-.3-1.99-1.55-3.7-3.27-4.84zM9 6c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm6 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>Android</span><span style="display:inline-flex;align-items:center;gap:6px"><i class="an-dot" style="background:#22a875"></i><svg viewBox="0 0 250 307" width="14" height="14" fill="currentColor" style="display:inline-block;vertical-align:middle"><path d="M208.209 162.951C208.36 151.207 211.48 139.691 217.277 129.477C223.075 119.262 231.362 110.68 241.367 104.528C235.011 95.4506 226.626 87.9799 216.877 82.7096C207.128 77.4394 196.285 74.5149 185.209 74.1684C161.581 71.6882 138.674 88.307 126.634 88.307C114.36 88.307 95.8222 74.4146 75.8596 74.8253C62.9473 75.2425 50.3632 78.9973 39.3335 85.7239C28.3038 92.4505 19.2046 101.92 12.9224 113.208C-14.2903 160.323 6.00794 229.566 32.0755 267.65C45.1176 286.298 60.3602 307.129 80.3047 306.391C99.8216 305.581 107.111 293.945 130.669 293.945C154.009 293.945 160.848 306.391 181.197 305.921C202.14 305.581 215.335 287.189 227.919 268.364C237.29 255.076 244.501 240.39 249.285 224.85C237.117 219.704 226.734 211.091 219.43 200.083C212.126 189.076 208.223 176.161 208.209 162.951Z"/><path d="M169.775 49.1155C181.194 35.4077 186.819 17.7887 185.457 0C168.012 1.8323 151.897 10.17 140.324 23.3519C134.666 29.7916 130.332 37.2833 127.571 45.3989C124.809 53.5145 123.675 62.0947 124.231 70.649C132.957 70.7389 141.59 68.8476 149.479 65.1176C157.368 61.3877 164.307 55.9163 169.775 49.1155Z"/></svg>iOS</span></div>
   <div class="an-chart" id="an-activity-chart"></div>
   <div class="an-caption" id="an-activity-caption"></div>
   <details class="an-day-details"><summary>Данные по дням</summary><div class="an-table-wrap" id="an-activity-table"></div></details>
@@ -113,13 +115,14 @@ var AN_RELIABLE_FROM = '2026-09-25';
 var AN_C = { accent: '#0574F8', green: '#22a875', red: '#ED4621', text: '#17191E', muted: '#747B88', gray: '#F4F5F7', grid: '#F2F3F5' };
 // Магазины — цвета их логотипов.
 var AN_STORES = {
-  'Google Play': { color: '#01875F', icon: 'googleplay' },
-  'RuStore': { color: '#0077FF', mono: 'R' },
-  'App Store': { color: '#0D96F6', icon: 'appstore' },
-  'TestFlight': { color: '#0D96F6', icon: 'appstore' }
+  'Google Play': { color: '#01875F', icon: 'gplay' },
+  'RuStore': { color: '#0077FF', icon: 'rustore' },
+  'App Store': { color: '#000000', icon: 'appstore' },
+  'TestFlight': { color: '#000000', icon: 'appstore' },
+  'Web': { color: '#15966B', icon: 'web' }
 };
 var AN_SOURCES = {
-  yandex: { name: 'Яндекс', mono: 'Я', bg: '#FC3F1D' },
+  yandex: { name: 'Яндекс', icon: 'yandex' },
   google: { name: 'Google', icon: 'google' },
   instagram: { name: 'Instagram', icon: 'instagram' },
   youtube: { name: 'YouTube', icon: 'youtube' },
@@ -127,20 +130,29 @@ var AN_SOURCES = {
   telegram: { name: 'Telegram', icon: 'telegram' },
   vk: { name: 'ВКонтакте', icon: 'vk' },
   threads: { name: 'Threads', icon: 'threads' },
-  dzen: { name: 'Дзен', mono: 'Д', bg: '#000000' },
-  direct: { name: 'Прямые / без метки', glyph: 'link' },
-  other: { name: 'Другие сайты', glyph: 'globe' }
+  dzen: { name: 'Дзен', icon: 'dzen' },
+  direct: { name: 'Прямые / без метки', icon: 'direct' },
+  other: { name: 'Другие сайты', icon: 'other' }
 };
-var AN_ICON_COLORS = { googleplay: '#01875F', appstore: '#0D96F6', instagram: '#FF0069', youtube: '#FF0000', telegram: '#26A5E4', vk: '#0077FF', tiktok: '#000000', threads: '#000000', google: '#4285F4' };
+var AN_ICON_COLORS = { gplay: '#01875F', googleplay: '#01875F', appstore: '#000000', instagram: '#FF0069', youtube: '#FF0000', telegram: '#26A5E4', vk: '#0077FF', tiktok: '#000000', threads: '#000000', google: '#4285F4', rustore: '#0077FF', yandex: '#FC3F1D', dzen: '#000000' };
 
 function anEsc(v) { return typeof adminEsc === 'function' ? adminEsc(v) : String(v == null ? '' : v); }
 function anNum(n) { return Number(n || 0).toLocaleString('ru-RU'); }
-function anSvgIcon(key) { return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="' + (AN_ICON_COLORS[key] || AN_C.muted) + '" d="' + AN_BRAND_PATHS[key] + '"/></svg>'; }
+function anSvgIcon(key) {
+  if (typeof BRAND_SVGS !== 'undefined' && BRAND_SVGS && BRAND_SVGS[key]) return BRAND_SVGS[key];
+  var path = (typeof AN_BRAND_PATHS !== 'undefined' && AN_BRAND_PATHS[key]) || '';
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="' + (AN_ICON_COLORS[key] || AN_C.muted) + '" d="' + path + '"/></svg>';
+}
 function anGlyph(kind) {
   if (kind === 'link') return '<svg viewBox="0 0 24 24" fill="none" stroke="#A1A6B7" stroke-width="2.2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1 1"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1-1"/></svg>';
   return '<svg viewBox="0 0 24 24" fill="none" stroke="#A1A6B7" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>';
 }
 function anLogo(conf) {
+  if (!conf) conf = { icon: 'other' };
+  if (typeof conf === 'string') conf = { icon: conf };
+  if (conf.icon && typeof BRAND_SVGS !== 'undefined' && BRAND_SVGS && BRAND_SVGS[conf.icon]) {
+    return '<span class="an-logo" style="background:transparent;display:inline-flex;align-items:center;justify-content:center;">' + BRAND_SVGS[conf.icon] + '</span>';
+  }
   if (conf.mono) return '<span class="an-mono" style="background:' + (conf.bg || conf.color) + '">' + conf.mono + '</span>';
   if (conf.icon) return '<span class="an-logo">' + anSvgIcon(conf.icon) + '</span>';
   return '<span class="an-logo">' + anGlyph(conf.glyph) + '</span>';
@@ -294,20 +306,30 @@ function anRenderActivity(data) {
  var activity=data.users&&data.users.activity, days=activity?activity.days:[], available=days.filter(function(d){return d.total!=null;}), bars=[];
  var latest=available[available.length-1], sum=available.reduce(function(n,d){return n+d.total;},0);
  document.getElementById('an-activity-summary').innerHTML=latest?[
- ['Сегодня',latest.total],['Android',latest.android],['iOS',latest.ios],['Среднее за день',Math.round(sum/available.length)]
+ ['Сегодня',latest.total],
+ ['<span class="an-act-label">' + anSvgIcon('android') + 'Android</span>',latest.android],
+ ['<span class="an-act-label">' + anSvgIcon('apple') + 'iOS</span>',latest.ios],
+ ['Среднее за день',Math.round(sum/available.length)]
  ].map(function(m){return '<span>'+m[0]+'<b>'+anNum(m[1])+'</b></span>';}).join(''):'';
  available.forEach(function(d){
-  var tip='<b>'+anDayLabel(d.date,true)+'</b>' + [['Активные аккаунты за день',d.total],['Android',d.android],['iOS',d.ios],['Веб',d.web],['Неизвестно',d.unknown]].map(function(m){return '<div class="an-tip-row"><span>'+m[0]+'</span><b>'+anNum(m[1])+'</b></div>';}).join('');
+  var tip='<b>'+anDayLabel(d.date,true)+'</b>' + [
+    ['Активные аккаунты за день',d.total],
+    ['<span style="display:inline-flex;align-items:center;gap:4px">' + anSvgIcon('android') + 'Android</span>',d.android],
+    ['<span style="display:inline-flex;align-items:center;gap:4px">' + anSvgIcon('apple') + 'iOS</span>',d.ios],
+    ['<span style="display:inline-flex;align-items:center;gap:4px">' + anSvgIcon('web') + 'Веб</span>',d.web],
+    ['Неизвестно',d.unknown]
+  ].map(function(m){return '<div class="an-tip-row"><span>'+m[0]+'</span><b>'+anNum(m[1])+'</b></div>';}).join('');
   bars.push({value:d.android,color:'#0574F8',label:anDayLabel(d.date),tip:tip});
   bars.push({value:d.ios,color:'#22a875',label:'',tip:tip});
  });
  var el=document.getElementById('an-activity-chart');
  if(bars.length)anBars(el,bars,205);else el.innerHTML='<div class="an-empty">Нет истории активности за выбранный период</div>';
  document.getElementById('an-activity-caption').textContent=activity?'История с '+anDayLabel(activity.from)+' · МСК':'';
- document.getElementById('an-activity-table').innerHTML=days.length?anTable(['День','Всего','Android','iOS','Веб','Неизвестно'],days.slice().reverse().map(function(d){return '<tr><td>'+anDayLabel(d.date)+'</td>'+['total','android','ios','web','unknown'].map(function(k){return '<td>'+(d[k]==null?'—':anNum(d[k]))+'</td>';}).join('')+'</tr>';})):'<div class="an-empty">Нет данных</div>';
+ document.getElementById('an-activity-table').innerHTML=days.length?anTable(['День','Всего','<span style="display:inline-flex;align-items:center;gap:4px">' + anSvgIcon('android') + 'Android</span>','<span style="display:inline-flex;align-items:center;gap:4px">' + anSvgIcon('apple') + 'iOS</span>','<span style="display:inline-flex;align-items:center;gap:4px">' + anSvgIcon('web') + 'Веб</span>','Неизвестно'],days.slice().reverse().map(function(d){return '<tr><td>'+anDayLabel(d.date)+'</td>'+['total','android','ios','web','unknown'].map(function(k){return '<td>'+(d[k]==null?'—':anNum(d[k]))+'</td>';}).join('')+'</tr>';})):'<div class="an-empty">Нет данных</div>';
 }
 var anUsageFeature = 'tickets';
-var AN_USAGE_NAMES = {tickets:'Билеты',topics:'Темы',exam:'Экзамен',game:'3D-игра',feed:'Лента'};
+var AN_USAGE_NAMES = {tickets:'Билеты',topics:'Темы',exam:'Экзамен',feed:'Лента',game:'3D-игра',sign_swiper:'Знак-Свайпер',traffic_controller:'Регулировщик 3D',roundabout:'Круговое 3D'};
+ var AN_USAGE_COLORS = {tickets:'#0574F8',topics:'#7C5CFC',exam:'#F5582A',feed:'#0BB8A8',game:'#10B981',sign_swiper:'#F59E0B',traffic_controller:'#D946EF',roundabout:'#06B6D4'};
 function anRenderUsage(data) {
  var usage=data.usage, features=usage&&usage.features||{}, timeline=usage&&usage.timeline||[], keys=Object.keys(AN_USAGE_NAMES);
  var starts=keys.reduce(function(n,k){return n+(features[k]&&features[k].starts||0);},0);
@@ -320,7 +342,7 @@ function anRenderUsage(data) {
  table.innerHTML=starts?anTable(['Режим','Запуски','<abbr title="Установки, в которых запускали режим за выбранный период">Активные установки</abbr>','<abbr title="Среднее число запусков на активную установку">На установку</abbr>'],keys.map(function(k){
   var f=features[k]||{starts:0,installations:0};
   var share=starts?f.starts/starts*100:0, label=share>0&&share<1?'&lt;1%':Math.round(share)+'%';
-  return '<tr><td><div class="an-usage-name"><button type="button" class="an-usage-mode" data-usage="'+k+'" aria-controls="an-usage-details" aria-expanded="'+(details.open&&k===anUsageFeature)+'" aria-label="Показать динамику: '+AN_USAGE_NAMES[k]+'">'+AN_USAGE_NAMES[k]+'</button><div class="an-usage-track" aria-hidden="true"><i style="width:'+share+'%"></i></div><span class="an-usage-share">'+label+'</span></div></td>'+anCell(f.starts)+anCell(f.installations)+'<td>'+(f.installations?(f.starts/f.installations).toLocaleString('ru-RU',{maximumFractionDigits:1}):'—')+'</td></tr>';
+  var mc=AN_USAGE_COLORS[k]||'var(--an-accent)';return '<tr style="--an-mode-color:'+mc+'"><td><div class="an-usage-name"><button type="button" class="an-usage-mode" data-usage="'+k+'" aria-controls="an-usage-details" aria-expanded="'+(details.open&&k===anUsageFeature)+'" aria-label="Показать динамику: '+AN_USAGE_NAMES[k]+'"><span class="an-usage-mode-dot" aria-hidden="true"></span>'+AN_USAGE_NAMES[k]+'</button><div class="an-usage-track" aria-hidden="true"><i style="width:'+share+'%"></i></div><span class="an-usage-share">'+label+'</span></div></td>'+anCell(f.starts)+anCell(f.installations)+'<td>'+(f.installations?(f.starts/f.installations).toLocaleString('ru-RU',{maximumFractionDigits:1}):'—')+'</td></tr>';
  })):'';
  document.getElementById('an-usage-feature').innerHTML=keys.map(function(k){return '<option value="'+k+'">'+AN_USAGE_NAMES[k]+'</option>';}).join('');
  document.getElementById('an-usage-feature').value=anUsageFeature;
@@ -331,7 +353,7 @@ function anRenderUsageDetails(data) {
  var usage=data.usage, timeline=usage&&usage.timeline||[], selected=usage&&usage.features&&usage.features[anUsageFeature];
  var available=timeline.filter(function(d){return d.features[anUsageFeature].starts!=null;}), bars=[];
  available.forEach(function(d){var f=d.features[anUsageFeature],tip='<b>'+anDayLabel(d.date,true)+'</b><div class="an-tip-row"><span>Запуски</span><b>'+anNum(f.starts)+'</b></div><div class="an-tip-row"><span>Активные установки</span><b>'+anNum(f.installations)+'</b></div>';
-  bars.push({value:f.starts,color:AN_C.accent,label:anDayLabel(d.date),tip:tip},{value:f.installations,color:AN_C.green,label:'',tip:tip});
+  var dc=AN_USAGE_COLORS[anUsageFeature]||AN_C.accent;bars.push({value:f.starts,color:dc,label:anDayLabel(d.date),tip:tip},{value:f.installations,color:AN_C.green,label:'',tip:tip});
  });
  var chart=document.getElementById('an-usage-chart');
  if(selected&&selected.starts&&bars.length)anBars(chart,bars,170);else chart.innerHTML='<div class="an-empty">В этом режиме пока нет запусков за выбранный период.</div>';
@@ -382,4 +404,4 @@ window.addEventListener('resize', function () {
 });
 `;
 
-export const ANALYTICS_CLIENT_JS = 'var AN_SELECT_GEO = ' + selectGeoRows.toString() + ';\n' + 'var AN_BRAND_PATHS = ' + JSON.stringify(BRAND_ICON_PATHS) + ';\n' + CLIENT;
+export const ANALYTICS_CLIENT_JS = 'var BRAND_SVGS = (typeof window !== "undefined" && window.BRAND_SVGS) || ' + JSON.stringify(BRAND_SVGS) + ';\n' + 'var AN_SELECT_GEO = ' + selectGeoRows.toString() + ';\n' + 'var AN_BRAND_PATHS = ' + JSON.stringify(BRAND_ICON_PATHS) + ';\n' + CLIENT;

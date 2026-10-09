@@ -229,14 +229,14 @@ function scRenderStatus() {
   var posts = scState.posts || [];
   var chips = [];
   chips.push(s.hasGoogleRefreshToken
-    ? '<span class="sc-chip ok">Google</span>'
-    : '<span class="sc-chip bad">Google не подключён</span>');
+    ? '<span class="sc-chip ok" style="display:inline-flex;align-items:center;gap:6px;">' + (typeof BRAND_SVGS !== 'undefined' ? BRAND_SVGS.google : '') + 'Google</span>'
+    : '<span class="sc-chip bad" style="display:inline-flex;align-items:center;gap:6px;">' + (typeof BRAND_SVGS !== 'undefined' ? BRAND_SVGS.google : '') + 'Google не подключён</span>');
   chips.push(a && a.hasInstagramToken
-    ? '<span class="sc-chip ok">Instagram</span>'
-    : '<span class="sc-chip">Instagram не подключён</span>');
+    ? '<span class="sc-chip ok" style="display:inline-flex;align-items:center;gap:6px;">' + (typeof BRAND_SVGS !== 'undefined' ? BRAND_SVGS.instagram : '') + 'Instagram</span>'
+    : '<span class="sc-chip" style="display:inline-flex;align-items:center;gap:6px;">' + (typeof BRAND_SVGS !== 'undefined' ? BRAND_SVGS.instagram : '') + 'Instagram не подключён</span>');
   chips.push(s.youtubeReady
-    ? '<span class="sc-chip ok">YouTube</span>'
-    : '<span class="sc-chip">YouTube не подключён</span>');
+    ? '<span class="sc-chip ok" style="display:inline-flex;align-items:center;gap:6px;">' + (typeof BRAND_SVGS !== 'undefined' ? BRAND_SVGS.youtube : '') + 'YouTube</span>'
+    : '<span class="sc-chip" style="display:inline-flex;align-items:center;gap:6px;">' + (typeof BRAND_SVGS !== 'undefined' ? BRAND_SVGS.youtube : '') + 'YouTube не подключён</span>');
   chips.push('<span class="sc-chip">Роликов: ' + posts.length + '</span>');
   document.getElementById('sc-status').innerHTML = chips.join('');
 
@@ -298,8 +298,8 @@ var SC_ICONS = {
   clock: '<svg class="sc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
   check: '<svg class="sc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
   alert: '<svg class="sc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>',
-  ig: '<svg class="sc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg>',
-  yt: '<svg class="sc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="4"/><polygon points="11,9.2 15,12 11,14.8" fill="currentColor" stroke="none"/></svg>',
+  ig: (typeof BRAND_SVGS !== 'undefined' && BRAND_SVGS && BRAND_SVGS.instagram) ? BRAND_SVGS.instagram : '<svg class="sc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg>',
+  yt: (typeof BRAND_SVGS !== 'undefined' && BRAND_SVGS && BRAND_SVGS.youtube) ? BRAND_SVGS.youtube : '<svg class="sc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="4"/><polygon points="11,9.2 15,12 11,14.8" fill="currentColor" stroke="none"/></svg>',
   film: '<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#3A3F4B" stroke-width="1.6"><rect x="2" y="2" width="20" height="20" rx="3"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>'
 };
 

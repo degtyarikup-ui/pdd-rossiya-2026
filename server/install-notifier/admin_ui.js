@@ -341,7 +341,7 @@ export function enhanceAdminHtml(html) {
 export function enhanceAdminClientJs(js) {
   let result = js
     .replace("links: 'Генератор ссылок и кампании',", "links: 'Ссылки',")
-    .replace("ai: 'Управление искусственным интеллектом',", "ai: 'Управление ИИ',")
+    .replace("ai: 'Управление искусственным интеллектом',", "ai: 'Управление ИИ',\n    economy: 'Экономика',")
     .replace("users: 'Пользователи и Премиум-доступ',", "users: 'Пользователи',")
     .replace("let currentFeature = 'analytics';", "let currentFeature = localStorage.getItem('pdd-admin-feature') || 'analytics';")
     .replace("let cachedBlogArticles = [];", "")
@@ -365,9 +365,13 @@ export function enhanceAdminClientJs(js) {
     )
     .replace(
       "const allViews = ['analytics-view', 'links-view', 'blog-view', 'threads-view', 'users-view', 'ai-view'];",
-      "const allViews = ['analytics-view', 'links-view', 'publications-view', 'blog-view', 'threads-view', 'users-view', 'ai-view'];"
+      "const allViews = ['analytics-view', 'links-view', 'publications-view', 'blog-view', 'threads-view', 'users-view', 'ai-view', 'economy-view'];"
     )
-    .replace("else if (currentFeature === 'blog') loadBlogArticles();", "");
+    .replace("else if (currentFeature === 'blog') loadBlogArticles();", "")
+    .replace(
+      "else if (currentFeature === 'ai') loadAiStats();",
+      "else if (currentFeature === 'ai') loadAiStats();\n    else if (currentFeature === 'economy' && typeof window.loadEconomy === 'function') window.loadEconomy();"
+    );
 
   // Кампании и источники приходят с публичных ссылок — только через adminEsc.
   result = result
@@ -545,10 +549,11 @@ export const ADMIN_UI_CLIENT_JS = `
     return feature;
   }
   var initial = adminRouteFeature(location.hash ? location.hash.slice(1) : currentFeature);
-  var allowed = ['analytics', 'tasks', 'links', 'publications', 'users', 'ai', 'notifications'];
+  var allowed = ['analytics', 'tasks', 'links', 'publications', 'users', 'ai', 'economy', 'notifications'];
   if (allowed.indexOf(initial) === -1) initial = 'analytics';
   var initialButton = document.querySelector('.sidebar-menu .nav-item[data-feature="' + initial + '"]');
   if (initialButton) initialButton.click();
+  if (initial === 'economy' && typeof window.loadEconomy === 'function') window.loadEconomy();
 
   window.addEventListener('popstate', function () {
     var oldFeature = location.hash.slice(1).split('/')[0];
@@ -556,9 +561,15 @@ export const ADMIN_UI_CLIENT_JS = `
     if (feature === 'publications' && publicationAliases[oldFeature] && typeof window.pubOpen === 'function') {
       window.pubOpen(publicationAliases[oldFeature], false);
     }
+    if (feature === 'economy' && typeof window.loadEconomy === 'function') {
+      window.loadEconomy();
+    }
     if (feature === currentFeature || allowed.indexOf(feature) === -1) return;
     var button = document.querySelector('.sidebar-menu .nav-item[data-feature="' + feature + '"]');
     if (button) button.click();
+    if (feature === 'economy' && typeof window.loadEconomy === 'function') {
+      window.loadEconomy();
+    }
   });
   // Сворачивание и разворачивание левого меню
   var sidebar = document.querySelector('.sidebar');
