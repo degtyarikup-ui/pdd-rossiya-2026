@@ -9,12 +9,14 @@ class GameQuestionCard extends StatelessWidget {
   final GameState state;
   final ValueChanged<int> onSelectAnswer;
   final VoidCallback? onShowSourceImage;
+  final bool sourceOpen;
 
   const GameQuestionCard({
     super.key,
     required this.state,
     required this.onSelectAnswer,
     this.onShowSourceImage,
+    this.sourceOpen = false,
   });
 
   @override
@@ -56,6 +58,7 @@ class GameQuestionCard extends StatelessWidget {
                       child: GameTicketBadge(
                         ticket: situation.ticket,
                         onTap: onShowSourceImage,
+                        open: sourceOpen,
                       ),
                     ),
                     const SizedBox(width: 8),

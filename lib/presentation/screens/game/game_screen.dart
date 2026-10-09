@@ -42,7 +42,6 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/question_image.dart';
-import 'package:pdd_app/presentation/widgets/zoomable_image_viewer.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
   final VoidCallback? onExit;
@@ -941,35 +940,34 @@ class _GameScreenState extends ConsumerState<GameScreen>
     return inTicket[number - 1];
   }
 
-  Future<void> _showSourceImage(GameSituation situation) async {
-    if (_garageOpen) return;
+  // The source photo slides out over the game from behind the bottom panel;
+  // the ticket badge toggles it (photo icon / cross).
+  bool _sourceOpen = false;
+  String? _sourceFor;
+  String? _sourcePath;
+
+  bool _sourceVisible(GameSituation? s) =>
+      s != null && _sourceOpen && _sourceFor == s.id && _sourcePath != null;
+
+  Future<void> _toggleSourceImage(GameSituation situation) async {
     HapticFeedbackHelper.tap();
-    // Use the same pause bookkeeping as the other modal game views, including
-    // backgrounding the app or switching tabs while the image is open.
-    _garageOpen = true;
-    _applyActive();
-    try {
-      final question = await _questionFor(situation);
-      if (!mounted || _disposing) return;
-      if (question == null || !question.hasImage()) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(appL10n.gameSourceImageUnavailable)),
-        );
-        return;
-      }
-      await showZoomableImage(
-        context: context,
-        heroTag: UniqueKey(),
-        image: QuestionImage(
-          assetPath: question.image!,
-          fit: BoxFit.contain,
-          zoomable: false,
-        ),
-      );
-    } finally {
-      _garageOpen = false;
-      if (mounted && !_disposing) _applyActive();
+    if (_sourceVisible(situation)) {
+      setState(() => _sourceOpen = false);
+      return;
     }
+    final question = await _questionFor(situation);
+    if (!mounted || _disposing) return;
+    if (question == null || !question.hasImage()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appL10n.gameSourceImageUnavailable)),
+      );
+      return;
+    }
+    setState(() {
+      _sourceOpen = true;
+      _sourceFor = situation.id;
+      _sourcePath = question.image;
+    });
   }
 
   /// The run's mistakes as the ticket questions, in the regular trainer.
@@ -1525,35 +1523,51 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: KeyedSubtree(
-                  key: _cardKey,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 420),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInOutCubic,
-                    // No clipping: the card slides down past the bottom
-                    // edge of the game area and disappears under the menu.
-                    transitionBuilder: (child, animation) => SlideTransition(
-                      position: Tween(
-                        begin: const Offset(0, 1.15),
-                        end: Offset.zero,
-                      ).animate(animation),
-                      child: child,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _SourcePhoto(
+                      path: _sourcePath,
+                      visible:
+                          gameState.phase == GamePhase.situation &&
+                          _sourceVisible(gameState.currentSituation),
                     ),
-                    layoutBuilder: (current, previous) => Stack(
-                      alignment: Alignment.bottomCenter,
-                      children: [...previous, ?current],
+                    KeyedSubtree(
+                      key: _cardKey,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 420),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInOutCubic,
+                        // No clipping: the card slides down past the bottom
+                        // edge of the game area and disappears under the menu.
+                        transitionBuilder: (child, animation) =>
+                            SlideTransition(
+                              position: Tween(
+                                begin: const Offset(0, 1.15),
+                                end: Offset.zero,
+                              ).animate(animation),
+                              child: child,
+                            ),
+                        layoutBuilder: (current, previous) => Stack(
+                          alignment: Alignment.bottomCenter,
+                          children: [...previous, ?current],
+                        ),
+                        child: gameState.phase == GamePhase.situation
+                            ? GameQuestionCard(
+                                key: const ValueKey('question'),
+                                state: gameState,
+                                onSelectAnswer: gameNotifier.submitAnswer,
+                                onShowSourceImage: () => _toggleSourceImage(
+                                  gameState.currentSituation!,
+                                ),
+                                sourceOpen: _sourceVisible(
+                                  gameState.currentSituation,
+                                ),
+                              )
+                            : const SizedBox.shrink(key: ValueKey('none')),
+                      ),
                     ),
-                    child: gameState.phase == GamePhase.situation
-                        ? GameQuestionCard(
-                            key: const ValueKey('question'),
-                            state: gameState,
-                            onSelectAnswer: gameNotifier.submitAnswer,
-                            onShowSourceImage: () =>
-                                _showSourceImage(gameState.currentSituation!),
-                          )
-                        : const SizedBox.shrink(key: ValueKey('none')),
-                  ),
+                  ],
                 ),
               ),
             // Bottom Overlays depending on game phase
@@ -1570,6 +1584,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   key: _bottomKey,
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    _SourcePhoto(
+                      path: _sourcePath,
+                      visible:
+                          gameState.phase == GamePhase.explanation &&
+                          _sourceVisible(gameState.currentSituation),
+                    ),
                     if (gameState.phase == GamePhase.explanation &&
                         gameState.currentSituation != null)
                       GameExplanationSheet(
@@ -1577,7 +1597,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
                         timedOut: gameState.selectedAnswerIndex == null,
                         onContinue: gameNotifier.continueAfterExplanation,
                         onShowSourceImage: () =>
-                            _showSourceImage(gameState.currentSituation!),
+                            _toggleSourceImage(gameState.currentSituation!),
+                        sourceOpen: _sourceVisible(gameState.currentSituation),
                       ),
                     if (!_desktopWeb &&
                         (gameState.phase == GamePhase.driving ||
@@ -2083,6 +2104,41 @@ class _FirstDriveTip extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The ticket's photo, growing upward out from behind the bottom panel (the
+/// bottom alignment pins it to the panel while the height animates).
+class _SourcePhoto extends StatelessWidget {
+  const _SourcePhoto({required this.path, required this.visible});
+
+  final String? path;
+  final bool visible;
+
+  @override
+  Widget build(BuildContext context) {
+    final path = this.path;
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 340),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.bottomCenter,
+      child: SizedBox(
+        width: double.infinity,
+        child: visible && path != null
+            ? ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+                child: QuestionImage(
+                  assetPath: path,
+                  fit: BoxFit.fitWidth,
+                  zoomable: false,
+                  height: 160,
+                ),
+              )
+            : null,
       ),
     );
   }

@@ -5,10 +5,18 @@ import 'package:pdd_app/l10n/l10n.dart';
 
 /// The source ticket stays accessible in both the question and its explanation.
 class GameTicketBadge extends StatelessWidget {
-  const GameTicketBadge({super.key, required this.ticket, this.onTap});
+  const GameTicketBadge({
+    super.key,
+    required this.ticket,
+    this.onTap,
+    this.open = false,
+  });
 
   final String ticket;
   final VoidCallback? onTap;
+
+  /// The source photo is shown: the icon turns into a cross that closes it.
+  final bool open;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +47,15 @@ class GameTicketBadge extends StatelessWidget {
               ),
               if (onTap != null) ...[
                 const SizedBox(width: 6),
-                Icon(Icons.photo_outlined, size: 15, color: colors.accent),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  child: Icon(
+                    open ? Icons.close_rounded : Icons.photo_outlined,
+                    key: ValueKey(open),
+                    size: 15,
+                    color: colors.accent,
+                  ),
+                ),
               ],
             ],
           ),

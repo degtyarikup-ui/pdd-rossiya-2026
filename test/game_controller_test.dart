@@ -23,6 +23,7 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_controls_overlay.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_debug_sheet.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_hud.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_ticket_badge.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_question_card.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_over_dialog.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_lobby.dart';
@@ -1442,7 +1443,7 @@ void main() {
 
   for (final sourceId in [true, false]) {
     testWidgets(
-      'Ticket badge opens the source image and pauses time (source id: $sourceId)',
+      'Ticket badge slides the photo out and the cross closes it (source id: $sourceId)',
       (tester) async {
         tester.view.physicalSize = const Size(390, 844);
         tester.view.devicePixelRatio = 1;
@@ -1498,50 +1499,46 @@ void main() {
           () => precacheImage(AssetImage(question.image!), context),
         );
 
-        Future<void> openImage() async {
-          await tester.tap(find.text(situation.ticket));
+        final badge = find.text(situation.ticket);
+        expect(find.byType(QuestionImage), findsNothing);
+        Finder badgeIcon(IconData icon) => find.descendant(
+          of: find.byType(GameTicketBadge),
+          matching: find.byIcon(icon),
+        );
+        expect(badgeIcon(Icons.photo_outlined), findsOneWidget);
+
+        Future<void> togglePhoto({required bool open}) async {
+          await tester.tap(badge);
           await tester.pumpAndSettle();
-          expect(find.byType(InteractiveViewer), findsOneWidget);
-          expect(
-            tester.widget<QuestionImage>(find.byType(QuestionImage)).assetPath,
-            question.image,
-          );
-          expect(container.read(gameControllerProvider).paused, true);
-          expect(
-            engine.scripts.any((s) => s.contains('setPaused(true)')),
-            true,
-          );
+          if (open) {
+            expect(
+              tester
+                  .widget<QuestionImage>(find.byType(QuestionImage))
+                  .assetPath,
+              question.image,
+            );
+            expect(badgeIcon(Icons.close_rounded), findsOneWidget);
+          } else {
+            expect(find.byType(QuestionImage), findsNothing);
+            expect(badgeIcon(Icons.photo_outlined), findsOneWidget);
+          }
+          // The photo is an overlay: the game and the answer timer go on.
+          expect(container.read(gameControllerProvider).paused, false);
         }
 
-        await openImage();
         final remaining = container
             .read(gameControllerProvider)
             .remainingSeconds;
-        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-        tester.binding.handleAppLifecycleStateChanged(
-          AppLifecycleState.resumed,
-        );
-        await tester.pump(const Duration(seconds: 10));
-        expect(
-          container.read(gameControllerProvider).remainingSeconds,
-          remaining,
-        );
-        expect(
-          container.read(gameControllerProvider).phase,
-          GamePhase.situation,
-        );
-        await tester.tap(find.byTooltip(appL10n.close));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-        expect(container.read(gameControllerProvider).paused, false);
-        expect(
-          engine.scripts.lastWhere((s) => s.contains('setPaused(')),
-          contains('setPaused(false)'),
-        );
-        await tester.pump(const Duration(milliseconds: 300));
+        await togglePhoto(open: true);
         expect(
           container.read(gameControllerProvider).remainingSeconds,
           lessThan(remaining),
+        );
+        expect(find.byType(InteractiveViewer), findsNothing);
+        await togglePhoto(open: false);
+        expect(
+          container.read(gameControllerProvider).phase,
+          GamePhase.situation,
         );
 
         final wrong =
@@ -1550,14 +1547,12 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(GameExplanationSheet), findsOneWidget);
         expect(find.text(situation.ticket), findsOneWidget);
-        await openImage();
-        await tester.tap(find.byTooltip(appL10n.close));
-        await tester.pumpAndSettle();
+        await togglePhoto(open: true);
+        await togglePhoto(open: false);
         expect(
           container.read(gameControllerProvider).phase,
           GamePhase.explanation,
         );
-        expect(container.read(gameControllerProvider).paused, false);
         expect(find.text(question.comment!), findsOneWidget);
         await tester.ensureVisible(find.text(appL10n.gameContinue));
         await tester.tap(find.text(appL10n.gameContinue));

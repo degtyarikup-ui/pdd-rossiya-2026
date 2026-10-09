@@ -10,6 +10,7 @@ class GameExplanationSheet extends StatelessWidget {
   final GameSituation situation;
   final VoidCallback onContinue;
   final VoidCallback? onShowSourceImage;
+  final bool sourceOpen;
 
   /// No answer was chosen before the countdown ran out.
   final bool timedOut;
@@ -19,6 +20,7 @@ class GameExplanationSheet extends StatelessWidget {
     required this.situation,
     required this.onContinue,
     this.onShowSourceImage,
+    this.sourceOpen = false,
     this.timedOut = false,
   });
 
@@ -66,6 +68,7 @@ class GameExplanationSheet extends StatelessWidget {
                       child: GameTicketBadge(
                         ticket: situation.ticket,
                         onTap: onShowSourceImage,
+                        open: sourceOpen,
                       ),
                     ),
                     const SizedBox(width: 8),
