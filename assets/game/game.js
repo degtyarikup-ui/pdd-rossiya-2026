@@ -14006,6 +14006,17 @@
     const still = Math.abs(state.speed || 0) < 0.05 && (state.isAtSituation || state.roadEvent?.phase === 'question');
     if ((state.weak || quality.struggling) && still && elapsed < 0.03) return;
     processSceneryJobs(elapsed>.035?1:3);
+    // The release after a violation runs on its own clock: it used to tick
+    // inside updatePlayerMovement only, which is skipped at a question and
+    // during a junction, so a recovery interrupted by the next situation
+    // never ended and gas/steering stayed dead for good.
+    if (state.driveRecovery > 0) {
+      state.driveRecovery = Math.max(0, state.driveRecovery - dt);
+      if (!state.driveRecovery) {
+        state.driveFaults.clear();
+        sendToFlutter({ event: 'maneuver_ready' });
+      }
+    }
     if (!state.paused) {
       updateAttract(dt);
       updateActors(dt);
@@ -14886,14 +14897,7 @@
       state.motorwayEndZ = null;
       if (state.speedLimitKmH === 110) state.speedLimitKmH = null;
     }
-    if (state.driveRecovery > 0) {
-      state.driveRecovery = Math.max(0, state.driveRecovery - dt);
-      if (!state.driveRecovery) {
-        state.driveFaults.clear();
-        sendToFlutter({ event: 'maneuver_ready' });
-      }
-      return;
-    }
+    if (state.driveRecovery > 0) return;
     const active = state.intersections.find(it => it.stopZ + 3 > playerCarGroup.position.z);
     state.activeIntersection = active || null;
     let limit = state.maxSpeed;

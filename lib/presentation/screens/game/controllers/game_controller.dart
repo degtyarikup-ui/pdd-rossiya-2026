@@ -301,7 +301,9 @@ class GameController extends StateNotifier<GameState> {
       return;
     }
     _lastSituationId = situation.id;
-    state = state.copyWith(clearViolation: true);
+    // A new question closes any crash recovery still open: its end signal
+    // must not be the only thing that can re-enable the controls.
+    state = state.copyWith(clearViolation: true, recovering: false);
     onStopGas?.call();
     _timer?.cancel();
     _lastTickSecond = -1;

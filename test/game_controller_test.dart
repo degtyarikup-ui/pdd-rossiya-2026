@@ -461,6 +461,30 @@ void main() {
     expect(controller.state.mistakes, isEmpty);
   });
 
+  test('A new question closes a crash recovery that never reported ready', () {
+    const situation = GameSituation(
+      id: 'q1',
+      ticket: 'Билет 1 · Вопрос 13',
+      title: 'Кому уступить?',
+      explanation: '',
+      pddRule: '',
+      options: ['Никому', 'Пешеходу'],
+      correctAnswerIndex: 1,
+      legend: [],
+      type: 'crossroad',
+    );
+    final controller = GameController();
+    addTearDown(controller.dispose);
+    controller.onEngineReady();
+    controller.setRecovering(true);
+    expect(controller.state.controlsEnabled, false);
+    controller.onApproachSituation(situation);
+    expect(controller.state.recovering, false);
+    controller.submitAnswer(1);
+    controller.onSituationClearedFromEngine('q1');
+    expect(controller.state.controlsEnabled, true);
+  });
+
   test('A reloaded engine keeps the run and drops the open question', () {
     const situation = GameSituation(
       id: 'r1',
