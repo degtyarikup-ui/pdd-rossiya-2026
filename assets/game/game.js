@@ -5618,7 +5618,13 @@
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false }));
     sprite.renderOrder = 1000;
     sprite.scale.set(1.5, 1.5, 1);
-    sprite.userData.trajectoryLabel = letter;
+    sprite.userData = {
+      editKey: 'label:' + letter,
+      trajectoryLabel: letter,
+      labelText: letter,
+      isLabel: true,
+      noEditIndex: true
+    };
     return sprite;
   }
 
@@ -5627,7 +5633,7 @@
   // Route guide: one smooth flat band per route ending in an arrowhead, the
   // same for the player's route and a ticket's labelled alternatives. Kinks
   // between authored points are smoothed out; long exit tails are clipped.
-  function createRouteGuide(paths, lengths = []) {
+  function createRouteGuide(paths, lengths = [], starts = []) {
     const guide = new THREE.Group();
     const mat = new THREE.MeshBasicMaterial({ color: BRAND.accent, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide });
     const headShape = new THREE.Shape();
@@ -5650,16 +5656,31 @@
       let bendEnd = 0;
       for (const b of bends) { if (bendEnd && b.from - bendEnd > 20) break; bendEnd = b.to; }
       const defaultLength = Math.min(fullLength, bendEnd ? bendEnd + 4 : 14);
-      const length = Number.isFinite(lengths[index]) ? Math.max(2, Math.min(200, lengths[index])) : defaultLength;
+      const startDist = Number.isFinite(starts[index]) ? starts[index] : 0;
+      const length = Number.isFinite(lengths[index]) ? Math.max(startDist + 1, Math.min(200, lengths[index])) : defaultLength;
       const route = new THREE.Group(), start = path.getPointAt(0);
       route.position.set(start.x, 0, start.z);
-      route.userData = { editKey: 'route:' + index, isRoute: true, routePath: path, routeLength: length };
+      route.userData = {
+        editKey: 'route:' + index,
+        isRoute: true,
+        routePath: path,
+        routeLength: length,
+        routeStart: startDist,
+        origPoints: path.points ? path.points.map(p => p.clone()) : null
+      };
       guide.add(route);
-      const n = Math.max(8, Math.ceil(length / 0.25));
+      const effectiveLen = Math.max(0.5, length - startDist);
+      const n = Math.max(8, Math.ceil(effectiveLen / 0.25));
       let pts = Array.from({ length: n + 1 }, (_, i) => {
-        const distance = i / n * length;
-        const p = distance <= fullLength ? path.getPointAt(distance / fullLength)
-          : path.getPointAt(1).addScaledVector(path.getTangentAt(1), distance - fullLength);
+        const distance = startDist + (i / n) * (length - startDist);
+        let p;
+        if (distance < 0) {
+          p = path.getPointAt(0).addScaledVector(path.getTangentAt(0), distance);
+        } else if (distance <= fullLength) {
+          p = path.getPointAt(distance / fullLength);
+        } else {
+          p = path.getPointAt(1).addScaledVector(path.getTangentAt(1), distance - fullLength);
+        }
         return p.sub(new THREE.Vector3(start.x, 0, start.z));
       });
       for (let pass = 0; pass < 8; pass++) pts = pts.map((p, i) => i === 0 || i === n ? p :
@@ -5686,20 +5707,87 @@
     return guide;
   }
 
-  // Rebuild only the visual cue; the driving path stays unchanged.
-  function setRouteLength(route, length) {
-    if (!Number.isFinite(length)) return;
-    const replacement = createRouteGuide([route.userData.routePath], [length]).children[0];
+  // Rebuild the visual cue supporting both startOffset and length.
+  function setRouteRange(route, length, startOffset = 0) {
+    if (!Number.isFinite(length)) length = route.userData.routeLength;
+    if (!Number.isFinite(startOffset)) startOffset = route.userData.routeStart || 0;
+    const replacement = createRouteGuide([route.userData.routePath], [length], [startOffset]).children[0];
     route.children.slice().forEach(o => { route.remove(o); o.geometry?.dispose(); o.material?.dispose(); });
     replacement.children.slice().forEach(o => route.add(o));
     route.userData.routeLength = replacement.userData.routeLength;
+    route.userData.routeStart = replacement.userData.routeStart;
   }
+  function setRouteLength(route, length) {
+    setRouteRange(route, length, route.userData.routeStart || 0);
+  }
+
+  function setRouteBend(route, bend) {
+    bend = Number(bend) || 0;
+    route.userData.routeBend = bend;
+    const basePts = (route.userData.origPoints || route.userData.routePath.points || []).map(p => p.clone());
+    if (basePts.length < 2) return;
+    if (Math.abs(bend) < 0.001) {
+      route.userData.routePath = curve(basePts);
+      route.position.set(basePts[0].x, 0, basePts[0].z);
+      setRouteRange(route, route.userData.routeLength, route.userData.routeStart);
+      return;
+    }
+    const p0 = basePts[0], pEnd = basePts[basePts.length - 1];
+    const vx = pEnd.x - p0.x, vz = pEnd.z - p0.z, len = Math.hypot(vx, vz) || 1;
+    const nx = -vz / len, nz = vx / len;
+    let newPts;
+    if (basePts.length === 2) {
+      newPts = [
+        p0.clone(),
+        new THREE.Vector3((p0.x + pEnd.x) / 2 + nx * bend, 0.12, (p0.z + pEnd.z) / 2 + nz * bend),
+        pEnd.clone()
+      ];
+    } else {
+      newPts = basePts.map((p, i) => {
+        const u = i / (basePts.length - 1);
+        const disp = 4 * u * (1 - u) * bend;
+        return new THREE.Vector3(p.x + nx * disp, p.y, p.z + nz * disp);
+      });
+    }
+    route.userData.routePath = curve(newPts);
+    route.position.set(newPts[0].x, 0, newPts[0].z);
+    setRouteRange(route, route.userData.routeLength, route.userData.routeStart);
+  }
+
+  function setRoutePoints(route, points, originZ = 0) {
+    if (!Array.isArray(points) || points.length < 2) return;
+    route.userData.customPoints = points.map(([x, z]) => [+Number(x).toFixed(2), +Number(z).toFixed(2)]);
+    route.userData.hasCustomPoints = true;
+    const newPts = points.map(([x, z]) => new THREE.Vector3(Number(x), 0.12, originZ + Number(z)));
+    route.userData.routePath = curve(newPts);
+    route.position.set(newPts[0].x, 0, newPts[0].z);
+    setRouteRange(route, route.userData.routeLength, route.userData.routeStart);
+  }
+
+  function setRoutePoint(route, index, x, z, originZ = 0) {
+    const curPts = (route.userData.routePath?.points || []).map(p => p.clone());
+    if (index < 0 || index >= curPts.length) return;
+    curPts[index].set(Number(x), 0.12, originZ + Number(z));
+    route.userData.routePath = curve(curPts);
+    route.userData.customPoints = curPts.map(p => [+p.x.toFixed(2), +(p.z - originZ).toFixed(2)]);
+    route.userData.hasCustomPoints = true;
+    route.position.set(curPts[0].x, 0, curPts[0].z);
+    setRouteRange(route, route.userData.routeLength, route.userData.routeStart);
+  }
+
   function applyRouteEdits(guide, id, originZ) {
     const edits = (window.PDD_SCENE_EDITS || {})[id]?.objects || [];
     guide.children.filter(o => o.userData.isRoute).forEach(o => {
       const e = edits.find(e => e.key === o.userData.editKey);
       if (!e) return;
-      if (e.length !== undefined) setRouteLength(o, e.length);
+      if (e.points && Array.isArray(e.points) && e.points.length >= 2) {
+        setRoutePoints(o, e.points, originZ);
+      } else if (e.bend !== undefined && e.bend !== 0) {
+        setRouteBend(o, e.bend);
+      }
+      if (e.length !== undefined || e.startOffset !== undefined) {
+        setRouteRange(o, e.length ?? o.userData.routeLength, e.startOffset ?? o.userData.routeStart ?? 0);
+      }
       if (e.x !== undefined) o.position.x = e.x;
       if (e.z !== undefined) o.position.z = originZ + e.z;
       if (e.rotY !== undefined) o.rotation.y = e.rotY;
@@ -8885,6 +8973,7 @@
       const sgn = others.length && sideScore(-1) > sideScore(1) ? -1 : 1;
       const label = createLetterToken(t.label);
       label.position.set(t.labelPosition?.[0] ?? (at.x + perp.x * sgn * 1.25), 0.8, t.labelPosition ? centerZ + t.labelPosition[1] : at.z + perp.z * sgn * 1.25); // child position: mirrored with the segment
+      label.userData = { editKey: 'label:' + (t.label || n), isLabel: true, labelText: t.label, noEditIndex: true };
       seg.add(label);
     });
 
@@ -8895,7 +8984,9 @@
           new THREE.MeshBasicMaterial({color: BRAND.accent}));
         marker.userData.questionEvidence = true;
         const label = createLetterToken(choice.label);
-        label.position.set(-0.8, 0.8, centerZ + choice.z); seg.add(label);
+        label.position.set(-0.8, 0.8, centerZ + choice.z);
+        label.userData = { editKey: 'label:stop:' + (choice.label || ''), isLabel: true, labelText: choice.label, noEditIndex: true };
+        seg.add(label);
       }
     }
     if(situation.noRight) {
@@ -9200,7 +9291,16 @@
         sign.userData = { ...obj.userData, signCode: e.code };
         obj.parent.add(sign); obj.parent.remove(obj); obj = sign;
       }
-      if (obj.userData.isRoute && e.length !== undefined) setRouteLength(obj, e.length);
+      if (obj.userData.isRoute) {
+        if (e.points && Array.isArray(e.points) && e.points.length >= 2) {
+          setRoutePoints(obj, e.points, originZ);
+        } else if (e.bend !== undefined && e.bend !== 0) {
+          setRouteBend(obj, e.bend);
+        }
+        if (e.length !== undefined || e.startOffset !== undefined) {
+          setRouteRange(obj, e.length ?? obj.userData.routeLength, e.startOffset ?? obj.userData.routeStart ?? 0);
+        }
+      }
       if (e.x !== undefined) obj.position.x = e.x;
       if (e.z !== undefined) obj.position.z = originZ + e.z;
       if (e.rotY !== undefined) obj.rotation.y = e.rotY;
@@ -12470,7 +12570,9 @@
         const at = t.labelPosition
           ? new THREE.Vector3(t.labelPosition[0], 0.8, stopZ + t.labelPosition[1])
           : paths[i].getPointAt(1).add(new THREE.Vector3(0, 0.8, 2));
-        label.position.copy(at); guide.add(label);
+        label.position.copy(at);
+        label.userData = { editKey: 'label:' + (t.label || i), isLabel: true, labelText: t.label, noEditIndex: true };
+        guide.add(label);
       });
       // Include the complete alternatives in camera framing, not just the sign.
       guide.userData.questionEvidence = true;

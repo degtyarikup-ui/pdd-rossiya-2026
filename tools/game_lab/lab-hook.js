@@ -100,26 +100,89 @@
       const actorType = o.userData.actorType || o.userData.actorConfig?.type || (isActor ? 'car' : null);
       const actorName = o.userData.actorName || o.userData.actorConfig?.name;
       let label;
+      const isLabel = !!(o.userData.isLabel || (o.userData.editKey && o.userData.editKey.startsWith('label:')));
+      const labelText = o.userData.labelText || o.userData.trajectoryLabel || (isLabel ? o.userData.editKey.replace(/^label:(stop:)?/, '') : null);
+      if (isLabel) {
+        return {
+          key: o.userData.editKey,
+          isLabel: true,
+          labelText,
+          label: 'Метка ' + labelText,
+          x: +o.position.x.toFixed(2),
+          z: +(o.position.z - lab.origin).toFixed(2),
+          rotY: +o.rotation.y.toFixed(3),
+          visible: o.visible
+        };
+      }
       if (o.userData.signCode) label = 'Знак ' + o.userData.signCode;
       else if (isActor) label = actorName || ('Участник ' + (actorType || ''));
       else if (o.userData.isRoute) label = 'Синяя стрелка ' + (Number(o.userData.editKey.split(':')[1]) + 1);
       else label = o.userData.decorKind || o.userData.editKey;
       const blinker = isActor ? (o.userData.blinkerOverride !== undefined ? (o.userData.blinkerOverride || 'none') : (o.userData.blinkerSide || 'none')) : null;
+      const isRoute = !!o.userData.isRoute;
+      const curPts = isRoute ? (o.userData.routePath?.points || []).map(p => [+p.x.toFixed(2), +(p.z - lab.origin).toFixed(2)]) : null;
       return { key: o.userData.editKey, code: o.userData.signCode || null, kind: isActor ? 'actor' : (o.userData.decorKind || null),
-        isActor, actorType, actorName, blinker, isRoute: !!o.userData.isRoute, length: o.userData.routeLength,
+        isActor, actorType, actorName, blinker, isRoute,
+        length: isRoute ? o.userData.routeLength : undefined,
+        startOffset: isRoute ? (o.userData.routeStart || 0) : undefined,
+        bend: isRoute ? (o.userData.routeBend || 0) : undefined,
+        hasCustomPoints: isRoute ? !!o.userData.hasCustomPoints : undefined,
+        points: isRoute ? (o.userData.customPoints || curPts) : undefined,
         x: +o.position.x.toFixed(2), z: +(o.position.z - lab.origin).toFixed(2), rotY: +o.rotation.y.toFixed(3),
         visible: o.visible, label };
     }
     function setHelper(o) {
       if (lab.helper) { scene.remove(lab.helper); lab.helper = null; }
       if (!o) return;
+      if (o.userData?.isLabel || o.userData?.editKey?.startsWith('label:')) {
+        const ringGeo = new THREE.RingGeometry(0.8, 1.05, 32);
+        ringGeo.rotateX(-Math.PI / 2);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x0574F8, side: THREE.DoubleSide });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.position.set(o.position.x, 0.04, o.position.z);
+        ring.renderOrder = 999;
+        lab.helper = ring;
+        scene.add(ring);
+        return;
+      }
+      if (o.userData?.isRoute) {
+        const group = new THREE.Group();
+        const box = new THREE.BoxHelper(o, 0x0574F8);
+        group.add(box);
+        const pts = o.userData.routePath?.points || [];
+        const handleGeo = new THREE.SphereGeometry(0.4, 16, 16);
+        pts.forEach((p, idx) => {
+          const isSel = lab.selectedPoint && lab.selectedPoint.route === o && lab.selectedPoint.index === idx;
+          const handleMat = new THREE.MeshBasicMaterial({ color: isSel ? 0xFF0055 : 0xFFB703, depthTest: false });
+          const m = new THREE.Mesh(handleGeo, handleMat);
+          m.position.copy(p);
+          m.renderOrder = 1002;
+          m.userData = { isRouteHandle: true, pointIndex: idx, route: o };
+          group.add(m);
+        });
+        lab.helper = group;
+        scene.add(group);
+        return;
+      }
       lab.helper = new THREE.BoxHelper(o, 0x0574F8); scene.add(lab.helper);
     }
     function find(key) {
       if (key === 'player') return playerCarGroup;
       let hit = null;
-      lab.group?.traverse(o => { if (o.userData.editKey === key && (o.parent === lab.group || o.userData.isRoute)) hit = o; });
+      lab.group?.traverse(o => { if (o.userData?.editKey === key) hit = o; });
       return hit;
+    }
+    function labels() {
+      if (!lab.group) return [];
+      const list = [];
+      const seen = new Set();
+      lab.group.traverse(o => {
+        if ((o.userData?.isLabel || (o.userData?.editKey && o.userData.editKey.startsWith('label:'))) && !seen.has(o.userData.editKey)) {
+          seen.add(o.userData.editKey);
+          list.push(describe(o));
+        }
+      });
+      return list;
     }
     function actors() {
       if (!lab.group) return [];
@@ -136,27 +199,61 @@
       if (!lab.group) return null;
       ray.setFromCamera(new THREE.Vector2(nx, ny), camera);
       const targets = [playerCarGroup, ...lab.group.children];
+      if (lab.helper) targets.push(lab.helper);
       const hits = ray.intersectObjects(targets, true);
       for (const h of hits) {
         let o = h.object;
         let isPlayer = false;
+        if (o.userData?.isRouteHandle) {
+          lab.selected = o.userData.route;
+          lab.selectedPoint = { route: o.userData.route, index: o.userData.pointIndex };
+          setHelper(o.userData.route);
+          return { ...describe(o.userData.route), selectedPointIndex: o.userData.pointIndex };
+        }
         while (o) {
           if (o === playerCarGroup) { isPlayer = true; break; }
-          if (o.parent === lab.group || o.userData.isRoute) break;
+          if (o.userData?.isLabel || (o.userData?.editKey && o.userData.editKey.startsWith('label:'))) {
+            lab.selected = o;
+            lab.selectedPoint = null;
+            setHelper(o);
+            return describe(o);
+          }
+          if (o.parent === lab.group || o.userData?.isRoute) break;
           o = o.parent;
         }
         if (isPlayer) {
           lab.selected = playerCarGroup;
+          lab.selectedPoint = null;
           setHelper(playerCarGroup);
           return describe(playerCarGroup);
         }
-        if (o && o.userData.editKey) {
+        if (o && o.userData?.editKey) {
           lab.selected = o;
+          lab.selectedPoint = null;
           setHelper(o);
           return describe(o);
         }
       }
-      lab.selected = null; setHelper(null); return null;
+      const gp = ground(nx, ny);
+      if (gp) {
+        let nearestLabel = null, minDist = 2.0;
+        lab.group.traverse(o => {
+          if (o.userData?.isLabel || (o.userData?.editKey && o.userData.editKey.startsWith('label:'))) {
+            const dist = Math.hypot(o.position.x - gp.x, o.position.z - gp.z);
+            if (dist < minDist) { minDist = dist; nearestLabel = o; }
+          }
+        });
+        if (nearestLabel) {
+          lab.selected = nearestLabel;
+          lab.selectedPoint = null;
+          setHelper(nearestLabel);
+          return describe(nearestLabel);
+        }
+      }
+      lab.selected = null;
+      lab.selectedPoint = null;
+      setHelper(null);
+      return null;
     }
     function ground(nx, ny) {
       ray.setFromCamera(new THREE.Vector2(nx, ny), camera);
@@ -186,12 +283,52 @@
         sign.userData = { ...o.userData, signCode: props.code };
         lab.group.add(sign); lab.group.remove(o); o = lab.selected = sign;
       }
-      if (o.userData.isRoute && props.length !== undefined) setRouteLength(o, props.length);
+      if (o.userData.isRoute) {
+        if (props.startOffset !== undefined || props.length !== undefined) {
+          const newLen = props.length !== undefined ? props.length : o.userData.routeLength;
+          const newStart = props.startOffset !== undefined ? props.startOffset : (o.userData.routeStart || 0);
+          setRouteRange(o, newLen, newStart);
+        }
+        if (props.bend !== undefined) {
+          setRouteBend(o, props.bend);
+        }
+        if (props.resetPoints) {
+          o.userData.customPoints = null;
+          o.userData.hasCustomPoints = false;
+          if (o.userData.origPoints) {
+            o.userData.routePath = curve(o.userData.origPoints.map(p => p.clone()));
+            o.position.set(o.userData.origPoints[0].x, 0, o.userData.origPoints[0].z);
+            setRouteBend(o, o.userData.routeBend || 0);
+          }
+        }
+        if (props.points !== undefined && Array.isArray(props.points)) {
+          setRoutePoints(o, props.points, lab.origin);
+        }
+        if (props.pointIndex !== undefined && props.pointX !== undefined && props.pointZ !== undefined) {
+          setRoutePoint(o, props.pointIndex, props.pointX, props.pointZ, lab.origin);
+          lab.selectedPoint = { route: o, index: props.pointIndex };
+        }
+      }
       if (props.blinker !== undefined) {
         o.userData.blinkerOverride = props.blinker === 'none' ? null : props.blinker;
       }
-      if (props.x !== undefined) o.position.x = props.x;
-      if (props.z !== undefined) o.position.z = lab.origin + props.z;
+      if (props.x !== undefined || props.z !== undefined) {
+        const newX = props.x !== undefined ? props.x : o.position.x;
+        const newZ = props.z !== undefined ? lab.origin + props.z : o.position.z;
+        const dx = newX - o.position.x;
+        const dz = newZ - o.position.z;
+        o.position.x = newX;
+        o.position.z = newZ;
+        if (o.userData.isRoute && o.userData.routePath?.points && (Math.abs(dx) > 0.001 || Math.abs(dz) > 0.001)) {
+          o.userData.routePath.points.forEach(p => { p.x += dx; p.z += dz; });
+          if (o.userData.customPoints) {
+            o.userData.customPoints = o.userData.routePath.points.map(p => [+p.x.toFixed(2), +(p.z - lab.origin).toFixed(2)]);
+          }
+          if (o.userData.origPoints) {
+            o.userData.origPoints.forEach(p => { p.x += dx; p.z += dz; });
+          }
+        }
+      }
       if (props.rotY !== undefined) o.rotation.y = props.rotY;
       if (props.visible !== undefined) o.visible = props.visible;
       if (o.userData.isActorRoot || (o.userData.editKey && o.userData.editKey.startsWith('actor:'))) {
@@ -209,7 +346,9 @@
         }
       }
       setHelper(o);
-      return describe(o);
+      const res = describe(o);
+      if (lab.selectedPoint && lab.selectedPoint.route === o) res.selectedPointIndex = lab.selectedPoint.index;
+      return res;
     }
     function add(spec, nx = 0, ny = 0) {
       const o = createEditable(spec);
@@ -291,11 +430,12 @@
       signCodes: () => Object.keys(window.PDD_SIGN_TEXTURES || {}).sort(),
       decorKinds: () => Object.keys(EDITABLE_DECOR),
       actors: () => actors(),
+      labels: () => labels(),
       routes: () => { const list = []; lab.group?.traverse(o => { if (o.userData.isRoute) list.push(describe(o)); }); return list; },
       player: () => ({ x: playerCarGroup.position.x, z: playerCarGroup.position.z }),
       tick: () => {
         // Freeze traffic in inspection mode, but keep the canvas and camera live.
         if(state.paused) { updateWeather(1/60); updateCamera(1/60); updateBlinkers(1/60); renderer.render(scene,camera); }
-        if (lab.helper) lab.helper.update();
+        if (lab.helper) lab.helper.update?.();
       } };
   })();

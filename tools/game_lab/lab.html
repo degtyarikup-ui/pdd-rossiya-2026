@@ -363,7 +363,19 @@ function record(d, extra = {}) {
     }
   } else {
     Object.assign(r, { x: d.x, z: d.z, rotY: d.rotY }, extra);
-    if (d.isRoute) r.length = d.length;
+    if (d.isLabel) {
+      delete r.rotY;
+    }
+    if (d.isRoute) {
+      r.length = d.length;
+      if (d.startOffset !== undefined && Math.abs(d.startOffset) > 0.01) r.startOffset = d.startOffset;
+      else delete r.startOffset;
+      if (d.bend !== undefined && Math.abs(d.bend) > 0.01) r.bend = d.bend;
+      else delete r.bend;
+      if (d.hasCustomPoints && d.points && d.points.length >= 2) r.points = d.points;
+      else if (extra.points) r.points = extra.points;
+      else delete r.points;
+    }
     if (d.code) r.code = d.code;
     if (extra.blinker !== undefined) r.blinker = extra.blinker;
     else if (d.blinker !== undefined) r.blinker = d.blinker;
@@ -375,11 +387,12 @@ function renderEditPanel() {
   if (!current) { $('#panel').innerHTML = '<div class="empty"><span class="e"><lab-icon name="cursor"></lab-icon></span>Выберите сцену</div>'; return; }
   const panelScroll = $('#panel').scrollTop;
   const d = selection, codes = lab.signCodes(), actors = lab.actors ? lab.actors() : [];
-  const routes = lab.routes();
+  const routes = lab.routes(), labels = lab.labels ? lab.labels() : [];
   let icon = '';
   if (d) {
     if (d.code) icon = `<img src="${signImg(d.code)}">`;
     else if (d.isRoute) icon = '<span class="big"><lab-icon name="route"></lab-icon></span>';
+    else if (d.isLabel) icon = `<span class="badge" style="width:32px;height:32px;border-radius:50%;background:#0574F8;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;box-shadow:0 2px 5px rgba(0,0,0,0.25)">${esc(d.labelText)}</span>`;
     else if (d.isActor || d.isPlayer) icon = `<span class="big">${ACTOR_ICONS[d.actorType] || '<lab-icon name="car"></lab-icon>'}</span>`;
     else icon = `<span class="big">${DECOR[d.kind]?.[0] || '<lab-icon name="box"></lab-icon>'}</span>`;
   }
@@ -390,7 +403,10 @@ function renderEditPanel() {
     const bNames = { left: 'левый указатель поворота', right: 'правый указатель поворота', none: 'поворотник выключен' };
     selSub = bNames[d.blinker] || 'поворотник выключен';
   } else if (d?.isRoute) selTitle = d.label;
-  else if (d?.code) selTitle = 'Знак ' + d.code;
+  else if (d?.isLabel) {
+    selTitle = 'Метка «' + d.labelText + '»';
+    selSub = d.visible ? 'Плашка с буквой траектории · перемещение мышью' : 'скрыта';
+  } else if (d?.code) selTitle = 'Знак ' + d.code;
   else if (d?.isActor) {
     selTitle = d.label || d.actorName || 'Участник движения';
     selSub = (d.visible ? 'Перемещение мышью · поворот Q / E' : 'скрыт') + (d.actorType ? ` · ${d.actorType}` : '');
@@ -407,7 +423,7 @@ function renderEditPanel() {
       <div class="nums">
         <label>X, м<input id="sx" type="number" step="0.1" value="${d.x}"></label>
         <label>Z, м<input id="sz" type="number" step="0.1" value="${d.z}"></label>
-        <label>Угол, °<input id="sr" type="number" step="15" value="${Math.round(d.rotY * 180 / Math.PI)}"></label>
+        ${!d.isLabel ? `<label>Угол, °<input id="sr" type="number" step="15" value="${Math.round(d.rotY * 180 / Math.PI)}"></label>` : ''}
       </div>` : ''}
       ${(d.isActor || d.isPlayer) ? `
       <div class="sec" style="padding:8px 0;margin:6px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
@@ -419,9 +435,52 @@ function renderEditPanel() {
           ${d.isActor ? `<button class="btn ${d.blinker === 'hazard' ? 'primary' : ''}" data-blinker="hazard" title="Аварийная сигнализация">⚠️ Аварийка</button>` : ''}
         </div>
       </div>` : ''}
-      ${d.isRoute ? `<label>Длина стрелки, м<input id="sl" type="number" min="2" max="200" step="0.5" value="${d.length.toFixed(1)}"></label><div class="acts"><button class="btn" id="shorten">− 1 м</button><button class="btn" id="lengthen">+ 1 м</button></div>` : ''}
+      ${d.isRoute ? `
+      <div class="sec" style="padding:8px 0;margin:6px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+        <h4 style="margin:0 0 6px 0;font-size:12px;font-weight:600"><lab-icon name="route"></lab-icon> Длина и границы стрелки</h4>
+        <div class="nums" style="grid-template-columns: 1fr 1fr">
+          <label>Начало, м<input id="rStart" type="number" step="0.5" value="${(d.startOffset || 0).toFixed(1)}"></label>
+          <label>Конец, м<input id="sl" type="number" min="1" max="200" step="0.5" value="${d.length.toFixed(1)}"></label>
+        </div>
+        <div class="acts" style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">
+          <button class="btn" id="startBack" title="Удлинить начало назад (растянуть)">◀ Начало −1м</button>
+          <button class="btn" id="startFwd" title="Укоротить начало вперёд">▶ Начало +1м</button>
+          <button class="btn" id="shorten" title="Укоротить конец стрелки">◀ Конец −1м</button>
+          <button class="btn" id="lengthen" title="Удлинить конец стрелки">▶ Конец +1м</button>
+        </div>
+        <div class="muted mini" style="margin-top:4px;text-align:center">
+          Видимая длина: ${(d.length - (d.startOffset || 0)).toFixed(1)} м
+        </div>
+      </div>
+      <div class="sec" style="padding:8px 0;margin:6px 0;border-bottom:1px solid var(--border)">
+        <h4 style="margin:0 0 6px 0;font-size:12px;font-weight:600"><lab-icon name="route"></lab-icon> Изгиб (кривизна)</h4>
+        <label style="display:block;margin-bottom:6px">Кривизна дуги, м<input id="rBend" type="number" min="-30" max="30" step="0.5" value="${(d.bend || 0).toFixed(1)}"></label>
+        <div class="acts" style="display:flex;gap:4px">
+          <button class="btn" id="bendL" title="Изогнуть влево">⬅️ Влево</button>
+          <button class="btn" id="bend0" title="Сбросить изгиб">0</button>
+          <button class="btn" id="bendR" title="Изогнуть вправо">➡️ Вправо</button>
+        </div>
+      </div>
+      <details class="palette-section" id="routePointsSec" style="margin-bottom:8px">
+        <summary><lab-icon name="route"></lab-icon>Опорные точки траектории (${d.points?.length || 0})</summary>
+        <div style="padding:6px 0">
+          <p class="muted mini" style="margin:0 0 6px 0">Точки можно перетаскивать мышью прямо на дороге (жёлтые сферы) или вводить координаты X и Z:</p>
+          ${(d.points || []).map((pt, i) => `
+            <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:11px">
+              <span style="width:16px;font-weight:700;color:${d.selectedPointIndex === i ? 'var(--accent)' : 'var(--muted)'}">${i + 1}</span>
+              <label style="flex:1;margin:0">X<input class="pt-input" data-pti="${i}" data-coord="x" type="number" step="0.1" value="${pt[0]}" style="width:100%"></label>
+              <label style="flex:1;margin:0">Z<input class="pt-input" data-pti="${i}" data-coord="z" type="number" step="0.1" value="${pt[1]}" style="width:100%"></label>
+              ${(d.points || []).length > 2 ? `<button class="ib pt-del" data-pti="${i}" title="Удалить точку" style="padding:2px 6px">✕</button>` : ''}
+            </div>
+          `).join('')}
+          <div class="acts" style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
+            <button class="btn" id="addPtBtn">+ Добавить точку</button>
+            ${d.hasCustomPoints ? `<button class="btn" id="resetPtsBtn">Сбросить точки</button>` : ''}
+          </div>
+        </div>
+      </details>` : ''}
       <div class="selection-actions">
-        ${!d.isPlayer ? `
+        ${(!d.isPlayer && !d.isLabel) ? `
         <button class="btn" id="rotL" title="Повернуть влево на 15°"><lab-icon name="undo"></lab-icon>15°</button>
         <button class="btn" id="rotR" title="Повернуть вправо на 15°"><lab-icon name="redo"></lab-icon>15°</button>
         <button class="btn" id="rot180" title="Развернуть на 180°">180°</button>` : ''}
@@ -430,7 +489,8 @@ function renderEditPanel() {
         ${isSelectedEdited ? '<button class="btn" id="resetItem" title="Сбросить правки этого объекта">Сброс</button>' : ''}
       </div>`
       : '<div class="empty"><span class="e"><lab-icon name="cursor"></lab-icon></span>Выберите объект в сцене или в списке ниже</div>'}</div>
-    ${routes.length ? `<div class="sec"><h4><lab-icon name="route"></lab-icon> Синие стрелки</h4><div class="acts">${routes.map(r => `<button class="btn ${d?.key === r.key ? 'primary' : ''}" data-route="${r.key}">${esc(r.label)}</button>`).join('')}</div><p class="muted mini">Стрелки можно перемещать, поворачивать и менять их длину.</p></div>` : ''}
+    ${routes.length ? `<div class="sec"><h4><lab-icon name="route"></lab-icon> Синие стрелки (${routes.length})</h4><div class="acts">${routes.map(r => `<button class="btn ${d?.key === r.key ? 'primary' : ''}" data-route="${r.key}">${esc(r.label)}</button>`).join('')}</div><p class="muted mini">Стрелки можно перемещать, поворачивать, менять начало/конец, изгиб и опорные точки.</p></div>` : ''}
+    ${labels.length ? `<div class="sec"><h4><lab-icon name="route"></lab-icon> Метки линий (${labels.length})</h4><div class="acts">${labels.map(l => `<button class="btn ${d?.key === l.key ? 'primary' : ''}" data-label="${esc(l.key)}"><b style="color:var(--accent);font-size:13px">${esc(l.labelText)}</b> · ${esc(l.label)}</button>`).join('')}</div><p class="muted mini">Плашки с буквами можно перемещать мышью по дороге или задавать координаты X и Z.</p></div>` : ''}
     <div class="sec"><h4><lab-icon name="car"></lab-icon> Участники движения (${actors.length + 1})</h4>
       <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));">
         <button class="tile ${d?.key === 'player' ? 'on' : ''}" data-actor="player" title="Моё авто${sceneEdits().some(e => e.key === 'player') ? ' (с правками)' : ''}">
@@ -468,15 +528,56 @@ function renderEditPanel() {
       record(nd, { blinker });
     });
     if (d.isRoute) {
+      $('#rStart').onchange = () => apply({ startOffset: Number($('#rStart').value) });
+      $('#startBack').onclick = () => apply({ startOffset: (d.startOffset || 0) - 1 });
+      $('#startFwd').onclick = () => apply({ startOffset: (d.startOffset || 0) + 1 });
       $('#sl').onchange = () => apply({ length: Number($('#sl').value) });
       $('#shorten').onclick = () => apply({ length: d.length - 1 });
       $('#lengthen').onclick = () => apply({ length: d.length + 1 });
+      $('#rBend').onchange = () => apply({ bend: Number($('#rBend').value) });
+      $('#bendL').onclick = () => apply({ bend: (d.bend || 0) - 1 });
+      $('#bend0').onclick = () => apply({ bend: 0 });
+      $('#bendR').onclick = () => apply({ bend: (d.bend || 0) + 1 });
+      $('#panel').querySelectorAll('.pt-input').forEach(inp => {
+        inp.onchange = () => {
+          const idx = +inp.dataset.pti;
+          const coord = inp.dataset.coord;
+          const curPts = d.points.slice().map(p => p.slice());
+          if (coord === 'x') curPts[idx][0] = +inp.value;
+          else curPts[idx][1] = +inp.value;
+          apply({ points: curPts });
+        };
+      });
+      $('#panel').querySelectorAll('.pt-del').forEach(btn => {
+        btn.onclick = () => {
+          const idx = +btn.dataset.pti;
+          const curPts = d.points.slice().map(p => p.slice());
+          curPts.splice(idx, 1);
+          apply({ points: curPts });
+        };
+      });
+      if ($('#addPtBtn')) {
+        $('#addPtBtn').onclick = () => {
+          const curPts = d.points.slice().map(p => p.slice());
+          const last = curPts[curPts.length - 1];
+          const prev = curPts[curPts.length - 2] || [last[0], last[1] - 4];
+          const dx = last[0] - prev[0], dz = last[1] - prev[1];
+          const len = Math.hypot(dx, dz) || 1;
+          curPts.push([+(last[0] + dx / len * 4).toFixed(2), +(last[1] + dz / len * 4).toFixed(2)]);
+          apply({ points: curPts });
+        };
+      }
+      if ($('#resetPtsBtn')) {
+        $('#resetPtsBtn').onclick = () => {
+          apply({ resetPoints: true });
+        };
+      }
     }
     if ($('#sx')) {
-      const onCoord = () => apply({ x: +$('#sx').value, z: +$('#sz').value, rotY: +$('#sr').value * Math.PI / 180 });
+      const onCoord = () => apply({ x: +$('#sx').value, z: +$('#sz').value, rotY: $('#sr') ? +$('#sr').value * Math.PI / 180 : d.rotY });
       $('#sx').onchange = onCoord;
       $('#sz').onchange = onCoord;
-      $('#sr').onchange = onCoord;
+      if ($('#sr')) $('#sr').onchange = onCoord;
     }
     if ($('#rotL')) $('#rotL').onclick = () => apply({ rotY: d.rotY + Math.PI / 12 });
     if ($('#rotR')) $('#rotR').onclick = () => apply({ rotY: d.rotY - Math.PI / 12 });
@@ -501,6 +602,7 @@ function renderEditPanel() {
     }
   }
   $('#panel').querySelectorAll('[data-route]').forEach(b => b.onclick = () => { selection = lab.select(b.dataset.route); renderEditPanel(); });
+  $('#panel').querySelectorAll('[data-label]').forEach(b => b.onclick = () => { selection = lab.select(b.dataset.label); renderEditPanel(); });
   $('#panel').querySelectorAll('[data-actor]').forEach(b => b.onclick = () => {
     const key = b.dataset.actor;
     const nd = lab.select(key);
@@ -779,13 +881,31 @@ function bindFrameInput() {
     }
     if (mode === 'edit' && !e.shiftKey) {
       const d = lab.pick(nx, ny); selection = d; renderEditPanel();
-      if (d) { const g = lab.ground(nx, ny); if(!g)return; drag = { kind: 'move', dx: d.x - g.x, dz: d.z + lab.lab.origin - g.z }; return; }
+      if (d) {
+        const g = lab.ground(nx, ny); if (!g) return;
+        if (d.selectedPointIndex !== undefined && d.points?.[d.selectedPointIndex]) {
+          const pt = d.points[d.selectedPointIndex];
+          drag = { kind: 'point', index: d.selectedPointIndex, dx: pt[0] - g.x, dz: pt[1] + lab.lab.origin - g.z };
+        } else {
+          drag = { kind: 'move', dx: d.x - g.x, dz: d.z + lab.lab.origin - g.z };
+        }
+        return;
+      }
     }
     drag = { kind: e.shiftKey ? 'pan' : 'orbit', x: e.clientX, y: e.clientY };
   }, true);
   doc.addEventListener('mousemove', e => {
     if (!drag) return;
     const o = lab.lab.orbit;
+    if (drag.kind === 'point') {
+      const [nx, ny] = ndc(e), g = lab.ground(nx, ny); if (!g) return;
+      drag.last = lab.update({
+        pointIndex: drag.index,
+        pointX: +(g.x + drag.dx).toFixed(2),
+        pointZ: +(g.z + drag.dz - lab.lab.origin).toFixed(2)
+      });
+      return;
+    }
     if (drag.kind === 'move') {
       const [nx, ny] = ndc(e), g = lab.ground(nx, ny); if (!g) return;
       drag.last = lab.update({ x: +(g.x + drag.dx).toFixed(2), z: +(g.z + drag.dz - lab.lab.origin).toFixed(2) }); return;
@@ -796,7 +916,7 @@ function bindFrameInput() {
       o.target.x += (Math.cos(o.yaw) * dx + Math.sin(o.yaw) * dy) * k;
       o.target.z += (-Math.sin(o.yaw) * dx + Math.cos(o.yaw) * dy) * k; }
   });
-  doc.addEventListener('mouseup', () => { if (drag?.kind === 'move' && drag.last) record(drag.last); drag = null; });
+  doc.addEventListener('mouseup', () => { if ((drag?.kind === 'move' || drag?.kind === 'point') && drag.last) record(drag.last); drag = null; });
   doc.addEventListener('wheel', e => {
     if (!lab.lab.freeCam) return;
     e.preventDefault(); const o = lab.lab.orbit; o.size = Math.max(3, Math.min(160, o.size * Math.exp(e.deltaY * 0.001)));

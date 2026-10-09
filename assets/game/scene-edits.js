@@ -17,6 +17,33 @@ window.PDD_SCENE_EDITS = {
    }
   ]
  },
+ "road_18_11": {
+  "objects": [
+   {
+    "key": "actor:road_0_truck",
+    "rotY": 0,
+    "x": -2.08,
+    "z": -31.13
+   },
+   {
+    "key": "actor:road_1_truck",
+    "rotY": 0,
+    "x": -1.99,
+    "z": 20.33
+   }
+  ]
+ },
+ "road_19_16": {
+  "objects": [
+   {
+    "blinker": "hazard",
+    "key": "actor:bus_lane_obstacle",
+    "rotY": 1.194,
+    "x": -6.06,
+    "z": 26.51
+   }
+  ]
+ },
  "ticket_10_14": {
   "objects": [
    {
@@ -337,6 +364,39 @@ window.PDD_SCENE_EDITS = {
    }
   ]
  },
+ "ticket_18_13": {
+  "objects": [
+   {
+    "key": "route:0",
+    "length": 9.282001236141898,
+    "rotY": 0,
+    "x": -1.71,
+    "z": -7.6
+   }
+  ]
+ },
+ "ticket_18_14": {
+  "objects": [
+   {
+    "key": "route:0",
+    "length": 18.568969464659176,
+    "rotY": 0,
+    "x": -1.8,
+    "z": -7
+   }
+  ]
+ },
+ "ticket_18_15": {
+  "objects": [
+   {
+    "key": "route:0",
+    "length": 14,
+    "rotY": 0,
+    "x": -1.8,
+    "z": -9
+   }
+  ]
+ },
  "ticket_18_5": {
   "objects": [
    {
@@ -373,6 +433,69 @@ window.PDD_SCENE_EDITS = {
    }
   ]
  },
+ "ticket_18_9": {
+  "objects": [
+   {
+    "key": "route:1",
+    "length": 11.311283747314388,
+    "rotY": 0,
+    "x": -1.78,
+    "z": -23.46
+   },
+   {
+    "key": "route:0",
+    "length": 26.5,
+    "rotY": 0,
+    "x": -1.93,
+    "z": -13.23
+   }
+  ]
+ },
+ "ticket_19_13": {
+  "objects": [
+   {
+    "blinker": "left",
+    "key": "actor:npc_car",
+    "rotY": -1.571,
+    "x": 10,
+    "z": -2.05
+   }
+  ]
+ },
+ "ticket_19_14": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 8.282001236141898,
+    "rotY": 0,
+    "x": -1.7,
+    "z": -7.73
+   }
+  ]
+ },
+ "ticket_19_8": {
+  "objects": [
+   {
+    "key": "route:1",
+    "length": 32.283036553872336,
+    "rotY": 0,
+    "x": -5.4,
+    "z": -14
+   },
+   {
+    "key": "route:0",
+    "length": 28.860264320975066,
+    "rotY": 0,
+    "x": -5.4,
+    "z": -14
+   },
+   {
+    "blinker": "left",
+    "key": "player"
+   }
+  ]
+ },
  "ticket_1_13": {
   "objects": [
    {
@@ -403,6 +526,230 @@ window.PDD_SCENE_EDITS = {
     "rotY": 0,
     "x": -1.67,
     "z": -7.5
+   }
+  ]
+ },
+ "ticket_20_13": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 12.963383999375658,
+    "rotY": 0,
+    "x": -1.8,
+    "z": -7.58
+   }
+  ]
+ },
+ "ticket_20_14": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 10.282001236141898,
+    "rotY": 0,
+    "x": -1.73,
+    "z": -7.55
+   },
+   {
+    "blinker": "right",
+    "key": "player"
+   }
+  ]
+ },
+ "ticket_20_15": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 15.963383999375658,
+    "rotY": 0,
+    "x": -1.89,
+    "z": -7.23
+   }
+  ]
+ },
+ "ticket_20_2": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 34.332430912530675,
+    "rotY": 0,
+    "x": -1.62,
+    "z": -13.5
+   }
+  ]
+ },
+ "ticket_20_6": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 15.817369960949904,
+    "rotY": 0,
+    "x": -5.36,
+    "z": -15.16
+   }
+  ]
+ },
+ "ticket_21_13": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 15.963383999375658,
+    "rotY": 0,
+    "x": -1.8,
+    "z": -7.41
+   },
+   {
+    "blinker": "left",
+    "key": "player"
+   }
+  ]
+ },
+ "ticket_21_14": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 14.963383999375658,
+    "rotY": 0,
+    "x": -1.81,
+    "z": -7.64
+   },
+   {
+    "blinker": "left",
+    "key": "player"
+   }
+  ]
+ },
+ "ticket_21_15": {
+  "objects": [
+   {
+    "blinker": "left",
+    "key": "actor:npc_truck",
+    "rotY": 1.571,
+    "x": -10,
+    "z": 2.05
+   },
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 14,
+    "rotY": 0,
+    "x": -1.8,
+    "z": -8.68
+   }
+  ]
+ },
+ "ticket_21_16": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 14.963383999375658,
+    "removed": true,
+    "rotY": 0,
+    "x": -1.8,
+    "z": -7.47
+   },
+   {
+    "blinker": null,
+    "code": "5.22",
+    "key": "sign:0",
+    "rotY": 0,
+    "x": -4.88,
+    "z": -7.49
+   }
+  ]
+ },
+ "ticket_21_8": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 15.019669052175836,
+    "rotY": 0,
+    "x": -1.84,
+    "z": -8.33
+   },
+   {
+    "blinker": "left",
+    "key": "player"
+   }
+  ]
+ },
+ "ticket_22_13": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 26.5,
+    "rotY": 0,
+    "x": -4.1,
+    "z": -14
+   }
+  ]
+ },
+ "ticket_22_8": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:1",
+    "length": 20,
+    "rotY": 0,
+    "x": -1.62,
+    "z": -12.4
+   },
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 16.5,
+    "rotY": 0.017,
+    "x": -1.33,
+    "z": -12.33
+   }
+  ]
+ },
+ "ticket_23_13": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 7.282001236141898,
+    "rotY": 0,
+    "x": -1.67,
+    "z": -7.52
+   }
+  ]
+ },
+ "ticket_23_14": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 14,
+    "rotY": 0,
+    "x": -1.8,
+    "z": -8.74
+   }
+  ]
+ },
+ "ticket_23_15": {
+  "objects": [
+   {
+    "blinker": null,
+    "key": "route:0",
+    "length": 14.963383999375658,
+    "rotY": 0,
+    "x": -1.8,
+    "z": -7.58
+   },
+   {
+    "blinker": "left",
+    "key": "player"
    }
   ]
  },
