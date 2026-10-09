@@ -5627,13 +5627,13 @@
   // Route guide: one smooth flat band per route ending in an arrowhead, the
   // same for the player's route and a ticket's labelled alternatives. Kinks
   // between authored points are smoothed out; long exit tails are clipped.
-  function createRouteGuide(paths) {
+  function createRouteGuide(paths, lengths = []) {
     const guide = new THREE.Group();
     const mat = new THREE.MeshBasicMaterial({ color: BRAND.accent, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide });
     const headShape = new THREE.Shape();
     headShape.moveTo(0, 0); headShape.lineTo(-0.5, -1.15); headShape.lineTo(0.5, -1.15); headShape.closePath();
     const headGeo = new THREE.ShapeGeometry(headShape); headGeo.rotateX(Math.PI / 2);
-    for (const path of paths) {
+    for (const [index, path] of paths.entries()) {
       // Stop shortly after the bend, in the receiving lane. Driving paths
       // retain their full length; only the visual direction cue is shortened.
       // A path with several bends (a bypass out and back, 130 m long) shows
@@ -5649,9 +5649,19 @@
       }
       let bendEnd = 0;
       for (const b of bends) { if (bendEnd && b.from - bendEnd > 20) break; bendEnd = b.to; }
-      const length = Math.min(fullLength, bendEnd ? bendEnd + 4 : 14);
+      const defaultLength = Math.min(fullLength, bendEnd ? bendEnd + 4 : 14);
+      const length = Number.isFinite(lengths[index]) ? Math.max(2, Math.min(200, lengths[index])) : defaultLength;
+      const route = new THREE.Group(), start = path.getPointAt(0);
+      route.position.set(start.x, 0, start.z);
+      route.userData = { editKey: 'route:' + index, isRoute: true, routePath: path, routeLength: length };
+      guide.add(route);
       const n = Math.max(8, Math.ceil(length / 0.25));
-      let pts = Array.from({ length: n + 1 }, (_, i) => path.getPointAt(i / n * length / fullLength));
+      let pts = Array.from({ length: n + 1 }, (_, i) => {
+        const distance = i / n * length;
+        const p = distance <= fullLength ? path.getPointAt(distance / fullLength)
+          : path.getPointAt(1).addScaledVector(path.getTangentAt(1), distance - fullLength);
+        return p.sub(new THREE.Vector3(start.x, 0, start.z));
+      });
       for (let pass = 0; pass < 8; pass++) pts = pts.map((p, i) => i === 0 || i === n ? p :
         p.clone().lerp(pts[i - 1].clone().add(pts[i + 1]).multiplyScalar(0.5), 0.5));
       const smooth = curve(pts), total = smooth.getLength(), bodyEnd = Math.max(0.2, total - 0.95);
@@ -5666,14 +5676,35 @@
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx);
       const stroke = new THREE.Mesh(geo, mat);
       stroke.userData.routeStroke = true; stroke.userData.routePoints = routePoints;
-      guide.add(stroke);
+      route.add(stroke);
       const tip = smooth.getPointAt(1), dir = smooth.getTangentAt(1);
       const head = new THREE.Mesh(headGeo, mat);
       head.position.copy(tip); head.rotation.y = Math.atan2(dir.x, dir.z);
       head.userData.guideArrow = true;
-      guide.add(head);
+      route.add(head);
     }
     return guide;
+  }
+
+  // Rebuild only the visual cue; the driving path stays unchanged.
+  function setRouteLength(route, length) {
+    if (!Number.isFinite(length)) return;
+    const replacement = createRouteGuide([route.userData.routePath], [length]).children[0];
+    route.children.slice().forEach(o => { route.remove(o); o.geometry?.dispose(); o.material?.dispose(); });
+    replacement.children.slice().forEach(o => route.add(o));
+    route.userData.routeLength = replacement.userData.routeLength;
+  }
+  function applyRouteEdits(guide, id, originZ) {
+    const edits = (window.PDD_SCENE_EDITS || {})[id]?.objects || [];
+    guide.children.filter(o => o.userData.isRoute).forEach(o => {
+      const e = edits.find(e => e.key === o.userData.editKey);
+      if (!e) return;
+      if (e.length !== undefined) setRouteLength(o, e.length);
+      if (e.x !== undefined) o.position.x = e.x;
+      if (e.z !== undefined) o.position.z = originZ + e.z;
+      if (e.rotY !== undefined) o.rotation.y = e.rotY;
+      if (e.removed) o.visible = false;
+    });
   }
 
   // A double-sided advertising board for a roundabout island. The brand is
@@ -8325,6 +8356,7 @@
     const guidePaths = [curve(guidePoints.map(([x, z]) => new THREE.Vector3(x, 0.12, centerZ + z)))];
     createRouteGuide(guidePaths).children.slice().forEach(part => guide.add(part));
     seg.add(guide); guide.visible = false;
+    applyRouteEdits(guide, situation.id, centerZ);
     intersectionData.guide = guide;
 
     intersectionData.previews = {};
@@ -9004,6 +9036,7 @@
     const guide = createRouteGuide(guidePaths);
     if (situation.trajectories?.length) guide.userData.questionEvidence = true;
     seg.add(guide); guide.visible = false;
+    applyRouteEdits(guide, situation.id, centerZ);
     intersectionData.guide = guide;
     // Build every visible exit BEFORE a question or a camera turn. These
     // lightweight continuations are replaced seamlessly by the next full road.
@@ -9154,6 +9187,7 @@
         sign.userData = { ...obj.userData, signCode: e.code };
         obj.parent.add(sign); obj.parent.remove(obj); obj = sign;
       }
+      if (obj.userData.isRoute && e.length !== undefined) setRouteLength(obj, e.length);
       if (e.x !== undefined) obj.position.x = e.x;
       if (e.z !== undefined) obj.position.z = originZ + e.z;
       if (e.rotY !== undefined) obj.rotation.y = e.rotY;

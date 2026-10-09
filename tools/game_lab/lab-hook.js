@@ -88,9 +88,10 @@
       let label;
       if (o.userData.signCode) label = 'Знак ' + o.userData.signCode;
       else if (isActor) label = actorName || ('Участник ' + (actorType || ''));
+      else if (o.userData.isRoute) label = 'Синяя стрелка ' + (Number(o.userData.editKey.split(':')[1]) + 1);
       else label = o.userData.decorKind || o.userData.editKey;
       return { key: o.userData.editKey, code: o.userData.signCode || null, kind: isActor ? 'actor' : (o.userData.decorKind || null),
-        isActor, actorType, actorName,
+        isActor, actorType, actorName, isRoute: !!o.userData.isRoute, length: o.userData.routeLength,
         x: +o.position.x.toFixed(2), z: +(o.position.z - lab.origin).toFixed(2), rotY: +o.rotation.y.toFixed(3),
         visible: o.visible, label };
     }
@@ -101,7 +102,7 @@
     }
     function find(key) {
       let hit = null;
-      lab.group?.traverse(o => { if (o.userData.editKey === key && o.parent === lab.group) hit = o; });
+      lab.group?.traverse(o => { if (o.userData.editKey === key && (o.parent === lab.group || o.userData.isRoute)) hit = o; });
       return hit;
     }
     function actors() {
@@ -121,7 +122,7 @@
       const hits = ray.intersectObjects(lab.group.children, true);
       for (const h of hits) {
         let o = h.object;
-        while (o && o.parent !== lab.group) o = o.parent;
+        while (o && o.parent !== lab.group && !o.userData.isRoute) o = o.parent;
         if (o && o.userData.editKey) { lab.selected = o; setHelper(o); return describe(o); }
       }
       lab.selected = null; setHelper(null); return null;
@@ -140,6 +141,7 @@
         sign.userData = { ...o.userData, signCode: props.code };
         lab.group.add(sign); lab.group.remove(o); o = lab.selected = sign;
       }
+      if (o.userData.isRoute && props.length !== undefined) setRouteLength(o, props.length);
       if (props.x !== undefined) o.position.x = props.x;
       if (props.z !== undefined) o.position.z = lab.origin + props.z;
       if (props.rotY !== undefined) o.rotation.y = props.rotY;
@@ -241,6 +243,7 @@
       signCodes: () => Object.keys(window.PDD_SIGN_TEXTURES || {}).sort(),
       decorKinds: () => Object.keys(EDITABLE_DECOR),
       actors: () => actors(),
+      routes: () => { const list = []; lab.group?.traverse(o => { if (o.userData.isRoute) list.push(describe(o)); }); return list; },
       player: () => ({ x: playerCarGroup.position.x, z: playerCarGroup.position.z }),
       tick: () => {
         // Freeze traffic in inspection mode, but keep the canvas and camera live.
