@@ -44,6 +44,7 @@ class GameLobby extends StatelessWidget {
   final ValueChanged<double>? onSpin;
   final VoidCallback? onLeaderboard;
   final VoidCallback? onControls;
+  final VoidCallback? onClose;
 
   const GameLobby({
     super.key,
@@ -61,6 +62,7 @@ class GameLobby extends StatelessWidget {
     this.onColour,
     this.onLeaderboard,
     this.onControls,
+    this.onClose,
     this.onSpin,
   });
 
@@ -239,6 +241,14 @@ class GameLobby extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (onClose != null) ...[
+                    IconButton.filledTonal(
+                      tooltip: appL10n.close,
+                      onPressed: onClose,
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                 ],
               ),
             ),

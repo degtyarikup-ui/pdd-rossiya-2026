@@ -1707,6 +1707,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                           ),
                         )
                       : null,
+                  onClose: () => Navigator.of(context).maybePop(),
                   onStart: _startFromLobby,
                   resume: _runStarted && gameState.phase != GamePhase.gameOver,
                   onPrevious: _lobbyModels().length > 1

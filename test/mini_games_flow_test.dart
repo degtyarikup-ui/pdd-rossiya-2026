@@ -168,10 +168,7 @@ void main() {
   ) async {
     await open(tester, const SignSwiperScreen());
     await answerSign(tester, correct: true);
-    expect(
-      tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
-      8,
-    );
+    expect(tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score, 8);
     for (var mistakes = 1; mistakes <= 3; mistakes++) {
       await answerSign(tester, correct: false);
       expect(
@@ -575,9 +572,19 @@ void main() {
         expect(labelRect.bottom, lessThanOrEqualTo(photoRect.bottom));
       }
     }
-    await tester.scrollUntilVisible(find.text(appL10n.gameRoundaboutTitle), 200);
+    await tester.scrollUntilVisible(
+      find.text(appL10n.gameCrossroadsPriorityTitle),
+      200,
+    );
+    await tester.tap(find.text(appL10n.gameCrossroadsPriorityTitle));
     await tester.pumpAndSettle();
-    expect(find.text(appL10n.gameSoonBadge), findsOneWidget);
+    expect(find.byType(GamesHubScreen), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text(appL10n.gameRoundaboutTitle),
+      200,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(appL10n.gameSoonBadge), findsNWidgets(2));
     await tester.tap(find.text(appL10n.gameRoundaboutTitle));
     await tester.pumpAndSettle();
     expect(find.byType(GamesHubScreen), findsOneWidget);
@@ -668,7 +675,10 @@ void main() {
     tester,
   ) async {
     await open(tester, const GamesHubScreen());
-    await tester.scrollUntilVisible(find.text(appL10n.gameSignSwiperTitle), 200);
+    await tester.scrollUntilVisible(
+      find.text(appL10n.gameSignSwiperTitle),
+      200,
+    );
     await tester.pumpAndSettle();
     await tester.tapAt(
       tester.getCenter(find.text(appL10n.gameSignSwiperTitle)),

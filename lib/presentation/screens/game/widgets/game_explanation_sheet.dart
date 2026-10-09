@@ -108,33 +108,6 @@ class GameExplanationSheet extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (situation.pddRule.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.goldLightSurface,
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.radiusSmall,
-                        ),
-                      ),
-                      child: Text(
-                        situation.pddRule,
-                        style: TextStyle(
-                          fontFamily: 'Onest',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: colors.gold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
                 const SizedBox(height: 10),
 
                 // The right answer first: the question card is gone by now,

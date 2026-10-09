@@ -1,5 +1,8 @@
 import 'dart:math' as math;
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
+import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/presentation/screens/game/game_screen.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_leaderboard_sheet.dart';
@@ -13,7 +16,6 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_screen.dart';
 import 'package:pdd_app/presentation/screens/games/traffic_controller/traffic_controller_screen.dart';
-import 'package:pdd_app/presentation/screens/games/crossroads/crossroads_screen.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
 
 class GamesHubScreen extends ConsumerStatefulWidget {
@@ -25,6 +27,8 @@ class GamesHubScreen extends ConsumerStatefulWidget {
 class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
     with WidgetsBindingObserver {
   int _runs = GameRunsService.maxRuns;
+  int _cityBest = 0;
+  GameLeaderboardEntry? _me;
   Timer? _timer;
   Future<int>? _loadedRuns;
   @override
@@ -32,6 +36,7 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     unawaited(_refreshRuns());
+    unawaited(_refreshRating());
     _timer = Timer.periodic(const Duration(minutes: 1), (_) => _refreshRuns());
   }
 
@@ -41,9 +46,23 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
     if (mounted) setState(() => _runs = runs);
   }
 
+  Future<void> _refreshRating() async {
+    final prefs = await SharedPreferences.getInstance();
+    final board = await GameLeaderboardService.instance.fetch();
+    if (mounted) {
+      setState(() {
+        _cityBest = prefs.getInt('game_best_score') ?? 0;
+        _me = board?.me;
+      });
+    }
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) unawaited(_refreshRuns());
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refreshRuns());
+      unawaited(_refreshRating());
+    }
   }
 
   @override
@@ -59,6 +78,7 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => screen));
     await _refreshRuns();
+    await _refreshRating();
   }
 
   @override
@@ -66,7 +86,6 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
     final colors = AppColors.of(context);
     final traffic = ref.watch(trafficControllerProgressProvider);
     final signs = ref.watch(signSwiperProgressProvider);
-    final crossroads = ref.watch(crossroadsPriorityProgressProvider);
     final topInset = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
@@ -111,12 +130,23 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
                   ),
                 ),
                 const Spacer(),
-                IconButton(
-                  tooltip: appL10n.gameLobbyRating,
-                  onPressed: () => GameLeaderboardSheet.show(context),
+                TextButton.icon(
+                  onPressed: () async {
+                    await GameLeaderboardSheet.show(context);
+                    await _refreshRating();
+                  },
                   icon: Icon(
                     Icons.emoji_events_outlined,
                     color: colors.primaryText,
+                  ),
+                  label: Text(
+                    _me == null
+                        ? '—'
+                        : NumberFormat.decimalPattern('ru').format(_me!.score),
+                    style: TextStyle(
+                      color: colors.primaryText,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
@@ -129,14 +159,8 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
                 ? appL10n.gameRunsUnlimitedPill
                 : appL10n.gamesRunsAvailable(_runs),
             statusIcon: Icons.local_gas_station_rounded,
+            secondaryScore: _cityBest,
             onTap: () => _open(context, const GameScreen()),
-          ),
-          const SizedBox(height: AppDimensions.spacingL),
-          _GameCard(
-            art: const CrossroadsArt(forCard: true),
-            title: appL10n.gameCrossroadsPriorityTitle,
-            bestScore: crossroads.bestScore,
-            onTap: () => _open(context, const CrossroadsScreen()),
           ),
           const SizedBox(height: AppDimensions.spacingL),
           _GameCard(
@@ -151,6 +175,11 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
             title: appL10n.gameSignSwiperTitle,
             bestScore: signs.bestScore,
             onTap: () => _open(context, const SignSwiperScreen()),
+          ),
+          const SizedBox(height: AppDimensions.spacingL),
+          _GameCard(
+            art: const CrossroadsArt(forCard: true),
+            title: appL10n.gameCrossroadsPriorityTitle,
           ),
           const SizedBox(height: AppDimensions.spacingL),
           _GameCard(
@@ -172,6 +201,7 @@ class _GameCard extends StatelessWidget {
     this.onTap,
     this.status,
     this.statusIcon,
+    this.secondaryScore,
   });
 
   final Widget art;
@@ -180,6 +210,7 @@ class _GameCard extends StatelessWidget {
   final VoidCallback? onTap;
   final String? status;
   final IconData? statusIcon;
+  final int? secondaryScore;
 
   @override
   Widget build(BuildContext context) {
@@ -286,6 +317,25 @@ class _GameCard extends StatelessWidget {
                                             ),
                                           ),
                                         ),
+                                        if (secondaryScore != null) ...[
+                                          const SizedBox(width: 12),
+                                          Icon(
+                                            Icons.emoji_events_outlined,
+                                            size: 16,
+                                            color: colors.gold,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            NumberFormat.decimalPattern(
+                                              'ru',
+                                            ).format(secondaryScore!),
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ],

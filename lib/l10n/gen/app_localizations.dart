@@ -4995,6 +4995,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Комбо {count}'**
   String gameCurrentCombo(int count);
+
+  /// No description provided for @gameRatingResultsIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Итоги рейтинга через: {days, plural, one{{days} день} few{{days} дня} many{{days} дней} other{{days} дня}} {hours, plural, one{{hours} час} few{{hours} часа} many{{hours} часов} other{{hours} часа}}'**
+  String gameRatingResultsIn(int days, int hours);
 }
 
 class _AppLocalizationsDelegate

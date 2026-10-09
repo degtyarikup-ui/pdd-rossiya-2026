@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-/// Карточки используют подготовленный blur; результаты — чёткий оригинал.
+/// Чёткие WebP-обложки; декодирование ограничено размером карточки.
 class TrafficControllerArt extends StatelessWidget {
   const TrafficControllerArt({super.key, this.forCard = false});
 
@@ -84,7 +84,7 @@ class _GameCoverImage extends StatelessWidget {
           fit: BoxFit.cover,
           alignment: Alignment.center,
           cacheWidth: decodeWidth,
-          filterQuality: FilterQuality.low,
+          filterQuality: FilterQuality.medium,
           gaplessPlayback: true,
         );
       },

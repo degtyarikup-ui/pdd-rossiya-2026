@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:pdd_app/presentation/widgets/user_avatar.dart';
 import 'package:flutter/material.dart';
@@ -27,6 +28,21 @@ class GameLeaderboardSheet extends StatefulWidget {
 class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
   late Future<GameLeaderboard?> _future = GameLeaderboardService.instance
       .fetch();
+
+  Timer? _timer;
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,11 +78,27 @@ class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
                 ],
               ),
               const SizedBox(height: 6),
-              Text(
-                appL10n.gameRatingAllGames,
-                style: TextStyle(fontSize: 12, color: colors.secondaryText),
+              FutureBuilder<GameLeaderboard?>(
+                future: _future,
+                builder: (context, snapshot) {
+                  final end = snapshot.data?.endsAt;
+                  if (end == null) return const SizedBox.shrink();
+                  final hours = end
+                      .difference(DateTime.now())
+                      .inHours
+                      .clamp(0, 168);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      appL10n.gameRatingResultsIn(hours ~/ 24, hours % 24),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colors.secondaryText,
+                      ),
+                    ),
+                  );
+                },
               ),
-              const SizedBox(height: 12),
               Expanded(
                 child: FutureBuilder<GameLeaderboard?>(
                   future: _future,
@@ -93,24 +125,8 @@ class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
                     }
                     final me = board.me;
                     final pinMe = me != null && me.rank > board.top.length;
-                    final days = board.endsAt == null
-                        ? null
-                        : board.endsAt!.difference(DateTime.now()).inDays + 1;
                     return Column(
                       children: [
-                        if (days != null)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Text(
-                              appL10n.gameRatingEndsIn(days.clamp(1, 7)),
-                              style: TextStyle(
-                                fontFamily: 'Onest',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: colors.secondaryText,
-                              ),
-                            ),
-                          ),
                         Expanded(
                           child: ListView.separated(
                             itemCount: board.top.length,
@@ -164,14 +180,14 @@ class GameLeaderboardRow extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: medal?.withValues(alpha: .22) ?? colors.searchFieldFill,
+              color: Colors.transparent,
             ),
             child: Text(
               '${entry.rank}',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
-                color: colors.primaryText,
+                color: medal ?? colors.primaryText,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -221,11 +237,7 @@ class GameLeaderboardRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-            decoration: BoxDecoration(
-              color: colors.searchFieldFill,
-              borderRadius: BorderRadius.circular(12),
-            ),
+            padding: EdgeInsets.zero,
             constraints: BoxConstraints(
               maxWidth: MediaQuery.sizeOf(context).width * .28,
             ),

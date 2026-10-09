@@ -2996,4 +2996,25 @@ class AppLocalizationsRu extends AppLocalizations {
   String gameCurrentCombo(int count) {
     return 'Комбо $count';
   }
+
+  @override
+  String gameRatingResultsIn(int days, int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days дня',
+      many: '$days дней',
+      few: '$days дня',
+      one: '$days день',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: '$hours часа',
+      many: '$hours часов',
+      few: '$hours часа',
+      one: '$hours час',
+    );
+    return 'Итоги рейтинга через: $_temp0 $_temp1';
+  }
 }

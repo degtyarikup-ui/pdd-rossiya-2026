@@ -1273,5 +1273,16 @@
         "type": "int"
       }
     }
+  },
+  "gameRatingResultsIn": "Итоги рейтинга через: {days, plural, one{{days} день} few{{days} дня} many{{days} дней} other{{days} дня}} {hours, plural, one{{hours} час} few{{hours} часа} many{{hours} часов} other{{hours} часа}}",
+  "@gameRatingResultsIn": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "hours": {
+        "type": "int"
+      }
+    }
   }
 }
