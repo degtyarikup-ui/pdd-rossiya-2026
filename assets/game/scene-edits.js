@@ -1989,9 +1989,27 @@ window.PDD_SCENE_EDITS = {
     "blinker": null,
     "key": "route:0",
     "length": 14.963383999375658,
+    "points": [
+     [
+      -1.76,
+      -8.91
+     ],
+     [
+      -1.49,
+      -2.16
+     ],
+     [
+      2.52,
+      1.1
+     ],
+     [
+      7.98,
+      1.8
+     ]
+    ],
     "rotY": 0,
-    "x": -1.8,
-    "z": -7.58
+    "x": -1.76,
+    "z": -8.91
    },
    {
     "blinker": "left",
@@ -2096,6 +2114,10 @@ window.PDD_SCENE_EDITS = {
     "startOffset": -2,
     "x": -1.76,
     "z": -7
+   },
+   {
+    "blinker": "right",
+    "key": "player"
    }
   ]
  },
