@@ -157,6 +157,7 @@ class TrafficControllerRules {
         gesture == ControllerGesture.handsDown) {
       switch (approach) {
         case ApproachDirection.front:
+          return appL10n.gameTrafficHintWall;
         case ApproachDirection.back:
           return appL10n.gameTrafficHintBack;
         case ApproachDirection.left:

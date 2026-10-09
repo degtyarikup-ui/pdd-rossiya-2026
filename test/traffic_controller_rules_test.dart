@@ -240,6 +240,42 @@ void main() {
         ),
         contains('палка смотрит влево'),
       );
+
+      expect(
+        TrafficControllerRules.mnemonicVerse(
+          gesture: ControllerGesture.handsSides,
+          approach: ApproachDirection.front,
+          vehicle: VehicleKind.car,
+        ),
+        contains('Грудь'),
+      );
+
+      expect(
+        TrafficControllerRules.mnemonicVerse(
+          gesture: ControllerGesture.handsDown,
+          approach: ApproachDirection.front,
+          vehicle: VehicleKind.car,
+        ),
+        contains('Грудь'),
+      );
+
+      expect(
+        TrafficControllerRules.mnemonicVerse(
+          gesture: ControllerGesture.handsSides,
+          approach: ApproachDirection.back,
+          vehicle: VehicleKind.car,
+        ),
+        contains('Спина'),
+      );
+
+      expect(
+        TrafficControllerRules.mnemonicVerse(
+          gesture: ControllerGesture.handsDown,
+          approach: ApproachDirection.back,
+          vehicle: VehicleKind.car,
+        ),
+        contains('Спина'),
+      );
     });
   });
 }
