@@ -259,7 +259,13 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Извлечение email из identityToken (JWT) от Apple
-  static String? _extractEmailFromJwt(String? identityToken) {
+  static String? _extractEmailFromJwt(String? identityToken) =>
+      jwtClaim(identityToken, 'email');
+
+  /// A string claim of an identity token (payload only: the server verifies
+  /// the signature). Null when the token or the claim is missing.
+  @visibleForTesting
+  static String? jwtClaim(String? identityToken, String claim) {
     if (identityToken == null || identityToken.isEmpty) return null;
     try {
       final parts = identityToken.split('.');
@@ -271,9 +277,9 @@ class AuthService extends ChangeNotifier {
       }
       final decoded = utf8.decode(base64Url.decode(payload));
       final map = jsonDecode(decoded) as Map<String, dynamic>;
-      final email = map['email'] as String?;
-      if (email != null && email.isNotEmpty) {
-        return email;
+      final value = map[claim] as String?;
+      if (value != null && value.isNotEmpty) {
+        return value;
       }
     } catch (e) {
       debugPrint('AuthService: error decoding Apple identityToken: $e');
@@ -307,7 +313,12 @@ class AuthService extends ChangeNotifier {
         );
       }
 
-      final userIdentifier = credential.userIdentifier ?? '';
+      // The web popup flow returns no userIdentifier: the token's `sub` is the
+      // same Apple user id (the server verifies it and keys the account by it).
+      final userIdentifier =
+          credential.userIdentifier ??
+          jwtClaim(credential.identityToken, 'sub') ??
+          '';
       if (userIdentifier.isEmpty || credential.identityToken == null) {
         lastFailure = AuthFailure.provider;
         ErrorReporter.report(
