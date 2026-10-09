@@ -37,7 +37,11 @@ class YandexAuthSheet extends StatefulWidget {
   /// The same-tab flow works in iPhone browsers that block OAuth popups.
   static Future<YandexAuthResult?> _signInOnWeb() async {
     final state = _randomState();
-    final redirect = Uri.base.resolve('yandex-auth.html').toString();
+    // A distinct callback URL also avoids an older cached popup-only page.
+    final redirect = Uri.base
+        .resolve('yandex-auth.html')
+        .replace(queryParameters: {'flow': 'redirect'})
+        .toString();
     final url = Uri.https('oauth.yandex.ru', '/authorize', {
       'response_type': 'token',
       'client_id': AuthService.yandexClientId,

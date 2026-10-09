@@ -12,7 +12,9 @@
 
 - `ru.pdd.pddapp://oauth` — существующий мобильный WebView;
 - `https://oauth.yandex.ru/verification_code` — отладочный адрес;
-- `https://pdd-drive.ru/app/yandex-auth.html` — сайт.
+- `https://pdd-drive.ru/app/yandex-auth.html` — прежние веб-вкладки;
+- `https://pdd-drive.ru/app/yandex-auth.html?flow=redirect` — новый вход
+  в той же вкладке, в обход закэшированного popup callback.
 
 Ошибка 400 «redirect_uri не совпадает с Callback URL» исправляется
 в кабинете Яндекс ID. Платформа iOS включена с AppId
@@ -57,3 +59,12 @@ Apple либо токен Яндекса, и выдаёт сессию прил�
 
 После правок обработчика требуется `npx wrangler deploy` из
 `server/install-notifier`; после Dart/HTML — `./scripts/deploy_web.sh ru`.
+
+## Обновление веб-кэша
+
+GitHub Pages отдаёт JavaScript с max-age=600. `tools/version_web_build.py`
+после сборки добавляет content hash к URL bootstrap и main.dart.js;
+свежий HTML теперь не смешивается со старым кодом из HTTP-кэша.
+Callback возвращает на `/app/?oauth=2`, чтобы загрузить свежий HTML.
+Для уже открытой старой вкладки можно открыть новый адрес
+`https://pdd-drive.ru/app/?update=20261009-auth2` и повторить вход.

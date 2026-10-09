@@ -13,7 +13,7 @@ test('Apple form POST routes without app key, returns credentials only in a frag
   const destination = new URL(response.headers.get('location'));
   assert.equal(destination.origin, 'https://pdd-drive.ru');
   assert.equal(destination.pathname, '/app/');
-  assert.equal(destination.search, '');
+  assert.equal(destination.search, '?oauth=2');
   const params = new URLSearchParams(decodeURIComponent(destination.hash.slice('#pdd-oauth='.length)));
   assert.equal(params.get('provider'), 'apple');
   assert.equal(params.get('id_token'), 'signed-token');

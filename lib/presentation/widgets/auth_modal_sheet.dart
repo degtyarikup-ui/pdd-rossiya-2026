@@ -173,7 +173,8 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                   ],
 
                   // OAuth Buttons
-                  if (Theme.of(context).platform == TargetPlatform.iOS) ...[
+                  if (kIsWeb ||
+                      Theme.of(context).platform == TargetPlatform.iOS) ...[
                     _buildAuthButton(
                       svgAsset: 'assets/icons/auth/apple.svg',
                       svgColor: colors.primaryText,

@@ -42,7 +42,7 @@ export async function handleAppleWebCallback(request) {
     }
   }
   return new Response(null, { status: 303, headers: {
-    Location: 'https://pdd-drive.ru/app/#pdd-oauth=' + encodeURIComponent(params.toString()),
+    Location: 'https://pdd-drive.ru/app/?oauth=2#pdd-oauth=' + encodeURIComponent(params.toString()),
     'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer',
   } });
 }
