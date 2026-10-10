@@ -29,7 +29,7 @@ export async function verifyIdentity(body, env) {
   if (provider === 'google' && credential.split('.').length !== 3) {
     // Android and the custom web button use OAuth access tokens. Google
     // validates the token; the configured allowlist includes the web client.
-    const info = await fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(credential), { signal: AbortSignal.timeout(8000) });
+    const info = await fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(credential), { signal: AbortSignal.timeout(6000) });
     if (!info.ok) throw authFailure('invalid credential', 'google_tokeninfo_' + info.status);
     const tok = await info.json();
     const androidClients = audiences(env.GOOGLE_ANDROID_CLIENT_IDS, '');
@@ -38,8 +38,11 @@ export async function verifyIdentity(body, env) {
       : []; // Preserve the existing fallback for unconfigured Android clients.
     if (allowed.length && !allowed.includes(tok.aud) && !allowed.includes(tok.azp)) throw new Error('wrong client');
     if (!tok.sub || Number(tok.expires_in) <= 0) throw authFailure('invalid credential', 'google_tokeninfo_claims');
-    const user = await fetch('https://openidconnect.googleapis.com/v1/userinfo', { headers: { Authorization: 'Bearer ' + credential }, signal: AbortSignal.timeout(8000) });
-    const profile = user.ok ? await user.json() : {};
+    let profile = {};
+    try {
+      const user = await fetch('https://openidconnect.googleapis.com/v1/userinfo', { headers: { Authorization: 'Bearer ' + credential }, signal: AbortSignal.timeout(4000) });
+      if (user.ok) profile = await user.json();
+    } catch (_) {}
     if (profile.sub && profile.sub !== tok.sub) throw authFailure('invalid credential', 'google_userinfo_subject');
     claims = { sub: tok.sub, name: profile.name, email: tok.email || profile.email || '',
       email_verified: tok.email_verified === 'true' || profile.email_verified === true, picture: profile.picture };

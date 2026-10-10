@@ -63,7 +63,7 @@ async function platega(env, path, body) {
       method: body ? 'POST' : 'GET',
       headers: { 'content-type': 'application/json', 'X-MerchantId': env.PLATEGA_MERCHANT_ID, 'X-Secret': env.PLATEGA_SECRET },
       ...(body ? { body: JSON.stringify(body) } : {}),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(7000),
     });
   } catch (_) { throw new PaymentError('payment provider unavailable'); }
   let data = null;
