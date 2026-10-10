@@ -63,3 +63,14 @@ test('текст причины в уведомлении подбирается
   const plain = incidentCopy({ origin: 'server', category: 'auth', operation: 'auth.session', code: 'credential_rejected', status: 401 });
   assert.equal(plain.reason, copy.reason);
 });
+
+test('сообщения о сбоях связи и о входе «не сразу» имеют понятный текст', async () => {
+  const { incidentCopy } = await import('./incident_copy.js');
+  const lost = incidentCopy({ origin: 'client', category: 'auth', operation: 'auth.provider', code: 'timeout:3x' });
+  assert.match(lost.reason, /Ответ не получен/);
+  const recovered = incidentCopy({ origin: 'client', category: 'auth', operation: 'auth.recovered', code: 'fallback_ok:2x' });
+  assert.equal(recovered.title, 'Вход удался не сразу');
+  assert.match(recovered.reason, /запасной адрес/);
+  const retry = incidentCopy({ origin: 'client', category: 'auth', operation: 'auth.recovered', code: 'retry_ok:2x' });
+  assert.match(retry.reason, /повтор/);
+});

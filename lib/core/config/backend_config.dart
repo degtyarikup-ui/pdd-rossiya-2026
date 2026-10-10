@@ -27,6 +27,29 @@ class BackendConfig {
     defaultValue: '',
   );
 
+  /// Запасной адрес того же воркера на нашем домене. У части операторов
+  /// маршрут до `*.workers.dev` нестабилен — тогда вход и отправка отчётов
+  /// автоматически пробуют этот адрес. Пока DNS для него не настроен, запрос
+  /// к нему мгновенно завершается ошибкой, и приложение остаётся на основном.
+  static const String notifierFallbackUrl = String.fromEnvironment(
+    'INSTALL_NOTIFY_FALLBACK_URL',
+    defaultValue: 'https://api.pdd-drive.ru',
+  );
+
+  static const String _defaultNotifierUrl =
+      'https://pdd-install-notifier.sergei-pdd.workers.dev';
+
+  /// Адреса воркера по порядку: основной, затем запасной. Запасной
+  /// подключается только к боевому воркеру: тестовая сборка с другим адресом
+  /// не должна случайно писать в боевой.
+  static List<String> get notifierHosts => [
+    notifierUrl,
+    if (notifierUrl == _defaultNotifierUrl &&
+        notifierFallbackUrl.startsWith('https://') &&
+        notifierFallbackUrl != notifierUrl)
+      notifierFallbackUrl,
+  ];
+
   /// Настроен ли адрес (иначе сетевые функции просто молчат).
   static bool get hasNotifier => notifierUrl.startsWith('https://');
 }

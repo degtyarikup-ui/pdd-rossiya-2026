@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
+import 'package:pdd_app/data/services/network_retry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -50,6 +52,39 @@ void main() {
       expect(requests.last['events'][0]['id'], saved[0]['id']);
       expect(requests.last['events'][0]['ts'], saved[0]['ts']);
       expect(jsonDecode(prefs.getString(ErrorReporter.queueKey)!), isEmpty);
+    },
+  );
+
+  test(
+    'отчёт уходит через запасной адрес, если основной не отвечает',
+    () async {
+      final hosts = <String>[];
+      final client = MockClient((request) async {
+        hosts.add(request.url.host);
+        // Основной адрес (workers.dev) недоступен, запасной работает.
+        if (request.url.host.endsWith('workers.dev')) {
+          throw http.ClientException('no route');
+        }
+        return http.Response('{}', 200);
+      });
+      NotifierRoute.reset();
+      final reporter = ErrorReporter(
+        endpoint: BackendConfig.notifierUrl,
+        secret: 'test',
+        client: client,
+        metadata: () async => {},
+        headers: () => {},
+        userId: () => null,
+      );
+      await reporter.record(
+        ErrorCategory.auth,
+        'auth.provider',
+        code: 'timeout:3x',
+      );
+      final prefs = await SharedPreferences.getInstance();
+      expect(jsonDecode(prefs.getString(ErrorReporter.queueKey)!), isEmpty);
+      expect(hosts.first, endsWith('workers.dev'));
+      expect(hosts.last, 'api.pdd-drive.ru');
     },
   );
 

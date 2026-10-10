@@ -46,10 +46,14 @@ class AuthService extends ChangeNotifier {
   bool sessionIsTemporary = false;
 
   String _signInProvider = 'unknown';
+  // Сколько попыток сделал последний запрос выдачи сессии и где он удался —
+  // для отчётов о сбоях и о входе «не с первого раза».
+  RetryStats? _lastRetryStats;
   void _beginSignIn(String provider) {
     _signInProvider = provider;
     lastFailure = AuthFailure.cancelled;
     lastDiagnosticId = null;
+    _lastRetryStats = null;
   }
 
   void _recordSignInError(Object error) {
@@ -72,10 +76,18 @@ class AuthService extends ChangeNotifier {
         : error is FormatException || error is TypeError
         ? AuthFailure.response
         : AuthFailure.provider;
+    // Для сбоев связи в код добавляется число попыток (timeout:3x): так в
+    // уведомлении видно, что повторы и запасной адрес не помогли.
+    final tries = _lastRetryStats?.attempts ?? 0;
+    final networkLike =
+        error is TimeoutException || error is http.ClientException;
     ErrorReporter.report(
       ErrorCategory.auth,
       'auth.provider',
       error: error,
+      code: networkLike && tries > 0
+          ? '${ErrorReporter.codeFor(error)}:${tries}x'
+          : null,
       provider: _signInProvider,
     );
   }
@@ -542,9 +554,11 @@ class AuthService extends ChangeNotifier {
       );
     } catch (_) {}
     // Сессия выдаётся без записи на сервере — повторить запрос безопасно.
+    final stats = RetryStats();
+    _lastRetryStats = stats;
     final response = await sendWithRetry(
-      () => http.post(
-        Uri.parse('${BackendConfig.notifierUrl}/api/auth/session'),
+      (host) => http.post(
+        Uri.parse('$host/api/auth/session'),
         headers: serverHeaders,
         body: jsonEncode({
           'provider': provider,
@@ -555,7 +569,9 @@ class AuthService extends ChangeNotifier {
           'device': metadata['device'],
         }),
       ),
+      hosts: BackendConfig.notifierHosts,
       stillWanted: () => revision == _accountRevision,
+      stats: stats,
     );
     final diagnosticId = response.headers['x-auth-diagnostic-id'];
     if (diagnosticId != null &&
@@ -617,6 +633,18 @@ class AuthService extends ChangeNotifier {
     );
     sessionIsTemporary = temporarySession;
     lastFailure = null;
+    // Вход удался, но потребовался повтор или запасной адрес — это сигнал о
+    // плохой связи у части пользователей, хотя на экране ошибки не было.
+    if (stats.neededRecovery) {
+      ErrorReporter.report(
+        ErrorCategory.auth,
+        'auth.recovered',
+        code: stats.host == BackendConfig.notifierUrl
+            ? 'retry_ok:${stats.attempts}x'
+            : 'fallback_ok:${stats.attempts}x',
+        provider: _signInProvider,
+      );
+    }
     _accountRevision++;
     await _saveUser();
     notifyListeners();

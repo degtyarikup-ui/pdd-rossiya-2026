@@ -2029,7 +2029,7 @@ abstract class AppLocalizations {
   /// No description provided for @authErrorTimeout.
   ///
   /// In ru, this message translates to:
-  /// **'Нет связи с сервером. Проверьте интернет, отключите режим энергосбережения и попробуйте ещё раз.'**
+  /// **'Нет связи с сервером. Проверьте интернет или попробуйте другую сеть (Wi‑Fi или мобильный интернет).'**
   String get authErrorTimeout;
 
   /// No description provided for @authErrorAppKey.

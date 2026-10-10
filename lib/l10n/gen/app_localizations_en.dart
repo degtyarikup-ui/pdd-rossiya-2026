@@ -1119,7 +1119,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authErrorTimeout =>
-      'Can\'t reach the server. Check your internet connection, turn off battery saver and try again.';
+      'Can\'t reach the server. Check your internet connection or try another network (Wi‑Fi or mobile data).';
 
   @override
   String get authErrorAppKey =>

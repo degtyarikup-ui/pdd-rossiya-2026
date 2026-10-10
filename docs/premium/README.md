@@ -41,6 +41,7 @@ Apple — разные аккаунты.
 | `server/install-notifier/store_verification.js`, `purchase_claims.js` | Проверка чеков сторов |
 | `docs/premium/web-payments-launch.md` | Запуск веб-оплаты, секреты, устройство |
 | `docs/premium/web-auth.md` | Веб-вход |
+| `docs/premium/api-fallback.md` | Запасной адрес сервера и повторы входа |
 | `docs/premium/subscription-fix-2026-10-02.md` | История исправления подписок |
 
 ## Инварианты (нарушать нельзя)

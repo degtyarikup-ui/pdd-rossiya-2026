@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:pdd_app/data/services/network_retry.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/core/config/store_config.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
@@ -126,6 +127,12 @@ class ErrorReporter {
 
   Future<void> flush() => _serialize(null);
 
+  /// Адреса воркера. Запасной нужен только для боевого адреса; при другом
+  /// `endpoint` (тесты, отдельная сборка) отправка идёт только на него.
+  List<String> get _hosts => endpoint == BackendConfig.notifierUrl
+      ? BackendConfig.notifierHosts
+      : [endpoint];
+
   Future<void> _serialize(Map<String, dynamic>? event) {
     _tail = _tail.then((_) async {
       if (!endpoint.startsWith('https://') || secret.isEmpty) return;
@@ -178,20 +185,33 @@ class ErrorReporter {
                 },
               )
               .toList();
-          final response = await _client
-              .post(
-                Uri.parse(
-                  endpoint,
-                ).replace(path: '/api/diagnostics', query: ''),
-                headers: {
-                  ..._headers(),
-                  'content-type': 'application/json',
-                  'x-install-secret': secret,
-                },
-                body: jsonEncode({'installId': installId, 'events': batch}),
-              )
-              .timeout(const Duration(seconds: 10));
-          if (response.statusCode != 200) return;
+          // Отчёты идут туда же, куда и вход: если основной адрес недоступен,
+          // пробуем запасной — иначе о таких сбоях мы бы не узнали никогда.
+          http.Response? response;
+          final hosts = _hosts;
+          final start = NotifierRoute.preferredIndex(hosts);
+          for (var i = 0; i < hosts.length && response == null; i++) {
+            final host = hosts[(start + i) % hosts.length];
+            try {
+              response = await _client
+                  .post(
+                    Uri.parse(
+                      host,
+                    ).replace(path: '/api/diagnostics', query: ''),
+                    headers: {
+                      ..._headers(),
+                      'content-type': 'application/json',
+                      'x-install-secret': secret,
+                    },
+                    body: jsonEncode({'installId': installId, 'events': batch}),
+                  )
+                  .timeout(const Duration(seconds: 10));
+              NotifierRoute.remember(host);
+            } catch (_) {
+              // Следующий адрес; если он последний — отчёт останется в очереди.
+            }
+          }
+          if (response == null || response.statusCode != 200) return;
           events.removeRange(0, batch.length);
           await prefs.setString(queueKey, jsonEncode(events));
         }
