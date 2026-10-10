@@ -3,7 +3,7 @@
 
 Question text, options, correct index and explanation are copied verbatim from
 assets/countries/ru/questions/questions_ab.json. Only the scene layout below is
-authored, after viewing each source image (see docs/game-scenario-audit.md).
+authored, after viewing each source image (see docs/game/game-scenario-audit.md).
 
 Scene coordinates are world units relative to the point where the player stops
 for the question (z = 0 there, positive = ahead). x follows the renderer:

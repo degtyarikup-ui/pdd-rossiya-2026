@@ -4,7 +4,7 @@
 Зачем: без этого темы для статей выбираются наугад. С этим — видно, что люди
 реально ищут, где мы близко к топу и что просело.
 
-РАЗОВАЯ НАСТРОЙКА (нужен Сергей, ~5 минут) — см. docs/seo-automation.md.
+РАЗОВАЯ НАСТРОЙКА (нужен Сергей, ~5 минут) — см. docs/seo/seo-automation.md.
 Коротко: сервисный аккаунт в Google Cloud → JSON-ключ в secrets/gsc-service-account.json
 → добавить e-mail сервисного аккаунта как пользователя в Search Console.
 
@@ -33,7 +33,7 @@ SITE_URL = "sc-domain:pdd-drive.ru"   # доменное свойство, ка�
 SETUP_HINT = """
 Нет ключа сервисного аккаунта: %s
 
-Разовая настройка (инструкция целиком — docs/seo-automation.md):
+Разовая настройка (инструкция целиком — docs/seo/seo-automation.md):
   1. console.cloud.google.com → создать проект (или взять существующий)
   2. Включить "Google Search Console API"
   3. IAM → Service Accounts → создать аккаунт → Keys → Add key → JSON

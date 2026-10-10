@@ -1,17 +1,14 @@
-# pdd_app
+# ПДД Россия 2026
 
-A new Flutter project.
+Приложение для подготовки к экзамену ГИБДД (Flutter: iOS, Android, веб),
+3D-игра «Живой город», сайт pdd-drive.ru и серверная часть на Cloudflare Workers.
 
-## Getting Started
+- **Правила работы для людей и ИИ-агентов:** [CLAUDE.md](CLAUDE.md) (= `AGENTS.md`)
+- **Карта кода:** [docs/architecture.md](docs/architecture.md)
+- **Вся документация:** [docs/README.md](docs/README.md)
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+flutter test
+./scripts/build.sh ru apk          # сборка, варианты — в CLAUDE.md
+```

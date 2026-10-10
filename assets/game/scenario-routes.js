@@ -1,6 +1,6 @@
 /* Repository-source audit: RU questions_ab.json, tickets 1–20 / questions 13–15.
  * Static author-reviewed data: no runtime title/answer/actor inference.
- * See docs/game-scenario-audit.md for integration and remaining limitations.
+ * See docs/game/game-scenario-audit.md for integration and remaining limitations.
  * Only reviewed === true entries are playable. Excluded yieldTo: [] is NOT
  * a priority assertion; maneuver: null means the source selects no single route.
  * Apply overrides as full field replacements, including [] and null.

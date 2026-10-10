@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'package:pdd_app/data/datasources/sign_scenarios_library.dart';
+import 'package:pdd_app/data/sources/sign_scenarios_library.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
 
 /// Сервис генерации карточек для игры «Знак-Свайпер».

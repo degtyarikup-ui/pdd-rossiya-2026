@@ -4,6 +4,17 @@
 из проекта 2026-10-07; их опубликованные приложения и сайты
 (pdd-drive.online, rs.pdd-drive.online) живут отдельно и не обновляются.
 
+## Где что искать
+
+- Карта кода — `docs/architecture.md`; индекс документации — `docs/README.md`;
+  какие проверки запускать — `docs/testing.md`.
+- **Вход, оплата, Премиум** — `docs/premium/README.md` (инварианты и тесты).
+  Перед любой правкой в этой области прочитать его целиком.
+- 3D-игра — `docs/game/README.md`, её тесты — `tools/game_tests/`.
+- Временные файлы (скриншоты, отчёты, черновики) — только в `output/` или
+  `scratch/` (они в `.gitignore`). Готовые документы — в `docs/<тема>/`,
+  графика для сторов — в `store_assets/`. Новых файлов в корень не класть.
+
 ## Работа вдвоём (git)
 
 Над проектом работают два человека, у каждого свой ИИ-агент. Правила для всех:
@@ -84,7 +95,7 @@ assets/countries/ru/images/     questions_ab/, questions_cd/, signs/, markup/
   `PLATEGA_MERCHANT_ID`/`PLATEGA_SECRET`; без них — заглушка «СБП скоро» (только
   почта, `pay_intent:<id>`, список — `/api/admin/pay-intents`). Срок начисляется
   только по статусу, перечитанному у Platega. Запуск и устройство —
-  `docs/web-payments-launch.md`. Флаг — `CountryConfig.tariffsUrl`.
+  `docs/premium/web-payments-launch.md`. Флаг — `CountryConfig.tariffsUrl`.
 - **Способ оплаты по сборке** (`payment_mode.dart`, `store_config.dart`):
   - Android, Google Play (`--dart-define=STORE=play`, по умолчанию): СБП
     только для устройств в России, остальные — Play Billing. Страна — по сети

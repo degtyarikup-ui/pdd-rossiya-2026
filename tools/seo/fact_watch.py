@@ -17,7 +17,7 @@
     python3 tools/seo/fact_watch.py verify <id> [--note "сверено с consultant.ru"]
     python3 tools/seo/fact_watch.py verify --all-listed   # отметить всё из последнего due
 
-Реестр: docs/fact-registry.json (в гите, чтобы история сверок не терялась).
+Реестр: docs/seo/fact-registry.json (в гите, чтобы история сверок не терялась).
 """
 import argparse
 import datetime
@@ -31,7 +31,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 BLOG = os.path.join(REPO, "web_landing", "ru", "blog")
-REGISTRY = os.path.join(REPO, "docs", "fact-registry.json")
+REGISTRY = os.path.join(REPO, "docs", "seo", "fact-registry.json")
 
 TAG_RE = re.compile(r"<[^>]+>")
 
@@ -207,7 +207,7 @@ def cmd_due(args):
         print("… и ещё %d (покажи больше: --limit %d)"
               % (len(due) - args.limit, len(due)))
 
-    with open(os.path.join(REPO, "docs", ".fact-watch-last-due.json"),
+    with open(os.path.join(REPO, "docs", "seo", ".fact-watch-last-due.json"),
               "w", encoding="utf-8") as f:
         json.dump(listed, f)
     return 0
@@ -218,7 +218,7 @@ def cmd_verify(args):
     claims = reg.get("claims", {})
 
     if args.all_listed:
-        p = os.path.join(REPO, "docs", ".fact-watch-last-due.json")
+        p = os.path.join(REPO, "docs", "seo", ".fact-watch-last-due.json")
         if not os.path.isfile(p):
             print("Нет списка из последнего `due`.")
             return 1
