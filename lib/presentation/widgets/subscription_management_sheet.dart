@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
@@ -30,6 +31,29 @@ class SubscriptionManagementSheet extends StatefulWidget {
 class _SubscriptionManagementSheetState
     extends State<SubscriptionManagementSheet> {
   bool _isRestoring = false;
+
+  /// Данные форматирования дат для языка приложения: до загрузки дату
+  /// показываем цифрами (это работает без локальных данных).
+  bool _dateLocaleReady = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final language = Localizations.localeOf(context).languageCode;
+    initializeDateFormatting(language).then((_) {
+      if (mounted && !_dateLocaleReady) {
+        setState(() => _dateLocaleReady = true);
+      }
+    });
+  }
+
+  String _formatExpiry(DateTime expiresAt) {
+    final language = Localizations.localeOf(context).languageCode;
+    if (!_dateLocaleReady) {
+      return DateFormat('dd.MM.yyyy HH:mm').format(expiresAt);
+    }
+    return DateFormat('d MMMM yyyy, HH:mm', language).format(expiresAt);
+  }
 
   /// Стор, где оформлена подписка (по данным сервера, а не по платформе:
   /// премиум из App Store виден и на Android, и на сайте). null — доступ
@@ -112,8 +136,8 @@ class _SubscriptionManagementSheetState
     final isIOS = store == 'appstore';
 
     final dateStr = expiresAt != null
-        ? DateFormat('d MMMM yyyy, HH:mm', 'ru').format(expiresAt)
-        : 'Бессрочно';
+        ? _formatExpiry(expiresAt)
+        : appL10n.subscriptionNoExpiry;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     const greenAccent = Color(0xFF2BC280);
@@ -169,7 +193,7 @@ class _SubscriptionManagementSheetState
 
               // 3. Title & Expiration Info
               Text(
-                'Премиум-доступ активен',
+                appL10n.subscriptionActiveTitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 22,
@@ -180,7 +204,7 @@ class _SubscriptionManagementSheetState
               ),
               const SizedBox(height: 6),
               Text(
-                'Действует до $dateStr',
+                appL10n.subscriptionValidUntil(dateStr),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -205,9 +229,8 @@ class _SubscriptionManagementSheetState
                   children: [
                     _buildFeatureItem(
                       icon: Icons.all_inclusive_rounded,
-                      title: 'Безлимитная умная лента',
-                      description:
-                          'Все вопросы и категории доступны без ограничений',
+                      title: appL10n.subscriptionPerkFeedTitle,
+                      description: appL10n.subscriptionPerkFeedDescription,
                       accentColor: greenAccent,
                       surfaceColor: greenSurface,
                       colors: colors,
@@ -215,9 +238,8 @@ class _SubscriptionManagementSheetState
                     const SizedBox(height: 12),
                     _buildFeatureItem(
                       icon: Icons.auto_awesome_rounded,
-                      title: 'ИИ-разбор каждого вопроса',
-                      description:
-                          'Мгновенное объяснение правил и дорожных ситуаций',
+                      title: appL10n.subscriptionPerkAiTitle,
+                      description: appL10n.subscriptionPerkAiDescription,
                       accentColor: greenAccent,
                       surfaceColor: greenSurface,
                       colors: colors,
@@ -225,8 +247,8 @@ class _SubscriptionManagementSheetState
                     const SizedBox(height: 12),
                     _buildFeatureItem(
                       icon: Icons.record_voice_over_rounded,
-                      title: 'Профессиональная озвучка',
-                      description: 'Студийный диктор для вопросов и билетов',
+                      title: appL10n.subscriptionPerkVoiceTitle,
+                      description: appL10n.subscriptionPerkVoiceDescription,
                       accentColor: greenAccent,
                       surfaceColor: greenSurface,
                       colors: colors,
@@ -260,8 +282,8 @@ class _SubscriptionManagementSheetState
                         store == null
                             ? appL10n.premiumOneTimeInfo(dateStr)
                             : isIOS
-                            ? 'Вы можете отключить автопродление или изменить подписку в любой момент в настройках учетной записи Apple ID. При отмене доступ сохранится до $dateStr.'
-                            : 'Вы можете отключить автопродление или изменить способ оплаты в любой момент в Google Play. При отмене подписка останется активной до $dateStr.',
+                            ? appL10n.subscriptionCancelInfoApple(dateStr)
+                            : appL10n.subscriptionCancelInfoGoogle(dateStr),
                         style: TextStyle(
                           fontSize: 12.5,
                           height: 1.35,
@@ -287,8 +309,8 @@ class _SubscriptionManagementSheetState
                     ),
                     label: Text(
                       isIOS
-                          ? 'Управлять в App Store'
-                          : 'Управлять в Google Play',
+                          ? appL10n.subscriptionManageAppStore
+                          : appL10n.subscriptionManageGooglePlay,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -325,7 +347,7 @@ class _SubscriptionManagementSheetState
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : Text(
-                            'Восстановить покупки',
+                            appL10n.restorePurchases,
                             style: TextStyle(
                               fontSize: 13,
                               color: colors.secondaryText,

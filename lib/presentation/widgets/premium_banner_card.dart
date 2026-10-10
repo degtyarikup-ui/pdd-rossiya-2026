@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
@@ -30,15 +31,15 @@ class PremiumBannerCard extends ConsumerWidget {
     if (isPremium) {
       cardColor = const Color(0xFF2BC280);
       svgAsset = 'assets/images/traffic_light_green.svg';
-      subtitleText = 'Умная лента и ИИ без ограничений';
+      subtitleText = appL10n.premiumBannerSubtitleUnlimited;
     } else if (remaining > 0) {
       cardColor = const Color(0xFFFFA53C);
       svgAsset = 'assets/images/traffic_light_yellow.svg';
-      subtitleText = 'Осталось бесплатных карточек: $remaining из $limit';
+      subtitleText = appL10n.premiumBannerCardsLeft(remaining, limit);
     } else {
       cardColor = const Color(0xFFED4621);
       svgAsset = 'assets/images/traffic_light_red.svg';
-      subtitleText = 'Осталось бесплатных карточек: 0 из $limit';
+      subtitleText = appL10n.premiumBannerCardsLeft(0, limit);
     }
 
     return Container(
@@ -75,8 +76,8 @@ class PremiumBannerCard extends ConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const Text(
-                              'Премиум доступ',
+                            Text(
+                              appL10n.premiumAccessTitle,
                               style: TextStyle(
                                 fontSize: 15.5,
                                 fontWeight: FontWeight.w700,
@@ -95,8 +96,8 @@ class PremiumBannerCard extends ConsumerWidget {
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: const Text(
-                                  'АКТИВЕН',
+                                child: Text(
+                                  appL10n.premiumBannerActive,
                                   style: TextStyle(
                                     color: Color(0xFF121212),
                                     fontSize: 9.5,

@@ -28,11 +28,11 @@ class ProfileModalSheet extends ConsumerWidget {
   String _getProviderName(AuthProviderType type) {
     switch (type) {
       case AuthProviderType.google:
-        return 'Google Аккаунт';
+        return appL10n.profileProviderGoogle;
       case AuthProviderType.apple:
         return 'Apple ID';
       case AuthProviderType.yandex:
-        return 'Яндекс ID';
+        return appL10n.profileProviderYandex;
     }
   }
 
@@ -41,7 +41,11 @@ class ProfileModalSheet extends ConsumerWidget {
     await AuthService.instance.signOut();
     if (context.mounted) {
       Navigator.of(context).pop();
-      AppToast.show(context, 'Вы вышли из аккаунта', type: AppToastType.normal);
+      AppToast.show(
+        context,
+        appL10n.profileSignedOut,
+        type: AppToastType.normal,
+      );
     }
   }
 
@@ -50,21 +54,19 @@ class ProfileModalSheet extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Удалить аккаунт?'),
-        content: const Text(
-          'Это действие навсегда удалит ваш профиль и привязку премиум-доступа к аккаунту.',
-        ),
+        title: Text(appL10n.profileDeleteConfirmTitle),
+        content: Text(appL10n.profileDeleteConfirmBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Отмена'),
+            child: Text(appL10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFFED4621),
             ),
-            child: const Text('Удалить'),
+            child: Text(appL10n.profileDeleteConfirmAction),
           ),
         ],
       ),
@@ -192,7 +194,7 @@ class ProfileModalSheet extends ConsumerWidget {
               ListTile(
                 leading: Icon(Icons.logout_rounded, color: colors.primaryText),
                 title: Text(
-                  'Выйти из аккаунта',
+                  appL10n.profileSignOutAction,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -209,8 +211,8 @@ class ProfileModalSheet extends ConsumerWidget {
                   Icons.delete_outline_rounded,
                   color: Color(0xFFED4621),
                 ),
-                title: const Text(
-                  'Удалить аккаунт и данные',
+                title: Text(
+                  appL10n.profileDeleteAccountAction,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,

@@ -269,17 +269,17 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     if (isPremium) {
       accentColor = const Color(0xFF2BC280);
       surfaceColor = isDark ? const Color(0xFF162B1D) : const Color(0xFFE8F8F0);
-      badgeText = 'Премиум активен';
+      badgeText = appL10n.paywallBadgePremiumActive;
       badgeIcon = Icons.verified_rounded;
     } else if (remaining > 0) {
       accentColor = const Color(0xFFFFA53C);
       surfaceColor = isDark ? const Color(0xFF2E2215) : const Color(0xFFFFF7ED);
-      badgeText = 'Осталось $remaining из $limit карточек';
+      badgeText = appL10n.paywallBadgeCardsLeft(remaining, limit);
       badgeIcon = Icons.auto_awesome_rounded;
     } else {
       accentColor = const Color(0xFFED4621);
       surfaceColor = isDark ? const Color(0xFF341717) : const Color(0xFFFFECE8);
-      badgeText = 'Бесплатные карточки закончились';
+      badgeText = appL10n.paywallBadgeCardsEmpty;
       badgeIcon = Icons.hourglass_empty_rounded;
     }
 

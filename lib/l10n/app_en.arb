@@ -885,5 +885,77 @@
         "type": "int"
       }
     }
-  }
+  },
+  "premiumAccessTitle": "Premium access",
+  "premiumBannerSubtitleUnlimited": "Smart feed and AI without limits",
+  "premiumBannerCardsLeft": "Free cards left: {remaining} of {limit}",
+  "@premiumBannerCardsLeft": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "premiumBannerActive": "ACTIVE",
+  "profileProviderGoogle": "Google account",
+  "profileProviderYandex": "Yandex ID",
+  "profileSignedOut": "You have signed out",
+  "profileDeleteConfirmTitle": "Delete account?",
+  "profileDeleteConfirmBody": "This will permanently delete your profile and the premium access linked to your account.",
+  "profileDeleteConfirmAction": "Delete",
+  "profileSignOutAction": "Sign out",
+  "profileDeleteAccountAction": "Delete account and data",
+  "subscriptionNoExpiry": "No expiry date",
+  "subscriptionActiveTitle": "Premium access is active",
+  "subscriptionValidUntil": "Valid until {date}",
+  "@subscriptionValidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionPerkFeedTitle": "Unlimited smart feed",
+  "subscriptionPerkFeedDescription": "All questions and categories are available without limits",
+  "subscriptionPerkAiTitle": "AI explanation for every question",
+  "subscriptionPerkAiDescription": "Instant explanations of rules and road situations",
+  "subscriptionPerkVoiceTitle": "Professional voice-over",
+  "subscriptionPerkVoiceDescription": "Studio narrator for questions and tickets",
+  "subscriptionCancelInfoApple": "You can turn off auto-renewal or change your subscription at any time in your Apple ID account settings. If you cancel, access will remain until {date}.",
+  "@subscriptionCancelInfoApple": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionCancelInfoGoogle": "You can turn off auto-renewal or change your payment method at any time in Google Play. If you cancel, your subscription stays active until {date}.",
+  "@subscriptionCancelInfoGoogle": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionManageAppStore": "Manage in App Store",
+  "subscriptionManageGooglePlay": "Manage in Google Play",
+  "restorePurchases": "Restore purchases",
+  "paywallBadgePremiumActive": "Premium is active",
+  "paywallBadgeCardsLeft": "{remaining} of {limit} cards left",
+  "@paywallBadgeCardsLeft": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "paywallBadgeCardsEmpty": "Free cards are used up",
+  "yandexUserDefaultName": "Yandex user",
+  "yandexSignInTitle": "Sign in with Yandex ID"
 }

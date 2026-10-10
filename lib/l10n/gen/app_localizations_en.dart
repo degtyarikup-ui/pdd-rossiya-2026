@@ -3094,4 +3094,112 @@ class AppLocalizationsEn extends AppLocalizations {
   String gameScoreDailyLimitExplanation(int limit) {
     return 'Earn up to $limit points towards the combined ranking each day. Then keep playing for personal bests and practice. The limit resets at midnight Moscow time.';
   }
+
+  @override
+  String get premiumAccessTitle => 'Premium access';
+
+  @override
+  String get premiumBannerSubtitleUnlimited =>
+      'Smart feed and AI without limits';
+
+  @override
+  String premiumBannerCardsLeft(int remaining, int limit) {
+    return 'Free cards left: $remaining of $limit';
+  }
+
+  @override
+  String get premiumBannerActive => 'ACTIVE';
+
+  @override
+  String get profileProviderGoogle => 'Google account';
+
+  @override
+  String get profileProviderYandex => 'Yandex ID';
+
+  @override
+  String get profileSignedOut => 'You have signed out';
+
+  @override
+  String get profileDeleteConfirmTitle => 'Delete account?';
+
+  @override
+  String get profileDeleteConfirmBody =>
+      'This will permanently delete your profile and the premium access linked to your account.';
+
+  @override
+  String get profileDeleteConfirmAction => 'Delete';
+
+  @override
+  String get profileSignOutAction => 'Sign out';
+
+  @override
+  String get profileDeleteAccountAction => 'Delete account and data';
+
+  @override
+  String get subscriptionNoExpiry => 'No expiry date';
+
+  @override
+  String get subscriptionActiveTitle => 'Premium access is active';
+
+  @override
+  String subscriptionValidUntil(String date) {
+    return 'Valid until $date';
+  }
+
+  @override
+  String get subscriptionPerkFeedTitle => 'Unlimited smart feed';
+
+  @override
+  String get subscriptionPerkFeedDescription =>
+      'All questions and categories are available without limits';
+
+  @override
+  String get subscriptionPerkAiTitle => 'AI explanation for every question';
+
+  @override
+  String get subscriptionPerkAiDescription =>
+      'Instant explanations of rules and road situations';
+
+  @override
+  String get subscriptionPerkVoiceTitle => 'Professional voice-over';
+
+  @override
+  String get subscriptionPerkVoiceDescription =>
+      'Studio narrator for questions and tickets';
+
+  @override
+  String subscriptionCancelInfoApple(String date) {
+    return 'You can turn off auto-renewal or change your subscription at any time in your Apple ID account settings. If you cancel, access will remain until $date.';
+  }
+
+  @override
+  String subscriptionCancelInfoGoogle(String date) {
+    return 'You can turn off auto-renewal or change your payment method at any time in Google Play. If you cancel, your subscription stays active until $date.';
+  }
+
+  @override
+  String get subscriptionManageAppStore => 'Manage in App Store';
+
+  @override
+  String get subscriptionManageGooglePlay => 'Manage in Google Play';
+
+  @override
+  String get restorePurchases => 'Restore purchases';
+
+  @override
+  String get paywallBadgePremiumActive => 'Premium is active';
+
+  @override
+  String paywallBadgeCardsLeft(int remaining, int limit) {
+    return '$remaining of $limit cards left';
+  }
+
+  @override
+  String get paywallBadgeCardsEmpty => 'Free cards are used up';
+
+  @override
+  String get yandexUserDefaultName => 'Yandex user';
+
+  @override
+  String get yandexSignInTitle => 'Sign in with Yandex ID';
 }

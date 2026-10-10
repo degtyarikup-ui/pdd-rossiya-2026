@@ -3109,4 +3109,112 @@ class AppLocalizationsRu extends AppLocalizations {
   String gameScoreDailyLimitExplanation(int limit) {
     return 'В общий рейтинг можно заработать до $limit очков в сутки. После этого продолжайте играть для личных рекордов и обучения. Лимит обновляется в полночь по Москве.';
   }
+
+  @override
+  String get premiumAccessTitle => 'Премиум доступ';
+
+  @override
+  String get premiumBannerSubtitleUnlimited =>
+      'Умная лента и ИИ без ограничений';
+
+  @override
+  String premiumBannerCardsLeft(int remaining, int limit) {
+    return 'Осталось бесплатных карточек: $remaining из $limit';
+  }
+
+  @override
+  String get premiumBannerActive => 'АКТИВЕН';
+
+  @override
+  String get profileProviderGoogle => 'Google Аккаунт';
+
+  @override
+  String get profileProviderYandex => 'Яндекс ID';
+
+  @override
+  String get profileSignedOut => 'Вы вышли из аккаунта';
+
+  @override
+  String get profileDeleteConfirmTitle => 'Удалить аккаунт?';
+
+  @override
+  String get profileDeleteConfirmBody =>
+      'Это действие навсегда удалит ваш профиль и привязку премиум-доступа к аккаунту.';
+
+  @override
+  String get profileDeleteConfirmAction => 'Удалить';
+
+  @override
+  String get profileSignOutAction => 'Выйти из аккаунта';
+
+  @override
+  String get profileDeleteAccountAction => 'Удалить аккаунт и данные';
+
+  @override
+  String get subscriptionNoExpiry => 'Бессрочно';
+
+  @override
+  String get subscriptionActiveTitle => 'Премиум-доступ активен';
+
+  @override
+  String subscriptionValidUntil(String date) {
+    return 'Действует до $date';
+  }
+
+  @override
+  String get subscriptionPerkFeedTitle => 'Безлимитная умная лента';
+
+  @override
+  String get subscriptionPerkFeedDescription =>
+      'Все вопросы и категории доступны без ограничений';
+
+  @override
+  String get subscriptionPerkAiTitle => 'ИИ-разбор каждого вопроса';
+
+  @override
+  String get subscriptionPerkAiDescription =>
+      'Мгновенное объяснение правил и дорожных ситуаций';
+
+  @override
+  String get subscriptionPerkVoiceTitle => 'Профессиональная озвучка';
+
+  @override
+  String get subscriptionPerkVoiceDescription =>
+      'Студийный диктор для вопросов и билетов';
+
+  @override
+  String subscriptionCancelInfoApple(String date) {
+    return 'Вы можете отключить автопродление или изменить подписку в любой момент в настройках учетной записи Apple ID. При отмене доступ сохранится до $date.';
+  }
+
+  @override
+  String subscriptionCancelInfoGoogle(String date) {
+    return 'Вы можете отключить автопродление или изменить способ оплаты в любой момент в Google Play. При отмене подписка останется активной до $date.';
+  }
+
+  @override
+  String get subscriptionManageAppStore => 'Управлять в App Store';
+
+  @override
+  String get subscriptionManageGooglePlay => 'Управлять в Google Play';
+
+  @override
+  String get restorePurchases => 'Восстановить покупки';
+
+  @override
+  String get paywallBadgePremiumActive => 'Премиум активен';
+
+  @override
+  String paywallBadgeCardsLeft(int remaining, int limit) {
+    return 'Осталось $remaining из $limit карточек';
+  }
+
+  @override
+  String get paywallBadgeCardsEmpty => 'Бесплатные карточки закончились';
+
+  @override
+  String get yandexUserDefaultName => 'Пользователь Яндекс';
+
+  @override
+  String get yandexSignInTitle => 'Вход с Яндекс ID';
 }

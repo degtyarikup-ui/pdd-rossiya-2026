@@ -3097,4 +3097,111 @@ class AppLocalizationsKk extends AppLocalizations {
   String gameScoreDailyLimitExplanation(int limit) {
     return 'Күніне жалпы рейтингке $limit ұпайға дейін жинауға болады. Одан кейін жеке рекорд пен жаттығу үшін ойнай беріңіз. Шектеу Мәскеу уақытымен түн ортасында жаңарады.';
   }
+
+  @override
+  String get premiumAccessTitle => 'Премиум қолжетімділік';
+
+  @override
+  String get premiumBannerSubtitleUnlimited => 'Ақылды арна мен AI шектеусіз';
+
+  @override
+  String premiumBannerCardsLeft(int remaining, int limit) {
+    return 'Тегін карточкалар қалды: $remaining / $limit';
+  }
+
+  @override
+  String get premiumBannerActive => 'БЕЛСЕНДІ';
+
+  @override
+  String get profileProviderGoogle => 'Google аккаунты';
+
+  @override
+  String get profileProviderYandex => 'Яндекс ID';
+
+  @override
+  String get profileSignedOut => 'Сіз аккаунттан шықтыңыз';
+
+  @override
+  String get profileDeleteConfirmTitle => 'Аккаунтты жою керек пе?';
+
+  @override
+  String get profileDeleteConfirmBody =>
+      'Бұл әрекет профиліңізді және аккаунтқа байланған премиум қолжетімділікті мәңгілікке жояды.';
+
+  @override
+  String get profileDeleteConfirmAction => 'Жою';
+
+  @override
+  String get profileSignOutAction => 'Аккаунттан шығу';
+
+  @override
+  String get profileDeleteAccountAction => 'Аккаунт пен деректерді жою';
+
+  @override
+  String get subscriptionNoExpiry => 'Мерзімсіз';
+
+  @override
+  String get subscriptionActiveTitle => 'Премиум қолжетімділік белсенді';
+
+  @override
+  String subscriptionValidUntil(String date) {
+    return '$date дейін жарамды';
+  }
+
+  @override
+  String get subscriptionPerkFeedTitle => 'Шексіз ақылды арна';
+
+  @override
+  String get subscriptionPerkFeedDescription =>
+      'Барлық сұрақтар мен санаттар шектеусіз қолжетімді';
+
+  @override
+  String get subscriptionPerkAiTitle => 'Әр сұраққа AI талдауы';
+
+  @override
+  String get subscriptionPerkAiDescription =>
+      'Ережелер мен жол жағдайларын лезде түсіндіру';
+
+  @override
+  String get subscriptionPerkVoiceTitle => 'Кәсіби дауыспен оқу';
+
+  @override
+  String get subscriptionPerkVoiceDescription =>
+      'Сұрақтар мен билеттерге арналған студиялық диктор';
+
+  @override
+  String subscriptionCancelInfoApple(String date) {
+    return 'Автоматты жаңартуды кез келген уақытта өшіріп, жазылымды Apple ID аккаунтының параметрлерінде өзгертуге болады. Бас тартсаңыз, қолжетімділік $date дейін сақталады.';
+  }
+
+  @override
+  String subscriptionCancelInfoGoogle(String date) {
+    return 'Автоматты жаңартуды кез келген уақытта өшіріп, төлем әдісін Google Play ішінде өзгертуге болады. Бас тартсаңыз, жазылым $date дейін белсенді болып қалады.';
+  }
+
+  @override
+  String get subscriptionManageAppStore => 'App Store-да басқару';
+
+  @override
+  String get subscriptionManageGooglePlay => 'Google Play-де басқару';
+
+  @override
+  String get restorePurchases => 'Сатып алуларды қалпына келтіру';
+
+  @override
+  String get paywallBadgePremiumActive => 'Премиум белсенді';
+
+  @override
+  String paywallBadgeCardsLeft(int remaining, int limit) {
+    return '$remaining / $limit карточка қалды';
+  }
+
+  @override
+  String get paywallBadgeCardsEmpty => 'Тегін карточкалар таусылды';
+
+  @override
+  String get yandexUserDefaultName => 'Яндекс пайдаланушысы';
+
+  @override
+  String get yandexSignInTitle => 'Яндекс ID арқылы кіру';
 }

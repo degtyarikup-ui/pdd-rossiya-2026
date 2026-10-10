@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
@@ -215,7 +216,7 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
         final firstName = data['first_name'] as String?;
         final lastName = data['last_name'] as String?;
 
-        String name = 'Пользователь Яндекс';
+        String name = appL10n.yandexUserDefaultName;
         if (realName != null && realName.isNotEmpty) {
           name = realName;
         } else if (displayName != null && displayName.isNotEmpty) {
@@ -319,7 +320,7 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Вход с Яндекс ID',
+                        appL10n.yandexSignInTitle,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

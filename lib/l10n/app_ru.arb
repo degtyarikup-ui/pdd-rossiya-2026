@@ -1385,5 +1385,77 @@
         "type": "int"
       }
     }
-  }
+  },
+  "premiumAccessTitle": "Премиум доступ",
+  "premiumBannerSubtitleUnlimited": "Умная лента и ИИ без ограничений",
+  "premiumBannerCardsLeft": "Осталось бесплатных карточек: {remaining} из {limit}",
+  "@premiumBannerCardsLeft": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "premiumBannerActive": "АКТИВЕН",
+  "profileProviderGoogle": "Google Аккаунт",
+  "profileProviderYandex": "Яндекс ID",
+  "profileSignedOut": "Вы вышли из аккаунта",
+  "profileDeleteConfirmTitle": "Удалить аккаунт?",
+  "profileDeleteConfirmBody": "Это действие навсегда удалит ваш профиль и привязку премиум-доступа к аккаунту.",
+  "profileDeleteConfirmAction": "Удалить",
+  "profileSignOutAction": "Выйти из аккаунта",
+  "profileDeleteAccountAction": "Удалить аккаунт и данные",
+  "subscriptionNoExpiry": "Бессрочно",
+  "subscriptionActiveTitle": "Премиум-доступ активен",
+  "subscriptionValidUntil": "Действует до {date}",
+  "@subscriptionValidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionPerkFeedTitle": "Безлимитная умная лента",
+  "subscriptionPerkFeedDescription": "Все вопросы и категории доступны без ограничений",
+  "subscriptionPerkAiTitle": "ИИ-разбор каждого вопроса",
+  "subscriptionPerkAiDescription": "Мгновенное объяснение правил и дорожных ситуаций",
+  "subscriptionPerkVoiceTitle": "Профессиональная озвучка",
+  "subscriptionPerkVoiceDescription": "Студийный диктор для вопросов и билетов",
+  "subscriptionCancelInfoApple": "Вы можете отключить автопродление или изменить подписку в любой момент в настройках учетной записи Apple ID. При отмене доступ сохранится до {date}.",
+  "@subscriptionCancelInfoApple": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionCancelInfoGoogle": "Вы можете отключить автопродление или изменить способ оплаты в любой момент в Google Play. При отмене подписка останется активной до {date}.",
+  "@subscriptionCancelInfoGoogle": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionManageAppStore": "Управлять в App Store",
+  "subscriptionManageGooglePlay": "Управлять в Google Play",
+  "restorePurchases": "Восстановить покупки",
+  "paywallBadgePremiumActive": "Премиум активен",
+  "paywallBadgeCardsLeft": "Осталось {remaining} из {limit} карточек",
+  "@paywallBadgeCardsLeft": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "paywallBadgeCardsEmpty": "Бесплатные карточки закончились",
+  "yandexUserDefaultName": "Пользователь Яндекс",
+  "yandexSignInTitle": "Вход с Яндекс ID"
 }

@@ -885,5 +885,77 @@
         "type": "int"
       }
     }
-  }
+  },
+  "premiumAccessTitle": "Премиум қолжетімділік",
+  "premiumBannerSubtitleUnlimited": "Ақылды арна мен AI шектеусіз",
+  "premiumBannerCardsLeft": "Тегін карточкалар қалды: {remaining} / {limit}",
+  "@premiumBannerCardsLeft": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "premiumBannerActive": "БЕЛСЕНДІ",
+  "profileProviderGoogle": "Google аккаунты",
+  "profileProviderYandex": "Яндекс ID",
+  "profileSignedOut": "Сіз аккаунттан шықтыңыз",
+  "profileDeleteConfirmTitle": "Аккаунтты жою керек пе?",
+  "profileDeleteConfirmBody": "Бұл әрекет профиліңізді және аккаунтқа байланған премиум қолжетімділікті мәңгілікке жояды.",
+  "profileDeleteConfirmAction": "Жою",
+  "profileSignOutAction": "Аккаунттан шығу",
+  "profileDeleteAccountAction": "Аккаунт пен деректерді жою",
+  "subscriptionNoExpiry": "Мерзімсіз",
+  "subscriptionActiveTitle": "Премиум қолжетімділік белсенді",
+  "subscriptionValidUntil": "{date} дейін жарамды",
+  "@subscriptionValidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionPerkFeedTitle": "Шексіз ақылды арна",
+  "subscriptionPerkFeedDescription": "Барлық сұрақтар мен санаттар шектеусіз қолжетімді",
+  "subscriptionPerkAiTitle": "Әр сұраққа AI талдауы",
+  "subscriptionPerkAiDescription": "Ережелер мен жол жағдайларын лезде түсіндіру",
+  "subscriptionPerkVoiceTitle": "Кәсіби дауыспен оқу",
+  "subscriptionPerkVoiceDescription": "Сұрақтар мен билеттерге арналған студиялық диктор",
+  "subscriptionCancelInfoApple": "Автоматты жаңартуды кез келген уақытта өшіріп, жазылымды Apple ID аккаунтының параметрлерінде өзгертуге болады. Бас тартсаңыз, қолжетімділік {date} дейін сақталады.",
+  "@subscriptionCancelInfoApple": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionCancelInfoGoogle": "Автоматты жаңартуды кез келген уақытта өшіріп, төлем әдісін Google Play ішінде өзгертуге болады. Бас тартсаңыз, жазылым {date} дейін белсенді болып қалады.",
+  "@subscriptionCancelInfoGoogle": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionManageAppStore": "App Store-да басқару",
+  "subscriptionManageGooglePlay": "Google Play-де басқару",
+  "restorePurchases": "Сатып алуларды қалпына келтіру",
+  "paywallBadgePremiumActive": "Премиум белсенді",
+  "paywallBadgeCardsLeft": "{remaining} / {limit} карточка қалды",
+  "@paywallBadgeCardsLeft": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "paywallBadgeCardsEmpty": "Тегін карточкалар таусылды",
+  "yandexUserDefaultName": "Яндекс пайдаланушысы",
+  "yandexSignInTitle": "Яндекс ID арқылы кіру"
 }

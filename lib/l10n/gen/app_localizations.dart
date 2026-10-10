@@ -5139,6 +5139,192 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'В общий рейтинг можно заработать до {limit} очков в сутки. После этого продолжайте играть для личных рекордов и обучения. Лимит обновляется в полночь по Москве.'**
   String gameScoreDailyLimitExplanation(int limit);
+
+  /// No description provided for @premiumAccessTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Премиум доступ'**
+  String get premiumAccessTitle;
+
+  /// No description provided for @premiumBannerSubtitleUnlimited.
+  ///
+  /// In ru, this message translates to:
+  /// **'Умная лента и ИИ без ограничений'**
+  String get premiumBannerSubtitleUnlimited;
+
+  /// No description provided for @premiumBannerCardsLeft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Осталось бесплатных карточек: {remaining} из {limit}'**
+  String premiumBannerCardsLeft(int remaining, int limit);
+
+  /// No description provided for @premiumBannerActive.
+  ///
+  /// In ru, this message translates to:
+  /// **'АКТИВЕН'**
+  String get premiumBannerActive;
+
+  /// No description provided for @profileProviderGoogle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Google Аккаунт'**
+  String get profileProviderGoogle;
+
+  /// No description provided for @profileProviderYandex.
+  ///
+  /// In ru, this message translates to:
+  /// **'Яндекс ID'**
+  String get profileProviderYandex;
+
+  /// No description provided for @profileSignedOut.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы вышли из аккаунта'**
+  String get profileSignedOut;
+
+  /// No description provided for @profileDeleteConfirmTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить аккаунт?'**
+  String get profileDeleteConfirmTitle;
+
+  /// No description provided for @profileDeleteConfirmBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'Это действие навсегда удалит ваш профиль и привязку премиум-доступа к аккаунту.'**
+  String get profileDeleteConfirmBody;
+
+  /// No description provided for @profileDeleteConfirmAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить'**
+  String get profileDeleteConfirmAction;
+
+  /// No description provided for @profileSignOutAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выйти из аккаунта'**
+  String get profileSignOutAction;
+
+  /// No description provided for @profileDeleteAccountAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить аккаунт и данные'**
+  String get profileDeleteAccountAction;
+
+  /// No description provided for @subscriptionNoExpiry.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бессрочно'**
+  String get subscriptionNoExpiry;
+
+  /// No description provided for @subscriptionActiveTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Премиум-доступ активен'**
+  String get subscriptionActiveTitle;
+
+  /// No description provided for @subscriptionValidUntil.
+  ///
+  /// In ru, this message translates to:
+  /// **'Действует до {date}'**
+  String subscriptionValidUntil(String date);
+
+  /// No description provided for @subscriptionPerkFeedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Безлимитная умная лента'**
+  String get subscriptionPerkFeedTitle;
+
+  /// No description provided for @subscriptionPerkFeedDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Все вопросы и категории доступны без ограничений'**
+  String get subscriptionPerkFeedDescription;
+
+  /// No description provided for @subscriptionPerkAiTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'ИИ-разбор каждого вопроса'**
+  String get subscriptionPerkAiTitle;
+
+  /// No description provided for @subscriptionPerkAiDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Мгновенное объяснение правил и дорожных ситуаций'**
+  String get subscriptionPerkAiDescription;
+
+  /// No description provided for @subscriptionPerkVoiceTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Профессиональная озвучка'**
+  String get subscriptionPerkVoiceTitle;
+
+  /// No description provided for @subscriptionPerkVoiceDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Студийный диктор для вопросов и билетов'**
+  String get subscriptionPerkVoiceDescription;
+
+  /// No description provided for @subscriptionCancelInfoApple.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы можете отключить автопродление или изменить подписку в любой момент в настройках учетной записи Apple ID. При отмене доступ сохранится до {date}.'**
+  String subscriptionCancelInfoApple(String date);
+
+  /// No description provided for @subscriptionCancelInfoGoogle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы можете отключить автопродление или изменить способ оплаты в любой момент в Google Play. При отмене подписка останется активной до {date}.'**
+  String subscriptionCancelInfoGoogle(String date);
+
+  /// No description provided for @subscriptionManageAppStore.
+  ///
+  /// In ru, this message translates to:
+  /// **'Управлять в App Store'**
+  String get subscriptionManageAppStore;
+
+  /// No description provided for @subscriptionManageGooglePlay.
+  ///
+  /// In ru, this message translates to:
+  /// **'Управлять в Google Play'**
+  String get subscriptionManageGooglePlay;
+
+  /// No description provided for @restorePurchases.
+  ///
+  /// In ru, this message translates to:
+  /// **'Восстановить покупки'**
+  String get restorePurchases;
+
+  /// No description provided for @paywallBadgePremiumActive.
+  ///
+  /// In ru, this message translates to:
+  /// **'Премиум активен'**
+  String get paywallBadgePremiumActive;
+
+  /// No description provided for @paywallBadgeCardsLeft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Осталось {remaining} из {limit} карточек'**
+  String paywallBadgeCardsLeft(int remaining, int limit);
+
+  /// No description provided for @paywallBadgeCardsEmpty.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бесплатные карточки закончились'**
+  String get paywallBadgeCardsEmpty;
+
+  /// No description provided for @yandexUserDefaultName.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пользователь Яндекс'**
+  String get yandexUserDefaultName;
+
+  /// No description provided for @yandexSignInTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход с Яндекс ID'**
+  String get yandexSignInTitle;
 }
 
 class _AppLocalizationsDelegate
