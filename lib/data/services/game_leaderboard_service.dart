@@ -71,7 +71,7 @@ class GameLeaderboardService {
 
   static String newRunId() =>
       '${DateTime.now().microsecondsSinceEpoch}-'
-      '${Random.secure().nextInt(1 << 32).toRadixString(16)}';
+      '${Random.secure().nextInt(0x7FFFFFFF).toRadixString(16)}';
 
   Map<String, String> get _headers => AuthService.instance.serverHeaders;
 
