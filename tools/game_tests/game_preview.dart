@@ -1,5 +1,5 @@
 // Isolated native preview, without sign-in or notification onboarding:
-// flutter run -t tools/game_preview.dart --dart-define=COUNTRY=ru
+// flutter run -t tools/game_tests/game_preview.dart --dart-define=COUNTRY=ru
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:developer' as developer;

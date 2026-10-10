@@ -1,4 +1,4 @@
-// Native bridge smoke test against tools/game_preview.dart's local VM service.
+// Native bridge smoke test against tools/game_tests/game_preview.dart's local VM service.
 // Usage: node tools/game_tests/game-native-test.cjs <vmservice-out-file> <simulator-udid> <screenshots-dir>
 const fs = require('node:fs');
 const path = require('node:path');

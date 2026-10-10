@@ -42,12 +42,12 @@ Generate a FULL COLOR master image. Grayscale and reduced opacity will be applie
 
 ## Подготовка для слабых телефонов
 
-`tools/optimize_game_covers.cjs` готовит два WebP 960×540 для каждой игры: чёткий `_cover.webp` (результат раунда, quality 76) и `_card.webp` (нижнее размытие уже в пикселях, quality 74). У кругового движения карточка сразу чёрно-белая. Gradients, текст и прозрачность остаются в Flutter. ImageFiltered, ShaderMask и ColorFiltered больше не участвуют в прокрутке карточек.
+`tools/game_content/optimize_game_covers.cjs` готовит два WebP 960×540 для каждой игры: чёткий `_cover.webp` (результат раунда, quality 76) и `_card.webp` (нижнее размытие уже в пикселях, quality 74). У кругового движения карточка сразу чёрно-белая. Gradients, текст и прозрачность остаются в Flutter. ImageFiltered, ShaderMask и ColorFiltered больше не участвуют в прокрутке карточек.
 
 Команда (Node.js с пакетом sharp):
 
 ```sh
-node tools/optimize_game_covers.cjs --source-dir output/mini-games/cover-originals
+node tools/game_content/optimize_game_covers.cjs --source-dir output/mini-games/cover-originals
 ```
 
 Каталог источников содержит PNG `traffic_controller_cover.png`, `sign_swiper_cover.png`, `roundabout_cover.png`; это полноразмерные оригиналы imagegen, в публикацию не входят. Flutter декодирует 480/720/960 px в зависимости от размеров виджета и плотности экрана, никогда не выше оригинала. Три стабильных размера позволяют переиспользовать image cache при перестроениях.

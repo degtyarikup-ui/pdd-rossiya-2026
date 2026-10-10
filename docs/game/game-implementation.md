@@ -349,12 +349,12 @@ node tools/game_tests/game-road-rules-test.cjs    # переезды, перек
 Изолированная нативная проверка, без входа и запроса уведомлений:
 
 ```sh
-flutter run -t tools/game_preview.dart --dart-define=COUNTRY=ru \
+flutter run -t tools/game_tests/game_preview.dart --dart-define=COUNTRY=ru \
   --vmservice-out-file=/tmp/pdd-game-vm.txt
 node tools/game_tests/game-native-test.cjs /tmp/pdd-game-vm.txt <simulator-udid> /tmp/pdd-game-shots
 ```
 
-Тестовый VM-канал существует только в отдельной точке входа `tools/game_preview.dart`.
+Тестовый VM-канал существует только в отдельной точке входа `tools/game_tests/game_preview.dart`.
 В обычной сборке `lib/main.dart` его нет. Нативный тест проходит предупреждение
 о встречной с трёхсекундным допуском, ошибочный ответ, объяснение, ожидание
 действий игрока и ручной проезд прямо через

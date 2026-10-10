@@ -8,7 +8,7 @@ import mimetypes
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.abspath(os.path.join(HERE, ".."))
+REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 WEB_DIR = os.path.join(REPO, "build", "web")
 PORT = int(os.environ.get("WEB_PORT", "8080"))
 

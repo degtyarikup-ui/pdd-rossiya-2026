@@ -1,5 +1,5 @@
 // Offline asset preparation; no blur or grayscale shader is needed in the hub.
-// node tools/optimize_game_covers.cjs --source-dir <full-size PNG directory>
+// node tools/game_content/optimize_game_covers.cjs --source-dir <full-size PNG directory>
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const sharp = require('sharp');
@@ -8,7 +8,7 @@ async function main() {
   const args = process.argv.slice(2);
   const option = (name) => args[args.indexOf(name) + 1];
   if (!args.includes('--source-dir') || !option('--source-dir')) {
-    throw new Error('Usage: node tools/optimize_game_covers.cjs --source-dir <PNG directory> [--output-dir <directory>]');
+    throw new Error('Usage: node tools/game_content/optimize_game_covers.cjs --source-dir <PNG directory> [--output-dir <directory>]');
   }
   const sourceDir = path.resolve(option('--source-dir'));
   const outputDir = path.resolve(args.includes('--output-dir') ? option('--output-dir') : 'assets/images/games');

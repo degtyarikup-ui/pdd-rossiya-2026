@@ -186,7 +186,7 @@ case "$TARGET" in
       --dart-define=COUNTRY="$COUNTRY" \
       ${NOTIFY_DEFINES[@]+"${NOTIFY_DEFINES[@]}"} \
       ${EXTRA_DEFINES_ARR[@]+"${EXTRA_DEFINES_ARR[@]}"}
-    python3 tools/version_web_build.py build/web
+    python3 tools/web/version_web_build.py build/web
     echo "Web: build/web (COUNTRY=$COUNTRY)"
     ;;
   *) echo "unknown target: $TARGET (expected aab|apk|rustore-apk|ipa|web)"; exit 1 ;;

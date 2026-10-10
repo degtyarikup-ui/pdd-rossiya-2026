@@ -9,7 +9,7 @@
 flutter_svg рисует корректно, поэтому переносим стили классов на элементы и
 удаляем <style>.
 
-Использование: python3 tools/inline_svg_styles.py <dir-with-svgs> [--dry]
+Использование: python3 tools/ru_content/inline_svg_styles.py <dir-with-svgs> [--dry]
 Идемпотентно: файлы без <style> пропускаются.
 """
 import glob

@@ -62,7 +62,7 @@ Apple либо токен Яндекса, и выдаёт сессию прил�
 
 ## Обновление веб-кэша
 
-GitHub Pages отдаёт JavaScript с max-age=600. `tools/version_web_build.py`
+GitHub Pages отдаёт JavaScript с max-age=600. `tools/web/version_web_build.py`
 после сборки добавляет content hash к URL bootstrap и main.dart.js;
 свежий HTML теперь не смешивается со старым кодом из HTTP-кэша.
 Callback возвращает на `/app/?oauth=2`, чтобы загрузить свежий HTML.
