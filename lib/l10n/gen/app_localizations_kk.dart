@@ -760,7 +760,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameCarSedan => 'Седан';
 
   @override
-  String get gameCarSuv => 'SUV';
+  String get gameCarSuv => 'Жол талғамайтын көлік';
 
   @override
   String get gameCarPickup => 'Пикап';
