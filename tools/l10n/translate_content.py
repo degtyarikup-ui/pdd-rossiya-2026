@@ -413,6 +413,15 @@ def main():
     print("\n--- Processing Kazakh Translations ---")
     cache_kk = populate_translation_cache(strings, "kk", cache_kk, CACHE_KK_PATH)
 
+    print("\n--- Applying Explicit Cyrillic Letter Marker Overrides ---")
+    try:
+        from fix_letter_markers import EXPLICIT_LETTER_ANSWERS
+        for ru_text, (en_val, kk_val) in EXPLICIT_LETTER_ANSWERS.items():
+            cache_en[ru_text] = en_val
+            cache_kk[ru_text] = kk_val
+    except ImportError:
+        pass
+
     print("\n--- Generating Localized Content Files ---")
     for lang, cache in [("en", cache_en), ("kk", cache_kk)]:
         print(f"\nWriting files for language: {lang}")

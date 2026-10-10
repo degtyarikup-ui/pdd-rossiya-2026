@@ -217,11 +217,11 @@
           "question": "On what trajectory are you allowed to make a U-turn on a small bus?",
           "answers": [
             {
-              "text": "Only on A",
+              "text": "Only on А",
               "correct": true
             },
             {
-              "text": "Only on B",
+              "text": "Only on Б",
               "correct": false
             },
             {
@@ -351,11 +351,11 @@
               "correct": true
             },
             {
-              "text": "Only tram A",
+              "text": "Only tram А",
               "correct": false
             },
             {
-              "text": "Only tram B",
+              "text": "Only tram Б",
               "correct": false
             },
             {
@@ -1077,15 +1077,15 @@
           "question": "Where should you stay?",
           "answers": [
             {
-              "text": "Before the sign (A)",
+              "text": "Before the sign (А)",
               "correct": false
             },
             {
-              "text": "Before the intersection (B)",
+              "text": "Before the intersection (Б)",
               "correct": false
             },
             {
-              "text": "Before the edge of the intersecting roadway (B)",
+              "text": "Before the edge of the intersecting roadway (В)",
               "correct": true
             }
           ],
@@ -1128,19 +1128,19 @@
           "question": "Which of the following signs is installed at the beginning of a one-way road?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": true
             },
             {
-              "text": "B or G",
+              "text": "Б or Г",
               "correct": false
             },
             {
-              "text": "B or C",
+              "text": "Б or В",
               "correct": false
             }
           ],
@@ -1234,11 +1234,11 @@
           "question": "You are allowed to make a right turn on a small bus:",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": true
             },
             {
-              "text": "Only along trajectory B",
+              "text": "Only along trajectory Б",
               "correct": false
             },
             {
@@ -1413,15 +1413,15 @@
           "question": "Who do you have to give way to when turning left?",
           "answers": [
             {
-              "text": "Trams A and B",
+              "text": "Trams А and Б",
               "correct": false
             },
             {
-              "text": "Tram A and passenger car",
+              "text": "Tram А and passenger car",
               "correct": false
             },
             {
-              "text": "Only tram A",
+              "text": "Only tram А",
               "correct": true
             },
             {
@@ -1636,15 +1636,15 @@
           "question": "Which of the following signs applies only to the lane over which it is installed?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": true
             },
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": false
             },
             {
-              "text": "B and C",
+              "text": "Б and В",
               "correct": false
             }
           ],
@@ -1787,11 +1787,11 @@
           "question": "You can perform a reversal:",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": false
             },
             {
-              "text": "Only along trajectory B",
+              "text": "Only along trajectory Б",
               "correct": true
             },
             {
@@ -2132,19 +2132,19 @@
           "question": "In the presence of which sign must a driver give way if oncoming traffic is difficult to pass?",
           "answers": [
             {
-              "text": "Only B",
+              "text": "Only В",
               "correct": false
             },
             {
-              "text": "A and B",
+              "text": "А and В",
               "correct": true
             },
             {
-              "text": "B and C",
+              "text": "Б and В",
               "correct": false
             },
             {
-              "text": "B and G",
+              "text": "Б and Г",
               "correct": false
             }
           ],
@@ -2393,11 +2393,11 @@
               "correct": false
             },
             {
-              "text": "Only the driver of car A",
+              "text": "Only the driver of car А",
               "correct": true
             },
             {
-              "text": "Only the driver of car B",
+              "text": "Only the driver of car Б",
               "correct": false
             },
             {
@@ -2675,15 +2675,15 @@
           "question": "Which of the following signs permit travel by car to your place of residence or work?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only В",
               "correct": false
             },
             {
-              "text": "A and B",
+              "text": "А and В",
               "correct": true
             },
             {
@@ -3087,19 +3087,19 @@
           "question": "If you stop on an uphill (downhill) slope, if there is a shoulder, you can prevent the bus from spontaneously rolling onto the roadway by turning its front wheels to the position:",
           "answers": [
             {
-              "text": "A and G",
+              "text": "А and Г",
               "correct": true
             },
             {
-              "text": "B and C",
+              "text": "Б and В",
               "correct": false
             },
             {
-              "text": "A and B",
+              "text": "А and В",
               "correct": false
             },
             {
-              "text": "B and G",
+              "text": "Б and Г",
               "correct": false
             }
           ],
@@ -3222,15 +3222,15 @@
           "question": "Which of the following signs only applies to the nearest intersection in the direction of travel?",
           "answers": [
             {
-              "text": "A and B",
+              "text": "А and В",
               "correct": false
             },
             {
-              "text": "B and G",
+              "text": "Б and Г",
               "correct": true
             },
             {
-              "text": "B and D",
+              "text": "В and Г",
               "correct": false
             }
           ],
@@ -3422,15 +3422,15 @@
           "question": "In which of the following places can you park a truck with a permissible maximum weight of more than 3.5 tons?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only В",
               "correct": true
             },
             {
-              "text": "A or B",
+              "text": "А or В",
               "correct": false
             },
             {
@@ -3552,11 +3552,11 @@
           "question": "Which picture shows a car whose driver does not violate the rules for transporting goods?",
           "answers": [
             {
-              "text": "Only on A",
+              "text": "Only on А",
               "correct": false
             },
             {
-              "text": "Only on B",
+              "text": "Only on Б",
               "correct": false
             },
             {
@@ -3712,15 +3712,15 @@
           "question": "Which of the following signs prohibit turning left?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "A and B",
+              "text": "А and Б",
               "correct": false
             },
             {
-              "text": "A and B",
+              "text": "А and В",
               "correct": true
             },
             {
@@ -3842,11 +3842,11 @@
           "question": "On what trajectory are you allowed to make a left turn?",
           "answers": [
             {
-              "text": "Only on A",
+              "text": "Only on А",
               "correct": false
             },
             {
-              "text": "Only on B",
+              "text": "Only on Б",
               "correct": true
             },
             {
@@ -4030,7 +4030,7 @@
               "correct": false
             },
             {
-              "text": "Tram B and passenger car",
+              "text": "Tram Б and passenger car",
               "correct": true
             },
             {
@@ -4233,15 +4233,15 @@
           "question": "You are allowed to continue driving:",
           "answers": [
             {
-              "text": "Only in direction B",
+              "text": "Only in direction Б",
               "correct": true
             },
             {
-              "text": "In directions A or B",
+              "text": "In directions А or Б",
               "correct": false
             },
             {
-              "text": "In directions B or C",
+              "text": "In directions Б or В",
               "correct": false
             }
           ],
@@ -4408,11 +4408,11 @@
           "question": "Which trajectory are you allowed to continue on?",
           "answers": [
             {
-              "text": "Only on A",
+              "text": "Only on А",
               "correct": false
             },
             {
-              "text": "Only on B",
+              "text": "Only on Б",
               "correct": true
             },
             {
@@ -4712,11 +4712,11 @@
           "question": "Which of the following signs are valid only for the period of time when the roadway surface is wet?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": true
             },
             {
-              "text": "A and B",
+              "text": "А and Б",
               "correct": false
             },
             {
@@ -4868,11 +4868,11 @@
           "question": "On what trajectory are you allowed to make a left turn?",
           "answers": [
             {
-              "text": "Only on A",
+              "text": "Only on А",
               "correct": false
             },
             {
-              "text": "Only on B",
+              "text": "Only on Б",
               "correct": true
             },
             {
@@ -5229,11 +5229,11 @@
           "question": "When moving in a populated area, you can continue driving:",
           "answers": [
             {
-              "text": "Only in direction B",
+              "text": "Only in direction Б",
               "correct": true
             },
             {
-              "text": "In directions A or B",
+              "text": "In directions А or Б",
               "correct": false
             },
             {
@@ -5380,11 +5380,11 @@
           "question": "On what trajectory are you allowed to make a right turn on a small bus?",
           "answers": [
             {
-              "text": "Only on A",
+              "text": "Only on А",
               "correct": true
             },
             {
-              "text": "Only on B",
+              "text": "Only on Б",
               "correct": false
             },
             {
@@ -5405,11 +5405,11 @@
           "question": "You can perform a reversal:",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": false
             },
             {
-              "text": "On trajectories A or B",
+              "text": "On trajectories А or В",
               "correct": true
             },
             {
@@ -5484,11 +5484,11 @@
               "correct": true
             },
             {
-              "text": "Only the driver of vehicle A",
+              "text": "Only the driver of vehicle А",
               "correct": false
             },
             {
-              "text": "Only the driver of vehicle B",
+              "text": "Only the driver of vehicle Б",
               "correct": false
             },
             {
@@ -5660,19 +5660,19 @@
           "question": "If you stop on an uphill (downhill) slope and there is a sidewalk, you can prevent the bus from rolling away spontaneously by turning its front wheels to the position:",
           "answers": [
             {
-              "text": "A and G",
+              "text": "А and Г",
               "correct": false
             },
             {
-              "text": "B and C",
+              "text": "Б and В",
               "correct": false
             },
             {
-              "text": "A and B",
+              "text": "А and В",
               "correct": true
             },
             {
-              "text": "B and G",
+              "text": "Б and Г",
               "correct": false
             }
           ],
@@ -5821,11 +5821,11 @@
           "question": "Movement is permitted:",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": false
             },
             {
-              "text": "Only along trajectory B",
+              "text": "Only along trajectory Б",
               "correct": true
             },
             {
@@ -6797,11 +6797,11 @@
           "question": "Which of the following signs permit the movement of trucks with a permissible maximum weight of more than 3.5 tons?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": true
             },
             {
-              "text": "A and B",
+              "text": "А and В",
               "correct": false
             },
             {
@@ -6847,11 +6847,11 @@
           "question": "In which of the indicated places are you allowed to cross the solid marking line and stop?",
           "answers": [
             {
-              "text": "A and B",
+              "text": "А and Б",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": true
             },
             {
@@ -6923,11 +6923,11 @@
           "question": "On what trajectory are you allowed to make a left turn?",
           "answers": [
             {
-              "text": "Only on A",
+              "text": "Only on А",
               "correct": false
             },
             {
-              "text": "Only on B",
+              "text": "Only on Б",
               "correct": false
             },
             {
@@ -7073,11 +7073,11 @@
           "question": "You intend to drive straight through the intersection. Who do you have to give way to?",
           "answers": [
             {
-              "text": "Only tram A",
+              "text": "Only tram А",
               "correct": false
             },
             {
-              "text": "Only tram B",
+              "text": "Only tram Б",
               "correct": false
             },
             {
@@ -7287,15 +7287,15 @@
           "question": "You can continue driving at the intersection:",
           "answers": [
             {
-              "text": "Only in direction B",
+              "text": "Only in direction Б",
               "correct": false
             },
             {
-              "text": "In directions A and B",
+              "text": "In directions А and Б",
               "correct": true
             },
             {
-              "text": "In directions B and C",
+              "text": "In directions Б and В",
               "correct": false
             }
           ],
@@ -7338,15 +7338,15 @@
           "question": "Which of the following signs indicate the extent of the coverage area of ​​the signs with which they are used?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": false
             },
             {
-              "text": "B and C",
+              "text": "Б and В",
               "correct": true
             }
           ],
@@ -7442,11 +7442,11 @@
           "question": "Which trajectory are you allowed to continue to the left?",
           "answers": [
             {
-              "text": "Only on A",
+              "text": "Only on А",
               "correct": false
             },
             {
-              "text": "Only on B",
+              "text": "Only on Б",
               "correct": false
             },
             {
@@ -7651,19 +7651,19 @@
           "question": "You are allowed to continue driving:",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": false
             },
             {
-              "text": "Only along trajectory B",
+              "text": "Only along trajectory Б",
               "correct": true
             },
             {
-              "text": "On trajectories A or B",
+              "text": "On trajectories А or Б",
               "correct": false
             },
             {
-              "text": "On trajectories B or C",
+              "text": "On trajectories Б or В",
               "correct": false
             },
             {
@@ -7851,15 +7851,15 @@
           "question": "Which of the following signs prohibits the further movement of all vehicles without exception?",
           "answers": [
             {
-              "text": "A",
+              "text": "А",
               "correct": false
             },
             {
-              "text": "B",
+              "text": "Б",
               "correct": true
             },
             {
-              "text": "IN",
+              "text": "В",
               "correct": false
             }
           ],
@@ -8074,11 +8074,11 @@
           "question": "In which of the following places can you park the bus?",
           "answers": [
             {
-              "text": "Only B",
+              "text": "Only В",
               "correct": true
             },
             {
-              "text": "B or C",
+              "text": "Б or В",
               "correct": false
             },
             {
@@ -8385,11 +8385,11 @@
           "question": "You are allowed to continue driving:",
           "answers": [
             {
-              "text": "On trajectories B or C",
+              "text": "On trajectories Б or В",
               "correct": false
             },
             {
-              "text": "On trajectories A or B",
+              "text": "On trajectories А or В",
               "correct": true
             },
             {
@@ -8894,11 +8894,11 @@
           "question": "Which of the following signs informs that the requirements of the Rules establishing traffic rules in populated areas apply on this road?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "A and B",
+              "text": "А and Б",
               "correct": true
             },
             {
@@ -8994,11 +8994,11 @@
           "question": "You can continue moving:",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": false
             },
             {
-              "text": "On trajectories A or B",
+              "text": "On trajectories А or В",
               "correct": true
             },
             {
@@ -9019,11 +9019,11 @@
           "question": "When driving a long road train, you have the right to make a U-turn:",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": true
             },
             {
-              "text": "Only along trajectory B",
+              "text": "Only along trajectory Б",
               "correct": false
             },
             {
@@ -9410,11 +9410,11 @@
           "question": "Which of the following signs allow you to make a U-turn?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "B and C",
+              "text": "Б and В",
               "correct": false
             },
             {
@@ -9510,11 +9510,11 @@
           "question": "On what trajectory can you make a left turn?",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": true
             },
             {
-              "text": "Only along trajectory B",
+              "text": "Only along trajectory Б",
               "correct": false
             },
             {
@@ -9616,11 +9616,11 @@
               "correct": false
             },
             {
-              "text": "Only the driver of car A",
+              "text": "Only the driver of car А",
               "correct": false
             },
             {
-              "text": "Only the driver of car B",
+              "text": "Only the driver of car Б",
               "correct": false
             },
             {
@@ -9923,15 +9923,15 @@
           "question": "Which of the following signs prohibit further movement without stopping?",
           "answers": [
             {
-              "text": "A and G",
+              "text": "А and Г",
               "correct": false
             },
             {
-              "text": "B and C",
+              "text": "Б and В",
               "correct": true
             },
             {
-              "text": "B and D",
+              "text": "В and Г",
               "correct": false
             },
             {
@@ -10002,15 +10002,15 @@
           "question": "What sign is used to designate a vehicle when it is forced to stop in places where, taking into account visibility conditions, it cannot be noticed in a timely manner by other drivers?",
           "answers": [
             {
-              "text": "A",
+              "text": "А",
               "correct": true
             },
             {
-              "text": "B",
+              "text": "Б",
               "correct": false
             },
             {
-              "text": "IN",
+              "text": "В",
               "correct": false
             }
           ],
@@ -10027,11 +10027,11 @@
           "question": "You can make a left turn:",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": false
             },
             {
-              "text": "Only along trajectory B",
+              "text": "Only along trajectory Б",
               "correct": false
             },
             {
@@ -10077,19 +10077,19 @@
           "question": "Indicate the distance by which the Rules mean distance:",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": true
             },
             {
-              "text": "Only B",
+              "text": "Only В",
               "correct": false
             },
             {
-              "text": "A and B",
+              "text": "А and В",
               "correct": false
             }
           ],
@@ -10443,15 +10443,15 @@
           "question": "Which of the following signs informs about the beginning of a road with reverse traffic?",
           "answers": [
             {
-              "text": "A",
+              "text": "А",
               "correct": false
             },
             {
-              "text": "B",
+              "text": "Б",
               "correct": false
             },
             {
-              "text": "IN",
+              "text": "В",
               "correct": true
             }
           ],
@@ -10772,19 +10772,19 @@
           "question": "In the coverage area of ​​which signs do the Rules allow sound signals to be given only to prevent a traffic accident?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": false
             },
             {
-              "text": "A and B",
+              "text": "А and Б",
               "correct": true
             },
             {
-              "text": "A and B",
+              "text": "А and В",
               "correct": false
             }
           ],
@@ -11057,11 +11057,11 @@
           "question": "On what trajectory can you make a left turn?",
           "answers": [
             {
-              "text": "Only on A",
+              "text": "Only on А",
               "correct": false
             },
             {
-              "text": "Only on B",
+              "text": "Only on Б",
               "correct": true
             },
             {
@@ -11518,11 +11518,11 @@
           "question": "You can continue moving:",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": false
             },
             {
-              "text": "Only along trajectory B",
+              "text": "Only along trajectory Б",
               "correct": true
             },
             {
@@ -11568,11 +11568,11 @@
           "question": "Which trajectory are you allowed to continue on?",
           "answers": [
             {
-              "text": "Only on A",
+              "text": "Only on А",
               "correct": true
             },
             {
-              "text": "By A or B",
+              "text": "By А or Б",
               "correct": false
             },
             {
@@ -11985,19 +11985,19 @@
           "question": "Which of the following signs obliges the driver of a truck with a permissible maximum weight of more than 3.5 tons to turn right?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": true
             },
             {
-              "text": "A and B",
+              "text": "А and Б",
               "correct": false
             },
             {
-              "text": "B and C",
+              "text": "Б and В",
               "correct": false
             }
           ],
@@ -12118,11 +12118,11 @@
               "correct": false
             },
             {
-              "text": "Allowed only along trajectory A",
+              "text": "Allowed only along trajectory А",
               "correct": true
             },
             {
-              "text": "Allowed only along trajectory B",
+              "text": "Allowed only along trajectory Б",
               "correct": false
             },
             {
@@ -12197,11 +12197,11 @@
               "correct": true
             },
             {
-              "text": "Only the driver of car A",
+              "text": "Only the driver of car А",
               "correct": false
             },
             {
-              "text": "Only the driver of car B",
+              "text": "Only the driver of car Б",
               "correct": false
             },
             {
@@ -12482,15 +12482,15 @@
           "question": "Which of the following signs cancel all restrictions previously imposed by prohibitory signs?",
           "answers": [
             {
-              "text": "Only B",
+              "text": "Only В",
               "correct": true
             },
             {
-              "text": "A and B",
+              "text": "А and Б",
               "correct": false
             },
             {
-              "text": "B and D",
+              "text": "В and Г",
               "correct": false
             },
             {
@@ -12990,15 +12990,15 @@
           "question": "Which of the following signs require a mandatory stop?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": true
             },
             {
-              "text": "B and C",
+              "text": "Б and В",
               "correct": false
             },
             {
@@ -13194,11 +13194,11 @@
           "question": "Which trajectory do you have the right to continue?",
           "answers": [
             {
-              "text": "Only on A",
+              "text": "Only on А",
               "correct": false
             },
             {
-              "text": "Only on B",
+              "text": "Only on Б",
               "correct": true
             },
             {
@@ -13248,11 +13248,11 @@
           "question": "The drivers of which vehicles violated the stopping rules?",
           "answers": [
             {
-              "text": "Only small bus B",
+              "text": "Only small bus Б",
               "correct": false
             },
             {
-              "text": "Small bus B and truck B",
+              "text": "Small bus Б and truck В",
               "correct": true
             },
             {
@@ -13374,11 +13374,11 @@
           "question": "Which picture shows a car whose driver violates the rules for transporting goods?",
           "answers": [
             {
-              "text": "Only on A",
+              "text": "Only on А",
               "correct": true
             },
             {
-              "text": "Only on B",
+              "text": "Only on Б",
               "correct": false
             },
             {
@@ -13504,15 +13504,15 @@
           "question": "Which of the following signs are used to indicate the boundaries of an artificial roughness?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": true
             },
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": false
             },
             {
-              "text": "B and C",
+              "text": "Б and В",
               "correct": false
             }
           ],
@@ -13676,11 +13676,11 @@
           "question": "On what trajectory are you allowed to make a U-turn?",
           "answers": [
             {
-              "text": "Only on A",
+              "text": "Only on А",
               "correct": true
             },
             {
-              "text": "Only on B",
+              "text": "Only on Б",
               "correct": false
             },
             {
@@ -14012,11 +14012,11 @@
           "question": "You can continue moving:",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": true
             },
             {
-              "text": "Only along trajectory B",
+              "text": "Only along trajectory Б",
               "correct": false
             },
             {
@@ -14063,15 +14063,15 @@
           "question": "Which of the following signs are used to indicate the number assigned to the road (route)?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": false
             },
             {
-              "text": "A and B",
+              "text": "А and Б",
               "correct": true
             },
             {
@@ -14267,11 +14267,11 @@
           "question": "Where are you allowed to stay?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": false
             },
             {
@@ -14537,11 +14537,11 @@
           "question": "Which of the following signs provide the right of way at uncontrolled intersections?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "A and B",
+              "text": "А and В",
               "correct": true
             },
             {
@@ -14690,11 +14690,11 @@
           "question": "You are permitted to make a right turn in a long vehicle:",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": true
             },
             {
-              "text": "Only along trajectory B",
+              "text": "Only along trajectory Б",
               "correct": false
             },
             {
@@ -14794,11 +14794,11 @@
               "correct": false
             },
             {
-              "text": "Only the driver of car A",
+              "text": "Only the driver of car А",
               "correct": false
             },
             {
-              "text": "Only the driver of car B",
+              "text": "Only the driver of car Б",
               "correct": false
             },
             {
@@ -15055,11 +15055,11 @@
           "question": "You can perform a reversal:",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": false
             },
             {
-              "text": "Only along trajectory B",
+              "text": "Only along trajectory Б",
               "correct": true
             },
             {
@@ -15107,11 +15107,11 @@
           "question": "Which of the following signs indicate areas where the driver is required to give way to pedestrians on the roadway?",
           "answers": [
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": false
             },
             {
-              "text": "B and C",
+              "text": "Б and В",
               "correct": true
             },
             {
@@ -15568,11 +15568,11 @@
           "question": "Which of the following signs informs you that you are approaching the beginning of a section of road with oncoming traffic?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": true
             },
             {
-              "text": "A and B",
+              "text": "А and Б",
               "correct": false
             },
             {
@@ -15593,15 +15593,15 @@
           "question": "You are permitted to continue driving a truck with a permissible maximum weight of 12 tons and an actual weight of 8 tons:",
           "answers": [
             {
-              "text": "Only in direction B",
+              "text": "Only in direction В",
               "correct": false
             },
             {
-              "text": "In directions A and B",
+              "text": "In directions А and В",
               "correct": true
             },
             {
-              "text": "In directions B and D",
+              "text": "In directions Б and Г",
               "correct": false
             },
             {
@@ -16084,15 +16084,15 @@
           "question": "Which of the following signs informs you that at an intersection you must give way to vehicles approaching from the left?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": true
             },
             {
-              "text": "A and B",
+              "text": "А and Б",
               "correct": false
             },
             {
@@ -16138,15 +16138,15 @@
           "question": "You are allowed to move:",
           "answers": [
             {
-              "text": "Only in direction B",
+              "text": "Only in direction Б",
               "correct": false
             },
             {
-              "text": "In directions A and B",
+              "text": "In directions А and Б",
               "correct": false
             },
             {
-              "text": "In directions B and C",
+              "text": "In directions Б and В",
               "correct": false
             },
             {
@@ -16350,15 +16350,15 @@
           "question": "Where can you stay?",
           "answers": [
             {
-              "text": "Only B",
+              "text": "Only В",
               "correct": true
             },
             {
-              "text": "A and B",
+              "text": "А and В",
               "correct": false
             },
             {
-              "text": "B and C",
+              "text": "Б and В",
               "correct": false
             },
             {
@@ -16666,15 +16666,15 @@
           "question": "Which sign indicates the length of the turnaround zone?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": true
             },
             {
-              "text": "A and B",
+              "text": "А and Б",
               "correct": false
             }
           ],
@@ -16791,11 +16791,11 @@
               "correct": false
             },
             {
-              "text": "Possible only along trajectory A",
+              "text": "Possible only along trajectory А",
               "correct": false
             },
             {
-              "text": "Possible only along trajectory B",
+              "text": "Possible only along trajectory Б",
               "correct": false
             },
             {
@@ -16899,11 +16899,11 @@
               "correct": false
             },
             {
-              "text": "Give way only to tram A",
+              "text": "Give way only to tram А",
               "correct": false
             },
             {
-              "text": "Give way only to tram B",
+              "text": "Give way only to tram Б",
               "correct": false
             },
             {
@@ -17186,19 +17186,19 @@
           "question": "Which of the following signs are used to indicate camping?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": true
             },
             {
-              "text": "Only B",
+              "text": "Only В",
               "correct": false
             },
             {
-              "text": "B and C",
+              "text": "Б and В",
               "correct": false
             }
           ],
@@ -17652,11 +17652,11 @@
           "question": "You can continue at the following intersection:",
           "answers": [
             {
-              "text": "Only in direction B",
+              "text": "Only in direction Б",
               "correct": false
             },
             {
-              "text": "In directions A and B",
+              "text": "In directions А and Б",
               "correct": false
             },
             {
@@ -17677,11 +17677,11 @@
           "question": "Which of the following signs permit driving at a speed of 60 km/h?",
           "answers": [
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": false
             },
             {
-              "text": "B and C",
+              "text": "Б and В",
               "correct": true
             },
             {
@@ -17729,11 +17729,11 @@
           "question": "You can go around an obstacle:",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": true
             },
             {
-              "text": "Only along trajectory B",
+              "text": "Only along trajectory Б",
               "correct": false
             },
             {
@@ -17904,19 +17904,19 @@
           "question": "Drivers of which trucks with a permissible maximum weight of more than 3.5 tons did not violate parking rules?",
           "answers": [
             {
-              "text": "Only car B",
+              "text": "Only car Б",
               "correct": true
             },
             {
-              "text": "Only car B",
+              "text": "Only car В",
               "correct": false
             },
             {
-              "text": "Cars A and B",
+              "text": "Cars А and Б",
               "correct": false
             },
             {
-              "text": "Cars A and B",
+              "text": "Cars А and В",
               "correct": false
             }
           ],
@@ -18190,15 +18190,15 @@
           "question": "Which small bus drivers violated parking rules?",
           "answers": [
             {
-              "text": "Only bus A",
+              "text": "Only bus А",
               "correct": true
             },
             {
-              "text": "Only bus B",
+              "text": "Only bus Б",
               "correct": false
             },
             {
-              "text": "Buses A and B",
+              "text": "Buses А and Б",
               "correct": false
             }
           ],
@@ -18216,15 +18216,15 @@
           "question": "Which of the indicated plates extend the effect of the signs installed with them to trucks with a permissible maximum weight of more than 3.5 tons?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only В",
               "correct": false
             },
             {
-              "text": "A and B",
+              "text": "А and В",
               "correct": true
             },
             {
@@ -18320,11 +18320,11 @@
           "question": "You can continue driving when turning left:",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": false
             },
             {
-              "text": "Only along trajectory B",
+              "text": "Only along trajectory В",
               "correct": false
             },
             {
@@ -18680,19 +18680,19 @@
           "question": "Which of the following signs are installed immediately before a railway crossing?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only Б",
               "correct": false
             },
             {
-              "text": "Only B",
+              "text": "Only В",
               "correct": true
             },
             {
-              "text": "A and B",
+              "text": "А and В",
               "correct": false
             }
           ],
@@ -18709,11 +18709,11 @@
           "question": "You are allowed to make a U-turn:",
           "answers": [
             {
-              "text": "Only along trajectory A",
+              "text": "Only along trajectory А",
               "correct": false
             },
             {
-              "text": "Only along trajectory B",
+              "text": "Only along trajectory Б",
               "correct": true
             },
             {
@@ -18786,11 +18786,11 @@
           "question": "You are allowed to move:",
           "answers": [
             {
-              "text": "Only in direction A",
+              "text": "Only in direction А",
               "correct": true
             },
             {
-              "text": "In directions A and B",
+              "text": "In directions А and Б",
               "correct": false
             },
             {
@@ -19740,15 +19740,15 @@
           "question": "You have the right to continue driving at the intersection:",
           "answers": [
             {
-              "text": "Only in direction B",
+              "text": "Only in direction В",
               "correct": false
             },
             {
-              "text": "In directions A and B",
+              "text": "In directions А and В",
               "correct": true
             },
             {
-              "text": "In all indicated directions except G",
+              "text": "In all indicated directions except Г",
               "correct": false
             }
           ],
@@ -19766,15 +19766,15 @@
           "question": "Which of the following signs allow you to turn left?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "A and B",
+              "text": "А and Б",
               "correct": false
             },
             {
-              "text": "B and C",
+              "text": "Б and В",
               "correct": false
             },
             {
@@ -19949,11 +19949,11 @@
           "question": "On what trajectory can a small-bus driver overtake?",
           "answers": [
             {
-              "text": "Only on A",
+              "text": "Only on А",
               "correct": true
             },
             {
-              "text": "Only on B",
+              "text": "Only on Б",
               "correct": false
             },
             {
@@ -20260,11 +20260,11 @@
           "question": "Which of the following signs permit a U-turn?",
           "answers": [
             {
-              "text": "Only A",
+              "text": "Only А",
               "correct": false
             },
             {
-              "text": "A and B",
+              "text": "А and В",
               "correct": false
             },
             {
@@ -20309,7 +20309,7 @@
         },
         {
           "id": "34e7ed01bfe7229f476a69d1edd23185",
-          "question": "Markings in the form of the letter “A” indicate:",
+          "question": "Markings in the form of the letter “А” indicate:",
           "answers": [
             {
               "text": "Special lane for any buses",
@@ -20363,15 +20363,15 @@
           "question": "What identification mark must be attached to the rear of a towed motor vehicle if the hazard warning lights are missing or faulty?",
           "answers": [
             {
-              "text": "A",
+              "text": "А",
               "correct": true
             },
             {
-              "text": "B",
+              "text": "Б",
               "correct": false
             },
             {
-              "text": "IN",
+              "text": "В",
               "correct": false
             }
           ],
@@ -20517,11 +20517,11 @@
               "correct": false
             },
             {
-              "text": "Give way only to tram A",
+              "text": "Give way only to tram А",
               "correct": false
             },
             {
-              "text": "Give way only to tram B",
+              "text": "Give way only to tram Б",
               "correct": false
             },
             {

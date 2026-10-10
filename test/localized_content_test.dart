@@ -192,5 +192,65 @@ void main() {
         }
       }
     });
+
+    test('Ticket and topic answers preserve Cyrillic letters А, Б, В, Г in English and Kazakh', () {
+      final assetsDir = Directory('assets/countries/ru/questions');
+
+      for (final cat in ['ab', 'cd']) {
+        final ruFile = File('${assetsDir.path}/questions_$cat.json');
+        final ruJson = jsonDecode(ruFile.readAsStringSync()) as Map<String, dynamic>;
+        final ruTickets = ruJson['tickets'] as List<dynamic>;
+
+        for (final lang in ['en', 'kk']) {
+          final locFile = File('${assetsDir.path}/questions_${cat}_$lang.json');
+          if (!locFile.existsSync()) continue;
+          final locJson = jsonDecode(locFile.readAsStringSync()) as Map<String, dynamic>;
+          final locTickets = locJson['tickets'] as List<dynamic>;
+
+          for (int t = 0; t < ruTickets.length; t++) {
+            final ruQList = (ruTickets[t] as Map<String, dynamic>)['questions'] as List<dynamic>;
+            final locQList = (locTickets[t] as Map<String, dynamic>)['questions'] as List<dynamic>;
+
+            for (int q = 0; q < ruQList.length; q++) {
+              final ruAnswers = (ruQList[q] as Map<String, dynamic>)['answers'] as List<dynamic>;
+              final locAnswers = (locQList[q] as Map<String, dynamic>)['answers'] as List<dynamic>;
+
+              for (int a = 0; a < ruAnswers.length; a++) {
+                final ruText = (ruAnswers[a] as Map<String, dynamic>)['text'] as String;
+                final locText = (locAnswers[a] as Map<String, dynamic>)['text'] as String;
+
+                // Single letter markers must be exact Cyrillic letters
+                if (ruText == 'А') expect(locText, equals('А'));
+                if (ruText == 'Б') expect(locText, equals('Б'));
+                if (ruText == 'В') expect(locText, equals('В'));
+                if (ruText == 'Г') expect(locText, equals('Г'));
+
+                // Direction and option combinations
+                if (ruText == 'Только А') expect(locText, contains('А'));
+                if (ruText == 'Только Б') expect(locText, contains('Б'));
+                if (ruText == 'Только В') expect(locText, contains('В'));
+                if (ruText == 'Только Г') expect(locText, contains('Г'));
+
+                if (ruText == 'А и Б') {
+                  expect(locText, contains('А'));
+                  expect(locText, contains('Б'));
+                }
+                if (ruText == 'Б и В') {
+                  expect(locText, contains('Б'));
+                  expect(locText, contains('В'));
+                }
+                if (ruText == 'В и Г') {
+                  expect(locText, contains('В'));
+                  expect(locText, contains('Г'));
+                }
+                if (ruText == 'Перед знаком (А)') expect(locText, contains('(А)'));
+                if (ruText == 'Перед перекрестком (Б)') expect(locText, contains('(Б)'));
+                if (ruText == 'Перед краем пересекаемой проезжей части (В)') expect(locText, contains('(В)'));
+              }
+            }
+          }
+        }
+      }
+    });
   });
 }
