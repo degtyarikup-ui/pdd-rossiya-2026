@@ -167,7 +167,7 @@
               "correct": false
             },
             {
-              "text": "Before turning or turning",
+              "text": "Before turning or making a U-turn",
               "correct": false
             },
             {
@@ -229,7 +229,7 @@
               "correct": false
             }
           ],
-          "comment": "Departure from the intersection of roadways must be done on “your” side, i.e. based on right-hand traffic without going to the side of oncoming traffic. Moving along trajectory “B”, you are making oncoming traffic on the road you are crossing, which is extremely dangerous, as you can make a head-on collision with a car approaching from the left. You should turn around along the trajectory “A”. (Clause 8.6 of traffic rules)",
+          "comment": "Departure from the intersection of roadways must be done on “your” side, i.e. based on right-hand traffic without going to the side of oncoming traffic. Moving along trajectory “Б”, you are making oncoming traffic on the road you are crossing, which is extremely dangerous, as you can make a head-on collision with a car approaching from the left. You should turn around along the trajectory “А”. (Clause 8.6 of traffic rules)",
           "pddPoints": [],
           "image": "efd1efd34d242651508f28ca5d6ed914",
           "topic": [
@@ -363,7 +363,7 @@
               "correct": false
             }
           ],
-          "comment": "The intersection is equal. Under equal conditions, trams have an advantage over trackless vehicles. They are guided by the “right hand rule” among themselves. There is an obstacle on the right side of tram \"A\". Accordingly, tram “B” passes first, followed by “A”, you are the last. (Clause 13.11 of the Traffic Regulations)",
+          "comment": "The intersection is equal. Under equal conditions, trams have an advantage over trackless vehicles. They are guided by the “right hand rule” among themselves. There is an obstacle on the right side of tram \"А\". Accordingly, tram “Б” passes first, followed by “А”, you are the last. (Clause 13.11 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "5acd42c269b1bfcf82e39eebbc05c73a",
           "topic": [
@@ -589,7 +589,7 @@
         },
         {
           "id": "c991bb332c30b271ca2b58118297d36d",
-          "question": "Are you allowed to continue driving in a straight direction in a vehicle of subcategory “C1” without a trailer?",
+          "question": "Are you allowed to continue driving in a straight direction in a vehicle of subcategory “С1” without a trailer?",
           "answers": [
             {
               "text": "Allowed",
@@ -604,7 +604,7 @@
               "correct": false
             }
           ],
-          "comment": "Sign 3.4 “Truck traffic is prohibited”, in the absence of a number on the vehicle, applies to these vehicles, incl. and with trailer, r.m.m. which are more than 3.5 tons. Also, the specified vehicle r.m.m. deviate from the effect of this sign. which weigh up to 26 tons without a trailer, and in this case they serve enterprises located in the area indicated by the sign. This rule also applies to vehicles of subcategory C1, because their r.m.m. does not exceed 7.5 tons (“Road signs”, Article 25, paragraph 1 of the Federal Law “On Road Safety”)",
+          "comment": "Sign 3.4 “Truck traffic is prohibited”, in the absence of a number on the vehicle, applies to these vehicles, incl. and with trailer, r.m.m. which are more than 3.5 tons. Also, the specified vehicle r.m.m. deviate from the effect of this sign. which weigh up to 26 tons without a trailer, and in this case they serve enterprises located in the area indicated by the sign. This rule also applies to vehicles of subcategory С1, because their r.m.m. does not exceed 7.5 tons (“Road signs”, Article 25, paragraph 1 of the Federal Law “On Road Safety”)",
           "pddPoints": [],
           "image": "f82d238a2415185d91c46fe7ac2bc802",
           "topic": [
@@ -819,7 +819,7 @@
         },
         {
           "id": "2edb194bcd60dd9021f073603684e7ca",
-          "question": "Are you allowed to stay at the indicated place?",
+          "question": "Are you allowed to stop at the indicated place?",
           "answers": [
             {
               "text": "Allowed",
@@ -1074,7 +1074,7 @@
         },
         {
           "id": "f1c6fd3f16557349c986a37c59b0efa7",
-          "question": "Where should you stay?",
+          "question": "Where should you stop?",
           "answers": [
             {
               "text": "Before the sign (А)",
@@ -1089,7 +1089,7 @@
               "correct": true
             }
           ],
-          "comment": "If sign 2.5 “Driving without stopping is prohibited” is installed immediately before crossing the roadways, the driver is obliged to stop at the stop line. In its absence (as in this case), the driver is obliged to stop before the border of the roadways, i.e. without going beyond the “B” line. Keep in mind that such places are dangerous and are often “under special control” of traffic police inspectors. Therefore, always fulfill the main condition - a mandatory stop. This will save you from a conflict situation and maintain your own safety. (\"Road Signs\")",
+          "comment": "If sign 2.5 “Driving without stopping is prohibited” is installed immediately before crossing the roadways, the driver is obliged to stop at the stop line. In its absence (as in this case), the driver is obliged to stop before the border of the roadways, i.e. without going beyond the “В” line. Keep in mind that such places are dangerous and are often “under special control” of traffic police inspectors. Therefore, always fulfill the main condition - a mandatory stop. This will save you from a conflict situation and maintain your own safety. (\"Road Signs\")",
           "pddPoints": [],
           "image": "c8ce22f614e844117712f6cac9ff2e07",
           "topic": [
@@ -1144,7 +1144,7 @@
               "correct": false
             }
           ],
-          "comment": "Sign “B” - 5.5 “One-way road”. (\"Road Signs\")",
+          "comment": "Sign “Б” - 5.5 “One-way road”. (\"Road Signs\")",
           "pddPoints": [],
           "image": "9d8f7c4d12e8a5396421667793c21ba8",
           "topic": [
@@ -1246,7 +1246,7 @@
               "correct": false
             }
           ],
-          "comment": "When turning right, the vehicle should move as close as possible to the right edge of the roadway. You have such an opportunity, continue moving along trajectory “A”. (Clause 8.6 of traffic rules)",
+          "comment": "When turning right, the vehicle should move as close as possible to the right edge of the roadway. You have such an opportunity, continue moving along trajectory “А”. (Clause 8.6 of traffic rules)",
           "pddPoints": [],
           "image": "62ef0c915feb16c95c211244a78f8b57",
           "topic": [
@@ -1429,7 +1429,7 @@
               "correct": false
             }
           ],
-          "comment": "The intersection is unequal. The main road changes direction. Vehicles on the main road have priority; between themselves, trackless vehicles are guided by the “right-hand rule”, yielding to the tram, which has an advantage in equivalent conditions. Tram \"A\" passes first, you go after it. A passenger car and tram “B” at the same time, since their trajectories do not intersect. (“Road signs”, paragraphs 13.9, 13.10, 13.11 of the traffic rules)",
+          "comment": "The intersection is unequal. The main road changes direction. Vehicles on the main road have priority; between themselves, trackless vehicles are guided by the “right-hand rule”, yielding to the tram, which has an advantage in equivalent conditions. Tram \"А\" passes first, you go after it. A passenger car and tram “Б” at the same time, since their trajectories do not intersect. (“Road signs”, paragraphs 13.9, 13.10, 13.11 of the traffic rules)",
           "pddPoints": [],
           "image": "0dd363057d9f9da40721153a7b5808a1",
           "topic": [
@@ -1648,7 +1648,7 @@
               "correct": false
             }
           ],
-          "comment": "A sign with a sign 8.14 “Traffic Lane” (“A”) indicating the traffic lane covered by the sign or traffic light. (\"Road Signs\")",
+          "comment": "A sign with a sign 8.14 “Traffic Lane” (“А”) indicating the traffic lane covered by the sign or traffic light. (\"Road Signs\")",
           "pddPoints": [],
           "image": "a938e7f7035c4e2406a54463b5029227",
           "topic": [
@@ -1784,7 +1784,7 @@
         },
         {
           "id": "5ccc967d70f19d41f276ce69b2ad1334",
-          "question": "You can perform a reversal:",
+          "question": "You can make a U-turn:",
           "answers": [
             {
               "text": "Only along trajectory А",
@@ -1799,7 +1799,7 @@
               "correct": false
             }
           ],
-          "comment": "If there are tram tracks on the left in the same direction, located at the same level as the roadway, to make a U-turn, you must drive onto the tram tracks in advance and then perform the maneuver. In this case, there should be no interference with the tram. You can only make a U-turn along the “B” trajectory. (Clause 8.5, 9.6 of the Traffic Regulations)",
+          "comment": "If there are tram tracks on the left in the same direction, located at the same level as the roadway, to make a U-turn, you must drive onto the tram tracks in advance and then perform the maneuver. In this case, there should be no interference with the tram. You can only make a U-turn along the “Б” trajectory. (Clause 8.5, 9.6 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "69b062b40d4304b1244110310a6aaea8",
           "topic": [
@@ -2148,7 +2148,7 @@
               "correct": false
             }
           ],
-          "comment": "On slopes marked with signs: “A” - 1.13 “Steep descent” and “B” - 1.14 “Steep climb” - in the presence of an obstacle, the driver of a vehicle moving downhill must give way. On narrow sections of the road where oncoming passing is difficult, signs are installed: on the one hand - “B” - 2.6 “Advantage of oncoming traffic”, on the other side of traffic - “D” - 2.7 \"Advantage over oncoming traffic.\" In this case, if oncoming traffic is difficult, it is prohibited to enter the narrow section of the road from sign 2.6. Answer - signs “A” and “B”. (\"Road Signs\")",
+          "comment": "On slopes marked with signs: “А” - 1.13 “Steep descent” and “Б” - 1.14 “Steep climb” - in the presence of an obstacle, the driver of a vehicle moving downhill must give way. On narrow sections of the road where oncoming passing is difficult, signs are installed: on the one hand - “В” - 2.6 “Advantage of oncoming traffic”, on the other side of traffic - “Г” - 2.7 \"Advantage over oncoming traffic.\" In this case, if oncoming traffic is difficult, it is prohibited to enter the narrow section of the road from sign 2.6. Answer - signs “А” and “В”. (\"Road Signs\")",
           "pddPoints": [],
           "image": "23c214f483f83f8769c446d98571c90f",
           "topic": [
@@ -2405,7 +2405,7 @@
               "correct": false
             }
           ],
-          "comment": "Vehicles are allowed to be parked in one row parallel to the edge of the roadway. This rule also applies to local widening of the roadway (as in this situation). The exception is such places that have a combination of sign 6.4 with one of the plates 8.6.4 - 8.6.9. The driver of car “A” violates the parking rules. (Clause 12.2 of the Traffic Regulations)",
+          "comment": "Vehicles are allowed to be parked in one row parallel to the edge of the roadway. This rule also applies to local widening of the roadway (as in this situation). The exception is such places that have a combination of sign 6.4 with one of the plates 8.6.4 - 8.6.9. The driver of car “А” violates the parking rules. (Clause 12.2 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "bbcca8da1fd74ac47ad9b6516c269d25",
           "topic": [
@@ -2691,7 +2691,7 @@
               "correct": false
             }
           ],
-          "comment": "The following signs allow travel by car to the place of residence or work: “A” - 3.2 “Movement prohibited”, “B” - 3.3 “Movement of motor vehicles is prohibited”. Of the prohibition signs, 6 signs provide such a “benefit”. These do not include sign “B” - 3.1 “Entry prohibited”, which prohibits entry under the sign of all vehicles, except for route vehicles and vehicles, in the case of using sign 3.1 with plates 8.4.1 - 8.4.8; 8.5.1, 8.5.2, 8.5.3, 8.5.4, 8.5.5 - 8.5.7 and 8.4.9 - 8.4.16. (“Road signs”)",
+          "comment": "The following signs allow travel by car to the place of residence or work: “А” - 3.2 “Movement prohibited”, “В” - 3.3 “Movement of motor vehicles is prohibited”. Of the prohibition signs, 6 signs provide such a “benefit”. These do not include sign “Б” - 3.1 “Entry prohibited”, which prohibits entry under the sign of all vehicles, except for route vehicles and vehicles, in the case of using sign 3.1 with plates 8.4.1 - 8.4.8; 8.5.1, 8.5.2, 8.5.3, 8.5.4, 8.5.5 - 8.5.7 and 8.4.9 - 8.4.16. (“Road signs”)",
           "pddPoints": [],
           "image": "03188e3471c5b39d5055d8d0f86693b6",
           "topic": [
@@ -3051,7 +3051,7 @@
         },
         {
           "id": "26381d03feba44cd0ab86b8842f2f903",
-          "question": "Operation of a bus of category M2 and M3 is permitted if:",
+          "question": "Operation of a bus of category М2 and М3 is permitted if:",
           "answers": [
             {
               "text": "There is through corrosion or destruction of the floor of the passenger compartment",
@@ -3074,7 +3074,7 @@
               "correct": true
             }
           ],
-          "comment": "In case of the following malfunctions: there is through corrosion or destruction of the floor of the passenger compartment; additional structural elements are installed in the cabin that limit free access to emergency exits; the details for activating emergency exits are not marked with an appropriate sign or inscription; the emergency door switch and the stop signal are faulty or missing; If the internal lighting devices of the bus interior are faulty, the operation of a bus of categories M2 and M3 is prohibited. Only if the internal lighting devices of the bus interior are faulty, there is no prohibition on the operation of the vehicle. (“List of faults”, clause 9.9).",
+          "comment": "In case of the following malfunctions: there is through corrosion or destruction of the floor of the passenger compartment; additional structural elements are installed in the cabin that limit free access to emergency exits; the details for activating emergency exits are not marked with an appropriate sign or inscription; the emergency door switch and the stop signal are faulty or missing; If the internal lighting devices of the bus interior are faulty, the operation of a bus of categories М2 and М3 is prohibited. Only if the internal lighting devices of the bus interior are faulty, there is no prohibition on the operation of the vehicle. (“List of faults”, clause 9.9).",
           "pddPoints": [],
           "image": null,
           "topic": [
@@ -3103,7 +3103,7 @@
               "correct": false
             }
           ],
-          "comment": "Wheels turned towards the ditch (“A” and “D”), in the event of an unintentional rolling of the car, will lead the uncontrolled vehicle into the ditch, which will avoid oncoming collisions with moving vehicles. And vice versa.",
+          "comment": "Wheels turned towards the ditch (“А” and “Г”), in the event of an unintentional rolling of the car, will lead the uncontrolled vehicle into the ditch, which will avoid oncoming collisions with moving vehicles. And vice versa.",
           "pddPoints": [],
           "image": "e70a22698081ad129568283a5ee6a656",
           "topic": [
@@ -3209,7 +3209,7 @@
               "correct": false
             }
           ],
-          "comment": "The solid yellow marking line 1.4 indicates places where stopping is prohibited. From March 1, 2023, this marking is applied only independently. It is excluded from the definition of the coverage area of ​​sign 3.27 “Stopping is prohibited”. In this situation it is functionally ineffective. Stopping at the indicated place is prohibited (“Road signs”, “Horizontal markings”).",
+          "comment": "The solid yellow marking line 1.4 indicates places where stopping is prohibited. From March 1, 2023, this marking is applied only independently. It is excluded from the definition of the coverage area of sign 3.27 “Stopping is prohibited”. In this situation it is functionally ineffective. Stopping at the indicated place is prohibited (“Road signs”, “Horizontal markings”).",
           "pddPoints": [],
           "image": "b25332544043453a646cc8799fad995d",
           "topic": [
@@ -3234,7 +3234,7 @@
               "correct": false
             }
           ],
-          "comment": "The effect of the signs: B - 3.24 “Maximum speed limit” and D - 3.28 “Parking prohibited” extends to the nearest intersection beyond it, and in populated areas, in the absence of an intersection, to the end of the populated area. The effect of the signs: A - 5.31 “Zone with maximum speed limitation” and B - 5.27 “Zone with limited parking” is canceled by the corresponding signs 5.32 “End of zone with maximum speed limitation” and 5.28 “End of zone with limited parking.” (“Road signs”)",
+          "comment": "The effect of the signs: Б - 3.24 “Maximum speed limit” and Г - 3.28 “Parking prohibited” extends to the nearest intersection beyond it, and in populated areas, in the absence of an intersection, to the end of the populated area. The effect of the signs: А - 5.31 “Zone with maximum speed limitation” and В - 5.27 “Zone with limited parking” is canceled by the corresponding signs 5.32 “End of zone with maximum speed limitation” and 5.28 “End of zone with limited parking.” (“Road signs”)",
           "pddPoints": [],
           "image": "f888ee8e9715a443703c766fd117f03a",
           "topic": [
@@ -3438,7 +3438,7 @@
               "correct": false
             }
           ],
-          "comment": "On a one-way road, trucks with a permissible maximum weight of more than 3.5 tons are allowed to stop on the left side of the road in the direction of travel only for unloading or loading. You cannot stand in place “A”. At location “B” you will be within the coverage area of ​​sign 3.28 “No parking”, which is a violation. There is nothing contradictory for parking in place “B”. (“Road signs”, clause 12.1 of the traffic rules)",
+          "comment": "On a one-way road, trucks with a permissible maximum weight of more than 3.5 tons are allowed to stop on the left side of the road in the direction of travel only for unloading or loading. You cannot stand in place “А”. At location “Б” you will be within the coverage area of sign 3.28 “No parking”, which is a violation. There is nothing contradictory for parking in place “В”. (“Road signs”, clause 12.1 of the traffic rules)",
           "pddPoints": [],
           "image": "28104108323ae78ba08e1c67272846ab",
           "topic": [
@@ -3488,7 +3488,7 @@
               "correct": false
             }
           ],
-          "comment": "Nowadays, congestion has become a problem in big cities. A similar situation is not uncommon. You cannot continue driving in the forward direction, since if you stop at the intersection, you will block the traffic of vehicles moving in the transverse direction. In this situation, you can enter the intersection only if you intend to turn left or right. (Clause 13.2 of the Traffic Regulations). (12/14/18 the answer option (correct) was updated. Now you cannot enter an intersection with a traffic jam if you are going to make a U-turn)",
+          "comment": "Nowadays, congestion has become a problem in big cities. A similar situation is not uncommon. You cannot continue driving in the forward direction, since if you stop at the intersection, you will block the traffic of vehicles moving in the transverse direction. In this situation, you can enter the intersection only if you intend to turn left or right. (Clause 13.2 of the Traffic Regulations). (the correct answer option was updated on December 14, 2018. Now you cannot enter an intersection with a traffic jam if you are going to make a U-turn)",
           "pddPoints": [],
           "image": "e2df8420edfff761f06e9f0b2c4c2df2",
           "topic": [
@@ -3728,7 +3728,7 @@
               "correct": false
             }
           ],
-          "comment": "At an intersection in front of which there is a sign “A” - 5.13.1 “Exit onto a road with a lane for route vehicles”, it is prohibited for other vehicles to turn left. Sign “B” - 6.3.1 “A place for a turn” also prohibits turning to all types of vehicles. Among the signs depicted, you should pay attention to the sign “B” - 3.19 “Turn prohibited”, which, on the contrary, does not turn left prohibits. (“Road signs”)",
+          "comment": "At an intersection in front of which there is a sign “А” - 5.13.1 “Exit onto a road with a lane for route vehicles”, it is prohibited for other vehicles to turn left. Sign “В” - 6.3.1 “A place for a turn” also prohibits turning to all types of vehicles. Among the signs depicted, you should pay attention to the sign “Б” - 3.19 “Turn prohibited”, which, on the contrary, does not turn left prohibits. (“Road signs”)",
           "pddPoints": [],
           "image": "bbcb6250f5862bc690f65d5459d8cd5e",
           "topic": [
@@ -3854,7 +3854,7 @@
               "correct": false
             }
           ],
-          "comment": "If there is no sign 5.15.1 “Directions of traffic along lanes”, you should make a left turn along trajectory “A”. But at intersections in front of which and at which there are signs 5.15.1 and 5.15.2, access to tram tracks is prohibited. A left turn (U-turn) should be made along trajectory “B”. (“Road signs”, clause 8.5 of traffic rules)",
+          "comment": "If there is no sign 5.15.1 “Directions of traffic along lanes”, you should make a left turn along trajectory “А”. But at intersections in front of which and at which there are signs 5.15.1 and 5.15.2, access to tram tracks is prohibited. A left turn (U-turn) should be made along trajectory “Б”. (“Road signs”, clause 8.5 of traffic rules)",
           "pddPoints": [],
           "image": "63fee62f3d0f743c2f48f714db5fd3fe",
           "topic": [
@@ -3883,7 +3883,7 @@
               "correct": false
             }
           ],
-          "comment": "A turn from the right edge of the roadway (from the right shoulder) is allowed only outside the intersection. (Clause 8.8 of the traffic rules)",
+          "comment": "A U-turn from the right edge of the roadway (from the right shoulder) is allowed only outside the intersection. (Clause 8.8 of the traffic rules)",
           "pddPoints": [],
           "image": null,
           "topic": [
@@ -4038,7 +4038,7 @@
               "correct": false
             }
           ],
-          "comment": "The intersection is unequal. The main road changes direction. Vehicles on the main road have priority. Between themselves, trackless vehicles are guided by the “right-hand rule”, giving way to a tram, which, under equal conditions, has an advantage over them. Tram “B” passes first, then a passenger car, and you after them. Tram “A” will pass last, since it is located on a secondary road. (Clause 13.9, 13.1, 13.11 Traffic Regulations)",
+          "comment": "The intersection is unequal. The main road changes direction. Vehicles on the main road have priority. Between themselves, trackless vehicles are guided by the “right-hand rule”, giving way to a tram, which, under equal conditions, has an advantage over them. Tram “Б” passes first, then a passenger car, and you after them. Tram “А” will pass last, since it is located on a secondary road. (Clause 13.9, 13.1, 13.11 Traffic Regulations)",
           "pddPoints": [],
           "image": "505bf2d2ca0387542e3f140c8f0965c3",
           "topic": [
@@ -4245,7 +4245,7 @@
               "correct": false
             }
           ],
-          "comment": "According to sign 4.3 “Roundabout”, you are entering an intersection where traffic is allowed only in the direction of the arrows shown on the sign. Oncoming traffic along trajectory “B” is prohibited. Turning right along path “A” is prohibited by sign 3.18.1 “Turning right is prohibited.” From the indicated directions, you can continue moving only along trajectory “B”. (“Road signs”)",
+          "comment": "According to sign 4.3 “Roundabout”, you are entering an intersection where traffic is allowed only in the direction of the arrows shown on the sign. Oncoming traffic along trajectory “В” is prohibited. Turning right along path “А” is prohibited by sign 3.18.1 “Turning right is prohibited.” From the indicated directions, you can continue moving only along trajectory “Б”. (“Road signs”)",
           "pddPoints": [],
           "image": "35ca4cba068c385c58a76789a98fa50f",
           "topic": [
@@ -4333,7 +4333,7 @@
           "question": "When should you turn on your turn signals?",
           "answers": [
             {
-              "text": "Just before a turn or turn",
+              "text": "Just before a turn or a U-turn",
               "correct": false
             },
             {
@@ -4420,7 +4420,7 @@
               "correct": false
             }
           ],
-          "comment": "Drivers turning onto a reversible road marked 5.10 must drive in the far right lane. Changing lanes is allowed only after the driver is convinced that traffic in this direction is also permitted in other lanes. You can continue driving from the indicated trajectories only along trajectory “B”. (“Road signs”, paragraph 9.8 of the traffic rules)",
+          "comment": "Drivers turning onto a reversible road marked 5.10 must drive in the far right lane. Changing lanes is allowed only after the driver is convinced that traffic in this direction is also permitted in other lanes. You can continue driving from the indicated trajectories only along trajectory “Б”. (“Road signs”, paragraph 9.8 of the traffic rules)",
           "pddPoints": [],
           "image": "4d8ca03345cfd3040b165a86936a12d1",
           "topic": [
@@ -4496,7 +4496,7 @@
               "correct": false
             }
           ],
-          "comment": "The intersection is controlled. You have a green light, but there is a traffic jam ahead. If you enter an intersection to move in the forward direction, then when the signals change, you will interfere with traffic, especially in the transverse direction. Therefore, you can only go to the intersection to turn right or left. (Clause 6.2, 13.2 of the Traffic Regulations). (12/14/18 the answer option (correct) was updated. Now you can’t go to an intersection with a traffic jam if you are going to make a U-turn)",
+          "comment": "The intersection is controlled. You have a green light, but there is a traffic jam ahead. If you enter an intersection to move in the forward direction, then when the signals change, you will interfere with traffic, especially in the transverse direction. Therefore, you can only go to the intersection to turn right or left. (Clause 6.2, 13.2 of the Traffic Regulations). (the correct answer option was updated on December 14, 2018. Now you can’t go to an intersection with a traffic jam if you are going to make a U-turn)",
           "pddPoints": [],
           "image": "e2df8420edfff761f06e9f0b2c4c2df2",
           "topic": [
@@ -4582,15 +4582,15 @@
           "question": "Under which of the following conditions can no more than 8 people be transported in the back of a truck, including passengers in the cabin?",
           "answers": [
             {
-              "text": "Only if you have a driver’s license for the right to drive a vehicle of category “C”, regardless of the length of experience driving a vehicle of this category",
+              "text": "Only if you have a driver’s license for the right to drive a vehicle of category “С”, regardless of the length of experience driving a vehicle of this category",
               "correct": false
             },
             {
-              "text": "Only if you have a driver’s license for the right to drive a category “C” vehicle for more than 1 year",
+              "text": "Only if you have a driver’s license for the right to drive a category “С” vehicle for more than 1 year",
               "correct": false
             },
             {
-              "text": "If you have a driver’s license for the right to drive a vehicle of category “C” or subcategory “C1” for 3 or more years",
+              "text": "If you have a driver’s license for the right to drive a vehicle of category “С” or subcategory “С1” for 3 or more years",
               "correct": true
             }
           ],
@@ -4724,7 +4724,7 @@
               "correct": false
             }
           ],
-          "comment": "Only the combination of signs “A” - 3.24 “Maximum speed limit” with sign 8.16 “Wet surface”, indicating that the sign applies to the period when the road surface is wet - is the correct answer. Sign “B” - 1.18 “Gravel release” - warns about a section of the road on which gravel, crushed stone and the like can be released from under the wheels of vehicles. Sign “B” - 1.15 “Slippery road” - warns about a section of the road with increased slippery roadway. The reason for this may be snowfall, icing, bitumen spills during road work, etc. (“Road signs”)",
+          "comment": "Only the combination of signs “А” - 3.24 “Maximum speed limit” with sign 8.16 “Wet surface”, indicating that the sign applies to the period when the road surface is wet - is the correct answer. Sign “Б” - 1.18 “Gravel release” - warns about a section of the road on which gravel, crushed stone and the like can be released from under the wheels of vehicles. Sign “В” - 1.15 “Slippery road” - warns about a section of the road with increased Slippery roadway. The reason for this may be snowfall, icing, bitumen spills during road work, etc. (“Road signs”)",
           "pddPoints": [],
           "image": "64d52d2c3798dd659f52e3c42aba5978",
           "topic": [
@@ -4749,7 +4749,7 @@
               "correct": true
             }
           ],
-          "comment": "Table 8.2.2 “Validity area” indicates that the coverage area of ​​sign 3.28 “No parking” extends 50 m from the sign. You will clearly break the rules if you park your car in a given place if the distance from the sign to the car is less than 50 m. Although it is not easy to accurately determine such distances by eye, both in the picture and in practice. Remember the correct answer - PROHIBITED. (“Road signs”)",
+          "comment": "Table 8.2.2 “Validity area” indicates that the coverage area of sign 3.28 “No parking” extends 50 m from the sign. You will clearly break the rules if you park your car in a given place if the distance from the sign to the car is less than 50 m. Although it is not easy to accurately determine such distances by eye, both in the picture and in practice. Remember the correct answer - PROHIBITED. (“Road signs”)",
           "pddPoints": [],
           "image": "86e59f8d04cc053d994cdaa99cb37b73",
           "topic": [
@@ -4880,7 +4880,7 @@
               "correct": false
             }
           ],
-          "comment": "Before turning left or right, the driver must take the extreme position on the roadway in advance. The road is one-way, leaving it is no exception. Therefore, you should make a left turn along trajectory “B”. (“Road signs”, paragraph 8.5 of the traffic rules)",
+          "comment": "Before turning left or right, the driver must take the extreme position on the roadway in advance. The road is one-way, leaving it is no exception. Therefore, you should make a left turn along trajectory “Б”. (“Road signs”, paragraph 8.5 of the traffic rules)",
           "pddPoints": [],
           "image": "63fee62f3d0f743c2f48f714db5fd3fe",
           "topic": [
@@ -5117,7 +5117,7 @@
         },
         {
           "id": "41d56aa8bc5fb8a660c2ff85e22137ee",
-          "question": "It is prohibited to operate buses (categories M2 and M3) if the remaining tire tread depth (in the absence of wear indicators) is no more than:",
+          "question": "It is prohibited to operate buses (categories М2 and М3) if the remaining tire tread depth (in the absence of wear indicators) is no more than:",
           "answers": [
             {
               "text": "0.8 mm",
@@ -5241,7 +5241,7 @@
               "correct": false
             }
           ],
-          "comment": "In a populated area indicated by a corresponding sign with a white background, on this road the driver can use any lane convenient for him (Clause 9.4 of the Traffic Regulations). Sign 4.1.4 “Move straight or to the right” extends its effect to the first intersection of the roadways in front of which it is installed. Route vehicles may deviate from the effect of the sign. In this situation, marking 1.11 (solid line with broken line) has no meaning for you. (Whether it exists or not, for example, it is covered with snow). You are not allowed to turn around along trajectory “B”. According to paragraph 8.5 of the traffic rules, you cannot make a right turn, because you are not in the far right lane. You can continue driving only in direction “B”. (“Road signs”)",
+          "comment": "In a populated area indicated by a corresponding sign with a white background, on this road the driver can use any lane convenient for him (Clause 9.4 of the Traffic Regulations). Sign 4.1.4 “Move straight or to the right” extends its effect to the first intersection of the roadways in front of which it is installed. Route vehicles may deviate from the effect of the sign. In this situation, marking 1.11 (solid line with broken line) has no meaning for you. (Whether it exists or not, for example, it is covered with snow). You are not allowed to turn around along trajectory “В”. According to paragraph 8.5 of the traffic rules, you cannot make a right turn, because you are not in the far right lane. You can continue driving only in direction “Б”. (“Road signs”)",
           "pddPoints": [],
           "image": "16dcf0b083481538368abde7ffdb9a2c",
           "topic": [
@@ -5342,7 +5342,7 @@
               "correct": true
             }
           ],
-          "comment": "Mandatory conditions for the prohibition of overtaking the “operative” (and the T.S. accompanied by him) are: 1 - special colorographic schemes applied to the outer surfaces; 2 - turning on blue or blue and red flashing lights on it; 3 - turning on the alarm sound signal. The correct answer is if all conditions are met. (Clause 3.2 of the Traffic Regulations)",
+          "comment": "Mandatory conditions for the prohibition of overtaking the “operative” (and the vehicles accompanied by him) are: 1 - special colorographic schemes applied to the outer surfaces; 2 - turning on blue or blue and red flashing lights on it; 3 - turning on the alarm sound signal. The correct answer is if all conditions are met. (Clause 3.2 of the Traffic Regulations)",
           "pddPoints": [],
           "image": null,
           "topic": [
@@ -5392,7 +5392,7 @@
               "correct": false
             }
           ],
-          "comment": "When turning right, the vehicle should move as close as possible to the right edge of the roadway. You have such an opportunity; when turning right, continue driving along trajectory “A”. (Clause 8.6 of the Traffic Regulations)",
+          "comment": "When turning right, the vehicle should move as close as possible to the right edge of the roadway. You have such an opportunity; when turning right, continue driving along trajectory “А”. (Clause 8.6 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "ebd7a06c1787a54e1483112b0e153bdb",
           "topic": [
@@ -5402,7 +5402,7 @@
         },
         {
           "id": "a397830e8d1ecd3df6062ab68221da55",
-          "question": "You can perform a reversal:",
+          "question": "You can make a U-turn:",
           "answers": [
             {
               "text": "Only along trajectory А",
@@ -5417,7 +5417,7 @@
               "correct": false
             }
           ],
-          "comment": "U-turns are prohibited at pedestrian crossings (trajectories “B”). You can do it before or behind the pedestrian crossing, in this case along the “A” or “B” trajectory. (Clause 8.11 of the Traffic Regulations)",
+          "comment": "U-turns are prohibited at pedestrian crossings (trajectories “Б”). You can do it before or behind the pedestrian crossing, in this case along the “А” or “В” trajectory. (Clause 8.11 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "87a110f252d89dc39d97f2ebe72ca593",
           "topic": [
@@ -5455,7 +5455,7 @@
           "question": "The driver of the vehicle being overtaken:",
           "answers": [
             {
-              "text": "Gotta slow down",
+              "text": "Must slow down",
               "correct": false
             },
             {
@@ -5676,7 +5676,7 @@
               "correct": false
             }
           ],
-          "comment": "To prevent the bus from unintentionally rolling away, turn the wheels so that they rest against the sidewalk curb. This prevents the further movement of the bus (“A” and “B”). And, conversely, in the absence of support, the bus may spontaneously roll onto the roadway (“B” and “D”). This measure is additional to mandatory measures, i.e. using the parking brake and preferably engaging a lower gear or reverse gear. (Clause 12.8 of the Traffic Regulations. “Commentary on the Traffic Regulations of the Russian Federation,” publishing house “Za Rulem”)",
+          "comment": "To prevent the bus from unintentionally rolling away, turn the wheels so that they rest against the sidewalk curb. This prevents the further movement of the bus (“А” and “В”). And, conversely, in the absence of support, the bus may spontaneously roll onto the roadway (“Б” and “Г”). This measure is additional to mandatory measures, i.e. using the parking brake and preferably engaging a lower gear or reverse gear. (Clause 12.8 of the Traffic Regulations. “Commentary on the Traffic Regulations of the Russian Federation,” publishing house “Za Rulem”)",
           "pddPoints": [],
           "image": "d75c60f246ced48a195cd78f85943aaf",
           "topic": [
@@ -5719,11 +5719,11 @@
           "question": "In what cases can the owner of a truck with a permissible maximum weight of more than 7.5 tons transfer control of this vehicle in his presence to another person, having an insurance policy of compulsory civil liability insurance on paper or in the form of an electronic document or a copy thereof on paper?",
           "answers": [
             {
-              "text": "If this person has a driver’s license for the right to drive a vehicle of subcategory “C1”",
+              "text": "If this person has a driver’s license for the right to drive a vehicle of subcategory “С1”",
               "correct": false
             },
             {
-              "text": "If this person has a driver’s license for the right to drive a category “C” vehicle",
+              "text": "If this person has a driver’s license for the right to drive a category “С” vehicle",
               "correct": true
             },
             {
@@ -5731,7 +5731,7 @@
               "correct": false
             }
           ],
-          "comment": "According to Art. 25 clause 1 of the Federal Law “On Road Safety”, the owner of a truck with a permissible maximum weight of more than 7.5 tons can transfer control of this vehicle in his presence to another person, having the appropriate insurance policy on paper or in the form of an electronic document or a copy thereof, printed on paper, if this person has a driver’s license for the right to drive a category “C” vehicle. (Clause 2.1.1 of the Traffic Regulations)",
+          "comment": "According to Art. 25 clause 1 of the Federal Law “On Road Safety”, the owner of a truck with a permissible maximum weight of more than 7.5 tons can transfer control of this vehicle in his presence to another person, having the appropriate insurance policy on paper or in the form of an electronic document or a copy thereof, printed on paper, if this person has a driver’s license for the right to drive a category “С” vehicle. (Clause 2.1.1 of the Traffic Regulations)",
           "pddPoints": [],
           "image": null,
           "topic": [
@@ -5833,7 +5833,7 @@
               "correct": false
             }
           ],
-          "comment": "Horizontal marking line 1.11 is allowed to be crossed from the broken side, as well as from the solid side, but only when overtaking or detour is completed. Driver “A” leaving the yard violates the Rules. A vehicle making a U-turn along trajectory “B” is allowed to move (“Horizontal marking”)",
+          "comment": "Horizontal marking line 1.11 is allowed to be crossed from the broken side, as well as from the solid side, but only when overtaking or detour is completed. Driver “А” leaving the yard violates the Rules. A vehicle making a U-turn along trajectory “Б” is allowed to move (“Horizontal marking”)",
           "pddPoints": [],
           "image": "9a3919ba97d3b61386f2a1bd8ccdab1d",
           "topic": [
@@ -5933,7 +5933,7 @@
               "correct": true
             }
           ],
-          "comment": "Turning on bridges is prohibited for all types of transport. (Clause 8.11 of traffic rules)",
+          "comment": "U-turns on bridges are prohibited for all types of transport. (Clause 8.11 of traffic rules)",
           "pddPoints": [],
           "image": "78300eb0e89bb9eb7949c1cf15f4ffad",
           "topic": [
@@ -5958,7 +5958,7 @@
               "correct": false
             }
           ],
-          "comment": "The driver must not exceed the speed indicated on the “Speed ​​Limit” identification sign that marks the vehicle, in this case a truck. (“Road Signs”, paragraph 10.4 of the Traffic Regulations)",
+          "comment": "The driver must not exceed the speed indicated on the “Speed Limit” identification sign that marks the vehicle, in this case a truck. (“Road Signs”, paragraph 10.4 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "42b8ec0a9eb41026413a9d3491bf3c27",
           "topic": [
@@ -6268,7 +6268,7 @@
               "correct": true
             },
             {
-              "text": "Drive straight and turn around at the next intersection",
+              "text": "Drive straight and turn around only at the next intersection",
               "correct": false
             }
           ],
@@ -6297,7 +6297,7 @@
               "correct": true
             }
           ],
-          "comment": "The coverage area of ​​sign 3.27 “No stopping” in this situation is from the installation site to the nearest intersection. There is also a break in the dividing strip for turning around. Parking in the indicated place is prohibited. (“Road signs”, paragraph 1.2 of the traffic rules)",
+          "comment": "The coverage area of sign 3.27 “No stopping” in this situation is from the installation site to the nearest intersection. There is also a break in the dividing strip for turning around. Parking in the indicated place is prohibited. (“Road signs”, paragraph 1.2 of the traffic rules)",
           "pddPoints": [],
           "image": "b22212f047878ba97c2ea3064cc4e978",
           "topic": [
@@ -6449,7 +6449,7 @@
               "correct": false
             }
           ],
-          "comment": "There's a turn ahead. Houses and trees limit the view of the road. A turn is possible only if the road in the direction of travel is visible at a distance of at least 100 m. (Clause 8.11 of the Traffic Regulations)",
+          "comment": "There's a turn ahead. Houses and trees limit the view of the road. A U-turn is possible only if the road in the direction of travel is visible at a distance of at least 100 m. (Clause 8.11 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "114cbf907b419317a3a7a6feea3e71b3",
           "topic": [
@@ -6625,7 +6625,7 @@
               "correct": false
             }
           ],
-          "comment": "According to sign 5.14.1 “Lane for route vehicles” and marking 1.23.1 (in the form of the letter “A”), the right lane belongs to route vehicles and vehicles used as passenger taxis, as well as cyclists and “school buses”. It is prohibited for other vehicles to drive or stop in this lane. You are allowed to drive in this lane if you are driving a route or school bus. (Clause 18.2 of the Traffic Regulations, “Horizontal markings” 1.23.1)",
+          "comment": "According to sign 5.14.1 “Lane for route vehicles” and marking 1.23.1 (in the form of the letter “А”), the right lane belongs to route vehicles and vehicles used as passenger taxis, as well as cyclists and “school buses”. It is prohibited for other vehicles to drive or stop in this lane. You are allowed to drive in this lane if you are driving a route or school bus. (Clause 18.2 of the Traffic Regulations, “Horizontal markings” 1.23.1)",
           "pddPoints": [],
           "image": "8eece4a5748705f532297e894d014d58",
           "topic": [
@@ -6809,7 +6809,7 @@
               "correct": false
             }
           ],
-          "comment": "Sign “B” - 3.1 “Entry prohibited” - prohibits the entry of all vehicles. Route vehicles deviate from the requirements of the sign: trams, trolleybuses, buses. Sign “B” - 3.4 “Movement of trucks is prohibited” - in the absence of a number on the vehicle of the sign, it means that trucks can pass under the sign only if their r.m.m. no more than 3.5 tons. Sign “A” - 5.3 “Road for cars” - indicating a road intended only for cars (without restrictions), buses and motorcycles, any weight requirements, etc. does not present the listed vehicles. Of those listed, trucks with r.m.m. are allowed to move. more than 3.5 t only sign “A”. (“Road signs”)",
+          "comment": "Sign “Б” - 3.1 “Entry prohibited” - prohibits the entry of all vehicles. Route vehicles deviate from the requirements of the sign: trams, trolleybuses, buses. Sign “В” - 3.4 “Movement of trucks is prohibited” - in the absence of a number on the vehicle of the sign, it means that trucks can pass under the sign only if their r.m.m. no more than 3.5 tons. Sign “А” - 5.3 “Road for cars” - indicating a road intended only for cars (without restrictions), buses and motorcycles, any weight requirements, etc. does not present the listed vehicles. Of those listed, trucks with r.m.m. are allowed to move. more than 3.5 t only sign “А”. (“Road signs”)",
           "pddPoints": [],
           "image": "90332b16c5fd1ded27df87ccbcb3d53d",
           "topic": [
@@ -6859,7 +6859,7 @@
               "correct": false
             }
           ],
-          "comment": "This road has two adjacent carriageways. There is a dividing strip between them. On the left edge of the roadway there is a marking 1.2, which marks the edge of the roadway. The dividing strip is not intended for the movement and stopping of vehicles. (Location \"A\") In place “B” - you can stop. Marking line 1.2 in this case marks the edge of the roadway. In such a situation, it is allowed to cross it to stop the vehicle on the side of the road and when leaving it in places where stopping or parking is permitted. (Clause 1.2, the term “Dividing strip”, “Horizontal markings”)",
+          "comment": "This road has two adjacent carriageways. There is a dividing strip between them. On the left edge of the roadway there is a marking 1.2, which marks the edge of the roadway. The dividing strip is not intended for the movement and stopping of vehicles. (Location \"А\") In place “Б” - you can stop. Marking line 1.2 in this case marks the edge of the roadway. In such a situation, it is allowed to cross it to stop the vehicle on the side of the road and when leaving it in places where stopping or parking is permitted. (Clause 1.2, the term “Dividing strip”, “Horizontal markings”)",
           "pddPoints": [],
           "image": "33b91b6d8a28425de50ba6d1a461d6c8",
           "topic": [
@@ -6873,15 +6873,15 @@
           "question": "Do you have to stop at the request of the traffic controller at the place indicated by him?",
           "answers": [
             {
-              "text": "Should",
+              "text": "Yes",
               "correct": true
             },
             {
-              "text": "Must only be entered onto the sidewalk",
+              "text": "Yes, but only by pulling onto the sidewalk",
               "correct": false
             },
             {
-              "text": "Shouldn't",
+              "text": "No",
               "correct": false
             }
           ],
@@ -6910,7 +6910,7 @@
               "correct": false
             }
           ],
-          "comment": "The signal for a left turn (turn) corresponds to the left hand extended to the side. The right outstretched arm, but bent at the elbow at a right angle upward, can also be used for such a signal. (Clause 8.1 of the traffic rules)",
+          "comment": "The signal for a left turn or U-turn corresponds to the left hand extended to the side. The right outstretched arm, but bent at the elbow at a right angle upward, can also be used for such a signal. (Clause 8.1 of the traffic rules)",
           "pddPoints": [],
           "image": "6f0c1da85e9c4f6f424d2c282730e9b0",
           "topic": [
@@ -6960,7 +6960,7 @@
               "correct": false
             }
           ],
-          "comment": "The sign under the sign 8.2.1 “Area” indicates the length of the dangerous turns that the sign 1.12.1 “Dangerous turns” warns about, and which is installed outside populated areas 150 - 300 m before the dangerous area. When making a turn, you should not find yourself in a place with visibility of the road in at least one direction less than 100 m. You still have a short distance at which you can make a turn. (“Road signs”, clause 8.11 of the traffic rules)",
+          "comment": "The sign under the sign 8.2.1 “Coverage area” indicates the length of the dangerous turns that the sign 1.12.1 “Dangerous turns” warns about, and which is installed outside populated areas 150 - 300 m before the dangerous area. When making a turn, you should not find yourself in a place with visibility of the road in at least one direction less than 100 m. You still have a short distance at which you can make a turn. (“Road signs”, clause 8.11 of the traffic rules)",
           "pddPoints": [],
           "image": "1359a5bf465257f23a83825541241e05",
           "topic": [
@@ -7299,7 +7299,7 @@
               "correct": false
             }
           ],
-          "comment": "A median strip divides the road into carriageways. The effect of the sign 4.1.1 “Move straight”, installed in front of the intersection, applies only to the first intersection of the roadways behind the sign. Movement along trajectory “B” is prohibited. You can move along the trajectory “A” or “B”. (“Road signs”, paragraph 1.2 of the traffic rules)",
+          "comment": "A median strip divides the road into carriageways. The effect of the sign 4.1.1 “Move straight”, installed in front of the intersection, applies only to the first intersection of the roadways behind the sign. Movement along trajectory “В” is prohibited. You can move along the trajectory “А” or “Б”. (“Road signs”, paragraph 1.2 of the traffic rules)",
           "pddPoints": [],
           "image": "8cd942a5e7284533e08a18679f87fa00",
           "topic": [
@@ -7335,7 +7335,7 @@
         },
         {
           "id": "baa867744207c5882a0e71b39b355439",
-          "question": "Which of the following signs indicate the extent of the coverage area of ​​the signs with which they are used?",
+          "question": "Which of the following signs indicate the extent of the coverage area of the signs with which they are used?",
           "answers": [
             {
               "text": "Only А",
@@ -7350,7 +7350,7 @@
               "correct": true
             }
           ],
-          "comment": "Plates 8.2.1, 8.2.2 “Area of ​​action”, marked “B” and “C”, indicate the coverage area of ​​prohibiting signs. Plaque “A” 8.1.1 “Distance to object” indicates the exact distance from the sign to the beginning of the dangerous section, the place where any restriction is introduced or a certain object located ahead in the direction of travel. (“Road signs”)",
+          "comment": "Plates 8.2.1, 8.2.2 “Coverage area”, marked “Б” and “В”, indicate the coverage area of prohibiting signs. Plaque “А” 8.1.1 “Distance to object” indicates the exact distance from the sign to the beginning of the dangerous section, the place where any restriction is introduced or a certain object located ahead in the direction of travel. (“Road signs”)",
           "pddPoints": [],
           "image": "4385c3a698dfc1f3823a8be778da865d",
           "topic": [
@@ -7379,7 +7379,7 @@
               "correct": true
             }
           ],
-          "comment": "It is FORBIDDEN to cross the discontinuous line 1.9 of the horizontal marking separating the traffic flows of opposite directions when the reversing traffic lights are turned off.(“Horizontal Layout”)",
+          "comment": "It is FORBIDDEN to cross the discontinuous line 1.9 of the horizontal marking separating the traffic flows of opposite directions when the reversing traffic lights are turned off.(“Horizontal markings”)",
           "pddPoints": [],
           "image": "4f7014b202f1b5908965c54191027384",
           "topic": [
@@ -7396,7 +7396,7 @@
               "correct": true
             },
             {
-              "text": "Continue straight ahead",
+              "text": "Continue only straight ahead",
               "correct": false
             },
             {
@@ -7671,7 +7671,7 @@
               "correct": false
             }
           ],
-          "comment": "When turning right, the vehicle should move as close to the right as possible. That's what you do. You turn into the outer lane, but you cannot continue driving along it, since according to the sign 5.14.1 “Lane for fixed-route vehicles” and markings 1.23.1 (in the form of the letter “A”), it is intended for the movement of fixed-route vehicles and vehicles used as passenger taxis, as well as cyclists and “school buses.” Therefore, you change lanes along the “B” path into the adjacent lane. (Clause 8.6, 18.2 Traffic Regulations, “Road Signs”)",
+          "comment": "When turning right, the vehicle should move as close to the right as possible. That's what you do. You turn into the outer lane, but you cannot continue driving along it, since according to the sign 5.14.1 “Lane for fixed-route vehicles” and markings 1.23.1 (in the form of the letter “А”), it is intended for the movement of fixed-route vehicles and vehicles used as passenger taxis, as well as cyclists and “school buses.” Therefore, you change lanes along the “Б” path into the adjacent lane. (Clause 8.6, 18.2 Traffic Regulations, “Road Signs”)",
           "pddPoints": [],
           "image": "21af6276b61d90fe55efd4c5f6a97c7a",
           "topic": [
@@ -7863,7 +7863,7 @@
               "correct": false
             }
           ],
-          "comment": "Sign “B” - 3.17.2 “Danger” prohibits the further movement of all vehicles without exception. It is necessary to understand that the sign is installed in places that threaten the life and health of people. (“Road signs”)",
+          "comment": "Sign “Б” - 3.17.2 “Danger” prohibits the further movement of all vehicles without exception. It is necessary to understand that the sign is installed in places that threaten the life and health of people. (“Road signs”)",
           "pddPoints": [],
           "image": "7846a0f577ea4f72da8c831b475ca86f",
           "topic": [
@@ -8086,7 +8086,7 @@
               "correct": false
             }
           ],
-          "comment": "You cannot stop at places “A” and “B”, since stopping on the left side of the road in the direction of travel is allowed only in a populated area indicated by signs 5.23.1 and 5.23.2 “Beginning of a populated area” with a white background. The driver would have done the right thing by stopping at place “B.” (Clause 12.1 of the traffic rules)",
+          "comment": "You cannot stop at places “А” and “Б”, since stopping on the left side of the road in the direction of travel is allowed only in a populated area indicated by signs 5.23.1 and 5.23.2 “Beginning of a populated area” with a white background. The driver would have done the right thing by stopping at place “В.” (Clause 12.1 of the traffic rules)",
           "pddPoints": [],
           "image": "aa9d0721e059413f70eb7052110fc733",
           "topic": [
@@ -8217,7 +8217,7 @@
               "correct": true
             }
           ],
-          "comment": "Organized transportation of a group of children must be carried out on a bus with all the listed requirements. These requirements are formulated in paragraphs 1.2 of the traffic rules, the term “Organized transportation of a group of children”; 22.6 Traffic rules; paragraph 8 “General Provisions”. (12/14/18 the wording of the answer options was updated due to the changed requirements for the organized transportation of a group of children)",
+          "comment": "Organized transportation of a group of children must be carried out on a bus with all the listed requirements. These requirements are formulated in paragraphs 1.2 of the traffic rules, the term “Organized transportation of a group of children”; 22.6 Traffic rules; paragraph 8 “General Provisions”. (December 14, 2018: the wording of the answer options was updated due to the changed requirements for the organized transportation of a group of children)",
           "pddPoints": [],
           "image": null,
           "topic": [
@@ -8397,7 +8397,7 @@
               "correct": false
             }
           ],
-          "comment": "Sign 6.3.1 “Turning Place” prohibits turning left for all types of vehicles. From the indicated directions, you cannot continue moving along trajectory “B”. You are allowed to move along the path “A” or “B”. (“Road signs”)",
+          "comment": "Sign 6.3.1 “U-turn Place” prohibits turning left for all types of vehicles. From the indicated directions, you cannot continue moving along trajectory “Б”. You are allowed to move along the path “А” or “В”. (“Road signs”)",
           "pddPoints": [],
           "image": "18c57f81f52baded74fd0469d2f455ee",
           "topic": [
@@ -8432,7 +8432,7 @@
         },
         {
           "id": "5aa243ae9a9a08eb4ce1469d2b430fb0",
-          "question": "Where should you stay?",
+          "question": "Where should you stop?",
           "answers": [
             {
               "text": "Before the traffic light",
@@ -8511,7 +8511,7 @@
         },
         {
           "id": "af5b0face5ae13d0318fce0a78f3a416",
-          "question": "Is it possible for you to make a turn along this trajectory?",
+          "question": "Is it possible for you to make a U-turn along this trajectory?",
           "answers": [
             {
               "text": "Can",
@@ -8526,7 +8526,7 @@
               "correct": false
             }
           ],
-          "comment": "If, when turning outside an intersection, the width of the roadway is not sufficient to perform the maneuver from the extreme left position, it is allowed to be made from the right edge of the roadway (from the right shoulder). In this case, the driver must give way to passing and oncoming vehicles. (Clause 8.8 of the Traffic Regulations)",
+          "comment": "If, when making a U-turn outside an intersection, the width of the roadway is not sufficient to perform the maneuver from the extreme left position, it is allowed to be made from the right edge of the roadway (from the right shoulder). In this case, the driver must give way to passing and oncoming vehicles. (Clause 8.8 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "8f656d2a1a6099729be8df345a940e97",
           "topic": [
@@ -8906,7 +8906,7 @@
               "correct": false
             }
           ],
-          "comment": "Signs “A” and “B” - 5.23.1 and 5.23.2 “Beginning of a populated area” (with a white background). (“Road signs”)",
+          "comment": "Signs “А” and “Б” - 5.23.1 and 5.23.2 “Beginning of a populated area” (with a white background). (“Road signs”)",
           "pddPoints": [],
           "image": "0de4bdf9edbfba56fc7e7605a61e8bfd",
           "topic": [
@@ -9006,7 +9006,7 @@
               "correct": false
             }
           ],
-          "comment": "The arrow on sign 5.7.1 “Exit to a one-way road” indicates the direction of travel on a one-way road. Crossing the road is not prohibited (trajectory “B”). It is prohibited to turn left, i.e. movement in the opposite direction. When turning right, the vehicle should move as close as possible to the right edge of the roadway. You have such an opportunity. You can turn along the path “A”. (Clause 8.6 Traffic Regulations, “Road Signs”)",
+          "comment": "The arrow on sign 5.7.1 “Exit to a one-way road” indicates the direction of travel on a one-way road. Crossing the road is not prohibited (trajectory “В”). It is prohibited to turn left, i.e. movement in the opposite direction. When turning right, the vehicle should move as close as possible to the right edge of the roadway. You have such an opportunity. You can turn along the path “А”. (Clause 8.6 Traffic Regulations, “Road Signs”)",
           "pddPoints": [],
           "image": "bf1187bad22b605cd3e5af405aa0fe69",
           "topic": [
@@ -9031,7 +9031,7 @@
               "correct": false
             }
           ],
-          "comment": "If, when turning outside an intersection, the width of the roadway is not sufficient to perform from the extreme left position, it is allowed to be made from the right edge of the roadway (from the right shoulder). The answer indicated in the table of correct answers of the traffic police is such only under one condition (not specified in the question) that the width of the roadway for a given road train is insufficient to perform a turn from the extreme left position. (Clause 8.11 traffic regulations)",
+          "comment": "If, when making a U-turn outside an intersection, the width of the roadway is not sufficient to perform from the extreme left position, it is allowed to be made from the right edge of the roadway (from the right shoulder). The answer indicated in the table of correct answers of the traffic police is such only under one condition (not specified in the question) that the width of the roadway for a given road train is insufficient to perform a turn from the extreme left position. (Clause 8.11 traffic regulations)",
           "pddPoints": [],
           "image": "1e437cd038f88d410f5140cdcc6ac35a",
           "topic": [
@@ -9067,7 +9067,7 @@
         },
         {
           "id": "5ef1ced2a76cb71be1121bac119ffc86",
-          "question": "Is it possible for the driver of truck B to start overtaking?",
+          "question": "Is it possible for the driver of truck Б to start overtaking?",
           "answers": [
             {
               "text": "Can",
@@ -9082,7 +9082,7 @@
               "correct": true
             }
           ],
-          "comment": "The driver of the car turned on the left turn signal. The driver of truck “B” is prohibited from overtaking in such a situation. (Clause 11.2 of the Traffic Regulations)",
+          "comment": "The driver of the car turned on the left turn signal. The driver of truck “Б” is prohibited from overtaking in such a situation. (Clause 11.2 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "b85fc1f0f63d0b48d386e81bff9820f1",
           "topic": [
@@ -9381,7 +9381,7 @@
         },
         {
           "id": "04b1a8d935ab3e0efb7dec84e3bdf141",
-          "question": "Is it permitted to board (disembark) passengers or load (unload) a vehicle within the coverage area of ​​this sign?",
+          "question": "Is it permitted to board (disembark) passengers or load (unload) a vehicle within the coverage area of this sign?",
           "answers": [
             {
               "text": "Allowed",
@@ -9396,7 +9396,7 @@
               "correct": false
             }
           ],
-          "comment": "In the coverage area of ​​sign 3.28 “Parking prohibited”, “stopping” is permitted, including all actions defined by this term. (Clause 1.2 term “Stopping”, “Road signs”)",
+          "comment": "In the coverage area of sign 3.28 “Parking prohibited”, “stopping” is permitted, including all actions defined by this term. (Clause 1.2 term “Stopping”, “Road signs”)",
           "pddPoints": [],
           "image": "24106323c216b3deb383297948d2ff95",
           "topic": [
@@ -9422,7 +9422,7 @@
               "correct": true
             }
           ],
-          "comment": "All of the indicated signs allow you to make a U-turn at the intersections in front of which they are installed. Sign “A” - 3.18.2. “Left turn is prohibited.” Sign “B” - 5.7.2. “Exit onto a one-way road.” Sign “B” - 5.13.2. “Exit onto a road with a lane for route vehicles.” (“Road signs”)",
+          "comment": "All of the indicated signs allow you to make a U-turn at the intersections in front of which they are installed. Sign “А” - 3.18.2. “Left turn is prohibited.” Sign “Б” - 5.7.2. “Exit onto a one-way road.” Sign “В” - 5.13.2. “Exit onto a road with a lane for route vehicles.” (“Road signs”)",
           "pddPoints": [],
           "image": "eee4c18999233b60531d105b5699205c",
           "topic": [
@@ -9522,7 +9522,7 @@
               "correct": false
             }
           ],
-          "comment": "If there are no signs 5.15.1 “Directions of traffic along lanes” or 5.15.2, you should make a turn onto the tram tracks, i.e. along the trajectory “A”. (Clause 8.5 of the traffic rules)",
+          "comment": "If there are no signs 5.15.1 “Directions of traffic along lanes” or 5.15.2, you should make a turn onto the tram tracks, i.e. along the trajectory “А”. (Clause 8.5 of the traffic rules)",
           "pddPoints": [],
           "image": "b769b014a69b00d3a0924897e4dd1af9",
           "topic": [
@@ -9775,7 +9775,7 @@
               "correct": true
             }
           ],
-          "comment": "A driver who has committed an administrative offense will have his driver's license confiscated after the decision to deprive him of the right to drive a vehicle comes into force.",
+          "comment": "A driver who has committed an administrative offense will have his driver's license confiscated after the decision to deprive him of the right to drive a vehicle comes into force (Code of Administrative Offenses, Articles 31.1, 31.2 and 32.6).",
           "pddPoints": [],
           "image": null,
           "topic": [
@@ -9859,7 +9859,7 @@
               "correct": true
             }
           ],
-          "comment": "According to clause 2.6.1 of the traffic rules and part 1 of art. 11.1 of the Federal Law “On compulsory insurance of civil liability of vehicle owners,” drivers involved in an accident in the presence of all the listed conditions specified in the answers can draw up documents about a road accident without the participation of authorized police officers. (12/14/18 the wording of the question and answer options have been updated)",
+          "comment": "According to clause 2.6.1 of the traffic rules and part 1 of art. 11.1 of the Federal Law “On compulsory insurance of civil liability of vehicle owners,” drivers involved in an accident in the presence of all the listed conditions specified in the answers can draw up documents about a road accident without the participation of authorized police officers. (December 14, 2018: the wording of the question and answer options have been updated)",
           "pddPoints": [],
           "image": null,
           "topic": [
@@ -9909,7 +9909,7 @@
               "correct": true
             }
           ],
-          "comment": "Plate 8.2.4 “Validity area”, installed under sign 3.27 “Stopping is prohibited”, indicates that the coverage area of ​​the prohibitory sign extends both before the sign and after the sign. Therefore, stopping in the indicated place is prohibited by the Rules. (“Road signs”)",
+          "comment": "Plate 8.2.4 “Validity area”, installed under sign 3.27 “Stopping is prohibited”, indicates that the coverage area of the prohibitory sign extends both before the sign and after the sign. Therefore, stopping in the indicated place is prohibited by the Rules. (“Road signs”)",
           "pddPoints": [],
           "image": "1c8e9699fe5b8fdc33e3c03bee751376",
           "topic": [
@@ -9939,7 +9939,7 @@
               "correct": false
             }
           ],
-          "comment": "Driving without stopping is prohibited: sign “B” - 3.17.1 “Customs” and sign “B” - 3.17.3 “Control”. (“Road signs”)",
+          "comment": "Driving without stopping is prohibited: sign “Б” - 3.17.1 “Customs” and sign “В” - 3.17.3 “Control”. (“Road signs”)",
           "pddPoints": [],
           "image": "41d5244914c29b5fce1cdaa1d4311ca4",
           "topic": [
@@ -9964,7 +9964,7 @@
               "correct": false
             }
           ],
-          "comment": "The permanent markup is white. Temporary - orange In cases where the temporary marking lines and the permanent marking lines contradict each other, drivers should be guided by the temporary marking lines.(“Horizontal Layout”)",
+          "comment": "The permanent markup is white. Temporary - orange In cases where the temporary marking lines and the permanent marking lines contradict each other, drivers should be guided by the temporary marking lines.(“Horizontal markings”)",
           "pddPoints": [],
           "image": null,
           "topic": [
@@ -10014,7 +10014,7 @@
               "correct": false
             }
           ],
-          "comment": "Warning triangle \"A\" (Clause 7.2 of the Traffic Regulations)",
+          "comment": "Warning triangle \"А\" (Clause 7.2 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "6c4b4071c0e6b5e240f50f16ff66a4d2",
           "topic": [
@@ -10064,7 +10064,7 @@
               "correct": false
             }
           ],
-          "comment": "There is nothing contrary to performing a turn in this way in this situation. Reversing is prohibited at intersections. The adjacent territory is also used here (entrance to the courtyard through an arch). The maneuver performed must be safe and not interfere with other traffic participants. (Clause 1.2, 8.12 of the Traffic Regulations)",
+          "comment": "There is nothing contrary to performing a U-turn in this way in this situation. Reversing is prohibited at intersections. The adjacent territory is also used here (entrance to the courtyard through an arch). The maneuver performed must be safe and not interfere with other traffic participants. (Clause 1.2, 8.12 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "d7577ec8f4f4985f0b35d21a3f7d3269",
           "topic": [
@@ -10093,7 +10093,7 @@
               "correct": false
             }
           ],
-          "comment": "Distance “B” is the distance between passing vehicles. Distance “A” is the interval between oncoming vehicles, distance “B” is the interval between passing vehicles. (Clause 9.10 of the Traffic Regulations)",
+          "comment": "Distance “Б” is the distance between passing vehicles. Distance “А” is the interval between oncoming vehicles, distance “В” is the interval between passing vehicles. (Clause 9.10 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "79bff96d37093c23f3d0d24b67232c72",
           "topic": [
@@ -10345,7 +10345,7 @@
               "correct": false
             }
           ],
-          "comment": "The effect of strong cross wind on T.S. the most dangerous situation is when leaving a closed area for an open one. In this case, you need to be prepared to adjust the lateral wind force.",
+          "comment": "The effect of strong cross wind on vehicles is most dangerous when leaving a closed area for an open one. In this case, you need to be prepared to adjust the lateral wind force.",
           "pddPoints": [],
           "image": null,
           "topic": [
@@ -10455,7 +10455,7 @@
               "correct": true
             }
           ],
-          "comment": "Sign “B” - 5.8 “Reverse traffic.” (“Road signs”)",
+          "comment": "Sign “В” - 5.8 “Reverse traffic.” (“Road signs”)",
           "pddPoints": [],
           "image": "f96d0fd9b0cf6dc01afe54190b128488",
           "topic": [
@@ -10530,7 +10530,7 @@
               "correct": false
             }
           ],
-          "comment": "The signal for a left turn (turn) corresponds to the left arm extended to the side (as in this situation), or the right arm extended to the side and bent at the elbow at a right angle upward. (Clause 8.1 of the traffic rules)",
+          "comment": "The signal for a left turn or U-turn corresponds to the left arm extended to the side (as in this situation), or the right arm extended to the side and bent at the elbow at a right angle upward. (Clause 8.1 of the traffic rules)",
           "pddPoints": [],
           "image": "914ec3ce8f64bde566df85b3cc9a69f8",
           "topic": [
@@ -10769,7 +10769,7 @@
         },
         {
           "id": "1f51d2c50e642e5829277f6a10db2a1c",
-          "question": "In the coverage area of ​​which signs do the Rules allow sound signals to be given only to prevent a traffic accident?",
+          "question": "In the coverage area of which signs do the Rules allow sound signals to be given only to prevent a traffic accident?",
           "answers": [
             {
               "text": "Only А",
@@ -10788,7 +10788,7 @@
               "correct": false
             }
           ],
-          "comment": "In the coverage area of ​​signs 5.23.1 and 5.23.2 “Beginning of a populated area” (with a white background) and 3.26 “Sound signal is prohibited”, it is prohibited to sound a sound signal, except in cases of warning of a road traffic accident (RTA). (“Road signs”, clause 19.10 of the traffic rules)",
+          "comment": "In the coverage area of signs 5.23.1 and 5.23.2 “Beginning of a populated area” (with a white background) and 3.26 “Sound signal is prohibited”, it is prohibited to sound a sound signal, except in cases of warning of a road traffic accident (RTA). (“Road signs”, clause 19.10 of the traffic rules)",
           "pddPoints": [],
           "image": "95b0287f765ddd8997fb0219b7f0952a",
           "topic": [
@@ -11069,7 +11069,7 @@
               "correct": false
             }
           ],
-          "comment": "Turning at the exit from the intersection of carriageways, you should not be on the side of oncoming traffic. Turn to the left along the trajectory \"B\".(Clause 8.6 of the Traffic Rules)",
+          "comment": "Turning at the exit from the intersection of carriageways, you should not be on the side of oncoming traffic. Turn to the left along the trajectory \"Б\".(Clause 8.6 of the Traffic Rules)",
           "pddPoints": [],
           "image": "68bb1d75ba1a9ee2afc8290285e4fced",
           "topic": [
@@ -11094,7 +11094,7 @@
               "correct": true
             }
           ],
-          "comment": "Reversing is prohibited in places where turning is prohibited and at intersections. Turning and, therefore, reversing on bridges and overpasses is not allowed, i.e. prohibited. (Clause 8.11, 8.12 of the Traffic Regulations)",
+          "comment": "Reversing is prohibited in places where U-turns are prohibited and at intersections. U-turns and, therefore, reversing on bridges and overpasses is not allowed, i.e. prohibited. (Clause 8.11, 8.12 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "01768a7239c6db99fd9aef57efe02af6",
           "topic": [
@@ -11454,7 +11454,7 @@
               "correct": false
             }
           ],
-          "comment": "Sign 3.16 “Minimum distance limitation” prohibits the movement of vehicles with a distance between them less than that indicated on the sign. Plate 8.2.1 “Validity area” installed under the sign indicates the coverage area of ​​the sign. In this case, it is equal to 100 meters from the location of the sign. (“Road signs”)",
+          "comment": "Sign 3.16 “Minimum distance limitation” prohibits the movement of vehicles with a distance between them less than that indicated on the sign. Plate 8.2.1 “Validity area” installed under the sign indicates the coverage area of the sign. In this case, it is equal to 100 meters from the location of the sign. (“Road signs”)",
           "pddPoints": [],
           "image": "5e034534f45822dd91c0dea8a1dc093c",
           "topic": [
@@ -11530,7 +11530,7 @@
               "correct": false
             }
           ],
-          "comment": "In such a situation, when a traffic light with an additional section is installed in front of the intersection, and a green arrow with the main red signal is on, and there are several carriageways on the road behind the traffic light, movement under the additional section is permitted only to the first carriageway behind the traffic light, i.e., along trajectory “B.” (Clause 6.3 of the Traffic Regulations)",
+          "comment": "In such a situation, when a traffic light with an additional section is installed in front of the intersection, and a green arrow with the main red signal is on, and there are several carriageways on the road behind the traffic light, movement under the additional section is permitted only to the first carriageway behind the traffic light, i.e., along trajectory “Б.” (Clause 6.3 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "9fcc4ddbd9211ef8114aa7adf8dfbecc",
           "topic": [
@@ -11580,7 +11580,7 @@
               "correct": false
             }
           ],
-          "comment": "Oncoming traffic (such as trajectory “B”) is prohibited at an intersection where there is a roundabout. Entry to such an intersection, as an exception to the general rule, can be made from any lane of the roadway intended for traffic in this direction. (Clause 8.5 of the traffic rules). When turning right, the vehicle should move as close as possible to the right edge of the roadway. (Clause 8.6 of the traffic rules). In the situation shown, there is such an opportunity, you continue to move along trajectory “A”.",
+          "comment": "Oncoming traffic (such as trajectory “В”) is prohibited at an intersection where there is a roundabout. Entry to such an intersection, as an exception to the general rule, can be made from any lane of the roadway intended for traffic in this direction. (Clause 8.5 of the traffic rules). When turning right, the vehicle should move as close as possible to the right edge of the roadway. (Clause 8.6 of the traffic rules). In the situation shown, there is such an opportunity, you continue to move along trajectory “А”.",
           "pddPoints": [],
           "image": "329b24f2dfa996be76b199917ad48b41",
           "topic": [
@@ -11709,7 +11709,7 @@
               "correct": false
             }
           ],
-          "comment": "The right hand of the adjuster is extended forward. On the left side, trackless vehicles are allowed to move in all directions - straight, right, left and turn. When turning right, you are obliged to give way to pedestrians crossing the roadway to which you turn.(Clauses 6.10, 13.1 of the Traffic Rules)",
+          "comment": "The right hand of the adjuster is extended forward. On the left side, trackless vehicles are allowed to move in all directions - straight, right, left and U-turn. When turning right, you are obliged to give way to pedestrians crossing the roadway to which you turn.(Clauses 6.10, 13.1 of the Traffic Rules)",
           "pddPoints": [],
           "image": "05a715b3642c1d2a4c93278fb81e6799",
           "topic": [
@@ -11841,7 +11841,7 @@
               "correct": false
             }
           ],
-          "comment": "To return a driver's license after the expiration of the period of deprivation of the right to drive, assigned for the driver leaving the scene of a traffic accident in violation of the Traffic Rules in which he was a participant, it is necessary: ​​to pass a test of the driver's knowledge of the Traffic Rules and pay the fines imposed on him for administrative offenses in the field of road traffic. (Article 32.6, part 4.1; Article 12.27, part 2; Chapter 12 of the Administrative Code)",
+          "comment": "To return a driver's license after the expiration of the period of deprivation of the right to drive, assigned for the driver leaving the scene of a traffic accident in violation of the Traffic Rules in which he was a participant, it is necessary: to pass a test of the driver's knowledge of the Traffic Rules and pay the fines imposed on him for administrative offenses in the field of road traffic. (Article 32.6, part 4.1; Article 12.27, part 2; Chapter 12 of the Administrative Code)",
           "pddPoints": [],
           "image": null,
           "topic": [
@@ -12001,7 +12001,7 @@
               "correct": false
             }
           ],
-          "comment": "Only the requirements of the mandatory sign “B” - 4.1.2 “Move to the right” - of those indicated are mandatory for all vehicles. Route vehicles may deviate from its actions: trams, trolleybuses, buses. The effect of sign “A” - 5.7.1 “Exit onto a one-way road” - does not prohibit the crossing of this road by any vehicle. Sign “B” - 6.15.2 “Direction of movement for trucks” - is advisory for trucks, tractors, self-propelled vehicles, if at the intersection their movement is in one of directions are prohibited. (“Road signs”)",
+          "comment": "Only the requirements of the mandatory sign “Б” - 4.1.2 “Move to the right” - of those indicated are mandatory for all vehicles. Route vehicles may deviate from its actions: trams, trolleybuses, buses. The effect of sign “А” - 5.7.1 “Exit onto a one-way road” - does not prohibit the crossing of this road by any vehicle. Sign “В” - 6.15.2 “Direction of movement for trucks” - is advisory for trucks, tractors, self-propelled vehicles, if at the intersection their movement is in one of directions are prohibited. (“Road signs”)",
           "pddPoints": [],
           "image": "34b7fdff9fad52aec102f3381d923357",
           "topic": [
@@ -12089,15 +12089,15 @@
           "question": "Should you give way to a truck in this situation?",
           "answers": [
             {
-              "text": "Should",
+              "text": "Yes",
               "correct": false
             },
             {
-              "text": "Must if he intends to turn right",
+              "text": "Yes, if he intends to turn right",
               "correct": false
             },
             {
-              "text": "Shouldn't",
+              "text": "No",
               "correct": true
             }
           ],
@@ -12130,7 +12130,7 @@
               "correct": false
             }
           ],
-          "comment": "It is permitted to make a U-turn at intersections marked with sign 5.7.2 “Entering a one-way road” (trajectory “A”). A U-turn along path “B” cannot be made, because it is prohibited at pedestrian crossings. In this case, the boundaries of the pedestrian crossing are signs 5.19.1, 5.19.2 “Pedestrian crossing” (“Road signs”, clause 8.11 of the traffic rules)",
+          "comment": "It is permitted to make a U-turn at intersections marked with sign 5.7.2 “Entering a one-way road” (trajectory “А”). A U-turn along path “Б” cannot be made, because it is prohibited at pedestrian crossings. In this case, the boundaries of the pedestrian crossing are signs 5.19.1, 5.19.2 “Pedestrian crossing” (“Road signs”, clause 8.11 of the traffic rules)",
           "pddPoints": [],
           "image": "c78b292f28037efd2f224d77caa87290",
           "topic": [
@@ -12498,7 +12498,7 @@
               "correct": false
             }
           ],
-          "comment": "Sign “B” - 3.31 “End of the zone of all restrictions.” (“Road signs”)",
+          "comment": "Sign “В” - 3.31 “End of the zone of all restrictions.” (“Road signs”)",
           "pddPoints": [],
           "image": "dfb36ae37d8a36a7de8e3e0cb9a0fb63",
           "topic": [
@@ -12577,7 +12577,7 @@
               "correct": false
             }
           ],
-          "comment": "To regulate the movement of trams, as well as other route vehicles moving along the lane allocated for them, single-color traffic lights with four round white-moon colored signals located in the shape of the letter “T” can be used. (Clause 6.8 of the Traffic Regulations)",
+          "comment": "To regulate the movement of trams, as well as other route vehicles moving along the lane allocated for them, single-color traffic lights with four round white-moon colored signals located in the shape of the letter “Т” can be used. (Clause 6.8 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "d1f0ce80374fa93ecfbe4df906b5e4f5",
           "topic": [
@@ -13006,7 +13006,7 @@
               "correct": false
             }
           ],
-          "comment": "Only sign “B” - 2.5 “Moving without stopping is prohibited” - requires a mandatory stop. The sign is installed either at the intersection of roadways (case 1) or at the railway station. crossing, or quarantine post (case 2). Sign “A” - 2.6 “Right of way for oncoming traffic” - prohibits entry onto a narrow section of the road if this may impede oncoming traffic. Sign “B” - 6.16 “Stop line” - indicates the place where vehicles stop when there is a prohibiting traffic light. Sign “D” - 2.4 “Give way” - determines the order of priority passing a specific intersection. If necessary, choose a stopping place yourself, guided by the rule: “You must not resume or continue driving, or perform any maneuver if the action of your car forces other road users to change direction or speed.” (“Road Signs”)",
+          "comment": "Only sign “Б” - 2.5 “Moving without stopping is prohibited” - requires a mandatory stop. The sign is installed either at the intersection of roadways (case 1) or at the railway station. crossing, or quarantine post (case 2). Sign “А” - 2.6 “Right of way for oncoming traffic” - prohibits entry onto a narrow section of the road if this may impede oncoming traffic. Sign “В” - 6.16 “Stop line” - indicates the place where vehicles stop when there is a prohibiting traffic light. Sign “Г” - 2.4 “Give way” - determines the order of priority passing a specific intersection. If necessary, choose a stopping place yourself, guided by the rule: “You must not resume or continue driving, or perform any maneuver if the action of your car forces other road users to change direction or speed.” (“Road Signs”)",
           "pddPoints": [],
           "image": "feeebab9558f9155dea1b1da34ad5786",
           "topic": [
@@ -13206,7 +13206,7 @@
               "correct": false
             }
           ],
-          "comment": "Drivers turning onto a road marked with sign 5.10 “Entering a road with reverse traffic” must drive in the far right lane. In this situation, along trajectory “B”. Changing lanes is permitted only after the driver is convinced that traffic in this direction is also permitted in other lanes. (Clause 9.8 of the Traffic Regulations)",
+          "comment": "Drivers turning onto a road marked with sign 5.10 “Entering a road with reverse traffic” must drive in the far right lane. In this situation, along trajectory “Б”. Changing lanes is permitted only after the driver is convinced that traffic in this direction is also permitted in other lanes. (Clause 9.8 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "c8094372eac12e59a0a618b1fbbd2cfa",
           "topic": [
@@ -13260,7 +13260,7 @@
               "correct": false
             }
           ],
-          "comment": "Stopping and parking of vehicles if there is a shoulder should be carried out on it (as the driver of car “A” did). And only in its absence - at the edge of the roadway. Drivers of cars “B” and “C” are violators of traffic rules. (Clause 12.1 of traffic rules)",
+          "comment": "Stopping and parking of vehicles if there is a shoulder should be carried out on it (as the driver of car “А” did). And only in its absence - at the edge of the roadway. Drivers of cars “Б” and “В” are violators of traffic rules. (Clause 12.1 of traffic rules)",
           "pddPoints": [],
           "image": "de03e6160ebd0c8b93d0ceb5e94b7408",
           "topic": [
@@ -13386,7 +13386,7 @@
               "correct": false
             }
           ],
-          "comment": "The rules allow the movement of vehicles, the overall parameters of which do not exceed 2.55 meters in width. Transportation of cargo protruding laterally not more than 0.4 m from the outer edge of the side light is allowed without the identification mark \"Oversized cargo\". In Figure \"A\", this distance is greater than the permissible one. In Figure \"B\", the distance is less than the permissible distance. Only the driver of the car \"A\" violates the Rules.(Clauses 23.4, 23.5 of the SDA)",
+          "comment": "The rules allow the movement of vehicles, the overall parameters of which do not exceed 2.55 meters in width. Transportation of cargo protruding laterally not more than 0.4 m from the outer edge of the side light is allowed without the identification mark \"Oversized cargo\". In Figure \"А\", this distance is greater than the permissible one. In Figure \"Б\", the distance is less than the permissible distance. Only the driver of the car \"А\" violates the Rules.(Clauses 23.4, 23.5 of the SDA)",
           "pddPoints": [],
           "image": "d73cedf438c8a1f96a9328e785d386fe",
           "topic": [
@@ -13491,7 +13491,7 @@
               "correct": false
             }
           ],
-          "comment": "According to clause 2.6.1 of the traffic rules, if as a result of an accident damage is caused only to property, then, having previously recorded the position of the vehicle in relation to each other and road infrastructure, traces and objects related to the accident, damage to the vehicle, the driver involved in the accident is obliged to clear the roadway if an obstacle is created to the movement of other vehicles. (12/14/18 the question and answer options have been updated. Now the essence of the question is under what conditions the driver can clear the roadway part)",
+          "comment": "According to clause 2.6.1 of the traffic rules, if as a result of an accident damage is caused only to property, then, having previously recorded the position of the vehicle in relation to each other and road infrastructure, traces and objects related to the accident, damage to the vehicle, the driver involved in the accident is obliged to clear the roadway if an obstacle is created to the movement of other vehicles. (December 14, 2018: the question and answer options have been updated. Now the essence of the question is under what conditions the driver can clear the roadway part)",
           "pddPoints": [],
           "image": null,
           "topic": [
@@ -13516,7 +13516,7 @@
               "correct": false
             }
           ],
-          "comment": "Sign “A” - 5.20 “Artificial hump” indicates the boundary of an artificial hump (“speed bump”). The sign is installed at the nearest boundary of the artificial bump relative to approaching vehicles. (“Road signs”)",
+          "comment": "Sign “А” - 5.20 “Artificial hump” indicates the boundary of an artificial hump (“speed bump”). The sign is installed at the nearest boundary of the artificial bump relative to approaching vehicles. (“Road signs”)",
           "pddPoints": [],
           "image": "42d5e63e54e46bd7d098b02361b3c20c",
           "topic": [
@@ -13638,7 +13638,7 @@
               "correct": true
             },
             {
-              "text": "Stay",
+              "text": "Stop",
               "correct": false
             }
           ],
@@ -13663,7 +13663,7 @@
               "correct": false
             }
           ],
-          "comment": "The lane you are moving on ends. You need to rebuild. When rebuilding, you are obliged to give way to vehicles moving in passing without changing the direction of movement.(\"Horizontal marking\" 1.19, clause 8.4 of the SDA)",
+          "comment": "The lane you are moving on ends. You need to rebuild. When rebuilding, you are obliged to give way to vehicles moving in the same direction without changing the direction of movement.(\"Horizontal marking\" 1.19, clause 8.4 of the SDA)",
           "pddPoints": [],
           "image": "3ea85b084ae5bc855a3c4b0f439d446e",
           "topic": [
@@ -13688,7 +13688,7 @@
               "correct": false
             }
           ],
-          "comment": "The effect of sign 4.1.1 “Move straight”, installed before the intersection of roadways, extends to the first intersection behind the sign. At this intersection there are two intersections formed by a dividing strip. Trajectory “B” passes through the first intersection, which contradicts the actions of the sign. You can make a U-turn along trajectory “A”. (“Road signs”)",
+          "comment": "The effect of sign 4.1.1 “Move straight”, installed before the intersection of roadways, extends to the first intersection behind the sign. At this intersection there are two intersections formed by a dividing strip. Trajectory “Б” passes through the first intersection, which contradicts the actions of the sign. You can make a U-turn along trajectory “А”. (“Road signs”)",
           "pddPoints": [],
           "image": "908abb9154e2beaeadb1e952867e615d",
           "topic": [
@@ -14024,7 +14024,7 @@
               "correct": false
             }
           ],
-          "comment": "Dividing strips divide the road into adjacent carriageways. The effect of sign 4.1.2 “Move to the right”, installed before the intersection of roadways, extends to the first intersection. You can continue driving only along trajectory “A”. (Clause 1.2 term “Dividing strip”, “Road signs”)",
+          "comment": "Dividing strips divide the road into adjacent carriageways. The effect of sign 4.1.2 “Move to the right”, installed before the intersection of roadways, extends to the first intersection. You can continue driving only along trajectory “А”. (Clause 1.2 term “Dividing strip”, “Road signs”)",
           "pddPoints": [],
           "image": "39ddaf05adb2aaa9418eed14da63647c",
           "topic": [
@@ -14079,7 +14079,7 @@
               "correct": false
             }
           ],
-          "comment": "Signs “A” and “B” have a common number and name: 6.14.1 “Route number”. Sign “B” - 6.13 “Kilometer sign” - indicates the distance to the beginning or end of the road (km). (“Road signs”)",
+          "comment": "Signs “А” and “Б” have a common number and name: 6.14.1 “Route number”. Sign “В” - 6.13 “Kilometer sign” - indicates the distance to the beginning or end of the road (km). (“Road signs”)",
           "pddPoints": [],
           "image": "b1e7fcb885bc5d97430a4da60663e978",
           "topic": [
@@ -14254,7 +14254,7 @@
               "correct": true
             }
           ],
-          "comment": "On this vehicle, within the coverage area of ​​sign 3.22 “Overtaking of trucks is prohibited” - overtaking of all vehicles is prohibited, without exception. (“Road signs”)",
+          "comment": "On this vehicle, within the coverage area of sign 3.22 “Overtaking of trucks is prohibited” - overtaking of all vehicles is prohibited, without exception. (“Road signs”)",
           "pddPoints": [],
           "image": "0a5439e6f75b6e8c4b5952a561787080",
           "topic": [
@@ -14264,7 +14264,7 @@
         },
         {
           "id": "8206dcb11eb7940abab0c932c9731bac",
-          "question": "Where are you allowed to stay?",
+          "question": "Where are you allowed to stop?",
           "answers": [
             {
               "text": "Only А",
@@ -14549,7 +14549,7 @@
               "correct": false
             }
           ],
-          "comment": "Signs: 2.1 “Main Road” (“A”) and 2.3.5 “Adjunction of a Secondary Road” (“B”) provide the right of way at uncontrolled intersections to vehicles located on the main road. (Clause 1.2 term “Main Road”, 13.9 Traffic Rules)",
+          "comment": "Signs: 2.1 “Main Road” (“А”) and 2.3.5 “Adjunction of a Secondary Road” (“В”) provide the right of way at uncontrolled intersections to vehicles located on the main road. (Clause 1.2 term “Main Road”, 13.9 Traffic Rules)",
           "pddPoints": [],
           "image": "319669a3d2bee2da207c46746aed0ead",
           "topic": [
@@ -14575,7 +14575,7 @@
               "correct": true
             }
           ],
-          "comment": "On this vehicle, within the coverage area of ​​sign 3.22 “Overtaking of trucks is prohibited” - overtaking of all vehicles is prohibited, without exception. (“Road signs”)",
+          "comment": "On this vehicle, within the coverage area of sign 3.22 “Overtaking of trucks is prohibited” - overtaking of all vehicles is prohibited, without exception. (“Road signs”)",
           "pddPoints": [],
           "image": "3b2ba96b15031513e8896fda29697fb0",
           "topic": [
@@ -14601,7 +14601,7 @@
               "correct": true
             }
           ],
-          "comment": "Drivers of trucks who have a sign 6.4 “Parking (parking space)” with one of the signs 8.6.2 - 8.6.9 “Method of parking vehicles” are not allowed to stand in the coverage area of ​​this sign. It is not allowed for any trucks to park on the edge of the sidewalk and clause 12.2 of the traffic rules and in other places not marked with signs. Therefore, the answer is clear - the truck driver is violating the Rules. (“Road Signs”)",
+          "comment": "Drivers of trucks who have a sign 6.4 “Parking (parking space)” with one of the signs 8.6.2 - 8.6.9 “Method of parking vehicles” are not allowed to stand in the coverage area of this sign. It is not allowed for any trucks to park on the edge of the sidewalk and clause 12.2 of the traffic rules and in other places not marked with signs. Therefore, the answer is clear - the truck driver is violating the Rules. (“Road Signs”)",
           "pddPoints": [],
           "image": "7b1fa83077be8d0ad06fa62a0478be33",
           "topic": [
@@ -14637,7 +14637,7 @@
         },
         {
           "id": "a1010f11d0df5f7f07907a1c45d8d65e",
-          "question": "Where should you stay?",
+          "question": "Where should you stop?",
           "answers": [
             {
               "text": "Before the traffic light",
@@ -14665,15 +14665,15 @@
           "question": "Should drivers use their turn signals when maneuvering in a parking lot or gas station?",
           "answers": [
             {
-              "text": "Should",
+              "text": "Yes",
               "correct": true
             },
             {
-              "text": "Should only be used if there are other vehicles in the immediate vicinity.",
+              "text": "Yes, but only if there are other vehicles nearby.",
               "correct": false
             },
             {
-              "text": "Shouldn't",
+              "text": "No",
               "correct": false
             }
           ],
@@ -14823,7 +14823,7 @@
               "correct": false
             },
             {
-              "text": "Only when turning",
+              "text": "Only when making a U-turn",
               "correct": false
             },
             {
@@ -15052,7 +15052,7 @@
         },
         {
           "id": "5ccc967d70f19d41f276ce69b2ad1334",
-          "question": "You can perform a reversal:",
+          "question": "You can make a U-turn:",
           "answers": [
             {
               "text": "Only along trajectory А",
@@ -15067,7 +15067,7 @@
               "correct": false
             }
           ],
-          "comment": "The effect of the sign 4.1.1 “Go straight”, if installed before the intersection of roadways, applies only to the first intersection behind the sign. You can make a U-turn along trajectory “B”. (“Road signs”)",
+          "comment": "The effect of the sign 4.1.1 “Go straight”, if installed before the intersection of roadways, applies only to the first intersection behind the sign. You can make a U-turn along trajectory “Б”. (“Road signs”)",
           "pddPoints": [],
           "image": "69b062b40d4304b1244110310a6aaea8",
           "topic": [
@@ -15119,7 +15119,7 @@
               "correct": false
             }
           ],
-          "comment": "Signs: “B” - 5.19.2 “Pedestrian crossing”, “B” - 5.21 “Residential zone” give priority to pedestrians on the roadway on sections of roads and territories designated by them. Warning sign “A” - 1.22 “Pedestrian crossing” warns of approaching a pedestrian crossing marked with signs 5.19.1, 5.19.2 and (or) markings 1.14.1 and 1.14.2. Installed in N.P. beyond 50-100 m, outside N.P. for 150-300 m. (“Road signs”)",
+          "comment": "Signs: “Б” - 5.19.2 “Pedestrian crossing”, “В” - 5.21 “Residential zone” give priority to pedestrians on the roadway on sections of roads and territories designated by them. Warning sign “А” - 1.22 “Pedestrian crossing” warns of approaching a pedestrian crossing marked with signs 5.19.1, 5.19.2 and (or) markings 1.14.1 and 1.14.2. Installed in a populated area 50-100 m ahead, outside a populated area 150-300 m ahead. (“Road signs”)",
           "pddPoints": [],
           "image": "e587bedc388b60dc6e36dfa18858c7ab",
           "topic": [
@@ -15130,7 +15130,7 @@
         },
         {
           "id": "7c87ec599361afa9d197080403b72603",
-          "question": "What does the A 100 marking on the roadway mean?",
+          "question": "What does the А 100 marking on the roadway mean?",
           "answers": [
             {
               "text": "Distance to nearest intersection",
@@ -15208,15 +15208,15 @@
           "question": "You intend to start moving from the sidewalk. Should you give way to a motorcycle making a U-turn?",
           "answers": [
             {
-              "text": "Should",
+              "text": "Yes",
               "correct": true
             },
             {
-              "text": "Should not if you are driving a route vehicle",
+              "text": "No, if you are driving a route vehicle.",
               "correct": false
             },
             {
-              "text": "Shouldn't",
+              "text": "No",
               "correct": false
             }
           ],
@@ -15320,7 +15320,7 @@
               "correct": true
             }
           ],
-          "comment": "The truck driver violated clause 12.4 of the traffic rules, which prohibits stopping in places where the vehicle would block traffic lights and road signs from other drivers. In this case, he blocked the visibility of sign 3.27 “Stopping is prohibited”, the coverage area of ​​which begins from the place where the sign was installed (“Road signs”)",
+          "comment": "The truck driver violated clause 12.4 of the traffic rules, which prohibits stopping in places where the vehicle would block traffic lights and road signs from other drivers. In this case, he blocked the visibility of sign 3.27 “Stopping is prohibited”, the coverage area of which begins from the place where the sign was installed (“Road signs”)",
           "pddPoints": [],
           "image": "a696e15fe77d46c48235c27bf56176b1",
           "topic": [
@@ -15337,7 +15337,7 @@
               "correct": false
             },
             {
-              "text": "When turning",
+              "text": "When making a U-turn",
               "correct": false
             },
             {
@@ -15438,15 +15438,15 @@
           "question": "Should you switch the high beam to low beam if the driver of an oncoming vehicle periodically switches the headlights to indicate the need for this?",
           "answers": [
             {
-              "text": "Should",
+              "text": "Yes",
               "correct": true
             },
             {
-              "text": "Must only if the distance to the oncoming vehicle is less than 150 m",
+              "text": "Yes, but only if the distance to the oncoming vehicle is less than 150 m",
               "correct": false
             },
             {
-              "text": "Shouldn't",
+              "text": "No",
               "correct": false
             }
           ],
@@ -15540,7 +15540,7 @@
       "questions": [
         {
           "id": "d38b9dbea862aab8f0171e54024f06d7",
-          "question": "Subcategory “C1” includes vehicles (except for vehicles of category “D”), the permissible maximum weight of which is:",
+          "question": "Subcategory “С1” includes vehicles (except for vehicles of category “D”), the permissible maximum weight of which is:",
           "answers": [
             {
               "text": "More than 2.5 tons, but not more than 7.5 tons",
@@ -15555,7 +15555,7 @@
               "correct": false
             }
           ],
-          "comment": "According to Art. 25 of the Federal Law “On Road Safety”, subcategory C1 includes cars (except for vehicles of category D), r.m.m. which exceeds 3.5 tons, but does not exceed 7.5 tons.",
+          "comment": "According to Art. 25 of the Federal Law “On Road Safety”, subcategory С1 includes cars (except for vehicles of category D), r.m.m. which exceeds 3.5 tons, but does not exceed 7.5 tons.",
           "pddPoints": [],
           "image": null,
           "topic": [
@@ -15580,7 +15580,7 @@
               "correct": false
             }
           ],
-          "comment": "Only warning sign “A” - 1.21 “Two-way traffic” - is installed in front of a roadway with oncoming traffic, if it was preceded by a section of road with one-way traffic. Sign “B” - 5.8 “Reversible traffic” - informs about the beginning of a section of the road on which the direction of movement on one or more lanes can change to the opposite. Sign “B” - 5.15.7 “Direction of traffic along lanes” - indicates the organization of traffic in both directions on a three-lane road. (“Road signs”)",
+          "comment": "Only warning sign “А” - 1.21 “Two-way traffic” - is installed in front of a roadway with oncoming traffic, if it was preceded by a section of road with one-way traffic. Sign “Б” - 5.8 “Reversible traffic” - informs about the beginning of a section of the road on which the direction of movement on one or more lanes can change to the opposite. Sign “В” - 5.15.7 “Direction of traffic along lanes” - indicates the organization of traffic in both directions on a three-lane road. (“Road signs”)",
           "pddPoints": [],
           "image": "6cf4f8dccfa5d1552ac24457c0827103",
           "topic": [
@@ -16100,7 +16100,7 @@
               "correct": false
             }
           ],
-          "comment": "The order of passage of vehicles at intersections is determined by the priority signs indicated in this case \"A\" and \"B\".The sign \"A\" - 2.3.3 \"Junction of a secondary road\" - informs that the adjacent road on the left is secondary. Moving along the main road, you have an advantage. The combination of signs \"B\" - 2.4 \"Give way\" with the sign 8.13 \"Direction of the main road\" informs that moving vehicles located on the main road on the left and directly from the opposite direction have an advantage. You are obliged to give way to them. Sign \"B\" - 5.13.1 \"Exit to the road with a lane for fixed-route vehicles\" - is included in the group of signs of special regulations. It cannot regulate the order of passage of vehicles.(“Traffic Signs”)",
+          "comment": "The order of passage of vehicles at intersections is determined by the priority signs indicated in this case \"А\" and \"Б\".The sign \"А\" - 2.3.3 \"Junction of a secondary road\" - informs that the adjacent road on the left is secondary. Moving along the main road, you have an advantage. The combination of signs \"Б\" - 2.4 \"Give way\" with the sign 8.13 \"Direction of the main road\" informs that moving vehicles located on the main road on the left and directly from the opposite direction have an advantage. You are obliged to give way to them. Sign \"В\" - 5.13.1 \"Exit to the road with a lane for fixed-route vehicles\" - is included in the group of signs of special regulations. It cannot regulate the order of passage of vehicles.(“Traffic Signs”)",
           "pddPoints": [],
           "image": "56eee4a868383e84473cfcf683ba2498",
           "topic": [
@@ -16125,7 +16125,7 @@
               "correct": false
             }
           ],
-          "comment": "Those who live, work or service enterprises located in the area of ​​the sign are exempt from the effect of sign 3.7 “Moving with a trailer is prohibited.” (“Road signs”)",
+          "comment": "Those who live, work or service enterprises located in the area of the sign are exempt from the effect of sign 3.7 “Moving with a trailer is prohibited.” (“Road signs”)",
           "pddPoints": [],
           "image": "0d8b9795e9ed3f8aa799a590e935a9f8",
           "topic": [
@@ -16347,7 +16347,7 @@
         },
         {
           "id": "574723fbb679603e95601fc95fd11fa3",
-          "question": "Where can you stay?",
+          "question": "Where can you stop?",
           "answers": [
             {
               "text": "Only В",
@@ -16366,7 +16366,7 @@
               "correct": false
             }
           ],
-          "comment": "Outside a populated area, stopping or parking is permitted only on the right side of the road - on the side of the road, and in its absence - at the edge of the roadway. You will do the right thing if you stop at place “B”. (Clause 12.1 of the traffic rules)",
+          "comment": "Outside a populated area, stopping or parking is permitted only on the right side of the road - on the side of the road, and in its absence - at the edge of the roadway. You will do the right thing if you stop at place “В”. (Clause 12.1 of the traffic rules)",
           "pddPoints": [],
           "image": "6c42baf213b86b0e9651bee9c7f9eac6",
           "topic": [
@@ -16416,7 +16416,7 @@
               "correct": false
             }
           ],
-          "comment": "The intersection is equal. When determining the order of passage through an intersection, drivers are guided by the “right-hand rule.” During a turn, you will see an obstacle on the right, give way. (Clause 13.11 of traffic rules)",
+          "comment": "The intersection is equal. When determining the order of passage through an intersection, drivers are guided by the “right-hand rule.” During a U-turn, you will see an obstacle on the right, give way. (Clause 13.11 of traffic rules)",
           "pddPoints": [],
           "image": "8b7e4dff2648375a28cec259b678baac",
           "topic": [
@@ -16602,7 +16602,7 @@
               "correct": false
             }
           ],
-          "comment": "The driver of a small bus “changes lanes” into a parallel lane and further “advances” - the vehicle moves at a speed greater than the speed of the passing vehicle.",
+          "comment": "The driver of a small bus “changes lanes” into a parallel lane and further “advances” - the vehicle moves at a speed greater than the speed of the same-direction vehicle (Clause 1.2 of the Traffic Regulations, the terms “Lane change” and “Advancing”).",
           "pddPoints": [],
           "image": "6ec1d1367ac24ad74e76d6e567bb3ffa",
           "topic": [
@@ -16678,7 +16678,7 @@
               "correct": false
             }
           ],
-          "comment": "Sign “B” - 6.3.2 “Turn zone” is used to indicate the place on the road section that allows a turn, and its length. In this case, the length of the turnaround zone is no more than 15 m. The combination of signs “A” - 6.3.1 “Place for a turn” and plate 8.1.1 “Distance to object” indicate that 50 m from the installation of signs in the direction of travel there will be a place intended only for making a turn. The length of the turning zone in this situation is not specified. (“Road signs”)",
+          "comment": "Sign “Б” - 6.3.2 “Turn zone” is used to indicate the place on the road section that allows a turn, and its length. In this case, the length of the turnaround zone is no more than 15 m. The combination of signs “А” - 6.3.1 “Place for a turn” and plate 8.1.1 “Distance to object” indicate that 50 m from the installation of signs in the direction of travel there will be a place intended only for making a turn. The length of the turning zone in this situation is not specified. (“Road signs”)",
           "pddPoints": [],
           "image": "76237c12ff4775c335a34505b2da7b56",
           "topic": [
@@ -17202,7 +17202,7 @@
               "correct": false
             }
           ],
-          "comment": "Service signs inform about the location of the relevant facilities. Designated signs: “B” - 7.10 “Camping”; “A” - 7.9 “Hotel or motel”; “B” - 7.11 “Resting Place.” (“Road Signs”)",
+          "comment": "Service signs inform about the location of the relevant facilities. Designated signs: “Б” - 7.10 “Camping”; “А” - 7.9 “Hotel or motel”; “В” - 7.11 “Resting Place.” (“Road Signs”)",
           "pddPoints": [],
           "image": "25e380c254ce3fd7214589d1472bdef3",
           "topic": [
@@ -17219,7 +17219,7 @@
               "correct": true
             },
             {
-              "text": "Continue along the lane until the intersection",
+              "text": "Continue along the lane only until the intersection",
               "correct": false
             },
             {
@@ -17689,7 +17689,7 @@
               "correct": false
             }
           ],
-          "comment": "Signs: “B” - 4.6 “Minimum speed limit”, “B” - 6.2 “Recommended speed”. (“Road signs”)",
+          "comment": "Signs: “Б” - 4.6 “Minimum speed limit”, “В” - 6.2 “Recommended speed”. (“Road signs”)",
           "pddPoints": [],
           "image": "24794506dffeecac05a6ccefcb06ad06",
           "topic": [
@@ -17715,7 +17715,7 @@
               "correct": false
             }
           ],
-          "comment": "Drivers of trucks who have sign 6.4 “Parking (parking space)” with any of the signs 8.6.2, 8.6.3 and 8.6.6-8.6.9 “Method of placing vehicles” cannot stand in the coverage area of ​​the combination of these signs. (“Road signs”) Drivers of a passenger car and motorcycle, in accordance with sign 6.4 “Parking (parking space)” and plate 8.6.3, absolutely correctly complied with the requirements of the Rules. (Clause 12.2 of the Traffic Regulations)",
+          "comment": "Drivers of trucks who have sign 6.4 “Parking (parking space)” with any of the signs 8.6.2, 8.6.3 and 8.6.6-8.6.9 “Method of placing vehicles” cannot stand in the coverage area of the combination of these signs. (“Road signs”) Drivers of a passenger car and motorcycle, in accordance with sign 6.4 “Parking (parking space)” and plate 8.6.3, absolutely correctly complied with the requirements of the Rules. (Clause 12.2 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "663995696997424644b8cb9e4c945f26",
           "topic": [
@@ -17741,7 +17741,7 @@
               "correct": false
             }
           ],
-          "comment": "Signs take precedence over markings. Therefore, according to sign 4.2.2 “Avoiding obstacles on the left”, you must continue moving along trajectory “A”. (“Road signs”, “Horizontal markings”)",
+          "comment": "Signs take precedence over markings. Therefore, according to sign 4.2.2 “Avoiding obstacles on the left”, you must continue moving along trajectory “А”. (“Road signs”, “Horizontal markings”)",
           "pddPoints": [],
           "image": "8dbd3b88f109344853f74b2abb230352",
           "topic": [
@@ -17866,7 +17866,7 @@
               "correct": false
             }
           ],
-          "comment": "The action takes place in a populated area, indicated by sign 5.23.1 “Beginning of a populated area” (with a white background). Speed ​​in such populated areas is limited. The permissible maximum speed is 60 km/h (“Road signs”, clause 10.2 of the traffic rules)",
+          "comment": "The action takes place in a populated area, indicated by sign 5.23.1 “Beginning of a populated area” (with a white background). Speed in such populated areas is limited. The permissible maximum speed is 60 km/h (“Road signs”, clause 10.2 of the traffic rules)",
           "pddPoints": [],
           "image": "c81c2e3323923421fdfee78b1707ba7c",
           "topic": [
@@ -17920,7 +17920,7 @@
               "correct": false
             }
           ],
-          "comment": "Place “B” is located within the coverage area of ​​sign 3.27 “Stopping is prohibited”, the effect of which, according to plate 8.2.3 “Validity area”, ends behind the sign. Therefore, you can stop at place “B”. In place “A” on a one-way road, a truck with a permissible maximum weight of more than 3.5 tons can stop only for loading or unloading cargo. (“Road signs”, clause 12.1 of the traffic rules)",
+          "comment": "Place “В” is located within the coverage area of sign 3.27 “Stopping is prohibited”, the effect of which, according to plate 8.2.3 “Validity area”, ends behind the sign. Therefore, you can stop at place “Б”. In place “А” on a one-way road, a truck with a permissible maximum weight of more than 3.5 tons can stop only for loading or unloading cargo. (“Road signs”, clause 12.1 of the traffic rules)",
           "pddPoints": [],
           "image": "45fbd7f0b116b22d918a5c7702bb3ece",
           "topic": [
@@ -18202,7 +18202,7 @@
               "correct": false
             }
           ],
-          "comment": "The effect of sign 3.27 “Stopping is prohibited” extends to the nearest intersection. You cannot stop at place “A”, you cannot stand. The driver of a small bus, stopping on the side of the road behind an intersection, i.e. in place “B”, does not violate the rules. (Clause 12.1 of the traffic rules)",
+          "comment": "The effect of sign 3.27 “Stopping is prohibited” extends to the nearest intersection. You cannot stop at place “А”, you cannot stand. The driver of a small bus, stopping on the side of the road behind an intersection, i.e. in place “Б”, does not violate the rules. (Clause 12.1 of the traffic rules)",
           "pddPoints": [],
           "image": "eadfb24c142502d9414b76637b1f27dd",
           "topic": [
@@ -18232,7 +18232,7 @@
               "correct": false
             }
           ],
-          "comment": "Plates 8.4.1 (A) and 8.4.3 (B) “Type of vehicle” apply to: “A” - to trucks, including with a trailer, with a r.m.m. of more than 3.5 tons, “B” - to passenger cars, as well as trucks with a r.m.m. up to 3.5 tons. Plate 8.6.1 (B) “Method of parking a vehicle” extends the effect of sign 6.4 “Parking (parking space)” to ALL vehicles. Therefore, only plates “A” and “B” apply to trucks whose g.m.m. is more than 3.5 tons (“Road signs”)",
+          "comment": "Plates 8.4.1 (А) and 8.4.3 (Б) “Type of vehicle” apply to: “А” - to trucks, including with a trailer, with a r.m.m. of more than 3.5 tons, “Б” - to passenger cars, as well as trucks with a r.m.m. up to 3.5 tons. Plate 8.6.1 (В) “Method of parking a vehicle” extends the effect of sign 6.4 “Parking (parking space)” to ALL vehicles. Therefore, only plates “А” and “В” apply to trucks whose g.m.m. is more than 3.5 tons (“Road signs”)",
           "pddPoints": [],
           "image": "218d5973de82252dfe46a51de0928e0e",
           "topic": [
@@ -18257,7 +18257,7 @@
               "correct": true
             }
           ],
-          "comment": "On the rightmost lane indicated by marking 1.23.1 (in the form of the letter \"A\") and sign 5.14.1 \"Lane for fixed-route vehicles\" of the vehicles listed in the responses, buses and trolleybuses moving along the established routes with designated stopping places related to fixed-route vehicles, as well as school buses, passenger taxis and cyclists have the right to move.(Clause 1.2 of traffic rules, \"Road signs\", \"Horizontal marking\")",
+          "comment": "On the rightmost lane indicated by marking 1.23.1 (in the form of the letter \"А\") and sign 5.14.1 \"Lane for fixed-route vehicles\" of the vehicles listed in the responses, buses and trolleybuses moving along the established routes with designated stopping places related to fixed-route vehicles, as well as school buses, passenger taxis and cyclists have the right to move.(Clause 1.2 of traffic rules, \"Road signs\", \"Horizontal marking\")",
           "pddPoints": [],
           "image": "1d20ef7ba94f4118536364bbeb98ef8c",
           "topic": [
@@ -18696,7 +18696,7 @@
               "correct": false
             }
           ],
-          "comment": "Of those marked, only sign “B” - 1.3.2 “Multi-track railway” - is installed immediately before the railway crossing. It should be taken into account that in the absence of barriers on the railway. When crossing, signs 1.3.1 and 1.3.2 determine the size of the crossing. Combinations of signs “A” and “B” are installed outside populated areas at a distance of 150-300 m (“Road signs”)",
+          "comment": "Of those marked, only sign “В” - 1.3.2 “Multi-track railway” - is installed immediately before the railway crossing. It should be taken into account that in the absence of barriers on the railway. When crossing, signs 1.3.1 and 1.3.2 determine the size of the crossing. Combinations of signs “А” and “Б” are installed outside populated areas at a distance of 150-300 m (“Road signs”)",
           "pddPoints": [],
           "image": "c3634417d8d152602a38565c2bf781dd",
           "topic": [
@@ -18721,7 +18721,7 @@
               "correct": false
             }
           ],
-          "comment": "Traffic at the intersection marked with sign 4.3 “Roundabout” is organized in a circle in the direction of the arrows. Trajectory “A” passes in the opposite direction, which is unacceptable. To make a U-turn, you should go to the intersection and take a “lap of honor.” A U-turn can only be made along trajectory “B”. (“Road signs”)",
+          "comment": "Traffic at the intersection marked with sign 4.3 “Roundabout” is organized in a circle in the direction of the arrows. Trajectory “А” passes in the opposite direction, which is unacceptable. To make a U-turn, you should go to the intersection and take a “lap of honor.” A U-turn can only be made along trajectory “Б”. (“Road signs”)",
           "pddPoints": [],
           "image": "333cc82bac3c9a2e0696190f6ecafd7e",
           "topic": [
@@ -18798,7 +18798,7 @@
               "correct": false
             }
           ],
-          "comment": "The traffic controller’s actions apply to the intersection of roadways at which he is located. We will assume that it is at the first intersection. From the arm's length side, trackless vehicles are only allowed to move to the right. You can continue moving along trajectory “A”. (Clause 6.10 of the Traffic Regulations)",
+          "comment": "The traffic controller’s actions apply to the intersection of roadways at which he is located. We will assume that it is at the first intersection. From the arm's length side, trackless vehicles are only allowed to move to the right. You can continue moving along trajectory “А”. (Clause 6.10 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "01cacdbfa800b00afbeaf9d4e992d979",
           "topic": [
@@ -19284,7 +19284,7 @@
               "correct": false
             }
           ],
-          "comment": "The intermittent yellow line 1.10 indicates places where parking is prohibited. There is nothing contradicting the stop.(“Horizontal Layout”)",
+          "comment": "The intermittent yellow line 1.10 indicates places where parking is prohibited. There is nothing contradicting the stop.(“Horizontal markings”)",
           "pddPoints": [],
           "image": "f81e4efcdf66e32d71f385141e5e5d26",
           "topic": [
@@ -19752,7 +19752,7 @@
               "correct": false
             }
           ],
-          "comment": "You can continue driving without violating the Rules in directions “A” and “B”. Traffic in direction “G” is prohibited by sign 3.18.1 “Right turn prohibited.” Direction “B” passes along the roadway of oncoming traffic. Such movement is strictly prohibited. (Clause 1.4 of the Traffic Regulations, “Road Signs”)",
+          "comment": "You can continue driving without violating the Rules in directions “А” and “В”. Traffic in direction “Г” is prohibited by sign 3.18.1 “Right turn prohibited.” Direction “Б” passes along the roadway of oncoming traffic. Such movement is strictly prohibited. (Clause 1.4 of the Traffic Regulations, “Road Signs”)",
           "pddPoints": [],
           "image": "ed2fe2df24d514225d47c9e9ce92deeb",
           "topic": [
@@ -19782,7 +19782,7 @@
               "correct": true
             }
           ],
-          "comment": "All signs allow you to turn left. Sign “A” - 3.19 “No U-turn” - allows you to turn left. Signs “B” and “C” also do not prohibit making a maneuver - turning left. (“Road signs”)",
+          "comment": "All signs allow you to turn left. Sign “А” - 3.19 “No U-turn” - allows you to turn left. Signs “Б” and “В” also do not prohibit making a maneuver - turning left. (“Road signs”)",
           "pddPoints": [],
           "image": "9ccee42465f173cd04dd9e05aa3dcb45",
           "topic": [
@@ -19803,7 +19803,7 @@
               "correct": false
             },
             {
-              "text": "Turn left and turn",
+              "text": "Turn left and make a U-turn",
               "correct": true
             }
           ],
@@ -19832,7 +19832,7 @@
               "correct": true
             }
           ],
-          "comment": "The right hand of the adjuster is extended forward. With this gesture of the adjuster from the left side, trackless vehicles are allowed to move in all directions - straight, right, left and turn.(Clause 6.10 of the Traffic Rules)",
+          "comment": "The right hand of the adjuster is extended forward. With this gesture of the adjuster from the left side, trackless vehicles are allowed to move in all directions - straight, right, left and U-turn.(Clause 6.10 of the Traffic Rules)",
           "pddPoints": [],
           "image": "368f3181c80237d94dfa38fae1614aff",
           "topic": [
@@ -19961,7 +19961,7 @@
               "correct": false
             }
           ],
-          "comment": "Overtaking is prohibited at equivalent intersections. Therefore, the driver of a small vehicle can only overtake along trajectory “A”. (Clause 11.4 of the Traffic Regulations)",
+          "comment": "Overtaking is prohibited at equivalent intersections. Therefore, the driver of a small vehicle can only overtake along trajectory “А”. (Clause 11.4 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "34513b6e88ebe0bf4557ae9e5f48456f",
           "topic": [
@@ -20272,7 +20272,7 @@
               "correct": true
             }
           ],
-          "comment": "Mandatory signs, which include the sign A - 4.1.3 \"Movement to the left\", allowing a turn to the left, also allow a turn. Sign B - 5.7.2 \"Exit to a one-way road\" prohibits turning to the right, but does not prohibit turning. Most often, both drivers and traffic police officers either forget or do not know that the sign B - 3.18.2 \"Left turn is prohibited\" does not prohibit turning. Therefore, all three of these signs allow you to make a maneuver - a U-turn.(“Traffic Signs”)",
+          "comment": "Mandatory signs, which include the sign А - 4.1.3 \"Movement to the left\", allowing a turn to the left, also allow a U-turn. Sign В - 5.7.2 \"Exit to a one-way road\" prohibits turning to the right, but does not prohibit turning. Most often, both drivers and traffic police officers either forget or do not know that the sign Б - 3.18.2 \"Left turn is prohibited\" does not prohibit turning. Therefore, all three of these signs allow you to make a maneuver - a U-turn.(“Traffic Signs”)",
           "pddPoints": [],
           "image": "c482697b3bd6c695b04e7d526853f403",
           "topic": [
@@ -20324,7 +20324,7 @@
               "correct": false
             }
           ],
-          "comment": "Horizontal marking 1.23.1 (in the form of the letter “A”) designates a special lane for route vehicles, which include buses and trolleybuses moving along established routes with designated stops. Minibus taxis do not fall into this category.",
+          "comment": "Horizontal marking 1.23.1 (in the form of the letter “А”) designates a special lane for route vehicles, which include buses and trolleybuses moving along established routes with designated stops. Minibus taxis do not fall into this category.",
           "pddPoints": [],
           "image": "a83e88ca9d5dea8411083cacb0d886c2",
           "topic": [
@@ -20375,7 +20375,7 @@
               "correct": false
             }
           ],
-          "comment": "“A” is a warning triangle. (Clause 7.3 of the Traffic Regulations)",
+          "comment": "“А” is a warning triangle. (Clause 7.3 of the Traffic Regulations)",
           "pddPoints": [],
           "image": "f5759b1f0f48462b65625dbba5dc3857",
           "topic": [
