@@ -145,8 +145,8 @@ class PremiumService extends ChangeNotifier {
 
       if (lastDate != todayStr) {
         _dailyCardsCount = 0;
-        await prefs.setString(dateKey, todayStr);
-        await prefs.setInt(cardsKey, 0);
+        unawaited(prefs.setString(dateKey, todayStr));
+        unawaited(prefs.setInt(cardsKey, 0));
       } else {
         _dailyCardsCount =
             prefs.getInt(cardsKey) ?? prefs.getInt(_prefKeyDailyCards) ?? 0;
@@ -584,7 +584,7 @@ class PremiumService extends ChangeNotifier {
             headers: auth.serverHeaders,
             body: jsonEncode({'order': order}),
           )
-          .timeout(const Duration(seconds: 25));
+          .timeout(const Duration(seconds: 30));
       if (response.statusCode != 200) return null;
       final status =
           (jsonDecode(response.body) as Map<String, dynamic>)['status']

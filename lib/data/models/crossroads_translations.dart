@@ -134,14 +134,14 @@ class CrossroadsTranslations {
                 'A car with a flashing light and a special sound signal on has priority regardless of the signs!',
           ),
           'car_south': LocalizedActorText(
-            name: 'Blue sedan (Home)',
+            name: 'Blue sedan (Main road)',
             ruleExplanation:
                 'After the ambulance, the blue car on the main road passes second.',
           ),
           'car_west': LocalizedActorText(
-            name: 'Red hatchback (Minor)',
+            name: 'Red hatchback (Secondary road)',
             ruleExplanation:
-                'The red hatchback in the secondary with the 2.4 sign is inferior to everyone.',
+                'The red hatchback on the secondary road with the 2.4 sign gives way to everyone.',
           ),
         },
       ),
@@ -169,7 +169,7 @@ class CrossroadsTranslations {
         },
       ),
       'cross_stop_sign': LocalizedScenarioText(
-        title: 'Sign 2.5 "No entry without stopping"',
+        title: 'Sign 2.5 "Driving without stopping is prohibited"',
         subtitle:
             'At the STOP sign you stop and give way to traffic on the road you are crossing.',
         pddArticle:
@@ -244,7 +244,7 @@ class CrossroadsTranslations {
         pddArticle: 'Clauses 3.2 and 13.11 of the Russian Traffic Regulations',
         actors: {
           'police_south': LocalizedActorText(
-            name: 'DPS patrol (siren)',
+            name: 'Traffic police patrol (siren)',
             ruleExplanation:
                 'A car with flashing lights and a siren on has priority over all participants, including a tram (clause 3.2).',
           ),
@@ -256,7 +256,7 @@ class CrossroadsTranslations {
           'car_north': LocalizedActorText(
             name: 'Blue hatchback',
             ruleExplanation:
-                'The blue car is inferior to traffic police special vehicles and trams.',
+                'The blue car gives way to traffic police special vehicles and trams.',
           ),
         },
       ),
@@ -588,12 +588,12 @@ class CrossroadsTranslations {
           'car_south': LocalizedActorText(
             name: 'Көк седан',
             ruleExplanation:
-                'Көгілдір көлік түзу келе жатыр. Бұрылыс кезінде солтүстік седан оған көнуі керек.',
+                'Көгілдір көлік түзу келе жатыр. Бұрылыс кезінде солтүстік седан оған жол беруі керек.',
           ),
           'car_north': LocalizedActorText(
             name: 'Қызыл хэтчбек (Бұрылыс)',
             ruleExplanation:
-                'Айналып келе жатқан көлік қарсы келе жатқан көлікке итермелейді.',
+                'Кері бұрылып келе жатқан көлік қарсы келе жатқан көлікке жол беруі керек.',
           ),
         },
       ),
@@ -609,7 +609,7 @@ class CrossroadsTranslations {
                 'Көк көлік басты жолмен солға бұрылады. Ол автобустың оң жағында — бірінші өтеді.',
           ),
           'bus_south': LocalizedActorText(
-            name: 'Рейстік автобус',
+            name: 'Маршруттық автобус',
             ruleExplanation:
                 'Автобус та басты жолда, бірақ оң жағында көк седан. Жол беріп, екінші өтеді.',
           ),
@@ -633,14 +633,14 @@ class CrossroadsTranslations {
             'Ресейдің жол қозғалысы ережелерінің 3.2 және 13.11 тармақтары',
         actors: {
           'police_south': LocalizedActorText(
-            name: 'DPS патруль (сирена)',
+            name: 'Жол полициясы патрулі (сирена)',
             ruleExplanation:
                 'Жыпылықтайтын шамдары мен сиренасы бар автомобиль барлық қатысушылардан, соның ішінде трамвайдан да басымдылыққа ие (3.2-тармақ).',
           ),
           'tram_east': LocalizedActorText(
             name: 'Қызыл трамвай',
             ruleExplanation:
-                'Баламалы қиылыста трамвай қарапайым вагондарға қарағанда басымдыққа ие және екінші орынға шығады.',
+                'Тең құқықты қиылыста трамвай қарапайым көліктерге қарағанда басымдыққа ие және екінші орынға шығады.',
           ),
           'car_north': LocalizedActorText(
             name: 'Көк хэтчбек',
@@ -684,7 +684,7 @@ class CrossroadsTranslations {
                 'Кроссовер басты жолмен тура жүреді (2.3.2 белгісі).',
           ),
           'truck_east': LocalizedActorText(
-            name: 'Борттық жүк көлігі (қосылатын жол)',
+            name: 'Жүк көлігі (қосылатын жол)',
             ruleExplanation:
                 'Жүк көлігі қосылатын жолдан шығады (2.4 белгісі) және басты жолдағы кроссоверді өткізеді.',
           ),
@@ -752,9 +752,9 @@ class CrossroadsTranslations {
         },
       ),
       'cross_truck_left_turn': LocalizedScenarioText(
-        title: 'Солға бұрылыңыз: қарсы келе жатқан көлікті өту',
+        title: 'Солға бұрылыңыз: қарсы келе жатқан көлікке жол беру',
         subtitle:
-            'Солға бұрылу кезінде жүргізуші тікелей алға қарай келе жатқан көлікке көнуі керек.',
+            'Солға бұрылу кезінде жүргізуші тікелей алға қарай келе жатқан көлікке жол беруі керек.',
         pddArticle: 'Ресейдің жол қозғалысы ережелерінің 13.12 тармағы',
         actors: {
           'moto_north': LocalizedActorText(
