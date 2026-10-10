@@ -29,7 +29,8 @@ class SignItem {
   }) {
     final rawImage = (map['image'] as String? ?? '').trim();
     final fileName = rawImage.isNotEmpty ? rawImage.split('/').last : '';
-    final rawTitle = (map['title'] as String? ?? map['name'] as String? ?? number).trim();
+    final rawTitle =
+        (map['title'] as String? ?? map['name'] as String? ?? number).trim();
     final rawDesc = (map['description'] as String? ?? '').trim();
     final rawFolk = (map['folkName'] as String?)?.trim();
 

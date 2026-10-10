@@ -76,17 +76,34 @@ void main() async {
 
   final progressDataSource = ProgressDataSource();
   try {
-    await progressDataSource.init().timeout(const Duration(seconds: 2));
+    await progressDataSource.init().timeout(const Duration(seconds: 4));
   } catch (e) {
     debugPrint('ProgressDataSource init error: $e');
     ErrorReporter.report(ErrorCategory.app, 'startup.progress', error: e);
   }
 
+  // SharedPreferences на слабом Android (Xiaomi, TECNO) может не уложиться
+  // в 2 с на холодном старте. Старт этого не ждёт: init доработает в фоне.
+  final premiumInit = PremiumService.instance.init();
   try {
-    await PremiumService.instance.init().timeout(const Duration(seconds: 2));
+    await premiumInit.timeout(const Duration(seconds: 2));
   } catch (e) {
-    debugPrint('PremiumService init error: $e');
-    ErrorReporter.report(ErrorCategory.app, 'startup.premium', error: e);
+    debugPrint('PremiumService init is slow or failed: $e');
+    if (e is TimeoutException) {
+      unawaited(
+        premiumInit
+            .timeout(const Duration(seconds: 8))
+            .catchError(
+              (Object late) => ErrorReporter.report(
+                ErrorCategory.app,
+                'startup.premium',
+                error: late,
+              ),
+            ),
+      );
+    } else {
+      ErrorReporter.report(ErrorCategory.app, 'startup.premium', error: e);
+    }
   }
 
   // Восстановление входа на слабом Android (защищённое хранилище сессии) может
