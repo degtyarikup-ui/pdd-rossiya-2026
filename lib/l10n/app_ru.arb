@@ -1289,6 +1289,8 @@
   "languageRu": "Русский",
   "languageEn": "English",
   "languageKk": "Қазақша",
+  "languageSystem": "По умолчанию (системный)",
+  "interfaceSection": "Интерфейс",
   "@languageSetting": {
     "description": "Пункт настроек выбора языка интерфейса"
   },
@@ -1300,5 +1302,11 @@
   },
   "@languageKk": {
     "description": "Название казахского языка"
+  },
+  "@languageSystem": {
+    "description": "Выбор системного языка по умолчанию"
+  },
+  "@interfaceSection": {
+    "description": "Заголовок секции настроек интерфейса"
   }
 }

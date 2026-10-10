@@ -50,7 +50,6 @@ class AppSettingsController extends StateNotifier<AppSettings> {
 
   Future<void> _load() async {
     state = await _dataSource.loadAppSettings();
-    updateAppLocale(Locale(state.languageCode));
     SoundEffectsService.instance.setEnabled(state.soundEffectsEnabled);
   }
 
@@ -106,7 +105,7 @@ class AppSettingsController extends StateNotifier<AppSettings> {
 
   Future<void> setLanguageCode(String value) async {
     state = state.copyWith(languageCode: value);
-    updateAppLocale(Locale(value));
+    updateAppLocale(Locale(state.effectiveLanguageCode));
     await _dataSource.saveAppSettings(state);
   }
 

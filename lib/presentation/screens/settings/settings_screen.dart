@@ -147,6 +147,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
               _ThemeOptionTile(
+                icon: Icons.brightness_auto_rounded,
+                label: appL10n.languageSystem,
+                selected: settings.languageCode == 'system',
+                onTap: () {
+                  HapticFeedbackHelper.select();
+                  controller.setLanguageCode('system');
+                  Navigator.pop(sheetCtx);
+                },
+              ),
+              const SizedBox(height: AppDimensions.spacingS),
+              _ThemeOptionTile(
                 icon: Icons.language_rounded,
                 label: 'Русский',
                 selected: settings.languageCode == 'ru',
@@ -331,6 +342,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   32,
                 ),
                 children: [
+                  _buildSectionTitle(appL10n.interfaceSection),
+                  _buildSectionCard(
+                    children: [
+                      _buildSettingItem(
+                        icon: Icons.language_rounded,
+                        title: appL10n.languageSetting,
+                        trailing: _buildLanguageBadge(settings),
+                        onTap: () =>
+                            _showLanguagePicker(settings, settingsController),
+                      ),
+                      _buildDivider(),
+                      _buildSettingItem(
+                        icon: Icons.palette_outlined,
+                        title: appL10n.themeSetting,
+                        trailing: _buildThemeBadge(settings),
+                        onTap: () =>
+                            _showThemePicker(settings, settingsController),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppDimensions.spacingXL),
+
                   _buildSectionTitle(appL10n.preparation),
                   _buildSectionCard(
                     children: [
@@ -351,22 +384,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                           );
                         },
-                      ),
-                      _buildDivider(),
-                      _buildSettingItem(
-                        icon: Icons.palette_outlined,
-                        title: appL10n.themeSetting,
-                        trailing: _buildThemeBadge(settings),
-                        onTap: () =>
-                            _showThemePicker(settings, settingsController),
-                      ),
-                      _buildDivider(),
-                      _buildSettingItem(
-                        icon: Icons.language_rounded,
-                        title: appL10n.languageSetting,
-                        trailing: _buildLanguageBadge(settings),
-                        onTap: () =>
-                            _showLanguagePicker(settings, settingsController),
                       ),
                       if (CountryConfig.current.hasCdCategory) ...[
                         _buildDivider(),
@@ -689,17 +706,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildLanguageBadge(AppSettings settings) {
     final colors = AppColors.of(context);
     String label;
-    switch (settings.languageCode) {
-      case 'en':
-        label = 'English';
-        break;
-      case 'kk':
-        label = 'Қазақша';
-        break;
-      case 'ru':
-      default:
-        label = 'Русский';
-        break;
+    if (settings.languageCode == 'system') {
+      final effective = settings.effectiveLanguageCode;
+      final effectiveName = switch (effective) {
+        'en' => 'English',
+        'kk' => 'Қазақша',
+        _ => 'Русский',
+      };
+      label = '${appL10n.themeSystem} ($effectiveName)';
+    } else {
+      switch (settings.languageCode) {
+        case 'en':
+          label = 'English';
+          break;
+        case 'kk':
+          label = 'Қазақша';
+          break;
+        case 'ru':
+        default:
+          label = 'Русский';
+          break;
+      }
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

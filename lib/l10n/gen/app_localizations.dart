@@ -5031,6 +5031,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Қазақша'**
   String get languageKk;
+
+  /// Выбор системного языка по умолчанию
+  ///
+  /// In ru, this message translates to:
+  /// **'По умолчанию (системный)'**
+  String get languageSystem;
+
+  /// Заголовок секции настроек интерфейса
+  ///
+  /// In ru, this message translates to:
+  /// **'Интерфейс'**
+  String get interfaceSection;
 }
 
 class _AppLocalizationsDelegate

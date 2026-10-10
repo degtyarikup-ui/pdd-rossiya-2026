@@ -223,9 +223,19 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
   }
 
   @override
+  void didChangeLocales(List<Locale>? locales) {
+    super.didChangeLocales(locales);
+    final settings = ref.read(appSettingsProvider);
+    if (settings.languageCode == 'system') {
+      updateAppLocale(Locale(settings.effectiveLanguageCode));
+      setState(() {});
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final appSettings = ref.watch(appSettingsProvider);
-    updateAppLocale(Locale(appSettings.languageCode));
+    updateAppLocale(Locale(appSettings.effectiveLanguageCode));
     HapticFeedbackHelper.setEnabled(appSettings.hapticsEnabled);
 
     final String initialScreen = kDebugMode
@@ -259,7 +269,7 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
       darkTheme: AppTheme.darkTheme,
       themeMode: appSettings.themeMode,
       navigatorObservers: [appRouteObserver],
-      locale: Locale(appSettings.languageCode),
+      locale: Locale(appSettings.effectiveLanguageCode),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => AppMaxWidthFrame(child: child),

@@ -5,7 +5,9 @@ import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -62,6 +64,8 @@ Future<ProgressDataSource> pumpExam(
   SharedPreferences.setMockInitialValues({});
   final dataSource = ProgressDataSource();
   await dataSource.init();
+  await dataSource.saveAppSettings(const AppSettings(languageCode: 'ru'));
+  updateAppLocale(const Locale('ru'));
 
   await tester.pumpWidget(
     ProviderScope(
@@ -70,6 +74,9 @@ Future<ProgressDataSource> pumpExam(
         ttsServiceProvider.overrideWithValue(_SilentTts()),
       ],
       child: MaterialApp(
+        locale: const Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: ExamScreen(
           allQuestions: questions ?? buildQuestions(60),
           rules: rules,

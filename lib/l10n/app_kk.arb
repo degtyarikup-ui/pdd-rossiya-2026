@@ -820,5 +820,7 @@
   "languageSetting": "Тіл",
   "languageRu": "Русский",
   "languageEn": "English",
-  "languageKk": "Қазақша"
+  "languageKk": "Қазақша",
+  "languageSystem": "Әдепкі (жүйелік)",
+  "interfaceSection": "Интерфейс"
 }

@@ -3014,4 +3014,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageKk => 'Қазақша';
+
+  @override
+  String get languageSystem => 'System default';
+
+  @override
+  String get interfaceSection => 'Interface';
 }
