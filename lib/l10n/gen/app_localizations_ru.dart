@@ -3017,4 +3017,16 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return 'Итоги рейтинга через: $_temp0 $_temp1';
   }
+
+  @override
+  String get languageSetting => 'Язык';
+
+  @override
+  String get languageRu => 'Русский';
+
+  @override
+  String get languageEn => 'English';
+
+  @override
+  String get languageKk => 'Қазақша';
 }

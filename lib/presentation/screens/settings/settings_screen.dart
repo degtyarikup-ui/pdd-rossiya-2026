@@ -107,6 +107,84 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Future<void> _showLanguagePicker(
+    AppSettings settings,
+    AppSettingsController controller,
+  ) async {
+    HapticFeedbackHelper.tap();
+    final colors = AppColors.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: colors.cardBackground,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppDimensions.screenPadding,
+            0,
+            AppDimensions.screenPadding,
+            AppDimensions.spacingL,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: AppDimensions.spacingM,
+                ),
+                child: Text(
+                  appL10n.languageSetting,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: colors.primaryText,
+                  ),
+                ),
+              ),
+              _ThemeOptionTile(
+                icon: Icons.language_rounded,
+                label: 'Русский',
+                selected: settings.languageCode == 'ru',
+                onTap: () {
+                  HapticFeedbackHelper.select();
+                  controller.setLanguageCode('ru');
+                  Navigator.pop(sheetCtx);
+                },
+              ),
+              const SizedBox(height: AppDimensions.spacingS),
+              _ThemeOptionTile(
+                icon: Icons.language_rounded,
+                label: 'English',
+                selected: settings.languageCode == 'en',
+                onTap: () {
+                  HapticFeedbackHelper.select();
+                  controller.setLanguageCode('en');
+                  Navigator.pop(sheetCtx);
+                },
+              ),
+              const SizedBox(height: AppDimensions.spacingS),
+              _ThemeOptionTile(
+                icon: Icons.language_rounded,
+                label: 'Қазақша',
+                selected: settings.languageCode == 'kk',
+                onTap: () {
+                  HapticFeedbackHelper.select();
+                  controller.setLanguageCode('kk');
+                  Navigator.pop(sheetCtx);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _openTelegramSupport() async {
     HapticFeedbackHelper.tap();
     final ok = await launchUrl(
@@ -281,6 +359,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         trailing: _buildThemeBadge(settings),
                         onTap: () =>
                             _showThemePicker(settings, settingsController),
+                      ),
+                      _buildDivider(),
+                      _buildSettingItem(
+                        icon: Icons.language_rounded,
+                        title: appL10n.languageSetting,
+                        trailing: _buildLanguageBadge(settings),
+                        onTap: () =>
+                            _showLanguagePicker(settings, settingsController),
                       ),
                       if (CountryConfig.current.hasCdCategory) ...[
                         _buildDivider(),
@@ -585,6 +671,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         break;
       case ThemeMode.dark:
         label = appL10n.themeDark;
+        break;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: colors.searchFieldFill,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 13, color: colors.secondaryText),
+      ),
+    );
+  }
+
+  Widget _buildLanguageBadge(AppSettings settings) {
+    final colors = AppColors.of(context);
+    String label;
+    switch (settings.languageCode) {
+      case 'en':
+        label = 'English';
+        break;
+      case 'kk':
+        label = 'Қазақша';
+        break;
+      case 'ru':
+      default:
+        label = 'Русский';
         break;
     }
     return Container(

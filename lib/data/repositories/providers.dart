@@ -21,6 +21,7 @@ import 'package:pdd_app/data/models/sign_swiper_model.dart';
 import 'package:pdd_app/data/models/crossroads_priority_progress.dart';
 import 'package:pdd_app/data/sources/questions_data_source.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 
 final questionsDataSourceProvider = Provider<QuestionsDataSource>((ref) {
   return QuestionsDataSource();
@@ -49,6 +50,7 @@ class AppSettingsController extends StateNotifier<AppSettings> {
 
   Future<void> _load() async {
     state = await _dataSource.loadAppSettings();
+    updateAppLocale(Locale(state.languageCode));
     SoundEffectsService.instance.setEnabled(state.soundEffectsEnabled);
   }
 
@@ -99,6 +101,12 @@ class AppSettingsController extends StateNotifier<AppSettings> {
 
   Future<void> setThemeMode(ThemeMode value) async {
     state = state.copyWith(themeMode: value);
+    await _dataSource.saveAppSettings(state);
+  }
+
+  Future<void> setLanguageCode(String value) async {
+    state = state.copyWith(languageCode: value);
+    updateAppLocale(Locale(value));
     await _dataSource.saveAppSettings(state);
   }
 

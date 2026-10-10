@@ -5,6 +5,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_en.dart';
+import 'app_localizations_kk.dart';
 import 'app_localizations_ru.dart';
 
 // ignore_for_file: type=lint
@@ -92,7 +94,11 @@ abstract class AppLocalizations {
       ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[Locale('ru')];
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('kk'),
+    Locale('ru'),
+  ];
 
   /// No description provided for @exam.
   ///
@@ -5001,6 +5007,30 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Итоги рейтинга через: {days, plural, one{{days} день} few{{days} дня} many{{days} дней} other{{days} дня}} {hours, plural, one{{hours} час} few{{hours} часа} many{{hours} часов} other{{hours} часа}}'**
   String gameRatingResultsIn(int days, int hours);
+
+  /// Пункт настроек выбора языка интерфейса
+  ///
+  /// In ru, this message translates to:
+  /// **'Язык'**
+  String get languageSetting;
+
+  /// Название русского языка
+  ///
+  /// In ru, this message translates to:
+  /// **'Русский'**
+  String get languageRu;
+
+  /// Название английского языка
+  ///
+  /// In ru, this message translates to:
+  /// **'English'**
+  String get languageEn;
+
+  /// Название казахского языка
+  ///
+  /// In ru, this message translates to:
+  /// **'Қазақша'**
+  String get languageKk;
 }
 
 class _AppLocalizationsDelegate
@@ -5014,7 +5044,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['ru'].contains(locale.languageCode);
+      <String>['en', 'kk', 'ru'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -5023,6 +5053,10 @@ class _AppLocalizationsDelegate
 AppLocalizations lookupAppLocalizations(Locale locale) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
+    case 'en':
+      return AppLocalizationsEn();
+    case 'kk':
+      return AppLocalizationsKk();
     case 'ru':
       return AppLocalizationsRu();
   }

@@ -10,6 +10,7 @@ class AppSettings {
   final bool pushMessagesEnabled;
   final TicketCategory ticketCategory;
   final ThemeMode themeMode;
+  final String languageCode;
 
   /// `false` — показать онбординг выбора A/B vs C/D. До загрузки из хранилища держим `true`.
   final bool vehicleOnboardingCompleted;
@@ -23,6 +24,7 @@ class AppSettings {
     this.pushMessagesEnabled = false,
     this.ticketCategory = TicketCategory.ab,
     this.themeMode = ThemeMode.system,
+    this.languageCode = 'ru',
     this.vehicleOnboardingCompleted = true,
   });
 
@@ -35,6 +37,7 @@ class AppSettings {
     bool? pushMessagesEnabled,
     TicketCategory? ticketCategory,
     ThemeMode? themeMode,
+    String? languageCode,
     bool? vehicleOnboardingCompleted,
   }) {
     return AppSettings(
@@ -46,6 +49,7 @@ class AppSettings {
       pushMessagesEnabled: pushMessagesEnabled ?? this.pushMessagesEnabled,
       ticketCategory: ticketCategory ?? this.ticketCategory,
       themeMode: themeMode ?? this.themeMode,
+      languageCode: languageCode ?? this.languageCode,
       vehicleOnboardingCompleted:
           vehicleOnboardingCompleted ?? this.vehicleOnboardingCompleted,
     );
@@ -78,6 +82,7 @@ class AppSettings {
       pushMessagesEnabled: map['pushMessagesEnabled'] as bool? ?? false,
       ticketCategory: TicketCategory.parse(map['ticketCategory'] as String?),
       themeMode: parseThemeMode(map['themeMode'] as String?),
+      languageCode: map['languageCode'] as String? ?? 'ru',
       vehicleOnboardingCompleted: migratedOnboarding,
     );
   }
@@ -92,6 +97,7 @@ class AppSettings {
       'pushMessagesEnabled': pushMessagesEnabled,
       'ticketCategory': ticketCategory.name,
       'themeMode': themeMode.name,
+      'languageCode': languageCode,
       'vehicleOnboardingCompleted': vehicleOnboardingCompleted,
     };
   }

@@ -1284,5 +1284,21 @@
         "type": "int"
       }
     }
+  },
+  "languageSetting": "Язык",
+  "languageRu": "Русский",
+  "languageEn": "English",
+  "languageKk": "Қазақша",
+  "@languageSetting": {
+    "description": "Пункт настроек выбора языка интерфейса"
+  },
+  "@languageRu": {
+    "description": "Название русского языка"
+  },
+  "@languageEn": {
+    "description": "Название английского языка"
+  },
+  "@languageKk": {
+    "description": "Название казахского языка"
   }
 }

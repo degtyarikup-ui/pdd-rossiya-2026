@@ -4,12 +4,19 @@ import 'package:pdd_app/l10n/gen/app_localizations.dart';
 
 export 'package:pdd_app/l10n/gen/app_localizations.dart';
 
-/// Локализация текущей сборки. Язык фиксирован конфигом страны
-/// ([CountryConfig.language]) — рантайм-переключателя нет, поэтому доступ
-/// context-free: строки берём из этого объекта где угодно (в т.ч. вне виджетов).
-final AppLocalizations appL10n = lookupAppLocalizations(
-  Locale(CountryConfig.current.language),
-);
+Locale _appLocale = Locale(CountryConfig.current.language);
+AppLocalizations _cachedAppL10n = lookupAppLocalizations(_appLocale);
+
+/// Локализация текущей сборки / выбранного языка.
+/// Предоставляет context-free доступ: строки берём из этого объекта где угодно
+/// (в т.ч. вне виджетов, сервисах и репозиториях).
+AppLocalizations get appL10n => _cachedAppL10n;
+
+/// Обновляет текущую локаль приложения для context-free вызовов [appL10n].
+void updateAppLocale(Locale locale) {
+  _appLocale = locale;
+  _cachedAppL10n = lookupAppLocalizations(locale);
+}
 
 /// Доступ через context, если удобнее в виджете.
 extension L10nContext on BuildContext {
