@@ -1529,7 +1529,8 @@ class AppLocalizationsKk extends AppLocalizations {
       'Мен қателескен, содан кейін дұрыс жауап берген сұрақтар';
 
   @override
-  String get achievementDescGame => 'Ойындағы бір жүгірістегі ең жақсы ұпай';
+  String get achievementDescGame =>
+      '«Жанды қалада» бір жүрісте 200, 400, 700 және 950 ұпай жинаңыз.';
 
   @override
   String get achievementTitleRank => 'Рейтинг жеңімпазы';
@@ -1861,14 +1862,14 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get achievementDescTrafficController =>
-      'Трафик контроллерімен бір ойында 1000, 2500, 5000 және 7500 ұпай жинаңыз.';
+      '«Реттеуші» ойынында бір раундта 150, 300, 600 және 900 ұпай жинаңыз.';
 
   @override
   String get achievementTitleSignSwiper => 'Sign Connoisseur';
 
   @override
   String get achievementDescSignSwiper =>
-      'Sign Swipe бір ойынында 1000, 2500, 5000 және 7500 ұпай жинаңыз.';
+      '«Белгі-свайпер» ойынында бір раундта 100, 200, 300 және 450 ұпай жинаңыз.';
 
   @override
   String get gameSignQuestionScope => 'Басқа белгілер мен тыйымдар жоқ';
@@ -3026,4 +3027,26 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get interfaceSection => 'Интерфейс';
+
+  @override
+  String get gameScoreRulesTitle => 'Ұпай қалай есептеледі';
+
+  @override
+  String get gameScoreRulesBody =>
+      'Әр дұрыс жауап ұпай береді. Қатарынан дұрыс жауаптар шағын бонус қосады; кеңес қолданғанда сыйақының жартысы сақталады. Қате серияны тоқтатады, бірақ жиналған ұпай сақталады.';
+
+  @override
+  String gameScoreRewardLine(String game, int min, int max) {
+    return '$game: әр дұрыс жауапқа $min–$max ұпай';
+  }
+
+  @override
+  String gameScoreDailyBudget(int earned, int limit) {
+    return 'Бүгінгі рейтинг ұпайы: $earned / $limit';
+  }
+
+  @override
+  String gameScoreDailyLimitExplanation(int limit) {
+    return 'Күніне жалпы рейтингке $limit ұпайға дейін жинауға болады. Одан кейін жеке рекорд пен жаттығу үшін ойнай беріңіз. Шектеу Мәскеу уақытымен түн ортасында жаңарады.';
+  }
 }

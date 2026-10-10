@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdd_app/core/config/game_economy.dart';
 import 'package:pdd_app/data/models/achievement.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
@@ -9,24 +11,100 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('mini game records unlock independent achievement tiers', () {
-    for (var i = 0; i < AchievementThresholds.miniGame.length; i++) {
-      final threshold = AchievementThresholds.miniGame[i];
+  test('each game unlocks its own achievement tiers at the boundary', () {
+    const tiers = {
+      AchievementId.game: AchievementThresholds.game,
+      AchievementId.trafficController: AchievementThresholds.trafficController,
+      AchievementId.signSwiper: AchievementThresholds.signSwiper,
+    };
+    for (final entry in tiers.entries) {
+      for (var i = 0; i < entry.value.length; i++) {
+        for (final justBelow in [true, false]) {
+          final score = entry.value[i] - (justBelow ? 1 : 0);
+          final list = computeAchievements(
+            longestStreak: 0,
+            stats: {},
+            questionProgress: {},
+            examResults: [],
+            gameBestScore: entry.key == AchievementId.game ? score : 0,
+            trafficControllerBestScore:
+                entry.key == AchievementId.trafficController ? score : 0,
+            signSwiperBestScore: entry.key == AchievementId.signSwiper
+                ? score
+                : 0,
+          );
+          for (final game in tiers.keys) {
+            expect(
+              list.firstWhere((a) => a.id == game).level,
+              game == entry.key ? i + (justBelow ? 0 : 1) : 0,
+            );
+          }
+        }
+      }
+    }
+  });
+
+  test('historical records retain every previously earned badge tier', () {
+    const oldThresholds = [1000, 2500, 5000, 7500];
+    for (var i = 0; i < oldThresholds.length; i++) {
+      final score = oldThresholds[i];
       final list = computeAchievements(
         longestStreak: 0,
         stats: {},
         questionProgress: {},
         examResults: [],
-        gameBestScore: 0,
-        trafficControllerBestScore: threshold,
-        signSwiperBestScore: threshold - 1,
+        gameBestScore: score,
+        trafficControllerBestScore: score,
+        signSwiperBestScore: score,
       );
-      expect(
-        list.firstWhere((a) => a.id == AchievementId.trafficController).level,
-        i + 1,
-      );
-      expect(list.firstWhere((a) => a.id == AchievementId.signSwiper).level, i);
-      expect(list.firstWhere((a) => a.id == AchievementId.game).level, 0);
+      for (final id in [
+        AchievementId.game,
+        AchievementId.trafficController,
+        AchievementId.signSwiper,
+      ]) {
+        final progress = list.firstWhere((a) => a.id == id);
+        expect(progress.value, score);
+        expect(progress.level, greaterThanOrEqualTo(i + 1));
+      }
+    }
+  });
+
+  test('top game badges are attainable with a finite perfect round', () {
+    int perfectScore(int answers, int Function(int) reward) =>
+        List.generate(answers, (i) => reward(i + 1)).fold(0, (a, b) => a + b);
+    expect(
+      perfectScore(20, GameEconomy.city),
+      greaterThanOrEqualTo(AchievementThresholds.game.last),
+    );
+    expect(
+      perfectScore(30, (streak) => GameEconomy.regulator(streak)),
+      greaterThanOrEqualTo(AchievementThresholds.trafficController.last),
+    );
+    expect(
+      perfectScore(30, GameEconomy.signs),
+      greaterThanOrEqualTo(AchievementThresholds.signSwiper.last),
+    );
+  });
+
+  test('achievement descriptions match game tiers in every UI language', () {
+    const tiers = {
+      'achievementDescGame': AchievementThresholds.game,
+      'achievementDescTrafficController':
+          AchievementThresholds.trafficController,
+      'achievementDescSignSwiper': AchievementThresholds.signSwiper,
+    };
+    for (final language in ['ru', 'en', 'kk']) {
+      final arb =
+          jsonDecode(File('lib/l10n/app_$language.arb').readAsStringSync())
+              as Map<String, dynamic>;
+      for (final entry in tiers.entries) {
+        final description = arb[entry.key] as String;
+        final describedTiers = RegExp(r'\d+')
+            .allMatches(description)
+            .map((match) => int.parse(match.group(0)!))
+            .toList();
+        expect(describedTiers, entry.value, reason: '$language: ${entry.key}');
+      }
     }
   });
 
@@ -44,13 +122,13 @@ void main() {
       ),
       const AchievementProgress(
         id: AchievementId.game,
-        levels: [1000, 2500, 5000, 7500],
-        value: 2500,
+        levels: AchievementThresholds.game,
+        value: 400,
       ),
       const AchievementProgress(
         id: AchievementId.signSwiper,
-        levels: [1000, 2500, 5000, 7500],
-        value: 1000,
+        levels: AchievementThresholds.signSwiper,
+        value: 100,
       ),
     ];
     expect(achievementsForDisplay(source).map((a) => a.id), [
@@ -285,19 +363,19 @@ void main() {
       },
     );
 
-    test('game: счёт 2500 → уровень 2, счёт 0 → уровень 0', () {
-      final list2500 = computeAchievements(
+    test('game: счёт 400 → уровень 2, счёт 0 → уровень 0', () {
+      final list400 = computeAchievements(
         longestStreak: 0,
         stats: {'totalQuestions': 800, 'totalTickets': 40},
         questionProgress: {},
         examResults: [],
-        gameBestScore: 2500,
+        gameBestScore: 400,
       );
-      final game2500 = list2500.firstWhere((a) => a.id == AchievementId.game);
-      expect(game2500.levels, [1000, 2500, 5000, 7500]);
-      expect(game2500.value, 2500);
-      expect(game2500.level, 2);
-      expect(game2500.isUnlocked, isTrue);
+      final game400 = list400.firstWhere((a) => a.id == AchievementId.game);
+      expect(game400.levels, [200, 400, 700, 950]);
+      expect(game400.value, 400);
+      expect(game400.level, 2);
+      expect(game400.isUnlocked, isTrue);
 
       final list0 = computeAchievements(
         longestStreak: 0,

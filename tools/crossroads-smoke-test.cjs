@@ -1,0 +1,128 @@
+// Real Flutter scenario JSON through the native JS bridge and Three.js scene.
+// NODE_PATH=<playwright modules> node tools/crossroads-smoke-test.cjs [--all]
+// DART_BIN and CHROME_PATH can override the local runtimes.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const http = require('node:http');
+const os = require('node:os');
+const path = require('node:path');
+const { execFileSync } = require('node:child_process');
+const { pathToFileURL } = require('node:url');
+const { chromium } = require('playwright');
+
+const root = path.resolve(__dirname, '..');
+const assets = path.join(root, 'assets/game');
+const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'pdd-crossroads-smoke-'));
+const output = path.join(root, 'output/game-review/crossroads-smoke');
+
+async function main() {
+  let browser;
+  let server;
+  try {
+    const dartSource = path.join(temporary, 'scenarios.dart');
+    const modelUrl = pathToFileURL(path.join(root, 'lib/data/models/crossroads_priority_model.dart')).href;
+    fs.writeFileSync(dartSource, `import 'dart:convert';\nimport '${modelUrl}';\nvoid main() { print(jsonEncode(CrossroadsScenariosLibrary.allScenarios.map((s) => s.toJson()).toList())); }\n`);
+    const bundledDart = path.join(os.homedir(), 'flutter/bin/dart');
+    const dart = process.env.DART_BIN || (fs.existsSync(bundledDart) ? bundledDart : 'dart');
+    const scenarios = JSON.parse(execFileSync(dart, ['run', dartSource], {
+      cwd: root, encoding: 'utf8', timeout: 60000,
+    }));
+    assert(scenarios.length >= 5);
+
+    server = http.createServer((request, response) => {
+      const requestedPath = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+      if (requestedPath === '/favicon.ico') { response.writeHead(204).end(); return; }
+      const filename = path.resolve(assets, `.${requestedPath}`);
+      if (!filename.startsWith(`${assets}${path.sep}`) || !fs.existsSync(filename)) {
+        response.writeHead(404).end(); return;
+      }
+      const types = { '.html': 'text/html', '.js': 'application/javascript', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg' };
+      response.writeHead(200, { 'Content-Type': types[path.extname(filename)] || 'application/octet-stream' });
+      fs.createReadStream(filename).pipe(response);
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    browser = await chromium.launch({
+      headless: true,
+      executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      args: ['--use-angle=swiftshader'],
+    });
+    const page = await browser.newPage({ viewport: { width: 414, height: 896 }, deviceScaleFactor: 1 });
+    const errors = [];
+    page.on('pageerror', error => errors.push(String(error)));
+    page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+    await page.addInitScript(() => {
+      window.smokeEvents = [];
+      window.FlutterChannel = { postMessage: raw => window.smokeEvents.push(JSON.parse(raw)) };
+    });
+    await page.goto(`http://127.0.0.1:${address.port}/crossroads.html?weather=clear`);
+    await page.waitForFunction(() => window.smokeEvents.some(event => event.type === 'ready'));
+    assert.equal(await page.locator('canvas').count(), 1);
+    await page.waitForFunction(() => window._pddCrossroads.renderer.info.render.triangles > 500);
+    fs.mkdirSync(output, { recursive: true });
+
+    const representativeIds = ['cross_main_turns_left', 'cross_equal_tram', 'cross_emergency_priority', 'cross_uturn_equal', 'cross_two_trams_and_cars'];
+    const selected = process.argv.includes('--all') ? scenarios : representativeIds.map(id => {
+      const scenario = scenarios.find(candidate => candidate.id === id);
+      assert(scenario, `Missing representative scenario: ${id}`);
+      return scenario;
+    });
+    for (const scenario of selected) {
+      await page.evaluate(data => {
+        window.smokeEvents = [];
+        loadScenarioData(data);
+        setWeather('clear', true);
+        setViewInset(235);
+        setZoom(1);
+      }, scenario);
+      assert.equal(await page.evaluate(() => window._pddCrossroads.vehiclesGroup.children.length), scenario.actors.length);
+      if (scenario === scenarios[0]) await page.screenshot({ path: path.join(output, 'initial.png') });
+      let completedSteps = 0;
+      for (const actor of [...scenario.actors].sort((a, b) => a.order - b.order)) {
+        await page.evaluate(id => selectVehicle(id), actor.id);
+        await page.waitForFunction(expected => window.smokeEvents.filter(event => event.type === 'step_correct').length === expected, ++completedSteps);
+        const lastStep = await page.evaluate(() => window.smokeEvents.filter(event => event.type === 'step_correct').at(-1));
+        assert.equal(lastStep.actorId, actor.id);
+        await page.waitForFunction(id => {
+          const mesh = window._pddCrossroads.vehiclesGroup.children.find(child => child.userData.actorId === id);
+          return mesh && !mesh.visible;
+        }, actor.id, { timeout: 15000 });
+      }
+      await page.waitForFunction(() => window.smokeEvents.some(event => event.type === 'crossroad_complete'));
+      assert.equal(await page.evaluate(() => window.smokeEvents.filter(event => event.type === 'collision').length), 0);
+      console.log(`${scenario.id}: ${completedSteps} correct steps and completion`);
+    }
+
+    // Exported Dart objects use `explanation`; the standalone demo historically
+    // used `ruleExplanation`. The real bridge must preserve the actual rule.
+    const scenario = scenarios[0];
+    const priority = scenario.actors.find(actor => actor.order === 1);
+    const wrong = scenario.actors.find(actor => actor.order === 2);
+    await page.evaluate(data => { window.smokeEvents = []; loadScenarioData(data); }, scenario);
+    await page.evaluate(id => selectVehicle(id), wrong.id);
+    await page.waitForFunction(() => window.smokeEvents.some(event => event.type === 'collision'));
+    const collision = await page.evaluate(() => window.smokeEvents.find(event => event.type === 'collision'));
+    assert.equal(collision.reason, priority.explanation);
+    assert.equal(collision.pddArticle, scenario.pddArticle);
+    assert.equal(collision.priorityId, priority.id);
+    await page.screenshot({ path: path.join(output, 'collision.png') });
+
+    await page.evaluate(() => { window.smokeEvents = []; resetCurrentScenario(); });
+    assert.equal(await page.evaluate(() => window._pddCrossroads.vehiclesGroup.children.length), scenario.actors.length);
+    await page.evaluate(id => selectVehicle(id), priority.id);
+    await page.waitForFunction(() => window.smokeEvents.some(event => event.type === 'step_correct'));
+    await page.evaluate(() => setZoom(0.5));
+    await page.screenshot({ path: path.join(output, 'zoom-out.png') });
+    await page.evaluate(() => setZoom(2.5));
+    await page.screenshot({ path: path.join(output, 'zoom-in.png') });
+    assert.deepEqual(errors, []);
+    fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ scenarios: selected.length, collision, errors }, null, 2));
+    console.log(`${selected.length} scenarios, actual Dart collision explanation, retry, bridge and zoom passed; no JavaScript errors.`);
+  } finally {
+    if (browser) await browser.close();
+    if (server) await new Promise(resolve => server.close(resolve));
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+}
+
+main().catch(error => { console.error(error); process.exitCode = 1; });

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdd_app/core/config/game_economy.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/data/datasources/sign_scenarios_library.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
@@ -14,6 +15,7 @@ import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/domain/services/sign_swiper_engine.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/screens/games/crossroads/crossroads_screen.dart';
 import 'package:pdd_app/presentation/screens/games/games_hub_screen.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_screen.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/widgets/swipe_card_view.dart';
@@ -124,6 +126,27 @@ void main() {
     await tester.pump();
   }
 
+  Future<void> answerTraffic(
+    WidgetTester tester,
+    _TrafficWebController controller, {
+    required bool correct,
+  }) async {
+    final allowed = controller.allowedMoves;
+    final move = correct
+        ? allowed.first
+        : TrafficMove.values.firstWhere((move) => !allowed.contains(move));
+    await tester.tap(find.text(_moveLabel(move)));
+    await tester.pump();
+    if (!correct) {
+      await tester.pump(const Duration(milliseconds: 1100));
+    } else if (move == TrafficMove.none) {
+      await tester.pump(const Duration(milliseconds: 700));
+    } else {
+      controller.emitMoveComplete();
+      await tester.pump(const Duration(milliseconds: 160));
+    }
+  }
+
   testWidgets('Swiper starts immediately, expires once and restarts', (
     tester,
   ) async {
@@ -134,7 +157,7 @@ void main() {
       tester.widget<GameTimeBar>(find.byType(GameTimeBar)).secondsLeft,
       60,
     );
-    expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 3);
+    expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 5);
     expect(tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score, 0);
 
     await tester.pump(const Duration(seconds: 1));
@@ -154,7 +177,7 @@ void main() {
       tester.widget<GameTimeBar>(find.byType(GameTimeBar)).secondsLeft,
       60,
     );
-    expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 3);
+    expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 5);
     await tester.pump(const Duration(seconds: 1));
     expect(
       tester.widget<GameTimeBar>(find.byType(GameTimeBar)).secondsLeft,
@@ -163,25 +186,32 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('Swiper scores correct answers and ends after three mistakes', (
+  testWidgets('Swiper preserves earned points and ends after five mistakes', (
     tester,
   ) async {
     await open(tester, const SignSwiperScreen());
     await answerSign(tester, correct: true);
-    expect(tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score, 8);
-    for (var mistakes = 1; mistakes <= 3; mistakes++) {
+    expect(
+      tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
+      12,
+    );
+    for (var mistakes = 1; mistakes <= 5; mistakes++) {
       await answerSign(tester, correct: false);
       expect(
         tester.widget<GameLives>(find.byType(GameLives)).lives,
-        3 - mistakes,
+        5 - mistakes,
+      );
+      expect(
+        tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
+        12,
       );
     }
     expect(find.byType(GameResultOverlay), findsOneWidget);
-    expect(progress.getSignSwiperProgress().bestScore, 0);
-    expect(progress.getSignSwiperProgress().totalSwiped, 4);
+    expect(progress.getSignSwiperProgress().bestScore, 12);
+    expect(progress.getSignSwiperProgress().totalSwiped, 6);
     expect(progress.getSignSwiperProgress().trainingCount, 0);
 
-    await tester.tap(find.text(appL10n.gameRunMistakesButton(3)));
+    await tester.tap(find.text(appL10n.gameRunMistakesButton(5)));
     await tester.pumpAndSettle();
     expect(find.byType(BottomSheet), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -201,6 +231,57 @@ void main() {
     expect(progress.getSignSwiperProgress().totalSwiped, 0);
     await tester.pumpWidget(const SizedBox());
   });
+
+  testWidgets(
+    'Swiper timer is fixed while correct and wrong answers preserve progress',
+    (tester) async {
+      await open(tester, const SignSwiperScreen());
+      final startedAt = tester.binding.clock.now();
+      var previousScore = 0;
+      for (final correct in [true, true, false, true, false, true, false]) {
+        await answerSign(tester, correct: correct);
+        final score = tester
+            .widget<GameScoreLabel>(find.byType(GameScoreLabel))
+            .score;
+        expect(score, correct ? greaterThan(previousScore) : previousScore);
+        previousScore = score;
+        final elapsed = tester.binding.clock.now().difference(startedAt);
+        expect(
+          tester.widget<GameTimeBar>(find.byType(GameTimeBar)).secondsLeft,
+          60 - elapsed.inSeconds,
+        );
+      }
+      expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 2);
+      expect(find.byType(GameResultOverlay), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
+    'Swiper perfect play has bounded rewards and ends at sixty seconds',
+    (tester) async {
+      await open(tester, const SignSwiperScreen());
+      final startedAt = tester.binding.clock.now();
+      for (var i = 0; i < 120; i++) {
+        await answerSign(tester, correct: true);
+      }
+      expect(
+        tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
+        GameEconomy.maxRunScore,
+      );
+      expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 5);
+      final elapsed = tester.binding.clock.now().difference(startedAt);
+      await tester.pump(const Duration(seconds: 60) - elapsed);
+      expect(find.byType(GameResultOverlay), findsOneWidget);
+      expect(find.text(appL10n.gameTimeUp), findsOneWidget);
+      expect(
+        progress.getSignSwiperProgress().bestScore,
+        GameEconomy.maxRunScore,
+      );
+      expect(progress.getSignSwiperProgress().totalSwiped, 120);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 
   testWidgets('Swipe commits once, cancels safely and honors reduced motion', (
     tester,
@@ -262,26 +343,80 @@ void main() {
     expect(find.text(appL10n.gameSecondsLeft(25)), findsNothing);
     web.controllers.single.emitReady();
     await tester.pump();
-    expect(find.text(appL10n.gameSecondsLeft(35)), findsOneWidget);
-    expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 3);
+    expect(find.text(appL10n.gameSecondsLeft(60)), findsOneWidget);
+    expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 5);
     expect(
       web.controllers.single.scripts,
       contains(contains('setMode("arcade")')),
     );
     await tester.pump(const Duration(seconds: 1));
-    expect(find.text(appL10n.gameSecondsLeft(34)), findsOneWidget);
+    expect(find.text(appL10n.gameSecondsLeft(59)), findsOneWidget);
     web.controllers.single.emitReady();
     await tester.pump();
-    expect(find.text(appL10n.gameSecondsLeft(34)), findsOneWidget);
-    await tester.pump(const Duration(seconds: 34));
+    expect(find.text(appL10n.gameSecondsLeft(59)), findsOneWidget);
+    await tester.pump(const Duration(seconds: 59));
     expect(find.byType(GameResultOverlay), findsOneWidget);
     expect(find.text(appL10n.gameTimeUp), findsOneWidget);
     await tester.tap(find.text(appL10n.gameRestart));
     await tester.pump();
     expect(find.byType(GameResultOverlay), findsNothing);
-    expect(find.text(appL10n.gameSecondsLeft(35)), findsOneWidget);
+    expect(find.text(appL10n.gameSecondsLeft(60)), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
+
+  testWidgets('Traffic timer is fixed while mistakes retain earned rewards', (
+    tester,
+  ) async {
+    await open(tester, const TrafficControllerScreen());
+    final controller = web.controllers.single..emitReady();
+    await tester.pump();
+    final startedAt = tester.binding.clock.now();
+    var previousScore = 0;
+    for (final correct in [true, true, false, true, false, true, false]) {
+      await answerTraffic(tester, controller, correct: correct);
+      final score = tester
+          .widget<GameScoreLabel>(find.byType(GameScoreLabel))
+          .score;
+      expect(score, correct ? greaterThan(previousScore) : previousScore);
+      previousScore = score;
+      final elapsed = tester.binding.clock.now().difference(startedAt);
+      expect(
+        find.text(appL10n.gameSecondsLeft(60 - elapsed.inSeconds)),
+        findsOneWidget,
+      );
+    }
+    expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 2);
+    expect(find.byType(GameResultOverlay), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets(
+    'Traffic perfect play has bounded rewards and ends at sixty seconds',
+    (tester) async {
+      await open(tester, const TrafficControllerScreen());
+      final controller = web.controllers.single..emitReady();
+      await tester.pump();
+      final startedAt = tester.binding.clock.now();
+      for (var i = 0; i < 80; i++) {
+        await answerTraffic(tester, controller, correct: true);
+      }
+      expect(
+        tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
+        GameEconomy.maxRunScore,
+      );
+      expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 5);
+      final elapsed = tester.binding.clock.now().difference(startedAt);
+      await tester.pump(const Duration(seconds: 60) - elapsed);
+      expect(find.byType(GameResultOverlay), findsOneWidget);
+      expect(find.text(appL10n.gameTimeUp), findsOneWidget);
+      expect(
+        progress.getTrafficControllerProgress().bestScore,
+        GameEconomy.maxRunScore,
+      );
+      expect(progress.getTrafficControllerProgress().totalSolved, 80);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 
   testWidgets('Traffic actions follow driving directions and fit large text', (
     tester,
@@ -363,7 +498,7 @@ void main() {
       );
       expect(find.text(verse), findsOneWidget);
       await tester.pump(const Duration(seconds: 1));
-      expect(find.text(appL10n.gameSecondsLeft(34)), findsOneWidget);
+      expect(find.text(appL10n.gameSecondsLeft(59)), findsOneWidget);
       await tester.tap(hint);
       await tester.pump();
       expect(find.text(verse), findsNothing);
@@ -389,7 +524,7 @@ void main() {
         if (i == 0) expect(find.text(verse), findsNothing);
         expect(
           tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
-          i < 4 ? [9, 19, 43, 70][i] : 100 + (i - 4) * 30,
+          i < 4 ? [12, 25, 53, 83][i] : 115 + (i - 4) * 32,
           reason:
               'Viewed hints halve the first two rewards; later rounds restore the full combo reward',
         );
@@ -440,64 +575,69 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('Traffic scores a move once and ends after three mistakes', (
-    tester,
-  ) async {
-    await open(tester, const TrafficControllerScreen());
-    final controller = web.controllers.single..emitReady();
-    await tester.pump();
-    final correct = controller.allowedMoves.first;
-    await tester.tap(find.text(_moveLabel(correct)));
-    await tester.pump();
-    await tester.tap(find.text(_moveLabel(correct)));
-    await tester.pump();
-    expect(
-      tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
-      18,
-    );
-    // The screen must wait for the vehicle, not cut the animation at 1.25s.
-    if (correct != TrafficMove.none) {
-      await tester.pump(const Duration(milliseconds: 1500));
-      final scenariosBefore = controller.scripts
-          .where((s) => s.contains('setScenario('))
-          .length;
-      controller.emitMoveComplete(stale: true);
-      await tester.pump(const Duration(milliseconds: 200));
-      expect(
-        controller.scripts.where((s) => s.contains('setScenario(')).length,
-        scenariosBefore,
-      );
-      controller.emitMoveComplete();
-      await tester.pump(const Duration(milliseconds: 160));
-      expect(
-        controller.scripts.where((s) => s.contains('setScenario(')).length,
-        scenariosBefore + 1,
-      );
-    } else {
-      await tester.pump(const Duration(milliseconds: 700));
-    }
-
-    for (var mistakes = 1; mistakes <= 3; mistakes++) {
-      final allowed = controller.allowedMoves;
-      final wrong = TrafficMove.values.firstWhere(
-        (move) => !allowed.contains(move),
-      );
-      await tester.tap(find.text(_moveLabel(wrong)));
+  testWidgets(
+    'Traffic preserves each earned reward and ends after five mistakes',
+    (tester) async {
+      await open(tester, const TrafficControllerScreen());
+      final controller = web.controllers.single..emitReady();
+      await tester.pump();
+      final correct = controller.allowedMoves.first;
+      await tester.tap(find.text(_moveLabel(correct)));
+      await tester.pump();
+      await tester.tap(find.text(_moveLabel(correct)));
       await tester.pump();
       expect(
-        tester.widget<GameLives>(find.byType(GameLives)).lives,
-        3 - mistakes,
+        tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
+        24,
       );
-      if (mistakes < 3) {
-        await tester.pump(const Duration(milliseconds: 1200));
+      // The screen must wait for the vehicle, not cut the animation at 1.25s.
+      if (correct != TrafficMove.none) {
+        await tester.pump(const Duration(milliseconds: 1500));
+        final scenariosBefore = controller.scripts
+            .where((s) => s.contains('setScenario('))
+            .length;
+        controller.emitMoveComplete(stale: true);
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(
+          controller.scripts.where((s) => s.contains('setScenario(')).length,
+          scenariosBefore,
+        );
+        controller.emitMoveComplete();
+        await tester.pump(const Duration(milliseconds: 160));
+        expect(
+          controller.scripts.where((s) => s.contains('setScenario(')).length,
+          scenariosBefore + 1,
+        );
+      } else {
+        await tester.pump(const Duration(milliseconds: 700));
       }
-    }
-    expect(find.byType(GameResultOverlay), findsOneWidget);
-    expect(progress.getTrafficControllerProgress().bestScore, 0);
-    expect(progress.getTrafficControllerProgress().totalSolved, 1);
-    expect(progress.getTrafficControllerProgress().trainingCount, 0);
-    await tester.pumpWidget(const SizedBox());
-  });
+
+      for (var mistakes = 1; mistakes <= 5; mistakes++) {
+        final allowed = controller.allowedMoves;
+        final wrong = TrafficMove.values.firstWhere(
+          (move) => !allowed.contains(move),
+        );
+        await tester.tap(find.text(_moveLabel(wrong)));
+        await tester.pump();
+        expect(
+          tester.widget<GameLives>(find.byType(GameLives)).lives,
+          5 - mistakes,
+        );
+        expect(
+          tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
+          24,
+        );
+        if (mistakes < 5) {
+          await tester.pump(const Duration(milliseconds: 1200));
+        }
+      }
+      expect(find.byType(GameResultOverlay), findsOneWidget);
+      expect(progress.getTrafficControllerProgress().bestScore, 24);
+      expect(progress.getTrafficControllerProgress().totalSolved, 1);
+      expect(progress.getTrafficControllerProgress().trainingCount, 0);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 
   for (final (name, art) in [
     ('Traffic', const TrafficControllerArt()),
@@ -611,15 +751,31 @@ void main() {
       find.text(appL10n.gameCrossroadsPriorityTitle),
       200,
     );
-    await tester.tap(find.text(appL10n.gameCrossroadsPriorityTitle));
-    await tester.pumpAndSettle();
+    await tester.tapAt(
+      tester.getCenter(find.text(appL10n.gameCrossroadsPriorityTitle)),
+    );
+    await tester.pump();
+    if (const bool.fromEnvironment('GAME_DEBUG')) {
+      // The stub scene intentionally remains loading; do not settle its
+      // animated progress indicator while testing navigation.
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(find.byType(CrossroadsScreen), findsOneWidget);
+      Navigator.of(tester.element(find.byType(CrossroadsScreen))).pop();
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pumpAndSettle();
+      expect(find.byType(CrossroadsScreen), findsNothing);
+    }
     expect(find.byType(GamesHubScreen), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text(appL10n.gameRoundaboutTitle),
       200,
     );
     await tester.pumpAndSettle();
-    expect(find.text(appL10n.gameSoonBadge), findsNWidgets(2));
+    expect(
+      find.text(appL10n.gameSoonBadge),
+      findsNWidgets(const bool.fromEnvironment('GAME_DEBUG') ? 1 : 2),
+    );
     await tester.tap(find.text(appL10n.gameRoundaboutTitle));
     await tester.pumpAndSettle();
     expect(find.byType(GamesHubScreen), findsOneWidget);
@@ -638,9 +794,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 350));
     expect(find.byType(TrafficControllerScreen), findsOneWidget);
     expectNoModeChoice();
-    web.controllers.single.emitReady();
+    web.controllers.last.emitReady();
     await tester.pump();
-    expect(find.text(appL10n.gameSecondsLeft(35)), findsOneWidget);
+    expect(find.text(appL10n.gameSecondsLeft(60)), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });

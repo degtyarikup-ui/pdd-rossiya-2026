@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -14,6 +15,8 @@ class GameLeaderboardEntry {
   final bool isMe;
   final bool isPremium;
   final String? avatarUrl;
+  final int? dailyEarned;
+  final int? dailyLimit;
 
   const GameLeaderboardEntry({
     required this.rank,
@@ -23,6 +26,8 @@ class GameLeaderboardEntry {
     required this.isMe,
     this.isPremium = false,
     this.avatarUrl,
+    this.dailyEarned,
+    this.dailyLimit,
   });
 
   factory GameLeaderboardEntry.fromJson(Map<String, dynamic> json) {
@@ -36,6 +41,8 @@ class GameLeaderboardEntry {
       isMe: json['isMe'] == true,
       isPremium: json['isPremium'] == true,
       avatarUrl: json['avatarUrl'] as String?,
+      dailyEarned: (json['dailyEarned'] as num?)?.toInt(),
+      dailyLimit: (json['dailyLimit'] as num?)?.toInt(),
     );
   }
 }
@@ -62,11 +69,15 @@ class GameLeaderboardService {
   GameLeaderboardService._();
   static final GameLeaderboardService instance = GameLeaderboardService._();
 
+  static String newRunId() =>
+      '${DateTime.now().microsecondsSinceEpoch}-'
+      '${Random.secure().nextInt(1 << 32).toRadixString(16)}';
+
   Map<String, String> get _headers => AuthService.instance.serverHeaders;
 
   /// Adds a run's score to this week's total. Silent on any failure: the
   /// game must never depend on the network.
-  Future<int?> submitRun(int score) async {
+  Future<int?> submitRun(int score, {required String runId}) async {
     final user = AuthService.instance.currentUser;
     if (user == null ||
         !AuthService.instance.hasServerSession ||
@@ -83,6 +94,7 @@ class GameLeaderboardService {
               'userId': user.id,
               'name': user.name,
               'score': score,
+              'runId': runId,
             }),
           )
           .timeout(const Duration(seconds: 8));
@@ -99,6 +111,7 @@ class GameLeaderboardService {
   /// Returns true when the server took it (the caller then advances its
   /// "reported" mark); false keeps the delta for the next attempt.
   Future<bool> reportProgress({
+    required String runId,
     required int delta,
     required int runScore,
     required bool newRun,
@@ -118,6 +131,7 @@ class GameLeaderboardService {
             body: jsonEncode({
               'userId': user.id,
               'name': user.name,
+              'runId': runId,
               'delta': delta,
               'runScore': runScore,
               'newRun': newRun,

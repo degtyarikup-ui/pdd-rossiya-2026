@@ -37,11 +37,12 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   bool _isProcessingSwipe = false;
 
   Timer? _timer;
-  int _secondsLeft = 60;
+  int _secondsLeft = GameEconomy.miniGameSeconds;
   int _score = 0;
+  String _ratingRunId = GameLeaderboardService.newRunId();
   int _combo = 0;
   int _maxCombo = 0;
-  int _lives = 3;
+  int _lives = GameEconomy.miniGameLives;
   int _correctAnswers = 0;
   int _totalSwipedInRound = 0;
   bool _isGameOver = false;
@@ -50,7 +51,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   int _previousBest = 0;
   final List<SignCardQuestion> _mistakes = [];
 
-  /// Множитель очков за комбо: каждые 3 верных ответа +1, не выше x4.
+  // A small bounded streak bonus, independent of the fixed round timer.
 
   @override
   void dispose() {
@@ -76,10 +77,11 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     _isProcessingSwipe = false;
     _currentIndex = 0;
     _score = 0;
+    _ratingRunId = GameLeaderboardService.newRunId();
     _combo = 0;
     _maxCombo = 0;
-    _lives = 3;
-    _secondsLeft = 60;
+    _lives = GameEconomy.miniGameLives;
+    _secondsLeft = GameEconomy.miniGameSeconds;
     _correctAnswers = 0;
     _totalSwipedInRound = 0;
     _isGameOver = false;
@@ -130,6 +132,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
           correct: _correctAnswers,
           wrong: _totalSwipedInRound - _correctAnswers,
         ),
+        runId: _ratingRunId,
       ),
     );
     ref
@@ -164,8 +167,10 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
       _correctAnswers++;
       _combo++;
       if (_combo > _maxCombo) _maxCombo = _combo;
-      _score += GameEconomy.signs(_combo);
-      _secondsLeft = (_secondsLeft + 2).clamp(1, 60);
+      _score = (_score + GameEconomy.signs(_combo)).clamp(
+        0,
+        GameEconomy.maxRunScore,
+      );
 
       if (_combo == 5 || _combo == 10 || _combo == 20) {
         SoundEffectsService.instance.playStreak(volume: 0.45);
@@ -176,10 +181,8 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
       SoundEffectsService.instance.playIncorrect(volume: 0.30);
       HapticFeedbackHelper.warning();
 
-      _score = (_score - GameEconomy.signsMistake).clamp(0, 1000000);
       _combo = 0;
       _lives--;
-      _secondsLeft = (_secondsLeft - 3).clamp(0, 60);
       _mistakes.add(card);
 
       if (_lives <= 0 || _secondsLeft <= 0) {
@@ -293,6 +296,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
                 icon: Icons.close_rounded,
                 onTap: () {
                   HapticFeedbackHelper.tap();
+                  if (_totalSwipedInRound > 0) _endGame();
                   Navigator.of(context).pop();
                 },
               ),
@@ -302,10 +306,13 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
                 ),
               ),
               SizedBox(
-                width: 72,
+                width: 90,
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: GameLives(lives: _lives),
+                  child: GameLives(
+                    lives: _lives,
+                    total: GameEconomy.miniGameLives,
+                  ),
                 ),
               ),
             ],

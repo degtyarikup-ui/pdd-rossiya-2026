@@ -20,9 +20,11 @@ abstract final class AchievementThresholds {
   static const List<int> exams = [1, 3, 5, 10];
   static const List<int> flawless = [1, 3, 5, 10];
   static const List<int> mistakes = [10, 50, 100, 200];
-  static const List<int> game = [1000, 2500, 5000, 7500];
-
-  static const List<int> miniGame = [1000, 2500, 5000, 7500];
+  // Each tier is reachable within one finite round of its game. Historical
+  // personal bests remain valid, so previously earned badges are preserved.
+  static const List<int> game = [200, 400, 700, 950];
+  static const List<int> trafficController = [150, 300, 600, 900];
+  static const List<int> signSwiper = [100, 200, 300, 450];
 
   /// «Покоритель рейтинга»: уровни — топ-100 / топ-10 / топ-3 / 1 место.
   /// Модель считает «чем больше, тем лучше», а место — наоборот, поэтому
@@ -197,14 +199,14 @@ List<AchievementProgress> computeAchievements({
   result.add(
     AchievementProgress(
       id: AchievementId.trafficController,
-      levels: AchievementThresholds.miniGame,
+      levels: AchievementThresholds.trafficController,
       value: trafficControllerBestScore,
     ),
   );
   result.add(
     AchievementProgress(
       id: AchievementId.signSwiper,
-      levels: AchievementThresholds.miniGame,
+      levels: AchievementThresholds.signSwiper,
       value: signSwiperBestScore,
     ),
   );

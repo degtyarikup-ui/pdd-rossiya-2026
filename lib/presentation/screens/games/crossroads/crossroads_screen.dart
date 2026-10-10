@@ -40,18 +40,22 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
 
   // Сценарии
   List<CrossroadsScenario> get _scenarios {
-    final lang = ref.watch(appSettingsProvider.select((s) => s.effectiveLanguageCode));
+    final lang = ref.watch(
+      appSettingsProvider.select((s) => s.effectiveLanguageCode),
+    );
     return CrossroadsScenariosLibrary.getScenarios(lang);
   }
+
   int _scenarioIndex = 0;
   CrossroadsScenario get _curScenario => _scenarios[_scenarioIndex];
 
   // Игровое состояние
   int _currentStep = 1;
   int _score = 0;
+  String _ratingRunId = GameLeaderboardService.newRunId();
   int _combo = 0;
   int _maxComboInRound = 0;
-  int _lives = 3;
+  int _lives = GameEconomy.miniGameLives;
   int _secondsLeft = 45;
   int _solvedCount = 0;
   Timer? _countdownTimer;
@@ -193,9 +197,10 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     setState(() {
       _mode = CrossroadsGameMode.arcade;
       _score = 0;
+      _ratingRunId = GameLeaderboardService.newRunId();
       _combo = 0;
       _maxComboInRound = 0;
-      _lives = 3;
+      _lives = GameEconomy.miniGameLives;
       _secondsLeft = 45;
       _solvedCount = 0;
       _isGameOver = false;
@@ -217,6 +222,7 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
   }
 
   void _handleCorrectStep(Map<String, dynamic> data) {
+    if (_isGameOver) return;
     HapticFeedbackHelper.softSuccess();
     SoundEffectsService.instance.playCorrect();
     setState(() {
@@ -225,6 +231,7 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
   }
 
   void _handleCollision(Map<String, dynamic> data) {
+    if (_isGameOver) return;
     HapticFeedbackHelper.collision();
     SoundEffectsService.instance.playIncorrect();
 
@@ -232,7 +239,6 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     final pddArticle = data['pddArticle'] as String? ?? '';
 
     setState(() {
-      _score = (_score - GameEconomy.crossroadsMistake).clamp(0, 1000000);
       _combo = 0;
       _collisionReason = reason;
       _collisionPddArticle = pddArticle;
@@ -247,6 +253,7 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
   }
 
   void _handleCrossroadComplete() {
+    if (_isGameOver) return;
     HapticFeedbackHelper.success();
     SoundEffectsService.instance.playCorrect();
 
@@ -256,11 +263,16 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
       _solvedCount++;
       _combo++;
       if (_combo > _maxComboInRound) _maxComboInRound = _combo;
-      _score += gainedScore;
+      _score = (_score + gainedScore).clamp(0, GameEconomy.maxRunScore);
       if (_mode == CrossroadsGameMode.arcade) {
         _secondsLeft = math.min(60, _secondsLeft + 6); // +6 сек бонус
       }
     });
+
+    if (_mode == CrossroadsGameMode.arcade && _solvedCount >= 20) {
+      _endGame();
+      return;
+    }
 
     // Следующий перекресток
     Future.delayed(const Duration(milliseconds: 900), () {
@@ -280,8 +292,9 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
           GameEconomy.rankedScore(
             _score,
             correct: _solvedCount,
-            wrong: 3 - _lives,
+            wrong: GameEconomy.miniGameLives - _lives,
           ),
+          runId: _ratingRunId,
         ),
       );
     }
@@ -397,6 +410,10 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                       icon: Icons.close_rounded,
                       onTap: () {
                         HapticFeedbackHelper.tap();
+                        if (_mode == CrossroadsGameMode.arcade &&
+                            _solvedCount > 0) {
+                          _endGame();
+                        }
                         Navigator.of(context).pop();
                       },
                     ),
@@ -512,7 +529,7 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
               ),
             ],
           ),
-          GameLives(lives: _lives),
+          GameLives(lives: _lives, total: GameEconomy.miniGameLives),
         ],
       ),
     );
@@ -620,14 +637,22 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                         isDone
                             ? Icons.check_circle_rounded
                             : switch (actor.type) {
-                                CrossroadsVehicleType.tram => Icons.tram_rounded,
-                                CrossroadsVehicleType.emergency => Icons.emergency_rounded,
-                                CrossroadsVehicleType.police => Icons.local_police_rounded,
-                                CrossroadsVehicleType.truck => Icons.local_shipping_rounded,
-                                CrossroadsVehicleType.bus => Icons.directions_bus_rounded,
-                                CrossroadsVehicleType.motorcycle => Icons.two_wheeler_rounded,
-                                CrossroadsVehicleType.suv => Icons.directions_car_rounded,
-                                CrossroadsVehicleType.car => Icons.directions_car_rounded,
+                                CrossroadsVehicleType.tram =>
+                                  Icons.tram_rounded,
+                                CrossroadsVehicleType.emergency =>
+                                  Icons.emergency_rounded,
+                                CrossroadsVehicleType.police =>
+                                  Icons.local_police_rounded,
+                                CrossroadsVehicleType.truck =>
+                                  Icons.local_shipping_rounded,
+                                CrossroadsVehicleType.bus =>
+                                  Icons.directions_bus_rounded,
+                                CrossroadsVehicleType.motorcycle =>
+                                  Icons.two_wheeler_rounded,
+                                CrossroadsVehicleType.suv =>
+                                  Icons.directions_car_rounded,
+                                CrossroadsVehicleType.car =>
+                                  Icons.directions_car_rounded,
                               },
                         size: 16,
                         color: isDone ? colors.green : colors.primaryText,

@@ -42,7 +42,7 @@ class GameLives extends StatelessWidget {
                 i < lives
                     ? Icons.favorite_rounded
                     : Icons.favorite_border_rounded,
-                size: 22,
+                size: total > 3 ? 15 : 22,
                 color: i < lives ? colors.red : colors.secondaryText,
               ),
             ),

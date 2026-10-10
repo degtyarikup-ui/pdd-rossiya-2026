@@ -119,6 +119,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   // never end; a closed app must not lose points), not only at game over.
   int _liveScore = 0;
   int _reportedScore = 0;
+  String _ratingRunId = GameLeaderboardService.newRunId();
   bool _runCounted = false;
   bool _reporting = false;
   Timer? _reportTimer;
@@ -352,21 +353,23 @@ class _GameScreenState extends ConsumerState<GameScreen>
   /// Sends the score gained since the last report. Safe to call often.
   Future<void> _reportProgress() async {
     if (_reporting) return;
+    final runId = _ratingRunId;
     final score = _liveScore;
     final delta = score - _reportedScore;
     if (delta == 0 && (_runCounted || score == 0)) return;
     _reporting = true;
     final ok = await GameLeaderboardService.instance.reportProgress(
+      runId: runId,
       delta: delta,
       runScore: score,
       newRun: !_runCounted,
     );
     _reporting = false;
-    if (ok) {
+    if (ok && runId == _ratingRunId) {
       _reportedScore = score;
       _runCounted = true;
     }
-    // Premium runs never reach game over: keep the personal best anyway.
+    // Keep the personal best even when a run is interrupted.
     if (score > (_bestScore ?? 0)) {
       _bestScore = score;
       SharedPreferences.getInstance()
@@ -1204,6 +1207,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     if (!mounted || _disposing) return;
     await _reportProgress();
     _reportedScore = 0;
+    _ratingRunId = GameLeaderboardService.newRunId();
     _liveScore = 0;
     _runCounted = false;
     _bestBeforeRun = _bestScore ?? 0;

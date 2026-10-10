@@ -430,7 +430,7 @@
   "achievementDescExams": "Сынақ емтихандары өтті",
   "achievementDescFlawless": "Емтихандар қатесіз өтті",
   "achievementDescMistakes": "Мен қателескен, содан кейін дұрыс жауап берген сұрақтар",
-  "achievementDescGame": "Ойындағы бір жүгірістегі ең жақсы ұпай",
+  "achievementDescGame": "«Жанды қалада» бір жүрісте 200, 400, 700 және 950 ұпай жинаңыз.",
   "achievementTitleRank": "Рейтинг жеңімпазы",
   "achievementDescRank": "Ойынның апталық рейтингіндегі ең жақсы орын",
   "achievementRankTop": "Жоғарғы-{count}",
@@ -530,9 +530,9 @@
   "gameCaptionApproach": "саған қарай бұрылды",
   "gameAnswerWrong": "Дұрыс емес",
   "achievementTitleTrafficController": "Сигнал шебері",
-  "achievementDescTrafficController": "Трафик контроллерімен бір ойында 1000, 2500, 5000 және 7500 ұпай жинаңыз.",
+  "achievementDescTrafficController": "«Реттеуші» ойынында бір раундта 150, 300, 600 және 900 ұпай жинаңыз.",
   "achievementTitleSignSwiper": "Sign Connoisseur",
-  "achievementDescSignSwiper": "Sign Swipe бір ойынында 1000, 2500, 5000 және 7500 ұпай жинаңыз.",
+  "achievementDescSignSwiper": "«Белгі-свайпер» ойынында бір раундта 100, 200, 300 және 450 ұпай жинаңыз.",
   "gameSignQuestionScope": "Басқа белгілер мен тыйымдар жоқ",
   "gameTrafficSignalQuestion": "Сигнал не мүмкіндік береді?",
   "gameTrafficHintButton": "Кеңес",
@@ -822,5 +822,40 @@
   "languageEn": "English",
   "languageKk": "Қазақша",
   "languageSystem": "Әдепкі (жүйелік)",
-  "interfaceSection": "Интерфейс"
+  "interfaceSection": "Интерфейс",
+  "gameScoreRulesTitle": "Ұпай қалай есептеледі",
+  "gameScoreRulesBody": "Әр дұрыс жауап ұпай береді. Қатарынан дұрыс жауаптар шағын бонус қосады; кеңес қолданғанда сыйақының жартысы сақталады. Қате серияны тоқтатады, бірақ жиналған ұпай сақталады.",
+  "gameScoreRewardLine": "{game}: әр дұрыс жауапқа {min}–{max} ұпай",
+  "gameScoreDailyBudget": "Бүгінгі рейтинг ұпайы: {earned} / {limit}",
+  "gameScoreDailyLimitExplanation": "Күніне жалпы рейтингке {limit} ұпайға дейін жинауға болады. Одан кейін жеке рекорд пен жаттығу үшін ойнай беріңіз. Шектеу Мәскеу уақытымен түн ортасында жаңарады.",
+  "@gameScoreRewardLine": {
+    "placeholders": {
+      "game": {
+        "type": "String"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "@gameScoreDailyBudget": {
+    "placeholders": {
+      "earned": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "@gameScoreDailyLimitExplanation": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  }
 }

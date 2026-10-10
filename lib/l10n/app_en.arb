@@ -430,7 +430,7 @@
   "achievementDescExams": "Trial exams passed",
   "achievementDescFlawless": "Exams passed without errors",
   "achievementDescMistakes": "Questions in which I was wrong and then answered correctly",
-  "achievementDescGame": "Best score for one race in the game",
+  "achievementDescGame": "Score 200, 400, 700 and 950 points in a single Living City drive.",
   "achievementTitleRank": "Conqueror of the rating",
   "achievementDescRank": "Best place in the weekly rating of the game",
   "achievementRankTop": "Top-{count}",
@@ -530,9 +530,9 @@
   "gameCaptionApproach": "Facing you",
   "gameAnswerWrong": "Incorrect",
   "achievementTitleTrafficController": "Signal Master",
-  "achievementDescTrafficController": "Score 1000, 2500, 5000 and 7500 points in one game with the traffic controller.",
+  "achievementDescTrafficController": "Score 150, 300, 600 and 900 points in a single Traffic Controller game.",
   "achievementTitleSignSwiper": "Sign Master",
-  "achievementDescSignSwiper": "Score 1000, 2500, 5000 and 7500 points in a single game of Sign Swipe.",
+  "achievementDescSignSwiper": "Score 100, 200, 300 and 450 points in a single game of Sign Swipe.",
   "gameSignQuestionScope": "There are no other signs or prohibitions",
   "gameTrafficSignalQuestion": "What does the signal allow?",
   "gameTrafficHintButton": "Hint",
@@ -822,5 +822,40 @@
   "languageEn": "English",
   "languageKk": "Қазақша",
   "languageSystem": "System default",
-  "interfaceSection": "Interface"
+  "interfaceSection": "Interface",
+  "gameScoreRulesTitle": "How points work",
+  "gameScoreRulesBody": "Every correct answer earns points. A streak adds a small bonus; hints keep half the reward. Mistakes reset the streak, but earned points stay.",
+  "gameScoreRewardLine": "{game}: {min}–{max} points per correct answer",
+  "gameScoreDailyBudget": "Rating points today: {earned} / {limit}",
+  "gameScoreDailyLimitExplanation": "Earn up to {limit} points towards the combined ranking each day. Then keep playing for personal bests and practice. The limit resets at midnight Moscow time.",
+  "@gameScoreRewardLine": {
+    "placeholders": {
+      "game": {
+        "type": "String"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "@gameScoreDailyBudget": {
+    "placeholders": {
+      "earned": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "@gameScoreDailyLimitExplanation": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  }
 }

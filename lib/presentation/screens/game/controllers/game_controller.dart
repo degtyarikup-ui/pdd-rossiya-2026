@@ -230,12 +230,10 @@ class GameController extends StateNotifier<GameState> {
         !_violationEpisodes.add(episode)) {
       return;
     }
-    // Violations cost points (a crash the most); the score never goes below zero.
-    final penalty = penaltyFor(type);
+    // Keep the warning and counter; earned knowledge points are protected.
     state = state.copyWith(
       violationCount: state.violationCount + 1,
       lastViolation: type,
-      score: (state.score - penalty).clamp(0, 1 << 30),
     );
     _noticeTimer?.cancel();
     _noticeTimer = Timer(const Duration(seconds: 4), () {
@@ -245,8 +243,8 @@ class GameController extends StateNotifier<GameState> {
 
   GameController() : super(const GameState());
 
-  /// Points a violation costs: a crash the most.
-  static int penaltyFor(String type) => type == 'collision' ? 100 : 50;
+  /// Driving feedback does not erase already earned knowledge points.
+  static int penaltyFor(String type) => 0;
 
   /// Seconds to answer: 15 for a short question, one more for every 16
   /// characters of question and options beyond 160, at most 30 — the longest
@@ -411,7 +409,6 @@ class GameController extends StateNotifier<GameState> {
         consecutiveCorrect: 0,
         totalAnswered: state.totalAnswered + 1,
         totalMistakes: newMistakes,
-        score: (state.score - GameEconomy.cityMistake).clamp(0, 1000000),
         phase: GamePhase.explanation,
         mistakes: [...state.mistakes, sit],
       );

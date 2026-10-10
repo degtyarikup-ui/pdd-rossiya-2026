@@ -1,26 +1,30 @@
-/// Comparable weekly rewards: knowledge earns points, distance does not.
+/// Small, predictable rewards: learning preserves earned progress.
 abstract final class GameEconomy {
-  static int signs(int streak) => 8 + (streak - 1).clamp(0, 3) * 2;
+  static const miniGameSeconds = 60;
+  static const miniGameLives = 5;
+  static const maxRunScore = 1500;
+  static const dailyRatingLimit = 1500;
+
+  static int signs(int streak) => 12 + (streak - 1).clamp(0, 4);
   static int regulator(int streak, {bool hint = false}) {
-    final points = 18 + (streak - 1).clamp(0, 4) * 3;
+    final points = 24 + (streak - 1).clamp(0, 4) * 2;
     return hint ? points ~/ 2 : points;
   }
 
-  static int crossroads(int streak) => 40 + (streak - 1).clamp(0, 4) * 5;
+  static int crossroads(int streak) => 40 + (streak - 1).clamp(0, 5) * 2;
   static int city(int streak) => crossroads(streak);
-  static const signsMistake = 24;
-  static const regulatorMistake = 40;
-  static const crossroadsMistake = 80;
-  static const cityMistake = 65;
 
-  /// Short lucky streaks and random swipes do not count towards the rating.
+  // An error already costs a life and the streak bonus. Never erase learning.
+  static const signsMistake = 0;
+  static const regulatorMistake = 0;
+  static const crossroadsMistake = 0;
+  static const cityMistake = 0;
+
+  /// Every correct answer counts, including a beginner's first success.
+  /// The shared server budget bounds weekly accumulation across all games.
   static int rankedScore(
     int score, {
     required int correct,
     required int wrong,
-  }) {
-    return correct >= 5 && correct * 4 >= (correct + wrong) * 3
-        ? score.clamp(0, 1000000)
-        : 0;
-  }
+  }) => correct > 0 ? score.clamp(0, maxRunScore) : 0;
 }

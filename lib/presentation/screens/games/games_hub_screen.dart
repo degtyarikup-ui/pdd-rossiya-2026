@@ -14,6 +14,7 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/screens/games/crossroads/crossroads_screen.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_screen.dart';
 import 'package:pdd_app/presentation/screens/games/traffic_controller/traffic_controller_screen.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
@@ -181,6 +182,12 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
           _GameCard(
             art: const CrossroadsArt(forCard: true),
             title: appL10n.gameCrossroadsPriorityTitle,
+            bestScore: const bool.fromEnvironment('GAME_DEBUG')
+                ? ref.watch(crossroadsPriorityProgressProvider).bestScore
+                : null,
+            onTap: const bool.fromEnvironment('GAME_DEBUG')
+                ? () => _open(context, const CrossroadsScreen())
+                : null,
           ),
           const SizedBox(height: AppDimensions.spacingL),
           _GameCard(

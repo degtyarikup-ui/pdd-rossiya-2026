@@ -2689,7 +2689,7 @@ abstract class AppLocalizations {
   /// No description provided for @achievementDescGame.
   ///
   /// In ru, this message translates to:
-  /// **'Лучший счёт за один заезд в игре'**
+  /// **'Наберите 200, 400, 700 и 950 очков за один заезд в «Живом городе».'**
   String get achievementDescGame;
 
   /// No description provided for @achievementTitleRank.
@@ -3289,7 +3289,7 @@ abstract class AppLocalizations {
   /// No description provided for @achievementDescTrafficController.
   ///
   /// In ru, this message translates to:
-  /// **'Наберите 1000, 2500, 5000 и 7500 очков за одну игру с регулировщиком.'**
+  /// **'Наберите 150, 300, 600 и 900 очков за одну игру с регулировщиком.'**
   String get achievementDescTrafficController;
 
   /// No description provided for @achievementTitleSignSwiper.
@@ -3301,7 +3301,7 @@ abstract class AppLocalizations {
   /// No description provided for @achievementDescSignSwiper.
   ///
   /// In ru, this message translates to:
-  /// **'Наберите 1000, 2500, 5000 и 7500 очков за одну игру в «Знак-свайпер».'**
+  /// **'Наберите 100, 200, 300 и 450 очков за одну игру в «Знак-свайпер».'**
   String get achievementDescSignSwiper;
 
   /// No description provided for @gameSignQuestionScope.
@@ -5043,6 +5043,36 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Интерфейс'**
   String get interfaceSection;
+
+  /// No description provided for @gameScoreRulesTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как начисляются очки'**
+  String get gameScoreRulesTitle;
+
+  /// No description provided for @gameScoreRulesBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'Каждый верный ответ приносит очки. Серия добавляет небольшой бонус, подсказка сохраняет половину награды. Ошибки сбрасывают серию, но заработанные очки остаются.'**
+  String get gameScoreRulesBody;
+
+  /// No description provided for @gameScoreRewardLine.
+  ///
+  /// In ru, this message translates to:
+  /// **'{game}: {min}–{max} очков за верный ответ'**
+  String gameScoreRewardLine(String game, int min, int max);
+
+  /// No description provided for @gameScoreDailyBudget.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сегодня в рейтинг: {earned} / {limit}'**
+  String gameScoreDailyBudget(int earned, int limit);
+
+  /// No description provided for @gameScoreDailyLimitExplanation.
+  ///
+  /// In ru, this message translates to:
+  /// **'В общий рейтинг можно заработать до {limit} очков в сутки. После этого продолжайте играть для личных рекордов и обучения. Лимит обновляется в полночь по Москве.'**
+  String gameScoreDailyLimitExplanation(int limit);
 }
 
 class _AppLocalizationsDelegate

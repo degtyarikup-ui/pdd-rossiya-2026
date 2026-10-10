@@ -2369,7 +2369,8 @@
           type: 'collision',
           chosenId: c.wrongActor.data.id,
           priorityId: c.priorityActor.data.id,
-          reason: c.priorityActor.data.ruleExplanation || c.wrongActor.data.ruleExplanation,
+          reason: c.priorityActor.data.explanation || c.priorityActor.data.ruleExplanation ||
+            c.wrongActor.data.explanation || c.wrongActor.data.ruleExplanation || '',
           pddArticle: currentScenario.pddArticle,
         });
 

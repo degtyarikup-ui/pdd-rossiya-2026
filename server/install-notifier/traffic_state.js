@@ -1,4 +1,5 @@
 import { buildUserRegistrationMessage } from './worker.js';
+import { awardGameScore, gameDailySummary, validGameRunId } from './game_scoring.js';
 
 // One object per counter / weekly board. KV remains a compatibility snapshot;
 // concurrent updates are committed to strongly consistent DO storage first.
@@ -31,6 +32,13 @@ export class TrafficState {
         await this.state.storage.put({ key, value });
       }
       if (action === 'read') return Response.json(await this.state.storage.get('value'));
+      if (action === 'score-summary') {
+        const userId = body.userId;
+        if (!userId || ['__proto__', 'constructor', 'prototype'].includes(userId)) return new Response('invalid user', { status: 400 });
+        const stored = await this.state.storage.get('ranking:' + userId);
+        const doc = stored ? null : await this.state.storage.get('value');
+        return Response.json(gameDailySummary({ _ranking: stored || doc?.[userId]?._ranking }));
+      }
       if (!(await this.state.storage.getAlarm())) await this.state.storage.setAlarm(Date.now() + 60000);
       if (action === 'install') {
         const marker = 'id:' + String(body.installId || '');
@@ -71,21 +79,22 @@ export class TrafficState {
         const doc = await this.state.storage.get('value');
         const userId = body.userId;
         if (!userId || ['__proto__', 'constructor', 'prototype'].includes(userId)) return new Response('invalid user', { status: 400 });
-        if (action === 'delete') delete doc[userId];
+        if (action === 'delete') {
+          delete doc[userId];
+          await this.state.storage.delete('ranking:' + userId);
+        }
         else {
-          const e = doc[userId] || { score: 0, runs: 0, best: 0 };
-          const input = body.score;
-          e.name = String(input.name || e.name || 'Игрок').slice(0, 40);
-          if (input.delta !== undefined) {
-            e.score = Math.max(0, e.score + Math.max(-20000, Math.min(20000, Math.trunc(Number(input.delta) || 0))));
-            if (input.newRun === true) e.runs += 1;
-            e.best = Math.max(e.best, Math.max(0, Math.min(1000000, Math.floor(Number(input.runScore) || 0))));
-          } else {
-            const score = Math.max(0, Math.min(1000000, Math.floor(Number(input.score) || 0)));
-            e.score += score; e.runs += 1; e.best = Math.max(e.best, score);
-          }
-          e.updatedAt = new Date().toISOString();
-          doc[userId] = e;
+          const input = body.score || {};
+          if (input.runId !== undefined && !validGameRunId(input.runId)) return new Response('invalid runId', { status: 400 });
+          const previous = doc[userId] || {};
+          const ranking = await this.state.storage.get('ranking:' + userId);
+          const { entry, ...award } = awardGameScore({ ...previous, _ranking: ranking || previous._ranking }, input);
+          const { _ranking, ...publicEntry } = entry;
+          doc[userId] = publicEntry;
+          // One atomic write keeps the award ledger and public score together.
+          // Private run IDs stay out of the full-board document and KV snapshot.
+          await this.state.storage.put({ value: doc, ['ranking:' + userId]: _ranking });
+          return Response.json({ board: doc, ...award });
         }
         await this.state.storage.put('value', doc);
         return Response.json(doc);

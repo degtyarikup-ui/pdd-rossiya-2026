@@ -794,7 +794,7 @@
   "achievementDescExams": "Сданные пробные экзамены",
   "achievementDescFlawless": "Экзамены, сданные без ошибок",
   "achievementDescMistakes": "Вопросы, в которых ошибался, а потом ответил верно",
-  "achievementDescGame": "Лучший счёт за один заезд в игре",
+  "achievementDescGame": "Наберите 200, 400, 700 и 950 очков за один заезд в «Живом городе».",
   "achievementTitleRank": "Покоритель рейтинга",
   "achievementDescRank": "Лучшее место в недельном рейтинге игры",
   "achievementRankTop": "Топ-{count}",
@@ -967,9 +967,9 @@
   "gameCaptionApproach": "К вам повёрнут",
   "gameAnswerWrong": "Неверно",
   "achievementTitleTrafficController": "Мастер сигналов",
-  "achievementDescTrafficController": "Наберите 1000, 2500, 5000 и 7500 очков за одну игру с регулировщиком.",
+  "achievementDescTrafficController": "Наберите 150, 300, 600 и 900 очков за одну игру с регулировщиком.",
   "achievementTitleSignSwiper": "Знаток знаков",
-  "achievementDescSignSwiper": "Наберите 1000, 2500, 5000 и 7500 очков за одну игру в «Знак-свайпер».",
+  "achievementDescSignSwiper": "Наберите 100, 200, 300 и 450 очков за одну игру в «Знак-свайпер».",
   "gameSignQuestionScope": "Других знаков и запретов нет",
   "gameTrafficSignalQuestion": "Что разрешает сигнал?",
   "gameTrafficHintButton": "Подсказка",
@@ -1308,5 +1308,40 @@
   },
   "@interfaceSection": {
     "description": "Заголовок секции настроек интерфейса"
+  },
+  "gameScoreRulesTitle": "Как начисляются очки",
+  "gameScoreRulesBody": "Каждый верный ответ приносит очки. Серия добавляет небольшой бонус, подсказка сохраняет половину награды. Ошибки сбрасывают серию, но заработанные очки остаются.",
+  "gameScoreRewardLine": "{game}: {min}–{max} очков за верный ответ",
+  "gameScoreDailyBudget": "Сегодня в рейтинг: {earned} / {limit}",
+  "gameScoreDailyLimitExplanation": "В общий рейтинг можно заработать до {limit} очков в сутки. После этого продолжайте играть для личных рекордов и обучения. Лимит обновляется в полночь по Москве.",
+  "@gameScoreRewardLine": {
+    "placeholders": {
+      "game": {
+        "type": "String"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "@gameScoreDailyBudget": {
+    "placeholders": {
+      "earned": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "@gameScoreDailyLimitExplanation": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
   }
 }

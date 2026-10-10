@@ -1543,7 +1543,8 @@ class AppLocalizationsRu extends AppLocalizations {
       'Вопросы, в которых ошибался, а потом ответил верно';
 
   @override
-  String get achievementDescGame => 'Лучший счёт за один заезд в игре';
+  String get achievementDescGame =>
+      'Наберите 200, 400, 700 и 950 очков за один заезд в «Живом городе».';
 
   @override
   String get achievementTitleRank => 'Покоритель рейтинга';
@@ -1869,14 +1870,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get achievementDescTrafficController =>
-      'Наберите 1000, 2500, 5000 и 7500 очков за одну игру с регулировщиком.';
+      'Наберите 150, 300, 600 и 900 очков за одну игру с регулировщиком.';
 
   @override
   String get achievementTitleSignSwiper => 'Знаток знаков';
 
   @override
   String get achievementDescSignSwiper =>
-      'Наберите 1000, 2500, 5000 и 7500 очков за одну игру в «Знак-свайпер».';
+      'Наберите 100, 200, 300 и 450 очков за одну игру в «Знак-свайпер».';
 
   @override
   String get gameSignQuestionScope => 'Других знаков и запретов нет';
@@ -3035,4 +3036,26 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get interfaceSection => 'Интерфейс';
+
+  @override
+  String get gameScoreRulesTitle => 'Как начисляются очки';
+
+  @override
+  String get gameScoreRulesBody =>
+      'Каждый верный ответ приносит очки. Серия добавляет небольшой бонус, подсказка сохраняет половину награды. Ошибки сбрасывают серию, но заработанные очки остаются.';
+
+  @override
+  String gameScoreRewardLine(String game, int min, int max) {
+    return '$game: $min–$max очков за верный ответ';
+  }
+
+  @override
+  String gameScoreDailyBudget(int earned, int limit) {
+    return 'Сегодня в рейтинг: $earned / $limit';
+  }
+
+  @override
+  String gameScoreDailyLimitExplanation(int limit) {
+    return 'В общий рейтинг можно заработать до $limit очков в сутки. После этого продолжайте играть для личных рекордов и обучения. Лимит обновляется в полночь по Москве.';
+  }
 }

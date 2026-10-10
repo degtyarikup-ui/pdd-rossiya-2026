@@ -1526,7 +1526,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Questions in which I was wrong and then answered correctly';
 
   @override
-  String get achievementDescGame => 'Best score for one race in the game';
+  String get achievementDescGame =>
+      'Score 200, 400, 700 and 950 points in a single Living City drive.';
 
   @override
   String get achievementTitleRank => 'Conqueror of the rating';
@@ -1856,14 +1857,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get achievementDescTrafficController =>
-      'Score 1000, 2500, 5000 and 7500 points in one game with the traffic controller.';
+      'Score 150, 300, 600 and 900 points in a single Traffic Controller game.';
 
   @override
   String get achievementTitleSignSwiper => 'Sign Master';
 
   @override
   String get achievementDescSignSwiper =>
-      'Score 1000, 2500, 5000 and 7500 points in a single game of Sign Swipe.';
+      'Score 100, 200, 300 and 450 points in a single game of Sign Swipe.';
 
   @override
   String get gameSignQuestionScope =>
@@ -3020,4 +3021,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get interfaceSection => 'Interface';
+
+  @override
+  String get gameScoreRulesTitle => 'How points work';
+
+  @override
+  String get gameScoreRulesBody =>
+      'Every correct answer earns points. A streak adds a small bonus; hints keep half the reward. Mistakes reset the streak, but earned points stay.';
+
+  @override
+  String gameScoreRewardLine(String game, int min, int max) {
+    return '$game: $min–$max points per correct answer';
+  }
+
+  @override
+  String gameScoreDailyBudget(int earned, int limit) {
+    return 'Rating points today: $earned / $limit';
+  }
+
+  @override
+  String gameScoreDailyLimitExplanation(int limit) {
+    return 'Earn up to $limit points towards the combined ranking each day. Then keep playing for personal bests and practice. The limit resets at midnight Moscow time.';
+  }
 }

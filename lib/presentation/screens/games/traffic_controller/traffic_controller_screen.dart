@@ -48,10 +48,11 @@ class _TrafficControllerScreenState
 
   // Блиц
   int _score = 0;
+  String _ratingRunId = GameLeaderboardService.newRunId();
   int _combo = 0;
   int _maxComboInRound = 0;
-  int _lives = 3;
-  int _secondsLeft = 35;
+  int _lives = GameEconomy.miniGameLives;
+  int _secondsLeft = GameEconomy.miniGameSeconds;
   int _solvedCount = 0;
   Timer? _countdownTimer;
   // Пауза между ситуациями: ввод закрыт, чтобы не засчитать ответ дважды.
@@ -239,10 +240,11 @@ class _TrafficControllerScreenState
     _call('randomizeWeather()');
     setState(() {
       _score = 0;
+      _ratingRunId = GameLeaderboardService.newRunId();
       _combo = 0;
       _maxComboInRound = 0;
-      _lives = 3;
-      _secondsLeft = 35;
+      _lives = GameEconomy.miniGameLives;
+      _secondsLeft = GameEconomy.miniGameSeconds;
       _solvedCount = 0;
       _wrongCount = 0;
       _isGameOver = false;
@@ -316,9 +318,9 @@ class _TrafficControllerScreenState
         _lastWasCorrect = true;
         _combo++;
         if (_combo > _maxComboInRound) _maxComboInRound = _combo;
-        _score += GameEconomy.regulator(_combo, hint: _hintUsed);
+        _score = (_score + GameEconomy.regulator(_combo, hint: _hintUsed))
+            .clamp(0, GameEconomy.maxRunScore);
         _solvedCount++;
-        _secondsLeft = math.min(_secondsLeft + 3, 60);
       });
       _scheduleNextSituation(
         // Moving answers advance on the scene's completion message. This
@@ -332,7 +334,6 @@ class _TrafficControllerScreenState
         _awaitingNext = true;
         _lastMove = move;
         _lastWasCorrect = false;
-        _score = (_score - GameEconomy.regulatorMistake).clamp(0, 1000000);
         _combo = 0;
         _lives--;
         _wrongCount++;
@@ -355,6 +356,7 @@ class _TrafficControllerScreenState
           correct: _solvedCount,
           wrong: _wrongCount,
         ),
+        runId: _ratingRunId,
       ),
     );
     _countdownTimer?.cancel();
@@ -548,6 +550,7 @@ class _TrafficControllerScreenState
           icon: Icons.close_rounded,
           onTap: () {
             HapticFeedbackHelper.tap();
+            if (_solvedCount + _wrongCount > 0) _endArcadeGame();
             Navigator.of(context).pop();
           },
         ),
@@ -596,7 +599,7 @@ class _TrafficControllerScreenState
               ),
             ],
           ),
-          GameLives(lives: _lives),
+          GameLives(lives: _lives, total: GameEconomy.miniGameLives),
         ],
       ),
     );

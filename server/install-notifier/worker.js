@@ -1,4 +1,5 @@
 import { gameProfile } from './game_profile.js';
+import { awardGameScore, gameDailySummary, validGameRunId } from './game_scoring.js';
 import { notificationRequest, uploadNotificationImage, serveNotificationImage } from './notifications.js';
 export { NotificationsState } from './notifications.js';
 import { NOTIFICATIONS_NAV_HTML, NOTIFICATIONS_VIEW_HTML, NOTIFICATIONS_CLIENT_JS } from './notifications_ui.js';
@@ -3448,42 +3449,28 @@ const workerHandlers = {
       try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }
       const userId = String(body?.userId || '').slice(0, 120);
       if (!userId || !env.INSTALLS) return jsonResponse({ error: 'missing userId' }, 400);
+      if (body?.runId !== undefined && !validGameRunId(body.runId)) return jsonResponse({ error: 'invalid runId' }, 400);
       const week = gameWeekKey();
       if (env.TRAFFIC) {
-        const doc = await trafficRequest(env, 'game_lb:' + week, 'score', { userId, score: body });
+        const { board: doc, ...award } = await trafficRequest(env, 'game_lb:' + week, 'score', { userId, score: body });
         const ranked = rankGameBoard(doc);
         const me = ranked.findIndex(r => r.userId === userId);
-        return jsonResponse({ ok: true, week, rank: me + 1, total: ranked.length, weekScore: doc[userId].score });
+        return jsonResponse({ ok: true, week, rank: me + 1, total: ranked.length, weekScore: doc[userId].score, ...award });
       }
       const doc = await readGameBoard(env, week);
-      const entry = doc[userId] || { score: 0, runs: 0, best: 0 };
-      entry.name = String(body?.name || entry.name || 'Игрок').slice(0, 40);
-      if (body?.delta !== undefined) {
-        // 2.1.3+: progress is reported during the run (premium runs never end,
-        // and a closed app must not lose points). delta may be negative
-        // (penalties); runScore is the run total so far.
-        const delta = Math.max(-20000, Math.min(20000, Math.trunc(Number(body.delta) || 0)));
-        const runScore = Math.max(0, Math.min(1000000, Math.floor(Number(body.runScore) || 0)));
-        entry.score = Math.max(0, entry.score + delta);
-        if (body.newRun === true) entry.runs += 1;
-        entry.best = Math.max(entry.best, runScore);
-      } else {
-        // Older builds: one call with the final score when the run ends.
-        const score = Math.max(0, Math.min(1000000, Math.floor(Number(body?.score) || 0)));
-        entry.score += score; entry.runs += 1; entry.best = Math.max(entry.best, score);
-      }
-      entry.updatedAt = new Date().toISOString();
+      const { entry, ...award } = awardGameScore(doc[userId], body);
       doc[userId] = entry;
       await env.INSTALLS.put('game_lb:' + week, JSON.stringify(doc), { expirationTtl: 60 * 60 * 24 * 21 });
       const ranked = rankGameBoard(doc);
       const me = ranked.findIndex(r => r.userId === userId);
-      return jsonResponse({ ok: true, week, rank: me + 1, total: ranked.length, weekScore: entry.score });
+      return jsonResponse({ ok: true, week, rank: me + 1, total: ranked.length, weekScore: entry.score, ...award });
     }
     if (url.pathname === '/api/game/leaderboard' && request.method === 'GET') {
       if (!env.INSTALLS) return jsonResponse({ ok: true, week: gameWeekKey(), top: [], me: null });
       const week = gameWeekKey();
       const userId = url.searchParams.get('userId') || '';
-      const ranked = rankGameBoard(await readGameBoard(env, week));
+      const doc = await readGameBoard(env, week);
+      const ranked = rankGameBoard(doc);
       const meIndex = userId ? ranked.findIndex(r => r.userId === userId) : -1;
       const publicRow = async (r, rank) => {
         let user = null;
@@ -3492,7 +3479,13 @@ const workerHandlers = {
           isMe: r.userId === userId, ...gameProfile(user) };
       };
       const top = await Promise.all(ranked.slice(0, 100).map((r,i) => publicRow(r,i+1)));
-      const me = meIndex < 0 ? null : meIndex < top.length ? top[meIndex] : await publicRow(ranked[meIndex],meIndex+1);
+      const me = meIndex < 0 ? null : meIndex < top.length ? { ...top[meIndex] } : await publicRow(ranked[meIndex],meIndex+1);
+      if (me) {
+        const summary = env.TRAFFIC
+          ? await trafficRequest(env, 'game_lb:' + week, 'score-summary', { userId })
+          : gameDailySummary(doc[userId]);
+        Object.assign(me, summary);
+      }
       return jsonResponse({ ok: true, week, endsAt: gameWeekEnd(), total: ranked.length, top, me },
         200, { 'Cache-Control': 'no-store' });
     }

@@ -244,7 +244,9 @@ void main() {
     expect(controller.state.remainingSeconds, 18);
   });
 
-  testWidgets('A violation notice says what it cost', (tester) async {
+  testWidgets('A violation notice teaches without subtracting earned points', (
+    tester,
+  ) async {
     Future<void> hud(GameState state) => tester.pumpWidget(
       MaterialApp(
         home: Scaffold(body: GameHud(state: state)),
@@ -254,11 +256,11 @@ void main() {
       const GameState(phase: GamePhase.driving, lastViolation: 'collision'),
     );
     expect(find.text(appL10n.gameCollision), findsOneWidget);
-    expect(find.text(appL10n.gamePenaltyPoints(100)), findsOneWidget);
+    expect(find.byKey(const ValueKey('hud-penalty')), findsNothing);
     await hud(
       const GameState(phase: GamePhase.driving, lastViolation: 'priority'),
     );
-    expect(find.text(appL10n.gamePenaltyPoints(50)), findsOneWidget);
+    expect(find.byKey(const ValueKey('hud-penalty')), findsNothing);
     // Going round the queue at a closed railway crossing (ticket 2.16).
     await hud(
       const GameState(phase: GamePhase.driving, lastViolation: 'railway'),
@@ -2195,6 +2197,31 @@ void main() {
       expect(engineNotified, true);
     });
 
+    test(
+      'earned knowledge points survive wrong answers and repeated driving faults',
+      () {
+        controller.onEngineReady();
+        controller.onApproachSituation(dummySituation);
+        controller.submitAnswer(dummySituation.correctAnswerIndex);
+        final earned = controller.state.score;
+        controller.onSituationClearedFromEngine(dummySituation.id);
+        for (var episode = 0; episode < 10; episode++) {
+          controller.recordViolation(
+            episode.isEven ? 'collision' : 'offroad',
+            episode,
+          );
+          expect(controller.state.score, earned);
+        }
+        controller.onApproachSituation(
+          GameSituation.fromJson({...dummySituation.toJson(), 'id': 'next'}),
+        );
+        controller.submitAnswer(0);
+        expect(controller.state.score, earned);
+        expect(controller.state.consecutiveCorrect, 0);
+        expect(controller.state.totalMistakes, 1);
+      },
+    );
+
     test('Mistakes cost nothing; the run ends after 20 answers', () {
       controller.onEngineReady();
       controller.configureRuns(runs: 1, unlimited: false);
@@ -2459,8 +2486,7 @@ class _SourceImageQuestions extends QuestionsDataSource {
   Future<List<Question>> loadTickets(
     TicketCategory category, [
     String? lang,
-  ]) async =>
-      questions;
+  ]) async => questions;
 }
 
 class _GameWebPlatform extends WebViewPlatform {

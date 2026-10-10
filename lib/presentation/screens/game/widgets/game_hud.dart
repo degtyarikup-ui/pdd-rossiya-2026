@@ -322,7 +322,7 @@ class GameHud extends StatelessWidget {
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            if (penalty != null)
+                            if (penalty != null && penalty > 0)
                               Text(
                                 appL10n.gamePenaltyPoints(penalty),
                                 key: const ValueKey('hud-penalty'),
