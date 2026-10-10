@@ -137,13 +137,13 @@ void main() {
   }
 
   bool mustYield(CrossroadsScenario s, CrossroadsActor a, CrossroadsActor b) {
-    final siren = (CrossroadsActor x) => x.hasSiren;
+    bool siren(CrossroadsActor x) => x.hasSiren;
     if (siren(b) && !siren(a)) return true;
     if (siren(a) && !siren(b)) return false;
     if (!conflict(a, b)) return false;
     final ra = rank(s, a.side), rb = rank(s, b.side);
     if (ra != rb) return rb > ra;
-    final tram = (CrossroadsActor x) => x.type == CrossroadsVehicleType.tram;
+    bool tram(CrossroadsActor x) => x.type == CrossroadsVehicleType.tram;
     if (tram(b) && !tram(a)) return true;
     if (tram(a) && !tram(b)) return false;
     final turningAcross =
