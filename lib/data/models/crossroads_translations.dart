@@ -134,14 +134,14 @@ class CrossroadsTranslations {
                 'A car with a flashing light and a special sound signal on has priority regardless of the signs!',
           ),
           'car_south': LocalizedActorText(
-            name: 'Blue sedan (Home)',
+            name: 'Blue sedan (Main road)',
             ruleExplanation:
                 'After the ambulance, the blue car on the main road passes second.',
           ),
           'car_west': LocalizedActorText(
-            name: 'Red hatchback (Minor)',
+            name: 'Red hatchback (Secondary road)',
             ruleExplanation:
-                'The red hatchback in the secondary with the 2.4 sign is inferior to everyone.',
+                'The red hatchback on the secondary road with the 2.4 sign gives way to everyone.',
           ),
         },
       ),
@@ -169,7 +169,7 @@ class CrossroadsTranslations {
         },
       ),
       'cross_stop_sign': LocalizedScenarioText(
-        title: 'Sign 2.5 "No entry without stopping"',
+        title: 'Sign 2.5 "Driving without stopping is prohibited"',
         subtitle:
             'At the STOP sign you stop and give way to traffic on the road you are crossing.',
         pddArticle:
@@ -244,7 +244,7 @@ class CrossroadsTranslations {
         pddArticle: 'Clauses 3.2 and 13.11 of the Russian Traffic Regulations',
         actors: {
           'police_south': LocalizedActorText(
-            name: 'DPS patrol (siren)',
+            name: 'Traffic police patrol (siren)',
             ruleExplanation:
                 'A car with flashing lights and a siren on has priority over all participants, including a tram (clause 3.2).',
           ),
@@ -256,7 +256,7 @@ class CrossroadsTranslations {
           'car_north': LocalizedActorText(
             name: 'Blue hatchback',
             ruleExplanation:
-                'The blue car is inferior to traffic police special vehicles and trams.',
+                'The blue car gives way to traffic police special vehicles and trams.',
           ),
         },
       ),

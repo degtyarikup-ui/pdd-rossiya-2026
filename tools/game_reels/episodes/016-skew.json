@@ -1,0 +1,29 @@
+{
+  "id": "016-skew",
+  "country": "ru",
+  "ticket": 16,
+  "questionNumber": 15,
+  "sceneId": "ticket_16_15",
+  "choicesSpeech": "Поворачиваешь налево на таком перекрёстке. Кому уступишь? Автобусу? Автомобилю? Или обоим?",
+  "answerSpeech": "Обоим транспортным средствам! Главная дорога здесь уходит по диагонали. И автобус, и автомобиль едут по главной, а ты поворачиваешь со второстепенной.",
+  "rule": "13.9",
+  "ruleSource": "ПДД",
+  "motion": {
+    "playerDelay": 4.8,
+    "playerDuration": 3.0,
+    "npcDelay": 0.2,
+    "npcDuration": 4.6
+  },
+  "camera": {
+    "closeX": 0,
+    "closeY": 7,
+    "closeBehind": 18,
+    "closeTargetX": 1.2,
+    "closeTargetY": 2,
+    "highX": -6,
+    "highSize": 82,
+    "highY": 58,
+    "highFov": 44,
+    "highTargetZ": 1
+  }
+}

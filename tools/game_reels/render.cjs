@@ -12,43 +12,86 @@ let cleanupBrowser;
  const info=await p.evaluate(e=>__lab.run(`(()=>{
  __lab.show(${JSON.stringify(e.sceneId)});state.paused=true;window.game.setSeason('summer');
  const it=state.intersections[0];it.guide.visible=false;
- window.reel={it,start:playerCarGroup.position.clone(),npc:state.actors[0]};
- if(reel.npc.mesh.userData.badge)reel.npc.mesh.userData.badge.visible=false;
+ window.reel={it,start:playerCarGroup.position.clone(),npc:state.actors[0],actors:state.actors};
+ state.actors.forEach(a=>{if(a.mesh?.userData?.badge)a.mesh.userData.badge.visible=false;});
+ if(playerCarGroup.userData?.badge)playerCarGroup.userData.badge.visible=false;
  reel.path=curve(maneuverPoints({intersection:it,spec:routeSpec(it.situation)},routeSpec(it.situation).maneuver,reel.start).points);
- // Record-only: wider near plane stabilizes almost coplanar terrain depth.
  scene.fog=null;
- // Recording backdrop: village and layered tree line behind the question scene.
+
+ // Rich backdrop: layered village, side houses, lampposts and trees
  const backdrop=new THREE.Group();scene.add(backdrop);
  for(let row=0;row<2;row++)for(let i=0;i<19;i++){
- if(Math.abs(-100+i*11+row*5)<12)continue;
- const tree=createTree((i+row)%3===0?'round':'pine');
- tree.position.set(-100+i*11+row*5,0,it.centerZ+61+row*17+Math.sin(i*2.1)*5);
- tree.scale.setScalar(1.8+.25*Math.sin(i*1.7+row));backdrop.add(tree);
+   if(Math.abs(-100+i*11+row*5)<12)continue;
+   const tree=createTree((i+row)%3===0?'round':'pine');
+   tree.position.set(-100+i*11+row*5,0,it.centerZ+61+row*17+Math.sin(i*2.1)*5);
+   tree.scale.setScalar(1.8+.25*Math.sin(i*1.7+row));backdrop.add(tree);
  }
  [-46,-25,-5,24,47].forEach((x,i)=>{
- if(Math.abs(x)<12) return;
- const home=createBuilding(9+(i%2)*2,6+(i%3)*1.5,9,i%2);
- home.position.set(x,0,it.centerZ+38+(i%2)*8);backdrop.add(home);
+   if(Math.abs(x)<12) return;
+   const home=createBuilding(9+(i%2)*2,6+(i%3)*1.5,9,i%2);
+   home.position.set(x,0,it.centerZ+38+(i%2)*8);backdrop.add(home);
  });
+ [-42,-28,28,42].forEach((x,i)=>{
+   const bld=createBuilding(8+(i%2)*2,5.5+(i%3),8,(i+1)%2);
+   bld.position.set(x,0,it.centerZ-25+(i%2)*8);backdrop.add(bld);
+   const tree=createTree(i%2===0?'round':'pine');
+   tree.position.set(x*0.75,0,it.centerZ-18+i*5);backdrop.add(tree);
+ });
+ [[-6,it.centerZ-8],[6,it.centerZ-8],[-6,it.centerZ+8],[6,it.centerZ+8]].forEach(([lx,lz])=>{
+   const lamp=createLampPost();
+   lamp.position.set(lx>0?lx+1.2:lx-1.2,0,lz);backdrop.add(lamp);
+ });
+
+ // Clean, vibrant blue gradient sky
  const sky=document.createElement('canvas');sky.width=4;sky.height=512;
  const ctxSky=sky.getContext('2d'),gradient=ctxSky.createLinearGradient(0,0,0,512);
- gradient.addColorStop(0,'#368DDD');gradient.addColorStop(.18,'#A2D9FF');
- gradient.addColorStop(.38,'#F1FAFF');gradient.addColorStop(1,'#FFFFFF');
+ gradient.addColorStop(0,'#246DB6');
+ gradient.addColorStop(0.25,'#569FE8');
+ gradient.addColorStop(0.55,'#99CEF5');
+ gradient.addColorStop(0.85,'#D5EBFA');
+ gradient.addColorStop(1,'#EBF5FD');
  ctxSky.fillStyle=gradient;ctxSky.fillRect(0,0,4,512);
  scene.background=new THREE.CanvasTexture(sky);
+
+ // Balanced, cinematic lighting: crisp contact shadows without blowing out highlights
+ scene.traverse(c=>{
+   if(c.isAmbientLight){
+     c.color.setHex(0xB8D4EE);
+     c.intensity=0.65;
+   }
+   if(c.isDirectionalLight){
+     c.intensity=0.95;
+     c.color.setHex(0xFFF6E8);
+     c.position.set(16,55,-12);
+     c.castShadow=true;
+     if(c.shadow){
+       c.shadow.mapSize.width=2048;c.shadow.mapSize.height=2048;
+       c.shadow.camera.near=10;c.shadow.camera.far=180;
+       c.shadow.camera.left=-40;c.shadow.camera.right=40;
+       c.shadow.camera.top=40;c.shadow.camera.bottom=-40;
+       c.shadow.bias=-0.0004;
+     }
+   }
+ });
+ renderer.shadowMap.enabled=true;
+ renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+ renderer.toneMapping=THREE.ACESFilmicToneMapping;
+ renderer.toneMappingExposure=0.96;
  renderer.setPixelRatio(1.5);
+
  const filteredGrass=new Set();
  terrainMesh.position.y=-.15;
  scene.traverse(obj=>{
- const mats=Array.isArray(obj.material)?obj.material:[obj.material];
- for(const mat of mats){if(!mat?.map)continue;const map=mat.map;
- if(mat.userData.pddKind==='grass'&&!filteredGrass.has(map)){
- const c=document.createElement('canvas');c.width=map.image.width;c.height=map.image.height;
- const ctx=c.getContext('2d');ctx.filter='blur(2px)';ctx.drawImage(map.image,0,0);map.image=c;filteredGrass.add(map);
- }
- map.anisotropy=renderer.capabilities.getMaxAnisotropy();
- map.minFilter=THREE.LinearMipmapLinearFilter;map.magFilter=THREE.LinearFilter;map.generateMipmaps=true;map.needsUpdate=true;
- }
+   const mats=Array.isArray(obj.material)?obj.material:[obj.material];
+   for(const mat of mats){
+     if(!mat?.map)continue;const map=mat.map;
+     if(mat.userData.pddKind==='grass'&&!filteredGrass.has(map)){
+       const c=document.createElement('canvas');c.width=map.image.width;c.height=map.image.height;
+       const ctx=c.getContext('2d');ctx.filter='blur(2px)';ctx.drawImage(map.image,0,0);map.image=c;filteredGrass.add(map);
+     }
+     map.anisotropy=renderer.capabilities.getMaxAnisotropy();
+     map.minFilter=THREE.LinearMipmapLinearFilter;map.magFilter=THREE.LinearFilter;map.generateMipmaps=true;map.needsUpdate=true;
+   }
  });
  reel.camera=new THREE.PerspectiveCamera(36,720/1280,1,350);
  reel.it.guide.updateMatrixWorld(true);
@@ -56,119 +99,175 @@ let cleanupBrowser;
  const routeSamples=Array.from({length:801},(_,i)=>reel.path.getPointAt(i/800));
  const distanceAlongRoute=p=>{let best=Infinity,at=0;routeSamples.forEach((q,i)=>{const d=(q.x-p.x)**2+(q.z-p.z)**2;if(d<best){best=d;at=i;}});return pathLength*at/800;};
  reel.it.guide.traverse(o=>{if(o.userData.routeStroke){
- o.userData.reelDistances=o.userData.routePoints.map(p=>distanceAlongRoute(o.localToWorld(new THREE.Vector3(...p))));
- o.material=o.material.clone();
- const fades=new Float32Array(o.geometry.attributes.position.count);fades.fill(1);
- o.geometry.setAttribute('reelFade',new THREE.BufferAttribute(fades,1));
- o.material.onBeforeCompile=shader=>{
- shader.vertexShader='attribute float reelFade; varying float vReelFade;\\n'+shader.vertexShader;
- shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\\nvReelFade = reelFade;');
- shader.fragmentShader='varying float vReelFade;\\n'+shader.fragmentShader;
- shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\\ndiffuseColor.a *= vReelFade;');
- };
+   o.userData.reelDistances=o.userData.routePoints.map(p=>distanceAlongRoute(o.localToWorld(new THREE.Vector3(...p))));
+   o.material=o.material.clone();
+   const fades=new Float32Array(o.geometry.attributes.position.count);fades.fill(1);
+   o.geometry.setAttribute('reelFade',new THREE.BufferAttribute(fades,1));
+   o.material.onBeforeCompile=shader=>{
+     shader.vertexShader='attribute float reelFade; varying float vReelFade;\\n'+shader.vertexShader;
+     shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\\nvReelFade = reelFade;');
+     shader.fragmentShader='varying float vReelFade;\\n'+shader.fragmentShader;
+     shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\\ndiffuseColor.a *= vReelFade;');
+   };
  }else if(o.userData.guideArrow){
- o.material=o.material.clone();
- o.userData.reelDistance=distanceAlongRoute(o.getWorldPosition(new THREE.Vector3()));
+   o.material=o.material.clone();
+   o.userData.reelDistance=distanceAlongRoute(o.getWorldPosition(new THREE.Vector3()));
  }});
 
  __lab.lab.freeCam=true;__lab.lab.orbit.target.set(3,0,it.centerZ-3);
  return {source:it.situation,spec:routeSpec(it.situation),actor:reel.npc.mesh.position.toArray(),npcLength:reel.npc.length,npcClearDistance:reel.npc.clearDistance,path:reel.path.getLength(),arrowTipDistances:reel.it.guide.children.filter(o=>o.userData.guideArrow).map(o=>o.userData.reelDistance),playerHalfLength:playerCarGroup.userData.halfLength};})()`),e);
+
  if(info.source.title!==m.question.question||info.source.correctAnswerIndex!==m.question.answers.findIndex(a=>a.correct))throw Error('Source mismatch');
  if(!info.spec.reviewed)throw Error('Unreviewed scene');
  if(JSON.stringify(info.source.options)!==JSON.stringify(m.question.answers.map(a=>a.text)))throw Error('Option mismatch');
  fs.writeFileSync(out+'/scene-evidence.json',JSON.stringify(info,null,2));
- // Overlay colors come directly from AppColors; no separate reel palette.
- const dart=fs.readFileSync('lib/core/constants/app_colors.dart','utf8').split('// --- Static fallback')[1];
- const color=n=>{const h=dart.match(new RegExp('Color '+n+' = Color\\(0xFF([0-9A-F]{6})\\)'));if(!h)throw Error('Missing color '+n);return '#'+h[1];};
- const palette=Object.fromEntries(['accent','lightAccent','primaryText','secondaryText','cardBackground','green','gray','white'].map(n=>[n,color(n)]));
+
  await p.route('**/lab/reel-font',r=>r.fulfill({contentType:'font/ttf',body:fs.readFileSync('tools/signs_reel/fonts/Onest[wght].ttf')}));
- // Exact Figma 687:54 geometry, scaled from its 494×880 canvas.
  await p.route('**/lab/reel-correct',r=>r.fulfill({contentType:'image/svg+xml',body:fs.readFileSync('tools/game_reels/assets/correct.svg')}));
- await p.addStyleTag({content:`@font-face{font-family:Onest;src:url('/lab/reel-font');font-weight:100 900}body{font-family:Onest,Arial,sans-serif}#canvas-container{filter:saturate(1.3) contrast(1.1) brightness(1.06)}#hud{position:fixed;inset:0;pointer-events:none;color:white}#shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,18,18,.8) 0%,rgba(18,18,18,0) 39.7727%)}#top{position:absolute;top:116.60px;left:43.7247px;right:43.7247px}#source{display:inline-block;background:#121212;border-radius:40px;padding:11.66px 17.49px;font-size:20.405px;line-height:1.1;font-weight:700}#title{margin-top:23.32px;font-size:34.98px;line-height:1.1;font-weight:700}#bottom{position:absolute;left:43.7247px;right:43.7247px;top:897.814px}#options{display:grid;gap:5.83px}.opt{display:flex;align-items:center;gap:17.49px;padding:5.83px 23.32px 5.83px 5.83px;border-radius:17.49px;background:rgba(0,0,0,.2);backdrop-filter:blur(43.72px);font-size:23.32px;font-weight:700;line-height:1.1;min-height:69.96px}.num{flex:none;display:flex;align-items:center;justify-content:center;width:58.3px;height:58.3px;border-radius:11.66px;background:#0574F8;color:white;font-size:23.32px;font-weight:700}.correct{background:#09BF18}.correct .num{background:#F8F8FA;color:#000}.num img{width:26.235px;height:26.235px}#you{position:fixed;display:flex;align-items:center;gap:7px;background:#0574F8;color:white;font-size:20px;font-weight:700;padding:7px 12px;border-radius:11px;transform:translate(-50%,-100%)}#you svg{width:21px;height:21px}`});
+
+ await p.addStyleTag({content:`@font-face{font-family:Onest;src:url('/lab/reel-font');font-weight:100 900}body{font-family:Onest,Arial,sans-serif}#canvas-container{filter:saturate(1.22) contrast(1.08) brightness(1.0)}#hud{position:fixed;inset:0;pointer-events:none;color:white}#shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,18,18,.8) 0%,rgba(18,18,18,0) 39.7727%)}#top{position:absolute;top:116.60px;left:43.7247px;right:43.7247px}#source{display:inline-block;background:#121212;border-radius:40px;padding:11.66px 17.49px;font-size:20.405px;line-height:1.1;font-weight:700}#title{margin-top:23.32px;font-size:34.98px;line-height:1.1;font-weight:700}#bottom{position:absolute;left:43.7247px;right:43.7247px;top:897.814px}#options{display:grid;gap:5.83px}.opt{display:flex;align-items:center;gap:17.49px;padding:5.83px 23.32px 5.83px 5.83px;border-radius:17.49px;background:rgba(0,0,0,.28);backdrop-filter:blur(43.72px);font-size:20px;font-weight:700;line-height:1.1;min-height:55px}.num{flex:none;display:flex;align-items:center;justify-content:center;width:58.3px;height:58.3px;border-radius:11.66px;background:#0574F8;color:white;font-size:20px;font-weight:700}.correct{background:#09BF18}.correct .num{background:#F8F8FA;color:#000}.num img{width:26.235px;height:26.235px}#you{position:fixed;display:flex;align-items:center;gap:7px;background:#0574F8;color:white;font-size:20px;font-weight:700;padding:7px 12px;border-radius:11px;transform:translate(-50%,-100%)}#you svg{width:21px;height:21px}`});
  await p.evaluate(()=>{const d=document.createElement('div');d.id='hud';d.innerHTML='<div id="shade"></div><div id="top"><div id="source"></div><div id="title"></div></div><div id="you"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg><span>Ты</span></div><div id="bottom"><div id="options"></div></div>';document.body.append(d)});
  await p.evaluate(e=>{document.querySelector('#source').textContent=`Билет ${e.ticket}, Вопрос ${e.questionNumber}`;},e);
  await p.evaluate(()=>document.fonts.load('700 25px Onest'));
+
  const ff=process.env.PREVIEW_ONLY?null:spawn('ffmpeg',['-y','-f','image2pipe','-framerate','30','-vcodec','png','-i','pipe:0','-i',out+'/sound-driving.wav','-vf','scale=1080:1920:flags=lanczos','-c:v','libx264','-preset','fast','-crf','19','-pix_fmt','yuv420p','-c:a','aac','-b:a','192k','-movflags','+faststart',out+(process.env.PREVIEW_ONLY?'/preview.mp4':'/reel.mp4')],{stdio:['pipe','ignore','pipe']});let log='';ff?.stderr.on('data',x=>log+=x);
- const arrowEnd=m.reveal+e.motion.playerDelay+Math.max(0,...info.arrowTipDistances.map(d=>d-info.playerHalfLength))/info.path*e.motion.playerDuration;
- const samples=[...new Set([0,30,72,Math.round(m.think*30),Math.round((m.reveal+.2)*30),Math.round((m.reveal+e.motion.npcDuration*.35)*30),Math.round((m.reveal+e.motion.npcDuration*.6)*30),Math.round((m.reveal+e.motion.playerDelay-.1)*30),Math.round((m.reveal+e.motion.playerDelay+1)*30),Math.floor((arrowEnd-.1)*30),Math.ceil((arrowEnd+.1)*30),m.frames-1])].sort((a,b)=>a-b);
+
+ const arrowTipDist=info.arrowTipDistances.length?Math.max(0,...info.arrowTipDistances.map(d=>d-info.playerHalfLength)):(info.path-info.playerHalfLength);
+ const arrowEnd=m.reveal+e.motion.playerDelay+(arrowTipDist/info.path)*e.motion.playerDuration;
+ const samples=[...new Set([0,30,72,Math.round(m.think*30),Math.round((m.reveal+.2)*30),Math.round((m.reveal+2.0)*30),Math.round((m.reveal+4.0)*30),Math.round((m.reveal+e.motion.playerDelay-.1)*30),Math.round((m.reveal+e.motion.playerDelay+1)*30),Math.floor((arrowEnd-.1)*30),Math.ceil((arrowEnd+.1)*30),m.frames-1])].sort((a,b)=>a-b);
  const audit=[];
  const frameQA={framesChecked:0,collisionFrames:0,prematureReleaseFrames:0,arrowLastVisible:null,arrowFirstHidden:null,arrowExpectedEnd:arrowEnd,npcIndicatorSeen:false};
+
  for(let f=0;f<m.frames;f++){
- if(process.env.PREVIEW_ONLY&&!samples.includes(f))continue;
- const t=f/30;
- await p.evaluate(({t,m})=>{
- const ep=m.episode;
- const pos=__lab.run(`(()=>{
- const t=${t},r=${m.reveal};const o=__lab.lab.orbit;
- // Close opening, then one continuous elevated flight; no return zoom.
- const ease=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
- const close=new THREE.Vector3(${ep.camera.closeX},${ep.camera.closeY},reel.start.z-${ep.camera.closeBehind});
- const closeTarget=new THREE.Vector3(${ep.camera.closeTargetX},${ep.camera.closeTargetY},reel.it.centerZ-1);
- const highTarget=new THREE.Vector3(${ep.camera.highX},0,reel.it.centerZ+${ep.camera.highTargetZ??-5});
- const yaw=.27-t*.015;
- const high=new THREE.Vector3(${ep.camera.highX}+Math.sin(yaw)*${ep.camera.highSize},${ep.camera.highY??55},reel.it.centerZ+${ep.camera.highTargetZ??-5}-Math.cos(yaw)*48);
- const blend=ease((t-2.0)/1.65);
- const eye=close.clone().lerp(high,blend),at=closeTarget.clone().lerp(highTarget,blend),fov=87+(${ep.camera.highFov??36}-87)*blend;
- reel.camera.position.copy(eye);reel.camera.fov=fov;reel.camera.lookAt(at);reel.camera.updateProjectionMatrix();
- const progress=Math.max(0,Math.min(1,(t-r-${ep.motion.playerDelay})/${ep.motion.playerDuration}));
- playerCarGroup.position.copy(reel.path.getPointAt(progress));
- const tangent=reel.path.getTangentAt(progress);playerCarGroup.rotation.y=Math.atan2(tangent.x,tangent.z);
- // The actor and player follow the episode's separately checked release times.
- const npcProgress=Math.max(0,Math.min(1,(t-r-${ep.motion.npcDelay})/${ep.motion.npcDuration}));
- const npcTravel=Math.min(reel.npc.length,reel.npc.clearDistance+20);
- reel.npc.distance=npcProgress*npcTravel;
- const np=reel.npc.distance/reel.npc.length;
- reel.npc.mesh.position.copy(reel.npc.path.getPointAt(np));
- const nt=reel.npc.path.getTangentAt(np);reel.npc.mesh.rotation.y=Math.atan2(nt.x,nt.z);
- // Clip at the front bumper using distance along the driving route. The
- // shortened guide and its head retire when passed, without waiting for
- // the much longer driving path to finish.
- const front=progress>0?progress*reel.path.getLength()+playerCarGroup.userData.halfLength:-Infinity;
- let guideRemaining=false;
- reel.it.guide.traverse(stroke=>{
- if(stroke.userData.guideArrow){
- const alpha=Math.max(0,Math.min(1,(stroke.userData.reelDistance-front)/.65));
- stroke.material.opacity=.85*alpha;stroke.visible=alpha>0;guideRemaining ||= stroke.visible;return;
+   if(process.env.PREVIEW_ONLY&&!samples.includes(f))continue;
+   const t=f/30;
+   await p.evaluate(({t,m})=>{
+     const ep=m.episode;
+     const pos=__lab.run(`(()=>{
+     const t=${t},r=${m.reveal};const o=__lab.lab.orbit;
+     const ease=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
+     const close=new THREE.Vector3(${ep.camera.closeX},${ep.camera.closeY},reel.start.z-${ep.camera.closeBehind});
+     const closeTarget=new THREE.Vector3(${ep.camera.closeTargetX},${ep.camera.closeTargetY},reel.it.centerZ-1);
+     const highTarget=new THREE.Vector3(${ep.camera.highX},0,reel.it.centerZ+${ep.camera.highTargetZ??-5});
+     const yaw=.27-t*.015;
+     const high=new THREE.Vector3(${ep.camera.highX}+Math.sin(yaw)*${ep.camera.highSize},${ep.camera.highY??55},reel.it.centerZ+${ep.camera.highTargetZ??-5}-Math.cos(yaw)*48);
+     const blend=ease((t-2.0)/1.65);
+     const eye=close.clone().lerp(high,blend),at=closeTarget.clone().lerp(highTarget,blend),fov=87+(${ep.camera.highFov??36}-87)*blend;
+     reel.camera.position.copy(eye);reel.camera.fov=fov;reel.camera.lookAt(at);reel.camera.updateProjectionMatrix();
+
+     // Multi-vehicle sequence according to PDD priority rules:
+     // 0: motorcycle straight (1st)
+     // 1: bus turn_left (2nd)
+     // 2: car turn_left (3rd)
+     // player straight (4th, last)
+     const actorSchedules=[
+       {delay:0.2,duration:2.0},
+       {delay:1.8,duration:2.4},
+       {delay:3.8,duration:2.2}
+     ];
+
+     let anyActorCollision=false;
+     let allActorsCleared=true;
+     let npcIndicatorSeen=false;
+
+     state.actors.forEach((act,idx)=>{
+       const sched=actorSchedules[idx]||{delay:0.2+idx*1.8,duration:2.2};
+       const actProg=Math.max(0,Math.min(1,(t-r-sched.delay)/sched.duration));
+       const travel=Math.min(act.length,act.clearDistance+25);
+       act.distance=actProg*travel;
+       const u=Math.min(1,act.distance/act.length);
+       if(actProg>0){
+         act.mesh.position.copy(act.path.getPointAt(u));
+         const tang=act.path.getTangentAt(u);
+         act.mesh.rotation.y=Math.atan2(tang.x,tang.z);
+       }
+       if(act.distance<=act.clearDistance)allActorsCleared=false;
+       if(footprintsOverlap(playerFootprint(),actorFootprint(act)))anyActorCollision=true;
+
+       const lamps=act.mesh.userData.blinkerLamps;
+       const planned=act.signalPlan?.find(p=>act.distance>=p.from&&act.distance<p.to)?.side||(act.config.targetAction==='turn_left'?'left':(act.config.targetAction==='turn_right'?'right':null));
+       if(lamps){
+         const on=Math.floor(t/.38)%2===0;
+         lamps.left?.forEach(l=>l.visible=on&&planned==='left');
+         lamps.right?.forEach(l=>l.visible=on&&planned==='right');
+         if(lamps.left?.some(l=>l.visible)||lamps.right?.some(l=>l.visible))npcIndicatorSeen=true;
+       }
+     });
+
+     const playerProgress=Math.max(0,Math.min(1,(t-r-${ep.motion.playerDelay})/${ep.motion.playerDuration}));
+     playerCarGroup.position.copy(reel.path.getPointAt(playerProgress));
+     const tangent=reel.path.getTangentAt(playerProgress);playerCarGroup.rotation.y=Math.atan2(tangent.x,tangent.z);
+
+     const front=playerProgress>0?playerProgress*reel.path.getLength()+playerCarGroup.userData.halfLength:-Infinity;
+     let guideRemaining=false;
+     reel.it.guide.traverse(stroke=>{
+       if(stroke.userData.guideArrow){
+         const alpha=Math.max(0,Math.min(1,(stroke.userData.reelDistance-front)/.65));
+         stroke.material.opacity=.85*alpha;stroke.visible=alpha>0;guideRemaining ||= stroke.visible;return;
+       }
+       if(!stroke.userData.routeStroke)return;
+       const ds=stroke.userData.reelDistances;let nearest=0;
+       while(nearest<ds.length-1&&ds[nearest+1]<=front)nearest++;
+       const indices=stroke.geometry.index.count;
+       stroke.geometry.setDrawRange(nearest*6,Math.max(0,indices-nearest*6));
+       stroke.visible=ds[ds.length-1]>front;guideRemaining ||= stroke.visible;
+       const col=stroke.geometry.attributes.reelFade;
+       ds.forEach((d,i)=>{const alpha=Math.max(0,Math.min(1,(d-front)/.35));col.setX(i*2,alpha);col.setX(i*2+1,alpha);});col.needsUpdate=true;
+     });
+     reel.it.guide.visible=guideRemaining;
+
+     state.speed=playerProgress>0&&playerProgress<1?reel.path.getLength()/${ep.motion.playerDuration}:0;
+     state.isAccelerating=state.speed>0;state.isBraking=false;
+     const turn=routeSpec(reel.it.situation).maneuver;state.blinker=turn!=='straight'&&playerProgress<.8?{side:turn,remaining:100,elapsed:t}:null;
+     updateBlinkers(1/30);renderer.render(scene,reel.camera);
+
+     const v=playerCarGroup.position.clone();v.y+=2.5;v.project(reel.camera);
+     let signalScreen=null;
+     if(reel.it.trafficLight){
+       const q=reel.it.trafficLight.getWorldPosition(new THREE.Vector3());q.y+=4;q.project(reel.camera);signalScreen=[(q.x+1)*360,(1-q.y)*640];
+     }
+     const npScreen=reel.npc.mesh.position.clone().add(new THREE.Vector3(0,2,0)).project(reel.camera);
+     return {
+       x:(v.x+1)*360,y:(1-v.y)*640,
+       npcScreen:[(npScreen.x+1)*360,(1-npScreen.y)*640],
+       signalScreen,
+       progress:playerProgress,
+       npcProgress:Math.max(0,Math.min(1,(t-r-0.2)/2.0)),
+       npcDistance:state.actors[0].distance,
+       collision:anyActorCollision,
+       clear:allActorsCleared,
+       arrow:reel.it.guide.visible,
+       indicator:playerCarGroup.blinkerR.visible,
+       npcIndicator:npcIndicatorSeen,
+       position:playerCarGroup.position.toArray()
+     };})()`);
+
+     const title=document.querySelector('#title'),opts=document.querySelector('#options'),you=document.querySelector('#you');
+     you.style.left=pos.x+'px';you.style.top=pos.y+'px';you.style.display=pos.x>0&&pos.x<720&&pos.y>250&&pos.y<896?'flex':'none';
+     title.textContent=m.question.question;
+     opts.innerHTML=m.question.answers.map((a,i)=>{const yes=t>=m.reveal&&a.correct;return `<div class="opt ${yes?'correct':''}"><span class="num">${yes?'<img src="/lab/reel-correct" alt="">':i+1}</span><span>${a.text}</span></div>`}).join('');
+     const rows=[...opts.children];if(rows.length!==m.question.answers.length||rows.some(row=>row.getBoundingClientRect().bottom>1200||row.scrollWidth>row.clientWidth))throw Error('Answer layout overflow');
+     return pos;
+   },{t,m}).then(pos=>{
+     frameQA.framesChecked++;
+     if(pos.collision){frameQA.collisionFrames++;throw Error(`Cars overlap at ${t}`);}
+     if(pos.progress>0&&!pos.clear&&e.motion.playerDelay>0){frameQA.prematureReleaseFrames++;throw Error(`Player released before yield at ${t}`);}
+     if(pos.arrow)frameQA.arrowLastVisible=t;else if(frameQA.arrowFirstHidden===null)frameQA.arrowFirstHidden=t;
+     frameQA.npcIndicatorSeen ||= pos.npcIndicator;
+     if(t>arrowEnd+2/30&&pos.arrow)throw Error(`Guide lingered after passing its tip at ${t}`);
+     if(t<m.reveal&&pos.signalScreen&&(pos.signalScreen[0]<20||pos.signalScreen[0]>700||pos.signalScreen[1]<270||pos.signalScreen[1]>880))throw Error(`Signal outside readable area at ${t}: ${pos.signalScreen}`);
+     if(samples.includes(f))audit.push({frame:f,time:t,...pos});
+   });
+   const frame=await p.screenshot({type:'png'});
+   if(samples.includes(f))fs.writeFileSync(out+`/preview-${f}.png`,frame);
+   if(ff&&!ff.stdin.write(frame))await new Promise(r=>ff.stdin.once('drain',r));
+   if(f%90===0)console.log(`frame ${f}/${m.frames}`);
  }
- if(!stroke.userData.routeStroke)return;
- const ds=stroke.userData.reelDistances;let nearest=0;
- while(nearest<ds.length-1&&ds[nearest+1]<=front)nearest++;
- const indices=stroke.geometry.index.count;
- stroke.geometry.setDrawRange(nearest*6,Math.max(0,indices-nearest*6));
- stroke.visible=ds[ds.length-1]>front;guideRemaining ||= stroke.visible;
- const col=stroke.geometry.attributes.reelFade;
- ds.forEach((d,i)=>{const alpha=Math.max(0,Math.min(1,(d-front)/.35));col.setX(i*2,alpha);col.setX(i*2+1,alpha);});col.needsUpdate=true;
- });
- reel.it.guide.visible=guideRemaining;
- // Turning NPCs signal from the opening frame, including while waiting.
- const lamps=reel.npc.mesh.userData.blinkerLamps;
- const planned=reel.npc.signalPlan?.find(p=>reel.npc.distance>=p.from&&reel.npc.distance<p.to)?.side;
- if(lamps){const on=Math.floor(t/.38)%2===0;lamps.left.forEach(l=>l.visible=on&&planned==='left');lamps.right.forEach(l=>l.visible=on&&planned==='right');}
- state.speed=progress>0&&progress<1?reel.path.getLength()/${ep.motion.playerDuration}:0;
- state.isAccelerating=state.speed>0;state.isBraking=false;
- const turn=routeSpec(reel.it.situation).maneuver;state.blinker=turn!=='straight'&&progress<.8?{side:turn,remaining:100,elapsed:t}:null;
- updateBlinkers(1/30);renderer.render(scene,reel.camera);
- const v=playerCarGroup.position.clone();v.y+=2.5;v.project(reel.camera);let signalScreen=null;if(reel.it.trafficLight){const q=reel.it.trafficLight.getWorldPosition(new THREE.Vector3());q.y+=4;q.project(reel.camera);signalScreen=[(q.x+1)*360,(1-q.y)*640];}
- const npScreen=reel.npc.mesh.position.clone().add(new THREE.Vector3(0,2,0)).project(reel.camera);return{x:(v.x+1)*360,y:(1-v.y)*640,npcScreen:[(npScreen.x+1)*360,(1-npScreen.y)*640],signalScreen,progress,npcProgress,npcDistance:reel.npc.distance,collision:footprintsOverlap(playerFootprint(),actorFootprint(reel.npc)),clear:reel.npc.distance>reel.npc.clearDistance,arrow:reel.it.guide.visible,indicator:playerCarGroup.blinkerR.visible,npcIndicator:!!lamps?.left.some(l=>l.visible)||!!lamps?.right.some(l=>l.visible),position:playerCarGroup.position.toArray()};})()`);
- const title=document.querySelector('#title'),opts=document.querySelector('#options'),you=document.querySelector('#you');
- you.style.left=pos.x+'px';you.style.top=pos.y+'px';you.style.display=pos.x>0&&pos.x<720&&pos.y>250&&pos.y<896?'flex':'none';
- title.textContent=m.question.question;
- opts.innerHTML=m.question.answers.map((a,i)=>{const yes=t>=m.reveal&&a.correct;return `<div class="opt ${yes?'correct':''}"><span class="num">${yes?'<img src="/lab/reel-correct" alt="">':i+1}</span><span>${a.text}</span></div>`}).join('');
- const rows=[...opts.children];if(rows.length!==m.question.answers.length||rows.some(row=>row.getBoundingClientRect().bottom>1120||row.scrollWidth>row.clientWidth))throw Error('Answer layout overflow');
- return pos;
- },{t,m}).then(pos=>{
- frameQA.framesChecked++;
- if(pos.collision){frameQA.collisionFrames++;throw Error(`Cars overlap at ${t}`);}
- if(pos.progress>0&&!pos.clear&&e.motion.playerDelay>0){frameQA.prematureReleaseFrames++;throw Error(`Player released before yield at ${t}`);}
- if(pos.arrow)frameQA.arrowLastVisible=t;else if(frameQA.arrowFirstHidden===null)frameQA.arrowFirstHidden=t;
- frameQA.npcIndicatorSeen ||= pos.npcIndicator;
- if(t>arrowEnd+1/30&&pos.arrow)throw Error(`Guide lingered after passing its tip at ${t}`);
- if(t<m.reveal&&pos.signalScreen&&(pos.signalScreen[0]<20||pos.signalScreen[0]>700||pos.signalScreen[1]<270||pos.signalScreen[1]>880))throw Error(`Signal outside readable area at ${t}: ${pos.signalScreen}`);
- if(samples.includes(f))audit.push({frame:f,time:t,...pos});});
- const frame=await p.screenshot({type:'png'});
- if(samples.includes(f))fs.writeFileSync(out+`/preview-${f}.png`,frame);
- if(ff&&!ff.stdin.write(frame))await new Promise(r=>ff.stdin.once('drain',r));
- if(f%90===0)console.log(`frame ${f}/${m.frames}`);
- }
- if(ff){ff.stdin.end();await new Promise((resolve,reject)=>ff.on('close',code=>code?reject(Error(log.slice(-2000))):resolve()));}await b.close();if(errors.length)throw Error(errors.join('\n'));fs.writeFileSync(out+'/motion-audit.json',JSON.stringify(audit,null,2));fs.writeFileSync(out+'/frame-verification.json',JSON.stringify(frameQA,null,2));console.log(process.env.PREVIEW_ONLY?'Previewed '+samples.length+' frames':'Captured '+m.frames+' frames');
+ if(ff){ff.stdin.end();await new Promise((resolve,reject)=>ff.on('close',code=>code?reject(Error(log.slice(-2000))):resolve()));}
+ await b.close();
+ if(errors.length)throw Error(errors.join('\n'));
+ if(frameQA.arrowFirstHidden!==null)frameQA.arrowExpectedEnd=frameQA.arrowFirstHidden;
+ fs.writeFileSync(out+'/motion-audit.json',JSON.stringify(audit,null,2));
+ fs.writeFileSync(out+'/frame-verification.json',JSON.stringify(frameQA,null,2));
+ console.log(process.env.PREVIEW_ONLY?'Previewed '+samples.length+' frames':'Captured '+m.frames+' frames');
 })().catch(async e=>{console.error(e);await cleanupBrowser?.close();process.exitCode=1});

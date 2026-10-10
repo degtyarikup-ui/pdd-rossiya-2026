@@ -1,0 +1,29 @@
+{
+  "id": "031-straight",
+  "country": "ru",
+  "ticket": 31,
+  "questionNumber": 15,
+  "sceneId": "ticket_31_15",
+  "choicesSpeech": "Кому уступишь дорогу при движении прямо? Мотоциклу? Автобусу? Или вообще всем?",
+  "answerSpeech": "Всем транспортным средствам! Перекрёсток неравнозначный. Автобус и мотоцикл на главной, а легковой автомобиль справа от тебя на второстепенной.",
+  "rule": "13.9, 13.10",
+  "ruleSource": "ПДД",
+  "motion": {
+    "playerDelay": 5.8,
+    "playerDuration": 2.4,
+    "npcDelay": 0.2,
+    "npcDuration": 5.6
+  },
+  "camera": {
+    "closeX": 0,
+    "closeY": 7,
+    "closeBehind": 18,
+    "closeTargetX": 1.5,
+    "closeTargetY": 2,
+    "highX": -4,
+    "highSize": 80,
+    "highY": 58,
+    "highFov": 42,
+    "highTargetZ": 1
+  }
+}
