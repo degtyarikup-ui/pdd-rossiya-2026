@@ -617,12 +617,16 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                       Icon(
                         isDone
                             ? Icons.check_circle_rounded
-                            : (actor.type == CrossroadsVehicleType.tram
-                                  ? Icons.tram_rounded
-                                  : (actor.type ==
-                                            CrossroadsVehicleType.emergency
-                                        ? Icons.emergency_rounded
-                                        : Icons.directions_car_rounded)),
+                            : switch (actor.type) {
+                                CrossroadsVehicleType.tram => Icons.tram_rounded,
+                                CrossroadsVehicleType.emergency => Icons.emergency_rounded,
+                                CrossroadsVehicleType.police => Icons.local_police_rounded,
+                                CrossroadsVehicleType.truck => Icons.local_shipping_rounded,
+                                CrossroadsVehicleType.bus => Icons.directions_bus_rounded,
+                                CrossroadsVehicleType.motorcycle => Icons.two_wheeler_rounded,
+                                CrossroadsVehicleType.suv => Icons.directions_car_rounded,
+                                CrossroadsVehicleType.car => Icons.directions_car_rounded,
+                              },
                         size: 16,
                         color: isDone ? colors.green : colors.primaryText,
                       ),

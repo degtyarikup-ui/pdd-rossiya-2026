@@ -11,7 +11,7 @@ void main() {
   group('Crossroads Priority Rules and Scenarios Tests', () {
     test('All certified scenarios have valid priority order sequences', () {
       final scenarios = CrossroadsScenariosLibrary.allScenarios;
-      expect(scenarios.length, greaterThanOrEqualTo(8));
+      expect(scenarios.length, equals(18));
 
       for (final s in scenarios) {
         expect(s.actors.isNotEmpty, isTrue, reason: 'Scenario ${s.id} has no actors');
@@ -24,6 +24,18 @@ void main() {
       }
     });
 
+    test('Scenarios cover all diverse vehicle types (truck, bus, motorcycle, police, tram, etc.)', () {
+      final allTypes = CrossroadsScenariosLibrary.allScenarios
+          .expand((s) => s.actors)
+          .map((a) => a.type)
+          .toSet();
+
+      for (final expectedType in CrossroadsVehicleType.values) {
+        expect(allTypes.contains(expectedType), isTrue,
+            reason: 'Vehicle type $expectedType is not represented in scenarios library');
+      }
+    });
+
     test('Special emergency vehicle always has priority order 1', () {
       final emergencyScenario = CrossroadsScenariosLibrary.allScenarios
           .firstWhere((s) => s.id == 'cross_emergency_priority');
@@ -32,6 +44,29 @@ void main() {
 
       expect(emergencyActor.priorityOrder, equals(1));
       expect(emergencyActor.hasSiren, isTrue);
+    });
+
+    test('Police patrol with siren has priority order 1 before tram', () {
+      final policeScenario = CrossroadsScenariosLibrary.allScenarios
+          .firstWhere((s) => s.id == 'cross_police_vs_tram');
+      final policeActor = policeScenario.actors
+          .firstWhere((a) => a.type == CrossroadsVehicleType.police);
+      final tramActor = policeScenario.actors
+          .firstWhere((a) => a.type == CrossroadsVehicleType.tram);
+
+      expect(policeActor.priorityOrder, equals(1));
+      expect(policeActor.hasSiren, isTrue);
+      expect(tramActor.priorityOrder, equals(2));
+    });
+
+    test('Roundabout scenario prioritizes vehicle already in roundabout', () {
+      final roundScenario = CrossroadsScenariosLibrary.allScenarios
+          .firstWhere((s) => s.id == 'cross_roundabout_priority');
+      final carRing = roundScenario.actors.firstWhere((a) => a.id == 'car_east');
+      final carEntering = roundScenario.actors.firstWhere((a) => a.id == 'car_south');
+
+      expect(carRing.priorityOrder, equals(1));
+      expect(carEntering.priorityOrder, equals(2));
     });
 
     test('Tram has advantage over regular cars on equal crossroads', () {

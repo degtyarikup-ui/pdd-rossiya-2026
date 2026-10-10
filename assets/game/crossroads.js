@@ -1155,25 +1155,30 @@
     return tex;
   }
 
-  // --- Создание участников движения (машины, трамвай, скорая) ---
+  // --- Создание участников движения (машины, трамвай, грузовик, автобус, мотоцикл, скорая, полиция) ---
   function createVehicleMesh(actorData) {
     let mesh;
     const color = actorData.color || '#317ED4';
 
     if (actorData.type === 'tram') {
-      // Трамвай с реалистичными деталями и пантографом
       mesh = buildTramModel(color);
+    } else if (actorData.type === 'truck') {
+      mesh = buildTruckModel(color);
+    } else if (actorData.type === 'bus') {
+      mesh = buildBusModel(color);
+    } else if (actorData.type === 'motorcycle') {
+      mesh = buildMotorcycleModel(color);
+    } else if (actorData.type === 'police') {
+      mesh = buildPoliceModel();
+    } else if (actorData.type === 'emergency') {
+      mesh = buildAmbulanceModel();
     } else if (window.PDD_VEHICLES && window.PDD_VEHICLES.create) {
-      // Используем сертифицированные модели PDD_VEHICLES
-      const model = actorData.model || (actorData.type === 'emergency' ? 'suv' : 'hatch');
+      const model = actorData.model || (actorData.type === 'suv' ? 'suv' : 'sedan');
       mesh = window.PDD_VEHICLES.create(model, color);
-
-      // Для спецтранспорта добавляем проблесковые маячки (синий/красный)
       if (actorData.hasSiren) {
         addEmergencyBeacons(mesh);
       }
     } else {
-      // Запасной процедурный меш высокого качества
       mesh = buildFallbackCar(color);
     }
 
@@ -1193,6 +1198,332 @@
       }
     });
 
+    return mesh;
+  }
+
+  function buildTruckModel(colorHex) {
+    const truck = new THREE.Group();
+    const c = parseInt(colorHex.replace('#', ''), 16) || 0x317ED4;
+    const cabMat = new THREE.MeshLambertMaterial({ color: c });
+    const boxMat = new THREE.MeshLambertMaterial({ color: 0xE8ECF0 });
+    const darkMat = new THREE.MeshLambertMaterial({ color: 0x242830 });
+    const metalMat = new THREE.MeshLambertMaterial({ color: 0x8C929A });
+    const glassMat = new THREE.MeshLambertMaterial({ color: 0x2A3B4C, transparent: true, opacity: 0.88 });
+    const headMat = new THREE.MeshLambertMaterial({ color: 0xFFF3CC });
+    const tailMat = new THREE.MeshLambertMaterial({ color: 0xD33D38 });
+
+    // Рама шасси
+    const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.28, 6.4), darkMat);
+    chassis.position.y = 0.58;
+    chassis.castShadow = true;
+    truck.add(chassis);
+
+    // Кабина
+    const cabLower = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.2, 1.9), cabMat);
+    cabLower.position.set(0, 1.15, 2.1);
+    cabLower.castShadow = true;
+    truck.add(cabLower);
+
+    const cabUpper = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.1, 1.7), cabMat);
+    cabUpper.position.set(0, 2.2, 2.05);
+    cabUpper.castShadow = true;
+    truck.add(cabUpper);
+
+    // Лобовое стекло
+    const windshield = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.72, 0.08), glassMat);
+    windshield.position.set(0, 2.3, 2.92);
+    windshield.rotation.x = -0.12;
+    truck.add(windshield);
+
+    // Боковые стекла и зеркала
+    for (const sx of [-1, 1]) {
+      const sideGlass = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.65, 0.9), glassMat);
+      sideGlass.position.set(sx * 1.02, 2.3, 2.1);
+      truck.add(sideGlass);
+
+      const mirror = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.16), darkMat);
+      mirror.position.set(sx * 1.16, 2.15, 2.6);
+      truck.add(mirror);
+    }
+
+    // Решетка и фары
+    const grille = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.55, 0.08), darkMat);
+    grille.position.set(0, 1.05, 3.06);
+    truck.add(grille);
+
+    for (const sx of [-1, 1]) {
+      const headlight = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.16, 0.06), headMat);
+      headlight.position.set(sx * 0.82, 0.95, 3.06);
+      truck.add(headlight);
+    }
+
+    // Кузов-фургон
+    const cargoBox = new THREE.Mesh(new THREE.BoxGeometry(2.25, 2.2, 4.4), boxMat);
+    cargoBox.position.set(0, 1.88, -0.95);
+    cargoBox.castShadow = true;
+    truck.add(cargoBox);
+
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.28, 0.14, 4.3), cabMat);
+    stripe.position.set(0, 1.88, -0.95);
+    truck.add(stripe);
+
+    // Колеса (6 шт)
+    const r = 0.46;
+    truck.userData.wheels = [];
+    truck.userData.frontAxles = [];
+
+    const addWheel = (x, z, isFront) => {
+      const axle = new THREE.Group();
+      axle.position.set(x, r, z);
+      truck.add(axle);
+
+      const tyre = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.28, 18), darkMat);
+      tyre.rotation.z = Math.PI / 2;
+      tyre.castShadow = true;
+      axle.add(tyre);
+
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.6, r * 0.6, 0.29, 14), metalMat);
+      rim.rotation.z = Math.PI / 2;
+      axle.add(rim);
+
+      truck.userData.wheels.push(tyre);
+      if (isFront) truck.userData.frontAxles.push(axle);
+    };
+
+    addWheel(1.02, 2.1, true);
+    addWheel(-1.02, 2.1, true);
+    addWheel(1.02, -0.6, false);
+    addWheel(-1.02, -0.6, false);
+    addWheel(1.02, -1.9, false);
+    addWheel(-1.02, -1.9, false);
+
+    for (const sx of [-1, 1]) {
+      const tail = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.05), tailMat);
+      tail.position.set(sx * 0.85, 0.75, -3.17);
+      truck.add(tail);
+    }
+
+    truck.userData.height = 3.2;
+    truck.userData.isTruck = true;
+    return truck;
+  }
+
+  function buildBusModel(colorHex) {
+    const bus = new THREE.Group();
+    const c = parseInt(colorHex.replace('#', ''), 16) || 0xF08A24;
+    const bodyMat = new THREE.MeshLambertMaterial({ color: c });
+    const whiteMat = new THREE.MeshLambertMaterial({ color: 0xF5F6F8 });
+    const darkMat = new THREE.MeshLambertMaterial({ color: 0x22262C });
+    const metalMat = new THREE.MeshLambertMaterial({ color: 0x8C929A });
+    const glassMat = new THREE.MeshLambertMaterial({ color: 0x273545, transparent: true, opacity: 0.88 });
+    const headMat = new THREE.MeshLambertMaterial({ color: 0xFFF3CC });
+    const tailMat = new THREE.MeshLambertMaterial({ color: 0xD33D38 });
+
+    const lower = new THREE.Mesh(new THREE.BoxGeometry(2.35, 1.25, 9.2), bodyMat);
+    lower.position.y = 0.95;
+    lower.castShadow = true;
+    bus.add(lower);
+
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.55, 9.1), whiteMat);
+    roof.position.y = 2.8;
+    roof.castShadow = true;
+    bus.add(roof);
+
+    const acUnit = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.28, 2.2), whiteMat);
+    acUnit.position.set(0, 3.2, 0.5);
+    bus.add(acUnit);
+
+    const sideGlass = new THREE.Mesh(new THREE.BoxGeometry(2.38, 1.1, 8.4), glassMat);
+    sideGlass.position.y = 2.05;
+    bus.add(sideGlass);
+
+    const windshield = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.45, 0.08), glassMat);
+    windshield.position.set(0, 2.05, 4.62);
+    windshield.rotation.x = -0.08;
+    bus.add(windshield);
+
+    const routeDisplay = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.28, 0.08), darkMat);
+    routeDisplay.position.set(0, 2.85, 4.58);
+    bus.add(routeDisplay);
+
+    for (const sx of [-1, 1]) {
+      const hl = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.16, 0.06), headMat);
+      hl.position.set(sx * 0.88, 0.72, 4.62);
+      bus.add(hl);
+
+      const tl = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.16, 0.06), tailMat);
+      tl.position.set(sx * 0.88, 0.85, -4.62);
+      bus.add(tl);
+    }
+
+    const r = 0.48;
+    bus.userData.wheels = [];
+    bus.userData.frontAxles = [];
+
+    const addWheel = (x, z, isFront) => {
+      const axle = new THREE.Group();
+      axle.position.set(x, r, z);
+      bus.add(axle);
+
+      const tyre = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.28, 18), darkMat);
+      tyre.rotation.z = Math.PI / 2;
+      tyre.castShadow = true;
+      axle.add(tyre);
+
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.58, r * 0.58, 0.29, 14), metalMat);
+      rim.rotation.z = Math.PI / 2;
+      axle.add(rim);
+
+      bus.userData.wheels.push(tyre);
+      if (isFront) bus.userData.frontAxles.push(axle);
+    };
+
+    addWheel(1.12, 3.1, true);
+    addWheel(-1.12, 3.1, true);
+    addWheel(1.12, -2.4, false);
+    addWheel(-1.12, -2.4, false);
+    addWheel(1.12, -3.6, false);
+    addWheel(-1.12, -3.6, false);
+
+    bus.userData.height = 3.3;
+    bus.userData.isBus = true;
+    return bus;
+  }
+
+  function buildMotorcycleModel(colorHex) {
+    const moto = new THREE.Group();
+    const c = parseInt(colorHex.replace('#', ''), 16) || 0xED4621;
+    const bodyMat = new THREE.MeshLambertMaterial({ color: c });
+    const darkMat = new THREE.MeshLambertMaterial({ color: 0x1E2126 });
+    const metalMat = new THREE.MeshLambertMaterial({ color: 0xC8D0D8 });
+    const headMat = new THREE.MeshLambertMaterial({ color: 0xFFF3CC });
+    const tailMat = new THREE.MeshLambertMaterial({ color: 0xD33D38 });
+    const riderSuitMat = new THREE.MeshLambertMaterial({ color: 0x2A303A });
+
+    const engine = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.42, 0.65), metalMat);
+    engine.position.set(0, 0.48, 0.05);
+    engine.castShadow = true;
+    moto.add(engine);
+
+    const tank = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.32, 0.65), bodyMat);
+    tank.position.set(0, 0.85, 0.25);
+    tank.castShadow = true;
+    moto.add(tank);
+
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.16, 0.7), darkMat);
+    seat.position.set(0, 0.8, -0.32);
+    seat.castShadow = true;
+    moto.add(seat);
+
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.18, 0.4), bodyMat);
+    tail.position.set(0, 0.88, -0.75);
+    tail.rotation.x = -0.2;
+    moto.add(tail);
+
+    const tailLight = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.04), tailMat);
+    tailLight.position.set(0, 0.88, -0.96);
+    moto.add(tailLight);
+
+    const forkGroup = new THREE.Group();
+    forkGroup.position.set(0, 0.4, 0.85);
+    moto.add(forkGroup);
+
+    const forkTubeL = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.85), metalMat);
+    forkTubeL.position.set(0.14, 0.3, -0.08);
+    forkTubeL.rotation.x = 0.28;
+    forkGroup.add(forkTubeL);
+
+    const forkTubeR = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.85), metalMat);
+    forkTubeR.position.set(-0.14, 0.3, -0.08);
+    forkTubeR.rotation.x = 0.28;
+    forkGroup.add(forkTubeR);
+
+    const handlebar = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.05, 0.05), metalMat);
+    handlebar.position.set(0, 0.68, -0.16);
+    forkGroup.add(handlebar);
+
+    const headlight = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.08, 16), headMat);
+    headlight.rotation.x = Math.PI / 2;
+    headlight.position.set(0, 0.55, 0.04);
+    forkGroup.add(headlight);
+
+    const r = 0.38;
+    moto.userData.wheels = [];
+    moto.userData.frontAxles = [forkGroup];
+
+    const fTyre = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.12, 18), darkMat);
+    fTyre.rotation.z = Math.PI / 2;
+    fTyre.castShadow = true;
+    forkGroup.add(fTyre);
+    moto.userData.wheels.push(fTyre);
+
+    const rAxle = new THREE.Group();
+    rAxle.position.set(0, r, -0.75);
+    moto.add(rAxle);
+    const rTyre = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.16, 18), darkMat);
+    rTyre.rotation.z = Math.PI / 2;
+    rTyre.castShadow = true;
+    rAxle.add(rTyre);
+    moto.userData.wheels.push(rTyre);
+
+    const riderTorso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.55, 0.32), riderSuitMat);
+    riderTorso.position.set(0, 1.25, -0.15);
+    riderTorso.rotation.x = 0.32;
+    riderTorso.castShadow = true;
+    moto.add(riderTorso);
+
+    const riderHelmet = new THREE.Mesh(new THREE.SphereGeometry(0.19, 14, 14), bodyMat);
+    riderHelmet.position.set(0, 1.62, 0.02);
+    riderHelmet.castShadow = true;
+    moto.add(riderHelmet);
+
+    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.10, 0.12), darkMat);
+    visor.position.set(0, 1.62, 0.14);
+    moto.add(visor);
+
+    moto.userData.height = 1.9;
+    return moto;
+  }
+
+  function buildPoliceModel() {
+    let mesh;
+    if (window.PDD_VEHICLES && window.PDD_VEHICLES.create) {
+      mesh = window.PDD_VEHICLES.create('sedan', '#F2F3F5');
+    } else {
+      mesh = buildFallbackCar('#F2F3F5');
+    }
+
+    for (const sx of [-1, 1]) {
+      const stripe = new THREE.Mesh(
+        new THREE.BoxGeometry(0.04, 0.18, 2.6),
+        new THREE.MeshLambertMaterial({ color: 0x0574F8 })
+      );
+      stripe.position.set(sx * 0.92, 0.78, 0.0);
+      mesh.add(stripe);
+    }
+
+    addEmergencyBeacons(mesh);
+    return mesh;
+  }
+
+  function buildAmbulanceModel() {
+    let mesh;
+    if (window.PDD_VEHICLES && window.PDD_VEHICLES.create) {
+      mesh = window.PDD_VEHICLES.create('suv', '#F2F3F5');
+    } else {
+      mesh = buildFallbackCar('#F2F3F5');
+    }
+
+    for (const sx of [-1, 1]) {
+      const redStripe = new THREE.Mesh(
+        new THREE.BoxGeometry(0.04, 0.18, 2.4),
+        new THREE.MeshLambertMaterial({ color: 0xEF4444 })
+      );
+      redStripe.position.set(sx * 0.98, 1.05, 0.0);
+      mesh.add(redStripe);
+    }
+
+    addEmergencyBeacons(mesh);
     return mesh;
   }
 
@@ -1298,10 +1629,13 @@
   }
 
   // --- Парящий интерактивный бейдж над машиной ---
-  // --- Парящий интерактивный бейдж над машиной ---
   function createVehicleBadge(actorData) {
     const badgeGroup = new THREE.Group();
-    const h = (actorData.type === 'tram' ? 3.8 : 1.7) + 1.6;
+    let h = 1.7 + 1.6;
+    if (actorData.type === 'tram') h = 3.8 + 1.6;
+    else if (actorData.type === 'bus') h = 3.3 + 1.6;
+    else if (actorData.type === 'truck') h = 3.2 + 1.6;
+    else if (actorData.type === 'motorcycle') h = 1.9 + 1.5;
     badgeGroup.position.set(0, h, 0);
 
     const canvas = document.createElement('canvas');
@@ -1331,17 +1665,22 @@
     ctx.strokeStyle = actorData.color || '#0574F8';
     ctx.stroke();
 
-    // Символ направления маневра
+    // Символ направления маневра или типа ТС
     ctx.fillStyle = '#101828';
     ctx.font = 'bold 92px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
     let icon = '↑';
-    if (actorData.type === 'tram') icon = '🚋';
-    else if (actorData.hasSiren) icon = '🚨';
-    else if (actorData.maneuver === 'left') icon = '↰';
+    if (actorData.maneuver === 'left') icon = '↰';
     else if (actorData.maneuver === 'right') icon = '↱';
+    else if (actorData.maneuver === 'uTurn') icon = '⮌';
+    else if (actorData.type === 'tram') icon = '🚋';
+    else if (actorData.type === 'police') icon = '🚓';
+    else if (actorData.type === 'truck') icon = '🚚';
+    else if (actorData.type === 'bus') icon = '🚌';
+    else if (actorData.type === 'motorcycle') icon = '🏍️';
+    else if (actorData.hasSiren) icon = '🚨';
 
     ctx.fillText(icon, 128, 134);
 
@@ -1422,8 +1761,13 @@
 
   // Позиционирование машин перед перекрестком
   function placeActorAtStart(actorMesh, sideName) {
-    const isTram = actorMesh.userData.isTram;
-    const stopDist = isTram ? 17.0 : 14.8;
+    const isTram = !!actorMesh.userData.isTram;
+    const isBus = !!actorMesh.userData.isBus;
+    const isTruck = !!actorMesh.userData.isTruck;
+    let stopDist = 14.8;
+    if (isTram) stopDist = 17.0;
+    else if (isBus) stopDist = 17.2;
+    else if (isTruck) stopDist = 15.8;
     const laneX = isTram ? 0 : LANE_OFFSET;
 
     if (sideName === 'south') {
@@ -1639,6 +1983,28 @@
     const pStart = mesh.position.clone();
     const exitD = HALF_ROAD + 32.0;
     const laneX = isTram ? 0 : LANE_OFFSET;
+
+    if (maneuver === 'uTurn') {
+      let pEnd, pC1, pC2;
+      if (side === 'south') {
+        pEnd = new THREE.Vector3(-laneX, 0, exitD);
+        pC1 = new THREE.Vector3(laneX, 0, -2.5);
+        pC2 = new THREE.Vector3(-laneX, 0, -2.5);
+      } else if (side === 'north') {
+        pEnd = new THREE.Vector3(laneX, 0, -exitD);
+        pC1 = new THREE.Vector3(-laneX, 0, 2.5);
+        pC2 = new THREE.Vector3(laneX, 0, 2.5);
+      } else if (side === 'east') {
+        pEnd = new THREE.Vector3(exitD, 0, laneX);
+        pC1 = new THREE.Vector3(-2.5, 0, -laneX);
+        pC2 = new THREE.Vector3(-2.5, 0, laneX);
+      } else { // west
+        pEnd = new THREE.Vector3(-exitD, 0, -laneX);
+        pC1 = new THREE.Vector3(2.5, 0, laneX);
+        pC2 = new THREE.Vector3(2.5, 0, -laneX);
+      }
+      return new THREE.CubicBezierCurve3(pStart, pC1, pC2, pEnd);
+    }
 
     let pEnd, pMid;
     if (maneuver === 'straight') {

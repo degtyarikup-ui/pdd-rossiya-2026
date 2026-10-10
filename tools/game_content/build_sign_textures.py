@@ -7,7 +7,7 @@ The WebView runs offline from bundled assets, so the artwork of every sign the
 import base64, json, pathlib, re
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-CODES = ['1.4.6', '3.2', '1.18', '1.34.3', '1.3.2', '8.1.2', '8.12', '5.31', '5.32', '6.19.1', '4.1.1', '3.31', '2.1', '2.3.1', '2.4', '2.5',                      # crossroad priority signs
+CODES = ['1.4.6', '3.2', '1.18', '1.34.3', '1.3.2', '8.1.2', '8.12', '5.31', '5.32', '6.19.1', '4.1.1', '3.31', '2.1', '2.2', '2.3.1', '2.3.2', '2.3.3', '2.4', '2.5',                      # crossroad priority signs
          '1.6', '1.14', '1.25',                     # warnings used by overtaking/roadworks scenes
          '1.1', '1.2', '1.3.1', '1.4.1', '1.4.2', '1.4.3',  # railway crossing and its approach plates
          '3.1', '3.20', '3.21', '3.24', '3.25',     # no entry, overtaking / speed limits
@@ -31,6 +31,8 @@ SPRITE_CROPS = {
     '1.4.1': (0, 0, 44, 82),
     '1.4.2': (49, 0, 44, 82),
     '1.4.3': (98, 0, 44, 82),
+    '2.3.2': (0, 0, 100, 86),
+    '2.3.3': (100, 0, 100, 86),
 }
 # Codes that share one catalogue entry with their siblings.
 CATALOGUE = {'1.4.1': '1.4', '1.4.2': '1.4', '1.4.3': '1.4', '1.4.6': '1.4'}
