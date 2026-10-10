@@ -190,6 +190,21 @@ void main() {
     },
   );
 
+  test('коды StoreKit проходят в отчёт, остальное и чужие тексты — нет', () {
+    expect(
+      ErrorReporter.sdkCode('storekit_getproductrequest_platform_exception'),
+      'storekit_getproductrequest_platform_exception',
+    );
+    expect(
+      ErrorReporter.sdkCode('storekit2_failed_to_fetch_product'),
+      'storekit2_failed_to_fetch_product',
+    );
+    expect(ErrorReporter.sdkCode('storekit_error'), 'storekit_error');
+    expect(ErrorReporter.sdkCode('user@example.com'), 'sdk_error');
+    expect(ErrorReporter.sdkCode('storekit_Account user@x.com'), 'sdk_error');
+    expect(ErrorReporter.sdkCode(null), 'sdk_error');
+  });
+
   test('Google sign-in keeps the ApiException number but never its text', () {
     expect(
       ErrorReporter.codeFor(

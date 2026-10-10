@@ -78,7 +78,14 @@ class ErrorReporter {
       'developer_error',
       'storage_error',
     };
-    return known.contains(code) ? code! : 'sdk_error';
+    if (known.contains(code)) return code!;
+    // Коды плагина покупок (storekit_…, storekit2_…): технические метки без
+    // текста ошибки, строго по шаблону — по ним видно, что именно не прошло.
+    if (code != null &&
+        RegExp(r'^storekit2?_[a-z0-9_]{1,50}$').hasMatch(code)) {
+      return code;
+    }
+    return 'sdk_error';
   }
 
   static void report(
