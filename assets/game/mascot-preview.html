@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Маскот приложения ПДД 2026 — 3D Конус</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #1A222D;
+      color: #E2E8F0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      user-select: none;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .hud {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 20px 24px;
+      max-width: 380px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+      z-index: 10;
+    }
+    .badge {
+      display: inline-block;
+      background: #FF6E00;
+      color: #FFF;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #FFF;
+      margin-bottom: 8px;
+    }
+    p {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #94A3B8;
+      margin-bottom: 12px;
+    }
+    .stats {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 4px 0;
+    }
+    .stat-val {
+      font-weight: 600;
+      color: #38BDF8;
+    }
+    .controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    button {
+      flex: 1;
+      min-width: 100px;
+      background: #0284C7;
+      color: #FFF;
+      border: none;
+      padding: 9px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover { background: #0369A1; }
+    button.secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #E2E8F0;
+    }
+    button.secondary:hover { background: rgba(255, 255, 255, 0.18); }
+    .hint {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(8px);
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: #94A3B8;
+      pointer-events: none;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+  <script src="three.min.js"></script>
+  <script src="street-models.js"></script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  <div class="hud">
+    <div class="badge">Маскот приложения</div>
+    <h1>Дорожный Конус</h1>
+    <p>Редкий пасхальный персонаж, встречающийся среди пешеходов во всех трёх 3D-играх приложения.</p>
+    <div class="stats">
+      <div class="stat-row"><span>Шанс спавна:</span><span class="stat-val">0.8% (1 из 125)</span></div>
+      <div class="stat-row"><span>Игры:</span><span class="stat-val">Город, Перекрёстки, Регулировщик</span></div>
+      <div class="stat-row"><span>Тестовый URL:</span><span class="stat-val">?mascot=1</span></div>
+    </div>
+    <div class="controls">
+      <button id="toggle-walk">Пауза анимации</button>
+      <button id="view-face" class="secondary">Лицо</button>
+      <button id="view-reset" class="secondary">Общий вид</button>
+    </div>
+  </div>
+  <div class="hint">Вращайте мышью / тачем • Колёсико для масштаба</div>
+
+  <script>
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x131A22);
+
+    const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0.65, 1.05, 2.4);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    // Lighting
+    const dirLight = new THREE.DirectionalLight(0xFFFFFF, 1.25);
+    dirLight.position.set(3, 6, 4);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 1024;
+    dirLight.shadow.mapSize.height = 1024;
+    scene.add(dirLight);
+
+    const fillLight = new THREE.DirectionalLight(0x7DD3FC, 0.4);
+    fillLight.position.set(-3, 3, -2);
+    scene.add(fillLight);
+
+    const backLight = new THREE.DirectionalLight(0xFFB020, 0.3);
+    backLight.position.set(0, 2, -4);
+    scene.add(backLight);
+
+    scene.add(new THREE.AmbientLight(0xFFFFFF, 0.55));
+
+    // Ground platform
+    const platform = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.6, 1.6, 0.08, 36),
+      new THREE.MeshLambertMaterial({ color: 0x273342 })
+    );
+    platform.position.y = -0.04;
+    platform.receiveShadow = true;
+    scene.add(platform);
+
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(1.45, 1.52, 36),
+      new THREE.MeshBasicMaterial({ color: 0xFF6E00, side: THREE.DoubleSide })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.002;
+    scene.add(ring);
+
+    // Create Mascot
+    const mascot = window.PDD_STREET.createConeMascotPedestrian();
+    scene.add(mascot);
+
+    // Animation & Interaction state
+    let isWalking = true;
+    let animTime = 0;
+    let targetRotY = 0.35, currentRotY = 0.35;
+    let targetRotX = 0.15, currentRotX = 0.15;
+    let targetDist = 2.4, currentDist = 2.4;
+    let targetTargetY = 0.75, currentTargetY = 0.75;
+
+    // Mouse / Touch Controls
+    let isDragging = false, prevX = 0, prevY = 0;
+    window.addEventListener('pointerdown', e => {
+      if (e.target.closest('.hud')) return;
+      isDragging = true;
+      prevX = e.clientX;
+      prevY = e.clientY;
+    });
+    window.addEventListener('pointerup', () => isDragging = false);
+    window.addEventListener('pointercancel', () => isDragging = false);
+    window.addEventListener('pointermove', e => {
+      if (!isDragging) return;
+      const dx = e.clientX - prevX;
+      const dy = e.clientY - prevY;
+      targetRotY += dx * 0.008;
+      targetRotX = Math.max(-0.4, Math.min(0.8, targetRotX + dy * 0.006));
+      prevX = e.clientX;
+      prevY = e.clientY;
+    });
+    window.addEventListener('wheel', e => {
+      targetDist = Math.max(1.2, Math.min(4.5, targetDist + e.deltaY * 0.002));
+    }, { passive: true });
+
+    // Buttons
+    const btnToggle = document.getElementById('toggle-walk');
+    btnToggle.addEventListener('click', () => {
+      isWalking = !isWalking;
+      btnToggle.textContent = isWalking ? 'Пауза анимации' : 'Включить ходьбу';
+    });
+
+    document.getElementById('view-face').addEventListener('click', () => {
+      targetRotY = 0.1;
+      targetRotX = 0.05;
+      targetDist = 1.35;
+      targetTargetY = 0.88;
+    });
+
+    document.getElementById('view-reset').addEventListener('click', () => {
+      targetRotY = 0.35;
+      targetRotX = 0.15;
+      targetDist = 2.4;
+      targetTargetY = 0.75;
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Render loop
+    let lastTime = performance.now();
+    function animate(now) {
+      // Synchronous initial render for instant display & screenshots
+    const initCx = Math.sin(currentRotY) * Math.cos(currentRotX) * currentDist;
+    const initCy = currentTargetY + Math.sin(currentRotX) * currentDist;
+    const initCz = Math.cos(currentRotY) * Math.cos(currentRotX) * currentDist;
+    camera.position.set(initCx, initCy, initCz);
+    camera.lookAt(0, currentTargetY, 0);
+    window.PDD_STREET.animateWalk(mascot, 0.2, 1.0);
+    renderer.render(scene, camera);
+
+    requestAnimationFrame(animate);
+      const dt = Math.min(0.1, (now - lastTime) / 1000);
+      lastTime = now;
+
+      if (isWalking) {
+        animTime += dt;
+        window.PDD_STREET.animateWalk(mascot, animTime, 1.0);
+      }
+
+      currentRotY += (targetRotY - currentRotY) * 0.08;
+      currentRotX += (targetRotX - currentRotX) * 0.08;
+      currentDist += (targetDist - currentDist) * 0.08;
+      currentTargetY += (targetTargetY - currentTargetY) * 0.08;
+
+      const cx = Math.sin(currentRotY) * Math.cos(currentRotX) * currentDist;
+      const cy = currentTargetY + Math.sin(currentRotX) * currentDist;
+      const cz = Math.cos(currentRotY) * Math.cos(currentRotX) * currentDist;
+
+      camera.position.set(cx, cy, cz);
+      camera.lookAt(0, currentTargetY, 0);
+
+      renderer.render(scene, camera);
+    }
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

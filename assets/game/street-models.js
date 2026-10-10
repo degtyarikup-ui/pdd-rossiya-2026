@@ -14,13 +14,15 @@
       top: PEOPLE_COLORS[variant % PEOPLE_COLORS.length],
     };
   }
-  function modelPart(group, geometry, color, x, y, z) {
+  function modelPart(group, geometry, color, x, y, z, rx = 0, ry = 0, rz = 0) {
     const mesh = new THREE.Mesh(geometry, sceneryMat(color));
-    mesh.position.set(x, y, z); mesh.castShadow = true; group.add(mesh);
+    mesh.position.set(x, y, z);
+    if (rx || ry || rz) mesh.rotation.set(rx, ry, rz);
+    mesh.castShadow = true; group.add(mesh);
     return mesh;
   }
-  function modelBox(group, size, color, x, y, z) {
-    return modelPart(group, new THREE.BoxGeometry(...size), color, x, y, z);
+  function modelBox(group, size, color, x, y, z, rx = 0, ry = 0, rz = 0) {
+    return modelPart(group, new THREE.BoxGeometry(...size), color, x, y, z, rx, ry, rz);
   }
   function mergeModelParts(group, doubleSided = false) {
     // Bake colours into vertices: one draw call for each independently animated
@@ -69,7 +71,154 @@
     if (material?.userData?.pddKind) mesh.userData.pddSkinned = material.userData.pddKind;
     return mesh;
   }
+  const CONE_MASCOT_CHANCE = 0.008;
+
+  function shouldSpawnConeMascot() {
+    if (typeof window !== 'undefined') {
+      if (window.PDD_FORCE_CONE === true) return true;
+      if (window.PDD_FORCE_CONE === false) return false;
+      try {
+        const search = window.location && window.location.search;
+        if (search) {
+          const params = new URLSearchParams(search);
+          if (params.get('mascot') === '1' || params.get('cone') === '1') return true;
+        }
+      } catch (_) {}
+    }
+    return Math.random() < CONE_MASCOT_CHANCE;
+  }
+
+  function createConeMascotPedestrian() {
+    const ped = new THREE.Group();
+    ped.userData.isConeMascot = true;
+    ped.userData.arms = [];
+    ped.userData.legs = [];
+
+    const ORANGE = 0xFF6E00;
+    const DARK_ORANGE = 0xE65100;
+    const WHITE = 0xFFFFFF;
+    const BLACK = 0x1A1A1A;
+    const BLUE = 0x1E88E5;
+    const PINK = 0xFF4081;
+
+    // 1. Legs with sneakers
+    [-1, 1].forEach(side => {
+      const hip = new THREE.Group();
+      hip.position.set(side * 0.13, 0.28, 0);
+      // Upper leg
+      modelBox(hip, [0.10, 0.22, 0.10], ORANGE, 0, -0.09, 0);
+      // Sneaker body
+      modelBox(hip, [0.13, 0.09, 0.20], WHITE, 0, -0.21, 0.035);
+      // Sole
+      modelBox(hip, [0.14, 0.035, 0.21], DARK_ORANGE, 0, -0.25, 0.035);
+      // Toe cap (rounded)
+      modelPart(hip, new THREE.SphereGeometry(0.06, 12, 8), WHITE, 0, -0.21, 0.11);
+      mergeModelParts(hip);
+      ped.add(hip);
+      ped.userData.legs.push(hip);
+    });
+
+    // 2. Right Arm (Thumbs up! 👍)
+    const rightArm = new THREE.Group();
+    rightArm.position.set(0.20, 0.80, 0.03);
+    rightArm.rotation.set(-0.35, 0.25, 0.25);
+    rightArm.userData.isThumbsUp = true;
+    // Sleeve
+    modelBox(rightArm, [0.09, 0.18, 0.09], ORANGE, 0.03, -0.06, 0.04, -0.4, 0, 0);
+    // Glove cuff
+    modelBox(rightArm, [0.13, 0.05, 0.13], WHITE, 0.06, -0.13, 0.10, -0.4, 0, 0);
+    // Fist
+    modelPart(rightArm, new THREE.SphereGeometry(0.068, 12, 8), WHITE, 0.07, -0.17, 0.14);
+    // Finger ridges
+    modelBox(rightArm, [0.07, 0.022, 0.025], 0xE5E5E5, 0.07, -0.155, 0.19);
+    modelBox(rightArm, [0.07, 0.022, 0.025], 0xE5E5E5, 0.07, -0.185, 0.18);
+    // Thumb pointing straight UP!
+    modelPart(rightArm, new THREE.CylinderGeometry(0.024, 0.028, 0.085, 10), WHITE, 0.04, -0.095, 0.155, 0.2, 0, -0.1);
+    modelPart(rightArm, new THREE.SphereGeometry(0.024, 8, 6), WHITE, 0.035, -0.052, 0.165);
+    mergeModelParts(rightArm);
+    ped.add(rightArm);
+    ped.userData.arms.push(rightArm);
+
+    // 3. Left Arm (Swinging cartoon arm)
+    const leftArm = new THREE.Group();
+    leftArm.position.set(-0.20, 0.80, 0.03);
+    leftArm.rotation.set(0.25, -0.20, -0.25);
+    // Sleeve
+    modelBox(leftArm, [0.09, 0.18, 0.09], ORANGE, -0.03, -0.07, -0.03, 0.3, 0, 0);
+    // Glove cuff
+    modelBox(leftArm, [0.13, 0.05, 0.13], WHITE, -0.06, -0.15, -0.06, 0.3, 0, 0);
+    // Glove palm
+    modelPart(leftArm, new THREE.SphereGeometry(0.068, 12, 8), WHITE, -0.08, -0.20, -0.08);
+    // Cartoon fingers
+    modelBox(leftArm, [0.075, 0.065, 0.035], WHITE, -0.08, -0.255, -0.08);
+    mergeModelParts(leftArm);
+    ped.add(leftArm);
+    ped.userData.arms.push(leftArm);
+
+    // 4. Main Cone Body & Expressive Face
+    const body = new THREE.Group();
+
+    // Base plinth
+    modelBox(body, [0.66, 0.065, 0.66], DARK_ORANGE, 0, 0.31, 0);
+    modelBox(body, [0.56, 0.035, 0.56], ORANGE, 0, 0.355, 0);
+
+    // Cone stacked segments
+    // 1. Lower orange section (y=0.37 to 0.52, h=0.15)
+    modelPart(body, new THREE.CylinderGeometry(0.245, 0.280, 0.15, 18), ORANGE, 0, 0.445, 0);
+    // 2. Lower white reflective stripe (y=0.52 to 0.68, h=0.16)
+    modelPart(body, new THREE.CylinderGeometry(0.205, 0.245, 0.16, 18), WHITE, 0, 0.60, 0);
+    // 3. Middle orange face section (y=0.68 to 1.02, h=0.34)
+    modelPart(body, new THREE.CylinderGeometry(0.130, 0.205, 0.34, 18), ORANGE, 0, 0.85, 0);
+    // 4. Upper white reflective stripe (y=1.02 to 1.16, h=0.14)
+    modelPart(body, new THREE.CylinderGeometry(0.098, 0.130, 0.14, 18), WHITE, 0, 1.09, 0);
+    // 5. Top orange tip (y=1.16 to 1.30, h=0.14)
+    modelPart(body, new THREE.CylinderGeometry(0.060, 0.098, 0.14, 18), ORANGE, 0, 1.23, 0);
+    // 6. Rounded cone dome tip
+    modelPart(body, new THREE.SphereGeometry(0.060, 12, 8), ORANGE, 0, 1.30, 0);
+
+    // --- FACE FEATURES ---
+    // Right Eye (Open, Big Cartoon Eye at y=0.88, z=0.17)
+    modelPart(body, new THREE.SphereGeometry(0.065, 14, 8), WHITE, -0.065, 0.88, 0.168);
+    // Eyelid / dark contour
+    modelPart(body, new THREE.SphereGeometry(0.068, 14, 8), 0x221100, -0.065, 0.88, 0.164);
+    // Blue Iris
+    modelPart(body, new THREE.SphereGeometry(0.046, 12, 8), BLUE, -0.063, 0.875, 0.188);
+    // Black Pupil
+    modelPart(body, new THREE.SphereGeometry(0.030, 10, 8), BLACK, -0.062, 0.875, 0.198);
+    // Sparkle highlights
+    modelPart(body, new THREE.SphereGeometry(0.013, 8, 6), WHITE, -0.074, 0.893, 0.205);
+    modelPart(body, new THREE.SphereGeometry(0.007, 8, 6), WHITE, -0.054, 0.860, 0.205);
+
+    // Left Eye (Playfully Winking 😉 at y=0.88, z=0.17)
+    modelPart(body, new THREE.TorusGeometry(0.038, 0.009, 8, 12, Math.PI * 0.95), BLACK, 0.065, 0.862, 0.182, 0, 0, -0.05);
+    modelBox(body, [0.020, 0.012, 0.015], BLACK, 0.108, 0.868, 0.175, 0, 0, 0.45);
+
+    // Eyebrows
+    modelBox(body, [0.065, 0.018, 0.015], BLACK, -0.065, 0.965, 0.155, 0, 0, -0.15);
+    modelBox(body, [0.065, 0.018, 0.015], BLACK, 0.065, 0.975, 0.155, 0, 0, 0.22);
+
+    // Mouth (Curved Happy Open Smile)
+    modelPart(body, new THREE.CylinderGeometry(0.075, 0.02, 0.055, 12), 0x1A0505, 0, 0.765, 0.190, Math.PI / 2, 0, 0);
+    // Upper white teeth line
+    modelBox(body, [0.095, 0.016, 0.022], WHITE, 0, 0.790, 0.198);
+    // Cute pink tongue
+    modelPart(body, new THREE.SphereGeometry(0.040, 10, 8), PINK, 0.006, 0.748, 0.202);
+    // Rosy cheeks
+    modelPart(body, new THREE.SphereGeometry(0.028, 8, 6), 0xFFA07A, -0.112, 0.795, 0.175);
+    modelPart(body, new THREE.SphereGeometry(0.028, 8, 6), 0xFFA07A, 0.112, 0.795, 0.175);
+
+    mergeModelParts(body);
+    ped.add(body);
+    ped.userData.body = body;
+
+    ped.userData.appearance = 'cone_mascot';
+    return ped;
+  }
+
   function createPedestrian(color = 0x0574F8, variant = Math.floor(Math.random() * 12)) {
+    if (variant === 'cone' || variant === 'mascot' || (variant !== 'no_mascot' && shouldSpawnConeMascot())) {
+      return createConeMascotPedestrian();
+    }
     const ped = new THREE.Group(), look = personLook(variant);
     ped.userData.arms = []; ped.userData.legs = [];
     [-1, 1].forEach(side => {
@@ -122,8 +271,43 @@
   }
 
   function animateWalk(mesh, time, legStride, armStride = legStride) {
-    mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(time * 5 + i * Math.PI) * 0.32 * legStride; });
-    mesh.userData.arms.forEach((arm, i) => { arm.rotation.x = Math.sin(time * 5 + i * Math.PI) * -0.2 * armStride; });
+    if (!mesh || !mesh.userData) return;
+    if (mesh.userData.isConeMascot) {
+      if (mesh.userData.legs) {
+        mesh.userData.legs.forEach((leg, i) => {
+          leg.rotation.x = Math.sin(time * 5 + i * Math.PI) * 0.35 * legStride;
+        });
+      }
+      if (mesh.userData.arms) {
+        mesh.userData.arms.forEach(arm => {
+          if (arm.userData.isThumbsUp) {
+            arm.rotation.x = -0.35 + Math.sin(time * 5) * 0.10 * armStride;
+            arm.rotation.z = 0.25 + Math.cos(time * 5) * 0.05 * armStride;
+          } else {
+            arm.rotation.x = 0.25 + Math.sin(time * 5) * 0.35 * armStride;
+          }
+        });
+      }
+      if (mesh.userData.body) {
+        mesh.userData.body.rotation.z = Math.sin(time * 5) * 0.04 * legStride;
+        mesh.userData.body.position.y = Math.abs(Math.sin(time * 5)) * 0.02 * legStride;
+      }
+      return;
+    }
+    if (mesh.userData.legs) {
+      mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(time * 5 + i * Math.PI) * 0.32 * legStride; });
+    }
+    if (mesh.userData.arms) {
+      mesh.userData.arms.forEach((arm, i) => { arm.rotation.x = Math.sin(time * 5 + i * Math.PI) * -0.2 * armStride; });
+    }
   }
-  window.PDD_STREET = { createPedestrian, createLampPost, animateWalk, personLook, peopleColors: PEOPLE_COLORS };
+  window.PDD_STREET = {
+    createPedestrian,
+    createConeMascotPedestrian,
+    CONE_MASCOT_CHANCE,
+    createLampPost,
+    animateWalk,
+    personLook,
+    peopleColors: PEOPLE_COLORS,
+  };
 })();

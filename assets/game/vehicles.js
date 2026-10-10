@@ -40,6 +40,7 @@
   // parts: { meshIndex: { color, hidden } } }. Mesh indices follow the build order.
   function hex(value) { return parseInt(String(value).replace('#', ''), 16); }
   function applyModelEdits(modelId, root) {
+    if (!root || root.userData?.isConeMascot) return root;
     const e = (window.PDD_MODEL_EDITS || {})[modelId];
     if (!e || !root) return root;
     const remap = Object.fromEntries(Object.entries(e.colors || {}).map(([a, b]) => [hex(a), hex(b)]));
