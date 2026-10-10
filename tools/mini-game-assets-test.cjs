@@ -108,3 +108,21 @@ for (const weak of [true, false]) {
 }
 assert(!/tramMesh|buildTramTracks|buildRussianTram/.test(miniSource), 'No tram models or tracks in the mini-game');
 console.log('Shared grey lamps (two batches) and 4/8 pedestrians stayed safely on pavements for five minutes.');
+
+// Every visible street corner receives rain at the most distant game zoom.
+for (const [height, distance] of [[4.5, 22], [38, 50]]) {
+  const camera = new THREE.PerspectiveCamera(50, 575 / 1280, 0.1, 500);
+  camera.position.set(2.4, height, distance); camera.lookAt(0, 0, 0);
+  const bounds = api.getRainBounds(camera);
+  for (const nx of [-1, 1]) for (const ny of [-1, 1]) {
+    const ray = new THREE.Vector3(nx, ny, 0.5).unproject(camera).sub(camera.position).normalize();
+    const t = -camera.position.y / ray.y;
+    if (t > 0 && t <= 180) {
+      const corner = camera.position.clone().addScaledVector(ray, t);
+      assert(corner.x >= bounds.minX && corner.x <= bounds.maxX);
+      assert(corner.z >= bounds.minZ && corner.z <= bounds.maxZ);
+    }
+  }
+  assert(Object.values(bounds).every(Number.isFinite));
+}
+console.log('Rain covers near and maximum-zoom street footprints');

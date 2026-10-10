@@ -405,6 +405,41 @@ void main() {
     },
   );
 
+  testWidgets('Traffic reveals every allowed direction after answering', (
+    tester,
+  ) async {
+    await open(tester, const TrafficControllerScreen());
+    final controller = web.controllers.single..emitReady();
+    await tester.pump();
+    for (var round = 0; round < 12; round++) {
+      final allowed = controller.allowedMoves;
+      await tester.tap(find.text(_moveLabel(allowed.first)));
+      await tester.pump(const Duration(milliseconds: 200));
+      for (final move in TrafficMove.values) {
+        final icon = tester.widget<Icon>(
+          find.descendant(
+            of: find.ancestor(
+              of: find.text(_moveLabel(move)),
+              matching: find.byType(AnimatedContainer),
+            ),
+            matching: find.byType(Icon),
+          ),
+        );
+        expect(
+          icon.color,
+          allowed.contains(move) ? Colors.white : isNot(Colors.white),
+        );
+      }
+      if (allowed.first == TrafficMove.none) {
+        await tester.pump(const Duration(milliseconds: 500));
+      } else {
+        controller.emitMoveComplete();
+        await tester.pump(const Duration(milliseconds: 160));
+      }
+    }
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('Traffic scores a move once and ends after three mistakes', (
     tester,
   ) async {

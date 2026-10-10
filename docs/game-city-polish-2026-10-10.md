@@ -31,7 +31,7 @@
 
 ## Проверка
 
-- flutter analyze: без замечаний; flutter test: 311 passed, 1 skipped.
+- flutter analyze: без замечаний; flutter test: 312 passed, 1 skipped.
 - Дополнительно 11 проверок платёжных режимов и безопасности релиза.
 - game-city-polish-test.cjs: поезд/остановка, видимость трамвая, падение
   регулировщика, удаление старых и сохранение будущих участников, въезды/бордюр,
@@ -47,3 +47,20 @@
 
 RuStore сохраняет Platega без региональных ограничений; Google Play и iOS
 сохраняют свои платёжные режимы. Доставка сборки фиксируется после завершения.
+
+
+## Follow-up: regulator weather and answer feedback
+
+Build 2.2.3 (61) was saved to Desktop (Play AAB / RuStore APK), uploaded
+successfully to App Store Connect, and installed as a dev build on Pixel.
+
+Subsequent changes are for Pixel testing only, as requested by the user:
+- Rain follows the camera footprint, including the distant street at maximum
+  zoom. One LineSegments mesh, 350/900 particles, matching the main game's
+  pale short streaks, speed, wind and opacity.
+- Clear entry, autumn leaves, clear intervals 240–420 seconds, rain chance
+  15%, showers 25–45 seconds followed by clear weather.
+- All allowed answers turn green after a response; a selected wrong answer
+  turns red. No answer is revealed before responding.
+- Near/far rain footprint regression, maximum-zoom browser screenshot with
+  no errors, and twelve consecutive UI feedback rounds passed.

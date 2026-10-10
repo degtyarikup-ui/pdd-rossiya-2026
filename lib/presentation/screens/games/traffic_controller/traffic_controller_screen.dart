@@ -649,13 +649,12 @@ class _TrafficControllerScreenState
       Color background = colors.gray;
       Color foreground = colors.primaryText;
       if (_awaitingNext) {
-        if (isLast) {
-          background = _lastWasCorrect ? colors.green : colors.red;
+        if (allowed.contains(spec.move)) {
+          background = colors.green;
           foreground = colors.white;
-        } else if (!_lastWasCorrect && allowed.contains(spec.move)) {
-          // Неверный ответ — подсвечиваем, как было правильно.
-          background = colors.greenLight;
-          foreground = colors.green;
+        } else if (isLast && !_lastWasCorrect) {
+          background = colors.red;
+          foreground = colors.white;
         } else {
           foreground = colors.secondaryText;
         }
