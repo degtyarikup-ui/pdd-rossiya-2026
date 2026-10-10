@@ -6,6 +6,7 @@ import 'package:pdd_app/data/services/install_reporter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:pdd_app/data/services/network_retry.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
@@ -540,20 +541,22 @@ class AuthService extends ChangeNotifier {
         const Duration(seconds: 2),
       );
     } catch (_) {}
-    final response = await http
-        .post(
-          Uri.parse('${BackendConfig.notifierUrl}/api/auth/session'),
-          headers: serverHeaders,
-          body: jsonEncode({
-            'provider': provider,
-            'credential': credential,
-            'name': ?name,
-            'platform': metadata['platform'],
-            'appVersion': metadata['version'],
-            'device': metadata['device'],
-          }),
-        )
-        .timeout(const Duration(seconds: 15));
+    // Сессия выдаётся без записи на сервере — повторить запрос безопасно.
+    final response = await sendWithRetry(
+      () => http.post(
+        Uri.parse('${BackendConfig.notifierUrl}/api/auth/session'),
+        headers: serverHeaders,
+        body: jsonEncode({
+          'provider': provider,
+          'credential': credential,
+          'name': ?name,
+          'platform': metadata['platform'],
+          'appVersion': metadata['version'],
+          'device': metadata['device'],
+        }),
+      ),
+      stillWanted: () => revision == _accountRevision,
+    );
     final diagnosticId = response.headers['x-auth-diagnostic-id'];
     if (diagnosticId != null &&
         RegExp(r'^[a-f0-9-]{36}$').hasMatch(diagnosticId)) {

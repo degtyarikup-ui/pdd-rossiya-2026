@@ -330,7 +330,7 @@
   "authErrorCancelled": "Login incomplete. Try selecting your account again.",
   "authErrorProvider": "Failed to obtain login information from the selected service.",
   "authErrorNetwork": "Failed to contact the server. Check your internet connection.",
-  "authErrorTimeout": "The server did not respond on time. Try again.",
+  "authErrorTimeout": "Can't reach the server. Check your internet connection, turn off battery saver and try again.",
   "authErrorAppKey": "The server rejected this application build. Update the app from the store.",
   "authErrorCredential": "The server did not confirm the login. Try a different account or login method.",
   "authErrorServer": "Failed to complete login on the server. Please try again later.",

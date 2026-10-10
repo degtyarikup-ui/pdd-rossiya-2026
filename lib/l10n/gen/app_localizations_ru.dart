@@ -1137,7 +1137,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get authErrorTimeout =>
-      'Сервер не ответил вовремя. Попробуйте ещё раз.';
+      'Нет связи с сервером. Проверьте интернет, отключите режим энергосбережения и попробуйте ещё раз.';
 
   @override
   String get authErrorAppKey =>

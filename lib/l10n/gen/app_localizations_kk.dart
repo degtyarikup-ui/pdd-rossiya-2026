@@ -1121,7 +1121,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get authErrorTimeout =>
-      'Сервер уақытында жауап бермеді. Қайтадан байқап көріңіз.';
+      'Серверге қосылу мүмкін болмады. Интернетті тексеріп, қуат үнемдеу режимін өшіріп, қайталап көріңіз.';
 
   @override
   String get authErrorAppKey =>
