@@ -843,36 +843,12 @@
   "languageKk": "Қазақша",
   "languageSystem": "Әдепкі (жүйелік)",
   "interfaceSection": "Интерфейс",
-  "gameScoreRulesTitle": "Ұпай қалай есептеледі",
-  "gameScoreRulesBody": "Әр дұрыс жауап ұпай береді. Қатарынан дұрыс жауаптар шағын бонус қосады; кеңес қолданғанда сыйақының жартысы сақталады. Қате серияны тоқтатады, бірақ жиналған ұпай сақталады.",
-  "gameScoreRewardLine": "{game}: әр дұрыс жауапқа {min}–{max} ұпай",
   "gameScoreDailyBudget": "Бүгінгі рейтинг ұпайы: {earned} / {limit}",
-  "gameScoreDailyLimitExplanation": "Күніне жалпы рейтингке {limit} ұпайға дейін жинауға болады. Одан кейін жеке рекорд пен жаттығу үшін ойнай беріңіз. Шектеу Мәскеу уақытымен түн ортасында жаңарады.",
-  "@gameScoreRewardLine": {
-    "placeholders": {
-      "game": {
-        "type": "String"
-      },
-      "min": {
-        "type": "int"
-      },
-      "max": {
-        "type": "int"
-      }
-    }
-  },
   "@gameScoreDailyBudget": {
     "placeholders": {
       "earned": {
         "type": "int"
       },
-      "limit": {
-        "type": "int"
-      }
-    }
-  },
-  "@gameScoreDailyLimitExplanation": {
-    "placeholders": {
       "limit": {
         "type": "int"
       }

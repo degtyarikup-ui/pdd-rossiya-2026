@@ -3057,24 +3057,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get interfaceSection => 'Интерфейс';
 
   @override
-  String get gameScoreRulesTitle => 'Как начисляются очки';
-
-  @override
-  String get gameScoreRulesBody =>
-      'Каждый верный ответ приносит очки. Серия добавляет небольшой бонус, подсказка сохраняет половину награды. Ошибки сбрасывают серию, но заработанные очки остаются.';
-
-  @override
-  String gameScoreRewardLine(String game, int min, int max) {
-    return '$game: $min–$max очков за верный ответ';
-  }
-
-  @override
   String gameScoreDailyBudget(int earned, int limit) {
     return 'Сегодня в рейтинг: $earned / $limit';
-  }
-
-  @override
-  String gameScoreDailyLimitExplanation(int limit) {
-    return 'В общий рейтинг можно заработать до $limit очков в сутки. После этого продолжайте играть для личных рекордов и обучения. Лимит обновляется в полночь по Москве.';
   }
 }

@@ -88,6 +88,10 @@ SCENES = {
                   note='In a built-up area 1.2 stands 50-100 m before the crossing (here 70 m): the truck ahead is already '
                        'inside the 100 m zone, so overtaking may start only past the crossing. The photo shows a truck '
                        '(the explanation calls it a tractor).'),
+    # Ticket 17 question 7: the existing roadside repair scene is the evidence
+    # for the 15 m urban warning-triangle rule.
+    '17_7': dict(kind='obstacle',
+                  note='Urban roadside repair: a broken car, mechanic and warning triangle match the source question.'),
     '21_11': dict(kind='overtake', overtake='after_crossing', railway=dict(z=10, after=70,signalsUnlit=True,whiteSignal=False),
                   vehicles=[van(8, 5)],
                   note='The van is on the crossing; overtaking may start right after its boundary, the signal posts '

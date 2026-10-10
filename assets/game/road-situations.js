@@ -1065,6 +1065,35 @@ window.PDD_ROAD_SITUATIONS = [
   "note": "In a built-up area 1.2 stands 50-100 m before the crossing (here 70 m): the truck ahead is already inside the 100 m zone, so overtaking may start only past the crossing. The photo shows a truck (the explanation calls it a tractor)."
  },
  {
+  "id": "road_17_7",
+  "ticket": "Билет 17 · Вопрос 7",
+  "sourceQuestionId": "239fc67e604818ef29e21815041e436d",
+  "country": "ru",
+  "category": "ab",
+  "type": "road_obstacle",
+  "title": "На каком расстоянии от транспортного средства должен быть выставлен знак аварийной остановки в данной ситуации?",
+  "explanation": "Действие происходит в населённом пункте. В этом случае знак аварийной остановки устанавливается на расстоянии не менее 15 м от транспортного средства.(Пункт 7.2 ПДД)",
+  "pddRule": "п. 7.2",
+  "options": [
+   "Не менее 10 м",
+   "Не менее 15 м",
+   "Не менее 20 м",
+   "Не менее 30 м"
+  ],
+  "correctAnswerIndex": 1,
+  "legend": [
+   {
+    "label": "Вы",
+    "color": "#ED4621"
+   }
+  ],
+  "sourceImage": "afc8938a23c5f720b9d6f0fc9458690e",
+  "scene": {
+   "kind": "obstacle"
+  },
+  "note": "Urban roadside repair: a broken car, mechanic and warning triangle match the source question."
+ },
+ {
   "id": "road_21_11",
   "ticket": "Билет 21 · Вопрос 11",
   "sourceQuestionId": "6599c01f0c6ecae5b89db87f4d108b10",
@@ -2227,8 +2256,7 @@ window.PDD_ROAD_SITUATIONS = [
    "signs": [
     {
      "code": "5.16",
-     "z": 17,
-     "offsetX": -2.4
+     "z": 17
     }
    ],
    "forbidUturn": [

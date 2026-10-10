@@ -843,36 +843,12 @@
   "languageKk": "Қазақша",
   "languageSystem": "System default",
   "interfaceSection": "Interface",
-  "gameScoreRulesTitle": "How points work",
-  "gameScoreRulesBody": "Every correct answer earns points. A streak adds a small bonus; hints keep half the reward. Mistakes reset the streak, but earned points stay.",
-  "gameScoreRewardLine": "{game}: {min}–{max} points per correct answer",
   "gameScoreDailyBudget": "Rating points today: {earned} / {limit}",
-  "gameScoreDailyLimitExplanation": "Earn up to {limit} points towards the combined ranking each day. Then keep playing for personal bests and practice. The limit resets at midnight Moscow time.",
-  "@gameScoreRewardLine": {
-    "placeholders": {
-      "game": {
-        "type": "String"
-      },
-      "min": {
-        "type": "int"
-      },
-      "max": {
-        "type": "int"
-      }
-    }
-  },
   "@gameScoreDailyBudget": {
     "placeholders": {
       "earned": {
         "type": "int"
       },
-      "limit": {
-        "type": "int"
-      }
-    }
-  },
-  "@gameScoreDailyLimitExplanation": {
-    "placeholders": {
       "limit": {
         "type": "int"
       }

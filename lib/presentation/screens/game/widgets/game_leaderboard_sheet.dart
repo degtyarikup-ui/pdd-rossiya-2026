@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:pdd_app/core/config/game_economy.dart';
 import 'package:intl/intl.dart';
 import 'package:pdd_app/presentation/widgets/user_avatar.dart';
 import 'package:flutter/material.dart';
@@ -45,65 +44,6 @@ class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
     super.dispose();
   }
 
-  void _showScoreRules() {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(appL10n.gameScoreRulesTitle),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(appL10n.gameScoreRulesBody),
-              const SizedBox(height: 16),
-              for (final entry in [
-                (
-                  appL10n.gameSignSwiperTitle,
-                  GameEconomy.signs(1),
-                  GameEconomy.signs(99),
-                ),
-                (
-                  appL10n.gameTrafficControllerTitle,
-                  GameEconomy.regulator(1),
-                  GameEconomy.regulator(99),
-                ),
-                (
-                  appL10n.gameCityTitle,
-                  GameEconomy.city(1),
-                  GameEconomy.city(99),
-                ),
-                (
-                  appL10n.gameCrossroadsPriorityTitle,
-                  GameEconomy.crossroads(1),
-                  GameEconomy.crossroads(99),
-                ),
-              ])
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    appL10n.gameScoreRewardLine(entry.$1, entry.$2, entry.$3),
-                  ),
-                ),
-              const SizedBox(height: 8),
-              Text(
-                appL10n.gameScoreDailyLimitExplanation(
-                  GameEconomy.dailyRatingLimit,
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(appL10n.close),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -134,11 +74,6 @@ class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
                         color: colors.primaryText,
                       ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: _showScoreRules,
-                    tooltip: appL10n.gameScoreRulesTitle,
-                    icon: const Icon(Icons.info_outline_rounded),
                   ),
                 ],
               ),

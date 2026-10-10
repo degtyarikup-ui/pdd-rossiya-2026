@@ -3040,24 +3040,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get interfaceSection => 'Interface';
 
   @override
-  String get gameScoreRulesTitle => 'How points work';
-
-  @override
-  String get gameScoreRulesBody =>
-      'Every correct answer earns points. A streak adds a small bonus; hints keep half the reward. Mistakes reset the streak, but earned points stay.';
-
-  @override
-  String gameScoreRewardLine(String game, int min, int max) {
-    return '$game: $min–$max points per correct answer';
-  }
-
-  @override
   String gameScoreDailyBudget(int earned, int limit) {
     return 'Rating points today: $earned / $limit';
-  }
-
-  @override
-  String gameScoreDailyLimitExplanation(int limit) {
-    return 'Earn up to $limit points towards the combined ranking each day. Then keep playing for personal bests and practice. The limit resets at midnight Moscow time.';
   }
 }

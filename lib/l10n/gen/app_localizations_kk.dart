@@ -3046,24 +3046,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get interfaceSection => 'Интерфейс';
 
   @override
-  String get gameScoreRulesTitle => 'Ұпай қалай есептеледі';
-
-  @override
-  String get gameScoreRulesBody =>
-      'Әр дұрыс жауап ұпай береді. Қатарынан дұрыс жауаптар шағын бонус қосады; кеңес қолданғанда сыйақының жартысы сақталады. Қате серияны тоқтатады, бірақ жиналған ұпай сақталады.';
-
-  @override
-  String gameScoreRewardLine(String game, int min, int max) {
-    return '$game: әр дұрыс жауапқа $min–$max ұпай';
-  }
-
-  @override
   String gameScoreDailyBudget(int earned, int limit) {
     return 'Бүгінгі рейтинг ұпайы: $earned / $limit';
-  }
-
-  @override
-  String gameScoreDailyLimitExplanation(int limit) {
-    return 'Күніне жалпы рейтингке $limit ұпайға дейін жинауға болады. Одан кейін жеке рекорд пен жаттығу үшін ойнай беріңіз. Шектеу Мәскеу уақытымен түн ортасында жаңарады.';
   }
 }

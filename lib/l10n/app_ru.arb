@@ -1329,36 +1329,12 @@
   "@interfaceSection": {
     "description": "Заголовок секции настроек интерфейса"
   },
-  "gameScoreRulesTitle": "Как начисляются очки",
-  "gameScoreRulesBody": "Каждый верный ответ приносит очки. Серия добавляет небольшой бонус, подсказка сохраняет половину награды. Ошибки сбрасывают серию, но заработанные очки остаются.",
-  "gameScoreRewardLine": "{game}: {min}–{max} очков за верный ответ",
   "gameScoreDailyBudget": "Сегодня в рейтинг: {earned} / {limit}",
-  "gameScoreDailyLimitExplanation": "В общий рейтинг можно заработать до {limit} очков в сутки. После этого продолжайте играть для личных рекордов и обучения. Лимит обновляется в полночь по Москве.",
-  "@gameScoreRewardLine": {
-    "placeholders": {
-      "game": {
-        "type": "String"
-      },
-      "min": {
-        "type": "int"
-      },
-      "max": {
-        "type": "int"
-      }
-    }
-  },
   "@gameScoreDailyBudget": {
     "placeholders": {
       "earned": {
         "type": "int"
       },
-      "limit": {
-        "type": "int"
-      }
-    }
-  },
-  "@gameScoreDailyLimitExplanation": {
-    "placeholders": {
       "limit": {
         "type": "int"
       }

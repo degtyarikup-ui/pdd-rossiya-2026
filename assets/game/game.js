@@ -12758,6 +12758,10 @@
     if (sc.wideCity) buildWideCityQuestion(ev);
     addRoadLaneEvidence(ev);
     if (sc.kind === "temporary_bypass") buildTemporaryBypass(ev);
+    if (sc.kind === 'obstacle') {
+      ev.obstZ = stopZ + 24;
+      addObstacleScene(ev, ev.obstZ, true);
+    }
     if (sc.junction) buildRoadQuestionJunction(ev);
     if (sc.railway) buildRailwayCrossing(ev);
     if (sc.motorway) buildQuestionMotorway(ev);
@@ -13336,14 +13340,15 @@
     a.mesh.rotation.y += Math.atan2(next - prev, Math.max(travelled, 1e-3));
   }
 
-  function buildObstacleEvent(group, obstZ) {
-    const ev = { group, kind: 'obstacle', obstZ, phase: 'approach', actors: [] };
+  function addObstacleScene(ev, obstZ, questionEvidence = false) {
+    const group = ev.group;
     addBlocker(group, -3.2, -0.4, obstZ - 15.5, obstZ + 3);
     // A real, solid participant (it used to be scenery the player drove
     // through), standing with its hazard lights on.
     const at = new THREE.Vector3(-1.8, 0, obstZ);
     const broken = addRoadActor(group, { id: 'road_obstacle_car', type: 'car', color: '#64748B', name: 'Сломанное авто' },
       at, 0, [at, at.clone().add(new THREE.Vector3(0, 0, 0.01))], 0);
+    if (questionEvidence) broken.config.question = true;
     broken.mesh.userData.blinkerSide = 'hazard';
     ev.actors.push(broken);
     const mechanic=new THREE.Group();mechanic.userData.changingTyre=true;
@@ -13355,14 +13360,22 @@
       const arm=modelBox(mechanic,[.13,.46,.14],0x2E618B,side*.26,.55,.17);arm.rotation.x=-.7;
       modelBox(mechanic,[.11,.11,.13],0xD9AD87,side*.26,.35,.33);
     }
-    mergeModelParts(mechanic);mechanic.position.set(-3.55,.02,obstZ+1.25);mechanic.rotation.y=Math.PI/2;group.add(mechanic);
+    mergeModelParts(mechanic);mechanic.position.set(-3.55,.02,obstZ+1.25);mechanic.rotation.y=Math.PI/2;
+    if (questionEvidence) mechanic.userData.questionEvidence = true;
+    group.add(mechanic);
     const wheel=new THREE.Mesh(new THREE.TorusGeometry(.27,.105,8,16),new THREE.MeshLambertMaterial({color:0x202328}));
     wheel.rotation.x=Math.PI/2;wheel.position.set(-3.7,.12,obstZ+.25);wheel.userData.spareWheel=true;group.add(wheel);
 
     const triangle = createEmergencyTriangle();
     triangle.position.set(-1.8, 0, obstZ - 15);
+    if (questionEvidence) triangle.userData.questionEvidence = true;
     group.add(triangle);
     state.props.push({ mesh: triangle, radius: 0.55, kind: 'cone', ev, root: group, penalize: false });
+  }
+
+  function buildObstacleEvent(group, obstZ) {
+    const ev = { group, kind: 'obstacle', obstZ, phase: 'approach', actors: [] };
+    addObstacleScene(ev, obstZ);
     return ev;
   }
 

@@ -5062,35 +5062,11 @@ abstract class AppLocalizations {
   /// **'Интерфейс'**
   String get interfaceSection;
 
-  /// No description provided for @gameScoreRulesTitle.
-  ///
-  /// In ru, this message translates to:
-  /// **'Как начисляются очки'**
-  String get gameScoreRulesTitle;
-
-  /// No description provided for @gameScoreRulesBody.
-  ///
-  /// In ru, this message translates to:
-  /// **'Каждый верный ответ приносит очки. Серия добавляет небольшой бонус, подсказка сохраняет половину награды. Ошибки сбрасывают серию, но заработанные очки остаются.'**
-  String get gameScoreRulesBody;
-
-  /// No description provided for @gameScoreRewardLine.
-  ///
-  /// In ru, this message translates to:
-  /// **'{game}: {min}–{max} очков за верный ответ'**
-  String gameScoreRewardLine(String game, int min, int max);
-
   /// No description provided for @gameScoreDailyBudget.
   ///
   /// In ru, this message translates to:
   /// **'Сегодня в рейтинг: {earned} / {limit}'**
   String gameScoreDailyBudget(int earned, int limit);
-
-  /// No description provided for @gameScoreDailyLimitExplanation.
-  ///
-  /// In ru, this message translates to:
-  /// **'В общий рейтинг можно заработать до {limit} очков в сутки. После этого продолжайте играть для личных рекордов и обучения. Лимит обновляется в полночь по Москве.'**
-  String gameScoreDailyLimitExplanation(int limit);
 }
 
 class _AppLocalizationsDelegate
