@@ -13391,7 +13391,11 @@
       const pavement = new THREE.Mesh(geometry,new THREE.MeshLambertMaterial({color:season().sidewalk,side:THREE.DoubleSide}));
       pavement.userData.surface='sidewalk';pavement.material.userData.seasonal='sidewalk';
       pavement.userData.loweredDriveway=true;
-      pavement.userData.noRoad=p=>opening(p.z)<.5;g.add(pavement);
+      // Only the pavement strip itself, and only where its kerb is up: the
+      // test used to ignore X and the station's length, so once a station
+      // was built the whole carriageway, here and on later roads, became
+      // "kerb" — the car stopped against an invisible wall.
+      pavement.userData.noRoad=p=>p.x>=-7.4&&p.x<=-4.2&&p.z>=stationZ-18&&p.z<=stationZ+18&&opening(p.z)<.5;g.add(pavement);
       const paint = roadMarkingMat(); corridorDashes(g,stationZ-18,stationZ+18,.028,paint);
       addFlatPlane(g,.15,36,3.95,stationZ,.027,paint);
       const stationRoot = new THREE.Group(); stationRoot.userData.gasStation = true; g.add(stationRoot);
