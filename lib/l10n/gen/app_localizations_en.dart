@@ -295,23 +295,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personalRecord => 'Personal best';
 
   @override
-  String get streakMotivationRecord => 'New personal best! Keep it up.';
+  String get streakTitle => 'Day streak';
 
   @override
-  String get streakMotivationFirst =>
-      'The flame is lit. Check back tomorrow as the series continues to grow.';
+  String get streakToday => 'Today counts';
 
   @override
-  String get streakMotivationWeek =>
-      'Great pace. Just a little more and it will be a whole week.';
+  String get streakTodayPending =>
+      'No practice yet today — answer a question to keep your streak';
 
   @override
-  String get streakMotivationHabit =>
-      'A whole week behind us. This is how a habit is formed.';
+  String get streakNewRecord => 'New record';
 
   @override
-  String get streakMotivationMonth =>
-      'A month without a break is the level of a real driving school student.';
+  String streakNextGoal(int count, int goal) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more days to $goal',
+      one: '$count more day to $goal',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakGoalReached => 'Every goal reached — keep the pace';
 
   @override
   String get weekdayMon => 'Mon';

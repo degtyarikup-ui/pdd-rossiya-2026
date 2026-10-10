@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/presentation/widgets/progress_panel_card.dart';
 
 /// Панель прогресса на главном экране.
@@ -23,7 +22,7 @@ void main() {
   Future<void> pump(WidgetTester tester, {Map<String, int> s = stats}) {
     return tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(body: ProgressPanelCard(stats: s, streak: null)),
+        home: Scaffold(body: ProgressPanelCard(stats: s)),
       ),
     );
   }
@@ -101,27 +100,9 @@ void main() {
     expect(find.textContaining('осталось 0'), findsNothing);
   });
 
-  testWidgets('серия показывается строкой внутри той же карточки', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: ProgressPanelCard(
-            stats: stats,
-            streak: Streak(
-              current: 4,
-              longest: 11,
-              lastActiveDate: DateTime.now(),
-              startDate: DateTime.now(),
-              activeDays: const {},
-            ),
-          ),
-        ),
-      ),
-    );
-
-    expect(find.text('4 дня'), findsOneWidget);
-    expect(find.text('Рекорд 11'), findsOneWidget);
+  testWidgets('серии на главной нет — она в профиле', (tester) async {
+    await pump(tester);
+    expect(find.textContaining('Рекорд'), findsNothing);
+    expect(find.byIcon(Icons.local_fire_department_rounded), findsNothing);
   });
 }

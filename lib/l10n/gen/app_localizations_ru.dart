@@ -305,23 +305,33 @@ class AppLocalizationsRu extends AppLocalizations {
   String get personalRecord => 'Личный рекорд';
 
   @override
-  String get streakMotivationRecord => 'Новый личный рекорд! Так держать.';
+  String get streakTitle => 'Серия дней';
 
   @override
-  String get streakMotivationFirst =>
-      'Огонёк зажжён. Возвращайтесь завтра, чтобы серия росла.';
+  String get streakToday => 'Сегодня засчитано';
 
   @override
-  String get streakMotivationWeek =>
-      'Отличный темп. Ещё чуть-чуть и наберётся целая неделя.';
+  String get streakTodayPending =>
+      'Сегодня ещё не занимались — ответьте на вопрос, чтобы продлить серию';
 
   @override
-  String get streakMotivationHabit =>
-      'Целая неделя за плечами. Привычка формируется именно так.';
+  String get streakNewRecord => 'Новый рекорд';
 
   @override
-  String get streakMotivationMonth =>
-      'Месяц без перерыва — это уровень настоящего студента автошколы.';
+  String streakNextGoal(int count, int goal) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ещё $count дня до $goal',
+      many: 'Ещё $count дней до $goal',
+      few: 'Ещё $count дня до $goal',
+      one: 'Ещё $count день до $goal',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakGoalReached => 'Все цели взяты — держите темп';
 
   @override
   String get weekdayMon => 'Пн';

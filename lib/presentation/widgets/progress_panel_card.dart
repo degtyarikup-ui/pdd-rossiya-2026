@@ -3,13 +3,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
-import 'package:pdd_app/core/utils/haptic_feedback.dart';
-import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/l10n/l10n.dart';
-import 'package:pdd_app/presentation/widgets/streak_celebration_dialog.dart';
 
-/// Верх главного экрана: готовность к экзамену, четыре числа и серия дней —
-/// в одной карточке.
+/// Верх главного экрана: готовность к экзамену и четыре числа в одной
+/// карточке. Серия дней живёт в профиле, рядом с достижениями.
 ///
 /// Раньше это были две белые плиты одинакового веса, а внутри — четыре
 /// цветные плитки. Ни один элемент не доминировал, и ответ на главный вопрос
@@ -19,14 +16,9 @@ import 'package:pdd_app/presentation/widgets/streak_celebration_dialog.dart';
 /// остаются только на самих числах, без плашек, чтобы цвет снова означал
 /// состояние, а не категорию.
 class ProgressPanelCard extends StatelessWidget {
-  const ProgressPanelCard({
-    super.key,
-    required this.stats,
-    required this.streak,
-  });
+  const ProgressPanelCard({super.key, required this.stats});
 
   final Map<String, int> stats;
-  final Streak? streak;
 
   @override
   Widget build(BuildContext context) {
@@ -97,12 +89,6 @@ class ProgressPanelCard extends StatelessWidget {
               ),
             ],
           ),
-          if (streak != null) ...[
-            const SizedBox(height: AppDimensions.spacingM),
-            Divider(height: 1, thickness: 1, color: colors.divider),
-            const SizedBox(height: AppDimensions.spacingM),
-            _StreakLine(streak: streak!),
-          ],
         ],
       ),
     );
@@ -297,83 +283,5 @@ class _MicroDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     return Container(width: 1, height: 26, color: colors.divider);
-  }
-}
-
-/// Серия одной строкой: слева текущая (горящий огонёк), справа рекорд
-/// (погасший). Два огонька рядом читаются как «столько сейчас — столько было
-/// лучше всего», без подписей и без ленты дней: лента занимала место, а
-/// меняется раз в сутки.
-class _StreakLine extends StatelessWidget {
-  const _StreakLine({required this.streak});
-
-  final Streak streak;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final hasStreak = streak.current > 0;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () {
-          HapticFeedbackHelper.tap();
-          showStreakCelebrationDialog(context: context, streak: streak);
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-          child: Row(
-            children: [
-              Icon(
-                Icons.local_fire_department_rounded,
-                size: 18,
-                color: hasStreak ? colors.gold : colors.secondaryText,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  hasStreak
-                      ? appL10n.progressStreakDays(streak.current)
-                      : appL10n.streakStart,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: colors.primaryText,
-                  ),
-                ),
-              ),
-              if (streak.longest > 0) ...[
-                const SizedBox(width: AppDimensions.spacingM),
-                Icon(
-                  Icons.local_fire_department_rounded,
-                  size: 17,
-                  color: colors.secondaryText,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  appL10n.progressRecord(streak.longest),
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: colors.secondaryText,
-                  ),
-                ),
-              ],
-              const SizedBox(width: 4),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: colors.secondaryText.withValues(alpha: 0.6),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

@@ -77,11 +77,22 @@
   "continueButton": "Жалғастыру",
   "streakBarrierLabel": "Сериялар",
   "personalRecord": "Жеке ең жақсы",
-  "streakMotivationRecord": "Жаңа жеке рекорд! Оны жалғастырыңыз.",
-  "streakMotivationFirst": "Жалын жанып тұр. Серия өсуді жалғастыратындықтан, ертең қайта тексеріңіз.",
-  "streakMotivationWeek": "Тамаша қарқын. Сәл ғана және бұл бір апта болады.",
-  "streakMotivationHabit": "Бір апта артта қалды. Әдет осылай қалыптасады.",
-  "streakMotivationMonth": "Үзіліссіз ай - нағыз автомектеп оқушысының деңгейі.",
+  "streakTitle": "Күндер сериясы",
+  "streakToday": "Бүгін есептелді",
+  "streakTodayPending": "Бүгін әлі жаттықпадыңыз — серияны жалғастыру үшін сұраққа жауап беріңіз",
+  "streakNewRecord": "Жаңа рекорд",
+  "streakNextGoal": "{count, plural, one{{goal} күнге дейін тағы {count} күн} other{{goal} күнге дейін тағы {count} күн}}",
+  "@streakNextGoal": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "goal": {
+        "type": "int"
+      }
+    }
+  },
+  "streakGoalReached": "Барлық мақсат орындалды — қарқынды сақтаңыз",
   "weekdayMon": "дүйсенбі",
   "weekdayTue": "В",
   "weekdayWed": "Сәр",

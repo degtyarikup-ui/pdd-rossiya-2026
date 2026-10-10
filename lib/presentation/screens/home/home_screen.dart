@@ -481,7 +481,6 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
   @override
   Widget build(BuildContext context) {
     final statsAsync = ref.watch(statsProvider);
-    final streakAsync = ref.watch(streakProvider);
     final unfinishedSession = ref.watch(unfinishedSessionProvider);
     final sessionData = unfinishedSession.valueOrNull;
     final hasContinueCard = sessionData != null;
@@ -494,8 +493,8 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
         const double bottomPadding = AppDimensions.screenPadding; // 16.0
         const double gap = 12.0;
 
-        // Top progress panel height is ~206.0
-        const double topPanelHeight = 206.0;
+        // Top progress panel height is ~168.0
+        const double topPanelHeight = 168.0;
         final double continueCardH = hasContinueCard ? 56.0 : 0.0;
         final double totalGaps = gap * (hasContinueCard ? 4 : 3);
 
@@ -543,25 +542,16 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                     'totalTickets': 0,
                   };
                   final progressCard = statsAsync.when(
-                    data: (stats) => ProgressPanelCard(
-                      stats: stats,
-                      streak: streakAsync.valueOrNull,
-                    ),
+                    data: (stats) => ProgressPanelCard(stats: stats),
                     loading: () => banners.isNotEmpty
-                        ? ProgressPanelCard(
-                            stats: emptyStats,
-                            streak: streakAsync.valueOrNull,
-                          )
+                        ? ProgressPanelCard(stats: emptyStats)
                         : const Center(
                             child: Padding(
                               padding: EdgeInsets.symmetric(vertical: 48),
                               child: CircularProgressIndicator(),
                             ),
                           ),
-                    error: (error, _) => ProgressPanelCard(
-                      stats: emptyStats,
-                      streak: streakAsync.valueOrNull,
-                    ),
+                    error: (error, _) => ProgressPanelCard(stats: emptyStats),
                   );
                   if (banners.isEmpty) return progressCard;
                   final banner = banners.first;

@@ -37,7 +37,7 @@ void main() {
                   maintainSize: true,
                   maintainAnimation: true,
                   maintainState: true,
-                  child: ProgressPanelCard(stats: emptyStats, streak: null),
+                  child: ProgressPanelCard(stats: emptyStats),
                 ),
                 Positioned.fill(
                   child: AppNoticeBanner(

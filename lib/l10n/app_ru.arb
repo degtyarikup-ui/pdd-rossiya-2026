@@ -153,11 +153,22 @@
   "continueButton": "Продолжить",
   "streakBarrierLabel": "Серия",
   "personalRecord": "Личный рекорд",
-  "streakMotivationRecord": "Новый личный рекорд! Так держать.",
-  "streakMotivationFirst": "Огонёк зажжён. Возвращайтесь завтра, чтобы серия росла.",
-  "streakMotivationWeek": "Отличный темп. Ещё чуть-чуть и наберётся целая неделя.",
-  "streakMotivationHabit": "Целая неделя за плечами. Привычка формируется именно так.",
-  "streakMotivationMonth": "Месяц без перерыва — это уровень настоящего студента автошколы.",
+  "streakTitle": "Серия дней",
+  "streakToday": "Сегодня засчитано",
+  "streakTodayPending": "Сегодня ещё не занимались — ответьте на вопрос, чтобы продлить серию",
+  "streakNewRecord": "Новый рекорд",
+  "streakNextGoal": "{count, plural, one{Ещё {count} день до {goal}} few{Ещё {count} дня до {goal}} many{Ещё {count} дней до {goal}} other{Ещё {count} дня до {goal}}}",
+  "@streakNextGoal": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "goal": {
+        "type": "int"
+      }
+    }
+  },
+  "streakGoalReached": "Все цели взяты — держите темп",
   "weekdayMon": "Пн",
   "weekdayTue": "Вт",
   "weekdayWed": "Ср",

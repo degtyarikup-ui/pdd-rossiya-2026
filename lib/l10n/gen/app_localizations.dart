@@ -562,35 +562,41 @@ abstract class AppLocalizations {
   /// **'Личный рекорд'**
   String get personalRecord;
 
-  /// No description provided for @streakMotivationRecord.
+  /// No description provided for @streakTitle.
   ///
   /// In ru, this message translates to:
-  /// **'Новый личный рекорд! Так держать.'**
-  String get streakMotivationRecord;
+  /// **'Серия дней'**
+  String get streakTitle;
 
-  /// No description provided for @streakMotivationFirst.
+  /// No description provided for @streakToday.
   ///
   /// In ru, this message translates to:
-  /// **'Огонёк зажжён. Возвращайтесь завтра, чтобы серия росла.'**
-  String get streakMotivationFirst;
+  /// **'Сегодня засчитано'**
+  String get streakToday;
 
-  /// No description provided for @streakMotivationWeek.
+  /// No description provided for @streakTodayPending.
   ///
   /// In ru, this message translates to:
-  /// **'Отличный темп. Ещё чуть-чуть и наберётся целая неделя.'**
-  String get streakMotivationWeek;
+  /// **'Сегодня ещё не занимались — ответьте на вопрос, чтобы продлить серию'**
+  String get streakTodayPending;
 
-  /// No description provided for @streakMotivationHabit.
+  /// No description provided for @streakNewRecord.
   ///
   /// In ru, this message translates to:
-  /// **'Целая неделя за плечами. Привычка формируется именно так.'**
-  String get streakMotivationHabit;
+  /// **'Новый рекорд'**
+  String get streakNewRecord;
 
-  /// No description provided for @streakMotivationMonth.
+  /// No description provided for @streakNextGoal.
   ///
   /// In ru, this message translates to:
-  /// **'Месяц без перерыва — это уровень настоящего студента автошколы.'**
-  String get streakMotivationMonth;
+  /// **'{count, plural, one{Ещё {count} день до {goal}} few{Ещё {count} дня до {goal}} many{Ещё {count} дней до {goal}} other{Ещё {count} дня до {goal}}}'**
+  String streakNextGoal(int count, int goal);
+
+  /// No description provided for @streakGoalReached.
+  ///
+  /// In ru, this message translates to:
+  /// **'Все цели взяты — держите темп'**
+  String get streakGoalReached;
 
   /// No description provided for @weekdayMon.
   ///

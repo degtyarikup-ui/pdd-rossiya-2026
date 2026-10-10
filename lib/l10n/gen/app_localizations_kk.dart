@@ -295,23 +295,31 @@ class AppLocalizationsKk extends AppLocalizations {
   String get personalRecord => 'Жеке ең жақсы';
 
   @override
-  String get streakMotivationRecord => 'Жаңа жеке рекорд! Оны жалғастырыңыз.';
+  String get streakTitle => 'Күндер сериясы';
 
   @override
-  String get streakMotivationFirst =>
-      'Жалын жанып тұр. Серия өсуді жалғастыратындықтан, ертең қайта тексеріңіз.';
+  String get streakToday => 'Бүгін есептелді';
 
   @override
-  String get streakMotivationWeek =>
-      'Тамаша қарқын. Сәл ғана және бұл бір апта болады.';
+  String get streakTodayPending =>
+      'Бүгін әлі жаттықпадыңыз — серияны жалғастыру үшін сұраққа жауап беріңіз';
 
   @override
-  String get streakMotivationHabit =>
-      'Бір апта артта қалды. Әдет осылай қалыптасады.';
+  String get streakNewRecord => 'Жаңа рекорд';
 
   @override
-  String get streakMotivationMonth =>
-      'Үзіліссіз ай - нағыз автомектеп оқушысының деңгейі.';
+  String streakNextGoal(int count, int goal) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$goal күнге дейін тағы $count күн',
+      one: '$goal күнге дейін тағы $count күн',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakGoalReached => 'Барлық мақсат орындалды — қарқынды сақтаңыз';
 
   @override
   String get weekdayMon => 'дүйсенбі';

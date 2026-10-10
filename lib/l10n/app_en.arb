@@ -77,11 +77,22 @@
   "continueButton": "Continue",
   "streakBarrierLabel": "Series",
   "personalRecord": "Personal best",
-  "streakMotivationRecord": "New personal best! Keep it up.",
-  "streakMotivationFirst": "The flame is lit. Check back tomorrow as the series continues to grow.",
-  "streakMotivationWeek": "Great pace. Just a little more and it will be a whole week.",
-  "streakMotivationHabit": "A whole week behind us. This is how a habit is formed.",
-  "streakMotivationMonth": "A month without a break is the level of a real driving school student.",
+  "streakTitle": "Day streak",
+  "streakToday": "Today counts",
+  "streakTodayPending": "No practice yet today — answer a question to keep your streak",
+  "streakNewRecord": "New record",
+  "streakNextGoal": "{count, plural, one{{count} more day to {goal}} other{{count} more days to {goal}}}",
+  "@streakNextGoal": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "goal": {
+        "type": "int"
+      }
+    }
+  },
+  "streakGoalReached": "Every goal reached — keep the pace",
   "weekdayMon": "Mon",
   "weekdayTue": "Tue",
   "weekdayWed": "Wed",

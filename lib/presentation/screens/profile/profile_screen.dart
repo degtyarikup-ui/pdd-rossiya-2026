@@ -17,6 +17,7 @@ import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_banner_card.dart';
 import 'package:pdd_app/presentation/widgets/profile_modal_sheet.dart';
+import 'package:pdd_app/presentation/widgets/streak_widgets.dart';
 
 String _getAchievementTitle(AchievementId id) {
   switch (id) {
@@ -171,6 +172,7 @@ class ProfileScreen extends ConsumerWidget {
     final double topInset = MediaQuery.paddingOf(context).top;
     final currentUser = ref.watch(currentUserProvider);
     final achievementsAsync = ref.watch(achievementsProvider);
+    final streak = ref.watch(streakProvider).valueOrNull;
 
     final achievements = achievementsForDisplay(
       achievementsAsync.valueOrNull ?? const [],
@@ -244,6 +246,27 @@ class ProfileScreen extends ConsumerWidget {
             // Премиум-баннер
             const PremiumBannerCard(),
             const SizedBox(height: AppDimensions.spacingXL),
+
+            // Серия дней — над достижениями: привычка рядом с наградами за неё.
+            if (streak != null) ...[
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: AppDimensions.spacingXS,
+                  bottom: AppDimensions.spacingS,
+                ),
+                child: Text(
+                  appL10n.streakTitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: colors.secondaryText,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              StreakCard(streak: streak),
+              const SizedBox(height: AppDimensions.spacingXL),
+            ],
 
             // Раздел «Достижения»
             Row(
