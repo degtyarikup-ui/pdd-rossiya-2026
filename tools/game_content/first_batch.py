@@ -47,7 +47,7 @@ for k in ['18_5','21_16','33_2']:
 
 ROADS={
  '6_5':dict(kind='observe',yieldMarkingZ=20,junction=dict(z=62,priority='secondary'),note='1.20 before the row of 1.13 yield triangles; it is not a stop line.'),
- '7_2':dict(kind='observe',outsideSettlement=True,signs=[sign('2.4',8,stopDistance=250)],junction=dict(z=258,priority='stop'),zoneLength=295,note='2.4 with 8.1.2 STOP 250 m; mandatory stop at the actual STOP junction, not at the warning.'),
+ '7_2':dict(kind='observe',outsideSettlement=True,urbanPavements=True,signs=[sign('2.4',8,stopDistance=250)],junction=dict(z=258,priority='stop'),zoneLength=295,note='2.4 with 8.1.2 STOP 250 m; mandatory stop at the actual STOP junction, not at the warning.'),
  '10_16':dict(kind='railway',railway=dict(z=24,barrier=True,barrierOpen=True,closed=True,train=True,after=60),note='Red crossing signals prohibit entering even with the barrier raised.'),
  '11_4':dict(kind='speed',signs=[sign('5.31',10)],limitKmH=30,endSign='5.32',zoneLength=160,junction=dict(z=60,priority='main'),speedZone=True,note='30 km/h zone survives the intermediate junction; ends at 5.32.'),
  '13_6':dict(kind='railway',railway=dict(z=25,after=55),note='White-moon flashing signal at an open single-track crossing; check for trains before proceeding.'),
@@ -56,7 +56,7 @@ ROADS={
  '18_2':dict(kind='observe',outsideSettlement=True,signs=[sign('1.18',8)],gravelZ=178,zoneLength=230,note='Loose gravel 170 m after the rural warning sign; no invented speed restriction.'),
  '18_16':dict(kind='bus_departure',cityCentre='dashed',wideCity=True,cityWidth=10.8,cityLanes=1,playerLane='left',busPriority=False,note='Bus leaving an unmarked curb must yield; no bus-stop sign or bay.'),
  '19_16':dict(kind='bus_departure',wideCity=True,playerLane='left',busPriority=True,signs=[sign('5.16',8,offsetX=-3)],note='Bus signals out from a designated urban stop; driver must give way.'),
- '20_16':dict(kind='railway',railway=dict(z=27,signals=False,closed=True,train=True,stopOffset=12,requireStop=True,after=65),signs=[sign('2.5',15)],note='Uncontrolled single track: stop at 2.5, wait until train clears.'),
+ '20_16':dict(kind='railway',railway=dict(z=27,signals=False,closed=False,train=False,stopOffset=12,requireStop=True,after=65),signs=[sign('2.5',15)],note='Uncontrolled single track: stop at 2.5 before crossing; no train in the source image.'),
  '24_2':dict(kind='observe',outsideSettlement=True,railway=dict(z=208,after=45),signs=[sign('1.2',8,plateSign='1.4.1'),sign('1.4.2',78),sign('1.2',148,plateSign='1.4.3')],note='Rural unbarred crossing 200 m past 1.2 with 1.4.1, repeated with one stripe.'),
  '24_16':dict(kind='railway',railway=dict(z=26,barrier=True,closed=True,train=True,whiteSignal=False,crossbuck=False,signalsUnlit=True,stopOffset=12,after=65),note='No stop line or STOP sign: stop at least 5 m before the nearer barrier (7 m before track).'),
  '25_16':dict(kind='railway',railway=dict(z=30,tracks=2,signals=False,closed=True,train=True,trainDeparting=True,stopOffset=15,requireStop=True,after=65),signs=[sign('2.5',15)],note='Multitrack 1.3.2 and STOP: stop at sign; check both tracks before crossing.'),

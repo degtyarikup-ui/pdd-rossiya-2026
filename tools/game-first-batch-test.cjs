@@ -82,7 +82,7 @@ const {chromium} = require('playwright');
     return !!it.previews[side>0?'left':'right']&&!it.previews[side>0?'right':'left']&&!!it.previews.straight&&
       !it.seg.children.some(o=>o.userData.crosswalk||o.userData.stopLine)&&t.surface(side*12,it.centerZ)&&!t.surface(-side*12,it.centerZ);
    });
-   for(const id of ['road_10_16','road_20_16','road_24_16','road_25_16','road_27_16'])test(id,()=>{
+   for(const id of ['road_10_16','road_24_16','road_25_16','road_27_16'])test(id,()=>{
     const ev=t.ev,closed=!ev.rail.open;t.answer();p.position.z=ev.railBoundaryZ-p.userData.halfLength-.1;
     for(let i=0;i<60;i++)t.tick();const stationary=!t.faults().length;
     p.position.z=ev.railBoundaryZ-p.userData.halfLength+.5;t.eventOnly();const premature=t.faults().includes('railway');
@@ -92,6 +92,11 @@ const {chromium} = require('playwright');
     return closed&&stationary&&premature&&e.rail.open&&!t.faults().length&&
       (e.scene.railway.signals!==false||e.rail.red.length===0)&&
       (id!=='road_10_16'||e.rail.booms.length===2);
+   });
+   test('road_20_16',()=>{
+    const ev=t.ev;t.answer();p.position.z=ev.railBoundaryZ-p.userData.halfLength+.5;t.eventOnly();const missed=t.faults().includes('stop');
+    t.show('road_20_16');t.answer();const e=t.ev;p.position.z=e.railBoundaryZ-p.userData.halfLength-.1;for(let i=0;i<60;i++)t.tick();
+    return missed&&e.rail.open&&!e.rail.train&&e.stopSatisfied&&!t.faults().length;
    });
    test('road_13_6',()=>t.ev.rail.open&&t.ev.rail.white.length===2&&!t.ev.rail.booms.length);
    test('road_7_2',()=>{

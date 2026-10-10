@@ -32,7 +32,9 @@ const { chromium } = require('playwright');
             const it = state.activeIntersection;
             const center = it.centerZ;
             const core = [10, 30, 34.9, 35.1, 50, 75].map(d => this.surfacesAt(-d, center));
-            const shoulders = [6, 10, 30, 50, 75].flatMap(d => [-1, 1].map(side => this.surfacesAt(-d, center + side * 6.5)));
+            // At 6 m the rounded end of the main street pavement borders
+            // the dirt mouth. Probe the shoulders beyond that city corner.
+            const shoulders = [10, 30, 50, 75].flatMap(d => [-1, 1].map(side => this.surfacesAt(-d, center + side * 6.5)));
             return { core, shoulders };
           },
           enterDirt(distance = 15) {

@@ -7751,6 +7751,7 @@
     );
     swL.position.set(-(roadWidth / 2 + swWidth / 2), 0.09, startZ + length / 2);
     swL.receiveShadow = true;
+    swL.userData.surface = 'sidewalk';
     seg.add(swL);
 
     const swR = new THREE.Mesh(
@@ -7759,6 +7760,7 @@
     );
     swR.position.set(roadWidth / 2 + swWidth / 2, 0.09, startZ + length / 2);
     swR.receiveShadow = true;
+    swR.userData.surface = 'sidewalk';
     seg.add(swR);
 
     // Center Dashed Marking (1.5)
@@ -8917,6 +8919,7 @@
       stopLine.rotation.x = -Math.PI / 2;
       stopLine.position.set(kerbX / 2, 0.027, stopLineZ);
       stopLine.userData.stopLine = true;
+      if (situation.offsetTramRoad) stopLine.userData.editKey = 'stop-line';
       seg.add(stopLine);
     }
 
@@ -8972,6 +8975,10 @@
     if (regConfig) {
       const regMesh = createTrafficController(regConfig.pose || 'arms_down', regConfig.orientation || 'left_side');
       regMesh.position.set(0, 0, centerZ);
+      const body = new THREE.Group();
+      while (regMesh.children.length) body.add(regMesh.children[0]);
+      regMesh.add(body); regMesh.userData.body = body;
+      regMesh.userData.badge = { visible: false };
       seg.add(regMesh);
       seg.userData.regulator = regMesh;
       if (tlMesh) tlMesh.visible = false;
@@ -9428,14 +9435,21 @@
   // A junction with hand-drawn paths ends them in the lanes of an ordinary
   // street: its arms cannot go on as avenues.
   const authored = sc => !!routeSpec(sc).paths;
-  function avenueMain(sc) { const x = withOverrides(sc); return plainGeometry(x) && !authored(sc) && AVENUE_WIDTHS.includes(x.mainWidth) ? x.mainWidth : 0; }
+  function avenueMain(sc) {
+    const x = withOverrides(sc), spec = routeSpec(sc);
+    // Authored straight paths already end inside the inner avenue lane.
+    // They can keep that width without changing the ticket's manoeuvre;
+    // turns and special layouts retain their explicitly drawn connections.
+    const straightFits = spec.maneuver === 'straight' && spec.paths?.straight?.every(([px]) => Math.abs(px) + .9 < (x.mainWidth || 8.4) / 2);
+    return plainGeometry(x) && (!authored(sc) || straightFits) && AVENUE_WIDTHS.includes(x.mainWidth) ? x.mainWidth : 0;
+  }
   function avenueCross(sc) { const x = withOverrides(sc); return plainGeometry(x) && !authored(sc) && AVENUE_WIDTHS.includes(x.crossWidth) ? x.crossWidth : 0; }
   function avenueExits(situation) {
     const out = { straight: 8.4, left: 8.4, right: 8.4 };
     if (situation.fixedExitWidths) return { ...out, ...situation.fixedExitWidths };
     if (state.cityAvenues === false) return out;
     const main = avenueMain(situation), cross = avenueCross(situation);
-    if (main && Math.random() < AVENUE_CHANCE) out.straight = main;
+    if (main && (situation.cityContinueWidth === main || situation.cityContinueWidth === undefined && Math.random() < AVENUE_CHANCE)) out.straight = main;
     for (const side of ['left', 'right']) if (cross && Math.random() < AVENUE_CHANCE) out[side] = cross;
     return out;
   }
@@ -9444,58 +9458,52 @@
   // has to be a junction of the same width (never an ordinary one, whose
   // two-lane approach could not meet it).
   function nextSituation(width = 8.4) {
-    // Unreviewed geometry must not silently teach an incorrect scene.
     const pool = SITUATIONS.filter(s => routeSpec(s).reviewed === true);
     if (!pool.length) throw new Error('No validated driving scenarios loaded');
-
-    const regPool = pool.filter(isRegulatorSituation);
-    const normalPool = pool.filter(s => !isRegulatorSituation(s));
-    // Count every junction draw, including draws from the shuffled bag.
+    const run = state.streetRun;
+    // The lab and capture tools stage a single ticket before building the
+    // initial road. Preserve that explicit first draw.
+    if (!run && situationBag.length === 1 && width <= 8.5) {
+      const selected = situationBag.pop(), main = avenueMain(selected) || 8.4;
+      state.streetRun = {width: main, remaining: 1 + Math.floor(Math.random() * 4)};
+      lastSituationId = selected.id;
+      if (isRegulatorSituation(selected)) state.regulatorShown = true;
+      return {...selected, cityContinueWidth: main};
+    }
+    const keepNarrow = width <= 8.5 && (!run || run.width > 8.5 || run.remaining > 0);
+    const fits = s => width > 8.5 ? avenueMain(s) === width : keepNarrow ? !avenueMain(s) : !!avenueMain(s);
+    const candidates = pool.filter(fits);
     state.junctionsDrawn = (state.junctionsDrawn || 0) + 1;
     if (state.regulatorAt === undefined) state.regulatorAt = 3 + Math.floor(Math.random() * 6);
-    const wantRegulator = Boolean(state.forceRegulator) ||
-      (!state.regulatorShown && state.junctionsDrawn >= state.regulatorAt);
-    const fittingRegulators = width > 8.5 ? regPool.filter(s => avenueMain(s) === width) : regPool;
-    if (wantRegulator && fittingRegulators.length) {
-      const selected = fittingRegulators[Math.floor(Math.random() * fittingRegulators.length)];
-      state.regulatorShown = true;
-      lastSituationId = selected.id;
-      return selected;
-    }
-
-    if (situationBag.length && !(width > 8.5 && avenueMain(situationBag[situationBag.length - 1]) !== width)) {
-      const selected = situationBag.pop();
-      lastSituationId = selected.id;
-      return selected;
-    }
-    if (width > 8.5) {
-      const fits = sc => avenueMain(sc) === width && sc.id !== lastSituationId;
-      const inBag = situationBag.findIndex(fits);
-      const choices = pool.filter(fits);
-      if (inBag >= 0 || choices.length) {
-        const selected = inBag >= 0 ? situationBag.splice(inBag, 1)[0] : choices[Math.floor(Math.random() * choices.length)];
-        lastSituationId = selected.id;
-        return selected;
+    const wantRegulator = Boolean(state.forceRegulator) || (!state.regulatorShown && state.junctionsDrawn >= state.regulatorAt);
+    const regulators = candidates.filter(isRegulatorSituation);
+    let selected;
+    if (wantRegulator && regulators.length) {
+      selected = regulators[Math.floor(Math.random() * regulators.length)]; state.regulatorShown = true;
+    } else {
+      const eligible = candidates.filter(s => !isRegulatorSituation(s));
+      const available = eligible.length ? eligible : candidates;
+      let choices = situationBag.filter(s => available.includes(s) && s.id !== lastSituationId);
+      if (!choices.length) {
+        choices = available.filter(s => s.id !== lastSituationId);
+        if (!choices.length) choices = available;
+        situationBag = pool.slice();
       }
+      selected = choices[Math.floor(Math.random() * choices.length)];
+      situationBag = situationBag.filter(s => s !== selected);
     }
-
-
-    const availablePool = normalPool.length ? normalPool : pool;
-    situationBag = availablePool.slice();
-    for (let i = situationBag.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [situationBag[i], situationBag[j]] = [situationBag[j], situationBag[i]];
-    }
-    if (situationBag.length > 1 && situationBag[situationBag.length - 1].id === lastSituationId) {
-      [situationBag[0], situationBag[situationBag.length - 1]] =
-        [situationBag[situationBag.length - 1], situationBag[0]];
-    }
-    const selected = situationBag.pop();
+    if (!selected) throw new Error('No validated scenario fits the incoming street');
+    const selectedWidth = avenueMain(selected) || 8.4;
+    if (!run || run.width !== selectedWidth || run.remaining <= 0) {
+      state.streetRun = {width: selectedWidth, remaining: 1 + Math.floor(Math.random() * 4)};
+    } else run.remaining--;
     lastSituationId = selected.id;
-    return selected;
+    // Metadata belongs to this draw, never to the shared ticket definition.
+    return {...selected, cityContinueWidth: selectedWidth > 8.5 && state.streetRun.remaining > 0 ? selectedWidth : 8.4};
   }
 
   function buildInitialTrack() {
+    state.streetRun = null;
     buildStraightSegment(-150, 200);
     const incoming = state.roadSegments[state.roadSegments.length - 1];
     currentCorridor = incoming;
@@ -9931,6 +9939,14 @@
   function ensureTraffic(intersection) {
     if (!intersection.motions) {
       intersection.motions = intersection.actors.map(a => buildActorMotion(a, intersection));
+      const officer = intersection.seg.userData.regulator;
+      if (officer) {
+        const position = officer.position.clone();
+        const path = curve([position, position.clone().add(new THREE.Vector3(0, 0, 1))]);
+        intersection.motions.push({mesh: officer, config: {id: intersection.situation.id + '_regulator', type: 'pedestrian', staysPut: true, physicalOnly: true},
+          segment: intersection.seg, halfLength: .25, halfWidth: .3, path, length: 1,
+          distance: 0, speed: 0, maxSpeed: 0, clearDistance: 0, active: false, waitsForPlayer: true, cleared: true, done: false});
+      }
       state.actors.push(...intersection.motions);
       addPathCorridors(intersection.motions);
     }
@@ -10278,6 +10294,20 @@
     const currentBoxes = new Map([...traffic].filter(([a]) => a !== playerLeader).map(([a, entry]) => [a, entry.box]));
     state.actors.forEach(a => {
       if (a.done) return;
+      // Pending question participants stay staged even while their scene is off screen.
+      const owner = state.intersections.find(it => it.seg === a.segment);
+      const pending = owner && !owner.seg.userData.questionComplete || state.roadEvent?.actors?.includes(a);
+      if (!pending) {
+        a.visibilityTimer = (a.visibilityTimer || 0) - dt;
+        if (a.visibilityTimer <= 0) {
+          a.visibilityTimer = .25;
+          if (actorInView(a.mesh)) { a.hasBeenVisible = true; a.offscreenFor = 0; }
+          else if (a.hasBeenVisible || a.segment?.userData.questionComplete) {
+            a.offscreenFor = (a.offscreenFor || 0) + .25;
+            if (a.offscreenFor >= .75) { a.done = true; a.cleared = true; a.mesh.visible = false; return; }
+          }
+        }
+      }
       if (a.fall) { updateActorFall(a, dt); return; }
       if (a.crashed) {
         a.speed = 0;
@@ -10288,7 +10318,7 @@
           a.mesh.rotation.y = k.fromYaw + (k.toYaw - k.fromYaw) * e;
           if (u >= 1) a.knock = null;
         }
-        if (actorFootprint(a).p.distanceTo(playerCarGroup.position) > 90 && !actorInView(a.mesh)) {
+        if (!pending && actorFootprint(a).p.distanceTo(playerCarGroup.position) > 90 && !actorInView(a.mesh)) {
           a.done = true;
           a.mesh.visible = false;
         }
@@ -10298,7 +10328,7 @@
       // blocks nobody's turn and is removed once far behind, out of view.
       if (a.config.staysPut) {
         a.cleared = true;
-        if (actorFootprint(a).p.distanceTo(playerCarGroup.position) > 90 && !actorInView(a.mesh)) { a.done = true; a.mesh.visible = false; }
+        if (!pending && actorFootprint(a).p.distanceTo(playerCarGroup.position) > 90 && !actorInView(a.mesh)) { a.done = true; a.mesh.visible = false; }
         return;
       }
       if (!a.active && !a.waitsForPlayer && a.dependencies?.every(b => b.cleared)) a.active = true;
@@ -10508,6 +10538,7 @@
   }
 
   function pathsConflict(a, b) {
+    if (a.config?.physicalOnly || b.config?.physicalOnly) return false;
     if (a.config?.concurrentWith?.includes('player') || b.config?.concurrentWith?.includes('player')) return false;
     if (a.config?.concurrentWith?.includes(b.config?.id) || b.config?.concurrentWith?.includes(a.config?.id)) return false;
     const samples = motion => {
@@ -10949,7 +10980,7 @@
     // cannot cut through future junctions even after several turns or U-turns.
     const cut = new THREE.Plane(new THREE.Vector3(0, 0, -1), boundary);
     state.roadSegments.filter(seg => seg !== outgoingPreview).forEach(seg => seg.traverse(obj => {
-      if (obj.userData.sceneryObject) {
+      if (obj.userData.sceneryObject && !obj.userData.actor && !obj.userData.questionEvidence) {
         const box = new THREE.Box3().setFromObject(obj);
         if (box.max.z > boundary) obj.visible = false;
       }
@@ -10975,6 +11006,7 @@
     if (state.targetLane === 1 && outgoingPreview.userData.oneWay !== 'against') clearOncoming();
     state.isAtSituation = false;
     state.isResolvingSituation = false;
+    if (r.intersection.seg) r.intersection.seg.userData.questionComplete = true;
     state.activeIntersection = null;
     state.resolution = null;
     if (state.blinker?.fromSituation) {
@@ -12574,7 +12606,7 @@
     const keepClear = [sc.junction && stopZ + sc.junction.z, sc.railway && stopZ + sc.railway.z].filter(Boolean);
     if (sc.roadCurve) {
       buildCurvedQuestionRoad(ev);
-    } else if (sc.outsideSettlement) {
+    } else if (sc.outsideSettlement && !sc.urbanPavements) {
       ev.rural = replaceCorridorStrip(stopZ - 34, ev.endZ - 5, g => {
         const from = stopZ - 34, to = ev.endZ - 5, length = to - from;
         roadSurface(g, 8.4, length, 0, (from + to) / 2);
@@ -13206,9 +13238,26 @@
     const station = replaceCorridorStrip(stationZ - 18, stationZ + 18, g => {
       roadSurface(g, 8.4, 36, 0, stationZ);
       roadSurface(g, 3.2, 36, 5.8, stationZ, true);
-      roadSurface(g, 21.6, 32, -18.2, stationZ);
-      for (const offset of [-11, 11]) roadSurface(g, 3.3, 6, -5.8, stationZ + offset);
-      for (const [a,b] of [[-18,-14],[-8,8],[14,18]]) roadSurface(g,3.2,b-a,-5.8,stationZ+(a+b)/2,true);
+      const forecourt = roadSurface(g, 21.6, 32, -18.2, stationZ);
+      forecourt.userData.freeManeuverArea = true;
+      // Wide mouths with smoothly lowered pavement; no square kerb across the driveways.
+      const samples = []; for (let q=stationZ-18;q<=stationZ+18;q+=.5) samples.push(q);
+      const opening = q => 1-THREE.MathUtils.smoothstep(Math.min(Math.abs(q-stationZ-11),Math.abs(q-stationZ+11)),3.5,6);
+      const drivewaySurface=roadSurface(g,3.2,36,-5.8,stationZ);
+      drivewaySurface.userData.freeManeuverArea=true;
+      const geometry=new THREE.BufferGeometry(),positions=[],indices=[];
+      for(const q of samples) {
+        const h=.024+.156*(1-opening(q));
+        positions.push(-7.4,0,q,-7.4,h,q,-4.2,h,q,-4.2,0,q);
+      }
+      for(let i=0;i<samples.length-1;i++) for(let j=0;j<3;j++) {
+        const v=i*4+j;indices.push(v,v+4,v+1,v+1,v+4,v+5);
+      }
+      geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setIndex(indices);geometry.computeVertexNormals();
+      const pavement = new THREE.Mesh(geometry,new THREE.MeshLambertMaterial({color:season().sidewalk,side:THREE.DoubleSide}));
+      pavement.userData.surface='sidewalk';pavement.material.userData.seasonal='sidewalk';
+      pavement.userData.loweredDriveway=true;
+      pavement.userData.noRoad=p=>opening(p.z)<.5;g.add(pavement);
       const paint = roadMarkingMat(); corridorDashes(g,stationZ-18,stationZ+18,.028,paint);
       addFlatPlane(g,.15,36,3.95,stationZ,.027,paint);
       const stationRoot = new THREE.Group(); stationRoot.userData.gasStation = true; g.add(stationRoot);
@@ -13217,7 +13266,9 @@
         m.position.set(x,y,stationZ+z);m.castShadow=true;m.receiveShadow=true;stationRoot.add(m);return m;
       };
       // High canopy leaves the forecourt open beneath it.
-      box(14,.45,12,-19,4.7,0,0xED4621);
+      const canopy = box(14,.45,12,-19,4.7,0,0xED4621);
+      canopy.userData.gasCanopy = true;
+      state.occluders.push(canopy);
       for (const x of [-25,-13]) for (const z of [-5,5]) box(.25,4.5,.25,x,2.25,z,0xDAE2E8);
       for (const z of [-3,3]) {
         box(1.5,.14,2.8,-19,.09,z,0xB8BFC5);
@@ -13229,13 +13280,22 @@
       }
       box(7,3,5,-25,1.5,10,0xE7DDCF);
       box(7.4,.2,5.4,-25,3.1,10,0xED4621);
-      box(.04,1.5,3.6,-21.47,1.8,10,0x597985);
-      const c=document.createElement('canvas');c.width=768;c.height=96;
-      const ctx=c.getContext('2d');ctx.fillStyle='#ED4621';ctx.fillRect(0,0,c.width,c.height);
-      ctx.fillStyle='#FFFFFF';ctx.font='bold 64px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(state.labels.gasStation || '',384,48);
-      const title=new THREE.Mesh(new THREE.PlaneGeometry(10,1.25),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),side:THREE.DoubleSide}));
-      title.position.set(-11.98,4.75,stationZ);title.rotation.y=Math.PI/2;stationRoot.add(title);
+      box(.04,1.25,2.5,-21.47,1.8,9.3,0x597985);
+      box(.04,2.05,.9,-21.47,1.025,11.5,0x394A53);
+      // Compact landscaped boundary and a path to the shop; keep the lot
+      // and both entrances unobstructed without adding interactive props.
+      box(.22,.18,30,-29.1,.09,0,0xB8BFC5);
+      box(18,.18,.22,-20,.09,-16.1,0xB8BFC5);
+      box(18,.18,.22,-20,.09,16.1,0xB8BFC5);
+      for(const z of [-13,13]) {
+        box(2,.3,2,-27,.15,z,0xB8BFC5);
+        box(1.8,.06,1.8,-27,.32,z,0x81985E);
+        const tree=createTree('round');tree.scale.setScalar(.7);tree.position.set(-27,.35,stationZ+z);stationRoot.add(tree);
+      }
+      const title = window.PDD_STATION_SIGN();
+      title.position.set(-12.05,4.94,stationZ); title.rotation.y=Math.PI/2;
+      stationRoot.add(title);
+      state.occluders.push(title);
     });
     refreshRoadBounds();
     return {group,station,kind:'gasstation',stationZ,phase:'approach',actors:[]};
@@ -13396,6 +13456,7 @@
     const id = ev.situation?.id;
     releaseRoadActors(ev);
     ev.phase = 'done';
+    ev.group.userData.questionComplete = true;
     state.roadEvent = null;
     state.isAtSituation = false;
     if (state.blinker?.fromSituation) {
@@ -14309,7 +14370,14 @@
   // oncoming: the left lane of a two-way road (3 s grace for a manoeuvre).
   // against: driving against the flow of a one-way road — any lane, no grace
   // beyond a moment; the notice says so instead of "keep right".
+  function inFreeManeuverArea() {
+    const p = playerCarGroup.position;
+    return state.roadBounds?.some(b => b.freeManeuverArea && b.box.containsPoint(new THREE.Vector3(p.x,b.box.min.y,p.z)) &&
+      (!b.localBox || b.localBox.containsPoint(new THREE.Vector3(p.x,b.box.min.y,p.z).applyMatrix4(b.inverse))));
+  }
+
   function updateLaneViolation(dt, oncoming = state.currentLaneOffset > -0.85, against = false) {
+    if (inFreeManeuverArea()) { clearOncoming(); return; }
     oncoming = oncoming || against;
     if (oncoming !== state.oncoming || (oncoming && against !== !!state.oncomingAgainst)) {
       state.oncoming = oncoming;
@@ -15170,7 +15238,7 @@
     }));
     state.roadSegments.forEach(seg => seg.traverse(obj => {
       if (obj.userData.surface === 'road' && !obj.userData.visualOnly) state.roadBounds.push({
-        box: new THREE.Box3().setFromObject(obj), material: obj.material,
+        box: new THREE.Box3().setFromObject(obj), material: obj.material, freeManeuverArea: obj.userData.freeManeuverArea === true,
         // A rounded corner is road only outside its kerb curve.
         fillet: obj.userData.fillet && { center: obj.userData.fillet.center.clone().applyMatrix4(obj.matrixWorld), r: obj.userData.fillet.r },
         containsRoad: obj.userData.containsRoad,
@@ -15334,6 +15402,13 @@
       state.isAccelerating = false;
       state.steering = 0; state.steerPress = null; state.manualSteer = false; state.laneChangeX = null; state.autoPath = null;
       state.isAtSituation = true;
+      // Evidence of the current task must never inherit retirement state from
+      // traffic of the previous task. A prohibited tram remains at its stop.
+      for (const actor of ensureTraffic(active)) {
+        if (!actor.config.staysPut) continue;
+        actor.done = false; actor.mesh.visible = true;
+        if (!actor.fall) actor.mesh.position.copy(actor.initialPos || actor.mesh.position);
+      }
       const pBlinker = active.seg?.userData?.playerBlinker;
       if (pBlinker) {
         state.blinker = { side: pBlinker, remaining: Infinity, elapsed: 0, fromSituation: true };
@@ -15653,6 +15728,7 @@
     state.resolution = null;
     state.exitReported = undefined;
     state.junctionsDrawn = 0;
+    state.streetRun = null;
     state.regulatorAt = undefined;
     state.regulatorShown = false;
     state.activeIntersection = null;

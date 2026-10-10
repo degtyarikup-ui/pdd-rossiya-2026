@@ -33,9 +33,9 @@
       title: s.title, options: s.options, correct: s.correctAnswerIndex, explanation: s.explanation, pddRule: s.pddRule,
       type: s.type, reviewed: s.enabled !== false, sourceQuestionId: s.sourceQuestionId, signs: (s.scene.signs || []).map(x => x.code) }));
     const EVENT_BUILDERS={busstop:buildBusStopEvent,crosswalk:buildCrosswalkEvent,roadworks:buildRoadworksEvent,
-      obstacle:buildObstacleEvent,courtyard:buildCourtyardEvent,cyclist:buildCyclistEvent,emergency:buildEmergencyEvent};
+      obstacle:buildObstacleEvent,courtyard:buildCourtyardEvent,cyclist:buildCyclistEvent,emergency:buildEmergencyEvent,gasstation:buildGasStationEvent};
     const EVENT_NAMES={busstop:'Автобусная остановка',crosswalk:'Пешеходный переход',roadworks:'Дорожные работы',
-      obstacle:'Препятствие',courtyard:'Выезд из двора',cyclist:'Велосипедист',emergency:'Спецавтомобиль'};
+      obstacle:'Препятствие',courtyard:'Выезд из двора',cyclist:'Велосипедист',emergency:'Спецавтомобиль',gasstation:'Заправка «ГазЛукПук»'};
     const events=()=>Object.keys(EVENT_BUILDERS).map(k=>({id:'event_'+k,kind:'event',title:EVENT_NAMES[k],reviewed:true,options:[],signs:[]}));
     function clearWorld() {
       resetGame(); state.attract = false;

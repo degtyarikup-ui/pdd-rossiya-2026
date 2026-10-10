@@ -320,8 +320,8 @@
     box(W - 0.06, 0.05, 0.04, 0, noseY - 0.04, zf + 0.03, mats.head);
     car.brakeLights = [box(W - 0.06, 0.05, 0.04, 0, tailY - 0.05, zr - 0.03, surfaces.material('lens', 0xD33D38))];
     box(W - 0.2, 0.012, 0.012, 0, (tailY + topAt(zC)) / 2 + 0.02, zC - 0.6, mats.trim);
-    box(W + 0.04, 0.16, 0.2, 0, ground + 0.06, zf - 0.08, mats.trim);
-    box(W + 0.04, 0.16, 0.2, 0, ground + 0.06, zr + 0.08, mats.trim);
+    box(W + 0.04, 0.16, 0.2, 0, ground + 0.04, zf + 0.115, mats.trim);
+    box(W + 0.04, 0.16, 0.2, 0, ground + 0.04, zr - 0.115, mats.trim);
     // Square, angular wheel arches and big wheels.
     const r = 0.44, wb = L * 0.32;
     for (const z of [wb, -wb]) for (const sx of [-1, 1]) {

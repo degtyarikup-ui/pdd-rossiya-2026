@@ -133,8 +133,7 @@
   // --- Погодная система «Регулировщик 3D»: ясно, дождь, туман ---
   const WEATHERS = ['clear', 'rain', 'fog'];
   let currentTargetWeather = 'clear';
-  let weatherAutoTimer = 55 + Math.random() * 30; // 55-85 секунд до плавной смены
-  let weatherDeck = [];
+  let weatherAutoTimer = 240 + Math.random() * 180; // 55-85 секунд до плавной смены
   let weatherFx = null;
 
   // Текущие сглаженные параметры погоды (0..1)
@@ -143,15 +142,8 @@
   let curOvercast = 0;
 
   function pickNextWeather() {
-    if (weatherDeck.length === 0) {
-      const candidates = WEATHERS.filter(w => w !== currentTargetWeather);
-      for (let i = candidates.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
-      }
-      weatherDeck = candidates;
-    }
-    return weatherDeck.shift();
+    // Match the bright city: brief rain, long clear intervals, no random fog.
+    return currentTargetWeather === 'clear' && Math.random() < 0.15 ? 'rain' : 'clear';
   }
 
   function setWeather(kind, immediate = false) {
@@ -310,10 +302,10 @@
 
     // 2. Освещение (баланс солнца и рассеянного света)
     if (ambientLight) {
-      ambientLight.intensity = THREE.MathUtils.lerp(season.ambient, 0.62, curRain * 0.85 + curFog * 0.45);
+      ambientLight.intensity = THREE.MathUtils.lerp(0.75, 0.72, curRain * 0.85 + curFog * 0.45);
     }
     if (sunLight) {
-      const sunInt = THREE.MathUtils.lerp(season.sunIntensity, THREE.MathUtils.lerp(0.20, 0.08, curFog), Math.max(curRain, curFog));
+      const sunInt = THREE.MathUtils.lerp(0.85, THREE.MathUtils.lerp(0.55, 0.5, curFog), Math.max(curRain, curFog));
       sunLight.intensity = sunInt;
       sunLight.color.setHex(season.sun).lerp(new THREE.Color(0xCCD8E4), Math.max(curRain, curFog));
     }
@@ -382,8 +374,8 @@
     // Таймер автоматической смены погоды в случайном порядке
     weatherAutoTimer -= dt;
     if (weatherAutoTimer <= 0) {
-      weatherAutoTimer = 55 + Math.random() * 30;
       setWeather(pickNextWeather());
+      weatherAutoTimer = currentTargetWeather === 'clear' ? 240 + Math.random() * 180 : 25 + Math.random() * 20;
     }
 
     applyWeather(dt);
@@ -426,7 +418,7 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowEnd ? 1.25 : 1.75));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMapping = THREE.NoToneMapping;
     renderer.toneMappingExposure = 1.05;
     container.appendChild(renderer.domElement);
 
@@ -448,8 +440,8 @@
     // Первоначальное состояние
     setScenario(GESTURES.RIGHT_ARM_FORWARD, APPROACHES.LEFT, VEHICLES.CAR);
 
-    // Выбираем начальную погоду в случайном порядке (ясно, дождь или туман)
-    const initialWeather = WEATHERS[Math.floor(Math.random() * WEATHERS.length)];
+    // Bright daytime on entry, as in the city game.
+    const initialWeather = 'clear';
     setWeather(initialWeather, true);
 
     // Сообщаем Flutter о готовности

@@ -1386,6 +1386,7 @@ window.PDD_ROAD_SITUATIONS = [
   "scene": {
    "kind": "observe",
    "outsideSettlement": true,
+   "urbanPavements": true,
    "signs": [
     {
      "code": "2.4",
@@ -1756,8 +1757,8 @@ window.PDD_ROAD_SITUATIONS = [
    "railway": {
     "z": 27,
     "signals": false,
-    "closed": true,
-    "train": true,
+    "closed": false,
+    "train": false,
     "stopOffset": 12,
     "requireStop": true,
     "after": 65
@@ -1769,7 +1770,7 @@ window.PDD_ROAD_SITUATIONS = [
     }
    ]
   },
-  "note": "Uncontrolled single track: stop at 2.5, wait until train clears."
+  "note": "Uncontrolled single track: stop at 2.5 before crossing; no train in the source image."
  },
  {
   "id": "road_24_2",
