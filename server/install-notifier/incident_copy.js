@@ -106,3 +106,5 @@ const PROVIDERS = { google: 'Google', apple: 'Apple ID', yandex: 'Яндекс',
 const PLATFORMS = { android: 'Android', ios: 'iOS', web: 'Веб', macos: 'macOS', windows: 'Windows', linux: 'Linux' };
 export const providerLabel = value => Object.hasOwn(PROVIDERS, value) ? PROVIDERS[value] : 'Не определён';
 export const platformLabel = value => Object.hasOwn(PLATFORMS, value) ? PLATFORMS[value] : 'Не определена';
+const STORES = { googlePlay: 'Google Play', rustore: 'RuStore' };
+export const storeLabel = value => Object.hasOwn(STORES, value) ? STORES[value] : 'Не определён';

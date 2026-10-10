@@ -157,6 +157,11 @@ test('known payment reasons are readable, unknown codes remain honest and messag
   const message = buildIncidentMessage(event({ category: 'purchase', operation: 'api.user.purchase', code: 'purchase_belongs_to_another_account', provider: 'appstore' }));
   assert.match(message, /Эта покупка уже привязана к другому аккаунту/);
   assert.match(message, /App Store/);
+  const signIn = buildIncidentMessage(event({ operation: 'auth.provider', code: 'sign_in_failed:10', store: 'rustore' }));
+  assert.match(signIn, /Код: <code>sign_in_failed:10<\/code>/);
+  assert.match(signIn, /Сервис входа сообщил об ошибке/);
+  assert.match(signIn, /Магазин:<\/b> RuStore/);
+  assert.doesNotMatch(buildIncidentMessage(event({ store: null })), /Магазин/);
   assert.match(buildIncidentMessage(event({ operation: 'constructor', code: '__proto__', provider: '__proto__', platform: 'constructor' })), /Точная причина пока не определена/);
   assert.match(incidentCopy(event({ operation: 'new.unknown', code: 'sdk_error' })).reason, /Точная причина пока не определена/);
   const longest = buildIncidentMessage(event({ category: 'infrastructure', origin: 'server', operation: 'api.user.progress.sync', code: 'storage_rate_limited', userId: '&'.repeat(200), userName: '&'.repeat(120), userEmail: '&'.repeat(160), device: '&'.repeat(100), installation: 'a'.repeat(16), diagnosticId: 'a'.repeat(36), status: 500 }), 1000000, 1000000);

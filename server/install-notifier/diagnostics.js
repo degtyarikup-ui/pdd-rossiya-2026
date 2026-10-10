@@ -1,5 +1,5 @@
 import { readSession, tokenHash } from './user_auth.js';
-import { incidentCopy, providerLabel, platformLabel } from './incident_copy.js';
+import { incidentCopy, providerLabel, platformLabel, storeLabel } from './incident_copy.js';
 
 const escape = value => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 const tag = (value, fallback = 'unknown') => typeof value === 'string' && /^[a-zA-Z0-9_.:-]{1,80}$/.test(value) ? value : fallback;
@@ -27,6 +27,7 @@ export function buildIncidentMessage(event, repeats = 0, overflow = 0) {
     authProvider ? '• <b>Вход:</b> ' + providerLabel(authProvider) : null,
     event.provider && event.provider !== authProvider ? '• <b>Сервис:</b> ' + providerLabel(event.provider) : null,
     event.platform ? '• <b>Платформа:</b> ' + platformLabel(event.platform) + (event.appVersion ? ' · v' + escape(event.appVersion) : '') : null,
+    event.store ? '• <b>Магазин:</b> ' + storeLabel(event.store) : null,
     event.device ? '• <b>Устройство:</b> ' + escape(event.device) : null,
     repeats ? '• <b>Повторов с прошлого сообщения:</b> ' + repeats + ' (могли затронуть других пользователей)' : null,
     overflow ? '• <b>Других сообщений ограничено:</b> ' + overflow : null,
@@ -67,6 +68,7 @@ export async function reportIncident(env, incident) {
       operation: tag(incident.operation), code: tag(incident.code),
       provider: incident.provider ? tag(incident.provider) : null,
       platform: tag(incident.platform || user?.platform, null),
+      store: tag(incident.store, null),
       appVersion: typeof (incident.appVersion || user?.appVersion) === 'string' && /^[\d.+-]{1,32}$/.test(incident.appVersion || user?.appVersion) ? incident.appVersion || user.appVersion : null,
       device: text(incident.device || user?.device, 100),
       userId,
