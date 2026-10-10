@@ -10,6 +10,7 @@ class BrowserGame {
   });
   bool get desktop => false;
   Widget get widget => const SizedBox.shrink();
+  set allowPointerEvents(bool allow) {}
   Future<Object> runJavaScriptReturningResult(String code) async => '';
   Future<void> runJavaScript(String code) async {}
   Future<void> dispose() async {}

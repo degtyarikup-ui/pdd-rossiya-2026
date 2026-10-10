@@ -1925,8 +1925,23 @@
   function onTap(event) {
     if (isResolving || !currentScenario) return;
     const rect = renderer.domElement.getBoundingClientRect();
-    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    const clientX = event.clientX - rect.left;
+    const clientY = event.clientY - rect.top;
+
+    // Клик по кнопке закрытия в левом верхнем углу (под оверлеем Flutter)
+    if (clientX <= 72 && clientY <= 72) {
+      notifyFlutter({ type: 'close' });
+      return;
+    }
+
+    // Клик по кнопке сброса камеры в правом нижнем углу
+    if (clientX >= rect.width - 72 && clientY >= rect.height - 72) {
+      window.resetCamera();
+      return;
+    }
+
+    mouse.x = (clientX / rect.width) * 2 - 1;
+    mouse.y = -(clientY / rect.height) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
 
     const candidates = [];

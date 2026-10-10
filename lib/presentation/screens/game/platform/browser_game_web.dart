@@ -15,14 +15,20 @@ class BrowserGame {
   late final String _viewType;
   int _request = 0;
   bool _disposed = false;
+  bool _allowPointerEvents = false;
   bool get desktop => !web.window.matchMedia('(pointer: coarse)').matches;
+  bool get allowPointerEvents => _allowPointerEvents;
+  set allowPointerEvents(bool allow) {
+    _allowPointerEvents = allow;
+    _frame.style.pointerEvents = allow ? 'auto' : 'none';
+  }
   BrowserGame({
     required void Function(String) onMessage,
     required VoidCallback onBlur,
     required void Function(String, bool, bool) onKey,
     String htmlPath = 'assets/assets/game/index.html?flutterWeb=1',
     bool allowPointerEvents = false,
-  }) {
+  }) : _allowPointerEvents = allowPointerEvents {
     _viewType = 'pdd-game-${++_sequence}';
     _frame.style
       ..border = '0'

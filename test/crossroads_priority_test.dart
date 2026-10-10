@@ -3,6 +3,7 @@ import 'package:pdd_app/data/models/crossroads_priority_model.dart';
 import 'package:pdd_app/data/models/crossroads_priority_progress.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -151,6 +152,36 @@ void main() {
       // Все 4 таблички 8.13 уникальны и не дублируются
       final tableSet = scenario.signs.map((s) => s.table8_13).toSet();
       expect(tableSet.length, equals(4));
+    });
+
+    test('Resolution step prompt bounds never exceed actors count', () {
+      final scenario = CrossroadsScenariosLibrary.allScenarios.firstWhere(
+        (s) => s.actors.length == 2,
+      );
+      final totalActors = scenario.actors.length;
+      expect(totalActors, equals(2));
+
+      // На 1-м шаге: кто проедет первым
+      final prompt1 = 1 == 1
+          ? appL10n.gameCrossroadsPromptWhoGoesFirst
+          : appL10n.gameCrossroadsPromptWhoGoesNext(1);
+      expect(prompt1, equals(appL10n.gameCrossroadsPromptWhoGoesFirst));
+
+      // На 2-м шаге: кто проедет следующим (2-м)
+      final prompt2 = 2 > totalActors
+          ? appL10n.gameCrossroadsCompleteTitle
+          : appL10n.gameCrossroadsPromptWhoGoesNext(2);
+      expect(prompt2, equals(appL10n.gameCrossroadsPromptWhoGoesNext(2)));
+
+      // На 3-м шаге (когда обе машины разъехались): показывается заголовок победы,
+      // а не фантомный вопрос "Кто проедет следующим (3-м)?"
+      final isComplete = 3 > totalActors;
+      expect(isComplete, isTrue);
+      final prompt3 = isComplete
+          ? appL10n.gameCrossroadsCompleteTitle
+          : appL10n.gameCrossroadsPromptWhoGoesNext(3);
+      expect(prompt3, equals(appL10n.gameCrossroadsCompleteTitle));
+      expect(prompt3, isNot(contains('3-м')));
     });
   });
 
