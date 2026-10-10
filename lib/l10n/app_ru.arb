@@ -948,6 +948,8 @@
     }
   },
   "gameCrossroadsHowTo": "Расставьте машины по очереди: нажимайте на ту, что едет сейчас.",
+  "gameCrossroadsTapHint": "Нажмите на машину или метку над ней. Сцену можно крутить пальцем и приближать двумя.",
+  "gameCrossroadsResetCamera": "Вернуть камеру",
   "gameCrossroadsNextCrossroad": "Следующий перекресток",
   "gameCrossroadsRepeatCrossroad": "Попробовать снова",
   "gameCrossroadsModeArcade": "Аркада",

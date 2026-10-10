@@ -403,6 +403,7 @@
     buildTrajectoryArrows();
 
     window.addEventListener('resize', onWindowResize);
+    window.addEventListener('pointerdown', () => audio && audio.unlock());
 
     // Первоначальное состояние
     setScenario(GESTURES.RIGHT_ARM_FORWARD, APPROACHES.LEFT, VEHICLES.CAR);
@@ -1354,6 +1355,7 @@
     activeMove = moveType;
     activeMoveId = moveId;
     moveDuration = moveType === MOVES.STRAIGHT ? 1.8 : moveType === MOVES.UTURN ? 2.05 : 1.95;
+    if (audio) audio.engine('car', moveDuration + 0.3);
 
     notifyFlutter({
       type: 'move_result',
@@ -1567,7 +1569,15 @@
   }
 
   // Экспорт API для вызова из Flutter
+  // Фон улицы и звук мотора; Flutter включает по настройке «Звук».
+  const audio = window.PDD_AMBIENT ? window.PDD_AMBIENT.create() : null;
+
   window.TrafficControllerGame = {
+    setSound(on) {
+      if (!audio) return;
+      audio.setEnabled(on);
+      if (on) audio.unlock();
+    },
     setScenario,
     getAllowedMoves,
     getRainBounds: rainBounds,

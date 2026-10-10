@@ -19,6 +19,7 @@
 | `sign-textures.js` | Текстуры знаков (большой файл с base64) |
 | `seasons.js` | Палитры сезонов, листопад |
 | `crossroads.js`, `traffic-controller*.js` | Мини-игры |
+| `ambient-audio.js` | Звук мини-игр (WebAudio, без файлов): фон улицы, мотор, трамвай, сирена, удар; включается настройкой «Звук» (`setSoundEnabled` / `TrafficControllerGame.setSound`) |
 
 ## Соглашения движка
 

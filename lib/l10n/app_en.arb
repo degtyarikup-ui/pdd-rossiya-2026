@@ -525,6 +525,8 @@
     }
   },
   "gameCrossroadsHowTo": "Put the vehicles in order: tap the one that goes now.",
+  "gameCrossroadsTapHint": "Tap a car or the pin above it. Drag to rotate the scene, pinch to zoom.",
+  "gameCrossroadsResetCamera": "Reset camera",
   "gameCrossroadsNextCrossroad": "Next intersection",
   "gameCrossroadsRepeatCrossroad": "Try again",
   "gameCrossroadsModeArcade": "Arcade",

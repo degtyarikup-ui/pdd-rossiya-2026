@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -80,16 +81,9 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
   String _collisionPddArticle = '';
   String _collisionShouldGo = '';
 
-  // Камера и зум
-  static const double _minZoom = 0.5;
-  static const double _maxZoom = 2.5;
-  double _zoom = 1.0;
-  double _zoomAtStart = 1.0;
-
-  // Высота нижней панели
-  final GlobalKey _panelKey = GlobalKey();
-  double _sentInset = -1;
-  double _panelHeight = 0;
+  // Верхняя часть (HUD и подсказка): сцена кадрируется под ней.
+  final GlobalKey _headerKey = GlobalKey();
+  String _sentInset = '';
 
   @override
   void initState() {
@@ -118,7 +112,8 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
       onBlur: () {},
       onKey: (_, _, _) {},
       htmlPath: 'assets/assets/game/crossroads.html?flutterWeb=1',
-      allowPointerEvents: false,
+      // Камеру крутят и машины выбирают прямо в сцене.
+      allowPointerEvents: true,
     );
     setState(() => _browserGame = browser);
   }
@@ -155,12 +150,15 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
       final type = data['type'] as String?;
       if (type == 'ready' && mounted && !_engineReady) {
         setState(() => _engineReady = true);
+        _sentInset = '';
         _syncViewInset();
-        _call('setZoom($_zoom)');
+        _call('setSoundEnabled(${SoundEffectsService.instance.isEnabled})');
         _sendScenarioToEngine();
         if (_mode == CrossroadsGameMode.arcade) {
           _startArcadeRound();
         }
+      } else if (type == 'vehicle_tapped') {
+        HapticFeedbackHelper.select();
       } else if (type == 'step_correct') {
         _handleCorrectStep(data);
       } else if (type == 'collision') {
@@ -190,16 +188,16 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
 
   void _syncViewInset() {
     if (!mounted || !_engineReady) return;
-    final renderBox =
-        _panelKey.currentContext?.findRenderObject() as RenderBox?;
-    final newHeight = renderBox?.size.height ?? 0;
-    if (newHeight != _panelHeight) {
-      _panelHeight = newHeight;
-    }
-    final targetInset = _panelHeight * MediaQuery.devicePixelRatioOf(context);
-    if ((targetInset - _sentInset).abs() > 2) {
-      _sentInset = targetInset;
-      _call('setViewInset($targetInset)');
+    final box = _headerKey.currentContext?.findRenderObject() as RenderBox?;
+    final ratio = MediaQuery.devicePixelRatioOf(context);
+    final top = ((box?.size.height ?? 0) * ratio).round();
+    // Снизу — только кнопка камеры и системная полоса.
+    final bottom = ((MediaQuery.paddingOf(context).bottom + 56) * ratio)
+        .round();
+    final key = '$bottom,$top';
+    if (key != _sentInset) {
+      _sentInset = key;
+      _call('setViewInset($bottom, $top)');
     }
   }
 
@@ -239,8 +237,8 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
 
   void _handleCorrectStep(Map<String, dynamic> data) {
     if (_isGameOver) return;
+    // Звонок шага играет сцена (с каждым шагом выше тоном).
     HapticFeedbackHelper.softSuccess();
-    SoundEffectsService.instance.playCorrect();
     setState(() {
       _currentStep++;
     });
@@ -248,8 +246,8 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
 
   void _handleCollision(Map<String, dynamic> data) {
     if (_isGameOver) return;
+    // Удар звучит в сцене; здесь — вибрация и разбор.
     HapticFeedbackHelper.collision();
-    SoundEffectsService.instance.playIncorrect();
 
     final reason = data['reason'] as String? ?? '';
     final pddArticle = data['pddArticle'] as String? ?? '';
@@ -277,8 +275,13 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
 
   void _handleCrossroadComplete() {
     if (_isGameOver) return;
-    HapticFeedbackHelper.success();
-    SoundEffectsService.instance.playCorrect();
+    if (_combo >= 2) {
+      HapticFeedbackHelper.confirm();
+      SoundEffectsService.instance.playStreak();
+    } else {
+      HapticFeedbackHelper.success();
+      SoundEffectsService.instance.playCorrect();
+    }
 
     final gainedScore = GameEconomy.crossroads(_combo + 1);
 
@@ -369,30 +372,20 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
         fit: StackFit.expand,
         children: [
           // 1. Центральная 3D-сцена
+          // Жесты (тап по машине, вращение, щипок) обрабатывает сама сцена.
           Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onScaleStart: (details) {
-                _zoomAtStart = _zoom;
-              },
-              onScaleUpdate: (details) {
-                if (details.pointerCount >= 2) {
-                  final newZoom = (_zoomAtStart * details.scale).clamp(
-                    _minZoom,
-                    _maxZoom,
-                  );
-                  if ((newZoom - _zoom).abs() > 0.02) {
-                    setState(() => _zoom = newZoom);
-                    _call('setZoom($_zoom)');
-                  }
-                }
-              },
-              child: kIsWeb
-                  ? (_browserGame?.widget ?? const SizedBox())
-                  : (_webViewController != null
-                        ? WebViewWidget(controller: _webViewController!)
-                        : const SizedBox()),
-            ),
+            child: kIsWeb
+                ? (_browserGame?.widget ?? const SizedBox())
+                : (_webViewController != null
+                      ? WebViewWidget(
+                          controller: _webViewController!,
+                          gestureRecognizers: {
+                            Factory<OneSequenceGestureRecognizer>(
+                              EagerGestureRecognizer.new,
+                            ),
+                          },
+                        )
+                      : const SizedBox()),
           ),
 
           // Пока сцена грузится — тема приложения и спиннер.
@@ -421,84 +414,101 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
             left: 0,
             right: 0,
             child: SafeArea(
+              key: _headerKey,
               bottom: false,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppDimensions.screenPadding,
                   vertical: 8,
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    AppChromeIconButton(
-                      icon: Icons.close_rounded,
-                      onTap: () {
-                        HapticFeedbackHelper.tap();
-                        if (_mode == CrossroadsGameMode.arcade &&
-                            _solvedCount > 0) {
-                          _endGame();
-                        }
-                        Navigator.of(context).pop();
-                      },
+                    Row(
+                      children: [
+                        AppChromeIconButton(
+                          icon: Icons.close_rounded,
+                          onTap: () {
+                            HapticFeedbackHelper.tap();
+                            if (_mode == CrossroadsGameMode.arcade &&
+                                _solvedCount > 0) {
+                              _endGame();
+                            }
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        const SizedBox(width: AppDimensions.spacingM),
+                        if (_mode == CrossroadsGameMode.arcade)
+                          Expanded(child: _buildHud(colors))
+                        else ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.cardBackground,
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.buttonRadius,
+                              ),
+                            ),
+                            child: Text(
+                              appL10n.gameCrossroadsModeTraining,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: colors.accent,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                            onPressed: () {
+                              setState(() {
+                                _scenarioIndex =
+                                    (_scenarioIndex - 1 + _scenarios.length) %
+                                    _scenarios.length;
+                              });
+                              _sendScenarioToEngine();
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.arrow_forward_ios_rounded),
+                            onPressed: () {
+                              setState(() {
+                                _scenarioIndex =
+                                    (_scenarioIndex + 1) % _scenarios.length;
+                              });
+                              _sendScenarioToEngine();
+                            },
+                          ),
+                        ],
+                      ],
                     ),
-                    const SizedBox(width: AppDimensions.spacingM),
-                    if (_mode == CrossroadsGameMode.arcade)
-                      Expanded(child: _buildHud(colors))
-                    else ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.cardBackground,
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.buttonRadius,
-                          ),
-                        ),
-                        child: Text(
-                          appL10n.gameCrossroadsModeTraining,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: colors.accent,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                        onPressed: () {
-                          setState(() {
-                            _scenarioIndex =
-                                (_scenarioIndex - 1 + _scenarios.length) %
-                                _scenarios.length;
-                          });
-                          _sendScenarioToEngine();
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.arrow_forward_ios_rounded),
-                        onPressed: () {
-                          setState(() {
-                            _scenarioIndex =
-                                (_scenarioIndex + 1) % _scenarios.length;
-                          });
-                          _sendScenarioToEngine();
-                        },
-                      ),
-                    ],
+                    const SizedBox(height: AppDimensions.spacingS),
+                    _buildCaption(colors),
                   ],
                 ),
               ),
             ),
           ),
 
-          // 3. Нижняя панель управления и подсказок
+          // 3. Вернуть камеру в исходный ракурс.
           Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildBottomPanel(colors),
+            right: AppDimensions.screenPadding,
+            bottom:
+                MediaQuery.paddingOf(context).bottom + AppDimensions.spacingM,
+            child: Tooltip(
+              message: appL10n.gameCrossroadsResetCamera,
+              child: AppChromeIconButton(
+                icon: Icons.center_focus_strong_rounded,
+                onTap: () {
+                  HapticFeedbackHelper.tap();
+                  _call('resetCamera()');
+                },
+              ),
+            ),
           ),
 
           // 4. Модальная шторка ДТП (при ошибке очередности)
@@ -556,34 +566,33 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     );
   }
 
-  /// Нижняя панель в стиле «Регулировщика»: без тени и обводок, крупные
-  /// плитки участников с цветом их машины. Проехавшие — зелёные, с номером.
-  Widget _buildBottomPanel(AppThemeColors colors) {
+  /// Подсказка под счётом: перекрёсток, шаг и что делать. Машины выбирают
+  /// прямо в сцене — нажатием на машину или метку над ней.
+  Widget _buildCaption(AppThemeColors colors) {
     final scenario = _curScenario;
+    final firstTime =
+        _solvedCount == 0 && _wrongCount == 0 && _currentStep == 1;
     return Container(
-      key: _panelKey,
-      padding: EdgeInsets.fromLTRB(
-        AppDimensions.screenPadding,
-        AppDimensions.spacingL,
-        AppDimensions.screenPadding,
-        MediaQuery.paddingOf(context).bottom + AppDimensions.spacingM,
+      padding: const EdgeInsets.fromLTRB(
+        AppDimensions.spacingM,
+        AppDimensions.spacingS + 2,
+        AppDimensions.spacingS + 2,
+        AppDimensions.spacingS + 2,
       ),
       decoration: BoxDecoration(
         color: colors.cardBackground,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppDimensions.radiusExtraLarge),
-        ),
+        borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
-                  scenario.title,
+                  _currentStep == 1
+                      ? appL10n.gameCrossroadsPromptWhoGoesFirst
+                      : appL10n.gameCrossroadsPromptWhoGoesNext(_currentStep),
                   style: TextStyle(
                     fontSize: 16,
                     height: 1.25,
@@ -616,41 +625,17 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: AppDimensions.spacingXS),
+          const SizedBox(height: 2),
           Text(
-            _currentStep == 1
-                ? appL10n.gameCrossroadsPromptWhoGoesFirst
-                : appL10n.gameCrossroadsPromptWhoGoesNext(_currentStep),
+            firstTime ? appL10n.gameCrossroadsTapHint : scenario.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              height: 1.3,
+              fontWeight: FontWeight.w500,
               color: colors.secondaryText,
             ),
-          ),
-          const SizedBox(height: AppDimensions.spacingM),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              const gap = AppDimensions.spacingS;
-              final width = (constraints.maxWidth - gap) / 2;
-              return Wrap(
-                spacing: gap,
-                runSpacing: gap,
-                children: [
-                  for (final actor in scenario.actors)
-                    SizedBox(
-                      width: width,
-                      child: _ActorTile(
-                        actor: actor,
-                        done: actor.priorityOrder < _currentStep,
-                        onTap: () {
-                          HapticFeedbackHelper.tap();
-                          _call('selectVehicle("${actor.id}")');
-                        },
-                      ),
-                    ),
-                ],
-              );
-            },
           ),
         ],
       ),
@@ -788,94 +773,6 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
         ],
         onRestart: _startArcadeRound,
         onExit: () => Navigator.of(context).pop(),
-      ),
-    );
-  }
-}
-
-/// Плитка участника: цвет машины, иконка типа и название. Без обводки —
-/// состояние передаёт заливка (серая — ждёт, зелёная — проехал).
-class _ActorTile extends StatelessWidget {
-  const _ActorTile({
-    required this.actor,
-    required this.done,
-    required this.onTap,
-  });
-
-  final CrossroadsActor actor;
-  final bool done;
-  final VoidCallback onTap;
-
-  Color get _carColor {
-    final hex = actor.colorHex.replaceFirst('#', '');
-    return Color(int.parse('FF$hex', radix: 16));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final icon = switch (actor.type) {
-      CrossroadsVehicleType.tram => Icons.tram_rounded,
-      CrossroadsVehicleType.emergency => Icons.emergency_rounded,
-      CrossroadsVehicleType.police => Icons.local_police_rounded,
-      CrossroadsVehicleType.truck => Icons.local_shipping_rounded,
-      CrossroadsVehicleType.bus => Icons.directions_bus_rounded,
-      CrossroadsVehicleType.motorcycle => Icons.two_wheeler_rounded,
-      CrossroadsVehicleType.suv ||
-      CrossroadsVehicleType.car => Icons.directions_car_rounded,
-    };
-    return Material(
-      color: done ? colors.greenLight : colors.gray,
-      borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-        onTap: done ? null : onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          child: Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: done ? colors.green : _carColor,
-                  shape: BoxShape.circle,
-                ),
-                child: done
-                    ? Text(
-                        '${actor.priorityOrder}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Icon(
-                        icon,
-                        size: 18,
-                        color: _carColor.computeLuminance() > 0.6
-                            ? const Color(0xFF2B2F36)
-                            : Colors.white,
-                      ),
-              ),
-              const SizedBox(width: AppDimensions.spacingS),
-              Expanded(
-                child: Text(
-                  actor.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    height: 1.2,
-                    fontWeight: FontWeight.w600,
-                    color: done ? colors.green : colors.primaryText,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

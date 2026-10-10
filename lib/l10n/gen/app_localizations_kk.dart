@@ -1798,6 +1798,13 @@ class AppLocalizationsKk extends AppLocalizations {
       'Көліктерді кезекпен қойыңыз: дәл қазір өтетінін басыңыз.';
 
   @override
+  String get gameCrossroadsTapHint =>
+      'Көлікті немесе оның үстіндегі белгіні басыңыз. Сахнаны саусақпен бұруға, екі саусақпен жақындатуға болады.';
+
+  @override
+  String get gameCrossroadsResetCamera => 'Камераны қайтару';
+
+  @override
   String get gameCrossroadsNextCrossroad => 'Келесі қиылысу';
 
   @override

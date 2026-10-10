@@ -1793,6 +1793,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Put the vehicles in order: tap the one that goes now.';
 
   @override
+  String get gameCrossroadsTapHint =>
+      'Tap a car or the pin above it. Drag to rotate the scene, pinch to zoom.';
+
+  @override
+  String get gameCrossroadsResetCamera => 'Reset camera';
+
+  @override
   String get gameCrossroadsNextCrossroad => 'Next intersection';
 
   @override

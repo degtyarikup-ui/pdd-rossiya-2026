@@ -146,6 +146,7 @@ class _TrafficControllerScreenState
         _syncViewInset();
         unawaited(_sendPlayerCar());
         _call('setZoom($_zoom)');
+        _call('setSound(${SoundEffectsService.instance.isEnabled})');
         // Блиц стартует, когда сцена готова, — иначе время тратится на загрузку.
         _startArcadeRound();
       } else if (data['type'] == 'move_complete' &&

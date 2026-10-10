@@ -3154,6 +3154,18 @@ abstract class AppLocalizations {
   /// **'Расставьте машины по очереди: нажимайте на ту, что едет сейчас.'**
   String get gameCrossroadsHowTo;
 
+  /// No description provided for @gameCrossroadsTapHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нажмите на машину или метку над ней. Сцену можно крутить пальцем и приближать двумя.'**
+  String get gameCrossroadsTapHint;
+
+  /// No description provided for @gameCrossroadsResetCamera.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вернуть камеру'**
+  String get gameCrossroadsResetCamera;
+
   /// No description provided for @gameCrossroadsNextCrossroad.
   ///
   /// In ru, this message translates to:

@@ -1810,6 +1810,13 @@ class AppLocalizationsRu extends AppLocalizations {
       'Расставьте машины по очереди: нажимайте на ту, что едет сейчас.';
 
   @override
+  String get gameCrossroadsTapHint =>
+      'Нажмите на машину или метку над ней. Сцену можно крутить пальцем и приближать двумя.';
+
+  @override
+  String get gameCrossroadsResetCamera => 'Вернуть камеру';
+
+  @override
   String get gameCrossroadsNextCrossroad => 'Следующий перекресток';
 
   @override

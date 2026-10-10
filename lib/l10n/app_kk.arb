@@ -525,6 +525,8 @@
     }
   },
   "gameCrossroadsHowTo": "Көліктерді кезекпен қойыңыз: дәл қазір өтетінін басыңыз.",
+  "gameCrossroadsTapHint": "Көлікті немесе оның үстіндегі белгіні басыңыз. Сахнаны саусақпен бұруға, екі саусақпен жақындатуға болады.",
+  "gameCrossroadsResetCamera": "Камераны қайтару",
   "gameCrossroadsNextCrossroad": "Келесі қиылысу",
   "gameCrossroadsRepeatCrossroad": "Қайталап көріңіз",
   "gameCrossroadsModeArcade": "Аркада",

@@ -68,11 +68,12 @@ async function main() {
       return scenario;
     });
     const geometryCounts = [];
+    const locations = new Set();
     for (const scenario of selected) {
       await page.evaluate(data => {
         window.smokeEvents = [];
         loadScenarioData(data);
-                setViewInset(235);
+        setViewInset(90, 220);
         setZoom(1);
       }, scenario);
       assert.equal(await page.evaluate(() => window._pddCrossroads.vehiclesGroup.children.length), scenario.actors.length);
@@ -97,6 +98,12 @@ async function main() {
       const trams = scenario.actors.filter(a => a.type === 'tram');
       const axes = new Set(trams.map(a => a.side === 'north' || a.side === 'south' ? 'ns' : 'ew'));
       assert.equal(scene.rails, axes.size * 2, scenario.id + ': rails only under trams');
+      locations.add(await page.evaluate(() => window._pddCrossroads.location()));
+      if (scenario.closedSide) {
+        // Закрытая ветка — тротуар и газон, а не серая плита на всю длину.
+        const lawn = await page.evaluate(() => window._pddCrossroads.scenarioGroup.children.some(o => o.material && o.material.userData.pddKind === 'grass'));
+        assert(lawn, scenario.id + ': closed arm has a lawn');
+      }
       geometryCounts.push(scene.geometries);
       const facing = await page.evaluate(() => window._pddCrossroads.signsGroup.children
         .map(g => ({ x: g.position.x, z: g.position.z, ry: g.rotation.y })));
@@ -123,6 +130,7 @@ async function main() {
       console.log(`${scenario.id}: ${completedSteps} correct steps and completion`);
     }
     // Смена перекрёстков не копит геометрию (машины, метки и знаки освобождаются).
+    if (selected.length >= 5) assert(locations.size >= 3, 'crossroads change locations: ' + [...locations]);
     if (geometryCounts.length > 4) assert(Math.max(...geometryCounts.slice(-3)) < geometryCounts[0] * 1.6, 'no geometry leak: ' + geometryCounts.join(','));
 
     // Exported Dart objects use `explanation`; the standalone demo historically
@@ -141,8 +149,25 @@ async function main() {
 
     await page.evaluate(() => { window.smokeEvents = []; resetCurrentScenario(); });
     assert.equal(await page.evaluate(() => window._pddCrossroads.vehiclesGroup.children.length), scenario.actors.length);
-    await page.evaluate(id => selectVehicle(id), priority.id);
+    // Перетаскивание крутит камеру и ничего не выбирает.
+    const before = await page.evaluate(() => window._pddCrossroads.camera.position.toArray());
+    await page.mouse.move(120, 700); await page.mouse.down();
+    await page.mouse.move(260, 660, { steps: 8 }); await page.mouse.up();
+    const after = await page.evaluate(() => window._pddCrossroads.camera.position.toArray());
+    assert(Math.hypot(after[0] - before[0], after[2] - before[2]) > 3, 'drag rotates the camera');
+    assert.equal(await page.evaluate(() => window.smokeEvents.length), 0, 'drag does not pick a car');
+    // Настоящий тап по метке над машиной, которая едет первой.
+    const pin = await page.evaluate(id => {
+      const { vehiclesGroup, camera, renderer } = window._pddCrossroads;
+      const mesh = vehiclesGroup.children.find(c => c.userData.actorId === id);
+      const v = mesh.userData.badge.userData.sprite.getWorldPosition(new mesh.position.constructor()).project(camera);
+      const r = renderer.domElement.getBoundingClientRect();
+      return { x: (v.x + 1) / 2 * r.width, y: (1 - v.y) / 2 * r.height - 25 };
+    }, priority.id);
+    await page.mouse.click(pin.x, pin.y);
     await page.waitForFunction(() => window.smokeEvents.some(event => event.type === 'step_correct'));
+    assert.equal(await page.evaluate(() => window.smokeEvents.find(e => e.type === 'vehicle_tapped').actorId), priority.id);
+    await page.evaluate(() => resetCamera());
     await page.evaluate(() => setZoom(0.5));
     await page.screenshot({ path: path.join(output, 'zoom-out.png') });
     await page.evaluate(() => setZoom(2.5));
