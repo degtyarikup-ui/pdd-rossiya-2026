@@ -2164,6 +2164,15 @@
     }
   }
 
+  function getVehicleCollisionExtents(actor) {
+    const type = actor && actor.data ? actor.data.type : '';
+    if (type === 'tram') return { front: 4.8, side: 1.15, isTram: true };
+    if (type === 'bus') return { front: 4.6, side: 1.18, isBus: true };
+    if (type === 'truck') return { front: 3.1, side: 1.15, isTruck: true };
+    if (type === 'motorcycle') return { front: 1.1, side: 0.45, isMoto: true };
+    return { front: 2.25, side: 0.95 }; // car / police / emergency
+  }
+
   // --- Кинематографичная авария (ДТП) при ошибке очередности ---
   function triggerCollision(wrongActor, priorityActor) {
     isResolving = true;
@@ -2177,16 +2186,72 @@
     const tStartWrong = wrongActor.mesh.position.clone();
     const tStartPriority = priorityActor.mesh.position.clone();
 
-    // Следы экстренного торможения (skid marks) на асфальте
-    createSkidMarks(tStartWrong, crashPoint, wrongActor.data.side);
-    createSkidMarks(tStartPriority, crashPoint, priorityActor.data.side);
+    // Векторы направлений движения от старта к точке пересечения
+    const vW = new THREE.Vector3(crashPoint.x - tStartWrong.x, 0, crashPoint.z - tStartWrong.z);
+    const distW = vW.length();
+    const dirW = distW > 0.001 ? vW.clone().normalize() : new THREE.Vector3(0, 0, 1);
+
+    const vP = new THREE.Vector3(crashPoint.x - tStartPriority.x, 0, crashPoint.z - tStartPriority.z);
+    const distP = vP.length();
+    const dirP = distP > 0.001 ? vP.clone().normalize() : new THREE.Vector3(0, 0, 1);
+
+    const extW = getVehicleCollisionExtents(wrongActor);
+    const extP = getVehicleCollisionExtents(priorityActor);
+
+    const cosAngle = dirW.dot(dirP);
+    let targetWrong, targetPriority, impactPoint;
+
+    if (cosAngle < -0.6) {
+      // Встречные курсы (лобовое столкновение):
+      // Машины сходятся навстречу друг другу, бамперы встречаются у точки crashPoint
+      const crumple = 0.2;
+      const stopDistW = Math.max(0.2, extW.front - crumple * 0.5);
+      const stopDistP = Math.max(0.2, extP.front - crumple * 0.5);
+
+      targetWrong = crashPoint.clone().sub(dirW.clone().multiplyScalar(stopDistW));
+      targetPriority = crashPoint.clone().sub(dirP.clone().multiplyScalar(stopDistP));
+      impactPoint = crashPoint.clone().setY(0.6);
+    } else if (cosAngle > 0.6) {
+      // Попутные курсы (удар сзади):
+      const crumple = 0.2;
+      const stopDistW = Math.max(0.2, extW.front + extP.front - crumple);
+      targetWrong = crashPoint.clone().sub(dirW.clone().multiplyScalar(stopDistW));
+      targetPriority = crashPoint.clone();
+      impactPoint = targetPriority.clone().sub(dirP.clone().multiplyScalar(extP.front)).setY(0.6);
+    } else {
+      // Пересекающиеся полосы (боковой T-образный удар на перекрестке):
+      // Приоритетная машина выезжает на перекресток первой (ее борт пересекает путь нарушителя).
+      // Нарушитель не уступил и передним бампером врезается в борт приоритетного участника.
+      // Чтобы длинные трамваи/автобусы/машины НЕ въезжали друг в друга:
+      // Передний бампер нарушителя упирается в борт приоритетного ТС (с реалистичной деформацией ~16 см).
+      const crumple = 0.16;
+      const stopDistW = extW.front + extP.side - crumple;
+      targetWrong = crashPoint.clone().sub(dirW.clone().multiplyScalar(stopDistW));
+
+      // Приоритетный участник продвигается вперед через crashPoint так, чтобы удар пришелся в переднюю часть борта:
+      const advanceP = Math.min(extP.front * 0.35, 1.6);
+      targetPriority = crashPoint.clone().add(dirP.clone().multiplyScalar(advanceP));
+
+      // Точка контакта бампера с бортом:
+      impactPoint = targetWrong.clone().add(dirW.clone().multiplyScalar(extW.front)).setY(0.7);
+    }
+
+    // Следы экстренного торможения ведут строго до колес точки остановки
+    if (!extW.isTram) createSkidMarks(tStartWrong, targetWrong, wrongActor.data.side);
+    if (!extP.isTram) createSkidMarks(tStartPriority, targetPriority, priorityActor.data.side);
 
     activeCollision = {
       wrongActor,
       priorityActor,
       tStartWrong,
       tStartPriority,
-      crashPoint,
+      targetWrong,
+      targetPriority,
+      dirW,
+      dirP,
+      impactPoint,
+      extW,
+      extP,
       elapsed: 0,
       duration: 0.85,
       impactHandled: false,
@@ -2422,8 +2487,8 @@
       const progress = Math.min(1.0, c.elapsed / c.duration);
       const ease = 1 - Math.pow(1 - progress, 2);
 
-      c.wrongActor.mesh.position.lerpVectors(c.tStartWrong, c.crashPoint, ease * 0.88);
-      c.priorityActor.mesh.position.lerpVectors(c.tStartPriority, c.crashPoint, ease * 0.88);
+      c.wrongActor.mesh.position.lerpVectors(c.tStartWrong, c.targetWrong, ease);
+      c.priorityActor.mesh.position.lerpVectors(c.tStartPriority, c.targetPriority, ease);
 
       const wheelsWrong = c.wrongActor.mesh.userData.wheels || [];
       const wheelsPriority = c.priorityActor.mesh.userData.wheels || [];
@@ -2434,24 +2499,24 @@
         c.impactHandled = true;
         camShake = 0.55;
         if (audio) audio.crash();
-        createCrashParticles(c.crashPoint);
-        createCrashSmoke(c.crashPoint);
+        createCrashParticles(c.impactPoint);
+        createCrashSmoke(c.impactPoint);
 
-        c.wrongActor.mesh.position.add(new THREE.Vector3(
-          (c.tStartWrong.x - c.crashPoint.x) * 0.08,
-          0.06,
-          (c.tStartWrong.z - c.crashPoint.z) * 0.08
-        ));
-        c.wrongActor.mesh.rotation.z += 0.09;
-        c.wrongActor.mesh.rotation.x -= 0.04;
+        // Реалистичный отскок от удара назад по вектору своего движения
+        const recoilW = c.extW.isTram ? 0.08 : 0.22;
+        const recoilP = c.extP.isTram ? 0.06 : 0.16;
+        c.wrongActor.mesh.position.sub(c.dirW.clone().multiplyScalar(recoilW));
+        c.priorityActor.mesh.position.sub(c.dirP.clone().multiplyScalar(recoilP));
 
-        c.priorityActor.mesh.position.add(new THREE.Vector3(
-          (c.tStartPriority.x - c.crashPoint.x) * 0.08,
-          0.06,
-          (c.tStartPriority.z - c.crashPoint.z) * 0.08
-        ));
-        c.priorityActor.mesh.rotation.z -= 0.09;
-        c.priorityActor.mesh.rotation.x -= 0.04;
+        // Небольшой крен/толчок кузова от удара (минимальный для трамвая, чтобы не перекашивать длинный корпус)
+        const tiltW = c.extW.isTram ? 0.012 : 0.035;
+        const tiltP = c.extP.isTram ? 0.010 : 0.030;
+
+        c.wrongActor.mesh.rotation.z += (c.dirW.x !== 0 ? -c.dirW.x : 1) * tiltW;
+        c.wrongActor.mesh.rotation.x += (c.dirW.z !== 0 ? c.dirW.z : 1) * tiltW * 0.5;
+
+        c.priorityActor.mesh.rotation.z += (c.dirP.x !== 0 ? c.dirP.x : -1) * tiltP;
+        c.priorityActor.mesh.rotation.x += (c.dirP.z !== 0 ? -c.dirP.z : 1) * tiltP * 0.5;
 
         c.wrongActor.mesh.userData.hazardLights = true;
         c.priorityActor.mesh.userData.hazardLights = true;
