@@ -18,6 +18,19 @@ enum PurchaseResult {
   storeUnavailable,
 }
 
+/// Почему покупка закончилась ошибкой — для понятного текста пользователю.
+/// Сырой текст магазина или исключения человеку не показывается.
+enum PurchaseFailure {
+  /// Причина не уточнена (общий случай).
+  other,
+
+  /// Магазин не смог провести оплату (способ оплаты, отказ банка и т.п.).
+  storeRefused,
+
+  /// Оплата прошла, но доступ пока не подтверждён — повторно платить не нужно.
+  verificationPending,
+}
+
 class IapService extends ChangeNotifier {
   static final IapService instance = IapService._internal();
   IapService._internal();
@@ -80,6 +93,9 @@ class IapService extends ChangeNotifier {
   bool get isAvailable => _isAvailable;
   Map<String, ProductDetails> get products => _products;
   String get lastErrorMessage => _lastErrorMessage;
+
+  PurchaseFailure _lastFailure = PurchaseFailure.other;
+  PurchaseFailure get lastFailure => _lastFailure;
 
   void _report(String operation, {String? code, Object? error}) =>
       ErrorReporter.report(
@@ -308,6 +324,7 @@ class IapService extends ChangeNotifier {
 
     final owner = AuthService.instance.currentUser?.id;
     _lastErrorMessage = '';
+    _lastFailure = PurchaseFailure.other;
     if (!AuthService.instance.hasServerSession) return PurchaseResult.error;
     if (!await _verificationAvailable()) {
       _report('iap.buy', code: _verificationError);
@@ -476,6 +493,7 @@ class IapService extends ChangeNotifier {
           );
           debugPrint('IapService: purchase error: ${purchaseDetails.error}');
           _lastErrorMessage = purchaseDetails.error?.message ?? 'Ошибка оплаты';
+          _lastFailure = PurchaseFailure.storeRefused;
           _safeCompletePurchase(PurchaseResult.error);
           _safeCompleteRestore(false);
         } else if (purchaseDetails.status == PurchaseStatus.purchased ||
@@ -511,6 +529,7 @@ class IapService extends ChangeNotifier {
           );
           if (!verified) {
             _lastErrorMessage = appL10n.purchaseVerificationPending;
+            _lastFailure = PurchaseFailure.verificationPending;
             _safeCompletePurchase(PurchaseResult.error);
             // Do not acknowledge a payment we could not deliver. The store
             // can redeliver it; the user can retry restoration after reconnecting.

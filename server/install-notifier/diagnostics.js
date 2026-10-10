@@ -1,5 +1,5 @@
 import { readSession, tokenHash } from './user_auth.js';
-import { incidentCopy, providerLabel, platformLabel, storeLabel } from './incident_copy.js';
+import { incidentCopy, incidentGuide, providerLabel, platformLabel, storeLabel } from './incident_copy.js';
 
 const escape = value => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 const tag = (value, fallback = 'unknown') => typeof value === 'string' && /^[a-zA-Z0-9_.:-]{1,80}$/.test(value) ? value : fallback;
@@ -14,13 +14,19 @@ export function errorCode(error) {
 }
 export function buildIncidentMessage(event, repeats = 0, overflow = 0) {
   const copy = incidentCopy(event);
+  const guide = incidentGuide(event);
   const account = event.userName || (event.userId ? 'Имя не получено' : 'Аккаунт ещё не определён');
   const authProvider = event.authProvider || (['google', 'apple', 'yandex'].includes(event.provider) ? event.provider : null);
   return [
-    '🚨 <b>' + copy.title + '</b>',
+    guide.emoji + ' <b>' + copy.title + '</b>',
+    '<b>' + guide.label + '</b> — ' + guide.meaning,
     '',
     copy.description,
     '<b>Причина:</b> ' + copy.reason,
+    guide.what ? '<b>Что именно:</b> ' + guide.what : null,
+    guide.steps.length ? '' : null,
+    guide.steps.length ? '<b>Что делать:</b>' : null,
+    ...guide.steps.map(step => '• ' + step),
     '',
     event.userId || event.category !== 'infrastructure' ? '👤 <b>Пользователь:</b> ' + escape(account) : null,
     event.userId ? '• <b>Почта:</b> ' + escape(event.userEmail || 'не получена') : null,
@@ -29,6 +35,7 @@ export function buildIncidentMessage(event, repeats = 0, overflow = 0) {
     event.platform ? '• <b>Платформа:</b> ' + platformLabel(event.platform) + (event.appVersion ? ' · v' + escape(event.appVersion) : '') : null,
     event.store ? '• <b>Магазин:</b> ' + storeLabel(event.store) : null,
     event.device ? '• <b>Устройство:</b> ' + escape(event.device) : null,
+    event.country ? '• <b>Страна по IP:</b> ' + escape(event.country) + ' (при VPN может отличаться от реальной)' : null,
     repeats ? '• <b>Повторов с прошлого сообщения:</b> ' + repeats + ' (могли затронуть других пользователей)' : null,
     overflow ? '• <b>Других сообщений ограничено:</b> ' + overflow : null,
     '',
@@ -73,6 +80,7 @@ export async function reportIncident(env, incident) {
       device: text(incident.device || user?.device, 100),
       userId,
       userName: text(user?.name, 120), userEmail: text(user?.email, 160),
+      country: /^[A-Z]{2}$/.test(String(user?.ipCountry ?? '')) ? user.ipCountry : null,
       authProvider: tag(user?.provider, null),
       installation: typeof incident.installation === 'string' && /^[a-f0-9]{16}$/.test(incident.installation) ? incident.installation : null,
       diagnosticId: typeof incident.diagnosticId === 'string' && /^[a-f0-9-]{36}$/.test(incident.diagnosticId) ? incident.diagnosticId : null,

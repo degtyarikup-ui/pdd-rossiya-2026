@@ -1120,40 +1120,70 @@ class AppLocalizationsRu extends AppLocalizations {
   String get authSuccess => 'Вход выполнен успешно';
 
   @override
-  String get authFailed =>
-      'Вход отменён или возникла ошибка. Попробуйте ещё раз.';
+  String get authFailed => 'Вход не удался. Попробуйте ещё раз.';
 
   @override
   String get authErrorCancelled =>
-      'Вход не завершён. Попробуйте выбрать аккаунт ещё раз.';
+      'Вход не завершён. Выберите аккаунт ещё раз.';
 
   @override
   String get authErrorProvider =>
-      'Не удалось получить данные для входа от выбранного сервиса.';
+      'Не получилось войти через выбранный сервис. Попробуйте ещё раз или выберите другой способ входа.';
 
   @override
   String get authErrorNetwork =>
-      'Не удалось связаться с сервером. Проверьте подключение к интернету.';
+      'Нет связи с интернетом. Проверьте подключение и попробуйте ещё раз.';
 
   @override
   String get authErrorTimeout =>
-      'Нет связи с сервером. Проверьте интернет или попробуйте другую сеть (Wi‑Fi или мобильный интернет).';
+      'Не удалось дождаться ответа. Проверьте интернет или попробуйте другую сеть (Wi‑Fi или мобильный интернет). Билеты и экзамен доступны и без входа.';
 
   @override
   String get authErrorAppKey =>
-      'Сервер отклонил эту сборку приложения. Обновите приложение из магазина.';
+      'Эта версия приложения устарела. Обновите её в магазине и войдите снова.';
 
   @override
   String get authErrorCredential =>
-      'Сервер не подтвердил вход. Попробуйте другой аккаунт или способ входа.';
+      'Не удалось подтвердить вход. Попробуйте ещё раз или войдите другим способом.';
 
   @override
   String get authErrorServer =>
-      'Не удалось завершить вход на сервере. Попробуйте позже.';
+      'Что-то пошло не так на нашей стороне. Попробуйте через пару минут.';
 
   @override
   String get authErrorResponse =>
-      'Не удалось завершить вход. Обновите страницу или перезапустите приложение и попробуйте снова.';
+      'Вход не завершился. Перезапустите приложение и попробуйте ещё раз. Если не помогло — проверьте дату и время на телефоне.';
+
+  @override
+  String get paySuccessActivated => 'Премиум включён. Спасибо!';
+
+  @override
+  String get payRestoreSuccess => 'Покупки восстановлены.';
+
+  @override
+  String get payRestoreNone =>
+      'Подходящих покупок не нашлось. Войдите в тот аккаунт магазина, с которого платили.';
+
+  @override
+  String get payErrorPricesLoading =>
+      'Цены ещё загружаются. Подождите секунду и нажмите снова.';
+
+  @override
+  String payErrorStoreUnavailable(String store) {
+    return 'Магазин сейчас недоступен. Проверьте интернет и вход в $store, затем попробуйте снова.';
+  }
+
+  @override
+  String payErrorStoreRefused(String store) {
+    return 'Магазин не смог провести оплату. Проверьте способ оплаты в $store и попробуйте ещё раз.';
+  }
+
+  @override
+  String get payErrorGeneric =>
+      'Покупка не завершилась. Попробуйте ещё раз. Если деньги списались, нажмите «Восстановить»: доступ вернётся.';
+
+  @override
+  String get payErrorUnexpected => 'Что-то пошло не так. Попробуйте ещё раз.';
 
   @override
   String get authSessionTemporary =>
@@ -1357,7 +1387,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get purchaseVerificationPending =>
-      'Магазин сообщил о покупке, но доступ пока не подтверждён. Для повторной проверки нажмите «Восстановить» при доступном интернете.';
+      'Оплата прошла, но доступ ещё не подтверждён. Не платите повторно: нажмите «Восстановить» при включённом интернете.';
 
   @override
   String get notifAdminChannelName => 'Сообщения приложения';
@@ -1422,7 +1452,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get webPayNotify => 'Сообщить мне';
 
   @override
-  String get webPayFailed => 'Не удалось отправить, попробуйте ещё раз';
+  String get webPayFailed =>
+      'Не получилось открыть оплату. Проверьте интернет и попробуйте ещё раз.';
 
   @override
   String get webPayNeedsAccount =>
@@ -1440,10 +1471,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get webPayPending =>
-      'Платёж обрабатывается — Премиум включится автоматически в течение нескольких минут';
+      'Платёж обрабатывается. Премиум включится сам в течение нескольких минут — платить повторно не нужно.';
 
   @override
-  String get webPayCanceled => 'Оплата не завершена — деньги не списаны';
+  String get webPayCanceled => 'Оплата не завершена. Деньги не списаны.';
 
   @override
   String webPaySaved(String email) {

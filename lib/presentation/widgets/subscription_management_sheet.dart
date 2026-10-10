@@ -30,6 +30,7 @@ class SubscriptionManagementSheet extends StatefulWidget {
 class _SubscriptionManagementSheetState
     extends State<SubscriptionManagementSheet> {
   bool _isRestoring = false;
+
   /// Стор, где оформлена подписка (по данным сервера, а не по платформе:
   /// премиум из App Store виден и на Android, и на сайте). null — доступ
   /// без автопродления: оплата на сайте или выдача из админки.
@@ -80,13 +81,13 @@ class _SubscriptionManagementSheetState
         if (restored) {
           AppToast.show(
             context,
-            'Покупки успешно восстановлены',
+            appL10n.payRestoreSuccess,
             type: AppToastType.success,
           );
         } else {
           AppToast.show(
             context,
-            'Активных покупок не найдено',
+            appL10n.payRestoreNone,
             type: AppToastType.normal,
           );
         }
@@ -96,7 +97,7 @@ class _SubscriptionManagementSheetState
         setState(() => _isRestoring = false);
         AppToast.show(
           context,
-          'Ошибка восстановления: $e',
+          appL10n.payErrorUnexpected,
           type: AppToastType.error,
         );
       }
@@ -275,60 +276,64 @@ class _SubscriptionManagementSheetState
               const SizedBox(height: 20),
 
               // 6. Action Button: Manage in App Store / Google Play
-              if (store != null) SizedBox(
-                height: 54,
-                child: ElevatedButton.icon(
-                  onPressed: _openStoreSubscriptionSettings,
-                  icon: Icon(
-                    isIOS ? Icons.apple_rounded : Icons.shop_rounded,
-                    size: 20,
-                  ),
-                  label: Text(
-                    isIOS ? 'Управлять в App Store' : 'Управлять в Google Play',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      height: 1.15,
-                      fontFamily: 'Onest',
+              if (store != null)
+                SizedBox(
+                  height: 54,
+                  child: ElevatedButton.icon(
+                    onPressed: _openStoreSubscriptionSettings,
+                    icon: Icon(
+                      isIOS ? Icons.apple_rounded : Icons.shop_rounded,
+                      size: 20,
                     ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: greenAccent,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 0,
+                    label: Text(
+                      isIOS
+                          ? 'Управлять в App Store'
+                          : 'Управлять в Google Play',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        height: 1.15,
+                        fontFamily: 'Onest',
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: greenAccent,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 0,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                   ),
                 ),
-              ),
               const SizedBox(height: 12),
 
               // 7. Restore & Support (покупки магазинов восстанавливаются
               // только в приложениях; на сайте статус приходит с аккаунтом).
-              if (!kIsWeb) Center(
-                child: TextButton(
-                  onPressed: _isRestoring ? null : _handleRestore,
-                  child: _isRestoring
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(
-                          'Восстановить покупки',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: colors.secondaryText,
-                            decoration: TextDecoration.underline,
+              if (!kIsWeb)
+                Center(
+                  child: TextButton(
+                    onPressed: _isRestoring ? null : _handleRestore,
+                    child: _isRestoring
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            'Восстановить покупки',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colors.secondaryText,
+                              decoration: TextDecoration.underline,
+                            ),
                           ),
-                        ),
+                  ),
                 ),
-              ),
             ],
           ),
         ),

@@ -1103,39 +1103,70 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authSuccess => 'Login successful';
 
   @override
-  String get authFailed => 'Login canceled or an error occurred. Try again.';
+  String get authFailed => 'Sign-in didn\'t work. Please try again.';
 
   @override
   String get authErrorCancelled =>
-      'Login incomplete. Try selecting your account again.';
+      'Sign-in wasn\'t completed. Choose your account again.';
 
   @override
   String get authErrorProvider =>
-      'Failed to obtain login information from the selected service.';
+      'Couldn\'t sign in with the selected service. Try again or choose another way to sign in.';
 
   @override
   String get authErrorNetwork =>
-      'Failed to contact the server. Check your internet connection.';
+      'No internet connection. Check it and try again.';
 
   @override
   String get authErrorTimeout =>
-      'Can\'t reach the server. Check your internet connection or try another network (Wi‑Fi or mobile data).';
+      'Couldn\'t get a response. Check your internet or try another network (Wi‑Fi or mobile data). Tickets and exams work without signing in.';
 
   @override
   String get authErrorAppKey =>
-      'The server rejected this application build. Update the app from the store.';
+      'This version of the app is out of date. Update it in the store and sign in again.';
 
   @override
   String get authErrorCredential =>
-      'The server did not confirm the login. Try a different account or login method.';
+      'Couldn\'t confirm your sign-in. Try again or sign in another way.';
 
   @override
   String get authErrorServer =>
-      'Failed to complete login on the server. Please try again later.';
+      'Something went wrong on our side. Please try again in a couple of minutes.';
 
   @override
   String get authErrorResponse =>
-      'Login failed. Refresh the page or restart the application and try again.';
+      'Sign-in didn\'t finish. Restart the app and try again. If that doesn\'t help, check the date and time on your phone.';
+
+  @override
+  String get paySuccessActivated => 'Premium is on. Thank you!';
+
+  @override
+  String get payRestoreSuccess => 'Purchases restored.';
+
+  @override
+  String get payRestoreNone =>
+      'No purchases found. Sign in to the store account you paid with.';
+
+  @override
+  String get payErrorPricesLoading =>
+      'Prices are still loading. Wait a second and tap again.';
+
+  @override
+  String payErrorStoreUnavailable(String store) {
+    return 'The store isn\'t available right now. Check your internet and your $store sign-in, then try again.';
+  }
+
+  @override
+  String payErrorStoreRefused(String store) {
+    return 'The store couldn\'t process the payment. Check your payment method in $store and try again.';
+  }
+
+  @override
+  String get payErrorGeneric =>
+      'The purchase didn\'t finish. Try again. If you were charged, tap “Restore” and your access will come back.';
+
+  @override
+  String get payErrorUnexpected => 'Something went wrong. Please try again.';
 
   @override
   String get authSessionTemporary =>
@@ -1334,7 +1365,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get purchaseVerificationPending =>
-      'The store reported the purchase, but access has not yet been confirmed. To check again, click “Restore” when the Internet is available.';
+      'Payment went through, but access isn\'t confirmed yet. Don\'t pay again: tap “Restore” while you\'re online.';
 
   @override
   String get notifAdminChannelName => 'Application messages';
@@ -1400,7 +1431,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get webPayNotify => 'Notify me';
 
   @override
-  String get webPayFailed => 'Failed to send, try again';
+  String get webPayFailed =>
+      'Couldn\'t open the payment. Check your internet and try again.';
 
   @override
   String get webPayNeedsAccount =>
@@ -1418,11 +1450,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get webPayPending =>
-      'Payment is being processed - Premium will be activated automatically within a few minutes';
+      'The payment is being processed. Premium will turn on by itself within a few minutes — no need to pay again.';
 
   @override
   String get webPayCanceled =>
-      'Payment is not completed - money has not been debited';
+      'Payment wasn\'t completed. No money was charged.';
 
   @override
   String webPaySaved(String email) {

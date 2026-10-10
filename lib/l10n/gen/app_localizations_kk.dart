@@ -1104,40 +1104,70 @@ class AppLocalizationsKk extends AppLocalizations {
   String get authSuccess => 'Жүйеге кіру сәтті';
 
   @override
-  String get authFailed =>
-      'Жүйеге кіру тоқтатылды немесе қате орын алды. Қайтадан байқап көріңіз.';
+  String get authFailed => 'Кіру орындалмады. Қайталап көріңіз.';
 
   @override
   String get authErrorCancelled =>
-      'Кіру аяқталмады. Есептік жазбаңызды қайта таңдап көріңіз.';
+      'Кіру аяқталмады. Есептік жазбаны қайта таңдаңыз.';
 
   @override
   String get authErrorProvider =>
-      'Таңдалған қызметтен кіру ақпаратын алу мүмкін болмады.';
+      'Таңдалған қызмет арқылы кіру мүмкін болмады. Қайталап көріңіз немесе басқа жолмен кіріңіз.';
 
   @override
   String get authErrorNetwork =>
-      'Сервермен байланысу мүмкін болмады. Интернет байланысын тексеріңіз.';
+      'Интернет байланысы жоқ. Байланысты тексеріп, қайталап көріңіз.';
 
   @override
   String get authErrorTimeout =>
-      'Сервер уақытында жауап бермеді. Қайтадан байқап көріңіз.';
+      'Жауап алу мүмкін болмады. Интернетті тексеріңіз немесе басқа желіні (Wi‑Fi немесе мобильді интернет) байқап көріңіз. Билеттер мен емтихан кірмей де қолжетімді.';
 
   @override
   String get authErrorAppKey =>
-      'Сервер бұл қолданба құрастырудан бас тартты. Қолданбаны дүкеннен жаңартыңыз.';
+      'Қолданбаның бұл нұсқасы ескірген. Оны дүкенде жаңартып, қайта кіріңіз.';
 
   @override
   String get authErrorCredential =>
-      'Сервер кіруді растамады. Басқа тіркелгіні немесе кіру әдісін қолданып көріңіз.';
+      'Кіруді растау мүмкін болмады. Қайталап көріңіз немесе басқа жолмен кіріңіз.';
 
   @override
   String get authErrorServer =>
-      'Серверге кіруді аяқтау мүмкін болмады. Тағы жасауды сәл кейінірек көріңізді өтінеміз.';
+      'Біздің тарапта бір нәрсе дұрыс болмады. Бірнеше минуттан кейін қайталап көріңіз.';
 
   @override
   String get authErrorResponse =>
-      'Жүйеге кіру аяқталмады. Бетті жаңартыңыз немесе қолданбаны қайта іске қосып, әрекетті қайталаңыз.';
+      'Кіру аяқталмады. Қолданбаны қайта іске қосып, қайталап көріңіз. Көмектеспесе, телефондағы күн мен уақытты тексеріңіз.';
+
+  @override
+  String get paySuccessActivated => 'Премиум қосылды. Рақмет!';
+
+  @override
+  String get payRestoreSuccess => 'Сатып алулар қалпына келтірілді.';
+
+  @override
+  String get payRestoreNone =>
+      'Сатып алулар табылмады. Төлеген дүкен есептік жазбасына кіріңіз.';
+
+  @override
+  String get payErrorPricesLoading =>
+      'Бағалар әлі жүктелуде. Бір секунд күтіп, қайта басыңыз.';
+
+  @override
+  String payErrorStoreUnavailable(String store) {
+    return 'Дүкен қазір қолжетімсіз. Интернетті және $store есептік жазбасына кіруді тексеріп, қайталап көріңіз.';
+  }
+
+  @override
+  String payErrorStoreRefused(String store) {
+    return 'Дүкен төлемді өткізе алмады. $store ішіндегі төлем әдісін тексеріп, қайталап көріңіз.';
+  }
+
+  @override
+  String get payErrorGeneric =>
+      'Сатып алу аяқталмады. Қайталап көріңіз. Ақша алынған болса, «Қалпына келтіру» түймесін басыңыз — қолжетімділік қайтады.';
+
+  @override
+  String get payErrorUnexpected => 'Бірдеңе дұрыс болмады. Қайталап көріңіз.';
 
   @override
   String get authSessionTemporary =>
@@ -1336,7 +1366,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get purchaseVerificationPending =>
-      'Дүкен сатып алу туралы хабарлады, бірақ қол жеткізу әлі расталмады. Қайта тексеру үшін Интернет қолжетімді болған кезде «Қалпына келтіру» түймесін басыңыз.';
+      'Төлем өтті, бірақ қолжетімділік әлі расталмады. Қайта төлемеңіз: интернет қосулы кезде «Қалпына келтіру» түймесін басыңыз.';
 
   @override
   String get notifAdminChannelName => 'Қолданба хабарламалары';
@@ -1403,7 +1433,8 @@ class AppLocalizationsKk extends AppLocalizations {
   String get webPayNotify => 'Маған хабарлаңыз';
 
   @override
-  String get webPayFailed => 'Жіберілмеді, әрекетті қайталаңыз';
+  String get webPayFailed =>
+      'Төлемді ашу мүмкін болмады. Интернетті тексеріп, қайталап көріңіз.';
 
   @override
   String get webPayNeedsAccount =>
@@ -1421,10 +1452,10 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get webPayPending =>
-      'Төлем өңделді - Премиум бірнеше минут ішінде автоматты түрде іске қосылады';
+      'Төлем өңделуде. Премиум бірнеше минутта өзі қосылады — қайта төлеудің қажеті жоқ.';
 
   @override
-  String get webPayCanceled => 'Төлем аяқталмады - ақша есептен шығарылмаған';
+  String get webPayCanceled => 'Төлем аяқталмады. Ақша алынған жоқ.';
 
   @override
   String webPaySaved(String email) {

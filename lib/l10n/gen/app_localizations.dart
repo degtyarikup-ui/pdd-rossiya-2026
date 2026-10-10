@@ -2005,56 +2005,104 @@ abstract class AppLocalizations {
   /// No description provided for @authFailed.
   ///
   /// In ru, this message translates to:
-  /// **'Вход отменён или возникла ошибка. Попробуйте ещё раз.'**
+  /// **'Вход не удался. Попробуйте ещё раз.'**
   String get authFailed;
 
   /// No description provided for @authErrorCancelled.
   ///
   /// In ru, this message translates to:
-  /// **'Вход не завершён. Попробуйте выбрать аккаунт ещё раз.'**
+  /// **'Вход не завершён. Выберите аккаунт ещё раз.'**
   String get authErrorCancelled;
 
   /// No description provided for @authErrorProvider.
   ///
   /// In ru, this message translates to:
-  /// **'Не удалось получить данные для входа от выбранного сервиса.'**
+  /// **'Не получилось войти через выбранный сервис. Попробуйте ещё раз или выберите другой способ входа.'**
   String get authErrorProvider;
 
   /// No description provided for @authErrorNetwork.
   ///
   /// In ru, this message translates to:
-  /// **'Не удалось связаться с сервером. Проверьте подключение к интернету.'**
+  /// **'Нет связи с интернетом. Проверьте подключение и попробуйте ещё раз.'**
   String get authErrorNetwork;
 
   /// No description provided for @authErrorTimeout.
   ///
   /// In ru, this message translates to:
-  /// **'Нет связи с сервером. Проверьте интернет или попробуйте другую сеть (Wi‑Fi или мобильный интернет).'**
+  /// **'Не удалось дождаться ответа. Проверьте интернет или попробуйте другую сеть (Wi‑Fi или мобильный интернет). Билеты и экзамен доступны и без входа.'**
   String get authErrorTimeout;
 
   /// No description provided for @authErrorAppKey.
   ///
   /// In ru, this message translates to:
-  /// **'Сервер отклонил эту сборку приложения. Обновите приложение из магазина.'**
+  /// **'Эта версия приложения устарела. Обновите её в магазине и войдите снова.'**
   String get authErrorAppKey;
 
   /// No description provided for @authErrorCredential.
   ///
   /// In ru, this message translates to:
-  /// **'Сервер не подтвердил вход. Попробуйте другой аккаунт или способ входа.'**
+  /// **'Не удалось подтвердить вход. Попробуйте ещё раз или войдите другим способом.'**
   String get authErrorCredential;
 
   /// No description provided for @authErrorServer.
   ///
   /// In ru, this message translates to:
-  /// **'Не удалось завершить вход на сервере. Попробуйте позже.'**
+  /// **'Что-то пошло не так на нашей стороне. Попробуйте через пару минут.'**
   String get authErrorServer;
 
   /// No description provided for @authErrorResponse.
   ///
   /// In ru, this message translates to:
-  /// **'Не удалось завершить вход. Обновите страницу или перезапустите приложение и попробуйте снова.'**
+  /// **'Вход не завершился. Перезапустите приложение и попробуйте ещё раз. Если не помогло — проверьте дату и время на телефоне.'**
   String get authErrorResponse;
+
+  /// No description provided for @paySuccessActivated.
+  ///
+  /// In ru, this message translates to:
+  /// **'Премиум включён. Спасибо!'**
+  String get paySuccessActivated;
+
+  /// No description provided for @payRestoreSuccess.
+  ///
+  /// In ru, this message translates to:
+  /// **'Покупки восстановлены.'**
+  String get payRestoreSuccess;
+
+  /// No description provided for @payRestoreNone.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подходящих покупок не нашлось. Войдите в тот аккаунт магазина, с которого платили.'**
+  String get payRestoreNone;
+
+  /// No description provided for @payErrorPricesLoading.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цены ещё загружаются. Подождите секунду и нажмите снова.'**
+  String get payErrorPricesLoading;
+
+  /// No description provided for @payErrorStoreUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Магазин сейчас недоступен. Проверьте интернет и вход в {store}, затем попробуйте снова.'**
+  String payErrorStoreUnavailable(String store);
+
+  /// No description provided for @payErrorStoreRefused.
+  ///
+  /// In ru, this message translates to:
+  /// **'Магазин не смог провести оплату. Проверьте способ оплаты в {store} и попробуйте ещё раз.'**
+  String payErrorStoreRefused(String store);
+
+  /// No description provided for @payErrorGeneric.
+  ///
+  /// In ru, this message translates to:
+  /// **'Покупка не завершилась. Попробуйте ещё раз. Если деньги списались, нажмите «Восстановить»: доступ вернётся.'**
+  String get payErrorGeneric;
+
+  /// No description provided for @payErrorUnexpected.
+  ///
+  /// In ru, this message translates to:
+  /// **'Что-то пошло не так. Попробуйте ещё раз.'**
+  String get payErrorUnexpected;
 
   /// No description provided for @authSessionTemporary.
   ///
@@ -2353,7 +2401,7 @@ abstract class AppLocalizations {
   /// No description provided for @purchaseVerificationPending.
   ///
   /// In ru, this message translates to:
-  /// **'Магазин сообщил о покупке, но доступ пока не подтверждён. Для повторной проверки нажмите «Восстановить» при доступном интернете.'**
+  /// **'Оплата прошла, но доступ ещё не подтверждён. Не платите повторно: нажмите «Восстановить» при включённом интернете.'**
   String get purchaseVerificationPending;
 
   /// No description provided for @notifAdminChannelName.
@@ -2473,7 +2521,7 @@ abstract class AppLocalizations {
   /// No description provided for @webPayFailed.
   ///
   /// In ru, this message translates to:
-  /// **'Не удалось отправить, попробуйте ещё раз'**
+  /// **'Не получилось открыть оплату. Проверьте интернет и попробуйте ещё раз.'**
   String get webPayFailed;
 
   /// No description provided for @webPayNeedsAccount.
@@ -2503,13 +2551,13 @@ abstract class AppLocalizations {
   /// No description provided for @webPayPending.
   ///
   /// In ru, this message translates to:
-  /// **'Платёж обрабатывается — Премиум включится автоматически в течение нескольких минут'**
+  /// **'Платёж обрабатывается. Премиум включится сам в течение нескольких минут — платить повторно не нужно.'**
   String get webPayPending;
 
   /// No description provided for @webPayCanceled.
   ///
   /// In ru, this message translates to:
-  /// **'Оплата не завершена — деньги не списаны'**
+  /// **'Оплата не завершена. Деньги не списаны.'**
   String get webPayCanceled;
 
   /// No description provided for @webPaySaved.

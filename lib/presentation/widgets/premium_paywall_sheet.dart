@@ -100,6 +100,23 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     if (mounted) setState(() {});
   }
 
+  /// Понятный текст при неудачной покупке. Сырой текст магазина не показываем:
+  /// он бывает на чужом языке и ничего не говорит о том, что делать дальше.
+  String _purchaseErrorText(PurchaseResult result) {
+    final store = defaultTargetPlatform == TargetPlatform.iOS
+        ? 'App Store'
+        : 'Google Play';
+    if (result == PurchaseResult.storeUnavailable) {
+      return appL10n.payErrorStoreUnavailable(store);
+    }
+    return switch (IapService.instance.lastFailure) {
+      PurchaseFailure.verificationPending =>
+        appL10n.purchaseVerificationPending,
+      PurchaseFailure.storeRefused => appL10n.payErrorStoreRefused(store),
+      PurchaseFailure.other => appL10n.payErrorGeneric,
+    };
+  }
+
   Future<void> _handlePurchase() async {
     HapticFeedbackHelper.select();
     setState(() => _isLoading = true);
@@ -121,7 +138,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
           Navigator.of(context).pop(true);
           AppToast.show(
             context,
-            'Премиум-доступ успешно активирован',
+            appL10n.paySuccessActivated,
             type: AppToastType.success,
           );
         } else if (result == PurchaseResult.canceled) {
@@ -129,14 +146,13 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
         } else if (result == PurchaseResult.productNotFound) {
           AppToast.show(
             context,
-            'Товары магазина загружаются... Попробуйте через секунду.',
+            appL10n.payErrorPricesLoading,
             type: AppToastType.normal,
           );
         } else {
-          final errorMsg = IapService.instance.lastErrorMessage;
           AppToast.show(
             context,
-            errorMsg.isNotEmpty ? errorMsg : 'Не удалось завершить покупку',
+            _purchaseErrorText(result),
             type: AppToastType.error,
           );
         }
@@ -146,7 +162,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
         setState(() => _isLoading = false);
         AppToast.show(
           context,
-          'Ошибка при оформлении: $e',
+          appL10n.payErrorUnexpected,
           type: AppToastType.error,
         );
       }
@@ -210,13 +226,13 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
         Navigator.of(context).pop(true);
         AppToast.show(
           context,
-          'Покупки успешно восстановлены',
+          appL10n.payRestoreSuccess,
           type: AppToastType.success,
         );
       } else {
         AppToast.show(
           context,
-          'Активных покупок не найдено',
+          appL10n.payRestoreNone,
           type: AppToastType.normal,
         );
       }
