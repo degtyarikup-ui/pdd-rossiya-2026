@@ -123,7 +123,7 @@ void main() {
   test('запасной адрес подключён только к боевому воркеру', () {
     final configured = BackendConfig.notifierHosts;
     expect(configured.first, BackendConfig.notifierUrl);
-    expect(configured, contains('https://api.pdd-drive.ru'));
+    expect(configured, contains('https://api.pdd-drive.app'));
     expect(configured.toSet().length, configured.length);
   });
 }

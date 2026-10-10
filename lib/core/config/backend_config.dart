@@ -33,7 +33,7 @@ class BackendConfig {
   /// к нему мгновенно завершается ошибкой, и приложение остаётся на основном.
   static const String notifierFallbackUrl = String.fromEnvironment(
     'INSTALL_NOTIFY_FALLBACK_URL',
-    defaultValue: 'https://api.pdd-drive.ru',
+    defaultValue: 'https://api.pdd-drive.app',
   );
 
   static const String _defaultNotifierUrl =

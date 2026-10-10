@@ -84,7 +84,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       expect(jsonDecode(prefs.getString(ErrorReporter.queueKey)!), isEmpty);
       expect(hosts.first, endsWith('workers.dev'));
-      expect(hosts.last, 'api.pdd-drive.ru');
+      expect(hosts.last, 'api.pdd-drive.app');
     },
   );
 
