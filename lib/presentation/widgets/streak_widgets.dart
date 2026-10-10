@@ -6,6 +6,104 @@ import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/flame_icon.dart';
 
+/// Тёплый градиент серии — тот же, что в шапке поздравления.
+const streakHeatGradient = LinearGradient(
+  begin: Alignment.topCenter,
+  end: Alignment.bottomCenter,
+  colors: [Color(0xFFFFB13D), Color(0xFFFF7A1A)],
+);
+
+/// Огонёк серии в плитке: тёплый градиент, светлый круг и белое пламя,
+/// которое спокойно «дышит» (как в поздравлении, без искр и лучей).
+/// Без серии — серая плитка, пламя не горит.
+class StreakFlameBadge extends StatefulWidget {
+  const StreakFlameBadge({super.key, required this.active, this.size = 56});
+
+  final bool active;
+  final double size;
+
+  @override
+  State<StreakFlameBadge> createState() => _StreakFlameBadgeState();
+}
+
+class _StreakFlameBadgeState extends State<StreakFlameBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _breath = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1600),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.active) _breath.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(StreakFlameBadge old) {
+    super.didUpdateWidget(old);
+    if (widget.active && !_breath.isAnimating) _breath.repeat(reverse: true);
+    if (!widget.active) _breath.stop();
+  }
+
+  @override
+  void dispose() {
+    _breath.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final size = widget.size;
+    if (!widget.active) {
+      return Container(
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: colors.searchFieldFill,
+          borderRadius: BorderRadius.circular(size * 0.3),
+        ),
+        child: FlameIcon(size: size * 0.5, color: colors.secondaryText),
+      );
+    }
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: streakHeatGradient,
+        borderRadius: BorderRadius.circular(size * 0.3),
+      ),
+      child: AnimatedBuilder(
+        animation: _breath,
+        builder: (context, _) {
+          final t = Curves.easeInOut.transform(_breath.value);
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: size * (0.68 + 0.04 * t),
+                height: size * (0.68 + 0.04 * t),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.white.withValues(alpha: 0.2 + 0.06 * t),
+                ),
+              ),
+              Transform.scale(
+                scale: 1 + 0.05 * t,
+                alignment: Alignment.bottomCenter,
+                child: FlameIcon(size: size * 0.5, color: AppColors.white),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
 /// Ступени серии: ближайшая из них — цель, которую показывают человеку.
 /// Близкая цель тянет сильнее далёкой («ещё 2 дня до недели» против
 /// «рекорд 100»), поэтому лестница частая в начале.
@@ -30,6 +128,15 @@ int previousStreakMilestone(int current) {
 }
 
 DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
+
+/// День входит в текущую серию: ряд из `current` дней, кончающийся
+/// последним активным. Лента и число не могут показывать разное.
+bool _inRun(Streak s, DateTime d) {
+  final last = s.lastActiveDate;
+  if (s.current <= 0 || last == null) return false;
+  final end = _day(last), day = _day(d);
+  return !day.isAfter(end) && end.difference(day).inDays < s.current;
+}
 
 /// Календарная неделя (Пн–Вс) с сегодняшним днём: так её читают все,
 /// в отличие от «недели серии» со сдвигающимся началом.
@@ -70,7 +177,7 @@ class StreakWeekStrip extends StatelessWidget {
         for (final d in days)
           _DayDot(
             label: labels[d.weekday - 1],
-            done: streak.isActiveOn(d),
+            done: streak.isActiveOn(d) || _inRun(streak, d),
             isToday: d == todayDay,
             future: d.isAfter(todayDay),
             size: size,
@@ -217,7 +324,7 @@ class StreakGoalBar extends StatelessWidget {
   }
 }
 
-/// Блок серии в профиле: главное число, неделя и ближайшая цель.
+/// Блок серии в профиле: огонёк, число дней и неделя.
 ///
 /// На главной от серии осталась только статистика: серия — про привычку,
 /// ей место рядом с достижениями, где человек смотрит на свой путь.
@@ -251,21 +358,9 @@ class StreakCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: active ? colors.gold : colors.searchFieldFill,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: FlameIcon(
-                  size: 26,
-                  color: active ? AppColors.white : colors.secondaryText,
-                ),
-              ),
+              StreakFlameBadge(active: active),
               const SizedBox(width: AppDimensions.spacingM),
               Expanded(
                 child: Column(
@@ -309,44 +404,10 @@ class StreakCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (streak.longest > 0) ...[
-                const SizedBox(width: AppDimensions.spacingS),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.searchFieldFill,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.emoji_events_rounded,
-                        size: 14,
-                        color: colors.secondaryText,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        appL10n.progressRecord(streak.longest),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: colors.secondaryText,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ],
           ),
           const SizedBox(height: AppDimensions.spacingL),
           StreakWeekStrip(streak: streak, today: now),
-          const SizedBox(height: AppDimensions.spacingL),
-          StreakGoalBar(current: streak.current),
         ],
       ),
     );

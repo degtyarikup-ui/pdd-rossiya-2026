@@ -25,7 +25,9 @@ void main() {
   }
 
   Future<void> pump(WidgetTester tester, Widget child) => tester.pumpWidget(
-    MaterialApp(home: Scaffold(body: SingleChildScrollView(child: child))),
+    MaterialApp(
+      home: Scaffold(body: SingleChildScrollView(child: child)),
+    ),
   );
 
   test('ближайшая цель — следующая ступень лестницы', () {
@@ -36,14 +38,15 @@ void main() {
     expect(previousStreakMilestone(12), 7);
   });
 
-  testWidgets('карточка: число, рекорд, неделя и цель', (tester) async {
+  testWidgets('карточка: огонёк, число и неделя — без рекорда и цели', (
+    tester,
+  ) async {
     await pump(tester, StreakCard(streak: streakOf(5, 11), today: today));
-    expect(find.text('5 '), findsNothing); // число и слово — один абзац
     expect(find.textContaining('дней подряд'), findsOneWidget);
-    expect(find.text('Рекорд 11'), findsOneWidget);
     expect(find.text('Сегодня засчитано'), findsOneWidget);
-    expect(find.text('Ещё 2 дня до 7'), findsOneWidget);
-    expect(find.text('5/7'), findsOneWidget);
+    expect(find.textContaining('Рекорд'), findsNothing);
+    expect(find.textContaining('Ещё'), findsNothing);
+    expect(find.byType(StreakFlameBadge), findsOneWidget);
     // Пн–Чт закрыты (4 дня этой недели), Пт–Вс впереди.
     expect(find.byIcon(Icons.check_rounded), findsNWidgets(4));
   });
@@ -60,7 +63,35 @@ void main() {
     await pump(tester, StreakCard(streak: Streak.empty(), today: today));
     expect(find.textContaining('зажжётся огонёк'), findsOneWidget);
     expect(find.textContaining('Рекорд'), findsNothing);
-    expect(find.text('Ещё 3 дня до 3'), findsOneWidget);
+  });
+
+  testWidgets('лента не расходится с числом: дни серии закрашены', (
+    tester,
+  ) async {
+    // Счётчик говорит 6, а в списке нет вторника: лента всё равно закрывает
+    // все шесть дней ряда (исправление самого счётчика — в ProgressDataSource).
+    final days = {for (var i = 0; i < 6; i++) today.subtract(Duration(days: i))}
+      ..remove(DateTime(2026, 10, 6));
+    await pump(
+      tester,
+      StreakCard(
+        streak: Streak(
+          current: 6,
+          longest: 6,
+          lastActiveDate: today,
+          startDate: today.subtract(const Duration(days: 5)),
+          activeDays: days,
+        ),
+        today: today,
+      ),
+    );
+    expect(find.byIcon(Icons.check_rounded), findsNWidgets(4));
+  });
+
+  testWidgets('огонёк без серии — серый и неподвижный', (tester) async {
+    await pump(tester, const StreakFlameBadge(active: false));
+    await tester.pumpAndSettle();
+    expect(find.byType(StreakFlameBadge), findsOneWidget);
   });
 
   testWidgets('поздравление: без обводок, без лишнего текста', (tester) async {

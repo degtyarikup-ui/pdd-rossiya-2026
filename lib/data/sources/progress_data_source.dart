@@ -355,8 +355,8 @@ class ProgressDataSource {
   /// - Последняя активность сегодня или вчера → сохранённое значение
   /// - Перерыв больше суток → 0 (серия прервана, но UI узнаёт об этом)
   ///
-  /// Сохранённое значение не меняем — оно будет перезаписано на следующей
-  /// тренировке в [_markStreakActivityToday] корректно.
+  /// Если счётчик разошёлся со списком дней (синхронизация с другим
+  /// устройством), он исправляется по списку и сохраняется.
   Future<Streak> loadStreak() async {
     final storedCurrent = _prefs.getInt(_keyStreakCurrent) ?? 0;
     final storedLongest = _prefs.getInt(_keyStreakLongest) ?? 0;
@@ -389,9 +389,34 @@ class ProgressDataSource {
         .map(_dateOnly)
         .toSet();
 
+    // Источник правды — сами дни с занятиями. Счётчик и дата последней
+    // активности приходят ещё и с сервера (с другого устройства), и раньше
+    // могли разойтись со списком дней: «11 дней подряд» при пустой пятнице.
+    // Серия — это непрерывный ряд дней, кончающийся последним активным.
+    // Список хранит 30 дней: ряд длиннее упирается в его край, тогда верим
+    // сохранённому числу.
+    if (actualCurrent > 0 && lastDay != null && activeDays.contains(lastDay)) {
+      var run = 0;
+      var d = lastDay;
+      while (activeDays.contains(d)) {
+        run++;
+        d = d.subtract(const Duration(days: 1));
+      }
+      final oldest = activeDays.reduce((a, b) => a.isBefore(b) ? a : b);
+      final reachesWindowEdge =
+          !d.isAfter(oldest.subtract(const Duration(days: 1))) &&
+          activeDays.length >= _maxStoredActiveDays;
+      if (!reachesWindowEdge && run != actualCurrent) {
+        actualCurrent = run;
+        effectiveStart = lastDay.subtract(Duration(days: run - 1));
+        await _prefs.setInt(_keyStreakCurrent, run);
+        await _prefs.setString(_keyStreakStartDate, _isoDate(effectiveStart));
+      }
+    }
+
     return Streak(
       current: actualCurrent,
-      longest: storedLongest,
+      longest: storedLongest < actualCurrent ? actualCurrent : storedLongest,
       lastActiveDate: lastDay,
       startDate: effectiveStart,
       activeDays: activeDays,
@@ -608,7 +633,10 @@ class ProgressDataSource {
   Future<void> saveTrafficControllerProgress(
     TrafficControllerProgress progress,
   ) async {
-    await _prefs.setString(_keyTrafficController, jsonEncode(progress.toJson()));
+    await _prefs.setString(
+      _keyTrafficController,
+      jsonEncode(progress.toJson()),
+    );
   }
 
   SignSwiperProgress getSignSwiperProgress() {
@@ -625,9 +653,7 @@ class ProgressDataSource {
     }
   }
 
-  Future<void> saveSignSwiperProgress(
-    SignSwiperProgress progress,
-  ) async {
+  Future<void> saveSignSwiperProgress(SignSwiperProgress progress) async {
     await _prefs.setString(_keySignSwiper, jsonEncode(progress.toJson()));
   }
 
@@ -648,7 +674,10 @@ class ProgressDataSource {
   Future<void> saveCrossroadsPriorityProgress(
     CrossroadsPriorityProgress progress,
   ) async {
-    await _prefs.setString(_keyCrossroadsPriority, jsonEncode(progress.toJson()));
+    await _prefs.setString(
+      _keyCrossroadsPriority,
+      jsonEncode(progress.toJson()),
+    );
   }
 
   /// Лучшее место в недельном рейтинге игры, запомненное на устройстве.
@@ -777,11 +806,16 @@ class ProgressDataSource {
       if (lon > (_prefs.getInt(_keyStreakLongest) ?? 0)) {
         await _prefs.setInt(_keyStreakLongest, lon);
       }
-      if (last != null && last.isNotEmpty) {
+      // Дата с сервера принимается, только если она не старше своей:
+      // иначе устройство «забывало» сегодняшний день.
+      final localLast = _prefs.getString(_keyStreakLastActive);
+      if (last != null &&
+          last.isNotEmpty &&
+          (localLast == null || last.compareTo(localLast) >= 0)) {
         await _prefs.setString(_keyStreakLastActive, last);
-      }
-      if (start != null && start.isNotEmpty) {
-        await _prefs.setString(_keyStreakStartDate, start);
+        if (start != null && start.isNotEmpty) {
+          await _prefs.setString(_keyStreakStartDate, start);
+        }
       }
       if (active.isNotEmpty) {
         final existingActive =
