@@ -36,7 +36,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signs => 'Road Signs';
 
   @override
-  String get video => 'Tape';
+  String get video => 'Feed';
 
   @override
   String get rules => 'Rules';
@@ -79,14 +79,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalText =>
-      'As you learn, your progress will be completed. Your goal is to have all tickets filled!';
+      'As you learn, your progress will fill up. Your goal is to fill in all the tickets!';
 
   @override
   String get goalTextTopics =>
       'As you learn, your progress will fill in. Your goal is to complete all topics!';
 
   @override
-  String get confirmAnswer => 'Reply';
+  String get confirmAnswer => 'Answer';
 
   @override
   String get nextQuestion => 'Next question';
@@ -147,7 +147,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'What\'s wrong with this question? A typo, wrong answer, wrong picture - write in your own words.';
 
   @override
-  String get reportQuestionHint => 'For example: there is a typo in answer B';
+  String get reportQuestionHint =>
+      'For example: there is a typo in the second answer';
 
   @override
   String get reportSend => 'Submit';
@@ -349,9 +350,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get telegramOpenFailed => 'Failed to open Telegram';
 
   @override
-  String get supportDeveloper => 'Support the developer';
-
-  @override
   String get techSupport => 'Technical support';
 
   @override
@@ -371,7 +369,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get confirmAnswerHint =>
-      'Reply first is selected and then confirmed with a button.';
+      'The answer is first selected and then confirmed with a button.';
 
   @override
   String get hapticFeedback => 'Vibration';
@@ -394,7 +392,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get resetStatsDetail =>
-      'Data Progress on questions, exam results and favorite questions will be cleared.';
+      'Progress on questions, exam results and favorite questions will be cleared.';
 
   @override
   String get reset => 'Reset';
@@ -458,7 +456,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get repeatAllMistakes => 'Repeat all errors';
 
   @override
-  String get mistakeReview => 'Error parsing';
+  String get mistakeReview => 'Error analysis';
 
   @override
   String get mistakeLabel => 'Error';
@@ -608,22 +606,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get supportChooseMethod => 'Select method';
-
-  @override
-  String get supportYoomoney => 'УMoney (card, wallet)';
-
-  @override
-  String get supportUsdt => 'USDT · TRC-20 Network (TRON)';
-
-  @override
-  String get supportUsdtWarning =>
-      'Send only USDT over the TRC-20 Network (TRON). Transferring via another network will result in loss of funds.';
-
-  @override
-  String get copyAddress => 'Copy address';
-
-  @override
   String get notifStreakTitle1 => 'The series is under threat';
 
   @override
@@ -689,7 +671,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsHint =>
-      'Every day at 20:00, unless the series is closed';
+      'Every day at 20:00, if you have not yet kept your streak today';
 
   @override
   String get game => 'Game';
@@ -830,7 +812,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameRevealTitle => 'New car!';
 
   @override
-  String get gameRevealTap => 'Click on the gate';
+  String get gameRevealTap => 'Tap the gate';
 
   @override
   String get gameRevealChoose => 'Select';
@@ -846,7 +828,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Short cards with rules, signs and tips for every day. Sign in and your feed, activity series, and progress will be with you on any device.';
 
   @override
-  String get feedSignIn => 'Login';
+  String get feedSignIn => 'Sign in';
 
   @override
   String get gameSceneTitle => 'Weather and season';
@@ -1057,7 +1039,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Lively city, traffic police tickets right on the road and rating of the week. Sign in and let\'s go.';
 
   @override
-  String get gameFuel => 'Arrivals';
+  String get gameFuel => 'Races';
 
   @override
   String get gameFuelUnlimited => 'Unlimited races';
@@ -1067,7 +1049,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String gameFuelRefillIn(String time) {
-    return 'New race through $time';
+    return 'New race in $time';
   }
 
   @override
@@ -1084,7 +1066,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameOverDescription =>
-      'All race issues are over. Incorrect answers are already in the “Errors” - sort them out and try again.';
+      'All questions of the race are done. Incorrect answers are already in “Errors” - go through them and try again.';
 
   @override
   String get gameYou => 'You';
@@ -1097,7 +1079,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameLoadError =>
-      'Failed to continue the race. Restart the machine or return to the menu.';
+      'Failed to continue the race. Restart the simulator or return to the menu.';
 
   @override
   String get authSuccess => 'Login successful';
@@ -1245,7 +1227,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamePause => 'Pause';
 
   @override
-  String get gameLobbyControls => 'Control.';
+  String get gameLobbyControls => 'Controls';
 
   @override
   String gameRunProgress(int n, int total) {
@@ -1307,7 +1289,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String gameRunsPill(int runs, int max) {
-    return 'Races $runs from $max';
+    return 'Races $runs of $max';
   }
 
   @override
@@ -1318,12 +1300,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String gameRunsExplain(int questions, int max, int minutes) {
-    return 'Race is $questions questions on the road. There are up to $max races left, each spent is returned in $minutes minutes.';
+    return 'A race is $questions questions on the road. Up to $max races are in stock; each one used comes back after $minutes minutes.';
   }
 
   @override
   String gameRunsNextIn(String time) {
-    return 'Next race via $time';
+    return 'Next race in $time';
   }
 
   @override
@@ -1358,7 +1340,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameRunsReady => 'Ready';
 
   @override
-  String get gameRunsUntil => 'before arrival';
+  String get gameRunsUntil => 'until the next race';
 
   @override
   String get gameUturn => 'U-turn';
@@ -1419,7 +1401,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get webPayEmailBody =>
-      'We will connect payment through SBP in the coming days. Leave your email and we\'ll write you as soon as it\'s up and running. A check will come for her.';
+      'We will connect payment through SBP in the coming days. Leave your email and we\'ll write you as soon as it\'s up and running. The receipt will be sent to the same address.';
 
   @override
   String get webPayEmailHint => 'Email';
@@ -1440,7 +1422,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get webPayLiveBody =>
-      'Indicate the mail for the check. Next, payment will open through SBP - using a QR code or in the bank’s application. Premium will be activated immediately after payment.';
+      'Enter your email for the receipt. Next, payment will open through SBP - using a QR code or in the bank’s application. Premium will be activated immediately after payment.';
 
   @override
   String get webPayProceed => 'Proceed to payment';
@@ -1531,7 +1513,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get achievementTitleStreak => 'Without passes';
+  String get achievementTitleStreak => 'No missed days';
 
   @override
   String get achievementTitleCoverage => 'Erudite';
@@ -1546,7 +1528,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get achievementTitleExams => 'Examiner';
 
   @override
-  String get achievementTitleFlawless => 'Without single error';
+  String get achievementTitleFlawless => 'Without a single error';
 
   @override
   String get achievementTitleMistakes => 'Work on errors';
@@ -1556,7 +1538,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get achievementDescStreak =>
-      'Best series of days in a row with classes';
+      'Longest run of consecutive days with practice';
 
   @override
   String get achievementDescCoverage =>
@@ -1622,7 +1604,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paywallFeatureFeed => 'Unlimited feed of questions';
 
   @override
-  String get paywallFeatureAi => 'Analysis of errors from AI';
+  String get paywallFeatureAi => 'AI analysis of your mistakes';
 
   @override
   String get paywallFeatureVoice => 'Studio voice-over of tickets';
@@ -1643,7 +1625,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paywallEveryWeek => 'every week';
 
   @override
-  String get paywallBadgeBest => 'Profitable';
+  String get paywallBadgeBest => 'Best value';
 
   @override
   String paywallRenewal(String store) {
@@ -1654,7 +1636,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paywallTerms => 'Terms';
 
   @override
-  String get paywallPrivacy => 'Confidentiality';
+  String get paywallPrivacy => 'Privacy';
 
   @override
   String get paywallRestore => 'Restore';
@@ -1670,7 +1652,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navGames => 'Games';
 
   @override
-  String get gameTrafficControllerTitle => 'Traffic cop';
+  String get gameTrafficControllerTitle => 'Traffic controller';
 
   @override
   String get gameBestScoreLabel => 'Record';
@@ -1763,7 +1745,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String gameQuestionFolkName(String name) {
-    return 'People call this sign “$name”?';
+    return 'Is this sign popularly called “$name”?';
   }
 
   @override
@@ -1813,11 +1795,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get gameCrossroadsCollision => 'Accident! Irregularity';
+  String get gameCrossroadsCollision => 'Accident! Right-of-way violation';
 
   @override
   String gameCrossroadsShouldGo(String name) {
-    return 'Should go now: $name';
+    return 'Going now: $name';
   }
 
   @override
@@ -1879,14 +1861,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String gameSecondsLeft(int seconds) {
-    return '$seconds with';
+    return '$seconds s';
   }
 
   @override
   String get gameSignsLoadError => 'Failed to load signs';
 
   @override
-  String get gameRetry => 'Repeat';
+  String get gameRetry => 'Retry';
 
   @override
   String get gameRestartRound => 'Start over';
@@ -1898,10 +1880,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameSignNo => 'NO';
 
   @override
-  String get gameSignCan => 'POSSIBLE';
+  String get gameSignCan => 'ALLOWED';
 
   @override
-  String get gameSignCannot => 'IT IS IMPOSSIBLE';
+  String get gameSignCannot => 'NOT ALLOWED';
 
   @override
   String get gameUnderstood => 'I understand';
@@ -1933,7 +1915,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get achievementDescSignSwiper =>
-      'Score 100, 200, 300 and 450 points in a single game of Sign Swipe.';
+      'Score 100, 200, 300 and 450 points in a single game of Sign-Swiper.';
 
   @override
   String get gameSignQuestionScope =>
@@ -2055,7 +2037,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameSignScenario1_5_0Prompt =>
-      'The tram crosses the road outside the intersection, not from the depot. Should I give in?';
+      'The tram crosses the road outside the intersection, not from the depot. Should I give way?';
 
   @override
   String get gameSignScenario1_5_0Explanation =>
@@ -2210,7 +2192,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameSignScenario2_4_0Explanation =>
-      'Yes. The sign requires you to yield to cars on the road you are crossing. At the sign 8.13 - cars on the main road.';
+      'Yes. The sign requires you to give way to cars on the road you are crossing. With plate 8.13, you give way to cars on the main road.';
 
   @override
   String get gameSignScenario2_4_1Prompt =>
@@ -2222,7 +2204,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameSignScenario2_4_2Prompt =>
-      'Both are on the secondary road: you are straight, oncoming traffic is to the left. Should he give in?';
+      'Both are on the secondary road: you are going straight, and the oncoming car is turning left. Should he give way?';
 
   @override
   String get gameSignScenario2_4_2Explanation =>
@@ -2246,7 +2228,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameSignScenario2_6_0Prompt =>
-      'The entry will interfere with the oncoming car. Should I give in?';
+      'The entry will interfere with the oncoming car. Should I give way?';
 
   @override
   String get gameSignScenario2_6_0Explanation =>
@@ -2254,7 +2236,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameSignScenario2_6_1Prompt =>
-      'Does this sign give you an advantage over people you meet?';
+      'Does this sign give you an advantage over oncoming vehicles?';
 
   @override
   String get gameSignScenario2_6_1Explanation =>
@@ -2290,7 +2272,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameSignScenario3_1_1Explanation =>
-      'No. There is no exception for residents. Do not confuse this sign with the \"No Traffic\" sign.';
+      'No. There is no exception for residents. Do not confuse this sign with sign 3.2 “Movement Prohibition”.';
 
   @override
   String get gameSignScenario3_1_2Prompt =>
@@ -2314,7 +2296,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameSignScenario3_2_1Explanation =>
-      'No. The sign prohibits movement. The passage of residents and service vehicles are exceptions to access to the destination.';
+      'No. The sign prohibits movement. Residents and service vehicles are exceptions, allowed to reach their destination.';
 
   @override
   String get gameSignScenario3_2_2Prompt =>
@@ -2489,7 +2471,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameSignScenario3_29_1Explanation =>
-      'No. It only prohibits parking on odd numbers. Stopping is permitted.';
+      'No. It only prohibits parking on odd-numbered days. Stopping is permitted.';
 
   @override
   String get gameSignScenario3_31_0Prompt =>
@@ -2595,7 +2577,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameSignScenario4_2_1_1Prompt =>
-      'Is it possible to go around an obstacle on the left if there are no oncoming people?';
+      'Is it possible to go around an obstacle on the left if there are no oncoming vehicles?';
 
   @override
   String get gameSignScenario4_2_1_1Explanation =>
@@ -2678,7 +2660,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameSignScenario5_5_0Explanation =>
-      'Yes. The sign itself does not prohibit this. You cannot reverse at intersections, crossings and other places from paragraphs. 8.11–8.12.';
+      'Yes. The sign itself does not prohibit this. You cannot reverse at intersections, crossings and other places listed in clauses 8.11–8.12.';
 
   @override
   String get gameSignScenario5_5_1Prompt =>
@@ -2885,7 +2867,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameSignScenario7_1_0Explanation =>
-      'Yes. He tells you where the first aid station is.';
+      'Yes. It shows where the first aid station is.';
 
   @override
   String get gameSignScenario7_1_1Prompt =>
@@ -2913,11 +2895,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameSignScenario8_1_1_0Prompt =>
-      'Does the sign indicate the distance to the object or the beginning of the restriction?';
+      'Does the sign show the distance to the place where a restriction begins?';
 
   @override
   String get gameSignScenario8_1_1_0Explanation =>
-      'Yes. This is the distance from the sign to the dangerous area, object or place where the restriction begins.';
+      'Yes. The sign shows one distance: from the sign to the dangerous area, object or place where the restriction begins.';
 
   @override
   String get gameSignScenario8_1_1_1Prompt =>
@@ -2933,7 +2915,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameSignScenario8_2_1_0Explanation =>
-      'Yes. This is the length of the area or area of ​​the sign.';
+      'Yes. This is the length of the section or of the sign\'s coverage zone.';
 
   @override
   String get gameSignScenario8_2_1_1Prompt =>
@@ -2988,7 +2970,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameSignScenario8_4_3_1Explanation =>
-      'No. This plate applies to cars and trucks up to and including 3.5 tonnes.';
+      'No. This plate applies to cars and trucks up to and including 3.5 tons.';
 
   @override
   String get gameSignScenario8_17_0Prompt =>

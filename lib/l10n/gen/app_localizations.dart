@@ -652,12 +652,6 @@ abstract class AppLocalizations {
   /// **'Не удалось открыть Telegram'**
   String get telegramOpenFailed;
 
-  /// No description provided for @supportDeveloper.
-  ///
-  /// In ru, this message translates to:
-  /// **'Поддержать разработчика'**
-  String get supportDeveloper;
-
   /// No description provided for @techSupport.
   ///
   /// In ru, this message translates to:
@@ -1101,36 +1095,6 @@ abstract class AppLocalizations {
     String title,
     String url,
   );
-
-  /// No description provided for @supportChooseMethod.
-  ///
-  /// In ru, this message translates to:
-  /// **'Выберите способ'**
-  String get supportChooseMethod;
-
-  /// No description provided for @supportYoomoney.
-  ///
-  /// In ru, this message translates to:
-  /// **'ЮMoney (карта, кошелёк)'**
-  String get supportYoomoney;
-
-  /// No description provided for @supportUsdt.
-  ///
-  /// In ru, this message translates to:
-  /// **'USDT · сеть TRC-20 (TRON)'**
-  String get supportUsdt;
-
-  /// No description provided for @supportUsdtWarning.
-  ///
-  /// In ru, this message translates to:
-  /// **'Отправляйте только USDT по сети TRC-20 (TRON). Перевод по другой сети приведёт к потере средств.'**
-  String get supportUsdtWarning;
-
-  /// No description provided for @copyAddress.
-  ///
-  /// In ru, this message translates to:
-  /// **'Копировать адрес'**
-  String get copyAddress;
 
   /// No description provided for @notifStreakTitle1.
   ///
@@ -4891,13 +4855,13 @@ abstract class AppLocalizations {
   /// No description provided for @gameSignScenario8_1_1_0Prompt.
   ///
   /// In ru, this message translates to:
-  /// **'Табличка показывает расстояние до объекта или начала ограничения?'**
+  /// **'Табличка показывает расстояние до места, где начинается ограничение?'**
   String get gameSignScenario8_1_1_0Prompt;
 
   /// No description provided for @gameSignScenario8_1_1_0Explanation.
   ///
   /// In ru, this message translates to:
-  /// **'Да. Это расстояние от знака до опасного участка, объекта или места начала ограничения.'**
+  /// **'Да. Табличка показывает одно расстояние: от знака до опасного участка, объекта или места начала ограничения.'**
   String get gameSignScenario8_1_1_0Explanation;
 
   /// No description provided for @gameSignScenario8_1_1_1Prompt.

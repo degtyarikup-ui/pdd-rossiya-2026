@@ -361,9 +361,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get telegramOpenFailed => 'Не удалось открыть Telegram';
 
   @override
-  String get supportDeveloper => 'Поддержать разработчика';
-
-  @override
   String get techSupport => 'Тех. поддержка';
 
   @override
@@ -621,22 +618,6 @@ class AppLocalizationsRu extends AppLocalizations {
   ) {
     return '$result\nВерных ответов: $correct из $total\n\n$title\n$url';
   }
-
-  @override
-  String get supportChooseMethod => 'Выберите способ';
-
-  @override
-  String get supportYoomoney => 'ЮMoney (карта, кошелёк)';
-
-  @override
-  String get supportUsdt => 'USDT · сеть TRC-20 (TRON)';
-
-  @override
-  String get supportUsdtWarning =>
-      'Отправляйте только USDT по сети TRC-20 (TRON). Перевод по другой сети приведёт к потере средств.';
-
-  @override
-  String get copyAddress => 'Копировать адрес';
 
   @override
   String get notifStreakTitle1 => 'Серия под угрозой';
@@ -2923,11 +2904,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameSignScenario8_1_1_0Prompt =>
-      'Табличка показывает расстояние до объекта или начала ограничения?';
+      'Табличка показывает расстояние до места, где начинается ограничение?';
 
   @override
   String get gameSignScenario8_1_1_0Explanation =>
-      'Да. Это расстояние от знака до опасного участка, объекта или места начала ограничения.';
+      'Да. Табличка показывает одно расстояние: от знака до опасного участка, объекта или места начала ограничения.';
 
   @override
   String get gameSignScenario8_1_1_1Prompt =>

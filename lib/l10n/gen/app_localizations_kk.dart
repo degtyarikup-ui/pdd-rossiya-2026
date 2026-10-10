@@ -349,9 +349,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get telegramOpenFailed => 'Telegram ашылмады';
 
   @override
-  String get supportDeveloper => 'Әзірлеушіге қолдау көрсету';
-
-  @override
   String get techSupport => 'Техникалық қолдау';
 
   @override
@@ -608,22 +605,6 @@ class AppLocalizationsKk extends AppLocalizations {
   ) {
     return '$result\nДұрыс жауаптар: $correct / $total\n\n$title\n$url';
   }
-
-  @override
-  String get supportChooseMethod => 'Әдісті таңдаңыз';
-
-  @override
-  String get supportYoomoney => 'YuMoney (карта, әмиян)';
-
-  @override
-  String get supportUsdt => 'USDT · TRC-20 желісі (TRON)';
-
-  @override
-  String get supportUsdtWarning =>
-      'TRC-20 (TRON) желісі арқылы тек USDT жіберіңіз. Басқа желі арқылы аудару қаражаттың жоғалуына әкеледі.';
-
-  @override
-  String get copyAddress => 'Мекенжайды көшіру';
 
   @override
   String get notifStreakTitle1 => 'Серия қауіп төніп тұр';
