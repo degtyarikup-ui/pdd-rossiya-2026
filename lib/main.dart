@@ -89,17 +89,44 @@ void main() async {
     ErrorReporter.report(ErrorCategory.app, 'startup.premium', error: e);
   }
 
+  // Восстановление входа на слабом Android (защищённое хранилище сессии) может
+  // занять больше 2 с. Старт этого не ждёт: init доработает в фоне. Ошибкой это
+  // считаем только если init завис совсем.
+  final authInit = AuthService.instance.init();
   try {
-    await AuthService.instance.init().timeout(const Duration(seconds: 2));
+    await authInit.timeout(const Duration(seconds: 2));
   } catch (e) {
-    debugPrint('AuthService init error: $e');
-    ErrorReporter.report(ErrorCategory.app, 'startup.auth', error: e);
+    debugPrint('AuthService init is slow or failed: $e');
+    if (e is TimeoutException) {
+      unawaited(
+        authInit
+            .timeout(const Duration(seconds: 13))
+            .catchError(
+              (Object late) => ErrorReporter.report(
+                ErrorCategory.app,
+                'startup.auth',
+                error: late,
+              ),
+            ),
+      );
+    } else {
+      ErrorReporter.report(ErrorCategory.app, 'startup.auth', error: e);
+    }
   }
 
   // Инициализация облачной синхронизации прогресса
   ProgressSyncService.instance.init(progressDataSource);
   if (AuthService.instance.isAuthenticated) {
     unawaited(ProgressSyncService.instance.syncWithServer());
+  } else {
+    // Вход восстановился уже после старта: подтянуть прогресс с сервера.
+    unawaited(
+      authInit.then((_) async {
+        if (AuthService.instance.isAuthenticated) {
+          await ProgressSyncService.instance.syncWithServer();
+        }
+      }),
+    );
   }
 
   unawaited(IapService.instance.init());

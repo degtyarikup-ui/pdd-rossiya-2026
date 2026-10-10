@@ -154,4 +154,32 @@ void main() {
       );
     },
   );
+
+  test('Google sign-in keeps the ApiException number but never its text', () {
+    expect(
+      ErrorReporter.codeFor(
+        PlatformException(
+          code: 'sign_in_failed',
+          message:
+              'com.google.android.gms.common.api.ApiException: 10: account user@example.com',
+        ),
+      ),
+      'sign_in_failed:10',
+    );
+    expect(
+      ErrorReporter.codeFor(
+        PlatformException(code: 'sign_in_failed', message: 'boom'),
+      ),
+      'sign_in_failed',
+    );
+    expect(
+      ErrorReporter.codeFor(
+        PlatformException(
+          code: 'sign_in_canceled',
+          message: 'ApiException: 12501',
+        ),
+      ),
+      'sdk_error',
+    );
+  });
 }

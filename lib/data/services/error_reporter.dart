@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdd_app/core/config/backend_config.dart';
+import 'package:pdd_app/core/config/store_config.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/install_reporter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -44,7 +45,18 @@ class ErrorReporter {
     if (error is FormatException || error is TypeError) {
       return 'invalid_response';
     }
-    if (error is PlatformException) return sdkCode(error.code);
+    if (error is PlatformException) {
+      final code = sdkCode(error.code);
+      // google_sign_in сводит разные сбои в sign_in_failed. Номер ApiException
+      // отличает их (10 — настройки OAuth-клиента, 12500 — сбой Google Play
+      // Services). Сохраняем только цифры, текст ошибки не пишем.
+      final api = RegExp(
+        r'ApiException: (\d{1,5})',
+      ).firstMatch(error.message ?? '');
+      return code == 'sign_in_failed' && api != null
+          ? '$code:${api.group(1)}'
+          : code;
+    }
     final type = 'exception_${error.runtimeType}'.replaceAll(
       RegExp('[^a-zA-Z0-9_]'),
       '',
@@ -148,6 +160,11 @@ class ErrorReporter {
                 (e) => {
                   ...e,
                   'platform': kIsWeb ? 'web' : defaultTargetPlatform.name,
+                  // Сборка RuStore и Google Play подписаны разными ключами и
+                  // проходят вход Google по-разному: различаем их в отчёте.
+                  if (!kIsWeb &&
+                      defaultTargetPlatform == TargetPlatform.android)
+                    'store': StoreConfig.current.name,
                   if (metadata['version'] is String)
                     'appVersion': (metadata['version'] as String).substring(
                       0,
