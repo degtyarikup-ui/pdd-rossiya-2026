@@ -1090,6 +1090,43 @@ class _GameScreenState extends ConsumerState<GameScreen>
     _send('setPaused', [_enginePaused]);
   }
 
+  /// «Новый заезд» in the garage while a run is in progress: confirm, then
+  /// the same path as a new run after the game over (paid, fresh world).
+  Future<void> _newRunFromLobby() async {
+    if (!_inLobby || !_runStarted) return;
+    HapticFeedbackHelper.tap();
+    final colors = AppColors.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.cardBackground,
+        surfaceTintColor: Colors.transparent,
+        title: Text(appL10n.gameLobbyNewRunTitle),
+        content: Text(appL10n.gameLobbyNewRunBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(appL10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(appL10n.gameLobbyNewRunConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted || !_inLobby) return;
+    if (!await _takeRun()) return;
+    if (!mounted || !_inLobby) return;
+    setState(() {
+      _inLobby = false;
+      _runStarted = true;
+    });
+    _send('hideLobby', []);
+    // Fuel is already taken above: the restart must not take it again.
+    await _handleRestart(alreadyPaid: true);
+  }
+
   void _openLobby() {
     setState(() => _inLobby = true);
     _game.setPaused(true);
@@ -1190,16 +1227,18 @@ class _GameScreenState extends ConsumerState<GameScreen>
       _garageOpen ||
       ref.read(gameControllerProvider).phase == GamePhase.gameOver;
 
-  Future<void> _handleRestart() async {
+  Future<void> _handleRestart({bool alreadyPaid = false}) async {
     if (_restarting || _disposing) return;
     // Only a new run after the game over is paid here. A restart after an
     // engine failure replays the run that was paid when it started (or, in the
     // lobby, is paid at «Начать заезд»): charging it again burned the attempt.
-    final newRun = ref.read(gameControllerProvider).phase == GamePhase.gameOver;
-    if (newRun && !await _takeRun()) return;
+    // «Новый заезд» from the garage pays for itself (alreadyPaid).
+    final gameOver =
+        ref.read(gameControllerProvider).phase == GamePhase.gameOver;
+    if (gameOver && !alreadyPaid && !await _takeRun()) return;
     if (!mounted || _disposing) return;
     HapticFeedbackHelper.confirm();
-    if (newRun) UsageReporter.track(UsageFeature.game);
+    if (gameOver || alreadyPaid) UsageReporter.track(UsageFeature.game);
     _restarting = true;
     _readyTimer?.cancel();
     _game.setPaused(true);
@@ -1713,6 +1752,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                       : null,
                   onClose: () => Navigator.of(context).maybePop(),
                   onStart: _startFromLobby,
+                  onNewRun: _newRunFromLobby,
                   resume: _runStarted && gameState.phase != GamePhase.gameOver,
                   onPrevious: _lobbyModels().length > 1
                       ? () => _browseCar(-1)

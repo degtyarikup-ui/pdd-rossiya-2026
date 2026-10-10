@@ -972,6 +972,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameLobbyContinue => 'Continue race';
 
   @override
+  String get gameLobbyNewRun => 'New run';
+
+  @override
+  String get gameLobbyNewRunTitle => 'Start a new run?';
+
+  @override
+  String get gameLobbyNewRunBody =>
+      'The current run will end and the new one will start from the first question.';
+
+  @override
+  String get gameLobbyNewRunConfirm => 'Start over';
+
+  @override
   String get gameLobbyChangeCar => 'Change';
 
   @override

@@ -24,6 +24,10 @@ class GameLobby extends StatelessWidget {
   final Widget? blocker;
   final VoidCallback? onStart;
 
+  /// A run is in progress: a second button beside «Продолжить заезд» ends
+  /// it and starts a new one (after a confirmation).
+  final VoidCallback? onNewRun;
+
   /// Opened from a run in progress: the button continues it.
   final bool resume;
 
@@ -54,6 +58,7 @@ class GameLobby extends StatelessWidget {
     required this.runs,
     this.blocker,
     this.onStart,
+    this.onNewRun,
     this.resume = false,
     this.startCaption,
     this.carName,
@@ -323,51 +328,89 @@ class GameLobby extends StatelessWidget {
                 width: double.infinity,
                 child:
                     blocker ??
-                    ConstrainedBox(
-                      // Grows with the system text size instead of cutting
-                      // the caption off.
-                      constraints: const BoxConstraints(minHeight: 56),
-                      child: ElevatedButton(
-                        onPressed: onStart,
-                        // 56 high with the run's progress under the title.
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 8,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              resume
-                                  ? appL10n.gameLobbyContinue
-                                  : appL10n.gameLobbyStart,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontFamily: 'Onest',
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                height: 1.1,
-                              ),
-                            ),
-                            if (startCaption != null)
-                              Text(
-                                startCaption!,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontFamily: 'Onest',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.2,
-                                  color: AppColors.white.withValues(
-                                    alpha: 0.78,
+                    Row(
+                      children: [
+                        if (resume && onNewRun != null) ...[
+                          Tooltip(
+                            message: appL10n.gameLobbyNewRun,
+                            child: Semantics(
+                              button: true,
+                              label: appL10n.gameLobbyNewRun,
+                              excludeSemantics: true,
+                              child: Material(
+                                color: colors.cardBackground,
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.buttonRadius,
+                                ),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.buttonRadius,
+                                  ),
+                                  onTap: onNewRun,
+                                  child: SizedBox(
+                                    width: 56,
+                                    height: 56,
+                                    child: Icon(
+                                      Icons.restart_alt_rounded,
+                                      color: colors.primaryText,
+                                      size: 26,
+                                    ),
                                   ),
                                 ),
                               ),
-                          ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                        ],
+                        Expanded(
+                          child: ConstrainedBox(
+                            // Grows with the system text size instead of cutting
+                            // the caption off.
+                            constraints: const BoxConstraints(minHeight: 56),
+                            child: ElevatedButton(
+                              onPressed: onStart,
+                              // 56 high with the run's progress under the title.
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 8,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    resume
+                                        ? appL10n.gameLobbyContinue
+                                        : appL10n.gameLobbyStart,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontFamily: 'Onest',
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.1,
+                                    ),
+                                  ),
+                                  if (startCaption != null)
+                                    Text(
+                                      startCaption!,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontFamily: 'Onest',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        height: 1.2,
+                                        color: AppColors.white.withValues(
+                                          alpha: 0.78,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
               ),
             ],

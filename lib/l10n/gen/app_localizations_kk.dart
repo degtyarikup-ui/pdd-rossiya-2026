@@ -973,6 +973,19 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameLobbyContinue => 'Жүруді жалғастырыңыз';
 
   @override
+  String get gameLobbyNewRun => 'Жаңа сапар';
+
+  @override
+  String get gameLobbyNewRunTitle => 'Жаңа сапарды бастау керек пе?';
+
+  @override
+  String get gameLobbyNewRunBody =>
+      'Ағымдағы сапар аяқталады, жаңасы бірінші сұрақтан басталады.';
+
+  @override
+  String get gameLobbyNewRunConfirm => 'Қайта бастау';
+
+  @override
   String get gameLobbyChangeCar => 'Өзгерту';
 
   @override

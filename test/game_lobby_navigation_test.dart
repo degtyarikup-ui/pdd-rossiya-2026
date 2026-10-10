@@ -37,4 +37,28 @@ void main() {
     expect(find.byType(GameLobby), findsNothing);
     expect(find.text('open'), findsOneWidget);
   });
+
+  testWidgets('«Новый заезд» виден только при начатом заезде', (tester) async {
+    var newRuns = 0;
+    Future<void> pump({required bool resume}) => tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: GameLobby(
+            vehiclePaint: 'red',
+            bestScore: 0,
+            runs: const Text('3'),
+            resume: resume,
+            onStart: () {},
+            onNewRun: () => newRuns++,
+          ),
+        ),
+      ),
+    );
+    await pump(resume: false);
+    expect(find.byIcon(Icons.restart_alt_rounded), findsNothing);
+    await pump(resume: true);
+    await tester.tap(find.byIcon(Icons.restart_alt_rounded));
+    expect(newRuns, 1);
+    expect(find.text('Продолжить заезд'), findsOneWidget);
+  });
 }

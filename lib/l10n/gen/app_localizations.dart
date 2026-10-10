@@ -1786,6 +1786,30 @@ abstract class AppLocalizations {
   /// **'Продолжить заезд'**
   String get gameLobbyContinue;
 
+  /// No description provided for @gameLobbyNewRun.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новый заезд'**
+  String get gameLobbyNewRun;
+
+  /// No description provided for @gameLobbyNewRunTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Начать новый заезд?'**
+  String get gameLobbyNewRunTitle;
+
+  /// No description provided for @gameLobbyNewRunBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'Текущий заезд закончится, новый начнётся с первого вопроса.'**
+  String get gameLobbyNewRunBody;
+
+  /// No description provided for @gameLobbyNewRunConfirm.
+  ///
+  /// In ru, this message translates to:
+  /// **'Начать заново'**
+  String get gameLobbyNewRunConfirm;
+
   /// No description provided for @gameLobbyChangeCar.
   ///
   /// In ru, this message translates to:
