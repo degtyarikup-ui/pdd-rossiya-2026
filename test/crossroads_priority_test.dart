@@ -11,69 +11,80 @@ void main() {
   group('Crossroads Priority Rules and Scenarios Tests', () {
     test('All certified scenarios have valid priority order sequences', () {
       final scenarios = CrossroadsScenariosLibrary.allScenarios;
-      expect(scenarios.length, equals(18));
+      expect(scenarios.length, equals(17));
 
       for (final s in scenarios) {
-        expect(s.actors.isNotEmpty, isTrue, reason: 'Scenario ${s.id} has no actors');
+        expect(
+          s.actors.isNotEmpty,
+          isTrue,
+          reason: 'Scenario ${s.id} has no actors',
+        );
         final orders = s.actors.map((a) => a.priorityOrder).toList()..sort();
         // Проверяем, что порядок идет 1, 2, 3...
         for (int i = 0; i < orders.length; i++) {
-          expect(orders[i], equals(i + 1),
-              reason: 'Scenario ${s.id} has broken priority order sequence: $orders');
+          expect(
+            orders[i],
+            equals(i + 1),
+            reason:
+                'Scenario ${s.id} has broken priority order sequence: $orders',
+          );
         }
       }
     });
 
-    test('Scenarios cover all diverse vehicle types (truck, bus, motorcycle, police, tram, etc.)', () {
-      final allTypes = CrossroadsScenariosLibrary.allScenarios
-          .expand((s) => s.actors)
-          .map((a) => a.type)
-          .toSet();
+    test(
+      'Scenarios cover all diverse vehicle types (truck, bus, motorcycle, police, tram, etc.)',
+      () {
+        final allTypes = CrossroadsScenariosLibrary.allScenarios
+            .expand((s) => s.actors)
+            .map((a) => a.type)
+            .toSet();
 
-      for (final expectedType in CrossroadsVehicleType.values) {
-        expect(allTypes.contains(expectedType), isTrue,
-            reason: 'Vehicle type $expectedType is not represented in scenarios library');
-      }
-    });
+        for (final expectedType in CrossroadsVehicleType.values) {
+          expect(
+            allTypes.contains(expectedType),
+            isTrue,
+            reason:
+                'Vehicle type $expectedType is not represented in scenarios library',
+          );
+        }
+      },
+    );
 
     test('Special emergency vehicle always has priority order 1', () {
       final emergencyScenario = CrossroadsScenariosLibrary.allScenarios
           .firstWhere((s) => s.id == 'cross_emergency_priority');
-      final emergencyActor = emergencyScenario.actors
-          .firstWhere((a) => a.type == CrossroadsVehicleType.emergency);
+      final emergencyActor = emergencyScenario.actors.firstWhere(
+        (a) => a.type == CrossroadsVehicleType.emergency,
+      );
 
       expect(emergencyActor.priorityOrder, equals(1));
       expect(emergencyActor.hasSiren, isTrue);
     });
 
     test('Police patrol with siren has priority order 1 before tram', () {
-      final policeScenario = CrossroadsScenariosLibrary.allScenarios
-          .firstWhere((s) => s.id == 'cross_police_vs_tram');
-      final policeActor = policeScenario.actors
-          .firstWhere((a) => a.type == CrossroadsVehicleType.police);
-      final tramActor = policeScenario.actors
-          .firstWhere((a) => a.type == CrossroadsVehicleType.tram);
+      final policeScenario = CrossroadsScenariosLibrary.allScenarios.firstWhere(
+        (s) => s.id == 'cross_police_vs_tram',
+      );
+      final policeActor = policeScenario.actors.firstWhere(
+        (a) => a.type == CrossroadsVehicleType.police,
+      );
+      final tramActor = policeScenario.actors.firstWhere(
+        (a) => a.type == CrossroadsVehicleType.tram,
+      );
 
       expect(policeActor.priorityOrder, equals(1));
       expect(policeActor.hasSiren, isTrue);
       expect(tramActor.priorityOrder, equals(2));
     });
 
-    test('Roundabout scenario prioritizes vehicle already in roundabout', () {
-      final roundScenario = CrossroadsScenariosLibrary.allScenarios
-          .firstWhere((s) => s.id == 'cross_roundabout_priority');
-      final carRing = roundScenario.actors.firstWhere((a) => a.id == 'car_east');
-      final carEntering = roundScenario.actors.firstWhere((a) => a.id == 'car_south');
-
-      expect(carRing.priorityOrder, equals(1));
-      expect(carEntering.priorityOrder, equals(2));
-    });
-
     test('Tram has advantage over regular cars on equal crossroads', () {
-      final tramScenario = CrossroadsScenariosLibrary.allScenarios
-          .firstWhere((s) => s.id == 'cross_equal_tram');
-      final tramActor = tramScenario.actors
-          .firstWhere((a) => a.type == CrossroadsVehicleType.tram);
+      final tramScenario = CrossroadsScenariosLibrary.allScenarios.firstWhere(
+        (s) => s.id == 'cross_equal_tram',
+      );
+      final tramActor = tramScenario.actors.firstWhere(
+        (a) => a.type == CrossroadsVehicleType.tram,
+      );
 
       expect(tramActor.priorityOrder, equals(1));
     });
@@ -82,32 +93,48 @@ void main() {
       final mainRoadScenario = CrossroadsScenariosLibrary.allScenarios
           .firstWhere((s) => s.id == 'cross_main_straight');
 
-      final carSouth = mainRoadScenario.actors.firstWhere((a) => a.id == 'car_south');
-      final carEast = mainRoadScenario.actors.firstWhere((a) => a.id == 'car_east');
+      final carSouth = mainRoadScenario.actors.firstWhere(
+        (a) => a.id == 'car_south',
+      );
+      final carEast = mainRoadScenario.actors.firstWhere(
+        (a) => a.id == 'car_east',
+      );
 
       expect(carSouth.priorityOrder, lessThan(carEast.priorityOrder));
     });
 
-    test('CrossroadsScenario serialization to JSON is valid for Three.js engine', () {
-      for (final s in CrossroadsScenariosLibrary.allScenarios) {
-        final json = s.toJson();
-        expect(json['id'], isNotEmpty);
-        expect(json['actors'], isA<List>());
-        expect(json['signs'], isA<List>());
-        final actorsList = json['actors'] as List;
-        expect(actorsList.length, equals(s.actors.length));
-      }
-    });
+    test(
+      'CrossroadsScenario serialization to JSON is valid for Three.js engine',
+      () {
+        for (final s in CrossroadsScenariosLibrary.allScenarios) {
+          final json = s.toJson();
+          expect(json['id'], isNotEmpty);
+          expect(json['actors'], isA<List>());
+          expect(json['signs'], isA<List>());
+          final actorsList = json['actors'] as List;
+          expect(actorsList.length, equals(s.actors.length));
+        }
+      },
+    );
 
     test('cross_main_turns_left has 4 distinct and valid table8_13 signs', () {
-      final scenario = CrossroadsScenariosLibrary.allScenarios
-          .firstWhere((s) => s.id == 'cross_main_turns_left');
+      final scenario = CrossroadsScenariosLibrary.allScenarios.firstWhere(
+        (s) => s.id == 'cross_main_turns_left',
+      );
       expect(scenario.signs.length, equals(4));
 
-      final south = scenario.signs.firstWhere((s) => s.side == CrossroadsSide.south);
-      final west = scenario.signs.firstWhere((s) => s.side == CrossroadsSide.west);
-      final north = scenario.signs.firstWhere((s) => s.side == CrossroadsSide.north);
-      final east = scenario.signs.firstWhere((s) => s.side == CrossroadsSide.east);
+      final south = scenario.signs.firstWhere(
+        (s) => s.side == CrossroadsSide.south,
+      );
+      final west = scenario.signs.firstWhere(
+        (s) => s.side == CrossroadsSide.west,
+      );
+      final north = scenario.signs.firstWhere(
+        (s) => s.side == CrossroadsSide.north,
+      );
+      final east = scenario.signs.firstWhere(
+        (s) => s.side == CrossroadsSide.east,
+      );
 
       expect(south.code, equals('2.1'));
       expect(south.table8_13, equals('bottom_left'));

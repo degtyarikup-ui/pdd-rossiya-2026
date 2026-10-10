@@ -47,7 +47,17 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
   }
 
   int _scenarioIndex = 0;
-  CrossroadsScenario get _curScenario => _scenarios[_scenarioIndex];
+
+  /// Перекрёстки раунда в случайном порядке: раньше каждый раунд шёл
+  /// одной и той же цепочкой, и порядок проезда запоминался, а не решался.
+  List<int> _order = const [];
+  CrossroadsScenario get _curScenario {
+    final list = _scenarios;
+    if (_order.length != list.length) {
+      _order = List.generate(list.length, (i) => i)..shuffle();
+    }
+    return list[_order[_scenarioIndex % _order.length]];
+  }
 
   // Игровое состояние
   int _currentStep = 1;
@@ -61,11 +71,14 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
   Timer? _countdownTimer;
   bool _isGameOver = false;
   bool _isNewRecord = false;
+  int _previousBest = 0;
+  int _wrongCount = 0;
 
   // Ошибка / разбор ДТП
   bool _showCollisionModal = false;
   String _collisionReason = '';
   String _collisionPddArticle = '';
+  String _collisionShouldGo = '';
 
   // Камера и зум
   static const double _minZoom = 0.5;
@@ -203,9 +216,12 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
       _lives = GameEconomy.miniGameLives;
       _secondsLeft = 45;
       _solvedCount = 0;
+      _wrongCount = 0;
       _isGameOver = false;
       _isNewRecord = false;
       _scenarioIndex = 0;
+      _order = List.generate(_scenarios.length, (i) => i)..shuffle();
+      _previousBest = ref.read(crossroadsPriorityProgressProvider).bestScore;
       _currentStep = 1;
     });
     _sendScenarioToEngine();
@@ -237,9 +253,16 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
 
     final reason = data['reason'] as String? ?? '';
     final pddArticle = data['pddArticle'] as String? ?? '';
+    final priorityId = data['priorityId'] as String?;
+    final shouldGo = _curScenario.actors
+        .where((a) => a.id == priorityId)
+        .map((a) => a.name)
+        .firstOrNull;
 
     setState(() {
       _combo = 0;
+      _wrongCount++;
+      _collisionShouldGo = shouldGo ?? '';
       _collisionReason = reason;
       _collisionPddArticle = pddArticle;
       _showCollisionModal = true;
@@ -431,7 +454,6 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                           borderRadius: BorderRadius.circular(
                             AppDimensions.buttonRadius,
                           ),
-                          boxShadow: gameSoftShadow(colors),
                         ),
                         child: Text(
                           appL10n.gameCrossroadsModeTraining,
@@ -501,7 +523,6 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
       decoration: BoxDecoration(
         color: colors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-        boxShadow: gameSoftShadow(colors),
       ),
       child: Wrap(
         alignment: WrapAlignment.spaceBetween,
@@ -535,59 +556,67 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     );
   }
 
+  /// Нижняя панель в стиле «Регулировщика»: без тени и обводок, крупные
+  /// плитки участников с цветом их машины. Проехавшие — зелёные, с номером.
   Widget _buildBottomPanel(AppThemeColors colors) {
+    final scenario = _curScenario;
     return Container(
       key: _panelKey,
       padding: EdgeInsets.fromLTRB(
         AppDimensions.screenPadding,
-        14,
+        AppDimensions.spacingL,
         AppDimensions.screenPadding,
-        MediaQuery.paddingOf(context).bottom + 12,
+        MediaQuery.paddingOf(context).bottom + AppDimensions.spacingM,
       ),
       decoration: BoxDecoration(
-        color: colors.cardBackground.withValues(alpha: 0.96),
+        color: colors.cardBackground,
         borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppDimensions.cardRadius),
+          top: Radius.circular(AppDimensions.radiusExtraLarge),
         ),
-        boxShadow: gameSoftShadow(colors),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
-                  _curScenario.title,
+                  scenario.title,
                   style: TextStyle(
                     fontSize: 16,
+                    height: 1.25,
                     fontWeight: FontWeight.w700,
                     color: colors.primaryText,
                   ),
                 ),
               ),
+              const SizedBox(width: AppDimensions.spacingS),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
-                  color: colors.accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
+                  color: colors.lightAccent,
+                  borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   appL10n.gameCrossroadsStepOf(
-                    _currentStep,
-                    _curScenario.actors.length,
+                    math.min(_currentStep, scenario.actors.length),
+                    scenario.actors.length,
                   ),
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: colors.accent,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppDimensions.spacingXS),
           Text(
             _currentStep == 1
                 ? appL10n.gameCrossroadsPromptWhoGoesFirst
@@ -598,262 +627,249 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
               color: colors.secondaryText,
             ),
           ),
-          const SizedBox(height: 12),
-          // Миниатюры участников
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _curScenario.actors.map((actor) {
-              final isDone = actor.priorityOrder < _currentStep;
-              return InkWell(
-                onTap: isDone
-                    ? null
-                    : () {
-                        HapticFeedbackHelper.tap();
-                        _call('selectVehicle("${actor.id}")');
-                      },
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDone
-                        ? colors.green.withValues(alpha: 0.12)
-                        : colors.background,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isDone
-                          ? colors.green
-                          : colors.divider.withValues(alpha: 0.5),
-                      width: 1.2,
+          const SizedBox(height: AppDimensions.spacingM),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const gap = AppDimensions.spacingS;
+              final width = (constraints.maxWidth - gap) / 2;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final actor in scenario.actors)
+                    SizedBox(
+                      width: width,
+                      child: _ActorTile(
+                        actor: actor,
+                        done: actor.priorityOrder < _currentStep,
+                        onTap: () {
+                          HapticFeedbackHelper.tap();
+                          _call('selectVehicle("${actor.id}")');
+                        },
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isDone
-                            ? Icons.check_circle_rounded
-                            : switch (actor.type) {
-                                CrossroadsVehicleType.tram =>
-                                  Icons.tram_rounded,
-                                CrossroadsVehicleType.emergency =>
-                                  Icons.emergency_rounded,
-                                CrossroadsVehicleType.police =>
-                                  Icons.local_police_rounded,
-                                CrossroadsVehicleType.truck =>
-                                  Icons.local_shipping_rounded,
-                                CrossroadsVehicleType.bus =>
-                                  Icons.directions_bus_rounded,
-                                CrossroadsVehicleType.motorcycle =>
-                                  Icons.two_wheeler_rounded,
-                                CrossroadsVehicleType.suv =>
-                                  Icons.directions_car_rounded,
-                                CrossroadsVehicleType.car =>
-                                  Icons.directions_car_rounded,
-                              },
-                        size: 16,
-                        color: isDone ? colors.green : colors.primaryText,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        actor.name,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isDone ? colors.green : colors.primaryText,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               );
-            }).toList(),
+            },
           ),
         ],
       ),
     );
   }
 
+  /// Разбор ошибки: кто должен был ехать и почему, по пункту ПДД.
   Widget _buildCollisionModal(AppThemeColors colors) {
     return Container(
-      color: Colors.black.withValues(alpha: 0.54),
+      color: Colors.black.withValues(alpha: 0.45),
       alignment: Alignment.bottomCenter,
-      child: SafeArea(
-        child: Container(
-          margin: const EdgeInsets.all(AppDimensions.screenPadding),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: colors.cardBackground,
-            borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-            boxShadow: gameSoftShadow(colors),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.fromLTRB(
+          AppDimensions.screenPadding,
+          AppDimensions.spacingXL,
+          AppDimensions.screenPadding,
+          MediaQuery.paddingOf(context).bottom + AppDimensions.spacingM,
+        ),
+        decoration: BoxDecoration(
+          color: colors.cardBackground,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppDimensions.radiusExtraLarge),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: colors.red.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.warning_amber_rounded,
-                      color: colors.red,
-                      size: 28,
-                    ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: colors.redLight,
+                    shape: BoxShape.circle,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      appL10n.gameCrossroadsCollision,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: colors.red,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (_collisionPddArticle.isNotEmpty) ...[
-                Text(
-                  _collisionPddArticle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: colors.accent,
+                  child: Icon(
+                    Icons.car_crash_rounded,
+                    color: colors.red,
+                    size: 22,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(width: AppDimensions.spacingM),
+                Expanded(
+                  child: Text(
+                    appL10n.gameCrossroadsCollision,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: colors.red,
+                    ),
+                  ),
+                ),
               ],
+            ),
+            if (_collisionShouldGo.isNotEmpty) ...[
+              const SizedBox(height: AppDimensions.spacingM),
               Text(
-                _collisionReason,
+                appL10n.gameCrossroadsShouldGo(_collisionShouldGo),
                 style: TextStyle(
-                  fontSize: 14,
-                  height: 1.35,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
                   color: colors.primaryText,
                 ),
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _retryCurrentScenario,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusSmall,
-                          ),
-                        ),
-                      ),
-                      child: Text(appL10n.gameCrossroadsRepeatCrossroad),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _skipToNextScenario,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.accent,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusSmall,
-                          ),
-                        ),
-                      ),
-                      child: Text(appL10n.gameCrossroadsNextCrossroad),
-                    ),
-                  ),
-                ],
-              ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGameOverDialog(AppThemeColors colors) {
-    return Container(
-      color: Colors.black.withValues(alpha: 0.6),
-      alignment: Alignment.center,
-      padding: const EdgeInsets.all(AppDimensions.screenPadding),
-      child: Material(
-        color: colors.cardBackground,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(
-                height: 120,
-                width: 220,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(AppDimensions.cardRadius),
-                  ),
-                  child: CrossroadsArt(),
-                ),
+            const SizedBox(height: AppDimensions.spacingS),
+            Text(
+              _collisionReason,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.4,
+                color: colors.primaryText,
               ),
-              const SizedBox(height: 16),
+            ),
+            if (_collisionPddArticle.isNotEmpty) ...[
+              const SizedBox(height: AppDimensions.spacingS),
               Text(
-                _isNewRecord
-                    ? appL10n.gameOverNewRecord
-                    : appL10n.gameOverTitle,
+                _collisionPddArticle,
                 style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: _isNewRecord ? colors.gold : colors.primaryText,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: colors.accent,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                appL10n.gameCrossroadsSolvedCount(_solvedCount),
-                style: TextStyle(fontSize: 14, color: colors.secondaryText),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _statItem(
-                    colors,
-                    appL10n.gameBestScoreLabel,
-                    '$_score',
-                    colors.accent,
+            ],
+            const SizedBox(height: AppDimensions.spacingL),
+            Row(
+              children: [
+                Expanded(
+                  child: GameActionButton(
+                    label: appL10n.gameCrossroadsRepeatCrossroad,
+                    onTap: _retryCurrentScenario,
+                    background: colors.gray,
+                    foreground: colors.primaryText,
+                    height: 52,
                   ),
-                  _statItem(
-                    colors,
-                    appL10n.gameComboLabel,
-                    'x$_maxComboInRound',
-                    colors.gold,
+                ),
+                const SizedBox(width: AppDimensions.spacingS),
+                Expanded(
+                  child: GameActionButton(
+                    label: appL10n.gameCrossroadsNextCrossroad,
+                    onTap: _skipToNextScenario,
+                    background: colors.accent,
+                    foreground: colors.white,
+                    height: 52,
                   ),
-                ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Итог раунда — тот же экран, что у «Регулировщика» и основной игры.
+  Widget _buildGameOverDialog(AppThemeColors colors) {
+    final answered = _solvedCount + _wrongCount;
+    final accuracy = answered > 0 ? (_solvedCount * 100 / answered).round() : 0;
+    return Positioned.fill(
+      child: GameResultOverlay(
+        art: const CrossroadsArt(),
+        title: _secondsLeft <= 1 ? appL10n.gameTimeUp : appL10n.gameOverTitle,
+        score: _score,
+        bestScore: _previousBest,
+        isNewRecord: _isNewRecord,
+        stats: [
+          GameResultStat(appL10n.gameSolvedLabel, '$_solvedCount'),
+          GameResultStat(appL10n.gameAccuracyLabel, '$accuracy%'),
+          GameResultStat(appL10n.gameComboLabel, 'x$_maxComboInRound'),
+        ],
+        onRestart: _startArcadeRound,
+        onExit: () => Navigator.of(context).pop(),
+      ),
+    );
+  }
+}
+
+/// Плитка участника: цвет машины, иконка типа и название. Без обводки —
+/// состояние передаёт заливка (серая — ждёт, зелёная — проехал).
+class _ActorTile extends StatelessWidget {
+  const _ActorTile({
+    required this.actor,
+    required this.done,
+    required this.onTap,
+  });
+
+  final CrossroadsActor actor;
+  final bool done;
+  final VoidCallback onTap;
+
+  Color get _carColor {
+    final hex = actor.colorHex.replaceFirst('#', '');
+    return Color(int.parse('FF$hex', radix: 16));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final icon = switch (actor.type) {
+      CrossroadsVehicleType.tram => Icons.tram_rounded,
+      CrossroadsVehicleType.emergency => Icons.emergency_rounded,
+      CrossroadsVehicleType.police => Icons.local_police_rounded,
+      CrossroadsVehicleType.truck => Icons.local_shipping_rounded,
+      CrossroadsVehicleType.bus => Icons.directions_bus_rounded,
+      CrossroadsVehicleType.motorcycle => Icons.two_wheeler_rounded,
+      CrossroadsVehicleType.suv ||
+      CrossroadsVehicleType.car => Icons.directions_car_rounded,
+    };
+    return Material(
+      color: done ? colors.greenLight : colors.gray,
+      borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
+        onTap: done ? null : onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: done ? colors.green : _carColor,
+                  shape: BoxShape.circle,
+                ),
+                child: done
+                    ? Text(
+                        '${actor.priorityOrder}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Icon(
+                        icon,
+                        size: 18,
+                        color: _carColor.computeLuminance() > 0.6
+                            ? const Color(0xFF2B2F36)
+                            : Colors.white,
+                      ),
               ),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: _startArcadeRound,
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text(appL10n.gamePlayAgain),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colors.accent,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.buttonRadius,
-                    ),
+              const SizedBox(width: AppDimensions.spacingS),
+              Expanded(
+                child: Text(
+                  actor.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.2,
+                    fontWeight: FontWeight.w600,
+                    color: done ? colors.green : colors.primaryText,
                   ),
                 ),
               ),
@@ -861,31 +877,6 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _statItem(
-    AppThemeColors colors,
-    String label,
-    String value,
-    Color valColor,
-  ) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: valColor,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(fontSize: 12, color: colors.secondaryText),
-        ),
-      ],
     );
   }
 }

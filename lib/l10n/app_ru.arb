@@ -935,6 +935,15 @@
     }
   },
   "gameCrossroadsCollision": "ДТП! Нарушение очередности",
+  "gameCrossroadsShouldGo": "Проезжает сейчас: {name}",
+  "@gameCrossroadsShouldGo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gameCrossroadsHowTo": "Расставьте машины по очереди: нажимайте на ту, что едет сейчас.",
   "gameCrossroadsNextCrossroad": "Следующий перекресток",
   "gameCrossroadsRepeatCrossroad": "Попробовать снова",
   "gameCrossroadsModeArcade": "Аркада",

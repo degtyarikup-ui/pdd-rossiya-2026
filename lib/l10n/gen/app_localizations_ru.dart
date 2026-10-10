@@ -1788,6 +1788,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameCrossroadsCollision => 'ДТП! Нарушение очередности';
 
   @override
+  String gameCrossroadsShouldGo(String name) {
+    return 'Проезжает сейчас: $name';
+  }
+
+  @override
+  String get gameCrossroadsHowTo =>
+      'Расставьте машины по очереди: нажимайте на ту, что едет сейчас.';
+
+  @override
   String get gameCrossroadsNextCrossroad => 'Следующий перекресток';
 
   @override

@@ -67,15 +67,45 @@ async function main() {
       assert(scenario, `Missing representative scenario: ${id}`);
       return scenario;
     });
+    const geometryCounts = [];
     for (const scenario of selected) {
       await page.evaluate(data => {
         window.smokeEvents = [];
         loadScenarioData(data);
-        setWeather('clear', true);
-        setViewInset(235);
+                setViewInset(235);
         setZoom(1);
       }, scenario);
       assert.equal(await page.evaluate(() => window._pddCrossroads.vehiclesGroup.children.length), scenario.actors.length);
+      // Ясная погода всегда: ни дождя, ни прожекторов фар; рельсы — только под трамвай;
+      // каждый знак смотрит на водителей своего подъезда.
+      const scene = await page.evaluate(() => {
+        const { scene } = window._pddCrossroads;
+        let spots = 0, rain = 0, rails = 0; const signs = [];
+        scene.traverse(o => {
+          if (o.isSpotLight) spots++;
+          if (o.isLineSegments || o.isPoints) rain++;
+        });
+        window._pddCrossroads.scenarioGroup.children.forEach(o => {
+          const p = o.geometry?.parameters;
+          if (p && Math.min(p.width, p.depth) === 0.08) rails++;
+        });
+        return { spots, rain, rails, fog: !!scene.fog, geometries: window._pddCrossroads.renderer.info.memory.geometries };
+      });
+      assert.equal(scene.spots, 0, 'no headlight spot lights');
+      assert.equal(scene.rain, 0, 'no rain');
+      assert.equal(scene.fog, false, 'no fog');
+      const trams = scenario.actors.filter(a => a.type === 'tram');
+      const axes = new Set(trams.map(a => a.side === 'north' || a.side === 'south' ? 'ns' : 'ew'));
+      assert.equal(scene.rails, axes.size * 2, scenario.id + ': rails only under trams');
+      geometryCounts.push(scene.geometries);
+      const facing = await page.evaluate(() => window._pddCrossroads.signsGroup.children
+        .map(g => ({ x: g.position.x, z: g.position.z, ry: g.rotation.y })));
+      assert.equal(facing.length, (scenario.signs || []).length, scenario.id + ': every sign is placed');
+      for (const f of facing) {
+        // Нормаль лица знака (+Z, повернутая) направлена от перекрёстка — к подъезду.
+        const nx = Math.sin(f.ry), nz = Math.cos(f.ry);
+        assert(nx * f.x + nz * f.z > 0, scenario.id + ': sign faces its approach ' + JSON.stringify(f));
+      }
       if (scenario === scenarios[0]) await page.screenshot({ path: path.join(output, 'initial.png') });
       let completedSteps = 0;
       for (const actor of [...scenario.actors].sort((a, b) => a.order - b.order)) {
@@ -92,6 +122,8 @@ async function main() {
       assert.equal(await page.evaluate(() => window.smokeEvents.filter(event => event.type === 'collision').length), 0);
       console.log(`${scenario.id}: ${completedSteps} correct steps and completion`);
     }
+    // Смена перекрёстков не копит геометрию (машины, метки и знаки освобождаются).
+    if (geometryCounts.length > 4) assert(Math.max(...geometryCounts.slice(-3)) < geometryCounts[0] * 1.6, 'no geometry leak: ' + geometryCounts.join(','));
 
     // Exported Dart objects use `explanation`; the standalone demo historically
     // used `ruleExplanation`. The real bridge must preserve the actual rule.

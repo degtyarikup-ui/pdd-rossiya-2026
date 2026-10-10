@@ -85,7 +85,7 @@ void main() {
     test('CrossroadsScenariosLibrary returns full scenarios for all languages', () {
       for (final lang in ['ru', 'en', 'kk']) {
         final scenarios = CrossroadsScenariosLibrary.getScenarios(lang);
-        expect(scenarios.length, equals(18));
+        expect(scenarios.length, equals(17));
         for (final sc in scenarios) {
           expect(sc.title.isNotEmpty, isTrue);
           expect(sc.subtitle.isNotEmpty, isTrue);

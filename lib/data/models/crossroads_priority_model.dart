@@ -200,6 +200,7 @@ class CrossroadsScenario {
     this.signs = const [],
     this.isEqualCrossroad = false,
     this.trafficLightGreenSides,
+    this.closedSide,
   });
 
   final String id;
@@ -210,6 +211,9 @@ class CrossroadsScenario {
   final List<CrossroadsSignPlacement> signs;
   final bool isEqualCrossroad;
   final List<CrossroadsSide>? trafficLightGreenSides;
+
+  /// Т-образный перекрёсток: этой стороны нет (знаки 2.3.2, 2.3.3).
+  final CrossroadsSide? closedSide;
 
   /// Список акторов, отсортированных по правильному порядку проезда.
   List<CrossroadsActor> get orderedActors {
@@ -232,6 +236,7 @@ class CrossroadsScenario {
     'subtitle': subtitle,
     'pddArticle': pddArticle,
     'isEqual': isEqualCrossroad,
+    if (closedSide != null) 'closedSide': closedSide!.name,
     'signs': signs.map((s) => s.toJson()).toList(),
     'actors': actors.map((a) => a.toJson()).toList(),
   };
@@ -245,6 +250,7 @@ class CrossroadsScenario {
     List<CrossroadsSignPlacement>? signs,
     bool? isEqualCrossroad,
     List<CrossroadsSide>? trafficLightGreenSides,
+    CrossroadsSide? closedSide,
   }) => CrossroadsScenario(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -253,7 +259,9 @@ class CrossroadsScenario {
     actors: actors ?? this.actors,
     signs: signs ?? this.signs,
     isEqualCrossroad: isEqualCrossroad ?? this.isEqualCrossroad,
-    trafficLightGreenSides: trafficLightGreenSides ?? this.trafficLightGreenSides,
+    trafficLightGreenSides:
+        trafficLightGreenSides ?? this.trafficLightGreenSides,
+    closedSide: closedSide ?? this.closedSide,
   );
 }
 
@@ -290,26 +298,32 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_main_turns_left',
       title: 'Главная дорога поворачивает налево (знак 8.13)',
-      subtitle: 'Водители на главной разъезжаются по помехе справа, затем второстепенные.',
+      subtitle:
+          'Сначала проезжают машины на главной, между собой — по помехе справа. Затем второстепенные.',
       pddArticle: 'Пункт 13.10 ПДД РФ',
       signs: [
-        CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.south, table8_13: 'bottom_left'),
-        CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.west, table8_13: 'bottom_right'),
-        CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.north, table8_13: 'top_right'),
-        CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.east, table8_13: 'left_top'),
+        CrossroadsSignPlacement(
+          code: '2.1',
+          side: CrossroadsSide.south,
+          table8_13: 'bottom_left',
+        ),
+        CrossroadsSignPlacement(
+          code: '2.1',
+          side: CrossroadsSide.west,
+          table8_13: 'bottom_right',
+        ),
+        CrossroadsSignPlacement(
+          code: '2.4',
+          side: CrossroadsSide.north,
+          table8_13: 'top_right',
+        ),
+        CrossroadsSignPlacement(
+          code: '2.4',
+          side: CrossroadsSide.east,
+          table8_13: 'left_top',
+        ),
       ],
       actors: [
-        CrossroadsActor(
-          id: 'car_west',
-          type: CrossroadsVehicleType.car,
-          name: 'Белый седан',
-          colorHex: '#F2F3F5',
-          side: CrossroadsSide.west,
-          maneuver: CrossroadsManeuver.straight,
-          priorityOrder: 1,
-          ruleExplanation: 'Белый седан на главной дороге и для южного автомобиля является помехой справа. Проезжает первым.',
-          vehicleModel: 'sedan',
-        ),
         CrossroadsActor(
           id: 'car_south',
           type: CrossroadsVehicleType.car,
@@ -317,20 +331,22 @@ class CrossroadsScenariosLibrary {
           colorHex: '#317ED4',
           side: CrossroadsSide.south,
           maneuver: CrossroadsManeuver.left,
-          priorityOrder: 2,
-          ruleExplanation: 'Синий автомобиль на главной дороге, уступает белому справа и проезжает вторым.',
+          priorityOrder: 1,
+          ruleExplanation:
+              'Синий на главной дороге. Для белого седана он помеха справа, поэтому проезжает первым.',
           vehicleModel: 'hatch',
         ),
         CrossroadsActor(
-          id: 'car_east',
-          type: CrossroadsVehicleType.suv,
-          name: 'Зеленый кроссовер',
-          colorHex: '#4D7768',
-          side: CrossroadsSide.east,
+          id: 'car_west',
+          type: CrossroadsVehicleType.car,
+          name: 'Белый седан',
+          colorHex: '#F2F3F5',
+          side: CrossroadsSide.west,
           maneuver: CrossroadsManeuver.straight,
-          priorityOrder: 3,
-          ruleExplanation: 'Зеленый на второстепенной дороге. Среди второстепенных у него нет помехи справа от северного.',
-          vehicleModel: 'suv',
+          priorityOrder: 2,
+          ruleExplanation:
+              'Белый тоже на главной, но справа от него синий хэтчбек. Уступает ему и проезжает вторым.',
+          vehicleModel: 'sedan',
         ),
         CrossroadsActor(
           id: 'car_north',
@@ -339,9 +355,22 @@ class CrossroadsScenariosLibrary {
           colorHex: '#F08A24',
           side: CrossroadsSide.north,
           maneuver: CrossroadsManeuver.straight,
-          priorityOrder: 4,
-          ruleExplanation: 'Оранжевый на второстепенной дороге уступает зеленому кроссоверу справа.',
+          priorityOrder: 3,
+          ruleExplanation:
+              'Оранжевый на второстепенной: пропускает главную. Справа от него никого — едет третьим.',
           vehicleModel: 'sedan',
+        ),
+        CrossroadsActor(
+          id: 'car_east',
+          type: CrossroadsVehicleType.suv,
+          name: 'Зеленый кроссовер',
+          colorHex: '#4D7768',
+          side: CrossroadsSide.east,
+          maneuver: CrossroadsManeuver.straight,
+          priorityOrder: 4,
+          ruleExplanation:
+              'Зеленый на второстепенной, и справа от него оранжевый седан. Проезжает последним.',
+          vehicleModel: 'suv',
         ),
       ],
     ),
@@ -378,7 +407,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.north,
           maneuver: CrossroadsManeuver.left,
           priorityOrder: 2,
-          ruleExplanation: 'Зеленый внедорожник на главной дороге, но при повороте налево уступает встречному синему (п. 13.12).',
+          ruleExplanation:
+              'Зеленый внедорожник на главной дороге, но при повороте налево уступает встречному синему (п. 13.12).',
           vehicleModel: 'suv',
         ),
         CrossroadsActor(
@@ -389,7 +419,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.east,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 3,
-          ruleExplanation: 'Красный автомобиль находится на второстепенной дороге со знаком 2.4 «Уступите дорогу».',
+          ruleExplanation:
+              'Красный автомобиль находится на второстепенной дороге со знаком 2.4 «Уступите дорогу».',
           vehicleModel: 'hatch',
         ),
       ],
@@ -399,20 +430,21 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_equal_3_cars',
       title: 'Равнозначный перекресток: 3 автомобиля',
-      subtitle: 'При равных условиях уступают помехе справа.',
+      subtitle: 'Знаков нет: каждый уступает тому, кто приближается справа.',
       pddArticle: 'Пункт 13.11 ПДД РФ',
       isEqualCrossroad: true,
       actors: [
         CrossroadsActor(
-          id: 'car_east',
-          type: CrossroadsVehicleType.car,
-          name: 'Желтый седан',
-          colorHex: '#F08A24',
-          side: CrossroadsSide.east,
+          id: 'car_west',
+          type: CrossroadsVehicleType.suv,
+          name: 'Зеленый кроссовер',
+          colorHex: '#4D7768',
+          side: CrossroadsSide.west,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
-          ruleExplanation: 'У желтого автомобиля справа нет помехи. Он начинает движение первым.',
-          vehicleModel: 'sedan',
+          ruleExplanation:
+              'Справа от зеленого кроссовера никого нет — он проезжает первым.',
+          vehicleModel: 'suv',
         ),
         CrossroadsActor(
           id: 'car_north',
@@ -422,19 +454,21 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.north,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 2,
-          ruleExplanation: 'Синий автомобиль уступает желтому справа. После его проезда освобождается.',
+          ruleExplanation:
+              'Справа от синего был зеленый кроссовер. Когда тот проехал, синий свободен.',
           vehicleModel: 'hatch',
         ),
         CrossroadsActor(
-          id: 'car_west',
-          type: CrossroadsVehicleType.suv,
-          name: 'Зеленый кроссовер',
-          colorHex: '#4D7768',
-          side: CrossroadsSide.west,
+          id: 'car_east',
+          type: CrossroadsVehicleType.car,
+          name: 'Желтый седан',
+          colorHex: '#F08A24',
+          side: CrossroadsSide.east,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 3,
-          ruleExplanation: 'Зеленый кроссовер имеет помеху справа (синий авто) и проезжает последним.',
-          vehicleModel: 'suv',
+          ruleExplanation:
+              'Справа от желтого — синий хэтчбек. Желтый уступает и проезжает последним.',
+          vehicleModel: 'sedan',
         ),
       ],
     ),
@@ -443,7 +477,8 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_equal_tram',
       title: 'Равнозначный перекресток с трамваем',
-      subtitle: 'На равнозначной дороге трамвай всегда имеет преимущество.',
+      subtitle:
+          'На равнозначном перекрестке трамвай проезжает раньше автомобилей.',
       pddArticle: 'Пункт 13.11 ПДД РФ',
       isEqualCrossroad: true,
       actors: [
@@ -455,8 +490,21 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.north,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
-          ruleExplanation: 'На перекрестке равнозначных дорог трамвай имеет преимущество перед безрельсовыми ТС независимо от направления.',
+          ruleExplanation:
+              'На перекрестке равнозначных дорог трамвай имеет преимущество перед безрельсовыми ТС независимо от направления.',
           vehicleModel: 'tram',
+        ),
+        CrossroadsActor(
+          id: 'car_south',
+          type: CrossroadsVehicleType.car,
+          name: 'Серый хэтчбек',
+          colorHex: '#B9C0C7',
+          side: CrossroadsSide.south,
+          maneuver: CrossroadsManeuver.left,
+          priorityOrder: 2,
+          ruleExplanation:
+              'Серый поворачивает налево и пропускает трамвай. Справа от него никого — он второй.',
+          vehicleModel: 'hatch',
         ),
         CrossroadsActor(
           id: 'car_west',
@@ -465,20 +513,10 @@ class CrossroadsScenariosLibrary {
           colorHex: '#317ED4',
           side: CrossroadsSide.west,
           maneuver: CrossroadsManeuver.straight,
-          priorityOrder: 2,
-          ruleExplanation: 'После трамвая синий автомобиль свободен от помехи справа и проезжает вторым.',
-          vehicleModel: 'sedan',
-        ),
-        CrossroadsActor(
-          id: 'car_south',
-          type: CrossroadsVehicleType.car,
-          name: 'Серый хэтчбек',
-          colorHex: '#B9C0C7',
-          side: CrossroadsSide.south,
-          maneuver: CrossroadsManeuver.straight,
           priorityOrder: 3,
-          ruleExplanation: 'Серый автомобиль уступает трамваю и помехе справа (синему авто).',
-          vehicleModel: 'hatch',
+          ruleExplanation:
+              'Справа от синего седана — серый хэтчбек. Синий уступает ему и проезжает последним.',
+          vehicleModel: 'sedan',
         ),
       ],
     ),
@@ -487,7 +525,8 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_emergency_priority',
       title: 'Спецтранспорт: скорая помощь с сиреной',
-      subtitle: 'Маячок и специальный звуковой сигнал дают безоговорочный приоритет.',
+      subtitle:
+          'Маячок и специальный звуковой сигнал дают безоговорочный приоритет.',
       pddArticle: 'Пункт 3.2 ПДД РФ',
       signs: [
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.south),
@@ -504,7 +543,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.east,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
-          ruleExplanation: 'Автомобиль с включенными проблесковым маячком и специальным звуковым сигналом пользуется преимуществом независимо от знаков!',
+          ruleExplanation:
+              'Автомобиль с включенными проблесковым маячком и специальным звуковым сигналом пользуется преимуществом независимо от знаков!',
           hasSiren: true,
           vehicleModel: 'suv',
         ),
@@ -516,7 +556,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.south,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 2,
-          ruleExplanation: 'После скорой синий автомобиль на главной дороге проезжает вторым.',
+          ruleExplanation:
+              'После скорой синий автомобиль на главной дороге проезжает вторым.',
           vehicleModel: 'sedan',
         ),
         CrossroadsActor(
@@ -527,7 +568,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.west,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 3,
-          ruleExplanation: 'Красный хэтчбек на второстепенной со знаком 2.4 уступает всем.',
+          ruleExplanation:
+              'Красный хэтчбек на второстепенной со знаком 2.4 уступает всем.',
           vehicleModel: 'hatch',
         ),
       ],
@@ -537,8 +579,8 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_tram_on_secondary',
       title: 'Трамвай на второстепенной дороге',
-      subtitle: 'Трамвай на второстепенной уступает автомобилям на главной!',
-      pddArticle: 'Пункт 13.9 ПДД РФ',
+      subtitle: 'Трамвай на второстепенной уступает автомобилям на главной.',
+      pddArticle: 'Пункты 13.9 и 13.12 ПДД РФ',
       signs: [
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.south),
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.north),
@@ -549,34 +591,37 @@ class CrossroadsScenariosLibrary {
         CrossroadsActor(
           id: 'car_south',
           type: CrossroadsVehicleType.car,
-          name: 'Синий седан (Главная)',
+          name: 'Синий седан (главная)',
           colorHex: '#317ED4',
           side: CrossroadsSide.south,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
-          ruleExplanation: 'Синий автомобиль движется по главной дороге и имеет приоритет перед трамваем на второстепенной.',
+          ruleExplanation:
+              'Синий автомобиль на главной дороге — он проезжает раньше трамвая на второстепенной.',
           vehicleModel: 'sedan',
         ),
         CrossroadsActor(
           id: 'tram_east',
           type: CrossroadsVehicleType.tram,
-          name: 'Красный трамвай (Второстепенная)',
+          name: 'Красный трамвай (второстепенная)',
           colorHex: '#ED4621',
           side: CrossroadsSide.east,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 2,
-          ruleExplanation: 'Трамвай на второстепенной уступает главной, но имеет преимущество перед желтым автомобилем на той же второстепенной дороге.',
+          ruleExplanation:
+              'Трамвай на второстепенной пропускает главную. Встречный желтый поворачивает налево и уступает трамваю.',
           vehicleModel: 'tram',
         ),
         CrossroadsActor(
           id: 'car_west',
           type: CrossroadsVehicleType.car,
-          name: 'Желтый седан (Второстепенная)',
+          name: 'Желтый седан (второстепенная)',
           colorHex: '#F08A24',
           side: CrossroadsSide.west,
-          maneuver: CrossroadsManeuver.straight,
+          maneuver: CrossroadsManeuver.left,
           priorityOrder: 3,
-          ruleExplanation: 'Желтый автомобиль на второстепенной уступает главной дороге и трамваю.',
+          ruleExplanation:
+              'Желтый на второстепенной, а поворачивая налево, уступает и встречному трамваю.',
           vehicleModel: 'sedan',
         ),
       ],
@@ -586,8 +631,9 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_stop_sign',
       title: 'Знак 2.5 «Движение без остановки запрещено»',
-      subtitle: 'Обязательная остановка и уступка транспорту по пересекаемой главной дороге.',
-      pddArticle: 'Знак 2.5 и п. 13.9 ПДД РФ',
+      subtitle:
+          'Перед знаком STOP нужно остановиться и уступить транспорту на пересекаемой дороге.',
+      pddArticle: 'Знак 2.5, пункты 13.9 и 13.12 ПДД РФ',
       signs: [
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.east),
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.west),
@@ -603,7 +649,7 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.east,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
-          ruleExplanation: 'Зеленый автомобиль движется по главной дороге прямо.',
+          ruleExplanation: 'Зеленый внедорожник едет по главной дороге прямо.',
           vehicleModel: 'suv',
         ),
         CrossroadsActor(
@@ -614,18 +660,20 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.north,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 2,
-          ruleExplanation: 'Белый седан на второстепенной проезжает раньше южного авто с учетом помехи справа.',
+          ruleExplanation:
+              'Белый седан на второстепенной пропускает главную и едет прямо.',
           vehicleModel: 'sedan',
         ),
         CrossroadsActor(
           id: 'car_south',
           type: CrossroadsVehicleType.car,
-          name: 'Красный хэтчбек (Знак STOP)',
+          name: 'Красный хэтчбек (знак STOP)',
           colorHex: '#ED4621',
           side: CrossroadsSide.south,
-          maneuver: CrossroadsManeuver.straight,
+          maneuver: CrossroadsManeuver.left,
           priorityOrder: 3,
-          ruleExplanation: 'Красный автомобиль уступает всем участникам на пересекаемой дороге.',
+          ruleExplanation:
+              'Красный остановился у знака STOP, пропускает главную, а при повороте налево — встречный белый седан.',
           vehicleModel: 'hatch',
         ),
       ],
@@ -635,7 +683,8 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_uturn_equal',
       title: 'Разворот на перекрестке',
-      subtitle: 'При развороте встречный автомобиль становится помехой справа.',
+      subtitle:
+          'При развороте водитель уступает встречным машинам, которые едут прямо или направо.',
       pddArticle: 'Пункт 13.12 ПДД РФ',
       isEqualCrossroad: true,
       actors: [
@@ -647,7 +696,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.south,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
-          ruleExplanation: 'Синий автомобиль движется прямо. Северный седан при развороте обязан уступить ему.',
+          ruleExplanation:
+              'Синий автомобиль движется прямо. Северный седан при развороте обязан уступить ему.',
           vehicleModel: 'sedan',
         ),
         CrossroadsActor(
@@ -658,7 +708,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.north,
           maneuver: CrossroadsManeuver.uTurn,
           priorityOrder: 2,
-          ruleExplanation: 'Разворачивающийся автомобиль уступает встречному транспорту.',
+          ruleExplanation:
+              'Разворачивающийся автомобиль уступает встречному транспорту.',
           vehicleModel: 'hatch',
         ),
       ],
@@ -668,36 +719,55 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_main_turns_right',
       title: 'Главная дорога поворачивает направо (знак 8.13)',
-      subtitle: 'Транспорт на главной разъезжается по правилу правой руки, затем второстепенные.',
+      subtitle:
+          'Сначала проезжают машины на главной, между собой — по помехе справа. Затем второстепенные.',
       pddArticle: 'Пункт 13.10 ПДД РФ',
       signs: [
-        CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.south, table8_13: 'bottom_right'),
-        CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.east, table8_13: 'bottom_left'),
-        CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.north, table8_13: 'left_top'),
-        CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.west, table8_13: 'top_right'),
+        CrossroadsSignPlacement(
+          code: '2.1',
+          side: CrossroadsSide.south,
+          table8_13: 'bottom_right',
+        ),
+        CrossroadsSignPlacement(
+          code: '2.1',
+          side: CrossroadsSide.east,
+          table8_13: 'bottom_left',
+        ),
+        CrossroadsSignPlacement(
+          code: '2.4',
+          side: CrossroadsSide.north,
+          table8_13: 'left_top',
+        ),
+        CrossroadsSignPlacement(
+          code: '2.4',
+          side: CrossroadsSide.west,
+          table8_13: 'top_right',
+        ),
       ],
       actors: [
-        CrossroadsActor(
-          id: 'bus_south',
-          type: CrossroadsVehicleType.bus,
-          name: 'Рейсовый автобус',
-          colorHex: '#F08A24',
-          side: CrossroadsSide.south,
-          maneuver: CrossroadsManeuver.right,
-          priorityOrder: 1,
-          ruleExplanation: 'Автобус движется по главной дороге и поворачивает направо. У него нет помехи справа.',
-          vehicleModel: 'bus',
-        ),
         CrossroadsActor(
           id: 'car_east',
           type: CrossroadsVehicleType.car,
           name: 'Синий седан',
           colorHex: '#317ED4',
           side: CrossroadsSide.east,
+          maneuver: CrossroadsManeuver.left,
+          priorityOrder: 1,
+          ruleExplanation:
+              'Синий на главной поворачивает налево, вдоль главной. Для автобуса он помеха справа — едет первым.',
+          vehicleModel: 'sedan',
+        ),
+        CrossroadsActor(
+          id: 'bus_south',
+          type: CrossroadsVehicleType.bus,
+          name: 'Рейсовый автобус',
+          colorHex: '#F08A24',
+          side: CrossroadsSide.south,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 2,
-          ruleExplanation: 'Синий седан на главной дороге уступает автобусу справа и проезжает вторым.',
-          vehicleModel: 'sedan',
+          ruleExplanation:
+              'Автобус тоже на главной, но справа от него синий седан. Уступает и проезжает вторым.',
+          vehicleModel: 'bus',
         ),
         CrossroadsActor(
           id: 'truck_west',
@@ -707,7 +777,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.west,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 3,
-          ruleExplanation: 'Грузовик на второстепенной дороге свободен от помехи справа и проезжает раньше северного авто.',
+          ruleExplanation:
+              'Грузовик на второстепенной пропускает главную. Справа от него уже никого — он третий.',
           vehicleModel: 'truck',
         ),
         CrossroadsActor(
@@ -718,44 +789,9 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.north,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 4,
-          ruleExplanation: 'Красный хэтчбек на второстепенной дороге уступает белому грузовику справа.',
+          ruleExplanation:
+              'Красный на второстепенной, и справа от него белый грузовик. Проезжает последним.',
           vehicleModel: 'hatch',
-        ),
-      ],
-    ),
-
-    // 10. Круговое движение со знаком 4.3 (п. 13.11.1)
-    const CrossroadsScenario(
-      id: 'cross_roundabout_priority',
-      title: 'Круговое движение (знак 4.3)',
-      subtitle: 'При въезде на круг со знаком 4.3 водитель обязан уступить дорогу движущимся по кругу.',
-      pddArticle: 'Пункт 13.11.1 ПДД РФ',
-      signs: [
-        CrossroadsSignPlacement(code: '4.3', side: CrossroadsSide.south),
-        CrossroadsSignPlacement(code: '4.3', side: CrossroadsSide.west),
-      ],
-      actors: [
-        CrossroadsActor(
-          id: 'car_east',
-          type: CrossroadsVehicleType.suv,
-          name: 'Зеленый кроссовер (по кругу)',
-          colorHex: '#4D7768',
-          side: CrossroadsSide.east,
-          maneuver: CrossroadsManeuver.straight,
-          priorityOrder: 1,
-          ruleExplanation: 'Зеленый кроссовер уже находится на перекрестке с круговым движением и пользуется преимуществом.',
-          vehicleModel: 'suv',
-        ),
-        CrossroadsActor(
-          id: 'car_south',
-          type: CrossroadsVehicleType.car,
-          name: 'Желтый седан (въезд на круг)',
-          colorHex: '#E8C547',
-          side: CrossroadsSide.south,
-          maneuver: CrossroadsManeuver.straight,
-          priorityOrder: 2,
-          ruleExplanation: 'Водитель желтого седана при въезде на круговой перекресток обязан уступить дорогу ТС на круге (п. 13.11.1).',
-          vehicleModel: 'sedan',
         ),
       ],
     ),
@@ -764,7 +800,8 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_police_vs_tram',
       title: 'Патруль ДПС со спецсигналами и трамвай',
-      subtitle: 'Автомобиль оперативной службы с маячком и сиреной имеет преимущество даже перед трамваем.',
+      subtitle:
+          'Автомобиль оперативной службы с маячком и сиреной имеет преимущество даже перед трамваем.',
       pddArticle: 'Пункты 3.2 и 13.11 ПДД РФ',
       isEqualCrossroad: true,
       actors: [
@@ -776,7 +813,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.south,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
-          ruleExplanation: 'Автомобиль со включенными проблесковыми маячками и сиреной пользуется преимуществом перед всеми участниками, включая трамвай (п. 3.2).',
+          ruleExplanation:
+              'Автомобиль со включенными проблесковыми маячками и сиреной пользуется преимуществом перед всеми участниками, включая трамвай (п. 3.2).',
           hasSiren: true,
           vehicleModel: 'sedan',
         ),
@@ -788,7 +826,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.east,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 2,
-          ruleExplanation: 'На равнозначном перекрестке трамвай имеет преимущество перед обычными автомобилями и едет вторым.',
+          ruleExplanation:
+              'На равнозначном перекрестке трамвай имеет преимущество перед обычными автомобилями и едет вторым.',
           vehicleModel: 'tram',
         ),
         CrossroadsActor(
@@ -799,7 +838,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.north,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 3,
-          ruleExplanation: 'Синий автомобиль уступает спецтранспорту ДПС и трамваю.',
+          ruleExplanation:
+              'Синий автомобиль уступает спецтранспорту ДПС и трамваю.',
           vehicleModel: 'hatch',
         ),
       ],
@@ -809,7 +849,8 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_junction_2_3_1',
       title: 'Пересечение со второстепенной дорогой (знак 2.3.1)',
-      subtitle: 'Знак 2.3.1 предоставляет приоритет перед ТС на пересекаемой второстепенной дороге.',
+      subtitle:
+          'Знак 2.3.1 предоставляет приоритет перед ТС на пересекаемой второстепенной дороге.',
       pddArticle: 'Знак 2.3.1 и п. 13.12 ПДД РФ',
       signs: [
         CrossroadsSignPlacement(code: '2.3.1', side: CrossroadsSide.south),
@@ -826,7 +867,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.south,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
-          ruleExplanation: 'Мотоцикл движется по главной дороге прямо и имеет приоритет перед всеми участниками.',
+          ruleExplanation:
+              'Мотоцикл движется по главной дороге прямо и имеет приоритет перед всеми участниками.',
           vehicleModel: 'motorcycle',
         ),
         CrossroadsActor(
@@ -837,7 +879,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.north,
           maneuver: CrossroadsManeuver.left,
           priorityOrder: 2,
-          ruleExplanation: 'Седан на главной дороге поворачивает налево и уступает встречному мотоциклу (п. 13.12).',
+          ruleExplanation:
+              'Седан на главной дороге поворачивает налево и уступает встречному мотоциклу (п. 13.12).',
           vehicleModel: 'sedan',
         ),
         CrossroadsActor(
@@ -848,7 +891,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.west,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 3,
-          ruleExplanation: 'Грузовик находится на второстепенной дороге со знаком 2.4 и пропускает транспорт главной дороги.',
+          ruleExplanation:
+              'Грузовик находится на второстепенной дороге со знаком 2.4 и пропускает транспорт главной дороги.',
           vehicleModel: 'truck',
         ),
       ],
@@ -858,8 +902,9 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_junction_right_2_3_2',
       title: 'Примыкание второстепенной дороги справа (знак 2.3.2)',
-      subtitle: 'Главная дорога продолжается прямо, примыкающий справа уступает.',
-      pddArticle: 'Знак 2.3.2 и п. 13.9 ПДД РФ',
+      subtitle: 'Главная дорога идет прямо, справа примыкает второстепенная.',
+      pddArticle: 'Знак 2.3.2 и пункт 13.9 ПДД РФ',
+      closedSide: CrossroadsSide.west,
       signs: [
         CrossroadsSignPlacement(code: '2.3.2', side: CrossroadsSide.south),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.east),
@@ -868,23 +913,25 @@ class CrossroadsScenariosLibrary {
         CrossroadsActor(
           id: 'suv_south',
           type: CrossroadsVehicleType.suv,
-          name: 'Зеленый кроссовер (Главная)',
+          name: 'Зеленый кроссовер (главная)',
           colorHex: '#4D7768',
           side: CrossroadsSide.south,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
-          ruleExplanation: 'Кроссовер движется по главной дороге прямо согласно знаку 2.3.2.',
+          ruleExplanation:
+              'Кроссовер едет по главной дороге прямо (знак 2.3.2).',
           vehicleModel: 'suv',
         ),
         CrossroadsActor(
           id: 'truck_east',
           type: CrossroadsVehicleType.truck,
-          name: 'Бортовой грузовик (Примыкание)',
+          name: 'Бортовой грузовик (примыкание)',
           colorHex: '#D7AA60',
           side: CrossroadsSide.east,
-          maneuver: CrossroadsManeuver.straight,
+          maneuver: CrossroadsManeuver.left,
           priorityOrder: 2,
-          ruleExplanation: 'Грузовик выезжает со второстепенной дороги со знаком 2.4 и уступает кроссоверу.',
+          ruleExplanation:
+              'Грузовик выезжает с примыкающей дороги (знак 2.4) и пропускает кроссовер на главной.',
           vehicleModel: 'truck',
         ),
       ],
@@ -894,9 +941,11 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_end_of_main_2_2',
       title: 'Конец главной дороги (знаки 2.2 и 2.4)',
-      subtitle: 'Знак 2.2 совместно с 2.4 отменяет приоритет перед пересекаемой дорогой.',
-      pddArticle: 'Знаки 2.2, 2.4 и п. 13.9 ПДД РФ',
+      subtitle:
+          'После знака 2.2 главная кончилась: на перекрестке со знаком 2.4 нужно уступить.',
+      pddArticle: 'Знаки 2.2, 2.4 и пункт 13.9 ПДД РФ',
       signs: [
+        CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.south),
         CrossroadsSignPlacement(code: '2.2', side: CrossroadsSide.south),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.north),
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.east),
@@ -906,34 +955,37 @@ class CrossroadsScenariosLibrary {
         CrossroadsActor(
           id: 'car_east',
           type: CrossroadsVehicleType.suv,
-          name: 'Черный внедорожник (Главная)',
+          name: 'Черный внедорожник (главная)',
           colorHex: '#2B2F36',
           side: CrossroadsSide.east,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
-          ruleExplanation: 'Внедорожник движется по пересекаемой главной дороге прямо (знак 2.1).',
+          ruleExplanation:
+              'Внедорожник едет по главной дороге прямо (знак 2.1).',
           vehicleModel: 'suv',
         ),
         CrossroadsActor(
           id: 'car_west',
           type: CrossroadsVehicleType.car,
-          name: 'Синее купе (Главная)',
+          name: 'Синее купе (главная)',
           colorHex: '#317ED4',
           side: CrossroadsSide.west,
           maneuver: CrossroadsManeuver.left,
           priorityOrder: 2,
-          ruleExplanation: 'Купе на главной дороге при повороте налево уступает встречному внедорожнику (п. 13.12).',
+          ruleExplanation:
+              'Купе на главной при повороте налево уступает встречному внедорожнику (п. 13.12).',
           vehicleModel: 'coupe',
         ),
         CrossroadsActor(
           id: 'bus_south',
           type: CrossroadsVehicleType.bus,
-          name: 'Городской автобус (Конец главной)',
+          name: 'Городской автобус',
           colorHex: '#F08A24',
           side: CrossroadsSide.south,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 3,
-          ruleExplanation: 'Автобус встречает знак 2.2 «Конец главной дороги» со знаком 2.4 и уступает обоим ТС на главной дороге.',
+          ruleExplanation:
+              'Для автобуса главная кончилась (знак 2.2), перед перекрестком знак 2.4 — он уступает обоим.',
           vehicleModel: 'bus',
         ),
       ],
@@ -943,45 +995,51 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_mandatory_4_1_1',
       title: 'Предписывающий знак 4.1.1 «Движение прямо»',
-      subtitle: 'Знак 4.1.1 разрешает движение только прямо, на перекрестке неравнозначных дорог.',
-      pddArticle: 'Знак 4.1.1 и п. 13.9 ПДД РФ',
+      subtitle:
+          'С южной стороны можно ехать только прямо. Порядок — по знакам приоритета.',
+      pddArticle: 'Знак 4.1.1, пункты 13.9 и 13.12 ПДД РФ',
       signs: [
+        CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.south),
         CrossroadsSignPlacement(code: '4.1.1', side: CrossroadsSide.south),
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.north),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.east),
+        CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.west),
       ],
       actors: [
         CrossroadsActor(
           id: 'bus_south',
           type: CrossroadsVehicleType.bus,
-          name: 'Автобус (Главная прямо)',
+          name: 'Автобус (главная, прямо)',
           colorHex: '#317ED4',
           side: CrossroadsSide.south,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
-          ruleExplanation: 'Автобус движется по главной дороге прямо согласно знаку 4.1.1.',
+          ruleExplanation:
+              'Автобус на главной едет прямо, как велит знак 4.1.1.',
           vehicleModel: 'bus',
         ),
         CrossroadsActor(
           id: 'truck_north',
           type: CrossroadsVehicleType.truck,
-          name: 'Белый грузовик (Главная)',
+          name: 'Белый грузовик (главная)',
           colorHex: '#F2F3F5',
           side: CrossroadsSide.north,
-          maneuver: CrossroadsManeuver.straight,
+          maneuver: CrossroadsManeuver.left,
           priorityOrder: 2,
-          ruleExplanation: 'Грузовик движется по главной дороге во встречном направлении прямо.',
+          ruleExplanation:
+              'Грузовик на главной поворачивает налево и уступает встречному автобусу (п. 13.12).',
           vehicleModel: 'truck',
         ),
         CrossroadsActor(
           id: 'car_east',
           type: CrossroadsVehicleType.car,
-          name: 'Красный хэтчбек (Второстепенная)',
+          name: 'Красный хэтчбек (второстепенная)',
           colorHex: '#ED4621',
           side: CrossroadsSide.east,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 3,
-          ruleExplanation: 'Красный хэтчбек со знаком 2.4 уступает дорогу обоим ТС на главной дороге.',
+          ruleExplanation:
+              'Красный хэтчбек со знаком 2.4 пропускает обоих на главной.',
           vehicleModel: 'hatch',
         ),
       ],
@@ -991,8 +1049,9 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_junction_left_2_3_3',
       title: 'Примыкание второстепенной дороги слева (знак 2.3.3)',
-      subtitle: 'Главная дорога продолжается прямо, транспорт слева уступает.',
-      pddArticle: 'Знак 2.3.3 и п. 13.9 ПДД РФ',
+      subtitle: 'Главная дорога идет прямо, слева примыкает второстепенная.',
+      pddArticle: 'Знак 2.3.3 и пункт 13.9 ПДД РФ',
+      closedSide: CrossroadsSide.east,
       signs: [
         CrossroadsSignPlacement(code: '2.3.3', side: CrossroadsSide.south),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.west),
@@ -1001,23 +1060,24 @@ class CrossroadsScenariosLibrary {
         CrossroadsActor(
           id: 'car_south',
           type: CrossroadsVehicleType.car,
-          name: 'Желтый седан (Главная)',
+          name: 'Желтый седан (главная)',
           colorHex: '#E8C547',
           side: CrossroadsSide.south,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
-          ruleExplanation: 'Седан движется по главной дороге прямо (знак 2.3.3).',
+          ruleExplanation: 'Седан едет по главной дороге прямо (знак 2.3.3).',
           vehicleModel: 'sedan',
         ),
         CrossroadsActor(
           id: 'truck_west',
           type: CrossroadsVehicleType.truck,
-          name: 'Грузовой фургон (Примыкание)',
+          name: 'Грузовой фургон (примыкание)',
           colorHex: '#2B2F36',
           side: CrossroadsSide.west,
-          maneuver: CrossroadsManeuver.straight,
+          maneuver: CrossroadsManeuver.left,
           priorityOrder: 2,
-          ruleExplanation: 'Грузовик выезжает со второстепенной дороги слева со знаком 2.4 и уступает седану.',
+          ruleExplanation:
+              'Фургон выезжает с примыкающей дороги (знак 2.4) и пропускает седан на главной.',
           vehicleModel: 'truck',
         ),
       ],
@@ -1027,7 +1087,8 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_truck_left_turn',
       title: 'Поворот налево: разъезд со встречным транспортом',
-      subtitle: 'При повороте налево водитель обязан уступить встречному ТС, движущемуся прямо.',
+      subtitle:
+          'При повороте налево водитель обязан уступить встречному ТС, движущемуся прямо.',
       pddArticle: 'Пункт 13.12 ПДД РФ',
       isEqualCrossroad: true,
       actors: [
@@ -1039,7 +1100,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.north,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
-          ruleExplanation: 'Мотоцикл движется со встречного направления прямо и не имеет помехи справа.',
+          ruleExplanation:
+              'Мотоцикл движется со встречного направления прямо и не имеет помехи справа.',
           vehicleModel: 'motorcycle',
         ),
         CrossroadsActor(
@@ -1050,7 +1112,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.south,
           maneuver: CrossroadsManeuver.left,
           priorityOrder: 2,
-          ruleExplanation: 'Самосвал поворачивает налево и обязан уступить дорогу встречному мотоциклу (п. 13.12).',
+          ruleExplanation:
+              'Самосвал поворачивает налево и обязан уступить дорогу встречному мотоциклу (п. 13.12).',
           vehicleModel: 'truck',
         ),
       ],
@@ -1060,41 +1123,45 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_two_trams_and_cars',
       title: 'Два трамвая и автомобили на равнозначном перекрестке',
-      subtitle: 'Трамваи пользуются преимуществом перед безрельсовыми ТС.',
+      subtitle:
+          'Трамваи проезжают раньше автомобилей, между собой — по помехе справа.',
       pddArticle: 'Пункт 13.11 ПДД РФ',
       isEqualCrossroad: true,
       actors: [
         CrossroadsActor(
           id: 'tram_north',
           type: CrossroadsVehicleType.tram,
-          name: 'Трамвай №1 (Север)',
+          name: 'Трамвай №1 (север)',
           colorHex: '#ED4621',
           side: CrossroadsSide.north,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
-          ruleExplanation: 'Трамвай пользуется преимуществом перед безрельсовыми транспортными средствами независимо от направления движения.',
+          ruleExplanation:
+              'Трамваи проезжают раньше автомобилей. Справа от трамвая №1 никого — он первый.',
           vehicleModel: 'tram',
         ),
         CrossroadsActor(
-          id: 'tram_south',
+          id: 'tram_east',
           type: CrossroadsVehicleType.tram,
-          name: 'Трамвай №2 (Юг)',
+          name: 'Трамвай №2 (восток)',
           colorHex: '#ED4621',
-          side: CrossroadsSide.south,
+          side: CrossroadsSide.east,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 2,
-          ruleExplanation: 'Второй трамвай также имеет безусловный приоритет перед безрельсовыми автомобилями.',
+          ruleExplanation:
+              'Справа от трамвая №2 — трамвай №1. Он уступает ему и проезжает вторым.',
           vehicleModel: 'tram',
         ),
         CrossroadsActor(
-          id: 'car_east',
+          id: 'car_south',
           type: CrossroadsVehicleType.car,
           name: 'Белый седан',
           colorHex: '#F2F3F5',
-          side: CrossroadsSide.east,
+          side: CrossroadsSide.south,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 3,
-          ruleExplanation: 'После проезда трамваев белый седан свободен от помехи справа и проезжает третьим.',
+          ruleExplanation:
+              'После трамваев у белого седана справа никого — он третий.',
           vehicleModel: 'sedan',
         ),
         CrossroadsActor(
@@ -1105,7 +1172,8 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.west,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 4,
-          ruleExplanation: 'Зеленый кроссовер уступает белому седану по правилу помехи справа и проезжает последним.',
+          ruleExplanation:
+              'Справа от зеленого кроссовера — белый седан. Проезжает последним.',
           vehicleModel: 'suv',
         ),
       ],

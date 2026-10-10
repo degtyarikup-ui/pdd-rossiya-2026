@@ -512,6 +512,15 @@
   "gameCrossroadsPromptWhoGoesNext": "Who will pass next ({step}-th)?",
   "gameCrossroadsStepOf": "Step {current} from {total}",
   "gameCrossroadsCollision": "Accident! Irregularity",
+  "gameCrossroadsShouldGo": "Should go now: {name}",
+  "@gameCrossroadsShouldGo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gameCrossroadsHowTo": "Put the vehicles in order: tap the one that goes now.",
   "gameCrossroadsNextCrossroad": "Next intersection",
   "gameCrossroadsRepeatCrossroad": "Try again",
   "gameCrossroadsModeArcade": "Arcade",

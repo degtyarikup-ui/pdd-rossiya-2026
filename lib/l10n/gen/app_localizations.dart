@@ -3118,6 +3118,18 @@ abstract class AppLocalizations {
   /// **'ДТП! Нарушение очередности'**
   String get gameCrossroadsCollision;
 
+  /// No description provided for @gameCrossroadsShouldGo.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проезжает сейчас: {name}'**
+  String gameCrossroadsShouldGo(String name);
+
+  /// No description provided for @gameCrossroadsHowTo.
+  ///
+  /// In ru, this message translates to:
+  /// **'Расставьте машины по очереди: нажимайте на ту, что едет сейчас.'**
+  String get gameCrossroadsHowTo;
+
   /// No description provided for @gameCrossroadsNextCrossroad.
   ///
   /// In ru, this message translates to:

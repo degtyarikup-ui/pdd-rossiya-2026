@@ -1776,6 +1776,15 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameCrossroadsCollision => 'Жол апаты! Кезеңді бұзу';
 
   @override
+  String gameCrossroadsShouldGo(String name) {
+    return 'Қазір өтетін: $name';
+  }
+
+  @override
+  String get gameCrossroadsHowTo =>
+      'Көліктерді кезекпен қойыңыз: дәл қазір өтетінін басыңыз.';
+
+  @override
   String get gameCrossroadsNextCrossroad => 'Келесі қиылысу';
 
   @override

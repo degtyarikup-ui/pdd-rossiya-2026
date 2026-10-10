@@ -2,7 +2,7 @@
 """
 tools/l10n/translate_crossroads.py
 
-Extracts all 18 crossroads scenarios and their actors from crossroads_priority_model.dart,
+Extracts all crossroads scenarios and their actors from crossroads_priority_model.dart,
 translates title, subtitle, pddArticle, actor name, and ruleExplanation into English and Kazakh,
 and generates lib/data/models/crossroads_translations.dart with type-safe const maps.
 """
