@@ -2456,7 +2456,10 @@ class _SourceImageQuestions extends QuestionsDataSource {
   final List<Question> questions;
 
   @override
-  Future<List<Question>> loadTickets(TicketCategory category) async =>
+  Future<List<Question>> loadTickets(
+    TicketCategory category, [
+    String? lang,
+  ]) async =>
       questions;
 }
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -11,19 +13,25 @@ import 'package:pdd_app/presentation/widgets/app_pill_search_field.dart';
 
 /// Вкладка «ПДД»: разделы правил из контента страны
 /// (assets/countries/{code}/questions/pdd_sections.json) и знаки/разметка.
-class PddScreen extends StatefulWidget {
+class PddScreen extends ConsumerStatefulWidget {
   const PddScreen({super.key});
 
   @override
-  State<PddScreen> createState() => _PddScreenState();
+  ConsumerState<PddScreen> createState() => _PddScreenState();
 }
 
-class _PddScreenState extends State<PddScreen> {
+class _PddScreenState extends ConsumerState<PddScreen> {
   int _subTab = 0; // 0: Правила, 1: Знаки и разметка
   final TextEditingController _searchController = TextEditingController();
-  final Future<List<Map<String, String>>> _sectionsFuture =
-      QuestionsDataSource().loadPddSections();
+  late Future<List<Map<String, String>>> _sectionsFuture;
   String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    final lang = ref.read(appSettingsProvider).effectiveLanguageCode;
+    _sectionsFuture = QuestionsDataSource().loadPddSections(lang);
+  }
 
   @override
   void dispose() {

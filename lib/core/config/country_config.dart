@@ -134,21 +134,66 @@ class CountryConfig {
   static const String _pddPointMarkerRu =
       r'(?:[Пп]ункт(?:ы|ов|а|е|ам|ами)?|[Пп]\.)\s*((?:\d{1,2}(?:\.\d{1,2}){1,3}(?:\s*(?:,|и)\s*)?)+)';
 
-  /// Путь к JSON вопросов категории ('ab' | 'cd').
-  String questionsJson(String cat) =>
-      '$assetsRoot/questions/questions_$cat.json';
+  /// BCP-47 локаль для озвучки (TTS) с учётом текущего языка.
+  String ttsLocaleFor([String? lang]) {
+    switch (lang) {
+      case 'en':
+        return 'en-US';
+      case 'kk':
+        return 'kk-KZ';
+      case 'ru':
+      default:
+        return 'ru-RU';
+    }
+  }
 
-  /// Путь к JSON тем категории ('ab' | 'cd').
-  String topicsJson(String cat) => '$assetsRoot/questions/topics_$cat.json';
+  /// Путь к JSON вопросов категории ('ab' | 'cd') с учётом языка.
+  String questionsJson(String cat, [String? lang]) {
+    if (lang != null && lang != 'ru' && (lang == 'en' || lang == 'kk')) {
+      return '$assetsRoot/questions/questions_${cat}_$lang.json';
+    }
+    return '$assetsRoot/questions/questions_$cat.json';
+  }
 
-  /// Путь к JSON знаков.
-  String get signsJson => '$assetsRoot/questions/signs.json';
+  /// Путь к JSON тем категории ('ab' | 'cd') с учётом языка.
+  String topicsJson(String cat, [String? lang]) {
+    if (lang != null && lang != 'ru' && (lang == 'en' || lang == 'kk')) {
+      return '$assetsRoot/questions/topics_${cat}_$lang.json';
+    }
+    return '$assetsRoot/questions/topics_$cat.json';
+  }
 
-  /// Путь к JSON текста ПДД (разделы для вкладки «ПДД»).
-  String get pddSectionsJson => '$assetsRoot/questions/pdd_sections.json';
+  /// Путь к JSON знаков с учётом языка.
+  String signsJson([String? lang]) {
+    if (lang != null && lang != 'ru' && (lang == 'en' || lang == 'kk')) {
+      return '$assetsRoot/questions/signs_$lang.json';
+    }
+    return '$assetsRoot/questions/signs.json';
+  }
 
-  /// Путь к JSON дорожной разметки.
-  String get markupJson => '$assetsRoot/questions/markup.json';
+  /// Путь к JSON манифеста ленты знаков с учётом языка.
+  String signsFeedManifestJson([String? lang]) {
+    if (lang != null && lang != 'ru' && (lang == 'en' || lang == 'kk')) {
+      return '$assetsRoot/questions/signs_feed_manifest_$lang.json';
+    }
+    return '$assetsRoot/questions/signs_feed_manifest.json';
+  }
+
+  /// Путь к JSON текста ПДД (разделы для вкладки «ПДД») с учётом языка.
+  String pddSectionsJson([String? lang]) {
+    if (lang != null && lang != 'ru' && (lang == 'en' || lang == 'kk')) {
+      return '$assetsRoot/questions/pdd_sections_$lang.json';
+    }
+    return '$assetsRoot/questions/pdd_sections.json';
+  }
+
+  /// Путь к JSON дорожной разметки с учётом языка.
+  String markupJson([String? lang]) {
+    if (lang != null && lang != 'ru' && (lang == 'en' || lang == 'kk')) {
+      return '$assetsRoot/questions/markup_$lang.json';
+    }
+    return '$assetsRoot/questions/markup.json';
+  }
 
   /// Каталог картинок вопросов категории.
   String questionImagesDir(String cat) => '$assetsRoot/images/questions_$cat';

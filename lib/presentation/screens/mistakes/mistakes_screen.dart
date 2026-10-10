@@ -166,8 +166,10 @@ class MistakesScreen extends ConsumerWidget {
     List<String> wrongIds,
   ) async {
     final dataSource = ref.read(questionsDataSourceProvider);
-    final category = ref.read(appSettingsProvider).ticketCategory;
-    final allQuestions = await dataSource.loadTickets(category);
+    final settings = ref.read(appSettingsProvider);
+    final category = settings.ticketCategory;
+    final lang = settings.effectiveLanguageCode;
+    final allQuestions = await dataSource.loadTickets(category, lang);
     final wrongIdSet = wrongIds.toSet();
 
     return allQuestions

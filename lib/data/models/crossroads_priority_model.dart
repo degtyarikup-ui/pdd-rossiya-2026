@@ -1,3 +1,5 @@
+import 'crossroads_translations.dart';
+
 /// Сторона перекрестка, откуда подъезжает транспорт.
 enum CrossroadsSide {
   south('Юг'),
@@ -7,6 +9,22 @@ enum CrossroadsSide {
 
   const CrossroadsSide(this.title);
   final String title;
+
+  String localizedTitle([String? lang]) => switch (lang) {
+    'en' => switch (this) {
+      CrossroadsSide.south => 'South',
+      CrossroadsSide.north => 'North',
+      CrossroadsSide.east => 'East',
+      CrossroadsSide.west => 'West',
+    },
+    'kk' => switch (this) {
+      CrossroadsSide.south => 'Оңтүстік',
+      CrossroadsSide.north => 'Солтүстік',
+      CrossroadsSide.east => 'Шығыс',
+      CrossroadsSide.west => 'Батыс',
+    },
+    _ => title,
+  };
 }
 
 /// Направление движения на перекрестке.
@@ -18,6 +36,22 @@ enum CrossroadsManeuver {
 
   const CrossroadsManeuver(this.label);
   final String label;
+
+  String localizedLabel([String? lang]) => switch (lang) {
+    'en' => switch (this) {
+      CrossroadsManeuver.straight => 'Straight',
+      CrossroadsManeuver.right => 'Right',
+      CrossroadsManeuver.left => 'Left',
+      CrossroadsManeuver.uTurn => 'U-turn',
+    },
+    'kk' => switch (this) {
+      CrossroadsManeuver.straight => 'Тіке',
+      CrossroadsManeuver.right => 'Оңға',
+      CrossroadsManeuver.left => 'Солға',
+      CrossroadsManeuver.uTurn => 'Кері бұрылу',
+    },
+    _ => label,
+  };
 }
 
 /// Тип транспортного средства.
@@ -33,6 +67,30 @@ enum CrossroadsVehicleType {
 
   const CrossroadsVehicleType(this.label);
   final String label;
+
+  String localizedLabel([String? lang]) => switch (lang) {
+    'en' => switch (this) {
+      CrossroadsVehicleType.car => 'Car',
+      CrossroadsVehicleType.tram => 'Tram',
+      CrossroadsVehicleType.emergency => 'Emergency vehicle with siren',
+      CrossroadsVehicleType.truck => 'Truck',
+      CrossroadsVehicleType.suv => 'SUV',
+      CrossroadsVehicleType.motorcycle => 'Motorcycle',
+      CrossroadsVehicleType.bus => 'Bus',
+      CrossroadsVehicleType.police => 'Police',
+    },
+    'kk' => switch (this) {
+      CrossroadsVehicleType.car => 'Жеңіл автокөлік',
+      CrossroadsVehicleType.tram => 'Трамвай',
+      CrossroadsVehicleType.emergency => 'Сиренасы бар арнайы көлік',
+      CrossroadsVehicleType.truck => 'Жүк көлігі',
+      CrossroadsVehicleType.suv => 'Жол талғамайтын көлік',
+      CrossroadsVehicleType.motorcycle => 'Мотоцикл',
+      CrossroadsVehicleType.bus => 'Автобус',
+      CrossroadsVehicleType.police => 'Полиция',
+    },
+    _ => label,
+  };
 }
 
 /// Участник дорожного движения на перекрестке.
@@ -81,6 +139,30 @@ class CrossroadsActor {
     'hasSiren': hasSiren,
     'model': vehicleModel,
   };
+
+  CrossroadsActor copyWith({
+    String? id,
+    CrossroadsVehicleType? type,
+    String? name,
+    String? colorHex,
+    CrossroadsSide? side,
+    CrossroadsManeuver? maneuver,
+    int? priorityOrder,
+    String? ruleExplanation,
+    bool? hasSiren,
+    String? vehicleModel,
+  }) => CrossroadsActor(
+    id: id ?? this.id,
+    type: type ?? this.type,
+    name: name ?? this.name,
+    colorHex: colorHex ?? this.colorHex,
+    side: side ?? this.side,
+    maneuver: maneuver ?? this.maneuver,
+    priorityOrder: priorityOrder ?? this.priorityOrder,
+    ruleExplanation: ruleExplanation ?? this.ruleExplanation,
+    hasSiren: hasSiren ?? this.hasSiren,
+    vehicleModel: vehicleModel ?? this.vehicleModel,
+  );
 }
 
 /// Дорожный знак на перекрестке.
@@ -153,11 +235,55 @@ class CrossroadsScenario {
     'signs': signs.map((s) => s.toJson()).toList(),
     'actors': actors.map((a) => a.toJson()).toList(),
   };
+
+  CrossroadsScenario copyWith({
+    String? id,
+    String? title,
+    String? subtitle,
+    String? pddArticle,
+    List<CrossroadsActor>? actors,
+    List<CrossroadsSignPlacement>? signs,
+    bool? isEqualCrossroad,
+    List<CrossroadsSide>? trafficLightGreenSides,
+  }) => CrossroadsScenario(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    subtitle: subtitle ?? this.subtitle,
+    pddArticle: pddArticle ?? this.pddArticle,
+    actors: actors ?? this.actors,
+    signs: signs ?? this.signs,
+    isEqualCrossroad: isEqualCrossroad ?? this.isEqualCrossroad,
+    trafficLightGreenSides: trafficLightGreenSides ?? this.trafficLightGreenSides,
+  );
 }
 
 /// Библиотека сертифицированных перекрестков по билетам ГИБДД РФ.
 class CrossroadsScenariosLibrary {
   CrossroadsScenariosLibrary._();
+
+  static List<CrossroadsScenario> getScenarios([String? lang]) {
+    if (lang == null || lang == 'ru') return allScenarios;
+    final localizedMap = CrossroadsTranslations.localizedScenarios[lang];
+    if (localizedMap == null) return allScenarios;
+    return allScenarios.map((sc) {
+      final locSc = localizedMap[sc.id];
+      if (locSc == null) return sc;
+      final newActors = sc.actors.map((actor) {
+        final locActor = locSc.actors[actor.id];
+        if (locActor == null) return actor;
+        return actor.copyWith(
+          name: locActor.name,
+          ruleExplanation: locActor.ruleExplanation,
+        );
+      }).toList();
+      return sc.copyWith(
+        title: locSc.title,
+        subtitle: locSc.subtitle,
+        pddArticle: locSc.pddArticle,
+        actors: newActors,
+      );
+    }).toList();
+  }
 
   static final List<CrossroadsScenario> allScenarios = [
     // 1. Неравнозначный перекресток с табличкой 8.13 (главная налево, п. 13.10)

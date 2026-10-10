@@ -39,8 +39,10 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
   CrossroadsGameMode _mode = CrossroadsGameMode.arcade;
 
   // Сценарии
-  final List<CrossroadsScenario> _scenarios =
-      CrossroadsScenariosLibrary.allScenarios;
+  List<CrossroadsScenario> get _scenarios {
+    final lang = ref.watch(appSettingsProvider.select((s) => s.effectiveLanguageCode));
+    return CrossroadsScenariosLibrary.getScenarios(lang);
+  }
   int _scenarioIndex = 0;
   CrossroadsScenario get _curScenario => _scenarios[_scenarioIndex];
 

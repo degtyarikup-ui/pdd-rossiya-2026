@@ -139,6 +139,9 @@ final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
+  final lang = ref.watch(
+    appSettingsProvider.select((s) => s.effectiveLanguageCode),
+  );
   final progress = ref.watch(progressDataSourceProvider);
   final saved = progress.loadUnfinishedSession(category);
   if (saved == null) return null;
@@ -146,7 +149,7 @@ final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
   final ids = (saved['questionIds'] as List).cast<String>();
   final all = await ref
       .watch(questionsDataSourceProvider)
-      .loadTickets(category);
+      .loadTickets(category, lang);
   final byId = {for (final q in all) q.id: q};
 
   final questions = <Map<String, dynamic>>[];
@@ -198,8 +201,11 @@ final ticketsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
+  final lang = ref.watch(
+    appSettingsProvider.select((s) => s.effectiveLanguageCode),
+  );
   final dataSource = ref.watch(questionsDataSourceProvider);
-  final allQuestions = await dataSource.loadTickets(category);
+  final allQuestions = await dataSource.loadTickets(category, lang);
 
   // Количество билетов определяется данными, а не константой:
   // у разных стран разный объём базы.
@@ -219,20 +225,29 @@ final topicsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
+  final lang = ref.watch(
+    appSettingsProvider.select((s) => s.effectiveLanguageCode),
+  );
   final dataSource = ref.watch(questionsDataSourceProvider);
-  return await dataSource.loadTopics(category);
+  return await dataSource.loadTopics(category, lang);
 });
 
 final signsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final lang = ref.watch(
+    appSettingsProvider.select((s) => s.effectiveLanguageCode),
+  );
   final dataSource = ref.watch(questionsDataSourceProvider);
-  return await dataSource.loadSigns();
+  return await dataSource.loadSigns(lang);
 });
 
 final markupProvider = FutureProvider<Map<String, List<Map<String, String>>>>((
   ref,
 ) async {
+  final lang = ref.watch(
+    appSettingsProvider.select((s) => s.effectiveLanguageCode),
+  );
   final dataSource = ref.watch(questionsDataSourceProvider);
-  return await dataSource.loadMarkup();
+  return await dataSource.loadMarkup(lang);
 });
 
 final statsProvider = FutureProvider<Map<String, int>>((ref) async {
@@ -481,8 +496,11 @@ final feedItemsProvider = FutureProvider<List<FeedItem>>((ref) async {
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
+  final lang = ref.watch(
+    appSettingsProvider.select((s) => s.effectiveLanguageCode),
+  );
   final repo = ref.watch(feedRepositoryProvider);
-  return repo.generateFeedItems(category: category, count: 60);
+  return repo.generateFeedItems(category: category, count: 60, lang: lang);
 });
 
 final authServiceProvider = ChangeNotifierProvider<AuthService>((ref) {

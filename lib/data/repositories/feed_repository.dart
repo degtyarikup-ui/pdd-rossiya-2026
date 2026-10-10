@@ -15,9 +15,13 @@ class FeedRepository {
 
   FeedRepository(this._questionsDataSource, this._progressDataSource);
 
-  DriverTip _getNextRandomTip(Random random) {
-    if (_tipPool.isEmpty) {
-      _tipPool.addAll(List.of(DriverTipsData.tips)..shuffle(random));
+  String? _lastLang;
+
+  DriverTip _getNextRandomTip(Random random, [String? lang]) {
+    if (_tipPool.isEmpty || _lastLang != lang) {
+      _lastLang = lang;
+      _tipPool.clear();
+      _tipPool.addAll(List.of(DriverTipsData.getTips(lang))..shuffle(random));
     }
     return _tipPool.removeAt(0);
   }
@@ -35,13 +39,15 @@ class FeedRepository {
     required TicketCategory category,
     int count = 60,
     Set<String>? excludeQuestionIds,
+    String? lang,
   }) async {
     final random = Random();
     final List<Question> allQuestions = await _questionsDataSource.loadTickets(
       category,
+      lang,
     );
-    final List<Map<String, dynamic>> signsManifest = await _questionsDataSource
-        .loadSignsFeedManifest();
+    final List<Map<String, dynamic>> signsManifest =
+        await _questionsDataSource.loadSignsFeedManifest(lang);
 
     final excluded = excludeQuestionIds ?? const <String>{};
 
@@ -70,7 +76,24 @@ class FeedRepository {
         final qNum = i + 1;
         final qProgress = userProgress[q.id] as Map<String, dynamic>?;
 
-        final badge = tNum > 0 ? 'Билет $tNum · Вопрос $qNum' : 'Вопрос $qNum';
+        final String badge;
+        if (tNum > 0) {
+          if (lang == 'en') {
+            badge = 'Ticket $tNum · Question $qNum';
+          } else if (lang == 'kk') {
+            badge = '$tNum-билет · $qNum-сұрақ';
+          } else {
+            badge = 'Билет $tNum · Вопрос $qNum';
+          }
+        } else {
+          if (lang == 'en') {
+            badge = 'Question $qNum';
+          } else if (lang == 'kk') {
+            badge = '$qNum-сұрақ';
+          } else {
+            badge = 'Вопрос $qNum';
+          }
+        }
 
         final item = FeedItem(
           id: 'q_${q.id}',
@@ -135,7 +158,11 @@ class FeedRepository {
               type: FeedItemType.roadSign,
               questionText:
                   s['questionText'] as String? ??
-                  'Что означает этот дорожный знак?',
+                  (lang == 'en'
+                      ? 'What does this road sign mean?'
+                      : lang == 'kk'
+                      ? 'Бұл жол белгісі нені білдіреді?'
+                      : 'Что означает этот дорожный знак?'),
               imagePath: fullImgPath,
               isSvgImage: isSvg,
               answers: answersList,
@@ -144,7 +171,11 @@ class FeedRepository {
               explanation: (s['description'] as String?)?.isNotEmpty == true
                   ? s['description'] as String
                   : null,
-              badgeText: 'Знак № ${s['number'] ?? ''}',
+              badgeText: lang == 'en'
+                  ? 'Sign № ${s['number'] ?? ''}'
+                  : lang == 'kk'
+                  ? 'Белгі № ${s['number'] ?? ''}'
+                  : 'Знак № ${s['number'] ?? ''}',
               signNumber: s['number']?.toString(),
               rawQuestionId: signId,
               isAiSmart: false,
@@ -225,7 +256,7 @@ class FeedRepository {
       questionCounter++;
 
       if (questionCounter % 6 == 0) {
-        final tip = _getNextRandomTip(random);
+        final tip = _getNextRandomTip(random, lang);
         resultFeed.add(FeedItem.fromDriverTip(tip));
       }
     }

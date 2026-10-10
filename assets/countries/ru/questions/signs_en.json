@@ -1,0 +1,1816 @@
+{
+  "Warning sign": {
+    "1.1": {
+      "number": "1.1",
+      "title": "Railway crossing with barrier",
+      "image": "./images/signs/c6a558e6fbb120c93d55d8fd967dbe12.svg",
+      "description": "Warns of approaching a railway crossing with a barrier. Outside a populated area (n.p.) it is installed at a distance of 150-300 m, in a populated area - at a distance of 50-100 m. The sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The driver of a vehicle can cross railway tracks only at railway crossings, giving way to a train (locomotive, handcar). It is prohibited: a) overtaking at railway crossings and closer than 100 m in front of them; b) stopping and parking at railway crossings; c) parking closer than 50 m from railway crossings; d) turning around; e) driving in reverse; f) transporting agricultural, road, construction and other vehicles through the crossing in a non-transport position; 8 km/h, as well as tractor drag sleds without permission from the head of the track; h) drive around vehicles standing in front of a closed barrier into oncoming traffic; i) open the barrier without authorization. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.10 Part 1 Crossing a railway track outside a railway crossing, entering a railway crossing with a closed or closing barrier or with a prohibitory signal from a traffic light or the person on duty at the crossing, stopping or parking at a railway crossing or driving through an unregulated railway crossing, If a train (locomotive, handcar) approaches a crossing within sight, a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 3 to 6 months;  Code of Administrative Offenses of the Russian Federation 12.10 Part 2 Violation of the rules for passing through railway crossings, except for the cases provided for in Part 1 of this article - a fine of 5,000 rubles. Code of Administrative Offenses of the Russian Federation 12.10 Part 3 Repeated commission of an administrative offense provided for in Part 1 of this article - deprivation of the right to drive a vehicle for a period of 1 year"
+    },
+    "1.2": {
+      "number": "1.2",
+      "title": "Railway crossing without barrier",
+      "image": "./images/signs/83f281bb018ce60e820c7f6be9c134dc.svg",
+      "description": "Warns of approaching a railway crossing without a barrier. Outside a populated area (n.p.) it is installed at a distance of 150-300 m, in a populated area - at a distance of 50-100 m. The sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The driver of a vehicle can cross railway tracks only at railway crossings, giving way to a train (locomotive, handcar). It is prohibited: a) overtaking at railway crossings and closer than 100 m in front of them; b) stopping and parking at railway crossings; c) parking closer than 50 m from railway crossings; d) turning around; e) reversing; f) transporting agricultural, road, construction and other vehicles through the crossing in a non-transport position; also tractor sleds without the permission of the head of the route; h) drive around vehicles standing in front of a closed barrier into oncoming traffic; i) open the barrier without authorization. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.10 part 1. Crossing a railway track outside a railway crossing, entering a railway crossing with a closed or closing barrier or with a prohibitory signal from a traffic light or the person on duty at the crossing, stopping or parking at a railway crossing or driving through an unregulated railway crossing, if a train (locomotive, trolley) is approaching the crossing within sight - a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 3 to 6 months; Code of Administrative Offenses of the Russian Federation 12.10 Part 2 Violation of the rules for passing through railway crossings, except for the cases provided for in Part 1 of this article - a fine of 5,000 rubles. Code of Administrative Offenses of the Russian Federation 12.10 Part 3 Repeated commission of an administrative offense provided for in Part 1 of this article - deprivation of the right to drive a vehicle for a period of 1 year"
+    },
+    "1.3.1": {
+      "number": "1.3.1",
+      "title": "Single track railway",
+      "image": "./images/signs/8231f34584e8aa44ccbb561cbaa35688.svg",
+      "description": "Installed immediately before the railway crossing. Installed only if there is one path. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.10 Part 1 Crossing a railway track outside a railway crossing, entering a railway crossing with a closed or closing barrier or with a prohibitory signal from a traffic light or the person on duty at the crossing, stopping or parking at a railway crossing or driving through an unregulated railway crossing, If a train (locomotive, handcar) approaches a crossing within sight, a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 3 to 6 months; Code of Administrative Offenses of the Russian Federation 12.10 Part 2 Violation of the rules for passing through railway crossings, except for the cases provided for in Part 1 of this article - a fine of 5,000 rubles. Code of Administrative Offenses of the Russian Federation 12.10 Part 3 Repeated commission of an administrative offense provided for in Part 1 of this article - deprivation of the right to drive a vehicle for a period of 1 year"
+    },
+    "1.3.2": {
+      "number": "1.3.2",
+      "title": "Multi-track railway",
+      "image": "./images/signs/87348b472014495db6c032af23df8d3a.svg",
+      "description": "Installed immediately before the railway crossing. Installed when there are two or more tracks (3, 4, 5, etc.). If there are no barriers at the railway crossing, signs 1.3.1 and 1.3.2 determine the size of the crossing. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.10 Part 1 Crossing a railway track outside a railway crossing, entering a railway crossing with a closed or closing barrier or with a prohibitory signal from a traffic light or the person on duty at the crossing, stopping or parking at a railway crossing or driving through an unregulated railway crossing, If a train (locomotive, handcar) approaches a crossing within sight, a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 3 to 6 months; Code of Administrative Offenses of the Russian Federation 12.10 Part 2 Violation of the rules for passing through railway crossings, except for the cases provided for in Part 1 of this article - a fine of 5,000 rubles. Code of Administrative Offenses of the Russian Federation 12.10 Part 3 Repeated commission of an administrative offense provided for in Part 1 of this article - deprivation of the right to drive a vehicle for a period of 1 year  "
+    },
+    "1.4": {
+      "number": "1.4",
+      "title": "Approaching a railway crossing",
+      "image": "./images/signs/4a81d6b210c719d3169aaa0dca0c6236.svg",
+      "description": "Additional warning about approaching a railway crossing outside of populated areas. Installed outside at a distance of 150-300 meters, while the distance between the signs is proportional. Signs 1.4.1-1.4.3 are installed on the right side of the road. and signs 1.4.4-1.4.6 are on the left. "
+    },
+    "1.5": {
+      "number": "1.5",
+      "title": "Intersection with tram line",
+      "image": "./images/signs/578c3540c391e5986467d497f63d7c09.svg",
+      "description": "Installed in n. p. 50-100 m. before the intersection with the tram line, outside the street. n. - for 150-300 m, can be installed at a different distance, but the distance is specified in table 8.1.1 “Distance to object”. With simultaneous traffic rights (when the vehicles are in equivalent conditions), tram drivers have priority. Outside intersections where tram tracks cross the path of trackless vehicles, the tram has priority, except when leaving the depot."
+    },
+    "1.6": {
+      "number": "1.6",
+      "title": "Intersection of equivalent roads",
+      "image": "./images/signs/7cd691a55c5de8504d293ea19a606ab9.svg",
+      "description": "Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. At such intersections of equivalent roads, overtaking is prohibited for all types of transport by all vehicles."
+    },
+    "1.7": {
+      "number": "1.7",
+      "title": "Roundabout intersection",
+      "image": "./images/signs/c61293b97e38afa2aad680c3e8d6af08.svg",
+      "description": "Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. When approaching such an intersection, it is recommended to reduce your speed to safe limits and follow the rules for driving through intersections."
+    },
+    "1.8": {
+      "number": "1.8",
+      "title": "Traffic light regulation",
+      "image": "./images/signs/58f102bf9902a200e8cca8144ad2284c.svg",
+      "description": "An intersection, pedestrian crossing or section of road where traffic is regulated by a traffic light. Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The sign warns of approaching an intersection, pedestrian crossing or section of the road where traffic is regulated by a traffic light. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.   In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.12 Part 1 Driving through a prohibiting traffic light signal or a prohibiting gesture of a traffic controller, except for the cases provided for in Part 1 of Article 12.10 of this Code and Part 2 of this Article - a fine of 1000 rubles; in case of repeated violation - 5000 rubles or deprivation of the right to drive from 4 to 6 months"
+    },
+    "1.9": {
+      "number": "1.9",
+      "title": "Drawbridge",
+      "image": "./images/signs/b5a6748d791f08ae4af8f92e86f4a3ba.svg",
+      "description": "Drawbridge or ferry crossing. Installed in n. p. for 50-100 m, outside n. p. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object.” The sign must be repeated outside the populated area, and the repeated sign is installed at a distance of at least 50 m."
+    },
+    "1.10": {
+      "number": "1.10",
+      "title": "Departure to the embankment",
+      "image": "./images/signs/dded61f2ea9c8709c14a8134258c895a.svg",
+      "description": "Departure to the embankment or shore. Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The sign must be repeated outside the populated area, and the repeated sign is installed at a distance of at least 50 m."
+    },
+    "1.11.1": {
+      "number": "1.11.1",
+      "title": "Dangerous turn (right)",
+      "image": "./images/signs/7db7847fc21327e2a75716ee03ec23d5.svg",
+      "description": "Rounding a road with a small radius or with limited visibility. Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The difference is in the direction of turn (right, left). The sign only informs about the direction of the first turn after the sign."
+    },
+    "1.11.2": {
+      "number": "1.11.2",
+      "title": "Dangerous turn (left)",
+      "image": "./images/signs/da41b8446c2150dd42e805bf2416b2f6.svg",
+      "description": "Rounding a road with a small radius or with limited visibility. Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The difference is in the direction of turn (right, left). The sign only informs about the direction of the first turn after the sign."
+    },
+    "1.12.1": {
+      "number": "1.12.1",
+      "title": "Dangerous turns (with the first right turn)",
+      "image": "./images/signs/41c00d307234f7446b98e8e45df02687.svg",
+      "description": "A section of road with dangerous turns. Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The sign informs that there is a series (or several) turns ahead, while sign 1.12.1 indicates that the first turn after the sign is to the right."
+    },
+    "1.12.2": {
+      "number": "1.12.2",
+      "title": "Dangerous turns (with the first left turn)",
+      "image": "./images/signs/d0c989fcc0302d8851bfa531de49537b.svg",
+      "description": "A section of road with dangerous turns. Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The sign informs you that there are a number (or several) turns ahead.  Sign 1.12.2 indicates that the first turn after the sign is to the left. "
+    },
+    "1.13": {
+      "number": "1.13",
+      "title": "Steep descent",
+      "image": "./images/signs/63db8254d7e4237477dc2867e9c69d9c.svg",
+      "description": "Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. Sign 1.13 can be installed without Table 8.1.1 immediately before a steep descent or ascent. If there is an obstacle on slopes marked with signs 1.13 and 1.14, the driver of a vehicle moving downhill must give way. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.14 Part 3 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying the priority right of movement, except for the cases provided for in Part 2 of Article 12.13 and Article 12.17 of this Code - a warning or a fine of 500 rubles.  "
+    },
+    "1.14": {
+      "number": "1.14",
+      "title": "Steep climb",
+      "image": "./images/signs/275c24b735cf456a411fa6a6bf30b8e9.svg",
+      "description": "Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. Sign 1.14 can be installed without Table 8.1.1 immediately before a steep descent or ascent. If there is an obstacle on slopes marked with signs 1.13 and 1.14, the driver of a vehicle moving downhill must give way. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.14 Part 3 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying the priority right of movement, except for the cases provided for in Part 2 of Article 12.13 and Article 12.17 of this Code - a warning or a fine of 500 rubles.   "
+    },
+    "1.15": {
+      "number": "1.15",
+      "title": "slippery road",
+      "image": "./images/signs/66e7d4e5770deff0d3bdd165cdafdefd.svg",
+      "description": "A section of road with increased slipperiness of the roadway. A section of road with increased slipperiness of the roadway. Installed in n. p. for 50-100 m, outside n. p. for 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object.” In order to prevent skidding in areas marked with a sign, it is necessary to drive at a reduced speed, without sudden acceleration and braking, and smoothly rotate the steering wheel, since the coefficient of adhesion of the tires to the surface is, due to the circumstances, very small. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.   In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
+    },
+    "1.16": {
+      "number": "1.16",
+      "title": "Rough road",
+      "image": "./images/signs/343a661fe1667d501e436fbc1f655c96.svg",
+      "description": "A section of road that has unevenness on the roadway (undulations, potholes, uneven junctions with bridges, etc.). Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. To avoid loss of control and stability, you should drive at a reduced speed in such areas. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.   In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
+    },
+    "1.17": {
+      "number": "1.17",
+      "title": "Artificial hump",
+      "image": "./images/signs/f9f9d2a86210a49f47bdeec985d98e80.svg",
+      "description": "A section of road with artificial hump(s) to force a reduction in speed. Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. This artificial unevenness is called a speed bump by drivers.",
+      "folkName": "speed bump"
+    },
+    "1.18": {
+      "number": "1.18",
+      "title": "Gravel release",
+      "image": "./images/signs/2017ed2db11d6dce6d4c3a6e5cf1b297.svg",
+      "description": "A section of road where gravel, crushed stone and the like can be thrown out from under the wheels of vehicles. Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. If possible, increase the interval and distance between cars and reduce speed. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.   In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
+    },
+    "1.19": {
+      "number": "1.19",
+      "title": "Dangerous roadside",
+      "image": "./images/signs/e200c6f0253fb1f71dae7b0cd0800557.svg",
+      "description": "A section of road where pulling off to the side of the road is dangerous. Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. There is no categorical ban on driving off to the side of the road. But if the need arises, do it extremely carefully, and it is better not to do this on heavy vehicles. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.   In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
+    },
+    "1.20.1": {
+      "number": "1.20.1",
+      "title": "Road narrows.",
+      "image": "./images/signs/b3ade4e8a06ca1f7f773b215d32a2315.svg",
+      "description": "Road narrowing is carried out on both sides. Installed in no. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.   In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
+    },
+    "1.20.2": {
+      "number": "1.20.2",
+      "title": "Road narrows",
+      "image": "./images/signs/4b729689429a923d1634207bfd4650b3.svg",
+      "description": "The road narrows on the right. It is installed in no. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.  In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
+    },
+    "1.20.3": {
+      "number": "1.20.3",
+      "title": "Road narrows",
+      "image": "./images/signs/4695660c0dd17921622280dbf727b87e.svg",
+      "description": "The road narrows on the left. It is installed in the no. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The yellow background means the signs are temporary. In addition, signs installed on portable supports are considered temporary.   In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
+    },
+    "1.21": {
+      "number": "1.21",
+      "title": "Two-way traffic",
+      "image": "./images/signs/f40f71b414882df64daced1a6afad2ba.svg",
+      "description": "The beginning of a section of road (roadway) with oncoming traffic. Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The sign is installed in front of a section of the road (carriageway) with oncoming traffic. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.   In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
+    },
+    "1.22": {
+      "number": "1.22",
+      "title": "Pedestrian crossing",
+      "image": "./images/signs/982792bfd504ae48ccf1ac4e42a0767e.svg",
+      "description": "The pedestrian crossing, marked with signs 5.19.1, 5.19.2 and (or) marking 1.14.1 and 1.14.2, is installed in the independent section 50-100 m, outside the independent section 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table8.1.1 \"Distance to the object\".  When approaching an unregulated pedestrian crossing, the driver should increase attention, be prepared to slow down or stop giving way to pedestrians crossing the roadway. Penalty for violation of the requirements of the sign:Administrative Code of the Russian Federation 12.18 Failure to comply with the requirement of traffic rules to give way to pedestrians, cyclists or other road users (with the exception of drivers of vehicles) who enjoy an advantage in traffic - a fine of 1500 - 2500 rubles."
+    },
+    "1.23": {
+      "number": "1.23",
+      "title": "Children",
+      "image": "./images/signs/374c5f0dc69341c672ac8d8744d9b951.svg",
+      "description": "A section of road near a children's institution (school, health camp, etc.), on the roadway of which children may appear. Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. It must be repeated outside the settlement, while the second sign is installed at a distance of at least 50 m. Sign 1.23 is also repeated in populated areas immediately at the beginning of the dangerous section. You should reduce your speed and increase your attention. Keep in mind that children’s actions are unconscious and unpredictable. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.18 Failure to comply with the traffic rules requirement to give way to pedestrians, cyclists or other road users (except for vehicle drivers) who have priority in traffic - a fine of 1500 - 2500 rubles."
+    },
+    "1.24": {
+      "number": "1.24",
+      "title": "Intersection with a bike lane or bicycle path",
+      "image": "./images/signs/e0f5a506bfd9f817b50182d6bfaeb66f.svg",
+      "description": "Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The sign is installed before the intersection of the bicycle path, marked with sign 4.4 “Bicycle path” and markings 1.15, with the road, if this intersection occurs outside the intersection. Bicycle drivers must give way to vehicles moving on the road. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.15 Part 2 Driving on bicycle or pedestrian paths or sidewalks in violation of traffic rules – a fine of 2000 rubles.  "
+    },
+    "1.25": {
+      "number": "1.25",
+      "title": "Men at work",
+      "image": "./images/signs/24d6164e6c97727edb3cb183e7c68325.svg",
+      "description": "Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. When carrying out short-term work on the roadway, it can be installed without a sign. 8.1.1 at a distance of 10 - 15 m to the work site.",
+      "folkName": "man with a shovel"
+    },
+    "1.26": {
+      "number": "1.26",
+      "title": "Cattle drive",
+      "image": "./images/signs/5de8d56a79f4014a86621419b78ce1cc.svg",
+      "description": "Installed in n. p. beyond 50-100 m, outside n. p. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in the table. 8.1.1 “Distance to object.” The sign is installed in front of sections of roads passing along unfenced pastures, livestock yards, farms, etc. Animals should be allowed through."
+    },
+    "1.27": {
+      "number": "1.27",
+      "title": "Wild animals",
+      "image": "./images/signs/0b31080392cdcf8efbd1e97068cd169d.svg",
+      "description": "Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. Installed on road sections where wild animals may appear. Colliding with animals can have serious consequences, so drive at a speed that will stop you."
+    },
+    "1.28": {
+      "number": "1.28",
+      "title": "Falling stones",
+      "image": "./images/signs/03b0085e9ae96b6c86050ae0f2cb9031.svg",
+      "description": "A section of road where avalanches, landslides, and falling rocks are possible. A section of road where avalanches, landslides, and falling rocks are possible. Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The driver needs to pay more attention and in the event of avalanches, landslides, etc., depending on the specific situation, he should either stop or, conversely, increase speed and drive through the dangerous area."
+    },
+    "1.29": {
+      "number": "1.29",
+      "title": "Side wind",
+      "image": "./images/signs/7ea6b707c222dd7cb4e7fbdb7660ec75.svg",
+      "description": "Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The driver must be prepared to compensate for the vehicle's deflection in sudden and strong gusts of wind by turning the steering wheel in a timely manner.  "
+    },
+    "1.30": {
+      "number": "1.30",
+      "title": "Low flying aircraft",
+      "image": "./images/signs/0bc0c9ffdc942036e637d03d9fa663bd.svg",
+      "description": "Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The sign warns of sections of roads over which planes or helicopters fly at low altitude. Unexpected noise should not distract the driver's attention from the road."
+    },
+    "1.31": {
+      "number": "1.31",
+      "title": "Tunnel",
+      "image": "./images/signs/a80f78b51626464d56817f3630ae9f02.svg",
+      "description": "A tunnel in which there is no artificial lighting, or a tunnel in which the visibility of the entrance portal is limited. Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. In tunnels, a moving vehicle must have high or low beam headlights on. In tunnels, the following is prohibited: overtaking, stopping and parking, turning around, and reversing."
+    },
+    "1.32": {
+      "number": "1.32",
+      "title": "Congestion",
+      "image": "./images/signs/e0832c9f4c9d131bdd5fb542f6be8a2a.svg",
+      "description": "A section of road where there is a traffic jam. Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. It is used as a temporary sign or in signs with a variable image, before an intersection, from where it is possible to bypass a section of the road where a traffic jam has formed."
+    },
+    "1.33": {
+      "number": "1.33",
+      "title": "Other hazards",
+      "image": "./images/signs/95c20b7894f5ff2995481ad277f6d392.svg",
+      "description": "A section of road that contains hazards that are not indicated by other warning signs. Installed in n. p. for 50-100 m, outside n. n. - beyond 150-300 m, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The sign is installed in front of sections of roads where the type of danger is not indicated by other warning signs. For example, in places where there is frequent occurrence of fog, smoke, etc. A yellow background means that this sign is temporary. In addition, signs installed on portable supports are considered temporary.   In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
+    },
+    "1.34.1": {
+      "number": "1.34.1",
+      "title": "Turning direction",
+      "image": "./images/signs/2ff8dce0350fa3d7117b50e733b69862.svg",
+      "description": "Indicates the direction of travel on a small radius curved road with limited visibility. Direction to bypass the road section being repaired. (to the right) Installation is required on turns with a radius of less than 30 m. Installed directly at the turn.",
+      "folkName": "herringbone"
+    },
+    "1.34.2": {
+      "number": "1.34.2",
+      "title": "Turning direction",
+      "image": "./images/signs/3bc768cc062609ff2edf0d08e9c851ba.svg",
+      "description": "Indicates the direction of travel on a small radius curved road with limited visibility. Direction to bypass the road section being repaired. (to the left) Installation is required on turns with a radius of less than 30 m. Installed directly at the turn.",
+      "folkName": "herringbone"
+    },
+    "1.34.3": {
+      "number": "1.34.3",
+      "title": "Turning direction",
+      "image": "./images/signs/cb078ec1df8058cfe80be2ebd4a44c53.svg",
+      "description": "Indicates the direction of travel at a T-junction or fork in the road. Direction to bypass the road section being repaired. Installed directly at a turn or T-junction."
+    },
+    "1.35": {
+      "number": "1.35",
+      "title": "Crossroads section",
+      "image": "./images/signs/fbf4a078f330f3988095dd96e5a76041.svg",
+      "description": "Designation of the approach to an intersection, the section of which is marked with markings 1.26 and which is prohibited from entering if there is a traffic jam ahead along the route that will force the driver to stop, creating an obstacle to the movement of vehicles in the transverse direction, with the exception of turning right or left in the cases established by these Rules. Sign 1.35 is installed at the border of the intersection. If at complex intersections it is impossible to install a road sign at the border of the intersection, it is installed at a distance of no more than 30 meters from the border of the intersection. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 1 Driving to an intersection or crossing a roadway in the event of a traffic jam that forced the driver to stop, creating an obstacle to the movement of vehicles in the transverse direction - a fine of 1000 rubles."
+    }
+  },
+  "Priority signs": {
+    "2.1": {
+      "number": "2.1",
+      "title": "Main road",
+      "image": "./images/signs/c56c59646b12f56cc259a0c240446ddb.svg",
+      "description": "A road on which the right of way is granted to unregulated intersections. Installed directly before the intersection. The advantage of driving through intersections that are not regulated by traffic lights. REMEMBER! On such a road, your advantage may end unexpectedly for you in the event of an intersection with vehicles with special signals (ambulance, fire truck, etc.). The coverage area is up to sign 2.2 “End of the main road.” Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles."
+    },
+    "2.2": {
+      "number": "2.2",
+      "title": "End of the main road",
+      "image": "./images/signs/aeaa9658d323d0cbe76781e44f883aba.svg",
+      "description": "Sign 2.1 “Main Road” has expired. The end of the right-of-way at uncontrolled intersections."
+    },
+    "2.3.1": {
+      "number": "2.3.1",
+      "title": "Intersection with a secondary road",
+      "image": "./images/signs/600a61ad31228e1f8b01ace9238ab436.svg",
+      "description": "Provides the right of way of an unregulated intersection to vehicles located on the main road. It is installed immediately before the intersection. At these intersections, overtaking is allowed on the road that is the main one in relation to the one being crossed. Penalty for violation of the requirements of the sign:Administrative Code of the Russian Federation 12.13 h. 2 Failure to comply with the requirement of traffic rules to give way to a vehicle that enjoys the preferential right of way of intersections - a fine of 1000 rubles."
+    },
+    "2.3.2": {
+      "number": "2.3.2",
+      "title": "Junction of secondary road",
+      "image": "./images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   "
+    },
+    "2.3.3": {
+      "number": "2.3.3",
+      "title": "Junction of secondary road",
+      "image": "./images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   "
+    },
+    "2.3.4": {
+      "number": "2.3.4",
+      "title": "Junction of secondary road",
+      "image": "./images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   "
+    },
+    "2.3.5": {
+      "number": "2.3.5",
+      "title": "Junction of secondary road",
+      "image": "./images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   "
+    },
+    "2.3.6": {
+      "number": "2.3.6",
+      "title": "Junction of secondary road",
+      "image": "./images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   "
+    },
+    "2.3.7": {
+      "number": "2.3.7",
+      "title": "Junction of secondary road",
+      "image": "./images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   "
+    },
+    "2.4": {
+      "number": "2.4",
+      "title": "Give way",
+      "image": "./images/signs/cc8922782f1e3262ac4dfbb3fbe8cbe6.svg",
+      "description": "The driver must give way to vehicles moving on the road being crossed, and, if there is a table 8.13, on the main road. Installed directly before the intersection (or at the intersection of roadways). The sign determines the order of passage of a particular intersection. Where to stop (if required) to give way? You must not resume or continue driving or make any maneuver if the action of your vehicle would cause other road users to change direction or speed. Therefore, if necessary, choose the stopping place yourself, guided by the above rule. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles."
+    },
+    "2.5": {
+      "number": "2.5",
+      "title": "Driving without stopping is prohibited",
+      "image": "./images/signs/2bc0f81810c66f9af28b7a7ba506aa56.svg",
+      "description": "It is prohibited to drive without stopping in front of the stop line, and if there is none, in front of the edge of the roadway being crossed. The driver must give way to vehicles moving along the intersection, and if there is a table 8.13 - along the main road. Sign 2.5 can be installed in front of a railway crossing or quarantine post. In these cases, the driver must stop in front of the stop line, and if there is no stop line, in front of the sign. Installed at the intersection of roadways or at a railway crossing, etc. It is necessary to take into account that stopping is mandatory if the sign is installed at the intersection of roadways - at the stop line (if it is placed on the roadway), and if there is no line, it is not necessary to stop at the level of the sign; the driver can stop after passing the sign, but not further than the intersection boundary. If the sign is installed at a railway crossing, etc. — the driver is obliged to stop either at the stop line or, in its absence, before the sign. In this case, stopping behind the sign is considered a traffic violation. When a traffic light is operating, this sign is not followed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.12 Part 2 Failure to comply with the traffic rules requirement to stop in front of the stop line indicated by road signs or markings of the roadway, when there is a prohibiting traffic light signal or a prohibiting gesture from a traffic controller - a fine of 800 rubles."
+    },
+    "2.6": {
+      "number": "2.6",
+      "title": "Advantage of oncoming traffic",
+      "image": "./images/signs/59f11961eb2e50d67ff5840cbc67d810.svg",
+      "description": "It is prohibited to enter a narrow section of the road if it may impede oncoming traffic. The driver must give way to oncoming vehicles located in a narrow area or the opposite entrance to it. The yellow background means the signs are temporary. In addition, signs installed on portable supports are considered temporary.  In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.14 Part 3 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying the priority right of movement, except for the cases provided for in Part 2 of Article 12.13 and Article 12.17 of this Code - a warning or a fine of 500 rubles."
+    },
+    "2.7": {
+      "number": "2.7",
+      "title": "Advantage over oncoming traffic",
+      "image": "./images/signs/ba51fb25f54b4902f2343928fbfbadc4.svg",
+      "description": "A narrow section of road on which the driver has advantage over oncoming vehicles. These two signs (2.6 and 2.7) cannot exist without each other. If on one side of a narrow section there is a 2.6 sign, then on the other side there must be a 2.7 sign. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.14 Part 3 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying the priority right of movement, except for the cases provided for in Part 2 of Article 12.13 and Article 12.17 of this Code - a warning or a fine of 500 rubles."
+    }
+  },
+  "Prohibition signs": {
+    "3.1": {
+      "number": "3.1",
+      "title": "No entry",
+      "image": "./images/signs/9f77764c15a21428b8e6e7f5c75936e2.svg",
+      "description": "The sign does not apply to route vehicles. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 Part 3 Driving in the opposite direction on a one-way road—a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 4 to 6 months. Code of Administrative Offenses of the Russian Federation 12.16 Part 3.1 Repeated commission of an administrative offense under Part 3 of Art. 12.16 Code of Administrative Offenses of the Russian Federation—deprivation of the right to drive a vehicle for a period of 12 months or a fine of 5,000 rubles.",
+      "folkName": "brick"
+    },
+    "3.2": {
+      "number": "3.2",
+      "title": "Movement Prohibition",
+      "image": "./images/signs/34cb3c56f57e675aa834aa440b1cb7b0.svg",
+      "description": "All vehicles are prohibited. Prohibits the movement of relevant types of vehicles in both directions. The sign does not apply to: route vehicles;\ton vehicles of federal postal organizations that have on the side surface a white diagonal stripe on a blue background, the emblem of federal postal organizations, the inscription “Russian Post”, and vehicles that serve enterprises located in the designated zone, as well as serve citizens or belong to citizens living or working in the designated zone. In these cases, vehicles must enter and exit the designated area at the intersection closest to their destination;\tfor vehicles driven by disabled people of groups I and II, transporting such disabled people and (or) disabled children, if the identification sign “Disabled” is installed on these vehicles; (Changes took effect: March 1, 2023).  Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles.",
+      "folkName": "bagel"
+    },
+    "3.3": {
+      "number": "3.3",
+      "title": "Movement of motor vehicles is prohibited",
+      "image": "./images/signs/08c6ccd7e2a83f22760e6b819fc6903e.svg",
+      "description": "The movement of motor vehicles is prohibited. Horse-drawn carts, bicycles and velomobiles can continue to move. Prohibits the movement of relevant types of vehicles in both directions. The sign does not apply to: route vehicles;\ton vehicles of federal postal organizations that have on the side surface a white diagonal stripe on a blue background, the emblem of federal postal organizations, the inscription “Russian Post”, and vehicles that serve enterprises located in the designated zone, as well as serve citizens or belong to citizens living or working in the designated zone. In these cases, vehicles must enter and exit the designated area at the intersection closest to their destination;\tfor vehicles driven by disabled people of groups I and II, transporting such disabled people and (or) disabled children, if the identification sign “Disabled” is installed on these vehicles; (Changes took effect: March 1, 2023).  Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles."
+    },
+    "3.4": {
+      "number": "3.4",
+      "title": "Truck traffic is prohibited",
+      "image": "./images/signs/914fd360991ffa9b61f253758e04e16b.svg",
+      "description": "The movement of trucks and vehicle combinations with a permissible maximum weight of more than 3.5 tons (if the weight is not indicated on the sign) or with a permissible maximum weight more than indicated on the sign, as well as tractors and self-propelled vehicles is prohibited. Prohibits the movement of relevant types of vehicles in both directions. Sign 3.4 does not prohibit the movement of trucks intended for the transport of people, vehicles of federal postal organizations that have on the side surface a white diagonal stripe on a blue background, the emblem of federal postal organizations, the inscription “Russian Post,” as well as trucks without a trailer with a permissible maximum weight of no more than 26 tons that serve enterprises located in the designated area. In these cases, vehicles must enter and exit the designated area at the intersection closest to their destination. (Changes took effect: March 1, 2023).  Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles."
+    },
+    "3.5": {
+      "number": "3.5",
+      "title": "Motorcycles are prohibited",
+      "image": "./images/signs/9aaa18f58f694795cddf7e13ddcc4fbf.svg",
+      "description": "The movement of any motorcycles (with or without sidecars) is prohibited. Prohibits the movement of relevant types of vehicles in both directions. The sign does not apply to: vehicles of federal postal organizations that have on the side surface a white diagonal stripe on a blue background, the emblem of federal postal organizations, the inscription “Russian Post”, and vehicles that serve enterprises located in the designated zone, as well as serve citizens or belong to citizens living or working in the designated zone. In these cases, vehicles must enter and exit the designated area at the intersection closest to their destination; Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles."
+    },
+    "3.6": {
+      "number": "3.6",
+      "title": "Tractor traffic is prohibited",
+      "image": "./images/signs/54ebf28e98a87237762c1e6cb0f1b7ce.svg",
+      "description": "The movement of tractors of any kind and self-propelled machines (scrapers, graders, etc.) is prohibited. Prohibits the movement of relevant types of vehicles in both directions. The signs do not apply to vehicles of federal postal organizations that have on the side surface a white diagonal stripe on a blue background, the emblem of federal postal organizations, the inscription “Russian Post”, and vehicles that serve enterprises located in the designated zone, as well as serve citizens or belong to citizens living or working in the designated zone. In these cases, vehicles must enter and exit the designated area at the intersection closest to their destination. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles. "
+    },
+    "3.7": {
+      "number": "3.7",
+      "title": "Driving with a trailer is prohibited",
+      "image": "./images/signs/75d9cc53558cb11ba3977cd3a3d0ab19.svg",
+      "description": "It is prohibited to drive trucks and tractors with trailers of any type, as well as tow motor vehicles. Prohibits the movement of relevant types of vehicles in both directions. The signs do not apply to vehicles of federal postal organizations that have on the side surface a white diagonal stripe on a blue background, the emblem of federal postal organizations, the inscription “Russian Post”, and vehicles that serve enterprises located in the designated zone, as well as serve citizens or belong to citizens living or working in the designated zone. In these cases, vehicles must enter and exit the designated area at the intersection closest to their destination. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles."
+    },
+    "3.8": {
+      "number": "3.8",
+      "title": "Horse-drawn carriages are prohibited",
+      "image": "./images/signs/ef60d8138f893003bed1dba33e17c03e.svg",
+      "description": "The movement of horse-drawn carts (sleighs), riding and pack animals, as well as the passage of livestock is prohibited. Prohibits the movement of relevant types of vehicles in both directions. The signs do not apply to vehicles of federal postal organizations that have on the side surface a white diagonal stripe on a blue background, the emblem of federal postal organizations, the inscription “Russian Post”, and vehicles that serve enterprises located in the designated zone, as well as serve citizens or belong to citizens living or working in the designated zone. In these cases, vehicles must enter and exit the designated area at the intersection closest to their destination. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles."
+    },
+    "3.9": {
+      "number": "3.9",
+      "title": "Bicycles are prohibited",
+      "image": "./images/signs/bb075c4b76fd011bc5fdd18c641d15ac.svg",
+      "description": "Cyclists and mopeds are prohibited. (Changes took effect: March 1, 2023).  Prohibits the movement of relevant types of vehicles in both directions. The sign does not prohibit driving a bicycle (moped) with your hands on the sidewalk (pedestrian path), and in its absence, on the right side of the road (in the direction of movement of vehicles). Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles."
+    },
+    "3.10": {
+      "number": "3.10",
+      "title": "No Pedestrians",
+      "image": "./images/signs/5e10d01ece04b20a6053422accd40715.svg",
+      "description": "The movement of pedestrians, as well as persons using personal mobility devices for movement, is prohibited. (Changes took effect: March 1, 2023).  The sign applies only to the side of the road where it is installed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.29 Part 1 Violation of traffic rules by a pedestrian or passenger of a vehicle—a warning or a fine of 500 rubles."
+    },
+    "3.11": {
+      "number": "3.11",
+      "title": "Weight limitation",
+      "image": "./images/signs/068747edfecce150c32c884f33993fe5.svg",
+      "description": "The movement of vehicles, including combinations of vehicles, the total actual weight of which is greater than that indicated on the sign, is prohibited.  A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.  In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.21 1 part 2. Movement of a heavy and (or) large-sized vehicle with an excess of the permissible dimensions of the vehicle by more than 10, but not more than 20 centimeters, or with an excess of the permissible weight of the vehicle or the permissible load on the axle of the vehicle by more than 10, but not more 20 percent without special permission—a fine on the owner (owner) of the vehicle in the amount of 250,000 rubles. Code of Administrative Offenses of the Russian Federation 12.21 1 part 3 Movement of a heavy and (or) large vehicle with an excess of the permissible dimensions of the vehicle by more than 20, but not more than 50 centimeters, or with an excess of the permissible weight of the vehicle or the permissible load on the axle of the vehicle by more than 20, but not more than 50 percent without special permission - a fine on the owner (owner) of the vehicle in the amount of 350,000 rubles. Code of Administrative Offenses of the Russian Federation 12.21 1 part 4. Movement of a heavy and (or) large-sized vehicle with an excess of the dimensions specified in the special permit by more than 10, but not more than 20 centimeters, or with an excess of the weight of the vehicle or the load on the axle of the vehicle specified in the special permit by more than 10, but not more than 20 percent - a fine on the owner (owner) of the vehicle in the amount of 200,000 rubles. Code of Administrative Offenses of the Russian Federation 12.21 1 part 5. Movement of a heavy and (or) large-sized vehicle with an excess of the dimensions specified in the special permit by more than 20, but not more than 50 centimeters, or with an excess of the weight of the vehicle or the load on the axle of the vehicle specified in the special permit by more than 20, but not more than 50 percent - a fine on the owner (owner) of the vehicle in the amount of 300,000 rubles."
+    },
+    "3.12": {
+      "number": "3.12",
+      "title": "Limitation of weight per vehicle axle",
+      "image": "./images/signs/65257ca9ce6d79c1c0310e738a2c1ab4.svg",
+      "description": "It is prohibited to drive vehicles whose actual weight on any axle exceeds that indicated on the sign. 1. The load on the axle of trucks is distributed as follows: on two-axle vehicles - 1/3 on the front, 2/3 on the rear axle; on three-axle vehicles - 1/3 for each axle.2. If the axle load is greater than what is indicated on the sign, the driver must go around this section of the road along a different route. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.  In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.21 1 part 2. Movement of a heavy and (or) large-sized vehicle with an excess of the permissible dimensions of the vehicle by more than 10, but not more than 20 centimeters, or with an excess of the permissible weight of the vehicle or the permissible load on the axle of the vehicle by more than 10, but not more 20 percent without special permission—a fine on the owner (owner) of the vehicle in the amount of 250,000 rubles. Code of Administrative Offenses of the Russian Federation 12.21 1 part 3 Movement of a heavy and (or) large vehicle with an excess of the permissible dimensions of the vehicle by more than 20, but not more than 50 centimeters, or with an excess of the permissible weight of the vehicle or the permissible load on the axle of the vehicle by more than 20, but not more than 50 percent without special permission - a fine on the owner (owner) of the vehicle in the amount of 350,000 rubles. Code of Administrative Offenses of the Russian Federation 12.21 1 part 4. Movement of a heavy and (or) large-sized vehicle with an excess of the dimensions specified in the special permit by more than 10, but not more than 20 centimeters, or with an excess of the weight of the vehicle or the load on the axle of the vehicle specified in the special permit by more than 10, but not more than 20 percent - a fine on the owner (owner) of the vehicle in the amount of 200,000 rubles. Code of Administrative Offenses of the Russian Federation 12.21 1 part 5. Movement of a heavy and (or) large-sized vehicle with an excess of the dimensions specified in the special permit by more than 20, but not more than 50 centimeters, or with an excess of the weight of the vehicle or the load on the axle of the vehicle specified in the special permit by more than 20, but not more than 50 percent - a fine on the owner (owner) of the vehicle in the amount of 300,000 rubles."
+    },
+    "3.13": {
+      "number": "3.13",
+      "title": "Height limitation",
+      "image": "./images/signs/d414912394ad7ce94a1b5231a48461ae.svg",
+      "description": "The movement of vehicles whose overall height (with or without cargo) is greater than that indicated on the sign is prohibited. If the height of the car (with or without a load) is greater than on the sign, then the driver must go around the road section along a different route. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.  In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
+    },
+    "3.14": {
+      "number": "3.14",
+      "title": "Width limitation",
+      "image": "./images/signs/ddcc2db01c1573b8b9f1d2a69983a4c2.svg",
+      "description": "The movement of vehicles whose overall width (with or without cargo) is greater than that indicated on the sign is prohibited. If the width of the car (with or without a load) is greater than on the sign, then the driver must go around this section of the road along a different route. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.  In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
+    },
+    "3.15": {
+      "number": "3.15",
+      "title": "Length limitation",
+      "image": "./images/signs/ac2d23173a5924e3412fcd0ef249e811.svg",
+      "description": "It is prohibited to drive vehicles (vehicle trains) whose overall length (with or without load) is greater than that indicated on the sign. If the overall length of the vehicle (vehicle combinations) is greater than that indicated on the sign, then the driver must go around this section of the road along a different route. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.  In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
+    },
+    "3.16": {
+      "number": "3.16",
+      "title": "Minimum distance limitation",
+      "image": "./images/signs/c1897beee89c46a70537922b8a7e05f4.svg",
+      "description": "It is prohibited to drive vehicles with a distance between them less than that indicated on the sign. The coverage area extends from the place where the sign is installed to the nearest intersection behind it, and in populated areas, in the absence of an intersection, to the end of the populated area. The effect of the signs is not interrupted at exit points from territories adjacent to the road and at intersections (junctions) with field, forest and other secondary roads, in front of which the corresponding signs are not installed. The coverage area of ​​signs may be reduced: table. 8.2.1. \"Area of ​​Action\" A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary. (Changes took effect: March 1, 2023).  In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
+    },
+    "3.17.1": {
+      "number": "3.17.1",
+      "title": "Customs",
+      "image": "./images/signs/99fa0ef722f7e87702dcbf311b1d4903.svg",
+      "description": "It is prohibited to travel without stopping at customs. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.12 Part 2 Failure to comply with the traffic rules requirement to stop in front of the stop line indicated by road signs or road markings, when there is a prohibitory traffic light signal or a prohibitory gesture from a traffic controller - a fine of 800 rubles. "
+    },
+    "3.17.2": {
+      "number": "3.17.2",
+      "title": "Danger",
+      "image": "./images/signs/ddb141598843973c26ff792b30258257.svg",
+      "description": "The further movement of all vehicles without exception is prohibited due to a traffic accident, accident, fire or other danger. The sign is installed in places that threaten the life and health of people. Passing behind the sign is prohibited for everyone without exception. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.12 Part 2 Failure to comply with the traffic rules requirement to stop in front of the stop line indicated by road signs or road markings, when there is a prohibitory traffic light signal or a prohibitory gesture from a traffic controller - a fine of 800 rubles.  "
+    },
+    "3.17.3": {
+      "number": "3.17.3",
+      "title": "Control",
+      "image": "./images/signs/25b68a4c922b42620ee23bec91f7bb6b.svg",
+      "description": "Driving through checkpoints without stopping is prohibited. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.12 Part 2 Failure to comply with the traffic rules requirement to stop in front of the stop line indicated by road signs or road markings, when there is a prohibitory traffic light signal or a prohibitory gesture from a traffic controller - a fine of 800 rubles. "
+    },
+    "3.18.1": {
+      "number": "3.18.1",
+      "title": "Turn to the right is prohibited",
+      "image": "./images/signs/b519a818d4b84d09db35ba439ef7762d.svg",
+      "description": "Prohibits right turns. The signs do not apply to: route vehicles. The effect of the sign applies only to the intersection in front of which the sign is installed. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary. (Changes entered into force: March 1, 2023.) In cases where the meanings of temporary road signs and permanent road signs contradict each other, drivers must be guided by the temporary signs. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of cases provided for in parts 2 - 7 of this article and other articles of this chapter - Warning or fine of 500 rubles. "
+    },
+    "3.18.2": {
+      "number": "3.18.2",
+      "title": "Turning left is prohibited",
+      "image": "./images/signs/6b13acd4920340d6a5ade9cbf8b7733d.svg",
+      "description": "Prohibits left turns. PLEASE NOTE: the sign does not prohibit turning. The signs do not apply to: route vehicles. The effect of the sign applies only to the intersection in front of which the sign is installed. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary. (Changes entered into force: March 1, 2023.) In cases where the meanings of temporary road signs and permanent road signs contradict each other, drivers must be guided by the temporary signs. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 Part 2 Turning left or turning in violation of the requirements prescribed by road signs or markings of the roadway - a fine of 1000 - 1500 rubles."
+    },
+    "3.19": {
+      "number": "3.19",
+      "title": "U-turn prohibited",
+      "image": "./images/signs/a77036dc28d01bd6a43b7e1dc8c7f78d.svg",
+      "description": "PLEASE NOTE: the sign does not prohibit left turns. The signs do not apply to: route vehicles. In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 Part 2 Turning left or turning in violation of the requirements prescribed by road signs or markings of the roadway - a fine of 1000 - 1500 rubles.  "
+    },
+    "3.20": {
+      "number": "3.20",
+      "title": "Overtaking is prohibited",
+      "image": "./images/signs/10b31089e23256d42615a68260f1960b.svg",
+      "description": "It is prohibited to overtake all vehicles except slow-moving vehicles, horse-drawn vehicles, bicycles, mopeds and two-wheeled motorcycles without a side trailer. The coverage area extends from the place where the sign is installed to the nearest intersection behind it, and in populated areas, in the absence of an intersection, to the end of the populated area. The effect of the signs is not interrupted at exit points from territories adjacent to the road and at intersections (junctions) with field, forest and other secondary roads, in front of which the corresponding signs are not installed. The sign's coverage area can be reduced by installing signs 3.21, 3.23, 3.25 at the end of their coverage area, respectively, or by using plate 8.2.1. (Changes took effect: March 1, 2023). A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary. (Changes entered into force: March 1, 2023.) In cases where the meanings of temporary road signs and permanent road signs contradict each other, drivers must be guided by the temporary signs. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.15 Part 4 Driving in violation of traffic rules onto a lane intended for oncoming traffic, or onto tram tracks in the opposite direction, except for the cases provided for in Part 3 of this article - a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 4 to 6 months.  "
+    },
+    "3.21": {
+      "number": "3.21",
+      "title": "End of the no-overtaking zone",
+      "image": "./images/signs/6654cc3433e1a3946decf8d350d4e99f.svg",
+      "description": "Cancels the effect of sign 3.20 “Overtaking is prohibited”. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.   In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
+    },
+    "3.22": {
+      "number": "3.22",
+      "title": "Overtaking by a truck is prohibited",
+      "image": "./images/signs/218ffabddb61261300f3a99b19a0ea77.svg",
+      "description": "It is prohibited for trucks with a permissible maximum weight of more than 3.5 tons to overtake all vehicles without exception. The coverage area extends from the place where the sign is installed to the nearest intersection behind it, and in populated areas, in the absence of an intersection, to the end of the populated area. The effect of the signs is not interrupted at exit points from territories adjacent to the road and at intersections (junctions) with field, forest and other secondary roads, in front of which the corresponding signs are not installed. The sign's coverage area can be reduced by installing signs 3.21, 3.23, 3.25 at the end of their coverage area, respectively, or by using plate 8.2.1. (Changes took effect: March 1, 2023). A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary. (Changes entered into force: March 1, 2023.) In cases where the meanings of temporary road signs and permanent road signs contradict each other, drivers must be guided by the temporary signs. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.15 Part 4 Driving in violation of traffic rules onto a lane intended for oncoming traffic, or onto tram tracks in the opposite direction, except for the cases provided for in Part 3 of this article - a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 4 to 6 months."
+    },
+    "3.23": {
+      "number": "3.23",
+      "title": "End of the no-overtaking zone for trucks",
+      "image": "./images/signs/8972f87ccd509bc265ae5a4bb40c87ff.svg",
+      "description": "Cancels the effect of sign 3.22 “Overtaking by trucks is prohibited.” A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary. (Changes entered into force: March 1, 2023.) In cases where the meanings of temporary road signs and permanent road signs contradict each other, drivers must be guided by the temporary signs. "
+    },
+    "3.24": {
+      "number": "3.24",
+      "title": "Maximum speed limit",
+      "image": "./images/signs/afe2a800e15fdfb647cbbf80ed8ffb1a.svg",
+      "description": "It is prohibited to drive at a speed (km/h) exceeding that indicated on the sign. The coverage area extends from the place where the sign is installed to the nearest intersection behind it, and in populated areas, in the absence of an intersection, to the end of the populated area. The effect of the signs is not interrupted at exit points from territories adjacent to the road and at intersections (junctions) with field, forest and other secondary roads, in front of which the corresponding signs are not installed. The sign's coverage area can be reduced by installing signs 3.21, 3.23, 3.25 at the end of their coverage area, respectively, or by using plate 8.2.1. The coverage area of ​​this sign can be reduced by installing sign 3.24 with a different maximum speed value. (Changes took effect: March 1, 2023). A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary. (Changes took effect: March 1, 2023). In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.9 part 2 Exceeding the established speed of a vehicle by more than 20, but not more than 40 kilometers per hour - a fine of 500 rubles. Code of Administrative Offenses of the Russian Federation 12.9 part 3 Exceeding the established speed of a vehicle by more than 40, but not more than 60 kilometers per hour - a fine of 1000 to 1500 rubles; for repeated violation - from 2000 to 2500 rubles Code of Administrative Offenses of the Russian Federation 12.9 part 4 Exceeding the established speed of a vehicle by more than 60, but not more than 80 kilometers per hour hour - fine from 2000 to 2500 rubles. or deprivation of the right to drive a vehicle for a period of 4 to 6 months; in case of repeated violation - deprivation of the right to drive for 1 year. Code of Administrative Offenses of the Russian Federation 12.9 part 5 Exceeding the established speed of a vehicle by more than 80 kilometers per hour - 5000 rubles or deprivation of the right to drive for 6 months; in case of repeated violation - deprivation of the right to drive for 1 year  "
+    },
+    "3.25": {
+      "number": "3.25",
+      "title": "End of maximum speed limit zone",
+      "image": "./images/signs/88f2e89569fde85399a3119939e9362d.svg",
+      "description": "Cancels the effect of sign 3.24 “Maximum speed limit”. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.  In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
+    },
+    "3.26": {
+      "number": "3.26",
+      "title": "The sound signal is not allowed",
+      "image": "./images/signs/d69cde7c75a100a5ad1b051a363e9798.svg",
+      "description": "It is prohibited to use sound signals, except when the signal is given to prevent a traffic accident. The coverage area extends from the place where the sign is installed to the nearest intersection behind it, and in populated areas, in the absence of an intersection, to the end of the populated area. The effect of the signs is not interrupted at exit points from territories adjacent to the road and at intersections (junctions) with field, forest and other secondary roads, in front of which the corresponding signs are not installed. The sign's coverage area may be reduced: table. 8.2.1 “Area of ​​Operation.” (Changes took effect: March 1, 2023). Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.20 Violation of the rules for using external lighting devices, sound signals, hazard warning lights or warning triangles - a warning or a fine of 500 rubles.  "
+    },
+    "3.27": {
+      "number": "3.27",
+      "title": "No stopping allowed",
+      "image": "./images/signs/32f6c6260d4ca82b635350a9ec41689b.svg",
+      "description": "Stopping and parking of vehicles is prohibited. Applies only to the side of the road on which they are installed. This sign does not apply to: route vehicles and vehicles used as passenger taxis, in places where route vehicles stop or where vehicles used as passenger taxis are parked, marked with markings 1.17.1 and (or) signs 5.16, 5.17, 5.18, respectively. The coverage area extends from the place where the sign is installed to the nearest intersection behind it, and in populated areas, in the absence of an intersection, to the end of the populated area. The effect of the signs is not interrupted at exit points from territories adjacent to the road and at intersections (junctions) with field, forest and other secondary roads, in front of which the corresponding signs are not installed. The coverage area of ​​signs can be reduced by installing repeated signs 3.27, 3.28, 3.29, 3.30 at the end of their coverage area with sign 8.2.3 or using sign 8.2.2, as well as installing sign 5.29 or 6.4. (Changes took effect: March 1, 2023). Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.19 Part 1 Violation of the rules for stopping or parking vehicles, with the exception of the cases provided for in Part 1 of Article 12.10 of this Code and Parts 2 - 6 of this Article - a warning or a fine of 500 rubles.  Code of Administrative Offenses of the Russian Federation 12.19 Part 5 Violation provided for in Part 1 of this article, committed in a federal city of Moscow or St. Petersburg - a fine of 2500 rubles. ",
+      "folkName": "cross"
+    },
+    "3.28": {
+      "number": "3.28",
+      "title": "No parking",
+      "image": "./images/signs/c64e8fde613df61be12cb0d6b3e8e634.svg",
+      "description": "Parking of vehicles is prohibited. Applies only to the side of the road on which they are installed. The signs do not apply to: vehicles driven by disabled people who, in accordance with the Federal Law “On Social Protection of Disabled Persons in the Russian Federation,” are granted the right to free use of parking spaces for vehicles carrying such disabled people and (or) disabled children, if the “Disabled Person” identification sign is installed on these vehicles, as well as to vehicles of federal postal service organizations with on the side surface there is a white diagonal stripe on a blue background, the emblem of federal postal organizations, the inscription “Russian Post”, and on passenger taxis with a taximeter turned on; (Changes took effect: March 1, 2023).   The coverage area extends from the place where the sign is installed to the nearest intersection behind it, and in populated areas, in the absence of an intersection, to the end of the populated area. The effect of the signs is not interrupted at exit points from territories adjacent to the road and at intersections (junctions) with field, forest and other secondary roads, in front of which the corresponding signs are not installed. The coverage area of ​​signs can be reduced by installing repeated signs 3.27, 3.28, 3.29, 3.30 at the end of their coverage area with sign 8.2.3 or using sign 8.2.2, as well as installing sign 5.29 or 6.4. (Changes took effect: March 1, 2023). Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.19 Part 1 Violation of the rules for stopping or parking vehicles, with the exception of the cases provided for in Part 1 of Article 12.10 of this Code and Parts 2 - 6 of this Article - a warning or a fine of 500 rubles.  Code of Administrative Offenses of the Russian Federation 12.19 Part 5 Violation provided for in Part 1 of this article, committed in a federal city of Moscow or St. Petersburg - a fine of 2500 rubles. "
+    },
+    "3.29": {
+      "number": "3.29",
+      "title": "Parking is prohibited on odd days of the month",
+      "image": "./images/signs/7958b8f457dbafef41933413bd561e78.svg",
+      "description": "The signs do not apply to: vehicles driven by disabled people who, in accordance with the Federal Law \"On Social Protection of Disabled Persons in the Russian Federation\", are granted the right to free use of parking spaces for vehicles carrying such disabled people and (or) disabled children, if the identification sign \"Disabled\" is installed on these vehicles, as well as to vehicles of federal postal service organizations that have a white diagonal stripe on the side surface on a blue background, an emblem federal postal organizations, the inscription \"Russian Post\", and on passenger taxis with a taximeter turned on. The coverage area extends from the place where the sign is installed to the nearest intersection behind it, and in populated areas, in the absence of an intersection, to the end of the populated area. The effect of the signs is not interrupted at exit points from territories adjacent to the road and at intersections (junctions) with field, forest and other secondary roads, in front of which the corresponding signs are not installed. The coverage area of ​​signs can be reduced by installing repeated signs 3.27, 3.28, 3.29, 3.30 at the end of their coverage area with sign 8.2.3 or using sign 8.2.2, as well as installing sign 5.29 or 6.4. (Changes took effect: March 1, 2023). Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.19 Part 1 Violation of the rules for stopping or parking vehicles, with the exception of the cases provided for in Part 1 of Article 12.10 of this Code and Parts 2 - 6 of this Article - a warning or a fine of 500 rubles.  Code of Administrative Offenses of the Russian Federation 12.19 Part 5 Violation provided for in Part 1 of this article, committed in a federal city of Moscow or St. Petersburg - a fine of 2500 rubles. "
+    },
+    "3.30": {
+      "number": "3.30",
+      "title": "Parking is prohibited on even days of the month",
+      "image": "./images/signs/a371758db16fc213e35b2d83517b7517.svg",
+      "description": "The signs do not apply: The coverage area extends from the place where the sign is installed to the nearest intersection behind it, and in populated areas, in the absence of an intersection, to the end of the populated area. The effect of the signs is not interrupted at exit points from territories adjacent to the road and at intersections (junctions) with field, forest and other secondary roads, in front of which the corresponding signs are not installed. The coverage area of ​​signs can be reduced by installing repeated signs 3.27, 3.28, 3.29, 3.30 at the end of their coverage area with sign 8.2.3 or using sign 8.2.2, as well as installing sign 5.29 or 6.4. (Changes took effect: March 1, 2023). Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.19 Part 1 Violation of the rules for stopping or parking vehicles, with the exception of the cases provided for in Part 1 of Article 12.10 of this Code and Parts 2 - 6 of this Article - a warning or a fine of 500 rubles.  Code of Administrative Offenses of the Russian Federation 12.19 Part 5 Violation provided for in Part 1 of this article, committed in a federal city of Moscow or St. Petersburg - a fine of 2500 rubles. "
+    },
+    "3.31": {
+      "number": "3.31",
+      "title": "The end of the zone of all restrictions",
+      "image": "./images/signs/9bcec66d4b6d2d724af18234cea86409.svg",
+      "description": "Cancels the effect of the following prohibitory signs (installed together or sequentially):1) 3.16 Minimum distance limit;2) 3.20 Overtaking prohibited;3) 3.22 Overtaking by trucks is prohibited;4) 3.24 Maximum speed limit;5) 3.26 Sound signal prohibited;6) 3.27 Stopping prohibited;7) 3.28 Parking prohibited;8) 3.29 Parking is prohibited on odd days of the month;9) 3.30 Parking is prohibited on even days of the month. "
+    },
+    "3.32": {
+      "number": "3.32",
+      "title": "The movement of vehicles with dangerous goods is prohibited",
+      "image": "./images/signs/9e26b76d6e5a7c5c18d24c55f1eec2e4.svg",
+      "description": "The movement of vehicles equipped with identification signs (information plates) “Dangerous cargo” is prohibited. The sign applies to ALL vehicles that have identification marks (information plates) “Dangerous cargo”. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 Part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles or Code of Administrative Offenses of the Russian Federation 12.21.2 Part 2 Violation of the rules for the transportation of dangerous goods, except for the cases provided for in Part 1 of this articles - fine: for a driver from 1000 to 1500 rubles, for officials from 5000 to 10000 rubles, for legal entities from 150000 to 250000 rubles."
+    },
+    "3.33": {
+      "number": "3.33",
+      "title": "The movement of vehicles with explosive and flammable cargo is prohibited",
+      "image": "./images/signs/4c5aa981f6fb1fbfa01712a2724f3883.svg",
+      "description": "The movement of vehicles transporting explosives and products, as well as other dangerous goods subject to marking as flammable, is prohibited, except in cases of transportation of these dangerous substances and products in limited quantities, determined in the manner established by special transportation rules. Dangerous goods are divided into classes: cl. 1 - explosives; class. 2 - compressed, liquefied and dissolved gases under pressure; class. 3 - flammable liquids; cl. 4 - flammable substances and materials; cl. 5 - oxidizing substances and organic peroxides; cl. 6 - poisonous (toxic) substances; cl. 7 - radioactive and infectious materials; class. 8 - caustic and corrosive materials; class. 9 - other hazardous substances. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 Part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles or Code of Administrative Offenses of the Russian Federation 12.21.2 Part 2 Violation of the rules for the transportation of dangerous goods, except for the cases provided for in Part 1 of this articles - fine: for a driver from 1000 to 1500 rubles, for officials from 5000 to 10000 rubles, for legal entities from 150000 to 250000 rubles."
+    },
+    "3.34": {
+      "number": "3.34",
+      "title": "Bus traffic is prohibited",
+      "image": "./images/signs/4f3323041ff6c39163c6e0f34b531904.svg",
+      "description": "Bus traffic is prohibited. The movement of relevant types of vehicles in both directions is prohibited. The signs do not apply to: route vehicles;\tfor school buses."
+    },
+    "3.35": {
+      "number": "3.35",
+      "title": "Driving on personal mobility devices is prohibited",
+      "image": "./images/signs/86d638ddcb608b242da09a549b545bcf.svg",
+      "description": "(Changes took effect: March 1, 2023)."
+    }
+  },
+  "Prescriptive signs": {
+    "4.1.1": {
+      "number": "4.1.1",
+      "title": "Go straight",
+      "image": "./images/signs/edfa72956b6ebefa96d04500db9285e1.svg",
+      "description": "1. Driving is only allowed straight ahead if the sign is installed immediately before the intersection of roadways. 2. If the sign is installed at the beginning of a section of the road (i.e. at some distance before the intersection of roads), then in this case the sign does not prohibit turning only to the right into courtyards and other adjacent areas (gas stations, rest stops, etc.). A sign with a configuration of arrows corresponding to the required directions of movement at a specific intersection can be used. The following vehicles deviate from the effect of the sign: route vehicles (tram, trolleybus, bus). Sign's coverage area: a) the sign's effect extends to the intersection of roadways in front of which the sign is installed (only to the first intersection behind the sign); b) if the sign is installed at the beginning of a road section, the sign's effect extends to the nearest intersection. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles."
+    },
+    "4.1.2": {
+      "number": "4.1.2",
+      "title": "Movement to the right",
+      "image": "./images/signs/f5e183503d29e5e1959541346d1fe2b6.svg",
+      "description": "Driving only to the right is allowed. 1. Route vehicles deviate from the effect of the sign.2. The sign's coverage area extends to the intersection of roadways in front of which the sign is installed (to the first intersection behind the sign). Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles.  "
+    },
+    "4.1.3": {
+      "number": "4.1.3",
+      "title": "Driving left",
+      "image": "./images/signs/20412a2d3a8dba838a80b04ac05e0bba.svg",
+      "description": "Only driving to the left or turning around is allowed. 1. Route vehicles deviate from the effect of the sign.2. The sign's coverage area extends to the intersection of roadways in front of which the sign is installed (to the first intersection behind the sign). Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles."
+    },
+    "4.1.4": {
+      "number": "4.1.4",
+      "title": "Driving straight or right",
+      "image": "./images/signs/36a7dc2f0402fb1c3b52e998cc4f2639.svg",
+      "description": "Driving only straight or to the right is allowed. 1. Route vehicles deviate from the effect of the sign.2. The sign's coverage area extends to the intersection of roadways in front of which the sign is installed (to the first intersection behind the sign). Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles.  "
+    },
+    "4.1.5": {
+      "number": "4.1.5",
+      "title": "Driving straight or left",
+      "image": "./images/signs/a4f684add2aee502a2a42567d6e5aff2.svg",
+      "description": "Only driving straight, left or turning is allowed. 1. Route vehicles deviate from the effect of the sign.2. The sign's coverage area extends to the intersection of roadways in front of which the sign is installed (to the first intersection behind the sign). Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles.  "
+    },
+    "4.1.6": {
+      "number": "4.1.6",
+      "title": "Moving right or left",
+      "image": "./images/signs/bff85c177f0e2166e4d881c52cb57943.svg",
+      "description": "Movement is only allowed to the right, left, and also a U-turn. 1. Route vehicles deviate from the effect of the sign.2. The sign's coverage area extends to the intersection of roadways in front of which the sign is installed (to the first intersection behind the sign). Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.16 part 1 Failure to comply with the requirements prescribed by road signs or markings of the roadway, with the exception of the cases provided for in parts 2 - 7 of this article and other articles of this chapter - a warning or a fine of 500 rubles.  "
+    },
+    "4.2.1": {
+      "number": "4.2.1",
+      "title": "Avoiding obstacles on the right",
+      "image": "./images/signs/2a04d02796007c51b2b1c61f5915a9bb.svg",
+      "description": " Indicates that avoidance of various types of obstacles on the roadway (including traffic islands) is permitted from the side indicated by the arrow."
+    },
+    "4.2.2": {
+      "number": "4.2.2",
+      "title": "Avoiding obstacles on the left",
+      "image": "./images/signs/2ab08b0518c64b8ebedc5d9e4e632d18.svg",
+      "description": " Indicates that avoidance of various types of obstacles on the roadway (including traffic islands) is permitted from the side indicated by the arrow."
+    },
+    "4.2.3": {
+      "number": "4.2.3",
+      "title": "Avoiding obstacles on the right or left",
+      "image": "./images/signs/55444c380ed0f9052af912b13d1040c2.svg",
+      "description": "Detour around the obstacle is allowed from any direction."
+    },
+    "4.3": {
+      "number": "4.3",
+      "title": "Roundabout Circulation",
+      "image": "./images/signs/58e7e696835bcc69857b61cf990b6151.svg",
+      "description": "The movement is organized in a circle in the direction of the arrows. Entering a roundabout intersection is permitted from any lane. No preliminary lane change is required. The exit is carried out according to the general rules of maneuvering, from the extreme position on the roadway.",
+      "folkName": "ring"
+    },
+    "4.4.1": {
+      "number": "4.4.1",
+      "title": "Bike Lane",
+      "image": "./images/signs/729fb6b3c0f5c83fa4fd2e41e061aeda.svg",
+      "description": "Only bicycles are allowed. Pedestrians can also use the bike path (if there is no sidewalk or pedestrian path). Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.15 Part 2 Driving on bicycle or pedestrian paths or sidewalks in violation of traffic rules - a fine of 2000 rubles."
+    },
+    "4.4.2": {
+      "number": "4.4.2",
+      "title": "End of the bike path",
+      "image": "./images/signs/155ee2d1eb349cb22fd28ec943375dc2.svg",
+      "description": "End of sign coverage area 4.4.1."
+    },
+    "4.5.1": {
+      "number": "4.5.1",
+      "title": "As a walkway",
+      "image": "./images/signs/7ed2392cb565f59a0677e169a75abb5a.svg",
+      "description": "The sign is used to designate paths intended only for pedestrians (or equivalent to them). Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.15 Part 2 Driving on bicycle or pedestrian paths or sidewalks in violation of traffic rules – a fine of 2000 rubles.   "
+    },
+    "4.5.2": {
+      "number": "4.5.2",
+      "title": "Pedestrian and bicycle path with combined traffic (bicycle path with combined traffic)",
+      "image": "./images/signs/6d32e475df4cc14e6de380997aaeb51d.svg",
+      "description": "Pedestrian and bicycle path with combined traffic (bicycle path with combined traffic)."
+    },
+    "4.5.3": {
+      "number": "4.5.3",
+      "title": "End of a pedestrian and bicycle path with combined traffic (end of a bicycle and pedestrian path with combined traffic)",
+      "image": "./images/signs/ebabed716c12bca2ae3f1bec74bb74e0.svg",
+      "description": "The end of the bike and pedestrian path with combined traffic."
+    },
+    "4.5.4": {
+      "number": "4.5.4",
+      "title": "Split Traffic Pedestrian & Bike Path",
+      "image": "./images/signs/f63df427a9d45b0c938dcec9bb92effb.svg",
+      "description": "A bicycle and pedestrian path with a division into bicycle and pedestrian sides of the path, allocated structurally and (or) marked with horizontal markings 1.2, 1.23.2 and 1.23.3 or in another way."
+    },
+    "4.5.5": {
+      "number": "4.5.5",
+      "title": "Split Traffic Pedestrian & Bike Path",
+      "image": "./images/signs/ceaf85075f73573cce0010570c62dbbe.svg",
+      "description": "A bicycle and pedestrian path with a division into bicycle and pedestrian sides of the path, allocated structurally and (or) marked with horizontal markings 1.2, 1.23.2 and 1.23.3 or in another way."
+    },
+    "4.5.6": {
+      "number": "4.5.6",
+      "title": "End of a segregated pedestrian and cycle path (end of a segregated cycle/pedestrian path)",
+      "image": "./images/signs/2d4e5fbe86643950a8df6714211874ac.svg",
+      "description": "The end of a segregated bike and pedestrian path."
+    },
+    "4.5.7": {
+      "number": "4.5.7",
+      "title": "End of a segregated pedestrian and cycle path (end of a segregated cycle/pedestrian path)",
+      "image": "./images/signs/590489adc4e0cbfc40aaf0ddd8a1f996.svg",
+      "description": "The end of a segregated bike and pedestrian path."
+    },
+    "4.6": {
+      "number": "4.6",
+      "title": "Minimum speed limit",
+      "image": "./images/signs/8d75c6c47899372ca2fe29d2aaaf7ef0.svg",
+      "description": "Driving is only permitted at the specified speed or higher (km/h).  Coverage area: up to sign 4.7 “End of minimum speed limit zone.” Do not confuse this sign with sign 6.2 “Recommended speed”."
+    },
+    "4.7": {
+      "number": "4.7",
+      "title": "End of minimum speed limit zone",
+      "image": "./images/signs/73ba23061c79c6fedde6f6815b898e0c.svg",
+      "description": "Cancels the effect of sign 4.6 “Minimum speed limit”."
+    },
+    "4.8.1": {
+      "number": "4.8.1",
+      "title": "Direction of movement of vehicles with dangerous goods",
+      "image": "./images/signs/a3c739d9396fba61a07febb646118b39.svg",
+      "description": "The movement of vehicles equipped with identification signs (information plates) “Dangerous Goods” is permitted only in the direction indicated on the sign: 4.8.1 - straight, 4.8.2 - right, 4.8.3 - left. These mandatory signs must be installed immediately before crossing roadways in places where prohibitory signs are installed: 3.32 “Movement of vehicles with dangerous goods is prohibited”, 3.33 “Movement of vehicles with explosive, flammable goods"
+    }
+  },
+  "Signs of special regulations": {
+    "5.1": {
+      "number": "5.1",
+      "title": "Motorway",
+      "image": "./images/signs/30ef8488ecc5abc3fe2758fb400a6ad6.svg",
+      "description": "A road on which the requirements of the Road Traffic Rules of the Russian Federation apply, establishing the procedure for driving on highways. This road is the fastest. Sign 5.1 is installed at the beginning of the highway, as well as after the entrances to it.  On the highway it is prohibited: the movement of pedestrians, persons using personal mobility devices, pets, bicycles, mopeds, tractors and self-propelled vehicles, other vehicles whose speed, according to their technical characteristics or their condition, is less than 40 km/h;\tmovement of trucks with a permissible maximum weight of more than 3.5 tons beyond the second lane;\tstopping outside special parking areas marked with sign 6.4 or 7.11;\tturning around and entering technological gaps in the median;\treversing. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.11 Part 1 Driving on a highway in a vehicle whose speed according to its technical characteristics or its condition is less than 40 kilometers per hour, as well as stopping a vehicle on a highway outside special parking areas - a fine of 1000 rubles. Code of Administrative Offenses of the Russian Federation 12.11 Part 2 Driving a truck with a permissible maximum weight of more than 3.5 tons on a highway beyond the second lane, as well as training driving on a highway, will result in a fine of 1,000 rubles. Code of Administrative Offenses of the Russian Federation 12.11 part 3 Turning or driving a vehicle into technological gaps in the dividing strip on a highway or driving in reverse on a highway - a fine of 2,500 rubles.  "
+    },
+    "5.2": {
+      "number": "5.2",
+      "title": "End of the motorway",
+      "image": "./images/signs/186fc9221cc561b1d35260f2178e8b7d.svg",
+      "description": "Indicates the end of a motorway marked with sign 5.1. Installed at the end of the highway and at the beginning of exits from it."
+    },
+    "5.3": {
+      "number": "5.3",
+      "title": "Road for cars",
+      "image": "./images/signs/a482c86004b27c60a7f7fd8aa4eabea5.svg",
+      "description": "A road intended for use only by cars, buses and motorcycles. This road is subject to all the requirements of the traffic rules section “Traffic on highways”. What is prohibited on roads marked with sign 5.1 is also prohibited on roads marked with sign 5.3. Before side entrances to a road marked with sign 5.3, sign 5.3 is installed with one of the signs 8.3.1, 8.3.2, 8.3.3 “Directions of Action”. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.11 Part 1 Driving on a highway in a vehicle whose speed according to its technical characteristics or its condition is less than 40 kilometers per hour, as well as stopping a vehicle on a highway outside special parking areas - a fine of 1000 rubles. Code of Administrative Offenses of the Russian Federation 12.11 Part 2 Driving a truck with a permissible maximum weight of more than 3.5 tons on a highway beyond the second lane, as well as training driving on a highway, will result in a fine of 1,000 rubles. Code of Administrative Offenses of the Russian Federation 12.11 part 3 Turning or driving a vehicle into technological gaps in the dividing strip on a highway or driving in reverse on a highway - a fine of 2,500 rubles "
+    },
+    "5.4": {
+      "number": "5.4",
+      "title": "End of the road for cars",
+      "image": "./images/signs/81b2326a382ee8076f85797956a47c6a.svg",
+      "description": "Indicates the end of the road marked with sign 5.3 “Road for motor vehicles”."
+    },
+    "5.5": {
+      "number": "5.5",
+      "title": "One way road",
+      "image": "./images/signs/1346f884b8d8b48ffd07df32058779b2.svg",
+      "description": "A road or carriageway along which the movement of motorized vehicles over its entire width is carried out in one direction. 1. Sign coverage area: up to sign 5.6 “End of one-way road.”2. Permitted directions: straight, left, right, reverse is not prohibited, except for the places listed in paragraphs 8.11, 8.12 of Rule.3. In practice, it must be remembered that on one-way roads, stopping and parking are allowed not only on the right side of the road, but also on the left, in the direction of movement of cars, and on such a road there must be at least two lanes for traffic. Trucks with a permissible maximum weight of more than 3.5 tons are allowed to stop on the left side of the road only for loading and unloading cargo.4. In cases where there are no horizontal markings dividing the roadway into the number of lanes, drivers must mentally divide its width by the number of lanes for the vehicles the driver is driving, and it is necessary that the mental lane be wide enough for the smooth movement of the vehicle. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.15 Part 4 Driving in violation of traffic rules onto a lane intended for oncoming traffic, or onto tram tracks in the opposite direction, except for the cases provided for in Part 3 of this article - a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 4 to 6 months. Code of Administrative Offenses of the Russian Federation 12.15 Part 5 Repeated commission of an administrative offense under Part 4 of Art. 12.15 of the Code of Administrative Offenses of the Russian Federation - deprivation of the right to drive a vehicle for a period of 1 year, and in the case of recording an administrative offense using special technical means operating in automatic mode, having the functions of photography, filming, video recording, or means of photography, filming, video recording - the imposition of an administrative fine in the amount of 5,000 rubles."
+    },
+    "5.6": {
+      "number": "5.6",
+      "title": "End of a one way road",
+      "image": "./images/signs/b5666c37f7cc53c2e6c5b9f9d1139156.svg",
+      "description": " Indicates the end of a road or carriageway marked with sign 5.5 “One-way road”."
+    },
+    "5.7.1": {
+      "number": "5.7.1",
+      "title": "Entering a one-way road.",
+      "image": "./images/signs/eaa67e0f15d830945fbd285b1a198768.svg",
+      "description": "Entering a one-way road or carriageway. Installed in front of all side exits on one-way roads. 1. The arrow indicates the direction of travel on a one-way road.2. Crossing a one-way road is not prohibited.3. At an intersection in front of which sign 5.7.1 is installed, turning left is prohibited. U-turn is not prohibited.4. At an intersection in front of which sign 5.7.2 is installed, turning right is prohibited. U-turn is not prohibited. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.15 Part 4 Driving in violation of traffic rules onto a lane intended for oncoming traffic, or onto tram tracks in the opposite direction, except for the cases provided for in Part 3 of this article - a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 4 to 6 months. Code of Administrative Offenses of the Russian Federation 12.15 Part 5 Repeated commission of an administrative offense under Part 4 of Art. 12.15 of the Code of Administrative Offenses of the Russian Federation - deprivation of the right to drive a vehicle for a period of 1 year, and in the case of recording an administrative offense using special technical means operating in automatic mode, having the functions of photography, filming, video recording, or means of photography, filming, video recording - imposition of an administrative fine in the amount of 5,000 rubles. "
+    },
+    "5.7.2": {
+      "number": "5.7.2",
+      "title": "Entering a one-way road.",
+      "image": "./images/signs/eaa67e0f15d830945fbd285b1a198768.svg",
+      "description": "Entering a one-way road or carriageway. Installed in front of all side exits on one-way roads. 1. The arrow indicates the direction of travel on a one-way road.2. Crossing a one-way road is not prohibited.3. At an intersection in front of which sign 5.7.1 is installed, turning left is prohibited. U-turn is not prohibited.4. At an intersection in front of which sign 5.7.2 is installed, turning right is prohibited. U-turn is not prohibited. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.15 Part 4 Driving in violation of traffic rules onto a lane intended for oncoming traffic, or onto tram tracks in the opposite direction, except for the cases provided for in Part 3 of this article - a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 4 to 6 months. Code of Administrative Offenses of the Russian Federation 12.15 Part 5 Repeated commission of an administrative offense under Part 4 of Art. 12.15 of the Code of Administrative Offenses of the Russian Federation - deprivation of the right to drive a vehicle for a period of 1 year, and in the case of recording an administrative offense using special technical means operating in automatic mode, having the functions of photography, filming, video recording, or means of photography, filming, video recording - imposition of an administrative fine in the amount of 5,000 rubles. "
+    },
+    "5.8": {
+      "number": "5.8",
+      "title": "Reverse movement",
+      "image": "./images/signs/3ffcf683b099f1108e43767eb611dee9.svg",
+      "description": "The beginning of a section of road on which one or more lanes may change direction to the opposite direction. The direction of traffic can be reversed using reversible traffic lights. Effective area: up to sign 5.9 “End of reverse movement”."
+    },
+    "5.9": {
+      "number": "5.9",
+      "title": "End of reverse movement",
+      "image": "./images/signs/31d460be855f04c2263c8690e62b715d.svg",
+      "description": "Cancels the effect of sign 5.8 “Reverse movement”."
+    },
+    "5.10": {
+      "number": "5.10",
+      "title": "Entering a road with reverse traffic",
+      "image": "./images/signs/f2e247bb2668f187b147f897639b482e.svg",
+      "description": "The sign is used to indicate exit onto a road with reverse traffic. It is installed in front of all side exits on such a road. Drivers turning onto a reversible road marked 5.10 must drive in the far right lane. Changing lanes is allowed only after the driver is convinced that traffic in this direction is also permitted in other lanes."
+    },
+    "5.11.1": {
+      "number": "5.11.1",
+      "title": "Road with a lane for route vehicles",
+      "image": "./images/signs/5e74ef793315c48a24193f8d1bd34409.svg",
+      "description": "A road on which vehicles allowed to move in lanes for route vehicles move along a specially allocated lane towards the general flow of vehicles. On a road with a lane for route vehicles, marked with sign 5.11.1, the movement and stopping of other vehicles in this lane is prohibited. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.17 parts 1.1 and 1.2 Movement of vehicles in the lane for route vehicles or stopping on the specified lane in violation of the Traffic Rules - a fine of 1,500 rubles. (for Moscow and St. Petersburg - 3000 rubles)"
+    },
+    "5.11.2": {
+      "number": "5.11.2",
+      "title": "Road with lane for cyclists",
+      "image": "./images/signs/3417cb06252d5348b568b87a0547e3b6.svg",
+      "description": ""
+    },
+    "5.12.1": {
+      "number": "5.12.1",
+      "title": "End of the road with a lane for route vehicles",
+      "image": "./images/signs/49010e49177332307b04aac8146c94d7.svg",
+      "description": "Cancels the effect of sign 5.11.1 “Road with a lane for route vehicles.”"
+    },
+    "5.12.2": {
+      "number": "5.12.2",
+      "title": "End of the road with a lane for cyclists",
+      "image": "./images/signs/e03e05911c4bfcee90cd96a42dc4caa2.svg",
+      "description": "The road sign is a road sign 5.11.2, the image of which is crossed out by a diagonal red stripe from the lower left corner to the upper right corner of the sign."
+    },
+    "5.13.1": {
+      "number": "5.13.1",
+      "title": "Entering a road with a lane for route vehicles",
+      "image": "./images/signs/6f250c306d6911bf975744127dcfa861.svg",
+      "description": "Entering a road with a lane for route vehicles (sign 5.11.1), the movement of which is carried out along a specially designated lane towards the general flow of vehicles. At an intersection in front of which sign 5.13.1 is installed, turning left is prohibited. A U-turn is not prohibited. At an intersection in front of which sign 5.13.2 is installed, a right turn is prohibited. U-turn is not prohibited. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.17 parts 1.1 and 1.2 Movement of vehicles in the lane for route vehicles or stopping on the specified lane in violation of the Traffic Rules - a fine of 1,500 rubles. (for Moscow and St. Petersburg - 3000 rubles)"
+    },
+    "5.13.2": {
+      "number": "5.13.2",
+      "title": "Entering a road with a lane for route vehicles",
+      "image": "./images/signs/6f250c306d6911bf975744127dcfa861.svg",
+      "description": "Entering a road with a lane for route vehicles (sign 5.11.1), the movement of which is carried out along a specially designated lane towards the general flow of vehicles. At an intersection in front of which sign 5.13.1 is installed, turning left is prohibited. A U-turn is not prohibited. At an intersection in front of which sign 5.13.2 is installed, a right turn is prohibited. U-turn is not prohibited. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.17 parts 1.1 and 1.2 Movement of vehicles in the lane for route vehicles or stopping on the specified lane in violation of the Traffic Rules - a fine of 1,500 rubles. (for Moscow and St. Petersburg - 3000 rubles)"
+    },
+    "5.13.3": {
+      "number": "5.13.3",
+      "title": "Entering a road with a lane for cyclists",
+      "image": "./images/signs/040dd5b89c58d745f260470b69f95c65.svg",
+      "description": ""
+    },
+    "5.13.4": {
+      "number": "5.13.4",
+      "title": "Entering a road with a lane for cyclists",
+      "image": "./images/signs/5564935ee2b1ae22a68ff3efb49d60bd.svg",
+      "description": ""
+    },
+    "5.14": {
+      "number": "5.14",
+      "title": "End of the bike lane",
+      "image": "./images/signs/8af3051b4e6b17af2f625c0b55db66fb.svg",
+      "description": "  The effect of the sign extends to the strip above which they are located. The effect of signs installed to the right of the road extends to the right lane."
+    },
+    "5.15.1": {
+      "number": "5.15.1",
+      "title": "Lane directions",
+      "image": "./images/signs/0681ef67b1ece368503d8ea99032ae81.svg",
+      "description": "The number of lanes and permitted directions of movement for each of them.  Signs 5.15.1 and 5.15.2, which permit turning left from the extreme left lane, also permit a U-turn from this lane. Signs 5.15.1 and 5.15.2 do not apply to route vehicles. Signs 5.15.1 and 5.15.2 installed in front of the intersection apply to the entire intersection, if other signs 5.15.1 and 5.15.2 installed on it do not provide any other instructions."
+    },
+    "5.15.2": {
+      "number": "5.15.2",
+      "title": "Lane directions",
+      "image": "./images/signs/beef79c1d2b2eb4a94ff9e1ab2c8022b.svg",
+      "description": "Permitted lane directions.  Signs 5.15.1 and 5.15.2, which permit turning left from the extreme left lane, also permit a U-turn from this lane. Signs 5.15.1 and 5.15.2 do not apply to route vehicles. Signs 5.15.1 and 5.15.2 installed in front of the intersection apply to the entire intersection, if other signs 5.15.1 and 5.15.2 installed on it do not provide any other instructions."
+    },
+    "5.15.3": {
+      "number": "5.15.3",
+      "title": "Start of the strip",
+      "image": "./images/signs/b8f365d78f5e528c3bfd33af36910053.svg",
+      "description": "The beginning of an additional lane on an ascent or a braking lane (for example, on a motorway before an organized parking lot). If the sign installed in front of the additional lane shows sign 4.6 “Minimum speed limit,” then the driver of a vehicle that cannot continue moving along the main lane at the indicated or higher speed must change lanes to the lane located to the right of him. Coverage area: up to sign 5.15.5 “End of lane”."
+    },
+    "5.15.4": {
+      "number": "5.15.4",
+      "title": "Start of the strip",
+      "image": "./images/signs/ee0170555608e2a99a2329403621ebb9.svg",
+      "description": "The beginning of the middle section of a three-lane road intended for traffic in a given direction. Effective area: up to sign 5.15.6 “End of lane”. If sign 5.15.4 shows a sign prohibiting the movement of any vehicles, then the movement of these vehicles in the corresponding lane is prohibited."
+    },
+    "5.15.5": {
+      "number": "5.15.5",
+      "title": "End of the strip",
+      "image": "./images/signs/a366fbccc0d7e20f9d8ddf7c07f96a94.svg",
+      "description": "The end of an additional uphill lane or acceleration lane. Cancels the effect of sign 5.15.3 “Start of lane”."
+    },
+    "5.15": {
+      "number": "5.15",
+      "title": "End of the strip",
+      "image": "./images/signs/7741be01f08c2b9cbc335ca3ca36b272.svg",
+      "description": "The end of a section of the median on a three-lane road intended for traffic in a given direction. Cancels the effect of sign 5.15.4 “Start of lane”."
+    },
+    "5.15.7": {
+      "number": "5.15.7",
+      "title": "Lane direction",
+      "image": "./images/signs/21cfe9835811be4037063248f7f71722.svg",
+      "description": "Permitted direction of movement in lanes. If sign 5.15.7 shows a sign prohibiting the movement of any vehicles, then the movement of these vehicles in the corresponding lane is prohibited. Sign 5.15.7 with the appropriate number of arrows can be used on roads with four or more lanes."
+    },
+    "5.15.8": {
+      "number": "5.15.8",
+      "title": "Number of lanes",
+      "image": "./images/signs/2fba92f5f3bfd14956d7bc4e6b463cc3.svg",
+      "description": "Indicates the number of lanes and lane modes. The driver is obliged to comply with the requirements of the signs marked on the arrows."
+    },
+    "5.16": {
+      "number": "5.16",
+      "title": "Bus and (or) trolleybus stop location",
+      "image": "./images/signs/d04e25e655acda59116d783bdd771c4a.svg",
+      "description": "The stopping place for buses and (or) trolleybuses moving along established routes, as well as for minibuses. Stopping and parking is prohibited closer than 15 m from the stopping places of route vehicles, indicated by markings 1.17.1, and in its absence - from the sign of the stopping place of route vehicles. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.17 Part 1 Failure to provide priority in movement to a route vehicle, as well as a vehicle with a blue flashing light and a special sound signal simultaneously turned on - a warning or a fine of 500 rubles. Code of Administrative Offenses of the Russian Federation 12.19 parts 3.1 and 6 Stopping or parking vehicles at stopping places for route vehicles or closer than 15 meters from stopping places for route vehicles, with the exception of stopping to pick up or disembark passengers, a forced stop - a fine of 1000 rubles. (for Moscow and St. Petersburg - 3000 rubles), detention of a vehicle"
+    },
+    "5.17": {
+      "number": "5.17",
+      "title": "Tram stop location",
+      "image": "./images/signs/aca41c63f4d3ed3106c239531f68b8cb.svg",
+      "description": "Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.17 Part 1 Failure to provide priority in traffic to a route vehicle, as well as a vehicle with a blue flashing light and a special sound signal simultaneously turned on - a warning or a fine of 500 rubles. Code of Administrative Offenses of the Russian Federation 12.19 parts 3.1 and 6 Stopping or parking vehicles at stopping places for route vehicles or closer than 15 meters from stopping places for route vehicles, with the exception of stopping to pick up or disembark passengers, a forced stop - a fine of 1000 rubles. (for Moscow and St. Petersburg - 3000 rubles), detention of a vehicle"
+    },
+    "5.18": {
+      "number": "5.18",
+      "title": "Taxi parking area",
+      "image": "./images/signs/e6b05e014f5c98ca11e53c44113ba47a.svg",
+      "description": ""
+    },
+    "5.19.1": {
+      "number": "5.19.1",
+      "title": "Pedestrian crossing",
+      "image": "./images/signs/5e5e79df8b8d44ac07e95737a9071eb1.svg",
+      "description": "If there are no markings 1.14.1 or 1.14.2 at the crossing, sign 5.19.1 is installed to the right of the road on the near border of the crossing relative to approaching vehicles, and sign 5.19.2 is installed to the left of the road on the far border of the crossing. If there are signs, the size of the pedestrian crossing is limited from sign 5.19.2 to sign 5.19.1. In the absence of signs, the size of the pedestrian crossing is determined by the width of the marking lines. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.18 Failure to comply with the requirement of the Traffic Rules to give way to pedestrians, cyclists or other road users (with the exception of vehicle drivers) enjoying priority in traffic - a fine of 1500 - 2500 rubles.  ",
+      "folkName": "zebra"
+    },
+    "5.19.2": {
+      "number": "5.19.2",
+      "title": "Pedestrian crossing",
+      "image": "./images/signs/5e5e79df8b8d44ac07e95737a9071eb1.svg",
+      "description": "If there are no markings 1.14.1 or 1.14.2 at the crossing, sign 5.19.1 is installed to the right of the road on the near border of the crossing relative to approaching vehicles, and sign 5.19.2 is installed to the left of the road on the far border of the crossing. If there are signs, the size of the pedestrian crossing is limited from sign 5.19.2 to sign 5.19.1. In the absence of signs, the size of the pedestrian crossing is determined by the width of the marking lines. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.18 Failure to comply with the requirement of the Traffic Rules to give way to pedestrians, cyclists or other road users (with the exception of vehicle drivers) enjoying priority in traffic - a fine of 1500 - 2500 rubles.  ",
+      "folkName": "zebra"
+    },
+    "5.20": {
+      "number": "5.20",
+      "title": "Artificial hump",
+      "image": "./images/signs/770b1b65de5d3511d714f585ce68014b.svg",
+      "description": "Indicates the boundaries of an artificial roughness. The sign is installed at the nearest boundary of the artificial hump relative to approaching vehicles."
+    },
+    "5.21": {
+      "number": "5.21",
+      "title": "Residential area",
+      "image": "./images/signs/b81a8535c1c8399750342e997c877a83.svg",
+      "description": "The territory in which the requirements of the Road Traffic Regulations of the Russian Federation are in force, establishing the rules of traffic in a residential area. In a residential area, pedestrians have priority; their movement is allowed not only on sidewalks, but also on the roadway."
+    },
+    "5.22": {
+      "number": "5.22",
+      "title": "End of residential area",
+      "image": "./images/signs/05ff92d6ded01a43a03530c05540f5c2.svg",
+      "description": "Indicates the end of a residential area, indicated by sign 5.21 \"Residential Area\"."
+    },
+    "5.23.1": {
+      "number": "5.23.1",
+      "title": "The beginning of the settlement",
+      "image": "./images/signs/d70f1a70a8a13c3ddc2aff857af62cc3.svg",
+      "description": "The beginning of a populated area in which the requirements of the Road Traffic Rules of the Russian Federation are in force, establishing the procedure for traffic in populated areas. First of all, such requirements include limiting the speed to 60 km/h and prohibiting the sound signal except in cases where it is necessary to prevent a traffic accident."
+    },
+    "5.23.2": {
+      "number": "5.23.2",
+      "title": "The beginning of the settlement",
+      "image": "./images/signs/d70f1a70a8a13c3ddc2aff857af62cc3.svg",
+      "description": "The beginning of a populated area in which the requirements of the Road Traffic Rules of the Russian Federation are in force, establishing the procedure for traffic in populated areas. First of all, such requirements include limiting the speed to 60 km/h and prohibiting the sound signal except in cases where it is necessary to prevent a traffic accident."
+    },
+    "5.24.1": {
+      "number": "5.24.1",
+      "title": "End of a settlement",
+      "image": "./images/signs/96dca5136d8e68a65997314f1cfc8057.svg",
+      "description": "The place from which on a given road the requirements of the Road Traffic Rules of the Russian Federation, establishing the procedure for traffic in populated areas, cease to apply."
+    },
+    "5.24.2": {
+      "number": "5.24.2",
+      "title": "End of a settlement",
+      "image": "./images/signs/96dca5136d8e68a65997314f1cfc8057.svg",
+      "description": "The place from which on a given road the requirements of the Road Traffic Rules of the Russian Federation, establishing the procedure for traffic in populated areas, cease to apply."
+    },
+    "5.25": {
+      "number": "5.25",
+      "title": "The beginning of the settlement",
+      "image": "./images/signs/ee2aa080ca0917a408dc449cedf9a62f.svg",
+      "description": "The beginning of a populated area in which the requirements of the Road Traffic Rules of the Russian Federation, which establish traffic rules in populated areas, do not apply on this road. The paragraphs of the Rules that establish the procedure for driving in populated areas do not apply; only on the section of the road indicated by this sign, that is, this rule does not apply to other roads in the populated area indicated on the sign."
+    },
+    "5.26": {
+      "number": "5.26",
+      "title": "End of a settlement",
+      "image": "./images/signs/7d1a12c9641e63b01d7c130b3e52db06.svg",
+      "description": "The end of the settlement indicated by sign 5.25."
+    },
+    "5.27": {
+      "number": "5.27",
+      "title": "Restricted parking zone",
+      "image": "./images/signs/14c4e6f9bf615642cd376816b1c9a31b.svg",
+      "description": "The place from which the territory (section of the road) begins where parking is prohibited. The coverage area is required up to sign 5.28 “End of restricted parking zone”. The coverage area is not interrupted at intersections. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.19 Part 1 Violation of the rules for stopping or parking vehicles, with the exception of the cases provided for in Part 1 of Article 12.10 of this Code and Parts 2 - 6 of this Article - a warning or a fine of 500 rubles.  Code of Administrative Offenses of the Russian Federation 12.19 Part 5 Violation provided for in Part 1 of this article, committed in a federal city of Moscow or St. Petersburg - a fine of 2500 rubles. "
+    },
+    "5.28": {
+      "number": "5.28",
+      "title": "End of restricted parking zone",
+      "image": "./images/signs/aa0da72b4ed18058857247a419b321d4.svg",
+      "description": "Cancels the effect of sign 5.27 “Zone with limited parking.”"
+    },
+    "5.29": {
+      "number": "5.29",
+      "title": "Regulated parking area",
+      "image": "./images/signs/610af5057a545235a28e294c215ecccf.svg",
+      "description": "The place from which the territory (section of the road) begins, where parking is permitted and regulated with the help of signs and markings. The coverage area is required up to sign 5.30 “End of regulated parking zone.” The coverage area is not interrupted at intersections. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.19 Part 1 Violation of the rules for stopping or parking vehicles, with the exception of the cases provided for in Part 1 of Article 12.10 of this Code and Parts 2 - 6 of this Article - a warning or a fine of 500 rubles.  Code of Administrative Offenses of the Russian Federation 12.19 Part 5 Violation provided for in Part 1 of this article, committed in a federal city of Moscow or St. Petersburg - a fine of 2500 rubles. "
+    },
+    "5.30": {
+      "number": "5.30",
+      "title": "End of regulated parking zone",
+      "image": "./images/signs/8509aedb94c4ba5b421c708293fdb7ce.svg",
+      "description": "Cancels the effect of sign 5.29 “Regulated parking zone”."
+    },
+    "5.31": {
+      "number": "5.31",
+      "title": "Maximum speed zone",
+      "image": "./images/signs/bc1b8dc9f72988f492f1f6cb011431bb.svg",
+      "description": "The place from which the territory (section of the road) begins where the maximum speed is limited.  The coverage area is required up to sign 5.32 “End of zone with maximum speed limit.” The coverage area is not interrupted at intersections. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.9 part 2 Exceeding the established speed of a vehicle by more than 20, but not more than 40 kilometers per hour - a fine of 500 rubles. Code of Administrative Offenses of the Russian Federation 12.9 part 3 Exceeding the established speed of a vehicle by more than 40, but not more than 60 kilometers per hour - a fine of 1000 to 1500 rubles; for repeated violation - from 2000 to 2500 rubles Code of Administrative Offenses of the Russian Federation 12.9 part 4 Exceeding the established speed of a vehicle by more than 60 kilometers, but not more 80 kilometers per hour – fine from 2000 to 2500 rubles. or deprivation of the right to drive a vehicle for a period of 4 to 6 months; in case of repeated violation - deprivation of the right to drive for 1 year. Code of Administrative Offenses of the Russian Federation 12.9 part 5 Exceeding the established speed of a vehicle by more than 80 kilometers per hour - 5000 rubles or deprivation of the right to drive for 6 months; in case of repeated violation - deprivation of the right to drive for 1 year"
+    },
+    "5.32": {
+      "number": "5.32",
+      "title": "End of speed limit zone",
+      "image": "./images/signs/e44d95bcd4b97b097c8473e98f189e77.svg",
+      "description": "Cancels the effect of sign 5.31 “Maximum speed limit zone”. "
+    },
+    "5.33": {
+      "number": "5.33",
+      "title": "Pedestrian Crosswalk Area",
+      "image": "./images/signs/d52366ac63d7e334fd5be1b120360481.svg",
+      "description": "The coverage area is required up to sign 5.34 “End of the pedestrian zone.” The coverage area is not interrupted at intersections. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.15 Part 2 Driving on bicycle or pedestrian paths or sidewalks in violation of the Traffic Rules - a fine of 2000 rubles."
+    },
+    "5.34": {
+      "number": "5.34",
+      "title": "End of the pedestrian zone",
+      "image": "./images/signs/e88445389c8086879623298c42b7fe19.svg",
+      "description": "Cancels the effect of sign 5.33 “Pedestrian zone”."
+    },
+    "5.35": {
+      "number": "5.35",
+      "title": "Zone with restrictions on the environmental class of motor vehicles",
+      "image": "./images/signs/242f0f9e4e3b62378736cf94bfa497c3.svg",
+      "description": "The place from which the territory (section of the road) begins where the movement of mechanical vehicles is prohibited: the environmental class of which, indicated in the registration documents for these vehicles, is lower than the environmental class indicated on the sign;\tthe environmental class of which is not indicated in the registration documents for these vehicles. The sign does not apply to motor vehicles of the Armed Forces of the Russian Federation, police, emergency rescue services and units, fire protection, ambulance, gas network emergency service and motor vehicles of federal postal service organizations that have on the side surface a white diagonal stripe on a blue background, the emblem of federal postal organizations, the inscription \"Russian Post\", electric vehicles, vehicles on which it is installed identification sign “Disabled”, as well as on vehicles that belong to citizens living in the designated area."
+    },
+    "5.36": {
+      "number": "5.36",
+      "title": "End of the zone with restrictions on the environmental class of motor vehicles",
+      "image": "./images/signs/345a99a1a4b932347124cabca8d24ebf.svg",
+      "description": "Shows the place where the restrictions introduced by signs 5.35 end."
+    },
+    "5.37": {
+      "number": "5.37",
+      "title": "Zone with limited environmental class by type of vehicle",
+      "image": "./images/signs/1803985703e79e068adae5fbe8b509b6.svg",
+      "description": "The place from which the territory (section of the road) begins where the movement of the types of vehicles indicated on the sign is prohibited: the environmental class of which, indicated in the registration documents for these vehicles, is lower than the environmental class indicated on the sign;\tthe environmental class of which is not indicated in the registration documents for these vehicles. The sign does not apply to motor vehicles of the Armed Forces of the Russian Federation, police, emergency rescue services and units, fire brigade, ambulance, gas network emergency service and motor vehicles of federal postal organizations that have on the side surface a white diagonal stripe on a blue background, the emblem of federal postal organizations, the inscription \"Russian Post\", electric vehicles, vehicles on which the Disabled identification mark is installed as well as vehicles that belong to citizens living in the designated area."
+    },
+    "5.38": {
+      "number": "5.38",
+      "title": "End of the zone with restrictions on environmental class by type of vehicle",
+      "image": "./images/signs/6d0f14589f6af543715764288d124d1e.svg",
+      "description": "Shows the place where the restrictions introduced by signs 5.37 end."
+    },
+    "5.39": {
+      "number": "5.39",
+      "title": "Bicycle zone",
+      "image": "./images/signs/d3160697c5cd4c697e7b68e4cbad44e3.svg",
+      "description": "The place where the bicycle zone begins."
+    },
+    "5.40": {
+      "number": "5.40",
+      "title": "End of the bike zone",
+      "image": "./images/signs/eeab078b65f048a6679d8c387c9706b8.svg",
+      "description": ""
+    }
+  },
+  "Information signs": {
+    "6.1": {
+      "number": "6.1",
+      "title": "General maximum speed limits",
+      "image": "./images/signs/545aeb9ed09a63b6ba8c1d582309c18f.svg",
+      "description": "General speed limits established by the Road Traffic Rules of the Russian Federation. In populated areas marked with a sign with a white background - up to 60 km/h. Outside populated areas - up to 90 km/h. On highways - up to 110 km/h."
+    },
+    "6.2": {
+      "number": "6.2",
+      "title": "Recommended speed",
+      "image": "./images/signs/58b42c05d3e791c8263461b0e0379916.svg",
+      "description": "The speed at which it is recommended to drive on this section of the road. Effective area: from the place where the sign is installed to the nearest intersection, and when using sign 6.2 together with a warning sign, it is determined by the length of the dangerous area."
+    },
+    "6.3.1": {
+      "number": "6.3.1",
+      "title": "Turning space",
+      "image": "./images/signs/c5a140e4e6c30d973224af2a38a608bc.svg",
+      "description": "The sign is used to designate a place intended only for turning around. Turning left is prohibited for all types of vehicles."
+    },
+    "6.3.2": {
+      "number": "6.3.2",
+      "title": "Turning area",
+      "image": "./images/signs/a8ae91018e84ca4d6838885ffb142419.svg",
+      "description": "The sign is used to designate a place and an area intended only for turning around. Turning left is prohibited for all types of vehicles."
+    },
+    "6.4": {
+      "number": "6.4",
+      "title": "Parking (parking space)",
+      "image": "./images/signs/9c264561036f4345cb397727afe03cb4.svg",
+      "description": ""
+    },
+    "6.5": {
+      "number": "6.5",
+      "title": "Emergency stop lane",
+      "image": "./images/signs/6bf62a1a2494304fb5e03eb8d440ed70.svg",
+      "description": "Emergency stop lane on a steep descent."
+    },
+    "6.6": {
+      "number": "6.6",
+      "title": "Subway (underpass)",
+      "image": "./images/signs/093777c883e6312ca8ca3cd7cf5e4516.svg",
+      "description": "It is installed facing the movement of the main pedestrian flows at the staircase exits of pedestrian tunnels."
+    },
+    "6.7": {
+      "number": "6.7",
+      "title": "Overhead pedestrian crossing",
+      "image": "./images/signs/790e884d35ea1f9dc3ae8946276c0506.svg",
+      "description": "It is installed facing the movement of the main pedestrian flows at the staircases of pedestrian bridges and overpasses."
+    },
+    "6.8.1": {
+      "number": "6.8.1",
+      "title": "Dead end",
+      "image": "./images/signs/6698506a4dfde9bdd505a9416cf99ad1.svg",
+      "description": "A road with no through passage."
+    },
+    "6.8.2": {
+      "number": "6.8.2",
+      "title": "Dead end",
+      "image": "./images/signs/bc53ce5cc147dc114b979ce607ee2046.svg",
+      "description": "A road with no through passage."
+    },
+    "6.8.3": {
+      "number": "6.8.3",
+      "title": "Dead end",
+      "image": "./images/signs/f00d3ce68923a5484fe6c4dd7fb88ca1.svg",
+      "description": "A road with no through passage."
+    },
+    "6.9.1": {
+      "number": "6.9.1",
+      "title": "Preliminary index of directions",
+      "image": "./images/signs/78675c94103f63e2c9e95721177f85b7.svg",
+      "description": "Directions to the settlements and other objects indicated on the sign. Signs may contain images of sign 6.14.1 “Number assigned to the road”, symbols of a highway, airport, sports and other (generally accepted) pictograms (meaningful images). Sign 6.9.1 may contain images of other signs informing about traffic conditions. Sign 6.9.1 is also used to indicate a detour to sections of roads on which one of the prohibitory signs is installed: 3.11 Restriction weight;3.12 Axle load limitation;3.13 Height limitation;3.14 Width limitation;3.15 Length limitation.  At the bottom of the sign, the distance (900 m, 300 m, 150 m, 50 m) from the place where the sign is installed to the first intersection or the beginning of the deceleration lane is indicated. On a sign installed outside a populated area, a green or blue background means that traffic to the specified populated area or object will be carried out along a motorway or other road, respectively.  On a sign installed in a populated area, inserts with a green or blue background mean that movement to the specified populated area or object after leaving this populated area will be carried out respectively along a motorway or other road; The white background of the sign means that the specified object is located in this locality. Brown background indicates a tourist site. "
+    },
+    "6.9.2": {
+      "number": "6.9.2",
+      "title": "pre-directional sign",
+      "image": "./images/signs/581726513bf08809b4bb12dc9de91198.svg",
+      "description": "Directions to the settlements and other objects indicated on the sign. The signs may contain images of sign 6.14.1 “Number assigned to the road”, symbols of a highway, airport, sports and other (generally accepted) pictograms (meaningful images). On a sign installed outside a populated area, a green or blue background means that traffic to the specified populated area or object will be carried out along a motorway or other road, respectively.  On a sign installed in a populated area, inserts with a green or blue background mean that movement to the specified populated area or object after leaving this populated area will be carried out respectively along a motorway or other road; The white background of the sign means that the specified object is located in this locality. Brown background indicates a tourist site. "
+    },
+    "6.9.3": {
+      "number": "6.9.3",
+      "title": "Traffic pattern",
+      "image": "./images/signs/1679d3602327fc9e02252cbd987827d2.svg",
+      "description": "Permitted directions of movement at a complex intersection or route of movement when certain maneuvers are prohibited at the intersection."
+    },
+    "6.10.1": {
+      "number": "6.10.1",
+      "title": "Directions indicator",
+      "image": "./images/signs/ed1863f394cab85e875897a4a7301b7b.svg",
+      "description": "Indicate directions of movement to route points. Signs may indicate the distance to the objects indicated on it (km), and include symbols of a highway, airport, sports and other pictograms (meaningful images).  On a sign installed outside a populated area, a green or blue background means that traffic to the specified populated area or object will be carried out along a motorway or other road, respectively.  On a sign installed in a populated area, inserts with a green or blue background mean that movement to the specified populated area or object after leaving this populated area will be carried out respectively along a motorway or other road; The white background of the sign means that the specified object is located in this locality. Brown background indicates a tourist site. "
+    },
+    "6.10.2": {
+      "number": "6.10.2",
+      "title": "Directions indicator",
+      "image": "./images/signs/13b861438d0ef9fd4f9c7b07fae66f50.svg",
+      "description": "Indicate directions of movement to route points. Signs may indicate the distance to the objects indicated on it (km), and include symbols of a highway, airport, sports and other pictograms (meaningful images).  On a sign installed outside a populated area, a green or blue background means that traffic to the specified populated area or object will be carried out along a motorway or other road, respectively.  On a sign installed in a populated area, inserts with a green or blue background mean that movement to the specified populated area or object after leaving this populated area will be carried out respectively along a motorway or other road; The white background of the sign means that the specified object is located in this locality. Brown background indicates a tourist site. "
+    },
+    "6.11": {
+      "number": "6.11",
+      "title": "Object name",
+      "image": "./images/signs/d9499edc5f28b0dad5d1cf96a948c008.svg",
+      "description": "The name of an object other than a populated area (river, lake, pass, etc.). Brown background indicates a tourist site. "
+    },
+    "6.12": {
+      "number": "6.12",
+      "title": "Distance indicator",
+      "image": "./images/signs/b665ed30bb7c753703354357f288ef6a.svg",
+      "description": "Distance (km) to settlements located along the route."
+    },
+    "6.13": {
+      "number": "6.13",
+      "title": "Kilometer sign",
+      "image": "./images/signs/76ba0dea92f4426642503b1de1ccb9b3.svg",
+      "description": "Distance (km) to the beginning or end of the road."
+    },
+    "6.14.1": {
+      "number": "6.14.1",
+      "title": "Route number",
+      "image": "./images/signs/43ee93f9beef73510d34a41e5f2e67d8.svg",
+      "description": "Number assigned to the road (route). All major highways in the country are assigned specific numbers. So, for example, the road Moscow - Belarus has the number 1, Moscow - Novorossiysk - 4, Moscow - St. Petersburg - 10. These numbers are indicated in the atlas of highways and on the diagrams of individual routes. In Moscow, city highways, which are continuations of highways, have the same numbering as roads, but with the addition of the letter “M”. So Leningradsky Prospekt has the number M10. several motorways included in the international European road network. The numbers of such roads consist of the letter “E” and a number printed in white on a green background. The Moscow-Kaluga-Bryansk-Kyiv road is designated by the number E101, the Russian section of the road is also designated as M3."
+    },
+    "6.14.2": {
+      "number": "6.14.2",
+      "title": "Route number",
+      "image": "./images/signs/9d77fef1dd077bcd6d5bd46fb4fbe20d.svg",
+      "description": "Number and direction of the road (route). All major highways in the country are assigned specific numbers. So, for example, the road Moscow - Belarus has the number 1, Moscow - Novorossiysk - 4, Moscow - St. Petersburg - 10. These numbers are indicated in the atlas of highways and on the diagrams of individual routes. In Moscow, city highways, which are continuations of highways, have the same numbering as roads, but with the addition of the letter “M”. So Leningradsky Prospekt has the number M10. several motorways included in the international European road network. The numbers of such roads consist of the letter “E” and a number printed in white on a green background. The Moscow-Kaluga-Bryansk-Kyiv road is designated by the number E101, the Russian section of the road is also designated as M3."
+    },
+    "6.15.1": {
+      "number": "6.15.1",
+      "title": "Driving direction for trucks",
+      "image": "./images/signs/97fec8946f925b9144aced6c6c045173.svg",
+      "description": "Recommended direction of movement for trucks, tractors and self-propelled vehicles if their movement in one of the directions is prohibited at the intersection. The direction is recommended, therefore optional, but drivers of the listed vehicles should adhere to the indicated direction, since in the future there will again be a restriction or prohibition of movement. When entering an intersection, the driver should immediately determine in which direction the restriction has been introduced and whether the vehicle he is driving belongs to those indicated on the prohibition sign."
+    },
+    "6.15.2": {
+      "number": "6.15.2",
+      "title": "Driving direction for trucks",
+      "image": "./images/signs/845885e866c35707924f6185b2f0f0dd.svg",
+      "description": "Recommended direction of movement for trucks, tractors and self-propelled vehicles if their movement in one of the directions is prohibited at the intersection. The direction is recommended, therefore optional, but drivers of the listed vehicles should adhere to the indicated direction, since in the future there will again be a restriction or prohibition of movement. When entering an intersection, the driver should immediately determine in which direction the restriction has been introduced and whether the vehicle he is driving belongs to those indicated on the prohibition sign."
+    },
+    "6.15.3": {
+      "number": "6.15.3",
+      "title": "Driving direction for trucks",
+      "image": "./images/signs/94a167e72fa9fa1e86a5e916b5f9f304.svg",
+      "description": "Recommended direction of movement for trucks, tractors and self-propelled vehicles if their movement in one of the directions is prohibited at the intersection. The direction is recommended, therefore optional, but drivers of the listed vehicles should adhere to the indicated direction, since in the future there will again be a restriction or prohibition of movement. When entering an intersection, the driver should immediately determine in which direction the restriction has been introduced and whether the vehicle he is driving belongs to those indicated on the prohibition sign."
+    },
+    "6.16": {
+      "number": "6.16",
+      "title": "Stop line",
+      "image": "./images/signs/3343f65fb065ffe6481350c2829522c2.svg",
+      "description": "The place where vehicles stop when there is a prohibiting traffic light signal (traffic controller)."
+    },
+    "6.17": {
+      "number": "6.17",
+      "title": "Detour scheme",
+      "image": "./images/signs/f471a5ecb73a5a95f6d5820518ff4da0.svg",
+      "description": "Route to bypass a section of road temporarily closed to traffic."
+    },
+    "6.18.1": {
+      "number": "6.18.1",
+      "title": "Detour direction",
+      "image": "./images/signs/36dec91dd31b821fd5cf0feab858d1c6.svg",
+      "description": "Direction to bypass a section of road temporarily closed to traffic.  The yellow background of the sign indicates that the detour is temporary."
+    },
+    "6.18.2": {
+      "number": "6.18.2",
+      "title": "Detour direction",
+      "image": "./images/signs/66ee62828d0a1d953852d4d66daf99f6.svg",
+      "description": "Direction to bypass a section of road temporarily closed to traffic.  The yellow background of the sign indicates that the detour is temporary. "
+    },
+    "6.18.3": {
+      "number": "6.18.3",
+      "title": "Detour direction",
+      "image": "./images/signs/5e38e7445fd02cb20ac7109d433117bc.svg",
+      "description": "Direction to bypass a section of road temporarily closed to traffic.  The yellow background of the sign indicates that the detour is temporary."
+    },
+    "6.19.1": {
+      "number": "6.19.1",
+      "title": "Preliminary sign of rebuilding to another roadway",
+      "image": "./images/signs/8795fafca3aed200ee782fa766df1416.svg",
+      "description": "The direction to bypass a section of the roadway closed to traffic on a road with a dividing strip or the direction of movement to return to the right roadway. The yellow background of the sign indicates that the detour is temporary."
+    },
+    "6.19.2": {
+      "number": "6.19.2",
+      "title": "Preliminary sign of rebuilding to another roadway",
+      "image": "./images/signs/8795fafca3aed200ee782fa766df1416.svg",
+      "description": "The direction to bypass a section of the roadway closed to traffic on a road with a dividing strip or the direction of movement to return to the right roadway. The yellow background of the sign indicates that the detour is temporary."
+    },
+    "6.20.1": {
+      "number": "6.20.1",
+      "title": "Emergency exit",
+      "image": "./images/signs/7d41716ad000606623f15a20c5ab9e0d.svg",
+      "description": "Indicates the place in the tunnel where the emergency exit is located."
+    },
+    "6.20.2": {
+      "number": "6.20.2",
+      "title": "Emergency exit",
+      "image": "./images/signs/7d41716ad000606623f15a20c5ab9e0d.svg",
+      "description": "Indicates the place in the tunnel where the emergency exit is located."
+    },
+    "6.21": {
+      "number": "6.21",
+      "title": "Direction of movement to the emergency exit",
+      "image": "./images/signs/e957b683cdca0245291f7322a8388e14.svg",
+      "description": "Indicates the direction to the emergency exit and the distance to it."
+    },
+    "6.22": {
+      "number": "6.22",
+      "title": "Photo and video recording",
+      "image": "./images/signs/8228a3dcddaa013dc8fd8e816cc22cc9.svg",
+      "description": "Indicates places of possible use of stationary or mobile special technical means operating in automatic mode, having the functions of photography, filming, and video recording for recording violations of traffic rules. Sign 6.22 is installed outside the populated area at a distance of 150 - 300 m to the control zone of stationary or mobile special technical equipment operating in automatic mode, having the functions of photography, filming, video recording for recording violations of traffic rules, in the populated area - with signs 5.23.1, 5.23.2 and 5.25. If necessary, sign 6.22 is used with plates 8.1.1 and 8.1.3, 8.1.4."
+    }
+  },
+  "Service marks": {
+    "7.1": {
+      "number": "7.1",
+      "title": "Medical aid station",
+      "image": "./images/signs/aeefa11a7668b0f779cbbf50c0dbf748.svg",
+      "description": ""
+    },
+    "7.2": {
+      "number": "7.2",
+      "title": "Hospital",
+      "image": "./images/signs/8bc512242cc8d3e084ad1f59eda9a863.svg",
+      "description": ""
+    },
+    "7.3": {
+      "number": "7.3",
+      "title": "Gas station",
+      "image": "./images/signs/f33fe3ea91d17dd2e1471bb7403430c9.svg",
+      "description": ""
+    },
+    "7.4": {
+      "number": "7.4",
+      "title": "Car maintenance",
+      "image": "./images/signs/b1b835da7a2ff04a831c0d5321e853da.svg",
+      "description": ""
+    },
+    "7.5": {
+      "number": "7.5",
+      "title": "Car wash",
+      "image": "./images/signs/9fdf2e19bc009ba511d778fadbd5aeb7.svg",
+      "description": ""
+    },
+    "7.6": {
+      "number": "7.6",
+      "title": "Telephone",
+      "image": "./images/signs/2eac94f432d3ee50afdeac2fb4c463b5.svg",
+      "description": ""
+    },
+    "7.7": {
+      "number": "7.7",
+      "title": "Food point",
+      "image": "./images/signs/cdf562fd51c6bd678899ab95a68250a5.svg",
+      "description": ""
+    },
+    "7.8": {
+      "number": "7.8",
+      "title": "Potable water",
+      "image": "./images/signs/d0adc92b61f004c713c26d08e9114eb8.svg",
+      "description": ""
+    },
+    "7.9": {
+      "number": "7.9",
+      "title": "Hotel or motel",
+      "image": "./images/signs/50f03ffa7c33a8dcb7df429e0837cfbb.svg",
+      "description": ""
+    },
+    "7.10": {
+      "number": "7.10",
+      "title": "Camping",
+      "image": "./images/signs/f1373aa9762a336d2752c7ed8cbf9850.svg",
+      "description": ""
+    },
+    "7.11": {
+      "number": "7.11",
+      "title": "Rest place",
+      "image": "./images/signs/f05ee79d3126e8f4ec8307e9bfe0baf2.svg",
+      "description": ""
+    },
+    "7.12": {
+      "number": "7.12",
+      "title": "Road patrol post",
+      "image": "./images/signs/f6fe79ec307f75faa8347a470586532b.svg",
+      "description": ""
+    },
+    "7.13": {
+      "number": "7.13",
+      "title": "The Police",
+      "image": "./images/signs/0c3947bf4d54a57c386e151b17fd02b2.svg",
+      "description": ""
+    },
+    "7.14": {
+      "number": "7.14",
+      "title": "Transport control point",
+      "image": "./images/signs/3476127cc3910b6859d3cc1ae0d1807d.svg",
+      "description": "(Changes took effect: March 1, 2023.)"
+    },
+    "7.15": {
+      "number": "7.15",
+      "title": "Reception area of ​​a radio station transmitting traffic information",
+      "image": "./images/signs/fe7c5ee643acc09f3b2d53bd13b05587.svg",
+      "description": "A section of road where radio station broadcasts are received at the frequency indicated on the sign."
+    },
+    "7.16": {
+      "number": "7.16",
+      "title": "Radio communication area with emergency services",
+      "image": "./images/signs/4e9d823ddb98beb52f3ea6fc05270b69.svg",
+      "description": "A section of road on which a radio communication system with emergency services operates in the civilian 27 MHz band."
+    },
+    "7.17": {
+      "number": "7.17",
+      "title": "Pool or beach",
+      "image": "./images/signs/bd4b37d28532d055639fb030d3956ab1.svg",
+      "description": ""
+    },
+    "7.18": {
+      "number": "7.18",
+      "title": "Toilet",
+      "image": "./images/signs/78a6ed148fc072db020201c9f125ca0a.svg",
+      "description": ""
+    },
+    "7.19": {
+      "number": "7.19",
+      "title": "Emergency phone number",
+      "image": "./images/signs/cf703c67799e91157aab4f7c883de05d.svg",
+      "description": " Indicates the location where the telephone for calling emergency services is located."
+    },
+    "7.20": {
+      "number": "7.20",
+      "title": "Fire extinguisher",
+      "image": "./images/signs/aa6600355aebedbb91683be842e94417.svg",
+      "description": " Indicates the location of the fire extinguisher."
+    },
+    "7.21": {
+      "number": "7.21",
+      "title": "Gas station with electric vehicle charging capabilities",
+      "image": "./images/signs/c12f75d4384149c8aec3a074d67cda52.svg",
+      "description": " "
+    }
+  },
+  "Additional information signs (plates)": {
+    "8.1.1": {
+      "number": "8.1.1",
+      "title": "Distance to object",
+      "image": "./images/signs/3badd393679a1ea39b13d2fa69c93e83.svg",
+      "description": "Indicates the distance from the sign to the beginning of the dangerous section, the place where the corresponding restriction is introduced, or a specific object (place) located ahead in the direction of travel."
+    },
+    "8.1.2": {
+      "number": "8.1.2",
+      "title": "Distance to object",
+      "image": "./images/signs/49758cdf5b7557a1356a4b71f7acf36c.svg",
+      "description": "Indicates the distance from sign 2.4 to the intersection if sign 2.5 is installed immediately before the intersection."
+    },
+    "8.1.3": {
+      "number": "8.1.3",
+      "title": "Distance to object",
+      "image": "./images/signs/1044a05986e556d51dd020126f0f89f0.svg",
+      "description": "Indicate the distance to an object located away from the road."
+    },
+    "8.1.4": {
+      "number": "8.1.4",
+      "title": "Distance to object",
+      "image": "./images/signs/7a75b0d4b68f950dc62eb43238cad6d5.svg",
+      "description": "Indicate the distance to an object located away from the road."
+    },
+    "8.2.1": {
+      "number": "8.2.1",
+      "title": "Coverage area",
+      "image": "./images/signs/7e13e8cc1965fba71029290ef8ec3162.svg",
+      "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of ​​prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of ​​prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc."
+    },
+    "8.2.2": {
+      "number": "8.2.2",
+      "title": "Coverage area",
+      "image": "./images/signs/7e13e8cc1965fba71029290ef8ec3162.svg",
+      "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of ​​prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of ​​prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc."
+    },
+    "8.2.3": {
+      "number": "8.2.3",
+      "title": "Coverage area",
+      "image": "./images/signs/7e13e8cc1965fba71029290ef8ec3162.svg",
+      "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of ​​prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of ​​prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc."
+    },
+    "8.2.4": {
+      "number": "8.2.4",
+      "title": "Coverage area",
+      "image": "./images/signs/7e13e8cc1965fba71029290ef8ec3162.svg",
+      "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of ​​prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of ​​prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc."
+    },
+    "8.2.5": {
+      "number": "8.2.5",
+      "title": "Coverage area",
+      "image": "./images/signs/7e13e8cc1965fba71029290ef8ec3162.svg",
+      "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of ​​prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of ​​prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc."
+    },
+    "8.2.6": {
+      "number": "8.2.6",
+      "title": "Coverage area",
+      "image": "./images/signs/7e13e8cc1965fba71029290ef8ec3162.svg",
+      "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of ​​prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of ​​prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of ​​signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc."
+    },
+    "8.3.1": {
+      "number": "8.3.1",
+      "title": "Direction of action",
+      "image": "./images/signs/4e4d0a4d9887563082fb91884fccc52f.svg",
+      "description": "Indicate the direction of action of signs installed in front of the intersection, or the direction of movement to designated objects located directly next to the road."
+    },
+    "8.3.2": {
+      "number": "8.3.2",
+      "title": "Direction of action",
+      "image": "./images/signs/4e4d0a4d9887563082fb91884fccc52f.svg",
+      "description": "Indicate the direction of action of signs installed in front of the intersection, or the direction of movement to designated objects located directly next to the road."
+    },
+    "8.3.3": {
+      "number": "8.3.3",
+      "title": "Direction of action",
+      "image": "./images/signs/4e4d0a4d9887563082fb91884fccc52f.svg",
+      "description": "Indicate the direction of action of signs installed in front of the intersection, or the direction of movement to designated objects located directly next to the road."
+    },
+    "8.4.1": {
+      "number": "8.4.1",
+      "title": "Type of vehicle",
+      "image": "./images/signs/bfded6a56e241d9d1309c110f51eb6c0.svg",
+      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+    },
+    "8.4.2": {
+      "number": "8.4.2",
+      "title": "Type of vehicle",
+      "image": "./images/signs/41aa6b941291fc410b79604aca819bd2.svg",
+      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+    },
+    "8.4.3": {
+      "number": "8.4.3",
+      "title": "Type of vehicle",
+      "image": "./images/signs/9a0b442b18f0b4d4a8a0ad08c8177ad3.svg",
+      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+    },
+    "8.4.3.1": {
+      "number": "8.4.3.1",
+      "title": "Type of vehicle",
+      "image": "./images/signs/a6d331b029b8729439c175a74fbbd0f0.svg",
+      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+    },
+    "8.4.4": {
+      "number": "8.4.4",
+      "title": "Type of vehicle",
+      "image": "./images/signs/f941577f48cb9142943a5b10c1b03157.svg",
+      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+    },
+    "8.4.5": {
+      "number": "8.4.5",
+      "title": "Type of vehicle",
+      "image": "./images/signs/af02a7b65ddacef604a24f87cfb421dd.svg",
+      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+    },
+    "8.4.6": {
+      "number": "8.4.6",
+      "title": "Type of vehicle",
+      "image": "./images/signs/6a92d5265766393c3acc42e438c5fdbe.svg",
+      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+    },
+    "8.4.7": {
+      "number": "8.4.7",
+      "title": "Type of vehicle",
+      "image": "./images/signs/4403f3136d0776b99d069e8d4d9453c6.svg",
+      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+    },
+    "8.4.7.2": {
+      "number": "8.4.7.2",
+      "title": "Type of vehicle",
+      "image": "./images/signs/df7e4a3347190dcd89bde0518c60d86b.svg",
+      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+    },
+    "8.4.8": {
+      "number": "8.4.8",
+      "title": "Type of vehicle",
+      "image": "./images/signs/9288fdc7e63e8aa1db5b2e44281908b2.svg",
+      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+    },
+    "8.4.9": {
+      "number": "8.4.9",
+      "title": "In addition to the type of vehicle",
+      "image": "./images/signs/db658fa5edbdeb63250095a45d4fe3ba.svg",
+      "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
+    },
+    "8.4.10": {
+      "number": "8.4.10",
+      "title": "In addition to the type of vehicle",
+      "image": "./images/signs/9438bd2e073474a00a4779739a4e4c0e.svg",
+      "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
+    },
+    "8.4.11": {
+      "number": "8.4.11",
+      "title": "In addition to the type of vehicle",
+      "image": "./images/signs/fbbb2df3c38cc24d9bdfcbe883096ac4.svg",
+      "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
+    },
+    "8.4.12": {
+      "number": "8.4.12",
+      "title": "In addition to the type of vehicle",
+      "image": "./images/signs/dea5a38cd13c55156954e4d83eed8341.svg",
+      "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
+    },
+    "8.4.13": {
+      "number": "8.4.13",
+      "title": "In addition to the type of vehicle",
+      "image": "./images/signs/5e3f73a8c6ba3052d50835df4902caa9.svg",
+      "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
+    },
+    "8.4.14": {
+      "number": "8.4.14",
+      "title": "In addition to the type of vehicle",
+      "image": "./images/signs/da594e28441885b37f74cfc3d4e3da57.svg",
+      "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
+    },
+    "8.4.15": {
+      "number": "8.4.15",
+      "title": "In addition to the type of vehicle",
+      "image": "./images/signs/277f97229af969ed8a32f2e24309f43d.svg",
+      "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
+    },
+    "8.4.16": {
+      "number": "8.4.16",
+      "title": "In addition to the type of vehicle",
+      "image": "./images/signs/5d9c53edfc609c14dcbd3d6f8d7df175.svg",
+      "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
+    },
+    "8.5.1": {
+      "number": "8.5.1",
+      "title": "Saturday, Sunday and holidays",
+      "image": "./images/signs/bacd2567523d771bff74605cf1a787f1.svg",
+      "description": "Indicates that the sign is valid only on Saturday, Sunday and public holidays."
+    },
+    "8.5.2": {
+      "number": "8.5.2",
+      "title": "Working days",
+      "image": "./images/signs/5187124058465f93a2202a31c1f08dd4.svg",
+      "description": "Indicates that the sign is valid only on weekdays."
+    },
+    "8.5.3": {
+      "number": "8.5.3",
+      "title": "Days of the week",
+      "image": "./images/signs/ef9aee3770fe7b8d9da6d069e681c833.svg",
+      "description": "Indicates that the sign is valid only on specifically specified days of the week."
+    },
+    "8.5.4": {
+      "number": "8.5.4",
+      "title": "Action time",
+      "image": "./images/signs/64111687123fee7f3328f3842ed6961b.svg",
+      "description": "Indicates the time of day during which the sign is valid."
+    },
+    "8.5.5": {
+      "number": "8.5.5",
+      "title": "Action time",
+      "image": "./images/signs/91fc5a36ed15865407d832e6cbc0bd69.svg",
+      "description": "Indicate the days of the week and time of day during which the sign is valid."
+    },
+    "8.5.6": {
+      "number": "8.5.6",
+      "title": "Action time",
+      "image": "./images/signs/f7b4b4dd526d6aa57e987a196e471722.svg",
+      "description": "Indicate the days of the week and time of day during which the sign is valid."
+    },
+    "8.5.7": {
+      "number": "8.5.7",
+      "title": "Action time",
+      "image": "./images/signs/adf11b2ea70489f4e30c236704532346.svg",
+      "description": "Indicate the days of the week and time of day during which the sign is valid."
+    },
+    "8.6.1": {
+      "number": "8.6.1",
+      "title": "Method of parking a vehicle",
+      "image": "./images/signs/58675851a0bdf1bfc6bb2ffec19b2f08.svg",
+      "description": "Sign 8.6.1 indicates that all vehicles must be parked on the roadway along the sidewalk; Signs 8.6.2 to 8.6.9 indicate the method of parking cars and motorcycles in sidewalk parking. Parking on the edge of the sidewalk bordering the roadway is permitted only for cars, motorcycles, mopeds and bicycles."
+    },
+    "8.6.2": {
+      "number": "8.6.2",
+      "title": "Method of parking a vehicle",
+      "image": "./images/signs/97f04b9ddda4ba4f465072433a1d8332.svg",
+      "description": "Sign 8.6.1 indicates that all vehicles must be parked on the roadway along the sidewalk; Signs 8.6.2 to 8.6.9 indicate the method of parking cars and motorcycles in sidewalk parking. Parking on the edge of the sidewalk bordering the roadway is permitted only for cars, motorcycles, mopeds and bicycles."
+    },
+    "8.6.3": {
+      "number": "8.6.3",
+      "title": "Method of parking a vehicle",
+      "image": "./images/signs/c9b5bc2c73347304507adf75af06006d.svg",
+      "description": "Sign 8.6.1 indicates that all vehicles must be parked on the roadway along the sidewalk; Signs 8.6.2 to 8.6.9 indicate the method of parking cars and motorcycles in sidewalk parking. Parking on the edge of the sidewalk bordering the roadway is permitted only for cars, motorcycles, mopeds and bicycles."
+    },
+    "8.6.4": {
+      "number": "8.6.4",
+      "title": "Method of parking a vehicle",
+      "image": "./images/signs/12c69bb13cd1f25f40c2ad0644023c21.svg",
+      "description": "Sign 8.6.1 indicates that all vehicles must be parked on the roadway along the sidewalk; Signs 8.6.2 to 8.6.9 indicate the method of parking cars and motorcycles in sidewalk parking. Parking on the edge of the sidewalk bordering the roadway is permitted only for cars, motorcycles, mopeds and bicycles."
+    },
+    "8.6.5": {
+      "number": "8.6.5",
+      "title": "Method of parking a vehicle",
+      "image": "./images/signs/2d042dd714da92588515052467069500.svg",
+      "description": "Sign 8.6.1 indicates that all vehicles must be parked on the roadway along the sidewalk; Signs 8.6.2 to 8.6.9 indicate the method of parking cars and motorcycles in sidewalk parking. Parking on the edge of the sidewalk bordering the roadway is permitted only for cars, motorcycles, mopeds and bicycles."
+    },
+    "8.6.6": {
+      "number": "8.6.6",
+      "title": "Method of parking a vehicle",
+      "image": "./images/signs/7fccfbd0a5d488eeb39a0bbd09abab8a.svg",
+      "description": "Sign 8.6.1 indicates that all vehicles must be parked on the roadway along the sidewalk; Signs 8.6.2 to 8.6.9 indicate the method of parking cars and motorcycles in sidewalk parking. Parking on the edge of the sidewalk bordering the roadway is permitted only for cars, motorcycles, mopeds and bicycles."
+    },
+    "8.6.7": {
+      "number": "8.6.7",
+      "title": "Method of parking a vehicle",
+      "image": "./images/signs/8d5f0ad3d33bd1153552c5815d15ee97.svg",
+      "description": "Sign 8.6.1 indicates that all vehicles must be parked on the roadway along the sidewalk; Signs 8.6.2 to 8.6.9 indicate the method of parking cars and motorcycles in sidewalk parking. Parking on the edge of the sidewalk bordering the roadway is permitted only for cars, motorcycles, mopeds and bicycles."
+    },
+    "8.6.8": {
+      "number": "8.6.8",
+      "title": "Method of parking a vehicle",
+      "image": "./images/signs/ae64e6874cdeb3b5c9b29a680070aad4.svg",
+      "description": "Sign 8.6.1 indicates that all vehicles must be parked on the roadway along the sidewalk; Signs 8.6.2 to 8.6.9 indicate the method of parking cars and motorcycles in sidewalk parking. Parking on the edge of the sidewalk bordering the roadway is permitted only for cars, motorcycles, mopeds and bicycles."
+    },
+    "8.6.9": {
+      "number": "8.6.9",
+      "title": "Method of parking a vehicle",
+      "image": "./images/signs/a5c2c6750c60332d0ef500f7455f9dd3.svg",
+      "description": "Sign 8.6.1 indicates that all vehicles must be parked on the roadway along the sidewalk; Signs 8.6.2 to 8.6.9 indicate the method of parking cars and motorcycles in sidewalk parking. Parking on the edge of the sidewalk bordering the roadway is permitted only for cars, motorcycles, mopeds and bicycles."
+    },
+    "8.7": {
+      "number": "8.7",
+      "title": "Parking with the engine not running",
+      "image": "./images/signs/815fccaec30b9c56f4a688f19ee1e947.svg",
+      "description": "Indicates that in a parking lot marked with sign 6.4, parking of vehicles only with the engine not running is permitted."
+    },
+    "8.8": {
+      "number": "8.8",
+      "title": "Paid services",
+      "image": "./images/signs/ba9d09c26ae6d0773e2c70e0b84237c4.svg",
+      "description": "Indicates that services are provided for a fee only."
+    },
+    "8.9": {
+      "number": "8.9",
+      "title": "Parking for diplomatic vehicles only",
+      "image": "./images/signs/ed2b51311057d631c048eb2b81f41f63.svg",
+      "description": "Indicates that only vehicles of accredited diplomatic missions, consular offices, international (interstate) organizations and representative offices of such organizations that have state registration plates used to designate such vehicles can be placed in a parking lot (parking space) marked with sign 6.4.  "
+    },
+    "8.10": {
+      "number": "8.10",
+      "title": "Vehicle inspection area",
+      "image": "./images/signs/312a66fea6f362d115ed30e84f26175e.svg",
+      "description": "Indicates that there is an overpass or inspection ditch on the site marked with sign 6.4 or 7.11."
+    },
+    "8.11": {
+      "number": "8.11",
+      "title": "Maximum weight limit",
+      "image": "./images/signs/9620cfb6c38d4a85351d530cfbff9523.svg",
+      "description": "Indicates that the sign applies only to vehicles with a permissible maximum weight exceeding the maximum weight indicated on the plate."
+    },
+    "8.12": {
+      "number": "8.12",
+      "title": "Dangerous roadside",
+      "image": "./images/signs/83a59da1cc6cae01344a8dd67e1fb2bd.svg",
+      "description": "Warns that the roadside ramp is dangerous due to the repair work on it. Applies with sign 1.25 \"Road works\"."
+    },
+    "8.13": {
+      "number": "8.13",
+      "title": "Main road direction",
+      "image": "./images/signs/a213fe50d5e1de0a7eb6427f4c3d5271.svg",
+      "description": "Indicates the direction of the main road at an intersection. The depiction of the direction of the main road and adjacent ones on the sign may follow the actual path of the roads."
+    },
+    "8.14": {
+      "number": "8.14",
+      "title": "Traffic lane",
+      "image": "./images/signs/204b060885d2db4445c191d09c03ae74.svg",
+      "description": "Indicates the traffic lane or bicycle lane covered by a sign or traffic light."
+    },
+    "8.15": {
+      "number": "8.15",
+      "title": "Blind pedestrians",
+      "image": "./images/signs/2501bfddc7cc07324fdc0f80991ae3cc.svg",
+      "description": "Indicates that the pedestrian crossing is used by the blind. Used with signs 1.22, 5.19.1, 5.19.2 and traffic lights. All blind and visually impaired pedestrians move with the help of a white cane covered with reflective film. When crossing the road, they are recommended to raise the stick forward. Drivers in all cases (regardless of traffic lights) are obliged to consider this signal as a red traffic light. The driver is obliged to stop and not resume movement until the pedestrian has completed crossing the roadway in this direction."
+    },
+    "8.16": {
+      "number": "8.16",
+      "title": "Wet coating",
+      "image": "./images/signs/d87c82fab2e99c528afa159e23cdbbfb.svg",
+      "description": "Indicates that the sign applies to the period of time when the roadway surface is wet. A wet surface reduces vehicle controllability and increases braking distance. Sharp braking can cause the car's wheels to lock and drift. To avoid an accident, it is necessary to reduce speed in such places. Be especially careful when braking in places where plastic markings are applied, as well as on sections of the road at the initial moment of raindrops. When the roadway is wetted, in some cases a thin layer (dust + moisture) is formed, which further impairs the grip of the wheels on the road."
+    },
+    "8.17": {
+      "number": "8.17",
+      "title": "Disabled people",
+      "image": "./images/signs/1a1c1daafc7bb06a248c3c57930a2e7b.svg",
+      "description": "Indicates that the effect of sign 6.4 applies only to motorized wheelchairs and cars on which the “Disabled Person” identification sign is installed."
+    },
+    "8.18": {
+      "number": "8.18",
+      "title": "Except for disabled people",
+      "image": "./images/signs/5bcede874a58b37421d515308b58a331.svg",
+      "description": "Indicates that the sign does not apply to motorized wheelchairs and cars on which the “Disabled” identification sign is installed."
+    },
+    "8.19": {
+      "number": "8.19",
+      "title": "Dangerous goods class",
+      "image": "./images/signs/eefb0a904ed7ed3aecbea3fc5c79a5fa.svg",
+      "description": "Indicates the number of the class (classes) of dangerous goods according to GOST 19433-88."
+    },
+    "8.20.1": {
+      "number": "8.20.1",
+      "title": "Vehicle bogie type",
+      "image": "./images/signs/dc4b2b2243c4b3ed51eb412e81774e2c.svg",
+      "description": "Used with sign 3.12. Indicate the number of adjacent axles of the vehicle, for each of which the mass indicated on the sign is the maximum permissible."
+    },
+    "8.20.2": {
+      "number": "8.20.2",
+      "title": "Vehicle bogie type",
+      "image": "./images/signs/4964059b55f06c6c82a53768ce928f66.svg",
+      "description": "Used with sign 3.12. Indicate the number of adjacent axles of the vehicle, for each of which the mass indicated on the sign is the maximum permissible."
+    },
+    "8.21.1": {
+      "number": "8.21.1",
+      "title": "Type of route vehicle",
+      "image": "./images/signs/5b8b0fd6591bf894df145092cd242708.svg",
+      "description": "Used with sign 6.4. They indicate where vehicles are parked at metro stations, bus (trolleybus) or tram stops, where transfer to the appropriate mode of transport is possible."
+    },
+    "8.21.2": {
+      "number": "8.21.2",
+      "title": "Type of route vehicle",
+      "image": "./images/signs/6ef156e519afdc98144d24d4dcefe977.svg",
+      "description": "Used with sign 6.4. They indicate where vehicles are parked at metro stations, bus (trolleybus) or tram stops, where transfer to the appropriate mode of transport is possible."
+    },
+    "8.21.3": {
+      "number": "8.21.3",
+      "title": "Type of route vehicle",
+      "image": "./images/signs/03b9940c1b4e5b9f38839dbb1b293da1.svg",
+      "description": "Used with sign 6.4. They indicate where vehicles are parked at metro stations, bus (trolleybus) or tram stops, where transfer to the appropriate mode of transport is possible."
+    },
+    "8.22.1": {
+      "number": "8.22.1",
+      "title": "Obstruction",
+      "image": "./images/signs/f4ce65cda3ff52f3ef02e3fca21567a2.svg",
+      "description": "They indicate the obstacle and the direction to avoid it. Used with signs 4.2.1, 4.2.2 and 4.2.3."
+    },
+    "8.22.2": {
+      "number": "8.22.2",
+      "title": "Obstruction",
+      "image": "./images/signs/f4ce65cda3ff52f3ef02e3fca21567a2.svg",
+      "description": "They indicate the obstacle and the direction to avoid it. Used with signs 4.2.1, 4.2.2 and 4.2.3."
+    },
+    "8.22.3": {
+      "number": "8.22.3",
+      "title": "Obstruction",
+      "image": "./images/signs/f4ce65cda3ff52f3ef02e3fca21567a2.svg",
+      "description": "They indicate the obstacle and the direction to avoid it. Used with signs 4.2.1, 4.2.2 and 4.2.3."
+    },
+    "8.24": {
+      "number": "8.24",
+      "title": "A tow truck is working",
+      "image": "./images/signs/7a047c7c3a5ced96d0b5525a81704be3.svg",
+      "description": "Indicates that a vehicle is being detained in the coverage area of ​​road signs 3.27, 3.28, 3.29 and 3.30."
+    },
+    "8.25": {
+      "number": "8.25",
+      "title": "Ecological class of the vehicle",
+      "image": "./images/signs/8894b97aa74fe383868dcee176bfb584.svg",
+      "description": "Indicates that the effect of signs 3.3 - 3.5, 3.18.1, 3.18.2 and 4.1.1 - 4.1.6 applies to motor vehicles: the environmental class of which, indicated in the registration documents for these vehicles, is lower than the environmental class indicated on the plate;\tthe environmental class of which is not indicated in the registration documents for these vehicles. Indicates that the effect of signs 5.29 and 6.4 applies to motor vehicles: the environmental class of which, indicated in the registration documents for these vehicles, corresponds to the environmental class indicated on the plate, or is higher than the environmental class indicated on the plate;\tthe environmental class of which is not indicated in the registration documents for these vehicles."
+    },
+    "8.26": {
+      "number": "8.26",
+      "title": "Charging electric vehicles",
+      "image": "./images/signs/869f5d177692243ed6703d663eb88f25.svg",
+      "description": "Indicates a charging location for electric vehicles. (Changes took effect: March 1, 2023.)"
+    }
+  }
+}

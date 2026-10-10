@@ -254,8 +254,10 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     List<String> favoriteIds,
   ) async {
     final dataSource = ref.read(questionsDataSourceProvider);
-    final category = ref.read(appSettingsProvider).ticketCategory;
-    final allQuestions = await dataSource.loadTickets(category);
+    final settings = ref.read(appSettingsProvider);
+    final category = settings.ticketCategory;
+    final lang = settings.effectiveLanguageCode;
+    final allQuestions = await dataSource.loadTickets(category, lang);
     final favoriteSet = favoriteIds.toSet();
 
     return allQuestions

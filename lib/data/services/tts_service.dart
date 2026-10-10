@@ -36,6 +36,12 @@ class TtsService {
   bool _configured = false;
   int _activeRequestId = 0;
 
+  Future<void> updateLanguage(String lang) async {
+    try {
+      await _tts.setLanguage(CountryConfig.current.ttsLocaleFor(lang));
+    } catch (_) {}
+  }
+
   Future<void> _ensureConfigured() async {
     if (_configured) return;
 

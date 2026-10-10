@@ -28,6 +28,8 @@ class _SilentTts implements TtsService {
   @override
   Future<void> stop() async {}
   @override
+  Future<void> updateLanguage(String lang) async {}
+  @override
   Future<void> dispose() async {}
 }
 

@@ -82,12 +82,15 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
 
   Future<void> _initFeed() async {
     try {
-      final category = ref.read(appSettingsProvider).ticketCategory;
+      final settings = ref.read(appSettingsProvider);
+      final category = settings.ticketCategory;
+      final lang = settings.effectiveLanguageCode;
       final repo = ref.read(feedRepositoryProvider);
-      debugPrint('FEED_DEBUG: _initFeed starting for category $category');
+      debugPrint('FEED_DEBUG: _initFeed starting for category $category (lang: $lang)');
       final initial = await repo.generateFeedItems(
         category: category,
         count: 60,
+        lang: lang,
       );
       debugPrint('FEED_DEBUG: _initFeed generated ${initial.length} items');
       if (mounted) {
@@ -199,7 +202,9 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   Future<void> _loadMoreItems() async {
     _isLoadingMore = true;
     try {
-      final category = ref.read(appSettingsProvider).ticketCategory;
+      final settings = ref.read(appSettingsProvider);
+      final category = settings.ticketCategory;
+      final lang = settings.effectiveLanguageCode;
       final repo = ref.read(feedRepositoryProvider);
       final currentIds = _items
           .map((i) => i.rawQuestionId ?? i.id)
@@ -209,6 +214,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
         category: category,
         count: 40,
         excludeQuestionIds: currentIds,
+        lang: lang,
       );
       if (mounted && newItems.isNotEmpty) {
         setState(() {
@@ -227,11 +233,14 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     HapticFeedbackHelper.success();
 
     try {
-      final category = ref.read(appSettingsProvider).ticketCategory;
+      final settings = ref.read(appSettingsProvider);
+      final category = settings.ticketCategory;
+      final lang = settings.effectiveLanguageCode;
       final repo = ref.read(feedRepositoryProvider);
       final newItems = await repo.generateFeedItems(
         category: category,
         count: 50,
+        lang: lang,
       );
 
       if (mounted) {
@@ -339,6 +348,15 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String?>(
+      appSettingsProvider.select((s) => s.effectiveLanguageCode),
+      (previous, next) {
+        if (previous != null && previous != next) {
+          _refreshFeed();
+        }
+      },
+    );
+
     final colors = AppColors.of(context);
     final feedAsync = ref.watch(feedItemsProvider);
 

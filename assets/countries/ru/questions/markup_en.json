@@ -1,0 +1,58 @@
+{
+  "Horizontal marking": [
+    {
+      "title": "Solid lines",
+      "description": "They separate flows of opposite directions, mark the edge of the roadway and limit the intersection."
+    },
+    {
+      "title": "Intermittent lines",
+      "description": "They allow you to change lanes and help you navigate traffic lanes."
+    },
+    {
+      "title": "Yellow markings",
+      "description": "Used for areas where stopping or parking is prohibited."
+    },
+    {
+      "title": "Combined lines",
+      "description": "Crossing rules depend on the side from which the driver approaches the line."
+    },
+    {
+      "title": "Pedestrian Crossings",
+      "description": "They highlight the crossing point and increase the driver’s attention when approaching pedestrians."
+    },
+    {
+      "title": "Stop lines",
+      "description": "Shows the mandatory stopping point before the intersection, traffic light or stop sign."
+    },
+    {
+      "title": "Directions by lane",
+      "description": "Arrows and inscriptions indicate in which direction traffic is allowed from each lane."
+    },
+    {
+      "title": "Special lanes and stops",
+      "description": "Designate lanes for route transport, cyclists and public transport stops."
+    }
+  ],
+  "Vertical marking": [
+    {
+      "title": "Supports and protruding elements",
+      "description": "They help to notice in advance the supports of bridges, overpasses and other massive obstacles along the road."
+    },
+    {
+      "title": "Lower dimensions of structures",
+      "description": "Emphasize the lower edge of tunnels, bridges and overpasses, where it is important to control the height of transport."
+    },
+    {
+      "title": "Fencing in hazardous areas",
+      "description": "Used on curves, steep slopes and in places where visual orientation is especially important."
+    },
+    {
+      "title": "Fencing in regular areas",
+      "description": "The side surfaces of road barriers are highlighted where additional visibility is required."
+    },
+    {
+      "title": "Curbs and guide elements",
+      "description": "The contour of safety islands, curbs and guide structures is prompted at night."
+    }
+  ]
+}

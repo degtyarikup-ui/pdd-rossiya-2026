@@ -13,10 +13,25 @@ class QuestionsDataSource {
   String _cat(TicketCategory category) =>
       category == TicketCategory.ab ? 'ab' : 'cd';
 
-  Future<List<Question>> loadTickets(TicketCategory category) async {
+  Future<String> _loadStringWithFallback(
+    String path,
+    String fallbackPath,
+  ) async {
+    try {
+      return await rootBundle.loadString(path);
+    } catch (_) {
+      return await rootBundle.loadString(fallbackPath);
+    }
+  }
+
+  Future<List<Question>> loadTickets(
+    TicketCategory category, [
+    String? lang,
+  ]) async {
     try {
       final cat = _cat(category);
-      final String content = await rootBundle.loadString(
+      final String content = await _loadStringWithFallback(
+        _config.questionsJson(cat, lang),
         _config.questionsJson(cat),
       );
       final dynamic data = json.decode(content);
@@ -49,10 +64,14 @@ class QuestionsDataSource {
     }
   }
 
-  Future<List<Map<String, dynamic>>> loadTopics(TicketCategory category) async {
+  Future<List<Map<String, dynamic>>> loadTopics(
+    TicketCategory category, [
+    String? lang,
+  ]) async {
     try {
       final cat = _cat(category);
-      final String content = await rootBundle.loadString(
+      final String content = await _loadStringWithFallback(
+        _config.topicsJson(cat, lang),
         _config.topicsJson(cat),
       );
       final dynamic data = json.decode(content);
@@ -88,9 +107,12 @@ class QuestionsDataSource {
     }
   }
 
-  Future<Map<String, dynamic>> loadSigns() async {
+  Future<Map<String, dynamic>> loadSigns([String? lang]) async {
     try {
-      final String content = await rootBundle.loadString(_config.signsJson);
+      final String content = await _loadStringWithFallback(
+        _config.signsJson(lang),
+        _config.signsJson(),
+      );
       final dynamic decoded = json.decode(content);
       return decoded is Map ? Map<String, dynamic>.from(decoded) : {};
     } catch (_) {
@@ -98,10 +120,13 @@ class QuestionsDataSource {
     }
   }
 
-  Future<List<Map<String, dynamic>>> loadSignsFeedManifest() async {
+  Future<List<Map<String, dynamic>>> loadSignsFeedManifest([
+    String? lang,
+  ]) async {
     try {
-      final String content = await rootBundle.loadString(
-        'assets/countries/ru/questions/signs_feed_manifest.json',
+      final String content = await _loadStringWithFallback(
+        _config.signsFeedManifestJson(lang),
+        _config.signsFeedManifestJson(),
       );
       final dynamic decoded = json.decode(content);
       if (decoded is List) {
@@ -118,8 +143,13 @@ class QuestionsDataSource {
 
   /// Дорожная разметка по группам: { «Горизонтальная разметка»: [{title,
   /// description}, …], «Вертикальная разметка»: […] }. Страно-зависимая.
-  Future<Map<String, List<Map<String, String>>>> loadMarkup() async {
-    final String content = await rootBundle.loadString(_config.markupJson);
+  Future<Map<String, List<Map<String, String>>>> loadMarkup([
+    String? lang,
+  ]) async {
+    final String content = await _loadStringWithFallback(
+      _config.markupJson(lang),
+      _config.markupJson(),
+    );
     final Map<String, dynamic> data =
         json.decode(content) as Map<String, dynamic>;
     return data.map((group, entries) {
@@ -136,8 +166,11 @@ class QuestionsDataSource {
   }
 
   /// Разделы текста ПДД для вкладки «ПДД»: [{'title':…, 'content':…}, …].
-  Future<List<Map<String, String>>> loadPddSections() async {
-    final String content = await rootBundle.loadString(_config.pddSectionsJson);
+  Future<List<Map<String, String>>> loadPddSections([String? lang]) async {
+    final String content = await _loadStringWithFallback(
+      _config.pddSectionsJson(lang),
+      _config.pddSectionsJson(),
+    );
     final List<dynamic> sections = json.decode(content) as List<dynamic>;
     return sections
         .map(

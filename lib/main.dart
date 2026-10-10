@@ -236,6 +236,7 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final appSettings = ref.watch(appSettingsProvider);
     updateAppLocale(Locale(appSettings.effectiveLanguageCode));
+    TtsService.instance.updateLanguage(appSettings.effectiveLanguageCode);
     HapticFeedbackHelper.setEnabled(appSettings.hapticsEnabled);
 
     final String initialScreen = kDebugMode
