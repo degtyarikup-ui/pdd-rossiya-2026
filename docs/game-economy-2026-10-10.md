@@ -44,3 +44,14 @@ Verification: full Flutter suite, analyzer, fixed-time and beginner UI tests,
 reachable achievement boundaries, server daily/cumulative/concurrency/retry
 regressions and real-browser crossroads progression/DTП explanation smoke.
 New delivery is a dev installation to Pixel only; no store bundles are built.
+
+
+Delivery completed: pushed commit 3df0bfb5, deployed worker version
+2dee7e94-f046-446b-a2d1-d6b2ef8d1c4d, installed the dev APK on Pixel over Wi-Fi.
+The installed APK SHA-256 matches the verified local build exactly; Android
+package ru.pdd.pdd_app.dev has label `ПДД Россия · Тест`.
+
+Validation: 322 Flutter tests passed, one skipped; analyzer clean; 25 final
+focused tests and 18 GAME_DEBUG flow tests passed. Server: 45 scoring/auth/profile
+checks and 63 security tests passed. Crossroads: 18 real scenarios / 52 steps,
+collision explanation, retry and zoom passed in Chromium without JS errors.
