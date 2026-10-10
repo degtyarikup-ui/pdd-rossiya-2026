@@ -1,6 +1,6 @@
 import 'package:pdd_app/domain/services/sign_swiper_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pdd_app/data/datasources/sign_scenarios_library.dart';
+import 'package:pdd_app/data/sources/sign_scenarios_library.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
 
 void main() {
