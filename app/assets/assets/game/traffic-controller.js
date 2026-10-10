@@ -133,8 +133,7 @@
   // --- Погодная система «Регулировщик 3D»: ясно, дождь, туман ---
   const WEATHERS = ['clear', 'rain', 'fog'];
   let currentTargetWeather = 'clear';
-  let weatherAutoTimer = 55 + Math.random() * 30; // 55-85 секунд до плавной смены
-  let weatherDeck = [];
+  let weatherAutoTimer = 240 + Math.random() * 180; // Long clear intervals, like the city.
   let weatherFx = null;
 
   // Текущие сглаженные параметры погоды (0..1)
@@ -143,15 +142,8 @@
   let curOvercast = 0;
 
   function pickNextWeather() {
-    if (weatherDeck.length === 0) {
-      const candidates = WEATHERS.filter(w => w !== currentTargetWeather);
-      for (let i = candidates.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
-      }
-      weatherDeck = candidates;
-    }
-    return weatherDeck.shift();
+    // Match the bright city: brief rain, long clear intervals, no random fog.
+    return currentTargetWeather === 'clear' && Math.random() < 0.15 ? 'rain' : 'clear';
   }
 
   function setWeather(kind, immediate = false) {
@@ -170,60 +162,39 @@
     notifyFlutter({ type: 'weather_changed', weather: currentTargetWeather });
   }
 
+  // Ground and canopy planes bound the visible rain volume. Limit rays
+  // above the horizon to the extent of the modelled city, not the far clip.
+  const rainRay = new THREE.Vector3();
+  function rainBounds(viewCamera) {
+    viewCamera.updateMatrixWorld();
+    const bounds = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
+    for (const y of [0, 32]) for (const nx of [-1, 1]) for (const ny of [-1, 1]) {
+      rainRay.set(nx, ny, 0.5).unproject(viewCamera).sub(viewCamera.position).normalize();
+      const distance = (y - viewCamera.position.y) / rainRay.y;
+      const t = distance > 0 ? Math.min(distance, 180) : 180;
+      const x = viewCamera.position.x + rainRay.x * t;
+      const z = viewCamera.position.z + rainRay.z * t;
+      bounds.minX = Math.min(bounds.minX, x - 4); bounds.maxX = Math.max(bounds.maxX, x + 4);
+      bounds.minZ = Math.min(bounds.minZ, z - 4); bounds.maxZ = Math.max(bounds.maxZ, z + 4);
+    }
+    return bounds;
+  }
+
   function ensureWeatherFx() {
     if (weatherFx) return weatherFx;
 
-    // Объёмная 3D система дождя: 3 слоя глубины (ближний, средний, дальний план)
-    // Создаёт естественное восприятие объёма пространства без перегрузки GPU
-    const isWeak = !!weak;
-    const dropCount = isWeak ? 1000 : 2100;
-    const dropPositions = new Float32Array(dropCount * 2 * 3);
-    const drops = [];
-
-    const nearCount = Math.floor(dropCount * 0.22);
-    const midCount = Math.floor(dropCount * 0.42);
-    const farCount = dropCount - nearCount - midCount;
-
-    // 1. Ближний план: длинные капли вблизи камеры с выраженным параллаксом
-    for (let i = 0; i < nearCount; i++) {
-      drops.push({
-        x: (Math.random() - 0.5) * 22,
-        y: Math.random() * 22,
-        z: 4 + Math.random() * 20,
-        speed: 15.0 + Math.random() * 3.5,
-        len: 1.2 + Math.random() * 0.6,
-        layer: 'near',
-      });
-    }
-
-    // 2. Средний план: капли над перекрёстком, машинами и регулировщиком
-    for (let i = 0; i < midCount; i++) {
-      drops.push({
-        x: (Math.random() - 0.5) * 44,
-        y: Math.random() * 24,
-        z: (Math.random() - 0.5) * 36,
-        speed: 14.0 + Math.random() * 3.0,
-        len: 0.75 + Math.random() * 0.35,
-        layer: 'mid',
-      });
-    }
-
-    // 3. Дальний план: мягкая плотная сетка дождя на фоне города
-    for (let i = 0; i < farCount; i++) {
-      drops.push({
-        x: (Math.random() - 0.5) * 76,
-        y: Math.random() * 26,
-        z: -12 - Math.random() * 40,
-        speed: 12.8 + Math.random() * 2.8,
-        len: 0.45 + Math.random() * 0.25,
-        layer: 'far',
-      });
-    }
+    // Same short, pale streaks and particle budget as the city game.
+    const dropCount = lowEnd ? 350 : 900;
+    const dropPositions = new Float32Array(dropCount * 6);
+    const drops = Array.from({ length: dropCount }, () => ({
+      x: Math.random(), z: Math.random(), y: Math.random() * 32,
+      speed: 20 + Math.random() * 8, len: 0.5 + Math.random() * 0.5,
+    }));
 
     const rainGeo = new THREE.BufferGeometry();
     rainGeo.setAttribute('position', new THREE.BufferAttribute(dropPositions, 3));
     const rainMat = new THREE.LineBasicMaterial({
-      color: 0xB2C6D8,
+      color: 0xDCE6F0,
       transparent: true,
       opacity: 0,
     });
@@ -287,7 +258,7 @@
 
     // 1. Цвета неба и атмосферы
     const clearSky = new THREE.Color(season.sky);
-    const rainSky = new THREE.Color(0x8E9CA8);
+    const rainSky = new THREE.Color(0xAEB6BD);
     const fogSky = new THREE.Color(0xC2CCD5);
 
     scene.background.copy(clearSky).lerp(rainSky, curRain).lerp(fogSky, curFog);
@@ -310,10 +281,10 @@
 
     // 2. Освещение (баланс солнца и рассеянного света)
     if (ambientLight) {
-      ambientLight.intensity = THREE.MathUtils.lerp(season.ambient, 0.62, curRain * 0.85 + curFog * 0.45);
+      ambientLight.intensity = THREE.MathUtils.lerp(0.75, 0.72, curRain * 0.85 + curFog * 0.45);
     }
     if (sunLight) {
-      const sunInt = THREE.MathUtils.lerp(season.sunIntensity, THREE.MathUtils.lerp(0.20, 0.08, curFog), Math.max(curRain, curFog));
+      const sunInt = THREE.MathUtils.lerp(0.85, THREE.MathUtils.lerp(0.55, 0.5, curFog), Math.max(curRain, curFog));
       sunLight.intensity = sunInt;
       sunLight.color.setHex(season.sun).lerp(new THREE.Color(0xCCD8E4), Math.max(curRain, curFog));
     }
@@ -330,37 +301,25 @@
       weatherFx.walkMat.color.copy(dryWalk).lerp(wetWalk, curRain * 0.35 + curFog * 0.15);
     }
 
-    // 4. Дождь: 3-слойная объёмная симуляция с глубиной и параллаксом
+    // Follow the entire camera footprint, including the distant street at
+    // maximum zoom. Normalized drop coordinates avoid rebuilding geometry.
     if (curRain > 0.01) {
       weatherFx.rainLines.visible = true;
-      weatherFx.rainLines.material.opacity = curRain * 0.62;
+      weatherFx.rainLines.material.opacity = curRain * 0.55;
+      const bounds = rainBounds(camera);
+      const width = bounds.maxX - bounds.minX, depth = bounds.maxZ - bounds.minZ;
       const pos = weatherFx.rainLines.geometry.attributes.position.array;
-      let ptr = 0;
-      const windX = 1.1;
-      const windZ = -1.5;
-      weatherFx.drops.forEach(d => {
+      weatherFx.drops.forEach((d, i) => {
         d.y -= d.speed * dt;
-        d.x += windX * dt;
-        d.z += windZ * dt;
+        d.z = (d.z - 4 * dt / depth + 1) % 1;
         if (d.y < 0) {
-          d.y = 22 + Math.random() * 4;
-          if (d.layer === 'near') {
-            d.x = (Math.random() - 0.5) * 22;
-            d.z = 4 + Math.random() * 20;
-          } else if (d.layer === 'mid') {
-            d.x = (Math.random() - 0.5) * 44;
-            d.z = (Math.random() - 0.5) * 36;
-          } else {
-            d.x = (Math.random() - 0.5) * 76;
-            d.z = -12 - Math.random() * 40;
-          }
+          d.y = 28 + Math.random() * 4;
+          d.x = Math.random(); d.z = Math.random();
         }
-        pos[ptr++] = d.x;
-        pos[ptr++] = d.y;
-        pos[ptr++] = d.z;
-        pos[ptr++] = d.x - 0.06 * d.len;
-        pos[ptr++] = d.y - 1.15 * d.len;
-        pos[ptr++] = d.z + 0.08 * d.len;
+        const x = bounds.minX + d.x * width, z = bounds.minZ + d.z * depth;
+        const o = i * 6;
+        pos[o] = x; pos[o + 1] = d.y; pos[o + 2] = z;
+        pos[o + 3] = x; pos[o + 4] = d.y + d.len; pos[o + 5] = z + 0.12;
       });
       weatherFx.rainLines.geometry.attributes.position.needsUpdate = true;
     } else {
@@ -382,8 +341,8 @@
     // Таймер автоматической смены погоды в случайном порядке
     weatherAutoTimer -= dt;
     if (weatherAutoTimer <= 0) {
-      weatherAutoTimer = 55 + Math.random() * 30;
       setWeather(pickNextWeather());
+      weatherAutoTimer = currentTargetWeather === 'clear' ? 240 + Math.random() * 180 : 25 + Math.random() * 20;
     }
 
     applyWeather(dt);
@@ -426,7 +385,7 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowEnd ? 1.25 : 1.75));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMapping = THREE.NoToneMapping;
     renderer.toneMappingExposure = 1.05;
     container.appendChild(renderer.domElement);
 
@@ -444,12 +403,13 @@
     buildTrajectoryArrows();
 
     window.addEventListener('resize', onWindowResize);
+    window.addEventListener('pointerdown', () => audio && audio.unlock());
 
     // Первоначальное состояние
     setScenario(GESTURES.RIGHT_ARM_FORWARD, APPROACHES.LEFT, VEHICLES.CAR);
 
-    // Выбираем начальную погоду в случайном порядке (ясно, дождь или туман)
-    const initialWeather = WEATHERS[Math.floor(Math.random() * WEATHERS.length)];
+    // Bright daytime on entry, as in the city game.
+    const initialWeather = 'clear';
     setWeather(initialWeather, true);
 
     // Сообщаем Flutter о готовности
@@ -1395,6 +1355,7 @@
     activeMove = moveType;
     activeMoveId = moveId;
     moveDuration = moveType === MOVES.STRAIGHT ? 1.8 : moveType === MOVES.UTURN ? 2.05 : 1.95;
+    if (audio) audio.engine('car', moveDuration + 0.3);
 
     notifyFlutter({
       type: 'move_result',
@@ -1608,9 +1569,18 @@
   }
 
   // Экспорт API для вызова из Flutter
+  // Фон улицы и звук мотора; Flutter включает по настройке «Звук».
+  const audio = window.PDD_AMBIENT ? window.PDD_AMBIENT.create() : null;
+
   window.TrafficControllerGame = {
+    setSound(on) {
+      if (!audio) return;
+      audio.setEnabled(on);
+      if (on) audio.unlock();
+    },
     setScenario,
     getAllowedMoves,
+    getRainBounds: rainBounds,
     getState() { return {gesture: currentGesture, approach: currentApproach, vehicle: currentVehicle, season: seasonName, weather: currentTargetWeather, rain: curRain, fog: curFog, pose: inspectorGroup?.userData.pose, rightHandX: rightArmPivot?.position.x, leafCount: leaves?.mesh?.count || 0, drawCalls: renderer.info.render.calls}; },
     makeMove,
     setMode(mode) {
