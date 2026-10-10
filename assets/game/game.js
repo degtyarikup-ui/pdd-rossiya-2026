@@ -7920,177 +7920,298 @@
     return seg;
   }
 
-  function buildDeadEndSegment(length = 38, district = (state.district + 1) % DISTRICTS) {
-    const seg = new THREE.Group();
-    const roadWidth = 8.4;
-    const turnaroundWidth = 15.6;
-    const straightLength = Math.min(20, length - 14);
-    const padStart = straightLength - 2;
+  // ---------------------------------------------------------------------------
+  // A real dead end (sign 6.8.x). The street runs between fenced homes, opens
+  // through a flare into a round turning pad (22 m across, nothing standing on
+  // it) and is closed behind it by a row of garages. Nothing is built beyond
+  // the end (no next junction, no road event: see deadEndAhead), so the road
+  // really stops. The pad is wide enough to turn round on by hand with one
+  // held arrow from anywhere inside it; the U-turn button of the controls
+  // drives a smooth loop round its middle.
+  // ---------------------------------------------------------------------------
+  const DEAD_END_LENGTH = 66;
 
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(36, length + 20 + 2 * SEAM),
-      new THREE.MeshLambertMaterial({ color: season().verge[Math.min(district, 2)] })
-    );
-    ground.material.userData.seasonal = 'verge' + Math.min(district, 2);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.set(0, -0.015, (length + 20) / 2);
-    seg.add(ground);
-
-    const straightAsphalt = new THREE.Mesh(
-      new THREE.PlaneGeometry(roadWidth, straightLength + 2 * SEAM),
-      new THREE.MeshLambertMaterial({ color: BRAND.asphalt })
-    );
-    straightAsphalt.rotation.x = -Math.PI / 2;
-    straightAsphalt.position.set(0, 0.02, straightLength / 2);
-    straightAsphalt.receiveShadow = true;
-    seg.add(straightAsphalt);
-
-    const turnaroundLength = length - padStart;
-    const padAsphalt = new THREE.Mesh(
-      new THREE.PlaneGeometry(turnaroundWidth, turnaroundLength + 2 * SEAM),
-      new THREE.MeshLambertMaterial({ color: BRAND.asphalt })
-    );
-    padAsphalt.rotation.x = -Math.PI / 2;
-    padAsphalt.position.set(0, 0.021, padStart + turnaroundLength / 2);
-    padAsphalt.receiveShadow = true;
-    seg.add(padAsphalt);
-
-    const swMat = new THREE.MeshLambertMaterial({ color: BRAND.sidewalk });
-    const swWidth = 3.2;
-
-    const swStraightL = new THREE.Mesh(new THREE.BoxGeometry(swWidth, 0.18, straightLength), swMat);
-    swStraightL.position.set(-(roadWidth / 2 + swWidth / 2), 0.09, straightLength / 2);
-    swStraightL.receiveShadow = true;
-    seg.add(swStraightL);
-
-    const swStraightR = new THREE.Mesh(new THREE.BoxGeometry(swWidth, 0.18, straightLength), swMat);
-    swStraightR.position.set(roadWidth / 2 + swWidth / 2, 0.09, straightLength / 2);
-    swStraightR.receiveShadow = true;
-    seg.add(swStraightR);
-
-    const stepL = new THREE.Mesh(new THREE.BoxGeometry((turnaroundWidth - roadWidth) / 2 + swWidth, 0.18, swWidth), swMat);
-    stepL.position.set(-(roadWidth / 2 + ((turnaroundWidth - roadWidth) / 2 + swWidth) / 2), 0.09, straightLength);
-    seg.add(stepL);
-
-    const stepR = new THREE.Mesh(new THREE.BoxGeometry((turnaroundWidth - roadWidth) / 2 + swWidth, 0.18, swWidth), swMat);
-    stepR.position.set(roadWidth / 2 + ((turnaroundWidth - roadWidth) / 2 + swWidth) / 2, 0.09, straightLength);
-    seg.add(stepR);
-
-    const padSideL = new THREE.Mesh(new THREE.BoxGeometry(swWidth, 0.18, turnaroundLength), swMat);
-    padSideL.position.set(-(turnaroundWidth / 2 + swWidth / 2), 0.09, padStart + turnaroundLength / 2);
-    padSideL.receiveShadow = true;
-    seg.add(padSideL);
-
-    const padSideR = new THREE.Mesh(new THREE.BoxGeometry(swWidth, 0.18, turnaroundLength), swMat);
-    padSideR.position.set(turnaroundWidth / 2 + swWidth / 2, 0.09, padStart + turnaroundLength / 2);
-    padSideR.receiveShadow = true;
-    seg.add(padSideR);
-
-    const backSw = new THREE.Mesh(new THREE.BoxGeometry(turnaroundWidth + 2 * swWidth, 0.22, swWidth), swMat);
-    backSw.position.set(0, 0.11, length + swWidth / 2);
-    backSw.receiveShadow = true;
-    seg.add(backSw);
-
-    const markingMat = new THREE.MeshBasicMaterial({ color: BRAND.asphaltMarking });
-    const dashLength = 2.0, gapLength = 3.0;
-    const dashGeo = new THREE.PlaneGeometry(0.18, dashLength);
-    dashGeo.rotateX(-Math.PI / 2);
-    const dashes = [];
-    for (let z = 2; z < straightLength - 2; z += (dashLength + gapLength)) {
-      const dash = new THREE.Mesh(dashGeo, markingMat);
-      dash.position.set(0, 0.025, z + dashLength / 2);
-      dashes.push(dash);
+  // The kerb line as one open polyline [x, z]: from the right-hand corner of the
+  // mouth up the street, through the flare (a fillet that opens the street into
+  // the loop), round the loop and back down the left-hand side. Factory X is
+  // the driver's right, as everywhere; the line is symmetric about X = 0.
+  function deadEndKerb(width, centerZ, radius, flare) {
+    const w = width / 2, dx = w + flare, dc = radius + flare;
+    const flareZ = centerZ - Math.sqrt(dc * dc - dx * dx);
+    // Unit vector from the loop's centre to the flare fillet's centre.
+    const ux = dx / dc, uz = (flareZ - centerZ) / dc;
+    const right = [[w, 0], [w, flareZ]];
+    const a0 = Math.PI, a1 = Math.atan2(-uz, -ux), flareSteps = 10;
+    for (let i = 1; i <= flareSteps; i++) {
+      const a = a0 + (a1 - a0) * i / flareSteps;
+      right.push([dx + flare * Math.cos(a), flareZ + flare * Math.sin(a)]);
     }
-    seg.add(mergeStatic(dashes, markingMat));
-
-    const lineL = new THREE.Mesh(new THREE.PlaneGeometry(0.15, straightLength), markingMat);
-    lineL.rotation.x = -Math.PI / 2;
-    lineL.position.set(-roadWidth / 2 + 0.25, 0.025, straightLength / 2);
-    seg.add(lineL);
-
-    const lineR = new THREE.Mesh(new THREE.PlaneGeometry(0.15, straightLength), markingMat);
-    lineR.rotation.x = -Math.PI / 2;
-    lineR.position.set(roadWidth / 2 - 0.25, 0.025, straightLength / 2);
-    seg.add(lineR);
-
-    const barrierGroup = new THREE.Group();
-    const barrierZ = length - 2;
-    const postMat = new THREE.MeshLambertMaterial({ color: 0x555D65 });
-    const whiteBoardMat = new THREE.MeshLambertMaterial({ color: 0xEAEAEA });
-    const redBoardMat = new THREE.MeshLambertMaterial({ color: 0xD32F2F });
-
-    for (let x = -turnaroundWidth / 2 + 1.2; x <= turnaroundWidth / 2 - 1.2; x += 2.4) {
-      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.3, 8), postMat);
-      post.position.set(x, 0.65, barrierZ);
-      post.castShadow = true;
-      barrierGroup.add(post);
+    const f0 = Math.atan2(uz, ux), f1 = Math.PI - f0, loopSteps = 64, loop = [];
+    for (let i = 1; i < loopSteps; i++) {
+      const f = f0 + (f1 - f0) * i / loopSteps;
+      loop.push([radius * Math.cos(f), centerZ + radius * Math.sin(f)]);
     }
-    for (const y of [0.55, 0.95]) {
-      const beamSegments = 14;
-      const beamStep = (turnaroundWidth - 2) / beamSegments;
-      for (let i = 0; i < beamSegments; i++) {
-        const segX = -turnaroundWidth / 2 + 1.0 + (i + 0.5) * beamStep;
-        const beam = new THREE.Mesh(
-          new THREE.BoxGeometry(beamStep, 0.22, 0.08),
-          i % 2 === 0 ? redBoardMat : whiteBoardMat
-        );
-        beam.position.set(segX, y, barrierZ);
-        beam.castShadow = true;
-        barrierGroup.add(beam);
+    const left = right.map(([x, z]) => [-x, z]).reverse();
+    return { points: [...right, ...loop, ...left], flareZ };
+  }
+
+  // A polyline pushed sideways by d (mitred at the corners); positive d is
+  // to the right of the direction of travel, which for the kerb line above
+  // means outwards, negative inwards.
+  function offsetPath(points, d) {
+    const last = points.length - 1;
+    const edge = (a, b) => { const dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [dz / l, -dx / l]; };
+    return points.map((p, i) => {
+      const u = edge(points[Math.max(0, i - 1)], points[i === 0 ? 1 : i]);
+      const v = edge(points[i === last ? i - 1 : i], points[Math.min(last, i + 1)]);
+      const k = d / Math.max(0.2, 1 + u[0] * v[0] + u[1] * v[1]);
+      return [p[0] + (u[0] + v[0]) * k, p[1] + (u[1] + v[1]) * k];
+    });
+  }
+
+  // A row of lock-up garages: one long low block with a flat roof and a steel
+  // door in every bay. Doors are baked per colour, so the whole row costs about
+  // ten draw calls. The doors face -Z (the street), the origin is the row's
+  // centre on the ground.
+  function createGarageRow(count = 8, bay = 3.1, depth = 5.6, height = 2.7) {
+    const row = new THREE.Group(), width = count * bay, sn = season();
+    row.userData.garageRow = true;
+    const brick = Math.random() < 0.35;
+    const wall = brick ? 0xB5675A : [0xB8B3A6, 0xA9AEAE, 0xC2BBA8][Math.floor(Math.random() * 3)];
+    const body = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), sceneryMat(wall));
+    body.position.y = height / 2; body.receiveShadow = true;
+    (brick ? WALL.brick : WALL.plaster)(body);
+    row.add(body);
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(width + 0.5, 0.16, depth + 0.5), sceneryMat(sn.precipitation === 'snow' ? 0xC7D0D8 : 0x50575E));
+    roof.position.y = height + 0.08; row.add(roof); window.PDD_ROADS.skinObject(roof, 'roofFlat');
+    const rim = new THREE.Mesh(new THREE.BoxGeometry(width + 0.75, 0.12, depth + 0.75), sceneryMat(sn.precipitation === 'snow' ? 0x9AA6B2 : 0x8D959C));
+    rim.position.y = height + 0.02; row.add(rim); window.PDD_ROADS.skinObject(rim, 'roofFlat');
+    const front = -depth / 2 - 0.012;
+    const plane = (w, h, x, y, z) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h)); m.position.set(x, y, z); m.rotation.y = Math.PI; return m;
+    };
+    const palette = [0x2F5D8C, 0x3E7C4A, 0x8B5A3C, 0x7C838A, 0xA84B3A, 0xC7A23C, 0x56677A];
+    const leaves = new Map(), frames = [], ribs = [];
+    for (let i = 0; i < count; i++) {
+      const x = -width / 2 + bay * (i + 0.5), color = palette[Math.floor(Math.random() * palette.length)];
+      frames.push(plane(bay - 0.18, 2.34, x, 1.17, front));
+      if (!leaves.has(color)) leaves.set(color, []);
+      leaves.get(color).push(plane(bay - 0.42, 2.12, x, 1.1, front - 0.012));
+      for (const y of [0.5, 1.1, 1.7]) ribs.push(plane(bay - 0.42, 0.05, x, y, front - 0.024));
+    }
+    const bake = (list, color) => {
+      const mesh = mergeStatic(list, sceneryMat(color)); list.forEach(m => m.geometry.dispose());
+      mesh.receiveShadow = true; row.add(mesh); return mesh;
+    };
+    bake(frames, 0x2B3136);
+    bake(ribs, 0x2B3136);
+    leaves.forEach((list, color) => window.PDD_ROADS.skinObject(bake(list, color), 'metal'));
+    return row;
+  }
+
+  // Three wheelie bins by the garages: two draw calls.
+  function createBinCluster(count = 3) {
+    const cluster = new THREE.Group(), bodies = [], lids = [];
+    for (let i = 0; i < count; i++) {
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.05, 0.95)); body.position.set(i * 1.35, 0.525, 0); bodies.push(body);
+      const lid = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 1.0)); lid.position.set(i * 1.35, 1.09, 0); lid.rotation.x = -0.12; lids.push(lid);
+    }
+    const green = mergeStatic(bodies, sceneryMat(0x3E7C5A)), dark = mergeStatic(lids, sceneryMat(0x2B3033));
+    bodies.concat(lids).forEach(m => m.geometry.dispose());
+    cluster.add(green, dark);
+    return cluster;
+  }
+
+  // A clipped hedge along an arc of the given radius (angles from the loop's
+  // centre), one merged mesh of short boxes. The group's origin is the arc's
+  // middle, so a long hedge never "stands" on the loop it surrounds.
+  function createHedgeArc(radius, from, to) {
+    const group = new THREE.Group(), sn = season();
+    const color = sn.precipitation === 'snow' ? 0xC9D2D8 : sn.roof === null && sn.sun === 0xFFE3B8 ? 0x9A8A3E : 0x56764C;
+    const mid = (from + to) / 2, cx = radius * Math.cos(mid), cz = radius * Math.sin(mid);
+    const steps = Math.max(2, Math.ceil(Math.abs(to - from) * radius / 0.9)), step = Math.abs(to - from) * radius / steps, parts = [];
+    for (let i = 0; i <= steps; i++) {
+      const a = from + (to - from) * i / steps, height = 0.82 + Math.random() * 0.12;
+      const part = new THREE.Mesh(new THREE.BoxGeometry(step * 1.25, height, 1.05));
+      part.position.set(radius * Math.cos(a) - cx, height / 2, radius * Math.sin(a) - cz);
+      part.rotation.y = Math.atan2(-Math.cos(a), -Math.sin(a)) * (to > from ? 1 : -1);
+      parts.push(part);
+    }
+    const hedge = mergeStatic(parts, sceneryMat(color)); parts.forEach(m => m.geometry.dispose());
+    window.PDD_ROADS.skinObject(hedge, 'leaves');
+    group.add(hedge); group.position.set(cx, 0, cz);
+    return group;
+  }
+
+  // A manhole cover in the road: two flat discs, one baked mesh.
+  function createManhole(radius = 0.5) {
+    const cover = new THREE.Group(), rim = new THREE.Mesh(new THREE.CircleGeometry(radius, 20)), lid = new THREE.Mesh(new THREE.CircleGeometry(radius * 0.8, 20));
+    rim.rotation.x = lid.rotation.x = -Math.PI / 2; lid.position.y = 0.002;
+    const rimMesh = mergeStatic([rim], sceneryMat(0x59606A)), lidMesh = mergeStatic([lid], sceneryMat(0x3B4048));
+    rim.geometry.dispose(); lid.geometry.dispose();
+    rimMesh.userData.roadMarking = lidMesh.userData.roadMarking = true;
+    cover.add(rimMesh, lidMesh);
+    return cover;
+  }
+
+  // The roadside of a cul-de-sac, built in small steps like the rows of a
+  // straight road (see enqueueScenery): the surfaces are laid at once, this
+  // is what dresses them. Objects are placed in factory coordinates (X = the
+  // driver's right) and registered one step at a time once the road is.
+  function* buildDeadEndScenery(seg, info) {
+    const { length, centerZ: zc, radius: R, pavement } = info;
+    let firstChild = seg.children.length;
+    const settle = () => {
+      const added = seg.children.slice(firstChild);
+      firstChild = seg.children.length;
+      if (!added.length || !seg.userData.registered) return;
+      added.forEach(registerRoadObject);
+      added.forEach(o => { const b = new THREE.Box3().setFromObject(o); if (!b.isEmpty() && b.max.y > .3) o.userData.sceneryObject = true; });
+      settleStreamedScenery(seg, added); clearSceneryOffRoad(added);
+      window.PDD_ROADS.invalidate(); added.forEach(weatherSurfaces);
+    };
+    const add = (obj, x, z, yaw = 0, y = 0) => { obj.position.set(x, y, z); obj.rotation.y = yaw; seg.add(obj); return obj; };
+    const lamp = (x, z, yaw) => { add(createLampPost(), x, z, yaw).userData.streetLamp = true; };
+
+    // Homes along the street: a fenced yard on each side, a parked car in one
+    // of them and a hedge in the next, a street tree between the houses.
+    for (const [row, z] of [[0, 7.5], [1, 19.5]]) {
+      for (const side of [-1, 1]) {
+        const w = 6 + Math.random() * 2, d = 6 + Math.random() * 2;
+        const house = add(createBuilding(w, 4.5, d, 1), side * (8.8 + w / 2), z + Math.random() * 2 - 1);
+        state.occluders.push(house);
+        add(createFence(d + 6), side * 8.0, z + 1);
+        const hedge = createBush(); hedge.scale.set(1.2, 0.9, 3); add(hedge, side * 12.8, z + d / 2 + 2, 0, 0.5);
+        add(createTree(), side * 8.6, z + d / 2 + 3.2);
+        settle(); yield;
       }
     }
+    for (const [side, z] of [[1, 12], [-1, 24.5]]) {
+      lamp(side * 7.0, z, side > 0 ? Math.PI : 0);
+      // Ambient walkers have no traffic IDs, answers, badges or collisions.
+      const walker = createPedestrian(PEOPLE_COLORS[Math.floor(Math.random() * PEOPLE_COLORS.length)]);
+      const lane = side > 0 ? 0 : 1, at = z + (side > 0 ? 3 : -5);
+      if (side < 0 && Math.random() < 0.5) {
+        const dog = createDog([0x8A6A4A, 0xD9C6A5, 0x3A3A3A, 0xB88A5A][Math.floor(Math.random() * 4)]);
+        dog.position.set(0.55, -0.18, -0.85); walker.add(dog); walker.userData.dog = dog;
+        const leash = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0.3, 0.9, 0), new THREE.Vector3(0.55, 0.3, -0.55)]),
+          new THREE.LineBasicMaterial({ color: 0x2B2F33 }));
+        walker.add(leash);
+      }
+      add(walker, side * (5.2 + lane * 1.1), at, 0, 0.18);
+      state.ambient.push({ mesh: walker, center: at, phase: Math.random() * 6, time: 0, side, lane, targetLane: lane, seg, edge: 5.2 });
+    }
+    settle(); yield;
 
-    const deadEndSign = createRoadSign('6.8.2', 3.0);
-    deadEndSign.position.set(roadWidth / 2 + 1.4, 0, 8);
-    deadEndSign.rotation.y = 0;
-    seg.add(deadEndSign);
+    // A manhole in the middle of the pad.
+    add(createManhole(), 0, zc + 1.2, 0, 0.027);
+    settle(); yield;
 
-    const stopBarrier = new THREE.Mesh(
-      new THREE.BoxGeometry(turnaroundWidth + 4, 3.0, 1.2),
-      new THREE.MeshBasicMaterial({ visible: false })
-    );
-    stopBarrier.position.set(0, 1.5, length);
-    stopBarrier.userData.sceneryObject = true;
-    seg.add(stopBarrier);
-    seg.add(barrierGroup);
-
-    for (const [side, z] of [[-1, 10], [1, 12], [-1, 24], [1, 26]]) {
-      const tree = createTree(z % 2 ? 'round' : 'poplar');
-      tree.position.set(side * (roadWidth / 2 + 4.5), 0, z);
-      tree.userData.sceneryObject = true;
-      seg.add(tree);
-      const bush = createBush();
-      bush.position.set(side * (roadWidth / 2 + 3.0), 0, z + 3);
-      bush.userData.sceneryObject = true;
-      seg.add(bush);
+    // Two lamps lighting the entrance of the pad, street trees on the pavement
+    // all round it, hedges closing its flanks.
+    for (const phi of [-0.35, Math.PI + 0.35]) {
+      const at = R + pavement - 0.8;
+      lamp(at * Math.cos(phi), zc + at * Math.sin(phi), -(phi + Math.PI));
+    }
+    for (const deg of [-62, -4, 32, 62]) for (const mirror of [false, true]) {
+      const phi = (mirror ? 180 - deg : deg) * Math.PI / 180, at = R + pavement - 0.7, tree = createTree(Math.random() < 0.4 ? 'birch' : 'round');
+      tree.scale.multiplyScalar(0.8);
+      add(tree, at * Math.cos(phi), zc + at * Math.sin(phi));
+    }
+    const hedgeR = R + pavement + 1.1;
+    for (const [from, to] of [[-0.9, 0.55], [Math.PI - 0.55, Math.PI + 0.9]]) {
+      const hedge = createHedgeArc(hedgeR, from, to);
+      seg.add(hedge); hedge.position.z += zc;
+    }
+    for (const side of [-1, 1]) for (const [x, z] of [[17.5, zc - 7], [18, zc + 4], [15.5, zc + 12]]) add(createTree(), side * x, z);
+    settle(); yield;
+    // More homes round the loop, so a glance along its flank is never empty lawn.
+    for (const side of [-1, 1]) for (const dz of [-6, 9]) {
+      const w = 6 + Math.random() * 2, d = 6 + Math.random() * 2;
+      const home = add(createBuilding(w, 4.5, d, 1), side * (21.5 + w / 2), zc + dz + Math.random() * 2 - 1, (Math.random() - 0.5) * 0.4);
+      state.occluders.push(home);
+      settle(); yield;
     }
 
-    const garageL = createBuilding(6, 3.2, 5, 1);
-    garageL.position.set(-(turnaroundWidth / 2 + 5.0), 0, length - 8);
-    garageL.rotation.y = Math.PI / 2;
-    garageL.userData.sceneryObject = true;
-    seg.add(garageL);
+    // The end of the street: garages across the loop, bins at their corner.
+    const garageFront = zc + R + pavement + 1.5, depth = 5.6;
+    add(createGarageRow(8, 3.1, depth), 0, garageFront + depth / 2);
+    add(createBinCluster(), 14.6, garageFront + 1.4);
+    settle(); yield;
 
-    const garageR = createBuilding(6, 3.2, 5, 2);
-    garageR.position.set(turnaroundWidth / 2 + 5.0, 0, length - 8);
-    garageR.rotation.y = -Math.PI / 2;
-    garageR.userData.sceneryObject = true;
-    seg.add(garageR);
+    // Behind them: a tree line and a block of flats on the skyline, baked into
+    // a handful of meshes (never reached, rarely seen).
+    const far = [];
+    for (let i = 0; i < 11; i++) {
+      const tree = createTree(i % 3 === 0 ? 'pine' : undefined);
+      tree.position.set(-24 + i * 4.8 + Math.random() * 2, 0, garageFront + depth + 2 + Math.random() * 6);
+      tree.scale.multiplyScalar(1.1); far.push(tree);
+    }
+    const block = createBuilding(13, 13.5, 9, 2); block.position.set(-9, 0, length + 13); far.push(block);
+    const backdrop = new THREE.Group();
+    bakeGroups(far).forEach(m => backdrop.add(m));
+    backdrop.userData.backdropSide = 1;
+    seg.add(backdrop);
+    settle(); yield;
+  }
 
-    const endHouse = createBuilding(10, 5, 6, 1);
-    endHouse.position.set(0, 0, length + 8);
-    endHouse.userData.sceneryObject = true;
-    seg.add(endHouse);
+  function buildDeadEndSegment(length = DEAD_END_LENGTH, district = (state.district + 1) % DISTRICTS) {
+    const seg = new THREE.Group();
+    const roadWidth = 8.4, radius = 11, flare = 5, pavement = 3.2;
+    const centerZ = length - 27, w = roadWidth / 2;
+    const { points: kerb, flareZ } = deadEndKerb(roadWidth, centerZ, radius, flare);
+    const lawn = Math.min(district, 2);
+    const asphalt = () => { const m = new THREE.MeshLambertMaterial({ color: BRAND.asphalt }); m.userData.asphalt = true; return m; };
+
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(64, length + 22 + 2 * SEAM), new THREE.MeshLambertMaterial({ color: season().verge[lawn] }));
+    ground.material.userData.seasonal = 'verge' + lawn;
+    ground.rotation.x = -Math.PI / 2; ground.position.set(0, -0.015, (length + 18) / 2); ground.receiveShadow = true;
+    seg.add(ground);
+
+    // The street, and the loop with its flare: two surfaces, so only the loop
+    // is a free manoeuvring area (no oncoming-lane fault while turning round).
+    const street = addFlatPlane(seg, roadWidth, flareZ + 0.3 + SEAM, 0, (flareZ + 0.3 - SEAM) / 2, 0.02, asphalt());
+    const loop = [[w, flareZ - 0.3], ...kerb.filter(p => p[1] >= flareZ - 1e-6), [-w, flareZ - 0.3]];
+    const loopGeometry = new THREE.ShapeGeometry(polygonShape(loop)); loopGeometry.rotateX(-Math.PI / 2);
+    const loopSurface = new THREE.Mesh(loopGeometry, asphalt());
+    loopSurface.position.y = 0.021; loopSurface.receiveShadow = true;
+    loopSurface.userData.surface = 'road'; loopSurface.userData.freeManeuverArea = true;
+    loopSurface.userData.containsRoad = p => polygonContains(loop, p.x, p.z);
+    seg.add(loopSurface);
+
+    // Pavement all round the kerb line: a band of the pavement's width.
+    const band = [...offsetPath(kerb, pavement), ...kerb.slice().reverse()];
+    const bandGeometry = new THREE.ExtrudeGeometry(polygonShape(band), { depth: 0.18, bevelEnabled: false });
+    bandGeometry.rotateX(-Math.PI / 2);
+    const pavements = new THREE.Mesh(bandGeometry, new THREE.MeshLambertMaterial({ color: BRAND.sidewalk }));
+    pavements.position.y = -0.001; pavements.receiveShadow = true; pavements.userData.surface = 'sidewalk';
+    seg.add(pavements);
+
+    // Edge line 0.25 m inside the kerb all the way round; broken centre line
+    // up to the flare.
+    const paint = new THREE.MeshBasicMaterial({ color: BRAND.asphaltMarking });
+    const inner = offsetPath(kerb, -0.175), innermost = offsetPath(kerb, -0.325), quads = [];
+    for (let i = 0; i < kerb.length - 1; i++) quads.push([inner[i], inner[i + 1], innermost[i + 1], innermost[i]]);
+    addBakedQuads(seg, quads, 0.03, paint).userData.roadMarking = true;
+    const dashGeometry = new THREE.PlaneGeometry(0.18, 2); dashGeometry.rotateX(-Math.PI / 2);
+    const dashes = [];
+    for (let z = 2; z < flareZ - 3; z += 5) { const dash = new THREE.Mesh(dashGeometry, paint); dash.position.set(0, 0.025, z + 1); dashes.push(dash); }
+    seg.add(mergeStatic(dashes, paint)); dashGeometry.dispose();
+
+    const info = { length, centerZ, radius, flareZ, pavement, turnFromZ: flareZ - 6 };
+    enqueueScenery(seg, buildDeadEndScenery(seg, info));
 
     seg.children.forEach(o => {
       const box = new THREE.Box3().setFromObject(o);
       if (!box.isEmpty() && box.max.y > 0.3) o.userData.sceneryObject = true;
     });
-
     registerRoadSegment(seg);
+    seg.userData.district = district;
     seg.userData.roadWidth = roadWidth;
-    seg.userData.deadEnd = true;
+    seg.userData.deadEnd = info;
     seg.userData.roadEnds = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, length)];
+    addPuddles(seg, 3, flareZ - 6, roadWidth);
+    state.weatherDirty = true;
     return seg;
   }
 
@@ -9210,7 +9331,7 @@
       const oneWayMode = oneWay && direction !== 'straight' ? (direction === flowExit ? 'with' : 'against') : null;
       const isDeadEnd = situation.deadEnd === direction;
       const extension = isDeadEnd
-        ? buildDeadEndSegment(38, (state.district + 1) % DISTRICTS)
+        ? buildDeadEndSegment(DEAD_END_LENGTH, (state.district + 1) % DISTRICTS)
         : dirtApproach && direction === 'right'
         ? buildDirtExit(200, (state.district + 1) % DISTRICTS, (crossStreetLength - roadWidth) / 2)
         : buildStraightSegment(0, 200, true, (state.district + 1) % DISTRICTS, oneWayMode, direction === 'straight' ? 0 : 30,
@@ -9542,6 +9663,8 @@
   function checkAndSpawnNext() {
     if (!state.isAtSituation && !state.resolution && maybeReverseWorld()) return;
     if (state.isResolvingSituation || state.intersections.length) return;
+    // A cul-de-sac is closed: nothing is built beyond its end.
+    if (deadEndAhead()) return;
     // The next junction is built 150 m + 1.5 s of travel ahead: its scenery
     // streams in before it comes into view, without keeping a whole extra
     // junction (and its exits) alive on a weak phone.
@@ -9571,6 +9694,8 @@
 
   function maybeReverseWorld(force = false) {
     if (!currentCorridor || state.isAtSituation || state.resolution || Math.cos(playerCarGroup.rotation.y) > -0.55) return false;
+    // The loop of a dead end is driven on its own line; the world turns round once it is done.
+    if (state.autoPath?.deadEndTurn) return false;
     state.laneChangeX = null; state.autoPath = null; state.trail = [];
     const forward = new THREE.Vector3(Math.sin(playerCarGroup.rotation.y), 0, Math.cos(playerCarGroup.rotation.y));
     const distanceToEnd = Math.max(...corridorWorldEnds().map(p => p.clone().sub(playerCarGroup.position).dot(forward)));
@@ -9607,7 +9732,11 @@
     // Scenes along this very road (a car in a driveway, a bus at its stop,
     // road works) stay where they are and keep moving: only the junctions
     // at its ends are rebuilt. Nothing the player is looking at vanishes.
-    const kept = new Set(state.roadSegments.filter(seg => seg === currentCorridor || seg.userData.roadEvent));
+    // The road itself is always kept, also when it hangs in the junction it led
+    // to (the first turn round makes it that junction's U-turn exit): turning
+    // round a second time within reach of that junction used to retire the road
+    // under the car along with it.
+    const kept = new Set([currentCorridor, ...state.roadSegments.filter(seg => seg.userData.roadEvent)]);
     const retired = state.roadSegments.filter(seg => !kept.has(seg));
     retired.forEach(disposeSegment);
     state.roadSegments = [...kept];
@@ -9617,7 +9746,6 @@
     state.actors = state.actors.filter(a => !a.done && inKept(a));
     // Their question/event is over: anyone waiting for the player moves on.
     state.actors.forEach(a => { a.waitsForPlayer = false; if (a.stopFor === Infinity) a.stopFor = 1.2; });
-    if (currentCorridor?.userData.deadEnd) currentCorridor.userData.deadEnd = false;
     state.exitRoad = currentCorridor;
     state.sideJunction = null;
     clearOncoming();
@@ -9628,6 +9756,12 @@
     const ends = corridorWorldEnds();
     const startZ = Math.max(...ends.map(p => p.z));
     state.district = (state.district + 1) % DISTRICTS;
+    if (deadEndAhead()) {
+      // Turned back towards the closed end of a cul-de-sac: nothing lies beyond it.
+      nextSegmentZ = startZ;
+      refreshRoadBounds();
+      return true;
+    }
     buildIntersectionSegment(startZ, nextSituation(currentCorridor.userData.roadWidth || 8.4), currentCorridor);
     nextSegmentZ = startZ + 52;
     refreshRoadBounds();
@@ -11028,7 +11162,7 @@
       state.speedLimitKmH = 110;
       state.motorwayEndZ = playerCarGroup.position.z + 170;
     }
-    placeRoadEvent(boundary);
+    if (!outgoingPreview.userData.deadEnd) placeRoadEvent(boundary);
     if (state.motorwayEndZ != null) {
       // The stretch ends well before the next road question.
       const nextStop = state.roadEvent?.stopZ;
@@ -14590,7 +14724,10 @@
     const twoWay = !oneWayStatus();
     let best = null;
     const step = laneStep();
-    for (let k = 0; k < 4; k++) for (const c of [step / 2 + step * k, -step / 2 - step * k]) {
+    // A cul-de-sac is one two-lane street, however wide its turning pad is: the
+    // car is led back to a lane of the street, never to a "lane" on the pad
+    // that runs into the kerb at the street's mouth.
+    for (let k = 0; k < (currentCorridor?.userData.deadEnd ? 1 : 4); k++) for (const c of [step / 2 + step * k, -step / 2 - step * k]) {
       if (!laneFits(c)) continue;
       const oncoming = twoWay && c * heading > 0;
       if (oncoming && Math.abs(c - x) > 1) continue;
@@ -14766,26 +14903,59 @@
     return pz <= exitGate(r, 'uturn');
   }
 
-  // Arrows: «←» left, «→» right, the same arrow again — straight on. The
-  // U-turn has its own button ('uturn', pressed again — straight on).
+  // The corridor under the player ends in a cul-de-sac and its closed end lies
+  // ahead (world +Z, the way the player drives): its description, else null.
+  // Heading out of it the same road is an ordinary one again.
+  function deadEndAhead() {
+    const info = currentCorridor?.userData.deadEnd;
+    if (!info) return null;
+    currentCorridor.updateWorldMatrix(true, false);
+    const m = currentCorridor.matrixWorld;
+    return new THREE.Vector3(0, 0, info.length).applyMatrix4(m).z > new THREE.Vector3(0, 0, 0).applyMatrix4(m).z ? info : null;
+  }
+
+  // The U-turn button of a dead end: from the street short of the loop, while
+  // the car still heads for it (a turn under way hides it, like at a junction).
+  function deadEndTurnOffered() {
+    const info = deadEndAhead();
+    if (!info || !playerCarGroup || state.paused || state.autoPath || state.resolution || state.isAtSituation) return false;
+    const z = currentCorridor.worldToLocal(playerCarGroup.position.clone()).z;
+    return z >= info.turnFromZ && Math.cos(playerCarGroup.rotation.y) > 0.5;
+  }
+
+  // Turning round in a dead end: a smooth loop round the middle of the pad,
+  // counter-clockwise like any roundabout, out into the other lane. The line is
+  // laid from the car's own pose: it joins the canonical way a few metres
+  // ahead of the nearest point, so it works from the street, the flare or the
+  // pad itself. Driver's right is -X in the road's frame.
   function performDeadEndUturn() {
-    if (!playerCarGroup || state.paused || state.autoPath) return;
-    const car = playerCarGroup;
-    const start = car.position.clone();
-    const z = Math.min(Math.max(start.z, 26), 36);
-    const p0 = start.clone();
-    const p1 = new THREE.Vector3(THREE.MathUtils.clamp(start.x + 2.0, -2, 5.0), 0, z + 3);
-    const p2 = new THREE.Vector3(3.2, 0, z + 7);
-    const p3 = new THREE.Vector3(-0.5, 0, z + 8.5);
-    const p4 = new THREE.Vector3(-4.0, 0, z + 6.5);
-    const p5 = new THREE.Vector3(-3.5, 0, z + 2.5);
-    const p6 = new THREE.Vector3(-1.8, 0, z - 2);
-    const p7 = new THREE.Vector3(-1.8, 0, z - 12);
-    const path = curve([p0, p1, p2, p3, p4, p5, p6, p7]);
-    state.autoPath = planPath(path);
+    if (!deadEndTurnOffered()) return;
+    const info = deadEndAhead(), road = currentCorridor, car = playerCarGroup;
+    const { centerZ: zc, flareZ: zf } = info;
+    const r = 6.3, onLoop = deg => new THREE.Vector3(-r * Math.cos(deg * Math.PI / 180), 0, zc + r * Math.sin(deg * Math.PI / 180));
+    const way = [new THREE.Vector3(-1.8, 0, zf - 12), new THREE.Vector3(-1.8, 0, zf - 4), new THREE.Vector3(-1.9, 0, zf + 1.5)];
+    for (const deg of [-55, -20, 20, 60, 100, 140, 180, 220]) way.push(onLoop(deg));
+    way.push(new THREE.Vector3(3.4, 0, zc - 8.5), new THREE.Vector3(2.4, 0, zf - 0.5), new THREE.Vector3(1.8, 0, zf - 5), new THREE.Vector3(1.8, 0, zf - 13));
+    const samples = curve(way).getSpacedPoints(140);
+    const here = road.worldToLocal(car.position.clone()), heading = new THREE.Vector3(Math.sin(car.rotation.y), 0, Math.cos(car.rotation.y));
+    let nearest = -1, best = Infinity;
+    for (let i = 0; i < samples.length - 1; i++) {
+      if (samples[i + 1].clone().sub(samples[i]).normalize().dot(heading) < 0.1) continue;
+      const d = samples[i].distanceTo(here);
+      if (d < best) { best = d; nearest = i; }
+    }
+    // Already past the loop, or nowhere near the way round.
+    if (nearest < 0 || nearest > samples.length - 12 || best > 14) return;
+    const join = Math.min(samples.length - 1, nearest + 4);
+    const points = [here, here.clone().addScaledVector(heading, 1.5), ...samples.slice(join).filter((_, i) => i % 2 === 0)];
+    state.laneChangeX = null; state.steerPress = null;
+    state.autoPath = planPath(curve(points.map(p => road.localToWorld(p.clone()))));
+    state.autoPath.deadEndTurn = true;
     triggerBlinker('left');
   }
 
+  // Arrows: «←» left, «→» right, the same arrow again — straight on. The
+  // U-turn has its own button ('uturn', pressed again — straight on).
   function chooseJunctionExit(direction) {
     const r = state.resolution, previews = r.intersection.previews || {};
     const pz = playerCarGroup.position.z;
@@ -14857,7 +15027,7 @@
       }
     }
     let uturn = uturnOffered(r);
-    if (!r && currentCorridor?.userData.deadEnd && playerCarGroup && playerCarGroup.position.z >= 18) {
+    if (!r && deadEndTurnOffered()) {
       uturn = true;
       hint = 'uturn';
     }
@@ -15028,7 +15198,7 @@
     updateSteerHold(dt);
     updateHeldExit();
     applySteeringAssist(dt);
-    if (state.autoPath && state.resolution) limit = Math.min(limit, curveSpeedLimit(state.autoPath));
+    if (state.autoPath && (state.resolution || state.autoPath.deadEndTurn)) limit = Math.min(limit, curveSpeedLimit(state.autoPath));
     // Brake from the button press, including the straight approach before
     // the curve. Holding the accelerator must not override this assistance.
     const turnChoice = state.resolution?.simpleChoice;
@@ -15873,7 +16043,7 @@
       heldExit = null; heldExitDone = false;
       const r = state.resolution;
       if (!r || r.phase !== 'manual' || r.recovery || !state.simpleSteering) {
-        if (currentCorridor?.userData.deadEnd && playerCarGroup && playerCarGroup.position.z >= 18) {
+        if (deadEndTurnOffered()) {
           performDeadEndUturn();
           return;
         }

@@ -53,8 +53,10 @@ const { chromium, webkit } = require('playwright');
           frames(count, fps = 60) { for (let i = 0; i < count; i++) this.frame(1 / fps); },
           deadEnd() {
             const road = buildDeadEndSegment();
+            // The roadside is streamed in small steps while the game runs.
+            while (sceneryJobs.some(j => j.owner === road)) processSceneryJobs(0.001);
             const houses = road.children.filter(o => o.userData.cameraOccluder);
-            const result = { deadEnd: road.userData.deadEnd,
+            const result = { deadEnd: !!road.userData.deadEnd,
               length: road.userData.roadEnds[1].z, houses: houses.length,
               decorated: houses.every(o => o.userData.sceneryObject && o.children.length > 0) };
             disposeSegment(road);
@@ -130,7 +132,7 @@ const { chromium, webkit } = require('playwright');
     assert.deepEqual(recovery, { completed: true, ready: 1 }, 'crash recovery finishes while the next question is displayed');
 
     const deadEnd = await page.evaluate(() => frameTest.deadEnd());
-    assert.deepEqual(deadEnd, { deadEnd: true, length: 38, houses: 3, decorated: true },
+    assert.deepEqual(deadEnd, { deadEnd: true, length: 66, houses: 8, decorated: true },
       'a randomly offered dead-end exit builds without a missing scenery factory');
 
     const visibility = await page.evaluate(() => {

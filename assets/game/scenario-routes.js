@@ -61,7 +61,7 @@ window.PDD_SCENARIO_ROUTES = {
   // ticket_9_13: source question 059bf18cc5917313c7c2e73e20d41726; image c149e9f2ca6afaf456691db1d9126d64.webp.
   "ticket_9_13": {"maneuver":null,"yieldTo":[],"reviewed":false,"reason":"Left/right alternatives with downstream queue and green light; straight/uturn not supported answers.","overrides":{"actorsConfig":[],"signs":[],"trafficLights":null}},
   // ticket_9_14: source question 340eda677b699654d088c6951e2b884c; image 7696eff6f310158ee0bcfe0466a7ae39.webp.
-  "ticket_9_14": {"maneuver":"straight","yieldTo":["npc_truck"],"reviewed":true,"overrides":{"actorsConfig":[{"id":"npc_truck","type":"truck","name":"Грузовик","side":"cross_right","targetAction":"straight","color":"#FFA53C"}],"signs":[{"code":"6.8.2","z":-12}],"trafficLights":null}},
+  "ticket_9_14": {"maneuver":"straight","yieldTo":["npc_truck"],"reviewed":true,"overrides":{"actorsConfig":[{"id":"npc_truck","type":"truck","name":"Грузовик","side":"cross_right","targetAction":"straight","color":"#FFA53C"}],"signs":[{"code":"6.8.2","z":-12}],"deadEnd":"right","trafficLights":null}},
   // ticket_9_15: source question c64eefab25596af3056aa4b69e92516e; image dd7e958840da9ddd1c102a65d8d5c03f.webp.
   "ticket_9_15": {"maneuver":"left","yieldTo":[],"reviewed":false,"reason":"Source conflict: same image as 1_15 shows main road south-west and bus left, but 9_15 explanation calls bus secondary/last and car second. Player yield set is empty either way; NPC priority sequence cannot be reconciled without a source correction.","overrides":{"actorsConfig":[],"signs":[],"trafficLights":null}},
   // ticket_10_13: source question 194ef8a5284cdc1f00c190c4939e0943; image 7a60498d12d7f8dcb3630c7a3e3f7312.webp.
