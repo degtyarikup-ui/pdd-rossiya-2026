@@ -195,8 +195,8 @@
     let animTime = 0;
     let targetRotY = 0.35, currentRotY = 0.35;
     let targetRotX = 0.15, currentRotX = 0.15;
-    let targetDist = 2.4, currentDist = 2.4;
-    let targetTargetY = 0.75, currentTargetY = 0.75;
+    let targetDist = 2.2, currentDist = 2.2;
+    let targetTargetY = 0.58, currentTargetY = 0.58;
 
     // Mouse / Touch Controls
     let isDragging = false, prevX = 0, prevY = 0;
@@ -232,14 +232,14 @@
       targetRotY = 0.1;
       targetRotX = 0.05;
       targetDist = 1.35;
-      targetTargetY = 0.88;
+      targetTargetY = 0.66;
     });
 
     document.getElementById('view-reset').addEventListener('click', () => {
       targetRotY = 0.35;
       targetRotX = 0.15;
-      targetDist = 2.4;
-      targetTargetY = 0.75;
+      targetDist = 2.2;
+      targetTargetY = 0.58;
     });
 
     window.addEventListener('resize', () => {

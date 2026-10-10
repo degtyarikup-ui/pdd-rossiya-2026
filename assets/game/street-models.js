@@ -91,125 +91,178 @@
   function createConeMascotPedestrian() {
     const ped = new THREE.Group();
     ped.userData.isConeMascot = true;
-    ped.userData.arms = [];
     ped.userData.legs = [];
+    ped.userData.arms = [];
 
     const ORANGE = 0xFF6E00;
     const DARK_ORANGE = 0xE65100;
     const WHITE = 0xFFFFFF;
     const BLACK = 0x1A1A1A;
-    const BLUE = 0x1E88E5;
+    const BLUE = 0x0288D1;
+    const CYAN = 0x4FC3F7;
+    const MOUTH_DARK = 0x240606;
     const PINK = 0xFF4081;
+    const CHEEK_PINK = 0xFFA07A;
 
-    // 1. Legs with sneakers
+    // 1. SHORT CUTE SNEAKER LEGS (sitting snugly under base plate)
     [-1, 1].forEach(side => {
       const hip = new THREE.Group();
-      hip.position.set(side * 0.13, 0.28, 0);
-      // Upper leg
-      modelBox(hip, [0.10, 0.22, 0.10], ORANGE, 0, -0.09, 0);
-      // Sneaker body
-      modelBox(hip, [0.13, 0.09, 0.20], WHITE, 0, -0.21, 0.035);
-      // Sole
-      modelBox(hip, [0.14, 0.035, 0.21], DARK_ORANGE, 0, -0.25, 0.035);
-      // Toe cap (rounded)
-      modelPart(hip, new THREE.SphereGeometry(0.06, 12, 8), WHITE, 0, -0.21, 0.11);
+      hip.position.set(side * 0.12, 0.12, 0);
+      // Short leg link
+      modelBox(hip, [0.08, 0.07, 0.08], ORANGE, 0, -0.035, 0);
+      // White sneaker body
+      modelBox(hip, [0.12, 0.050, 0.17], WHITE, 0, -0.080, 0.025);
+      // Round sneaker toe cap
+      modelPart(hip, new THREE.SphereGeometry(0.046, 12, 8), WHITE, 0, -0.080, 0.095);
+      // Dark orange sole touching the ground at y=0
+      modelBox(hip, [0.13, 0.022, 0.18], DARK_ORANGE, 0, -0.110, 0.025);
       mergeModelParts(hip);
       ped.add(hip);
       ped.userData.legs.push(hip);
     });
 
-    // 2. Right Arm (Thumbs up! 👍)
-    const rightArm = new THREE.Group();
-    rightArm.position.set(0.20, 0.80, 0.03);
-    rightArm.rotation.set(-0.35, 0.25, 0.25);
-    rightArm.userData.isThumbsUp = true;
-    // Sleeve
-    modelBox(rightArm, [0.09, 0.18, 0.09], ORANGE, 0.03, -0.06, 0.04, -0.4, 0, 0);
-    // Glove cuff
-    modelBox(rightArm, [0.13, 0.05, 0.13], WHITE, 0.06, -0.13, 0.10, -0.4, 0, 0);
-    // Fist
-    modelPart(rightArm, new THREE.SphereGeometry(0.068, 12, 8), WHITE, 0.07, -0.17, 0.14);
-    // Finger ridges
-    modelBox(rightArm, [0.07, 0.022, 0.025], 0xE5E5E5, 0.07, -0.155, 0.19);
-    modelBox(rightArm, [0.07, 0.022, 0.025], 0xE5E5E5, 0.07, -0.185, 0.18);
-    // Thumb pointing straight UP!
-    modelPart(rightArm, new THREE.CylinderGeometry(0.024, 0.028, 0.085, 10), WHITE, 0.04, -0.095, 0.155, 0.2, 0, -0.1);
-    modelPart(rightArm, new THREE.SphereGeometry(0.024, 8, 6), WHITE, 0.035, -0.052, 0.165);
-    mergeModelParts(rightArm);
-    ped.add(rightArm);
-    ped.userData.arms.push(rightArm);
-
-    // 3. Left Arm (Swinging cartoon arm)
-    const leftArm = new THREE.Group();
-    leftArm.position.set(-0.20, 0.80, 0.03);
-    leftArm.rotation.set(0.25, -0.20, -0.25);
-    // Sleeve
-    modelBox(leftArm, [0.09, 0.18, 0.09], ORANGE, -0.03, -0.07, -0.03, 0.3, 0, 0);
-    // Glove cuff
-    modelBox(leftArm, [0.13, 0.05, 0.13], WHITE, -0.06, -0.15, -0.06, 0.3, 0, 0);
-    // Glove palm
-    modelPart(leftArm, new THREE.SphereGeometry(0.068, 12, 8), WHITE, -0.08, -0.20, -0.08);
-    // Cartoon fingers
-    modelBox(leftArm, [0.075, 0.065, 0.035], WHITE, -0.08, -0.255, -0.08);
-    mergeModelParts(leftArm);
-    ped.add(leftArm);
-    ped.userData.arms.push(leftArm);
-
-    // 4. Main Cone Body & Expressive Face
+    // 2. CONE BODY
     const body = new THREE.Group();
 
-    // Base plinth
-    modelBox(body, [0.66, 0.065, 0.66], DARK_ORANGE, 0, 0.31, 0);
-    modelBox(body, [0.56, 0.035, 0.56], ORANGE, 0, 0.355, 0);
+    // Plinth base (lowered)
+    modelBox(body, [0.68, 0.045, 0.68], DARK_ORANGE, 0, 0.155, 0);
+    modelBox(body, [0.58, 0.025, 0.58], ORANGE, 0, 0.19, 0);
 
     // Cone stacked segments
-    // 1. Lower orange section (y=0.37 to 0.52, h=0.15)
-    modelPart(body, new THREE.CylinderGeometry(0.245, 0.280, 0.15, 18), ORANGE, 0, 0.445, 0);
-    // 2. Lower white reflective stripe (y=0.52 to 0.68, h=0.16)
-    modelPart(body, new THREE.CylinderGeometry(0.205, 0.245, 0.16, 18), WHITE, 0, 0.60, 0);
-    // 3. Middle orange face section (y=0.68 to 1.02, h=0.34)
-    modelPart(body, new THREE.CylinderGeometry(0.130, 0.205, 0.34, 18), ORANGE, 0, 0.85, 0);
-    // 4. Upper white reflective stripe (y=1.02 to 1.16, h=0.14)
-    modelPart(body, new THREE.CylinderGeometry(0.098, 0.130, 0.14, 18), WHITE, 0, 1.09, 0);
-    // 5. Top orange tip (y=1.16 to 1.30, h=0.14)
-    modelPart(body, new THREE.CylinderGeometry(0.060, 0.098, 0.14, 18), ORANGE, 0, 1.23, 0);
+    // 1. Lower orange (h=0.12, y=0.20 to 0.32)
+    modelPart(body, new THREE.CylinderGeometry(0.245, 0.280, 0.12, 20), ORANGE, 0, 0.26, 0);
+    // 2. Lower white stripe (h=0.15, y=0.32 to 0.47)
+    modelPart(body, new THREE.CylinderGeometry(0.205, 0.245, 0.15, 20), WHITE, 0, 0.395, 0);
+    // 3. Middle orange FACE (h=0.34, y=0.47 to 0.81)
+    modelPart(body, new THREE.CylinderGeometry(0.130, 0.205, 0.34, 20), ORANGE, 0, 0.64, 0);
+    // 4. Upper white stripe (h=0.13, y=0.81 to 0.94)
+    modelPart(body, new THREE.CylinderGeometry(0.098, 0.130, 0.13, 20), WHITE, 0, 0.875, 0);
+    // 5. Top orange (h=0.13, y=0.94 to 1.07)
+    modelPart(body, new THREE.CylinderGeometry(0.060, 0.098, 0.13, 20), ORANGE, 0, 1.005, 0);
     // 6. Rounded cone dome tip
-    modelPart(body, new THREE.SphereGeometry(0.060, 12, 8), ORANGE, 0, 1.30, 0);
+    modelPart(body, new THREE.SphereGeometry(0.060, 14, 10), ORANGE, 0, 1.07, 0);
 
-    // --- FACE FEATURES ---
-    // Right Eye (Open, Big Cartoon Eye at y=0.88, z=0.17)
-    modelPart(body, new THREE.SphereGeometry(0.065, 14, 8), WHITE, -0.065, 0.88, 0.168);
-    // Eyelid / dark contour
-    modelPart(body, new THREE.SphereGeometry(0.068, 14, 8), 0x221100, -0.065, 0.88, 0.164);
-    // Blue Iris
-    modelPart(body, new THREE.SphereGeometry(0.046, 12, 8), BLUE, -0.063, 0.875, 0.188);
+    // --- FACE (Tilted flush with cone slope) ---
+    const SLOPE = -0.217;
+
+    // --- A. HAPPY PIXAR-STYLE SMILE ---
+    const mouthShape = new THREE.Shape();
+    mouthShape.moveTo(-0.084, 0.024);
+    mouthShape.quadraticCurveTo(0, 0.040, 0.084, 0.024);
+    mouthShape.quadraticCurveTo(0.092, -0.010, 0.070, -0.044);
+    mouthShape.quadraticCurveTo(0, -0.078, -0.070, -0.044);
+    mouthShape.quadraticCurveTo(-0.092, -0.010, -0.084, 0.024);
+
+    const mouthGeo = new THREE.ShapeGeometry(mouthShape, 16);
+    modelPart(body, mouthGeo, MOUTH_DARK, 0, 0.585, 0.190, SLOPE, 0, 0);
+
+    // Upper teeth (clean white band along top of smile)
+    const teethShape = new THREE.Shape();
+    teethShape.moveTo(-0.076, 0.024);
+    teethShape.quadraticCurveTo(0, 0.038, 0.076, 0.024);
+    teethShape.lineTo(0.066, 0.006);
+    teethShape.quadraticCurveTo(0, 0.018, -0.066, 0.006);
+    teethShape.closePath();
+
+    const teethGeo = new THREE.ShapeGeometry(teethShape, 16);
+    modelPart(body, teethGeo, WHITE, 0, 0.585, 0.192, SLOPE, 0, 0);
+
+    // Pink tongue at the bottom of the smile
+    const tongueShape = new THREE.Shape();
+    tongueShape.moveTo(-0.048, -0.030);
+    tongueShape.quadraticCurveTo(0, -0.002, 0.048, -0.030);
+    tongueShape.quadraticCurveTo(0.038, -0.066, 0, -0.074);
+    tongueShape.quadraticCurveTo(-0.038, -0.066, -0.048, -0.030);
+
+    const tongueGeo = new THREE.ShapeGeometry(tongueShape, 16);
+    modelPart(body, tongueGeo, PINK, 0, 0.585, 0.192, SLOPE, 0, 0);
+
+    // Smile corner creases
+    modelBox(body, [0.018, 0.008, 0.005], MOUTH_DARK, 0.090, 0.608, 0.183, SLOPE, 0.35, 0.5);
+    modelBox(body, [0.018, 0.008, 0.005], MOUTH_DARK, -0.090, 0.608, 0.183, SLOPE, -0.35, -0.5);
+
+    // --- B. OPEN RIGHT EYE (Mascot's right eye, viewer's LEFT) ---
+    const eyeRotY = -0.40;
+    // Dark outline
+    modelPart(body, new THREE.CylinderGeometry(0.048, 0.048, 0.008, 24), BLACK, -0.064, 0.698, 0.165, Math.PI/2 + SLOPE, eyeRotY, 0, 0.86, 1.0, 1.25);
+    // White sclera
+    modelPart(body, new THREE.CylinderGeometry(0.044, 0.044, 0.010, 24), WHITE, -0.064, 0.698, 0.167, Math.PI/2 + SLOPE, eyeRotY, 0, 0.86, 1.0, 1.25);
+    // Large Deep Blue Iris
+    modelPart(body, new THREE.CylinderGeometry(0.033, 0.033, 0.012, 22), BLUE, -0.064, 0.698, 0.169, Math.PI/2 + SLOPE, eyeRotY, 0, 0.86, 1.0, 1.15);
+    // Soft light cyan shine at bottom of iris
+    modelPart(body, new THREE.CylinderGeometry(0.024, 0.024, 0.013, 16), CYAN, -0.064, 0.684, 0.170, Math.PI/2 + SLOPE, eyeRotY, 0, 0.82, 1.0, 0.55);
     // Black Pupil
-    modelPart(body, new THREE.SphereGeometry(0.030, 10, 8), BLACK, -0.062, 0.875, 0.198);
-    // Sparkle highlights
-    modelPart(body, new THREE.SphereGeometry(0.013, 8, 6), WHITE, -0.074, 0.893, 0.205);
-    modelPart(body, new THREE.SphereGeometry(0.007, 8, 6), WHITE, -0.054, 0.860, 0.205);
+    modelPart(body, new THREE.CylinderGeometry(0.020, 0.020, 0.014, 20), BLACK, -0.064, 0.699, 0.171, Math.PI/2 + SLOPE, eyeRotY, 0, 0.86, 1.0, 1.05);
+    // Primary big shine dot (top-left)
+    modelPart(body, new THREE.CylinderGeometry(0.009, 0.009, 0.015, 12), WHITE, -0.073, 0.713, 0.173, Math.PI/2 + SLOPE, eyeRotY, 0);
+    // Secondary small shine dot (bottom-right)
+    modelPart(body, new THREE.CylinderGeometry(0.005, 0.005, 0.015, 10), WHITE, -0.056, 0.685, 0.173, Math.PI/2 + SLOPE, eyeRotY, 0);
 
-    // Left Eye (Playfully Winking 😉 at y=0.88, z=0.17)
-    modelPart(body, new THREE.TorusGeometry(0.038, 0.009, 8, 12, Math.PI * 0.95), BLACK, 0.065, 0.862, 0.182, 0, 0, -0.05);
-    modelBox(body, [0.020, 0.012, 0.015], BLACK, 0.108, 0.868, 0.175, 0, 0, 0.45);
+    // --- C. WINKING LEFT EYE (Mascot's left eye, viewer's RIGHT) ---
+    const winkRotY = 0.40;
+    modelPart(body, new THREE.TorusGeometry(0.036, 0.008, 8, 16, Math.PI * 0.88), BLACK, 0.064, 0.682, 0.168, SLOPE, winkRotY, 0.18);
+    // Eyelashes at outer corner: angled upwards-right
+    modelBox(body, [0.018, 0.007, 0.005], BLACK, 0.098, 0.698, 0.155, SLOPE, winkRotY, 0.45);
+    modelBox(body, [0.014, 0.006, 0.005], BLACK, 0.100, 0.686, 0.155, SLOPE, winkRotY, 0.15);
 
-    // Eyebrows
-    modelBox(body, [0.065, 0.018, 0.015], BLACK, -0.065, 0.965, 0.155, 0, 0, -0.15);
-    modelBox(body, [0.065, 0.018, 0.015], BLACK, 0.065, 0.975, 0.155, 0, 0, 0.22);
+    // --- D. EYEBROWS ---
+    // Right eyebrow: arched in a friendly high curve
+    modelPart(body, new THREE.TorusGeometry(0.048, 0.008, 6, 12, Math.PI * 0.45), BLACK, -0.064, 0.765, 0.146, SLOPE, eyeRotY, 0.35);
+    // Left eyebrow: confident cheerful wink tilt
+    modelBox(body, [0.064, 0.015, 0.008], BLACK, 0.064, 0.762, 0.146, SLOPE, winkRotY, 0.22);
 
-    // Mouth (Curved Happy Open Smile)
-    modelPart(body, new THREE.CylinderGeometry(0.075, 0.02, 0.055, 12), 0x1A0505, 0, 0.765, 0.190, Math.PI / 2, 0, 0);
-    // Upper white teeth line
-    modelBox(body, [0.095, 0.016, 0.022], WHITE, 0, 0.790, 0.198);
-    // Cute pink tongue
-    modelPart(body, new THREE.SphereGeometry(0.040, 10, 8), PINK, 0.006, 0.748, 0.202);
-    // Rosy cheeks
-    modelPart(body, new THREE.SphereGeometry(0.028, 8, 6), 0xFFA07A, -0.112, 0.795, 0.175);
-    modelPart(body, new THREE.SphereGeometry(0.028, 8, 6), 0xFFA07A, 0.112, 0.795, 0.175);
+    // --- E. ROSY CHEEKS ---
+    modelPart(body, new THREE.CylinderGeometry(0.026, 0.026, 0.008, 16), CHEEK_PINK, -0.100, 0.628, 0.158, Math.PI/2 + SLOPE, -0.55, 0, 0.9, 1.0, 0.7);
+    modelPart(body, new THREE.CylinderGeometry(0.026, 0.026, 0.008, 16), CHEEK_PINK, 0.100, 0.628, 0.158, Math.PI/2 + SLOPE, 0.55, 0, 0.9, 1.0, 0.7);
 
     mergeModelParts(body);
     ped.add(body);
     ped.userData.body = body;
+
+    // 3. MASCOT RIGHT ARM (Viewer's LEFT) -> THE PROUD THUMBS-UP 👍 IN FOREGROUND!
+    const rightArm = new THREE.Group();
+    rightArm.position.set(-0.16, 0.60, 0.06);
+    rightArm.userData.isThumbsUp = true;
+
+    // Rounded shoulder sphere
+    modelPart(rightArm, new THREE.SphereGeometry(0.048, 12, 10), ORANGE, 0, 0, 0);
+    // Sleeve extending forward
+    modelPart(rightArm, new THREE.CylinderGeometry(0.044, 0.040, 0.11, 12), ORANGE, -0.02, -0.035, 0.05, 0.55, -0.25, -0.20);
+    // Thick puffy white glove cuff ring
+    modelPart(rightArm, new THREE.CylinderGeometry(0.062, 0.058, 0.045, 16), WHITE, -0.040, -0.075, 0.115, 0.55, -0.25, -0.20);
+    // Big puffy white glove palm / fist
+    modelPart(rightArm, new THREE.SphereGeometry(0.064, 16, 12), WHITE, -0.050, -0.105, 0.160);
+    // Curled fingers along front of palm
+    modelPart(rightArm, new THREE.CylinderGeometry(0.016, 0.016, 0.065, 10), 0xF5F5F5, -0.050, -0.090, 0.210, 0, 0, Math.PI/2);
+    modelPart(rightArm, new THREE.CylinderGeometry(0.016, 0.016, 0.065, 10), 0xF0F0F0, -0.050, -0.112, 0.208, 0, 0, Math.PI/2);
+    modelPart(rightArm, new THREE.CylinderGeometry(0.015, 0.015, 0.060, 10), 0xE8E8E8, -0.050, -0.132, 0.200, 0, 0, Math.PI/2);
+
+    // BIG PROUD THUMB UP (👍):
+    modelPart(rightArm, new THREE.CylinderGeometry(0.026, 0.029, 0.100, 14), WHITE, -0.028, -0.035, 0.170, -0.15, 0.05, 0.05);
+    modelPart(rightArm, new THREE.SphereGeometry(0.027, 14, 10), WHITE, -0.024, 0.016, 0.172);
+
+    mergeModelParts(rightArm);
+    ped.add(rightArm);
+    ped.userData.arms.push(rightArm);
+
+    // 4. MASCOT LEFT ARM (Viewer's RIGHT) -> Confident arm resting by side
+    const leftArm = new THREE.Group();
+    leftArm.position.set(0.16, 0.60, 0.04);
+
+    // Shoulder sphere
+    modelPart(leftArm, new THREE.SphereGeometry(0.048, 12, 10), ORANGE, 0, 0, 0);
+    // Sleeve connecting smoothly
+    modelPart(leftArm, new THREE.CylinderGeometry(0.044, 0.038, 0.10, 12), ORANGE, 0.015, -0.040, -0.015, -0.25, 0.15, 0.20);
+    // White cuff ring enclosing sleeve end
+    modelPart(leftArm, new THREE.CylinderGeometry(0.058, 0.054, 0.042, 14), WHITE, 0.030, -0.085, -0.030, -0.25, 0.15, 0.20);
+    // White glove palm
+    modelPart(leftArm, new THREE.SphereGeometry(0.058, 14, 10), WHITE, 0.040, -0.125, -0.045);
+    // Curled fingers
+    modelPart(leftArm, new THREE.SphereGeometry(0.044, 12, 8), 0xF0F0F0, 0.042, -0.160, -0.050);
+
+    mergeModelParts(leftArm);
+    ped.add(leftArm);
+    ped.userData.arms.push(leftArm);
 
     ped.userData.appearance = 'cone_mascot';
     return ped;
@@ -281,16 +334,16 @@
       if (mesh.userData.arms) {
         mesh.userData.arms.forEach(arm => {
           if (arm.userData.isThumbsUp) {
-            arm.rotation.x = -0.35 + Math.sin(time * 5) * 0.10 * armStride;
-            arm.rotation.z = 0.25 + Math.cos(time * 5) * 0.05 * armStride;
+            arm.rotation.x = Math.sin(time * 5) * 0.12 * armStride;
+            arm.rotation.z = Math.cos(time * 5) * 0.06 * armStride;
           } else {
-            arm.rotation.x = 0.25 + Math.sin(time * 5) * 0.35 * armStride;
+            arm.rotation.x = Math.sin(time * 5) * -0.32 * armStride;
           }
         });
       }
       if (mesh.userData.body) {
         mesh.userData.body.rotation.z = Math.sin(time * 5) * 0.04 * legStride;
-        mesh.userData.body.position.y = Math.abs(Math.sin(time * 5)) * 0.02 * legStride;
+        mesh.userData.body.position.y = Math.abs(Math.sin(time * 5)) * 0.015 * legStride;
       }
       return;
     }
