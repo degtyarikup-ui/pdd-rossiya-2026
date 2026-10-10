@@ -71,7 +71,7 @@
     if (material?.userData?.pddKind) mesh.userData.pddSkinned = material.userData.pddKind;
     return mesh;
   }
-  const CONE_MASCOT_CHANCE = 0.008;
+  const CONE_MASCOT_CHANCE = 0.003;
 
   function shouldSpawnConeMascot() {
     if (typeof window !== 'undefined') {
