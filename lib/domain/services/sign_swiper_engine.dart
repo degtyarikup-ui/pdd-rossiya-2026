@@ -52,7 +52,7 @@ class SignSwiperEngine {
   List<String> get availableCategories => signsByCategory.keys.toList();
 
   /// Генерация колоды вопросов.
-  /// [categoryFilter] — фильтр по категории (null или «Все» — без фильтра).
+  /// [categoryFilter] — фильтр по категории (null — без фильтра).
   /// [count] — количество вопросов в колоде.
   List<SignCardQuestion> generateDeck({
     String? categoryFilter,
@@ -61,7 +61,6 @@ class SignSwiperEngine {
     final categoryPool =
         (categoryFilter == null ||
             categoryFilter.isEmpty ||
-            categoryFilter == 'Все категории' ||
             !signsByCategory.containsKey(categoryFilter))
         ? allSigns
         : signsByCategory[categoryFilter]!;
