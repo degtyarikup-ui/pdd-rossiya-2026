@@ -139,6 +139,21 @@
     return out;
   }
 
+  // Sign pictures load asynchronously: TextureLoader hands out a texture whose image arrives
+  // later. A texture that is still empty when the scene is baked turns the sign into a plain
+  // plate, so the export waits until every picture of the scene is there and decoded.
+  async function waitForPictures(root) {
+    const maps = new Set();
+    root.traverse(o => {
+      const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+      for (const m of mats) if (m.map) maps.add(m.map);
+    });
+    const ready = () => [...maps].every(map => map.image && (!(map.image instanceof HTMLImageElement) || (map.image.complete && map.image.naturalWidth)));
+    const until = Date.now() + 8000;
+    while (!ready() && Date.now() < until) await new Promise(r => setTimeout(r, 50));
+    await Promise.all([...maps].map(map => (map.image instanceof HTMLImageElement && map.image.decode ? map.image.decode() : Promise.resolve()).catch(() => {})));
+  }
+
   function isShown(o) { for (let n = o; n; n = n.parent) if (n.visible === false) return false; return true; }
 
   function exportableMap(map) {
@@ -264,6 +279,8 @@
       const g = bakeStatic(it.guide, new Set(), origin);
       if (g.children.length) guideGlb = await X.toGlb(g);
     }
+    await waitForPictures(it.seg);
+    if (it.guide) await waitForPictures(it.guide);
     const scene = bakeStatic(it.seg, skip, origin);
     out_weight = Object.entries(tally).sort((a, b) => b[1] - a[1]).slice(0, 25);
     const out = { glb: await X.toGlb(scene), guide: guideGlb, lights: [], actors: [], weight: out_weight };
@@ -343,6 +360,9 @@
       texts[lang] = { ticket: t.ticket, title: t.title, options: t.options, explanation: t.explanation, pddRule: t.pddRule || s.pddRule || '' };
     }
     const legendLabels = (s.legend || []).map(l => ({ ...l }));
+    // The game plays a scene only when it is reviewed and has no traffic controller (see engine_sync.py).
+    const reviewed = E.routeSpec(s).reviewed === true;
+    const regulator = !!E.isRegulatorSituation(s);
     out.json = {
       props,
       labels,
@@ -354,7 +374,7 @@
       requiredStop: s.requiredStop ?? null,
       redWait: s.redWait ?? null,
       speedLimit: s.speedLimitKmH ?? null,
-      id: s.id, geometry: s.geometry || null, type: s.type || null,
+      id: s.id, geometry: s.geometry || null, type: s.type || null, reviewed, regulator,
       centerZ: 0, startZ: r3(it.startZ - it.centerZ), stopZ: r3(it.stopZ - it.centerZ),
       playerStartX: it.playerStartX ?? null, playerStartRotY: it.playerStartRotY || 0,
       leftLane: it.leftLane ?? 1.8, rightLane: it.rightLane ?? 1.8, kerbZ: it.kerbZ ?? 4.2, kerbX: it.kerbX ?? 4.2,

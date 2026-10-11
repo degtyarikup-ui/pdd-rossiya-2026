@@ -83,19 +83,22 @@ func stop_point() -> Vector3:
 
 
 ## The drawn surfaces (asphalt, islands, pavement, kerbs) as one ArrayMesh.
-## `scenery` supplies the detail-map layers and the shared material.
-func surface_mesh(scenery: Scenery) -> ArrayMesh:
+## `scenery` supplies the detail-map layers and the shared material. `uv_z` is the
+## junction's world z: the detail map is laid on the world grid, the same grid the
+## street uses (scripts/street.gd), so the texture carries across the junction edge.
+func surface_mesh(scenery: Scenery, uv_z := 0.0) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for s in build.surfaces:
-		_add_triangles(st, s, scenery)
+		_add_triangles(st, s, scenery, uv_z)
+	_add_kerbs(st, scenery, uv_z)
 	st.generate_normals()
 	var mesh := st.commit()
 	mesh.surface_set_material(0, scenery.material)
 	return mesh
 
 
-func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery) -> void:
+func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_z: float) -> void:
 	var colour := Color(s.colour)
 	var layer := scenery.layer_of(s.layer)
 	var period: float = scenery.kinds[s.layer].period
@@ -108,14 +111,21 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery) -> void:
 		for c in 3:
 			var i: int = idx[k + c] * 2
 			var p := Vector3(v[i], y, v[i + 1])
-			st.set_uv(Vector2(p.x / period, p.z / period))
+			st.set_uv(Vector2(p.x / period, (p.z + uv_z) / period))
 			st.set_uv2(Vector2(layer, 0))
 			st.add_vertex(p)
 		k += 3
-	# Kerbs: vertical walls between the carriageway and the raised ground.
+
+
+## Kerbs: vertical walls between the carriageway and the raised ground, one set for the
+## whole network. Along a wall the texture runs on the world grid too (x + z), so the
+## stones line up from one wall to the next.
+func _add_kerbs(st: SurfaceTool, scenery: Scenery, uv_z: float) -> void:
 	var kerbs: Dictionary = build.kerbs
 	var kc := Color(kerbs.colour)
 	st.set_color(Color(kc.r, kc.g, kc.b, 0.0))
+	var layer := scenery.layer_of("pavement")
+	var period: float = scenery.kinds["pavement"].period
 	var segs: Array = kerbs.segs
 	var j := 0
 	while j < segs.size():
@@ -124,7 +134,8 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery) -> void:
 		var t := Vector3(a.x, kerbs.y1, a.z)
 		var u := Vector3(b.x, kerbs.y1, b.z)
 		for p in [a, b, u, a, u, t]:
-			st.set_uv(Vector2(p.x / period, p.y))
-			st.set_uv2(Vector2(scenery.layer_of("pavement"), 1))
+			var along: float = (p.x + p.z + uv_z) / period
+			st.set_uv(Vector2(along, p.y))
+			st.set_uv2(Vector2(layer, 1))
 			st.add_vertex(p)
 		j += 4

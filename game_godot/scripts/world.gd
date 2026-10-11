@@ -231,7 +231,7 @@ func _run_previews() -> void:
 		var sit := Situation.load_scene(id, scenery)
 		if sit == null:
 			continue
-		sit.position = Vector3(0.0, 0.0, 3000.0 + float(n) * 1000.0)
+		sit.place_at(3000.0 + float(n) * 1000.0, scenery)
 		add_child(sit)
 		sit.set_evidence_visible(false)
 		camera.position = sit.global_position + Vector3(0, 300, 0)
@@ -594,7 +594,7 @@ func _maybe_spawn() -> void:
 	var crop: float = sit.data.crop
 	var k := ceili((drive.pos.z + 150.0) / L)
 	var zc := k * L + crop
-	sit.position = Vector3(0, 0, zc)
+	sit.place_at(zc, scenery)
 	add_child(sit)
 	var junction := Junction.new(sit)
 	junction.fault.connect(func(type, key): on_fault(type, key))

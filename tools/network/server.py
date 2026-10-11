@@ -174,7 +174,9 @@ class Handler(BaseHTTPRequestHandler):
             title = ((q.get("text") or {}).get("ru") or {}).get("ticket", "")
             out.append({"id": p.stem, "title": title, "status": (s.get("compliance") or {}).get("status"),
                         "errors": sum(f["level"] == "error" for f in found),
-                        "warns": sum(f["level"] == "warn" for f in found)})
+                        "warns": sum(f["level"] == "warn" for f in found),
+                        "playable": bool(s.get("reviewed", True)) and not s.get("regulator", False),
+                        "regulator": bool(s.get("regulator", False))})
         return out
 
     def catalog(self):

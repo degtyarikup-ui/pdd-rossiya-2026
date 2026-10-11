@@ -220,6 +220,19 @@ def backfill(sid: str) -> bool:
     return changed
 
 
+def playable(sid: str) -> bool:
+    """The game plays a scene that is reviewed and has no traffic controller (regulator)."""
+    net = check.load(sid)
+    return bool(net.get("reviewed", True)) and not net.get("regulator", False)
+
+
+def write_index() -> list:
+    """situations/index.json: the scenes the game draws its exam questions from."""
+    ids = [p.stem for p in sorted(NET.glob("*.json")) if playable(p.stem)]
+    write_json(SIT / "index.json", ids)
+    return ids
+
+
 def main(argv: list) -> int:
     mode = "sync"
     if "--init" in argv:
@@ -235,6 +248,8 @@ def main(argv: list) -> int:
             print(sid, "changed" if backfill(sid) else "ok")
         else:
             print(sid, sync(sid))
+    if mode == "sync" and not [a for a in argv if not a.startswith("--")]:
+        print("game index:", len(write_index()), "scenes")
     return 0
 
 

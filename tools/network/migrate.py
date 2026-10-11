@@ -166,6 +166,8 @@ def migrate(scene_id: str) -> dict:
         "question": question,
         "approachWidth": scene.get("approachW", DEFAULT_WIDTH),
         "exitWidths": scene.get("exitWidths") or {"straight": DEFAULT_WIDTH, "left": DEFAULT_WIDTH, "right": DEFAULT_WIDTH},
+        "reviewed": bool(scene.get("reviewed", True)),
+        "regulator": bool(scene.get("regulator", False)),
         "compliance": {"status": "unverified", "by": None, "notes": ""},
         "staticScene": f"{scene_id}/scene.glb",
     }

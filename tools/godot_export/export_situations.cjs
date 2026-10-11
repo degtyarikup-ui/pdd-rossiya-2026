@@ -31,7 +31,7 @@ const only = process.argv.slice(2);
     const open = async () => {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
     page.on('pageerror', e => errors.push(e.message));
-    await page.addInitScript(() => { window.FlutterChannel = { postMessage: m => { if (m.includes('"ready"')) window.__ready = true; } }; });
+    await page.addInitScript(all => { window.__exportAll = all; window.FlutterChannel = { postMessage: m => { if (m.includes('"ready"')) window.__ready = true; } }; }, process.env.ALL === '1');
     await page.route('**/assets/game/game.js', async route => {
       const response = await route.fetch();
       const body = (await response.text()).replace('  // Run init on DOM ready', `
@@ -48,7 +48,7 @@ const only = process.argv.slice(2);
     bakeGroups = groups => groups;
   }
   window.__eng = {
-    state, routeSpec, ensureTraffic, maneuverPoints, curve, player: () => playerCarGroup, roadSupports, refreshRoadBounds,
+    state, routeSpec, isRegulatorSituation, ensureTraffic, maneuverPoints, curve, player: () => playerCarGroup, roadSupports, refreshRoadBounds,
     // The question view the game settles on at this junction (updateCamera).
     // The question view the game settles on (updateCamera) for a covered
     // bottom strip of bottom px (HUD on top is 130 px, a 390x844 screen).
@@ -62,7 +62,7 @@ const only = process.argv.slice(2);
       return out;
     },
 
-    scenarios: () => SITUATIONS.filter(s => routeSpec(s).reviewed && !isRegulatorSituation(s)),
+    scenarios: () => (window.__exportAll ? SITUATIONS : SITUATIONS.filter(s => routeSpec(s).reviewed && !isRegulatorSituation(s))),
     drain() { while (processSceneryJobs(1000).pending) {} },
     // Vertices of the scene by top-level child (to find what makes it heavy).
     weight(root) {

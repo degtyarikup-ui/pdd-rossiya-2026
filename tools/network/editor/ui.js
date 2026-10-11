@@ -160,7 +160,8 @@ const Ed = (() => {
         <img src="/preview/${s.id}.png" loading="lazy" onerror="this.style.visibility='hidden'" alt="">
         <span class="scene-text"><b>${esc(sceneTitle(s.id))}</b>
         <small>${s.errors ? `${s.errors} ${plural(s.errors, ["ошибка", "ошибки", "ошибок"])}` : "проверка пройдена"}${s.warns ? ` · ${s.warns} замеч.` : ""}
-        · ${s.status === "ok" ? "сверено" : s.status === "fixed" ? "исправлено" : "не сверено"}</small></span>
+        · ${s.status === "ok" ? "сверено" : s.status === "fixed" ? "исправлено" : "не сверено"}</small>
+        ${s.playable ? "" : `<em class="note-tag">${s.regulator ? "регулировщик" : "нет в игре"}</em>`}</span>
         <i class="dot ${s.errors ? "bad" : ok && s.status !== "unverified" ? "good" : "todo"}"></i></button>`;
     }).join("") || `<div class="empty-list">Ничего не найдено</div>`;
     $("#count-scenes").textContent = `${list.length} из ${scenes.length}`;

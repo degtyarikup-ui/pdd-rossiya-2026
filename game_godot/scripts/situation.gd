@@ -75,6 +75,15 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 	return s
 
 
+## Puts the junction at world z. Its road surfaces are laid on the world grid
+## (the street's texture grid), so the surface is rebuilt for that z.
+func place_at(z: float, scenery: Scenery) -> void:
+	position = Vector3(0.0, 0.0, z)
+	var node := get_node_or_null("surfaces") as MeshInstance3D
+	if node and network:
+		node.mesh = network.surface_mesh(scenery, z)
+
+
 ## The point (situation coordinates) is inside this junction's own streets.
 func covers(local: Vector3) -> bool:
 	return absf(local.x) <= _crop and absf(local.z) <= _crop
