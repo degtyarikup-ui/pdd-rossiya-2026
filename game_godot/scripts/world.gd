@@ -30,6 +30,10 @@ var hud: PerfHud
 var speed := 0.0                  # m/s
 var max_speed := 19.4
 var traffic: Array[Dictionary] = []
+var traffic_mm: Array[MultiMesh] = []
+var walker_mm: Array[MultiMesh] = []
+var wheels: Array[Node3D] = []
+var front_axles: Array[Node3D] = []
 var walkers: Array[Dictionary] = []
 var road_half := 3.6
 var tier := "high"
@@ -140,33 +144,13 @@ func _setup_multimeshes() -> void:
 	crown.rings = 4
 	_multimesh("crown", crown, int(cfg.trees_per_side) * 2)
 	_multimesh("lamp", BoxMesh.new(), int(cfg.lamps_per_side) * 2)
-	# Moving things: their MultiMesh is not tied to chunks (count = 1 "chunk").
-	for name in ["car_body", "car_cabin"]:
-		var multi := MultiMesh.new()
-		multi.transform_format = MultiMesh.TRANSFORM_3D
-		multi.use_colors = true
-		multi.mesh = BoxMesh.new()
-		multi.instance_count = int(cfg.traffic.cars)
-		var node := MultiMeshInstance3D.new()
-		node.multimesh = multi
-		node.material_override = _material()
-		add_child(node)
-		mm[name] = multi
-	var walker := CapsuleMesh.new()
-	walker.radius = 0.25
-	walker.height = 1.7
-	walker.radial_segments = 6
-	walker.rings = 2
-	var wm := MultiMesh.new()
-	wm.transform_format = MultiMesh.TRANSFORM_3D
-	wm.use_colors = true
-	wm.mesh = walker
-	wm.instance_count = int(cfg.pedestrians)
-	var wn := MultiMeshInstance3D.new()
-	wn.multimesh = wm
-	wn.material_override = _material()
-	add_child(wn)
-	mm["walker"] = wm
+	# Moving things: real game models, one MultiMesh per model type.
+	var per_type := ceili(float(cfg.traffic.cars) / Models.CARS.size())
+	for id in Models.CARS:
+		traffic_mm.append(Models.crowd(self, "res://models/traffic/%s.glb" % id, per_type))
+	var per_look := ceili(float(cfg.pedestrians) / Models.WALKERS)
+	for v in Models.WALKERS:
+		walker_mm.append(Models.crowd(self, "res://models/walkers/walker_%d.glb" % v, per_look))
 
 
 ## One chunk of street (asphalt, markings, kerbs, sidewalks, grass) baked into
@@ -253,28 +237,13 @@ func _place_chunk(slot: int, index: int) -> void:
 func _build_player() -> void:
 	player = Node3D.new()
 	add_child(player)
-	var paint := StandardMaterial3D.new()
-	paint.albedo_color = Color("#f08a24")
-	var glass := StandardMaterial3D.new()
-	glass.albedo_color = Color("#f5f6f8")
-	var tyre := StandardMaterial3D.new()
-	tyre.albedo_color = Color("#22252a")
-	_part(player, Vector3(1.8, 0.7, 4.2), Vector3(0, 0.6, 0), paint)
-	_part(player, Vector3(1.6, 0.6, 2.2), Vector3(0, 1.25, -0.2), glass)
-	for wx in [-0.85, 0.85]:
-		for wz in [-1.35, 1.35]:
-			_part(player, Vector3(0.3, 0.6, 0.6), Vector3(wx, 0.3, wz), tyre)
+	var car := Models.player_car("hatch", Color("#F08A24"))
+	player.add_child(car)
+	for node in car.find_children("wheel_*", "", true, false):
+		wheels.append(node)
+	for node in car.find_children("axle_front_*", "", true, false):
+		front_axles.append(node)
 	player.position = Vector3(-cfg.road.lane_width / 2, 0, 5)
-
-
-func _part(parent: Node3D, size: Vector3, pos: Vector3, mat: Material) -> void:
-	var box := BoxMesh.new()
-	box.size = size
-	var node := MeshInstance3D.new()
-	node.mesh = box
-	node.material_override = mat
-	node.position = pos
-	parent.add_child(node)
 
 
 func _spawn_traffic() -> void:
@@ -283,27 +252,39 @@ func _spawn_traffic() -> void:
 	var lane: float = cfg.road.lane_width / 2
 	for i in int(cfg.traffic.cars):
 		var same := i % 2 == 0
+		var multi: MultiMesh = traffic_mm[i % traffic_mm.size()]
+		var slot := i / traffic_mm.size()
 		traffic.append({
 			"x": -lane if same else lane,
 			"z": 30.0 + i * 25.0,
 			"v": rng.randf_range(cfg.traffic.speed_min, cfg.traffic.speed_max) * (1 if same else -1),
+			"mm": multi, "slot": slot,
 		})
-		mm.car_body.set_instance_color(i, _pick(cfg.colors.car, rng))
-		mm.car_cabin.set_instance_color(i, Color("#eef0f3"))
+		multi.set_instance_custom_data(slot, _pick(cfg.colors.car, rng))
+	# Unused slots (count rounded up per type) are parked far below the street.
+	for multi in traffic_mm:
+		for slot in multi.instance_count:
+			multi.set_instance_transform(slot, Transform3D(Basis(), Vector3(0, -100, 0)))
 
 
 func _spawn_walkers() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
 	var side: float = cfg.road.sidewalk
+	for multi in walker_mm:
+		for slot in multi.instance_count:
+			multi.set_instance_transform(slot, Transform3D(Basis(), Vector3(0, -100, 0)))
 	for i in int(cfg.pedestrians):
 		var dir := 1.0 if i % 2 == 0 else -1.0
+		var multi: MultiMesh = walker_mm[i % walker_mm.size()]
+		var slot := i / walker_mm.size()
+		var v := rng.randf_range(1.0, 1.6) * (1 if rng.randf() > 0.5 else -1)
 		walkers.append({
 			"x": dir * (road_half + rng.randf_range(1.0, side - 1.0)),
-			"z": rng.randf_range(0, L * 4),
-			"v": rng.randf_range(1.0, 1.6) * (1 if rng.randf() > 0.5 else -1),
+			"z": rng.randf_range(0, L * 4), "v": v, "mm": multi, "slot": slot,
 		})
-		mm.walker.set_instance_color(i, Color.from_hsv(rng.randf(), 0.45, 0.7))
+		var jacket := Color.from_hsv(rng.randf(), 0.55, 0.8)
+		multi.set_instance_custom_data(slot, Color(jacket.r, jacket.g, jacket.b, rng.randf()))
 
 
 # --- frame -----------------------------------------------------------------
@@ -321,6 +302,10 @@ func _process(delta: float) -> void:
 	player.position.x = clampf(player.position.x + lateral, -road_half + 1.0, road_half - 1.0)
 	player.rotation.y = lerp_angle(player.rotation.y, controls.steer * 0.12 * clampf(speed / 6.0, 0, 1), 0.2)
 	player.position.z += speed * delta
+	for w in wheels:
+		w.rotate_x(speed * delta / 0.34)
+	for a in front_axles:
+		a.rotation.y = controls.steer * 0.4
 	_update_traffic(delta)
 	_update_walkers(delta)
 	_recycle_chunks()
@@ -345,9 +330,7 @@ func _update_traffic(delta: float) -> void:
 		elif car.z > behind + span:
 			car.z -= span
 		var face := 0.0 if car.v > 0 else PI
-		var basis := Basis(Vector3.UP, face)
-		mm.car_body.set_instance_transform(i, Transform3D(basis.scaled(Vector3(1.8, 0.7, 4.2)), Vector3(car.x, 0.6, car.z)))
-		mm.car_cabin.set_instance_transform(i, Transform3D(basis.scaled(Vector3(1.6, 0.6, 2.2)), Vector3(car.x, 1.25, car.z)))
+		(car.mm as MultiMesh).set_instance_transform(car.slot, Transform3D(Basis(Vector3.UP, face), Vector3(car.x, 0, car.z)))
 
 
 func _update_walkers(delta: float) -> void:
@@ -357,7 +340,8 @@ func _update_walkers(delta: float) -> void:
 		var w: Dictionary = walkers[i]
 		w.z += w.v * delta
 		var z := base + fposmod(w.z - base, span)
-		mm.walker.set_instance_transform(i, Transform3D(Basis(), Vector3(w.x, 0.97, z)))
+		var face := 0.0 if w.v > 0 else PI
+		(w.mm as MultiMesh).set_instance_transform(w.slot, Transform3D(Basis(Vector3.UP, face), Vector3(w.x, 0.12, z)))
 
 
 func _recycle_chunks() -> void:
