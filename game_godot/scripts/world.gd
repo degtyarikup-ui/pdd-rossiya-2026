@@ -66,6 +66,9 @@ var oncoming_time := 0.0           # in the oncoming lane (updateLaneViolation)
 var oncoming_reported := false
 var limit_kmh := 60                # built-up area unless a sign says otherwise
 var question_over := false         # answered, the card is about to leave
+var topdown_cam_locked := false
+var topdown_now := false
+var topdown := ""                # --topdown=<png>: straight-down picture of the junction (editor background)
 var follow := false                # --follow: a debug driver steers along the chosen exit
 var jerk := { "yaw": 0.0, "cam": 0.0, "heading": 0.0, "turns": 0 }   # largest per-frame steps seen (debug)
 var prev_yaw := 0.0
@@ -138,6 +141,11 @@ func _ready() -> void:
 			near_debug = true
 		if arg == "--debug":
 			dbg_every = 1.0
+		if arg.begins_with("--topdown="):
+			topdown = arg.trim_prefix("--topdown=")
+			near_debug = false
+			overview = true
+			topdown_now = true
 		if arg == "--follow":
 			follow = true
 			auto_answer = true
@@ -148,6 +156,8 @@ func _ready() -> void:
 		if arg == "--overview":
 			overview = true
 			(find_children("*", "WorldEnvironment", false, false)[0] as WorldEnvironment).environment.fog_enabled = false
+	if topdown_now:
+		spawn_after = -1.0e9   # the junction is laid out at once
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--shot="):
 			_shot(arg.trim_prefix("--shot="))
@@ -186,6 +196,27 @@ func _season() -> String:
 	# Same calendar as seasons.js: Sep–Nov autumn, Dec–Feb winter.
 	var m: int = Time.get_date_dict_from_system().month
 	return "autumn" if m >= 9 and m <= 11 else ("winter" if m == 12 or m <= 2 else "summer")
+
+
+## Straight-down picture of one junction (north = +Z, like the editor): 190 m across.
+func _topdown_shot(sit: Situation, path: String) -> void:
+	(find_children("*", "WorldEnvironment", false, false)[0] as WorldEnvironment).environment.fog_enabled = false
+	ui.visible = false
+	controls.set_active(false)
+	hud.visible = false
+	sit.set_evidence_visible(false)
+	for l in [leaves]:
+		if l:
+			l.visible = false
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	camera.size = 190.0
+	camera.keep_aspect = Camera3D.KEEP_HEIGHT
+	camera.position = sit.global_position + Vector3(0, 300, 0)
+	camera.look_at(sit.global_position, Vector3(0, 0, 1))
+	topdown_cam_locked = true
+	await get_tree().create_timer(1.5).timeout
+	get_viewport().get_texture().get_image().save_png(path)
+	get_tree().quit()
 
 
 func _qshot_later(path: String) -> void:
@@ -522,6 +553,8 @@ func _maybe_spawn() -> void:
 	junction.finished.connect(_on_finished)
 	current = { "sit": sit, "junction": junction, "zc": zc }
 	blanks.append([zc - crop, zc + crop])
+	if topdown != "":
+		_topdown_shot(sit, topdown)
 	if near_debug:
 		near_debug = false
 		drive.pos.z = zc + float(sit.data.stopZ) - 12.0
@@ -917,6 +950,8 @@ func _process(delta: float) -> void:
 		controls.gas = not _car_ahead_in_lane(14.0)
 	elif auto_answer and phase == "resolving" and not follow:
 		controls.gas = true
+	if topdown_cam_locked:
+		return
 	drive.accelerating = controls.gas and phase != "question"
 	drive.braking = controls.brake
 	drive.steering = controls.steer if phase != "question" else 0.0
@@ -977,9 +1012,10 @@ func _process(delta: float) -> void:
 		var glide := cam_look.lerp(look, 1.0 - exp(-6.0 * delta))
 		cam_look = cam_look + (glide - cam_look).limit_length(25.0 * delta)
 	look = cam_look
-	camera.position = look + Vector3(-sin(cam_heading) * 44.0, 42, -cos(cam_heading) * 44.0)
-	camera.look_at(look)
-	if overview and current:
+	if not topdown_cam_locked:
+		camera.position = look + Vector3(-sin(cam_heading) * 44.0, 42, -cos(cam_heading) * 44.0)
+		camera.look_at(look)
+	if overview and current and not topdown_cam_locked:
 		camera.size = 220.0
 		camera.position = current.sit.global_position + Vector3(0, 300, -1.0)
 		camera.look_at(current.sit.global_position)

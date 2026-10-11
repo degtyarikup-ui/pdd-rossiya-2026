@@ -31,8 +31,13 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_GET(self):
+        self.path = self.path.split("?")[0]
         if self.path in ("/", "/index.html"):
             return self.send(200, (Path(__file__).parent / "editor.html").read_bytes(), "text/html")
+        m = re.match(r"^/preview/([a-z0-9_]+)\.png$", self.path)
+        if m:
+            f = NET / "preview" / f"{m[1]}.png"
+            return self.send(200, f.read_bytes(), "image/png") if f.exists() else self.send(404, b"", "image/png")
         if self.path == "/api/scenes":
             out = []
             for p in sorted(NET.glob("*.json")):

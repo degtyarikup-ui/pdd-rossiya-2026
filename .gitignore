@@ -80,3 +80,4 @@ tools/network/.venv/
 tools/signs_reel/.cache/
 tools/signs_reel/.work/
 web_landing/ru/app/
+game_godot/network/preview/
