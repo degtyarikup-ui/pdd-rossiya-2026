@@ -10,8 +10,6 @@ render_mode diffuse_lambert, specular_disabled;
 uniform float walk_speed = 5.0;
 varying vec3 paint;
 
-vec3 to_linear(vec3 c) { return pow(c, vec3(2.2)); }
-
 void vertex() {
 	paint = INSTANCE_CUSTOM.rgb;
 	float amp = UV2.x;
@@ -26,6 +24,8 @@ void vertex() {
 
 void fragment() {
 	vec3 base = COLOR.rgb;
-	ALBEDO = to_linear(mix(base, base * paint, COLOR.a));
+	// Colours are used as-is (no sRGB decode): the WebView game renders
+	// without colour management, this keeps the same look (see scenery.gdshader).
+	ALBEDO = mix(base, base * paint, COLOR.a);
 	ROUGHNESS = 0.85;
 }

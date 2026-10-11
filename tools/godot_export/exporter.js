@@ -176,6 +176,7 @@
     return out;
   }
 
+  window.__toGlb = toGlb;
   window.exportModels = async function () {
     const result = {};
     // Cars: paint exported WHITE — Godot multiplies it by the per-car colour.
@@ -212,5 +213,106 @@
     const flatLamp = flatten(lamp, () => false);
     result['street/lamp'] = { glb: await toGlb(flatLamp), before: stats(lamp), after: stats(flatLamp) };
     return result;
+  };
+})();
+
+// ---------------------------------------------------------------------------
+// Scenery (needs the full game page: factories live inside game.js; the
+// export script exposes them as window.__pdd). Every prop is baked into one
+// mesh for shaders/scenery.gdshader:
+//   COLOR.rgb  colour; COLOR.a = 1: takes the instance tint (canopy season
+//              colour, facade colour), 0.5: turns to snow in winter (roofs)
+//   UV         the game's own detail-map coordinates (skinObject)
+//   UV2        (layer + 1, side): detail texture layer in the Texture2DArray
+//              (0 = none) and 1 on vertical faces (pddSide)
+(function () {
+  const U = THREE.BufferGeometryUtils;
+  function seeded(seed) {
+    let a = seed >>> 0;
+    return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  function withSeed(seed, fn) {
+    const real = Math.random; Math.random = seeded(seed);
+    try { return fn(); } finally { Math.random = real; }
+  }
+
+  function bakeScenery(root, layers, tintOf) {
+    root.updateMatrixWorld(true);
+    const inv = new THREE.Matrix4().copy(root.matrixWorld).invert(), list = [];
+    root.traverse(node => {
+      if (!node.isMesh || node.visible === false) return;
+      const m = node.material; if (!m || Array.isArray(m)) return;
+      let g = node.geometry.index ? node.geometry.toNonIndexed() : node.geometry.clone();
+      const own = g.attributes.color, side = g.attributes.pddSide;
+      for (const name of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(name)) g.deleteAttribute(name);
+      if (!g.attributes.normal) g.computeVertexNormals();
+      const n = g.attributes.position.count;
+      if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(n * 2), 2));
+      g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, node.matrixWorld));
+      const kind = m.userData.pddKind;
+      const layer = kind && layers.includes(kind) ? layers.indexOf(kind) + 1 : 0;
+      const tinted = tintOf(node, m);
+      const col = new Float32Array(n * 4), uv2 = new Float32Array(n * 2);
+      for (let i = 0; i < n; i++) {
+        const c = own ? new THREE.Color(own.getX(i), own.getY(i), own.getZ(i)).multiply(m.color) : m.color;
+        col.set(tinted === 1 ? [1, 1, 1, 1] : [c.r, c.g, c.b, tinted === 0.5 ? 0.5 : 0], i * 4);
+        uv2.set([layer, side ? side.getX(i) : 0], i * 2);
+      }
+      g.setAttribute('color', new THREE.BufferAttribute(col, 4));
+      g.setAttribute('uv2', new THREE.BufferAttribute(uv2, 2));
+      g.clearGroups();
+      list.push(g);
+    });
+    const mesh = new THREE.Mesh(U.mergeBufferGeometries(list, false), new THREE.MeshStandardMaterial({ vertexColors: true }));
+    mesh.material.name = 'scenery'; mesh.name = root.name;
+    const out = new THREE.Group(); out.name = root.name; out.add(mesh);
+    const box = new THREE.Box3().setFromObject(mesh);
+    return { object: out, size: [box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z] };
+  }
+
+  function detailTextures(kinds) {
+    return kinds.map(kind => {
+      const src = PDD_ROADS.texture(kind).image, c = document.createElement('canvas');
+      c.width = c.height = 256;
+      const ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = true; ctx.drawImage(src, 0, 0, 256, 256);
+      const k = PDD_ROADS.kinds[kind];
+      return { kind, png: c.toDataURL('image/png').split(',')[1], macro: k.macro || 0, macroScale: k.macroScale || 1,
+        period: k.period || 0, side: k.side || 0, u: k.u || 0, v: k.v || 0 };
+    });
+  }
+
+  window.exportScenery = async function () {
+    const F = window.__pdd, toGlb = window.__toGlb;
+    const layers = Object.keys(PDD_ROADS.kinds);
+    const out = { textures: detailTextures(layers), props: {} };
+    const seasonal = (node, m) => m.userData.seasonal ? 1 : 0;
+    const add = async (name, obj, tint = seasonal, meta = {}) => {
+      obj.name = name.split('/').pop();
+      const { object, size } = bakeScenery(obj, layers, tint);
+      out.props[name] = { glb: await toGlb(object), size, ...meta };
+    };
+    // Buildings: the facade colour is the instance tint too (one mesh serves
+    // every colour of its palette), so the body is marked as tinted.
+    const ROOFS = [0x6B7480, 0x94A3B8];
+    const facade = palette => (node, m) => palette.includes(m.color.getHex()) ? 1
+      : m.userData.seasonal === 'roof' || ROOFS.includes(m.color.getHex()) ? 0.5 : 0;
+    const HOME = [0xF3E3C3, 0xE8CFA8, 0xD9B99B, 0xC8D9C0, 0xE9D5CC];
+    const BLOCK = [0xF5F6FA, 0xE9ECF2, 0xDDE1EA, 0xC6CCD8, 0xB5675A, 0xA9B4C2];
+    const homes = [[6, 4.5, 6], [7, 4.5, 7], [8, 4.5, 6.5], [6.5, 7.5, 7], [7.5, 7.5, 7.5], [8, 7.5, 6]];
+    for (let i = 0; i < homes.length; i++) await add('buildings/home_' + i, withSeed(100 + i, () => F.createBuilding(...homes[i], 1)), facade(HOME), { style: 1, footprint: homes[i] });
+    const blocks = [[10, 10.5, 8], [11, 13.5, 9], [12, 16.5, 10], [13, 10.5, 9], [10.5, 16.5, 8.5], [12.5, 13.5, 10], [11.5, 19.5, 11], [13, 22.5, 10]];
+    for (let i = 0; i < blocks.length; i++) await add('buildings/block_' + i, withSeed(200 + i, () => F.createBuilding(...blocks[i], 2)), facade(BLOCK), { style: 2, footprint: blocks[i] });
+    const towers = [[14, 28.5, 11], [15, 34.5, 11], [16, 40.5, 11], [13.5, 46.5, 11]];
+    for (let i = 0; i < towers.length; i++) await add('buildings/tower_' + i, withSeed(300 + i, () => F.createBuilding(...towers[i], 2)), facade(BLOCK), { style: 3, footprint: towers[i] });
+    // Trees: the seasonal canopy takes the instance tint (season palette).
+    for (const kind of ['pine', 'round', 'birch']) for (let i = 0; i < 1; i++) {
+      await add(`trees/${kind}_${i}`, withSeed(400 + i * 7 + kind.length, () => { const t = F.createTree(kind); t.scale.set(1, 1, 1); t.rotation.y = 0; return t; }),
+        (node, m) => m.userData.seasonal || m.userData.pddKind === 'leaves' ? 1 : 0, { kind });
+    }
+    await add('street/bush', withSeed(500, () => { const b = F.createBush(0xFFFFFF); b.scale.set(1, 0.6, 1.3); b.position.y = 0; return b; }), () => 1);
+    for (const length of [12, 14]) await add('street/fence_' + length, F.createFence(length), () => 0);
+    for (let i = 0; i < 3; i++) await add('street/kiosk_' + i, withSeed(600 + i * 13, () => F.createKiosk()), () => 0);
+    await add('street/lamp', F.createLampPost(), () => 0);
+    return out;
   };
 })();
