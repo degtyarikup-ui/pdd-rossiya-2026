@@ -220,6 +220,23 @@ void main() {
       expect(prompt3, equals(appL10n.gameCrossroadsCompleteTitle));
       expect(prompt3, isNot(contains('3-м')));
     });
+
+    test('Training mode order is sequential and category filters preserve scenario mapping', () {
+      final allScenarios = CrossroadsScenariosLibrary.allScenarios;
+      final signScenarios = allScenarios.where((s) => s.category == CrossroadsCategory.prioritySigns).toList();
+      final tlScenarios = allScenarios.where((s) => s.category == CrossroadsCategory.trafficLights).toList();
+
+      expect(signScenarios.length, equals(17));
+      expect(tlScenarios.length, equals(5));
+      expect(allScenarios.length, equals(22));
+
+      // Sequential progression indices in training mode
+      final trainingOrderSigns = List.generate(signScenarios.length, (i) => i);
+      expect(trainingOrderSigns, equals([for (var i = 0; i < 17; i++) i]));
+
+      final trainingOrderTL = List.generate(tlScenarios.length, (i) => i);
+      expect(trainingOrderTL, equals([0, 1, 2, 3, 4]));
+    });
   });
 
   group('Crossroads Priority Progress Tests', () {

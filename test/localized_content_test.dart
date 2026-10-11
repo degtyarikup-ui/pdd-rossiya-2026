@@ -83,6 +83,7 @@ void main() {
     });
 
     test('CrossroadsScenariosLibrary returns full scenarios for all languages', () {
+      final cyrillic = RegExp(r'[а-яА-ЯёЁ]');
       for (final lang in ['ru', 'en', 'kk']) {
         final scenarios = CrossroadsScenariosLibrary.getScenarios(lang);
         expect(scenarios.length, equals(22));
@@ -90,9 +91,15 @@ void main() {
           expect(sc.title.isNotEmpty, isTrue);
           expect(sc.subtitle.isNotEmpty, isTrue);
           expect(sc.pddArticle.isNotEmpty, isTrue);
+          if (lang == 'en') {
+            expect(cyrillic.hasMatch(sc.title), isFalse, reason: 'Scenario ${sc.id} title has Cyrillic in EN');
+          }
           for (final actor in sc.actors) {
             expect(actor.name.isNotEmpty, isTrue);
             expect(actor.ruleExplanation.isNotEmpty, isTrue);
+            if (lang == 'en') {
+              expect(cyrillic.hasMatch(actor.name), isFalse, reason: 'Actor ${actor.id} in ${sc.id} has Cyrillic in EN');
+            }
           }
         }
       }

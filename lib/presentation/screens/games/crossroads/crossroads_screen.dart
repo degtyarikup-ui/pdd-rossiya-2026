@@ -58,12 +58,15 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
 
   int _scenarioIndex = 0;
 
-  /// Перекрёстки раунда в случайном порядке
+  /// Перекрёстки раунда: последовательно в тренировке, случайно в аркаде
   List<int> _order = const [];
   CrossroadsScenario get _curScenario {
     final list = _filteredScenarios;
     if (_order.length != list.length) {
-      _order = List.generate(list.length, (i) => i)..shuffle();
+      _order = List.generate(list.length, (i) => i);
+      if (_mode == CrossroadsGameMode.arcade) {
+        _order.shuffle();
+      }
     }
     return list[_order[_scenarioIndex % _order.length]];
   }
@@ -232,7 +235,8 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
       _isGameOver = false;
       _isNewRecord = false;
       _scenarioIndex = 0;
-      _order = List.generate(_scenarios.length, (i) => i)..shuffle();
+      final count = _filteredScenarios.length;
+      _order = List.generate(count, (i) => i)..shuffle();
       _previousBest = ref.read(crossroadsPriorityProgressProvider).bestScore;
       _currentStep = 1;
     });
@@ -322,6 +326,7 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
       final count = _filteredScenarios.length;
       setState(() {
         _scenarioIndex = (_scenarioIndex + 1) % count;
+        _currentStep = 1;
       });
       _sendScenarioToEngine();
     });

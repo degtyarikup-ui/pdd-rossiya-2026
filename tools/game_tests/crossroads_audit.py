@@ -346,7 +346,29 @@ def main():
                 break
         assert red_collision is not None, "Red light collision was not triggered!"
         assert '6.2' in red_collision.get('pddArticle', ''), f"Expected article 6.2, got {red_collision.get('pddArticle')}"
-        print(f"  ✓ Red light violation detected: article={red_collision.get('pddArticle')}, reason='{red_collision.get('reason')}'")
+        # Test I: U-Turn Blinker & Corner Tap Safety (п. 8.1 ПДД РФ)
+        print(f"\n--- Test I: U-Turn Turn Signal & Corner Tap Safety (п. 8.1 ПДД РФ) ---")
+        uturn_sc = next(s for s in scenarios if s['id'] == 'cross_uturn_equal')
+        driver.execute_script("window.smokeEvents = []; window.loadScenarioData(arguments[0]);", uturn_sc)
+        time.sleep(0.15)
+        blinker_ok = driver.execute_script("""
+            const carNorth = window._pddCrossroads.vehiclesGroup.children.find(c => c.userData.actorId === 'car_north');
+            return carNorth && carNorth.userData.activeBlinker === carNorth.blinkerL && carNorth.blinkerL.visible === true;
+        """)
+        assert blinker_ok, "U-Turn vehicle must have active left blinker per clause 8.1 ПДД РФ"
+        print("  ✓ U-Turn left blinker successfully verified (active & visible)")
+
+        # Verify tapping top-left corner does NOT trigger accidental close
+        driver.execute_script("""
+            window.smokeEvents = [];
+            const el = window._pddCrossroads.renderer.domElement;
+            el.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 2, clientX: 20, clientY: 20, bubbles: true }));
+            el.dispatchEvent(new PointerEvent('pointerup', { pointerId: 2, clientX: 20, clientY: 20, bubbles: true }));
+        """)
+        time.sleep(0.1)
+        corner_events = driver.execute_script("return window.smokeEvents;")
+        assert not any(e.get('type') == 'close' for e in corner_events), "Accidental close event emitted on corner tap!"
+        print("  ✓ Corner tap safety verified: no accidental close events")
 
         # Test H: JavaScript Console Errors Audit
         print("\n--- Test H: JavaScript Console Errors Audit ---")

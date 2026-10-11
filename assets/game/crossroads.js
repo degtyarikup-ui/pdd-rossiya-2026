@@ -157,8 +157,11 @@
     ]
   };
   let walkers = [];
+  let initialized = false;
 
   function init() {
+    if (initialized) return;
+    initialized = true;
     container = document.getElementById('canvas-container');
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
@@ -1079,6 +1082,11 @@
   function clearSigns() {
     activeSigns.forEach(s => { signsGroup.remove(s); disposeObject(s); });
     activeSigns = [];
+    while (signsGroup.children.length > 0) {
+      const c = signsGroup.children[0];
+      signsGroup.remove(c);
+      disposeObject(c);
+    }
   }
 
   function clearTrafficLights() {
@@ -1940,7 +1948,7 @@
   function enableTurnSignals(carMesh, maneuver) {
     if (carMesh.blinkerL) carMesh.userData.blinkerLeft = carMesh.blinkerL;
     if (carMesh.blinkerR) carMesh.userData.blinkerRight = carMesh.blinkerR;
-    if (maneuver === 'left' && carMesh.blinkerL) {
+    if ((maneuver === 'left' || maneuver === 'uTurn') && carMesh.blinkerL) {
       carMesh.blinkerL.visible = true;
       carMesh.userData.activeBlinker = carMesh.blinkerL;
     } else if (maneuver === 'right' && carMesh.blinkerR) {
@@ -2160,6 +2168,7 @@
     isResolving = false;
     drivingAnimations = [];
     activeCollision = null;
+    camShake = 0;
     if (activeFx) {
       activeFx.forEach(fx => fx.cleanup && fx.cleanup());
       activeFx = [];
@@ -2303,18 +2312,6 @@
     const clientX = event.clientX - rect.left;
     const clientY = event.clientY - rect.top;
 
-    // Клик по кнопке закрытия в левом верхнем углу (под оверлеем Flutter)
-    if (clientX <= 72 && clientY <= 72) {
-      notifyFlutter({ type: 'close' });
-      return;
-    }
-
-    // Клик по кнопке сброса камеры в правом нижнем углу
-    if (clientX >= rect.width - 72 && clientY >= rect.height - 72) {
-      window.resetCamera();
-      return;
-    }
-
     mouse.x = (clientX / rect.width) * 2 - 1;
     mouse.y = -(clientY / rect.height) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
@@ -2438,7 +2435,7 @@
     const path = generateTrajectory(mesh, side, maneuver, isTram);
 
     let steerAngle = 0;
-    if (maneuver === 'left') steerAngle = -0.42;
+    if (maneuver === 'left' || maneuver === 'uTurn') steerAngle = -0.42;
     else if (maneuver === 'right') steerAngle = 0.42;
 
     if (audio) {
@@ -2555,11 +2552,11 @@
     const pathP = generateTrajectory(priorityActor.mesh, priorityActor.data.side, priorityActor.data.maneuver, priorityActor.data.type === 'tram');
 
     let steerAngleW = 0;
-    if (wrongActor.data.maneuver === 'left') steerAngleW = -0.42;
+    if (wrongActor.data.maneuver === 'left' || wrongActor.data.maneuver === 'uTurn') steerAngleW = -0.42;
     else if (wrongActor.data.maneuver === 'right') steerAngleW = 0.42;
 
     let steerAngleP = 0;
-    if (priorityActor.data.maneuver === 'left') steerAngleP = -0.42;
+    if (priorityActor.data.maneuver === 'left' || priorityActor.data.maneuver === 'uTurn') steerAngleP = -0.42;
     else if (priorityActor.data.maneuver === 'right') steerAngleP = 0.42;
 
     const extW = getVehicleCollisionExtents(wrongActor);
@@ -2853,7 +2850,7 @@
       chosenId: wrongActor.data.id,
       priorityId: priorityActor.data.id,
       reason: 'Слишком ранний выезд: не уступил дорогу и не дождался освобождения перекрестка движущимся транспортом! (п. 13.8 ПДД РФ)',
-      pddArticle: '13.8',
+      pddArticle: 'Пункт 13.8 ПДД РФ',
     });
   }
 
