@@ -55,6 +55,36 @@
 
 ## Этап 2. Перекрёстки и билеты
 
+**Устройство (решено 2026-10-11).** Построение сцен в game.js — ~6000 строк
+(buildIntersectionSegment 728, buildRoundaboutSegment, buildQuestionEvent…);
+их НЕ переписываем: WebView-игра становится «компилятором сцен». Выгрузчик
+`tools/godot_export/export_situations.cjs` открывает игру, для каждой
+проверенной ситуации строит сцену тем же кодом, что игрок видит сейчас
+(как `select()/approach()` в `tools/game_tests/game-engine-test.cjs`), и пишет:
+- `situations/<id>/scene.glb` — вся статика сцены одной-двумя сетками
+  (формат scenery: вершинные цвета, слой детали); светофоры, шлагбаумы —
+  отдельными узлами с именами (лампы переключаются в Godot);
+- `situations/<id>/actor_<n>.glb` — модели участников (baked);
+- `situations/<id>/scene.json` — всё, что посчитал движок: centerZ, stopZ,
+  startZ/длина сегмента, полосы (leftLane/rightLane/halfW/kerbZ/kerbX),
+  участники (тип, габариты, начальная поза, путь buildActorMotion — точки
+  кривой, clearDistance, скорость), spec (maneuver, yieldTo, paths),
+  траектории игрока maneuverPoints для каждого съезда + exitYaw, рамка камеры
+  вопроса, проезжие полигоны (surface road / noRoad), стрелки-подсказки.
+Тексты вопросов/ответов/разборов — из `junction-situations.js`,
+`road-situations.js` и встроенного списка SITUATIONS (выгрузка в JSON,
+ru/en/kk из `i18n-situations.js`).
+
+В Godot переписывается только поведение во время игры (≈3000 строк JS):
+updateActors (движение по путям, зависимости, ожидание игрока),
+resolveSituationAnimation/updateResolution/finishManeuver (ручной проезд),
+pathsConflict, столкновения, нарушения (drivingFault, checkManeuverPath),
+integrateDriving/applySteeringAssist (руление), камера вопроса (updateCamera),
+перестройка мира после поворота (maybeReverseWorld). Имена функций в GDScript
+те же, что в game.js, с комментарием-ссылкой — чтобы сверять построчно.
+Стенд проверки сцен (game_lab) пока работает по WebView-игре: правка сцены в
+стенде → перевыгрузка в Godot.
+
 - [ ] 2.1 Выгрузчик сцен: `junction-situations.js` + `scenario-routes.js` +
       `scene-edits.js` + `road-situations.js` → `game_godot/data/situations/*.json`
       (геометрия перекрёстка, участники, знаки, маршруты, правильный ответ).
