@@ -29,15 +29,16 @@ func _ready() -> void:
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
-	_add(root, "left", "←", Vector2(74, 76), CARD, ACCENT, 8)
-	_add(root, "right", "→", Vector2(74, 76), CARD, ACCENT, 8)
-	_add(root, "brake", "СТОП", Vector2(100, 76), DARK, Color.WHITE, 8)
-	_add(root, "gas", "ГАЗ", Vector2(100, 100), CARD, Color("#121212"), 50)
+	_add(root, "left", "res://icons/steer_left.svg", "", Vector2(74, 76), CARD, ACCENT, 8, 36)
+	_add(root, "right", "res://icons/steer_right.svg", "", Vector2(74, 76), CARD, ACCENT, 8, 36)
+	_add(root, "brake", "res://icons/pedal_brake.svg", "СТОП", Vector2(100, 76), DARK, Color.WHITE, 8, 40)
+	_add(root, "gas", "res://icons/pedal_gas.svg", "ГАЗ", Vector2(100, 100), CARD, Color("#121212"), 50, 52)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 
 
-func _add(root: Control, name: String, text: String, size: Vector2, bg: Color, fg: Color, radius: int) -> void:
+## A pedal or steering arrow: a vector icon (white, tinted by the button) and an optional caption.
+func _add(root: Control, name: String, icon_path: String, caption: String, size: Vector2, bg: Color, fg: Color, radius: int, icon_px: int) -> void:
 	var panel := Panel.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.size = size
@@ -45,16 +46,29 @@ func _add(root: Control, name: String, text: String, size: Vector2, bg: Color, f
 	style.bg_color = bg
 	style.set_corner_radius_all(radius)
 	panel.add_theme_stylebox_override("panel", style)
-	var label := Label.new()
-	label.text = text
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	label.add_theme_color_override("font_color", fg)
-	label.add_theme_font_size_override("font_size", 30 if name in ["left", "right"] else 16)
-	panel.add_child(label)
+	var icon := TextureRect.new()
+	icon.texture = load(icon_path)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.size = Vector2(icon_px, icon_px)
+	icon.position = Vector2((size.x - icon_px) / 2.0, (size.y - icon_px) / 2.0 - (6.0 if caption != "" else 0.0))
+	icon.modulate = fg
+	panel.add_child(icon)
+	var label: Label = null
+	if caption != "":
+		label = Label.new()
+		label.text = caption
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.position = Vector2(0, size.y - 22)
+		label.size = Vector2(size.x, 18)
+		label.add_theme_font_size_override("font_size", 14)
+		label.add_theme_color_override("font_color", fg)
+		panel.add_child(label)
 	panel.set_meta("bg", bg)
 	panel.set_meta("fg", fg)
+	panel.set_meta("icon", icon)
+	panel.set_meta("label", label)
 	root.add_child(panel)
 	_buttons[name] = panel
 
@@ -107,7 +121,11 @@ func _press(name: String, down: bool) -> void:
 	var panel: Panel = _buttons[name]
 	var style: StyleBoxFlat = panel.get_theme_stylebox("panel")
 	style.bg_color = (RED if name == "brake" else ACCENT) if down else panel.get_meta("bg")
-	panel.get_child(0).add_theme_color_override("font_color", Color.WHITE if down else panel.get_meta("fg"))
+	var fg: Color = Color.WHITE if down else panel.get_meta("fg")
+	(panel.get_meta("icon") as TextureRect).modulate = fg
+	var caption = panel.get_meta("label")
+	if caption:
+		(caption as Label).add_theme_color_override("font_color", fg)
 	match name:
 		"gas": gas = down
 		"brake": brake = down

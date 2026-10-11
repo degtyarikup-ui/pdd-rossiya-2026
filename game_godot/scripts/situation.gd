@@ -209,9 +209,9 @@ func _trajectory_guide() -> Node3D:
 			continue
 		var st := SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		for i in pts.size() - 1:
-			_ribbon_segment(st, _p2(pts[i]), _p2(pts[i + 1]))
-		_arrowhead(st, _p2(pts[pts.size() - 2]), _p2(pts[pts.size() - 1]))
+		var curve := _smooth(pts)
+		_strip(st, curve, GUIDE_WIDTH)
+		_arrowhead(st, _before_tip(curve, 1.6), curve[curve.size() - 1])
 		var mi := MeshInstance3D.new()
 		mi.mesh = st.commit()
 		mi.material_override = _guide_material(letter_colour(str(tr.label)))
@@ -224,15 +224,58 @@ static func _p2(a: Array) -> Vector2:
 	return Vector2(float(a[0]), float(a[1]))
 
 
-static func _ribbon_segment(st: SurfaceTool, a: Vector2, b: Vector2) -> void:
-	var d := (b - a).normalized()
-	var n := Vector2(-d.y, d.x) * (GUIDE_WIDTH * 0.5)
-	var pa0 := Vector3(a.x + n.x, GUIDE_LIFT, a.y + n.y)
-	var pa1 := Vector3(a.x - n.x, GUIDE_LIFT, a.y - n.y)
-	var pb0 := Vector3(b.x + n.x, GUIDE_LIFT, b.y + n.y)
-	var pb1 := Vector3(b.x - n.x, GUIDE_LIFT, b.y - n.y)
-	for v in [pa0, pa1, pb0, pa1, pb1, pb0]:
-		st.add_vertex(v)
+## The route through its points as a smooth curve (Catmull-Rom), sampled every 0.4 m. The
+## routes are simplified polylines: without this the corners read as breaks.
+static func _smooth(pts: Array) -> PackedVector2Array:
+	var p: Array[Vector2] = []
+	for pt in pts:
+		p.append(_p2(pt))
+	var out := PackedVector2Array()
+	var n := p.size()
+	for i in n - 1:
+		var p0: Vector2 = p[maxi(i - 1, 0)]
+		var p1: Vector2 = p[i]
+		var p2: Vector2 = p[i + 1]
+		var p3: Vector2 = p[mini(i + 2, n - 1)]
+		var steps := maxi(1, ceili(p1.distance_to(p2) / 0.4))
+		for s in steps:
+			out.append(_catmull(p0, p1, p2, p3, float(s) / steps))
+	out.append(p[n - 1])
+	return out
+
+
+static func _catmull(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: float) -> Vector2:
+	var t2 := t * t
+	var t3 := t2 * t
+	return 0.5 * ((2.0 * p1) + (p2 - p0) * t + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2 + (3.0 * p1 - p0 - 3.0 * p2 + p3) * t3)
+
+
+## One continuous ribbon along the curve: every point shares its vertices with its neighbours,
+## so there are no gaps at the joints.
+static func _strip(st: SurfaceTool, pts: PackedVector2Array, width: float) -> void:
+	var n := pts.size()
+	var normals := PackedVector2Array()
+	for i in n:
+		var a := pts[maxi(i - 1, 0)]
+		var b := pts[mini(i + 1, n - 1)]
+		var d := (b - a).normalized()
+		normals.append(Vector2(-d.y, d.x) * (width * 0.5))
+	for i in n - 1:
+		var a0 := pts[i] + normals[i]
+		var a1 := pts[i] - normals[i]
+		var b0 := pts[i + 1] + normals[i + 1]
+		var b1 := pts[i + 1] - normals[i + 1]
+		for v in [a0, a1, b0, a1, b1, b0]:
+			st.add_vertex(Vector3(v.x, GUIDE_LIFT, v.y))
+
+
+## The curve point `metres` back from its end: the direction the arrowhead points in.
+static func _before_tip(pts: PackedVector2Array, metres: float) -> Vector2:
+	var tip := pts[pts.size() - 1]
+	for i in range(pts.size() - 2, -1, -1):
+		if pts[i].distance_to(tip) >= metres:
+			return pts[i]
+	return pts[0]
 
 
 ## The arrow at the end of a route: a triangle pointing along the last segment.

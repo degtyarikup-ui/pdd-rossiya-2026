@@ -16,6 +16,7 @@ uniform sampler2DArray detail : repeat_enable, filter_linear_mipmap;
 uniform float macro[24];
 uniform float macro_scale[24];
 uniform float gain[24];               // contrast of the detail per kind: the maps are very quiet (about +-3 %)
+uniform vec2 detail_fade = vec2(60.0, 200.0);  // metres: the grain fades to a flat tone with distance, where it would only shimmer
 uniform vec3 plain_tint = vec3(1.0);   // tint of a non-instanced mesh (roads)
 uniform vec3 snow_color = vec3(0.78, 0.82, 0.85);  // sRGB, like COLOR
 
@@ -41,6 +42,10 @@ void fragment() {
 		float g = gain[layer];
 		float fine = 0.5 + (mix(d.r, d.b, side) - 0.5) * g;
 		float large = 0.5 + (mix(texture(detail, vec3(UV * macro_scale[layer] + vec2(0.31, 0.17), float(layer))).g, 0.5, side) - 0.5) * g;
+		// Far away a texel is smaller than a pixel: the detail flickers as the camera moves. It is faded.
+		float far = smoothstep(detail_fade.x, detail_fade.y, -VERTEX.z);
+		fine = mix(fine, 0.5, far);
+		large = mix(large, 0.5, far);
 		base *= fine * 2.0 * (1.0 + (large * 2.0 - 1.0) * macro[layer]);
 	}
 	// As-is, no sRGB decode: the WebView game (three.js r128) renders without
