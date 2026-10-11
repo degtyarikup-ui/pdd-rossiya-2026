@@ -1855,6 +1855,25 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameCrossroadsCatTrafficLights => 'Светофоры';
 
   @override
+  String get gameCrossroadsCatHard => 'Сложные ситуации';
+
+  @override
+  String get crossroadsHardSituationBadge => '⚡ Сложная ситуация • 3× очков';
+
+  @override
+  String get crossroadsTimeBonus10s => '+10 сек';
+
+  @override
+  String get crossroadsPedestrian => 'Пешеход';
+
+  @override
+  String get crossroadsReasonPedestrianViolation =>
+      'Не уступили дорогу пешеходу, переходящему проезжую часть (п. 13.1 ПДД РФ). При повороте водитель обязан уступить пешеходам!';
+
+  @override
+  String get crossroadsArticlePedestrian => 'Пункт 13.1 ПДД РФ';
+
+  @override
   String gameCrossroadsSolvedCount(int count) {
     return 'Разрулено: $count';
   }

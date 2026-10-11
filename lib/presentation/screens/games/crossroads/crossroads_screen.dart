@@ -86,6 +86,10 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
   int _previousBest = 0;
   int _wrongCount = 0;
 
+  // Сложная ситуация: бонус времени и плашка
+  String _lastHardRewardedScenarioId = '';
+  bool _showHardBonusToast = false;
+
   // Ошибка / разбор ДТП
   bool _showCollisionModal = false;
   String _collisionReason = '';
@@ -199,6 +203,18 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
   void _sendScenarioToEngine() {
     if (!_engineReady) return;
     setState(() => _currentStep = 1);
+
+    if (_mode == CrossroadsGameMode.arcade &&
+        _curScenario.isHardSituation &&
+        _lastHardRewardedScenarioId != _curScenario.id) {
+      _lastHardRewardedScenarioId = _curScenario.id;
+      _secondsLeft += 10;
+      _showHardBonusToast = true;
+      Timer(const Duration(milliseconds: 2500), () {
+        if (mounted) setState(() => _showHardBonusToast = false);
+      });
+    }
+
     final jsonStr = jsonEncode(_curScenario.toJson());
     _call('loadScenarioData($jsonStr)');
   }
@@ -224,8 +240,11 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     final list = _filteredScenarios;
     final signs = <int>[];
     final lights = <int>[];
+    final hard = <int>[];
     for (int i = 0; i < list.length; i++) {
-      if (list[i].category == CrossroadsCategory.trafficLights) {
+      if (list[i].isHardSituation) {
+        hard.add(i);
+      } else if (list[i].category == CrossroadsCategory.trafficLights) {
         lights.add(i);
       } else {
         signs.add(i);
@@ -233,14 +252,20 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     }
     signs.shuffle();
     lights.shuffle();
+    hard.shuffle();
 
-    // Гарантируем появление светофора уже на 2-м перекрестке и сбалансированную ротацию
+    // Гарантируем сбалансированную ротацию со сложной ситуацией каждые 4 перекрестка (25% шанс)
     final order = <int>[];
-    int si = 0, li = 0;
-    while (si < signs.length || li < lights.length) {
+    int si = 0, li = 0, hi = 0;
+    while (si < signs.length || li < lights.length || hi < hard.length) {
       if (si < signs.length) order.add(signs[si++]);
       if (li < lights.length) order.add(lights[li++]);
       if (si < signs.length) order.add(signs[si++]);
+      if (hi < hard.length) {
+        order.add(hard[hi++]);
+      } else if (hard.isNotEmpty) {
+        order.add(hard[math.Random().nextInt(hard.length)]);
+      }
     }
     return order;
   }
@@ -258,6 +283,8 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
       _secondsLeft = 45;
       _solvedCount = 0;
       _wrongCount = 0;
+      _lastHardRewardedScenarioId = '';
+      _showHardBonusToast = false;
       _isGameOver = false;
       _isNewRecord = false;
       _scenarioIndex = 0;
@@ -298,11 +325,13 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     final reason = switch (data['reasonCode'] as String?) {
       'redLight' => appL10n.crossroadsReasonRedLight,
       'earlyExit' => appL10n.crossroadsReasonEarlyExit,
+      'pedestrianViolation' => appL10n.crossroadsReasonPedestrianViolation,
       _ => data['reason'] as String? ?? '',
     };
     final pddArticle = switch (data['pddArticleCode'] as String?) {
       '6.2' => appL10n.crossroadsArticleRedLight,
       '13.8' => appL10n.crossroadsArticleEarlyExit,
+      '13.1' => appL10n.crossroadsArticlePedestrian,
       _ => data['pddArticle'] as String? ?? '',
     };
     final priorityId = data['priorityId'] as String?;
@@ -337,7 +366,9 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
       SoundEffectsService.instance.playCorrect();
     }
 
-    final gainedScore = GameEconomy.crossroads(_combo + 1);
+    final isHard = _curScenario.isHardSituation;
+    final baseGainedScore = GameEconomy.crossroads(_combo + 1);
+    final gainedScore = isHard ? baseGainedScore * 3 : baseGainedScore;
 
     setState(() {
       _solvedCount++;
@@ -459,6 +490,7 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     CrossroadsCategory.all => appL10n.gameCrossroadsCatAll,
     CrossroadsCategory.prioritySigns => appL10n.gameCrossroadsCatSigns,
     CrossroadsCategory.trafficLights => appL10n.gameCrossroadsCatTrafficLights,
+    CrossroadsCategory.hardSituations => appL10n.gameCrossroadsCatHard,
   };
 
   Widget _buildCategoryChips(AppThemeColors colors) {
@@ -744,6 +776,24 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                   color: urgent ? colors.red : colors.primaryText,
                 ),
               ),
+              if (_showHardBonusToast) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: colors.greenLight,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    appL10n.crossroadsTimeBonus10s,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: colors.green,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
           GameLives(lives: _lives, total: GameEconomy.miniGameLives),
@@ -858,6 +908,38 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
               color: colors.secondaryText,
             ),
           ),
+          if (scenario.isHardSituation) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF6B400).withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: const Color(0xFFF6B400).withValues(alpha: 0.45),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.bolt_rounded,
+                    size: 15,
+                    color: Color(0xFFE89E00),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    appL10n.crossroadsHardSituationBadge,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFC77800),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -1842,6 +1842,25 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameCrossroadsCatTrafficLights => 'Бағдаршамдар';
 
   @override
+  String get gameCrossroadsCatHard => 'Күрделі жағдайлар';
+
+  @override
+  String get crossroadsHardSituationBadge => '⚡ Күрделі жағдай • 3× ұпай';
+
+  @override
+  String get crossroadsTimeBonus10s => '+10 сек';
+
+  @override
+  String get crossroadsPedestrian => 'Жаяу жүргінші';
+
+  @override
+  String get crossroadsReasonPedestrianViolation =>
+      'Жүріс бөлігінен өтіп бара жатқан жаяу жүргіншіге жол бермедіңіз (ЖЖЕ 13.1-тармағы). Бұрылған кезде жүргізуші жаяу жүргіншілерге жол беруге міндетті!';
+
+  @override
+  String get crossroadsArticlePedestrian => 'ЖЖЕ 13.1-тармағы';
+
+  @override
   String gameCrossroadsSolvedCount(int count) {
     return 'Шешілген: $count';
   }

@@ -511,6 +511,141 @@ class CrossroadsTranslations {
           ),
         },
       ),
+      'hard_traffic_light_arrow_pedestrian': LocalizedScenarioText(
+        title: 'Traffic light arrow and pedestrian crossing',
+        subtitle:
+            'Turning on arrow with main red and duty to yield to pedestrian.',
+        pddArticle: 'Clauses 13.1 and 13.5 of the Russian Traffic Regulations',
+        actors: {
+          'car_west': LocalizedActorText(
+            name: 'Blue sedan',
+            ruleExplanation:
+                'The blue sedan travels on green and has priority over vehicles turning on arrow (clause 13.5).',
+          ),
+          'pedestrian_east': LocalizedActorText(
+            name: 'Pedestrian',
+            ruleExplanation:
+                'The pedestrian crosses on green signal. The turning driver must yield to them (clause 13.1).',
+          ),
+          'car_south': LocalizedActorText(
+            name: 'White hatchback',
+            ruleExplanation:
+                'The white hatchback turns on arrow with red. It must yield to the blue sedan (clause 13.5) and pedestrian (clause 13.1).',
+          ),
+        },
+      ),
+      'hard_equal_4way_3cars_pedestrian': LocalizedScenarioText(
+        title: 'Equal crossroads with pedestrian',
+        subtitle:
+            'Priority to the right between cars and pedestrian priority on crosswalk.',
+        pddArticle: 'Clauses 13.1, 13.11 and 14.1 of the Russian Traffic Regulations',
+        actors: {
+          'pedestrian_east': LocalizedActorText(
+            name: 'Pedestrian',
+            ruleExplanation:
+                'The pedestrian crosses on zebra crossing. The driver turning right must yield to them (clause 13.1).',
+          ),
+          'car_south': LocalizedActorText(
+            name: 'Blue sedan',
+            ruleExplanation:
+                'After yielding to pedestrian, the blue sedan completes its turn. No priority to the right obstacle (clause 13.11).',
+          ),
+          'car_west': LocalizedActorText(
+            name: 'White sedan',
+            ruleExplanation:
+                'The blue car was on the right. After it clears, the white sedan moves straight (clause 13.11).',
+          ),
+          'car_east': LocalizedActorText(
+            name: 'Red hatchback',
+            ruleExplanation:
+                'The red hatchback turns left and gives way to oncoming white sedan (clause 13.12).',
+          ),
+        },
+      ),
+      'hard_priority_t_tram_pedestrian': LocalizedScenarioText(
+        title: 'T-junction: tram and pedestrian',
+        subtitle:
+            'Tram priority on main road and yielding to pedestrian from secondary road.',
+        pddArticle: 'Clauses 13.1, 13.9 and 14.1 of the Russian Traffic Regulations',
+        actors: {
+          'pedestrian_east': LocalizedActorText(
+            name: 'Pedestrian',
+            ruleExplanation:
+                'The pedestrian crosses on an unregulated crosswalk (clause 14.1). All drivers must yield.',
+          ),
+          'tram_west': LocalizedActorText(
+            name: 'Tram',
+            ruleExplanation:
+                'The tram on main road has priority over non-rail vehicles (clauses 13.9, 13.11).',
+          ),
+          'car_east': LocalizedActorText(
+            name: 'White sedan',
+            ruleExplanation:
+                'The white sedan on main road turns left after oncoming tram passes (clauses 13.9, 13.12).',
+          ),
+          'car_south': LocalizedActorText(
+            name: 'Blue hatchback',
+            ruleExplanation:
+                'The blue hatchback on secondary road turns left and yields to main road traffic (clause 13.9).',
+          ),
+        },
+      ),
+      'hard_emergency_priority_pedestrian': LocalizedScenarioText(
+        title: 'Ambulance with siren and pedestrian',
+        subtitle:
+            'Absolute priority of emergency vehicle with siren and beacon.',
+        pddArticle: 'Clauses 3.2 and 13.1 of the Russian Traffic Regulations',
+        actors: {
+          'ambulance_north': LocalizedActorText(
+            name: 'Ambulance',
+            ruleExplanation:
+                'The ambulance with beacon and siren has priority over all participants (clause 3.2).',
+          ),
+          'pedestrian_west': LocalizedActorText(
+            name: 'Pedestrian',
+            ruleExplanation:
+                'The pedestrian crosses the western street. The turning car must yield to them (clause 13.1).',
+          ),
+          'car_south': LocalizedActorText(
+            name: 'Yellow sedan',
+            ruleExplanation:
+                'The yellow sedan yields to the ambulance (clause 3.2) and pedestrian (clause 13.1), then completes turn.',
+          ),
+          'car_east': LocalizedActorText(
+            name: 'Red hatchback',
+            ruleExplanation:
+                'The red hatchback on secondary road yields to main road traffic (clause 13.9).',
+          ),
+        },
+      ),
+      'hard_priority_main_turns_right_pedestrian': LocalizedScenarioText(
+        title: 'Main road turns right and pedestrian',
+        subtitle:
+            'Maneuvering on main road with sign 8.13 and yielding to pedestrian.',
+        pddArticle: 'Clauses 13.1, 13.10 and 13.11 of the Russian Traffic Regulations',
+        actors: {
+          'pedestrian_south': LocalizedActorText(
+            name: 'Pedestrian',
+            ruleExplanation:
+                'The pedestrian crosses the street. Drivers must yield to them (clauses 13.1, 14.1).',
+          ),
+          'car_east': LocalizedActorText(
+            name: 'Blue sedan',
+            ruleExplanation:
+                'The blue sedan on main road turns with it. No vehicle on its right (clause 13.10).',
+          ),
+          'car_south': LocalizedActorText(
+            name: 'White sedan',
+            ruleExplanation:
+                'The white sedan gives way to the blue sedan as priority to the right (clause 13.10).',
+          ),
+          'car_west': LocalizedActorText(
+            name: 'Red hatchback',
+            ruleExplanation:
+                'The red hatchback on secondary road yields to main road vehicles (clause 13.9).',
+          ),
+        },
+      ),
     },
     'kk': {
       'cross_main_turns_left': LocalizedScenarioText(
@@ -984,6 +1119,141 @@ class CrossroadsTranslations {
             name: 'Ақ седан',
             ruleExplanation:
                 'Ақ седан жедел жәрдемге және солға бұрылу кезінде қарсы көк көлікке жол береді (13.4-тармақ).',
+          ),
+        },
+      ),
+      'hard_traffic_light_arrow_pedestrian': LocalizedScenarioText(
+        title: 'Бағдаршам бағыттауышы және жаяу жүргіншілер өткелі',
+        subtitle:
+            'Негізгі қызылмен бағыттауышқа бұрылу және жаяу жүргіншіге жол беру міндеті.',
+        pddArticle: 'ЖЖЕ 13.1 және 13.5-тармақтары',
+        actors: {
+          'car_west': LocalizedActorText(
+            name: 'Көк седан',
+            ruleExplanation:
+                'Көк седан негізгі жасыл сигналмен жүріп, бағыттауышпен бұрылатын көліктен басымдыққа ие (13.5-тармақ).',
+          ),
+          'pedestrian_east': LocalizedActorText(
+            name: 'Жаяу жүргінші',
+            ruleExplanation:
+                'Жаяу жүргінші рұқсат етуші сигналда өтуде. Бұрылатын жүргізуші оған жол беруге міндетті (13.1-тармақ).',
+          ),
+          'car_south': LocalizedActorText(
+            name: 'Ақ хэтчбек',
+            ruleExplanation:
+                'Ақ хэтчбек негізгі қызыл сигналдағы бағыттауышпен бұрылады. Ол көк седанға (13.5-тармақ) және жаяу жүргіншіге (13.1-тармақ) жол беруге міндетті.',
+          ),
+        },
+      ),
+      'hard_equal_4way_3cars_pedestrian': LocalizedScenarioText(
+        title: 'Жаяу жүргіншісі бар тең дәрежелі қиылыс',
+        subtitle:
+            'Көліктер арасында оң жақ кедергісі және өткелдегі жаяу жүргіншінің басымдығы.',
+        pddArticle: 'ЖЖЕ 13.1, 13.11 және 14.1-тармақтары',
+        actors: {
+          'pedestrian_east': LocalizedActorText(
+            name: 'Жаяу жүргінші',
+            ruleExplanation:
+                'Жаяу жүргінші реттелмейтін өткелден өтуде. Жүргізуші оңға бұрылғанда оған жол беруге міндетті (13.1-тармақ).',
+          ),
+          'car_south': LocalizedActorText(
+            name: 'Көк седан',
+            ruleExplanation:
+                'Жаяу жүргіншіні өткізген соң көк седан оңға бұрылысты аяқтайды. Оның оң жағында кедергі жоқ (13.11-тармақ).',
+          ),
+          'car_west': LocalizedActorText(
+            name: 'Ақ седан',
+            ruleExplanation:
+                'Ақ седан үшін көк көлік оң жақ кедергі болды. Ол өткеннен кейін ақ седан тура жүре алады (13.11-тармақ).',
+          ),
+          'car_east': LocalizedActorText(
+            name: 'Қызыл хэтчбек',
+            ruleExplanation:
+                'Қызыл хэтчбек солға бұрылып, қарсы ақ седанға жол береді (13.12-тармақ).',
+          ),
+        },
+      ),
+      'hard_priority_t_tram_pedestrian': LocalizedScenarioText(
+        title: 'Т-тәрізді қиылыс: трамвай және жаяу жүргінші',
+        subtitle:
+            'Негізгі жолдағы трамвай басымдығы және қосалқы жолдан шығуда жаяу жүргіншіні өткізу.',
+        pddArticle: 'ЖЖЕ 13.1, 13.9 және 14.1-тармақтары',
+        actors: {
+          'pedestrian_east': LocalizedActorText(
+            name: 'Жаяу жүргінші',
+            ruleExplanation:
+                'Жаяу жүргінші реттелмейтін өткелден өтіп жатыр (14.1-т.). Барлық жүргізушілер оған жол беруге міндетті.',
+          ),
+          'tram_west': LocalizedActorText(
+            name: 'Трамвай',
+            ruleExplanation:
+                'Негізгі жолдағы трамвай рельссіз көліктерден басымдыққа ие (13.9, 13.11-т.).',
+          ),
+          'car_east': LocalizedActorText(
+            name: 'Ақ седан',
+            ruleExplanation:
+                'Негізгі жолдағы ақ седан қарсы келе жатқан трамвай өткеннен кейін солға бұрылады (13.9, 13.12-т.).',
+          ),
+          'car_south': LocalizedActorText(
+            name: 'Көк хэтчбек',
+            ruleExplanation:
+                '2.4 белгісі бар екінші дәрежелі жолдағы көк хэтчбек солға бұрылып, басты жолдағы көліктерге жол береді (13.9-т.).',
+          ),
+        },
+      ),
+      'hard_emergency_priority_pedestrian': LocalizedScenarioText(
+        title: 'Арнайы сигналдары бар жедел жәрдем және жаяу жүргінші',
+        subtitle:
+            'Сиренасы мен маяктары бар шұғыл қызмет көлігінің сөзсіз басымдығы.',
+        pddArticle: 'ЖЖЕ 3.2 және 13.1-тармақтары',
+        actors: {
+          'ambulance_north': LocalizedActorText(
+            name: 'Жедел жәрдем',
+            ruleExplanation:
+                'Маяктары мен сиренасы қосулы жедел жәрдем барлық қатысушылардан басымдыққа ие (3.2-тармақ).',
+          ),
+          'pedestrian_west': LocalizedActorText(
+            name: 'Жаяу жүргінші',
+            ruleExplanation:
+                'Жаяу жүргінші батыс көшесінен өтіп барады. Оған бұрылатын көлік жол беруге міндетті (13.1-тармақ).',
+          ),
+          'car_south': LocalizedActorText(
+            name: 'Сары седан',
+            ruleExplanation:
+                'Сары седан жедел жәрдемге (3.2-тармақ) және жаяу жүргіншіге (13.1-тармақ) жол беріп, маневрді аяқтайды.',
+          ),
+          'car_east': LocalizedActorText(
+            name: 'Қызыл хэтчбек',
+            ruleExplanation:
+                '2.4 белгісі бар қосалқы жолдағы қызыл хэтчбек негізгі жолдағы көліктерге жол береді (13.9-тармақ).',
+          ),
+        },
+      ),
+      'hard_priority_main_turns_right_pedestrian': LocalizedScenarioText(
+        title: 'Негізгі жол оңға бұрылады және жаяу жүргінші',
+        subtitle:
+            '8.13 белгісі бар негізгі жолда өту және жаяу жүргіншіні өткізу.',
+        pddArticle: 'ЖЖЕ 13.1, 13.10 және 13.11-тармақтары',
+        actors: {
+          'pedestrian_south': LocalizedActorText(
+            name: 'Жаяу жүргінші',
+            ruleExplanation:
+                'Жаяу жүргінші өткелден өтіп жатыр. Жүргізушілер оған жол беруге міндетті (13.1, 14.1-т.).',
+          ),
+          'car_east': LocalizedActorText(
+            name: 'Көк седан',
+            ruleExplanation:
+                'Негізгі жолдағы көк седан онымен бұрылады. Оның оң жағында ешкім жоқ (13.10-тармақ).',
+          ),
+          'car_south': LocalizedActorText(
+            name: 'Ақ седан',
+            ruleExplanation:
+                'Негізгі жолдағы ақ седан көк седанға оң жақ кедергі ретінде жол береді (13.10-тармақ).',
+          ),
+          'car_west': LocalizedActorText(
+            name: 'Қызыл хэтчбек',
+            ruleExplanation:
+                'Қосалқы жолдағы қызыл хэтчбек негізгі жолдағы барлық көліктерге жол береді (13.9-тармақ).',
           ),
         },
       ),

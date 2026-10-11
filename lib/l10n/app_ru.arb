@@ -981,6 +981,12 @@
   "gameCrossroadsCatAll": "Все",
   "gameCrossroadsCatSigns": "Знаки приоритета",
   "gameCrossroadsCatTrafficLights": "Светофоры",
+  "gameCrossroadsCatHard": "Сложные ситуации",
+  "crossroadsHardSituationBadge": "⚡ Сложная ситуация • 3× очков",
+  "crossroadsTimeBonus10s": "+10 сек",
+  "crossroadsPedestrian": "Пешеход",
+  "crossroadsReasonPedestrianViolation": "Не уступили дорогу пешеходу, переходящему проезжую часть (п. 13.1 ПДД РФ). При повороте водитель обязан уступить пешеходам!",
+  "crossroadsArticlePedestrian": "Пункт 13.1 ПДД РФ",
   "gameCrossroadsSolvedCount": "Разрулено: {count}",
   "@gameCrossroadsSolvedCount": {
     "placeholders": {

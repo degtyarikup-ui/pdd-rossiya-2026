@@ -22,6 +22,16 @@ void main() {
   const laneOffset = 3.4, halfRoad = 6.8, exitD = halfRoad + 32;
 
   ({double x, double z}) start(CrossroadsActor a) {
+    if (a.type == CrossroadsVehicleType.pedestrian) {
+      const crossingDist = halfRoad + 3.8;
+      const curbDist = halfRoad + 1.6;
+      return switch (a.side) {
+        CrossroadsSide.south => (x: -curbDist, z: crossingDist),
+        CrossroadsSide.north => (x: curbDist, z: -crossingDist),
+        CrossroadsSide.east => (x: crossingDist, z: curbDist),
+        CrossroadsSide.west => (x: -crossingDist, z: -curbDist),
+      };
+    }
     final tram = a.type == CrossroadsVehicleType.tram;
     final stop = tram
         ? 17.0
@@ -58,6 +68,22 @@ void main() {
         }(),
     ];
     switch (a.maneuver) {
+      case CrossroadsManeuver.cross:
+        const crossingDist = halfRoad + 3.8;
+        const curbDist = halfRoad + 1.6;
+        final end = switch (side) {
+          CrossroadsSide.south => p(curbDist, crossingDist),
+          CrossroadsSide.north => p(-curbDist, -crossingDist),
+          CrossroadsSide.east => p(crossingDist, -curbDist),
+          CrossroadsSide.west => p(-crossingDist, curbDist),
+        };
+        return [
+          for (var i = 0; i <= 60; i++)
+            () {
+              final t = i / 60, u = 1 - t;
+              return p(u * s.x + t * end.x, u * s.z + t * end.z);
+            }(),
+        ];
       case CrossroadsManeuver.straight:
         final e = switch (side) {
           CrossroadsSide.south => p(l, -exitD),
@@ -150,6 +176,16 @@ void main() {
       final aArrowRed = tla?.state == 'red' && (tla?.arrowActive ?? false);
       final bArrowRed = tlb?.state == 'red' && (tlb?.arrowActive ?? false);
 
+      // Пешеход на регулируемом перекрестке уступает машинам на основной зеленый прямо
+      if (a.type == CrossroadsVehicleType.pedestrian) {
+        if (bMainGreen && b.maneuver == CrossroadsManeuver.straight) return true;
+        return false;
+      }
+      if (b.type == CrossroadsVehicleType.pedestrian) {
+        if (aMainGreen && a.maneuver == CrossroadsManeuver.straight) return false;
+        return true;
+      }
+
       // Движение по стрелке при красном сигнале уступает основному зелёному (п. 13.5, 13.6).
       // Даже трамвай на стрелку с красным обязан уступить автомобилю на основной зелёный (п. 13.6).
       if (aArrowRed && bMainGreen) return true;
@@ -177,6 +213,10 @@ void main() {
       if (bTurningAcross && aThrough && a.side == opposite[b.side]) return false;
       return rightOf[a.side] == b.side;
     }
+
+    // Нерегулируемый перекресток: пешеход на переходе (п. 13.1, 14.1)
+    if (a.type == CrossroadsVehicleType.pedestrian) return false;
+    if (b.type == CrossroadsVehicleType.pedestrian) return true;
 
     final ra = rank(s, a.side), rb = rank(s, b.side);
     if (ra != rb) return rb > ra;
@@ -238,6 +278,7 @@ void main() {
             CrossroadsManeuver.right => rightOf[a.side],
             CrossroadsManeuver.left => opposite[rightOf[a.side]],
             CrossroadsManeuver.uTurn => a.side,
+            CrossroadsManeuver.cross => a.side,
           };
           expect(exit, isNot(closed), reason: a.id);
         }

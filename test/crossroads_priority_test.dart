@@ -12,7 +12,7 @@ void main() {
   group('Crossroads Priority Rules and Scenarios Tests', () {
     test('All certified scenarios have valid priority order sequences', () {
       final scenarios = CrossroadsScenariosLibrary.allScenarios;
-      expect(scenarios.length, equals(22));
+      expect(scenarios.length, equals(27));
 
       for (final s in scenarios) {
         expect(
@@ -156,7 +156,7 @@ void main() {
 
     test('Traffic lights scenarios are properly categorized and configured', () {
       final scenarios = CrossroadsScenariosLibrary.allScenarios;
-      final tlScenarios = scenarios.where((s) => s.isRegulated).toList();
+      final tlScenarios = scenarios.where((s) => s.category == CrossroadsCategory.trafficLights).toList();
       expect(tlScenarios.length, equals(5));
 
       for (final s in tlScenarios) {
@@ -225,10 +225,12 @@ void main() {
       final allScenarios = CrossroadsScenariosLibrary.allScenarios;
       final signScenarios = allScenarios.where((s) => s.category == CrossroadsCategory.prioritySigns).toList();
       final tlScenarios = allScenarios.where((s) => s.category == CrossroadsCategory.trafficLights).toList();
+      final hardScenarios = allScenarios.where((s) => s.category == CrossroadsCategory.hardSituations).toList();
 
       expect(signScenarios.length, equals(17));
       expect(tlScenarios.length, equals(5));
-      expect(allScenarios.length, equals(22));
+      expect(hardScenarios.length, equals(5));
+      expect(allScenarios.length, equals(27));
 
       // Sequential progression indices in training mode
       final trainingOrderSigns = List.generate(signScenarios.length, (i) => i);
@@ -236,6 +238,9 @@ void main() {
 
       final trainingOrderTL = List.generate(tlScenarios.length, (i) => i);
       expect(trainingOrderTL, equals([0, 1, 2, 3, 4]));
+
+      final trainingOrderHard = List.generate(hardScenarios.length, (i) => i);
+      expect(trainingOrderHard, equals([0, 1, 2, 3, 4]));
     });
   });
 

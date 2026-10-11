@@ -86,7 +86,7 @@ void main() {
       final cyrillic = RegExp(r'[а-яА-ЯёЁ]');
       for (final lang in ['ru', 'en', 'kk']) {
         final scenarios = CrossroadsScenariosLibrary.getScenarios(lang);
-        expect(scenarios.length, equals(22));
+        expect(scenarios.length, equals(27));
         for (final sc in scenarios) {
           expect(sc.title.isNotEmpty, isTrue);
           expect(sc.subtitle.isNotEmpty, isTrue);

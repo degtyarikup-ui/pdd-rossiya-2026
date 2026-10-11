@@ -1840,6 +1840,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameCrossroadsCatTrafficLights => 'Traffic lights';
 
   @override
+  String get gameCrossroadsCatHard => 'Hard situations';
+
+  @override
+  String get crossroadsHardSituationBadge => '⚡ Hard situation • 3× points';
+
+  @override
+  String get crossroadsTimeBonus10s => '+10 sec';
+
+  @override
+  String get crossroadsPedestrian => 'Pedestrian';
+
+  @override
+  String get crossroadsReasonPedestrianViolation =>
+      'Did not yield to a pedestrian crossing the carriageway (clause 13.1 of the Russian Traffic Regulations). When turning, drivers must yield to pedestrians!';
+
+  @override
+  String get crossroadsArticlePedestrian =>
+      'Clause 13.1 of the Russian Traffic Regulations';
+
+  @override
   String gameCrossroadsSolvedCount(int count) {
     return 'Cleared: $count';
   }

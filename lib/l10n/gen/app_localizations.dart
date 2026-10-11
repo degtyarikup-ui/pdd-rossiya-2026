@@ -3226,6 +3226,42 @@ abstract class AppLocalizations {
   /// **'Светофоры'**
   String get gameCrossroadsCatTrafficLights;
 
+  /// No description provided for @gameCrossroadsCatHard.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сложные ситуации'**
+  String get gameCrossroadsCatHard;
+
+  /// No description provided for @crossroadsHardSituationBadge.
+  ///
+  /// In ru, this message translates to:
+  /// **'⚡ Сложная ситуация • 3× очков'**
+  String get crossroadsHardSituationBadge;
+
+  /// No description provided for @crossroadsTimeBonus10s.
+  ///
+  /// In ru, this message translates to:
+  /// **'+10 сек'**
+  String get crossroadsTimeBonus10s;
+
+  /// No description provided for @crossroadsPedestrian.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пешеход'**
+  String get crossroadsPedestrian;
+
+  /// No description provided for @crossroadsReasonPedestrianViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не уступили дорогу пешеходу, переходящему проезжую часть (п. 13.1 ПДД РФ). При повороте водитель обязан уступить пешеходам!'**
+  String get crossroadsReasonPedestrianViolation;
+
+  /// No description provided for @crossroadsArticlePedestrian.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пункт 13.1 ПДД РФ'**
+  String get crossroadsArticlePedestrian;
+
   /// No description provided for @gameCrossroadsSolvedCount.
   ///
   /// In ru, this message translates to:

@@ -1696,7 +1696,9 @@
     let mesh;
     const color = actorData.color || '#317ED4';
 
-    if (actorData.type === 'tram') {
+    if (actorData.type === 'pedestrian') {
+      mesh = buildPedestrianModel(color);
+    } else if (actorData.type === 'tram') {
       mesh = buildTramModel(color);
     } else if (actorData.type === 'truck') {
       mesh = buildTruckModel(color);
@@ -1718,18 +1720,19 @@
       mesh = buildFallbackCar(color);
     }
 
-    // Создаем интерактивный парящий бейдж над автомобилем
+    // Создаем интерактивный парящий бейдж над автомобилем или пешеходом
     const badge = createVehicleBadge(actorData);
     mesh.add(badge);
     mesh.userData.badge = badge;
     mesh.userData.actorId = actorData.id;
 
     // Невидимый объемный хитбокс для безотказного нажатия на мобильных устройствах
-    let boxH = 3.6, boxL = 6.2;
+    let boxH = 3.6, boxL = 6.2, boxW = 4.2;
     if (actorData.type === 'tram') { boxH = 5.2; boxL = 15.6; }
     else if (actorData.type === 'bus') { boxH = 4.8; boxL = 12.0; }
     else if (actorData.type === 'truck') { boxH = 4.6; boxL = 8.5; }
-    const hitGeo = new THREE.BoxGeometry(4.2, boxH, boxL);
+    else if (actorData.type === 'pedestrian') { boxH = 3.6; boxL = 3.2; boxW = 3.2; }
+    const hitGeo = new THREE.BoxGeometry(boxW, boxH, boxL);
     const hitMat = new THREE.MeshBasicMaterial({ visible: false });
     const hitBox = new THREE.Mesh(hitGeo, hitMat);
     hitBox.position.set(0, boxH / 2, 0);
@@ -1747,6 +1750,44 @@
     });
 
     return mesh;
+  }
+
+  function buildPedestrianModel(colorHex) {
+    let mesh;
+    const c = typeof colorHex === 'number' ? colorHex : (parseInt(String(colorHex).replace('#', ''), 16) || 0x2E5B88);
+    if (window.PDD_STREET && window.PDD_STREET.createPedestrian) {
+      mesh = window.PDD_STREET.createPedestrian(c, 0);
+    } else {
+      mesh = buildFallbackPedestrian(c);
+    }
+    mesh.scale.set(1.4, 1.4, 1.4);
+    mesh.userData.isPedestrian = true;
+    return mesh;
+  }
+
+  function buildFallbackPedestrian(colorHex) {
+    const ped = new THREE.Group();
+    const c = typeof colorHex === 'number' ? colorHex : (parseInt(String(colorHex).replace('#', ''), 16) || 0x2E5B88);
+    const bodyMat = new THREE.MeshLambertMaterial({ color: c });
+    const skinMat = new THREE.MeshLambertMaterial({ color: 0xF3C299 });
+    const pantsMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+
+    const legL = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.18), pantsMat);
+    legL.position.set(-0.12, 0.35, 0);
+    ped.add(legL);
+    const legR = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.18), pantsMat);
+    legR.position.set(0.12, 0.35, 0);
+    ped.add(legR);
+
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.65, 0.28), bodyMat);
+    torso.position.set(0, 0.95, 0);
+    ped.add(torso);
+
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), skinMat);
+    head.position.set(0, 1.42, 0);
+    ped.add(head);
+
+    return ped;
   }
 
   function buildTruckModel(colorHex) {
@@ -2187,7 +2228,43 @@
     priority: { fill: '#FFA53C', ink: '#FFFFFF' },
   };
 
+  function drawPedestrianIcon(ctx, ink) {
+    ctx.save();
+    ctx.translate(128, 102);
+    ctx.fillStyle = ink;
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Голова
+    ctx.beginPath();
+    ctx.arc(0, -32, 13, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Корпус
+    ctx.beginPath();
+    ctx.moveTo(0, -16);
+    ctx.lineTo(0, 10);
+    // Ноги
+    ctx.moveTo(0, 10);
+    ctx.lineTo(-15, 42);
+    ctx.moveTo(0, 10);
+    ctx.lineTo(16, 42);
+    // Руки
+    ctx.moveTo(-16, 6);
+    ctx.lineTo(0, -10);
+    ctx.lineTo(16, 8);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
   function drawManeuver(ctx, maneuver, ink) {
+    if (maneuver === 'cross') {
+      drawPedestrianIcon(ctx, ink);
+      return;
+    }
     ctx.save();
     ctx.translate(128, 104);
     ctx.strokeStyle = ink; ctx.fillStyle = ink;
@@ -2315,6 +2392,7 @@
     if (actorData.type === 'tram') h = 3.9;
     else if (actorData.type === 'bus') h = 3.4;
     else if (actorData.type === 'truck') h = 3.3;
+    else if (actorData.type === 'pedestrian') h = 2.4;
     else if (actorData.type === 'motorcycle') h = 1.9;
     h += 0.5;
     badgeGroup.position.set(0, h, 0);
@@ -2354,8 +2432,35 @@
     paintBadge(u, u.status, text);
   }
 
-  // Позиционирование машин перед перекрестком
+  function getPedestrianCrossStart(sideName) {
+    const crossingDist = HALF_ROAD + 3.8;
+    const curbDist = HALF_ROAD + 1.6;
+    if (sideName === 'south') return new THREE.Vector3(-curbDist, 0.16, crossingDist);
+    if (sideName === 'north') return new THREE.Vector3(curbDist, 0.16, -crossingDist);
+    if (sideName === 'east') return new THREE.Vector3(crossingDist, 0.16, curbDist);
+    return new THREE.Vector3(-crossingDist, 0.16, -curbDist);
+  }
+
+  function getPedestrianCrossEnd(sideName) {
+    const crossingDist = HALF_ROAD + 3.8;
+    const curbDist = HALF_ROAD + 1.6;
+    if (sideName === 'south') return new THREE.Vector3(curbDist, 0.16, crossingDist);
+    if (sideName === 'north') return new THREE.Vector3(-curbDist, 0.16, -crossingDist);
+    if (sideName === 'east') return new THREE.Vector3(crossingDist, 0.16, -curbDist);
+    return new THREE.Vector3(-crossingDist, 0.16, curbDist);
+  }
+
+  // Позиционирование машин и пешеходов перед перекрестком
   function placeActorAtStart(actorMesh, sideName) {
+    if (actorMesh.userData.isPedestrian) {
+      const p = getPedestrianCrossStart(sideName);
+      actorMesh.position.copy(p);
+      if (sideName === 'south') actorMesh.rotation.y = Math.PI / 2;
+      else if (sideName === 'north') actorMesh.rotation.y = -Math.PI / 2;
+      else if (sideName === 'east') actorMesh.rotation.y = Math.PI;
+      else if (sideName === 'west') actorMesh.rotation.y = 0;
+      return;
+    }
     const isTram = !!actorMesh.userData.isTram;
     const isBus = !!actorMesh.userData.isBus;
     const isTruck = !!actorMesh.userData.isTruck;
@@ -2640,7 +2745,16 @@
     } else {
       // ОШИБКА / ДТП!
       // Игрок выбрал машину без преимущества. Начинается кинематографичная авария!
-      triggerCollision(chosen, priorityActor);
+      if (priorityActor.data.type === 'pedestrian' && chosen.data.type !== 'pedestrian') {
+        triggerCollision(chosen, priorityActor, {
+          reasonCode: 'pedestrianViolation',
+          pddArticleCode: '13.1',
+          reason: 'Не уступили дорогу пешеходу, переходящему проезжую часть (п. 13.1 ПДД РФ). При повороте водитель обязан уступить пешеходам!',
+          pddArticle: 'Пункт 13.1 ПДД РФ',
+        });
+      } else {
+        triggerCollision(chosen, priorityActor);
+      }
     }
   }
 
@@ -2650,6 +2764,7 @@
     const side = data.side;
     const maneuver = data.maneuver;
     const isTram = data.type === 'tram';
+    const isPedestrian = data.type === 'pedestrian' || maneuver === 'cross';
 
     // Формируем контрольные точки траектории Безье строго от текущей позиции
     const path = generateTrajectory(mesh, side, maneuver, isTram);
@@ -2658,7 +2773,7 @@
     if (maneuver === 'left' || maneuver === 'uTurn') steerAngle = -0.42;
     else if (maneuver === 'right') steerAngle = 0.42;
 
-    if (audio) {
+    if (!isPedestrian && audio) {
       audio.engine(data.type, isTram ? 2.6 : 2.0);
       if (data.hasSiren) audio.siren(2.2);
     }
@@ -2667,7 +2782,9 @@
       mesh,
       path,
       progress: 0,
-      speed: isTram ? 0.38 : 0.48,
+      speed: isPedestrian ? 0.32 : (isTram ? 0.38 : 0.48),
+      isPedestrian,
+      walkTime: 0,
       wheels: mesh.userData.wheels || [],
       frontAxles: mesh.userData.frontAxles || [],
       steerAngle,
@@ -2683,6 +2800,11 @@
     const pStart = mesh.position.clone();
     const exitD = HALF_ROAD + 32.0;
     const laneX = isTram ? 0 : LANE_OFFSET;
+
+    if (maneuver === 'cross') {
+      const pEnd = getPedestrianCrossEnd(side);
+      return new THREE.LineCurve3(pStart, pEnd);
+    }
 
     if (maneuver === 'uTurn') {
       let pEnd, pC1, pC2;
@@ -2800,6 +2922,7 @@
     if (type === 'bus') return { front: 4.62, side: 1.18, isBus: true };
     if (type === 'truck') return { front: 3.8, side: 1.2, isTruck: true };
     if (type === 'motorcycle') return { front: 1.1, side: 0.45, isMoto: true };
+    if (type === 'pedestrian') return { front: 0.5, side: 0.5, isPedestrian: true };
     return { front: 2.25, side: 0.95 }; // car / police / emergency
   }
 
@@ -2809,6 +2932,15 @@
     drivingAnimations = [];
     wrongActor.state = 'crashed';
     priorityActor.state = 'crashed';
+
+    if (priorityActor.data.type === 'pedestrian' && !customError) {
+      customError = {
+        reasonCode: 'pedestrianViolation',
+        pddArticleCode: '13.1',
+        reason: 'Не уступили дорогу пешеходу, переходящему проезжую часть (п. 13.1 ПДД РФ). При повороте водитель обязан уступить пешеходам!',
+        pddArticle: 'Пункт 13.1 ПДД РФ',
+      };
+    }
 
     // Формируем реальные кривые траекторий участников через перекресток
     const pathW = generateTrajectory(wrongActor.mesh, wrongActor.data.side, wrongActor.data.maneuver, wrongActor.data.type === 'tram');
@@ -2869,6 +3001,12 @@
     if (headOn) {
       contactDistW = extW.front + 0.15;
       contactDistP = extP.front + 0.15;
+    } else if (extP.isPedestrian) {
+      contactDistW = extW.front + 0.70; // Торможение ровно перед пешеходом на зебре
+      contactDistP = 0.05;
+    } else if (extW.isPedestrian) {
+      contactDistW = 0.05;
+      contactDistP = extP.front + 0.70;
     } else {
       contactDistW = extW.front + extP.side * 0.95 + 0.20;
       contactDistP = Math.max(0.2, extP.front * 0.15);
@@ -3188,10 +3326,18 @@
         const point = anim.path.getPoint(t);
         anim.mesh.position.copy(point);
 
-        // Вращение колес
-        anim.wheels.forEach(w => {
-          w.rotation.x += dt * 14.0;
-        });
+        // Анимация шагов пешехода или вращения колес транспорта
+        if (anim.isPedestrian) {
+          anim.walkTime = (anim.walkTime || 0) + dt;
+          if (window.PDD_STREET && window.PDD_STREET.animateWalk) {
+            window.PDD_STREET.animateWalk(anim.mesh, anim.walkTime * 7.5, 0.9);
+          }
+        } else {
+          // Вращение колес
+          anim.wheels.forEach(w => {
+            w.rotation.x += dt * 14.0;
+          });
+        }
 
         // Направление кузова строго по касательной траектории Безье
         const tangent = anim.path.getTangent(Math.min(0.999, t));
@@ -3273,7 +3419,14 @@
       if (progress >= 1.0 && !c.impactHandled) {
         c.impactHandled = true;
         camShake = 0.55;
-        if (audio) audio.crash();
+        if (audio) {
+          if ((c.extP && c.extP.isPedestrian) || (c.extW && c.extW.isPedestrian)) {
+            if (audio.screech) audio.screech();
+            else audio.crash();
+          } else {
+            audio.crash();
+          }
+        }
         createCrashParticles(c.impactPoint);
         createCrashSmoke(c.impactPoint);
 
@@ -3285,8 +3438,8 @@
         createSkidMarks(c.priorityActor.mesh.position, dirP, c.priorityActor.data.side, c.extP.isTram);
 
         // Реалистичный отскок от удара назад по вектору своего движения
-        const recoilW = c.extW.isTram ? 0.08 : 0.22;
-        const recoilP = c.extP.isTram ? 0.06 : 0.16;
+        const recoilW = c.extW.isTram ? 0.08 : (c.extW.isPedestrian ? 0 : 0.22);
+        const recoilP = c.extP.isTram ? 0.06 : (c.extP.isPedestrian ? 0 : 0.16);
         c.wrongActor.mesh.position.sub(dirW.clone().multiplyScalar(recoilW));
         c.priorityActor.mesh.position.sub(dirP.clone().multiplyScalar(recoilP));
 
@@ -3294,11 +3447,14 @@
         const tiltW = c.extW.isTram ? 0.012 : 0.035;
         const tiltP = c.extP.isTram ? 0.010 : 0.030;
 
-        c.wrongActor.mesh.rotation.z += (dirW.x !== 0 ? -dirW.x : 1) * tiltW;
-        c.wrongActor.mesh.rotation.x += (dirW.z !== 0 ? dirW.z : 1) * tiltW * 0.5;
-
-        c.priorityActor.mesh.rotation.z += (dirP.x !== 0 ? dirP.x : -1) * tiltP;
-        c.priorityActor.mesh.rotation.x += (dirP.z !== 0 ? -dirP.z : 1) * tiltP * 0.5;
+        if (!c.extW.isPedestrian) {
+          c.wrongActor.mesh.rotation.z += (dirW.x !== 0 ? -dirW.x : 1) * tiltW;
+          c.wrongActor.mesh.rotation.x += (dirW.z !== 0 ? dirW.z : 1) * tiltW * 0.5;
+        }
+        if (!c.extP.isPedestrian) {
+          c.priorityActor.mesh.rotation.z += (dirP.x !== 0 ? dirP.x : -1) * tiltP;
+          c.priorityActor.mesh.rotation.x += (dirP.z !== 0 ? -dirP.z : 1) * tiltP * 0.5;
+        }
 
         c.wrongActor.mesh.userData.hazardLights = true;
         c.priorityActor.mesh.userData.hazardLights = true;
