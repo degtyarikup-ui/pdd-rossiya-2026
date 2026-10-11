@@ -9,6 +9,8 @@ extends CanvasLayer
 signal answer_chosen(index: int)
 signal continue_pressed
 signal pause_pressed
+signal exit_pressed
+signal resume_pressed
 
 var snow := false                 # winter: HUD numbers are dark on the light snow
 
@@ -300,7 +302,10 @@ static func _picture_of(scene_id: String) -> String:
 
 ## The original ticket picture over the game; a tap anywhere closes it.
 func _show_picture(scene_id: String) -> void:
-	var tex := load("res://questions/%s.webp" % _picture_of(scene_id)) as Texture2D
+	# Kept as webp in the pack (importer "keep"): decoded only when shown.
+	var bytes := FileAccess.get_file_as_bytes("res://questions/%s.webp" % _picture_of(scene_id))
+	var img := Image.new()
+	var tex: Texture2D = ImageTexture.create_from_image(img) if img.load_webp_from_buffer(bytes) == OK else null
 	if tex == null:
 		return
 	var shade := ColorRect.new()
@@ -533,5 +538,31 @@ func show_result(summary: Dictionary) -> void:
 	box.add_child(Ui.label("%s: %s" % [Ui.t("gameCorrectAnswers"), Ui.t("gameAnswersOf", { "correct": summary.correct, "total": summary.answered })], 14, 600, Ui.c("text"), true))
 	box.add_child(Ui.label("%s: %d" % [Ui.t("gameScore"), summary.score], 14, 600, Ui.c("text")))
 	box.add_child(Ui.label(Ui.t("gameNoViolations") if summary.violations == 0 else "%s: %d" % [Ui.t("gameViolations"), summary.violations], 14, 500, Ui.c("secondary")))
+	box.add_child(_wide_button(Ui.t("gameExit"), Ui.c("accent"), Color.WHITE, func(): exit_pressed.emit()))
 	_root.add_child(_sheet)
 	_place_sheet(_sheet)
+
+
+## Pause: back to the road or leave the run (the app keeps its score).
+func show_pause() -> void:
+	hide_cards()
+	var shell := _sheet_shell(0.5)
+	_sheet = shell[0]
+	var box: VBoxContainer = shell[1]
+	box.add_child(Ui.label(Ui.t("gamePause"), 18, 800, Ui.c("text")))
+	box.add_child(_wide_button(Ui.t("gameLobbyContinue"), Ui.c("accent"), Color.WHITE, func(): resume_pressed.emit()))
+	box.add_child(_wide_button(Ui.t("gameExit"), Ui.c("gray"), Ui.c("text"), func(): exit_pressed.emit()))
+	_root.add_child(_sheet)
+	_place_sheet(_sheet)
+
+
+func _wide_button(text: String, bg: Color, fg: Color, action: Callable) -> PanelContainer:
+	var btn := PanelContainer.new()
+	btn.custom_minimum_size = Vector2(0, 50)
+	btn.add_theme_stylebox_override("panel", Ui.box(bg, 12))
+	var bl := Ui.label(text, 15, 700, fg)
+	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	btn.add_child(bl)
+	_tap(btn, action)
+	return btn

@@ -48,6 +48,20 @@
                 <data android:scheme="ru.pdd.pddapp" android:host="oauth" />
             </intent-filter>
         </activity>
+        <!-- 3D-игра на Godot (game_godot/): свой процесс — движок не перезапускается
+             внутри одного процесса и закрывает его при выходе. Класс есть только
+             в сборке с движком (scripts/godot_android_assets.sh). -->
+        <activity
+            android:name=".game.GodotGameActivity"
+            android:process=":game"
+            android:exported="false"
+            android:theme="@style/GodotGameTheme"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:configChanges="layoutDirection|locale|orientation|keyboardHidden|screenSize|smallestScreenSize|density|keyboard|navigation|screenLayout|uiMode"
+            android:resizeableActivity="false" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

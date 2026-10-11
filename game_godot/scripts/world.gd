@@ -25,6 +25,7 @@ var chunk_index: Array[int] = []  # world chunk number shown in each ring slot
 var road_nodes: Array[MeshInstance3D] = []
 var scenery: Scenery
 var street: Street
+var paused := false
 var ghost: Node3D                 # the street before the last turn, frozen until it is far behind
 var ghost_until := 0.0
 var blanks: Array = []            # [z0, z1]: an exam junction has its own streets there
@@ -137,6 +138,11 @@ func _ready() -> void:
 	sound.enabled = not _is_test_run() or _has_arg("--sound")
 	ui.answer_chosen.connect(_on_answer_chosen)
 	ui.continue_pressed.connect(_on_continue)
+	ui.pause_pressed.connect(_on_pause)
+	ui.resume_pressed.connect(_on_resume)
+	ui.exit_pressed.connect(_on_exit)
+	# Android «back» opens the pause instead of closing the app's game screen at once.
+	get_tree().quit_on_go_back = false
 	hud = PerfHud.new()
 	add_child(hud)
 	hud.tier_changed.connect(_apply_tier)
@@ -874,6 +880,7 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 		controls.set_active(false)
 		ui.show_result(run.summary())
 		event.emit({ "event": "run_finished", "summary": run.summary() })
+		Host.send({ "event": "run_finished", "summary": run.summary() })
 	print("[game] cleared ", sit.id, " by ", exit_direction)
 	if follow:
 		print("[jerk] %s %s: max yaw %.2f rad/s, camera %.2f m/s, camera heading %.2f rad/s" % [sit.id, exit_direction, jerk.yaw, jerk.cam, jerk.heading])
@@ -1132,7 +1139,38 @@ func _update_walkers(delta: float) -> void:
 
 # --- frame -----------------------------------------------------------------
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		if phase == "over" or paused:
+			_on_exit()
+		else:
+			_on_pause()
+	elif what == NOTIFICATION_APPLICATION_PAUSED and phase in ["driving", "resolving"]:
+		_on_pause()
+
+
+## Pause (top-left button, Android «back»): not while a question waits for its answer.
+func _on_pause() -> void:
+	if paused or phase in ["question", "over"] or (road != null and road_phase == "question"):
+		return
+	paused = true
+	controls.set_active(false)
+	ui.show_pause()
+
+
+func _on_resume() -> void:
+	paused = false
+	ui.hide_cards()
+	controls.set_active(true)
+
+
+func _on_exit() -> void:
+	Host.exit(run.summary(), get_tree())
+
+
 func _process(delta: float) -> void:
+	if paused:
+		return
 	delta = minf(delta, 0.05)
 	if phase == "question" and ui.tick(delta) and not question_over:
 		_on_answer_chosen(-1)

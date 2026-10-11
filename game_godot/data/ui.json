@@ -36,7 +36,9 @@
   "gameScore": "Счёт",
   "gameBrake": "Тормоз · назад при остановке",
   "gameGasHint": "Зажмите и держите — это газ",
-  "gameResolving": "Газ — ехать · стрелки — рулить"
+  "gameResolving": "Газ — ехать · стрелки — рулить",
+  "gameExit": "Выйти",
+  "gameLobbyContinue": "Продолжить заезд"
  },
  "en": {
   "gameSeconds": "s",
@@ -75,7 +77,9 @@
   "gameScore": "Score",
   "gameBrake": "Brake · back when stopping",
   "gameGasHint": "Press and hold - this is gas",
-  "gameResolving": "Gas - drive · arrows - steer"
+  "gameResolving": "Gas - drive · arrows - steer",
+  "gameExit": "Exit",
+  "gameLobbyContinue": "Continue race"
  },
  "kk": {
   "gameSeconds": "с",
@@ -114,6 +118,8 @@
   "gameScore": "Ұпай",
   "gameBrake": "Тоқтаған кезде кері тежеңіз",
   "gameGasHint": "Басып ұстап тұрыңыз - бұл газ",
-  "gameResolving": "Газ — жүру · көрсеткілер — бұру"
+  "gameResolving": "Газ — жүру · көрсеткілер — бұру",
+  "gameExit": "Шығу",
+  "gameLobbyContinue": "Жүруді жалғастырыңыз"
  }
 }
