@@ -68,6 +68,8 @@ var limit_kmh := 60                # built-up area unless a sign says otherwise
 var question_over := false         # answered, the card is about to leave
 var topdown_cam_locked := false
 var topdown_now := false
+var previews := false             # --previews --out=<dir>: pictures of all junctions in one run
+var previews_out := ""
 var topdown := ""                # --topdown=<png>: straight-down picture of the junction (editor background)
 var follow := false                # --follow: a debug driver steers along the chosen exit
 var jerk := { "yaw": 0.0, "cam": 0.0, "heading": 0.0, "turns": 0 }   # largest per-frame steps seen (debug)
@@ -141,6 +143,10 @@ func _ready() -> void:
 			near_debug = true
 		if arg == "--debug":
 			dbg_every = 1.0
+		if arg == "--previews":
+			previews = true
+		if arg.begins_with("--out="):
+			previews_out = arg.trim_prefix("--out=")
 		if arg.begins_with("--topdown="):
 			topdown = arg.trim_prefix("--topdown=")
 			near_debug = false
@@ -156,6 +162,8 @@ func _ready() -> void:
 		if arg == "--overview":
 			overview = true
 			(find_children("*", "WorldEnvironment", false, false)[0] as WorldEnvironment).environment.fog_enabled = false
+	if previews:
+		call_deferred("_run_previews")
 	if topdown_now:
 		spawn_after = -1.0e9   # the junction is laid out at once
 	for arg in OS.get_cmdline_user_args():
@@ -196,6 +204,46 @@ func _season() -> String:
 	# Same calendar as seasons.js: Sep–Nov autumn, Dec–Feb winter.
 	var m: int = Time.get_date_dict_from_system().month
 	return "autumn" if m >= 9 and m <= 11 else ("winter" if m == 12 or m <= 2 else "summer")
+
+
+## Every junction, one after another, in this one run (no window restarts):
+## each is placed far from the car, photographed straight down, then removed.
+func _run_previews() -> void:
+	await get_tree().process_frame
+	var ids := []
+	for f in DirAccess.get_files_at("res://network"):
+		if f.ends_with(".json"):
+			ids.append(f.trim_suffix(".json"))
+	ids.sort()
+	DirAccess.make_dir_recursive_absolute(previews_out)
+	(find_children("*", "WorldEnvironment", false, false)[0] as WorldEnvironment).environment.fog_enabled = false
+	ui.visible = false
+	hud.visible = false
+	controls.set_active(false)
+	if leaves:
+		leaves.visible = false
+	topdown_cam_locked = true
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	camera.keep_aspect = Camera3D.KEEP_HEIGHT
+	camera.size = 190.0
+	var n := 0
+	for id in ids:
+		var sit := Situation.load_scene(id, scenery)
+		if sit == null:
+			continue
+		sit.position = Vector3(0.0, 0.0, 3000.0 + float(n) * 1000.0)
+		add_child(sit)
+		sit.set_evidence_visible(false)
+		camera.position = sit.global_position + Vector3(0, 300, 0)
+		camera.look_at(sit.global_position, Vector3(0, 0, 1))
+		await get_tree().process_frame
+		await get_tree().process_frame
+		get_viewport().get_texture().get_image().save_png(previews_out.path_join(id + ".png"))
+		print("[preview] ", id)
+		sit.queue_free()
+		await get_tree().process_frame
+		n += 1
+	get_tree().quit()
 
 
 ## Straight-down picture of one junction (north = +Z, like the editor): 190 m across.
