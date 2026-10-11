@@ -317,9 +317,9 @@ func _process(delta: float) -> void:
 		speed = minf(max_speed, speed + p.accel * delta)
 	else:
 		speed = maxf(0.0, speed - p.drag * delta)
-	var lateral: float = -controls.steer * p.steer_speed * delta * clampf(speed / 4.0, 0.0, 1.0)
+	var lateral: float = controls.steer * p.steer_speed * delta * clampf(speed / 4.0, 0.0, 1.0)
 	player.position.x = clampf(player.position.x + lateral, -road_half + 1.0, road_half - 1.0)
-	player.rotation.y = lerp_angle(player.rotation.y, -controls.steer * 0.12 * clampf(speed / 6.0, 0, 1), 0.2)
+	player.rotation.y = lerp_angle(player.rotation.y, controls.steer * 0.12 * clampf(speed / 6.0, 0, 1), 0.2)
 	player.position.z += speed * delta
 	_update_traffic(delta)
 	_update_walkers(delta)
