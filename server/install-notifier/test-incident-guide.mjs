@@ -1,7 +1,7 @@
 // Сообщения об ошибках в Telegram: срочность, «что делать» и разбор причин.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { incidentGuide } from './incident_copy.js';
+import { incidentCopy, incidentGuide, platformLabel } from './incident_copy.js';
 import { buildIncidentMessage } from './diagnostics.js';
 
 const base = { ts: Date.UTC(2026, 9, 10, 12), origin: 'client', category: 'auth', operation: 'auth.provider', code: 'timeout', userId: 'google_1', userName: 'Анна', userEmail: 'a@b.ru' };
@@ -65,4 +65,19 @@ test('сообщение: уровень, «Что делать», страна;
   // Самый длинный вариант: максимум советов и длинные данные пользователя.
   const longest = buildIncidentMessage({ ...base, userName: '&'.repeat(120), userEmail: '&'.repeat(160), device: '&'.repeat(100), userId: '&'.repeat(200), country: 'BY', platform: 'android', appVersion: '2.2.3+59', store: 'rustore', installation: 'a'.repeat(16), diagnosticId: 'a'.repeat(8) + '-' + 'a'.repeat(4) + '-' + 'a'.repeat(4) + '-' + 'a'.repeat(4) + '-' + 'a'.repeat(12), category: 'purchase', operation: 'premium.verify', code: 'purchase_belongs_to_another_account', status: 403 }, 99, 99);
   assert.ok(longest.length < 4096, 'длина ' + longest.length);
+});
+
+test('платформа приходит из приложения именем enum («iOS», «macOS»), а не строчными буквами', () => {
+  assert.equal(platformLabel('iOS'), 'iOS');
+  assert.equal(platformLabel('macOS'), 'macOS');
+  assert.equal(platformLabel('android'), 'Android');
+  assert.equal(platformLabel('plan9'), 'Не определена');
+  assert.equal(platformLabel(undefined), 'Не определена');
+  assert.match(buildIncidentMessage({ ...base, platform: 'iOS' }), /Платформа:<\/b> iOS/);
+});
+
+test('пустой ответ магазина объясняется понятной причиной, а не «Точная причина не определена»', () => {
+  const copy = incidentCopy({ ...base, category: 'purchase', operation: 'iap.products', code: 'products_not_found' });
+  assert.match(copy.reason, /не вернул наш тариф Premium/);
+  assert.match(incidentCopy({ ...base, category: 'purchase', operation: 'iap.products', code: 'channel-error' }).reason, /Модуль покупок/);
 });

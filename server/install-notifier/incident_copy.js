@@ -63,6 +63,9 @@ const REASONS = {
   missing_credential: 'Сервис входа не вернул подтверждение аккаунта.',
   provider_rejected: 'Сервис входа сообщил об отказе.',
   invalid_response: 'Получен ответ в неожиданном формате.',
+  products_not_found: 'Магазин ответил без ошибки, но не вернул наш тариф Premium.',
+  'channel-error': 'Модуль покупок в приложении не получил ответ от магазина.',
+  'null-error': 'Модуль покупок в приложении получил пустой ответ от магазина.',
   page_load_failed: 'Страница входа не загрузилась.',
   sign_in_failed: 'Сервис входа сообщил об ошибке.',
   sign_in_required: 'Для продолжения нужно повторить вход.',
@@ -277,6 +280,10 @@ export function incidentGuide(event) {
 const PROVIDERS = { google: 'Google', apple: 'Apple ID', yandex: 'Яндекс', appstore: 'App Store', googleplay: 'Google Play', platega: 'СБП · Platega', firebase: 'Firebase' };
 const PLATFORMS = { android: 'Android', ios: 'iOS', web: 'Веб', macos: 'macOS', windows: 'Windows', linux: 'Linux' };
 export const providerLabel = value => Object.hasOwn(PROVIDERS, value) ? PROVIDERS[value] : 'Не определён';
-export const platformLabel = value => Object.hasOwn(PLATFORMS, value) ? PLATFORMS[value] : 'Не определена';
+// Приложение присылает TargetPlatform по имени enum: «iOS», «macOS» — без регистра не совпадали.
+export const platformLabel = value => {
+  const key = String(value ?? '').toLowerCase();
+  return Object.hasOwn(PLATFORMS, key) ? PLATFORMS[key] : 'Не определена';
+};
 const STORES = { googlePlay: 'Google Play', rustore: 'RuStore' };
 export const storeLabel = value => Object.hasOwn(STORES, value) ? STORES[value] : 'Не определён';
