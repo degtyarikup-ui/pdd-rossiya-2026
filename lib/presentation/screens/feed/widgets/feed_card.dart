@@ -13,6 +13,7 @@ import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:pdd_app/presentation/widgets/question_image.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 
 class FeedCard extends ConsumerStatefulWidget {
   final FeedItem item;
@@ -440,8 +441,8 @@ class _FeedCardState extends ConsumerState<FeedCard>
                 const SizedBox(width: 4),
                 Text(
                   _selectedAnswerIndex == widget.item.correctAnswerIndex
-                      ? 'Верно'
-                      : 'Ошибка',
+                      ? appL10n.gameCorrectShort
+                      : appL10n.mistakeLabel,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -490,7 +491,7 @@ class _FeedCardState extends ConsumerState<FeedCard>
                       Icon(Icons.timer_outlined, size: 13, color: fg),
                       const SizedBox(width: 4),
                       Text(
-                        '$remaining с',
+                        appL10n.gameSecondsLeft(remaining),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -526,11 +527,11 @@ class _FeedCardState extends ConsumerState<FeedCard>
             } else if (remaining > 0) {
               badgeBg = const Color(0xFFFFA53C);
               badgeTextColor = Colors.white;
-              badgeText = '$remaining из $limit';
+              badgeText = appL10n.feedLimitRemaining(remaining, limit);
             } else {
               badgeBg = const Color(0xFFED4621);
               badgeTextColor = Colors.white;
-              badgeText = '0 из $limit';
+              badgeText = appL10n.feedLimitRemaining(0, limit);
             }
 
             return GestureDetector(

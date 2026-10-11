@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
@@ -185,8 +186,7 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
         setState(() {
           _chatMessages.add(
             AiChatMessage(
-              text:
-                  'Не удалось получить ответ. Проверьте интернет-соединение и попробуйте еще раз.',
+              text: appL10n.aiLoadError,
               isUser: false,
               timestamp: DateTime.now(),
             ),
@@ -274,7 +274,7 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Разбор от ИИ',
+                                  appL10n.aiAnalysisTitle,
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
@@ -328,8 +328,11 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
                                 ),
                                 child: Text(
                                   remaining > 0
-                                      ? '$remaining из $limit'
-                                      : 'Лимит 0 из $limit',
+                                      ? appL10n.feedLimitRemaining(
+                                          remaining,
+                                          limit,
+                                        )
+                                      : appL10n.feedLimitRemaining(0, limit),
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
@@ -413,8 +416,8 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Лимит 10 вопросов исчерпан',
+                Text(
+                  appL10n.aiLimitExhausted(PremiumService.instance.aiFreeLimit),
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
@@ -424,7 +427,7 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Оформите Premium для безлимитного ИИ',
+                  appL10n.aiGoPremium,
                   style: TextStyle(
                     fontSize: 11.5,
                     color: Colors.white.withValues(alpha: 0.95),
@@ -480,7 +483,7 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
             ),
             const SizedBox(height: 16),
             Text(
-              'ИИ анализирует ситуацию на дороге...',
+              appL10n.aiThinking,
               style: TextStyle(
                 fontSize: 14,
                 color: colors.secondaryText,
@@ -501,7 +504,7 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Не удалось загрузить ответ',
+              appL10n.aiLoadFailed,
               style: TextStyle(
                 color: colors.red,
                 fontSize: 14,
@@ -519,8 +522,8 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Повторить',
+              child: Text(
+                appL10n.gameRetry,
                 style: TextStyle(fontFamily: 'Onest'),
               ),
             ),
@@ -616,7 +619,7 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
                   ),
                   const SizedBox(width: 5),
                   Text(
-                    'ИИ-Автоинструктор',
+                    appL10n.aiSheetTitle,
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
@@ -731,7 +734,7 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Нейросеть печатает ответ...',
+              appL10n.aiTyping,
               style: TextStyle(
                 fontSize: 12.5,
                 color: colors.secondaryText,
@@ -808,7 +811,7 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
                   fontFamily: 'Onest',
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Задайте вопрос нейросети...',
+                  hintText: appL10n.aiInputHint,
                   hintStyle: TextStyle(
                     fontSize: 13.5,
                     color: colors.secondaryText,

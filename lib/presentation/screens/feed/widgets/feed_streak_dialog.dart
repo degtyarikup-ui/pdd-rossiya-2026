@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 
 class FeedStreakMilestone {
   final int count;
@@ -25,51 +26,51 @@ class FeedStreakMilestone {
   static FeedStreakMilestone? forCount(int count) {
     switch (count) {
       case 5:
-        return const FeedStreakMilestone(
+        return FeedStreakMilestone(
           count: 5,
-          badgeText: '5 ПОДРЯД! 🔥',
-          title: 'Старт идеальный!',
-          subtitle: 'Мотор прогрет, жми дальше!',
+          badgeText: '${appL10n.streakBadge(5)} 🔥',
+          title: appL10n.streakTitle5,
+          subtitle: appL10n.streakSubtitle5,
           imagePath: 'assets/images/streaks/streak_5.png',
           fallbackIcon: Icons.local_fire_department_rounded,
           accentColor: Color(0xFFFFA53C),
         );
       case 10:
-        return const FeedStreakMilestone(
+        return FeedStreakMilestone(
           count: 10,
-          badgeText: '10 ПОДРЯД! ⚡',
-          title: 'В потоке без ошибок!',
-          subtitle: 'Ты отлично чувствуешь дорогу!',
+          badgeText: '${appL10n.streakBadge(10)} ⚡',
+          title: appL10n.streakTitle10,
+          subtitle: appL10n.streakSubtitle10,
           imagePath: 'assets/images/streaks/streak_10.png',
           fallbackIcon: Icons.bolt_rounded,
           accentColor: Color(0xFFFFA53C),
         );
       case 20:
-        return const FeedStreakMilestone(
+        return FeedStreakMilestone(
           count: 20,
-          badgeText: '20 ПОДРЯД! 🏎️',
-          title: 'Огненный форсаж!',
-          subtitle: 'Билет за билетом! Инспектор в шоке!',
+          badgeText: '${appL10n.streakBadge(20)} 🏎️',
+          title: appL10n.streakTitle20,
+          subtitle: appL10n.streakSubtitle20,
           imagePath: 'assets/images/streaks/streak_20.png',
           fallbackIcon: Icons.speed_rounded,
           accentColor: Color(0xFFED4621),
         );
       case 50:
-        return const FeedStreakMilestone(
+        return FeedStreakMilestone(
           count: 50,
-          badgeText: '50 ПОДРЯД! 💥',
-          title: 'Легенда автошколы!',
-          subtitle: 'Тебя уже ничто не остановит на дороге!',
+          badgeText: '${appL10n.streakBadge(50)} 💥',
+          title: appL10n.streakTitle50,
+          subtitle: appL10n.streakSubtitle50,
           imagePath: 'assets/images/streaks/streak_50.png',
           fallbackIcon: Icons.whatshot_rounded,
           accentColor: Color(0xFF8B5CF6),
         );
       case 100:
-        return const FeedStreakMilestone(
+        return FeedStreakMilestone(
           count: 100,
-          badgeText: '100 ПОДРЯД! 🌌',
-          title: 'Космический уровень!',
-          subtitle: 'Экзамен сдашь даже с закрытыми глазами!',
+          badgeText: '${appL10n.streakBadge(100)} 🌌',
+          title: appL10n.streakTitle100,
+          subtitle: appL10n.streakSubtitle100,
           imagePath: 'assets/images/streaks/streak_100.png',
           fallbackIcon: Icons.rocket_launch_rounded,
           accentColor: Color(0xFF06B6D4),
@@ -240,8 +241,8 @@ class FeedStreakDialog extends StatelessWidget {
                       ),
                     ),
                   ),
-                  child: const Text(
-                    'Продолжить',
+                  child: Text(
+                    appL10n.continueButton,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,

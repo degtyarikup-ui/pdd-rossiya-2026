@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/premium_granted_dialog.dart';
 
 void main() {
+  // Как в main(): данные дат для языков приложения загружаются до первого показа.
+  setUpAll(initAppDateFormatting);
+
   testWidgets(
     'PremiumGrantedDialog displays correct elements for limited duration',
     (tester) async {

@@ -5,6 +5,7 @@ import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/sources/driver_tips_data.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 
 class TipFeedCard extends StatefulWidget {
   final FeedItem item;
@@ -256,7 +257,7 @@ class _TipFeedCardState extends State<TipFeedCard>
                             Icon(Icons.timer_outlined, size: 13, color: fg),
                             const SizedBox(width: 4),
                             Text(
-                              '$remaining с',
+                              appL10n.gameSecondsLeft(remaining),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -280,7 +281,7 @@ class _TipFeedCardState extends State<TipFeedCard>
                     color: colors.accent,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
@@ -290,7 +291,7 @@ class _TipFeedCardState extends State<TipFeedCard>
                       ),
                       SizedBox(width: 5),
                       Text(
-                        'Совет',
+                        appL10n.feedTipLabel,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,

@@ -25,6 +25,23 @@ const Map<String, String> _kSignCategoryIcons = {
   'Информационные знаки': 'information.svg',
   'Знаки сервиса': 'service.svg',
   'Знаки дополнительной информации (таблички)': 'additional_info.svg',
+  // Казахский и английский: названия категорий берутся из signs_kk/signs_en.
+  'Ескерту белгілері': 'warning.svg',
+  'Басымдық белгілері': 'priority.svg',
+  'Тыйым салу белгілері': 'prohibitory.svg',
+  'Міндетті белгілер': 'mandatory.svg',
+  'Арнайы нормативтік актілердің белгілері': 'special_prescriptions.svg',
+  'Ақпараттық белгілер': 'information.svg',
+  'Қызмет көрсету белгілері': 'service.svg',
+  'Қосымша ақпарат белгілері (тақталар)': 'additional_info.svg',
+  'Warning sign': 'warning.svg',
+  'Priority signs': 'priority.svg',
+  'Prohibition signs': 'prohibitory.svg',
+  'Prescriptive signs': 'mandatory.svg',
+  'Signs of special regulations': 'special_prescriptions.svg',
+  'Information signs': 'information.svg',
+  'Service marks': 'service.svg',
+  'Additional information signs (plates)': 'additional_info.svg',
 };
 
 const String _kSignCategoryFallbackIcon = 'information.svg';
@@ -50,6 +67,10 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
   static const Map<String, String> _markupIcons = {
     'Горизонтальная разметка': 'markup_horizontal.svg',
     'Вертикальная разметка': 'markup_vertical.svg',
+    'Көлденең таңбалау': 'markup_horizontal.svg',
+    'Тік таңбалау': 'markup_vertical.svg',
+    'Horizontal marking': 'markup_horizontal.svg',
+    'Vertical marking': 'markup_vertical.svg',
   };
 
   @override

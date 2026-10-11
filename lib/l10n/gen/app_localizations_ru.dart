@@ -3217,4 +3217,146 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get yandexSignInTitle => 'Вход с Яндекс ID';
+
+  @override
+  String get examSpeedUnit => 'км/ч';
+
+  @override
+  String get feedLoadFailed => 'Не удалось загрузить вопросы';
+
+  @override
+  String get feedEmpty => 'Нет вопросов для отображения';
+
+  @override
+  String get feedSwipeHint => 'Свайпай';
+
+  @override
+  String get feedTipLabel => 'Совет';
+
+  @override
+  String feedLimitRemaining(int remaining, int limit) {
+    return '$remaining из $limit';
+  }
+
+  @override
+  String streakBadge(int count) {
+    return '$count ПОДРЯД';
+  }
+
+  @override
+  String get streakTitle5 => 'Старт идеальный!';
+
+  @override
+  String get streakSubtitle5 => 'Мотор прогрет, жми дальше!';
+
+  @override
+  String get streakTitle10 => 'В потоке без ошибок!';
+
+  @override
+  String get streakSubtitle10 => 'Ты отлично чувствуешь дорогу!';
+
+  @override
+  String get streakTitle20 => 'Огненный форсаж!';
+
+  @override
+  String get streakSubtitle20 => 'Билет за билетом! Инспектор в шоке!';
+
+  @override
+  String get streakTitle50 => 'Легенда автошколы!';
+
+  @override
+  String get streakSubtitle50 => 'Тебя уже ничто не остановит на дороге!';
+
+  @override
+  String get streakTitle100 => 'Космический уровень!';
+
+  @override
+  String get streakSubtitle100 => 'Экзамен сдашь даже с закрытыми глазами!';
+
+  @override
+  String get premiumGrantedLifetime => 'Вам открыт бессрочный доступ навсегда!';
+
+  @override
+  String get premiumGrantedToday => 'Доступ активен до конца сегодняшнего дня';
+
+  @override
+  String premiumGrantedDays(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days дня',
+      many: '$days дней',
+      few: '$days дня',
+      one: '$days день',
+    );
+    return 'Доступ открыт на $_temp0 (до $date)';
+  }
+
+  @override
+  String premiumGrantedMonth(String date) {
+    return 'Доступ открыт на 1 месяц (до $date)';
+  }
+
+  @override
+  String premiumGrantedQuarter(String date) {
+    return 'Доступ открыт на 3 месяца (до $date)';
+  }
+
+  @override
+  String premiumGrantedYear(String date) {
+    return 'Доступ открыт на 1 год (до $date)';
+  }
+
+  @override
+  String premiumGrantedUntil(String date) {
+    return 'Доступ активен до $date';
+  }
+
+  @override
+  String get premiumGrantedBadge => 'PRO ДОСТУП АКТИВИРОВАН';
+
+  @override
+  String get premiumGrantedTitle => 'Вам выдан Premium!';
+
+  @override
+  String get premiumGrantedFeatureFeed => 'Умная лента и все 800 вопросов';
+
+  @override
+  String get premiumGrantedFeatureAi => 'Подробные объяснения от ИИ';
+
+  @override
+  String get premiumGrantedFeatureNoAds => 'Полное отсутствие рекламы';
+
+  @override
+  String get premiumGrantedOk => 'Отлично, спасибо!';
+
+  @override
+  String get aiSheetTitle => 'ИИ-Автоинструктор';
+
+  @override
+  String get aiAnalysisTitle => 'Разбор от ИИ';
+
+  @override
+  String get aiLoadError =>
+      'Не удалось получить ответ. Проверьте интернет-соединение и попробуйте еще раз.';
+
+  @override
+  String get aiLoadFailed => 'Не удалось загрузить ответ';
+
+  @override
+  String get aiThinking => 'ИИ анализирует ситуацию на дороге...';
+
+  @override
+  String get aiTyping => 'Нейросеть печатает ответ...';
+
+  @override
+  String get aiInputHint => 'Задайте вопрос нейросети...';
+
+  @override
+  String aiLimitExhausted(int limit) {
+    return 'Лимит $limit вопросов исчерпан';
+  }
+
+  @override
+  String get aiGoPremium => 'Оформите Premium для безлимитного ИИ';
 }

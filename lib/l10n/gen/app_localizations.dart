@@ -5325,6 +5325,240 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Вход с Яндекс ID'**
   String get yandexSignInTitle;
+
+  /// No description provided for @examSpeedUnit.
+  ///
+  /// In ru, this message translates to:
+  /// **'км/ч'**
+  String get examSpeedUnit;
+
+  /// No description provided for @feedLoadFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить вопросы'**
+  String get feedLoadFailed;
+
+  /// No description provided for @feedEmpty.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет вопросов для отображения'**
+  String get feedEmpty;
+
+  /// No description provided for @feedSwipeHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Свайпай'**
+  String get feedSwipeHint;
+
+  /// No description provided for @feedTipLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Совет'**
+  String get feedTipLabel;
+
+  /// No description provided for @feedLimitRemaining.
+  ///
+  /// In ru, this message translates to:
+  /// **'{remaining} из {limit}'**
+  String feedLimitRemaining(int remaining, int limit);
+
+  /// No description provided for @streakBadge.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count} ПОДРЯД'**
+  String streakBadge(int count);
+
+  /// No description provided for @streakTitle5.
+  ///
+  /// In ru, this message translates to:
+  /// **'Старт идеальный!'**
+  String get streakTitle5;
+
+  /// No description provided for @streakSubtitle5.
+  ///
+  /// In ru, this message translates to:
+  /// **'Мотор прогрет, жми дальше!'**
+  String get streakSubtitle5;
+
+  /// No description provided for @streakTitle10.
+  ///
+  /// In ru, this message translates to:
+  /// **'В потоке без ошибок!'**
+  String get streakTitle10;
+
+  /// No description provided for @streakSubtitle10.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ты отлично чувствуешь дорогу!'**
+  String get streakSubtitle10;
+
+  /// No description provided for @streakTitle20.
+  ///
+  /// In ru, this message translates to:
+  /// **'Огненный форсаж!'**
+  String get streakTitle20;
+
+  /// No description provided for @streakSubtitle20.
+  ///
+  /// In ru, this message translates to:
+  /// **'Билет за билетом! Инспектор в шоке!'**
+  String get streakSubtitle20;
+
+  /// No description provided for @streakTitle50.
+  ///
+  /// In ru, this message translates to:
+  /// **'Легенда автошколы!'**
+  String get streakTitle50;
+
+  /// No description provided for @streakSubtitle50.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тебя уже ничто не остановит на дороге!'**
+  String get streakSubtitle50;
+
+  /// No description provided for @streakTitle100.
+  ///
+  /// In ru, this message translates to:
+  /// **'Космический уровень!'**
+  String get streakTitle100;
+
+  /// No description provided for @streakSubtitle100.
+  ///
+  /// In ru, this message translates to:
+  /// **'Экзамен сдашь даже с закрытыми глазами!'**
+  String get streakSubtitle100;
+
+  /// No description provided for @premiumGrantedLifetime.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вам открыт бессрочный доступ навсегда!'**
+  String get premiumGrantedLifetime;
+
+  /// No description provided for @premiumGrantedToday.
+  ///
+  /// In ru, this message translates to:
+  /// **'Доступ активен до конца сегодняшнего дня'**
+  String get premiumGrantedToday;
+
+  /// No description provided for @premiumGrantedDays.
+  ///
+  /// In ru, this message translates to:
+  /// **'Доступ открыт на {days, plural, one{{days} день} few{{days} дня} many{{days} дней} other{{days} дня}} (до {date})'**
+  String premiumGrantedDays(int days, String date);
+
+  /// No description provided for @premiumGrantedMonth.
+  ///
+  /// In ru, this message translates to:
+  /// **'Доступ открыт на 1 месяц (до {date})'**
+  String premiumGrantedMonth(String date);
+
+  /// No description provided for @premiumGrantedQuarter.
+  ///
+  /// In ru, this message translates to:
+  /// **'Доступ открыт на 3 месяца (до {date})'**
+  String premiumGrantedQuarter(String date);
+
+  /// No description provided for @premiumGrantedYear.
+  ///
+  /// In ru, this message translates to:
+  /// **'Доступ открыт на 1 год (до {date})'**
+  String premiumGrantedYear(String date);
+
+  /// No description provided for @premiumGrantedUntil.
+  ///
+  /// In ru, this message translates to:
+  /// **'Доступ активен до {date}'**
+  String premiumGrantedUntil(String date);
+
+  /// No description provided for @premiumGrantedBadge.
+  ///
+  /// In ru, this message translates to:
+  /// **'PRO ДОСТУП АКТИВИРОВАН'**
+  String get premiumGrantedBadge;
+
+  /// No description provided for @premiumGrantedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вам выдан Premium!'**
+  String get premiumGrantedTitle;
+
+  /// No description provided for @premiumGrantedFeatureFeed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Умная лента и все 800 вопросов'**
+  String get premiumGrantedFeatureFeed;
+
+  /// No description provided for @premiumGrantedFeatureAi.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подробные объяснения от ИИ'**
+  String get premiumGrantedFeatureAi;
+
+  /// No description provided for @premiumGrantedFeatureNoAds.
+  ///
+  /// In ru, this message translates to:
+  /// **'Полное отсутствие рекламы'**
+  String get premiumGrantedFeatureNoAds;
+
+  /// No description provided for @premiumGrantedOk.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отлично, спасибо!'**
+  String get premiumGrantedOk;
+
+  /// No description provided for @aiSheetTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'ИИ-Автоинструктор'**
+  String get aiSheetTitle;
+
+  /// No description provided for @aiAnalysisTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разбор от ИИ'**
+  String get aiAnalysisTitle;
+
+  /// No description provided for @aiLoadError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось получить ответ. Проверьте интернет-соединение и попробуйте еще раз.'**
+  String get aiLoadError;
+
+  /// No description provided for @aiLoadFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить ответ'**
+  String get aiLoadFailed;
+
+  /// No description provided for @aiThinking.
+  ///
+  /// In ru, this message translates to:
+  /// **'ИИ анализирует ситуацию на дороге...'**
+  String get aiThinking;
+
+  /// No description provided for @aiTyping.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нейросеть печатает ответ...'**
+  String get aiTyping;
+
+  /// No description provided for @aiInputHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Задайте вопрос нейросети...'**
+  String get aiInputHint;
+
+  /// No description provided for @aiLimitExhausted.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лимит {limit} вопросов исчерпан'**
+  String aiLimitExhausted(int limit);
+
+  /// No description provided for @aiGoPremium.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оформите Premium для безлимитного ИИ'**
+  String get aiGoPremium;
 }
 
 class _AppLocalizationsDelegate

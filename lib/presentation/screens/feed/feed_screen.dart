@@ -16,6 +16,7 @@ import 'package:pdd_app/presentation/screens/feed/widgets/tip_feed_card.dart';
 import 'package:pdd_app/presentation/widgets/ai_explanation_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 
 class FeedScreen extends ConsumerStatefulWidget {
   const FeedScreen({super.key});
@@ -86,7 +87,9 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
       final category = settings.ticketCategory;
       final lang = settings.effectiveLanguageCode;
       final repo = ref.read(feedRepositoryProvider);
-      debugPrint('FEED_DEBUG: _initFeed starting for category $category (lang: $lang)');
+      debugPrint(
+        'FEED_DEBUG: _initFeed starting for category $category (lang: $lang)',
+      );
       final initial = await repo.generateFeedItems(
         category: category,
         count: 60,
@@ -373,7 +376,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Не удалось загрузить вопросы',
+                  appL10n.feedLoadFailed,
                   style: TextStyle(color: colors.secondaryText, fontSize: 16),
                 ),
                 const SizedBox(height: 12),
@@ -382,7 +385,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                     _initFeed();
                     final _ = ref.refresh(feedItemsProvider);
                   },
-                  child: const Text('Повторить'),
+                  child: Text(appL10n.gameRetry),
                 ),
               ],
             ),
@@ -394,7 +397,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
               backgroundColor: colors.homeScreenBackground,
               body: Center(
                 child: Text(
-                  'Нет вопросов для отображения',
+                  appL10n.feedEmpty,
                   style: TextStyle(color: colors.secondaryText),
                 ),
               ),
@@ -543,11 +546,11 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                                 color: colors.accent,
                                 borderRadius: BorderRadius.circular(24),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    'Свайпай',
+                                    appL10n.feedSwipeHint,
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 14,

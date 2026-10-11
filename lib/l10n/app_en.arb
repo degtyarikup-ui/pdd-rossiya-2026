@@ -957,5 +957,106 @@
   },
   "paywallBadgeCardsEmpty": "Free cards are used up",
   "yandexUserDefaultName": "Yandex user",
-  "yandexSignInTitle": "Sign in with Yandex ID"
+  "yandexSignInTitle": "Sign in with Yandex ID",
+  "examSpeedUnit": "km/h",
+  "feedLoadFailed": "Couldn't load questions",
+  "feedEmpty": "No questions to show",
+  "feedSwipeHint": "Swipe",
+  "feedTipLabel": "Tip",
+  "feedLimitRemaining": "{remaining} of {limit}",
+  "@feedLimitRemaining": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "streakBadge": "{count} IN A ROW",
+  "@streakBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakTitle5": "Perfect start!",
+  "streakSubtitle5": "The engine's warm, keep going!",
+  "streakTitle10": "In the flow, no mistakes!",
+  "streakSubtitle10": "You feel the road perfectly!",
+  "streakTitle20": "Full throttle!",
+  "streakSubtitle20": "Ticket after ticket! The inspector is stunned!",
+  "streakTitle50": "Driving school legend!",
+  "streakSubtitle50": "Nothing will stop you on the road now!",
+  "streakTitle100": "Out-of-this-world level!",
+  "streakSubtitle100": "You'll pass the exam even with your eyes closed!",
+  "premiumGrantedLifetime": "You have lifetime access!",
+  "premiumGrantedToday": "Access is active until the end of today",
+  "premiumGrantedDays": "Access is open for {days, plural, one{{days} day} other{{days} days}} (until {date})",
+  "@premiumGrantedDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumGrantedMonth": "Access is open for 1 month (until {date})",
+  "@premiumGrantedMonth": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumGrantedQuarter": "Access is open for 3 months (until {date})",
+  "@premiumGrantedQuarter": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumGrantedYear": "Access is open for 1 year (until {date})",
+  "@premiumGrantedYear": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumGrantedUntil": "Access is active until {date}",
+  "@premiumGrantedUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumGrantedBadge": "PRO ACCESS ACTIVATED",
+  "premiumGrantedTitle": "You've got Premium!",
+  "premiumGrantedFeatureFeed": "Smart feed and all 800 questions",
+  "premiumGrantedFeatureAi": "Detailed explanations from AI",
+  "premiumGrantedFeatureNoAds": "No ads at all",
+  "premiumGrantedOk": "Great, thanks!",
+  "aiSheetTitle": "AI driving instructor",
+  "aiAnalysisTitle": "AI explanation",
+  "aiLoadError": "Couldn't get a response. Check your internet connection and try again.",
+  "aiLoadFailed": "Couldn't load the answer",
+  "aiThinking": "AI is analyzing the road situation...",
+  "aiTyping": "The AI is typing the answer...",
+  "aiInputHint": "Ask the AI a question...",
+  "aiLimitExhausted": "The limit of {limit} questions is used up",
+  "@aiLimitExhausted": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "aiGoPremium": "Get Premium for unlimited AI"
 }

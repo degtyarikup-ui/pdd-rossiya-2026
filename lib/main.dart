@@ -32,6 +32,7 @@ import 'package:pdd_app/data/services/web_oauth_redirect_stub.dart'
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initAppDateFormatting();
   final webAuthReturn = takeWebOAuthReturn();
 
   final previousFlutterError = FlutterError.onError;

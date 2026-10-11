@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:pdd_app/l10n/l10n.dart';
+import 'package:intl/intl.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 
@@ -73,40 +75,25 @@ class _PremiumGrantedDialogState extends State<PremiumGrantedDialog>
 
   String _formatDurationSubtitle() {
     if (widget.expiresAt == null) {
-      return 'Вам открыт бессрочный доступ навсегда!';
+      return appL10n.premiumGrantedLifetime;
     }
     final exp = widget.expiresAt!;
     final now = DateTime.now();
     final diffDays = exp.difference(now).inDays + 1;
-    const months = [
-      '',
-      'января',
-      'февраля',
-      'марта',
-      'апреля',
-      'мая',
-      'июня',
-      'июля',
-      'августа',
-      'сентября',
-      'октября',
-      'ноября',
-      'декабря',
-    ];
-    final dateStr = '${exp.day} ${months[exp.month]} ${exp.year}';
+    final dateStr = DateFormat('d MMMM yyyy', appL10n.localeName).format(exp);
 
     if (diffDays <= 1) {
-      return 'Доступ активен до конца сегодняшнего дня';
+      return appL10n.premiumGrantedToday;
     } else if (diffDays <= 7) {
-      return 'Доступ открыт на $diffDays дней (до $dateStr)';
+      return appL10n.premiumGrantedDays(diffDays, dateStr);
     } else if (diffDays <= 31) {
-      return 'Доступ открыт на 1 месяц (до $dateStr)';
+      return appL10n.premiumGrantedMonth(dateStr);
     } else if (diffDays <= 95) {
-      return 'Доступ открыт на 3 месяца (до $dateStr)';
+      return appL10n.premiumGrantedQuarter(dateStr);
     } else if (diffDays <= 370) {
-      return 'Доступ открыт на 1 год (до $dateStr)';
+      return appL10n.premiumGrantedYear(dateStr);
     }
-    return 'Доступ активен до $dateStr';
+    return appL10n.premiumGrantedUntil(dateStr);
   }
 
   @override
@@ -181,8 +168,8 @@ class _PremiumGrantedDialogState extends State<PremiumGrantedDialog>
                         color: const Color(0xFF2BC280),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
-                        'PRO ДОСТУП АКТИВИРОВАН',
+                      child: Text(
+                        appL10n.premiumGrantedBadge,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 11,
@@ -195,7 +182,7 @@ class _PremiumGrantedDialogState extends State<PremiumGrantedDialog>
 
                     // Title
                     Text(
-                      'Вам выдан Premium!',
+                      appL10n.premiumGrantedTitle,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 20,
@@ -255,21 +242,21 @@ class _PremiumGrantedDialogState extends State<PremiumGrantedDialog>
                           _buildFeatureRow(
                             icon: Icons.bolt_rounded,
                             color: const Color(0xFF0574F8),
-                            text: 'Умная лента и все 800 вопросов',
+                            text: appL10n.premiumGrantedFeatureFeed,
                             colors: colors,
                           ),
                           const SizedBox(height: 8),
                           _buildFeatureRow(
                             icon: Icons.psychology_rounded,
                             color: const Color(0xFF2BC280),
-                            text: 'Подробные объяснения от ИИ',
+                            text: appL10n.premiumGrantedFeatureAi,
                             colors: colors,
                           ),
                           const SizedBox(height: 8),
                           _buildFeatureRow(
                             icon: Icons.block_rounded,
                             color: const Color(0xFFED4621),
-                            text: 'Полное отсутствие рекламы',
+                            text: appL10n.premiumGrantedFeatureNoAds,
                             colors: colors,
                           ),
                         ],
@@ -294,8 +281,8 @@ class _PremiumGrantedDialogState extends State<PremiumGrantedDialog>
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: const Text(
-                          'Отлично, спасибо!',
+                        child: Text(
+                          appL10n.premiumGrantedOk,
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,

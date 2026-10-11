@@ -3202,4 +3202,146 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get yandexSignInTitle => 'Sign in with Yandex ID';
+
+  @override
+  String get examSpeedUnit => 'km/h';
+
+  @override
+  String get feedLoadFailed => 'Couldn\'t load questions';
+
+  @override
+  String get feedEmpty => 'No questions to show';
+
+  @override
+  String get feedSwipeHint => 'Swipe';
+
+  @override
+  String get feedTipLabel => 'Tip';
+
+  @override
+  String feedLimitRemaining(int remaining, int limit) {
+    return '$remaining of $limit';
+  }
+
+  @override
+  String streakBadge(int count) {
+    return '$count IN A ROW';
+  }
+
+  @override
+  String get streakTitle5 => 'Perfect start!';
+
+  @override
+  String get streakSubtitle5 => 'The engine\'s warm, keep going!';
+
+  @override
+  String get streakTitle10 => 'In the flow, no mistakes!';
+
+  @override
+  String get streakSubtitle10 => 'You feel the road perfectly!';
+
+  @override
+  String get streakTitle20 => 'Full throttle!';
+
+  @override
+  String get streakSubtitle20 =>
+      'Ticket after ticket! The inspector is stunned!';
+
+  @override
+  String get streakTitle50 => 'Driving school legend!';
+
+  @override
+  String get streakSubtitle50 => 'Nothing will stop you on the road now!';
+
+  @override
+  String get streakTitle100 => 'Out-of-this-world level!';
+
+  @override
+  String get streakSubtitle100 =>
+      'You\'ll pass the exam even with your eyes closed!';
+
+  @override
+  String get premiumGrantedLifetime => 'You have lifetime access!';
+
+  @override
+  String get premiumGrantedToday => 'Access is active until the end of today';
+
+  @override
+  String premiumGrantedDays(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '$days day',
+    );
+    return 'Access is open for $_temp0 (until $date)';
+  }
+
+  @override
+  String premiumGrantedMonth(String date) {
+    return 'Access is open for 1 month (until $date)';
+  }
+
+  @override
+  String premiumGrantedQuarter(String date) {
+    return 'Access is open for 3 months (until $date)';
+  }
+
+  @override
+  String premiumGrantedYear(String date) {
+    return 'Access is open for 1 year (until $date)';
+  }
+
+  @override
+  String premiumGrantedUntil(String date) {
+    return 'Access is active until $date';
+  }
+
+  @override
+  String get premiumGrantedBadge => 'PRO ACCESS ACTIVATED';
+
+  @override
+  String get premiumGrantedTitle => 'You\'ve got Premium!';
+
+  @override
+  String get premiumGrantedFeatureFeed => 'Smart feed and all 800 questions';
+
+  @override
+  String get premiumGrantedFeatureAi => 'Detailed explanations from AI';
+
+  @override
+  String get premiumGrantedFeatureNoAds => 'No ads at all';
+
+  @override
+  String get premiumGrantedOk => 'Great, thanks!';
+
+  @override
+  String get aiSheetTitle => 'AI driving instructor';
+
+  @override
+  String get aiAnalysisTitle => 'AI explanation';
+
+  @override
+  String get aiLoadError =>
+      'Couldn\'t get a response. Check your internet connection and try again.';
+
+  @override
+  String get aiLoadFailed => 'Couldn\'t load the answer';
+
+  @override
+  String get aiThinking => 'AI is analyzing the road situation...';
+
+  @override
+  String get aiTyping => 'The AI is typing the answer...';
+
+  @override
+  String get aiInputHint => 'Ask the AI a question...';
+
+  @override
+  String aiLimitExhausted(int limit) {
+    return 'The limit of $limit questions is used up';
+  }
+
+  @override
+  String get aiGoPremium => 'Get Premium for unlimited AI';
 }

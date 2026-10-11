@@ -2,20 +2,20 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum ExamCardConcept {
-  signU(0, 'Знак «У»'),
-  license(1, 'Водительские права'),
-  speedometer(2, 'Спидометр 100%'),
-  trafficLight(3, 'Зелёный светофор'),
-  chronometer(4, 'Хронометр и знаки'),
-  overpass(5, 'Парящая эстакада'),
-  mainRoad(6, 'Главная дорога');
+  signU(0),
+  license(1),
+  speedometer(2),
+  trafficLight(3),
+  chronometer(4),
+  overpass(5),
+  mainRoad(6);
 
   final int id;
-  final String title;
-  const ExamCardConcept(this.id, this.title);
+  const ExamCardConcept(this.id);
 
   static ExamCardConcept fromId(int id) {
     final validId = id.clamp(0, ExamCardConcept.values.length - 1);
@@ -156,7 +156,7 @@ class _ExamHeroCardState extends State<ExamHeroCard> {
                         Row(
                           children: [
                             Text(
-                              'Экзамен',
+                              appL10n.exam,
                               style: TextStyle(
                                 fontSize: (cardH < 130) ? 22 : 26,
                                 fontWeight: FontWeight.w700,
@@ -544,8 +544,8 @@ class _SpeedometerPainter extends CustomPainter {
 
     // Подпись «км/ч»
     final unitPainter = TextPainter(
-      text: const TextSpan(
-        text: 'км/ч',
+      text: TextSpan(
+        text: appL10n.examSpeedUnit,
         style: TextStyle(
           fontSize: 8.5,
           fontWeight: FontWeight.w600,

@@ -1457,5 +1457,106 @@
   },
   "paywallBadgeCardsEmpty": "Бесплатные карточки закончились",
   "yandexUserDefaultName": "Пользователь Яндекс",
-  "yandexSignInTitle": "Вход с Яндекс ID"
+  "yandexSignInTitle": "Вход с Яндекс ID",
+  "examSpeedUnit": "км/ч",
+  "feedLoadFailed": "Не удалось загрузить вопросы",
+  "feedEmpty": "Нет вопросов для отображения",
+  "feedSwipeHint": "Свайпай",
+  "feedTipLabel": "Совет",
+  "feedLimitRemaining": "{remaining} из {limit}",
+  "@feedLimitRemaining": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "streakBadge": "{count} ПОДРЯД",
+  "@streakBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakTitle5": "Старт идеальный!",
+  "streakSubtitle5": "Мотор прогрет, жми дальше!",
+  "streakTitle10": "В потоке без ошибок!",
+  "streakSubtitle10": "Ты отлично чувствуешь дорогу!",
+  "streakTitle20": "Огненный форсаж!",
+  "streakSubtitle20": "Билет за билетом! Инспектор в шоке!",
+  "streakTitle50": "Легенда автошколы!",
+  "streakSubtitle50": "Тебя уже ничто не остановит на дороге!",
+  "streakTitle100": "Космический уровень!",
+  "streakSubtitle100": "Экзамен сдашь даже с закрытыми глазами!",
+  "premiumGrantedLifetime": "Вам открыт бессрочный доступ навсегда!",
+  "premiumGrantedToday": "Доступ активен до конца сегодняшнего дня",
+  "premiumGrantedDays": "Доступ открыт на {days, plural, one{{days} день} few{{days} дня} many{{days} дней} other{{days} дня}} (до {date})",
+  "@premiumGrantedDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumGrantedMonth": "Доступ открыт на 1 месяц (до {date})",
+  "@premiumGrantedMonth": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumGrantedQuarter": "Доступ открыт на 3 месяца (до {date})",
+  "@premiumGrantedQuarter": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumGrantedYear": "Доступ открыт на 1 год (до {date})",
+  "@premiumGrantedYear": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumGrantedUntil": "Доступ активен до {date}",
+  "@premiumGrantedUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumGrantedBadge": "PRO ДОСТУП АКТИВИРОВАН",
+  "premiumGrantedTitle": "Вам выдан Premium!",
+  "premiumGrantedFeatureFeed": "Умная лента и все 800 вопросов",
+  "premiumGrantedFeatureAi": "Подробные объяснения от ИИ",
+  "premiumGrantedFeatureNoAds": "Полное отсутствие рекламы",
+  "premiumGrantedOk": "Отлично, спасибо!",
+  "aiSheetTitle": "ИИ-Автоинструктор",
+  "aiAnalysisTitle": "Разбор от ИИ",
+  "aiLoadError": "Не удалось получить ответ. Проверьте интернет-соединение и попробуйте еще раз.",
+  "aiLoadFailed": "Не удалось загрузить ответ",
+  "aiThinking": "ИИ анализирует ситуацию на дороге...",
+  "aiTyping": "Нейросеть печатает ответ...",
+  "aiInputHint": "Задайте вопрос нейросети...",
+  "aiLimitExhausted": "Лимит {limit} вопросов исчерпан",
+  "@aiLimitExhausted": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "aiGoPremium": "Оформите Premium для безлимитного ИИ"
 }

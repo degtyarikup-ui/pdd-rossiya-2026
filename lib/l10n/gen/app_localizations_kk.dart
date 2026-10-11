@@ -3204,4 +3204,139 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get yandexSignInTitle => 'Яндекс ID арқылы кіру';
+
+  @override
+  String get examSpeedUnit => 'км/сағ';
+
+  @override
+  String get feedLoadFailed => 'Сұрақтарды жүктеу мүмкін болмады';
+
+  @override
+  String get feedEmpty => 'Көрсетуге сұрақтар жоқ';
+
+  @override
+  String get feedSwipeHint => 'Сырғыт';
+
+  @override
+  String get feedTipLabel => 'Кеңес';
+
+  @override
+  String feedLimitRemaining(int remaining, int limit) {
+    return '$remaining / $limit';
+  }
+
+  @override
+  String streakBadge(int count) {
+    return '$count ҚАТАРЫНАН';
+  }
+
+  @override
+  String get streakTitle5 => 'Керемет бастама!';
+
+  @override
+  String get streakSubtitle5 => 'Қозғалтқыш қызды, жалғастыра бер!';
+
+  @override
+  String get streakTitle10 => 'Қатесіз ағында!';
+
+  @override
+  String get streakSubtitle10 => 'Жолды тамаша сезінесің!';
+
+  @override
+  String get streakTitle20 => 'Отты форсаж!';
+
+  @override
+  String get streakSubtitle20 => 'Билет сайын! Инспектор таңғалды!';
+
+  @override
+  String get streakTitle50 => 'Автомектептің аңызы!';
+
+  @override
+  String get streakSubtitle50 => 'Енді жолда сені ешнәрсе тоқтата алмайды!';
+
+  @override
+  String get streakTitle100 => 'Ғарыштық деңгей!';
+
+  @override
+  String get streakSubtitle100 => 'Емтиханды көзің жұмық та тапсырасың!';
+
+  @override
+  String get premiumGrantedLifetime => 'Сізге мәңгілік қолжетімділік ашылды!';
+
+  @override
+  String get premiumGrantedToday =>
+      'Қолжетімділік бүгінгі күннің соңына дейін белсенді';
+
+  @override
+  String premiumGrantedDays(int days, String date) {
+    return 'Қолжетімділік $days күнге ашылды ($date дейін)';
+  }
+
+  @override
+  String premiumGrantedMonth(String date) {
+    return 'Қолжетімділік 1 айға ашылды ($date дейін)';
+  }
+
+  @override
+  String premiumGrantedQuarter(String date) {
+    return 'Қолжетімділік 3 айға ашылды ($date дейін)';
+  }
+
+  @override
+  String premiumGrantedYear(String date) {
+    return 'Қолжетімділік 1 жылға ашылды ($date дейін)';
+  }
+
+  @override
+  String premiumGrantedUntil(String date) {
+    return 'Қолжетімділік $date дейін белсенді';
+  }
+
+  @override
+  String get premiumGrantedBadge => 'PRO ҚОЛЖЕТІМДІЛІК ІСКЕ ҚОСЫЛДЫ';
+
+  @override
+  String get premiumGrantedTitle => 'Сізге Premium берілді!';
+
+  @override
+  String get premiumGrantedFeatureFeed => 'Ақылды арна және барлық 800 сұрақ';
+
+  @override
+  String get premiumGrantedFeatureAi => 'AI-дан толық түсіндірмелер';
+
+  @override
+  String get premiumGrantedFeatureNoAds => 'Жарнаманың толық жоқтығы';
+
+  @override
+  String get premiumGrantedOk => 'Керемет, рахмет!';
+
+  @override
+  String get aiSheetTitle => 'AI-автонұсқаушы';
+
+  @override
+  String get aiAnalysisTitle => 'AI талдауы';
+
+  @override
+  String get aiLoadError =>
+      'Жауапты алу мүмкін болмады. Интернет байланысын тексеріп, қайталап көріңіз.';
+
+  @override
+  String get aiLoadFailed => 'Жауапты жүктеу мүмкін болмады';
+
+  @override
+  String get aiThinking => 'AI жол жағдайын талдап жатыр...';
+
+  @override
+  String get aiTyping => 'Нейрожелі жауап жазып жатыр...';
+
+  @override
+  String get aiInputHint => 'Нейрожеліге сұрақ қойыңыз...';
+
+  @override
+  String aiLimitExhausted(int limit) {
+    return '$limit сұрақ лимиті таусылды';
+  }
+
+  @override
+  String get aiGoPremium => 'Шексіз AI үшін Premium жазылыңыз';
 }

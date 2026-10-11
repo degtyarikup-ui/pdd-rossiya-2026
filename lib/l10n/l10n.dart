@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/l10n/gen/app_localizations.dart';
 
@@ -22,3 +23,8 @@ void updateAppLocale(Locale locale) {
 extension L10nContext on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
 }
+
+/// Данные дат (intl) для всех языков приложения. Вызывать до runApp: без них
+/// DateFormat с локалью падает с LocaleDataException.
+Future<void> initAppDateFormatting() =>
+    Future.wait(['ru', 'kk', 'en'].map(initializeDateFormatting));

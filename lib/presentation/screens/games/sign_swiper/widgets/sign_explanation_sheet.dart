@@ -183,6 +183,55 @@ class SignExplanationSheet extends StatelessWidget {
     );
   }
 
+  /// Заголовки разделов, с которых начинается новый абзац в описании знака.
+  /// Описания хранятся в signs_<язык>.json, поэтому список берётся для языка.
+  static List<String> _sectionLabels(String languageCode) {
+    switch (languageCode) {
+      case 'kk':
+        return const [
+          'Белгінің талаптарын бұзғаны үшін жаза:',
+          'Белгі талаптарын бұзғаны үшін жаза:',
+          'Белгілер мыналарға қолданылмайды:',
+          'Белгі мыналарға қолданылмайды:',
+          'Белгілер қолданылмайды:',
+          'Тиімді аймақ:',
+          'Қамту аймағы:',
+          'Белгінің қамту аймағы:',
+          'Тыйым салынады:',
+          'Рұқсат етілген бағыттар:',
+          'Туннельдерде келесі әрекеттерге тыйым салынады:',
+          'Белгінің әсерінен келесі көліктер ауытқиды:',
+          'НАЗАР АУДАРЫҢЫЗ:',
+        ];
+      case 'en':
+        return const [
+          'Coverage area:',
+          'Sign coverage area:',
+          "Sign's coverage area:",
+          'Effective area:',
+          'It is prohibited:',
+          'The sign does not apply to:',
+          'The signs do not apply to:',
+          'Permitted directions:',
+          'In tunnels, the following is prohibited:',
+          'PLEASE NOTE:',
+          'Part 1 of this articles - fine:',
+        ];
+      default:
+        return const [
+          'Зона действия знака:',
+          'Зона действия:',
+          'От действия знака отступают:',
+          'Запрещается:',
+          'Разрешается:',
+          'Особенности:',
+          'Наказание за нарушение требований знака:',
+          'Наказание:',
+          'КоАП РФ',
+        ];
+    }
+  }
+
   static String _formatPddDescription(String raw) {
     if (raw.isEmpty) return raw;
 
@@ -190,26 +239,21 @@ class SignExplanationSheet extends StatelessWidget {
     var text = raw.replaceAll('\u00a0', ' ').replaceAll('\r', '').trim();
 
     // 2. Исправление склеенных предложений (точка/скобка перед заглавной буквой)
-    text = text.replaceAllMapped(RegExp(r'(\))\.(?=[А-ЯЁ])'), (m) => '). ');
     text = text.replaceAllMapped(
-      RegExp(r'(?<=[а-яё\w])\.(?=[А-ЯЁ])'),
+      RegExp(r'(\))\.(?=\p{Lu})', unicode: true),
+      (m) => '). ',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(?<=[\p{Ll}\w])\.(?=\p{Lu})', unicode: true),
       (m) => '. ',
     );
-    text = text.replaceAllMapped(RegExp(r':(?=[а-яА-Я0-9])'), (m) => ': ');
+    text = text.replaceAllMapped(
+      RegExp(r':(?=[\p{L}0-9])', unicode: true),
+      (m) => ': ',
+    );
 
     // 3. Выделение стандартных смысловых разделов ПДД с новой строки
-    const sections = [
-      'Зона действия знака:',
-      'Зона действия:',
-      'От действия знака отступают:',
-      'Запрещается:',
-      'Разрешается:',
-      'Особенности:',
-      'Наказание за нарушение требований знака:',
-      'Наказание:',
-      'КоАП РФ',
-    ];
-    for (final s in sections) {
+    for (final s in _sectionLabels(appL10n.localeName)) {
       if (text.contains(s)) {
         text = text.replaceAll(s, '\n\n$s\n');
       }
