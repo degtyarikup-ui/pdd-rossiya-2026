@@ -31,6 +31,8 @@ device install app`. Пакет `ru.pdd.godotspike` — отдельное пр�
   `available()` на вебе — есть ли `godot/index.pck` на сайте.
 - Мост: игра шлёт родителю `postMessage({bridge: 'pdd-godot', kind: 'exit', json: <итог заезда>})`
   (`scripts/host.gd`, `Host.exit`); аргументы приходят из query-строки (`--k=v` ↔ `k=v`, `--k` ↔ `k=1`).
+  События игры (нарушения, ответы, начало и конец заезда) — то же, с `kind: 'send'` (`Host.send`);
+  страница их пока не читает.
 - Управление: сенсорные педали и руль (`controls.gd`); с клавиатуры: W/стрелка вверх — газ,
   S/стрелка вниз/пробел — тормоз, A/D или стрелки — руль (физические клавиши).
 - Тест локально: `python3 -m http.server 8960 --bind 127.0.0.1 --directory build/web`, открыть
@@ -57,6 +59,10 @@ device install app`. Пакет `ru.pdd.godotspike` — отдельное пр�
 `scripts/road_body.gd` (участники: машины, грузовик, автобус, трактор, поезд, полиция).
 Проверка: `godot --headless --path game_godot --script res://tests/road_check.gd` (правила на
 неверном манёвре); каждый вопрос целиком: `sh game_godot/tests/road_all.sh` (логи в `output/godot-roads/`).
+Все нарушения (каждое — со случаем «да» и «нет»), события для аналитики:
+`godot --headless --path game_godot --script res://tests/rules_check.gd`. Перекрёстки в проверке
+нужны из `game_godot/situations/` и `game_godot/network/build/` (выгружаются скриптом экспорта, в git
+не входят); без них проверки перекрёстков пропускаются (skip).
 
 ## Первые замеры
 

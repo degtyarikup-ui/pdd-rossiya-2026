@@ -413,6 +413,22 @@ func step(dt: float, pos: Vector3, yaw: float, speed: float, hw: float, hl: floa
 	return out
 
 
+## Whether the oncoming side is legal for the car at `pos` now (game.js roadOvertakeAllowedAt): an
+## overtake the question allows once it is answered, the oncoming side round a roadworks barrier
+## (a detour), and the bypass lane of temporary works (0..6.2 m from the centre, 40..150 m past the
+## stop line). Such a stretch is not an oncoming violation (world._update_rules).
+func oncoming_lane_allowed(pos: Vector3) -> bool:
+	var z := pos.z
+	if kind == "detour":
+		var barrier_z := float(sc.get("obstacleZ", 24.0))
+		return z >= stop_z + barrier_z - 30.0 and z <= stop_z + barrier_z + 12.0
+	if kind == "temporary_bypass":
+		return pos.x > 0.0 and pos.x < 6.2 and z >= stop_z + 40.0 and z <= stop_z + 150.0
+	if kind == "overtake" and phase == "manual":
+		return _overtake_allowed(z)
+	return false
+
+
 ## Whether the overtaking is allowed at world z (roadOvertakeAllowedAt, by the question's rule).
 func _overtake_allowed(z: float) -> bool:
 	var o: Variant = sc.get("overtake")

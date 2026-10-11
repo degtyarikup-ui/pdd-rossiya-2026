@@ -50,14 +50,22 @@ static func _query_args() -> Array:
 	return out
 
 
-## Any event of the game; «run_finished» carries the final summary.
+## Any event of the game (violation, answer, run_start, run_end, ...); «run_finished»
+## carries the final summary. Android and the web get it at once; on iOS the events of a run
+## go to `events.jsonl` (one JSON object per line), the summary stays in `summary.json`.
 static func send(data: Dictionary) -> void:
 	if embedded():
 		Engine.get_singleton("PddHost").send(JSON.stringify(data))
 	elif io != "":
-		_write(data)
+		_append(data)
 	elif on_web():
 		_post_to_parent("send", JSON.stringify(data))
+
+
+## iOS: the game clears the events of the previous run when a new run's scene starts.
+static func begin_events() -> void:
+	if io != "":
+		DirAccess.remove_absolute(io.path_join("events.jsonl"))
 
 
 ## Leaves the game: the app gets the run's summary and closes the game screen.
@@ -72,6 +80,18 @@ static func exit(summary: Dictionary, tree: SceneTree) -> void:
 		_post_to_parent("exit", JSON.stringify(summary))
 	else:
 		tree.quit()
+
+
+## One event appended to events.jsonl (iOS). The file is written by the game only, one line per event.
+static func _append(data: Dictionary) -> void:
+	var path := io.path_join("events.jsonl")
+	var file := FileAccess.open(path, FileAccess.READ_WRITE) if FileAccess.file_exists(path) \
+		else FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return
+	file.seek_end()
+	file.store_line(JSON.stringify(data))
+	file.close()
 
 
 ## Written whole under a temporary name and renamed: the app never reads half a file.

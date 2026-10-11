@@ -102,6 +102,7 @@ var lobby: Lobby                  # the garage before a run (--garage=<json>); n
 var lobby_mode := false
 var lobby_turn := 0.0             # the car's turn on the stand (radians)
 var run_started := false          # a run began (the app charges one run then)
+var run_end_sent := false         # the run_end event went out (once per visit)
 var chosen := {}                  # { id, paint } of the car the player drove, for the app
 var tips_enabled := false         # the app's garage says the first-drive tips are not seen yet
 var tip_step := -1                # 0..2 the tips card on the screen; -1 none
@@ -159,6 +160,9 @@ func _ready() -> void:
 	ui.resume_pressed.connect(_on_resume)
 	ui.exit_pressed.connect(_on_exit)
 	ui.tip_next.connect(_on_tip_next)
+	# Analytics: every event of the game goes to the app (Host.send; a no-op on the desktop).
+	event.connect(Host.send)
+	Host.begin_events()
 	# Android «back» opens the pause instead of closing the app's game screen at once.
 	get_tree().quit_on_go_back = false
 	hud = PerfHud.new()
@@ -631,7 +635,13 @@ func on_fault(type: String, key: String) -> void:
 	elif type == "offroad":
 		sound.play("scrape")
 		GameSound.buzz(25)
-	elif type == "speeding" or type == "oncoming" or type == "priority" or type == "stop":
+	_report(type)
+
+
+## One violation is counted and shown. The caller keeps the episode: a key in the faults (on_fault),
+## or its own flag (speeding, oncoming: game.js speedingPenalized / oncomingPenalized, once per episode).
+func _report(type: String) -> void:
+	if type == "speeding" or type == "oncoming" or type == "priority" or type == "stop":
 		GameSound.buzz(120)
 	run.violations += 1
 	ui.show_notice(type)
@@ -807,12 +817,7 @@ func _end_road_test(how: String) -> void:
 
 ## A violation of a road question's rule. road_event.gd reports each rule once per episode.
 func road_violation(rule: String) -> void:
-	run.violations += 1
-	if rule in ["speeding", "oncoming", "priority", "stop"]:
-		GameSound.buzz(120)
-	ui.show_notice(rule)
-	event.emit({ "event": "violation", "type": rule })
-	print("[road] violation ", rule)
+	_report(rule)
 
 
 ## A road question's participant or barrier is hit. The roadworks barrier is knocked over and the car
@@ -838,6 +843,7 @@ func _on_road_answer(index: int) -> void:
 	var right := int(road.entry.correctAnswerIndex)
 	var is_correct := index == right
 	run.answer(road.id, is_correct)
+	_report_answer(road.id, is_correct, index)
 	print("[road] answer ", index, " correct ", is_correct)
 	sound.play("correct" if is_correct else "incorrect")
 	if not is_correct:
@@ -884,18 +890,20 @@ func _update_rules(delta: float) -> void:
 		speeding_reported = false
 	if over and speeding_time > 0.8 and not speeding_reported:
 		speeding_reported = true
-		on_fault("speeding", "speeding")
+		_report("speeding")
 	var inside := false
 	for j in _junctions():
 		if j.sit.covers(j.sit.global_transform.affine_inverse() * drive.pos):
 			inside = true
-	var oncoming := phase == "driving" and not inside and cos(drive.yaw) > 0.5 and drive.pos.x > -0.85
+	# The oncoming side is legal where the question allows it (a legal overtake, a detour, a bypass lane).
+	var oncoming := phase == "driving" and not inside and cos(drive.yaw) > 0.5 and drive.pos.x > -0.85 \
+		and not (road != null and road.oncoming_lane_allowed(drive.pos))
 	oncoming_time = oncoming_time + delta if oncoming else 0.0
 	if not oncoming:
 		oncoming_reported = false
 	elif oncoming_time >= 3.0 and not oncoming_reported:
 		oncoming_reported = true
-		on_fault("oncoming", "oncoming")
+		_report("oncoming")
 
 
 ## The player tapped an option (or the time ran out: index -1).
@@ -910,6 +918,7 @@ func _on_answer_chosen(index: int) -> void:
 	var right := int(sit.data.correctAnswerIndex)
 	var is_correct := index == right
 	run.answer(sit.id, is_correct)
+	_report_answer(sit.id, is_correct, index)
 	sound.play("correct" if is_correct else "incorrect")
 	if not is_correct:
 		GameSound.buzz(150)
@@ -1271,7 +1280,27 @@ func _on_resume() -> void:
 
 
 func _on_exit() -> void:
+	_report_run_end()
 	Host.exit(_exit_summary(), get_tree())
+
+
+## Analytics events of a run (Host.send): the start of a run the app charges, its end once,
+## and every answer (id of the scene, right or not, time left on the card; 0 on a timeout).
+func _report_run_start() -> void:
+	event.emit({ "event": "run_start", "car": chosen.get("id", ""), "resumed": resumed })
+
+
+func _report_run_end() -> void:
+	if run_end_sent or not run_started:
+		return
+	run_end_sent = true
+	event.emit({ "event": "run_end", "summary": _exit_summary() })
+
+
+func _report_answer(situation_id: String, is_correct: bool, index: int) -> void:
+	var left := maxf(0.0, ui.remaining_seconds())
+	event.emit({ "event": "answer", "situation": situation_id, "correct": is_correct,
+		"timeout": index < 0, "time_left": snappedf(left, 0.1) })
 
 
 ## The garage before a run (lobby.gd): the car turns on a stand in the street, the camera
@@ -1326,6 +1355,7 @@ func _on_lobby_start(id: String, paint: String, hex: String) -> void:
 	if not resume_state.is_empty():
 		run.restore(resume_state)
 		resumed = true
+	_report_run_start()
 	lobby_mode = false
 	lobby.queue_free()
 	lobby = null
