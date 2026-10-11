@@ -36,7 +36,12 @@ var walkers: Array[Dictionary] = []
 var walker_mm: Array[MultiMesh] = []
 var wheels: Array[Node3D] = []
 var front_axles: Array[Node3D] = []
+var brake_mat: StandardMaterial3D        # shared by the car's stop lamps
+var blinkers := {}                        # "L"/"R" -> Node3D
+var steer_hold := 0.0
+var blink := { "side": "", "left": 0.0, "clock": 0.0 }
 var tier := "high"
+var leaves: Leaves                # autumn only
 
 
 func _ready() -> void:
@@ -47,14 +52,17 @@ func _ready() -> void:
 	scenery = Scenery.new(_season())
 	_setup_environment()
 	street = Street.new(self, scenery, L, chunk_count)
+	_build_player()
+	if _season() == "autumn":
+		leaves = Leaves.new(scenery.season.canopy, 36)
+		add_child(leaves)
 	for i in chunk_count:
 		var node := MeshInstance3D.new()
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(node)
 		road_nodes.append(node)
 		chunk_index.append(-1)
-		_place_chunk(i, i - int(cfg.chunks_behind))
-	_build_player()
+		_place_chunk(i, int(floor(player.position.z / L)) + i - int(cfg.chunks_behind))
 	_spawn_traffic()
 	_spawn_walkers()
 	controls = Controls.new()
@@ -145,7 +153,18 @@ func _build_player() -> void:
 		wheels.append(node)
 	for node in car.find_children("axle_front_*", "", true, false):
 		front_axles.append(node)
+	# Stop lamps: one material for all of them, lit while braking or standing
+	# (as in the game: red F04438 when on, dark 7F1D1D when off).
+	brake_mat = StandardMaterial3D.new()
+	brake_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	for node in car.find_children("brake_*", "MeshInstance3D", true, false):
+		(node as MeshInstance3D).material_override = brake_mat
+	for side in ["L", "R"]:
+		blinkers[side] = car.find_child("blink_" + side, true, false)
 	player.position = Vector3(-lane, 0, 5)
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--start="):
+			player.position.z = float(arg.trim_prefix("--start="))
 
 
 func _pick(list: Array, rng: RandomNumberGenerator) -> Color:
@@ -216,13 +235,36 @@ func _process(delta: float) -> void:
 		w.rotate_x(speed * delta / 0.34)
 	for a in front_axles:
 		a.rotation.y = controls.steer * 0.4
+	_update_lamps(delta)
 	_update_traffic(delta)
 	_update_walkers(delta)
 	_recycle_chunks()
 	var look := Vector3(player.position.x * 0.3, 0, player.position.z + 10)
 	camera.position = look + Vector3(0, 42, -44)
 	camera.look_at(look)
+	if leaves:
+		leaves.step(delta, look)
 	hud.speed_kmh = speed * 3.6
+
+
+## Stop lamps and indicators, as updateBlinkers() in game.js: holding an
+## arrow for 0.3 s turns the indicator on; it keeps blinking 2.2 s after.
+func _update_lamps(delta: float) -> void:
+	var lit := controls.brake or speed == 0.0 or not controls.gas
+	brake_mat.albedo_color = Color("#F04438") if lit else Color("#7F1D1D")
+	steer_hold = steer_hold + delta if controls.steer != 0 else 0.0
+	if controls.steer != 0 and steer_hold >= 0.3:
+		blink.side = "L" if controls.steer > 0 else "R"
+		blink.left = 2.2
+	elif blink.side != "":
+		blink.left -= delta
+		if blink.left <= 0.0:
+			blink.side = ""
+	blink.clock += delta
+	var on: bool = blink.side != "" and int(blink.clock * 3.0) % 2 == 0
+	for side in blinkers:
+		if blinkers[side]:
+			blinkers[side].visible = on and blink.side == side
 
 
 func _update_traffic(delta: float) -> void:
@@ -268,4 +310,7 @@ func _apply_tier(next: String) -> void:
 	vp.msaa_3d = prof.msaa
 	sun.shadow_enabled = prof.shadows
 	Engine.max_fps = prof.max_fps
+	if leaves:
+		# Fewer leaves on a weak GPU, as in the game (18 instead of 36).
+		leaves.multimesh.visible_instance_count = 18 if tier == "low" else -1
 	hud.tier = tier
