@@ -124,8 +124,7 @@ func _add_kerbs(st: SurfaceTool, scenery: Scenery, uv_z: float) -> void:
 	var kerbs: Dictionary = build.kerbs
 	var kc := Color(kerbs.colour)
 	st.set_color(Color(kc.r, kc.g, kc.b, 0.0))
-	var layer := scenery.layer_of("pavement")
-	var period: float = scenery.kinds["pavement"].period
+	# Plain colour, as the street's kerbs (scripts/street.gd _kerb): an 18 cm wall shows no detail.
 	var segs: Array = kerbs.segs
 	var j := 0
 	while j < segs.size():
@@ -134,8 +133,7 @@ func _add_kerbs(st: SurfaceTool, scenery: Scenery, uv_z: float) -> void:
 		var t := Vector3(a.x, kerbs.y1, a.z)
 		var u := Vector3(b.x, kerbs.y1, b.z)
 		for p in [a, b, u, a, u, t]:
-			var along: float = (p.x + p.z + uv_z) / period
-			st.set_uv(Vector2(along, p.y))
-			st.set_uv2(Vector2(layer, 1))
+			st.set_uv(Vector2(0, 0))
+			st.set_uv2(Vector2(0, 1))
 			st.add_vertex(p)
 		j += 4

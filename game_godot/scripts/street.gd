@@ -163,9 +163,11 @@ func _kerb(st: SurfaceTool, x: float, z0: float, z1: float, color: Color, world_
 		Vector3(x, 0, z0), Vector3(x, KERB, z1), Vector3(x, 0, z1)]
 	if side < 0:
 		pts = [pts[0], pts[2], pts[1], pts[3], pts[5], pts[4]]
+	# A 18 cm wall is drawn in one plain colour: the stone pattern squeezed into that height
+	# shimmers as the car moves.
 	for p in pts:
-		st.set_uv(Vector2((p.z + world_z) / k.side, 0.02 + 0.96 * p.y / KERB))
-		st.set_uv2(Vector2(layer, 1))
+		st.set_uv(Vector2(0, 0))
+		st.set_uv2(Vector2(0, 1))
 		st.add_vertex(p)
 
 
@@ -234,12 +236,12 @@ func _plot(slot: int, rng: RandomNumberGenerator, side: float, z: float, style: 
 		1:
 			_put(slot, "street/fence_12" if depth < 7 else "street/fence_14", Vector3(side * 8.0, 0, z + 1))
 			if posmod(row, 2) == 0:
-				_park(slot, rng, Vector3(side * 12.8, 0, gap_z - 0.5), side * PI / 2 + 0.15)
+				_park(slot, rng, Vector3(side * (ROAD_HALF - 0.6), 0, gap_z - 0.5), 0.0)
 			else:
 				_put(slot, "street/bush", Vector3(side * 12.8, 0, gap_z - 0.5), 0, Vector3(1.2, 0.9, 3), _bush())
 		3:
 			if posmod(row, 2) == 0:
-				_park(slot, rng, Vector3(side * 10.4, 0, gap_z - 0.5), side * PI / 2)
+				_park(slot, rng, Vector3(side * (ROAD_HALF - 0.6), 0, gap_z - 0.5), 0.0)
 			else:
 				_put(slot, "street/bush", Vector3(side * 10.4, 0, gap_z - 0.5), 0, Vector3(1, 0.8, 2.6), _bush())
 		2:
