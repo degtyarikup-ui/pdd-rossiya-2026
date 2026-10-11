@@ -22,7 +22,7 @@
     tramWhite: 0xF5F5F5,
   };
 
-  const CITY_REACH = 160;
+  const CITY_REACH = 360;
   const ROAD_WIDTH = 13.6;
   const HALF_ROAD = ROAD_WIDTH / 2;
   const LANE_OFFSET = 3.4; // центр полосы движения
@@ -192,7 +192,7 @@
     scene.add(skyDome);
 
     // Перспективная камера: изометрический обзор под углом 46 градусов
-    camera = new THREE.PerspectiveCamera(42, width / height, 0.5, 450);
+    camera = new THREE.PerspectiveCamera(40, width / height, 0.5, 900);
     updateCameraPosition();
 
     renderer = new THREE.WebGLRenderer({ antialias: !lowEnd, alpha: false, powerPreference: 'high-performance' });
@@ -226,7 +226,7 @@
 
     // Подключаем процедурные шейдерные материалы дорог (асфальт с микропорами)
     if (window.PDD_ROADS) {
-      window.PDD_ROADS.attach(renderer, { roots: () => [envGroup], lineage: () => null });
+      window.PDD_ROADS.attach(renderer, { roots: () => [envGroup, scenarioGroup, locationGroup], lineage: () => null });
     }
 
     // Обработчики событий
@@ -275,8 +275,8 @@
   // Изометрический обзор с юго-востока. Кадр подбирается под сценарий:
   // все участники с метками помещаются в видимую часть экрана над нижней
   // карточкой Flutter (раньше крайние машины обрезались краем экрана).
-  const CAMERA_DIR = new THREE.Vector3(44, 38, 31).normalize();
-  const CAMERA_BASE = 66;
+  const CAMERA_DIR = new THREE.Vector3(38, 50, 28).normalize();
+  const CAMERA_BASE = 68;
   let fitDistance = CAMERA_BASE;
 
   function frameProbe() {
@@ -293,7 +293,7 @@
   const BASE_YAW = Math.atan2(CAMERA_DIR.x, CAMERA_DIR.z), BASE_PITCH = Math.asin(CAMERA_DIR.y);
 
   function cameraDir() {
-    const yaw = BASE_YAW + camYaw, pitch = THREE.MathUtils.clamp(BASE_PITCH + camPitch, 0.5, 1.3);
+    const yaw = BASE_YAW + camYaw, pitch = THREE.MathUtils.clamp(BASE_PITCH + camPitch, 0.65, 1.35);
     return new THREE.Vector3(Math.cos(pitch) * Math.sin(yaw), Math.sin(pitch), Math.cos(pitch) * Math.cos(yaw));
   }
 
@@ -337,7 +337,7 @@
 
   function updateCameraPosition() {
     if (!camera) return;
-    camera.fov = 48;
+    camera.fov = 40;
     placeCamera(fitDistance / camZoom);
     if (camShake > 0) {
       camera.position.x += (Math.random() - 0.5) * camShake * 2.0;
@@ -348,7 +348,7 @@
   // --- Построение перекрестка и окружения ---
   function buildEnvironment() {
     // 1. Земля / газон
-    const groundGeo = new THREE.PlaneGeometry(800, 800);
+    const groundGeo = new THREE.PlaneGeometry(1600, 1600);
     const groundMat = new THREE.MeshLambertMaterial({ color: season.ground });
     groundMat.userData.pddKind = 'grass';
     const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -412,9 +412,9 @@
     });
   }
 
-  // Т-образный перекрёсток: на месте закрытой ветки — продолжение квартала:
-  // тротуар 6 м вдоль поперечной улицы, дальше газон, как в соседних углах
-  // (сплошная серая плита на всю длину выглядела как недостроенная дорога).
+  // Т-образный перекрёсток: на месте закрытой ветки — благоустроенный бульвар:
+  // аккуратный зеленый газон с честным тайлингом UV по физическим метрам (4.8 м),
+  // бордюрами, пешеходными дорожками и уличными фонарями.
   function closeArm(parent, side) {
     const len = CITY_REACH - HALF_ROAD, width = ROAD_WIDTH + 0.4;
     const ns = side === 'north' || side === 'south';
@@ -426,15 +426,68 @@
       parent.add(m);
       return m;
     };
+
+    // Основание тротуара вдоль всей закрытой ветки
     box(width, len, HALF_ROAD + len / 2, cachedWalkMat, 0.08, 0.16);
+
+    // Поперечный бордюр на границе перекрестка
     const curb = box(ROAD_WIDTH, 0.25, HALF_ROAD + 0.12, curbMatShared, 0.1, 0.2);
     curb.castShadow = true;
-    const lawn = new THREE.Mesh(new THREE.PlaneGeometry(ns ? width : len - 6, ns ? len - 6 : width), lawnMatShared);
+
+    // Внутренний зеленый газон бульвара (ширина 8.8 м, по краям остаются тротуары по 2.6 м)
+    const lawnW = 8.8;
+    const lawnL = len - 6.0;
+    const lawnGeo = new THREE.PlaneGeometry(ns ? lawnW : lawnL, ns ? lawnL : lawnW);
+
+    const at = sign * (HALF_ROAD + 6.0 + lawnL / 2);
+    const cx = ns ? 0 : at;
+    const cz = ns ? at : 0;
+
+    // Точный расчет UV-координат по физическим метрам (тайлинг каждые 4.8 м, без растяжения)
+    const pos = lawnGeo.attributes.position;
+    const uv = lawnGeo.attributes.uv;
+    for (let i = 0; i < pos.count; i++) {
+      const lx = pos.getX(i);
+      const ly = pos.getY(i);
+      const wx = cx + (ns ? lx : (sign > 0 ? -ly : ly));
+      const wz = cz + (ns ? (sign > 0 ? -ly : ly) : lx);
+      uv.setXY(i, wx / 4.8, wz / 4.8);
+    }
+    uv.needsUpdate = true;
+
+    const lawn = new THREE.Mesh(lawnGeo, lawnMatShared);
     lawn.rotation.x = -Math.PI / 2;
-    const at = sign * (HALF_ROAD + 6 + (len - 6) / 2);
-    if (ns) lawn.position.set(0, 0.168, at); else lawn.position.set(at, 0.168, 0);
+    lawn.position.set(cx, 0.168, cz);
     lawn.receiveShadow = true;
     parent.add(lawn);
+
+    // Ограничивающие бордюры вдоль газона бульвара с обеих сторон
+    [-lawnW / 2 - 0.11, lawnW / 2 + 0.11].forEach(offset => {
+      const m = new THREE.Mesh(
+        ns ? new THREE.BoxGeometry(0.22, 0.20, lawnL) : new THREE.BoxGeometry(lawnL, 0.20, 0.22),
+        curbMatShared
+      );
+      if (ns) m.position.set(offset, 0.10, at);
+      else m.position.set(at, 0.10, offset);
+      m.castShadow = true;
+      m.receiveShadow = true;
+      parent.add(m);
+    });
+
+    // Уличные фонари вдоль пешеходных дорожек бульвара
+    if (window.PDD_STREET && window.PDD_STREET.createLampPost) {
+      for (let d = HALF_ROAD + 18; d < Math.min(CITY_REACH - 20, 160); d += 28) {
+        const lamp = window.PDD_STREET.createLampPost();
+        if (ns) {
+          lamp.position.set(sign * 5.4, 0.16, sign * d);
+          lamp.rotation.y = sign > 0 ? -Math.PI / 2 : Math.PI / 2;
+        } else {
+          lamp.position.set(sign * d, 0.16, sign * 5.4);
+          lamp.rotation.y = sign > 0 ? Math.PI : 0;
+        }
+        parent.add(lamp);
+      }
+    }
   }
 
   function buildMarkings(parent) {
@@ -837,10 +890,10 @@
     const E = HALF_ROAD;
     const house = (w, h, d, x, z, rot, kind, color, opts) => houseFactory(w, h, d, x, 0, z, rot, kind, color, opts);
     const trees = [];
-    // Не в домах, не на дорогах и тротуарах (кроме закрытой ветки).
+    // Не в домах, не на проезжей части и не на аллее бульвара
     const free = (x, z, pad = 0) => {
-      const onNS = Math.abs(x) < E + 7 && !(closed === 'north' && z < -(E + 7)) && !(closed === 'south' && z > E + 7);
-      const onEW = Math.abs(z) < E + 7 && !(closed === 'west' && x < -(E + 7)) && !(closed === 'east' && x > E + 7);
+      const onNS = Math.abs(x) < E + 7.5;
+      const onEW = Math.abs(z) < E + 7.5;
       if (onNS || onEW) return false;
       return occupied.every(o => Math.hypot(o.x - x, o.z - z) > o.r + pad);
     };
@@ -904,11 +957,11 @@
     }
     // Дальний пояс: деревья, чтобы при отдалении не было пустых полей.
     scatter(weak ? 60 : 110, 75, 150, 1.2);
-    // Закрытая ветка — аллея.
+    // Закрытая ветка — упорядоченная парковая аллея вдоль пешеходных дорожек
     if (closed) {
-      for (let d = E + 12; d < 72; d += 9) for (const off of [-3.5, 3.5]) {
+      for (let d = E + 14; d < Math.min(CITY_REACH - 20, 180); d += 14) for (const off of [-5.2, 5.2]) {
         const ns = closed === 'north' || closed === 'south', sign = closed === 'south' || closed === 'east' ? 1 : -1;
-        trees.push({ x: ns ? off : sign * d, z: ns ? sign * d : off, s: 0.9 + rnd() * 0.3 });
+        trees.push({ x: ns ? off : sign * d, z: ns ? sign * d : off, s: 0.95 + rnd() * 0.25 });
       }
     }
     plantTrees(trees, rnd);
@@ -1230,6 +1283,18 @@
     mesh.add(badge);
     mesh.userData.badge = badge;
     mesh.userData.actorId = actorData.id;
+
+    // Невидимый объемный хитбокс для безотказного нажатия на мобильных устройствах
+    let boxH = 3.6, boxL = 6.2;
+    if (actorData.type === 'tram') { boxH = 5.2; boxL = 15.6; }
+    else if (actorData.type === 'bus') { boxH = 4.8; boxL = 12.0; }
+    else if (actorData.type === 'truck') { boxH = 4.6; boxL = 8.5; }
+    const hitGeo = new THREE.BoxGeometry(4.2, boxH, boxL);
+    const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+    const hitBox = new THREE.Mesh(hitGeo, hitMat);
+    hitBox.position.set(0, boxH / 2, 0);
+    hitBox.userData = { actorId: actorData.id, isHitProxy: true };
+    mesh.add(hitBox);
 
     // Включаем указатели поворота в зависимости от маневра
     enableTurnSignals(mesh, actorData.maneuver);
@@ -1756,6 +1821,7 @@
     sprite.center.set(0.5, 0.06); // кончик хвостика — над крышей
     sprite.scale.set(3.8, 3.8, 1);
     sprite.renderOrder = 10;
+    sprite.userData.actorId = actorData.id;
     badgeGroup.add(sprite);
 
     badgeGroup.userData = {
@@ -1921,9 +1987,9 @@
   }
 
   // Тап по машине или метке. Если палец чуть промахнулся — берём ближайшую
-  // ждущую машину в радиусе ~50 px от точки касания.
+  // Тап по машине или метке. Экранный радиус доводки ~100 px от точки касания.
   function onTap(event) {
-    if (isResolving || !currentScenario) return;
+    if (activeCollision || !currentScenario) return;
     const rect = renderer.domElement.getBoundingClientRect();
     const clientX = event.clientX - rect.left;
     const clientY = event.clientY - rect.top;
@@ -1948,7 +2014,7 @@
     activeActors.forEach(({ mesh, badge, state }) => {
       if (state !== 'waiting') return;
       candidates.push(mesh);
-      if (badge) candidates.push(badge.userData.sprite);
+      if (badge && badge.userData && badge.userData.sprite) candidates.push(badge.userData.sprite);
     });
     let actorId = null;
     const hit = raycaster.intersectObjects(candidates, true)[0];
@@ -1956,15 +2022,19 @@
       if (o.userData && o.userData.actorId) { actorId = o.userData.actorId; break; }
     }
     if (!actorId) {
-      let best = 50;
+      let best = 100;
       const v = new THREE.Vector3();
       activeActors.forEach(({ mesh, badge, state, data }) => {
         if (state !== 'waiting') return;
         const points = [mesh.getWorldPosition(new THREE.Vector3())];
-        if (badge) points.push(badge.userData.sprite.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 1.8 * badgeScale, 0)));
+        if (badge && badge.userData && badge.userData.sprite) {
+          const bp = badge.userData.sprite.getWorldPosition(new THREE.Vector3());
+          points.push(bp);
+          points.push(bp.clone().add(new THREE.Vector3(0, 1.8 * badgeScale, 0)));
+        }
         points.forEach(p => {
           v.copy(p).project(camera);
-          const d = Math.hypot((v.x + 1) / 2 * rect.width - (event.clientX - rect.left), (1 - v.y) / 2 * rect.height - (event.clientY - rect.top));
+          const d = Math.hypot((v.x + 1) / 2 * rect.width - clientX, (1 - v.y) / 2 * rect.height - clientY);
           if (d < best) { best = d; actorId = data.id; }
         });
       });
@@ -1977,10 +2047,11 @@
 
   // --- Проверка правильности выбора очередности ---
   function handleVehicleChoice(chosenActorId) {
+    if (activeCollision) return;
     const chosen = activeActors.get(chosenActorId);
-    if (!chosen) return;
+    if (!chosen || chosen.state !== 'waiting') return;
 
-    // Ищем актора, который ОБЯЗАН ехать на текущем шаге
+    // Ищем актора, который ОБЯЗАН ехать на текущем шаге среди ждущих
     let priorityActor = null;
     activeActors.forEach(rec => {
       if (rec.state === 'waiting') {
@@ -1998,18 +2069,28 @@
       updateBadgeText(chosen.badge, `${currentStep}`, true);
       if (audio) audio.chime(currentStep);
 
-      // Анимируем плавный проезд перекрестка
+      const thisStep = currentStep;
+      currentStep++;
+
+      notifyFlutter({
+        type: 'step_correct',
+        actorId: chosenActorId,
+        step: thisStep,
+        totalSteps: currentScenario.actors.length,
+      });
+
+      // Немедленно запускаем проезд перекрестка, не блокируя выбор следующих участников!
       startDriveAnimation(chosen, () => {
         chosen.state = 'done';
         chosen.mesh.visible = false;
 
-        // Проверяем, остались ли еще участники
-        let remaining = false;
+        // Проверяем, остались ли еще активные участники (ждущие или еще едущие)
+        let anyActive = false;
         activeActors.forEach(rec => {
-          if (rec.state === 'waiting') remaining = true;
+          if (rec.state === 'waiting' || rec.state === 'driving') anyActive = true;
         });
 
-        if (!remaining) {
+        if (!anyActive && !activeCollision) {
           // ПЕРЕКРЕСТОК ПОЛНОСТЬЮ РАЗРУЛЕН!
           notifyFlutter({
             type: 'crossroad_complete',
@@ -2017,15 +2098,6 @@
           });
         }
       });
-
-      notifyFlutter({
-        type: 'step_correct',
-        actorId: chosenActorId,
-        step: currentStep,
-        totalSteps: currentScenario.actors.length,
-      });
-
-      currentStep++;
     } else {
       // ОШИБКА / ДТП!
       // Игрок выбрал машину без преимущества. Начинается кинематографичная авария!
@@ -2047,12 +2119,12 @@
     if (maneuver === 'left') steerAngle = -0.42;
     else if (maneuver === 'right') steerAngle = 0.42;
 
-    isResolving = true;
     if (audio) {
       audio.engine(data.type, isTram ? 2.6 : 2.0);
       if (data.hasSiren) audio.siren(2.2);
     }
     drivingAnimations.push({
+      actorRecord,
       mesh,
       path,
       progress: 0,
@@ -2062,7 +2134,6 @@
       steerAngle,
       blinker: mesh.userData.activeBlinker,
       onComplete: () => {
-        isResolving = false;
         onComplete && onComplete();
       },
     });
@@ -2176,6 +2247,7 @@
   // --- Кинематографичная авария (ДТП) при ошибке очередности ---
   function triggerCollision(wrongActor, priorityActor) {
     isResolving = true;
+    drivingAnimations = [];
     wrongActor.state = 'crashed';
     priorityActor.state = 'crashed';
 
@@ -2399,6 +2471,92 @@
     });
   }
 
+  // --- Проверка динамических столкновений участников на перекрестке в реальном времени ---
+  function checkDynamicCollisions() {
+    if (drivingAnimations.length < 2 || activeCollision) return;
+
+    for (let i = 0; i < drivingAnimations.length; i++) {
+      for (let j = i + 1; j < drivingAnimations.length; j++) {
+        const animA = drivingAnimations[i];
+        const animB = drivingAnimations[j];
+        if (!animA || !animB || !animA.actorRecord || !animB.actorRecord) continue;
+
+        const posA = animA.mesh.position;
+        const posB = animB.mesh.position;
+        const dist = Math.hypot(posA.x - posB.x, posA.z - posB.z);
+
+        const extA = getVehicleCollisionExtents(animA.actorRecord);
+        const extB = getVehicleCollisionExtents(animB.actorRecord);
+        const threshold = Math.max(extA.side + extB.side + 0.5, (extA.front + extB.front) * 0.70);
+
+        if (dist < threshold) {
+          triggerDynamicCollision(animA, animB);
+          return;
+        }
+      }
+    }
+  }
+
+  function triggerDynamicCollision(animA, animB) {
+    const orderA = animA.actorRecord.data.order;
+    const orderB = animB.actorRecord.data.order;
+    const earlierAnim = orderA <= orderB ? animA : animB;
+    const rushingAnim = orderA <= orderB ? animB : animA;
+
+    const priorityActor = earlierAnim.actorRecord;
+    const wrongActor = rushingAnim.actorRecord;
+
+    priorityActor.state = 'crashed';
+    wrongActor.state = 'crashed';
+    isResolving = true;
+
+    const posA = animA.mesh.position.clone();
+    const posB = animB.mesh.position.clone();
+    const impactPoint = new THREE.Vector3((posA.x + posB.x) * 0.5, 0.65, (posA.z + posB.z) * 0.5);
+
+    // Останавливаем все движения
+    drivingAnimations = [];
+
+    // Звук удара, тряска камеры и спецэффекты (дым, искры)
+    if (audio) audio.crash();
+    camShake = 0.65;
+    createCrashParticles(impactPoint);
+    createCrashSmoke(impactPoint);
+
+    // Реалистичный отскок участников друг от друга
+    const away = new THREE.Vector3(
+      wrongActor.mesh.position.x - priorityActor.mesh.position.x,
+      0,
+      wrongActor.mesh.position.z - priorityActor.mesh.position.z
+    );
+    if (away.lengthSq() > 0.001) away.normalize();
+    else away.set(1, 0, 0);
+
+    wrongActor.mesh.position.addScaledVector(away, 0.20);
+    priorityActor.mesh.position.addScaledVector(away, -0.16);
+
+    // Небольшой крен кузовов от удара
+    wrongActor.mesh.rotation.z += 0.035;
+    wrongActor.mesh.rotation.x -= 0.025;
+    priorityActor.mesh.rotation.z -= 0.030;
+
+    // Включаем аварийную сигнализацию
+    wrongActor.mesh.userData.hazardLights = true;
+    priorityActor.mesh.userData.hazardLights = true;
+
+    // Обновляем бейджи
+    updateBadgeText(wrongActor.badge, '✗', 'error');
+    updateBadgeText(priorityActor.badge, '!', 'priority');
+
+    notifyFlutter({
+      type: 'collision',
+      chosenId: wrongActor.data.id,
+      priorityId: priorityActor.data.id,
+      reason: 'Слишком ранний выезд: не уступил дорогу и не дождался освобождения перекрестка движущимся транспортом! (п. 13.8 ПДД РФ)',
+      pddArticle: '13.8',
+    });
+  }
+
   // --- Основной цикл рендера и анимаций ---
   function animate() {
     requestAnimationFrame(animate);
@@ -2478,6 +2636,11 @@
           anim.blinker = null;
         }
       }
+    }
+
+    // Проверка динамических столкновений между движущимися ТС в реальном времени
+    if (!activeCollision && drivingAnimations.length >= 2) {
+      checkDynamicCollisions();
     }
 
     // Обновление активной анимации ДТП
@@ -2595,7 +2758,7 @@
   };
 
   window.selectVehicle = actorId => {
-    if (isResolving || !currentScenario) return;
+    if (activeCollision || !currentScenario) return;
     handleVehicleChoice(actorId);
   };
 

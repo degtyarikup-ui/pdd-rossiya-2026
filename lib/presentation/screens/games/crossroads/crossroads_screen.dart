@@ -680,7 +680,11 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
           Text(
             isComplete
                 ? scenario.title
-                : (firstTime ? appL10n.gameCrossroadsTapHint : scenario.title),
+                : (firstTime
+                    ? appL10n.gameCrossroadsTapHint
+                    : (_currentStep > 1 && scenario.subtitle.isNotEmpty
+                        ? scenario.subtitle
+                        : scenario.title)),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
