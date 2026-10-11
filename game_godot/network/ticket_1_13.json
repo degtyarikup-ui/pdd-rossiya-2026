@@ -414,7 +414,8 @@
    "yaw": -3.142,
    "scale": 1.16,
    "arrow": null,
-   "state": "green"
+   "state": "green",
+   "asset": "ticket_1_13/light_0.glb"
   }
  ],
  "actors": [
@@ -425,7 +426,6 @@
    "route": "actor_cyclist",
    "pos": [
     -3.35,
-    0,
     -7.5
    ],
    "yaw": 0,
@@ -454,7 +454,8 @@
      "color": "#2BC280"
     }
    },
-   "wheelsRadius": 0.36
+   "wheelsRadius": 0.36,
+   "asset": "ticket_1_13/actor_0.glb"
   },
   {
    "id": "pedestrian",
@@ -463,7 +464,6 @@
    "route": "actor_pedestrian",
    "pos": [
     -5.8,
-    0.18,
     -5.6
    ],
    "yaw": 0,
@@ -501,7 +501,8 @@
      ]
     }
    },
-   "wheelsRadius": 0.36
+   "wheelsRadius": 0.36,
+   "asset": "ticket_1_13/actor_1.glb"
   },
   {
    "id": "pedestrian_2",
@@ -510,7 +511,6 @@
    "route": "actor_pedestrian_2",
    "pos": [
     -6.8,
-    0.18,
     -5.6
    ],
    "yaw": 0,
@@ -548,7 +548,8 @@
      ]
     }
    },
-   "wheelsRadius": 0.36
+   "wheelsRadius": 0.36,
+   "asset": "ticket_1_13/actor_2.glb"
   }
  ],
  "decor": [
@@ -564,7 +565,8 @@
     1,
     0.996
    ],
-   "tint": "#e8cfa8"
+   "tint": "#e8cfa8",
+   "id": "decor_0"
   },
   {
    "prop": "buildings/home_1",
@@ -578,7 +580,8 @@
     1,
     1.014
    ],
-   "tint": "#e9d5cc"
+   "tint": "#e9d5cc",
+   "id": "decor_1"
   },
   {
    "prop": "trees/round_0",
@@ -592,7 +595,8 @@
     0.907,
     0.907
    ],
-   "tint": "#c7a24a"
+   "tint": "#c7a24a",
+   "id": "decor_2"
   },
   {
    "prop": "trees/round_0",
@@ -606,7 +610,8 @@
     1.25,
     1.25
    ],
-   "tint": "#d98a2b"
+   "tint": "#d98a2b",
+   "id": "decor_3"
   },
   {
    "prop": "trees/round_0",
@@ -620,7 +625,8 @@
     1.282,
     1.282
    ],
-   "tint": "#b86a2a"
+   "tint": "#b86a2a",
+   "id": "decor_4"
   },
   {
    "prop": "trees/pine_0",
@@ -634,7 +640,8 @@
     1,
     1
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_5"
   },
   {
    "prop": "buildings/home_3",
@@ -648,7 +655,8 @@
     1,
     0.944
    ],
-   "tint": "#e8cfa8"
+   "tint": "#e8cfa8",
+   "id": "decor_6"
   },
   {
    "prop": "street/lamp",
@@ -662,7 +670,8 @@
     1,
     1
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_7"
   },
   {
    "prop": "street/fence_12",
@@ -676,7 +685,8 @@
     1,
     1.051
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_8"
   },
   {
    "prop": "parked",
@@ -690,7 +700,8 @@
     1,
     1
    ],
-   "tint": "#d1cec4"
+   "tint": "#d1cec4",
+   "id": "decor_9"
   },
   {
    "prop": "buildings/home_1",
@@ -704,7 +715,8 @@
     1,
     0.952
    ],
-   "tint": "#e8cfa8"
+   "tint": "#e8cfa8",
+   "id": "decor_10"
   },
   {
    "prop": "buildings/home_2",
@@ -718,7 +730,8 @@
     1,
     1.087
    ],
-   "tint": "#c8d9c0"
+   "tint": "#c8d9c0",
+   "id": "decor_11"
   },
   {
    "prop": "trees/round_0",
@@ -732,7 +745,8 @@
     0.911,
     0.911
    ],
-   "tint": "#b86a2a"
+   "tint": "#b86a2a",
+   "id": "decor_12"
   },
   {
    "prop": "trees/round_0",
@@ -746,7 +760,8 @@
     1.232,
     1.232
    ],
-   "tint": "#c94f2b"
+   "tint": "#c94f2b",
+   "id": "decor_13"
   },
   {
    "prop": "trees/round_0",
@@ -760,7 +775,8 @@
     1.082,
     1.082
    ],
-   "tint": "#b86a2a"
+   "tint": "#b86a2a",
+   "id": "decor_14"
   },
   {
    "prop": "trees/round_0",
@@ -774,7 +790,8 @@
     1,
     1
    ],
-   "tint": "#d98a2b"
+   "tint": "#d98a2b",
+   "id": "decor_15"
   },
   {
    "prop": "buildings/home_3",
@@ -788,7 +805,8 @@
     1,
     0.974
    ],
-   "tint": "#e9d5cc"
+   "tint": "#e9d5cc",
+   "id": "decor_16"
   },
   {
    "prop": "street/fence_12",
@@ -802,7 +820,8 @@
     1,
     1.068
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_17"
   },
   {
    "prop": "parked",
@@ -816,7 +835,8 @@
     1,
     1
    ],
-   "tint": "#e8e8e8"
+   "tint": "#e8e8e8",
+   "id": "decor_18"
   },
   {
    "prop": "buildings/home_1",
@@ -830,7 +850,8 @@
     1,
     1.053
    ],
-   "tint": "#e9d5cc"
+   "tint": "#e9d5cc",
+   "id": "decor_19"
   },
   {
    "prop": "buildings/home_1",
@@ -844,7 +865,8 @@
     1,
     1.005
    ],
-   "tint": "#e8cfa8"
+   "tint": "#e8cfa8",
+   "id": "decor_20"
   },
   {
    "prop": "trees/round_0",
@@ -858,7 +880,8 @@
     0.958,
     0.958
    ],
-   "tint": "#c7a24a"
+   "tint": "#c7a24a",
+   "id": "decor_21"
   },
   {
    "prop": "trees/round_0",
@@ -872,7 +895,8 @@
     1.068,
     1.068
    ],
-   "tint": "#c7a24a"
+   "tint": "#c7a24a",
+   "id": "decor_22"
   },
   {
    "prop": "trees/round_0",
@@ -886,7 +910,8 @@
     0.808,
     0.808
    ],
-   "tint": "#c7a24a"
+   "tint": "#c7a24a",
+   "id": "decor_23"
   },
   {
    "prop": "trees/pine_0",
@@ -900,7 +925,8 @@
     1,
     1
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_24"
   },
   {
    "prop": "buildings/home_0",
@@ -914,7 +940,8 @@
     1,
     1.036
    ],
-   "tint": "#e8cfa8"
+   "tint": "#e8cfa8",
+   "id": "decor_25"
   },
   {
    "prop": "street/fence_12",
@@ -928,7 +955,8 @@
     1,
     1.018
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_26"
   },
   {
    "prop": "street/bush",
@@ -942,7 +970,8 @@
     1.5,
     2.308
    ],
-   "tint": "#9a8a3e"
+   "tint": "#9a8a3e",
+   "id": "decor_27"
   },
   {
    "prop": "buildings/home_1",
@@ -956,7 +985,8 @@
     1,
     1.119
    ],
-   "tint": "#c8d9c0"
+   "tint": "#c8d9c0",
+   "id": "decor_28"
   },
   {
    "prop": "buildings/home_1",
@@ -970,7 +1000,8 @@
     1,
     1.114
    ],
-   "tint": "#d9b99b"
+   "tint": "#d9b99b",
+   "id": "decor_29"
   },
   {
    "prop": "trees/round_0",
@@ -984,7 +1015,8 @@
     0.949,
     0.949
    ],
-   "tint": "#b86a2a"
+   "tint": "#b86a2a",
+   "id": "decor_30"
   },
   {
    "prop": "trees/round_0",
@@ -998,7 +1030,8 @@
     0.846,
     0.846
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_31"
   },
   {
    "prop": "trees/round_0",
@@ -1012,7 +1045,8 @@
     0.903,
     0.903
    ],
-   "tint": "#d98a2b"
+   "tint": "#d98a2b",
+   "id": "decor_32"
   },
   {
    "prop": "trees/round_0",
@@ -1026,7 +1060,8 @@
     1,
     1
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_33"
   },
   {
    "prop": "buildings/home_1",
@@ -1040,7 +1075,8 @@
     1,
     1.097
    ],
-   "tint": "#f3e3c3"
+   "tint": "#f3e3c3",
+   "id": "decor_34"
   },
   {
    "prop": "street/lamp",
@@ -1054,7 +1090,8 @@
     1,
     1
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_35"
   },
   {
    "prop": "street/fence_14",
@@ -1068,7 +1105,8 @@
     1,
     0.977
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_36"
   },
   {
    "prop": "street/bush",
@@ -1082,7 +1120,8 @@
     1.5,
     2.308
    ],
-   "tint": "#9a8a3e"
+   "tint": "#9a8a3e",
+   "id": "decor_37"
   },
   {
    "prop": "trees/pine_0",
@@ -1096,7 +1135,8 @@
     1.157,
     1.157
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_38"
   },
   {
    "prop": "trees/round_0",
@@ -1110,7 +1150,8 @@
     1.094,
     1.094
    ],
-   "tint": "#d98a2b"
+   "tint": "#d98a2b",
+   "id": "decor_39"
   },
   {
    "prop": "trees/birch_0",
@@ -1124,7 +1165,8 @@
     1.128,
     1.128
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_40"
   },
   {
    "prop": "trees/pine_0",
@@ -1138,7 +1180,8 @@
     1.005,
     1.005
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_41"
   },
   {
    "prop": "trees/pine_0",
@@ -1152,7 +1195,8 @@
     1.337,
     1.337
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_42"
   },
   {
    "prop": "trees/round_0",
@@ -1166,7 +1210,8 @@
     1.006,
     1.006
    ],
-   "tint": "#c94f2b"
+   "tint": "#c94f2b",
+   "id": "decor_43"
   },
   {
    "prop": "trees/pine_0",
@@ -1180,7 +1225,8 @@
     0.894,
     0.894
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_44"
   },
   {
    "prop": "trees/pine_0",
@@ -1194,7 +1240,8 @@
     1,
     1
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_45"
   },
   {
    "prop": "buildings/home_1",
@@ -1208,7 +1255,8 @@
     1,
     0.937
    ],
-   "tint": "#e9d5cc"
+   "tint": "#e9d5cc",
+   "id": "decor_46"
   },
   {
    "prop": "street/lamp",
@@ -1222,7 +1270,8 @@
     1,
     1
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_47"
   },
   {
    "prop": "street/fence_12",
@@ -1236,7 +1285,8 @@
     1,
     1.047
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_48"
   },
   {
    "prop": "parked",
@@ -1250,7 +1300,8 @@
     1,
     1
    ],
-   "tint": "#8b1e2d"
+   "tint": "#8b1e2d",
+   "id": "decor_49"
   },
   {
    "prop": "trees/pine_0",
@@ -1264,7 +1315,8 @@
     1.38,
     1.38
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_50"
   },
   {
    "prop": "trees/pine_0",
@@ -1278,7 +1330,8 @@
     1.349,
     1.349
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_51"
   },
   {
    "prop": "trees/pine_0",
@@ -1292,7 +1345,8 @@
     1.199,
     1.199
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_52"
   },
   {
    "prop": "trees/pine_0",
@@ -1306,7 +1360,8 @@
     1.194,
     1.194
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_53"
   },
   {
    "prop": "trees/round_0",
@@ -1320,7 +1375,8 @@
     1.34,
     1.34
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_54"
   },
   {
    "prop": "trees/round_0",
@@ -1334,7 +1390,8 @@
     1.062,
     1.062
    ],
-   "tint": "#c7a24a"
+   "tint": "#c7a24a",
+   "id": "decor_55"
   },
   {
    "prop": "trees/pine_0",
@@ -1348,7 +1405,8 @@
     1.158,
     1.158
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_56"
   },
   {
    "prop": "trees/pine_0",
@@ -1362,7 +1420,8 @@
     1,
     1
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_57"
   },
   {
    "prop": "buildings/home_1",
@@ -1376,7 +1435,8 @@
     1,
     1.1
    ],
-   "tint": "#c8d9c0"
+   "tint": "#c8d9c0",
+   "id": "decor_58"
   },
   {
    "prop": "street/fence_14",
@@ -1390,7 +1450,8 @@
     1,
     0.978
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_59"
   },
   {
    "prop": "parked",
@@ -1404,7 +1465,8 @@
     1,
     1
    ],
-   "tint": "#b87847"
+   "tint": "#b87847",
+   "id": "decor_60"
   },
   {
    "prop": "trees/round_0",
@@ -1418,7 +1480,8 @@
     1.156,
     1.156
    ],
-   "tint": "#d98a2b"
+   "tint": "#d98a2b",
+   "id": "decor_61"
   },
   {
    "prop": "trees/round_0",
@@ -1432,7 +1495,8 @@
     1.267,
     1.267
    ],
-   "tint": "#d98a2b"
+   "tint": "#d98a2b",
+   "id": "decor_62"
   },
   {
    "prop": "trees/round_0",
@@ -1446,7 +1510,8 @@
     0.816,
     0.816
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_63"
   },
   {
    "prop": "street/lamp",
@@ -1460,7 +1525,8 @@
     1,
     1
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_64"
   },
   {
    "prop": "trees/round_0",
@@ -1474,7 +1540,8 @@
     1,
     1
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_65"
   },
   {
    "prop": "buildings/home_0",
@@ -1488,7 +1555,8 @@
     1,
     1.028
    ],
-   "tint": "#f3e3c3"
+   "tint": "#f3e3c3",
+   "id": "decor_66"
   },
   {
    "prop": "street/lamp",
@@ -1502,7 +1570,8 @@
     1,
     1
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_67"
   },
   {
    "prop": "street/fence_12",
@@ -1516,7 +1585,8 @@
     1,
     1.014
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_68"
   },
   {
    "prop": "parked",
@@ -1530,7 +1600,8 @@
     1,
     1
    ],
-   "tint": "#8b1e2d"
+   "tint": "#8b1e2d",
+   "id": "decor_69"
   },
   {
    "prop": "trees/birch_0",
@@ -1544,7 +1615,8 @@
     1,
     1
    ],
-   "tint": "#d98a2b"
+   "tint": "#d98a2b",
+   "id": "decor_70"
   },
   {
    "prop": "buildings/home_1",
@@ -1558,7 +1630,8 @@
     1,
     0.995
    ],
-   "tint": "#f3e3c3"
+   "tint": "#f3e3c3",
+   "id": "decor_71"
   },
   {
    "prop": "street/fence_12",
@@ -1572,7 +1645,8 @@
     1,
     1.08
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_72"
   },
   {
    "prop": "parked",
@@ -1586,7 +1660,8 @@
     1,
     1
    ],
-   "tint": "#e8e8e8"
+   "tint": "#e8e8e8",
+   "id": "decor_73"
   },
   {
    "prop": "trees/pine_0",
@@ -1600,7 +1675,8 @@
     1,
     1
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_74"
   },
   {
    "prop": "buildings/home_3",
@@ -1614,7 +1690,8 @@
     1,
     0.927
    ],
-   "tint": "#d9b99b"
+   "tint": "#d9b99b",
+   "id": "decor_75"
   },
   {
    "prop": "street/fence_12",
@@ -1628,7 +1705,8 @@
     1,
     1.041
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_76"
   },
   {
    "prop": "street/bush",
@@ -1642,7 +1720,8 @@
     1.5,
     2.308
    ],
-   "tint": "#9a8a3e"
+   "tint": "#9a8a3e",
+   "id": "decor_77"
   },
   {
    "prop": "trees/round_0",
@@ -1656,7 +1735,8 @@
     1,
     1
    ],
-   "tint": "#b86a2a"
+   "tint": "#b86a2a",
+   "id": "decor_78"
   },
   {
    "prop": "buildings/home_0",
@@ -1670,7 +1750,8 @@
     1,
     1.138
    ],
-   "tint": "#f3e3c3"
+   "tint": "#f3e3c3",
+   "id": "decor_79"
   },
   {
    "prop": "street/lamp",
@@ -1684,7 +1765,8 @@
     1,
     1
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_80"
   },
   {
    "prop": "street/fence_12",
@@ -1698,7 +1780,8 @@
     1,
     1.069
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_81"
   },
   {
    "prop": "street/bush",
@@ -1712,7 +1795,8 @@
     1.5,
     2.308
    ],
-   "tint": "#9a8a3e"
+   "tint": "#9a8a3e",
+   "id": "decor_82"
   },
   {
    "prop": "trees/pine_0",
@@ -1726,7 +1810,8 @@
     1.117,
     1.117
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_83"
   },
   {
    "prop": "trees/pine_0",
@@ -1740,7 +1825,8 @@
     1.222,
     1.222
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_84"
   },
   {
    "prop": "trees/pine_0",
@@ -1754,7 +1840,8 @@
     0.987,
     0.987
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_85"
   },
   {
    "prop": "trees/pine_0",
@@ -1768,7 +1855,8 @@
     1.169,
     1.169
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_86"
   },
   {
    "prop": "trees/pine_0",
@@ -1782,7 +1870,8 @@
     1.092,
     1.092
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_87"
   },
   {
    "prop": "trees/pine_0",
@@ -1796,7 +1885,8 @@
     1.326,
     1.326
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_88"
   },
   {
    "prop": "trees/pine_0",
@@ -1810,7 +1900,8 @@
     1.366,
     1.366
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_89"
   },
   {
    "prop": "buildings/home_1",
@@ -1824,7 +1915,8 @@
     1,
     0.901
    ],
-   "tint": "#e8cfa8"
+   "tint": "#e8cfa8",
+   "id": "decor_90"
   },
   {
    "prop": "street/lamp",
@@ -1838,7 +1930,8 @@
     1,
     1
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_91"
   },
   {
    "prop": "street/fence_12",
@@ -1852,7 +1945,8 @@
     1,
     1.025
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_92"
   },
   {
    "prop": "trees/pine_0",
@@ -1866,7 +1960,8 @@
     0.925,
     0.925
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_93"
   },
   {
    "prop": "trees/round_0",
@@ -1880,7 +1975,8 @@
     1.131,
     1.131
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_94"
   },
   {
    "prop": "trees/round_0",
@@ -1894,7 +1990,8 @@
     1.07,
     1.07
    ],
-   "tint": "#c7a24a"
+   "tint": "#c7a24a",
+   "id": "decor_95"
   },
   {
    "prop": "trees/pine_0",
@@ -1908,7 +2005,8 @@
     0.999,
     0.999
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_96"
   },
   {
    "prop": "trees/pine_0",
@@ -1922,7 +2020,8 @@
     1.425,
     1.425
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_97"
   },
   {
    "prop": "trees/birch_0",
@@ -1936,7 +2035,8 @@
     1.398,
     1.398
    ],
-   "tint": "#c7a24a"
+   "tint": "#c7a24a",
+   "id": "decor_98"
   },
   {
    "prop": "trees/pine_0",
@@ -1950,7 +2050,8 @@
     1.326,
     1.326
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_99"
   },
   {
    "prop": "buildings/home_4",
@@ -1964,7 +2065,8 @@
     1,
     0.965
    ],
-   "tint": "#c8d9c0"
+   "tint": "#c8d9c0",
+   "id": "decor_100"
   },
   {
    "prop": "street/fence_14",
@@ -1978,7 +2080,8 @@
     1,
     0.946
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_101"
   },
   {
    "prop": "trees/birch_0",
@@ -1992,7 +2095,8 @@
     1,
     1
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_102"
   },
   {
    "prop": "buildings/home_4",
@@ -2006,7 +2110,8 @@
     1,
     0.92
    ],
-   "tint": "#e9d5cc"
+   "tint": "#e9d5cc",
+   "id": "decor_103"
   },
   {
    "prop": "street/lamp",
@@ -2020,7 +2125,8 @@
     1,
     1
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_104"
   },
   {
    "prop": "street/fence_12",
@@ -2034,7 +2140,8 @@
     1,
     1.075
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_105"
   },
   {
    "prop": "parked",
@@ -2048,7 +2155,8 @@
     1,
     1
    ],
-   "tint": "#6e86a6"
+   "tint": "#6e86a6",
+   "id": "decor_106"
   },
   {
    "prop": "trees/pine_0",
@@ -2062,7 +2170,8 @@
     1,
     1
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_107"
   },
   {
    "prop": "buildings/home_3",
@@ -2076,7 +2185,8 @@
     1,
     0.928
    ],
-   "tint": "#e8cfa8"
+   "tint": "#e8cfa8",
+   "id": "decor_108"
   },
   {
    "prop": "street/fence_12",
@@ -2090,7 +2200,8 @@
     1,
     1.041
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_109"
   },
   {
    "prop": "parked",
@@ -2104,7 +2215,8 @@
     1,
     1
    ],
-   "tint": "#4d756a"
+   "tint": "#4d756a",
+   "id": "decor_110"
   },
   {
    "prop": "trees/round_0",
@@ -2118,7 +2230,8 @@
     1,
     1
    ],
-   "tint": "#c94f2b"
+   "tint": "#c94f2b",
+   "id": "decor_111"
   },
   {
    "prop": "buildings/home_1",
@@ -2132,7 +2245,8 @@
     1,
     0.945
    ],
-   "tint": "#e8cfa8"
+   "tint": "#e8cfa8",
+   "id": "decor_112"
   },
   {
    "prop": "street/fence_12",
@@ -2146,7 +2260,8 @@
     1,
     1.051
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_113"
   },
   {
    "prop": "street/bush",
@@ -2160,7 +2275,8 @@
     1.5,
     2.308
    ],
-   "tint": "#9a8a3e"
+   "tint": "#9a8a3e",
+   "id": "decor_114"
   },
   {
    "prop": "trees/birch_0",
@@ -2174,7 +2290,8 @@
     1,
     1
    ],
-   "tint": "#c94f2b"
+   "tint": "#c94f2b",
+   "id": "decor_115"
   },
   {
    "prop": "buildings/home_2",
@@ -2188,7 +2305,8 @@
     1,
     1.034
    ],
-   "tint": "#c8d9c0"
+   "tint": "#c8d9c0",
+   "id": "decor_116"
   },
   {
    "prop": "street/lamp",
@@ -2202,7 +2320,8 @@
     1,
     1
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_117"
   },
   {
    "prop": "street/fence_12",
@@ -2216,7 +2335,8 @@
     1,
     1.06
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_118"
   },
   {
    "prop": "street/bush",
@@ -2230,7 +2350,8 @@
     1.5,
     2.308
    ],
-   "tint": "#9a8a3e"
+   "tint": "#9a8a3e",
+   "id": "decor_119"
   },
   {
    "prop": "trees/round_0",
@@ -2244,7 +2365,8 @@
     1.162,
     1.162
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_120"
   },
   {
    "prop": "trees/birch_0",
@@ -2258,7 +2380,8 @@
     1.22,
     1.22
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_121"
   },
   {
    "prop": "trees/pine_0",
@@ -2272,7 +2395,8 @@
     1.015,
     1.015
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_122"
   },
   {
    "prop": "trees/pine_0",
@@ -2286,7 +2410,8 @@
     0.901,
     0.901
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_123"
   },
   {
    "prop": "trees/round_0",
@@ -2300,7 +2425,8 @@
     1.291,
     1.291
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_124"
   },
   {
    "prop": "trees/pine_0",
@@ -2314,7 +2440,8 @@
     1.181,
     1.181
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_125"
   },
   {
    "prop": "buildings/home_1",
@@ -2328,7 +2455,8 @@
     1,
     1.049
    ],
-   "tint": "#c8d9c0"
+   "tint": "#c8d9c0",
+   "id": "decor_126"
   },
   {
    "prop": "street/lamp",
@@ -2342,7 +2470,8 @@
     1,
     1
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_127"
   },
   {
    "prop": "street/fence_14",
@@ -2356,7 +2485,8 @@
     1,
     0.953
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_128"
   },
   {
    "prop": "trees/pine_0",
@@ -2370,7 +2500,8 @@
     1.05,
     1.05
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_129"
   },
   {
    "prop": "trees/round_0",
@@ -2384,7 +2515,8 @@
     1.312,
     1.312
    ],
-   "tint": "#c94f2b"
+   "tint": "#c94f2b",
+   "id": "decor_130"
   },
   {
    "prop": "trees/pine_0",
@@ -2398,7 +2530,8 @@
     1.332,
     1.332
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_131"
   },
   {
    "prop": "trees/pine_0",
@@ -2412,7 +2545,8 @@
     1.056,
     1.056
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_132"
   },
   {
    "prop": "buildings/home_2",
@@ -2426,7 +2560,8 @@
     1,
     0.935
    ],
-   "tint": "#f3e3c3"
+   "tint": "#f3e3c3",
+   "id": "decor_133"
   },
   {
    "prop": "street/fence_12",
@@ -2440,7 +2575,8 @@
     1,
     1.007
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_134"
   },
   {
    "prop": "trees/round_0",
@@ -2454,7 +2590,8 @@
     1,
     1
    ],
-   "tint": "#c7a24a"
+   "tint": "#c7a24a",
+   "id": "decor_135"
   },
   {
    "prop": "parked",
@@ -2468,7 +2605,8 @@
     1,
     1
    ],
-   "tint": "#e8e8e8"
+   "tint": "#e8e8e8",
+   "id": "decor_136"
   },
   {
    "prop": "trees/round_0",
@@ -2482,7 +2620,8 @@
     1,
     1
    ],
-   "tint": "#c94f2b"
+   "tint": "#c94f2b",
+   "id": "decor_137"
   },
   {
    "prop": "parked",
@@ -2496,7 +2635,8 @@
     1,
     1
    ],
-   "tint": "#b87847"
+   "tint": "#b87847",
+   "id": "decor_138"
   },
   {
    "prop": "buildings/home_1",
@@ -2510,7 +2650,8 @@
     1,
     0.982
    ],
-   "tint": "#e9d5cc"
+   "tint": "#e9d5cc",
+   "id": "decor_139"
   },
   {
    "prop": "buildings/home_1",
@@ -2524,7 +2665,8 @@
     1,
     0.994
    ],
-   "tint": "#f3e3c3"
+   "tint": "#f3e3c3",
+   "id": "decor_140"
   },
   {
    "prop": "trees/round_0",
@@ -2538,7 +2680,8 @@
     1.132,
     1.132
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_141"
   },
   {
    "prop": "trees/round_0",
@@ -2552,7 +2695,8 @@
     0.967,
     0.967
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_142"
   },
   {
    "prop": "trees/round_0",
@@ -2566,7 +2710,8 @@
     0.825,
     0.825
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_143"
   },
   {
    "prop": "trees/round_0",
@@ -2580,7 +2725,8 @@
     1,
     1
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_144"
   },
   {
    "prop": "buildings/home_0",
@@ -2594,7 +2740,8 @@
     1,
     1.043
    ],
-   "tint": "#e9d5cc"
+   "tint": "#e9d5cc",
+   "id": "decor_145"
   },
   {
    "prop": "street/fence_12",
@@ -2608,7 +2755,8 @@
     1,
     1.021
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_146"
   },
   {
    "prop": "street/bush",
@@ -2622,7 +2770,8 @@
     1.5,
     2.308
    ],
-   "tint": "#9a8a3e"
+   "tint": "#9a8a3e",
+   "id": "decor_147"
   },
   {
    "prop": "buildings/home_0",
@@ -2636,7 +2785,8 @@
     1,
     1.118
    ],
-   "tint": "#c8d9c0"
+   "tint": "#c8d9c0",
+   "id": "decor_148"
   },
   {
    "prop": "buildings/home_0",
@@ -2650,7 +2800,8 @@
     1,
     1.065
    ],
-   "tint": "#e8cfa8"
+   "tint": "#e8cfa8",
+   "id": "decor_149"
   },
   {
    "prop": "trees/round_0",
@@ -2664,7 +2815,8 @@
     1.259,
     1.259
    ],
-   "tint": "#c94f2b"
+   "tint": "#c94f2b",
+   "id": "decor_150"
   },
   {
    "prop": "trees/round_0",
@@ -2678,7 +2830,8 @@
     1.146,
     1.146
    ],
-   "tint": "#b86a2a"
+   "tint": "#b86a2a",
+   "id": "decor_151"
   },
   {
    "prop": "trees/round_0",
@@ -2692,7 +2845,8 @@
     1.212,
     1.212
    ],
-   "tint": "#b86a2a"
+   "tint": "#b86a2a",
+   "id": "decor_152"
   },
   {
    "prop": "trees/pine_0",
@@ -2706,7 +2860,8 @@
     1,
     1
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_153"
   },
   {
    "prop": "buildings/home_1",
@@ -2720,7 +2875,8 @@
     1,
     0.984
    ],
-   "tint": "#c8d9c0"
+   "tint": "#c8d9c0",
+   "id": "decor_154"
   },
   {
    "prop": "street/lamp",
@@ -2734,7 +2890,8 @@
     1,
     1
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_155"
   },
   {
    "prop": "street/fence_12",
@@ -2748,7 +2905,8 @@
     1,
     1.074
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_156"
   },
   {
    "prop": "street/bush",
@@ -2762,7 +2920,8 @@
     1.5,
     2.308
    ],
-   "tint": "#9a8a3e"
+   "tint": "#9a8a3e",
+   "id": "decor_157"
   },
   {
    "prop": "trees/pine_0",
@@ -2776,7 +2935,8 @@
     1.138,
     1.138
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_158"
   },
   {
    "prop": "trees/round_0",
@@ -2790,7 +2950,8 @@
     0.951,
     0.951
    ],
-   "tint": "#c7a24a"
+   "tint": "#c7a24a",
+   "id": "decor_159"
   },
   {
    "prop": "trees/round_0",
@@ -2804,7 +2965,8 @@
     1.354,
     1.354
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_160"
   },
   {
    "prop": "trees/pine_0",
@@ -2818,7 +2980,8 @@
     1.336,
     1.336
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_161"
   },
   {
    "prop": "trees/pine_0",
@@ -2832,7 +2995,8 @@
     1.117,
     1.117
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_162"
   },
   {
    "prop": "trees/round_0",
@@ -2846,7 +3010,8 @@
     0.983,
     0.983
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_163"
   },
   {
    "prop": "trees/pine_0",
@@ -2860,7 +3025,8 @@
     1.395,
     1.395
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_164"
   },
   {
    "prop": "trees/pine_0",
@@ -2874,7 +3040,8 @@
     1,
     1
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_165"
   },
   {
    "prop": "buildings/home_1",
@@ -2888,7 +3055,8 @@
     1,
     1.069
    ],
-   "tint": "#e8cfa8"
+   "tint": "#e8cfa8",
+   "id": "decor_166"
   },
   {
    "prop": "street/lamp",
@@ -2902,7 +3070,8 @@
     1,
     1
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_167"
   },
   {
    "prop": "street/fence_14",
@@ -2916,7 +3085,8 @@
     1,
     0.963
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_168"
   },
   {
    "prop": "parked",
@@ -2930,7 +3100,8 @@
     1,
     1
    ],
-   "tint": "#2f3a46"
+   "tint": "#2f3a46",
+   "id": "decor_169"
   },
   {
    "prop": "trees/pine_0",
@@ -2944,7 +3115,8 @@
     0.92,
     0.92
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_170"
   },
   {
    "prop": "trees/round_0",
@@ -2958,7 +3130,8 @@
     1.201,
     1.201
    ],
-   "tint": "#d98a2b"
+   "tint": "#d98a2b",
+   "id": "decor_171"
   },
   {
    "prop": "trees/pine_0",
@@ -2972,7 +3145,8 @@
     1.166,
     1.166
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_172"
   },
   {
    "prop": "trees/pine_0",
@@ -2986,7 +3160,8 @@
     1.129,
     1.129
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_173"
   },
   {
    "prop": "trees/pine_0",
@@ -3000,7 +3175,8 @@
     0.997,
     0.997
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_174"
   },
   {
    "prop": "trees/round_0",
@@ -3014,7 +3190,8 @@
     1.364,
     1.364
    ],
-   "tint": "#c94f2b"
+   "tint": "#c94f2b",
+   "id": "decor_175"
   },
   {
    "prop": "trees/pine_0",
@@ -3028,7 +3205,8 @@
     0.993,
     0.993
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_176"
   },
   {
    "prop": "trees/round_0",
@@ -3042,7 +3220,8 @@
     1,
     1
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_177"
   },
   {
    "prop": "buildings/home_2",
@@ -3056,7 +3235,8 @@
     1,
     0.984
    ],
-   "tint": "#d9b99b"
+   "tint": "#d9b99b",
+   "id": "decor_178"
   },
   {
    "prop": "street/fence_12",
@@ -3070,7 +3250,8 @@
     1,
     1.033
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_179"
   },
   {
    "prop": "parked",
@@ -3084,7 +3265,8 @@
     1,
     1
    ],
-   "tint": "#2f3a46"
+   "tint": "#2f3a46",
+   "id": "decor_180"
   },
   {
    "prop": "trees/pine_0",
@@ -3098,7 +3280,8 @@
     0.91,
     0.91
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_181"
   },
   {
    "prop": "trees/birch_0",
@@ -3112,7 +3295,8 @@
     1.116,
     1.116
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_182"
   },
   {
    "prop": "trees/birch_0",
@@ -3126,7 +3310,8 @@
     1.31,
     1.31
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_183"
   },
   {
    "prop": "trees/pine_0",
@@ -3140,7 +3325,8 @@
     1.405,
     1.405
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_184"
   },
   {
    "prop": "trees/pine_0",
@@ -3154,7 +3340,8 @@
     1.339,
     1.339
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_185"
   },
   {
    "prop": "trees/pine_0",
@@ -3168,7 +3355,8 @@
     1.168,
     1.168
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_186"
   },
   {
    "prop": "trees/pine_0",
@@ -3182,7 +3370,8 @@
     1.365,
     1.365
    ],
-   "tint": "#3e7c42"
+   "tint": "#3e7c42",
+   "id": "decor_187"
   },
   {
    "prop": "trees/pine_0",
@@ -3196,7 +3385,8 @@
     1,
     1
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_188"
   },
   {
    "prop": "trees/round_0",
@@ -3210,7 +3400,8 @@
     1.155,
     1.155
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_189"
   },
   {
    "prop": "street/bush",
@@ -3224,7 +3415,8 @@
     1,
     1.168
    ],
-   "tint": "#9a8a3e"
+   "tint": "#9a8a3e",
+   "id": "decor_190"
   },
   {
    "prop": "trees/pine_0",
@@ -3238,7 +3430,8 @@
     1.382,
     1.382
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_191"
   },
   {
    "prop": "trees/round_0",
@@ -3252,7 +3445,8 @@
     1.278,
     1.278
    ],
-   "tint": "#c7a24a"
+   "tint": "#c7a24a",
+   "id": "decor_192"
   },
   {
    "prop": "trees/pine_0",
@@ -3266,7 +3460,8 @@
     1.014,
     1.014
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_193"
   },
   {
    "prop": "trees/pine_0",
@@ -3280,7 +3475,8 @@
     0.975,
     0.975
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_194"
   },
   {
    "prop": "trees/round_0",
@@ -3294,7 +3490,8 @@
     1.052,
     1.052
    ],
-   "tint": "#d98a2b"
+   "tint": "#d98a2b",
+   "id": "decor_195"
   },
   {
    "prop": "trees/pine_0",
@@ -3308,7 +3505,8 @@
     1.1,
     1.1
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_196"
   },
   {
    "prop": "trees/pine_0",
@@ -3322,7 +3520,8 @@
     1.035,
     1.035
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_197"
   },
   {
    "prop": "trees/pine_0",
@@ -3336,7 +3535,8 @@
     1,
     1
    ],
-   "tint": "#467e3c"
+   "tint": "#467e3c",
+   "id": "decor_198"
   },
   {
    "prop": "street/lamp",
@@ -3350,7 +3550,8 @@
     1,
     1
    ],
-   "tint": null
+   "tint": null,
+   "id": "decor_199"
   },
   {
    "prop": "trees/round_0",
@@ -3364,7 +3565,8 @@
     0.833,
     0.833
    ],
-   "tint": "#e0b33c"
+   "tint": "#e0b33c",
+   "id": "decor_200"
   },
   {
    "prop": "street/bush",
@@ -3378,7 +3580,8 @@
     1,
     1.106
    ],
-   "tint": "#9a8a3e"
+   "tint": "#9a8a3e",
+   "id": "decor_201"
   }
  ],
  "questionCamera": [

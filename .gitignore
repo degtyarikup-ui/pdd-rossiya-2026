@@ -81,3 +81,5 @@ tools/signs_reel/.cache/
 tools/signs_reel/.work/
 web_landing/ru/app/
 game_godot/network/preview/
+# Scene editor: copies of a scene before each save (local undo on disk)
+game_godot/network/history/
