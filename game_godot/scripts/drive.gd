@@ -12,7 +12,7 @@ var world: Object
 var pos := Vector3.ZERO
 var yaw := 0.0
 var speed := 0.0                 # m/s, negative = reverse
-var steering := 0                # -1 right .. 1 left (held arrow)
+var steering := 0.0              # -1 right .. 1 left (held arrow; a debug driver may steer by degrees)
 var accelerating := false
 var braking := false
 var max_speed := 18.0            # follows the limit in force
@@ -75,7 +75,8 @@ func assist(dt: float) -> void:
 			var target := Vector3(from_x + (float(g.goal) - from_x) * t, 0, pos.z + 3.0)
 			var wanted := atan2(target.x - pos.x, target.z - pos.z)
 			var err := atan2(sin(wanted - yaw), cos(wanted - yaw))
-			yaw += err * minf(1.0, dt * 5.0)
+			# At most 1.5 rad/s: a car does not turn on the spot, however far off the lane.
+			yaw += clampf(err * minf(1.0, dt * 5.0), -1.5 * dt, 1.5 * dt)
 			return
 	var x := pos.x
 	if absf(x) > 16:
@@ -88,7 +89,7 @@ func assist(dt: float) -> void:
 		return
 	var lane := nearest_lane_x(x)
 	var pull := clampf((lane - x) * 0.05, -0.06, 0.06) * (-1.0 if back else 1.0)
-	yaw += (err + pull) * minf(1.0, dt * 1.8)
+	yaw += clampf((err + pull) * minf(1.0, dt * 1.8), -1.5 * dt, 1.5 * dt)
 
 
 ## Nearest lane centre: on a two-way road the oncoming lane counts only for

@@ -8,7 +8,7 @@ signal pressed
 
 var gas := false
 var brake := false
-var steer := 0            # 1 = left, -1 = right, the last arrow held wins
+var steer := 0.0          # 1 = left, -1 = right (the last arrow held wins); a debug driver may set any value
 
 var _buttons := {}        # name -> Control
 var _fingers := {}        # touch index -> button name
@@ -116,7 +116,7 @@ func _press(name: String, down: bool) -> void:
 			_held_dirs.erase(dir)
 			if down:
 				_held_dirs.append(dir)
-			steer = _held_dirs[-1] if _held_dirs.size() > 0 else 0
+			steer = float(_held_dirs[-1]) if _held_dirs.size() > 0 else 0.0
 	if down:
 		Input.vibrate_handheld(15)
 

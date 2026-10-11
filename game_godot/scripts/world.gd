@@ -66,6 +66,12 @@ var oncoming_time := 0.0           # in the oncoming lane (updateLaneViolation)
 var oncoming_reported := false
 var limit_kmh := 60                # built-up area unless a sign says otherwise
 var question_over := false         # answered, the card is about to leave
+var follow := false                # --follow: a debug driver steers along the chosen exit
+var jerk := { "yaw": 0.0, "cam": 0.0, "heading": 0.0, "turns": 0 }   # largest per-frame steps seen (debug)
+var prev_yaw := 0.0
+var skip_jerk := false
+var prev_cam := Vector3.ZERO
+var prev_heading := 0.0
 var qshot := ""                   # --qshot=<png>: picture of the first question, then quit
 var near_debug := false           # --near: start 30 m before the first junction's stop line
 var overview := false             # debug: look at the whole situation from above
@@ -130,6 +136,9 @@ func _ready() -> void:
 			near_debug = true
 		if arg == "--debug":
 			dbg_every = 1.0
+		if arg == "--follow":
+			follow = true
+			auto_answer = true
 		if arg == "--mute":
 			sound.enabled = false
 		if arg.begins_with("--qshot="):
@@ -470,24 +479,6 @@ func _maybe_spawn() -> void:
 	_rebuild_ring()
 
 
-## The last 30 m before the stop line: the car glides to the lane and heading
-## the ticket starts from (game.js applySteeringAssist approach). The closer
-## the stop line, the faster; it never leaves the carriageway.
-func _ease_into_start_pose(dt: float, sit: Situation, stop_z: float) -> void:
-	var gain := lerpf(0.8, 6.0, 1.0 - clampf((stop_z - drive.pos.z) / 30.0, 0.0, 1.0))
-	var k := 1.0 - exp(-gain * dt)
-	var goal_x: float = float(sit.data.playerStartX) if sit.data.playerStartX != null else drive.pos.x
-	var goal_yaw: float = float(sit.data.playerStartRotY)
-	var before := drive.pos
-	var before_yaw := drive.yaw
-	drive.pos.x = lerpf(drive.pos.x, goal_x, k)
-	var err := atan2(sin(goal_yaw - drive.yaw), cos(goal_yaw - drive.yaw))
-	drive.yaw += err * k
-	if not drive.on_road():
-		drive.pos = before
-		drive.yaw = before_yaw
-
-
 func _update_junction(dt: float) -> void:
 	for j in _junctions():
 		var local: Vector3 = j.sit.global_transform.affine_inverse() * drive.pos
@@ -503,12 +494,10 @@ func _update_junction(dt: float) -> void:
 	# The route guide shows within 55 m of the junction (game.js `it.guide.visible`).
 	if phase == "driving" or phase == "question":
 		sit.set_evidence_visible(absf(drive.pos.z - current.zc) < 55.0)
-	if phase == "driving" and cos(drive.yaw) > 0.2 and stop_z - drive.pos.z < 30.0:
-		_ease_into_start_pose(dt, sit, stop_z)
 	if phase == "driving" and drive.pos.z >= stop_z - 0.18 and cos(drive.yaw) > 0.2:
 		# At the question: the car stands on its stop mark (updatePlayerMovement).
-		# The pose was eased in over the last 30 m, so this only takes off a
-		# few centimetres (it is not a teleport).
+		# The approach steering (drive.gd assist, lane_goal) has brought the car to
+		# the start lane and heading; this only takes off what is left.
 		drive.pos.z = stop_z
 		if sit.data.playerStartX != null:
 			drive.pos.x = float(sit.data.playerStartX)
@@ -617,6 +606,7 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 		drive.pos = xf * drive.pos
 		drive.yaw -= exit_yaw
 		cam_heading -= exit_yaw
+		skip_jerk = true
 		cam_look = xf * cam_look
 		blanks = [[shift - crop, shift + crop]]
 		_reset_ambient()
@@ -637,6 +627,9 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 		ui.show_result(run.summary())
 		event.emit({ "event": "run_finished", "summary": run.summary() })
 	print("[game] cleared ", sit.id, " by ", exit_direction)
+	if follow:
+		print("[jerk] %s %s: max yaw %.2f rad/s, camera %.2f m/s, camera heading %.2f rad/s" % [sit.id, exit_direction, jerk.yaw, jerk.cam, jerk.heading])
+		jerk = { "yaw": 0.0, "cam": 0.0, "heading": 0.0, "turns": 0 }
 
 
 func _retire_far() -> void:
@@ -717,6 +710,60 @@ func _in_blank(z: float) -> bool:
 	return false
 
 
+## Debug driver: steers along the exit the answer chose (the exported route),
+## looking a little ahead, like a careful driver would.
+func _follow_steer() -> float:
+	var sit: Situation = current.sit
+	var d: Dictionary = sit.data
+	var maneuver := str(d.spec.maneuver) if d.spec.maneuver != null else "straight"
+	var exit: Dictionary = d.exits.get(maneuver, d.exits.get("straight"))
+	var pts: Array = exit.points
+	var local: Vector3 = sit.global_transform.affine_inverse() * drive.pos
+	var best := 0
+	var best_d := INF
+	for i in pts.size():
+		var dd := Vector2(pts[i][0] - local.x, pts[i][1] - local.z).length()
+		if dd < best_d:
+			best_d = dd
+			best = i
+	var look := 4.0 + absf(drive.speed) * 0.6
+	var j := best
+	var acc := 0.0
+	while j < pts.size() - 1 and acc < look:
+		acc += Vector2(pts[j + 1][0] - pts[j][0], pts[j + 1][1] - pts[j][1]).length()
+		j += 1
+	var target: Vector3 = sit.global_transform * Vector3(pts[j][0], 0, pts[j][1])
+	var heading := atan2(target.x - drive.pos.x, target.z - drive.pos.z)
+	var err := atan2(sin(heading - drive.yaw), cos(heading - drive.yaw))
+	return clampf(err * 2.0, -1.0, 1.0)
+
+
+## Debug: the largest per-frame steps of the car's heading and of the camera
+## (a jerky turn shows up as a big step). Printed with --debug.
+func _measure_jerk(delta: float) -> void:
+	if delta <= 0.0:
+		return
+	if skip_jerk:
+		# The frame the world was rebased in: the old and new frames differ.
+		skip_jerk = false
+		prev_yaw = drive.yaw
+		prev_cam = camera.position
+		prev_heading = cam_heading
+		return
+	var yaw_step := absf(atan2(sin(drive.yaw - prev_yaw), cos(drive.yaw - prev_yaw)))
+	var cam_step := camera.position.distance_to(prev_cam)
+	var head_step := absf(atan2(sin(cam_heading - prev_heading), cos(cam_heading - prev_heading)))
+	if phase == "resolving" or phase == "driving":
+		jerk.yaw = maxf(jerk.yaw, yaw_step / delta)
+		jerk.cam = maxf(jerk.cam, cam_step / delta)
+		if follow and cam_step / delta > 60.0:
+			print("[jerk-frame] phase ", phase, " cam ", camera.position, " prev ", prev_cam, " pos ", drive.pos, " yaw ", drive.yaw, " cam_look ", cam_look, " heading ", cam_heading, " zc ", current.get("zc", -1))
+		jerk.heading = maxf(jerk.heading, head_step / delta)
+	prev_yaw = drive.yaw
+	prev_cam = camera.position
+	prev_heading = cam_heading
+
+
 func _car_ahead_in_lane(distance: float) -> bool:
 	for car in traffic:
 		var gap: float = car.z - drive.pos.z
@@ -781,6 +828,11 @@ func _process(delta: float) -> void:
 	run.distance_m = int(drive.distance_traveled)
 	_update_rules(delta)
 	ui.set_hud(int(roundf(absf(drive.speed) * 3.6)), limit_kmh, run.violations, run.distance_m, run.score, run.answered, Run.QUESTIONS)
+	if follow and phase == "resolving" and current:
+		controls.gas = true
+		controls.steer = _follow_steer()
+	elif follow and phase == "driving":
+		controls.steer = 0.0   # the wheel is let go outside a manoeuvre
 	if qshot != "" and phase == "driving":
 		controls.gas = true   # --qshot: drive up to the first question by itself
 	if auto_answer and phase == "driving":
@@ -790,7 +842,7 @@ func _process(delta: float) -> void:
 		controls.gas = true
 	drive.accelerating = controls.gas and phase != "question"
 	drive.braking = controls.brake
-	drive.steering = controls.steer if phase != "question" else 0
+	drive.steering = controls.steer if phase != "question" else 0.0
 	var limit := drive.max_speed
 	if current and phase == "driving" and cos(drive.yaw) > 0.2:
 		# Slow down to stop exactly at the question (updatePlayerMovement).
@@ -843,7 +895,10 @@ func _process(delta: float) -> void:
 		cam_look = look
 		cam_ready = true
 	else:
-		cam_look = cam_look.lerp(look, 1.0 - exp(-6.0 * delta))
+		# Exponential glide, but never faster than 25 m/s: a long way to catch up
+		# (the question view to the driving view) is a steady pan, not a jump.
+		var glide := cam_look.lerp(look, 1.0 - exp(-6.0 * delta))
+		cam_look = cam_look + (glide - cam_look).limit_length(25.0 * delta)
 	look = cam_look
 	camera.position = look + Vector3(-sin(cam_heading) * 44.0, 42, -cos(cam_heading) * 44.0)
 	camera.look_at(look)
@@ -854,6 +909,7 @@ func _process(delta: float) -> void:
 	if leaves:
 		leaves.step(delta, look)
 	hud.speed_kmh = drive.speed * 3.6
+	_measure_jerk(delta)
 	if dbg_every > 0.0:
 		dbg_t += delta
 		if dbg_t > 2.0:

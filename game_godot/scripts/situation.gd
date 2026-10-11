@@ -24,6 +24,13 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 	s.name = situation_id
 	var dir := "res://situations/%s/" % situation_id
 	s.data = JSON.parse_string(FileAccess.get_file_as_string(dir + "scene.json"))
+	# Some scenes were exported before these fields existed: the game's own
+	# defaults (game.js buildIntersectionSegment) stand in for them.
+	for key in ["approachW", "leftLane", "rightLane", "kerbZ", "kerbX"]:
+		if not s.data.has(key) or s.data[key] == null:
+			s.data[key] = 8.4 if key == "approachW" else (4.2 if key.begins_with("kerb") else 1.8)
+	if not s.data.has("exitWidths") or not (s.data.exitWidths is Dictionary):
+		s.data["exitWidths"] = {}
 	var scene: Node3D = (load(dir + "scene.glb") as PackedScene).instantiate()
 	for node in scene.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
