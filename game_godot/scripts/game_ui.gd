@@ -236,6 +236,12 @@ func _sheet_shell(max_ratio: float) -> Array:
 	panel.add_child(margin)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var v_bar := scroll.get_v_scroll_bar()
+	if v_bar != null:
+		v_bar.custom_minimum_size = Vector2.ZERO
+		v_bar.scale = Vector2.ZERO
+		v_bar.visible = false
 	scroll.custom_minimum_size = Vector2(w - 32, 0)
 	margin.add_child(scroll)
 	var box := VBoxContainer.new()
@@ -252,10 +258,12 @@ func _place_sheet(panel: PanelContainer) -> void:
 	var size := get_viewport().get_visible_rect().size
 	var scroll: ScrollContainer = panel.get_meta("scroll")
 	var box: VBoxContainer = panel.get_meta("box")
-	# The sheet is as tall as its content, up to the cap, then it scrolls.
+	# The sheet is sized to fit all content cleanly without scrolling.
 	await get_tree().process_frame
 	var content_h := box.get_combined_minimum_size().y + 12 + 10 + _bottom
-	var height := minf(content_h, float(panel.get_meta("max_h")))
+	var available_h := size.y - (_top + 100.0)
+	var max_h: float = minf(float(panel.get_meta("max_h")), available_h)
+	var height := minf(content_h, max_h)
 	scroll.custom_minimum_size.y = height - 22 - _bottom
 	panel.size = Vector2(size.x, height)
 	panel.position = Vector2(0, size.y - height)
@@ -280,9 +288,20 @@ func show_question(text: Dictionary, seconds: float) -> void:
 	_answered = false
 	_remaining = seconds
 	_max = seconds
-	var shell := _sheet_shell(0.44)
+
+	var total_chars: int = text.title.length()
+	for opt in text.options:
+		total_chars += str(opt).length()
+	var num_opts: int = text.options.size()
+	var dense: bool = num_opts >= 4 or total_chars > 190 or text.title.length() > 60
+	var very_dense: bool = (num_opts >= 4 and total_chars > 240) or total_chars > 300
+
+	var max_ratio: float = 0.65 if very_dense else (0.62 if dense else 0.58)
+	var shell := _sheet_shell(max_ratio)
 	_card = shell[0]
 	var box: VBoxContainer = shell[1]
+	box.add_theme_constant_override("separation", 5 if very_dense else (6 if dense else 8))
+
 	var head := HBoxContainer.new()
 	head.add_child(_ticket_chip(text.ticket))
 	var sp := Control.new()
@@ -300,10 +319,13 @@ func show_question(text: Dictionary, seconds: float) -> void:
 	_timer_fill = Ui.box(Ui.c("accent"), 2)
 	_timer_bar.add_theme_stylebox_override("fill", _timer_fill)
 	box.add_child(_timer_bar)
-	box.add_child(Ui.label(text.title, 15, 600, Ui.c("text"), true))
+
+	var title_size: int = 13 if very_dense else (14 if dense else 15)
+	box.add_child(Ui.label(text.title, title_size, 600, Ui.c("text"), true))
+
 	_options.clear()
 	for i in text.options.size():
-		var opt := _option(i, text.options[i])
+		var opt := _option(i, text.options[i], dense, very_dense)
 		box.add_child(opt)
 		_options.append(opt)
 	_root.add_child(_card)
@@ -311,29 +333,34 @@ func show_question(text: Dictionary, seconds: float) -> void:
 	_update_timer()
 
 
-func _option(i: int, text: String) -> PanelContainer:
+func _option(i: int, text: String, dense: bool = false, very_dense: bool = false) -> PanelContainer:
 	var p := PanelContainer.new()
-	p.custom_minimum_size = Vector2(0, 48)
+	var min_h: int = 36 if very_dense else (40 if dense else 46)
+	p.custom_minimum_size = Vector2(0, min_h)
 	p.add_theme_stylebox_override("panel", Ui.box(Ui.c("field"), 8))
 	var m := MarginContainer.new()
-	m.add_theme_constant_override("margin_left", 16)
-	m.add_theme_constant_override("margin_right", 16)
-	m.add_theme_constant_override("margin_top", 12)
-	m.add_theme_constant_override("margin_bottom", 12)
+	var pad_lr: int = 10 if very_dense else (12 if dense else 16)
+	var pad_tb: int = 6 if very_dense else (8 if dense else 11)
+	m.add_theme_constant_override("margin_left", pad_lr)
+	m.add_theme_constant_override("margin_right", pad_lr)
+	m.add_theme_constant_override("margin_top", pad_tb)
+	m.add_theme_constant_override("margin_bottom", pad_tb)
 	p.add_child(m)
 	var h := HBoxContainer.new()
-	h.add_theme_constant_override("separation", 12)
+	h.add_theme_constant_override("separation", 10 if (dense or very_dense) else 12)
 	m.add_child(h)
 	var badge := PanelContainer.new()
-	badge.custom_minimum_size = Vector2(24, 24)
+	var badge_size: int = 20 if very_dense else (22 if dense else 24)
+	badge.custom_minimum_size = Vector2(badge_size, badge_size)
 	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	badge.add_theme_stylebox_override("panel", Ui.box(Ui.c("gray"), 12))
-	var n := Ui.label(str(i + 1), 12, 600, Ui.c("text"))
+	badge.add_theme_stylebox_override("panel", Ui.box(Ui.c("gray"), badge_size / 2))
+	var n := Ui.label(str(i + 1), 11 if very_dense else 12, 600, Ui.c("text"))
 	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	n.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge.add_child(n)
 	h.add_child(badge)
-	h.add_child(Ui.label(text, 14, 500, Ui.c("text"), true))
+	var font_size: int = 12 if very_dense else (13 if dense else 14)
+	h.add_child(Ui.label(text, font_size, 500, Ui.c("text"), true))
 	_tap(p, func(): _choose(i))
 	return p
 
@@ -369,6 +396,10 @@ func mark_answer(chosen: int, correct: int) -> void:
 
 ## Height of the open question card (0 when none): the camera frames the
 ## scene in the part of the screen the card leaves free.
+func remaining_seconds() -> float:
+	return _remaining
+
+
 func card_height() -> float:
 	return _card.size.y if _card != null else 0.0
 
@@ -401,9 +432,12 @@ func hide_cards() -> void:
 
 func show_explanation(text: Dictionary, correct: int, timed_out: bool) -> void:
 	hide_cards()
-	var shell := _sheet_shell(0.5)
+	var exp_len: int = str(text.get("explanation", "")).length()
+	var dense: bool = exp_len > 180
+	var shell := _sheet_shell(0.65 if dense else 0.55)
 	_sheet = shell[0]
 	var box: VBoxContainer = shell[1]
+	box.add_theme_constant_override("separation", 6 if dense else 8)
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 8)
 	head.add_child(_ticket_chip(text.ticket))
@@ -424,14 +458,14 @@ func show_explanation(text: Dictionary, correct: int, timed_out: bool) -> void:
 		var om := MarginContainer.new()
 		om.add_theme_constant_override("margin_left", 12)
 		om.add_theme_constant_override("margin_right", 12)
-		om.add_theme_constant_override("margin_top", 10)
-		om.add_theme_constant_override("margin_bottom", 10)
+		om.add_theme_constant_override("margin_top", 6 if dense else 10)
+		om.add_theme_constant_override("margin_bottom", 6 if dense else 10)
 		ok.add_child(om)
-		om.add_child(Ui.label("✓ %s: %s" % [Ui.t("gameCorrectAnswer"), text.options[correct]], 14, 600, Ui.c("text"), true))
+		om.add_child(Ui.label("✓ %s: %s" % [Ui.t("gameCorrectAnswer"), text.options[correct]], 13 if dense else 14, 600, Ui.c("text"), true))
 		box.add_child(ok)
-	box.add_child(Ui.label(text.explanation, 13, 500, Ui.c("text"), true))
+	box.add_child(Ui.label(text.explanation, 12 if dense else 13, 500, Ui.c("text"), true))
 	var btn := PanelContainer.new()
-	btn.custom_minimum_size = Vector2(0, 52)
+	btn.custom_minimum_size = Vector2(0, 44 if dense else 50)
 	btn.add_theme_stylebox_override("panel", Ui.box(Ui.c("accent"), 12))
 	var bl := Ui.label(Ui.t("gameContinue"), 15, 700, Color.WHITE)
 	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

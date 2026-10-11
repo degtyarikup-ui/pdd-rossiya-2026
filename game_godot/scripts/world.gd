@@ -45,18 +45,29 @@ var blinkers := {}                        # "L"/"R" -> Node3D
 var steer_hold := 0.0
 var blink := { "side": "", "left": 0.0, "clock": 0.0 }
 var tier := "high"
+var street_half := Street.ROAD_HALF   # carriageway half-width of the ring street (a multi-lane exit widens it)
 var leaves: Leaves                # autumn only
 var cam_heading := 0.0            # smoothed like cameraHeading in game.js
+var cam_look := Vector3.ZERO      # smoothed look point (game.js cameraLook)
+var cam_ready := false
 var ground: MeshInstance3D        # lawn under everything, follows the player
 var run := Run.new()
 var ui: GameUi
+var sound: GameSound
+var dbg_t := 0.0
+var dbg_every := 0.0
+var last_tick_second := 0
+var blinker_on := false
 var text: Dictionary = {}          # current question's text in the UI language
+var drive_faults := {}              # episodes on the plain street (cleared like driveFaults)
 var speeding_time := 0.0           # over the limit by 5+ km/h (game.js updateRoadEvent)
 var speeding_reported := false
 var oncoming_time := 0.0           # in the oncoming lane (updateLaneViolation)
 var oncoming_reported := false
 var limit_kmh := 60                # built-up area unless a sign says otherwise
 var question_over := false         # answered, the card is about to leave
+var qshot := ""                   # --qshot=<png>: picture of the first question, then quit
+var near_debug := false           # --near: start 30 m before the first junction's stop line
 var overview := false             # debug: look at the whole situation from above
 
 # Exam junctions.
@@ -77,6 +88,7 @@ func _ready() -> void:
 	street = Street.new(self, scenery, L, chunk_count)
 	drive = Drive.new()
 	drive.world = self
+	drive.lane_goal = _lane_goal
 	_build_player()
 	_build_ground()
 	if _season() == "autumn":
@@ -97,6 +109,8 @@ func _ready() -> void:
 	ui = GameUi.new()
 	ui.snow = scenery.season.precipitation == "snow"
 	add_child(ui)
+	sound = GameSound.new()
+	add_child(sound)
 	ui.answer_chosen.connect(_on_answer_chosen)
 	ui.continue_pressed.connect(_on_continue)
 	hud = PerfHud.new()
@@ -112,6 +126,14 @@ func _ready() -> void:
 			bag = [arg.trim_prefix("--situation=")]
 		if arg == "--auto":
 			auto_answer = true
+		if arg == "--near":
+			near_debug = true
+		if arg == "--debug":
+			dbg_every = 1.0
+		if arg == "--mute":
+			sound.enabled = false
+		if arg.begins_with("--qshot="):
+			qshot = arg.trim_prefix("--qshot=")
 		if arg == "--overview":
 			overview = true
 			(find_children("*", "WorldEnvironment", false, false)[0] as WorldEnvironment).environment.fog_enabled = false
@@ -139,6 +161,12 @@ func _season() -> String:
 	# Same calendar as seasons.js: Sep–Nov autumn, Dec–Feb winter.
 	var m: int = Time.get_date_dict_from_system().month
 	return "autumn" if m >= 9 and m <= 11 else ("winter" if m == 12 or m <= 2 else "summer")
+
+
+func _qshot_later(path: String) -> void:
+	await get_tree().create_timer(0.8).timeout
+	get_viewport().get_texture().get_image().save_png(path)
+	get_tree().quit()
 
 
 func _shot(path: String) -> void:
@@ -230,7 +258,7 @@ func _blank(index: int) -> bool:
 
 func _place_chunk(slot: int, index: int) -> void:
 	chunk_index[slot] = index
-	road_nodes[slot].mesh = street.build_chunk(slot, index, _blank(index))
+	road_nodes[slot].mesh = street.build_chunk(slot, index, _blank(index), street_half)
 	road_nodes[slot].position = Vector3(0, 0, index * L)
 
 
@@ -287,7 +315,7 @@ func road_supports(p: Vector3) -> bool:
 	for b in blanks:
 		if p.z > b[0] and p.z < b[1]:
 			return false
-	return absf(p.x) <= Street.ROAD_HALF
+	return absf(p.x) <= street_half
 
 
 ## Junction participants, as seen in world coordinates.
@@ -306,6 +334,28 @@ class WorldMotion:
 		var fwd := xf.basis * Vector3(sin(f.yaw), 0, cos(f.yaw))
 		return { "p": xf * f.p, "yaw": atan2(fwd.x, fwd.z), "hw": f.hw, "hl": f.hl }
 
+	var crashed: bool:
+		get: return m.crashed
+
+	## Moves the participant by `dist` metres along a world direction.
+	func nudge(world_dir: Vector3, dist: float) -> void:
+		m.node.position += (xf.basis.inverse() * world_dir) * dist
+
+
+class AmbientObstacle:
+	var car: Dictionary
+	var crashed := false
+	func nudge(_world_dir: Vector3, _dist: float) -> void:
+		pass
+	var pos: Vector3:
+		get: return Vector3(car.x, 0, car.z)
+
+	func _init(c: Dictionary) -> void:
+		car = c
+
+	func footprint() -> Dictionary:
+		return { "p": Vector3(car.x, 0, car.z), "yaw": 0.0 if car.v > 0 else PI, "hw": 0.95, "hl": 2.2 }
+
 
 func obstacles() -> Array:
 	var out := []
@@ -313,26 +363,66 @@ func obstacles() -> Array:
 		for m in j.junction.motions:
 			if not m.done:
 				out.append(WorldMotion.new(m, j.sit.global_transform))
+	for car in traffic:
+		# Inside a junction's own streets the ring traffic is not there at all.
+		if not _in_blank(car.z):
+			out.append(AmbientObstacle.new(car))
 	return out
 
 
 func on_collision(o) -> void:
-	var m: Junction.Motion = o.m
-	m.crashed = true
-	m.speed = 0
-	drive.recovery = 0.38
-	drive.speed = 0
-	on_fault("collision", "collision:" + m.id)
+	if "m" in o and o.m != null:
+		var m: Junction.Motion = o.m
+		m.crashed = true
+		m.speed = 0
+		drive.recovery = 0.38
+		drive.speed = 0
+		on_fault("collision", "collision:" + m.id)
+	else:
+		drive.recovery = 0.38
+		drive.speed = 0
+		if "car" in o and o.car != null:
+			o.car.v = 0.0
+		on_fault("collision", "collision:ambient")
 
 
+## The lane a wide junction approach steers into (applySteeringAssist).
+func _lane_goal(z: float) -> Variant:
+	if not current:
+		return null
+	var d: Dictionary = current.sit.data
+	var geo := str(d.geometry)
+	var motorway := geo == "motorway_parallel"
+	var avenue := float(d.approachW) > 8.5
+	if not (geo == "divided_main" or motorway or avenue):
+		return null
+	var local: float = z - float(current.zc)
+	var reach := 80.0 if motorway else (50.0 if avenue else 34.0)
+	if local < -reach or local > float(d.stopZ) + 0.2:
+		return null
+	var goal: float = float(d.playerStartX) if d.playerStartX != null else (-1.8 if avenue else -4.1)
+	var ease := [-76.0, -48.0] if motorway else ([-46.0, -20.0] if avenue else [-26.0, -14.0])
+	return { "goal": goal, "avenue": avenue, "ease": ease, "centre": float(current.zc) }
+
+
+## A violation, counted once per episode (game.js drivingFault / roadViolation):
+## inside a junction the faults are the manoeuvre's own (cleared by
+## junction.gd), on the plain street they live in drive_faults.
 func on_fault(type: String, key: String) -> void:
+	var faults: Dictionary = drive_faults
 	if current and current.junction.resolution != null:
-		var faults: Dictionary = current.junction.resolution.faults
-		if faults.has(key):
-			return
-		faults[key] = true
-	elif key == "offroad" or key.begins_with("collision"):
-		return  # outside a junction a kerb is felt, not reported
+		faults = current.junction.resolution.faults
+	if faults.has(key):
+		return
+	faults[key] = true
+	if type == "collision":
+		sound.play("crash")
+		GameSound.buzz(300)
+	elif type == "offroad":
+		sound.play("scrape")
+		GameSound.buzz(25)
+	elif type == "speeding" or type == "oncoming" or type == "priority" or type == "stop":
+		GameSound.buzz(120)
 	run.violations += 1
 	ui.show_notice(type)
 	event.emit({ "event": "violation", "type": type })
@@ -373,7 +463,29 @@ func _maybe_spawn() -> void:
 	junction.finished.connect(_on_finished)
 	current = { "sit": sit, "junction": junction, "zc": zc }
 	blanks.append([zc - crop, zc + crop])
+	if near_debug:
+		near_debug = false
+		drive.pos.z = zc + float(sit.data.stopZ) - 12.0
+		drive.yaw = 0.0
 	_rebuild_ring()
+
+
+## The last 30 m before the stop line: the car glides to the lane and heading
+## the ticket starts from (game.js applySteeringAssist approach). The closer
+## the stop line, the faster; it never leaves the carriageway.
+func _ease_into_start_pose(dt: float, sit: Situation, stop_z: float) -> void:
+	var gain := lerpf(0.8, 6.0, 1.0 - clampf((stop_z - drive.pos.z) / 30.0, 0.0, 1.0))
+	var k := 1.0 - exp(-gain * dt)
+	var goal_x: float = float(sit.data.playerStartX) if sit.data.playerStartX != null else drive.pos.x
+	var goal_yaw: float = float(sit.data.playerStartRotY)
+	var before := drive.pos
+	var before_yaw := drive.yaw
+	drive.pos.x = lerpf(drive.pos.x, goal_x, k)
+	var err := atan2(sin(goal_yaw - drive.yaw), cos(goal_yaw - drive.yaw))
+	drive.yaw += err * k
+	if not drive.on_road():
+		drive.pos = before
+		drive.yaw = before_yaw
 
 
 func _update_junction(dt: float) -> void:
@@ -391,8 +503,12 @@ func _update_junction(dt: float) -> void:
 	# The route guide shows within 55 m of the junction (game.js `it.guide.visible`).
 	if phase == "driving" or phase == "question":
 		sit.set_evidence_visible(absf(drive.pos.z - current.zc) < 55.0)
+	if phase == "driving" and cos(drive.yaw) > 0.2 and stop_z - drive.pos.z < 30.0:
+		_ease_into_start_pose(dt, sit, stop_z)
 	if phase == "driving" and drive.pos.z >= stop_z - 0.18 and cos(drive.yaw) > 0.2:
 		# At the question: the car stands on its stop mark (updatePlayerMovement).
+		# The pose was eased in over the last 30 m, so this only takes off a
+		# few centimetres (it is not a teleport).
 		drive.pos.z = stop_z
 		if sit.data.playerStartX != null:
 			drive.pos.x = float(sit.data.playerStartX)
@@ -407,6 +523,8 @@ func _update_junction(dt: float) -> void:
 		ui.show_question(text, Ui.answer_seconds(int(sit.data.sourceTextLength)))
 		event.emit({ "event": "approach_situation", "situation": sit.id })
 		print("[game] question ", sit.id)
+		if qshot != "":
+			_qshot_later(qshot)
 		if auto_answer:
 			get_tree().create_timer(1.5).timeout.connect(func(): _on_answer_chosen(int(sit.data.correctAnswerIndex)))
 	if phase == "resolving":
@@ -461,6 +579,9 @@ func _on_answer_chosen(index: int) -> void:
 	var right := int(sit.data.correctAnswerIndex)
 	var is_correct := index == right
 	run.answer(sit.id, is_correct)
+	sound.play("correct" if is_correct else "incorrect")
+	if not is_correct:
+		GameSound.buzz(150)
 	if index >= 0:
 		ui.mark_answer(index, right)
 	if is_correct:
@@ -496,8 +617,14 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 		drive.pos = xf * drive.pos
 		drive.yaw -= exit_yaw
 		cam_heading -= exit_yaw
+		cam_look = xf * cam_look
 		blanks = [[shift - crop, shift + crop]]
 		_reset_ambient()
+	# The exit road keeps its own width: a multi-lane exit widens the street
+	# that continues from it (cars and pedestrians follow that width).
+	var widths: Dictionary = sit.data.exitWidths if sit.data.exitWidths is Dictionary else {}
+	var w: float = float(sit.data.approachW) if exit_direction == "uturn" else float(widths.get(exit_direction, 8.4))
+	street_half = clampf(w / 2.0, Street.ROAD_HALF, 12.0)
 	retired.append(current)
 	current = {}
 	phase = "driving"
@@ -540,10 +667,13 @@ func _spawn_traffic() -> void:
 		var same := i % 2 == 0
 		var multi: MultiMesh = traffic_mm[i % traffic_mm.size()]
 		var slot := i / traffic_mm.size()
+		var spd: float = rng.randf_range(cfg.traffic.speed_min, cfg.traffic.speed_max)
+		var velocity := spd * (1 if same else -1)
 		traffic.append({
 			"x": -1.8 if same else 1.8,
-			"z": drive.pos.z + 30.0 + i * 25.0,
-			"v": rng.randf_range(cfg.traffic.speed_min, cfg.traffic.speed_max) * (1 if same else -1),
+			"z": drive.pos.z + 50.0 + i * 65.0,
+			"base_v": velocity,
+			"v": velocity,
 			"mm": multi, "slot": slot,
 		})
 		multi.set_instance_custom_data(slot, _pick(cfg.colors.car, rng))
@@ -565,17 +695,19 @@ func _spawn_walkers() -> void:
 		var v := rng.randf_range(1.0, 1.6) * (1 if rng.randf() > 0.5 else -1)
 		# Two walking lanes on the pavement (5.2 and 6.3 m), as in the game.
 		walkers.append({
-			"x": dir * (5.2 + (i / 2 % 2) * 1.1),
+			"dir": dir, "lane": (i / 2) % 2,
 			"z": rng.randf_range(0, L * 4), "v": v, "mm": multi, "slot": slot,
 		})
 		var jacket: Color = _pick(cfg.colors.people, rng)
 		multi.set_instance_custom_data(slot, Color(jacket.r, jacket.g, jacket.b, rng.randf()))
 
 
-## After a rebase the ring traffic starts again around the player.
+## After a rebase the ring traffic and walkers start again around the player.
 func _reset_ambient() -> void:
 	for i in traffic.size():
-		traffic[i].z = drive.pos.z + 30.0 + i * 25.0
+		traffic[i].z = drive.pos.z + 50.0 + i * 65.0
+	for i in walkers.size():
+		walkers[i].z = drive.pos.z + (i * 10.0) - 40.0
 
 
 func _in_blank(z: float) -> bool:
@@ -585,23 +717,45 @@ func _in_blank(z: float) -> bool:
 	return false
 
 
+func _car_ahead_in_lane(distance: float) -> bool:
+	for car in traffic:
+		var gap: float = car.z - drive.pos.z
+		if absf(car.x - drive.pos.x) < 1.8 and gap > 0.0 and gap < distance and not _in_blank(car.z):
+			return true
+	return false
+
+
 func _update_traffic(delta: float) -> void:
 	var span := L * chunk_count
 	var behind := drive.pos.z - L * float(cfg.chunks_behind)
 	for car in traffic:
+		# Lanes follow the carriageway as it is now: with the flow on the driver's
+		# side (-X), against it on the other (+X).
+		car.x = (-1.0 if car.v > 0 else 1.0) * street_half * 3.0 / 7.0
+		var target_speed: float = float(car.get("base_v", car.v))
+		for other in traffic:
+			if other != car and signf(other.v) == signf(car.v) and absf(other.x - car.x) < 1.0:
+				var dist: float = (other.z - car.z) * signf(car.v)
+				if dist > 0.0 and dist < 25.0:
+					target_speed = minf(absf(target_speed), maxf(2.0, absf(other.v) * 0.95)) * signf(car.v)
+		car.v = move_toward(car.v, target_speed, 8.0 * delta)
 		car.z += car.v * delta
-		# A car in the player's lane just ahead: the player cannot drive through it.
+
+		# A car in the player's lane ahead: smooth following speed regulation without snapping
 		var gap: float = car.z - drive.pos.z
-		if absf(car.x - drive.pos.x) < 1.9 and gap > -1.0 and gap < 7.0 and car.v > 0 and not _in_blank(car.z):
-			# Stuck behind a slower car: it sets the pace, the bumpers never touch.
-			drive.speed = minf(drive.speed, maxf(0.0, car.v) + maxf(0.0, gap - 4.6))
-			drive.pos.z = minf(drive.pos.z, car.z - 4.4)
+		if absf(car.x - drive.pos.x) < 1.8 and gap > 0.0 and gap < 9.0 and car.v > 0 and not _in_blank(car.z):
+			if gap < 4.6:
+				drive.speed = minf(drive.speed, maxf(0.0, car.v))
+			else:
+				var approach_limit: float = car.v + (gap - 4.6) * 2.5
+				drive.speed = minf(drive.speed, maxf(0.0, approach_limit))
+
 		if car.z < behind:
 			car.z += span
 		elif car.z > behind + span:
 			car.z -= span
 		var face := 0.0 if car.v > 0 else PI
-		var at := Vector3(car.x, 0, car.z) if not _in_blank(car.z) else Vector3(0, -100, 0)
+		var at := Vector3(car.x, 0, car.z)
 		(car.mm as MultiMesh).set_instance_transform(car.slot, Transform3D(Basis(Vector3.UP, face), at))
 
 
@@ -612,7 +766,9 @@ func _update_walkers(delta: float) -> void:
 		w.z += w.v * delta
 		var z := base + fposmod(w.z - base, span)
 		var face := 0.0 if w.v > 0 else PI
-		var at := Vector3(w.x, Street.KERB, z) if not _in_blank(z) else Vector3(0, -100, 0)
+		# Two walking lanes on the pavement, beside the current carriageway.
+		var x: float = w.dir * (street_half + 1.0 + float(w.lane) * 1.1)
+		var at := Vector3(x, Street.KERB, z)
 		(w.mm as MultiMesh).set_instance_transform(w.slot, Transform3D(Basis(Vector3.UP, face), at))
 
 
@@ -625,6 +781,13 @@ func _process(delta: float) -> void:
 	run.distance_m = int(drive.distance_traveled)
 	_update_rules(delta)
 	ui.set_hud(int(roundf(absf(drive.speed) * 3.6)), limit_kmh, run.violations, run.distance_m, run.score, run.answered, Run.QUESTIONS)
+	if qshot != "" and phase == "driving":
+		controls.gas = true   # --qshot: drive up to the first question by itself
+	if auto_answer and phase == "driving":
+		# Debug driver: holds the gas, but brakes behind a car in its lane.
+		controls.gas = not _car_ahead_in_lane(14.0)
+	elif auto_answer and phase == "resolving":
+		controls.gas = true
 	drive.accelerating = controls.gas and phase != "question"
 	drive.braking = controls.brake
 	drive.steering = controls.steer if phase != "question" else 0
@@ -633,8 +796,16 @@ func _process(delta: float) -> void:
 		# Slow down to stop exactly at the question (updatePlayerMovement).
 		var distance: float = current.zc + float(current.sit.data.stopZ) - drive.pos.z
 		limit = minf(limit, sqrt(maxf(0.0, 2 * 8 * distance)))
-	if phase != "question":
+	drive.assist_enabled = phase == "driving"
+	var was_recovering := drive.recovery > 0.0
+	if phase != "question" and phase != "over":
 		drive.integrate(delta, limit)
+	if was_recovering and drive.recovery <= 0.0:
+		drive_faults.clear()   # the impact is over: the next one is a new violation
+	if drive.curb_clear_time > 0.6:
+		drive_faults.erase("offroad")
+		if current and current.junction.resolution != null:
+			current.junction.resolution.faults.erase("offroad")
 	player.position = drive.pos
 	player.rotation.y = drive.yaw
 	for w in wheels:
@@ -659,8 +830,6 @@ func _process(delta: float) -> void:
 		cam_heading += atan2(sin(want - cam_heading), cos(want - cam_heading)) * (1.0 - exp(-3.0 * delta))
 	var fwd := Vector3(sin(cam_heading), 0, cos(cam_heading))
 	var look := Vector3(drive.pos.x, 0, drive.pos.z) + fwd * 10.0
-	if absf(cam_heading) < 0.2:
-		look.x = drive.pos.x * 0.3
 	if phase == "question" and current:
 		# The question view the game settles on (exported from updateCamera).
 		var qc := _question_framing()
@@ -668,6 +837,14 @@ func _process(delta: float) -> void:
 		camera.size = lerpf(camera.size, qc.size, 1 - exp(-5 * delta))
 	else:
 		camera.size = lerpf(camera.size, 42.0, 1 - exp(-5 * delta))
+	# The look point glides to its target (game.js: cameraLook.lerp): a sudden
+	# change of framing never jumps the picture.
+	if not cam_ready:
+		cam_look = look
+		cam_ready = true
+	else:
+		cam_look = cam_look.lerp(look, 1.0 - exp(-6.0 * delta))
+	look = cam_look
 	camera.position = look + Vector3(-sin(cam_heading) * 44.0, 42, -cos(cam_heading) * 44.0)
 	camera.look_at(look)
 	if overview and current:
@@ -677,6 +854,19 @@ func _process(delta: float) -> void:
 	if leaves:
 		leaves.step(delta, look)
 	hud.speed_kmh = drive.speed * 3.6
+	if dbg_every > 0.0:
+		dbg_t += delta
+		if dbg_t > 2.0:
+			dbg_t = 0.0
+			print("[dbg] phase ", phase, " pos ", drive.pos, " yaw ", snappedf(drive.yaw, 0.01), " speed ", snappedf(drive.speed, 0.1), " gas ", controls.gas, " rec ", drive.recovery)
+	sound.speed = drive.speed
+	if phase == "question":
+		var sec := ceili(ui.remaining_seconds())
+		if sec <= 3 and sec != last_tick_second:
+			last_tick_second = sec
+			sound.play("tick")
+	else:
+		last_tick_second = 0
 
 
 ## Question framing exported from the game for card heights 0..540 px of 844:
@@ -712,6 +902,10 @@ func _update_lamps(delta: float) -> void:
 			blink.side = ""
 	blink.clock += delta
 	var on: bool = blink.side != "" and int(blink.clock * 3.0) % 2 == 0
+	if on and not blinker_on:
+		sound.play("click")
+		GameSound.buzz(8)
+	blinker_on = on
 	for side in blinkers:
 		if blinkers[side]:
 			blinkers[side].visible = on and blink.side == side

@@ -72,7 +72,7 @@
       if (!visible) return;
       if (node.isMesh && node.material && !Array.isArray(node.material)) {
         const m = node.material;
-        const kind = m.userData?.pddKind;
+        const kind = m.userData?.pddKind || (window.PDD_ROADS && window.PDD_ROADS.kindOf(node));
         const tex = m.map && !kind;
         let host = node; while (host.parent && host.parent !== root && host.parent.parent !== root) host = host.parent;
         const lab = label(host) + ' > ' + label(node);
@@ -224,7 +224,7 @@
     // Deterministic scenes: the game's Math.random seeded per situation.
     const real = Math.random; let a = (index + 1) * 2654435761 >>> 0;
     Math.random = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-    try { E.select(index); E.drain(); E.approach(); E.drain(); } finally { Math.random = real; }
+    try { E.select(index); E.drain(); E.approach(); E.drain(); if (window.PDD_ROADS && window.PDD_ROADS.sweep) window.PDD_ROADS.sweep(true); } finally { Math.random = real; }
     const it = E.state.intersections[0];
     if (!it) return { error: 'no intersection' };
     const origin = new THREE.Vector3(0, 0, it.centerZ);

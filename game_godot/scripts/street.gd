@@ -7,12 +7,12 @@ class_name Street
 extends RefCounted
 
 const ROAD_HALF := 4.2
-const PAVE_OUT := 7.4
+const SIDEWALK := 3.2            # pavement width beside the carriageway
+const VERGE := 25.2              # grass verge beyond the pavement
 const KERB := 0.18
 const ROW := 20.0
 const GROUP_CHUNKS := 2           # chunks per district (then it blends on)
 const DISTRICTS := 4
-const VERGE_OUT := 29.4
 const GROUND_OUT := 90.0
 
 const HOMES := ["home_0", "home_1", "home_2", "home_3", "home_4", "home_5"]
@@ -62,7 +62,8 @@ func style_at(z: float) -> int:
 ## Lays out ring slot `slot` as world chunk `index`; returns its road mesh.
 ## A blank chunk (an exam junction stands there with its own streets) is
 ## empty: no road, no props.
-func build_chunk(slot: int, index: int, blank := false) -> ArrayMesh:
+## `half` is the carriageway half-width: a multi-lane exit widens the street.
+func build_chunk(slot: int, index: int, blank := false, half := ROAD_HALF) -> ArrayMesh:
 	for p in pools.values():
 		p.begin(slot)
 	for p in parked.values():
@@ -78,13 +79,13 @@ func build_chunk(slot: int, index: int, blank := false) -> ArrayMesh:
 	rng.seed = hash(index * 7919)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_road(st, z0)
+	_road(st, z0, half)
 	var z := z0 + ROW / 2
 	while z < z0 + L:
 		var style := style_at(z)
 		var row := int(floor(z / ROW))
 		for side: float in [-1.0, 1.0]:
-			_verge(st, side, z, style)
+			_verge(st, side, z, style, half)
 			_plot(slot, rng, side, z, style, row)
 		z += ROW
 	for p in pools.values():
@@ -99,32 +100,33 @@ func build_chunk(slot: int, index: int, blank := false) -> ArrayMesh:
 
 # --- road surface (one mesh per chunk, local z from 0) ----------------------
 
-func _road(st: SurfaceTool, z0: float) -> void:
+func _road(st: SurfaceTool, z0: float, half: float) -> void:
 	var asphalt := Color("#2C2F36")
 	var pave := sc.color("sidewalk")
 	var mark := Color("#F2F4F8")
-	_flat(st, -ROAD_HALF, ROAD_HALF, 0, L, 0.02, asphalt, "", z0)
+	_flat(st, -half, half, 0, L, 0.02, asphalt, "asphalt", z0)
 	for side: float in [-1.0, 1.0]:
-		var a := side * ROAD_HALF
-		var b := side * PAVE_OUT
+		var a := side * half
+		var b := side * (half + SIDEWALK)
 		_flat(st, minf(a, b), maxf(a, b), 0, L, KERB, pave, "pavement", z0)
 		_kerb(st, a, 0, L, pave, z0, side)
 		# Edge line 1.2 (0.15 m, 0.25 m from the kerb).
-		_flat(st, side * (ROAD_HALF - 0.325), side * (ROAD_HALF - 0.175), 0, L, 0.025, mark, "", z0)
+		_flat(st, side * (half - 0.325), side * (half - 0.175), 0, L, 0.025, mark, "", z0)
 	# Centre dashes 1.5: 2 m dash, 3 m gap, phase from world z.
 	var z := ceilf(z0 / 5.0) * 5.0 - z0
 	while z < L:
 		_flat(st, -0.09, 0.09, z, minf(z + 2.0, L), 0.025, mark, "", z0)
 		z += 5.0
-	_flat(st, -GROUND_OUT, -VERGE_OUT, 0, L, -0.02, sc.color("ground"), "grass", z0)
-	_flat(st, VERGE_OUT, GROUND_OUT, 0, L, -0.02, sc.color("ground"), "grass", z0)
+	_flat(st, -GROUND_OUT, -(half + VERGE), 0, L, -0.02, sc.color("ground"), "grass", z0)
+	_flat(st, half + VERGE, GROUND_OUT, 0, L, -0.02, sc.color("ground"), "grass", z0)
 
 
-func _verge(st: SurfaceTool, side: float, z: float, style: int) -> void:
+func _verge(st: SurfaceTool, side: float, z: float, style: int, half: float) -> void:
 	# Local z: build_chunk passes world z, the chunk mesh starts at its z0.
 	var z0 := floorf(z / L) * L
 	var col := sc.color("verge", mini(style, 2))
-	_flat(st, minf(side * PAVE_OUT, side * VERGE_OUT), maxf(side * PAVE_OUT, side * VERGE_OUT),
+	var outer := half + SIDEWALK + VERGE
+	_flat(st, minf(side * (half + SIDEWALK), side * outer), maxf(side * (half + SIDEWALK), side * outer),
 		z - z0 - ROW / 2, z - z0 + ROW / 2, -0.015, col, "grass", z0)
 
 

@@ -52,9 +52,31 @@ func on_road(at := pos, heading := yaw) -> bool:
 
 ## Lane keeping when no arrow is held (applySteeringAssist, plain street
 ## branch): a car nearly along the road settles into the nearest lane.
+var lane_goal := Callable()       # world: z -> Dictionary (junction approach) or null
+
+
+## Off while a question is open or its manoeuvre is driven by hand
+## (game.js: applySteeringAssist returns early when state.resolution is set).
+var assist_enabled := true
+
+
 func assist(dt: float) -> void:
-	if steering != 0 or speed < 1.5:
+	if steering != 0 or speed < 1.5 or not assist_enabled:
 		return
+	# Approach to a wide junction: ease into the lane the ticket starts from
+	# (game.js applySteeringAssist, the approach branch).
+	if lane_goal.is_valid():
+		var g = lane_goal.call(pos.z)
+		if g is Dictionary and cos(yaw) > 0.85 and pos.x < 0.0:
+			var from_x: float = pos.x if g.avenue else -1.8
+			var span: Array = g.ease
+			var t := clampf((pos.z + 3.0 - float(g.centre) - span[0]) / (span[1] - span[0]), 0.0, 1.0)
+			t = t * t * (3.0 - 2.0 * t)
+			var target := Vector3(from_x + (float(g.goal) - from_x) * t, 0, pos.z + 3.0)
+			var wanted := atan2(target.x - pos.x, target.z - pos.z)
+			var err := atan2(sin(wanted - yaw), cos(wanted - yaw))
+			yaw += err * minf(1.0, dt * 5.0)
+			return
 	var x := pos.x
 	if absf(x) > 16:
 		return
@@ -152,6 +174,15 @@ func integrate(dt: float, limit: float) -> void:
 			var me := footprint()
 			for m in world.obstacles():
 				if overlap(me, m.footprint(), 0.025):
+					if m.crashed and step > 0.0:
+						# A wreck left standing is nudged aside at walking pace (game.js
+						# integrateDriving): it never traps the player.
+						var fwd := Vector3(sin(yaw), 0, cos(yaw))
+						var right := Vector3(fwd.z, 0, -fwd.x)
+						var side := signf((m.pos - pos).dot(right))
+						m.nudge((fwd * 0.35 + right * (side if side != 0.0 else 1.0)).normalized(), absf(step) * 1.6)
+						speed = minf(speed, 1.5)
+						continue
 					var was := overlap({ "p": before, "yaw": old_yaw, "hw": half_width, "hl": half_length }, m.footprint(), 0.025)
 					if not was:
 						pos = before

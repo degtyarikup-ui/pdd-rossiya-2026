@@ -26,6 +26,9 @@ const only = process.argv.slice(2);
     args: ['--use-angle=swiftshader'] });
   const errors = [];
   try {
+    // A page is reloaded every few scenes: one page building 100+ junctions
+    // in a row ran out of memory and the browser closed (75 scenes lost).
+    const open = async () => {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
     page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(() => { window.FlutterChannel = { postMessage: m => { if (m.includes('"ready"')) window.__ready = true; } }; });
@@ -90,14 +93,21 @@ const only = process.argv.slice(2);
     await page.waitForFunction(() => window.__ready, null, { timeout: 120000 });
     await page.evaluate(d => { window.game.setPaused(true); window.__deep = d; }, process.env.WEIGHT === '2');
     for (const src of ['vendor/BufferGeometryUtils.js', 'vendor/GLTFExporter.js', 'exporter.js', 'situations.js']) await page.addScriptTag({ path: path.join(__dirname, src) });
+    return page;
+    };
+    let page = await open();
     const ids = await page.evaluate(() => window.situationIds());
     const catalog = JSON.parse(fs.readFileSync(path.join(ROOT, 'game_godot/scenery/index.json'), 'utf8')).props;
     const index = [], failed = [];
     for (let i = 0; i < ids.length; i++) {
       if (only.length && !only.includes(ids[i])) continue;
-      let item;
-      try { item = await page.evaluate(([i, c]) => window.exportSituation(i, c), [i, catalog]); }
-      catch (e) { console.log(ids[i], 'FAILED', e.message.split('\n')[0]); failed.push(ids[i]); continue; }
+      if (i > 0 && i % 6 === 0) { await page.close().catch(() => {}); page = await open(); }
+      let item = null;
+      for (let attempt = 0; attempt < 2 && !item; attempt++) {
+        try { item = await page.evaluate(([i, c]) => window.exportSituation(i, c), [i, catalog]); }
+        catch (e) { console.log(ids[i], 'retry in a fresh page:', e.message.split('\n')[0]); await page.close().catch(() => {}); page = await open(); }
+      }
+      if (!item) { console.log(ids[i], 'FAILED'); failed.push(ids[i]); continue; }
       if (item.error) { console.log(ids[i], 'SKIP', item.error); continue; }
       const dir = path.join(OUT, ids[i]);
       fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });

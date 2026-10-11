@@ -4,7 +4,7 @@
 #   ./scripts/godot_dev.sh android   # APK -> Pixel over Wi-Fi (adb), launch
 #   ./scripts/godot_dev.sh ios       # Xcode project -> build -> iPhone (cable), launch
 #   ./scripts/godot_dev.sh all
-#   ./scripts/godot_dev.sh export    # re-export models from the WebView game first
+#   ./scripts/godot_dev.sh export    # re-export models and the 112 junction scenes (~20 min)
 #
 # Separate app ru.pdd.godotspike: the store app is not touched.
 set -euo pipefail
@@ -16,6 +16,7 @@ OUT=output/godot
 mkdir -p "$OUT"
 
 export_models() { NODE_PATH="$PWD/node_modules" node tools/godot_export/export_models.cjs; }
+export_situations() { NODE_PATH="$PWD/node_modules" node tools/godot_export/export_situations.cjs; }
 
 android() {
   godot --headless --path game_godot --import >/dev/null 2>&1 || true
@@ -39,7 +40,7 @@ ios() {
 }
 
 case "${1:-all}" in
-  export) export_models ;;
+  export) export_models; export_situations ;;
   android) android ;;
   ios) ios ;;
   all) android; ios ;;

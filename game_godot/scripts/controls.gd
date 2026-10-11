@@ -77,6 +77,10 @@ func set_active(on: bool) -> void:
 	active = on
 	_root.visible = on
 	if not on:
+		gas = false
+		brake = false
+		steer = 0
+		_held_dirs.clear()
 		for index in _fingers.keys():
 			_press(_fingers[index], false)
 		_fingers.clear()

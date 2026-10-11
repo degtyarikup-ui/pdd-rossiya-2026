@@ -324,8 +324,8 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 		for w in a.wheels:
 			w.rotate_x(a.speed * dt / 0.36)
 		a.cleared = a.crashed or a.distance >= a.clear_distance
-		# Past the planned path, out of the junction: retire it.
-		if a.distance >= a.path.length + 40.0:
+		# Past the planned path, well out of the junction view: retire it.
+		if a.distance >= a.path.length + 80.0 or a.node.position.length() > 95.0:
 			a.done = true
 			a.node.visible = false
 	return hit
@@ -408,9 +408,6 @@ func _conflict_ahead(me: Dictionary, a: Motion, player_speed: float) -> bool:
 	return false
 
 
+## The world counts each fault once (its own set, see world.gd on_fault).
 func _fault(type: String, key: String) -> void:
-	if resolution != null:
-		if resolution.faults.has(key):
-			return
-		resolution.faults[key] = true
 	fault.emit(type, key)

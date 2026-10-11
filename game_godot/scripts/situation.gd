@@ -220,17 +220,25 @@ static func _badge_node(text: String, color: Color) -> Node3D:
 	return root
 
 
-## createLetterToken: a white disc with a blue letter and a soft shadow.
+## createLetterToken: a white disc with a blue letter and a soft shadow. Drawn
+## on top of the route ribbons (the game draws them without a depth test), the
+## letter above its disc.
 static func _letter_node(letter: String) -> Node3D:
 	var root := Node3D.new()
 	var shadow := _billboard(_plate(Color(0, 0, 0, 0.28), Vector2i(96, 96), 40, true), Vector2(2.2, 2.2))
 	shadow.position = Vector3(0, -0.06, 0)
+	_on_top(shadow, 1)
 	root.add_child(shadow)
 	var disc := _billboard(_plate(Color.WHITE, Vector2i(96, 96), 40, true), Vector2(2.2, 2.2))
-	disc.position.z = 0.002
+	_on_top(disc, 2)
 	root.add_child(disc)
-	var label := _text3d(letter, 64, TOKEN_BLUE, 800)
-	label.pixel_size = 0.028
-	label.position.z = 0.01
+	var label := _text3d(letter, 50, TOKEN_BLUE, 800)
+	label.pixel_size = 2.2 / 96.0
+	_on_top(label, 3)
 	root.add_child(label)
 	return root
+
+
+static func _on_top(node: GeometryInstance3D, priority: int) -> void:
+	node.no_depth_test = true
+	node.render_priority = priority
