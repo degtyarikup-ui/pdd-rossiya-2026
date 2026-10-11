@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/network_retry.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// One row of the weekly game leaderboard.
 class GameLeaderboardEntry {
@@ -54,13 +56,58 @@ class GameLeaderboard {
   final List<GameLeaderboardEntry> top;
   final GameLeaderboardEntry? me;
 
+  /// Когда рейтинг получен с сервера (для строки «на HH:MM» без связи).
+  final DateTime? fetchedAt;
+
+  /// Показан сохранённый рейтинг: связи с сервером сейчас нет.
+  final bool stale;
+
   const GameLeaderboard({
     required this.week,
     required this.endsAt,
     required this.total,
     required this.top,
     required this.me,
+    this.fetchedAt,
+    this.stale = false,
   });
+
+  /// Разбор ответа `/api/game/leaderboard`. Не объект — null.
+  static GameLeaderboard? parse(
+    String body, {
+    DateTime? fetchedAt,
+    bool stale = false,
+  }) {
+    final data = jsonDecode(body);
+    if (data is! Map) return null;
+    final top = (data['top'] as List<dynamic>? ?? [])
+        .map(
+          (e) => GameLeaderboardEntry.fromJson(
+            Map<String, dynamic>.from(e as Map),
+          ),
+        )
+        .toList();
+    final me = data['me'] is Map
+        ? GameLeaderboardEntry.fromJson(
+            Map<String, dynamic>.from(data['me'] as Map),
+          )
+        : null;
+    return GameLeaderboard(
+      week: data['week'] as String? ?? '',
+      endsAt: DateTime.tryParse(data['endsAt'] as String? ?? ''),
+      total: (data['total'] as num?)?.toInt() ?? top.length,
+      top: top,
+      me: me,
+      fetchedAt: fetchedAt,
+      stale: stale,
+    );
+  }
+
+  /// Неделя ещё идёт. После итогов сохранённый рейтинг уже не показываем.
+  bool isCurrentAt(DateTime now) {
+    final end = endsAt;
+    return end == null || end.isAfter(now);
+  }
 }
 
 /// Weekly points race: every finished run adds its score to the player's
@@ -68,6 +115,16 @@ class GameLeaderboard {
 class GameLeaderboardService {
   GameLeaderboardService._();
   static final GameLeaderboardService instance = GameLeaderboardService._();
+
+  static const _cacheKey = 'game_board_cache_v1';
+
+  /// Основной адрес, запасной, снова основной. Первый запрос в сетях с
+  /// ограничениями часто теряется, второй обычно проходит.
+  static const _attempts = [
+    Duration(seconds: 6),
+    Duration(seconds: 6),
+    Duration(seconds: 8),
+  ];
 
   static String newRunId() =>
       '${DateTime.now().microsecondsSinceEpoch}-'
@@ -171,41 +228,69 @@ class GameLeaderboardService {
     }
   }
 
+  /// Рейтинг недели. Если сеть не отвечает, отдаём последний удачный ответ
+  /// с его временем, а не ошибку. Ошибка — только когда сохранённого нет.
   Future<GameLeaderboard?> fetch() async {
     if (!BackendConfig.hasNotifier) return null;
-    final user = AuthService.instance.currentUser;
+    final userId = AuthService.instance.currentUser?.id;
     try {
-      final uri = Uri.parse(
-        '${BackendConfig.notifierUrl}/api/game/leaderboard',
-      ).replace(queryParameters: {if (user != null) 'userId': user.id});
-      final resp = await http
-          .get(uri, headers: _headers)
-          .timeout(const Duration(seconds: 8));
-      if (resp.statusCode != 200) return null;
-      final data = jsonDecode(resp.body);
-      if (data is! Map) return null;
-      final top = (data['top'] as List<dynamic>? ?? [])
-          .map(
-            (e) => GameLeaderboardEntry.fromJson(
-              Map<String, dynamic>.from(e as Map),
-            ),
-          )
-          .toList();
-      final me = data['me'] is Map
-          ? GameLeaderboardEntry.fromJson(
-              Map<String, dynamic>.from(data['me'] as Map),
-            )
-          : null;
-      return GameLeaderboard(
-        week: data['week'] as String? ?? '',
-        endsAt: DateTime.tryParse(data['endsAt'] as String? ?? ''),
-        total: (data['total'] as num?)?.toInt() ?? top.length,
-        top: top,
-        me: me,
+      final response = await sendWithRetry(
+        (host) => http.get(_boardUri(host, userId), headers: _headers),
+        hosts: BackendConfig.notifierHosts,
+        attempts: _attempts,
       );
+      if (response.statusCode == 200) {
+        final now = DateTime.now();
+        final board = GameLeaderboard.parse(response.body, fetchedAt: now);
+        if (board != null) {
+          await _remember(userId, response.body, now);
+          return board;
+        }
+      }
     } catch (e) {
       debugPrint('GameLeaderboardService.fetch: $e');
+    }
+    return lastKnown();
+  }
+
+  /// Последний удачный рейтинг этого аккаунта, пока неделя не закончилась.
+  Future<GameLeaderboard?> lastKnown() async {
+    final userId = AuthService.instance.currentUser?.id;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_cacheKey);
+      if (raw == null) return null;
+      final saved = jsonDecode(raw) as Map<String, dynamic>;
+      if (saved['userId'] != userId) return null;
+      final board = GameLeaderboard.parse(
+        saved['body'] as String,
+        fetchedAt: DateTime.fromMillisecondsSinceEpoch(saved['savedAt'] as int),
+        stale: true,
+      );
+      if (board == null || !board.isCurrentAt(DateTime.now())) return null;
+      return board;
+    } catch (_) {
       return null;
     }
   }
+
+  Future<void> _remember(String? userId, String body, DateTime now) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _cacheKey,
+        jsonEncode({
+          'userId': userId,
+          'savedAt': now.millisecondsSinceEpoch,
+          'body': body,
+        }),
+      );
+    } catch (_) {
+      // Без сохранения рейтинг просто не будет показан из памяти.
+    }
+  }
+
+  Uri _boardUri(String host, String? userId) => Uri.parse(
+    '$host/api/game/leaderboard',
+  ).replace(queryParameters: {'userId': ?userId});
 }

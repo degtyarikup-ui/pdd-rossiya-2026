@@ -995,6 +995,11 @@ class AppLocalizationsKk extends AppLocalizations {
       'Рейтинг жүктелмеді. Интернетті тексеріңіз.';
 
   @override
+  String gameRatingStaleAt(String time) {
+    return 'Байланыс жоқ. $time уақыттағы рейтинг көрсетілген.';
+  }
+
+  @override
   String get gameRatingYou => 'Сіз';
 
   @override

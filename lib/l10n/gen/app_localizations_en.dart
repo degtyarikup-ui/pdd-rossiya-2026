@@ -995,6 +995,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to load rating. Check the Internet.';
 
   @override
+  String gameRatingStaleAt(String time) {
+    return 'No connection. Showing the rating as of $time.';
+  }
+
+  @override
   String get gameRatingYou => 'You';
 
   @override

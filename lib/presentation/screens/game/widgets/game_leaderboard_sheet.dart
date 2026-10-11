@@ -27,8 +27,16 @@ class GameLeaderboardSheet extends StatefulWidget {
 }
 
 class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
-  late Future<GameLeaderboard?> _future = GameLeaderboardService.instance
-      .fetch();
+  late Future<GameLeaderboard?> _future = _load();
+
+  /// Последний сохранённый рейтинг: показываем до ответа сервера.
+  GameLeaderboard? _shown;
+
+  Future<GameLeaderboard?> _load() async {
+    final saved = await GameLeaderboardService.instance.lastKnown();
+    if (mounted && saved != null) setState(() => _shown = saved);
+    return GameLeaderboardService.instance.fetch();
+  }
 
   Timer? _timer;
   @override
@@ -146,20 +154,39 @@ class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
               FutureBuilder<GameLeaderboard?>(
                 future: _future,
                 builder: (context, snapshot) {
-                  final end = snapshot.data?.endsAt;
-                  if (end == null) return const SizedBox.shrink();
+                  final board = snapshot.data ?? _shown;
+                  final end = board?.endsAt;
+                  if (board == null || end == null) {
+                    return const SizedBox.shrink();
+                  }
                   final hours = end
                       .difference(DateTime.now())
                       .inHours
                       .clamp(0, 168);
+                  final savedAt = board.stale ? board.fetchedAt : null;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(
-                      appL10n.gameRatingResultsIn(hours ~/ 24, hours % 24),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colors.secondaryText,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appL10n.gameRatingResultsIn(hours ~/ 24, hours % 24),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colors.secondaryText,
+                          ),
+                        ),
+                        if (savedAt != null)
+                          Text(
+                            appL10n.gameRatingStaleAt(
+                              DateFormat.Hm().format(savedAt),
+                            ),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colors.secondaryText,
+                            ),
+                          ),
+                      ],
                     ),
                   );
                 },
@@ -167,7 +194,7 @@ class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
               FutureBuilder<GameLeaderboard?>(
                 future: _future,
                 builder: (context, snapshot) {
-                  final me = snapshot.data?.me;
+                  final me = (snapshot.data ?? _shown)?.me;
                   if (me?.dailyLimit == null) return const SizedBox.shrink();
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
@@ -188,18 +215,17 @@ class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
                 child: FutureBuilder<GameLeaderboard?>(
                   future: _future,
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState != ConnectionState.done) {
+                    // Сохранённый рейтинг показываем сразу, пока идёт обновление.
+                    final board = snapshot.data ?? _shown;
+                    if (board == null &&
+                        snapshot.connectionState != ConnectionState.done) {
                       return const Center(child: CircularProgressIndicator());
                     }
-                    final board = snapshot.data;
                     if (board == null) {
                       return _Message(
                         icon: Icons.wifi_off_rounded,
                         text: appL10n.gameRatingUnavailable,
-                        onRetry: () => setState(
-                          () =>
-                              _future = GameLeaderboardService.instance.fetch(),
-                        ),
+                        onRetry: () => setState(() => _future = _load()),
                       );
                     }
                     if (board.top.isEmpty) {

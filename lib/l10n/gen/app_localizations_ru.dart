@@ -1009,6 +1009,11 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось загрузить рейтинг. Проверьте интернет.';
 
   @override
+  String gameRatingStaleAt(String time) {
+    return 'Нет связи. Показан рейтинг на $time.';
+  }
+
+  @override
   String get gameRatingYou => 'Вы';
 
   @override

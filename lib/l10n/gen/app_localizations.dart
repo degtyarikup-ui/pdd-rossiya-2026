@@ -1822,6 +1822,12 @@ abstract class AppLocalizations {
   /// **'Не удалось загрузить рейтинг. Проверьте интернет.'**
   String get gameRatingUnavailable;
 
+  /// No description provided for @gameRatingStaleAt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет связи. Показан рейтинг на {time}.'**
+  String gameRatingStaleAt(String time);
+
   /// No description provided for @gameRatingYou.
   ///
   /// In ru, this message translates to:

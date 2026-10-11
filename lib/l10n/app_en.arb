@@ -296,6 +296,14 @@
   "gameRatingHint": "Points for all races for the week. The table shows the best 100.",
   "gameRatingEmpty": "No one has ridden this week yet. Be the first!",
   "gameRatingUnavailable": "Failed to load rating. Check the Internet.",
+  "gameRatingStaleAt": "No connection. Showing the rating as of {time}.",
+  "@gameRatingStaleAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "gameRatingYou": "You",
   "gameRatingRuns": "{count, plural, one{{count} run} other{{count} runs}}",
   "gameRatingEndsIn": "Until the end of the week: {days} days.",

@@ -296,6 +296,14 @@
   "gameRatingHint": "Аптадағы барлық жарыстардың ұпайлары. Кестеде ең жақсы 100 көрсетілген.",
   "gameRatingEmpty": "Бұл аптада әлі ешкім өткен жоқ. Бірінші болыңыз!",
   "gameRatingUnavailable": "Рейтинг жүктелмеді. Интернетті тексеріңіз.",
+  "gameRatingStaleAt": "Байланыс жоқ. {time} уақыттағы рейтинг көрсетілген.",
+  "@gameRatingStaleAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "gameRatingYou": "Сіз",
   "gameRatingRuns": "{count, plural, one{{count} жарыс} other{{count} жарыс}}",
   "gameRatingEndsIn": "Аптаның соңына дейін: {days} күн.",
