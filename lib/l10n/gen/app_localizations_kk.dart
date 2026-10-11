@@ -1802,7 +1802,7 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
-  String get gameCrossroadsCollision => 'Жол апаты! Кезеңді бұзу';
+  String get gameCrossroadsCollision => 'Жол апаты! Кезекті бұзу';
 
   @override
   String gameCrossroadsShouldGo(String name) {
@@ -1821,7 +1821,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameCrossroadsResetCamera => 'Камераны қайтару';
 
   @override
-  String get gameCrossroadsNextCrossroad => 'Келесі қиылысу';
+  String get gameCrossroadsNextCrossroad => 'Келесі қиылыс';
 
   @override
   String get gameCrossroadsRepeatCrossroad => 'Қайталап көріңіз';

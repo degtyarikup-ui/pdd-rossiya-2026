@@ -525,7 +525,7 @@
   "gameCrossroadsPromptWhoGoesFirst": "Кім бірінші өтеді?",
   "gameCrossroadsPromptWhoGoesNext": "Келесі ({step}-ші) кім өтеді?",
   "gameCrossroadsStepOf": "{current} / {total} қадам",
-  "gameCrossroadsCollision": "Жол апаты! Кезеңді бұзу",
+  "gameCrossroadsCollision": "Жол апаты! Кезекті бұзу",
   "gameCrossroadsShouldGo": "Қазір өтетін: {name}",
   "@gameCrossroadsShouldGo": {
     "placeholders": {
@@ -537,7 +537,7 @@
   "gameCrossroadsHowTo": "Көліктерді кезекпен қойыңыз: дәл қазір өтетінін басыңыз.",
   "gameCrossroadsTapHint": "Көлікті немесе оның үстіндегі белгіні басыңыз. Сахнаны саусақпен бұруға, екі саусақпен жақындатуға болады.",
   "gameCrossroadsResetCamera": "Камераны қайтару",
-  "gameCrossroadsNextCrossroad": "Келесі қиылысу",
+  "gameCrossroadsNextCrossroad": "Келесі қиылыс",
   "gameCrossroadsRepeatCrossroad": "Қайталап көріңіз",
   "gameCrossroadsModeArcade": "Аркада",
   "gameCrossroadsModeTraining": "Тренинг",
