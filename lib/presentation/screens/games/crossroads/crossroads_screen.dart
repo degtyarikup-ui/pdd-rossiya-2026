@@ -220,10 +220,36 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
 
   // --- Игровой процесс ---
 
+  List<int> _createBalancedArcadeOrder() {
+    final list = _filteredScenarios;
+    final signs = <int>[];
+    final lights = <int>[];
+    for (int i = 0; i < list.length; i++) {
+      if (list[i].category == CrossroadsCategory.trafficLights) {
+        lights.add(i);
+      } else {
+        signs.add(i);
+      }
+    }
+    signs.shuffle();
+    lights.shuffle();
+
+    // Гарантируем появление светофора уже на 2-м перекрестке и сбалансированную ротацию
+    final order = <int>[];
+    int si = 0, li = 0;
+    while (si < signs.length || li < lights.length) {
+      if (si < signs.length) order.add(signs[si++]);
+      if (li < lights.length) order.add(lights[li++]);
+      if (si < signs.length) order.add(signs[si++]);
+    }
+    return order;
+  }
+
   void _startArcadeRound() {
     _countdownTimer?.cancel();
     setState(() {
       _mode = CrossroadsGameMode.arcade;
+      _selectedCategory = CrossroadsCategory.all;
       _score = 0;
       _ratingRunId = GameLeaderboardService.newRunId();
       _combo = 0;
@@ -235,8 +261,7 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
       _isGameOver = false;
       _isNewRecord = false;
       _scenarioIndex = 0;
-      final count = _filteredScenarios.length;
-      _order = List.generate(count, (i) => i)..shuffle();
+      _order = _createBalancedArcadeOrder();
       _previousBest = ref.read(crossroadsPriorityProgressProvider).bestScore;
       _currentStep = 1;
     });
@@ -285,9 +310,8 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
       _showCollisionModal = true;
       if (_mode == CrossroadsGameMode.arcade) {
         _lives--;
-        if (_lives <= 0) {
-          _endGame();
-        }
+        // При потере последней жизни игрок сначала читает разбор ДТП,
+        // а кнопка на модалке сразу переводит к итогам игры.
       }
     });
     _updatePointerEvents();
@@ -351,6 +375,7 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     final isNewRecord = _score > progress.bestScore;
 
     setState(() {
+      _showCollisionModal = false;
       _isGameOver = true;
       _isNewRecord = isNewRecord;
     });
@@ -665,8 +690,9 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
               child: _buildCollisionModal(colors),
             ),
 
-          // 5. Финальный экран GameOver / NewRecord
-          if (_isGameOver) _buildGameOverDialog(colors),
+          // 5. Финальный экран GameOver / NewRecord (только если не открыта модалка ДТП)
+          if (_isGameOver && !_showCollisionModal)
+            _buildGameOverDialog(colors),
         ],
       ),
     );
@@ -913,29 +939,43 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                 ),
               ],
               const SizedBox(height: AppDimensions.spacingL),
-              Row(
-                children: [
-                  Expanded(
-                    child: GameActionButton(
-                      label: appL10n.gameCrossroadsRepeatCrossroad,
-                      onTap: _retryCurrentScenario,
-                      background: colors.gray,
-                      foreground: colors.primaryText,
-                      height: 52,
+              if (_mode == CrossroadsGameMode.arcade && _lives <= 0)
+                GameActionButton(
+                  label: appL10n.gameOverTitle,
+                  onTap: () {
+                    setState(() {
+                      _showCollisionModal = false;
+                    });
+                    _endGame();
+                  },
+                  background: colors.red,
+                  foreground: colors.white,
+                  height: 52,
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: GameActionButton(
+                        label: appL10n.gameCrossroadsRepeatCrossroad,
+                        onTap: _retryCurrentScenario,
+                        background: colors.gray,
+                        foreground: colors.primaryText,
+                        height: 52,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: AppDimensions.spacingS),
-                  Expanded(
-                    child: GameActionButton(
-                      label: appL10n.gameCrossroadsNextCrossroad,
-                      onTap: _skipToNextScenario,
-                      background: colors.accent,
-                      foreground: colors.white,
-                      height: 52,
+                    const SizedBox(width: AppDimensions.spacingS),
+                    Expanded(
+                      child: GameActionButton(
+                        label: appL10n.gameCrossroadsNextCrossroad,
+                        onTap: _skipToNextScenario,
+                        background: colors.accent,
+                        foreground: colors.white,
+                        height: 52,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
             ],
           ),
         ),

@@ -298,5 +298,63 @@ void main() {
       expect(controller.state.maxCombo, equals(5));
       expect(controller.state.totalSolved, equals(7));
     });
+
+    test('Arcade balanced rotation guarantees early traffic lights by round 2', () {
+      final all = CrossroadsScenariosLibrary.allScenarios;
+      final signs = <int>[];
+      final lights = <int>[];
+      for (int i = 0; i < all.length; i++) {
+        if (all[i].category == CrossroadsCategory.trafficLights) {
+          lights.add(i);
+        } else {
+          signs.add(i);
+        }
+      }
+      expect(lights.isNotEmpty, isTrue);
+      expect(signs.isNotEmpty, isTrue);
+
+      // Симулируем 100 генераций порядка раунда в аркаде
+      for (int seed = 0; seed < 100; seed++) {
+        final sCopy = List<int>.from(signs)..shuffle();
+        final lCopy = List<int>.from(lights)..shuffle();
+
+        final order = <int>[];
+        int si = 0, li = 0;
+        while (si < sCopy.length || li < lCopy.length) {
+          if (si < sCopy.length) order.add(sCopy[si++]);
+          if (li < lCopy.length) order.add(lCopy[li++]);
+          if (si < sCopy.length) order.add(sCopy[si++]);
+        }
+
+        // Проверяем, что 2-й перекресток (индекс 1) — гарантированно светофор
+        expect(
+          all[order[1]].category,
+          equals(CrossroadsCategory.trafficLights),
+          reason: 'Round 2 must be a traffic light scenario',
+        );
+        // Проверяем, что все сценарии вошли в список без пропусков и дублей
+        expect(order.length, equals(all.length));
+        expect(order.toSet().length, equals(all.length));
+      }
+    });
+
+    test('T-junction scenarios with closedSide have actors validly configured', () {
+      final tJunctions = CrossroadsScenariosLibrary.allScenarios
+          .where((s) => s.closedSide != null)
+          .toList();
+      expect(tJunctions.isNotEmpty, isTrue);
+
+      for (final s in tJunctions) {
+        expect(s.closedSide, isNotNull);
+        for (final a in s.actors) {
+          // Ни одна машина не начинает движение с закрытой стороны
+          expect(
+            a.side,
+            isNot(equals(s.closedSide)),
+            reason: 'Actor ${a.id} starts on closedSide ${s.closedSide}',
+          );
+        }
+      }
+    });
   });
 }

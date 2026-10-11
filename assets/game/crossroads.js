@@ -58,7 +58,7 @@
   // и приближает щипком/колёсиком. Сильно отдалить нельзя: за кварталами
   // только фон.
   let camZoom = 1.0, camYaw = 0, camPitch = 0, badgeScale = 1;
-  const ZOOM_MIN = 0.8, ZOOM_MAX = 2.4;
+  const ZOOM_MIN = 1.0, ZOOM_MAX = 2.4;
   let camShake = 0;
   const audio = window.PDD_AMBIENT ? window.PDD_AMBIENT.create() : null;
   let viewInsetBottom = 0, viewInsetTop = 0;
@@ -168,6 +168,9 @@
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color(season.sky);
+    // Плавный атмосферный туман: скрывает дальние границы дорог и ландшафта,
+    // мягко растворяя горизонт в цвете неба без резких срезов.
+    scene.fog = new THREE.Fog(season.sky, 180, 560);
 
     // Процедурный градиентный купол неба с облаками (как в флагмане)
     skyDome = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), new THREE.ShaderMaterial({
@@ -195,7 +198,7 @@
     scene.add(skyDome);
 
     // Перспективная камера: изометрический обзор под углом 46 градусов
-    camera = new THREE.PerspectiveCamera(40, width / height, 0.5, 900);
+    camera = new THREE.PerspectiveCamera(40, width / height, 0.5, 1400);
     updateCameraPosition();
 
     renderer = new THREE.WebGLRenderer({ antialias: !lowEnd, alpha: false, powerPreference: 'high-performance' });
@@ -352,8 +355,8 @@
 
   // --- Построение перекрестка и окружения ---
   function buildEnvironment() {
-    // 1. Земля / газон
-    const groundGeo = new THREE.PlaneGeometry(1600, 1600);
+    // 1. Земля / газон (3000 м, скрывает любые горизонты в тумане)
+    const groundGeo = new THREE.PlaneGeometry(3000, 3000);
     const groundMat = new THREE.MeshLambertMaterial({ color: season.ground });
     groundMat.userData.pddKind = 'grass';
     const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -362,12 +365,12 @@
     ground.receiveShadow = true;
     envGroup.add(ground);
 
-    // 2. Асфальтовые дороги (Север-Юг и Восток-Запад)
+    // 2. Асфальтовые дороги (Север-Юг и Восток-Запад, 1600 м)
     const roadMat = new THREE.MeshLambertMaterial({ color: BRAND.asphalt });
     roadMat.userData.pddKind = 'asphalt';
     cachedRoadMat = roadMat;
 
-    const roadLen = CITY_REACH * 2;
+    const roadLen = 1600;
     const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_WIDTH, roadLen), roadMat);
     roadNS.rotation.x = -Math.PI / 2;
     roadNS.position.y = 0.02;
@@ -404,7 +407,7 @@
   function buildTramRails(parent, axis) {
     const railMat = new THREE.MeshLambertMaterial({ color: 0x90949C });
     const gauge = 1.524; // ГОСТ колея трамвая в РФ
-    const railLength = CITY_REACH * 2;
+    const railLength = 1600;
     [-gauge / 2, gauge / 2].forEach(offset => {
       const geo = axis === 'ns'
         ? new THREE.BoxGeometry(0.08, 0.03, railLength)
@@ -417,9 +420,9 @@
     });
   }
 
-  // Т-образный перекрёсток: на месте закрытой ветки — благоустроенный бульвар:
-  // аккуратный зеленый газон с честным тайлингом UV по физическим метрам (4.8 м),
-  // бордюрами, пешеходными дорожками и уличными фонарями.
+  // Т-образный перекрёсток: на месте закрытой ветки продолжается аккуратный тротуар
+  // вдоль главной дороги (ширина 6 м с бордюром), а за ним — обычный зеленый газон квартала.
+  // Никаких длинных пустых аллей: тупик перекрывается полноценным городским зданием в buildLocation.
   function closeArm(parent, side) {
     const len = CITY_REACH - HALF_ROAD, width = ROAD_WIDTH + 0.4;
     const ns = side === 'north' || side === 'south';
@@ -432,67 +435,24 @@
       return m;
     };
 
-    // Основание тротуара вдоль всей закрытой ветки
-    box(width, len, HALF_ROAD + len / 2, cachedWalkMat, 0.08, 0.16);
+    // Сквозной тротуар вдоль перекрестка (глубина 6.0 м, встык с угловыми тротуарами)
+    box(width, 6.0, HALF_ROAD + 3.0, cachedWalkMat, 0.08, 0.16);
 
-    // Поперечный бордюр на границе перекрестка
+    // Поперечный бордюр на границе проезжей части
     const curb = box(ROAD_WIDTH, 0.25, HALF_ROAD + 0.12, curbMatShared, 0.1, 0.2);
     curb.castShadow = true;
 
-    // Внутренний зеленый газон бульвара (ширина 8.8 м, по краям остаются тротуары по 2.6 м)
-    const lawnW = 8.8;
-    const lawnL = len - 6.0;
-    const lawnGeo = new THREE.PlaneGeometry(ns ? lawnW : lawnL, ns ? lawnL : lawnW);
-
-    const at = sign * (HALF_ROAD + 6.0 + lawnL / 2);
+    // За тротуаром — стандартный зеленый газон квартала (без аллей и фонарей)
+    const lawnDepth = len - 6.0;
+    const lawnGeo = new THREE.PlaneGeometry(ns ? width : lawnDepth, ns ? lawnDepth : width);
+    const at = sign * (HALF_ROAD + 6.0 + lawnDepth / 2);
     const cx = ns ? 0 : at;
     const cz = ns ? at : 0;
-
-    // Точный расчет UV-координат по физическим метрам (тайлинг каждые 4.8 м, без растяжения)
-    const pos = lawnGeo.attributes.position;
-    const uv = lawnGeo.attributes.uv;
-    for (let i = 0; i < pos.count; i++) {
-      const lx = pos.getX(i);
-      const ly = pos.getY(i);
-      const wx = cx + (ns ? lx : (sign > 0 ? -ly : ly));
-      const wz = cz + (ns ? (sign > 0 ? -ly : ly) : lx);
-      uv.setXY(i, wx / 4.8, wz / 4.8);
-    }
-    uv.needsUpdate = true;
-
     const lawn = new THREE.Mesh(lawnGeo, lawnMatShared);
     lawn.rotation.x = -Math.PI / 2;
     lawn.position.set(cx, 0.168, cz);
     lawn.receiveShadow = true;
     parent.add(lawn);
-
-    // Ограничивающие бордюры вдоль газона бульвара с обеих сторон
-    [-lawnW / 2 - 0.11, lawnW / 2 + 0.11].forEach(offset => {
-      const m = new THREE.Mesh(
-        ns ? new THREE.BoxGeometry(0.22, 0.20, lawnL) : new THREE.BoxGeometry(lawnL, 0.20, 0.22),
-        curbMatShared
-      );
-      if (ns) m.position.set(offset, 0.10, at);
-      else m.position.set(at, 0.10, offset);
-      m.castShadow = true;
-      m.receiveShadow = true;
-      parent.add(m);
-    });
-
-    // Уличные фонари вдоль пешеходных дорожек бульвара
-    if (window.PDD_STREET && window.PDD_STREET.createLampPost) {
-      for (let d = HALF_ROAD + 18; d < Math.min(CITY_REACH - 20, 160); d += 28) {
-        const lamp = window.PDD_STREET.createLampPost();
-        if (ns) {
-          lamp.position.set(sign * 5.4, 0.16, sign * d);
-          lamp.rotation.y = sign > 0 ? -Math.PI / 2 : Math.PI / 2;
-        } else {
-          lamp.position.set(sign * d, 0.16, sign * 5.4);
-          lamp.rotation.y = sign > 0 ? Math.PI : 0;
-        }
-        parent.add(lamp);
-      }
-    }
   }
 
   function buildMarkings(parent) {
@@ -718,8 +678,188 @@
       }
     });
 
-    // 3. Реалистичные городские здания на заднем плане (красный кирпич, панели, окна, маркизы)
+    // 3. Пешеходные ограждения по ГОСТ вдоль бордюров возле всех 4 переходов
+    buildGuardrails(parent);
+
+    // 4. Остановка общественного транспорта (навес, стекло, скамейка, знак 5.16, урна)
+    buildBusStop(parent);
+
+    // 5. Уличная мебель: скамейки, урны, рекламный ситилайт, шкаф электросети
+    buildStreetFurniture(parent);
+
+    // 6. Аккуратная живая изгородь вдоль газонов на стыке с тротуаром
+    buildDecorativeHedges(parent);
+
+    // 7. Реалистичные городские здания на заднем плане (красный кирпич, панели, окна, маркизы)
     buildDetailedBuildings(parent);
+  }
+
+  // Пешеходные металлические ограждения по ГОСТ Р 52289 на углах возле переходов
+  function buildGuardrails(parent) {
+    const railMat = new THREE.MeshLambertMaterial({ color: 0x6E757D });
+    const postGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.95, 6);
+    postGeo.translate(0, 0.475 + 0.16, 0);
+    const hBarGeo = new THREE.BoxGeometry(1.92, 0.04, 0.04);
+    const vBarGeo = new THREE.BoxGeometry(0.04, 0.04, 1.92);
+
+    const corners = [[-1, -1], [1, -1], [-1, 1], [1, 1]];
+    corners.forEach(([sx, sz]) => {
+      // Ограждение вдоль проезжей части NS (от 7.5 м до 21.5 м от перекрестка)
+      for (let d = HALF_ROAD + 7.5; d <= HALF_ROAD + 21.5; d += 2.0) {
+        const p = new THREE.Mesh(postGeo, railMat);
+        p.position.set(sx * (HALF_ROAD + 0.45), 0, sz * d);
+        p.castShadow = true;
+        parent.add(p);
+        if (d < HALF_ROAD + 21.5) {
+          [0.16 + 0.88, 0.16 + 0.44].forEach(y => {
+            const bar = new THREE.Mesh(vBarGeo, railMat);
+            bar.position.set(sx * (HALF_ROAD + 0.45), y, sz * (d + 1.0));
+            parent.add(bar);
+          });
+        }
+      }
+      // Ограждение вдоль проезжей части EW (от 7.5 м до 21.5 м от перекрестка)
+      for (let d = HALF_ROAD + 7.5; d <= HALF_ROAD + 21.5; d += 2.0) {
+        const p = new THREE.Mesh(postGeo, railMat);
+        p.position.set(sx * d, 0, sz * (HALF_ROAD + 0.45));
+        p.castShadow = true;
+        parent.add(p);
+        if (d < HALF_ROAD + 21.5) {
+          [0.16 + 0.88, 0.16 + 0.44].forEach(y => {
+            const bar = new THREE.Mesh(hBarGeo, railMat);
+            bar.position.set(sx * (d + 1.0), y, sz * (HALF_ROAD + 0.45));
+            parent.add(bar);
+          });
+        }
+      }
+    });
+  }
+
+  // Остановка общественного транспорта (стеклянный павильон, скамейка, знак 5.16, урна)
+  function buildBusStop(parent) {
+    const group = new THREE.Group();
+    // Располагаем на восточном тротуаре (x = HALF_ROAD + 24, z = -(HALF_ROAD + 3.8))
+    group.position.set(HALF_ROAD + 24, 0.16, -(HALF_ROAD + 3.8));
+    group.rotation.y = Math.PI;
+
+    const frameMat = new THREE.MeshLambertMaterial({ color: 0x333B42 });
+    const glassMat = new THREE.MeshLambertMaterial({ color: 0x8CB8D4, transparent: true, opacity: 0.55 });
+    const woodMat = new THREE.MeshLambertMaterial({ color: 0x8C5632 });
+
+    // Стойки и крыша павильона
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.12, 2.2), frameMat);
+    roof.position.set(0, 2.5, 0);
+    roof.castShadow = true;
+    group.add(roof);
+
+    // Заднее стекло
+    const backGlass = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.2, 0.06), glassMat);
+    backGlass.position.set(0, 1.25, -0.95);
+    group.add(backGlass);
+
+    // Боковое стекло
+    const sideGlass = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.2, 1.8), glassMat);
+    sideGlass.position.set(2.1, 1.25, 0);
+    group.add(sideGlass);
+
+    // Скамья внутри
+    const bench = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.08, 0.45), woodMat);
+    bench.position.set(0, 0.48, -0.6);
+    group.add(bench);
+
+    // Знак 5.16 «Место остановки автобуса»
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 3.2, 6), frameMat);
+    pole.position.set(-2.6, 1.6, 0.8);
+    group.add(pole);
+    const signPlate = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.9, 0.05), new THREE.MeshBasicMaterial({ color: 0x1E5FAF }));
+    signPlate.position.set(-2.6, 2.7, 0.8);
+    group.add(signPlate);
+
+    // Урна рядом с остановкой
+    const bin = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.17, 0.7, 8), frameMat);
+    bin.position.set(-2.5, 0.35, -0.2);
+    group.add(bin);
+
+    parent.add(group);
+  }
+
+  // Уличная мебель: скамейки, урны, рекламные ситилайты, шкафы электросети
+  function buildStreetFurniture(parent) {
+    const darkMat = new THREE.MeshLambertMaterial({ color: 0x2E343A });
+    const woodMat = new THREE.MeshLambertMaterial({ color: 0x8C5632 });
+    const cabinetMat = new THREE.MeshLambertMaterial({ color: 0x98A2AD });
+    const lightBoxMat = new THREE.MeshBasicMaterial({ color: 0xE8EFF5 });
+
+    function addBench(x, z, rotY) {
+      const b = new THREE.Group();
+      b.position.set(x, 0.16, z);
+      b.rotation.y = rotY;
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, 0.48), woodMat);
+      seat.position.y = 0.46;
+      seat.castShadow = true;
+      b.add(seat);
+      const back = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.36, 0.06), woodMat);
+      back.position.set(0, 0.72, -0.22);
+      b.add(back);
+      [-0.75, 0.75].forEach(lx => {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.44, 0.46), darkMat);
+        leg.position.set(lx, 0.22, 0);
+        b.add(leg);
+      });
+      // Маленькая урна рядом
+      const bin = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.15, 0.65, 8), darkMat);
+      bin.position.set(1.25, 0.33, 0);
+      b.add(bin);
+      parent.add(b);
+    }
+
+    // Расставляем скамейки на тротуарах
+    addBench(-(HALF_ROAD + 3.8), -(HALF_ROAD + 18), Math.PI / 2);
+    addBench(-(HALF_ROAD + 3.8), HALF_ROAD + 20, Math.PI / 2);
+    addBench(HALF_ROAD + 3.8, HALF_ROAD + 22, -Math.PI / 2);
+    addBench(-(HALF_ROAD + 22), HALF_ROAD + 3.8, 0);
+
+    // Распределительный шкаф связи/электросети на углу
+    const cabinet = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.25, 0.4), cabinetMat);
+    cabinet.position.set(-(HALF_ROAD + 4.8), 0.16 + 0.625, HALF_ROAD + 12);
+    cabinet.castShadow = true;
+    parent.add(cabinet);
+
+    // Рекламный ситилайт (вертикальный светящийся лайтбокс)
+    const cityLight = new THREE.Group();
+    cityLight.position.set(HALF_ROAD + 3.6, 0.16, -(HALF_ROAD + 14));
+    cityLight.rotation.y = Math.PI / 2;
+    const clFrame = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.1, 0.14), darkMat);
+    clFrame.position.y = 1.2;
+    cityLight.add(clFrame);
+    const clPoster = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 1.45), lightBoxMat);
+    clPoster.position.set(0, 1.25, 0.08);
+    cityLight.add(clPoster);
+    parent.add(cityLight);
+  }
+
+  // Живая изгородь вдоль газонов (аккуратный подстриженный кустарник)
+  function buildDecorativeHedges(parent) {
+    const hedgeMat = new THREE.MeshLambertMaterial({
+      color: (season.canopy && season.canopy[0]) || 0x487538
+    });
+    const hedgeGeoNS = new THREE.BoxGeometry(0.7, 0.85, 16.0);
+    const hedgeGeoEW = new THREE.BoxGeometry(16.0, 0.85, 0.7);
+
+    // Вдоль тротуаров всех 4 кварталов на границе тротуар-газон
+    const corners = [[-1, -1], [1, -1], [-1, 1], [1, 1]];
+    corners.forEach(([sx, sz]) => {
+      // Вдоль улицы NS
+      const hNS = new THREE.Mesh(hedgeGeoNS, hedgeMat);
+      hNS.position.set(sx * (HALF_ROAD + 5.6), 0.16 + 0.425, sz * (HALF_ROAD + 18));
+      hNS.castShadow = true;
+      parent.add(hNS);
+      // Вдоль улицы EW
+      const hEW = new THREE.Mesh(hedgeGeoEW, hedgeMat);
+      hEW.position.set(sx * (HALF_ROAD + 18), 0.16 + 0.425, sz * (HALF_ROAD + 5.6));
+      hEW.castShadow = true;
+      parent.add(hEW);
+    });
   }
 
   // Сливает плоскости (окна) в одну сетку: один вызов отрисовки на дом вместо
@@ -921,18 +1061,22 @@
       house(20, 12, 14, E + 40, -(E + 18), 0, 'plaster', SAND);
       house(20, 12, 14, -(E + 18), E + 18, Math.PI / 2, 'panel', PALE);
       house(20, 11, 14, -(E + 40), E + 18, 0, 'plaster', WARM);
-      scatter(26, 24, 70);
+      house(18, 12, 14, E + 18, E + 22, 0, 'panel', LIGHT);
+      scatter(34, 20, 75);
     } else if (name === 'park') {
-      // Сквер: аллеи деревьев, пара домов вдали.
-      house(22, 12, 14, -(E + 46), -(E + 40), 0, 'plaster', SAND);
-      house(20, 13, 14, E + 44, -(E + 46), 0, 'panel', PALE);
+      // Сквер: пышный зеленый парк в одном секторе и городские фасады напротив
+      house(12, 4.2, 8, -(E + 16), -(E + 16), 0, 'brick', BRICK, { awning: true }); // Парковое кафе
+      house(24, 15, 14, E + 18, -(E + 20), 0, 'plaster', SAND);
+      house(20, 13, 14, E + 44, -(E + 20), 0, 'panel', PALE);
+      house(20, 14, 14, -(E + 18), E + 22, Math.PI / 2, 'brick', BRICK);
+      house(22, 13, 14, E + 22, E + 26, 0, 'panel', GREY);
       for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
         for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
           const x = sx * (E + 12 + i * 8 + rnd() * 3), z = sz * (E + 12 + j * 8 + rnd() * 3);
-          if (free(x, z)) trees.push({ x, z, s: 0.9 + rnd() * 0.45 });
+          if (free(x, z)) trees.push({ x, z, s: 0.95 + rnd() * 0.45 });
         }
       }
-      scatter(30, 40, 80);
+      scatter(45, 20, 85);
     } else if (name === 'suburb') {
       // Частный сектор: одноэтажные дома с двускатными крышами.
       for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
@@ -944,29 +1088,54 @@
           house(w, 4.2 + rnd() * 1.6, d, x, z, sz > 0 ? Math.PI : 0, 'plaster', COTTAGE[Math.floor(rnd() * COTTAGE.length)], { pitched: true });
         }
       }
-      scatter(40, 20, 75);
+      scatter(48, 16, 80);
     } else if (name === 'shops') {
-      // Торговая улица: низкие магазины с маркизами у угла, дома за ними.
+      // Торговая улица: магазины с маркизами у угла, дома за ними.
       for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
         house(14, 4.8, 10, sx * (E + 13), sz * (E + 12), sz > 0 ? Math.PI : 0, 'brick', [BRICK, SAND, LIGHT, WARM][Math.floor(rnd() * 4)], { awning: true });
         if (!(sx > 0 && sz > 0)) house(20, 15, 14, sx * (E + 22), sz * (E + 36), sz > 0 ? Math.PI : 0, 'panel', [PALE, GREY, LIGHT][Math.floor(rnd() * 3)]);
       }
-      scatter(18, 30, 75);
+      scatter(24, 25, 75);
     } else {
-      // Новый микрорайон: длинные светлые дома, отступ от дороги, много зелени.
-      house(44, 20, 13, -(E + 30), -(E + 34), 0, 'panel', LIGHT);
-      house(13, 20, 40, E + 30, -(E + 34), 0, 'panel', PALE);
-      house(40, 17, 13, -(E + 30), E + 34, 0, 'panel', GREY);
-      house(13, 9, 30, E + 52, E + 44, 0, 'panel', LIGHT);
-      scatter(36, 18, 75);
+      // Новый микрорайон: современные жилые дома ближе к перекрестку
+      house(36, 18, 13, -(E + 18), -(E + 22), 0, 'panel', LIGHT);
+      house(13, 18, 36, E + 20, -(E + 24), 0, 'panel', PALE);
+      house(34, 16, 13, -(E + 20), E + 24, 0, 'panel', GREY);
+      house(13, 14, 30, E + 24, E + 28, 0, 'panel', LIGHT);
+      scatter(44, 16, 80);
     }
     // Дальний пояс: деревья, чтобы при отдалении не было пустых полей.
-    scatter(weak ? 60 : 110, 75, 150, 1.2);
-    // Закрытая ветка — упорядоченная парковая аллея вдоль пешеходных дорожек
+    scatter(weak ? 80 : 140, 70, 160, 1.25);
+    // Закрытая ветка (Т-образный перекресток) — тупик перекрывается полноценным зданием
     if (closed) {
-      for (let d = E + 14; d < Math.min(CITY_REACH - 20, 180); d += 14) for (const off of [-5.2, 5.2]) {
-        const ns = closed === 'north' || closed === 'south', sign = closed === 'south' || closed === 'east' ? 1 : -1;
-        trees.push({ x: ns ? off : sign * d, z: ns ? sign * d : off, s: 0.95 + rnd() * 0.25 });
+      const ns = closed === 'north' || closed === 'south';
+      const sign = closed === 'south' || closed === 'east' ? 1 : -1;
+      const bColor = [LIGHT, PALE, GREY, SAND, WARM, BRICK][Math.floor(rnd() * 6)];
+      const bKind = bColor === BRICK ? 'brick' : (rnd() > 0.4 ? 'panel' : 'plaster');
+      if (ns) {
+        // T-образный перекресток: Север или Юг закрыт
+        const zCenter = sign * (E + 14);
+        const rot = sign > 0 ? Math.PI : 0;
+        // Центральное здание, перекрывающее тупик
+        house(38, 16, 14, 0, zCenter, rot, bKind, bColor, { awning: true });
+        // Дворовые корпуса за ним
+        house(22, 14, 14, -18, sign * (E + 34), rot, 'panel', PALE);
+        house(22, 14, 14, 18, sign * (E + 34), rot, 'plaster', SAND);
+        for (let cz = E + 24; cz < E + 60; cz += 10) {
+          trees.push({ x: (rnd() - 0.5) * 26, z: sign * cz, s: 0.95 + rnd() * 0.4 });
+        }
+      } else {
+        // T-образный перекресток: Восток или Запад закрыт
+        const xCenter = sign * (E + 14);
+        const rot = sign > 0 ? -Math.PI / 2 : Math.PI / 2;
+        // Центральное здание, перекрывающее тупик
+        house(38, 16, 14, xCenter, 0, rot, bKind, bColor, { awning: true });
+        // Дворовые корпуса за ним
+        house(22, 14, 14, sign * (E + 34), -18, rot, 'panel', PALE);
+        house(22, 14, 14, sign * (E + 34), 18, rot, 'plaster', SAND);
+        for (let cx = E + 24; cx < E + 60; cx += 10) {
+          trees.push({ x: sign * cx, z: (rnd() - 0.5) * 26, s: 0.95 + rnd() * 0.4 });
+        }
       }
     }
     plantTrees(trees, rnd);
@@ -1004,17 +1173,17 @@
 
   // Силуэты домов за деревьями по краю: один InstancedMesh из коробок.
   function buildBackdrop(rnd) {
-    const count = weak ? 24 : 40;
+    const count = weak ? 36 : 64;
     const blocks = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshLambertMaterial({ color: 0xFFFFFF }), count);
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), color = new THREE.Color();
     const palette = [LIGHT, PALE, GREY, SAND, WARM];
     for (let i = 0; i < count; i++) {
       let a = (i / count) * Math.PI * 2 + rnd() * 0.08;
-      const r = 165 + rnd() * 30;
+      const r = 145 + rnd() * 65;
       // Не загораживать концы улиц.
       if (Math.min(Math.abs(Math.cos(a)), Math.abs(Math.sin(a))) * r < HALF_ROAD + 12) a += 0.12;
       q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -a);
-      m.compose(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r), q, new THREE.Vector3(10 + rnd() * 14, 10 + rnd() * 20, 12 + rnd() * 8));
+      m.compose(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r), q, new THREE.Vector3(12 + rnd() * 16, 12 + rnd() * 24, 14 + rnd() * 10));
       blocks.setMatrixAt(i, m);
       blocks.setColorAt(i, color.setHex(palette[i % palette.length]));
     }
@@ -2105,7 +2274,7 @@
     const ctx = canvas.getContext('2d');
     const tex = new THREE.CanvasTexture(canvas);
     tex.anisotropy = 4;
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, fog: false }));
     sprite.center.set(0.5, 0.06); // кончик хвостика — над крышей
     sprite.scale.set(3.8, 3.8, 1);
     sprite.renderOrder = 10;
