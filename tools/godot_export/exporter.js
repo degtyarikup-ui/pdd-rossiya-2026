@@ -57,16 +57,22 @@
         visit(child);
       }
     };
+    // Parts that carry their colours in the vertices (a pedestrian: mergeModelParts) keep them
+    // when the material is plain white; a painted part takes its colour from the material.
     const add = (material, geometry, rel) => {
-      const g = prepare(geometry); g.applyMatrix4(rel);
-      if (!buckets.has(material.uuid)) buckets.set(material.uuid, { material, list: [] });
-      buckets.get(material.uuid).list.push(g);
+      const vertexColours = !!geometry.attributes.color && material.color.getHex() === 0xffffff;
+      const g = prepare(geometry, vertexColours); g.applyMatrix4(rel);
+      if (!buckets.has(material.uuid)) buckets.set(material.uuid, { material, list: [], vertexColours: false });
+      const bucket = buckets.get(material.uuid);
+      bucket.list.push(g);
+      bucket.vertexColours = bucket.vertexColours || vertexColours;
     };
     if (root.isMesh) add(root.material, root.geometry, new THREE.Matrix4());
     visit(root);
-    for (const { material, list } of buckets.values()) {
+    for (const { material, list, vertexColours } of buckets.values()) {
       const merged = U.mergeBufferGeometries(list, false);
       const mat = material.clone();
+      mat.vertexColors = vertexColours;
       mat.name = materialName(material);
       if (mat.map) mat.map.name = mat.name;
       const mesh = new THREE.Mesh(merged, mat);

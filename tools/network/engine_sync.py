@@ -79,7 +79,10 @@ def find_template(kind: str, typ: str, name: str = "") -> str | None:
 def base_actor(asset: str) -> dict:
     sid, fname = asset.split("/")
     k = int(fname[len("actor_"):-len(".glb")])
-    return copy.deepcopy(engine_base(sid)["actors"][k])
+    actors = engine_base(sid)["actors"]
+    if k >= len(actors):
+        raise ValueError(f"{asset}: the export of {sid} has {len(actors)} participants now")
+    return copy.deepcopy(actors[k])
 
 
 def length_of(points: list) -> float:
@@ -128,7 +131,16 @@ def sync(sid: str) -> dict:
 
     actors = []
     for na in net.get("actors", []):
-        asset = na.get("asset") or find_template("actor", na["type"], na.get("name", ""))
+        asset = na.get("asset")
+        if asset:
+            src, fname = asset.split("/")
+            k = int(fname[len("actor_"):-len(".glb")])
+            if not (SIT / src / "parts" / fname).exists() or k >= len(engine_base(src)["actors"]):
+                # The scene it came from was exported again and no longer has this participant:
+                # the first model of its type stands in for it.
+                asset = find_template("actor", na["type"], na.get("name", ""))
+        else:
+            asset = find_template("actor", na["type"], na.get("name", ""))
         if asset is None:
             raise ValueError(f"{sid}: no model for participant {na['id']} ({na['type']})")
         a = base_actor(asset)

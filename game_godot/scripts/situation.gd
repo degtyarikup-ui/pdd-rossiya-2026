@@ -60,6 +60,7 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 	for i in s.data.actors.size():
 		var a: Dictionary = s.data.actors[i]
 		var actor: Node3D = (load(dir + "actor_%d.glb" % i) as PackedScene).instantiate()
+		_vertex_colours_as_albedo(actor)
 		actor.position = _v(a.pos)
 		actor.rotation.y = a.yaw
 		actor.scale = _v(a.scale)
@@ -108,6 +109,19 @@ static func _surface_node(net: RoadNetwork, scenery: Scenery) -> MeshInstance3D:
 	node.mesh = net.surface_mesh(scenery)
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return node
+
+
+## A participant's colours are in its vertices (a pedestrian or a cyclist is built from coloured
+## parts): the material has to take them, or the figure draws white.
+static func _vertex_colours_as_albedo(root: Node3D) -> void:
+	for node in root.find_children("*", "MeshInstance3D", true, false):
+		var mesh := (node as MeshInstance3D).mesh
+		if mesh == null:
+			continue
+		for i in mesh.get_surface_count():
+			var mat := mesh.surface_get_material(i)
+			if mat is BaseMaterial3D:
+				(mat as BaseMaterial3D).vertex_color_use_as_albedo = true
 
 
 static func _v(a: Array) -> Vector3:
