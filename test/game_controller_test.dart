@@ -236,6 +236,20 @@ void main() {
     // 100 + 2 × 50 = 200 characters: 40 over — three more seconds.
     expect(GameController.answerSeconds(withText(100, 50)), 18);
     expect(GameController.answerSeconds(withText(400, 200)), 30);
+    // A translation is timed by its Russian source, whatever its own length.
+    final translated = GameSituation(
+      id: 'timer-translated',
+      ticket: 'Ticket 1 · Question 1',
+      title: 'v' * 400,
+      explanation: '',
+      pddRule: '',
+      options: const ['o', 'o'],
+      correctAnswerIndex: 0,
+      legend: const [],
+      type: 'crossroad',
+      sourceTextLength: 60,
+    );
+    expect(GameController.answerSeconds(translated), 15);
     final controller = GameController();
     addTearDown(controller.dispose);
     controller.onEngineReady();

@@ -86,6 +86,8 @@ for (const lang of ['kk', 'en']) {
   assert.equal(out.title, translations.ticket_1_9[lang].title);
   assert.equal(out.options.length, sample.options.length);
   assert.equal(out.correctAnswerIndex, sample.correctAnswerIndex);
+  // Time to answer follows the Russian source: its title and options length.
+  assert.equal(out.sourceTextLength, sample.title.length + sample.options.join('').length);
   assert.equal(out.legend[0].label, ui[lang]['Вы прямо']);
   assert.equal(out.legend[1].label, ui[lang]['Грузовик']);
   assert.equal(sample.title, 'x', 'the original situation keeps its Russian text');

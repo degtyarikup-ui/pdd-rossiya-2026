@@ -34,6 +34,11 @@ class GameSituation {
   final List<GameLegendItem> legend;
   final String type;
 
+  /// Length of the Russian source text (title and options) when the texts
+  /// are translated: the time to answer follows the source, so every
+  /// language gets the same time. Null: the texts above are the source.
+  final int? sourceTextLength;
+
   const GameSituation({
     required this.id,
     required this.ticket,
@@ -47,6 +52,7 @@ class GameSituation {
     required this.correctAnswerIndex,
     required this.legend,
     required this.type,
+    this.sourceTextLength,
   });
 
   factory GameSituation.fromJson(Map<String, dynamic> json) {
@@ -77,6 +83,7 @@ class GameSituation {
               .toList() ??
           [],
       type: json['type'] as String? ?? 'crossroad',
+      sourceTextLength: (json['sourceTextLength'] as num?)?.toInt(),
     );
   }
 
@@ -93,5 +100,6 @@ class GameSituation {
     'correctAnswerIndex': correctAnswerIndex,
     'legend': legend.map((l) => l.toJson()).toList(),
     'type': type,
+    if (sourceTextLength != null) 'sourceTextLength': sourceTextLength,
   };
 }

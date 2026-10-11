@@ -249,10 +249,12 @@ class GameController extends StateNotifier<GameState> {
   /// Seconds to answer: 15 for a short question, one more for every 16
   /// characters of question and options beyond 160, at most 30 — the longest
   /// tickets (divided roads, overtaking steps) are otherwise unreadable in time.
+  /// The length is that of the Russian source, so translations keep the time.
   static double answerSeconds(GameSituation situation) {
     final length =
+        situation.sourceTextLength ??
         situation.title.length +
-        situation.options.fold<int>(0, (sum, o) => sum + o.length);
+            situation.options.fold<int>(0, (sum, o) => sum + o.length);
     return (15 + ((length - 160) / 16).ceil()).clamp(15, 30).toDouble();
   }
 

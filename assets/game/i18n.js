@@ -18,6 +18,9 @@
     if (!situation || lang === 'ru') return situation;
     const translated = ((window.PDD_SITUATION_I18N || {})[situation.id] || {})[lang];
     if (!translated) return situation;
+    // The time to answer follows the Russian text, so every language gets the same time.
+    const sourceTextLength = situation.title.length +
+      situation.options.reduce((sum, option) => sum + option.length, 0);
     return Object.assign({}, situation, {
       ticket: translated.ticket,
       title: translated.title,
@@ -25,6 +28,7 @@
       explanation: translated.explanation,
       pddRule: translated.pddRule || situation.pddRule,
       legend: (situation.legend || []).map(item => Object.assign({}, item, { label: window.PDD_T(item.label) })),
+      sourceTextLength,
     });
   };
 })();
