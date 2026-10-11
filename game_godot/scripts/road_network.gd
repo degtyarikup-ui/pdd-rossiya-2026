@@ -151,8 +151,10 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 		colour = scenery.color("sidewalk")
 	elif s.layer == "asphalt":
 		colour = Color("#2C2F36")
-	var layer := scenery.layer_of(s.layer)
-	var period: float = scenery.kinds[s.layer].period
+	elif s.layer == "grass":
+		colour = scenery.color("ground")    # lawns in the season's colour, with the grass detail
+	var layer := scenery.layer_of(s.layer)  # 0 (plain paint) for markings: layer ""
+	var period: float = scenery.kinds[s.layer].period if scenery.kinds.has(s.layer) else 1.0
 	var v: Array = s.verts
 	var idx: Array = s.idx
 	var y: float = s.y

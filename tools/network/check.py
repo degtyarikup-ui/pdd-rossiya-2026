@@ -37,6 +37,48 @@ def finding(out, level, code, message, ref=None):
     out.append({"level": level, "code": code, "message": message, "ref": ref})
 
 
+MARKING_TYPES = ("paint", "solid", "dashed", "stop", "zebra")
+MARKING_COLOURS = ("white", "yellow")
+LINE_MARKINGS = ("solid", "dashed", "stop", "zebra")
+
+
+def check_layers(scene: dict, area, out: list) -> None:
+    """Lawns and markings (build.py): polygons that are valid, known types, paint on the carriageway."""
+    for l in scene.get("lawns", []):
+        ref = {"type": "lawn", "id": l.get("id")}
+        p = Polygon(l.get("outer", []))
+        if len(l.get("outer", [])) < 3 or not p.is_valid or p.area < 1.0:
+            finding(out, "error", "lawn-invalid", f"{l.get('id')}: контур газона не является корректным многоугольником", ref)
+        for h in l.get("holes", []):
+            if not Polygon(h).is_valid or not p.buffer(0.05).covers(Polygon(h)):
+                finding(out, "error", "lawn-hole", f"{l.get('id')}: дыра газона лежит вне газона", ref)
+    for m in scene.get("markings", []):
+        ref = {"type": "marking", "id": m.get("id")}
+        kind = m.get("type")
+        if kind not in MARKING_TYPES:
+            finding(out, "error", "marking-type", f"{m.get('id')}: неизвестный тип разметки {kind!r}", ref)
+            continue
+        if m.get("colour", "white") not in MARKING_COLOURS:
+            finding(out, "error", "marking-colour", f"{m.get('id')}: неизвестный цвет разметки {m.get('colour')!r}", ref)
+        if kind == "paint":
+            parts = [Polygon(p["outer"]) for p in m.get("polygons", [])]
+            if not parts or any(not p.is_valid for p in parts):
+                finding(out, "error", "marking-invalid", f"{m.get('id')}: контур разметки не является корректным многоугольником", ref)
+                continue
+            outside = unary_union(parts).difference(area.buffer(0.3)).area
+            if outside > 0.5:
+                finding(out, "warn", "marking-off-road", f"{m.get('id')}: {outside:.1f} м² краски вне дороги", ref)
+        elif kind in LINE_MARKINGS:
+            pts = m.get("points", [])
+            if len(pts) < 2:
+                finding(out, "error", "marking-short", f"{m.get('id')}: у разметки меньше двух точек", ref)
+                continue
+            if kind == "zebra" and LineString(pts[:2]).length < 1.0:
+                finding(out, "error", "marking-short", f"{m.get('id')}: зебра короче метра", ref)
+            if LineString(pts).difference(area.buffer(0.3)).length > 0.3:
+                finding(out, "warn", "marking-off-road", f"{m.get('id')}: часть разметки вне дороги", ref)
+
+
 def check_scene(scene: dict) -> list:
     out = []
     if scene.get("schema") != 1:
@@ -115,6 +157,8 @@ def check_scene(scene: dict) -> list:
     for d in scene.get("decor", []):
         if area.buffer(0.5).covers(Point(d["pos"])):
             finding(out, "warn", "prop-on-road", f"{d['prop']} стоит на проезжей части", {"type": "prop", "id": d.get("id")})
+
+    check_layers(scene, area, out)
 
     status = (scene.get("compliance") or {}).get("status")
     if status not in ("unverified", "ok", "fixed"):

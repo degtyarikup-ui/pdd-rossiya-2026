@@ -3,7 +3,8 @@
 road-network format (game_godot/network/<id>.json), the source of truth the
 Godot game and the web editor read and write.
 
-    tools/network/.venv/bin/python tools/network/migrate.py [id ...]
+    tools/network/.venv/bin/python tools/network/migrate.py [id ...]           # base network (once per scene)
+    tools/network/.venv/bin/python tools/network/migrate.py --layers [id ...]   # lawns and markings out of the baked scene
 
 What is converted and how:
 - roads: the drivable mask road.png (0.25 m cells, the exact area the game
@@ -13,19 +14,27 @@ What is converted and how:
   approach route to the stop line (lane assist, as in game.js lane goal).
 - stop / start / lights / decor / question: copied from scene.json, with the
   game's defaults where an older export left a field out.
-Signs, road markings and kerbs stay in the baked scene.glb until the next
-export moves them into data too (see docs/game/road-network.md).
+- --layers: the lawns (grass) and the paint on the carriageway are taken from
+  the baked scene (baked.glb, the export as it came out) into `lawns` and
+  `markings`; scene.glb is written again without them. See build.py for how the
+  network draws them. Signs and kerb walls stay in the baked scene.
 """
 import json
+import shutil
 import sys
 from pathlib import Path
 
 import numpy as np
+import shapely
 from PIL import Image
 from shapely.geometry import LineString, Polygon, mapping
 from shapely.geometry.polygon import orient
 from shapely.ops import unary_union
 from skimage import measure
+
+sys.path.insert(0, str(Path(__file__).parent))
+import build  # noqa: E402
+import glb  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "game_godot" / "situations"
@@ -173,7 +182,132 @@ def migrate(scene_id: str) -> dict:
     }
 
 
+# ---- lawns and markings: taken out of the baked scene -------------------------------------
+# The exporter bakes lawns and road markings into the static mesh. The network draws them now, so
+# they move from the baked scene (scene.glb, kept as baked.glb) into the network JSON, and the
+# game's scene.glb is written again without them. Classes of the baked triangles:
+#   lawn    flat, 3 cm to 30 cm under the road level, grass layer (uv2 = 16, scenery.gd) or grass colour;
+#   white / yellow   flat, 1.5 cm to 4.5 cm over the road level, paint colour, on the carriageway.
+# The textured dirt blobs (tex_N, alpha) and everything else stay in the scene as they are.
+GRASS_LAYER = 16
+LAYER_SIMPLIFY = 0.005   # m: paint is thin, a 2 cm tolerance cost up to 3% of its area
+GRASS_RGB = np.array([0.61, 0.65, 0.42])
+LAWN_BAND = (-0.03, 0.0005)
+MARK_BAND = (0.015, 0.045)
+
+
+def road_cover_of(net: dict):
+    """The carriageway (islands cut out) with 0.3 m of margin: markings are taken only from there."""
+    polys = []
+    for r in net.get("roads", []):
+        p = Polygon(r["outer"]).buffer(0)
+        for h in r.get("holes", []):
+            p = p.difference(Polygon(h).buffer(0))
+        polys.append(p)
+    return unary_union(polys).buffer(0.3) if polys else Polygon()
+
+
+def baked_classes(p: dict, road_cover):
+    """Bool masks over the triangles of one baked primitive: (lawn, white, yellow)."""
+    idx, pos = p["idx"], p["pos"]
+    tri = pos[idx]
+    flat = np.all(np.abs(tri[:, :, 1] - tri[:, :1, 1]) < 1e-3, axis=1)
+    y = tri[:, 0, 1]
+    first = idx[:, 0]
+    lay = np.round(p["layer"][first, 0]) if p["layer"] is not None else np.zeros(len(idx))
+    col = p["colour"][first, :3] if p["colour"] is not None else np.zeros((len(idx), 3))
+    grass = np.all(np.abs(col - GRASS_RGB) < 0.011, axis=1)
+    lawn = flat & (y > LAWN_BAND[0]) & (y < LAWN_BAND[1]) & ((lay == GRASS_LAYER) | grass)
+    band = flat & (y > MARK_BAND[0]) & (y < MARK_BAND[1])
+    white = band & np.all(col > 0.93, axis=1)
+    yellow = band & (col[:, 0] > 0.9) & (col[:, 1] > 0.6) & (col[:, 1] < 0.85) & (col[:, 2] < 0.3)
+    on = shapely.contains_xy(road_cover, tri[:, :, 0].mean(axis=1), tri[:, :, 2].mean(axis=1))
+    return lawn, white & on, yellow & on
+
+
+def union_of(tris: np.ndarray):
+    """Triangles (T x 3 x 3, world) -> one geometry in metres (x, z)."""
+    if not len(tris):
+        return Polygon()
+    polys = shapely.polygons(tris[:, :, [0, 2]])
+    return shapely.union_all(polys).buffer(0)
+
+
+def clean_parts(parts: list) -> list:
+    """Holes that are slivers (a ring of zero area from the tracing) are dropped: they are not holes."""
+    out = []
+    for part in parts:
+        holes = [h for h in part["holes"] if len(h) >= 3 and Polygon(h).is_valid and Polygon(h).area >= 0.2]
+        out.append({"outer": part["outer"], "holes": holes})
+    return out
+
+
+def extract_layers(scene_id: str, net: dict):
+    """(lawns, markings) of the baked scene: polygons for the network."""
+    road_cover = road_cover_of(net)
+    lawn_tris, white_tris, yellow_tris = [], [], []
+    for p in glb.primitives(SRC / scene_id / "baked.glb"):
+        if p["material"] != "scenery":
+            continue
+        lawn, white, yellow = baked_classes({"idx": p["idx"], "pos": p["world"], "colour": p["colour"], "layer": p["layer"]}, road_cover)
+        lawn_tris.append(p["world"][p["idx"][lawn]])
+        white_tris.append(p["world"][p["idx"][white]])
+        yellow_tris.append(p["world"][p["idx"][yellow]])
+    lawn_geom = union_of(np.concatenate(lawn_tris)) if lawn_tris else Polygon()
+    # The baked grass also lies under the roads and the pavement: those the network draws itself.
+    _, _, roads_all, ring = build.ground(net)
+    lawn_geom = lawn_geom.difference(roads_all).difference(ring)
+    lawn_geom = lawn_geom.simplify(LAYER_SIMPLIFY, preserve_topology=True)
+    lawns = [{"id": f"lawn_{i}", **part} for i, part in enumerate(clean_parts(polygons_of(lawn_geom)))]
+    markings = []
+    for colour, tris in (("white", white_tris), ("yellow", yellow_tris)):
+        geom = union_of(np.concatenate(tris)) if tris else Polygon()
+        geom = geom.simplify(LAYER_SIMPLIFY, preserve_topology=True)
+        parts = clean_parts(polygons_of(geom))
+        if parts:
+            markings.append({"id": f"paint_{colour}", "type": "paint", "colour": colour, "polygons": parts})
+    return lawns, markings
+
+
+def strip_layers(scene_id: str, net: dict) -> dict:
+    """Writes situations/<id>/scene.glb without the lawn and marking triangles (from baked.glb)."""
+    road_cover = road_cover_of(net)
+
+    def drop(p):
+        lawn, white, yellow = baked_classes(p, road_cover)
+        return lawn | white | yellow
+
+    return glb.strip_triangles(SRC / scene_id / "baked.glb", SRC / scene_id / "scene.glb", drop)
+
+
+def migrate_layers(scene_id: str) -> str:
+    """Once per scene: lawns and markings into the network JSON, the baked copies out of scene.glb.
+    A scene that already has them keeps its network JSON (the editor's work); its scene.glb is rebuilt."""
+    src = SRC / scene_id
+    net_path = DST / f"{scene_id}.json"
+    net = json.loads(net_path.read_text(encoding="utf-8"))
+    if not (src / "baked.glb").exists():
+        shutil.copyfile(src / "scene.glb", src / "baked.glb")
+    state = "kept"
+    if "lawns" not in net and "markings" not in net:
+        lawns, markings = extract_layers(scene_id, net)
+        net["lawns"] = lawns
+        net["markings"] = markings
+        net_path.write_text(json.dumps(net, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        state = "migrated"
+    removed = strip_layers(scene_id, net)
+    lawn_area = sum(Polygon(l["outer"]).area - sum(Polygon(h).area for h in l["holes"]) for l in net.get("lawns", []))
+    marks = sum(len(m.get("polygons", [])) for m in net.get("markings", []))
+    return (f"{scene_id:14} {state:8} lawns {len(net.get('lawns', []))} ({lawn_area:8.0f} m2)  "
+            f"paint polygons {marks}  baked triangles removed {removed['triangles']}")
+
+
 def main(argv):
+    if "--layers" in argv:
+        ids = [a for a in argv if not a.startswith("--")] or sorted(p.name for p in SRC.iterdir() if (p / "scene.json").exists())
+        for scene_id in ids:
+            print(migrate_layers(scene_id))
+        return
     DST.mkdir(parents=True, exist_ok=True)
     ids = argv or sorted(p.name for p in SRC.iterdir() if (p / "scene.json").exists())
     for scene_id in ids:
