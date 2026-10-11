@@ -33,15 +33,15 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 	if not s.data.has("exitWidths") or not (s.data.exitWidths is Dictionary):
 		s.data["exitWidths"] = {}
 	var scene: Node3D = (load(dir + "scene.glb") as PackedScene).instantiate()
+	s.network = RoadNetwork.load_scene(situation_id)
 	for node in scene.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
 		if mi.name == "static":
-			mi.mesh = _without_baked_ground(mi.mesh)
+			mi.mesh = _without_baked_ground(mi.mesh, s.network)
 			mi.material_override = scenery.material
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	s.add_child(scene)
 	s._crop = s.data.crop
-	s.network = RoadNetwork.load_scene(situation_id)
 	if s.network:
 		s.add_child(_surface_node(s.network, scenery))
 	else:
@@ -135,7 +135,7 @@ static func _vertex_colours_as_albedo(root: Node3D) -> void:
 ## The baked junction carries its own pavement and lawn, overlapping the network's ones; its lawn is in three overlapping layers 3-5 mm apart, which
 ## flicker against each other and the world's lawn. Flat triangles below the carriageway are
 ## dropped: the world's one lawn (world.gd) is under the junction.
-static func _without_baked_ground(mesh: Mesh) -> Mesh:
+static func _without_baked_ground(mesh: Mesh, net: RoadNetwork = null) -> Mesh:
 	var out := ArrayMesh.new()
 	for s in mesh.get_surface_count():
 		var arrays := mesh.surface_get_arrays(s)
@@ -155,6 +155,13 @@ static func _without_baked_ground(mesh: Mesh) -> Mesh:
 			# exactly on the network's pavement (build.py): the network draws the pavement.
 			if flat and a.y > 0.17 and a.y < 0.215:
 				continue
+			# The scene's own road copy (0..3.5 cm: asphalt, islands, lawns at the network's level)
+			# lies under the network's surfaces at a few centimetres: two layers of different colour
+			# and texture shimmer and show seams. Dropped where the network draws the same ground.
+			if flat and net and a.y >= -0.001 and a.y < 0.035:
+				var centre := Vector2((a.x + b.x + c.x) / 3.0, (a.z + b.z + c.z) / 3.0)
+				if net.covers(centre):
+					continue
 			# Its own kerb walls (0..0.2 m) stand exactly on the network's kerbs: two walls in one
 			# place shimmer (kerb corners, the whole ring of a roundabout). The network draws them.
 			var lo := minf(a.y, minf(b.y, c.y))

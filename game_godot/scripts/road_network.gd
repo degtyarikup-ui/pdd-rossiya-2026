@@ -13,6 +13,8 @@ var data: Dictionary
 var build: Dictionary             # build/<id>.json: surfaces and kerbs (derived)
 var _roads: Array = []            # [{outer: PackedVector2Array, holes: Array, box: Rect2}]
 var _routes := {}                 # id -> PackedVector2Array (local x, z)
+var _cover := {}                  # Vector2i (COVER_CELL bucket) -> [[a, b, c]] drawn triangles, x/z
+const COVER_CELL := 5.0
 
 
 static func load_scene(scene_id: String) -> RoadNetwork:
@@ -33,7 +35,47 @@ static func load_scene(scene_id: String) -> RoadNetwork:
 		net._roads.append({ "outer": outer, "holes": holes, "box": _box(outer) })
 	for rt in net.data.routes:
 		net._routes[rt.id] = _pts(rt.points)
+	net._build_cover()
 	return net
+
+
+## The drawn surfaces bucketed by COVER_CELL, for `covers`.
+func _build_cover() -> void:
+	if build.is_empty():
+		return
+	for s in build.surfaces:
+		var v: Array = s.verts
+		var idx: Array = s.idx
+		var k := 0
+		while k + 2 < idx.size():
+			var a := Vector2(v[idx[k] * 2], v[idx[k] * 2 + 1])
+			var b := Vector2(v[idx[k + 1] * 2], v[idx[k + 1] * 2 + 1])
+			var c := Vector2(v[idx[k + 2] * 2], v[idx[k + 2] * 2 + 1])
+			var box := Rect2(a, Vector2.ZERO).expand(b).expand(c)
+			for i in range(floori(box.position.x / COVER_CELL), floori(box.end.x / COVER_CELL) + 1):
+				for j in range(floori(box.position.y / COVER_CELL), floori(box.end.y / COVER_CELL) + 1):
+					var key := Vector2i(i, j)
+					if not _cover.has(key):
+						_cover[key] = []
+					_cover[key].append([a, b, c])
+			k += 3
+
+
+## True when the local point (x, z) lies on a surface the network draws (asphalt,
+## pavement, islands). Used to drop the scene's own copies of those surfaces.
+func covers(p: Vector2) -> bool:
+	for t in _cover.get(Vector2i(floori(p.x / COVER_CELL), floori(p.y / COVER_CELL)), []):
+		var a: Vector2 = t[0]
+		var b: Vector2 = t[1]
+		var c: Vector2 = t[2]
+		var d := (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y)
+		if absf(d) < 1e-12:
+			continue
+		var w1 := ((b.y - c.y) * (p.x - c.x) + (c.x - b.x) * (p.y - c.y)) / d
+		var w2 := ((c.y - a.y) * (p.x - c.x) + (a.x - c.x) * (p.y - c.y)) / d
+		if w1 >= -1e-6 and w2 >= -1e-6 and 1.0 - w1 - w2 >= -1e-6:
+			return true
+	return false
 
 
 static func _pts(list: Array) -> PackedVector2Array:
