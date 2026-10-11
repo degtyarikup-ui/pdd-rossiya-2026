@@ -18,13 +18,14 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 
 /// «Живой город» on Godot (game_godot/): the game runs on its own native
-/// screen (Android: GodotGameActivity in the process `:game`) with its own
-/// HUD, questions and result. The app pays the run from the stock before it
-/// starts and books the score when the player leaves.
+/// screen (Android: GodotGameActivity in the process `:game`; iOS: a game window
+/// over the app, ios/Runner/PddGodotGame.mm) with its own HUD, questions and
+/// result. The app pays the run from the stock before it starts and books the
+/// score when the player leaves.
 ///
-/// Available only in an Android build prepared with
-/// scripts/godot_android_assets.sh; elsewhere the WebView game (GameScreen)
-/// stays.
+/// Available only in an Android or iOS build prepared with
+/// scripts/godot_android_assets.sh or scripts/godot_ios_assets.sh; elsewhere the
+/// WebView game (GameScreen) stays.
 class GodotGame {
   GodotGame._();
 
@@ -33,8 +34,12 @@ class GodotGame {
   static Future<bool>? _available;
   static bool _running = false;
 
+  static bool get _nativeScreen =>
+      defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS;
+
   static Future<bool> available() {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+    if (kIsWeb || !_nativeScreen) {
       return Future.value(false);
     }
     return _available ??= _channel
