@@ -94,7 +94,7 @@ func _ready() -> void:
 	street = Street.new(self, scenery, L, chunk_count)
 	drive = Drive.new()
 	drive.world = self
-	drive.lane_goal = _lane_goal
+	drive.guide = _guide_target
 	_build_player()
 	_build_ground()
 	if _season() == "autumn":
@@ -117,6 +117,8 @@ func _ready() -> void:
 	add_child(ui)
 	sound = GameSound.new()
 	add_child(sound)
+	# Test runs (autopilot, screenshots, debug) are silent; --sound turns it on.
+	sound.enabled = not _is_test_run() or _has_arg("--sound")
 	ui.answer_chosen.connect(_on_answer_chosen)
 	ui.continue_pressed.connect(_on_continue)
 	hud = PerfHud.new()
@@ -149,6 +151,20 @@ func _ready() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--shot="):
 			_shot(arg.trim_prefix("--shot="))
+
+
+func _has_arg(name: String) -> bool:
+	for arg in OS.get_cmdline_user_args():
+		if arg == name or arg.begins_with(name + "="):
+			return true
+	return false
+
+
+func _is_test_run() -> bool:
+	for name in ["--auto", "--follow", "--near", "--shot", "--qshot", "--debug", "--situation", "--mute"]:
+		if _has_arg(name):
+			return true
+	return false
 
 
 ## Language and theme: from the command line (--lang=), else the phone's.
@@ -366,6 +382,22 @@ class AmbientObstacle:
 		return { "p": Vector3(car.x, 0, car.z), "yaw": 0.0 if car.v > 0 else PI, "hw": 0.95, "hl": 2.2 }
 
 
+class WalkerObstacle:
+	var w: Dictionary
+	var crashed := false
+	var pos: Vector3:
+		get: return Vector3(w.x, 0, w.zw)
+
+	func _init(d: Dictionary) -> void:
+		w = d
+
+	func nudge(_dir: Vector3, _dist: float) -> void:
+		pass
+
+	func footprint() -> Dictionary:
+		return { "p": pos, "yaw": 0.0 if w.v > 0 else PI, "hw": 0.3, "hl": 0.3 }
+
+
 func obstacles() -> Array:
 	var out := []
 	for j in _junctions():
@@ -376,6 +408,10 @@ func obstacles() -> Array:
 		# Inside a junction's own streets the ring traffic is not there at all.
 		if not _in_blank(car.z):
 			out.append(AmbientObstacle.new(car))
+	# Pedestrians are solid too (only the ones near the car: a cheap filter).
+	for w in walkers:
+		if w.get("alive", false) and absf(w.zw - drive.pos.z) < 8.0:
+			out.append(WalkerObstacle.new(w))
 	return out
 
 
@@ -387,6 +423,11 @@ func on_collision(o) -> void:
 		drive.recovery = 0.38
 		drive.speed = 0
 		on_fault("collision", "collision:" + m.id)
+	elif "w" in o and o.w != null:
+		drive.recovery = 0.38
+		drive.speed = 0
+		o.w.v = 0.0     # the pedestrian stops
+		on_fault("collision", "collision:pedestrian")
 	else:
 		drive.recovery = 0.38
 		drive.speed = 0
@@ -395,23 +436,32 @@ func on_collision(o) -> void:
 		on_fault("collision", "collision:ambient")
 
 
-## The lane a wide junction approach steers into (applySteeringAssist).
-func _lane_goal(z: float) -> Variant:
-	if not current:
-		return null
-	var d: Dictionary = current.sit.data
-	var geo := str(d.geometry)
-	var motorway := geo == "motorway_parallel"
-	var avenue := float(d.approachW) > 8.5
-	if not (geo == "divided_main" or motorway or avenue):
-		return null
-	var local: float = z - float(current.zc)
-	var reach := 80.0 if motorway else (50.0 if avenue else 34.0)
-	if local < -reach or local > float(d.stopZ) + 0.2:
-		return null
-	var goal: float = float(d.playerStartX) if d.playerStartX != null else (-1.8 if avenue else -4.1)
-	var ease := [-76.0, -48.0] if motorway else ([-46.0, -20.0] if avenue else [-26.0, -14.0])
-	return { "goal": goal, "avenue": avenue, "ease": ease, "centre": float(current.zc) }
+## The point 4 m ahead on the approach route of the current junction, in world
+## coordinates (the route is data in network/<id>.json). Vector3.INF when there is
+## no approach to steer on.
+func _guide_target(p: Vector3) -> Vector3:
+	if not current or phase != "driving":
+		return Vector3.INF
+	var sit: Situation = current.sit
+	if not sit.network or not sit.network.has_route("approach"):
+		return Vector3.INF
+	var local: Vector3 = sit.global_transform.affine_inverse() * p
+	if local.z > sit.network.stop_point().z + 0.2:
+		return Vector3.INF
+	var pts: PackedVector2Array = sit.network.route("approach")
+	var best := 0
+	var best_d := INF
+	for i in pts.size():
+		var d := pts[i].distance_to(Vector2(local.x, local.z))
+		if d < best_d:
+			best_d = d
+			best = i
+	var acc := 0.0
+	var j := best
+	while j < pts.size() - 1 and acc < 4.0:
+		acc += pts[j].distance_to(pts[j + 1])
+		j += 1
+	return sit.global_transform * Vector3(pts[j].x, 0.0, pts[j].y)
 
 
 ## A violation, counted once per episode (game.js drivingFault / roadViolation):
@@ -496,7 +546,7 @@ func _update_junction(dt: float) -> void:
 		sit.set_evidence_visible(absf(drive.pos.z - current.zc) < 55.0)
 	if phase == "driving" and drive.pos.z >= stop_z - 0.18 and cos(drive.yaw) > 0.2:
 		# At the question: the car stands on its stop mark (updatePlayerMovement).
-		# The approach steering (drive.gd assist, lane_goal) has brought the car to
+		# The approach steering (drive.gd assist, along the route) has brought the car to
 		# the start lane and heading; this only takes off what is left.
 		drive.pos.z = stop_z
 		if sit.data.playerStartX != null:
@@ -716,8 +766,12 @@ func _follow_steer() -> float:
 	var sit: Situation = current.sit
 	var d: Dictionary = sit.data
 	var maneuver := str(d.spec.maneuver) if d.spec.maneuver != null else "straight"
-	var exit: Dictionary = d.exits.get(maneuver, d.exits.get("straight"))
-	var pts: Array = exit.points
+	var pts: Array = []
+	if sit.network and sit.network.has_route("manoeuvre_" + maneuver):
+		for q in sit.network.route("manoeuvre_" + maneuver):
+			pts.append([q.x, q.y])
+	else:
+		pts = d.exits.get(maneuver, d.exits.get("straight")).points
 	var local: Vector3 = sit.global_transform.affine_inverse() * drive.pos
 	var best := 0
 	var best_d := INF
@@ -764,6 +818,15 @@ func _measure_jerk(delta: float) -> void:
 	prev_heading = cam_heading
 
 
+## A junction participant within `distance` metres of the car, in any direction:
+## crossing traffic is as much a reason to wait as the one ahead.
+func _participant_ahead(distance: float) -> bool:
+	for o in obstacles():
+		if o.footprint().p.distance_to(drive.pos) < distance:
+			return true
+	return false
+
+
 func _car_ahead_in_lane(distance: float) -> bool:
 	for car in traffic:
 		var gap: float = car.z - drive.pos.z
@@ -785,7 +848,13 @@ func _update_traffic(delta: float) -> void:
 				var dist: float = (other.z - car.z) * signf(car.v)
 				if dist > 0.0 and dist < 25.0:
 					target_speed = minf(absf(target_speed), maxf(2.0, absf(other.v) * 0.95)) * signf(car.v)
-		car.v = move_toward(car.v, target_speed, 8.0 * delta)
+		# A car never runs into the player: it matches his speed from 14 m behind and
+		# stops short of him; and a standing player is never overlapped (see below).
+		var behind_gap: float = (drive.pos.z - car.z) * signf(car.v)
+		if absf(car.x - drive.pos.x) < 2.0 and behind_gap > 0.0 and behind_gap < 14.0:
+			var follow_v: float = maxf(0.0, drive.speed) if behind_gap > 6.0 else 0.0
+			target_speed = minf(absf(target_speed), follow_v) * signf(car.v)
+		car.v = move_toward(car.v, target_speed, 12.0 * delta)
 		car.z += car.v * delta
 
 		# A car in the player's lane ahead: smooth following speed regulation without snapping
@@ -816,6 +885,13 @@ func _update_walkers(delta: float) -> void:
 		# Two walking lanes on the pavement, beside the current carriageway.
 		var x: float = w.dir * (street_half + 1.0 + float(w.lane) * 1.1)
 		var at := Vector3(x, Street.KERB, z)
+		# Never on a carriageway: inside a junction's streets or in a blank zone a
+		# walker is simply not there (the junction has its own pedestrians).
+		w.x = x
+		w.zw = z
+		w.alive = not _in_blank(z) and not road_supports(Vector3(x, 0, z))
+		if not w.alive:
+			at = Vector3(0, -100, 0)
 		(w.mm as MultiMesh).set_instance_transform(w.slot, Transform3D(Basis(Vector3.UP, face), at))
 
 
@@ -829,7 +905,8 @@ func _process(delta: float) -> void:
 	_update_rules(delta)
 	ui.set_hud(int(roundf(absf(drive.speed) * 3.6)), limit_kmh, run.violations, run.distance_m, run.score, run.answered, Run.QUESTIONS)
 	if follow and phase == "resolving" and current:
-		controls.gas = true
+		# The test driver yields: it lifts off when a participant is just ahead.
+		controls.gas = not _participant_ahead(16.0)
 		controls.steer = _follow_steer()
 	elif follow and phase == "driving":
 		controls.steer = 0.0   # the wheel is let go outside a manoeuvre
@@ -838,7 +915,7 @@ func _process(delta: float) -> void:
 	if auto_answer and phase == "driving":
 		# Debug driver: holds the gas, but brakes behind a car in its lane.
 		controls.gas = not _car_ahead_in_lane(14.0)
-	elif auto_answer and phase == "resolving":
+	elif auto_answer and phase == "resolving" and not follow:
 		controls.gas = true
 	drive.accelerating = controls.gas and phase != "question"
 	drive.braking = controls.brake

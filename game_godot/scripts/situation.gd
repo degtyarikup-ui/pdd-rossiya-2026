@@ -11,7 +11,8 @@ var data: Dictionary
 var lights: Array[Node3D] = []
 var actors: Array[Node3D] = []       # same order as data.actors
 var _pools := {}                     # prop -> MultiMesh
-var _mask: Image                     # drivable area (road.png, roadSupports sampled)
+var network: RoadNetwork             # the road network (network/<id>.json); the source of truth
+var _mask: Image                     # legacy drivable area (road.png) for scenes without a network
 var _crop := 90.0
 var _guide: Node3D                   # route ribbons (visible while the question is open)
 var _evidence: Array[Node3D] = []    # letter tokens
@@ -39,9 +40,13 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	s.add_child(scene)
 	s._crop = s.data.crop
-	s._mask = (load(dir + "road.png") as Texture2D).get_image()
-	if s._mask.is_compressed():
-		s._mask.decompress()
+	s.network = RoadNetwork.load_scene(situation_id)
+	if s.network:
+		s.add_child(_surface_node(s.network, scenery))
+	else:
+		s._mask = (load(dir + "road.png") as Texture2D).get_image()
+		if s._mask.is_compressed():
+			s._mask.decompress()
 	s._place_props(scenery)
 	for i in s.data.lights.size():
 		var l: Dictionary = s.data.lights[i]
@@ -75,14 +80,25 @@ func covers(local: Vector3) -> bool:
 	return absf(local.x) <= _crop and absf(local.z) <= _crop
 
 
-## game.js roadSupports at this point (from the exported mask).
+## game.js roadSupports at this point: from the road network (or, for a scene
+## without one, the exported mask).
 func road_at(local: Vector3) -> bool:
+	if network:
+		return network.is_drivable(local)
 	var m: Dictionary = data.roadMask
 	var xi := int(floor((local.x - float(m.x)) / float(m.cell)))
 	var zi := int(floor((local.z - float(m.z)) / float(m.cell)))
 	if xi < 0 or zi < 0 or xi >= _mask.get_width() or zi >= _mask.get_height():
 		return false
 	return _mask.get_pixel(xi, zi).r > 0.5
+
+
+static func _surface_node(net: RoadNetwork, scenery: Scenery) -> MeshInstance3D:
+	var node := MeshInstance3D.new()
+	node.name = "surfaces"
+	node.mesh = net.surface_mesh(scenery)
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return node
 
 
 static func _v(a: Array) -> Vector3:

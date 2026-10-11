@@ -1,96 +1,82 @@
+
+!.env.example
+# Android Studio will place build artifacts here
+# Flutter/Dart/Pub related
+# IntelliJ related
 # Miscellaneous
+# Obfuscation related
+# Release signing (local only)
+# Symbolication related
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+# Временные результаты агентов и скриптов (скриншоты, отчёты, черновики).
+# Генерённые AI-рестайлы картинок (346 МБ). К приложению не подключены,
+# Готовое переносится в docs/ или store_assets/, здесь не хранится.
+# Ключ приложения и прочие учётки лежат в secrets/ (см. выше) — не в коде.
+# Ключи и сертификаты
+# Ключи сервисных аккаунтов (Search Console API и т.п.) — НИКОГДА не коммитить
+# Кэш Supabase CLI
+# Локальное состояние wrangler (кэш и копия KV с локальных прогонов) —
+# Локальные секреты и окружение (перед публикацией на Git)
+# Пайплайн роликов «Успей узнать знак»: кэш растеризации, озвучка, готовые mp4.
+# Правила, сценарии и исходники генератора остаются в tools/game_reels/.
+# Реестр вышедших знаков (tools/signs_reel/state.json) коммитим — по нему
+# Формат 3: видео, кадры, озвучка и отчёты — временные результаты генерации.
+# в репозитории ему не место, оно уже один раз туда уехало.
+# воспроизводятся пайплайном — в историю репозитория им незачем.
+# следующий выпуск берёт другие знаки.
+#.vscode/
+**/.wrangler/
+**/doc/api/
+**/ios/Flutter/.last_build_id
 *.class
+*.iml
+*.ipr
+*.iws
+*.jks
+*.keystore
 *.log
+*.p12
+*.pem
 *.pyc
 *.swp
 .DS_Store
 .atom/
 .build/
 .buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
-
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
 .dart_tool/
+.dev-device
+.dev-mac
+.env
+.env.*
 .flutter-plugins-dependencies
+.history
+.idea/
 .pub-cache/
 .pub/
-/build/
-/coverage/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
+.svn/
+.swiftpm/
+.wrangler/
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-# Release signing (local only)
 /android/key.properties
-*.jks
-*.keystore
-
-# Локальные секреты и окружение (перед публикацией на Git)
-.env
-.env.*
-!.env.example
-
-# Кэш Supabase CLI
-supabase/.temp/
-
-# Ключи и сертификаты
-*.pem
-*.p12
-web_landing/ru/app/
-
-# Ключи сервисных аккаунтов (Search Console API и т.п.) — НИКОГДА не коммитить
-secrets/
-
-# Пайплайн роликов «Успей узнать знак»: кэш растеризации, озвучка, готовые mp4.
-# Реестр вышедших знаков (tools/signs_reel/state.json) коммитим — по нему
-# следующий выпуск берёт другие знаки.
-tools/signs_reel/.cache/
-tools/signs_reel/.work/
-assets/videos/signs_reel/
-
-# Формат 3: видео, кадры, озвучка и отчёты — временные результаты генерации.
-# Правила, сценарии и исходники генератора остаются в tools/game_reels/.
-output/game-reels/
-
-# Генерённые AI-рестайлы картинок (346 МБ). К приложению не подключены,
-# воспроизводятся пайплайном — в историю репозитория им незачем.
-exports/
-
-# Локальное состояние wrangler (кэш и копия KV с локальных прогонов) —
-# в репозитории ему не место, оно уже один раз туда уехало.
-.wrangler/
-**/.wrangler/
-node_modules/
-
-# Ключ приложения и прочие учётки лежат в secrets/ (см. выше) — не в коде.
-.dev-device
-.dev-mac
-
-# Временные результаты агентов и скриптов (скриншоты, отчёты, черновики).
-# Готовое переносится в docs/ или store_assets/, здесь не хранится.
+/build/
+/coverage/
 /output/
 /scratch/
+app.*.map.json
+app.*.symbols
+assets/videos/signs_reel/
+exports/
+game_godot/network/build/
+migrate_working_dir/
+node_modules/
+output/game-reels/
+secrets/
+supabase/.temp/
+tools/network/.venv/
+tools/signs_reel/.cache/
+tools/signs_reel/.work/
+web_landing/ru/app/

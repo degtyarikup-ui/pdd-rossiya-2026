@@ -52,7 +52,7 @@ func on_road(at := pos, heading := yaw) -> bool:
 
 ## Lane keeping when no arrow is held (applySteeringAssist, plain street
 ## branch): a car nearly along the road settles into the nearest lane.
-var lane_goal := Callable()       # world: z -> Dictionary (junction approach) or null
+var guide := Callable()           # world: car position -> world point ahead on the approach route, or Vector3.INF
 
 
 ## Off while a question is open or its manoeuvre is driven by hand
@@ -63,16 +63,12 @@ var assist_enabled := true
 func assist(dt: float) -> void:
 	if steering != 0 or speed < 1.5 or not assist_enabled:
 		return
-	# Approach to a wide junction: ease into the lane the ticket starts from
-	# (game.js applySteeringAssist, the approach branch).
-	if lane_goal.is_valid():
-		var g = lane_goal.call(pos.z)
-		if g is Dictionary and cos(yaw) > 0.85 and pos.x < 0.0:
-			var from_x: float = pos.x if g.avenue else -1.8
-			var span: Array = g.ease
-			var t := clampf((pos.z + 3.0 - float(g.centre) - span[0]) / (span[1] - span[0]), 0.0, 1.0)
-			t = t * t * (3.0 - 2.0 * t)
-			var target := Vector3(from_x + (float(g.goal) - from_x) * t, 0, pos.z + 3.0)
+	# On a junction approach the car follows the approach route of the road
+	# network (the world gives the point ahead on it): the lane the ticket starts
+	# from is part of the data, not a formula.
+	if guide.is_valid():
+		var target: Vector3 = guide.call(pos)
+		if target != Vector3.INF and cos(yaw) > 0.5:
 			var wanted := atan2(target.x - pos.x, target.z - pos.z)
 			var err := atan2(sin(wanted - yaw), cos(wanted - yaw))
 			# At most 1.5 rad/s: a car does not turn on the spot, however far off the lane.

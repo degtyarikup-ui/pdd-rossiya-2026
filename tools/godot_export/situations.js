@@ -70,9 +70,13 @@
       if (skip.has(node) || node.isSprite || node.isLine || node.isPoints) return;
       visible = visible && node.visible !== false;
       if (!visible) return;
+      // The road surfaces (carriageway, pavement, kerbs) are not baked any more:
+      // Godot builds them from the road network (network/<id>.json).
+      if (node.userData && (node.userData.surface === 'road' || node.userData.surface === 'sidewalk')) return;
       if (node.isMesh && node.material && !Array.isArray(node.material)) {
         const m = node.material;
         const kind = m.userData?.pddKind || (window.PDD_ROADS && window.PDD_ROADS.kindOf(node));
+        if (['asphalt', 'pavement', 'gravel', 'ballast', 'sleeper'].includes(kind)) return;
         const tex = m.map && !kind;
         let host = node; while (host.parent && host.parent !== root && host.parent.parent !== root) host = host.parent;
         const lab = label(host) + ' > ' + label(node);

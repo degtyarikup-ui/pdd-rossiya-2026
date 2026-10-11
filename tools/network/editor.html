@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Редактор сцен</title>
+<style>
+:root{--bg:#f4f5f8;--card:#fff;--tx:#121212;--sec:#7a8094;--acc:#0574f8;--red:#ed4621;--green:#2bc280;--line:#e3e5ec}
+@media(prefers-color-scheme:dark){:root{--bg:#121214;--card:#1c1d22;--tx:#f2f3f7;--sec:#8a90a2;--acc:#298bfe;--line:#2a2c34}}
+*{box-sizing:border-box}body{margin:0;font:13px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--tx);display:flex;height:100vh;overflow:hidden}
+#list{width:230px;overflow:auto;background:var(--card);border-right:1px solid var(--line)}
+#list input{width:calc(100% - 16px);margin:8px;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--tx)}
+.it{padding:6px 10px;cursor:pointer;display:flex;justify-content:space-between;border-bottom:1px solid var(--line)}
+.it:hover,.it.on{background:var(--bg)}.it b{font-weight:600}.bad{color:var(--red)}.ok{color:var(--green)}.sec{color:var(--sec)}
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+#bar{display:flex;gap:6px;padding:8px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center}
+button{padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--tx);cursor:pointer}
+button.on{background:var(--acc);color:#fff;border-color:var(--acc)}button.save{background:var(--green);color:#fff;border-color:var(--green)}
+#cv{flex:1;min-height:0;display:block;width:100%;height:100%;background:#cfd8c0;cursor:crosshair}
+#side{width:320px;overflow:auto;background:var(--card);border-left:1px solid var(--line);padding:10px}
+h3{margin:12px 0 4px;font-size:13px}.f{padding:4px 6px;border-radius:5px;margin:2px 0}.f.error{background:#ed462122}.f.warn{background:#ffa53c22}
+select,textarea{width:100%;padding:5px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--tx)}
+.leg span{display:inline-block;width:10px;height:10px;margin:0 4px 0 8px;border-radius:2px}
+</style></head><body>
+<div id="list"><input id="q" placeholder="поиск: ticket_5_14"><div id="items"></div></div>
+<div id="main">
+ <div id="bar">
+  <b id="title">—</b>
+  <button data-t="move" class="on" title="тянуть точки">Тянуть</button>
+  <button data-t="add" title="клик по линии — добавить точку">+ Точка</button>
+  <button data-t="del" title="клик по точке — удалить">− Точка</button>
+  <button data-t="pan" title="двигать вид">Рука</button>
+  <button id="undo">↶</button><button id="redo">↷</button>
+  <button id="save" class="save">Сохранить</button><span id="msg" class="sec"></span>
+  <span class="leg"><span style="background:#2c2f36"></span>дорога<span style="background:#0574f8"></span>манёвры<span style="background:#ed4621"></span>выбор А/Б<span style="background:#ffa53c"></span>участники<span style="background:#2bc280"></span>подъезд</span>
+ </div>
+ <canvas id="cv"></canvas>
+</div>
+<div id="side"></div>
+<script>
+const $=s=>document.querySelector(s);const cv=$('#cv'),cx=cv.getContext('2d');
+let S=null,id=null,tool='move',sel=null,view={x:0,z:0,k:6},hist=[],fut=[],dirty=false;
+const KC={manoeuvre:'#0574f8',choice:'#ed4621',actor:'#ffa53c',approach:'#2bc280'};
+async function api(u,o){const r=await fetch(u,o);return r.json()}
+async function loadList(){const l=await api('/api/scenes');window.L=l;draw_list()}
+function draw_list(){const q=$('#q').value.trim();$('#items').innerHTML=L.filter(s=>s.id.includes(q)).map(s=>`<div class="it ${s.id==id?'on':''}" data-id="${s.id}"><b>${s.id.replace('ticket_','')}</b><span class="${s.errors?'bad':'ok'}">${s.errors?s.errors+' ош.':'✓'}${s.warns?' · '+s.warns:''}</span></div>`).join('')}
+$('#items').onclick=e=>{const d=e.target.closest('.it');if(d)open(d.dataset.id)};$('#q').oninput=draw_list;
+async function open(i){if(dirty&&!confirm('Есть несохранённые правки. Открыть другую сцену?'))return;id=i;const r=await api('/api/scene/'+i);S=r.scene;hist=[];fut=[];dirty=false;sel=null;render_side(r.findings);$('#title').textContent=i;fit();draw();draw_list()}
+function size(){const r=cv.getBoundingClientRect();cv.width=Math.max(300,Math.floor(r.width));cv.height=Math.max(300,Math.floor(r.height))}addEventListener('resize',()=>{size();draw()});
+function fit(){size();view={x:0,z:0,k:Math.min(cv.width,cv.height)/80}}
+const W=(x,z)=>[cv.width/2+(x-view.x)*view.k,cv.height/2-(z-view.z)*view.k];const U=(px,py)=>[view.x+(px-cv.width/2)/view.k,view.z-(py-cv.height/2)/view.k];
+function path(pts,close){cx.beginPath();pts.forEach((p,i)=>{const[a,b]=W(p[0],p[1]);i?cx.lineTo(a,b):cx.moveTo(a,b)});if(close)cx.closePath()}
+function draw(){if(!S)return;cx.clearRect(0,0,cv.width,cv.height);
+ cx.fillStyle='#2c2f36';cx.strokeStyle='#e8e8e8';for(const r of S.roads){path(r.outer,1);for(const h of r.holes||[]){path(h,1)}}
+ for(const r of S.roads){cx.beginPath();[r.outer,...(r.holes||[])].forEach(ring=>ring.forEach((p,i)=>{const[a,b]=W(p[0],p[1]);i?cx.lineTo(a,b):cx.moveTo(a,b)}),cx.closePath());cx.fillStyle='#2c2f36';cx.fill('evenodd');}
+ // grid
+ cx.strokeStyle='#ffffff22';cx.lineWidth=1;for(let g=-90;g<=90;g+=10){let[a,b]=W(g,-90),[c,d]=W(g,90);cx.beginPath();cx.moveTo(a,b);cx.lineTo(c,d);cx.stroke();[a,b]=W(-90,g);[c,d]=W(90,g);cx.beginPath();cx.moveTo(a,b);cx.lineTo(c,d);cx.stroke()}
+ for(const r of S.routes){cx.strokeStyle=KC[r.kind]||'#fff';cx.lineWidth=r===sel?.route?4:2;path(r.points);cx.stroke();
+  const[a,b]=W(...r.points[r.points.length-1]);cx.fillStyle=cx.strokeStyle;cx.font='11px sans-serif';cx.fillText(r.label||r.exit||r.id.replace('actor_',''),a+4,b-4)}
+ const[sx,sz]=W(S.stop.x,S.stop.z);cx.fillStyle='#fff';cx.fillRect(sx-14,sz-2,28,4);cx.fillText('СТОП',sx+16,sz+4);
+ for(const l of S.lights){const[a,b]=W(...l.pos);cx.fillStyle='#ed4621';cx.beginPath();cx.arc(a,b,5,0,7);cx.fill()}
+ for(const a of S.actors){const[p,q]=W(a.pos[0],a.pos[2]);cx.fillStyle='#ffa53c';cx.fillRect(p-6,q-6,12,12);cx.fillStyle='#000';cx.fillText((a.name||a.id).slice(0,10),p+8,q)}
+ // vertices of the selected thing
+ const t=sel&&sel.route?sel.route.points:sel&&sel.ring?sel.ring:null;if(t)t.forEach((p,i)=>{const[a,b]=W(p[0],p[1]);cx.fillStyle=i==sel.i?'#fff':'#0574f8';cx.strokeStyle='#fff';cx.lineWidth=1.5;cx.beginPath();cx.arc(a,b,5,0,7);cx.fill();cx.stroke()})}
+function items(){const o=[];S.routes.forEach(r=>o.push({kind:'route',route:r,pts:r.points}));S.roads.forEach(r=>{o.push({kind:'ring',ring:r.outer,pts:r.outer});(r.holes||[]).forEach(h=>o.push({kind:'ring',ring:h,pts:h}))});return o}
+function pick(px,py){let best=null,bd=10;for(const it of items())it.pts.forEach((p,i)=>{const[a,b]=W(p[0],p[1]);const d=Math.hypot(a-px,b-py);if(d<bd){bd=d;best={...it,i}}});return best}
+function pickSeg(px,py){let best=null,bd=8;for(const it of items()){for(let i=0;i<it.pts.length-1+(it.kind=='ring'?1:0);i++){const A=W(...it.pts[i]),B=W(...it.pts[(i+1)%it.pts.length]);const l=Math.hypot(B[0]-A[0],B[1]-A[1])||1;const t=Math.max(0,Math.min(1,((px-A[0])*(B[0]-A[0])+(py-A[1])*(B[1]-A[1]))/l/l));const d=Math.hypot(px-(A[0]+t*(B[0]-A[0])),py-(A[1]+t*(B[1]-A[1])));if(d<bd){bd=d;best={...it,i,at:U(px,py)}}}}return best}
+function snap(){hist.push(JSON.stringify(S));if(hist.length>80)hist.shift();fut=[]}
+let drag=null,pan=null;
+cv.onmousedown=e=>{const px=e.offsetX,py=e.offsetY;if(tool=='pan'||e.button==1||e.shiftKey){pan={x:px,y:py,vx:view.x,vz:view.z};return}
+ if(tool=='move'){const p=pick(px,py);sel=p;if(p){snap();drag=p}draw();render_sel()}
+ else if(tool=='add'){const s=pickSeg(px,py);if(s){snap();s.pts.splice(s.i+1,0,s.at.map(v=>Math.round(v*100)/100));sel={...s,i:s.i+1};mark();draw()}}
+ else if(tool=='del'){const p=pick(px,py);if(p&&p.pts.length>(p.kind=='ring'?3:2)){snap();p.pts.splice(p.i,1);sel=null;mark();draw()}}}
+cv.onmousemove=e=>{if(pan){view.x=pan.vx-(e.offsetX-pan.x)/view.k;view.z=pan.vz+(e.offsetY-pan.y)/view.k;draw();return}
+ if(drag){const[x,z]=U(e.offsetX,e.offsetY);const r=v=>e.altKey?v:Math.round(v*20)/20;drag.pts[drag.i][0]=r(x);drag.pts[drag.i][1]=r(z);mark();draw()}}
+addEventListener('mouseup',()=>{drag=null;pan=null});
+cv.onwheel=e=>{e.preventDefault();const[x,z]=U(e.offsetX,e.offsetY);view.k*=e.deltaY<0?1.15:1/1.15;const[x2,z2]=U(e.offsetX,e.offsetY);view.x+=x-x2;view.z+=z-z2;draw()};
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tool=b.dataset.t;document.querySelectorAll('[data-t]').forEach(x=>x.classList.toggle('on',x==b))});
+function mark(){dirty=true;$('#msg').textContent='● не сохранено'}
+$('#undo').onclick=()=>{if(hist.length){fut.push(JSON.stringify(S));S=JSON.parse(hist.pop());sel=null;mark();draw()}};
+$('#redo').onclick=()=>{if(fut.length){hist.push(JSON.stringify(S));S=JSON.parse(fut.pop());sel=null;mark();draw()}};
+addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key=='z'){e.preventDefault();$('#undo').click()}if((e.metaKey||e.ctrlKey)&&e.key=='s'){e.preventDefault();save()}});
+async function save(){if(!S)return;const r=await api('/api/scene/'+id,{method:'POST',body:JSON.stringify(S)});dirty=false;$('#msg').textContent='сохранено, дорога пересобрана';render_side(r.findings);loadList()}
+$('#save').onclick=save;
+function render_side(f){const q=S.question,t=(q.text.ru||{});
+ $('#side').innerHTML=`<h3>Проверка</h3>${f.length?f.map(x=>`<div class="f ${x.level}">${x.level=='error'?'✗':'!'} ${x.message}</div>`).join(''):'<div class="ok">✓ всё в порядке</div>'}
+ <h3>Вопрос</h3><div class="sec">${t.ticket||''}</div><div>${t.title||''}</div><ol>${(t.options||[]).map((o,i)=>`<li ${i==q.correct?'class="ok"':''}>${o}</li>`).join('')}</ol>
+ <h3>Ожидаемый манёвр</h3><div>${q.maneuver||'—'}</div><h3>Уступить</h3><div>${(q.yieldTo||[]).join(', ')||'—'}</div>
+ <h3>Сверка с билетом</h3><select id="st"><option value="unverified">не проверено</option><option value="ok">соответствует билету</option><option value="fixed">исправлено вручную</option></select>
+ <textarea id="nt" rows="3" placeholder="заметки">${S.compliance.notes||''}</textarea>
+ <h3>Как править</h3><div class="sec">Тянуть — двигать точки (Alt — без привязки к сетке 5 см). «+ Точка» — клик по линии добавляет точку, «− Точка» — удаляет. Колесо — масштаб, Shift/«Рука» — двигать вид. Cmd+Z — отмена, Cmd+S — сохранить. Дорога — белая заливка внутри контура, острова — отдельные контуры внутри.</div>`;
+ $('#st').value=S.compliance.status||'unverified';$('#st').onchange=()=>{S.compliance.status=$('#st').value;mark()};$('#nt').oninput=()=>{S.compliance.notes=$('#nt').value;mark()}}
+function render_sel(){}
+size();loadList();
+</script></body></html>
