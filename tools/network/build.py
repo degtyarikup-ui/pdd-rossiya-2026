@@ -28,7 +28,7 @@ BUILD = NET / "build"
 
 SIDEWALK = 3.2       # pavement width beside the carriageway (m)
 KERB = 0.18          # height of kerbs and pavement (m)
-ROAD_Y = 0.02        # carriageway level (m)
+ROAD_Y = 0.0         # carriageway level (m); the same as the street's (scripts/street.gd ROAD_LEVEL)
 ASPHALT = "#2c2f36"
 PAVEMENT = "#747970"
 KERB_COLOUR = "#b9b4ab"

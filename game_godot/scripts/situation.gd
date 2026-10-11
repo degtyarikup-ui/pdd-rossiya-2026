@@ -307,16 +307,27 @@ static func _text3d(text: String, px: int, color: Color, weight := 700) -> Label
 
 
 ## createActorBadge: a rounded plate above the roof, dark text on a light plate.
+## The name plate over a participant: the text's real width sets the plate, so the text always
+## lies inside it. Both are drawn over the car (no depth test) and the text on top of the plate.
+const BADGE_PIXEL := 0.0125   # metres per pixel
+const BADGE_FONT := 40        # font size in pixels (about 0.5 m high text)
+const BADGE_PAD := 14         # plate padding around the text, pixels
+
 static func _badge_node(text: String, color: Color) -> Node3D:
 	var root := Node3D.new()
-	var plate := _billboard(_plate(color, Vector2i(160, 70), 14), Vector2(3.2, 1.4))
+	var weight := 600
+	var text_px: Vector2 = Ui.font(weight).get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, BADGE_FONT)
+	var w := int(ceil(text_px.x)) + BADGE_PAD * 2
+	var h := int(ceil(BADGE_FONT * 1.25)) + BADGE_PAD
+	var plate := _billboard(_plate(color, Vector2i(w, h), h * 0.35), Vector2(w, h) * BADGE_PIXEL)
+	_on_top(plate, 1)
 	root.add_child(plate)
 	var lum := 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b
-	var label := _text3d(text, 40, Color("#121212") if lum > 0.55 else Color.WHITE, 600)
-	label.pixel_size = 0.0215
-	label.position.z = 0.01
-	label.width = 138 * 1.0
-	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	var label := _text3d(text, BADGE_FONT, Color("#121212") if lum > 0.55 else Color.WHITE, weight)
+	label.pixel_size = BADGE_PIXEL
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_on_top(label, 2)
 	root.add_child(label)
 	return root
 

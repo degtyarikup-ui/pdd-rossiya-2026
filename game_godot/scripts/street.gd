@@ -10,6 +10,12 @@ const ROAD_HALF := 4.2
 const SIDEWALK := 3.2            # pavement width beside the carriageway
 const VERGE := 25.2              # grass verge beyond the pavement
 const KERB := 0.18
+# Surface levels, metres. Layers that touch are kept at least 3 cm apart: nearer than that the
+# depth buffer cannot tell them apart at distance and they flicker (z-fighting).
+const GROUND_LEVEL := -0.08      # the ground beside the town
+const ROAD_LEVEL := 0.0          # carriageway
+const MARK_LEVEL := 0.04         # road markings
+const VERGE_LEVEL := -0.03       # grass rows between the ground and the pavements
 const ROW := 20.0
 const GROUP_CHUNKS := 2           # chunks per district (then it blends on)
 const DISTRICTS := 4
@@ -104,21 +110,21 @@ func _road(st: SurfaceTool, z0: float, half: float) -> void:
 	var asphalt := Color("#2C2F36")
 	var pave := sc.color("sidewalk")
 	var mark := Color("#F2F4F8")
-	_flat(st, -half, half, 0, L, 0.02, asphalt, "asphalt", z0)
+	_flat(st, -half, half, 0, L, ROAD_LEVEL, asphalt, "asphalt", z0)
 	for side: float in [-1.0, 1.0]:
 		var a := side * half
 		var b := side * (half + SIDEWALK)
 		_flat(st, minf(a, b), maxf(a, b), 0, L, KERB, pave, "pavement", z0)
 		_kerb(st, a, 0, L, pave, z0, side)
 		# Edge line 1.2 (0.15 m, 0.25 m from the kerb).
-		_flat(st, side * (half - 0.325), side * (half - 0.175), 0, L, 0.025, mark, "", z0)
+		_flat(st, side * (half - 0.325), side * (half - 0.175), 0, L, MARK_LEVEL, mark, "", z0)
 	# Centre dashes 1.5: 2 m dash, 3 m gap, phase from world z.
 	var z := ceilf(z0 / 5.0) * 5.0 - z0
 	while z < L:
-		_flat(st, -0.09, 0.09, z, minf(z + 2.0, L), 0.025, mark, "", z0)
+		_flat(st, -0.09, 0.09, z, minf(z + 2.0, L), MARK_LEVEL, mark, "", z0)
 		z += 5.0
-	_flat(st, -GROUND_OUT, -(half + VERGE), 0, L, -0.02, sc.color("ground"), "grass", z0)
-	_flat(st, half + VERGE, GROUND_OUT, 0, L, -0.02, sc.color("ground"), "grass", z0)
+	_flat(st, -GROUND_OUT, -(half + VERGE), 0, L, GROUND_LEVEL, sc.color("ground"), "grass", z0)
+	_flat(st, half + VERGE, GROUND_OUT, 0, L, GROUND_LEVEL, sc.color("ground"), "grass", z0)
 
 
 func _verge(st: SurfaceTool, side: float, z: float, style: int, half: float) -> void:
@@ -127,7 +133,7 @@ func _verge(st: SurfaceTool, side: float, z: float, style: int, half: float) -> 
 	var col := sc.color("verge", mini(style, 2))
 	var outer := half + SIDEWALK + VERGE
 	_flat(st, minf(side * (half + SIDEWALK), side * outer), maxf(side * (half + SIDEWALK), side * outer),
-		z - z0 - ROW / 2, z - z0 + ROW / 2, -0.015, col, "grass", z0)
+		z - z0 - ROW / 2, z - z0 + ROW / 2, VERGE_LEVEL, col, "grass", z0)
 
 
 ## A horizontal quad; UV in metres / tile in world space (continuous between

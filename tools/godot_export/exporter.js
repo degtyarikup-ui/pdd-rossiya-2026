@@ -273,9 +273,16 @@
 
   function detailTextures(kinds) {
     return kinds.map(kind => {
-      const src = PDD_ROADS.texture(kind).image, c = document.createElement('canvas');
+      // A 128 px tile is scaled to 256: drawn alone, the smoothing reads past its edges as if
+      // they were empty and leaves a seam every period. Scaling the middle copy of a 3 x 3 grid
+      // of the tile reads the neighbours instead, so the picture still repeats without a seam.
+      const src = PDD_ROADS.texture(kind).image, S = src.width, c = document.createElement('canvas');
+      const grid = document.createElement('canvas'); grid.width = grid.height = 3 * S;
+      const gx = grid.getContext('2d');
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) gx.drawImage(src, i * S, j * S);
       c.width = c.height = 256;
-      const ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = true; ctx.drawImage(src, 0, 0, 256, 256);
+      const ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(grid, S, S, S, S, 0, 0, 256, 256);
       const k = PDD_ROADS.kinds[kind];
       return { kind, png: c.toDataURL('image/png').split(',')[1], macro: k.macro || 0, macroScale: k.macroScale || 1,
         period: k.period || 0, side: k.side || 0, u: k.u || 0, v: k.v || 0 };

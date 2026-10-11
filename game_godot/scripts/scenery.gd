@@ -6,9 +6,9 @@ extends RefCounted
 
 ## How much the detail map shows, per kind. The painted maps vary by only about 3 %, which
 ## reads as flat colour on a phone: the road and the ground get a clearly visible grain.
-const GAIN := { "asphalt": 4.0, "pavement": 3.5, "grass": 3.0, "gravel": 2.5, "ballast": 2.5, "sleeper": 2.5,
-	"leaves": 2.0, "plaster": 2.0, "brick": 1.8, "wood": 1.8, "bark": 1.8, "deck": 1.8, "roofTile": 1.8,
-	"roofFlat": 1.5, "metal": 1.5 }
+const GAIN := { "asphalt": 4.0, "pavement": 3.5, "gravel": 2.5, "ballast": 2.5, "sleeper": 2.5,
+	"grass": 1.3, "leaves": 1.0, "bark": 1.0, "plaster": 1.6, "brick": 1.6, "wood": 1.4, "deck": 1.6,
+	"roofTile": 1.4, "roofFlat": 1.3, "metal": 1.3 }
 
 var index: Dictionary
 var layers: Array = []            # kind names, layer i -> kind

@@ -322,7 +322,7 @@ func _setup_environment() -> void:
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.keep_aspect = Camera3D.KEEP_HEIGHT
 	camera.size = 42.0
-	camera.near = 1.0
+	camera.near = 0.5          # the nearer the plane, the finer the depth buffer at distance
 	camera.far = 400.0
 	add_child(camera)
 
@@ -458,7 +458,7 @@ class AmbientObstacle:
 		car = c
 
 	func footprint() -> Dictionary:
-		return { "p": Vector3(car.x, 0, car.z), "yaw": 0.0 if car.v > 0 else PI, "hw": 0.95, "hl": 2.2 }
+		return { "p": Vector3(car.x, 0, car.z), "yaw": 0.0 if car.dir > 0.0 else PI, "hw": 0.95, "hl": 2.2 }
 
 
 class WalkerObstacle:
@@ -511,6 +511,7 @@ func on_collision(o) -> void:
 		drive.recovery = 0.38
 		drive.speed = 0
 		if "car" in o and o.car != null:
+			o.car.spd = 0.0
 			o.car.v = 0.0
 		on_fault("collision", "collision:ambient")
 
@@ -788,16 +789,15 @@ func _spawn_traffic() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
 	for i in int(cfg.traffic.cars):
-		var same := i % 2 == 0
+		# Direction is decided once: the flow on the driver's side (+1) and the oncoming one (-1).
+		# The speed is kept apart from it, so a car that stops keeps its lane.
+		var dir := 1.0 if i % 2 == 0 else -1.0
 		var multi: MultiMesh = traffic_mm[i % traffic_mm.size()]
 		var slot := i / traffic_mm.size()
-		var spd: float = rng.randf_range(cfg.traffic.speed_min, cfg.traffic.speed_max)
-		var velocity := spd * (1 if same else -1)
+		var base: float = rng.randf_range(cfg.traffic.speed_min, cfg.traffic.speed_max)
 		traffic.append({
-			"x": -1.8 if same else 1.8,
-			"z": drive.pos.z + 50.0 + i * 65.0,
-			"base_v": velocity,
-			"v": velocity,
+			"dir": dir, "base": base, "spd": base, "v": dir * base,
+			"x": -dir * 1.8, "z": drive.pos.z + 50.0 + i * 65.0,
 			"mm": multi, "slot": slot,
 		})
 		multi.set_instance_custom_data(slot, _pick(cfg.colors.car, rng))
@@ -910,48 +910,77 @@ func _participant_ahead(distance: float) -> bool:
 
 func _car_ahead_in_lane(distance: float) -> bool:
 	for car in traffic:
-		var gap: float = car.z - drive.pos.z
+		var gap: float = (car.z - drive.pos.z) * car.dir
 		if absf(car.x - drive.pos.x) < 1.8 and gap > 0.0 and gap < distance and not _in_blank(car.z):
 			return true
 	return false
 
 
+## Length of a car nose to tail, and the least bumper-to-bumper gap a car keeps from the one
+## ahead of it; the gap a driver keeps also grows with speed (HEADWAY seconds).
+const CAR_LENGTH := 4.4
+const CAR_GAP := 6.0
+const HEADWAY := 1.5
+
+
+## The nearest car ahead of `car` in its own lane and direction, with the distance to it along
+## the road (wrapping around the ring): { "car": other, "dist": metres } or null.
+func _lead_of(car: Dictionary, span: float):
+	var best = null
+	for other in traffic:
+		if other == car or other.dir != car.dir or absf(other.x - car.x) > 1.0:
+			continue
+		var d: float = fposmod((other.z - car.z) * car.dir, span)
+		if d > 0.0 and (best == null or d < best.dist):
+			best = { "car": other, "dist": d }
+	return best
+
+
 func _update_traffic(delta: float) -> void:
 	var span := L * chunk_count
 	var behind := drive.pos.z - L * float(cfg.chunks_behind)
+	var lane := street_half * 3.0 / 7.0
 	for car in traffic:
-		# Lanes follow the carriageway as it is now: with the flow on the driver's
-		# side (-X), against it on the other (+X).
-		car.x = (-1.0 if car.v > 0 else 1.0) * street_half * 3.0 / 7.0
-		var target_speed: float = float(car.get("base_v", car.v))
-		for other in traffic:
-			if other != car and signf(other.v) == signf(car.v) and absf(other.x - car.x) < 1.0:
-				var dist: float = (other.z - car.z) * signf(car.v)
-				if dist > 0.0 and dist < 25.0:
-					target_speed = minf(absf(target_speed), maxf(2.0, absf(other.v) * 0.95)) * signf(car.v)
-		# A car never runs into the player: it matches his speed from 14 m behind and
-		# stops short of him; and a standing player is never overlapped (see below).
-		var behind_gap: float = (drive.pos.z - car.z) * signf(car.v)
+		# Lanes follow the carriageway as it is now: the flow on the driver's side (-X),
+		# the oncoming on the other (+X). The lane is set by the direction, never by the speed.
+		car.x = -car.dir * lane
+	for car in traffic:
+		var want: float = car.base
+		var lead = _lead_of(car, span)
+		if lead != null:
+			var gap: float = lead.dist - CAR_LENGTH
+			var safe: float = CAR_GAP + car.spd * HEADWAY
+			if gap < safe + 25.0:
+				want = minf(want, maxf(0.0, lead.car.spd + (gap - safe) * 0.6))
+		# A car behind the player in his lane keeps back from him: it matches his speed from 14 m
+		# and stops short of him.
+		var behind_gap: float = (drive.pos.z - car.z) * car.dir
 		if absf(car.x - drive.pos.x) < 2.0 and behind_gap > 0.0 and behind_gap < 14.0:
 			var follow_v: float = maxf(0.0, drive.speed) if behind_gap > 6.0 else 0.0
-			target_speed = minf(absf(target_speed), follow_v) * signf(car.v)
-		car.v = move_toward(car.v, target_speed, 12.0 * delta)
-		car.z += car.v * delta
-
-		# A car in the player's lane ahead: smooth following speed regulation without snapping
-		var gap: float = car.z - drive.pos.z
-		if absf(car.x - drive.pos.x) < 1.8 and gap > 0.0 and gap < 9.0 and car.v > 0 and not _in_blank(car.z):
+			want = minf(want, follow_v)
+		car.spd = move_toward(car.spd, want, (8.0 if want < car.spd else 3.0) * delta)
+		car.z += car.dir * car.spd * delta
+	# A hard rule on top of the speeds: no car ever overlaps the one ahead of it.
+	for car in traffic:
+		var lead = _lead_of(car, span)
+		if lead != null and lead.dist < CAR_LENGTH + CAR_GAP:
+			car.z -= car.dir * (CAR_LENGTH + CAR_GAP - lead.dist)
+			car.spd = minf(car.spd, lead.car.spd)
+	for car in traffic:
+		car.v = car.dir * car.spd
+		# A car in the player's lane ahead: smooth speed regulation without snapping
+		var gap: float = (car.z - drive.pos.z) * car.dir
+		if absf(car.x - drive.pos.x) < 1.8 and gap > 0.0 and gap < 9.0 and car.dir > 0.0 and not _in_blank(car.z):
 			if gap < 4.6:
-				drive.speed = minf(drive.speed, maxf(0.0, car.v))
+				drive.speed = minf(drive.speed, maxf(0.0, car.spd))
 			else:
-				var approach_limit: float = car.v + (gap - 4.6) * 2.5
+				var approach_limit: float = car.spd + (gap - 4.6) * 2.5
 				drive.speed = minf(drive.speed, maxf(0.0, approach_limit))
-
 		if car.z < behind:
 			car.z += span
 		elif car.z > behind + span:
 			car.z -= span
-		var face := 0.0 if car.v > 0 else PI
+		var face := 0.0 if car.dir > 0.0 else PI
 		var at := Vector3(car.x, 0, car.z)
 		(car.mm as MultiMesh).set_instance_transform(car.slot, Transform3D(Basis(Vector3.UP, face), at))
 
