@@ -2757,7 +2757,7 @@
   };
 
   window.selectVehicle = actorId => {
-    if (activeCollision || !currentScenario) return;
+    if (activeCollision || isResolving || !currentScenario) return;
     handleVehicleChoice(actorId);
   };
 
