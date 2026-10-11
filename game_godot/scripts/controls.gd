@@ -13,8 +13,18 @@ var steer := 0.0          # 1 = left, -1 = right (the last arrow held wins); a d
 var _buttons := {}        # name -> Control
 var _fingers := {}        # touch index -> button name
 var _held_dirs: Array[int] = []
+var _keys := {}           # physical key -> button name held on the keyboard (desktop browsers, dev runs)
 var _root: Control
 var active := true
+
+## The same pedals and steering from the keyboard: W/arrow up = gas, S/arrow down/space = brake,
+## A/D or the arrows = steer. Physical keys, so WASD works on any keyboard layout.
+const KEY_CONTROLS := {
+	KEY_W: "gas", KEY_UP: "gas",
+	KEY_S: "brake", KEY_DOWN: "brake", KEY_SPACE: "brake",
+	KEY_A: "left", KEY_LEFT: "left",
+	KEY_D: "right", KEY_RIGHT: "right",
+}
 
 const ACCENT := Color("#0574F8")
 const CARD := Color("#FFFFFF")
@@ -98,6 +108,7 @@ func set_active(on: bool) -> void:
 		for index in _fingers.keys():
 			_press(_fingers[index], false)
 		_fingers.clear()
+		_release_keys()
 
 
 func _input(event: InputEvent) -> void:
@@ -115,6 +126,23 @@ func _input(event: InputEvent) -> void:
 		elif _fingers.has(event.index):
 			_press(_fingers[event.index], false)
 			_fingers.erase(event.index)
+	elif event is InputEventKey and not event.echo and KEY_CONTROLS.has(event.physical_keycode):
+		var key: int = event.physical_keycode
+		if event.pressed and not _keys.has(key):
+			_keys[key] = KEY_CONTROLS[key]
+			_press(_keys[key], true)
+			pressed.emit()
+			get_viewport().set_input_as_handled()
+		elif not event.pressed and _keys.has(key):
+			_press(_keys[key], false)
+			_keys.erase(key)
+			get_viewport().set_input_as_handled()
+
+
+func _release_keys() -> void:
+	for key in _keys.keys():
+		_press(_keys[key], false)
+	_keys.clear()
 
 
 func _press(name: String, down: bool) -> void:
@@ -145,3 +173,4 @@ func _notification(what: int) -> void:
 		for index in _fingers.keys():
 			_press(_fingers[index], false)
 		_fingers.clear()
+		_release_keys()

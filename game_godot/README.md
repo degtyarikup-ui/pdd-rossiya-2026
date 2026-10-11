@@ -16,6 +16,27 @@ iOS собирается из сгенерированного Xcode-проек�
 CODE_SIGN_STYLE=Automatic CODE_SIGN_IDENTITY="Apple Development"`, ставится `xcrun devicectl
 device install app`. Пакет `ru.pdd.godotspike` — отдельное приложение, магазинное не трогает.
 
+## Веб (сайт, /app/godot/)
+
+`./scripts/godot_dev.sh web` — экспорт Web (nothreads, без SharedArrayBuffer) в
+`build/web/godot/`. `./scripts/build.sh ru web` делает это сам, если есть `godot` и
+`game_godot/situations`; иначе на сайте остаётся старая игра (`SKIP_GODOT_WEB=1` — без Godot).
+
+- В `index.pck` (~11 МБ) — движок-данные, модели, сети, список вопросов. Первая загрузка
+  ~16 МБ по gzip (движок ~10 МБ). Сцены перекрёстков (`situations/<id>/`, ~0.7 МБ каждая) и
+  картинки билетов (`questions/*.webp`) лежат рядом и грузятся по требованию
+  (`scripts/pack_files.gd`): перекрёсток — когда его надо поставить, картинка — при нажатии.
+- Вызов из приложения: `GodotGame` (`lib/presentation/screens/game/godot_game.dart`) открывает
+  `godot/index.html?lang=ru&dark=1` в iframe на весь экран (`GodotWebScreen`).
+  `available()` на вебе — есть ли `godot/index.pck` на сайте.
+- Мост: игра шлёт родителю `postMessage({bridge: 'pdd-godot', kind: 'exit', json: <итог заезда>})`
+  (`scripts/host.gd`, `Host.exit`); аргументы приходят из query-строки (`--k=v` ↔ `k=v`, `--k` ↔ `k=1`).
+- Управление: сенсорные педали и руль (`controls.gd`); с клавиатуры: W/стрелка вверх — газ,
+  S/стрелка вниз/пробел — тормоз, A/D или стрелки — руль (физические клавиши).
+- Тест локально: `python3 -m http.server 8960 --bind 127.0.0.1 --directory build/web`, открыть
+  `http://127.0.0.1:8960/godot/index.html?lang=ru&situation=ticket_10_13&topdown=x.png&mute=1`
+  (`topdown` ставит перекрёсток сразу; `auto=1` — автопилот, в медленном браузере долго).
+
 ## Как устроено (и почему не так, как в WebView-игре)
 
 | | WebView (Three.js) | Godot |

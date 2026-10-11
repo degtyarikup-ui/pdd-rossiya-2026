@@ -22,6 +22,8 @@ import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
+import 'package:pdd_app/presentation/screens/game/godot_web_screen.dart';
+import 'package:pdd_app/presentation/screens/game/platform/godot_web_frame.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_leaderboard_sheet.dart';
@@ -52,6 +54,7 @@ class GodotGame {
   static const _pendingRunKey = 'game_run_pending';
   static const _runQuestions = GameState.runQuestions;
   static Future<bool>? _available;
+  static Future<bool>? _webAvailable;
   static bool _running = false;
 
   /// Android and iOS run the game on their native screens (see ios/Runner/PddGodotGame.mm).
@@ -60,7 +63,10 @@ class GodotGame {
       defaultTargetPlatform == TargetPlatform.iOS;
 
   static Future<bool> available() {
-    if (kIsWeb || !_nativeScreen) {
+    if (kIsWeb) {
+      return _webAvailable ??= GodotWebFrame.available();
+    }
+    if (!_nativeScreen) {
       return Future.value(false);
     }
     return _available ??= _channel
@@ -77,16 +83,15 @@ class GodotGame {
     final lang = Localizations.localeOf(context).languageCode;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final garage = await _garageJson(ref, lang: lang);
+    if (!context.mounted) return;
     _running = true;
     String? json;
     try {
-      json = await _channel.invokeMethod<String>('start', {
-        'args': [
-          '--lang=$lang',
-          if (dark) '--dark',
-          '--garage=${jsonEncode(garage)}',
-        ],
-      });
+      json = await _start(context, [
+        '--lang=$lang',
+        if (dark) '--dark',
+        '--garage=${jsonEncode(garage)}',
+      ]);
     } on PlatformException {
       json = null;
     } finally {
@@ -96,6 +101,17 @@ class GodotGame {
     final decoded = jsonDecode(json);
     if (decoded is! Map || !context.mounted) return;
     await _afterGame(context, ref, decoded.cast<String, dynamic>());
+  }
+
+  /// Opens the game and waits for its summary (JSON), null if it did not end
+  /// with one. Android and iOS: the native screen; web: the game's route.
+  static Future<String?> _start(BuildContext context, List<String> args) {
+    if (kIsWeb) {
+      return Navigator.of(context).push<String>(
+        MaterialPageRoute<String>(builder: (_) => GodotWebScreen(args: args)),
+      );
+    }
+    return _channel.invokeMethod<String>('start', {'args': args});
   }
 
   /// Everything the lobby shows, in the app's own words and cars.

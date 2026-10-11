@@ -91,6 +91,8 @@ var retired: Array = []           # junctions behind the player, still on screen
 var phase := "driving"            # driving | question | resolving
 var auto_answer := false          # debug: answer correctly by itself
 var spawn_after := 0.0            # world z after which the next junction may come
+var next_id := ""                 # the junction picked next (its files may still be coming)
+var preparing := false            # its files are being fetched (web)
 var road_queue: Array = []        # the road questions still to come (road_scenes.json, kind speed)
 var road: RoadEvent = null        # the road question on the street now
 var road_phase := ""              # approach | question | passed (while road != null)
@@ -645,12 +647,23 @@ func _next_id() -> String:
 
 
 ## The next junction is laid out ahead, beyond the view: its streets replace
-## the ring there (blank chunks), chunk-aligned on both ends.
+## the ring there (blank chunks), chunk-aligned on both ends. On the web its
+## files come first (PackFiles): the junction waits for them, the car drives on.
 func _maybe_spawn() -> void:
 	if current or road != null or drive.pos.z < spawn_after:
 		return
-	var id := _next_id()
+	if next_id == "":
+		next_id = _next_id()
+	if not Situation.prepared(next_id):
+		if not preparing:
+			preparing = true
+			Situation.prepare(next_id, _on_prepared.bind(next_id))
+		if not Situation.prepared(next_id):
+			return
+	var id := next_id
+	next_id = ""
 	var sit := Situation.load_scene(id, scenery)
+	Situation.forget(id)
 	var crop: float = sit.data.crop
 	var k := ceili((drive.pos.z + 150.0) / L)
 	var zc := k * L + crop
@@ -668,6 +681,12 @@ func _maybe_spawn() -> void:
 		drive.pos.z = zc + float(sit.data.stopZ) - 12.0
 		drive.yaw = 0.0
 	_rebuild_ring()
+
+
+func _on_prepared(ok: bool, _id: String) -> void:
+	preparing = false
+	if not ok:
+		spawn_after = drive.pos.z + 20.0   # the files did not come: try again a little further on
 
 
 func _update_junction(dt: float) -> void:
