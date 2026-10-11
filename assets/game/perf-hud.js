@@ -6,7 +6,7 @@
 // on a real phone can be read from logcat without looking at the screen.
 (function () {
   let renderer = null, send = null, box = null, on = false;
-  let gpu = '';
+  let gpu = '', tier = '';
   let last = 0, frames = 0, sum = 0, worst = 0, slow = 0, cpuSum = 0, cpuWorst = 0;
   let windowStart = 0, report = 0, inputLat = 0, inputWorst = 0, pendingInput = 0;
   let frameStart = 0;
@@ -39,19 +39,22 @@
       if (on && !gpu && renderer) gpu = gpuName();
     },
     // A press just arrived (event.timeStamp, same clock as rAF).
+    setTier(t) { tier = t; },
     input(ts) { if (on) pendingInput = ts || performance.now(); },
     begin(now) {
       if (!on) return;
       frameStart = performance.now();
+    },
+    end(now) {
+      if (!on) return;
+      // Frames are counted where a picture was actually drawn (a capped frame
+      // returns early and never gets here), by the time between two drawings.
       if (last) {
         const dt = now - last;
         frames++; sum += dt; if (dt > worst) worst = dt; if (dt > 33.5) slow++;
       }
       last = now;
       if (!windowStart) windowStart = now;
-    },
-    end(now) {
-      if (!on) return;
       const cpu = performance.now() - frameStart;
       cpuSum += cpu; if (cpu > cpuWorst) cpuWorst = cpu;
       if (pendingInput) {
@@ -65,12 +68,12 @@
         cpuMs: +(cpuSum / frames).toFixed(1), cpuWorstMs: Math.round(cpuWorst),
         calls: info.render.calls, tris: info.render.triangles, geoms: info.memory.geometries,
         textures: info.memory.textures, ratio: +renderer.getPixelRatio().toFixed(2),
-        inputMs: Math.round(inputLat), inputWorstMs: Math.round(inputWorst), gpu,
+        inputMs: Math.round(inputLat), inputWorstMs: Math.round(inputWorst), gpu, tier,
       };
       box.textContent =
         `${stats.fps} fps  ${stats.avgMs} ms (worst ${stats.worstMs}, slow ${stats.slowFrames})\n` +
         `cpu ${stats.cpuMs} ms (worst ${stats.cpuWorstMs})  calls ${stats.calls}  tris ${(stats.tris / 1000).toFixed(0)}k\n` +
-        `geom ${stats.geoms}  tex ${stats.textures}  ratio ${stats.ratio}\n` +
+        `geom ${stats.geoms}  tex ${stats.textures}  ratio ${stats.ratio}  tier ${tier}\n` +
         `input ${stats.inputMs} ms (worst ${stats.inputWorstMs})\n${gpu}`;
       if (!report) report = now;
       if (now - report >= 5000 && send) { report = now; send({ event: 'perf', ...stats }); inputWorst = 0; }

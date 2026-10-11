@@ -20,6 +20,7 @@
 | `seasons.js` | Палитры сезонов, листопад |
 | `crossroads.js`, `traffic-controller*.js` | Мини-игры |
 | `touch-controls.js` | Педали и стрелки руля, нарисованные самой страницей (нажатие доходит до движка без моста Flutter → WebView). Flutter шлёт только `setTouchControls({visible, enabled, colors, labels, insets})`; обратно — события `haptic`, `gas_pressed`. В браузерной сборке остаётся Flutter-виджет `GameControlsOverlay` |
+| `quality-tier.js` | Уровень качества `low/mid/high` по названию видеочипа (Adreno 610 = low, а не «8 ядер = мощный»); профили: сглаживание, плотность пикселей, тени, лимит 30 к/с на low. Принудительно — `setQualityTier` из скрытого меню (имитация бюджетника); тест классификации — `tools/game_tests/game-quality-tier-test.cjs` |
 | `perf-hud.js` | Счётчик производительности (fps, худший кадр, draw calls, задержка нажатия, видеочип); включается в скрытом меню (долгое нажатие на гараж, dev-сборка) → `setPerfHud`; раз в 5 с строка `[game-perf]` в logcat |
 | `ambient-audio.js` | Звук мини-игр (WebAudio, без файлов): фон улицы, мотор, трамвай, сирена, удар; включается настройкой «Звук» (`setSoundEnabled` / `TrafficControllerGame.setSound`) |
 

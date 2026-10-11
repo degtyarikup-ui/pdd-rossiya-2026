@@ -873,6 +873,22 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameDebugUnlimitedFuel => 'Бесконечные заезды';
 
   @override
+  String get gameDebugTier => 'Уровень графики';
+
+  @override
+  String get gameDebugTierHint =>
+      'Авто выбирает по видеочипу; «Низкий» — имитация бюджетного телефона (сглаживание — после перезапуска игры)';
+
+  @override
+  String get gameDebugTierLow => 'Низкий';
+
+  @override
+  String get gameDebugTierMid => 'Средний';
+
+  @override
+  String get gameDebugTierHigh => 'Высокий';
+
+  @override
   String get gameDebugPerf => 'Счётчик производительности';
 
   @override

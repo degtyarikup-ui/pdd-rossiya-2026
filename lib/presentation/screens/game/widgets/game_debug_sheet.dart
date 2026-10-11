@@ -11,10 +11,13 @@ class GameDebugSheet extends StatefulWidget {
   final ValueChanged<String?> onWeatherChanged;
   final ValueChanged<String?> onSeasonChanged;
   final ValueChanged<bool> onUnlimitedFuelChanged;
+  final String? qualityTier;
+  final ValueChanged<String?> onQualityTierChanged;
   final bool perfHud;
   final ValueChanged<bool> onPerfHudChanged;
 
   static void _ignore(bool _) {}
+  static void _ignoreTier(String? _) {}
 
   const GameDebugSheet({
     super.key,
@@ -24,6 +27,8 @@ class GameDebugSheet extends StatefulWidget {
     required this.onWeatherChanged,
     required this.onSeasonChanged,
     required this.onUnlimitedFuelChanged,
+    this.qualityTier,
+    this.onQualityTierChanged = _ignoreTier,
     this.perfHud = false,
     this.onPerfHudChanged = _ignore,
   });
@@ -37,6 +42,7 @@ class _GameDebugSheetState extends State<GameDebugSheet> {
   late String? _season = widget.seasonOverride;
   late bool _unlimitedFuel = widget.unlimitedFuel;
   late bool _perfHud = widget.perfHud;
+  late String? _tier = widget.qualityTier;
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +119,33 @@ class _GameDebugSheetState extends State<GameDebugSheet> {
                 setState(() => _perfHud = value);
                 widget.onPerfHudChanged(value);
               },
+            ),
+            const SizedBox(height: 12),
+            title(appL10n.gameDebugTier),
+            const SizedBox(height: 4),
+            Text(
+              appL10n.gameDebugTierHint,
+              style: TextStyle(fontSize: 12, color: colors.secondaryText),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final (value, label) in [
+                  (null, appL10n.gameSceneAuto),
+                  ('low', appL10n.gameDebugTierLow),
+                  ('mid', appL10n.gameDebugTierMid),
+                  ('high', appL10n.gameDebugTierHigh),
+                ])
+                  ChoiceChip(
+                    label: Text(label),
+                    selected: _tier == value,
+                    onSelected: (_) {
+                      setState(() => _tier = value);
+                      widget.onQualityTierChanged(value);
+                    },
+                  ),
+              ],
             ),
             const SizedBox(height: 12),
             title(appL10n.gameSceneWeather),

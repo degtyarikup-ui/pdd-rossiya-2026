@@ -119,6 +119,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   bool _fuelLoaded = false;
   bool _debugUnlimitedFuel = false;
   bool _perfHud = false;
+  String? _qualityTier;
   // Last state pushed to the page's own pedals (see touch-controls.js).
   String? _controlsSig;
   Timer? _fuelTimer;
@@ -357,6 +358,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
           _send('setSeason', [kind]);
         },
         onUnlimitedFuelChanged: _setDebugUnlimitedFuel,
+        qualityTier: _qualityTier,
+        onQualityTierChanged: (tier) {
+          _qualityTier = tier;
+          _send('setQualityTier', [tier]);
+        },
         perfHud: _perfHud,
         onPerfHudChanged: (on) {
           _perfHud = on;
@@ -666,6 +672,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
         }
       }
       if (event == 'ready') {
+        _qualityTier = data['forcedTier'] as String?;
         _lastInsets = null;
         _controlsSig = null;
         gameNotifier.onEngineReady();

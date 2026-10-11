@@ -859,6 +859,22 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameDebugUnlimitedFuel => 'Шексіз жарыстар';
 
   @override
+  String get gameDebugTier => 'Графика деңгейі';
+
+  @override
+  String get gameDebugTierHint =>
+      'Авто бейнечип бойынша таңдайды; «Төмен» — бюджеттік телефонды имитациялайды (тегістеу ойынды қайта іске қосқаннан кейін)';
+
+  @override
+  String get gameDebugTierLow => 'Төмен';
+
+  @override
+  String get gameDebugTierMid => 'Орташа';
+
+  @override
+  String get gameDebugTierHigh => 'Жоғары';
+
+  @override
   String get gameDebugPerf => 'Өнімділік есептегіші';
 
   @override

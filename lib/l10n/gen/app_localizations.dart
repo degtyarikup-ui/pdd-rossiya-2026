@@ -1576,6 +1576,36 @@ abstract class AppLocalizations {
   /// **'Бесконечные заезды'**
   String get gameDebugUnlimitedFuel;
 
+  /// No description provided for @gameDebugTier.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уровень графики'**
+  String get gameDebugTier;
+
+  /// No description provided for @gameDebugTierHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Авто выбирает по видеочипу; «Низкий» — имитация бюджетного телефона (сглаживание — после перезапуска игры)'**
+  String get gameDebugTierHint;
+
+  /// No description provided for @gameDebugTierLow.
+  ///
+  /// In ru, this message translates to:
+  /// **'Низкий'**
+  String get gameDebugTierLow;
+
+  /// No description provided for @gameDebugTierMid.
+  ///
+  /// In ru, this message translates to:
+  /// **'Средний'**
+  String get gameDebugTierMid;
+
+  /// No description provided for @gameDebugTierHigh.
+  ///
+  /// In ru, this message translates to:
+  /// **'Высокий'**
+  String get gameDebugTierHigh;
+
   /// No description provided for @gameDebugPerf.
   ///
   /// In ru, this message translates to:
