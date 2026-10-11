@@ -10,11 +10,16 @@ const Ed = (() => {
   const LIGHT = { red: "Красный", yellow: "Жёлтый", green: "Зелёный", flashing_yellow: "Мигающий жёлтый" };
   const ARROW = { "": "нет", left: "налево", right: "направо", straight: "прямо" };
   const LETTERS = ["А", "Б", "В", "Г", "Д"];
+  const MARK_TYPES = { solid: "Сплошная", dashed: "Прерывистая", stop: "Стоп-линия", zebra: "Зебра" };
+  const MARK_COLOURS = { white: "Белая", yellow: "Жёлтая" };
   const TOOLS = {
-    select: { key: "V", hint: "Выбор: нажмите объект или линию. Тяните точку или объект. Двойной клик по линии добавляет точку." },
+    select: { key: "V", hint: "Выбор: нажмите объект или линию. Тяните точку или объект. Тяните внутри дороги, чтобы её сдвинуть. Стрелки и [ ] — сдвиг и поворот." },
     route: { key: "M", hint: "Маршрут: кликайте точки пути. Двойной клик или Enter — готово, Esc — отмена." },
     road: { key: "D", hint: "Дорога: кликайте углы контура. Клик у первой точки или Enter — замкнуть." },
+    straight: { key: "R", hint: "Прямой участок: две точки — начало и конец оси. Концы примыкают к ближайшим углам дороги (до 1,5 м)." },
     island: { key: "I", hint: "Островок: контур внутри дороги. Клик у первой точки или Enter — замкнуть." },
+    lawn: { key: "G", hint: "Газон: контур газона или клумбы. Клик у первой точки или Enter — замкнуть. Газон ложится на тротуар, но не на дорогу." },
+    marking: { key: "K", hint: "Разметка: сплошная и прерывистая — кликайте точки линии, Enter — готово. Стоп-линия и зебра — две точки поперёк дороги." },
     decor: { key: "P", hint: "Декор: кликните место, чтобы поставить выбранный предмет." },
     actor: { key: "A", hint: "Участник: кликните место, чтобы поставить машину или пешехода." },
     light: { key: "L", hint: "Светофор: кликните место у дороги." },
@@ -24,9 +29,10 @@ const Ed = (() => {
 
   let scenes = [], catalog = null, filter = "all", query = "", objQuery = "";
   let S = null, id = null, findings = [], source = null, seq = 0, previewTimer = null;
-  let sel = null, tool = "select", ltab = "scenes", rtab = "props", opts = { route: "manoeuvre", exit: "left", label: "А", actorType: "car", prop: "", draw: null };
+  let sel = null, tool = "select", ltab = "scenes", rtab = "props", opts = { route: "manoeuvre", exit: "left", label: "А", actorType: "car", prop: "", draw: null,
+    mark: "solid", markColour: "white", roadWidth: 8.4 };
   let undoStack = [], redoStack = [], dirty = false, savedJson = "", drag = null, draft = null, cursorWorld = null;
-  let openGroups = { roads: true, routes: true, actors: true, lights: true, decor: false, stop: true };
+  let openGroups = { roads: true, lawns: true, marks: true, routes: true, actors: true, lights: true, decor: false, stop: true };
 
   // ---- api ---------------------------------------------------------------------------
   async function api(path, body) {
@@ -60,10 +66,14 @@ const Ed = (() => {
   const decorOf = (did) => S.decor.find((d) => d.id === did);
   const isApproach = (r) => r.kind === "approach";
 
+  const markingOf = (mid) => (S.markings || []).find((m) => m.id === mid);
+
   function objectOf(s) {
     if (!S || !s) return null;
     if (s.t === "route") return routeOf(s.id);
     if (s.t === "road") return S.roads[s.i];
+    if (s.t === "lawn") return (S.lawns || [])[s.i];
+    if (s.t === "marking") return markingOf(s.id);
     if (s.t === "actor") return actorOf(s.id);
     if (s.t === "light") return lightOf(s.id);
     if (s.t === "decor") return decorOf(s.id);
@@ -128,6 +138,8 @@ const Ed = (() => {
     if (dirty && !confirm("Есть несохранённые правки. Открыть другую сцену без сохранения?")) return;
     const r = await api(`/api/scene/${sid}`);
     S = r.scene;
+    S.lawns = S.lawns || [];
+    S.markings = S.markings || [];
     id = sid;
     findings = r.findings;
     source = r.source;
@@ -217,8 +229,87 @@ const Ed = (() => {
         S.roads[i].holes.push(d.points);
         sel = { t: "road", i, part: S.roads[i].holes.length - 1 };
       });
+    } else if (d.kind === "lawn") {
+      if (d.points.length < 3) return toast("Газону нужно хотя бы три точки", "warn");
+      commit(() => {
+        const lid = uniqueId("lawn_", S.lawns.map((l) => l.id));
+        S.lawns.push({ id: lid, outer: d.points, holes: [] });
+        sel = { t: "lawn", i: S.lawns.length - 1, part: -1 };
+      });
+    } else if (d.kind === "marking") {
+      if (d.points.length < 2) return toast("Разметке нужно хотя бы две точки", "warn");
+      commit(() => addMarking(d.type, d.points));
+    } else if (d.kind === "straight") {
+      if (d.points.length < 2) return toast("Прямому участку нужны начало и конец", "warn");
+      commit(() => addStraight(d.points[0], d.points[1], opts.roadWidth));
     }
   }
+
+  // A marking as data (build.py draws it): the type and colour the tool has selected.
+  function addMarking(type, points) {
+    const mid = uniqueId("mark_", S.markings.map((m) => m.id));
+    const m = { id: mid, type, colour: opts.markColour, points };
+    if (type === "dashed" || type === "solid") m.width = 0.13;
+    if (type === "stop") m.width = 0.4;
+    if (type === "zebra") m.length = 4;
+    S.markings.push(m);
+    sel = { t: "marking", id: mid };
+  }
+
+  // A straight piece of road from a to b, `width` wide. Its ends run 1 m past the points, so they
+  // overlap the road they join; an end within 1.5 m of a corner of another road snaps to that corner.
+  function addStraight(a, b, width) {
+    const corners = S.roads.flatMap((r) => r.outer);
+    const snapTo = (p) => {
+      let best = null, bd = 1.5;
+      for (const c of corners) {
+        const d = dist(p, c);
+        if (d < bd) { bd = d; best = c; }
+      }
+      return best ? [best[0], best[1]] : p;
+    };
+    const p = snapTo(a), q = snapTo(b);
+    const len = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    if (len < 2) return toast("Прямой участок слишком короткий", "warn");
+    const ux = (q[0] - p[0]) / len, uz = (q[1] - p[1]) / len;
+    const nx = -uz * width / 2, nz = ux * width / 2, o = 1.0;
+    const s0 = [p[0] - ux * o, p[1] - uz * o], s1 = [q[0] + ux * o, q[1] + uz * o];
+    const r3 = (v) => Math.round(v * 1000) / 1000;
+    const outer = [
+      [r3(s0[0] + nx), r3(s0[1] + nz)], [r3(s1[0] + nx), r3(s1[1] + nz)],
+      [r3(s1[0] - nx), r3(s1[1] - nz)], [r3(s0[0] - nx), r3(s0[1] - nz)],
+    ];
+    const rid = uniqueId("road_", S.roads.map((r) => r.id));
+    S.roads.push({ id: rid, outer, holes: [] });
+    sel = { t: "road", i: S.roads.length - 1, part: -1 };
+  }
+
+  // The rings a move or turn acts on: the whole shape, or one island or hole of a road or lawn.
+  function pickRings(s) {
+    const all = ringsOfObject(s);
+    return (s.t === "road" || s.t === "lawn") && s.part >= 0 ? [all[s.part + 1]].filter(Boolean) : all;
+  }
+
+  // Rigid moves of a whole road, a lawn or a marking (keys, the inspector, dragging the body).
+  function translateObject(s, dx, dz) {
+    for (const ring of pickRings(s)) ring.forEach((p) => { p[0] = r3(p[0] + dx); p[1] = r3(p[1] + dz); });
+  }
+
+  // Turns an object around the centre of its points by `deg` degrees (counter-clockwise on the plan).
+  function rotateObject(s, deg) {
+    const rings = pickRings(s);
+    const all = rings.flat();
+    if (!all.length) return;
+    const cx = all.reduce((a, p) => a + p[0], 0) / all.length, cz = all.reduce((a, p) => a + p[1], 0) / all.length;
+    const c = Math.cos(deg * Math.PI / 180), n = Math.sin(deg * Math.PI / 180);
+    for (const ring of rings) ring.forEach((p) => {
+      const x = p[0] - cx, z = p[1] - cz;
+      p[0] = r3(cx + x * c - z * n);
+      p[1] = r3(cz + x * n + z * c);
+    });
+  }
+
+  const r3 = (v) => Math.round(v * 1000) / 1000;
 
   function centroid(poly) {
     const n = poly.length;
@@ -278,6 +369,15 @@ const Ed = (() => {
   }
 
   function ringOf(s) {
+    if (s.t === "lawn") {
+      const l = (S.lawns || [])[s.i];
+      if (!l) return null;
+      return s.part === -1 ? l.outer : l.holes[s.part];
+    }
+    if (s.t === "marking") {
+      const m = markingOf(s.id);
+      return m && m.points ? m.points : null;
+    }
     const r = S.roads[s.i];
     if (!r) return null;
     return s.part === -1 ? r.outer : r.holes[s.part];
@@ -289,10 +389,11 @@ const Ed = (() => {
       if (!r) return;
       if (r.points.length <= 2) return toast("В маршруте должно остаться две точки", "warn");
       commit(() => r.points.splice(index, 1));
-    } else if (owner.t === "road") {
+    } else if (owner.t === "road" || owner.t === "lawn" || owner.t === "marking") {
       const ring = ringOf(owner);
       if (!ring) return;
-      if (ring.length <= 3) return toast("В контуре должно остаться три точки", "warn");
+      const least = owner.t === "marking" ? 2 : 3;
+      if (ring.length <= least) return toast(`В контуре должно остаться точек: ${least}`, "warn");
       commit(() => ring.splice(index, 1));
     }
   }
@@ -390,12 +491,48 @@ const Ed = (() => {
       renderAll();
       return;
     }
-    if (h.kind === "road") {
-      sel = { t: "road", i: h.i, part: h.part };
+    if (h.kind === "road" || h.kind === "lawn") {
+      sel = { t: h.kind, i: h.i, part: h.part };
       Scene3D.setSelection(sel);
+      // Dragging the outline or the inside moves the whole object; a click alone changes nothing.
+      if (e.world) { snap(); startBodyDrag(sel, e.world); }
       renderAll();
       return;
     }
+    if (h.kind === "marking") {
+      sel = { t: "marking", id: h.id };
+      Scene3D.setSelection(sel);
+      if (e.world) { snap(); startBodyDrag(sel, e.world); }
+      renderAll();
+      return;
+    }
+  }
+
+  // The rings (point lists) an object is made of: a road's outline and islands, a lawn, a marking.
+  function ringsOfObject(s) {
+    if (!S || !s) return [];
+    if (s.t === "road") { const r = S.roads[s.i]; return r ? [r.outer, ...r.holes] : []; }
+    if (s.t === "lawn") { const l = S.lawns[s.i]; return l ? [l.outer, ...l.holes] : []; }
+    if (s.t === "marking") {
+      const m = markingOf(s.id);
+      if (!m) return [];
+      if (m.points) return [m.points];
+      return (m.polygons || []).flatMap((p) => [p.outer, ...p.holes]);
+    }
+    return [];
+  }
+
+  function startBodyDrag(owner, world) {
+    drag = { kind: "body", owner: { ...owner }, start: [world.x, world.z], base: JSON.parse(JSON.stringify(ringsOfObject(owner))), moved: false };
+  }
+
+  function bodyDrag(w) {
+    const dx = w.x - drag.start[0], dz = w.z - drag.start[1];
+    ringsOfObject(drag.owner).forEach((ring, k) => ring.forEach((p, j) => {
+      p[0] = r3(drag.base[k][j][0] + dx);
+      p[1] = r3(drag.base[k][j][1] + dz);
+    }));
+    drag.moved = true;
   }
 
   function drawClick(e) {
@@ -410,11 +547,26 @@ const Ed = (() => {
       renderTools();
       return;
     }
-    if (tool === "road" || tool === "island") {
-      const kind = tool === "road" ? "road" : "island";
-      if (!draft) draft = { kind, points: [] };
+    if (tool === "road" || tool === "island" || tool === "lawn") {
+      if (!draft) draft = { kind: tool, points: [] };
       if (draft.points.length >= 3 && dist(pt, draft.points[0]) < 1.2) return finishDraft();
       draft.points.push(pt);
+      Scene3D.setDraft(draft);
+      renderTools();
+      return;
+    }
+    if (tool === "marking") {
+      if (!draft) draft = { kind: "marking", type: opts.mark, points: [] };
+      draft.points.push(pt);
+      if ((draft.type === "stop" || draft.type === "zebra") && draft.points.length === 2) return finishDraft();
+      Scene3D.setDraft(draft);
+      renderTools();
+      return;
+    }
+    if (tool === "straight") {
+      if (!draft) draft = { kind: "straight", points: [] };
+      draft.points.push(pt);
+      if (draft.points.length === 2) return finishDraft();
       Scene3D.setDraft(draft);
       renderTools();
       return;
@@ -435,6 +587,13 @@ const Ed = (() => {
     if (!drag) return;
     const w = e.world;
     if (!w) return;
+    if (drag.kind === "body") {
+      bodyDrag(w);
+      Scene3D.refresh(S);
+      Scene3D.setSelection(sel);
+      renderStatus();
+      return;
+    }
     if (drag.kind === "vertex") {
       const pt = [w.x, w.z];
       const owner = drag.owner;
@@ -483,7 +642,7 @@ const Ed = (() => {
       if (draft.points.length > 1 && JSON.stringify(draft.points.at(-1)) === JSON.stringify(draft.points.at(-2))) draft.points.pop();
       return finishDraft();
     }
-    if ((tool === "road" || tool === "island") && draft) {
+    if ((tool === "road" || tool === "island" || tool === "lawn" || tool === "marking") && draft) {
       if (draft.points.length > 1 && JSON.stringify(draft.points.at(-1)) === JSON.stringify(draft.points.at(-2))) draft.points.pop();
       return finishDraft();
     }
@@ -496,7 +655,7 @@ const Ed = (() => {
 
   function deleteSelected() {
     if (!sel) return;
-    if (sel.v !== undefined && sel.v >= 0 && (sel.t === "route" || sel.t === "road")) return deleteVertex(sel, sel.v);
+    if (sel.v !== undefined && sel.v >= 0 && ["route", "road", "lawn", "marking"].includes(sel.t)) return deleteVertex(sel, sel.v);
     if (sel.t === "route") {
       const r = routeOf(sel.id);
       if (!r) return;
@@ -511,6 +670,18 @@ const Ed = (() => {
       commit(() => {
         if (sel.part === -1) S.roads.splice(sel.i, 1);
         else S.roads[sel.i].holes.splice(sel.part, 1);
+        sel = null;
+      });
+    } else if (sel.t === "lawn") {
+      commit(() => {
+        if (sel.part === -1) S.lawns.splice(sel.i, 1);
+        else S.lawns[sel.i].holes.splice(sel.part, 1);
+        sel = null;
+      });
+    } else if (sel.t === "marking") {
+      commit(() => {
+        const at = S.markings.findIndex((m) => m.id === sel.id);
+        if (at >= 0) S.markings.splice(at, 1);
         sel = null;
       });
     } else if (sel.t === "actor") {
@@ -539,6 +710,7 @@ const Ed = (() => {
       commit(() => { target[owner.v] = [target[owner.v][0] + dx, target[owner.v][1] + dz]; });
       return;
     }
+    if (isShape(sel)) return commit(() => translateObject(sel, dx, dz));
     const o = objectOf(sel);
     if (!o) return;
     commit(() => {
@@ -548,6 +720,7 @@ const Ed = (() => {
   }
 
   function rotate(deg) {
+    if (isShape(sel)) return commit(() => rotateObject(sel, deg));
     const o = objectOf(sel);
     if (!o || sel.v !== undefined && sel.v >= 0) return;
     commit(() => {
@@ -555,6 +728,9 @@ const Ed = (() => {
       else o.yaw += (deg * Math.PI) / 180;
     });
   }
+
+  // Roads, lawns and markings are shapes: moved and turned as a whole (an island, a hole, only itself).
+  const isShape = (s) => !!s && (s.t === "road" || s.t === "lawn" || s.t === "marking");
 
   // ---- live preview ------------------------------------------------------------------
   function schedulePreview() {
@@ -635,10 +811,18 @@ const Ed = (() => {
     if (tool === "actor" && catalog) {
       parts.push(`<label>Тип <select id="o-type">${Object.keys(catalog.actorTypes).map((t) => `<option value="${t}" ${opts.actorType === t ? "selected" : ""}>${TYPE[t] || t}</option>`).join("")}</select></label>`);
     }
-    if (draft) parts.push(`<span class="pill">${draft.kind === "route" ? "точек" : "точек"}: ${draft.points.length}</span>`);
+    if (tool === "marking") {
+      parts.push(`<label>Тип <select id="o-mark">${Object.entries(MARK_TYPES).map(([k, v]) => `<option value="${k}" ${opts.mark === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>`);
+      parts.push(`<label>Цвет <select id="o-mcolour">${Object.entries(MARK_COLOURS).map(([k, v]) => `<option value="${k}" ${opts.markColour === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>`);
+    }
+    if (tool === "straight") parts.push(`<label>Ширина, м <input id="o-rwidth" type="number" step="0.1" value="${opts.roadWidth}"></label>`);
+    if (draft) parts.push(`<span class="pill">точек: ${draft.points.length}</span>`);
     o.innerHTML = parts.join("");
     o.hidden = !parts.length;
     const bind = (sel, fn) => { const el = $(sel); if (el) el.onchange = () => fn(el); };
+    bind("#o-mark", (el) => { opts.mark = el.value; renderTools(); });
+    bind("#o-mcolour", (el) => { opts.markColour = el.value; });
+    bind("#o-rwidth", (el) => { opts.roadWidth = Number(el.value) || 8.4; });
     bind("#o-route", (el) => { opts.route = el.value; renderTools(); });
     bind("#o-exit", (el) => { opts.exit = el.value; });
     bind("#o-label", (el) => { opts.label = el.value; });
@@ -685,8 +869,16 @@ const Ed = (() => {
     const decorByProp = {};
     S.decor.forEach((d) => { (decorByProp[d.prop] = decorByProp[d.prop] || []).push(d); });
     const decor = Object.entries(decorByProp).map(([p, list]) => hit(p) ? `<div class="tree-sub"><span>${p}</span><em>${list.length}</em></div>${list.map((d, k) => row({ t: "decor", id: d.id }, `${p.split("/").pop()} ${k + 1}`, `${d.pos[0].toFixed(1)}, ${d.pos[1].toFixed(1)}`, "sub")).join("")}` : "").join("");
+    const lawns = (S.lawns || []).map((l, i) => hit(`газон ${i + 1}`)
+      ? row({ t: "lawn", i, part: -1 }, `Газон ${i + 1}`, `${Math.round(area(l.outer) - l.holes.reduce((s, h) => s + area(h), 0))} м²`) : "").join("");
+    const marks = (S.markings || []).map((m) => {
+      const name = m.type === "paint" ? "Разметка из сцены" : MARK_TYPES[m.type] || m.type;
+      return hit(name) ? row({ t: "marking", id: m.id }, name, MARK_COLOURS[m.colour] || "") : "";
+    }).join("");
     $("#object-tree").innerHTML = [
       group("roads", "Дорожное полотно", S.roads.length, roads || `<div class="tree-none">Нет дорог</div>`),
+      group("lawns", "Газоны и клумбы", (S.lawns || []).length, lawns || `<div class="tree-none">Нет газонов</div>`),
+      group("marks", "Разметка", (S.markings || []).length, marks || `<div class="tree-none">Нет разметки</div>`),
       group("routes", "Маршруты", S.routes.length, ["manoeuvre", "choice", "approach", "actor"].map((k) => routeRows(k)).join("") || `<div class="tree-none">Нет маршрутов</div>`),
       group("stop", "Стоп-линия и старт", 1, row({ t: "stop" }, "Стоп-линия / старт", `${S.stop.x.toFixed(2)}, ${S.stop.z.toFixed(2)}`)),
       group("actors", "Участники", S.actors.length, actors || `<div class="tree-none">Нет участников</div>`),
@@ -707,6 +899,8 @@ const Ed = (() => {
     if (!o) return renderOverview(pane);
     if (sel.t === "route") return renderRoute(pane, o);
     if (sel.t === "road") return renderRoad(pane, o);
+    if (sel.t === "lawn") return renderLawn(pane, o);
+    if (sel.t === "marking") return renderMarking(pane, o);
     if (sel.t === "actor") return renderActor(pane, o);
     if (sel.t === "light") return renderLight(pane, o);
     if (sel.t === "decor") return renderDecor(pane, o);
@@ -718,7 +912,7 @@ const Ed = (() => {
     pane.innerHTML = `
       <section class="card">
         <h3>Сцена</h3>
-        <dl class="kv"><dt>Дороги</dt><dd>${S.roads.length}</dd><dt>Маршруты</dt><dd>${S.routes.length}</dd>
+        <dl class="kv"><dt>Дороги</dt><dd>${S.roads.length}</dd><dt>Газоны</dt><dd>${S.lawns.length}</dd><dt>Разметка</dt><dd>${S.markings.length}</dd><dt>Маршруты</dt><dd>${S.routes.length}</dd>
         <dt>Участники</dt><dd>${S.actors.length}</dd><dt>Светофоры</dt><dd>${S.lights.length}</dd><dt>Декор</dt><dd>${S.decor.length}</dd>
         <dt>Проверка</dt><dd class="${err ? "bad-t" : "good-t"}">${err ? `${err} ${plural(err, ["ошибка", "ошибки", "ошибок"])}` : "ошибок нет"}</dd></dl>
       </section>
@@ -814,6 +1008,7 @@ const Ed = (() => {
         <div class="card-head"><h3>${sel.part === -1 ? "Дорога" : `Островок ${sel.part + 1}`}</h3><span class="pill">road_${sel.i}</span></div>
         <div class="stats">Площадь: <b>${Math.round(area(road.outer))} м²</b> · точек контура: <b>${road.outer.length}</b>${road.holes.length ? ` · островков: <b>${road.holes.length}</b>` : ""}</div>
         <p class="note">Дорога — это контур. Островки внутри него не едут. Тяните углы на плане, двойной клик по стороне добавляет угол.</p>
+        ${sel.part === -1 ? shapeControls() : ""}
         <div class="actions">
           <button class="btn" data-act="island">Нарисовать островок</button>
           ${sel.part !== -1 ? `<button class="btn danger" data-act="hole-del">Удалить островок</button>` : `<button class="btn danger" data-act="road-del">Удалить дорогу</button>`}
@@ -830,6 +1025,7 @@ const Ed = (() => {
       "hole-del": () => deleteSelected(),
       "road-del": () => deleteSelected(),
     });
+    if (sel.part === -1) bindShape(pane);
     pane.querySelectorAll("[data-hole]").forEach((el) => el.addEventListener("click", () => select({ t: "road", i: sel.i, part: Number(el.dataset.hole) })));
     pane.querySelectorAll("[data-rx],[data-rz]").forEach((el) => el.addEventListener("change", () => {
       const i = Number(el.dataset.rx ?? el.dataset.rz);
@@ -842,6 +1038,92 @@ const Ed = (() => {
       Scene3D.setSelection(sel);
       renderInspector();
     }));
+  }
+
+  // Shared by roads, lawns and markings: a move and a turn of the whole shape.
+  function shapeControls() {
+    return `<div class="row2">${fieldNum("Сдвиг по X", 0, "dx", 0.1, "м")}${fieldNum("по Z", 0, "dz", 0.1, "м")}</div>
+      <div class="row2">${fieldNum("Поворот", 0, "deg", 1, "°")}<div class="field"><span>&nbsp;</span><button class="btn" data-act="shape-apply">Сдвинуть и повернуть</button></div></div>
+      <div class="row"><button class="btn" data-act="shape-rot-l">Повернуть на −15°</button><button class="btn" data-act="shape-rot-r">Повернуть на +15°</button></div>
+      <p class="note">Клавиши: стрелки — сдвиг (Shift — на 50 см), [ ] — поворот. Поворот идёт вокруг центра фигуры.</p>`;
+  }
+
+  function bindShape(pane) {
+    const val = (k) => Number(pane.querySelector(`[data-f="${k}"]`)?.value || 0);
+    bindForm(pane, {
+      "shape-apply": () => commit(() => { translateObject(sel, val("dx"), val("dz")); if (val("deg")) rotateObject(sel, val("deg")); }),
+      "shape-rot-l": () => commit(() => rotateObject(sel, -15)),
+      "shape-rot-r": () => commit(() => rotateObject(sel, 15)),
+      "shape-del": () => deleteSelected(),
+    });
+  }
+
+  function pointsList(ring) {
+    return `<div class="pts">${ring.map((p, i) => `<div class="pt ${sel.v === i ? "on" : ""}" data-pt="${i}"><span>${i + 1}</span>
+      <input type="number" step="0.05" value="${p[0].toFixed(2)}" data-rx="${i}"><input type="number" step="0.05" value="${p[1].toFixed(2)}" data-rz="${i}">
+      <button class="icon-btn" data-rdel="${i}" title="Удалить точку">×</button></div>`).join("")}</div>`;
+  }
+
+  function bindRing(pane, ring) {
+    pane.querySelectorAll("[data-rx],[data-rz]").forEach((el) => el.addEventListener("change", () => {
+      const i = Number(el.dataset.rx ?? el.dataset.rz);
+      commit(() => { ring[i] = [el.dataset.rx !== undefined ? Number(el.value) : ring[i][0], el.dataset.rz !== undefined ? Number(el.value) : ring[i][1]]; });
+    }));
+    pane.querySelectorAll("[data-rdel]").forEach((el) => el.addEventListener("click", () => deleteVertex(sel, Number(el.dataset.rdel))));
+    pane.querySelectorAll("[data-pt]").forEach((el) => el.addEventListener("click", (e) => {
+      if (e.target.closest("input,button")) return;
+      sel = { ...sel, v: Number(el.dataset.pt) };
+      Scene3D.setSelection(sel);
+      renderInspector();
+    }));
+  }
+
+  function renderLawn(pane, l) {
+    const ring = ringOf(sel);
+    const holes = sel.part === -1 ? `<p class="note">Дыры в газоне: ${l.holes.length}. Островок в газоне можно удалить, выбрав его в списке «Газоны и клумбы».</p>` : "";
+    pane.innerHTML = `
+      <section class="card">
+        <div class="card-head"><h3>${sel.part === -1 ? "Газон или клумба" : `Дыра ${sel.part + 1}`}</h3><span class="pill">lawn_${sel.i}</span></div>
+        <div class="stats">Площадь: <b>${Math.round(area(l.outer))} м²</b> · точек контура: <b>${l.outer.length}</b></div>
+        <p class="note">Газон рисуется сетью на своём уровне (−3 см от асфальта). Там, где газон лежит на тротуаре, тротуар уступает ему место. По дорогам газон не идёт.</p>
+        ${holes}
+        ${shapeControls()}
+        <div class="actions"><button class="btn danger" data-act="shape-del">${sel.part === -1 ? "Удалить газон" : "Удалить дыру"}</button></div>
+      </section>
+      <section class="card"><h3>Точки ${sel.part === -1 ? "контура" : "дыры"}</h3>${pointsList(ring)}</section>`;
+    bindShape(pane);
+    bindRing(pane, ring);
+  }
+
+  function renderMarking(pane, m) {
+    const line = !!m.points;
+    const paint = m.type === "paint";
+    const width = m.type === "stop" ? 0.4 : 0.13;
+    pane.innerHTML = `
+      <section class="card">
+        <div class="card-head"><h3>${paint ? "Разметка из сцены" : MARK_TYPES[m.type] || m.type}</h3><span class="pill">${m.id}</span></div>
+        ${paint
+          ? `<p class="note">Разметка перенесена из запечённой сцены: контур не правится точками, но её можно сдвинуть, повернуть или удалить.</p>`
+          : `<label class="field"><span>Тип</span><select data-f="mtype">${Object.entries(MARK_TYPES).map(([k, v]) => `<option value="${k}" ${m.type === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>`}
+        <label class="field"><span>Цвет</span><select data-f="mcolour">${Object.entries(MARK_COLOURS).map(([k, v]) => `<option value="${k}" ${(m.colour || "white") === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+        ${m.type === "solid" || m.type === "dashed" || m.type === "stop" ? fieldNum("Ширина", m.width || width, "mwidth", 0.01, "м") : ""}
+        ${m.type === "zebra" ? fieldNum("Длина полос", m.length || 4, "mlength", 0.5, "м") : ""}
+        ${shapeControls()}
+        <div class="actions"><button class="btn danger" data-act="shape-del">Удалить разметку</button></div>
+      </section>
+      ${line ? `<section class="card"><h3>Точки линии</h3>${pointsList(m.points)}</section>` : ""}`;
+    bindShape(pane);
+    if (line) bindRing(pane, m.points);
+    bindForm(pane, {
+      mtype: (el) => commit(() => {
+        m.type = el.value;
+        if ((m.type === "stop" || m.type === "zebra") && m.points) m.points = m.points.slice(0, 2);
+        if (m.type === "zebra") m.length = m.length || 4;
+      }),
+      mcolour: (el) => commit(() => { m.colour = el.value; }),
+      mwidth: (el) => commit(() => { m.width = Number(el.value); }),
+      mlength: (el) => commit(() => { m.length = Number(el.value); }),
+    });
   }
 
   function renderActor(pane, a) {
@@ -1023,6 +1305,8 @@ const Ed = (() => {
     let s = null;
     if (ref.type === "route") s = { t: "route", id: ref.id };
     else if (ref.type === "road") { const i = S.roads.findIndex((r) => r.id === ref.id); if (i >= 0) s = { t: "road", i, part: -1 }; }
+    else if (ref.type === "lawn") { const i = S.lawns.findIndex((l) => l.id === ref.id); if (i >= 0) s = { t: "lawn", i, part: -1 }; }
+    else if (ref.type === "marking") { if (markingOf(ref.id)) s = { t: "marking", id: ref.id }; }
     else if (ref.type === "stop") s = { t: "stop" };
     else if (ref.type === "light") s = { t: "light", id: ref.id };
     else if (ref.type === "actor") s = { t: "actor", id: ref.id };
@@ -1095,6 +1379,7 @@ const Ed = (() => {
     else if (o.pos) c = o.pos;
     else if (o.points) c = o.points[Math.floor(o.points.length / 2)];
     else if (o.outer) c = o.outer[0];
+    else if (o.polygons && o.polygons.length) c = o.polygons[0].outer[0];
     if (c) Scene3D.focus(c[0], c[1]);
   }
 
@@ -1110,7 +1395,7 @@ const Ed = (() => {
     if (isTyping(e) || mod) return;
     if (!S) return;
     const k = e.key.toLowerCase();
-    const map = { v: "select", m: "route", d: "road", i: "island", p: "decor", a: "actor", l: "light", s: "stop" };
+    const map = { v: "select", m: "route", d: "road", r: "straight", i: "island", g: "lawn", k: "marking", p: "decor", a: "actor", l: "light", s: "stop" };
     if (map[k] && !e.altKey) { e.preventDefault(); return setTool(map[k]); }
     if (k === "escape") { cancelDraft(); setTool("select"); select(null); return; }
     if (k === "enter") { e.preventDefault(); return finishDraft(); }
@@ -1120,8 +1405,9 @@ const Ed = (() => {
     if (k === "arrowright") { e.preventDefault(); return nudge(step, 0); }
     if (k === "arrowup") { e.preventDefault(); return nudge(0, step); }
     if (k === "arrowdown") { e.preventDefault(); return nudge(0, -step); }
-    if (k === "[") return rotate(e.shiftKey ? -45 : -5);
-    if (k === "]") return rotate(e.shiftKey ? 45 : 5);
+    // With Shift the key reports "{" or "}", not "[" or "]": both forms are taken.
+    if (k === "[" || k === "{") { e.preventDefault(); return rotate(k === "{" ? -45 : -5); }
+    if (k === "]" || k === "}") { e.preventDefault(); return rotate(k === "}" ? 45 : 5); }
     if (k === "f") return Scene3D.fit();
     if (k === "?") return ($("#help-dialog").hidden = false);
   }

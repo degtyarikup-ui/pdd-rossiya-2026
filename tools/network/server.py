@@ -61,7 +61,7 @@ def removed_items(old: dict, new: dict) -> list:
     """What this save takes away from the scene (routes, participants, lights, roads, props)."""
     out = []
     for key, label in (("routes", "маршрут"), ("actors", "участник"), ("lights", "светофор"), ("roads", "дорога"),
-                       ("decor", "предмет")):
+                       ("decor", "предмет"), ("lawns", "газон"), ("markings", "разметка")):
         before = {x.get("id") for x in old.get(key, [])}
         after = {x.get("id") for x in new.get(key, [])}
         out += [f"{label} {x}" for x in sorted(before - after)]

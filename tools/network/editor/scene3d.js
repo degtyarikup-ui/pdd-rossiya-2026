@@ -167,12 +167,25 @@ const Scene3D = (() => {
     }
   }
 
+  // One material per layer of the network (build.py): asphalt, pavement, lawns (grass detail) and
+  // paint (flat). Every network layer takes a polygon offset, so where a copy of the same ground
+  // is left in the baked scene, the network's surface wins the depth test instead of flickering.
+  const OFFSET = { polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 };
+  function layerMaterial(s) {
+    if (s.layer === "") return new THREE.MeshLambertMaterial({ color: s.colour, side: THREE.DoubleSide, ...OFFSET });
+    const kind = s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
+    const m = surfaceMaterial(kind, s.layer === "grass" ? "#86a97a" : s.colour);
+    Object.assign(m, OFFSET);
+    return m;
+  }
+
   function rebuildRoads() {
     const g = setGroup("roads");
     if (!build) return;
     for (const s of build.surfaces) {
-      const kind = s.id === "asphalt" ? "asphalt" : "pavement";
-      const period = DETAIL[kind].period;
+      if (!s.idx.length) continue;
+      const kind = s.layer === "" ? null : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
+      const period = kind ? DETAIL[kind].period : 1;
       const geo = new THREE.BufferGeometry();
       const pos = [], uv = [];
       const verts = s.verts;
@@ -184,7 +197,7 @@ const Scene3D = (() => {
       geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
       geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
       geo.computeVertexNormals();
-      const m = new THREE.Mesh(geo, surfaceMaterial(kind, s.colour));
+      const m = new THREE.Mesh(geo, layerMaterial(s));
       m.userData.own = true;
       g.add(m);
     }
@@ -203,6 +216,65 @@ const Scene3D = (() => {
     g.add(km);
   }
 
+  // The game's filter of the baked scene (game_godot/scripts/situation.gd _without_baked_ground):
+  // the static mesh loses the flat triangles the network draws itself, so the editor shows what the
+  // game shows. Textured meshes (the dirt overlay) are kept, as the game keeps them.
+  const COVER_CELL = 5;
+  function coverIndex(B) {
+    const cover = new Map();
+    for (const s of B.surfaces) {
+      const v = s.verts;
+      for (let k = 0; k + 2 < s.idx.length; k += 3) {
+        const a = s.idx[k] * 2, b = s.idx[k + 1] * 2, c = s.idx[k + 2] * 2;
+        const t = [v[a], v[a + 1], v[b], v[b + 1], v[c], v[c + 1]];
+        const x0 = Math.min(t[0], t[2], t[4]), x1 = Math.max(t[0], t[2], t[4]);
+        const z0 = Math.min(t[1], t[3], t[5]), z1 = Math.max(t[1], t[3], t[5]);
+        for (let i = Math.floor(x0 / COVER_CELL); i <= Math.floor(x1 / COVER_CELL); i++) {
+          for (let j = Math.floor(z0 / COVER_CELL); j <= Math.floor(z1 / COVER_CELL); j++) {
+            const key = i + "," + j;
+            if (!cover.has(key)) cover.set(key, []);
+            cover.get(key).push(t);
+          }
+        }
+      }
+    }
+    return cover;
+  }
+  function covered(cover, x, z) {
+    for (const t of cover.get(Math.floor(x / COVER_CELL) + "," + Math.floor(z / COVER_CELL)) || []) {
+      const d = (t[3] - t[5]) * (t[0] - t[4]) + (t[4] - t[2]) * (t[1] - t[5]);
+      if (Math.abs(d) < 1e-12) continue;
+      const w1 = ((t[3] - t[5]) * (x - t[4]) + (t[4] - t[2]) * (z - t[5])) / d;
+      const w2 = ((t[5] - t[1]) * (x - t[4]) + (t[0] - t[4]) * (z - t[5])) / d;
+      if (w1 >= -1e-6 && w2 >= -1e-6 && 1 - w1 - w2 >= -1e-6) return true;
+    }
+    return false;
+  }
+  function filterBaked(root, B) {
+    const cover = coverIndex(B);
+    root.traverse((o) => {
+      if (!o.isMesh || o.name !== "static" || !o.geometry || !o.geometry.index) return;
+      // The loader's cache shares geometry with its clones: filter a copy, so a redraw starts afresh.
+      const geo = o.geometry = o.geometry.clone(), pos = geo.attributes.position, index = geo.index.array;
+      const keep = [];
+      for (let k = 0; k < index.length; k += 3) {
+        const a = index[k], b = index[k + 1], c = index[k + 2];
+        const ya = pos.getY(a), yb = pos.getY(b), yc = pos.getY(c);
+        const flat = Math.abs(ya - yb) < 0.001 && Math.abs(ya - yc) < 0.001;
+        const lo = Math.min(ya, yb, yc), hi = Math.max(ya, yb, yc);
+        let drop = false;
+        if (flat && ya < -0.001 && ya > -0.5) drop = true;
+        else if (flat && ya > 0.17 && ya < 0.215) drop = true;
+        else if (flat && ya >= -0.001 && ya < 0.035) {
+          const cx = (pos.getX(a) + pos.getX(b) + pos.getX(c)) / 3, cz = (pos.getZ(a) + pos.getZ(b) + pos.getZ(c)) / 3;
+          drop = covered(cover, cx, cz);
+        } else if (!flat && lo > -0.02 && hi < 0.215) drop = true;
+        if (!drop) keep.push(a, b, c);
+      }
+      geo.setIndex(keep);
+    });
+  }
+
   function rebuildStatic() {
     const g = setGroup("static");
     if (!model) return;
@@ -210,6 +282,7 @@ const Scene3D = (() => {
     const token = loadToken;
     loadGltf(url).then((root) => {
       if (!root || token !== loadToken || groups.static !== g) return;
+      if (build) filterBaked(root, build);
       root.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
       g.add(root);
       needsRender = true;
@@ -427,7 +500,7 @@ const Scene3D = (() => {
     scene.add(m);
   }
 
-  // The points of the selected object (route or road ring), as [x, z].
+  // The points of the selected object (route, road or lawn ring, a marking's line), as [x, z].
   function pointsOf(s) {
     if (!model || !s) return [];
     if (s.t === "route") {
@@ -438,6 +511,15 @@ const Scene3D = (() => {
       const r = model.roads[s.i];
       if (!r) return [];
       return s.part === -1 ? r.outer : (r.holes[s.part] || []);
+    }
+    if (s.t === "lawn") {
+      const l = (model.lawns || [])[s.i];
+      if (!l) return [];
+      return s.part === -1 ? l.outer : (l.holes[s.part] || []);
+    }
+    if (s.t === "marking") {
+      const m = (model.markings || []).find((x) => x.id === s.id);
+      return m && m.points ? m.points : [];
     }
     return [];
   }
@@ -458,7 +540,7 @@ const Scene3D = (() => {
     scene.add(sun);
     ground = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), mat(GROUND));
     ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.02;
+    ground.position.y = -0.15;   // the world's lawn (game_godot/scripts/world.gd), under the junction's own lawn
     scene.add(ground);
     loadDetail();
     camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 5000);
@@ -671,6 +753,11 @@ const Scene3D = (() => {
       lines.push({ kind: "road", i, part: -1, points: r.outer });
       r.holes.forEach((h, k) => lines.push({ kind: "road", i, part: k, points: h }));
     });
+    (model.lawns || []).forEach((l, i) => {
+      lines.push({ kind: "lawn", i, part: -1, points: l.outer });
+      l.holes.forEach((h, k) => lines.push({ kind: "lawn", i, part: k, points: h }));
+    });
+    (model.markings || []).forEach((m) => { if (m.points) lines.push({ kind: "marking", id: m.id, points: m.points }); });
     bd = 7;
     for (const l of lines) {
       for (let k = 0; k + 1 < l.points.length; k++) {
@@ -678,13 +765,19 @@ const Scene3D = (() => {
         const d = segDist(sx, sy, a, b);
         if (d < bd) {
           bd = d;
-          best = l.kind === "route" ? { kind: "route", id: l.id, seg: k } : { kind: "road", i: l.i, part: l.part, seg: k };
+          if (l.kind === "route") best = { kind: "route", id: l.id, seg: k };
+          else if (l.kind === "marking") best = { kind: "marking", id: l.id, seg: k };
+          else best = { kind: l.kind, i: l.i, part: l.part, seg: k };
         }
       }
     }
     if (best) return best;
     const w = worldAt(sx, sy);
     if (w) {
+      for (let i = (model.lawns || []).length - 1; i >= 0; i--) {
+        const l = model.lawns[i];
+        if (inside(w, l.outer) && !l.holes.some((h) => inside(w, h))) return { kind: "lawn", i, part: -1 };
+      }
       for (let i = model.roads.length - 1; i >= 0; i--) {
         const r = model.roads[i];
         if (inside(w, r.outer) && !r.holes.some((h) => inside(w, h))) return { kind: "road", i, part: -1 };
