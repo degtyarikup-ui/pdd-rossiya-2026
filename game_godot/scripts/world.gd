@@ -88,12 +88,21 @@ var retired: Array = []           # junctions behind the player, still on screen
 var phase := "driving"            # driving | question | resolving
 var auto_answer := false          # debug: answer correctly by itself
 var spawn_after := 0.0            # world z after which the next junction may come
+var road_queue: Array = []        # the road questions still to come (road_scenes.json, kind speed)
+var road: RoadEvent = null        # the road question on the street now
+var road_phase := ""              # approach | question | passed (while road != null)
+var road_after := 300.0           # world z after which the next road question may come
+var road_base_limit := 60         # the built-up limit to return to after a zone
+var road_force := ""              # --road=<id>: this road question first, no junctions (tests)
 
 
 func _ready() -> void:
 	cfg = JSON.parse_string(FileAccess.get_file_as_string("res://data/world.json"))
 	L = cfg.chunk_length
 	chunk_count = int(cfg.chunks_ahead) + int(cfg.chunks_behind) + 1
+	var roads: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://roads/road_scenes.json"))
+	road_queue = roads.scenes.filter(func(s): return s.scene.kind == "speed")
+	road_queue.shuffle()
 	scenery = Scenery.new(_season())
 	_setup_environment()
 	street = Street.new(self, scenery, L, chunk_count)
@@ -137,6 +146,8 @@ func _ready() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--situation="):
 			bag = [arg.trim_prefix("--situation=")]
+		if arg.begins_with("--road="):
+			road_force = arg.trim_prefix("--road=")
 		if arg == "--auto":
 			auto_answer = true
 		if arg == "--near":
@@ -164,6 +175,11 @@ func _ready() -> void:
 			(find_children("*", "WorldEnvironment", false, false)[0] as WorldEnvironment).environment.fog_enabled = false
 	if previews:
 		call_deferred("_run_previews")
+	if road_force != "":
+		# A test of one road question: the first speed question in the queue, no junctions.
+		road_queue.sort_custom(func(a, b): return a.id == road_force and b.id != road_force)
+		road_after = -1.0e9
+		spawn_after = 1.0e9
 	if topdown_now:
 		spawn_after = -1.0e9   # the junction is laid out at once
 	for arg in OS.get_cmdline_user_args():
@@ -588,7 +604,7 @@ func _next_id() -> String:
 ## The next junction is laid out ahead, beyond the view: its streets replace
 ## the ring there (blank chunks), chunk-aligned on both ends.
 func _maybe_spawn() -> void:
-	if current or drive.pos.z < spawn_after:
+	if current or road != null or drive.pos.z < spawn_after:
 		return
 	var id := _next_id()
 	var sit := Situation.load_scene(id, scenery)
@@ -653,6 +669,78 @@ func _update_junction(dt: float) -> void:
 		current.junction.update_resolution(dt, drive, local)
 
 
+## A road question on the straight street (road_scenes.json, kind speed): the car stops at the
+## stop mark, the question is asked there, then the zone's limit applies from its first sign
+## to its end sign. Junctions wait while it is on the street.
+func _update_road(_dt: float) -> void:
+	if road == null:
+		if current or road_queue.is_empty() or drive.pos.z < road_after:
+			return
+		var item: Dictionary = road_queue.pop_front()
+		road_base_limit = limit_kmh
+		road = RoadEvent.make(item, drive.pos.z + 150.0, street_half)
+		add_child(road)
+		road_phase = "approach"
+		return
+	var z := drive.pos.z
+	if road_phase == "approach" and z >= road.stop_z - 0.2 and cos(drive.yaw) > 0.2:
+		drive.pos.z = road.stop_z
+		drive.speed = 0
+		road_phase = "question"
+		phase = "question"
+		question_over = false
+		controls.set_active(false)
+		var card: Dictionary = road.question_text()
+		ui.show_question(card, Ui.answer_seconds(road.text_length()))
+		print("[road] question ", road.id, " stop at z ", snappedf(road.stop_z, 0.1))
+		event.emit({ "event": "approach_situation", "situation": road.id })
+		if qshot != "":
+			_qshot_later(qshot)
+		if auto_answer:
+			get_tree().create_timer(1.5).timeout.connect(func(): _on_answer_chosen(int(road.entry.correctAnswerIndex)))
+	if road.limit_kmh > 0 and z > road.limit_z and z <= road.end_sign_z:
+		if limit_kmh != road.limit_kmh:
+			print("[road] zone limit ", road.limit_kmh, " from z ", snappedf(z, 0.1))
+		limit_kmh = road.limit_kmh
+	if z > road.end_sign_z:
+		if limit_kmh != road_base_limit:
+			print("[road] zone ends, limit ", road_base_limit)
+		limit_kmh = road_base_limit
+	if z > road.end_z + 40.0:
+		road.queue_free()
+		road = null
+		road_phase = ""
+		road_after = z + 400.0
+
+
+func _on_road_answer(index: int) -> void:
+	if question_over or road == null:
+		return
+	question_over = true
+	var right := int(road.entry.correctAnswerIndex)
+	var is_correct := index == right
+	run.answer(road.id, is_correct)
+	print("[road] answer ", index, " correct ", is_correct)
+	sound.play("correct" if is_correct else "incorrect")
+	if not is_correct:
+		GameSound.buzz(150)
+	if index >= 0:
+		ui.mark_answer(index, right)
+	if is_correct:
+		await get_tree().create_timer(0.9).timeout
+		ui.hide_cards()
+		_road_resume()
+	else:
+		await get_tree().create_timer(0.9 if index >= 0 else 0.0).timeout
+		ui.show_explanation(road.question_text(), right, index < 0)
+
+
+func _road_resume() -> void:
+	road_phase = "passed"
+	phase = "driving"
+	controls.set_active(true)
+
+
 ## proceedAfterAnswer / releaseTraffic from the question card.
 func answer(correct: bool) -> void:
 	if phase != "question" or not current:
@@ -693,6 +781,9 @@ func _update_rules(delta: float) -> void:
 
 ## The player tapped an option (or the time ran out: index -1).
 func _on_answer_chosen(index: int) -> void:
+	if road != null and road_phase == "question":
+		_on_road_answer(index)
+		return
 	if phase != "question" or question_over or not current:
 		return
 	question_over = true
@@ -718,6 +809,9 @@ func _on_answer_chosen(index: int) -> void:
 
 func _on_continue() -> void:
 	ui.hide_cards()
+	if road != null and road_phase == "question":
+		_road_resume()
+		return
 	answer(false)
 
 
@@ -1056,6 +1150,7 @@ func _process(delta: float) -> void:
 	_update_lamps(delta)
 	_maybe_spawn()
 	_update_junction(delta)
+	_update_road(delta)
 	_retire_far()
 	# Snapped to the texture period so the grass pattern does not slide.
 	ground.position.x = 0.0
