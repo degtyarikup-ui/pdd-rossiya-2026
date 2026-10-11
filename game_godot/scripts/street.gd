@@ -226,19 +226,19 @@ func _plot(slot: int, rng: RandomNumberGenerator, side: float, z: float, style: 
 		# Blocks and towers stand by their centre, set back behind a lawn.
 		_building(slot, rng, style, Vector3(side * (18.5 if style == 3 else 13.5), 0, z), 0.0, true)
 	if posmod(row, 2) == (1 if side > 0 else 0):
-		_put(slot, "street/lamp", Vector3(side * 7.0, KERB, z - 9), PI if side > 0 else 0.0)
+		_put(slot, "street/lamp", Vector3(side * 7.0, KERB, z - 9), 0.0 if side > 0 else PI)   # the arm reaches over the road
 	match style:
 		0:
 			_tree(slot, rng, Vector3(side * (14 + rng.randf() * 6), 0, z + 4 + rng.randf() * 6))
 			_put(slot, "street/bush", Vector3(side * (10.5 + rng.randf() * 2), 0, z - 1), 0, Vector3.ONE, _bush())
 		1:
 			_put(slot, "street/fence_12" if depth < 7 else "street/fence_14", Vector3(side * 8.0, 0, z + 1))
-			if posmod(row, 2) == 0:
+			if rng.randf() < 0.22:   # now and then, each side on its own: no pairs facing each other
 				_park(slot, rng, Vector3(side * (ROAD_HALF - 0.45), 0, gap_z - 0.5), 0.0)
 			else:
 				_put(slot, "street/bush", Vector3(side * 12.8, 0, gap_z - 0.5), 0, Vector3(1.2, 0.9, 3), _bush())
 		3:
-			if posmod(row, 2) == 0:
+			if rng.randf() < 0.22:   # now and then, each side on its own: no pairs facing each other
 				_park(slot, rng, Vector3(side * (ROAD_HALF - 0.45), 0, gap_z - 0.5), 0.0)
 			else:
 				_put(slot, "street/bush", Vector3(side * 10.4, 0, gap_z - 0.5), 0, Vector3(1, 0.8, 2.6), _bush())

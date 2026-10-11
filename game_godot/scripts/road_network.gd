@@ -99,7 +99,12 @@ func surface_mesh(scenery: Scenery, uv_z := 0.0) -> ArrayMesh:
 
 
 func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_z: float) -> void:
+	# The street's own colours (street.gd), so the junction and the street meet without a seam.
 	var colour := Color(s.colour)
+	if s.layer == "pavement":
+		colour = scenery.color("sidewalk")
+	elif s.layer == "asphalt":
+		colour = Color("#2C2F36")
 	var layer := scenery.layer_of(s.layer)
 	var period: float = scenery.kinds[s.layer].period
 	var v: Array = s.verts
@@ -122,7 +127,7 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_z: floa
 ## stones line up from one wall to the next.
 func _add_kerbs(st: SurfaceTool, scenery: Scenery, uv_z: float) -> void:
 	var kerbs: Dictionary = build.kerbs
-	var kc := Color(kerbs.colour)
+	var kc := scenery.color("sidewalk")
 	st.set_color(Color(kc.r, kc.g, kc.b, 0.0))
 	# Plain colour, as the street's kerbs (scripts/street.gd _kerb): an 18 cm wall shows no detail.
 	var segs: Array = kerbs.segs

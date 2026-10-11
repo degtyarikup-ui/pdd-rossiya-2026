@@ -662,6 +662,8 @@ func _update_junction(dt: float) -> void:
 		question_over = false
 		controls.set_active(false)
 		text = sit.data.text.get(Ui.lang, sit.data.text.ru)
+		text = text.duplicate()
+		text["id"] = sit.id
 		ui.show_question(text, Ui.answer_seconds(int(sit.data.sourceTextLength)))
 		event.emit({ "event": "approach_situation", "situation": sit.id })
 		print("[game] question ", sit.id)
@@ -1089,10 +1091,19 @@ func _update_walkers(delta: float) -> void:
 	var base := drive.pos.z - L
 	for w in walkers:
 		w.z += w.v * delta
+	# People walking the same way in one lane keep a step apart: the one behind waits.
+	for w in walkers:
+		for o in walkers:
+			if o == w or o.dir != w.dir or signf(o.v) != signf(w.v):
+				continue
+			var ahead: float = fposmod((o.z - w.z) * signf(w.v), span)
+			if ahead > 0.0 and ahead < 1.0:
+				w.z -= signf(w.v) * (1.0 - ahead)
 		var z := base + fposmod(w.z - base, span)
 		var face := 0.0 if w.v > 0 else PI
-		# Two walking lanes on the pavement, beside the current carriageway.
-		var x: float = w.dir * (street_half + 1.0 + float(w.lane) * 1.1)
+		# Two walking lanes on the pavement, one per walking direction: people going opposite
+		# ways never meet head-on in one lane (they walked through each other).
+		var x: float = w.dir * (street_half + 1.0 + (0.0 if w.v > 0 else 1.1))
 		var at := Vector3(x, Street.KERB, z)
 		# Never on a carriageway: inside a junction's streets or in a blank zone a
 		# walker is simply not there (the junction has its own pedestrians).
@@ -1230,7 +1241,42 @@ func _question_framing() -> Dictionary:
 	var k := clampf((covered - lo.bottom) / maxf(1.0, hi.bottom - lo.bottom), 0.0, 1.0)
 	var a := Vector2(lo.look[0], lo.look[1])
 	var b := Vector2(hi.look[0], hi.look[1])
-	return { "look": a.lerp(b, k), "size": lerpf(lo.size, hi.size, k) }
+	var look := a.lerp(b, k)
+	var size := lerpf(lo.size, hi.size, k)
+	# Everything the answer depends on must be in view above the card: the answer routes, the
+	# manoeuvre, the participants and the stop line. Their box decides the zoom when the
+	# exported framing is too tight.
+	var d: Dictionary = current.sit.data
+	var pts: Array[Vector2] = [Vector2(float(d.get("playerStartX", -1.8) if d.get("playerStartX") != null else -1.8), float(d.stopZ))]
+	for tr in d.get("trajectories", []):
+		for q in tr.points:
+			pts.append(Vector2(q[0], q[1]))
+	var man = d.spec.maneuver if d.spec.maneuver != null else "straight"
+	var ex = d.exits.get(man)
+	if ex is Dictionary:
+		for q in ex.points:
+			pts.append(Vector2(q[0], q[q.size() - 1]))
+	for ac in d.actors:
+		var at := Vector2(ac.pos[0], ac.pos[2])
+		if at.length() < 40.0:     # participants waiting far down a street stay out of the frame
+			pts.append(at)
+	var lo_p := pts[0]
+	var hi_p := pts[0]
+	for q in pts:
+		lo_p = Vector2(minf(lo_p.x, q.x), minf(lo_p.y, q.y))
+		hi_p = Vector2(maxf(hi_p.x, q.x), maxf(hi_p.y, q.y))
+	var view := get_viewport().get_visible_rect().size
+	var free := clampf(1.0 - covered / 844.0, 0.3, 1.0)       # the part of the screen above the card
+	var aspect := view.x / view.y
+	var box := (hi_p - lo_p) + Vector2(8.0, 8.0)               # margin around the content
+	var need := maxf(box.y * 0.75 / free, box.x / aspect)      # the view is tilted: depth is foreshortened
+	need = minf(need, 95.0)     # never so far out that the junction turns into a map
+	if need > size:
+		size = need
+		var centre := (lo_p + hi_p) * 0.5
+		# The content's centre sits in the middle of the free part: shift the look down the screen.
+		look = Vector2(centre.x, centre.y - size * (1.0 - free) * 0.5 / 0.75)
+	return { "look": look, "size": size }
 
 
 ## Stop lamps and indicators, as updateBlinkers() in game.js: holding an

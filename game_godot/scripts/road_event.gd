@@ -41,7 +41,7 @@ static func make(item: Dictionary, z: float, half: float) -> RoadEvent:
 
 ## The text the question card shows: the question, its answers and the explanation.
 func question_text() -> Dictionary:
-	return { "ticket": entry.ticket, "title": entry.title, "options": entry.options,
+	return { "id": id, "ticket": entry.ticket, "title": entry.title, "options": entry.options,
 		"explanation": entry.get("explanation", ""), "pddRule": entry.get("pddRule", "") }
 
 

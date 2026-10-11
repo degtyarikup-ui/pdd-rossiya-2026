@@ -2,6 +2,9 @@
 config_version=5
 
 [application]
+
+boot_splash/show_image=false
+boot_splash/bg_color=Color(0.957, 0.961, 0.969, 1)
 config/name="PDD Game Spike"
 run/main_scene="res://main.tscn"
 config/icon="res://icon.png"

@@ -125,7 +125,7 @@ static func _vertex_colours_as_albedo(root: Node3D) -> void:
 				(mat as BaseMaterial3D).vertex_color_use_as_albedo = true
 
 
-## The baked junction carries its own lawn in three overlapping layers 3-5 mm apart, which
+## The baked junction carries its own pavement and lawn, overlapping the network's ones; its lawn is in three overlapping layers 3-5 mm apart, which
 ## flicker against each other and the world's lawn. Flat triangles below the carriageway are
 ## dropped: the world's one lawn (world.gd) is under the junction.
 static func _without_baked_ground(mesh: Mesh) -> Mesh:
@@ -143,6 +143,10 @@ static func _without_baked_ground(mesh: Mesh) -> Mesh:
 			var c := verts[idx[k + 2]]
 			var flat := absf(a.y - b.y) < 0.001 and absf(a.y - c.y) < 0.001
 			if flat and a.y < -0.001 and a.y > -0.5:
+				continue
+			# Its own pavement (0.18 m, ~200 000 m2 over all scenes) and lawns 6 mm above it lie
+			# exactly on the network's pavement (build.py): the network draws the pavement.
+			if flat and a.y > 0.17 and a.y < 0.195:
 				continue
 			keep.append_array([idx[k], idx[k + 1], idx[k + 2]])
 		arrays[Mesh.ARRAY_INDEX] = keep

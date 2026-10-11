@@ -269,7 +269,7 @@ func _place_sheet(panel: PanelContainer) -> void:
 	panel.position = Vector2(0, size.y - height)
 
 
-func _ticket_chip(text: String) -> PanelContainer:
+func _ticket_chip(text: String, scene_id := "") -> PanelContainer:
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", Ui.box(Ui.c("field"), 8))
 	var m := MarginContainer.new()
@@ -278,8 +278,48 @@ func _ticket_chip(text: String) -> PanelContainer:
 	m.add_theme_constant_override("margin_top", 4)
 	m.add_theme_constant_override("margin_bottom", 4)
 	p.add_child(m)
-	m.add_child(Ui.label(text, 12, 600, Ui.c("secondary")))
+	var has_picture := scene_id != "" and _picture_of(scene_id) != ""
+	m.add_child(Ui.label(text + ("  ▸ билет" if has_picture else ""), 12, 600, Ui.c("accent") if has_picture else Ui.c("secondary")))
+	if has_picture:
+		# Tapping the chip shows the original ticket picture the scene was made from.
+		p.mouse_filter = Control.MOUSE_FILTER_STOP
+		p.gui_input.connect(func(e):
+			if (e is InputEventScreenTouch and e.pressed) or (e is InputEventMouseButton and e.pressed):
+				_show_picture(scene_id))
 	return p
+
+
+static var _pictures := {}
+
+
+static func _picture_of(scene_id: String) -> String:
+	if _pictures.is_empty() and FileAccess.file_exists("res://questions/index.json"):
+		_pictures = JSON.parse_string(FileAccess.get_file_as_string("res://questions/index.json"))
+	return str(_pictures.get(scene_id, ""))
+
+
+## The original ticket picture over the game; a tap anywhere closes it.
+func _show_picture(scene_id: String) -> void:
+	var tex := load("res://questions/%s.webp" % _picture_of(scene_id)) as Texture2D
+	if tex == null:
+		return
+	var shade := ColorRect.new()
+	shade.color = Color(0, 0, 0, 0.82)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	var pic := TextureRect.new()
+	pic.texture = tex
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pic.set_anchors_preset(Control.PRESET_FULL_RECT)
+	pic.offset_left = 12
+	pic.offset_right = -12
+	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shade.add_child(pic)
+	shade.gui_input.connect(func(e):
+		if (e is InputEventScreenTouch and e.pressed) or (e is InputEventMouseButton and e.pressed):
+			shade.queue_free())
+	add_child(shade)
 
 
 ## The question (scene.json text for the current language).
@@ -303,7 +343,7 @@ func show_question(text: Dictionary, seconds: float) -> void:
 	box.add_theme_constant_override("separation", 5 if very_dense else (6 if dense else 8))
 
 	var head := HBoxContainer.new()
-	head.add_child(_ticket_chip(text.ticket))
+	head.add_child(_ticket_chip(text.ticket, str(text.get("id", ""))))
 	var sp := Control.new()
 	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(sp)
@@ -440,7 +480,7 @@ func show_explanation(text: Dictionary, correct: int, timed_out: bool) -> void:
 	box.add_theme_constant_override("separation", 6 if dense else 8)
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 8)
-	head.add_child(_ticket_chip(text.ticket))
+	head.add_child(_ticket_chip(text.ticket, str(text.get("id", ""))))
 	var chip := PanelContainer.new()
 	chip.add_theme_stylebox_override("panel", Ui.box(Ui.c("red_light"), 6))
 	var cm := MarginContainer.new()
