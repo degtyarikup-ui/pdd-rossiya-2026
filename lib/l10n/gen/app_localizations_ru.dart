@@ -873,6 +873,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameDebugUnlimitedFuel => 'Бесконечные заезды';
 
   @override
+  String get gameDebugPerf => 'Счётчик производительности';
+
+  @override
+  String get gameDebugPerfHint =>
+      'Кадры в секунду, задержка нажатия, нагрузка на видеокарту';
+
+  @override
   String get gameDebugUnlimitedFuelHint => 'Заезды не расходуются';
 
   @override

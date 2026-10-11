@@ -5485,6 +5485,8 @@
     // PCF with a blur radius: soft-edged shadows (PCFSoft ignores radius).
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.localClippingEnabled = true;
+    window.PDD_PERF?.init(renderer, sendToFlutter);
+    window.PDD_TOUCH?.init(sendToFlutter);
     // Road surfaces get their texture phase from the road they continue.
     window.PDD_ROADS.attach(renderer, { roots: () => state.roadSegments, lineage: () => state.exitRoad || currentCorridor });
     container.appendChild(renderer.domElement);
@@ -14559,6 +14561,7 @@
   let lastTime = null, telemetryElapsed = 0;
   function animate(time) {
     requestAnimationFrame(animate);
+    window.PDD_PERF?.begin(time);
     const elapsed = lastTime === null ? 0 : Math.max(0, (time - lastTime) / 1000);
     const dt = Math.min(elapsed, 0.05);
     // The ceremony follows wall time even below 20 FPS; road physics retains
@@ -14626,6 +14629,7 @@
     lastTime = time;
     adaptQuality(elapsed);
     renderer.render(scene, camera);
+    window.PDD_PERF?.end(time);
   }
   // Adaptive resolution: the pixel ratio drops in small steps only while the
   // frames are actually slow (a weak phone, a heavy scene) and climbs back
@@ -15972,6 +15976,9 @@
   }
   window.game = {
     releaseTraffic,
+    // On-screen pedals/arrows (touch-controls.js) and the performance probe (perf-hud.js).
+    setTouchControls(config) { window.PDD_TOUCH?.configure(config || {}); },
+    setPerfHud(on) { window.PDD_PERF?.set(on); },
     setGas(isPressed) {
       if (isPressed) gameAudio?.unlock();
       if (state.attract) { state.isAccelerating = false; return; }

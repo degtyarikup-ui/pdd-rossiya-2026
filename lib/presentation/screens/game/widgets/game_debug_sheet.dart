@@ -11,6 +11,10 @@ class GameDebugSheet extends StatefulWidget {
   final ValueChanged<String?> onWeatherChanged;
   final ValueChanged<String?> onSeasonChanged;
   final ValueChanged<bool> onUnlimitedFuelChanged;
+  final bool perfHud;
+  final ValueChanged<bool> onPerfHudChanged;
+
+  static void _ignore(bool _) {}
 
   const GameDebugSheet({
     super.key,
@@ -20,6 +24,8 @@ class GameDebugSheet extends StatefulWidget {
     required this.onWeatherChanged,
     required this.onSeasonChanged,
     required this.onUnlimitedFuelChanged,
+    this.perfHud = false,
+    this.onPerfHudChanged = _ignore,
   });
 
   @override
@@ -30,6 +36,7 @@ class _GameDebugSheetState extends State<GameDebugSheet> {
   late String? _weather = widget.weatherOverride;
   late String? _season = widget.seasonOverride;
   late bool _unlimitedFuel = widget.unlimitedFuel;
+  late bool _perfHud = widget.perfHud;
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +89,29 @@ class _GameDebugSheetState extends State<GameDebugSheet> {
               onChanged: (value) {
                 setState(() => _unlimitedFuel = value);
                 widget.onUnlimitedFuelChanged(value);
+              },
+            ),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: _perfHud,
+              secondary: Icon(
+                Icons.speed_rounded,
+                color: _perfHud ? colors.accent : colors.secondaryText,
+              ),
+              title: Text(
+                appL10n.gameDebugPerf,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: colors.primaryText,
+                ),
+              ),
+              subtitle: Text(
+                appL10n.gameDebugPerfHint,
+                style: TextStyle(color: colors.secondaryText),
+              ),
+              onChanged: (value) {
+                setState(() => _perfHud = value);
+                widget.onPerfHudChanged(value);
               },
             ),
             const SizedBox(height: 12),

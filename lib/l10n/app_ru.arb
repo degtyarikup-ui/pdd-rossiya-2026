@@ -418,6 +418,8 @@
   "gameScenePrecip": "Осадки",
   "gameSceneCalendar": "По календарю",
   "gameDebugUnlimitedFuel": "Бесконечные заезды",
+  "gameDebugPerf": "Счётчик производительности",
+  "gameDebugPerfHint": "Кадры в секунду, задержка нажатия, нагрузка на видеокарту",
   "gameDebugUnlimitedFuelHint": "Заезды не расходуются",
   "gameSceneSummer": "Лето",
   "gameSceneAutumn": "Осень",

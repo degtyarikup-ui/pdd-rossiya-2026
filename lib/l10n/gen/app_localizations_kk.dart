@@ -859,6 +859,13 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameDebugUnlimitedFuel => 'Шексіз жарыстар';
 
   @override
+  String get gameDebugPerf => 'Өнімділік есептегіші';
+
+  @override
+  String get gameDebugPerfHint =>
+      'Секундына кадр, басу кідірісі, графика жүктемесі';
+
+  @override
   String get gameDebugUnlimitedFuelHint => 'Жазбалар жұмсалмайды';
 
   @override

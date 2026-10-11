@@ -19,6 +19,8 @@
 | `sign-textures.js` | Текстуры знаков (большой файл с base64) |
 | `seasons.js` | Палитры сезонов, листопад |
 | `crossroads.js`, `traffic-controller*.js` | Мини-игры |
+| `touch-controls.js` | Педали и стрелки руля, нарисованные самой страницей (нажатие доходит до движка без моста Flutter → WebView). Flutter шлёт только `setTouchControls({visible, enabled, colors, labels, insets})`; обратно — события `haptic`, `gas_pressed`. В браузерной сборке остаётся Flutter-виджет `GameControlsOverlay` |
+| `perf-hud.js` | Счётчик производительности (fps, худший кадр, draw calls, задержка нажатия, видеочип); включается в скрытом меню (долгое нажатие на гараж, dev-сборка) → `setPerfHud`; раз в 5 с строка `[game-perf]` в logcat |
 | `ambient-audio.js` | Звук мини-игр (WebAudio, без файлов): фон улицы, мотор, трамвай, сирена, удар; включается настройкой «Звук» (`setSoundEnabled` / `TrafficControllerGame.setSound`) |
 
 ## Соглашения движка

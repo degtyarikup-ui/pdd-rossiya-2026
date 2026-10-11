@@ -255,6 +255,8 @@
   "gameScenePrecip": "Precipitation",
   "gameSceneCalendar": "By calendar",
   "gameDebugUnlimitedFuel": "Endless races",
+  "gameDebugPerf": "Performance counter",
+  "gameDebugPerfHint": "Frames per second, input delay, graphics load",
   "gameDebugUnlimitedFuelHint": "Races are not spent",
   "gameSceneSummer": "Summer",
   "gameSceneAutumn": "Autumn",

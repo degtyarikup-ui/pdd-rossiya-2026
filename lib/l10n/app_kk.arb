@@ -255,6 +255,8 @@
   "gameScenePrecip": "Жауын-шашын",
   "gameSceneCalendar": "Күнтізбе бойынша",
   "gameDebugUnlimitedFuel": "Шексіз жарыстар",
+  "gameDebugPerf": "Өнімділік есептегіші",
+  "gameDebugPerfHint": "Секундына кадр, басу кідірісі, графика жүктемесі",
   "gameDebugUnlimitedFuelHint": "Жазбалар жұмсалмайды",
   "gameSceneSummer": "Жаз",
   "gameSceneAutumn": "Күз",

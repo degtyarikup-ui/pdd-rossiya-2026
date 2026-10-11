@@ -55,6 +55,11 @@ class GameScreen extends ConsumerStatefulWidget {
   /// How many times in two minutes a dropped engine is reloaded silently
   /// before the error screen appears.
   @visibleForTesting
+  /// Widget tests drive the Flutter pedals; the browser build always uses them.
+  @visibleForTesting
+  static bool debugFlutterControls = false;
+  static bool get useFlutterControls => kIsWeb || debugFlutterControls;
+
   static int quietRecoveries = 3;
 
   @override
@@ -113,6 +118,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
   bool _outOfFuel = false;
   bool _fuelLoaded = false;
   bool _debugUnlimitedFuel = false;
+  bool _perfHud = false;
+  // Last state pushed to the page's own pedals (see touch-controls.js).
+  String? _controlsSig;
   Timer? _fuelTimer;
   int _correctBurst = 0;
   // Weekly rating: the run's score is reported as it grows (premium runs
@@ -218,6 +226,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     _restarting = false;
     _cleanup = null;
     _lastInsets = null;
+    _controlsSig = null;
     _initialization = _initWebView();
     _game.setPaused(_inLobby || !_active);
   }
@@ -348,6 +357,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
           _send('setSeason', [kind]);
         },
         onUnlimitedFuelChanged: _setDebugUnlimitedFuel,
+        perfHud: _perfHud,
+        onPerfHudChanged: (on) {
+          _perfHud = on;
+          _send('setPerfHud', [on]);
+        },
       ),
     );
   }
@@ -653,6 +667,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
       }
       if (event == 'ready') {
         _lastInsets = null;
+        _controlsSig = null;
         gameNotifier.onEngineReady();
         _syncTheme();
         _send('setSimpleSteering', [_simpleSteering]);
@@ -662,6 +677,21 @@ class _GameScreenState extends ConsumerState<GameScreen>
           final sit = GameSituation.fromJson(sitMap);
           gameNotifier.onApproachSituation(sit);
         }
+      } else if (event == 'haptic') {
+        if (data['kind'] == 'tap') {
+          HapticFeedbackHelper.tap();
+        } else {
+          HapticFeedbackHelper.select();
+        }
+      } else if (event == 'gas_pressed') {
+        if (_showGasHint) {
+          setState(() => _showGasHint = false);
+          SharedPreferences.getInstance()
+              .then((prefs) => prefs.setBool(_seenKey, true))
+              .catchError((_) => false);
+        }
+      } else if (event == 'perf') {
+        debugPrint('[game-perf] ${jsonEncode(data)}');
       } else if (event == 'telemetry') {
         final speed = data['speedKmH'];
         final dist = data['distanceM'];
@@ -743,6 +773,41 @@ class _GameScreenState extends ConsumerState<GameScreen>
     } catch (e) {
       debugPrint('Game JS Message Error: $e');
     }
+  }
+
+  static String _hex(Color c) =>
+      '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
+
+  /// Pushes pedal/arrow visibility, colours and labels to the page's own
+  /// controls (assets/game/touch-controls.js) when something changed.
+  void _syncTouchControls(bool visible, bool enabled) {
+    if (GameScreen.useFlutterControls || !_configured) return;
+    final colors = AppColors.of(context);
+    final padding = MediaQuery.paddingOf(context);
+    final config = {
+      'visible': visible,
+      'enabled': enabled,
+      'epoch': _controlsEpoch,
+      'colors': {
+        'accent': _hex(colors.accent),
+        'card': _hex(colors.cardBackground),
+        'text': _hex(colors.primaryText),
+        'secondary': _hex(colors.secondaryText),
+        'red': _hex(colors.red),
+        'darkCard': _hex(AppThemeColors.dark.cardBackground),
+      },
+      'labels': {
+        'left': appL10n.gameLeft,
+        'right': appL10n.gameRight,
+        'brake': appL10n.gameBrake,
+        'gas': appL10n.gameGas,
+      },
+      'insets': {'l': padding.left, 'r': padding.right, 'b': padding.bottom},
+    };
+    final sig = jsonEncode(config);
+    if (sig == _controlsSig) return;
+    _controlsSig = sig;
+    _send('setTouchControls', [config]);
   }
 
   void _syncTheme() {
@@ -1260,6 +1325,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     _cleanup = null;
     setState(() => _failed = false);
     _lastInsets = null;
+    _controlsSig = null;
     _initialization = _initWebView();
     _game.setPaused(_inLobby || !_active);
   }
@@ -1387,6 +1453,16 @@ class _GameScreenState extends ConsumerState<GameScreen>
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final now = ref.read(gameControllerProvider);
+      _syncTouchControls(
+        !_locked &&
+            !_outOfFuel &&
+            _reveal == null &&
+            !_inLobby &&
+            (now.phase == GamePhase.driving ||
+                now.phase == GamePhase.resolving),
+        now.controlsEnabled,
+      );
       final padding = MediaQuery.paddingOf(context);
       final insets = {
         'top': _hudKey.currentContext?.size?.height ?? padding.top,
@@ -1646,7 +1722,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
                             _toggleSourceImage(gameState.currentSituation!),
                         sourceOpen: _sourceVisible(gameState.currentSituation),
                       ),
-                    if (!_desktopWeb &&
+                    // Phones draw their own pedals inside the page (no bridge
+                    // between the press and the engine); this one is for the
+                    // browser build only.
+                    if (GameScreen.useFlutterControls &&
+                        !_desktopWeb &&
                         (gameState.phase == GamePhase.driving ||
                             gameState.phase == GamePhase.resolving))
                       GameControlsOverlay(

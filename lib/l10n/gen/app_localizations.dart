@@ -1576,6 +1576,18 @@ abstract class AppLocalizations {
   /// **'Бесконечные заезды'**
   String get gameDebugUnlimitedFuel;
 
+  /// No description provided for @gameDebugPerf.
+  ///
+  /// In ru, this message translates to:
+  /// **'Счётчик производительности'**
+  String get gameDebugPerf;
+
+  /// No description provided for @gameDebugPerfHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Кадры в секунду, задержка нажатия, нагрузка на видеокарту'**
+  String get gameDebugPerfHint;
+
   /// No description provided for @gameDebugUnlimitedFuelHint.
   ///
   /// In ru, this message translates to:

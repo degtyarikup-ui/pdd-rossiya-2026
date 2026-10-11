@@ -41,8 +41,14 @@ import 'package:pdd_app/presentation/screens/game/controllers/game_controller.da
 final signedIn = [isAuthenticatedProvider.overrideWithValue(true)];
 
 void main() {
-  setUp(() => GameScreen.quietRecoveries = 0);
-  tearDown(() => GameScreen.quietRecoveries = 3);
+  setUp(() {
+    GameScreen.quietRecoveries = 0;
+    GameScreen.debugFlutterControls = true;
+  });
+  tearDown(() {
+    GameScreen.quietRecoveries = 3;
+    GameScreen.debugFlutterControls = false;
+  });
   test('Garage unlocks cars after 5, 15, 35, 55 correct answers', () async {
     final garage = GameGarageService.instance..resetForTest();
     final unlockedAt = <int>[];
@@ -139,7 +145,7 @@ void main() {
     );
 
     expect(find.text(appL10n.gameDebugUnlimitedFuel), findsOneWidget);
-    await tester.tap(find.byType(Switch));
+    await tester.tap(find.byType(Switch).first);
     await tester.pump();
     expect(unlimited, isTrue);
   });
@@ -1836,6 +1842,38 @@ void main() {
         image.dispose();
       });
     }
+  });
+
+  testWidgets('Phones get their pedals from the page, not from Flutter', (
+    tester,
+  ) async {
+    GameScreen.debugFlutterControls = false;
+    final platform = _GameWebPlatform();
+    WebViewPlatform.instance = platform;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: signedIn,
+        child: MaterialApp(home: GameScreen(onExit: () {})),
+      ),
+    );
+    await tester.pump();
+    final web = platform.controllers.single;
+    web.emit('{"event":"ready"}');
+    await tester.pump();
+    await _startDrive(tester);
+    await tester.pump();
+    expect(find.byType(GameControlsOverlay), findsNothing);
+    final sent = web.scripts
+        .where((s) => s.contains('setTouchControls('))
+        .toList();
+    expect(sent, isNotEmpty);
+    expect(sent.last, contains('"visible":true'));
+    expect(sent.last, contains('"enabled":true'));
+    expect(sent.last, contains(appL10n.gameGas));
+    // A press reported by the page is a haptic tick, nothing else to do.
+    web.emit('{"event":"haptic","kind":"select"}');
+    web.emit('{"event":"gas_pressed"}');
+    await tester.pump();
   });
 
   testWidgets('Native ready, theme, failed command, restart and no HUD back', (

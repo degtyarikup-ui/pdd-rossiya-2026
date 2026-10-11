@@ -858,6 +858,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameDebugUnlimitedFuel => 'Endless races';
 
   @override
+  String get gameDebugPerf => 'Performance counter';
+
+  @override
+  String get gameDebugPerfHint =>
+      'Frames per second, input delay, graphics load';
+
+  @override
   String get gameDebugUnlimitedFuelHint => 'Races are not spent';
 
   @override
