@@ -10,6 +10,9 @@ import YandexLoginSDK
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "PddYandexAuth") {
       PddYandexAuth.register(with: registrar)
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "PddGodotGame") {
+      PddGodotGame.register(with: registrar)
+    }
   }
 }
 

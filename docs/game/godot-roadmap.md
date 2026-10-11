@@ -33,7 +33,7 @@
 | Платформа | Сейчас | Что сделать |
 |---|---|---|
 | Android | новая игра, отдельный экран, процесс `:game` | проверить запуск и возврат; Play Asset Delivery для 85 МБ игры, если AAB превысит лимит |
-| iOS | старая игра | собрать Godot из исходников как библиотеку (`library_type=static_library`, без `main`), экран `GodotViewController` в Runner, мост — Swift-плагин `PddHost`; запасной путь — отдельное приложение не годится |
+| iOS | новая игра собрана для устройства (`flutter build ios --release --no-codesign`; `ios/Runner/PddGodotGame.mm`, `scripts/godot_ios_assets.sh`); в симуляторе движка нет (в шаблоне нет arm64-слайса), там играет старая игра; запуск на телефоне не проверен | движок из шаблона экспорта (`libgodot`, без своей сборки из исходников), один движок на процесс: игра — окно поверх Flutter, каждый заезд перезагружает сцену; обмен через файлы в `Caches/pdd_game` (`request.json` → `summary.json`), см. `host.gd` и `embedded_io.gd`; проверить на iPhone: запуск, выход, повторные заезды, фон |
 | Веб (pdd-drive.ru/app/) | старая игра | веб-экспорт Godot (`web_nothreads`, без SharedArrayBuffer) в `iframe`, мост через `postMessage`; проверить вес (~30 МБ движок + сцены по требованию) |
 
 После iOS и веба — удалить `assets/game/` из Flutter (≈100 МБ в каждой сборке).

@@ -84,3 +84,4 @@ game_godot/network/preview/
 # Scene editor: copies of a scene before each save (local undo on disk)
 game_godot/network/history/
 /android/godot/
+/ios/Godot/

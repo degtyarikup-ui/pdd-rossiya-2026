@@ -169,7 +169,7 @@ func _ready() -> void:
 		_open_lobby()
 	# Desktop checks: `godot --path game_godot -- --shot=out.png [--season=winter]
 	# [--situation=<id>] [--auto] [--overview] [--start=<z>] [--wait=<s>]`.
-	for arg in OS.get_cmdline_user_args():
+	for arg in Host.user_args():
 		if arg.begins_with("--situation="):
 			bag = [arg.trim_prefix("--situation=")]
 		if arg.begins_with("--road="):
@@ -208,13 +208,13 @@ func _ready() -> void:
 		spawn_after = 1.0e9
 	if topdown_now:
 		spawn_after = -1.0e9   # the junction is laid out at once
-	for arg in OS.get_cmdline_user_args():
+	for arg in Host.user_args():
 		if arg.begins_with("--shot="):
 			_shot(arg.trim_prefix("--shot="))
 
 
 func _has_arg(name: String) -> bool:
-	for arg in OS.get_cmdline_user_args():
+	for arg in Host.user_args():
 		if arg == name or arg.begins_with(name + "="):
 			return true
 	return false
@@ -232,7 +232,7 @@ func _setup_language() -> void:
 	var l := OS.get_locale_language()
 	Ui.lang = l if l in ["ru", "kk"] else ("ru" if OS.has_feature("editor") else "en")
 	Ui.dark = DisplayServer.is_dark_mode()
-	for arg in OS.get_cmdline_user_args():
+	for arg in Host.user_args():
 		if arg.begins_with("--lang="):
 			Ui.lang = arg.trim_prefix("--lang=")
 		if arg == "--dark":
@@ -240,7 +240,7 @@ func _setup_language() -> void:
 
 
 func _season() -> String:
-	for arg in OS.get_cmdline_user_args():
+	for arg in Host.user_args():
 		if arg.begins_with("--season="):
 			return arg.trim_prefix("--season=")
 	# Same calendar as seasons.js: Sep–Nov autumn, Dec–Feb winter.
@@ -318,7 +318,7 @@ func _qshot_later(path: String) -> void:
 func _shot(path: String) -> void:
 	controls.gas = true
 	var wait := 4.0
-	for arg in OS.get_cmdline_user_args():
+	for arg in Host.user_args():
 		if arg.begins_with("--wait="):
 			wait = float(arg.trim_prefix("--wait="))
 	await get_tree().create_timer(wait).timeout
@@ -429,7 +429,7 @@ func _build_player() -> void:
 	add_child(player)
 	_mount_car("hatch", "#F08A24")
 	drive.pos = Vector3(-1.8, 0, 5)
-	for arg in OS.get_cmdline_user_args():
+	for arg in Host.user_args():
 		if arg.begins_with("--start="):
 			drive.pos.z = float(arg.trim_prefix("--start="))
 
@@ -1273,7 +1273,7 @@ func _set_street_objects(on: bool) -> void:
 
 
 func _arg_text(name: String) -> String:
-	for arg in OS.get_cmdline_user_args():
+	for arg in Host.user_args():
 		if arg.begins_with(name + "="):
 			return arg.trim_prefix(name + "=")
 	return ""

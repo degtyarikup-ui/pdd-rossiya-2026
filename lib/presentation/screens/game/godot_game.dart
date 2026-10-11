@@ -54,8 +54,13 @@ class GodotGame {
   static Future<bool>? _available;
   static bool _running = false;
 
+  /// Android and iOS run the game on their native screens (see ios/Runner/PddGodotGame.mm).
+  static bool get _nativeScreen =>
+      defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS;
+
   static Future<bool> available() {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+    if (kIsWeb || !_nativeScreen) {
       return Future.value(false);
     }
     return _available ??= _channel
