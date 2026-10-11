@@ -36,9 +36,12 @@ func play(kind: String) -> void:
 		_events.append({ "kind": kind, "t": 0.0, "dur": DURATION.get(kind, 0.1) })
 
 
+static var haptics := true         # the app's setting («Вибрация»): off, the phone stays quiet
+
 ## Short vibration for sharp events (the phone's own motor; not on desktop).
 static func buzz(ms: int) -> void:
-	Input.vibrate_handheld(ms)
+	if haptics:
+		Input.vibrate_handheld(ms)
 
 
 func _process(_delta: float) -> void:

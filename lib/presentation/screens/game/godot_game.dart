@@ -18,6 +18,7 @@ import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/data/services/progress_sync_service.dart';
+import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
@@ -48,6 +49,8 @@ class GodotGame {
   // The same keys as the WebView game (game_screen.dart): the tips and the first-drive gas hint.
   static const _tipsSeenKey = 'game_tips_seen';
   static const _firstRunSeenKey = 'game_seen';
+  static const _pendingRunKey = 'game_run_pending';
+  static const _runQuestions = GameState.runQuestions;
   static Future<bool>? _available;
   static bool _running = false;
 
@@ -130,6 +133,7 @@ class GodotGame {
           ],
         },
     ];
+    final pending = await _pendingRun();
     final selectedId = prefs?.getString(_vehicleKey) ?? GameGarageService.starter.id;
     final selectedPaint = prefs?.getString(_paintKey) ?? GameGarageService.starter.paint;
     return {
@@ -137,7 +141,11 @@ class GodotGame {
       'selected': {'id': selectedId, 'paint': selectedPaint},
       'record': prefs?.getInt(_bestScoreKey) ?? 0,
       'tips': !(prefs?.containsKey(_tipsSeenKey) ?? false),
-      'can_start': unlimited || runs > 0,
+      // The app's own switches: sound effects and the vibration.
+      'sound': SoundEffectsService.instance.isEnabled,
+      'haptics': HapticFeedbackHelper.enabled,
+      'can_start': unlimited || runs > 0 || pending != null,
+      if (pending != null) 'resume': pending.toJson(),
       'texts': {
         'start': appL10n.gameLobbyStart,
         'new': appL10n.gameLobbyNewCar,
@@ -146,6 +154,9 @@ class GodotGame {
         'runs': unlimited
             ? appL10n.gameRunsUnlimitedPill
             : appL10n.gameRunsPill(runs, GameRunsService.maxRuns),
+        if (pending != null) 'resume': appL10n.gameLobbyContinue,
+        if (pending != null)
+          'resume_text': appL10n.gameLobbyProgress(pending.answered, _runQuestions),
         'no_runs': appL10n.gameRunsNextIn(
           gameFuelCountdown(GameRunsService.instance.nextRefillAt),
         ),
@@ -173,13 +184,15 @@ class GodotGame {
     return list?.toSet();
   }
 
+  /// The result of one visit to the game: the car is kept; a run that began is
+  /// charged once (a resumed one is not); the progress is booked as it goes; a run
+  /// left in the middle is kept for «Продолжить заезд», a finished one shows its result.
   static Future<void> _afterGame(
     BuildContext context,
     WidgetRef ref,
     Map<String, dynamic> summary,
   ) async {
     final premium = ref.read(isPremiumProvider);
-    final started = summary['run_started'] == true;
     final car = summary['car'];
     if (car is Map && car['id'] is String && car['paint'] is String) {
       await _saveVehicle(car['id'] as String, car['paint'] as String);
@@ -187,27 +200,41 @@ class GodotGame {
     if (summary['tips_seen'] == true) {
       await _rememberTips();
     }
-    if (!started) return;
+    if (summary['run_started'] != true) return;
 
-    // The run is charged now: it began. Free players pay one run; premium is unlimited.
-    if (!ref.read(isPremiumProvider)) {
-      await GameRunsService.instance.consume();
+    final resumed = summary['resumed'] == true;
+    final finished = summary['finished'] == true;
+    final pending = await _pendingRun();
+    if (!resumed) {
+      // The run is charged now: it began. Free players pay one run; premium is unlimited.
+      if (!premium) await GameRunsService.instance.consume();
+      UsageReporter.track(UsageFeature.game);
     }
-    UsageReporter.track(UsageFeature.game);
     if (car is Map && car['id'] is String) {
       await _markDriven(car['id'] as String);
     }
 
-    final answered = (summary['answered'] as num?)?.toInt() ?? 0;
     final correct = (summary['correct'] as num?)?.toInt() ?? 0;
     final score = (summary['score'] as num?)?.toInt() ?? 0;
+    // Only what this visit added: the earlier visits of a resumed run were booked then.
+    final bookedScore = resumed ? (pending?.score ?? 0) : 0;
+    final bookedCorrect = resumed ? (pending?.correct ?? 0) : 0;
+    final runId = resumed && pending != null
+        ? pending.runId
+        : GameLeaderboardService.newRunId();
     final best = await _bestScore();
     final record = score > 0 && score > best;
-    await _book(score, record: record);
+    await _book(
+      runId: runId,
+      score: score,
+      delta: score - bookedScore,
+      newRun: !resumed,
+      record: record,
+    );
 
     final unlocked = <GameCar>[];
     if (!premium) {
-      for (var i = 0; i < correct; i++) {
+      for (var i = 0; i < correct - bookedCorrect; i++) {
         final car = await GameGarageService.instance.recordCorrect();
         if (car != null) unlocked.add(car);
       }
@@ -220,8 +247,59 @@ class GodotGame {
       await _showReveal(context, car);
       if (!context.mounted) return;
     }
-    if (answered == 0 || !context.mounted) return;
+
+    // Left before the last question (even before the first answer): the run waits for «Продолжить».
+    if (!finished) {
+      await _keepPendingRun(summary, runId: runId, score: score, correct: correct);
+      return;
+    }
+    await _clearPendingRun();
+    if (!context.mounted) return;
     await _showResult(context, ref, summary, best: best, record: record);
+  }
+
+  static Future<_PendingRun?> _pendingRun() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_pendingRunKey);
+      if (raw == null) return null;
+      return _PendingRun.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> _keepPendingRun(
+    Map<String, dynamic> summary, {
+    required String runId,
+    required int score,
+    required int correct,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final pending = _PendingRun(
+        runId: runId,
+        answered: (summary['answered'] as num?)?.toInt() ?? 0,
+        correct: correct,
+        score: score,
+        streak: (summary['streak'] as num?)?.toInt() ?? 0,
+        violations: (summary['violations'] as num?)?.toInt() ?? 0,
+        distanceM: (summary['distance_m'] as num?)?.toInt() ?? 0,
+        mistakes: [for (final m in (summary['mistakes'] as List? ?? const [])) '$m'],
+      );
+      await prefs.setString(_pendingRunKey, jsonEncode(pending.toJson()));
+    } catch (_) {
+      /* Without it the run starts again next time: no money is lost, only the progress. */
+    }
+  }
+
+  static Future<void> _clearPendingRun() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_pendingRunKey);
+    } catch (_) {
+      /* Nothing to clear. */
+    }
   }
 
   static Future<int> _bestScore() async {
@@ -265,13 +343,19 @@ class GodotGame {
     }
   }
 
-  static Future<void> _book(int score, {required bool record}) async {
-    if (score > 0) {
+  static Future<void> _book({
+    required String runId,
+    required int score,
+    required int delta,
+    required bool newRun,
+    required bool record,
+  }) async {
+    if (delta != 0 || newRun) {
       await GameLeaderboardService.instance.reportProgress(
-        runId: GameLeaderboardService.newRunId(),
-        delta: score,
+        runId: runId,
+        delta: delta,
         runScore: score,
-        newRun: true,
+        newRun: newRun,
       );
     }
     if (record) {
@@ -437,4 +521,52 @@ class GodotGame {
     if (number < 1 || number > inTicket.length) return null;
     return inTicket[number - 1];
   }
+}
+
+
+/// A run left in the middle: its progress, the score and correct answers already
+/// booked. «Продолжить заезд» continues it without a new charge.
+class _PendingRun {
+  final String runId;
+  final int answered;
+  final int correct;
+  final int score;
+  final int streak;
+  final int violations;
+  final int distanceM;
+  final List<String> mistakes;
+
+  const _PendingRun({
+    required this.runId,
+    required this.answered,
+    required this.correct,
+    required this.score,
+    required this.streak,
+    required this.violations,
+    required this.distanceM,
+    required this.mistakes,
+  });
+
+  factory _PendingRun.fromJson(Map<String, dynamic> json) => _PendingRun(
+        runId: json['run_id'] as String? ?? GameLeaderboardService.newRunId(),
+        answered: (json['answered'] as num?)?.toInt() ?? 0,
+        correct: (json['correct'] as num?)?.toInt() ?? 0,
+        score: (json['score'] as num?)?.toInt() ?? 0,
+        streak: (json['streak'] as num?)?.toInt() ?? 0,
+        violations: (json['violations'] as num?)?.toInt() ?? 0,
+        distanceM: (json['distance_m'] as num?)?.toInt() ?? 0,
+        mistakes: [for (final m in (json['mistakes'] as List? ?? const [])) '$m'],
+      );
+
+  /// The counters the game restores (run.gd restore) and the run's id.
+  Map<String, dynamic> toJson() => {
+        'run_id': runId,
+        'answered': answered,
+        'correct': correct,
+        'score': score,
+        'streak': streak,
+        'violations': violations,
+        'distance_m': distanceM,
+        'mistakes': mistakes,
+      };
 }

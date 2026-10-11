@@ -107,6 +107,8 @@ var tip_step := -1                # 0..2 the tips card on the screen; -1 none
 var tip_drawn := -1               # the step shown on the card now
 var tips_seen := false            # the player went through the tips (the app remembers it)
 var gas_hint_on := false          # «Зажмите и держите — это газ» until the first press
+var resume_state := {}            # the run left in the middle before (the app's progress), {} for a new one
+var resumed := false              # this run continues the one before (not charged again)
 const TIP_KEYS := ["gameTipGas", "gameTipSteer", "gameTipTurn"]
 
 
@@ -1208,6 +1210,9 @@ func _open_lobby() -> void:
 	lobby.start_requested.connect(_on_lobby_start)
 	lobby.spin.connect(_on_lobby_spin)
 	tips_enabled = bool(garage.get("tips", false))
+	resume_state = garage.get("resume", {})
+	sound.enabled = bool(garage.get("sound", true)) and not _is_test_run()
+	GameSound.haptics = bool(garage.get("haptics", true))
 	lobby_mode = true
 	paused = true
 	controls.set_active(false)
@@ -1244,6 +1249,9 @@ func _on_lobby_start(id: String, paint: String, hex: String) -> void:
 	chosen = { "id": id, "paint": paint }
 	_mount_car(id, hex)
 	run_started = true
+	if not resume_state.is_empty():
+		run.restore(resume_state)
+		resumed = true
 	lobby_mode = false
 	lobby.queue_free()
 	lobby = null
@@ -1277,6 +1285,8 @@ func _exit_summary() -> Dictionary:
 	out["run_started"] = run_started
 	out["car"] = chosen
 	out["tips_seen"] = tips_seen
+	out["resumed"] = resumed
+	out["finished"] = run.finished()
 	return out
 
 

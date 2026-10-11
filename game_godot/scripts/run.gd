@@ -36,4 +36,15 @@ func finished() -> bool:
 
 func summary() -> Dictionary:
 	return { "answered": answered, "correct": correct, "mistakes": mistakes, "score": score,
-		"violations": violations, "distance_m": distance_m }
+		"violations": violations, "distance_m": distance_m, "streak": streak }
+
+
+## Continues a run left in the middle (the app keeps its progress): the counters as they were.
+func restore(saved: Dictionary) -> void:
+	answered = int(saved.get("answered", 0))
+	correct = int(saved.get("correct", 0))
+	score = int(saved.get("score", 0))
+	streak = int(saved.get("streak", 0))
+	violations = int(saved.get("violations", 0))
+	distance_m = int(saved.get("distance_m", 0))
+	mistakes.assign(saved.get("mistakes", []))

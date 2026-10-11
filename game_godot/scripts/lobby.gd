@@ -190,8 +190,14 @@ func _refresh() -> void:
 	_badge.visible = car.new
 	_colour.text = "%s: %s" % [garage.texts.colour, paint.name]
 	_swatch.color = Color(paint.hex)
-	_record.text = "%s %d  ·  %s" % [garage.texts.record, garage.record, garage.texts.runs]
-	_start_label.text = garage.texts.start if garage.can_start else garage.texts.no_runs
+	var line := "%s %d  ·  %s" % [garage.texts.record, garage.record, garage.texts.runs]
+	if garage.has("resume"):   # the run left in the middle: how far it got
+		line = "%s  ·  %s" % [garage.texts.resume_text, line]
+	_record.text = line
+	if garage.can_start:
+		_start_label.text = garage.texts.resume if garage.has("resume") else garage.texts.start
+	else:
+		_start_label.text = garage.texts.no_runs
 	_start.modulate = Color.WHITE if garage.can_start else Color(1, 1, 1, 0.5)
 
 
