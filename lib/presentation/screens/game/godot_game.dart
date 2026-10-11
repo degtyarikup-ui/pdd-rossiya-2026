@@ -121,6 +121,7 @@ class GodotGame {
   }) async {
     final premium = ref.read(isPremiumProvider);
     await GameGarageService.instance.load();
+    await GameRunsService.instance.load();
     final runs = GameRunsService.instance.refresh();
     final unlimited = premium;
     final owned = GameGarageService.instance.cars;

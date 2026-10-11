@@ -1,7 +1,20 @@
 # 3D-игра «Живой город» — карта
 
-Игра — Three.js в WebView. Flutter-обёртка: `lib/presentation/screens/game/`
-(мост событий — `game_controller.dart`, `game_screen.dart`).
+Две реализации, пока идёт замена:
+
+- **Godot (новая)** — `game_godot/`, см. `game_godot/README.md` и план
+  `godot-roadmap.md`. Android — отдельный экран (процесс `:game`), iOS — окно
+  поверх приложения (`ios/Runner/PddGodotGame.mm`), web — `iframe` на сайте
+  (`godot/`). Flutter-обёртка: `lib/presentation/screens/game/godot_game.dart`
+  (гараж, оплата заезда, итоги, разбор ошибок, продолжение заезда).
+- **WebView / Three.js (старая)** — описана ниже; запускается, пока у платформы
+  нет сборки Godot (`GodotGame.available()` = false). Flutter-обёртка:
+  `lib/presentation/screens/game/` (мост событий — `game_controller.dart`,
+  `game_screen.dart`).
+
+Сборка Godot-версии: `./scripts/godot_android_assets.sh` (Android),
+`./scripts/godot_ios_assets.sh` (iOS), `./scripts/godot_dev.sh web` (web). Файлы
+движка и сцен в git не попадают.
 
 ## Файлы движка (`assets/game/`)
 
