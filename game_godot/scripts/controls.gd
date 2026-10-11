@@ -31,7 +31,7 @@ func _ready() -> void:
 	add_child(root)
 	_add(root, "left", "res://icons/steer_left.svg", "", Vector2(74, 76), CARD, ACCENT, 8, 36)
 	_add(root, "right", "res://icons/steer_right.svg", "", Vector2(74, 76), CARD, ACCENT, 8, 36)
-	_add(root, "brake", "res://icons/pedal_brake.svg", "СТОП", Vector2(100, 76), DARK, Color.WHITE, 8, 40)
+	_add(root, "brake", "res://icons/pedal_brake.svg", "", Vector2(100, 76), DARK, Color.WHITE, 8, 40)
 	_add(root, "gas", "res://icons/pedal_gas.svg", "ГАЗ", Vector2(100, 100), CARD, Color("#121212"), 50, 52)
 	get_viewport().size_changed.connect(_layout)
 	_layout()

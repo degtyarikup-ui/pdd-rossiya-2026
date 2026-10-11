@@ -56,6 +56,14 @@ func _init(parent: Node3D, scenery: Scenery, chunk_length: float, chunks: int) -
 		parked[id] = Scenery.Pool.new(parent, Models.mesh_of("res://models/traffic/%s.glb" % id), Models.baked_material(), chunks, rows, true)
 
 
+## Freezes the props of the whole ring under `parent` (see world.gd ghost).
+func snapshot(parent: Node3D) -> void:
+	for p in pools.values():
+		p.snapshot(parent)
+	for p in parked.values():
+		p.snapshot(parent)
+
+
 ## District of the plot row at world z (with the blend into the next one).
 func style_at(z: float) -> int:
 	var group_len := L * GROUP_CHUNKS
@@ -233,12 +241,12 @@ func _plot(slot: int, rng: RandomNumberGenerator, side: float, z: float, style: 
 			_put(slot, "street/bush", Vector3(side * (10.5 + rng.randf() * 2), 0, z - 1), 0, Vector3.ONE, _bush())
 		1:
 			_put(slot, "street/fence_12" if depth < 7 else "street/fence_14", Vector3(side * 8.0, 0, z + 1))
-			if rng.randf() < 0.22:   # now and then, each side on its own: no pairs facing each other
+			if posmod(row, 2) == (0 if side > 0 else 1) and rng.randf() < 0.25:   # rare, and a row parks on one side only
 				_park(slot, rng, Vector3(side * (ROAD_HALF - 0.45), 0, gap_z - 0.5), 0.0)
 			else:
 				_put(slot, "street/bush", Vector3(side * 12.8, 0, gap_z - 0.5), 0, Vector3(1.2, 0.9, 3), _bush())
 		3:
-			if rng.randf() < 0.22:   # now and then, each side on its own: no pairs facing each other
+			if posmod(row, 2) == (0 if side > 0 else 1) and rng.randf() < 0.25:   # rare, and a row parks on one side only
 				_park(slot, rng, Vector3(side * (ROAD_HALF - 0.45), 0, gap_z - 0.5), 0.0)
 			else:
 				_put(slot, "street/bush", Vector3(side * 10.4, 0, gap_z - 0.5), 0, Vector3(1, 0.8, 2.6), _bush())

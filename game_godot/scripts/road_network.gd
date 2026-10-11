@@ -86,11 +86,15 @@ func stop_point() -> Vector3:
 ## `scenery` supplies the detail-map layers and the shared material. `uv_z` is the
 ## junction's world z: the detail map is laid on the world grid, the same grid the
 ## street uses (scripts/street.gd), so the texture carries across the junction edge.
-func surface_mesh(scenery: Scenery, uv_z := 0.0) -> ArrayMesh:
+## `uv_xf` (the junction's placement in the world) wins over `uv_z` when given: after a turn
+## rebases the world the junction is rotated and the street's grid with it.
+func surface_mesh(scenery: Scenery, uv_z := 0.0, uv_xf := Transform3D()) -> ArrayMesh:
+	if uv_xf == Transform3D():
+		uv_xf = Transform3D(Basis(), Vector3(0, 0, uv_z))
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for s in build.surfaces:
-		_add_triangles(st, s, scenery, uv_z)
+		_add_triangles(st, s, scenery, uv_xf)
 	_add_kerbs(st, scenery, uv_z)
 	st.generate_normals()
 	var mesh := st.commit()
@@ -98,7 +102,7 @@ func surface_mesh(scenery: Scenery, uv_z := 0.0) -> ArrayMesh:
 	return mesh
 
 
-func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_z: float) -> void:
+func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Transform3D) -> void:
 	# The street's own colours (street.gd), so the junction and the street meet without a seam.
 	var colour := Color(s.colour)
 	if s.layer == "pavement":
@@ -116,7 +120,8 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_z: floa
 		for c in 3:
 			var i: int = idx[k + c] * 2
 			var p := Vector3(v[i], y, v[i + 1])
-			st.set_uv(Vector2(p.x / period, (p.z + uv_z) / period))
+			var w := uv_xf * p
+			st.set_uv(Vector2(w.x / period, w.z / period))
 			st.set_uv2(Vector2(layer, 0))
 			st.add_vertex(p)
 		k += 3

@@ -440,6 +440,11 @@ func remaining_seconds() -> float:
 	return _remaining
 
 
+## True only while a question card is open and its timer is running.
+func counting() -> bool:
+	return _card != null and not _answered
+
+
 func card_height() -> float:
 	return _card.size.y if _card != null else 0.0
 

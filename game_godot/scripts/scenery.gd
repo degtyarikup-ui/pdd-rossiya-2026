@@ -70,6 +70,7 @@ class Pool:
 	var multi: MultiMesh
 	var per_chunk: int
 	var used := {}                 # ring slot -> instances placed
+	var node: MultiMeshInstance3D
 
 	func _init(parent: Node, mesh: Mesh, mat: Material, chunks: int, cap: int, shadows: bool) -> void:
 		per_chunk = cap
@@ -82,7 +83,7 @@ class Pool:
 		for i in multi.instance_count:
 			multi.set_instance_color(i, Color.WHITE)
 			multi.set_instance_transform(i, HIDDEN)
-		var node := MultiMeshInstance3D.new()
+		node = MultiMeshInstance3D.new()
 		node.multimesh = multi
 		node.material_override = mat
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -90,6 +91,12 @@ class Pool:
 
 	# Unused instances: shrunk to nothing below the ground.
 	static var HIDDEN := Transform3D(Basis.from_scale(Vector3(0.001, 0.001, 0.001)), Vector3(0, -50, 0))
+
+	## A frozen copy of everything placed now, under `parent` (the old street kept after a turn).
+	func snapshot(parent: Node3D) -> void:
+		var copy := node.duplicate() as MultiMeshInstance3D
+		copy.multimesh = multi.duplicate()
+		parent.add_child(copy)
 
 	func begin(slot: int) -> void:
 		used[slot] = 0

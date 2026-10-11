@@ -86,6 +86,13 @@ func place_at(z: float, scenery: Scenery) -> void:
 		node.mesh = network.surface_mesh(scenery, z)
 
 
+## The detail map follows the world grid again after the world was rebased (a turn).
+func refresh_uv(scenery: Scenery) -> void:
+	var node := get_node_or_null("surfaces") as MeshInstance3D
+	if node and network:
+		node.mesh = network.surface_mesh(scenery, 0.0, transform)
+
+
 ## The point (situation coordinates) is inside this junction's own streets.
 func covers(local: Vector3) -> bool:
 	return absf(local.x) <= _crop and absf(local.z) <= _crop
@@ -146,7 +153,13 @@ static func _without_baked_ground(mesh: Mesh) -> Mesh:
 				continue
 			# Its own pavement (0.18 m, ~200 000 m2 over all scenes) and lawns 6 mm above it lie
 			# exactly on the network's pavement (build.py): the network draws the pavement.
-			if flat and a.y > 0.17 and a.y < 0.195:
+			if flat and a.y > 0.17 and a.y < 0.215:
+				continue
+			# Its own kerb walls (0..0.2 m) stand exactly on the network's kerbs: two walls in one
+			# place shimmer (kerb corners, the whole ring of a roundabout). The network draws them.
+			var lo := minf(a.y, minf(b.y, c.y))
+			var hi := maxf(a.y, maxf(b.y, c.y))
+			if not flat and lo > -0.02 and hi < 0.215:
 				continue
 			keep.append_array([idx[k], idx[k + 1], idx[k + 2]])
 		arrays[Mesh.ARRAY_INDEX] = keep

@@ -25,6 +25,8 @@ var chunk_index: Array[int] = []  # world chunk number shown in each ring slot
 var road_nodes: Array[MeshInstance3D] = []
 var scenery: Scenery
 var street: Street
+var ghost: Node3D                 # the street before the last turn, frozen until it is far behind
+var ghost_until := 0.0
 var blanks: Array = []            # [z0, z1]: an exam junction has its own streets there
 
 var player: Node3D
@@ -836,11 +838,24 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 		var xf := Transform3D(Basis(), Vector3(0, 0, shift)) * Transform3D(Basis(Vector3.UP, -exit_yaw), Vector3.ZERO) * Transform3D(Basis(), -centre)
 		for j in _junctions():
 			j.sit.transform = xf * j.sit.transform
+			j.sit.refresh_uv(scenery)
 		drive.pos = xf * drive.pos
 		drive.yaw -= exit_yaw
 		cam_heading -= exit_yaw
 		skip_jerk = true
 		cam_look = xf * cam_look
+		# The old street stays where it was (rotated with the world) instead of vanishing in view.
+		if ghost:
+			ghost.queue_free()
+		ghost = Node3D.new()
+		add_child(ghost)
+		ghost.transform = xf
+		for node: MeshInstance3D in road_nodes:
+			if node.mesh:
+				var copy := node.duplicate() as MeshInstance3D
+				ghost.add_child(copy)
+		street.snapshot(ghost)
+		ghost_until = shift + crop + 260.0
 		blanks = [[shift - crop, shift + crop]]
 		_reset_ambient()
 	# The exit road keeps its own width: a multi-lane exit widens the street
@@ -1174,6 +1189,9 @@ func _process(delta: float) -> void:
 	_update_traffic(delta)
 	_update_walkers(delta)
 	_recycle_chunks()
+	if ghost and drive.pos.z > ghost_until:
+		ghost.queue_free()
+		ghost = null
 	# The camera heading follows the car's slowly (game.js updateCamera:
 	# exp(-3 dt)) and only for real turns: small corrections and U-turn
 	# wobbles must not swing the view.
@@ -1217,7 +1235,7 @@ func _process(delta: float) -> void:
 			dbg_t = 0.0
 			print("[dbg] phase ", phase, " pos ", drive.pos, " yaw ", snappedf(drive.yaw, 0.01), " speed ", snappedf(drive.speed, 0.1), " gas ", controls.gas, " rec ", drive.recovery)
 	sound.speed = drive.speed
-	if phase == "question":
+	if phase == "question" and ui.counting():
 		var sec := ceili(ui.remaining_seconds())
 		if sec <= 3 and sec != last_tick_second:
 			last_tick_second = sec
