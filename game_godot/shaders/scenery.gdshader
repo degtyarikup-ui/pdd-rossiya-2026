@@ -8,7 +8,9 @@
 //   UV  = detail coordinates (metres / tile)
 //   UV2 = (kind layer + 1, vertical face 0/1); layer 0 = plain colour
 shader_type spatial;
-render_mode diffuse_lambert, specular_disabled;
+// cull_disabled: the game draws many road polygons double-sided (their
+// winding is arbitrary); a one-sided material made patches of asphalt vanish.
+render_mode diffuse_lambert, specular_disabled, cull_disabled;
 
 uniform sampler2DArray detail : repeat_enable, filter_linear_mipmap;
 uniform float macro[24];

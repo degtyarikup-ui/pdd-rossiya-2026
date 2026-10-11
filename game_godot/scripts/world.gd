@@ -46,6 +46,8 @@ var steer_hold := 0.0
 var blink := { "side": "", "left": 0.0, "clock": 0.0 }
 var tier := "high"
 var leaves: Leaves                # autumn only
+var cam_heading := 0.0            # smoothed like cameraHeading in game.js
+var ground: MeshInstance3D        # lawn under everything, follows the player
 var overview := false             # debug: look at the whole situation from above
 
 # Exam junctions.
@@ -67,6 +69,7 @@ func _ready() -> void:
 	drive = Drive.new()
 	drive.world = self
 	_build_player()
+	_build_ground()
 	if _season() == "autumn":
 		leaves = Leaves.new(scenery.season.canopy, 36)
 		add_child(leaves)
@@ -163,6 +166,29 @@ func _setup_environment() -> void:
 	camera.near = 1.0
 	camera.far = 400.0
 	add_child(camera)
+
+
+## A big lawn quad (season ground colour, grass detail) under the whole world:
+## no gap between districts and junction scenes ever shows the sky.
+func _build_ground() -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var c := Color(scenery.season.ground)
+	var layer := scenery.layer_of("grass")
+	var period: float = scenery.kinds.grass.period
+	var r := 400.0
+	st.set_color(Color(c.r, c.g, c.b, 0.0))
+	for p in [Vector3(-r, 0, -r), Vector3(r, 0, -r), Vector3(r, 0, r), Vector3(-r, 0, -r), Vector3(r, 0, r), Vector3(-r, 0, r)]:
+		st.set_uv(Vector2(p.x / period, p.z / period))
+		st.set_uv2(Vector2(layer, 0))
+		st.add_vertex(p)
+	st.generate_normals()
+	ground = MeshInstance3D.new()
+	ground.mesh = st.commit()
+	ground.material_override = scenery.material
+	ground.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ground.position.y = -0.05
+	add_child(ground)
 
 
 # --- the street ring -------------------------------------------------------
@@ -377,6 +403,7 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 			j.sit.transform = xf * j.sit.transform
 		drive.pos = xf * drive.pos
 		drive.yaw -= exit_yaw
+		cam_heading -= exit_yaw
 		blanks = [[shift - crop, shift + crop]]
 		_reset_ambient()
 	retired.append(current)
@@ -514,10 +541,22 @@ func _process(delta: float) -> void:
 	_maybe_spawn()
 	_update_junction(delta)
 	_retire_far()
+	# Snapped to the texture period so the grass pattern does not slide.
+	ground.position.x = 0.0
+	ground.position.z = snappedf(drive.pos.z, 44.8)
 	_update_traffic(delta)
 	_update_walkers(delta)
 	_recycle_chunks()
-	var look := Vector3(drive.pos.x * 0.3, 0, drive.pos.z) + Vector3(sin(drive.yaw), 0, cos(drive.yaw)) * 10.0
+	# The camera heading follows the car's slowly (game.js updateCamera:
+	# exp(-3 dt)) and only for real turns: small corrections and U-turn
+	# wobbles must not swing the view.
+	var want := drive.yaw if phase != "question" else 0.0
+	if phase == "resolving" or phase == "driving":
+		cam_heading += atan2(sin(want - cam_heading), cos(want - cam_heading)) * (1.0 - exp(-3.0 * delta))
+	var fwd := Vector3(sin(cam_heading), 0, cos(cam_heading))
+	var look := Vector3(drive.pos.x, 0, drive.pos.z) + fwd * 10.0
+	if absf(cam_heading) < 0.2:
+		look.x = drive.pos.x * 0.3
 	if phase == "question" and current:
 		# The question view the game settles on (exported from updateCamera).
 		var qc: Dictionary = current.sit.data.questionCamera
@@ -525,7 +564,7 @@ func _process(delta: float) -> void:
 		camera.size = lerpf(camera.size, float(qc.size), 1 - exp(-5 * delta))
 	else:
 		camera.size = lerpf(camera.size, 42.0, 1 - exp(-5 * delta))
-	camera.position = look + Vector3(0, 42, -44)
+	camera.position = look + Vector3(-sin(cam_heading) * 44.0, 42, -cos(cam_heading) * 44.0)
 	camera.look_at(look)
 	if overview and current:
 		camera.size = 220.0
