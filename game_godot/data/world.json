@@ -1,0 +1,21 @@
+{
+  "_comment": "Street look of the spike. Everything visual is data: colours, sizes, density. Agents edit this file, not the code.",
+  "chunk_length": 60,
+  "chunks_ahead": 6,
+  "chunks_behind": 2,
+  "road": { "lanes_each_way": 1, "lane_width": 3.6, "sidewalk": 4.0 },
+  "colors": {
+    "asphalt": "#3a3d42", "marking": "#f2f3f7", "sidewalk": "#b9b4ab", "grass": "#9bbf63",
+    "roof": ["#8a96a3", "#b5513f", "#6e7681"],
+    "facade": ["#c9ccd3", "#b0624c", "#e3d9c6", "#8f99a8", "#d8c5a0"],
+    "crown": ["#3f8f4a", "#e09a2c", "#d4682a", "#5aa84e"],
+    "trunk": "#6b4a32",
+    "car": ["#e8a33a", "#d9d9de", "#2f5d8c", "#3d6b48", "#9b2b2b", "#e0c94a"]
+  },
+  "buildings_per_side": 3,
+  "trees_per_side": 4,
+  "lamps_per_side": 2,
+  "traffic": { "cars": 12, "speed_min": 8, "speed_max": 14 },
+  "pedestrians": 16,
+  "player": { "max_speed_kmh": 70, "accel": 6.0, "brake": 14.0, "drag": 1.2, "steer_speed": 6.0 }
+}
