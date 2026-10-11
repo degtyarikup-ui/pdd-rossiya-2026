@@ -48,6 +48,15 @@ var tier := "high"
 var leaves: Leaves                # autumn only
 var cam_heading := 0.0            # smoothed like cameraHeading in game.js
 var ground: MeshInstance3D        # lawn under everything, follows the player
+var run := Run.new()
+var ui: GameUi
+var text: Dictionary = {}          # current question's text in the UI language
+var speeding_time := 0.0           # over the limit by 5+ km/h (game.js updateRoadEvent)
+var speeding_reported := false
+var oncoming_time := 0.0           # in the oncoming lane (updateLaneViolation)
+var oncoming_reported := false
+var limit_kmh := 60                # built-up area unless a sign says otherwise
+var question_over := false         # answered, the card is about to leave
 var overview := false             # debug: look at the whole situation from above
 
 # Exam junctions.
@@ -84,6 +93,12 @@ func _ready() -> void:
 	_spawn_walkers()
 	controls = Controls.new()
 	add_child(controls)
+	_setup_language()
+	ui = GameUi.new()
+	ui.snow = scenery.season.precipitation == "snow"
+	add_child(ui)
+	ui.answer_chosen.connect(_on_answer_chosen)
+	ui.continue_pressed.connect(_on_continue)
 	hud = PerfHud.new()
 	add_child(hud)
 	hud.tier_changed.connect(_apply_tier)
@@ -103,6 +118,18 @@ func _ready() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--shot="):
 			_shot(arg.trim_prefix("--shot="))
+
+
+## Language and theme: from the command line (--lang=), else the phone's.
+func _setup_language() -> void:
+	var l := OS.get_locale_language()
+	Ui.lang = l if l in ["ru", "kk"] else ("ru" if OS.has_feature("editor") else "en")
+	Ui.dark = DisplayServer.is_dark_mode()
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--lang="):
+			Ui.lang = arg.trim_prefix("--lang=")
+		if arg == "--dark":
+			Ui.dark = true
 
 
 func _season() -> String:
@@ -304,8 +331,10 @@ func on_fault(type: String, key: String) -> void:
 		if faults.has(key):
 			return
 		faults[key] = true
-	elif key == "offroad":
-		return  # outside a junction a kerb is felt, not reported (game: driveFaults once)
+	elif key == "offroad" or key.begins_with("collision"):
+		return  # outside a junction a kerb is felt, not reported
+	run.violations += 1
+	ui.show_notice(type)
 	event.emit({ "event": "violation", "type": type })
 	print("[game] violation ", type)
 
@@ -359,6 +388,9 @@ func _update_junction(dt: float) -> void:
 		return
 	var sit: Situation = current.sit
 	var stop_z: float = current.zc + float(sit.data.stopZ)
+	# The route guide shows within 55 m of the junction (game.js `it.guide.visible`).
+	if phase == "driving" or phase == "question":
+		sit.set_evidence_visible(absf(drive.pos.z - current.zc) < 55.0)
 	if phase == "driving" and drive.pos.z >= stop_z - 0.18 and cos(drive.yaw) > 0.2:
 		# At the question: the car stands on its stop mark (updatePlayerMovement).
 		drive.pos.z = stop_z
@@ -367,10 +399,16 @@ func _update_junction(dt: float) -> void:
 		drive.yaw = float(sit.data.playerStartRotY)
 		drive.speed = 0
 		phase = "question"
+		if sit.data.speedLimit != null:
+			limit_kmh = int(sit.data.speedLimit)
+		question_over = false
+		controls.set_active(false)
+		text = sit.data.text.get(Ui.lang, sit.data.text.ru)
+		ui.show_question(text, Ui.answer_seconds(int(sit.data.sourceTextLength)))
 		event.emit({ "event": "approach_situation", "situation": sit.id })
 		print("[game] question ", sit.id)
 		if auto_answer:
-			get_tree().create_timer(1.5).timeout.connect(func(): answer(true))
+			get_tree().create_timer(1.5).timeout.connect(func(): _on_answer_chosen(int(sit.data.correctAnswerIndex)))
 	if phase == "resolving":
 		var local: Vector3 = sit.global_transform.affine_inverse() * drive.pos
 		current.junction.update_resolution(dt, drive, local)
@@ -384,7 +422,61 @@ func answer(correct: bool) -> void:
 		current.junction.release()
 	current.junction.resolve(drive)
 	phase = "resolving"
+	current.sit.set_evidence_visible(false)   # hideBadges + the guide at the manoeuvre
+	controls.set_active(true)
 	drive.turning_at_junction = true
+
+
+## Rules on the plain street (updateRoadEvent / updateLaneViolation):
+## 5+ km/h over the limit for 0.8 s, 3 s in the oncoming lane.
+func _update_rules(delta: float) -> void:
+	if phase == "over":
+		return
+	var over := drive.speed * 3.6 > limit_kmh + 5
+	speeding_time = speeding_time + delta if over else 0.0
+	if not over:
+		speeding_reported = false
+	if over and speeding_time > 0.8 and not speeding_reported:
+		speeding_reported = true
+		on_fault("speeding", "speeding")
+	var inside := false
+	for j in _junctions():
+		if j.sit.covers(j.sit.global_transform.affine_inverse() * drive.pos):
+			inside = true
+	var oncoming := phase == "driving" and not inside and cos(drive.yaw) > 0.5 and drive.pos.x > -0.85
+	oncoming_time = oncoming_time + delta if oncoming else 0.0
+	if not oncoming:
+		oncoming_reported = false
+	elif oncoming_time >= 3.0 and not oncoming_reported:
+		oncoming_reported = true
+		on_fault("oncoming", "oncoming")
+
+
+## The player tapped an option (or the time ran out: index -1).
+func _on_answer_chosen(index: int) -> void:
+	if phase != "question" or question_over or not current:
+		return
+	question_over = true
+	var sit: Situation = current.sit
+	var right := int(sit.data.correctAnswerIndex)
+	var is_correct := index == right
+	run.answer(sit.id, is_correct)
+	if index >= 0:
+		ui.mark_answer(index, right)
+	if is_correct:
+		# The card stays a moment so the green answer is seen, then the car goes.
+		await get_tree().create_timer(0.9).timeout
+		ui.hide_cards()
+		answer(true)
+	else:
+		current.junction.release()
+		await get_tree().create_timer(0.9 if index >= 0 else 0.0).timeout
+		ui.show_explanation(text, right, index < 0)
+
+
+func _on_continue() -> void:
+	ui.hide_cards()
+	answer(false)
 
 
 ## finishManeuver: the player has left by an exit. A turn rebases the world
@@ -412,6 +504,11 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	spawn_after = drive.pos.z + 120
 	_rebuild_ring()
 	event.emit({ "event": "situation_cleared", "situationId": sit.id, "exit": exit_direction })
+	if run.finished():
+		phase = "over"
+		controls.set_active(false)
+		ui.show_result(run.summary())
+		event.emit({ "event": "run_finished", "summary": run.summary() })
 	print("[game] cleared ", sit.id, " by ", exit_direction)
 
 
@@ -495,8 +592,10 @@ func _update_traffic(delta: float) -> void:
 		car.z += car.v * delta
 		# A car in the player's lane just ahead: the player cannot drive through it.
 		var gap: float = car.z - drive.pos.z
-		if absf(car.x - drive.pos.x) < 1.9 and gap > 0 and gap < 5.0 and not _in_blank(car.z):
-			drive.speed = minf(drive.speed, maxf(0.0, car.v))
+		if absf(car.x - drive.pos.x) < 1.9 and gap > -1.0 and gap < 7.0 and car.v > 0 and not _in_blank(car.z):
+			# Stuck behind a slower car: it sets the pace, the bumpers never touch.
+			drive.speed = minf(drive.speed, maxf(0.0, car.v) + maxf(0.0, gap - 4.6))
+			drive.pos.z = minf(drive.pos.z, car.z - 4.4)
 		if car.z < behind:
 			car.z += span
 		elif car.z > behind + span:
@@ -521,6 +620,11 @@ func _update_walkers(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	delta = minf(delta, 0.05)
+	if phase == "question" and ui.tick(delta) and not question_over:
+		_on_answer_chosen(-1)
+	run.distance_m = int(drive.distance_traveled)
+	_update_rules(delta)
+	ui.set_hud(int(roundf(absf(drive.speed) * 3.6)), limit_kmh, run.violations, run.distance_m, run.score, run.answered, Run.QUESTIONS)
 	drive.accelerating = controls.gas and phase != "question"
 	drive.braking = controls.brake
 	drive.steering = controls.steer if phase != "question" else 0
@@ -559,9 +663,9 @@ func _process(delta: float) -> void:
 		look.x = drive.pos.x * 0.3
 	if phase == "question" and current:
 		# The question view the game settles on (exported from updateCamera).
-		var qc: Dictionary = current.sit.data.questionCamera
-		look = current.sit.global_transform * Vector3(qc.look[0], 0, qc.look[1])
-		camera.size = lerpf(camera.size, float(qc.size), 1 - exp(-5 * delta))
+		var qc := _question_framing()
+		look = current.sit.global_transform * Vector3(qc.look.x, 0, qc.look.y)
+		camera.size = lerpf(camera.size, qc.size, 1 - exp(-5 * delta))
 	else:
 		camera.size = lerpf(camera.size, 42.0, 1 - exp(-5 * delta))
 	camera.position = look + Vector3(-sin(cam_heading) * 44.0, 42, -cos(cam_heading) * 44.0)
@@ -573,6 +677,24 @@ func _process(delta: float) -> void:
 	if leaves:
 		leaves.step(delta, look)
 	hud.speed_kmh = drive.speed * 3.6
+
+
+## Question framing exported from the game for card heights 0..540 px of 844:
+## interpolated for this card (its real height relative to the screen).
+func _question_framing() -> Dictionary:
+	var samples: Array = current.sit.data.questionCamera
+	var covered := ui.card_height() / get_viewport().get_visible_rect().size.y * 844.0
+	var lo: Dictionary = samples[0]
+	var hi: Dictionary = samples[samples.size() - 1]
+	for i in samples.size() - 1:
+		if covered >= samples[i].bottom and covered <= samples[i + 1].bottom:
+			lo = samples[i]
+			hi = samples[i + 1]
+			break
+	var k := clampf((covered - lo.bottom) / maxf(1.0, hi.bottom - lo.bottom), 0.0, 1.0)
+	var a := Vector2(lo.look[0], lo.look[1])
+	var b := Vector2(hi.look[0], hi.look[1])
+	return { "look": a.lerp(b, k), "size": lerpf(lo.size, hi.size, k) }
 
 
 ## Stop lamps and indicators, as updateBlinkers() in game.js: holding an

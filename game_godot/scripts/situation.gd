@@ -13,6 +13,9 @@ var actors: Array[Node3D] = []       # same order as data.actors
 var _pools := {}                     # prop -> MultiMesh
 var _mask: Image                     # drivable area (road.png, roadSupports sampled)
 var _crop := 90.0
+var _guide: Node3D                   # route ribbons (visible while the question is open)
+var _evidence: Array[Node3D] = []    # letter tokens
+var _badges: Array[Node3D] = []      # name plates over the participants
 
 
 static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
@@ -41,6 +44,7 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 		light.scale = Vector3.ONE * float(l.scale)
 		s.add_child(light)
 		s.lights.append(light)
+	s._build_evidence(dir)
 	for i in s.data.actors.size():
 		var a: Dictionary = s.data.actors[i]
 		var actor: Node3D = (load(dir + "actor_%d.glb" % i) as PackedScene).instantiate()
@@ -49,6 +53,13 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 		actor.scale = _v(a.scale)
 		s.add_child(actor)
 		s.actors.append(actor)
+		if a.badge != null:
+			var plate := _badge_node(a.badge.text.get(Ui.lang, a.badge.text.ru), Color(a.badge.color))
+			plate.position = Vector3(0, float(a.badge.height), 0)
+			plate.scale = Vector3.ONE / actor.scale
+			actor.add_child(plate)
+			s._badges.append(plate)
+	s.set_evidence_visible(false)
 	return s
 
 
@@ -100,3 +111,126 @@ func _place_props(scenery: Scenery) -> void:
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if prop.begins_with("trees/") else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(node)
 		_pools[prop] = multi
+
+
+# --- question evidence -------------------------------------------------------------
+
+const TOKEN_BLUE := Color("#0574F8")
+
+
+func _build_evidence(dir: String) -> void:
+	if FileAccess.file_exists(dir + "guide.glb"):
+		_guide = (load(dir + "guide.glb") as PackedScene).instantiate()
+		for mi in _guide.find_children("*", "MeshInstance3D", true, false):
+			var mat := StandardMaterial3D.new()
+			mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			mat.albedo_color = TOKEN_BLUE
+			mat.albedo_color.a = 0.85
+			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+			mat.no_depth_test = false
+			(mi as MeshInstance3D).material_override = mat
+			(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			(mi as MeshInstance3D).position.y = 0.12
+		add_child(_guide)
+	for l in data.labels:
+		var token := _letter_node(l.letter)
+		token.position = _v(l.pos)
+		add_child(token)
+		_evidence.append(token)
+
+
+func set_evidence_visible(on: bool) -> void:
+	if _guide:
+		_guide.visible = on
+	for n in _evidence:
+		n.visible = on
+	for n in _badges:
+		n.visible = on
+
+
+func set_badges_visible(on: bool) -> void:
+	for n in _badges:
+		n.visible = on
+
+
+static var _plates := {}
+
+
+## A rounded plate texture (the game's name badge / letter token), cached.
+static func _plate(color: Color, size: Vector2i, radius: float, circle := false) -> ImageTexture:
+	var key := "%s%s%s" % [color.to_html(), size, circle]
+	if _plates.has(key):
+		return _plates[key]
+	var img := Image.create(size.x, size.y, false, Image.FORMAT_RGBA8)
+	var half := Vector2(size) / 2.0
+	for y in size.y:
+		for x in size.x:
+			var p := Vector2(x + 0.5, y + 0.5) - half
+			var d: float
+			if circle:
+				d = p.length() - half.x
+			else:
+				var q := p.abs() - (half - Vector2(radius, radius))
+				d = Vector2(maxf(q.x, 0.0), maxf(q.y, 0.0)).length() + minf(maxf(q.x, q.y), 0.0) - radius
+			img.set_pixel(x, y, Color(color.r, color.g, color.b, clampf(0.5 - d, 0.0, 1.0)))
+	img.generate_mipmaps()
+	var tex := ImageTexture.create_from_image(img)
+	_plates[key] = tex
+	return tex
+
+
+static func _billboard(tex: Texture2D, world_size: Vector2) -> Sprite3D:
+	var sp := Sprite3D.new()
+	sp.texture = tex
+	sp.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	sp.shaded = false
+	sp.pixel_size = world_size.x / float(tex.get_width())
+	sp.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	sp.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return sp
+
+
+static func _text3d(text: String, px: int, color: Color, weight := 700) -> Label3D:
+	var l := Label3D.new()
+	l.text = text
+	l.font = Ui.font(weight)
+	l.font_size = px
+	l.modulate = color
+	l.outline_size = 0
+	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	l.shaded = false
+	l.double_sided = true
+	l.no_depth_test = false
+	return l
+
+
+## createActorBadge: a rounded plate above the roof, dark text on a light plate.
+static func _badge_node(text: String, color: Color) -> Node3D:
+	var root := Node3D.new()
+	var plate := _billboard(_plate(color, Vector2i(160, 70), 14), Vector2(3.2, 1.4))
+	root.add_child(plate)
+	var lum := 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b
+	var label := _text3d(text, 40, Color("#121212") if lum > 0.55 else Color.WHITE, 600)
+	label.pixel_size = 0.0215
+	label.position.z = 0.01
+	label.width = 138 * 1.0
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	root.add_child(label)
+	return root
+
+
+## createLetterToken: a white disc with a blue letter and a soft shadow.
+static func _letter_node(letter: String) -> Node3D:
+	var root := Node3D.new()
+	var shadow := _billboard(_plate(Color(0, 0, 0, 0.28), Vector2i(96, 96), 40, true), Vector2(2.2, 2.2))
+	shadow.position = Vector3(0, -0.06, 0)
+	root.add_child(shadow)
+	var disc := _billboard(_plate(Color.WHITE, Vector2i(96, 96), 40, true), Vector2(2.2, 2.2))
+	disc.position.z = 0.002
+	root.add_child(disc)
+	var label := _text3d(letter, 64, TOKEN_BLUE, 800)
+	label.pixel_size = 0.028
+	label.position.z = 0.01
+	root.add_child(label)
+	return root

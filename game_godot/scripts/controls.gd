@@ -13,6 +13,8 @@ var steer := 0            # 1 = left, -1 = right, the last arrow held wins
 var _buttons := {}        # name -> Control
 var _fingers := {}        # touch index -> button name
 var _held_dirs: Array[int] = []
+var _root: Control
+var active := true
 
 const ACCENT := Color("#0574F8")
 const CARD := Color("#FFFFFF")
@@ -23,6 +25,7 @@ const RED := Color("#F04438")
 func _ready() -> void:
 	layer = 10
 	var root := Control.new()
+	_root = root
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
@@ -58,15 +61,30 @@ func _add(root: Control, name: String, text: String, size: Vector2, bg: Color, f
 
 func _layout() -> void:
 	var view := get_viewport().get_visible_rect().size
+	var ins := Ui.insets(get_viewport())
 	var safe := 20.0
-	var bottom := view.y - safe
+	var bottom: float = view.y - safe - ins.bottom
 	_buttons.left.position = Vector2(safe, bottom - 76)
 	_buttons.right.position = Vector2(safe + 84, bottom - 76)
 	_buttons.gas.position = Vector2(view.x - safe - 100, bottom - 100)
 	_buttons.brake.position = Vector2(view.x - safe - 100, bottom - 186)
 
 
+## Hidden and released while a question is on screen.
+func set_active(on: bool) -> void:
+	if on == active:
+		return
+	active = on
+	_root.visible = on
+	if not on:
+		for index in _fingers.keys():
+			_press(_fingers[index], false)
+		_fingers.clear()
+
+
 func _input(event: InputEvent) -> void:
+	if not active:
+		return
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			for name in _buttons:

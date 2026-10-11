@@ -158,6 +158,24 @@
     return obj;
   }
 
+  // The name plate above an actor (createActorMesh): text per language,
+  // plate colour, height; hidden plates are not exported.
+  function badgeOf(a) {
+    const sprite = a.mesh.userData.badge;
+    if (!sprite || sprite.visible === false) return null;
+    const cfg = a.config;
+    const label = cfg.siren ? 'Маячок + сирена' : cfg.badge || (cfg.name ? (
+      cfg.name.includes('Трамвай А') ? 'А' : cfg.name.includes('Трамвай Б') ? 'Б' : cfg.name.includes('Трамвай') ? 'Трамвай' :
+      cfg.name.includes('Автобус') ? 'Автобус' : cfg.name.includes('Фургон') ? 'Фургон' : cfg.name.includes('Грузовик') ? 'Грузовик' :
+      cfg.name.includes('Повозка') ? 'Повозка' : cfg.name.includes('Спец') ? 'Спец' : cfg.name.includes('Мотоцикл') ? 'Мото' :
+      cfg.name.includes('Велосипед') ? 'Вело' : cfg.name.includes('Пешеход') ? 'Пешеход' : cfg.name.includes('Встреч') ? 'Встречный' : 'Авто') : 'Авто');
+    const keep = window.PDD_LANG, text = {};
+    for (const lang of ['ru', 'en', 'kk']) { window.PDD_LANG = lang; text[lang] = window.PDD_T(label); }
+    window.PDD_LANG = keep;
+    const color = typeof cfg.color === 'number' ? '#' + cfg.color.toString(16).padStart(6, '0') : (cfg.color || '#0574F8');
+    return { text, color, height: r3(sprite.position.y) };
+  }
+
   function pathPoints(path, step = 1) {
     const len = path.getLength(), n = Math.max(2, Math.ceil(len / step));
     return Array.from({ length: n + 1 }, (_, i) => vec(path.getPointAt(i / n)));
@@ -227,9 +245,24 @@
       const p = propOf(o, origin, catalog);
       if (p && Math.abs(p.pos[0]) <= CROP && Math.abs(p.pos[2]) <= CROP) props.push(p);
     });
+    // Question evidence: route guides (flat ribbons + arrow heads), letter
+    // tokens (A, B, V...) and the actors' name badges.
+    const labels = [];
+    it.seg.traverse(o => {
+      if (o.userData.isLabel && isShown(o)) {
+        const p = o.getWorldPosition(new THREE.Vector3()).sub(origin);
+        labels.push({ letter: o.userData.labelText || o.userData.trajectoryLabel, pos: vec(p) });
+      }
+    });
+    let guideGlb = null;
+    if (it.guide && it.guide.children.length) {
+      it.guide.visible = true; it.seg.updateMatrixWorld(true);
+      const g = bakeStatic(it.guide, new Set(), origin);
+      if (g.children.length) guideGlb = await X.toGlb(g);
+    }
     const scene = bakeStatic(it.seg, skip, origin);
     out_weight = Object.entries(tally).sort((a, b) => b[1] - a[1]).slice(0, 25);
-    const out = { glb: await X.toGlb(scene), lights: [], actors: [], weight: out_weight };
+    const out = { glb: await X.toGlb(scene), guide: guideGlb, lights: [], actors: [], weight: out_weight };
     // Traffic lights: lamps named lamp_red / lamp_yellow / lamp_green.
     for (const tl of lights) {
       const copy = tl.clone(true);
@@ -257,6 +290,7 @@
       const flat = X.flatten(mesh, n => X.isDynamic(n) || n.name === 'pedals');
       out.actors.push({ glb: await X.toGlb(sanitize(flat)), id: a.config.id, type: a.config.type, name: a.config.name || '',
         config: a.config, halfLength: r3(a.halfLength || 0), halfWidth: r3(a.halfWidth || 0),
+        badge: badgeOf(a),
         pos: vec(a.mesh.position.clone().sub(origin)), yaw: r3(a.mesh.rotation.y), scale: vec(a.mesh.scale),
         path: pathPoints(a.path).map(p => [p[0], p[1], r3(p[2] - origin.z)]), length: r3(a.length),
         clearDistance: r3(a.clearDistance), maxSpeed: a.maxSpeed, signalPlan: a.signalPlan || null,
@@ -287,8 +321,10 @@
     for (let k = 0; k < mask.length; k++) { md.data[k * 4] = md.data[k * 4 + 1] = md.data[k * 4 + 2] = mask[k]; md.data[k * 4 + 3] = 255; }
     mc.getContext('2d').putImageData(md, 0, 0);
     out.mask = mc.toDataURL('image/png').split(',')[1];
-    const cam = E.questionCamera(it);
+    // Framing for several heights of the question card (px of 844).
+    const camSamples = [0, 150, 300, 380, 460, 540].map(b => { const c = E.questionCamera(it, b); return { bottom: b, look: [r3(c.look.x), r3(c.look.z - origin.z)], size: r3(c.size) }; });
     const spec = E.routeSpec(it.situation);
+    const s = it.situation;
     const exits = {};
     for (const action of ['straight', 'left', 'right', 'uturn']) {
       try {
@@ -297,9 +333,23 @@
         exits[action] = { points: points.map(p => [r3(p.x), r3(p.z - origin.z)]), exitYaw: r3(exitYaw) };
       } catch (e) { /* not offered here */ }
     }
-    const s = it.situation;
+    const texts = {};
+    for (const lang of ['ru', 'en', 'kk']) {
+      const t = lang === 'ru' ? s : (((window.PDD_SITUATION_I18N || {})[s.id] || {})[lang] || s);
+      texts[lang] = { ticket: t.ticket, title: t.title, options: t.options, explanation: t.explanation, pddRule: t.pddRule || s.pddRule || '' };
+    }
+    const legendLabels = (s.legend || []).map(l => ({ ...l }));
     out.json = {
       props,
+      labels,
+      text: texts,
+      correctAnswerIndex: s.correctAnswerIndex,
+      sourceTextLength: s.title.length + s.options.reduce((n, o) => n + o.length, 0),
+      legend: legendLabels,
+      stopPositions: s.stopPositions || null,
+      requiredStop: s.requiredStop ?? null,
+      redWait: s.redWait ?? null,
+      speedLimit: s.speedLimitKmH ?? null,
       id: s.id, geometry: s.geometry || null, type: s.type || null,
       centerZ: 0, startZ: r3(it.startZ - it.centerZ), stopZ: r3(it.stopZ - it.centerZ),
       playerStartX: it.playerStartX ?? null, playerStartRotY: it.playerStartRotY || 0,
@@ -310,7 +360,7 @@
       exits, trafficLights: s.trafficLights || null,
       crop: CROP,
       roadMask: { cell: CELL, x: r3(minX), z: r3(minZ - origin.z), width: W, height: H },
-      questionCamera: { look: [r3(cam.look.x), r3(cam.look.z - origin.z)], size: r3(cam.size) },
+      questionCamera: camSamples,
       trajectories: (s.trajectories || []).map(t => ({ ...t, points: t.points.map(([x, z]) => [-x, z]) })),
     };
     return out;

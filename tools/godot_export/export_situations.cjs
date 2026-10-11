@@ -47,13 +47,18 @@ const only = process.argv.slice(2);
   window.__eng = {
     state, routeSpec, ensureTraffic, maneuverPoints, curve, player: () => playerCarGroup, roadSupports, refreshRoadBounds,
     // The question view the game settles on at this junction (updateCamera).
-    questionCamera(it) {
+    // The question view the game settles on (updateCamera) for a covered
+    // bottom strip of bottom px (HUD on top is 130 px, a 390x844 screen).
+    questionCamera(it, bottom) {
       state.isAtSituation = true; state.activeIntersection = it;
-      for (let i = 0; i < 400; i++) updateCamera(1 / 60);
-      const out = { look: cameraLook.clone(), size: cameraViewSize, position: camera.position.clone() };
+      state.viewportTarget = null; state.viewportInsets = { top: 130, bottom };
+      cameraViewSize = 42;
+      for (let i = 0; i < 500; i++) updateCamera(1 / 60);
+      const out = { look: cameraLook.clone(), size: cameraViewSize };
       state.isAtSituation = false;
       return out;
     },
+
     scenarios: () => SITUATIONS.filter(s => routeSpec(s).reviewed && !isRegulatorSituation(s)),
     drain() { while (processSceneryJobs(1000).pending) {} },
     // Vertices of the scene by top-level child (to find what makes it heavy).
@@ -98,6 +103,7 @@ const only = process.argv.slice(2);
       fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(path.join(dir, 'scene.glb'), Buffer.from(item.glb, 'base64'));
       fs.writeFileSync(path.join(dir, 'road.png'), Buffer.from(item.mask, 'base64'));
+      if (item.guide) fs.writeFileSync(path.join(dir, 'guide.glb'), Buffer.from(item.guide, 'base64'));
       item.json.lights = item.lights.map((l, n) => { fs.writeFileSync(path.join(dir, `light_${n}.glb`), Buffer.from(l.glb, 'base64')); const { glb, ...rest } = l; return rest; });
       item.json.actors = item.actors.map((a, n) => { fs.writeFileSync(path.join(dir, `actor_${n}.glb`), Buffer.from(a.glb, 'base64')); const { glb, ...rest } = a; return rest; });
       fs.writeFileSync(path.join(dir, 'scene.json'), JSON.stringify(item.json, null, 1) + '\n');

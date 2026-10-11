@@ -1,0 +1,91 @@
+## Interface texts, fonts and colours of the Godot game's own screens
+## (HUD, question card, explanation). Strings come from the app's ARB files
+## (tools/godot_export/export_ui.py -> data/ui.json), colours are AppColors.
+class_name Ui
+extends RefCounted
+
+static var lang := "ru"
+static var dark := false
+static var _strings: Dictionary
+static var _fonts := {}
+
+const LIGHT := {
+	"accent": "#0574F8", "text": "#121212", "secondary": "#A1A6B7", "card": "#FFFFFF", "green": "#2BC280",
+	"green_light": "#E8F8F0", "red": "#ED4621", "red_light": "#FFECE8", "gray": "#EFF0F4", "field": "#F2F2F7",
+	"gold": "#FFA53C", "divider": "#E8E8E8",
+}
+const DARK := {
+	"accent": "#298BFE", "text": "#F2F3F7", "secondary": "#8A90A2", "card": "#1C1D22", "green": "#2BC280",
+	"green_light": "#162B1D", "red": "#ED4621", "red_light": "#341717", "gray": "#25272E", "field": "#202229",
+	"gold": "#FFA53C", "divider": "#22242B",
+}
+
+
+static func c(name: String) -> Color:
+	return Color((DARK if dark else LIGHT)[name])
+
+
+## Localised string; {name} placeholders are replaced from `args`.
+static func t(key: String, args := {}) -> String:
+	if _strings.is_empty():
+		_strings = JSON.parse_string(FileAccess.get_file_as_string("res://data/ui.json"))
+	var table: Dictionary = _strings.get(lang, _strings["ru"])
+	var s: String = table.get(key, _strings["ru"].get(key, key))
+	for k in args:
+		s = s.replace("{%s}" % k, str(args[k]))
+	return s
+
+
+## Onest, weights 400 / 500 / 600 / 700 / 800.
+static func font(weight := 500) -> Font:
+	if not _fonts.has(weight):
+		var style: String = { 400: "Regular", 500: "Medium", 600: "SemiBold", 700: "Bold", 800: "ExtraBold" }[weight]
+		_fonts[weight] = load("res://fonts/Onest-%s.ttf" % style)
+	return _fonts[weight]
+
+
+static func label(text: String, size: int, weight: int, color: Color, wrap := false) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_override("font", font(weight))
+	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_color_override("font_color", color)
+	if wrap:
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return l
+
+
+static func box(color: Color, radius := 8, top_only := false) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = color
+	if top_only:
+		s.corner_radius_top_left = radius
+		s.corner_radius_top_right = radius
+	else:
+		s.set_corner_radius_all(radius)
+	s.anti_aliasing = true
+	return s
+
+
+## answerSeconds (game_controller.dart): 15 s, +1 per 16 characters beyond 160, 15..30.
+static func answer_seconds(source_length: int) -> float:
+	return clampf(15.0 + ceil((source_length - 160) / 16.0), 15.0, 30.0)
+
+
+## Safe area of the screen in viewport units (notch, home indicator).
+static func insets(viewport: Viewport) -> Dictionary:
+	# Desktop: the safe area is the whole screen, not the window's.
+	if not OS.has_feature("mobile"):
+		return { "top": 0.0, "bottom": 0.0, "left": 0.0, "right": 0.0 }
+	var win := DisplayServer.window_get_size()
+	var safe := DisplayServer.get_display_safe_area()
+	if win.x <= 0 or safe.size.x <= 0:
+		return { "top": 0.0, "bottom": 0.0, "left": 0.0, "right": 0.0 }
+	var scale := viewport.get_visible_rect().size.x / float(win.x)
+	return {
+		"top": maxf(0.0, safe.position.y) * scale,
+		"bottom": maxf(0.0, win.y - (safe.position.y + safe.size.y)) * scale,
+		"left": maxf(0.0, safe.position.x) * scale,
+		"right": maxf(0.0, win.x - (safe.position.x + safe.size.x)) * scale,
+	}

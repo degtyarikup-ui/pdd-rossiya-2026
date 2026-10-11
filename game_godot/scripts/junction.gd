@@ -337,6 +337,20 @@ func update_resolution(dt: float, player: Drive, local_pos: Vector3) -> void:
 		return
 	resolution.elapsed += dt
 	var me := { "p": local_pos, "yaw": player.yaw, "hw": player.half_width, "hl": player.half_length }
+	# Red wait: the light turns green after redWait seconds (updateResolution).
+	var red_wait = data.get("redWait")
+	if red_wait != null and resolution.elapsed >= float(red_wait) and not resolution.get("green", false):
+		resolution.green = true
+		set_lights("green")
+	# A required stop (a stop line or sign): full stop before the line, else
+	# 'stop'; driving on while the light is still red is 'red_light'.
+	var req = data.get("requiredStop")
+	if req != null:
+		var front := local_pos.z + cos(player.yaw) * player.half_length
+		if red_wait == null:
+			_check_required_stop(float(req), front, player.speed, dt)
+		elif resolution.elapsed < float(red_wait) and front > float(req) + 0.25:
+			_fault("red_light", "red_light")
 	for a in motions:
 		if a.done:
 			continue
@@ -366,6 +380,20 @@ func update_resolution(dt: float, player: Drive, local_pos: Vector3) -> void:
 					a.waits_for_player = false
 			finished.emit(e[0], e[1])
 			return
+
+
+func _check_required_stop(line: float, front: float, speed: float, dt: float) -> void:
+	if resolution.get("stop_ok", false):
+		return
+	if front <= line + 0.15 and front >= line - 1.8 and absf(speed) < 0.25:
+		resolution.stop_wait = resolution.get("stop_wait", 0.0) + dt
+		if resolution.stop_wait >= 0.6:
+			resolution.stop_ok = true
+	else:
+		resolution.stop_wait = 0.0
+	if front > line + 0.25 and not resolution.get("stop_ok", false) and not resolution.get("stop_penalized", false):
+		resolution.stop_penalized = true
+		_fault("stop", "stop")
 
 
 func _conflict_ahead(me: Dictionary, a: Motion, player_speed: float) -> bool:
