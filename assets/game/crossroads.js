@@ -2594,9 +2594,10 @@
       !(tl.arrowActive && tl.arrow === chosen.data.maneuver);
 
     if (isIllegalRed) {
+      // Текст причины и статьи выбирает Flutter по языку (коды ниже).
       triggerCollision(chosen, priorityActor, {
-        reason: 'Проезд на запрещающий сигнал светофора (п. 6.2 ПДД РФ). Движение на красный свет категорически запрещено!',
-        pddArticle: 'Пункт 6.2 ПДД РФ',
+        reasonCode: 'redLight',
+        pddArticleCode: '6.2',
       });
       return;
     }
@@ -3126,8 +3127,8 @@
       type: 'collision',
       chosenId: wrongActor.data.id,
       priorityId: priorityActor.data.id,
-      reason: 'Слишком ранний выезд: не уступил дорогу и не дождался освобождения перекрестка движущимся транспортом! (п. 13.8 ПДД РФ)',
-      pddArticle: 'Пункт 13.8 ПДД РФ',
+      reasonCode: 'earlyExit',
+      pddArticleCode: '13.8',
     });
   }
 
@@ -3309,9 +3310,11 @@
           type: 'collision',
           chosenId: c.wrongActor.data.id,
           priorityId: c.priorityActor.data.id,
+          reasonCode: (c.customError && c.customError.reasonCode) || undefined,
           reason: (c.customError && c.customError.reason) ||
             c.priorityActor.data.explanation || c.priorityActor.data.ruleExplanation ||
             c.wrongActor.data.explanation || c.wrongActor.data.ruleExplanation || '',
+          pddArticleCode: (c.customError && c.customError.pddArticleCode) || undefined,
           pddArticle: (c.customError && c.customError.pddArticle) || currentScenario.pddArticle,
         });
 

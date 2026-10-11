@@ -1061,5 +1061,9 @@
       }
     }
   },
-  "aiGoPremium": "Шексіз AI үшін Premium жазылыңыз"
+  "aiGoPremium": "Шексіз AI үшін Premium жазылыңыз",
+  "crossroadsReasonRedLight": "Тыйым салатын бағдаршам сигналында өту (ЖЖЕ 6.2-тармағы). Қызыл жанғанда қозғалуға қатаң тыйым салынады!",
+  "crossroadsReasonEarlyExit": "Тым ерте шығу: жол бермедіңіз және қиылысты қозғалыстағы көліктер босатқанын күтпедіңіз! (ЖЖЕ 13.8-тармағы)",
+  "crossroadsArticleRedLight": "ЖЖЕ 6.2-тармағы",
+  "crossroadsArticleEarlyExit": "ЖЖЕ 13.8-тармағы"
 }

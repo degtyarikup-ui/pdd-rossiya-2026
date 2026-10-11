@@ -3368,4 +3368,18 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get aiGoPremium => 'Оформите Premium для безлимитного ИИ';
+
+  @override
+  String get crossroadsReasonRedLight =>
+      'Проезд на запрещающий сигнал светофора (п. 6.2 ПДД РФ). Движение на красный свет категорически запрещено!';
+
+  @override
+  String get crossroadsReasonEarlyExit =>
+      'Слишком ранний выезд: не уступил дорогу и не дождался освобождения перекрестка движущимся транспортом! (п. 13.8 ПДД РФ)';
+
+  @override
+  String get crossroadsArticleRedLight => 'Пункт 6.2 ПДД РФ';
+
+  @override
+  String get crossroadsArticleEarlyExit => 'Пункт 13.8 ПДД РФ';
 }

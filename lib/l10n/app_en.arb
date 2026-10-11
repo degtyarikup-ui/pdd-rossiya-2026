@@ -1061,5 +1061,9 @@
       }
     }
   },
-  "aiGoPremium": "Get Premium for unlimited AI"
+  "aiGoPremium": "Get Premium for unlimited AI",
+  "crossroadsReasonRedLight": "Driving through a red light (clause 6.2 of the Russian Traffic Regulations). Driving on red is strictly forbidden!",
+  "crossroadsReasonEarlyExit": "Entering too early: you did not yield and did not wait for the moving traffic to clear the intersection! (clause 13.8 of the Russian Traffic Regulations)",
+  "crossroadsArticleRedLight": "Clause 6.2 of the Russian Traffic Regulations",
+  "crossroadsArticleEarlyExit": "Clause 13.8 of the Russian Traffic Regulations"
 }

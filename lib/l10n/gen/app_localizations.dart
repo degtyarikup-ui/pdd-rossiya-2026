@@ -5577,6 +5577,30 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Оформите Premium для безлимитного ИИ'**
   String get aiGoPremium;
+
+  /// No description provided for @crossroadsReasonRedLight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проезд на запрещающий сигнал светофора (п. 6.2 ПДД РФ). Движение на красный свет категорически запрещено!'**
+  String get crossroadsReasonRedLight;
+
+  /// No description provided for @crossroadsReasonEarlyExit.
+  ///
+  /// In ru, this message translates to:
+  /// **'Слишком ранний выезд: не уступил дорогу и не дождался освобождения перекрестка движущимся транспортом! (п. 13.8 ПДД РФ)'**
+  String get crossroadsReasonEarlyExit;
+
+  /// No description provided for @crossroadsArticleRedLight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пункт 6.2 ПДД РФ'**
+  String get crossroadsArticleRedLight;
+
+  /// No description provided for @crossroadsArticleEarlyExit.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пункт 13.8 ПДД РФ'**
+  String get crossroadsArticleEarlyExit;
 }
 
 class _AppLocalizationsDelegate

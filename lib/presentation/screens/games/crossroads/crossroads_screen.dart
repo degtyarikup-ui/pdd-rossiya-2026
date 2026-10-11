@@ -293,8 +293,18 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     // Удар звучит в сцене; здесь — вибрация и разбор.
     HapticFeedbackHelper.collision();
 
-    final reason = data['reason'] as String? ?? '';
-    final pddArticle = data['pddArticle'] as String? ?? '';
+    // Причины нарушений, которые формирует сама сцена, приходят кодами и
+    // переводятся здесь; данные сценария уже приходят на нужном языке.
+    final reason = switch (data['reasonCode'] as String?) {
+      'redLight' => appL10n.crossroadsReasonRedLight,
+      'earlyExit' => appL10n.crossroadsReasonEarlyExit,
+      _ => data['reason'] as String? ?? '',
+    };
+    final pddArticle = switch (data['pddArticleCode'] as String?) {
+      '6.2' => appL10n.crossroadsArticleRedLight,
+      '13.8' => appL10n.crossroadsArticleEarlyExit,
+      _ => data['pddArticle'] as String? ?? '',
+    };
     final priorityId = data['priorityId'] as String?;
     final shouldGo = _curScenario.actors
         .where((a) => a.id == priorityId)
@@ -464,7 +474,10 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
               onTap: () => _setCategory(cat),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected ? colors.accent : colors.cardBackground,
                   borderRadius: BorderRadius.circular(999),
@@ -638,8 +651,7 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                             onPressed: () {
                               final count = _filteredScenarios.length;
                               setState(() {
-                                _scenarioIndex =
-                                    (_scenarioIndex + 1) % count;
+                                _scenarioIndex = (_scenarioIndex + 1) % count;
                                 _currentStep = 1;
                               });
                               _sendScenarioToEngine();
@@ -686,13 +698,10 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
 
           // 4. Модальная шторка ДТП (при ошибке очередности)
           if (_showCollisionModal)
-            Positioned.fill(
-              child: _buildCollisionModal(colors),
-            ),
+            Positioned.fill(child: _buildCollisionModal(colors)),
 
           // 5. Финальный экран GameOver / NewRecord (только если не открыта модалка ДТП)
-          if (_isGameOver && !_showCollisionModal)
-            _buildGameOverDialog(colors),
+          if (_isGameOver && !_showCollisionModal) _buildGameOverDialog(colors),
         ],
       ),
     );
@@ -772,8 +781,10 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                   isComplete
                       ? appL10n.gameCrossroadsCompleteTitle
                       : (_currentStep == 1
-                          ? appL10n.gameCrossroadsPromptWhoGoesFirst
-                          : appL10n.gameCrossroadsPromptWhoGoesNext(_currentStep)),
+                            ? appL10n.gameCrossroadsPromptWhoGoesFirst
+                            : appL10n.gameCrossroadsPromptWhoGoesNext(
+                                _currentStep,
+                              )),
                   style: TextStyle(
                     fontSize: 16,
                     height: 1.25,
@@ -834,10 +845,10 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
             isComplete
                 ? scenario.title
                 : (firstTime
-                    ? appL10n.gameCrossroadsTapHint
-                    : (_currentStep > 1 && scenario.subtitle.isNotEmpty
-                        ? scenario.subtitle
-                        : scenario.title)),
+                      ? appL10n.gameCrossroadsTapHint
+                      : (_currentStep > 1 && scenario.subtitle.isNotEmpty
+                            ? scenario.subtitle
+                            : scenario.title)),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(

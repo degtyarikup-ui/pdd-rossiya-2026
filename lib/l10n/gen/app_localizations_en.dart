@@ -3353,4 +3353,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiGoPremium => 'Get Premium for unlimited AI';
+
+  @override
+  String get crossroadsReasonRedLight =>
+      'Driving through a red light (clause 6.2 of the Russian Traffic Regulations). Driving on red is strictly forbidden!';
+
+  @override
+  String get crossroadsReasonEarlyExit =>
+      'Entering too early: you did not yield and did not wait for the moving traffic to clear the intersection! (clause 13.8 of the Russian Traffic Regulations)';
+
+  @override
+  String get crossroadsArticleRedLight =>
+      'Clause 6.2 of the Russian Traffic Regulations';
+
+  @override
+  String get crossroadsArticleEarlyExit =>
+      'Clause 13.8 of the Russian Traffic Regulations';
 }

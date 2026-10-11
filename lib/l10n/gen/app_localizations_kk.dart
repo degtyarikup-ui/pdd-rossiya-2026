@@ -3348,4 +3348,18 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get aiGoPremium => 'Шексіз AI үшін Premium жазылыңыз';
+
+  @override
+  String get crossroadsReasonRedLight =>
+      'Тыйым салатын бағдаршам сигналында өту (ЖЖЕ 6.2-тармағы). Қызыл жанғанда қозғалуға қатаң тыйым салынады!';
+
+  @override
+  String get crossroadsReasonEarlyExit =>
+      'Тым ерте шығу: жол бермедіңіз және қиылысты қозғалыстағы көліктер босатқанын күтпедіңіз! (ЖЖЕ 13.8-тармағы)';
+
+  @override
+  String get crossroadsArticleRedLight => 'ЖЖЕ 6.2-тармағы';
+
+  @override
+  String get crossroadsArticleEarlyExit => 'ЖЖЕ 13.8-тармағы';
 }
