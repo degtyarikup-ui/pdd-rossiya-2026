@@ -2715,72 +2715,89 @@
     }
 
     if (maneuver === 'right') {
-      // Поворот направо: дуга строго по проезжей части, без срезания тротуаров и бордюров
-      const pts = [pStart];
+      // Поворот направо: прямой подъезд -> монотонное скругление Безье (90°) -> прямой выезд
+      const tR = isTram ? 6.0 : 6.2;
+      const R = tR - laneX;
+      const k = 0.55228 * R;
+      let pTurnStart, pC1, pC2, pTurnEnd, pEnd;
+
       if (side === 'south') {
-        pts.push(new THREE.Vector3(laneX, 0, 5.8));
-        pts.push(new THREE.Vector3(Math.max(laneX, 4.8), 0, 4.8));
-        pts.push(new THREE.Vector3(HALF_ROAD, 0, laneX));
-        pts.push(new THREE.Vector3(HALF_ROAD + 14.0, 0, laneX));
-        pts.push(new THREE.Vector3(exitD, 0, laneX));
+        pTurnStart = new THREE.Vector3(laneX, 0, tR);
+        pC1 = new THREE.Vector3(laneX, 0, tR - k);
+        pC2 = new THREE.Vector3(tR - k, 0, laneX);
+        pTurnEnd = new THREE.Vector3(tR, 0, laneX);
+        pEnd = new THREE.Vector3(exitD, 0, laneX);
       } else if (side === 'north') {
-        pts.push(new THREE.Vector3(-laneX, 0, -5.8));
-        pts.push(new THREE.Vector3(Math.min(-laneX, -4.8), 0, -4.8));
-        pts.push(new THREE.Vector3(-HALF_ROAD, 0, -laneX));
-        pts.push(new THREE.Vector3(-(HALF_ROAD + 14.0), 0, -laneX));
-        pts.push(new THREE.Vector3(-exitD, 0, -laneX));
+        pTurnStart = new THREE.Vector3(-laneX, 0, -tR);
+        pC1 = new THREE.Vector3(-laneX, 0, -tR + k);
+        pC2 = new THREE.Vector3(-tR + k, 0, -laneX);
+        pTurnEnd = new THREE.Vector3(-tR, 0, -laneX);
+        pEnd = new THREE.Vector3(-exitD, 0, -laneX);
       } else if (side === 'east') {
-        pts.push(new THREE.Vector3(5.8, 0, -laneX));
-        pts.push(new THREE.Vector3(4.8, 0, Math.min(-laneX, -4.8)));
-        pts.push(new THREE.Vector3(laneX, 0, -HALF_ROAD));
-        pts.push(new THREE.Vector3(laneX, 0, -(HALF_ROAD + 14.0)));
-        pts.push(new THREE.Vector3(laneX, 0, -exitD));
+        pTurnStart = new THREE.Vector3(tR, 0, -laneX);
+        pC1 = new THREE.Vector3(tR - k, 0, -laneX);
+        pC2 = new THREE.Vector3(laneX, 0, -tR + k);
+        pTurnEnd = new THREE.Vector3(laneX, 0, -tR);
+        pEnd = new THREE.Vector3(laneX, 0, -exitD);
       } else { // west
-        pts.push(new THREE.Vector3(-5.8, 0, laneX));
-        pts.push(new THREE.Vector3(-4.8, 0, Math.max(laneX, 4.8)));
-        pts.push(new THREE.Vector3(-laneX, 0, HALF_ROAD));
-        pts.push(new THREE.Vector3(-laneX, 0, HALF_ROAD + 14.0));
-        pts.push(new THREE.Vector3(-laneX, 0, exitD));
+        pTurnStart = new THREE.Vector3(-tR, 0, laneX);
+        pC1 = new THREE.Vector3(-tR + k, 0, laneX);
+        pC2 = new THREE.Vector3(-laneX, 0, tR - k);
+        pTurnEnd = new THREE.Vector3(-laneX, 0, tR);
+        pEnd = new THREE.Vector3(-laneX, 0, exitD);
       }
-      return new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.15);
+
+      const cp = new THREE.CurvePath();
+      if (pStart.distanceTo(pTurnStart) > 0.05) cp.add(new THREE.LineCurve3(pStart, pTurnStart));
+      cp.add(new THREE.CubicBezierCurve3(pTurnStart, pC1, pC2, pTurnEnd));
+      if (pTurnEnd.distanceTo(pEnd) > 0.05) cp.add(new THREE.LineCurve3(pTurnEnd, pEnd));
+      return cp;
     }
 
     // maneuver === 'left'
-    // Поворот налево: проезд к центру перекрестка, плавный огиб центра и выезд на целевую полосу
-    const pts = [pStart];
+    // Поворот налево: прямой выезд к центру -> плавный огиб Безье (90°) через центр перекрестка -> прямой выезд
+    const deltaZ = 4.0 + laneX;
+    const deltaX = laneX + HALF_ROAD;
+    let pTurnStart, pC1, pC2, pTurnEnd, pEnd;
+
     if (side === 'south') {
-      pts.push(new THREE.Vector3(laneX, 0, 4.0));
-      pts.push(new THREE.Vector3(laneX * 0.4, 0, -0.6));
-      pts.push(new THREE.Vector3(-HALF_ROAD, 0, -laneX));
-      pts.push(new THREE.Vector3(-(HALF_ROAD + 14.0), 0, -laneX));
-      pts.push(new THREE.Vector3(-exitD, 0, -laneX));
+      pTurnStart = new THREE.Vector3(laneX, 0, 4.0);
+      pC1 = new THREE.Vector3(laneX, 0, 4.0 - 0.55 * deltaZ);
+      pC2 = new THREE.Vector3(-HALF_ROAD + 0.55 * deltaX, 0, -laneX);
+      pTurnEnd = new THREE.Vector3(-HALF_ROAD, 0, -laneX);
+      pEnd = new THREE.Vector3(-exitD, 0, -laneX);
     } else if (side === 'north') {
-      pts.push(new THREE.Vector3(-laneX, 0, -4.0));
-      pts.push(new THREE.Vector3(-laneX * 0.4, 0, 0.6));
-      pts.push(new THREE.Vector3(HALF_ROAD, 0, laneX));
-      pts.push(new THREE.Vector3(HALF_ROAD + 14.0, 0, laneX));
-      pts.push(new THREE.Vector3(exitD, 0, laneX));
+      pTurnStart = new THREE.Vector3(-laneX, 0, -4.0);
+      pC1 = new THREE.Vector3(-laneX, 0, -4.0 + 0.55 * deltaZ);
+      pC2 = new THREE.Vector3(HALF_ROAD - 0.55 * deltaX, 0, laneX);
+      pTurnEnd = new THREE.Vector3(HALF_ROAD, 0, laneX);
+      pEnd = new THREE.Vector3(exitD, 0, laneX);
     } else if (side === 'east') {
-      pts.push(new THREE.Vector3(4.0, 0, -laneX));
-      pts.push(new THREE.Vector3(-0.6, 0, -laneX * 0.4));
-      pts.push(new THREE.Vector3(-laneX, 0, HALF_ROAD));
-      pts.push(new THREE.Vector3(-laneX, 0, HALF_ROAD + 14.0));
-      pts.push(new THREE.Vector3(-laneX, 0, exitD));
+      pTurnStart = new THREE.Vector3(4.0, 0, -laneX);
+      pC1 = new THREE.Vector3(4.0 - 0.55 * deltaX, 0, -laneX);
+      pC2 = new THREE.Vector3(-laneX, 0, HALF_ROAD - 0.55 * deltaZ);
+      pTurnEnd = new THREE.Vector3(-laneX, 0, HALF_ROAD);
+      pEnd = new THREE.Vector3(-laneX, 0, exitD);
     } else { // west
-      pts.push(new THREE.Vector3(-4.0, 0, laneX));
-      pts.push(new THREE.Vector3(0.6, 0, laneX * 0.4));
-      pts.push(new THREE.Vector3(laneX, 0, -HALF_ROAD));
-      pts.push(new THREE.Vector3(laneX, 0, -(HALF_ROAD + 14.0)));
-      pts.push(new THREE.Vector3(laneX, 0, -exitD));
+      pTurnStart = new THREE.Vector3(-4.0, 0, laneX);
+      pC1 = new THREE.Vector3(-4.0 + 0.55 * deltaX, 0, laneX);
+      pC2 = new THREE.Vector3(laneX, 0, -HALF_ROAD + 0.55 * deltaZ);
+      pTurnEnd = new THREE.Vector3(laneX, 0, -HALF_ROAD);
+      pEnd = new THREE.Vector3(laneX, 0, -exitD);
     }
-    return new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.15);
+
+    const cp = new THREE.CurvePath();
+    if (pStart.distanceTo(pTurnStart) > 0.05) cp.add(new THREE.LineCurve3(pStart, pTurnStart));
+    cp.add(new THREE.CubicBezierCurve3(pTurnStart, pC1, pC2, pTurnEnd));
+    if (pTurnEnd.distanceTo(pEnd) > 0.05) cp.add(new THREE.LineCurve3(pTurnEnd, pEnd));
+    return cp;
   }
 
   function getVehicleCollisionExtents(actor) {
     const type = actor && actor.data ? actor.data.type : '';
     if (type === 'tram') return { front: 4.8, side: 1.15, isTram: true };
-    if (type === 'bus') return { front: 4.6, side: 1.18, isBus: true };
-    if (type === 'truck') return { front: 3.1, side: 1.15, isTruck: true };
+    if (type === 'bus') return { front: 4.62, side: 1.18, isBus: true };
+    if (type === 'truck') return { front: 3.8, side: 1.2, isTruck: true };
     if (type === 'motorcycle') return { front: 1.1, side: 0.45, isMoto: true };
     return { front: 2.25, side: 0.95 }; // car / police / emergency
   }
@@ -2812,10 +2829,10 @@
     let bestTW = 0.40;
     let bestTP = 0.40;
 
-    for (let i = 8; i <= 68; i += 2) {
+    for (let i = 4; i <= 80; i += 2) {
       const tw = i / 100.0;
       const ptW = pathW.getPoint(tw);
-      for (let j = 8; j <= 68; j += 2) {
+      for (let j = 4; j <= 80; j += 2) {
         const tp = j / 100.0;
         const ptP = pathP.getPoint(tp);
         const d = Math.hypot(ptW.x - ptP.x, ptW.z - ptP.z);
@@ -2827,18 +2844,46 @@
       }
     }
 
-    const ptW = pathW.getPoint(bestTW);
-    const ptP = pathP.getPoint(bestTP);
-    const impactPoint = new THREE.Vector3((ptW.x + ptP.x) * 0.5, 0.65, (ptW.z + ptP.z) * 0.5);
+    // Тонкое уточнение точки максимального сближения
+    const fineRange = 0.03;
+    for (let tw = Math.max(0.04, bestTW - fineRange); tw <= Math.min(0.85, bestTW + fineRange); tw += 0.005) {
+      const ptW = pathW.getPoint(tw);
+      for (let tp = Math.max(0.04, bestTP - fineRange); tp <= Math.min(0.85, bestTP + fineRange); tp += 0.005) {
+        const ptP = pathP.getPoint(tp);
+        const d = Math.hypot(ptW.x - ptP.x, ptW.z - ptP.z);
+        if (d < bestDist) {
+          bestDist = d;
+          bestTW = tw;
+          bestTP = tp;
+        }
+      }
+    }
 
-    // Рассчитываем параметры остановки (stopTW, stopTP), чтобы бампер упирался в точку контакта
-    const curveLenW = 48.0;
-    const curveLenP = 48.0;
-    const stopOffsetW = (extW.front * 0.65 + (bestDist <= 3.0 ? extP.side * 0.35 : 0)) / curveLenW;
-    const stopOffsetP = (extP.front * 0.25) / curveLenP;
+    const dirW = pathW.getTangent(Math.min(0.999, Math.max(0.001, bestTW))).normalize();
+    const dirP = pathP.getTangent(Math.min(0.999, Math.max(0.001, bestTP))).normalize();
+    const headOn = dirW.dot(dirP) < -0.5;
 
-    const stopTW = Math.max(0.08, bestTW - stopOffsetW);
-    const stopTP = Math.max(0.08, bestTP - stopOffsetP);
+    // Расчет физической дистанции остановки без взаимного проникновения кузовов
+    let contactDistW, contactDistP;
+    if (headOn) {
+      contactDistW = extW.front + 0.15;
+      contactDistP = extP.front + 0.15;
+    } else {
+      contactDistW = extW.front + extP.side * 0.95 + 0.20;
+      contactDistP = Math.max(0.2, extP.front * 0.15);
+    }
+
+    const lenW = Math.max(1.0, pathW.getLength());
+    const lenP = Math.max(1.0, pathP.getLength());
+    const stopOffsetW = contactDistW / lenW;
+    const stopOffsetP = contactDistP / lenP;
+
+    const stopTW = Math.max(0.05, bestTW - stopOffsetW);
+    const stopTP = Math.max(0.05, bestTP - stopOffsetP);
+
+    const ptStopW = pathW.getPoint(stopTW);
+    const impactPoint = ptStopW.clone().addScaledVector(dirW, extW.front);
+    impactPoint.y = 0.65;
 
     if (audio) {
       audio.engine(wrongActor.data.type, 1.8);
@@ -3016,7 +3061,7 @@
 
         const extA = getVehicleCollisionExtents(animA.actorRecord);
         const extB = getVehicleCollisionExtents(animB.actorRecord);
-        const threshold = Math.max(extA.side + extB.side + 0.8, (extA.front + extB.front) * 0.82);
+        const threshold = Math.max(extA.side + extB.side + 1.2, (extA.front + extB.front) * 1.35);
 
         if (dist < threshold) {
           triggerDynamicCollision(animA, animB);

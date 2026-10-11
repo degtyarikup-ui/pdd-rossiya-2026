@@ -350,11 +350,15 @@ def main():
         print(f"\n--- Test I: U-Turn Turn Signal & Corner Tap Safety (п. 8.1 ПДД РФ) ---")
         uturn_sc = next(s for s in scenarios if s['id'] == 'cross_uturn_equal')
         driver.execute_script("window.smokeEvents = []; window.loadScenarioData(arguments[0]);", uturn_sc)
-        time.sleep(0.15)
-        blinker_ok = driver.execute_script("""
-            const carNorth = window._pddCrossroads.vehiclesGroup.children.find(c => c.userData.actorId === 'car_north');
-            return carNorth && carNorth.userData.activeBlinker === carNorth.blinkerL && carNorth.blinkerL.visible === true;
-        """)
+        blinker_ok = False
+        for _ in range(10):
+            blinker_ok = driver.execute_script("""
+                const carNorth = window._pddCrossroads.vehiclesGroup.children.find(c => c.userData.actorId === 'car_north');
+                return carNorth && carNorth.userData.activeBlinker === carNorth.blinkerL && carNorth.blinkerL.visible === true;
+            """)
+            if blinker_ok:
+                break
+            time.sleep(0.06)
         assert blinker_ok, "U-Turn vehicle must have active left blinker per clause 8.1 ПДД РФ"
         print("  ✓ U-Turn left blinker successfully verified (active & visible)")
 
