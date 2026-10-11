@@ -416,6 +416,101 @@ class CrossroadsTranslations {
           ),
         },
       ),
+      'cross_tl_arrow_vs_main_13_5': LocalizedScenarioText(
+        title: 'Additional arrow section with red signal (clause 13.5)',
+        subtitle:
+            'A driver moving on a green arrow simultaneously with a red light must give way to traffic from other directions.',
+        pddArticle: 'Clause 13.5 of the Russian Traffic Regulations',
+        actors: {
+          'car_north': LocalizedActorText(
+            name: 'Blue sedan',
+            ruleExplanation:
+                'The blue sedan moves straight on the main green signal and has priority over traffic on an arrow (clause 13.5).',
+          ),
+          'car_west': LocalizedActorText(
+            name: 'White hatchback',
+            ruleExplanation:
+                'The white hatchback turns right on a green arrow while the main red light is on and must give way (clause 13.5).',
+          ),
+        },
+      ),
+      'cross_tl_tram_on_arrow_13_6': LocalizedScenarioText(
+        title: 'Tram on green arrow with red signal (clause 13.6)',
+        subtitle:
+            'When moving on an arrow with red light, even a tram must give way to vehicles moving on the main green signal.',
+        pddArticle: 'Clause 13.6 of the Russian Traffic Regulations',
+        actors: {
+          'car_south': LocalizedActorText(
+            name: 'Blue hatchback',
+            ruleExplanation:
+                'The blue hatchback moves straight on the main green signal and passes first.',
+          ),
+          'tram_east': LocalizedActorText(
+            name: 'Tram',
+            ruleExplanation:
+                'The tram moves on an arrow with a red signal and must give way to the car on the main green (clause 13.6).',
+          ),
+        },
+      ),
+      'cross_tl_left_turn_13_4': LocalizedScenarioText(
+        title: 'Left turn on green signal (clause 13.4)',
+        subtitle:
+            'When turning left on green, the driver must give way to oncoming vehicles moving straight or right.',
+        pddArticle: 'Clause 13.4 of the Russian Traffic Regulations',
+        actors: {
+          'car_north': LocalizedActorText(
+            name: 'White sedan',
+            ruleExplanation:
+                'The white sedan moves straight on green from the oncoming direction and has priority.',
+          ),
+          'car_south': LocalizedActorText(
+            name: 'Orange sedan',
+            ruleExplanation:
+                'The orange sedan turns left on green and gives way to oncoming traffic going straight (clause 13.4).',
+          ),
+        },
+      ),
+      'cross_tl_vs_priority_signs_13_3': LocalizedScenarioText(
+        title: 'Traffic lights and priority signs (clauses 13.3, 6.15)',
+        subtitle:
+            'Working traffic lights override priority signs. Drivers are guided solely by traffic lights.',
+        pddArticle: 'Clauses 13.3 and 6.15 of the Russian Traffic Regulations',
+        actors: {
+          'car_south': LocalizedActorText(
+            name: 'Blue hatchback',
+            ruleExplanation:
+                'The green light is on — the "Give way" sign is invalid (clause 6.15). The blue car goes straight first.',
+          ),
+          'car_north': LocalizedActorText(
+            name: 'Green crossover',
+            ruleExplanation:
+                'The green crossover turns left on green and gives way to the oncoming blue car (clause 13.4).',
+          ),
+        },
+      ),
+      'cross_tl_emergency_on_red_3_2': LocalizedScenarioText(
+        title: 'Emergency vehicle at controlled intersection (clause 3.2)',
+        subtitle:
+            'Vehicles with flashing blue lights and siren have priority regardless of traffic light signals.',
+        pddArticle: 'Clause 3.2 of the Russian Traffic Regulations',
+        actors: {
+          'ambulance_east': LocalizedActorText(
+            name: 'Ambulance',
+            ruleExplanation:
+                'The ambulance with beacon and siren has priority regardless of the red traffic light (clause 3.2).',
+          ),
+          'car_south': LocalizedActorText(
+            name: 'Blue hatchback',
+            ruleExplanation:
+                'The blue hatchback gives way to the ambulance (clause 3.2), then proceeds straight on green.',
+          ),
+          'car_north': LocalizedActorText(
+            name: 'White sedan',
+            ruleExplanation:
+                'The white sedan gives way to the ambulance and to oncoming traffic when turning left (clause 13.4).',
+          ),
+        },
+      ),
     },
     'kk': {
       'cross_main_turns_left': LocalizedScenarioText(
@@ -794,6 +889,101 @@ class CrossroadsTranslations {
             name: 'Жасыл кроссовер',
             ruleExplanation:
                 'Жасыл кроссовердің оң жағында ақ седан. Соңғы өтеді.',
+          ),
+        },
+      ),
+      'cross_tl_arrow_vs_main_13_5': LocalizedScenarioText(
+        title: 'Қызыл түс кезіндегі қосымша бағыттауыш секция (13.5-т.)',
+        subtitle:
+            'Қызылмен қатар қосылған бағыттауыш бойынша қозғалатын көлік басқа бағыттардағы көліктерге жол беруі тиіс.',
+        pddArticle: 'ЖЖЕ 13.5-тармағы',
+        actors: {
+          'car_north': LocalizedActorText(
+            name: 'Көк седан',
+            ruleExplanation:
+                'Көк седан негізгі жасыл белгіге тіке жүреді және бағыттауыш бойынша жүрген көліктен басымдыққа ие (13.5-т.).',
+          ),
+          'car_west': LocalizedActorText(
+            name: 'Ақ хэтчбек',
+            ruleExplanation:
+                'Ақ хэтчбек негізгі қызыл белгімен қосылған бағыттауышпен оңға бұрылып, жол беруге міндетті (13.5-т.).',
+          ),
+        },
+      ),
+      'cross_tl_tram_on_arrow_13_6': LocalizedScenarioText(
+        title: 'Қызыл түс кезінде бағыттауышпен келе жатқан трамвай (13.6-т.)',
+        subtitle:
+            'Қызыл сигналмен қатар қосылған бағыттауыш бойынша қозғалғанда тіпті трамвай да негізгі жасылға келе жатқан көлікке жол беруі керек.',
+        pddArticle: 'ЖЖЕ 13.6-тармағы',
+        actors: {
+          'car_south': LocalizedActorText(
+            name: 'Көк хэтчбек',
+            ruleExplanation:
+                'Көк хэтчбек бағдаршамның негізгі жасыл түсіне тіке жүріп, бірінші өтеді.',
+          ),
+          'tram_east': LocalizedActorText(
+            name: 'Трамвай',
+            ruleExplanation:
+                'Трамвай қызыл сигнал кезінде бағыттауышпен қозғалады және негізгі жасылға жүрген көлікке жол береді (13.6-т.).',
+          ),
+        },
+      ),
+      'cross_tl_left_turn_13_4': LocalizedScenarioText(
+        title: 'Жасыл белгіге солға бұрылу (13.4-т.)',
+        subtitle:
+            'Жасыл белгіге солға бұрылғанда жүргізуші қарсы келе жатқан, тіке немесе оңға жүретін көліктерге жол беруі тиіс.',
+        pddArticle: 'ЖЖЕ 13.4-тармағы',
+        actors: {
+          'car_north': LocalizedActorText(
+            name: 'Ақ седан',
+            ruleExplanation:
+                'Ақ седан қарсы бағыттан жасыл белгіге тіке қозғалып, басымдыққа ие болады.',
+          ),
+          'car_south': LocalizedActorText(
+            name: 'Қызғылт сары седан',
+            ruleExplanation:
+                'Қызғылт сары көлік жасылға солға бұрылып, қарсы тіке жүрген көлікке жол береді (13.4-т.).',
+          ),
+        },
+      ),
+      'cross_tl_vs_priority_signs_13_3': LocalizedScenarioText(
+        title: 'Бағдаршам және басымдық белгілері (13.3, 6.15-т.)',
+        subtitle:
+            'Жұмыс істеп тұрған бағдаршам басымдық белгілерін күшін жояды. Жүргізушілер тек бағдаршамға бағынады.',
+        pddArticle: 'ЖЖЕ 13.3 және 6.15-тармақтары',
+        actors: {
+          'car_south': LocalizedActorText(
+            name: 'Көк хэтчбек',
+            ruleExplanation:
+                'Бағдаршамның жасыл түсі жанып тұр — "Жол беріңіз" белгісі әрекет етпейді (6.15-т.). Көк көлік тіке бірінші өтеді.',
+          ),
+          'car_north': LocalizedActorText(
+            name: 'Жасыл кроссовер',
+            ruleExplanation:
+                'Жасыл кроссовер өзінің жасыл түсіне солға бұрылып, қарсы көк көлікке жол береді (13.4-т.).',
+          ),
+        },
+      ),
+      'cross_tl_emergency_on_red_3_2': LocalizedScenarioText(
+        title: 'Реттелетін қиылыстағы арнайы көлік (3.2-т.)',
+        subtitle:
+            'Көк маягі мен сиренасы қосулы көлік бағдаршам сигналдарына қарамастан басымдыққа ие.',
+        pddArticle: 'ЖЖЕ 3.2-тармағы',
+        actors: {
+          'ambulance_east': LocalizedActorText(
+            name: 'Жедел жәрдем',
+            ruleExplanation:
+                'Маягі мен сиренасы қосулы жедел жәрдем бағдаршам сигналына қарамастан басымдыққа ие (3.2-т.).',
+          ),
+          'car_south': LocalizedActorText(
+            name: 'Көк хэтчбек',
+            ruleExplanation:
+                'Көк хэтчбек жедел жәрдемге жол береді (3.2-т.), содан соң өз жасылына тіке өтеді.',
+          ),
+          'car_north': LocalizedActorText(
+            name: 'Ақ седан',
+            ruleExplanation:
+                'Ақ седан жедел жәрдемге және солға бұрылу кезінде қарсы көк көлікке жол береді (13.4-т.).',
           ),
         },
       ),

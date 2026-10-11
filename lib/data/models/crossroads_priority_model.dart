@@ -189,6 +189,45 @@ class CrossroadsSignPlacement {
   };
 }
 
+/// Конфигурация светофора на подъезде к перекрестку.
+class CrossroadsTrafficLight {
+  const CrossroadsTrafficLight({
+    required this.side,
+    this.state = 'red',
+    this.arrow,
+    this.arrowActive = false,
+  });
+
+  /// Сторона перекрестка, перед которой установлен светофор.
+  final CrossroadsSide side;
+
+  /// Основной сигнал светофора: 'green', 'red', 'yellow', 'flashing_yellow'.
+  final String state;
+
+  /// Дополнительная секция: 'right', 'left', null.
+  final String? arrow;
+
+  /// Горит ли дополнительная секция в текущей фазе.
+  final bool arrowActive;
+
+  Map<String, dynamic> toJson() => {
+    'side': side.name,
+    'state': state,
+    if (arrow != null) 'arrow': arrow,
+    if (arrowActive) 'arrowActive': arrowActive,
+  };
+}
+
+/// Категория перекрестка для фильтрации.
+enum CrossroadsCategory {
+  all('Все'),
+  prioritySigns('Знаки приоритета'),
+  trafficLights('Светофоры');
+
+  const CrossroadsCategory(this.title);
+  final String title;
+}
+
 /// Сценарий перекрестка.
 class CrossroadsScenario {
   const CrossroadsScenario({
@@ -199,6 +238,7 @@ class CrossroadsScenario {
     required this.actors,
     this.signs = const [],
     this.isEqualCrossroad = false,
+    this.trafficLights,
     this.trafficLightGreenSides,
     this.closedSide,
   });
@@ -210,10 +250,18 @@ class CrossroadsScenario {
   final List<CrossroadsActor> actors;
   final List<CrossroadsSignPlacement> signs;
   final bool isEqualCrossroad;
+  final List<CrossroadsTrafficLight>? trafficLights;
   final List<CrossroadsSide>? trafficLightGreenSides;
 
   /// Т-образный перекрёсток: этой стороны нет (знаки 2.3.2, 2.3.3).
   final CrossroadsSide? closedSide;
+
+  /// Регулируемый ли перекрёсток со светофорами.
+  bool get isRegulated => trafficLights != null && trafficLights!.isNotEmpty;
+
+  /// Категория перекрестка.
+  CrossroadsCategory get category =>
+      isRegulated ? CrossroadsCategory.trafficLights : CrossroadsCategory.prioritySigns;
 
   /// Список акторов, отсортированных по правильному порядку проезда.
   List<CrossroadsActor> get orderedActors {
@@ -239,6 +287,8 @@ class CrossroadsScenario {
     if (closedSide != null) 'closedSide': closedSide!.name,
     'signs': signs.map((s) => s.toJson()).toList(),
     'actors': actors.map((a) => a.toJson()).toList(),
+    if (trafficLights != null)
+      'trafficLights': trafficLights!.map((t) => t.toJson()).toList(),
   };
 
   CrossroadsScenario copyWith({
@@ -249,6 +299,7 @@ class CrossroadsScenario {
     List<CrossroadsActor>? actors,
     List<CrossroadsSignPlacement>? signs,
     bool? isEqualCrossroad,
+    List<CrossroadsTrafficLight>? trafficLights,
     List<CrossroadsSide>? trafficLightGreenSides,
     CrossroadsSide? closedSide,
   }) => CrossroadsScenario(
@@ -259,6 +310,7 @@ class CrossroadsScenario {
     actors: actors ?? this.actors,
     signs: signs ?? this.signs,
     isEqualCrossroad: isEqualCrossroad ?? this.isEqualCrossroad,
+    trafficLights: trafficLights ?? this.trafficLights,
     trafficLightGreenSides:
         trafficLightGreenSides ?? this.trafficLightGreenSides,
     closedSide: closedSide ?? this.closedSide,
@@ -1175,6 +1227,252 @@ class CrossroadsScenariosLibrary {
           ruleExplanation:
               'Справа от зеленого кроссовера — белый седан. Проезжает последним.',
           vehicleModel: 'suv',
+        ),
+      ],
+    ),
+
+    // 18. Дополнительная секция со стрелкой направо при красном сигнале (п. 13.5 ПДД РФ)
+    const CrossroadsScenario(
+      id: 'cross_tl_arrow_vs_main_13_5',
+      title: 'Зелёная стрелка с красным сигналом (п. 13.5)',
+      subtitle:
+          'Движущийся по стрелке при красном сигнале обязан уступить тем, кто едет с других направлений.',
+      pddArticle: 'Пункт 13.5 ПДД РФ',
+      trafficLights: [
+        CrossroadsTrafficLight(side: CrossroadsSide.north, state: 'green'),
+        CrossroadsTrafficLight(side: CrossroadsSide.south, state: 'green'),
+        CrossroadsTrafficLight(
+          side: CrossroadsSide.west,
+          state: 'red',
+          arrow: 'right',
+          arrowActive: true,
+        ),
+        CrossroadsTrafficLight(side: CrossroadsSide.east, state: 'red'),
+      ],
+      actors: [
+        CrossroadsActor(
+          id: 'car_north',
+          type: CrossroadsVehicleType.car,
+          name: 'Синий седан',
+          colorHex: '#317ED4',
+          side: CrossroadsSide.north,
+          maneuver: CrossroadsManeuver.straight,
+          priorityOrder: 1,
+          ruleExplanation:
+              'Синий седан едет на основной зелёный сигнал светофора и имеет полное преимущество.',
+          vehicleModel: 'sedan',
+        ),
+        CrossroadsActor(
+          id: 'car_west',
+          type: CrossroadsVehicleType.car,
+          name: 'Белый хэтчбек',
+          colorHex: '#F2F3F5',
+          side: CrossroadsSide.west,
+          maneuver: CrossroadsManeuver.right,
+          priorityOrder: 2,
+          ruleExplanation:
+              'Белый хэтчбек поворачивает по стрелке при красном сигнале и обязан уступить синему седану (п. 13.5).',
+          vehicleModel: 'hatch',
+        ),
+      ],
+    ),
+
+    // 19. Трамвай по стрелке при красном сигнале уступает автомобилю на зелёный (п. 13.6 ПДД РФ)
+    const CrossroadsScenario(
+      id: 'cross_tl_tram_on_arrow_13_6',
+      title: 'Трамвай на стрелку с красным сигналом (п. 13.6)',
+      subtitle:
+          'Трамвай на стрелку при красном сигнале уступает безрельсовому транспорту на основной зелёный.',
+      pddArticle: 'Пункт 13.6 ПДД РФ',
+      trafficLights: [
+        CrossroadsTrafficLight(side: CrossroadsSide.south, state: 'green'),
+        CrossroadsTrafficLight(side: CrossroadsSide.north, state: 'green'),
+        CrossroadsTrafficLight(
+          side: CrossroadsSide.east,
+          state: 'red',
+          arrow: 'right',
+          arrowActive: true,
+        ),
+        CrossroadsTrafficLight(side: CrossroadsSide.west, state: 'red'),
+      ],
+      actors: [
+        CrossroadsActor(
+          id: 'car_south',
+          type: CrossroadsVehicleType.car,
+          name: 'Синий хэтчбек',
+          colorHex: '#317ED4',
+          side: CrossroadsSide.south,
+          maneuver: CrossroadsManeuver.straight,
+          priorityOrder: 1,
+          ruleExplanation:
+              'Синий хэтчбек едет на основной зелёный сигнал светофора прямо и проезжает первым.',
+          vehicleModel: 'hatch',
+        ),
+        CrossroadsActor(
+          id: 'tram_east',
+          type: CrossroadsVehicleType.tram,
+          name: 'Трамвай',
+          colorHex: '#ED4621',
+          side: CrossroadsSide.east,
+          maneuver: CrossroadsManeuver.right,
+          priorityOrder: 2,
+          ruleExplanation:
+              'Трамвай движется по стрелке при красном сигнале и обязан уступить автомобилю на основной зелёный (п. 13.6).',
+          vehicleModel: 'tram',
+        ),
+      ],
+    ),
+
+    // 20. Поворот налево на регулируемом перекрестке (п. 13.4 ПДД РФ)
+    const CrossroadsScenario(
+      id: 'cross_tl_left_turn_13_4',
+      title: 'Поворот налево на зелёный сигнал (п. 13.4)',
+      subtitle:
+          'При повороте налево на зелёный водитель обязан уступить встречным, едущим прямо или направо.',
+      pddArticle: 'Пункт 13.4 ПДД РФ',
+      trafficLights: [
+        CrossroadsTrafficLight(side: CrossroadsSide.north, state: 'green'),
+        CrossroadsTrafficLight(side: CrossroadsSide.south, state: 'green'),
+        CrossroadsTrafficLight(side: CrossroadsSide.east, state: 'red'),
+        CrossroadsTrafficLight(side: CrossroadsSide.west, state: 'red'),
+      ],
+      actors: [
+        CrossroadsActor(
+          id: 'car_north',
+          type: CrossroadsVehicleType.car,
+          name: 'Белый седан',
+          colorHex: '#F2F3F5',
+          side: CrossroadsSide.north,
+          maneuver: CrossroadsManeuver.straight,
+          priorityOrder: 1,
+          ruleExplanation:
+              'Белый седан движется на зелёный сигнал прямо со встречного направления и имеет преимущество.',
+          vehicleModel: 'sedan',
+        ),
+        CrossroadsActor(
+          id: 'car_south',
+          type: CrossroadsVehicleType.car,
+          name: 'Оранжевый седан',
+          colorHex: '#F08A24',
+          side: CrossroadsSide.south,
+          maneuver: CrossroadsManeuver.left,
+          priorityOrder: 2,
+          ruleExplanation:
+              'Оранжевый поворачивает налево по зелёному сигналу и уступает встречному прямо (п. 13.4).',
+          vehicleModel: 'sedan',
+        ),
+      ],
+    ),
+
+    // 21. Светофор и знаки приоритета (п. 13.3, 6.15 ПДД РФ)
+    const CrossroadsScenario(
+      id: 'cross_tl_vs_priority_signs_13_3',
+      title: 'Светофор и знаки приоритета (п. 13.3, 6.15)',
+      subtitle:
+          'Работающий светофор отменяет действие знаков приоритета. Водители руководствуются только светофором.',
+      pddArticle: 'Пункты 13.3 и 6.15 ПДД РФ',
+      signs: [
+        CrossroadsSignPlacement(
+          code: '2.4',
+          side: CrossroadsSide.south,
+        ),
+        CrossroadsSignPlacement(
+          code: '2.4',
+          side: CrossroadsSide.north,
+        ),
+        CrossroadsSignPlacement(
+          code: '2.1',
+          side: CrossroadsSide.west,
+        ),
+        CrossroadsSignPlacement(
+          code: '2.1',
+          side: CrossroadsSide.east,
+        ),
+      ],
+      trafficLights: [
+        CrossroadsTrafficLight(side: CrossroadsSide.south, state: 'green'),
+        CrossroadsTrafficLight(side: CrossroadsSide.north, state: 'green'),
+        CrossroadsTrafficLight(side: CrossroadsSide.west, state: 'red'),
+        CrossroadsTrafficLight(side: CrossroadsSide.east, state: 'red'),
+      ],
+      actors: [
+        CrossroadsActor(
+          id: 'car_south',
+          type: CrossroadsVehicleType.car,
+          name: 'Синий хэтчбек',
+          colorHex: '#317ED4',
+          side: CrossroadsSide.south,
+          maneuver: CrossroadsManeuver.straight,
+          priorityOrder: 1,
+          ruleExplanation:
+              'Горит зелёный сигнал светофора — знак "Уступите дорогу" не действует (п. 6.15). Синий едет прямо первым.',
+          vehicleModel: 'hatch',
+        ),
+        CrossroadsActor(
+          id: 'car_north',
+          type: CrossroadsVehicleType.suv,
+          name: 'Зеленый кроссовер',
+          colorHex: '#4D7768',
+          side: CrossroadsSide.north,
+          maneuver: CrossroadsManeuver.left,
+          priorityOrder: 2,
+          ruleExplanation:
+              'Зелёный кроссовер поворачивает налево на свой зелёный и уступает встречному синему (п. 13.4).',
+          vehicleModel: 'suv',
+        ),
+      ],
+    ),
+
+    // 22. Спецтранспорт со спецсигналами на регулируемом перекрестке (п. 3.2 ПДД РФ)
+    const CrossroadsScenario(
+      id: 'cross_tl_emergency_on_red_3_2',
+      title: 'Спецтранспорт на регулируемом перекрёстке (п. 3.2)',
+      subtitle:
+          'Автомобили со включённым синим маячком и сиреной пользуются приоритетом независимо от сигналов светофора.',
+      pddArticle: 'Пункт 3.2 ПДД РФ',
+      trafficLights: [
+        CrossroadsTrafficLight(side: CrossroadsSide.south, state: 'green'),
+        CrossroadsTrafficLight(side: CrossroadsSide.north, state: 'green'),
+        CrossroadsTrafficLight(side: CrossroadsSide.east, state: 'red'),
+        CrossroadsTrafficLight(side: CrossroadsSide.west, state: 'red'),
+      ],
+      actors: [
+        CrossroadsActor(
+          id: 'ambulance_east',
+          type: CrossroadsVehicleType.emergency,
+          name: 'Скорая помощь',
+          colorHex: '#FFFFFF',
+          side: CrossroadsSide.east,
+          maneuver: CrossroadsManeuver.straight,
+          priorityOrder: 1,
+          ruleExplanation:
+              'Скорая помощь с включёнными маячками и сиреной пользуется приоритетом независимо от сигнала светофора (п. 3.2).',
+          hasSiren: true,
+          vehicleModel: 'ambulance',
+        ),
+        CrossroadsActor(
+          id: 'car_south',
+          type: CrossroadsVehicleType.car,
+          name: 'Синий хэтчбек',
+          colorHex: '#317ED4',
+          side: CrossroadsSide.south,
+          maneuver: CrossroadsManeuver.straight,
+          priorityOrder: 2,
+          ruleExplanation:
+              'Синий хэтчбек уступает скорой помощи (п. 3.2), после чего проезжает прямо на свой зелёный сигнал.',
+          vehicleModel: 'hatch',
+        ),
+        CrossroadsActor(
+          id: 'car_north',
+          type: CrossroadsVehicleType.car,
+          name: 'Белый седан',
+          colorHex: '#F2F3F5',
+          side: CrossroadsSide.north,
+          maneuver: CrossroadsManeuver.left,
+          priorityOrder: 3,
+          ruleExplanation:
+              'Белый седан уступает скорой помощи и встречному синему автомобилю при повороте налево (п. 13.4).',
+          vehicleModel: 'sedan',
         ),
       ],
     ),

@@ -39,6 +39,9 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
   // Режим игры
   CrossroadsGameMode _mode = CrossroadsGameMode.arcade;
 
+  // Категория для фильтрации перекрестков
+  CrossroadsCategory _selectedCategory = CrossroadsCategory.all;
+
   // Сценарии
   List<CrossroadsScenario> get _scenarios {
     final lang = ref.watch(
@@ -47,13 +50,18 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     return CrossroadsScenariosLibrary.getScenarios(lang);
   }
 
+  List<CrossroadsScenario> get _filteredScenarios {
+    final all = _scenarios;
+    if (_selectedCategory == CrossroadsCategory.all) return all;
+    return all.where((s) => s.category == _selectedCategory).toList();
+  }
+
   int _scenarioIndex = 0;
 
-  /// Перекрёстки раунда в случайном порядке: раньше каждый раунд шёл
-  /// одной и той же цепочкой, и порядок проезда запоминался, а не решался.
+  /// Перекрёстки раунда в случайном порядке
   List<int> _order = const [];
   CrossroadsScenario get _curScenario {
-    final list = _scenarios;
+    final list = _filteredScenarios;
     if (_order.length != list.length) {
       _order = List.generate(list.length, (i) => i)..shuffle();
     }
@@ -311,8 +319,9 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     // Следующий перекресток
     Future.delayed(const Duration(milliseconds: 900), () {
       if (!mounted || _isGameOver) return;
+      final count = _filteredScenarios.length;
       setState(() {
-        _scenarioIndex = (_scenarioIndex + 1) % _scenarios.length;
+        _scenarioIndex = (_scenarioIndex + 1) % count;
       });
       _sendScenarioToEngine();
     });
@@ -366,13 +375,87 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
   }
 
   void _skipToNextScenario() {
+    final count = _filteredScenarios.length;
     setState(() {
       _showCollisionModal = false;
-      _scenarioIndex = (_scenarioIndex + 1) % _scenarios.length;
+      _scenarioIndex = (_scenarioIndex + 1) % count;
       _currentStep = 1;
     });
     _updatePointerEvents();
     _sendScenarioToEngine();
+  }
+
+  void _setCategory(CrossroadsCategory category) {
+    if (_selectedCategory == category) return;
+    HapticFeedbackHelper.select();
+    setState(() {
+      _selectedCategory = category;
+      _scenarioIndex = 0;
+      final count = _filteredScenarios.length;
+      _order = List.generate(count, (i) => i);
+      _currentStep = 1;
+    });
+    _sendScenarioToEngine();
+  }
+
+  void _toggleMode() {
+    HapticFeedbackHelper.select();
+    if (_mode == CrossroadsGameMode.arcade) {
+      _countdownTimer?.cancel();
+      setState(() {
+        _mode = CrossroadsGameMode.training;
+        _scenarioIndex = 0;
+        final count = _filteredScenarios.length;
+        _order = List.generate(count, (i) => i);
+        _currentStep = 1;
+      });
+      _sendScenarioToEngine();
+    } else {
+      _startArcadeRound();
+    }
+  }
+
+  String _categoryLabel(CrossroadsCategory cat) => switch (cat) {
+    CrossroadsCategory.all => appL10n.gameCrossroadsCatAll,
+    CrossroadsCategory.prioritySigns => appL10n.gameCrossroadsCatSigns,
+    CrossroadsCategory.trafficLights => appL10n.gameCrossroadsCatTrafficLights,
+  };
+
+  Widget _buildCategoryChips(AppThemeColors colors) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: CrossroadsCategory.values.map((cat) {
+          final isSelected = _selectedCategory == cat;
+          return Padding(
+            padding: const EdgeInsets.only(right: AppDimensions.spacingS),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: () => _setCategory(cat),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isSelected ? colors.accent : colors.cardBackground,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: isSelected ? colors.accent : colors.cardBackground,
+                  ),
+                ),
+                child: Text(
+                  _categoryLabel(cat),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                    color: isSelected ? Colors.white : colors.secondaryText,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 
   // --- Виджеты UI ---
@@ -459,26 +542,51 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                           },
                         ),
                         const SizedBox(width: AppDimensions.spacingM),
-                        if (_mode == CrossroadsGameMode.arcade)
-                          Expanded(child: _buildHud(colors))
-                        else ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
+                        if (_mode == CrossroadsGameMode.arcade) ...[
+                          Expanded(child: _buildHud(colors)),
+                          const SizedBox(width: AppDimensions.spacingS),
+                          Tooltip(
+                            message: appL10n.gameCrossroadsModeTraining,
+                            child: AppChromeIconButton(
+                              icon: Icons.school_rounded,
+                              onTap: _toggleMode,
                             ),
-                            decoration: BoxDecoration(
-                              color: colors.cardBackground,
-                              borderRadius: BorderRadius.circular(
-                                AppDimensions.buttonRadius,
+                          ),
+                        ] else ...[
+                          InkWell(
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.buttonRadius,
+                            ),
+                            onTap: _toggleMode,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
                               ),
-                            ),
-                            child: Text(
-                              appL10n.gameCrossroadsModeTraining,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: colors.accent,
+                              decoration: BoxDecoration(
+                                color: colors.cardBackground,
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.buttonRadius,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.school_rounded,
+                                    size: 16,
+                                    color: colors.accent,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    appL10n.gameCrossroadsModeTraining,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: colors.accent,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -486,10 +594,11 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                           IconButton(
                             icon: const Icon(Icons.arrow_back_ios_new_rounded),
                             onPressed: () {
+                              final count = _filteredScenarios.length;
                               setState(() {
                                 _scenarioIndex =
-                                    (_scenarioIndex - 1 + _scenarios.length) %
-                                    _scenarios.length;
+                                    (_scenarioIndex - 1 + count) % count;
+                                _currentStep = 1;
                               });
                               _sendScenarioToEngine();
                             },
@@ -497,16 +606,29 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                           IconButton(
                             icon: const Icon(Icons.arrow_forward_ios_rounded),
                             onPressed: () {
+                              final count = _filteredScenarios.length;
                               setState(() {
                                 _scenarioIndex =
-                                    (_scenarioIndex + 1) % _scenarios.length;
+                                    (_scenarioIndex + 1) % count;
+                                _currentStep = 1;
                               });
                               _sendScenarioToEngine();
                             },
                           ),
+                          Tooltip(
+                            message: appL10n.gameCrossroadsModeArcade,
+                            child: AppChromeIconButton(
+                              icon: Icons.sports_esports_rounded,
+                              onTap: _toggleMode,
+                            ),
+                          ),
                         ],
                       ],
                     ),
+                    if (_mode == CrossroadsGameMode.training) ...[
+                      const SizedBox(height: AppDimensions.spacingS),
+                      _buildCategoryChips(colors),
+                    ],
                     const SizedBox(height: AppDimensions.spacingS),
                     _buildCaption(colors),
                   ],

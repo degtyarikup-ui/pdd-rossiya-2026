@@ -12,7 +12,7 @@ void main() {
   group('Crossroads Priority Rules and Scenarios Tests', () {
     test('All certified scenarios have valid priority order sequences', () {
       final scenarios = CrossroadsScenariosLibrary.allScenarios;
-      expect(scenarios.length, equals(17));
+      expect(scenarios.length, equals(22));
 
       for (final s in scenarios) {
         expect(
@@ -152,6 +152,43 @@ void main() {
       // Все 4 таблички 8.13 уникальны и не дублируются
       final tableSet = scenario.signs.map((s) => s.table8_13).toSet();
       expect(tableSet.length, equals(4));
+    });
+
+    test('Traffic lights scenarios are properly categorized and configured', () {
+      final scenarios = CrossroadsScenariosLibrary.allScenarios;
+      final tlScenarios = scenarios.where((s) => s.isRegulated).toList();
+      expect(tlScenarios.length, equals(5));
+
+      for (final s in tlScenarios) {
+        expect(s.category, equals(CrossroadsCategory.trafficLights));
+        expect(s.trafficLights, isNotNull);
+        expect(s.trafficLights!.isNotEmpty, isTrue);
+      }
+
+      // 1. Arrow vs Main green: arrow driver yields (clause 13.5)
+      final arrowScen = scenarios.firstWhere((s) => s.id == 'cross_tl_arrow_vs_main_13_5');
+      final arrowActor = arrowScen.actors.firstWhere((a) => a.id == 'car_west');
+      final mainActor = arrowScen.actors.firstWhere((a) => a.id == 'car_north');
+      expect(mainActor.priorityOrder, equals(1));
+      expect(arrowActor.priorityOrder, equals(2));
+
+      // 2. Tram on arrow yields to car on main green (clause 13.6)
+      final tramArrowScen = scenarios.firstWhere((s) => s.id == 'cross_tl_tram_on_arrow_13_6');
+      final tramActor = tramArrowScen.actors.firstWhere((a) => a.id == 'tram_east');
+      final carGreenActor = tramArrowScen.actors.firstWhere((a) => a.id == 'car_south');
+      expect(carGreenActor.priorityOrder, equals(1));
+      expect(tramActor.priorityOrder, equals(2));
+
+      // 3. Traffic lights override priority signs (clause 13.3, 6.15)
+      final overrideScen = scenarios.firstWhere((s) => s.id == 'cross_tl_vs_priority_signs_13_3');
+      expect(overrideScen.signs.isNotEmpty, isTrue);
+      expect(overrideScen.isRegulated, isTrue);
+
+      // 4. Emergency vehicle on red light has absolute priority (clause 3.2)
+      final emergencyScen = scenarios.firstWhere((s) => s.id == 'cross_tl_emergency_on_red_3_2');
+      final ambActor = emergencyScen.actors.firstWhere((a) => a.id == 'ambulance_east');
+      expect(ambActor.priorityOrder, equals(1));
+      expect(ambActor.hasSiren, isTrue);
     });
 
     test('Resolution step prompt bounds never exceed actors count', () {

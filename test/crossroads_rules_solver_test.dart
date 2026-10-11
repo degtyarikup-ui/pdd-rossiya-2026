@@ -141,6 +141,43 @@ void main() {
     if (siren(b) && !siren(a)) return true;
     if (siren(a) && !siren(b)) return false;
     if (!conflict(a, b)) return false;
+
+    if (s.isRegulated) {
+      final tla = s.trafficLights?.where((x) => x.side == a.side).firstOrNull;
+      final tlb = s.trafficLights?.where((x) => x.side == b.side).firstOrNull;
+      final aMainGreen = tla?.state == 'green';
+      final bMainGreen = tlb?.state == 'green';
+      final aArrowRed = tla?.state == 'red' && (tla?.arrowActive ?? false);
+      final bArrowRed = tlb?.state == 'red' && (tlb?.arrowActive ?? false);
+
+      // Движение по стрелке при красном сигнале уступает основному зелёному (п. 13.5, 13.6).
+      // Даже трамвай на стрелку с красным обязан уступить автомобилю на основной зелёный (п. 13.6).
+      if (aArrowRed && bMainGreen) return true;
+      if (bArrowRed && aMainGreen) return false;
+
+      // Трамвай на равных сигналах имеет преимущество
+      bool tram(CrossroadsActor x) => x.type == CrossroadsVehicleType.tram;
+      if (tram(b) && !tram(a)) return true;
+      if (tram(a) && !tram(b)) return false;
+
+      // Поворот налево на зелёный уступает встречным прямо/направо (п. 13.4)
+      final turningAcross =
+          a.maneuver == CrossroadsManeuver.left ||
+          a.maneuver == CrossroadsManeuver.uTurn;
+      final bThrough =
+          b.maneuver == CrossroadsManeuver.straight ||
+          b.maneuver == CrossroadsManeuver.right;
+      if (turningAcross && bThrough && b.side == opposite[a.side]) return true;
+      final bTurningAcross =
+          b.maneuver == CrossroadsManeuver.left ||
+          b.maneuver == CrossroadsManeuver.uTurn;
+      final aThrough =
+          a.maneuver == CrossroadsManeuver.straight ||
+          a.maneuver == CrossroadsManeuver.right;
+      if (bTurningAcross && aThrough && a.side == opposite[b.side]) return false;
+      return rightOf[a.side] == b.side;
+    }
+
     final ra = rank(s, a.side), rb = rank(s, b.side);
     if (ra != rb) return rb > ra;
     bool tram(CrossroadsActor x) => x.type == CrossroadsVehicleType.tram;

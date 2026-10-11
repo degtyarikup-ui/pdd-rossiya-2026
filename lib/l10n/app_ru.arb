@@ -970,6 +970,9 @@
   "gameCrossroadsRepeatCrossroad": "Попробовать снова",
   "gameCrossroadsModeArcade": "Аркада",
   "gameCrossroadsModeTraining": "Обучение",
+  "gameCrossroadsCatAll": "Все",
+  "gameCrossroadsCatSigns": "Знаки приоритета",
+  "gameCrossroadsCatTrafficLights": "Светофоры",
   "gameCrossroadsSolvedCount": "Разрулено: {count}",
   "@gameCrossroadsSolvedCount": {
     "placeholders": {

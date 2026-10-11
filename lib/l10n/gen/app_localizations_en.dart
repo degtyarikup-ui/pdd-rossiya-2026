@@ -1826,6 +1826,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameCrossroadsModeTraining => 'Training';
 
   @override
+  String get gameCrossroadsCatAll => 'All';
+
+  @override
+  String get gameCrossroadsCatSigns => 'Priority signs';
+
+  @override
+  String get gameCrossroadsCatTrafficLights => 'Traffic lights';
+
+  @override
   String gameCrossroadsSolvedCount(int count) {
     return 'Cleared: $count';
   }

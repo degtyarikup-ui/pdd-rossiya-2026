@@ -1828,6 +1828,15 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameCrossroadsModeTraining => 'Тренинг';
 
   @override
+  String get gameCrossroadsCatAll => 'Барлығы';
+
+  @override
+  String get gameCrossroadsCatSigns => 'Басымдық белгілері';
+
+  @override
+  String get gameCrossroadsCatTrafficLights => 'Бағдаршамдар';
+
+  @override
   String gameCrossroadsSolvedCount(int count) {
     return 'Шешілген: $count';
   }

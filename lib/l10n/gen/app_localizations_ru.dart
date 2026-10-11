@@ -1841,6 +1841,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameCrossroadsModeTraining => 'Обучение';
 
   @override
+  String get gameCrossroadsCatAll => 'Все';
+
+  @override
+  String get gameCrossroadsCatSigns => 'Знаки приоритета';
+
+  @override
+  String get gameCrossroadsCatTrafficLights => 'Светофоры';
+
+  @override
   String gameCrossroadsSolvedCount(int count) {
     return 'Разрулено: $count';
   }

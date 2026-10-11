@@ -104,7 +104,7 @@ def main():
 
             # Inspect scene details
             scene_info = driver.execute_script("""
-                const { scene, scenarioGroup, signsGroup, renderer } = window._pddCrossroads;
+                const { scene, scenarioGroup, signsGroup, trafficLightsGroup, renderer } = window._pddCrossroads;
                 let spots = 0, rain = 0, rails = 0;
                 scene.traverse(o => {
                     if (o.isSpotLight) spots++;
@@ -118,10 +118,12 @@ def main():
                 const signs = signsGroup.children.map(g => ({
                     x: g.position.x, z: g.position.z, ry: g.rotation.y
                 }));
+                const tlCount = trafficLightsGroup ? trafficLightsGroup.children.length : 0;
                 return {
                     spots, rain, rails, lawn,
                     signsCount: signs.length,
                     signs: signs,
+                    tlCount: tlCount,
                     geometries: renderer.info.memory.geometries,
                     location: window._pddCrossroads.location()
                 };
@@ -152,15 +154,21 @@ def main():
                 nz = math.cos(s['ry'])
                 assert nx * s['x'] + nz * s['z'] > 0, f"[{sc_id}] Sign does not face approach: {s}"
 
+            # Traffic lights count
+            expected_tls = len(scenario.get('trafficLights') or [])
+            assert scene_info['tlCount'] == expected_tls, (
+                f"[{sc_id}] Traffic lights count {scene_info['tlCount']} vs expected {expected_tls}"
+            )
+
             locations.add(scene_info['location'])
             geometry_counts.append(scene_info['geometries'])
-            print(f"  ✓ [{idx}/{len(scenarios)}] {sc_id}: {actor_mesh_count} cars, {expected_signs} signs, {len(axes)*2} rails, valid")
+            print(f"  ✓ [{idx}/{len(scenarios)}] {sc_id}: {actor_mesh_count} cars, {expected_signs} signs, {expected_tls} TLs, {len(axes)*2} rails, valid")
 
         assert len(locations) >= 3, f"Expected varied scenery locations, got {locations}"
         print(f"✓ Location variety verified: {locations}")
 
-        # Test C: Correct Order Playthrough for All 17 Scenarios
-        print(f"\n--- Test C: Step-by-step Correct Playthrough (All 17 Scenarios) ---")
+        # Test C: Correct Order Playthrough for All Scenarios
+        print(f"\n--- Test C: Step-by-step Correct Playthrough (All {len(scenarios)} Scenarios) ---")
         for sc in scenarios:
             sc_id = sc['id']
             actors = sorted(sc['actors'], key=lambda a: a['order'])
@@ -310,10 +318,38 @@ def main():
 
         assert dyn_collision is not None, f"Dynamic collision was not triggered on intersecting paths! Events: {events}"
         assert '13.8' in dyn_collision.get('pddArticle', ''), f"Expected article 13.8, got {dyn_collision.get('pddArticle')}"
-        print(f"  ✓ Dynamic collision detected: article={dyn_collision.get('pddArticle')}, reason='{dyn_collision.get('reason')}'")
+        # Test G: Red Light Signal Violation (п. 6.2 ПДД РФ)
+        print(f"\n--- Test G: Red Light Signal Violation (п. 6.2 ПДД РФ) ---")
+        tl_sc = next((s for s in scenarios if s.get('trafficLights')), None)
+        assert tl_sc is not None, "No traffic light scenario found for red signal audit"
+        test_tl_sc = json.loads(json.dumps(tl_sc))
+        test_tl_sc['actors'].append({
+            'id': 'violator_car',
+            'type': 'car',
+            'name': 'Нарушитель на красный',
+            'side': 'east',
+            'maneuver': 'straight',
+            'order': 99,
+            'ruleExplanation': 'Тестовый нарушитель',
+            'vehicleModel': 'sedan',
+            'colorHex': '#FF0000'
+        })
+        driver.execute_script("window.smokeEvents = []; window.loadScenarioData(arguments[0]);", test_tl_sc)
+        time.sleep(0.15)
+        driver.execute_script("window.selectVehicle('violator_car');")
+        red_collision = None
+        for _ in range(40):
+            time.sleep(0.05)
+            events = driver.execute_script("return window.smokeEvents;")
+            red_collision = next((e for e in events if e.get('type') == 'collision'), None)
+            if red_collision:
+                break
+        assert red_collision is not None, "Red light collision was not triggered!"
+        assert '6.2' in red_collision.get('pddArticle', ''), f"Expected article 6.2, got {red_collision.get('pddArticle')}"
+        print(f"  ✓ Red light violation detected: article={red_collision.get('pddArticle')}, reason='{red_collision.get('reason')}'")
 
-        # Test G: Console Errors Audit
-        print("\n--- Test G: JavaScript Console Errors Audit ---")
+        # Test H: JavaScript Console Errors Audit
+        print("\n--- Test H: JavaScript Console Errors Audit ---")
         console_errs = driver.execute_script("return window.consoleErrors;")
         for e in console_errs:
             print("  [ERROR]", e)

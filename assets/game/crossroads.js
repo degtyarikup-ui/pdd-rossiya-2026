@@ -29,7 +29,7 @@
 
   // --- Переменные сцены ---
   let scene, camera, renderer, container;
-  let envGroup, vehiclesGroup, signsGroup, fxGroup, scenarioGroup, locationGroup;
+  let envGroup, vehiclesGroup, signsGroup, trafficLightsGroup, fxGroup, scenarioGroup, locationGroup;
   let curbMatShared = null;
   // Текстуры знаков и табличек 8.13 создаются один раз на всю игру.
   const signTextureCache = new Map(), plateTextureCache = new Map();
@@ -73,7 +73,7 @@
   let drivingAnimations = []; // массив активных анимаций
   let activeCollision = null; // активная анимация ДТП
   let activeFx = []; // активные частицы и спецэффекты
-  let activeSigns = [];
+  let activeSigns = [], activeTrafficLights = [];
 
   // Сценарий для самостоятельного открытия страницы (стенд, браузер); в приложении
   // сценарии присылает Flutter (crossroads_priority_model.dart).
@@ -210,6 +210,7 @@
     envGroup = new THREE.Group();
     vehiclesGroup = new THREE.Group();
     signsGroup = new THREE.Group();
+    trafficLightsGroup = new THREE.Group();
     scenarioGroup = new THREE.Group();
     fxGroup = new THREE.Group();
     locationGroup = new THREE.Group();
@@ -217,10 +218,11 @@
     scene.add(envGroup);
     scene.add(vehiclesGroup);
     scene.add(signsGroup);
+    scene.add(trafficLightsGroup);
     scene.add(scenarioGroup);
     scene.add(fxGroup);
     scene.add(locationGroup);
-    window._pddCrossroads = { scene, camera, renderer, envGroup, vehiclesGroup, scenarioGroup, signsGroup, locationGroup, location: () => currentLocation };
+    window._pddCrossroads = { scene, camera, renderer, envGroup, vehiclesGroup, scenarioGroup, signsGroup, trafficLightsGroup, locationGroup, location: () => currentLocation };
 
     buildEnvironment();
 
@@ -1079,17 +1081,20 @@
     activeSigns = [];
   }
 
-  function createSignMesh(code, sideName, table8_13, slot = 0) {
+  function clearTrafficLights() {
+    activeTrafficLights.forEach(tl => { trafficLightsGroup.remove(tl); disposeObject(tl); });
+    activeTrafficLights = [];
+    while (trafficLightsGroup.children.length > 0) {
+      const c = trafficLightsGroup.children[0];
+      trafficLightsGroup.remove(c);
+      disposeObject(c);
+    }
+  }
+
+  // Создание щита знака и таблички 8.13 (без стойки — для монтажа отдельно или на светофоре)
+  function createSignFaceGroup(code, table8_13) {
     const group = new THREE.Group();
 
-    // Металлическая оцинкованная стойка знака (расположена сзади щита, не пересекая лицевую панель)
-    const poleMat = new THREE.MeshLambertMaterial({ color: 0x9FA3A9 });
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 3.5, 12), poleMat);
-    pole.position.set(0, 1.75, -0.06);
-    pole.castShadow = true;
-    group.add(pole);
-
-    // Щит знака
     const signTexUrl = (window.PDD_SIGN_TEXTURES && window.PDD_SIGN_TEXTURES[code]);
     let signMat;
     if (signTexUrl) {
@@ -1104,13 +1109,11 @@
       signMat = new THREE.MeshLambertMaterial({ color: 0xFFCC00 });
     }
 
-    // Лицевая панель знака (крупная, четкая, строго перед стойкой)
     const faceGeo = new THREE.PlaneGeometry(1.65, 1.45);
     const face = new THREE.Mesh(faceGeo, signMat);
-    face.position.set(0, 2.85, 0.02);
+    face.position.set(0, 0, 0.02);
     group.add(face);
 
-    // Тыльная серая панель знака (строго по контуру знака через альфа-маску, без круглых блинов)
     const backMat = new THREE.MeshLambertMaterial({
       color: 0x7E858E,
       map: signMat.map,
@@ -1126,33 +1129,53 @@
       };
     }
     const back = new THREE.Mesh(faceGeo, backMat);
-    back.position.set(0, 2.85, 0.00);
+    back.position.set(0, 0, 0.00);
     back.rotation.y = Math.PI;
     group.add(back);
 
-    // Табличка 8.13 «Направление главной дороги» (если указана)
     if (table8_13) {
       let plateTex = plateTextureCache.get(table8_13);
-      if (!plateTex) { plateTex = createTable8_13Texture(table8_13); plateTextureCache.set(table8_13, plateTex); }
+      if (!plateTex) {
+        plateTex = createTable8_13Texture(table8_13);
+        plateTextureCache.set(table8_13, plateTex);
+      }
       const plateMat = new THREE.MeshLambertMaterial({ map: plateTex });
       const plateGeo = new THREE.PlaneGeometry(1.25, 1.25);
 
       const plate = new THREE.Mesh(plateGeo, plateMat);
-      plate.position.set(0, 1.95, 0.02);
+      plate.position.set(0, -0.90, 0.02);
       group.add(plate);
 
       const plateBackMat = new THREE.MeshLambertMaterial({ color: 0x7E858E });
       const plateBack = new THREE.Mesh(plateGeo, plateBackMat);
-      plateBack.position.set(0, 1.95, 0.00);
+      plateBack.position.set(0, -0.90, 0.00);
       plateBack.rotation.y = Math.PI;
       group.add(plateBack);
     }
 
-    // Знак стоит справа от своего подъезда перед стоп-линией и смотрит на
-    // водителей этого подъезда (как в жизни и в основной игре). Второй знак
-    // той же стороны (2.2 перед 2.4, 4.1.1 при 2.1) — на 4.5 м дальше.
+    return group;
+  }
+
+  function createSignMesh(code, sideName, table8_13, slot = 0, underTL = false) {
+    const group = new THREE.Group();
+
+    if (!underTL) {
+      // Металлическая оцинкованная стойка знака
+      const poleMat = new THREE.MeshLambertMaterial({ color: 0x9FA3A9 });
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 3.5, 12), poleMat);
+      pole.position.set(0, 1.75, -0.06);
+      pole.castShadow = true;
+      group.add(pole);
+    }
+
+    // Щит и табличка
+    const faceGroup = createSignFaceGroup(code, table8_13);
+    faceGroup.position.set(0, underTL ? 1.65 : 2.85, 0);
+    group.add(faceGroup);
+
+    // Знак стоит справа от своего подъезда перед стоп-линией
     const curbX = HALF_ROAD + 1.2;
-    const curbZ = 11.0 + slot * 4.5;
+    const curbZ = underTL ? 10.5 : (11.0 + slot * 4.5);
     if (sideName === 'south') {
       group.position.set(curbX, 0, curbZ);
       group.rotation.y = 0;
@@ -1173,6 +1196,196 @@
         child.receiveShadow = true;
       }
     });
+    return group;
+  }
+
+  // Генерация текстуры стрелки для доп. секции светофора
+  function createArrowTexture(direction, active) {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(0, 0, 128, 128);
+
+    ctx.strokeStyle = active ? '#36FF88' : '#144026';
+    ctx.fillStyle = active ? '#36FF88' : '#144026';
+    ctx.lineWidth = 14;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.beginPath();
+    if (direction === 'right') {
+      ctx.moveTo(28, 64);
+      ctx.lineTo(96, 64);
+      ctx.moveTo(68, 36);
+      ctx.lineTo(96, 64);
+      ctx.lineTo(68, 92);
+    } else {
+      ctx.moveTo(100, 64);
+      ctx.lineTo(32, 64);
+      ctx.moveTo(60, 36);
+      ctx.lineTo(32, 64);
+      ctx.lineTo(60, 92);
+    }
+    ctx.stroke();
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.anisotropy = 4;
+    return tex;
+  }
+
+  // Создание 3D-светофора (короб, линзы, козырьки, стрелки, опциональный знак приоритета)
+  function createTrafficLight(tlData, signData = null) {
+    const group = new THREE.Group();
+
+    // 1. Металлическая стойка
+    const metalMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 4.4, 12), metalMat);
+    pole.position.y = 2.2;
+    pole.castShadow = true;
+    group.add(pole);
+
+    // 2. Короб светофора
+    const box = new THREE.Mesh(
+      new THREE.BoxGeometry(0.65, 1.6, 0.4),
+      new THREE.MeshLambertMaterial({ color: 0x1E293B })
+    );
+    box.position.set(0, 3.4, 0.25);
+    box.castShadow = true;
+    group.add(box);
+
+    // Фоновая пластина с белой окантовкой по ГОСТ
+    const plate = new THREE.Mesh(
+      new THREE.BoxGeometry(0.95, 1.9, 0.03),
+      new THREE.MeshLambertMaterial({ color: 0x111827 })
+    );
+    plate.position.set(0, 3.4, 0.03);
+    group.add(plate);
+
+    const rim = new THREE.Mesh(
+      new THREE.BoxGeometry(1.01, 1.96, 0.02),
+      new THREE.MeshLambertMaterial({ color: 0xF1F5F9 })
+    );
+    rim.position.set(0, 3.4, 0.01);
+    group.add(rim);
+
+    // 3. Козырьки над сигналами
+    [3.85, 3.40, 2.95].forEach(y => {
+      const visor = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.24, 0.24, 0.24, 12, 1, true, -Math.PI / 2, Math.PI),
+        new THREE.MeshLambertMaterial({ color: 0x1E293B, side: THREE.DoubleSide })
+      );
+      visor.rotation.x = Math.PI / 2;
+      visor.position.set(0, y, 0.52);
+      group.add(visor);
+    });
+
+    // 4. Три линзы сигналов
+    const lampGeo = new THREE.CylinderGeometry(0.20, 0.20, 0.06, 20);
+    lampGeo.rotateX(Math.PI / 2);
+
+    const isRed = tlData.state === 'red';
+    const isYellow = tlData.state === 'yellow' || tlData.state === 'flashing_yellow';
+    const isGreen = tlData.state === 'green';
+
+    const redLamp = new THREE.Mesh(
+      lampGeo,
+      new THREE.MeshBasicMaterial({ color: isRed ? 0xFF3838 : 0x351719 })
+    );
+    redLamp.position.set(0, 3.85, 0.46);
+    group.add(redLamp);
+    if (isRed && window.PDD_VEHICLES && window.PDD_VEHICLES.addGlow) {
+      const glow = window.PDD_VEHICLES.addGlow(redLamp, 0xFF3838, 1.25);
+      glow.position.z = 0.08;
+    }
+
+    const yellowLamp = new THREE.Mesh(
+      lampGeo,
+      new THREE.MeshBasicMaterial({ color: isYellow ? 0xFFD52A : 0x352D14 })
+    );
+    yellowLamp.position.set(0, 3.40, 0.46);
+    group.add(yellowLamp);
+    if (isYellow && window.PDD_VEHICLES && window.PDD_VEHICLES.addGlow) {
+      const glow = window.PDD_VEHICLES.addGlow(yellowLamp, 0xFFD52A, 1.25);
+      glow.position.z = 0.08;
+    }
+
+    const greenLamp = new THREE.Mesh(
+      lampGeo,
+      new THREE.MeshBasicMaterial({ color: isGreen ? 0x36FF88 : 0x123126 })
+    );
+    greenLamp.position.set(0, 2.95, 0.46);
+    group.add(greenLamp);
+    if (isGreen && window.PDD_VEHICLES && window.PDD_VEHICLES.addGlow) {
+      const glow = window.PDD_VEHICLES.addGlow(greenLamp, 0x36FF88, 1.25);
+      glow.position.z = 0.08;
+    }
+
+    // 5. Дополнительная секция со стрелкой (если есть)
+    if (tlData.arrow) {
+      const arrowX = tlData.arrow === 'left' ? -0.62 : 0.62;
+
+      const arrowBox = new THREE.Mesh(
+        new THREE.BoxGeometry(0.58, 0.58, 0.38),
+        new THREE.MeshLambertMaterial({ color: 0x1E293B })
+      );
+      arrowBox.position.set(arrowX, 2.95, 0.25);
+      arrowBox.castShadow = true;
+      group.add(arrowBox);
+
+      const arrowVisor = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.24, 0.24, 0.24, 12, 1, true, -Math.PI / 2, Math.PI),
+        new THREE.MeshLambertMaterial({ color: 0x1E293B, side: THREE.DoubleSide })
+      );
+      arrowVisor.rotation.x = Math.PI / 2;
+      arrowVisor.position.set(arrowX, 2.95, 0.52);
+      group.add(arrowVisor);
+
+      const arrowTex = createArrowTexture(tlData.arrow, tlData.arrowActive);
+      const arrowFace = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.48, 0.48),
+        new THREE.MeshBasicMaterial({ map: arrowTex, transparent: true })
+      );
+      arrowFace.position.set(arrowX, 2.95, 0.46);
+      group.add(arrowFace);
+
+      if (tlData.arrowActive && window.PDD_VEHICLES && window.PDD_VEHICLES.addGlow) {
+        const arrowGlow = window.PDD_VEHICLES.addGlow(arrowFace, 0x36FF88, 0.95);
+        arrowGlow.position.z = 0.06;
+      }
+    }
+
+    // 6. Монтирование знака приоритета под светофором (п. 13.3)
+    if (signData) {
+      const signGroup = createSignFaceGroup(signData.code, signData.table8_13);
+      signGroup.position.set(0, 1.70, 0.05);
+      group.add(signGroup);
+    }
+
+    // 7. Позиционирование на перекрестке (перед стоп-линией справа от потока)
+    const curbX = HALF_ROAD + 1.2;
+    const curbZ = 10.5;
+    if (tlData.side === 'south') {
+      group.position.set(curbX, 0, curbZ);
+      group.rotation.y = 0;
+    } else if (tlData.side === 'north') {
+      group.position.set(-curbX, 0, -curbZ);
+      group.rotation.y = Math.PI;
+    } else if (tlData.side === 'east') {
+      group.position.set(curbZ, 0, -curbX);
+      group.rotation.y = Math.PI / 2;
+    } else if (tlData.side === 'west') {
+      group.position.set(-curbZ, 0, curbX);
+      group.rotation.y = -Math.PI / 2;
+    }
+
+    group.traverse(child => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+
     return group;
   }
 
@@ -1771,6 +1984,70 @@
     ctx.restore();
   }
 
+  function drawTrafficLightBadge(ctx, tl) {
+    ctx.save();
+    const isRed = tl.state === 'red';
+    const isGreen = tl.state === 'green';
+    const hasArrow = tl.arrow && tl.arrowActive;
+
+    if (hasArrow && isRed) {
+      const x = 34, y = 24, w = 78, h = 40, r = 20;
+      ctx.fillStyle = '#111827';
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Красный свет
+      ctx.beginPath();
+      ctx.arc(54, 44, 11, 0, Math.PI * 2);
+      ctx.fillStyle = '#EF4444';
+      ctx.fill();
+
+      // Зелёная стрелка
+      ctx.strokeStyle = '#2BC280';
+      ctx.fillStyle = '#2BC280';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      if (tl.arrow === 'right') {
+        ctx.moveTo(76, 44); ctx.lineTo(94, 44);
+        ctx.moveTo(87, 37); ctx.lineTo(94, 44); ctx.lineTo(87, 51);
+      } else {
+        ctx.moveTo(94, 44); ctx.lineTo(76, 44);
+        ctx.moveTo(83, 37); ctx.lineTo(76, 44); ctx.lineTo(83, 51);
+      }
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = '#111827';
+      ctx.beginPath();
+      ctx.arc(58, 44, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(58, 44, 13, 0, Math.PI * 2);
+      ctx.fillStyle = isGreen ? '#2BC280' : (isRed ? '#EF4444' : '#F59E0B');
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(54, 40, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   function paintBadge(u, status, label) {
     const { ctx } = u, style = BADGE_STYLE[status] || BADGE_STYLE.normal;
     ctx.clearRect(0, 0, 256, 256);
@@ -1792,6 +2069,9 @@
       drawManeuver(ctx, u.maneuver, style.ink);
       if (u.siren) {
         ctx.beginPath(); ctx.arc(196, 40, 22, 0, Math.PI * 2); ctx.fillStyle = '#ED4621'; ctx.fill();
+      }
+      if (u.trafficLight) {
+        drawTrafficLightBadge(ctx, u.trafficLight);
       }
     } else {
       ctx.fillStyle = style.ink;
@@ -1832,6 +2112,7 @@
       color: actorData.color || '#0574F8',
       maneuver: actorData.maneuver,
       siren: !!actorData.hasSiren,
+      trafficLight: actorData.trafficLight || null,
       status: 'normal',
     };
     paintBadge(badgeGroup.userData, 'normal');
@@ -1887,10 +2168,11 @@
       fxGroup.remove(fxGroup.children[0]);
     }
 
-    // Очищаем предыдущие машины и знаки
+    // Очищаем предыдущие машины, знаки и светофоры
     activeActors.forEach(({ mesh }) => { vehiclesGroup.remove(mesh); disposeObject(mesh); });
     activeActors.clear();
     clearSigns();
+    clearTrafficLights();
     // Пути трамвая и закрытая ветка — свои у каждого сценария.
     while (scenarioGroup.children.length) {
       const child = scenarioGroup.children[0];
@@ -1903,8 +2185,31 @@
     if (scenarioData.closedSide) closeArm(scenarioGroup, scenarioData.closedSide);
     if (houseFactory) currentLocation = buildLocation(scenarioData);
 
-    // Создаем дорожные знаки
-    if (scenarioData.signs && scenarioData.signs.length > 0) {
+    // Создаем светофоры и дорожные знаки
+    if (scenarioData.trafficLights && scenarioData.trafficLights.length > 0) {
+      const signsBySide = new Map();
+      if (scenarioData.signs && scenarioData.signs.length > 0) {
+        scenarioData.signs.forEach(s => signsBySide.set(s.side, s));
+      }
+      scenarioData.trafficLights.forEach(tl => {
+        const sign = signsBySide.get(tl.side);
+        const tlMesh = createTrafficLight(tl, null);
+        trafficLightsGroup.add(tlMesh);
+        activeTrafficLights.push(tlMesh);
+        if (sign) {
+          const signMesh = createSignMesh(sign.code, sign.side, sign.table8_13, 0, true);
+          signsGroup.add(signMesh);
+          activeSigns.push(signMesh);
+          signsBySide.delete(tl.side);
+        }
+      });
+      // Оставшиеся знаки (если не на светофорных стойках)
+      signsBySide.forEach((s) => {
+        const signMesh = createSignMesh(s.code, s.side, s.table8_13, 0);
+        signsGroup.add(signMesh);
+        activeSigns.push(signMesh);
+      });
+    } else if (scenarioData.signs && scenarioData.signs.length > 0) {
       const perSide = {};
       scenarioData.signs.forEach(s => {
         const slot = perSide[s.side] = (perSide[s.side] ?? -1) + 1;
@@ -1917,6 +2222,11 @@
     // Создаем участников движения
     if (scenarioData.actors && scenarioData.actors.length > 0) {
       scenarioData.actors.forEach(a => {
+        if (scenarioData.trafficLights && scenarioData.trafficLights.length > 0) {
+          a.trafficLight = scenarioData.trafficLights.find(tl => tl.side === a.side) || null;
+        } else {
+          a.trafficLight = null;
+        }
         const mesh = createVehicleMesh(a);
         placeActorAtStart(mesh, a.side);
         vehiclesGroup.add(mesh);
@@ -2061,6 +2371,19 @@
     });
 
     if (!priorityActor) return;
+
+    // Проверка проезда на запрещающий сигнал светофора (п. 6.2 ПДД РФ)
+    const tl = chosen.data.trafficLight;
+    const isIllegalRed = tl && tl.state === 'red' && !chosen.data.hasSiren &&
+      !(tl.arrowActive && tl.arrow === chosen.data.maneuver);
+
+    if (isIllegalRed) {
+      triggerCollision(chosen, priorityActor, {
+        reason: 'Проезд на запрещающий сигнал светофора (п. 6.2 ПДД РФ). Движение на красный свет категорически запрещено!',
+        pddArticle: 'Пункт 6.2 ПДД РФ',
+      });
+      return;
+    }
 
     if (chosen.data.order === priorityActor.data.order) {
       // ПРАВИЛЬНЫЙ ВЫБОР!
@@ -2221,7 +2544,7 @@
   }
 
   // --- Кинематографичная авария (ДТП) при ошибке очередности ---
-  function triggerCollision(wrongActor, priorityActor) {
+  function triggerCollision(wrongActor, priorityActor, customError = null) {
     isResolving = true;
     drivingAnimations = [];
     wrongActor.state = 'crashed';
@@ -2308,6 +2631,7 @@
       elapsed: 0,
       duration: 0.85,
       impactHandled: false,
+      customError,
     };
   }
 
@@ -2715,9 +3039,10 @@
           type: 'collision',
           chosenId: c.wrongActor.data.id,
           priorityId: c.priorityActor.data.id,
-          reason: c.priorityActor.data.explanation || c.priorityActor.data.ruleExplanation ||
+          reason: (c.customError && c.customError.reason) ||
+            c.priorityActor.data.explanation || c.priorityActor.data.ruleExplanation ||
             c.wrongActor.data.explanation || c.wrongActor.data.ruleExplanation || '',
-          pddArticle: currentScenario.pddArticle,
+          pddArticle: (c.customError && c.customError.pddArticle) || currentScenario.pddArticle,
         });
 
         activeCollision = null;

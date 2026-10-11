@@ -3202,6 +3202,24 @@ abstract class AppLocalizations {
   /// **'Обучение'**
   String get gameCrossroadsModeTraining;
 
+  /// No description provided for @gameCrossroadsCatAll.
+  ///
+  /// In ru, this message translates to:
+  /// **'Все'**
+  String get gameCrossroadsCatAll;
+
+  /// No description provided for @gameCrossroadsCatSigns.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знаки приоритета'**
+  String get gameCrossroadsCatSigns;
+
+  /// No description provided for @gameCrossroadsCatTrafficLights.
+  ///
+  /// In ru, this message translates to:
+  /// **'Светофоры'**
+  String get gameCrossroadsCatTrafficLights;
+
   /// No description provided for @gameCrossroadsSolvedCount.
   ///
   /// In ru, this message translates to:
