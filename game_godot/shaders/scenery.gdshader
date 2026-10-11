@@ -43,9 +43,16 @@ void fragment() {
 		float fine = 0.5 + (mix(d.r, d.b, side) - 0.5) * g;
 		float large = 0.5 + (mix(texture(detail, vec3(UV * macro_scale[layer] + vec2(0.31, 0.17), float(layer))).g, 0.5, side) - 0.5) * g;
 		// Far away a texel is smaller than a pixel: the detail flickers as the camera moves. It is faded.
-		float far = smoothstep(detail_fade.x, detail_fade.y, -VERTEX.z);
+		// Anti-shimmer for every surface: how many texels of the 256 px map fall into one screen
+		// pixel. Where a texel is smaller than a pixel the detail cannot be shown, only flicker
+		// (tile joints, grass blades): it fades to the flat tone. Works at any distance and angle.
+		float texels = max(length(dFdx(UV)), length(dFdy(UV))) * 256.0;
+		// The coarse variation (macro, metres-wide patches) is sampled at macro_scale and stays
+		// visible: it is larger than a pixel, so it gives the surface life without shimmer.
+		float far = max(smoothstep(0.5, 1.5, texels), smoothstep(detail_fade.x, detail_fade.y, -VERTEX.z));
+		float far_large = smoothstep(0.5, 1.5, texels * macro_scale[layer]);
 		fine = mix(fine, 0.5, far);
-		large = mix(large, 0.5, far);
+		large = mix(large, 0.5, far_large);
 		base *= fine * 2.0 * (1.0 + (large * 2.0 - 1.0) * macro[layer]);
 	}
 	// As-is, no sRGB decode: the WebView game (three.js r128) renders without

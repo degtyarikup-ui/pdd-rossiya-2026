@@ -1159,7 +1159,7 @@ func _process(delta: float) -> void:
 	_retire_far()
 	# Snapped to the texture period so the grass pattern does not slide.
 	ground.position.x = 0.0
-	ground.position.z = snappedf(drive.pos.z, 44.8)
+	ground.position.z = snappedf(drive.pos.z, 144.0)  # whole grass periods (4.8 m fine, 28.8 m coarse): the pattern never jumps
 	_update_traffic(delta)
 	_update_walkers(delta)
 	_recycle_chunks()
