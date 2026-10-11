@@ -2211,29 +2211,6 @@
     return new THREE.QuadraticBezierCurve3(pStart, pMid, pEnd);
   }
 
-  // Геометрическая точка пересечения траекторий участников при ДТП
-  function calculateCrashPoint(wrongActor, priorityActor) {
-    const pW = wrongActor.mesh.position;
-    const pP = priorityActor.mesh.position;
-    const sideW = wrongActor.data.side;
-    const sideP = priorityActor.data.side;
-
-    const isWNorthSouth = (sideW === 'north' || sideW === 'south');
-    const isPNorthSouth = (sideP === 'north' || sideP === 'south');
-
-    if (isWNorthSouth && !isPNorthSouth) {
-      return new THREE.Vector3(pW.x, 0, pP.z);
-    } else if (!isWNorthSouth && isPNorthSouth) {
-      return new THREE.Vector3(pP.x, 0, pW.z);
-    } else {
-      return new THREE.Vector3(
-        (pW.x + pP.x) * 0.5,
-        0,
-        (pW.z + pP.z) * 0.5
-      );
-    }
-  }
-
   function getVehicleCollisionExtents(actor) {
     const type = actor && actor.data ? actor.data.type : '';
     if (type === 'tram') return { front: 4.8, side: 1.15, isTram: true };
@@ -2250,76 +2227,81 @@
     wrongActor.state = 'crashed';
     priorityActor.state = 'crashed';
 
-    // Точка столкновения (реальная геометрическая точка пересечения курсов)
-    const crashPoint = calculateCrashPoint(wrongActor, priorityActor);
+    // Формируем реальные кривые траекторий участников через перекресток
+    const pathW = generateTrajectory(wrongActor.mesh, wrongActor.data.side, wrongActor.data.maneuver, wrongActor.data.type === 'tram');
+    const pathP = generateTrajectory(priorityActor.mesh, priorityActor.data.side, priorityActor.data.maneuver, priorityActor.data.type === 'tram');
 
-    // Начальные координаты участников
-    const tStartWrong = wrongActor.mesh.position.clone();
-    const tStartPriority = priorityActor.mesh.position.clone();
+    let steerAngleW = 0;
+    if (wrongActor.data.maneuver === 'left') steerAngleW = -0.42;
+    else if (wrongActor.data.maneuver === 'right') steerAngleW = 0.42;
 
-    // Векторы направлений движения от старта к точке пересечения
-    const vW = new THREE.Vector3(crashPoint.x - tStartWrong.x, 0, crashPoint.z - tStartWrong.z);
-    const distW = vW.length();
-    const dirW = distW > 0.001 ? vW.clone().normalize() : new THREE.Vector3(0, 0, 1);
-
-    const vP = new THREE.Vector3(crashPoint.x - tStartPriority.x, 0, crashPoint.z - tStartPriority.z);
-    const distP = vP.length();
-    const dirP = distP > 0.001 ? vP.clone().normalize() : new THREE.Vector3(0, 0, 1);
+    let steerAngleP = 0;
+    if (priorityActor.data.maneuver === 'left') steerAngleP = -0.42;
+    else if (priorityActor.data.maneuver === 'right') steerAngleP = 0.42;
 
     const extW = getVehicleCollisionExtents(wrongActor);
     const extP = getVehicleCollisionExtents(priorityActor);
 
-    const cosAngle = dirW.dot(dirP);
-    let targetWrong, targetPriority, impactPoint;
+    // Ищем пару параметров (tW, tP) на кривых маршрутов, где траектории пересекаются или максимально сближаются
+    let bestDist = Infinity;
+    let bestTW = 0.40;
+    let bestTP = 0.40;
 
-    if (cosAngle < -0.6) {
-      // Встречные курсы (лобовое столкновение):
-      // Машины сходятся навстречу друг другу, бамперы встречаются у точки crashPoint
-      const crumple = 0.2;
-      const stopDistW = Math.max(0.2, extW.front - crumple * 0.5);
-      const stopDistP = Math.max(0.2, extP.front - crumple * 0.5);
-
-      targetWrong = crashPoint.clone().sub(dirW.clone().multiplyScalar(stopDistW));
-      targetPriority = crashPoint.clone().sub(dirP.clone().multiplyScalar(stopDistP));
-      impactPoint = crashPoint.clone().setY(0.6);
-    } else if (cosAngle > 0.6) {
-      // Попутные курсы (удар сзади):
-      const crumple = 0.2;
-      const stopDistW = Math.max(0.2, extW.front + extP.front - crumple);
-      targetWrong = crashPoint.clone().sub(dirW.clone().multiplyScalar(stopDistW));
-      targetPriority = crashPoint.clone();
-      impactPoint = targetPriority.clone().sub(dirP.clone().multiplyScalar(extP.front)).setY(0.6);
-    } else {
-      // Пересекающиеся полосы (боковой T-образный удар на перекрестке):
-      // Приоритетная машина выезжает на перекресток первой (ее борт пересекает путь нарушителя).
-      // Нарушитель не уступил и передним бампером врезается в борт приоритетного участника.
-      // Чтобы длинные трамваи/автобусы/машины НЕ въезжали друг в друга:
-      // Передний бампер нарушителя упирается в борт приоритетного ТС (с реалистичной деформацией ~16 см).
-      const crumple = 0.16;
-      const stopDistW = extW.front + extP.side - crumple;
-      targetWrong = crashPoint.clone().sub(dirW.clone().multiplyScalar(stopDistW));
-
-      // Приоритетный участник продвигается вперед через crashPoint так, чтобы удар пришелся в переднюю часть борта:
-      const advanceP = Math.min(extP.front * 0.35, 1.6);
-      targetPriority = crashPoint.clone().add(dirP.clone().multiplyScalar(advanceP));
-
-      // Точка контакта бампера с бортом:
-      impactPoint = targetWrong.clone().add(dirW.clone().multiplyScalar(extW.front)).setY(0.7);
+    for (let i = 8; i <= 68; i += 2) {
+      const tw = i / 100.0;
+      const ptW = pathW.getPoint(tw);
+      for (let j = 8; j <= 68; j += 2) {
+        const tp = j / 100.0;
+        const ptP = pathP.getPoint(tp);
+        const d = Math.hypot(ptW.x - ptP.x, ptW.z - ptP.z);
+        if (d < bestDist) {
+          bestDist = d;
+          bestTW = tw;
+          bestTP = tp;
+        }
+      }
     }
 
-    // Следы экстренного торможения ведут строго до колес точки остановки
-    if (!extW.isTram) createSkidMarks(tStartWrong, targetWrong, wrongActor.data.side);
-    if (!extP.isTram) createSkidMarks(tStartPriority, targetPriority, priorityActor.data.side);
+    let lateralOffset = null;
+    let impactPoint;
+
+    if (bestDist > 3.0) {
+      // Встречные параллельные полосы: сближение у центра перекрестка
+      const ptW = pathW.getPoint(bestTW);
+      const ptP = pathP.getPoint(bestTP);
+      impactPoint = new THREE.Vector3((ptW.x + ptP.x) * 0.5, 0.65, (ptW.z + ptP.z) * 0.5);
+      lateralOffset = impactPoint.clone().sub(ptW);
+      lateralOffset.y = 0;
+    } else {
+      const ptW = pathW.getPoint(bestTW);
+      const ptP = pathP.getPoint(bestTP);
+      impactPoint = new THREE.Vector3((ptW.x + ptP.x) * 0.5, 0.65, (ptW.z + ptP.z) * 0.5);
+    }
+
+    // Рассчитываем параметры остановки (stopTW, stopTP), чтобы бампер упирался в точку контакта
+    const curveLenW = 48.0;
+    const curveLenP = 48.0;
+    const stopOffsetW = (extW.front * 0.65 + (bestDist <= 3.0 ? extP.side * 0.35 : 0)) / curveLenW;
+    const stopOffsetP = (extP.front * 0.25) / curveLenP;
+
+    const stopTW = Math.max(0.08, bestTW - stopOffsetW);
+    const stopTP = Math.max(0.08, bestTP - stopOffsetP);
+
+    if (audio) {
+      audio.engine(wrongActor.data.type, 1.8);
+      if (wrongActor.data.hasSiren) audio.siren(2.0);
+    }
 
     activeCollision = {
       wrongActor,
       priorityActor,
-      tStartWrong,
-      tStartPriority,
-      targetWrong,
-      targetPriority,
-      dirW,
-      dirP,
+      pathW,
+      pathP,
+      stopTW,
+      stopTP,
+      steerAngleW,
+      steerAngleP,
+      lateralOffset,
       impactPoint,
       extW,
       extP,
@@ -2330,32 +2312,27 @@
   }
 
   // Следы протектора торможения на асфальте
-  function createSkidMarks(pStart, pCrash, side) {
+  function createSkidMarks(pStop, dir, side, isTram) {
+    if (isTram) return;
     const skidMat = new THREE.MeshBasicMaterial({
       color: 0x16181A,
       transparent: true,
-      opacity: 0.65,
+      opacity: 0.68,
       depthWrite: false,
     });
-    const isNS = (side === 'north' || side === 'south');
-    const trackWidth = 0.68;
+    const trackWidth = 0.70;
+    const skidLen = 4.2;
+
+    const norm = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
+    const pStart = pStop.clone().sub(dir.clone().multiplyScalar(skidLen));
 
     for (let sign of [-1, 1]) {
-      const p1 = pStart.clone().lerp(pCrash, 0.42);
-      const p2 = pCrash.clone();
-      if (isNS) {
-        p1.x += sign * trackWidth;
-        p2.x += sign * trackWidth;
-      } else {
-        p1.z += sign * trackWidth;
-        p2.z += sign * trackWidth;
-      }
+      const p1 = pStart.clone().addScaledVector(norm, sign * trackWidth);
+      const p2 = pStop.clone().addScaledVector(norm, sign * trackWidth);
       p1.y = 0.02;
       p2.y = 0.02;
 
-      const len = p1.distanceTo(p2);
-      if (len < 0.4) continue;
-      const skidGeo = new THREE.PlaneGeometry(0.22, len);
+      const skidGeo = new THREE.PlaneGeometry(0.24, skidLen);
       const skidMesh = new THREE.Mesh(skidGeo, skidMat);
       skidMesh.rotation.x = -Math.PI / 2;
       skidMesh.position.copy(p1.clone().add(p2).multiplyScalar(0.5));
@@ -2647,15 +2624,56 @@
       const c = activeCollision;
       c.elapsed += dt;
       const progress = Math.min(1.0, c.elapsed / c.duration);
-      const ease = 1 - Math.pow(1 - progress, 2);
+      const ease = THREE.MathUtils.smootherstep(progress, 0, 1);
 
-      c.wrongActor.mesh.position.lerpVectors(c.tStartWrong, c.targetWrong, ease);
-      c.priorityActor.mesh.position.lerpVectors(c.tStartPriority, c.targetPriority, ease);
+      const curTW = ease * c.stopTW;
+      const curTP = ease * c.stopTP;
 
+      // Позиция строго по кривой маршрута участников
+      const posW = c.pathW.getPoint(curTW);
+      const posP = c.pathP.getPoint(curTP);
+
+      if (c.lateralOffset) {
+        posW.addScaledVector(c.lateralOffset, ease * ease);
+      }
+
+      c.wrongActor.mesh.position.copy(posW);
+      c.priorityActor.mesh.position.copy(posP);
+
+      // Направление кузова строго по касательной траектории маршрута
+      const tanW = c.pathW.getTangent(Math.min(0.999, Math.max(0.001, curTW)));
+      if (tanW.lengthSq() > 0.0001) {
+        c.wrongActor.mesh.rotation.y = Math.atan2(tanW.x, tanW.z);
+      }
+
+      const tanP = c.pathP.getTangent(Math.min(0.999, Math.max(0.001, curTP)));
+      if (tanP.lengthSq() > 0.0001) {
+        c.priorityActor.mesh.rotation.y = Math.atan2(tanP.x, tanP.z);
+      }
+
+      // Вращение колес по асфальту
       const wheelsWrong = c.wrongActor.mesh.userData.wheels || [];
       const wheelsPriority = c.priorityActor.mesh.userData.wheels || [];
       wheelsWrong.forEach(w => { w.rotation.x += dt * 16.0; });
       wheelsPriority.forEach(w => { w.rotation.x += dt * 16.0; });
+
+      // Поворот передних колес по углу маневра
+      if (c.wrongActor.mesh.userData.frontAxles) {
+        const steerW = c.steerAngleW * Math.sin(curTW * Math.PI);
+        c.wrongActor.mesh.userData.frontAxles.forEach(a => { a.rotation.y = steerW; });
+      }
+      if (c.priorityActor.mesh.userData.frontAxles) {
+        const steerP = c.steerAngleP * Math.sin(curTP * Math.PI);
+        c.priorityActor.mesh.userData.frontAxles.forEach(a => { a.rotation.y = steerP; });
+      }
+
+      // Включение поворотника при маневре
+      if (c.wrongActor.mesh.userData.activeBlinker) {
+        c.wrongActor.mesh.userData.activeBlinker.visible = true;
+      }
+      if (c.priorityActor.mesh.userData.activeBlinker) {
+        c.priorityActor.mesh.userData.activeBlinker.visible = true;
+      }
 
       if (progress >= 1.0 && !c.impactHandled) {
         c.impactHandled = true;
@@ -2664,21 +2682,28 @@
         createCrashParticles(c.impactPoint);
         createCrashSmoke(c.impactPoint);
 
+        const dirW = tanW.clone().normalize();
+        const dirP = tanP.clone().normalize();
+
+        // Тормозные следы перед колесами точки удара
+        createSkidMarks(c.wrongActor.mesh.position, dirW, c.wrongActor.data.side, c.extW.isTram);
+        createSkidMarks(c.priorityActor.mesh.position, dirP, c.priorityActor.data.side, c.extP.isTram);
+
         // Реалистичный отскок от удара назад по вектору своего движения
         const recoilW = c.extW.isTram ? 0.08 : 0.22;
         const recoilP = c.extP.isTram ? 0.06 : 0.16;
-        c.wrongActor.mesh.position.sub(c.dirW.clone().multiplyScalar(recoilW));
-        c.priorityActor.mesh.position.sub(c.dirP.clone().multiplyScalar(recoilP));
+        c.wrongActor.mesh.position.sub(dirW.clone().multiplyScalar(recoilW));
+        c.priorityActor.mesh.position.sub(dirP.clone().multiplyScalar(recoilP));
 
-        // Небольшой крен/толчок кузова от удара (минимальный для трамвая, чтобы не перекашивать длинный корпус)
+        // Небольшой крен кузова от удара
         const tiltW = c.extW.isTram ? 0.012 : 0.035;
         const tiltP = c.extP.isTram ? 0.010 : 0.030;
 
-        c.wrongActor.mesh.rotation.z += (c.dirW.x !== 0 ? -c.dirW.x : 1) * tiltW;
-        c.wrongActor.mesh.rotation.x += (c.dirW.z !== 0 ? c.dirW.z : 1) * tiltW * 0.5;
+        c.wrongActor.mesh.rotation.z += (dirW.x !== 0 ? -dirW.x : 1) * tiltW;
+        c.wrongActor.mesh.rotation.x += (dirW.z !== 0 ? dirW.z : 1) * tiltW * 0.5;
 
-        c.priorityActor.mesh.rotation.z += (c.dirP.x !== 0 ? c.dirP.x : -1) * tiltP;
-        c.priorityActor.mesh.rotation.x += (c.dirP.z !== 0 ? -c.dirP.z : 1) * tiltP * 0.5;
+        c.priorityActor.mesh.rotation.z += (dirP.x !== 0 ? dirP.x : -1) * tiltP;
+        c.priorityActor.mesh.rotation.x += (dirP.z !== 0 ? -dirP.z : 1) * tiltP * 0.5;
 
         c.wrongActor.mesh.userData.hazardLights = true;
         c.priorityActor.mesh.userData.hazardLights = true;
