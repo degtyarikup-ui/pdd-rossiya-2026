@@ -60,11 +60,19 @@ func style_at(z: float) -> int:
 
 
 ## Lays out ring slot `slot` as world chunk `index`; returns its road mesh.
-func build_chunk(slot: int, index: int) -> ArrayMesh:
+## A blank chunk (an exam junction stands there with its own streets) is
+## empty: no road, no props.
+func build_chunk(slot: int, index: int, blank := false) -> ArrayMesh:
 	for p in pools.values():
 		p.begin(slot)
 	for p in parked.values():
 		p.begin(slot)
+	if blank:
+		for p in pools.values():
+			p.finish(slot)
+		for p in parked.values():
+			p.finish(slot)
+		return null
 	var z0 := index * L
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(index * 7919)

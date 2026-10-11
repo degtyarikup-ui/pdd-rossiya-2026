@@ -177,6 +177,7 @@
   }
 
   window.__toGlb = toGlb;
+  window.__exp = { flatten, bakeColors, toGlb, stats, isDynamic, prepare };
   window.exportModels = async function () {
     const result = {};
     // Cars: paint exported WHITE — Godot multiplies it by the per-car colour.
@@ -281,6 +282,7 @@
     });
   }
 
+  window.__exp.bakeScenery = bakeScenery;
   window.exportScenery = async function () {
     const F = window.__pdd, toGlb = window.__toGlb;
     const layers = Object.keys(PDD_ROADS.kinds);
