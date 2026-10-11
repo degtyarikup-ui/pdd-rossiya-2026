@@ -338,7 +338,7 @@ func _setup_environment() -> void:
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.keep_aspect = Camera3D.KEEP_HEIGHT
 	camera.size = 42.0
-	camera.near = 0.5          # the nearer the plane, the finer the depth buffer at distance
+	camera.near = 2.0          # the camera is 20+ m away: a far near plane keeps depth precise (no flicker)
 	camera.far = 400.0
 	add_child(camera)
 
@@ -362,7 +362,7 @@ func _build_ground() -> void:
 	ground.mesh = st.commit()
 	ground.material_override = scenery.material
 	ground.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	ground.position.y = -0.05
+	ground.position.y = -0.15   # well below the carriageway: nothing else lies near it
 	add_child(ground)
 
 
@@ -503,6 +503,11 @@ func obstacles() -> Array:
 		# Inside a junction's own streets the ring traffic is not there at all.
 		if not _in_blank(car.z):
 			out.append(AmbientObstacle.new(car))
+	# Parked cars at the kerb are solid too (only the ones near the car).
+	for spots in street.parked_spots.values():
+		for pos in spots:
+			if absf(pos.z - drive.pos.z) < 12.0:
+				out.append(AmbientObstacle.new({ "x": pos.x, "z": pos.z, "dir": 1.0, "v": 0.0, "spd": 0.0, "base": 0.0 }))
 	# Pedestrians are solid too (only the ones near the car: a cheap filter).
 	for w in walkers:
 		if w.get("alive", false) and absf(w.zw - drive.pos.z) < 8.0:

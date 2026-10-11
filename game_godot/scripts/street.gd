@@ -32,6 +32,7 @@ var sc: Scenery
 var L: float
 var pools := {}                   # prop -> Scenery.Pool
 var parked := {}                  # car id -> Scenery.Pool (baked material)
+var parked_spots := {}            # ring slot -> [Vector3] parked cars there (they are solid: world.gd obstacles)
 var winter := false
 
 
@@ -74,6 +75,7 @@ func build_chunk(slot: int, index: int, blank := false, half := ROAD_HALF) -> Ar
 		p.begin(slot)
 	for p in parked.values():
 		p.begin(slot)
+	parked_spots[slot] = []
 	if blank:
 		for p in pools.values():
 			p.finish(slot)
@@ -123,17 +125,13 @@ func _road(st: SurfaceTool, z0: float, half: float) -> void:
 	while z < L:
 		_flat(st, -0.09, 0.09, z, minf(z + 2.0, L), MARK_LEVEL, mark, "", z0)
 		z += 5.0
-	_flat(st, -GROUND_OUT, -(half + VERGE), 0, L, GROUND_LEVEL, sc.color("ground"), "grass", z0)
-	_flat(st, half + VERGE, GROUND_OUT, 0, L, GROUND_LEVEL, sc.color("ground"), "grass", z0)
+	# No ground here: the world's one lawn (world.gd _build_ground) lies under everything.
+	# Stacked grass planes a few centimetres apart flicker on a phone's depth buffer.
 
 
-func _verge(st: SurfaceTool, side: float, z: float, style: int, half: float) -> void:
-	# Local z: build_chunk passes world z, the chunk mesh starts at its z0.
-	var z0 := floorf(z / L) * L
-	var col := sc.color("verge", mini(style, 2))
-	var outer := half + SIDEWALK + VERGE
-	_flat(st, minf(side * (half + SIDEWALK), side * outer), maxf(side * (half + SIDEWALK), side * outer),
-		z - z0 - ROW / 2, z - z0 + ROW / 2, VERGE_LEVEL, col, "grass", z0)
+func _verge(_st: SurfaceTool, _side: float, _z: float, _style: int, _half: float) -> void:
+	# The verge is the world's lawn: a tinted strip stacked on it flickered (z-fighting).
+	pass
 
 
 ## A horizontal quad; UV in metres / tile in world space (continuous between
@@ -236,12 +234,12 @@ func _plot(slot: int, rng: RandomNumberGenerator, side: float, z: float, style: 
 		1:
 			_put(slot, "street/fence_12" if depth < 7 else "street/fence_14", Vector3(side * 8.0, 0, z + 1))
 			if posmod(row, 2) == 0:
-				_park(slot, rng, Vector3(side * (ROAD_HALF - 0.6), 0, gap_z - 0.5), 0.0)
+				_park(slot, rng, Vector3(side * (ROAD_HALF - 0.45), 0, gap_z - 0.5), 0.0)
 			else:
 				_put(slot, "street/bush", Vector3(side * 12.8, 0, gap_z - 0.5), 0, Vector3(1.2, 0.9, 3), _bush())
 		3:
 			if posmod(row, 2) == 0:
-				_park(slot, rng, Vector3(side * (ROAD_HALF - 0.6), 0, gap_z - 0.5), 0.0)
+				_park(slot, rng, Vector3(side * (ROAD_HALF - 0.45), 0, gap_z - 0.5), 0.0)
 			else:
 				_put(slot, "street/bush", Vector3(side * 10.4, 0, gap_z - 0.5), 0, Vector3(1, 0.8, 2.6), _bush())
 		2:
@@ -256,4 +254,5 @@ func _bush() -> Color:
 func _park(slot: int, rng: RandomNumberGenerator, pos: Vector3, yaw: float) -> void:
 	var id: String = Models.CARS[rng.randi() % Models.CARS.size()]
 	var paint := Color(PARKED_COLORS[rng.randi() % PARKED_COLORS.size()])
-	parked[id].put(slot, Transform3D(Basis(Vector3.UP, yaw), pos), Color(paint.r, paint.g, paint.b, 0))
+	if parked[id].put(slot, Transform3D(Basis(Vector3.UP, yaw), pos), Color(paint.r, paint.g, paint.b, 0)):
+		parked_spots[slot].append(pos)

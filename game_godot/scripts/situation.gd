@@ -36,6 +36,7 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 	for node in scene.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
 		if mi.name == "static":
+			mi.mesh = _without_baked_ground(mi.mesh)
 			mi.material_override = scenery.material
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	s.add_child(scene)
@@ -122,6 +123,32 @@ static func _vertex_colours_as_albedo(root: Node3D) -> void:
 			var mat := mesh.surface_get_material(i)
 			if mat is BaseMaterial3D:
 				(mat as BaseMaterial3D).vertex_color_use_as_albedo = true
+
+
+## The baked junction carries its own lawn in three overlapping layers 3-5 mm apart, which
+## flicker against each other and the world's lawn. Flat triangles below the carriageway are
+## dropped: the world's one lawn (world.gd) is under the junction.
+static func _without_baked_ground(mesh: Mesh) -> Mesh:
+	var out := ArrayMesh.new()
+	for s in mesh.get_surface_count():
+		var arrays := mesh.surface_get_arrays(s)
+		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+		if idx.is_empty():
+			idx = PackedInt32Array(range(verts.size()))
+		var keep := PackedInt32Array()
+		for k in range(0, idx.size(), 3):
+			var a := verts[idx[k]]
+			var b := verts[idx[k + 1]]
+			var c := verts[idx[k + 2]]
+			var flat := absf(a.y - b.y) < 0.001 and absf(a.y - c.y) < 0.001
+			if flat and a.y < -0.001 and a.y > -0.5:
+				continue
+			keep.append_array([idx[k], idx[k + 1], idx[k + 2]])
+		arrays[Mesh.ARRAY_INDEX] = keep
+		out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		out.surface_set_material(s, mesh.surface_get_material(s))
+	return out
 
 
 static func _v(a: Array) -> Vector3:
