@@ -91,12 +91,14 @@ var retired: Array = []           # junctions behind the player, still on screen
 var phase := "driving"            # driving | question | resolving
 var auto_answer := false          # debug: answer correctly by itself
 var spawn_after := 0.0            # world z after which the next junction may come
-var road_queue: Array = []        # the road questions still to come (road_scenes.json, kind speed)
+var road_queue: Array = []        # the road questions still to come (road_scenes.json, all kinds)
 var road: RoadEvent = null        # the road question on the street now
 var road_phase := ""              # approach | question | passed (while road != null)
 var road_after := 300.0           # world z after which the next road question may come
 var road_base_limit := 60         # the built-up limit to return to after a zone
-var road_force := ""              # --road=<id>: this road question first, no junctions (tests)
+var road_force := ""              # --road=<id>: only this road question, no junctions (tests/road_all.sh)
+var test_clock := 0.0             # --road: game seconds after the answer before the test run ends
+const TEST_TAIL := 12.0
 
 
 func _ready() -> void:
@@ -104,7 +106,7 @@ func _ready() -> void:
 	L = cfg.chunk_length
 	chunk_count = int(cfg.chunks_ahead) + int(cfg.chunks_behind) + 1
 	var roads: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://roads/road_scenes.json"))
-	road_queue = roads.scenes.filter(func(s): return s.scene.kind == "speed")
+	road_queue = roads.scenes.duplicate()
 	road_queue.shuffle()
 	scenery = Scenery.new(_season())
 	_setup_environment()
@@ -184,8 +186,11 @@ func _ready() -> void:
 	if previews:
 		call_deferred("_run_previews")
 	if road_force != "":
-		# A test of one road question: the first speed question in the queue, no junctions.
-		road_queue.sort_custom(func(a, b): return a.id == road_force and b.id != road_force)
+		# A test of one road question (tests/road_all.sh): only that question, no junctions.
+		road_queue = road_queue.filter(func(s): return s.id == road_force)
+		if road_queue.is_empty():
+			push_error("no road question %s" % road_force)
+			get_tree().quit(1)
 		road_after = -1.0e9
 		spawn_after = 1.0e9
 	if topdown_now:
@@ -203,7 +208,7 @@ func _has_arg(name: String) -> bool:
 
 
 func _is_test_run() -> bool:
-	for name in ["--auto", "--follow", "--near", "--shot", "--qshot", "--debug", "--situation", "--mute"]:
+	for name in ["--auto", "--follow", "--near", "--shot", "--qshot", "--debug", "--situation", "--mute", "--road"]:
 		if _has_arg(name):
 			return true
 	return false
@@ -520,10 +525,15 @@ func obstacles() -> Array:
 	for w in walkers:
 		if w.get("alive", false) and absf(w.zw - drive.pos.z) < 8.0:
 			out.append(WalkerObstacle.new(w))
+	if road != null:
+		out.append_array(road.obstacles())
 	return out
 
 
 func on_collision(o) -> void:
+	if o is RoadBody:
+		_road_hit(o)
+		return
 	if "m" in o and o.m != null:
 		var m: Junction.Motion = o.m
 		m.crashed = true
@@ -684,10 +694,10 @@ func _update_junction(dt: float) -> void:
 		current.junction.update_resolution(dt, drive, local)
 
 
-## A road question on the straight street (road_scenes.json, kind speed): the car stops at the
-## stop mark, the question is asked there, then the zone's limit applies from its first sign
-## to its end sign. Junctions wait while it is on the street.
-func _update_road(_dt: float) -> void:
+## A road question on the straight street (road_scenes.json): the car stops at the stop line, the
+## question is asked there, then the situation plays out and its rules are checked (road_event.gd).
+## A speed zone's limit applies from its first sign to its end sign. Junctions wait while it is on the street.
+func _update_road(dt: float) -> void:
 	if road == null:
 		if current or road_queue.is_empty() or drive.pos.z < road_after:
 			return
@@ -705,14 +715,18 @@ func _update_road(_dt: float) -> void:
 		phase = "question"
 		question_over = false
 		controls.set_active(false)
+		road.begin_question()
 		var card: Dictionary = road.question_text()
 		ui.show_question(card, Ui.answer_seconds(road.text_length()))
-		print("[road] question ", road.id, " stop at z ", snappedf(road.stop_z, 0.1))
+		print("[road] question ", road.id, " kind ", road.kind, " stop at z ", snappedf(road.stop_z, 0.1))
 		event.emit({ "event": "approach_situation", "situation": road.id })
 		if qshot != "":
 			_qshot_later(qshot)
 		if auto_answer:
 			get_tree().create_timer(1.5).timeout.connect(func(): _on_answer_chosen(int(road.entry.correctAnswerIndex)))
+	if road_phase != "approach":
+		for rule in road.step(dt, drive.pos, drive.yaw, drive.speed, drive.half_width, drive.half_length):
+			road_violation(str(rule))
 	if road.limit_kmh > 0 and z > road.limit_z and z <= road.end_sign_z:
 		if limit_kmh != road.limit_kmh:
 			print("[road] zone limit ", road.limit_kmh, " from z ", snappedf(z, 0.1))
@@ -721,11 +735,51 @@ func _update_road(_dt: float) -> void:
 		if limit_kmh != road_base_limit:
 			print("[road] zone ends, limit ", road_base_limit)
 		limit_kmh = road_base_limit
+	if road_phase == "passed" and road_force != "":
+		test_clock += dt
+		if test_clock > TEST_TAIL:
+			_end_road_test("time")
+			return
 	if z > road.end_z + 40.0:
+		var done_id := road.id
 		road.queue_free()
 		road = null
 		road_phase = ""
 		road_after = z + 400.0
+		if road_force != "":
+			_end_road_test("done " + done_id)
+
+
+## The end of a `--road=<id>` test run: the answer and the violations, then the game quits.
+func _end_road_test(how: String) -> void:
+	print("[road] test end (", how, ") answered ", run.answered, " correct ", run.correct, " violations ", run.violations)
+	get_tree().quit()
+
+
+## A violation of a road question's rule. road_event.gd reports each rule once per episode.
+func road_violation(rule: String) -> void:
+	run.violations += 1
+	if rule in ["speeding", "oncoming", "priority", "stop"]:
+		GameSound.buzz(120)
+	ui.show_notice(rule)
+	event.emit({ "event": "violation", "type": rule })
+	print("[road] violation ", rule)
+
+
+## A road question's participant or barrier is hit. The roadworks barrier is knocked over and the car
+## goes on, slower; any other participant stops the car (a collision, once per participant).
+func _road_hit(b: RoadBody) -> void:
+	if b.fault == "roadworks":
+		b.solid = false
+		b.node.visible = false
+		drive.speed *= 0.6
+		road_violation("roadworks")
+		return
+	b.crashed = true
+	b.speed = 0.0
+	drive.recovery = 0.38
+	drive.speed = 0
+	on_fault("collision", "collision:" + b.id)
 
 
 func _on_road_answer(index: int) -> void:
@@ -754,6 +808,7 @@ func _road_resume() -> void:
 	road_phase = "passed"
 	phase = "driving"
 	controls.set_active(true)
+	road.start_manual()
 
 
 ## proceedAfterAnswer / releaseTraffic from the question card.
@@ -1186,8 +1241,8 @@ func _process(delta: float) -> void:
 	if qshot != "" and phase == "driving":
 		controls.gas = true   # --qshot: drive up to the first question by itself
 	if auto_answer and phase == "driving":
-		# Debug driver: holds the gas, but brakes behind a car in its lane.
-		controls.gas = not _car_ahead_in_lane(14.0)
+		# Debug driver: holds the gas, but brakes behind a car in its lane (traffic or a question's participant).
+		controls.gas = not _car_ahead_in_lane(14.0) and not (road != null and road.blocks_ahead(drive.pos, 14.0))
 	elif auto_answer and phase == "resolving" and not follow:
 		controls.gas = true
 	if topdown_cam_locked:
@@ -1200,6 +1255,10 @@ func _process(delta: float) -> void:
 		# Slow down to stop exactly at the question (updatePlayerMovement).
 		var distance: float = current.zc + float(current.sit.data.stopZ) - drive.pos.z
 		limit = minf(limit, sqrt(maxf(0.0, 2 * 8 * distance)))
+	if road != null and road_phase == "approach" and cos(drive.yaw) > 0.2:
+		# The same for the stop line of a road question.
+		var road_distance: float = road.stop_z - drive.pos.z
+		limit = minf(limit, sqrt(maxf(0.0, 2 * 8 * road_distance)))
 	drive.assist_enabled = phase == "driving"
 	var was_recovering := drive.recovery > 0.0
 	if phase != "question" and phase != "over":
