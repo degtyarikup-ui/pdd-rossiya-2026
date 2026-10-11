@@ -5,6 +5,7 @@
 #   ./scripts/godot_dev.sh ios       # Xcode project -> build -> iPhone (cable), launch
 #   ./scripts/godot_dev.sh all
 #   ./scripts/godot_dev.sh export    # re-export models and the 112 junction scenes (~20 min)
+#   ./scripts/godot_dev.sh web       # the game for the site: build/web/godot/ (after build.sh web)
 #
 # Separate app ru.pdd.godotspike: the store app is not touched.
 set -euo pipefail
@@ -39,10 +40,36 @@ ios() {
   echo "iOS: запущено на $IPHONE"
 }
 
+# Web (the site, folder /app/godot/ next to the Flutter app). The pack holds the
+# engine, models, networks and the question list (~10 MB); the junction scenes
+# and the ticket pictures are plain files next to it, fetched when needed
+# (game_godot/scripts/pack_files.gd). Nothreads: no SharedArrayBuffer needed.
+web() {
+  local out="build/web/godot"
+  command -v godot >/dev/null || { echo "Web: нет godot в PATH"; exit 1; }
+  [ -d "game_godot/situations" ] || { echo "Web: нет game_godot/situations — сначала ./scripts/godot_dev.sh export"; exit 1; }
+  rm -rf "$out"; mkdir -p "$out"
+  godot --headless --path game_godot --import >/dev/null 2>&1 || true
+  godot --headless --path game_godot --export-release "Web" "../$out/index.html" 2>&1 | grep -E "ERROR" || true
+  [ -f "$out/index.pck" ] || { echo "Web: экспорт не получился"; exit 1; }
+  local list
+  list="$(mktemp "${TMPDIR:-/tmp}/godot-web-files.XXXXXX")"
+  # Only what the game reads per junction (game_godot/scripts/situation.gd).
+  (cd game_godot/situations && find . -mindepth 2 -maxdepth 2 -type f \
+    \( -name scene.json -o -name scene.glb -o -name road.png -o -name 'light_*.glb' -o -name 'actor_*.glb' -o -name guide.glb \)) \
+    | sed 's|^\./||' > "$list"
+  mkdir -p "$out/situations"
+  rsync -a --files-from="$list" game_godot/situations/ "$out/situations/"
+  rm -f "$list"
+  rsync -a --include='*.webp' --exclude='*' game_godot/questions/ "$out/questions/"
+  echo "Web: $out ($(du -sh "$out" | cut -f1); pack $(du -h "$out/index.pck" | cut -f1), engine $(du -h "$out/index.wasm" | cut -f1))"
+}
+
 case "${1:-all}" in
   export) export_models; export_situations ;;
   android) android ;;
   ios) ios ;;
+  web) web ;;
   all) android; ios ;;
-  *) echo "usage: $0 android|ios|all|export"; exit 1 ;;
+  *) echo "usage: $0 android|ios|all|export|web"; exit 1 ;;
 esac

@@ -280,7 +280,7 @@ func _ticket_chip(text: String, scene_id := "") -> PanelContainer:
 	m.add_theme_constant_override("margin_top", 4)
 	m.add_theme_constant_override("margin_bottom", 4)
 	p.add_child(m)
-	var has_picture := scene_id != "" and _picture_of(scene_id) != ""
+	var has_picture := scene_id != "" and picture_name(scene_id) != ""
 	m.add_child(Ui.label(text + ("  ▸ билет" if has_picture else ""), 12, 600, Ui.c("accent") if has_picture else Ui.c("secondary")))
 	if has_picture:
 		# Tapping the chip shows the original ticket picture the scene was made from.
@@ -294,7 +294,8 @@ func _ticket_chip(text: String, scene_id := "") -> PanelContainer:
 static var _pictures := {}
 
 
-static func _picture_of(scene_id: String) -> String:
+## The ticket picture of a scene: its file name in questions/ (no .webp), or "".
+static func picture_name(scene_id: String) -> String:
 	if _pictures.is_empty() and FileAccess.file_exists("res://questions/index.json"):
 		_pictures = JSON.parse_string(FileAccess.get_file_as_string("res://questions/index.json"))
 	return str(_pictures.get(scene_id, ""))
@@ -302,8 +303,15 @@ static func _picture_of(scene_id: String) -> String:
 
 ## The original ticket picture over the game; a tap anywhere closes it.
 func _show_picture(scene_id: String) -> void:
-	# Kept as webp in the pack (importer "keep"): decoded only when shown.
-	var bytes := FileAccess.get_file_as_bytes("res://questions/%s.webp" % _picture_of(scene_id))
+	# Kept as webp (importer "keep"): decoded only when shown. On the web the
+	# picture is fetched first (PackFiles), so the tap may show it a moment later.
+	var res := "res://questions/%s.webp" % picture_name(scene_id)
+	PackFiles.fetch(res, func(ok: bool):
+		if ok and is_instance_valid(self):
+			_present_picture(PackFiles.bytes(res)))
+
+
+func _present_picture(bytes: PackedByteArray) -> void:
 	var img := Image.new()
 	var tex: Texture2D = ImageTexture.create_from_image(img) if img.load_webp_from_buffer(bytes) == OK else null
 	if tex == null:

@@ -14,27 +14,32 @@ import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
+import 'package:pdd_app/presentation/screens/game/godot_web_screen.dart';
+import 'package:pdd_app/presentation/screens/game/platform/godot_web_frame.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 
-/// «Живой город» on Godot (game_godot/): the game runs on its own native
-/// screen (Android: GodotGameActivity in the process `:game`) with its own
-/// HUD, questions and result. The app pays the run from the stock before it
-/// starts and books the score when the player leaves.
+/// «Живой город» on Godot (game_godot/): the game runs on its own screen with
+/// its own HUD, questions and result. Android: a native screen (GodotGameActivity
+/// in the process `:game`). Web: the same game in a frame on the site (godot/,
+/// GodotWebScreen), when the site has the build. The app pays the run from the
+/// stock before it starts and books the score when the player leaves.
 ///
-/// Available only in an Android build prepared with
-/// scripts/godot_android_assets.sh; elsewhere the WebView game (GameScreen)
-/// stays.
+/// Elsewhere (iOS, a site without the build) the WebView game (GameScreen) stays.
 class GodotGame {
   GodotGame._();
 
   static const _channel = MethodChannel('pdd/godot_game');
   static const _bestScoreKey = 'game_best_score';
   static Future<bool>? _available;
+  static Future<bool>? _webAvailable;
   static bool _running = false;
 
   static Future<bool> available() {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+    if (kIsWeb) {
+      return _webAvailable ??= GodotWebFrame.available();
+    }
+    if (defaultTargetPlatform != TargetPlatform.android) {
       return Future.value(false);
     }
     return _available ??= _channel
@@ -62,9 +67,7 @@ class GodotGame {
     _running = true;
     String? json;
     try {
-      json = await _channel.invokeMethod<String>('start', {
-        'args': ['--lang=$lang', if (dark) '--dark'],
-      });
+      json = await _start(context, ['--lang=$lang', if (dark) '--dark']);
     } on PlatformException {
       json = null;
     } finally {
@@ -90,6 +93,17 @@ class GodotGame {
       /* The rating has the score; the local best is a convenience. */
     }
     unawaited(ProgressSyncService.instance.syncWithServer());
+  }
+
+  /// Opens the game and waits for its summary (JSON), null if it did not end
+  /// with one. Android: the native screen; web: the game's route.
+  static Future<String?> _start(BuildContext context, List<String> args) {
+    if (kIsWeb) {
+      return Navigator.of(context).push<String>(
+        MaterialPageRoute<String>(builder: (_) => GodotWebScreen(args: args)),
+      );
+    }
+    return _channel.invokeMethod<String>('start', {'args': args});
   }
 
   static void _showRuns(BuildContext context) {

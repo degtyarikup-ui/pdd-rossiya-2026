@@ -34,7 +34,7 @@
 |---|---|---|
 | Android | новая игра, отдельный экран, процесс `:game` | проверить запуск и возврат; Play Asset Delivery для 85 МБ игры, если AAB превысит лимит |
 | iOS | старая игра | собрать Godot из исходников как библиотеку (`library_type=static_library`, без `main`), экран `GodotViewController` в Runner, мост — Swift-плагин `PddHost`; запасной путь — отдельное приложение не годится |
-| Веб (pdd-drive.ru/app/) | старая игра | веб-экспорт Godot (`web_nothreads`, без SharedArrayBuffer) в `iframe`, мост через `postMessage`; проверить вес (~30 МБ движок + сцены по требованию) |
+| Веб (pdd-drive.ru/app/) | сделано в ветке `game-web`: Godot в `iframe` (`/app/godot/`), мост `postMessage`, пакет ~11 МБ + сцены и картинки по требованию (первая загрузка ~16 МБ по gzip); без сборки Godot на сайте остаётся старая игра | публикация — только по команде владельца (`scripts/build.sh ru web` + `deploy_web.sh`/`deploy_landing.sh`); проверить на телефоне |
 
 После iOS и веба — удалить `assets/game/` из Flutter (≈100 МБ в каждой сборке).
 

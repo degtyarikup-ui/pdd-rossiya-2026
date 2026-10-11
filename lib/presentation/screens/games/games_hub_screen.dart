@@ -83,8 +83,8 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
     await _refreshRating();
   }
 
-  /// Android with the Godot game in the build: the new game on its own screen;
-  /// elsewhere the WebView game.
+  /// The Godot game where it is available (Android build; the web when the site
+  /// has godot/): the new game on its own screen; elsewhere the WebView game.
   Future<void> _openCity() async {
     if (!await GodotGame.available()) {
       if (mounted) await _open(context, const GameScreen());

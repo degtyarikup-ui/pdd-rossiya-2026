@@ -19,12 +19,70 @@ var _evidence: Array[Node3D] = []    # letter tokens
 var _badges: Array[Node3D] = []      # name plates over the participants
 
 
+static var _ready_ids := {}          # web: junctions whose files are in memory
+
+
+## Web: the junction's files come over the network (PackFiles). Native: always.
+static func prepared(situation_id: String) -> bool:
+	return not PackFiles.web() or _ready_ids.has(situation_id)
+
+
+## Web: fetches the junction's files and parses its models, then on_done(ok).
+## Native: at once, nothing to fetch.
+static func prepare(situation_id: String, on_done: Callable) -> void:
+	if prepared(situation_id):
+		on_done.call(true)
+		return
+	var dir := "res://situations/%s/" % situation_id
+	var first: Array = [dir + "scene.json", dir + "scene.glb"]
+	if not FileAccess.file_exists("res://network/%s.json" % situation_id):
+		first.append(dir + "road.png")   # the mask: only for a scene without a network
+	PackFiles.fetch_all(first, func(ok: bool):
+		if not ok or not PackFiles.exists(dir + "scene.json"):
+			on_done.call(false)
+			return
+		var data = JSON.parse_string(PackFiles.text(dir + "scene.json"))
+		if not (data is Dictionary):
+			on_done.call(false)
+			return
+		# Required: the lights and participants the scene names (they must be here).
+		var more: Array = []
+		for i in data.lights.size():
+			more.append(dir + "light_%d.glb" % i)
+		for i in data.actors.size():
+			more.append(dir + "actor_%d.glb" % i)
+		# Optional: the route guide (only for a scene without trajectories) and the ticket picture.
+		var optional: Array = []
+		if not (data.get("trajectories", []) is Array) or data.trajectories.is_empty():
+			optional.append(dir + "guide.glb")
+		var picture := GameUi.picture_name(situation_id)
+		if picture != "":
+			optional.append("res://questions/%s.webp" % picture)
+		PackFiles.fetch_all(more + optional, func(ok2: bool):
+			var parsed := ok2
+			for p in first + more:
+				if not PackFiles.exists(p):
+					parsed = false
+			for p in first + more + optional:
+				if p.ends_with(".glb") and PackFiles.exists(p) and not PackFiles.parse_glb(p):
+					parsed = false
+			if parsed:
+				_ready_ids[situation_id] = true
+			on_done.call(parsed)))
+
+
+## Web: frees the junction's files once it is built.
+static func forget(situation_id: String) -> void:
+	_ready_ids.erase(situation_id)
+	PackFiles.forget("res://situations/%s/" % situation_id)
+
+
 static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 	var s := Situation.new()
 	s.id = situation_id
 	s.name = situation_id
 	var dir := "res://situations/%s/" % situation_id
-	s.data = JSON.parse_string(FileAccess.get_file_as_string(dir + "scene.json"))
+	s.data = JSON.parse_string(PackFiles.text(dir + "scene.json"))
 	# Some scenes were exported before these fields existed: the game's own
 	# defaults (game.js buildIntersectionSegment) stand in for them.
 	for key in ["approachW", "leftLane", "rightLane", "kerbZ", "kerbX"]:
@@ -32,7 +90,7 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 			s.data[key] = 8.4 if key == "approachW" else (4.2 if key.begins_with("kerb") else 1.8)
 	if not s.data.has("exitWidths") or not (s.data.exitWidths is Dictionary):
 		s.data["exitWidths"] = {}
-	var scene: Node3D = (load(dir + "scene.glb") as PackedScene).instantiate()
+	var scene: Node3D = PackFiles.instance(dir + "scene.glb")
 	for node in scene.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
 		if mi.name == "static":
@@ -45,13 +103,13 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 	if s.network:
 		s.add_child(_surface_node(s.network, scenery))
 	else:
-		s._mask = (load(dir + "road.png") as Texture2D).get_image()
+		s._mask = PackFiles.image(dir + "road.png")
 		if s._mask.is_compressed():
 			s._mask.decompress()
 	s._place_props(scenery)
 	for i in s.data.lights.size():
 		var l: Dictionary = s.data.lights[i]
-		var light: Node3D = (load(dir + "light_%d.glb" % i) as PackedScene).instantiate()
+		var light: Node3D = PackFiles.instance(dir + "light_%d.glb" % i)
 		light.position = _v(l.pos)
 		light.rotation.y = l.yaw
 		light.scale = Vector3.ONE * float(l.scale)
@@ -60,7 +118,7 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 	s._build_evidence(dir)
 	for i in s.data.actors.size():
 		var a: Dictionary = s.data.actors[i]
-		var actor: Node3D = (load(dir + "actor_%d.glb" % i) as PackedScene).instantiate()
+		var actor: Node3D = PackFiles.instance(dir + "actor_%d.glb" % i)
 		_vertex_colours_as_albedo(actor)
 		actor.position = _v(a.pos)
 		actor.rotation.y = a.yaw
@@ -214,8 +272,8 @@ func _build_evidence(dir: String) -> void:
 	if data.trajectories is Array and not data.trajectories.is_empty():
 		_guide = _trajectory_guide()
 		add_child(_guide)
-	elif FileAccess.file_exists(dir + "guide.glb"):
-		_guide = (load(dir + "guide.glb") as PackedScene).instantiate()
+	elif PackFiles.exists(dir + "guide.glb"):
+		_guide = PackFiles.instance(dir + "guide.glb")
 		for mi in _guide.find_children("*", "MeshInstance3D", true, false):
 			var mat := StandardMaterial3D.new()
 			mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
