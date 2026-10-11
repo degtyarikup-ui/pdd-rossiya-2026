@@ -228,7 +228,12 @@
     scene.add(scenarioGroup);
     scene.add(fxGroup);
     scene.add(locationGroup);
-    window._pddCrossroads = { scene, camera, renderer, envGroup, vehiclesGroup, scenarioGroup, signsGroup, trafficLightsGroup, locationGroup, location: () => currentLocation };
+    window._pddCrossroads = {
+      scene, camera, renderer, envGroup, vehiclesGroup, scenarioGroup, signsGroup, trafficLightsGroup, locationGroup,
+      location: () => currentLocation,
+      activeActors: () => activeActors,
+      drivingAnimations: () => drivingAnimations,
+    };
 
     buildEnvironment();
 
@@ -903,7 +908,8 @@
 
     const roofMat = new THREE.MeshLambertMaterial({ color: season.roof ?? 0x94A3B8 });
     const winMat = new THREE.MeshBasicMaterial({ color: 0x708995 });
-    const awningMats = [0xE0533F, 0x2F6F9F, 0x3E8E5E, 0xD9A441].map(
+    // Архитектурные сдержанные расцветки маркиз (бордовый, благородный темно-синий, лесной зеленый, кофейный)
+    const awningMats = [0x682025, 0x243346, 0x1F3F2E, 0x38322E].map(
       c => new THREE.MeshLambertMaterial({ color: c })
     );
 
@@ -914,9 +920,9 @@
       group.position.set(x, y, z);
       group.rotation.y = rotY;
 
-      const brickColor = 0xB5675A;
-      // Палитра домов основной игры (BRAND.buildingColors и тёплые штукатурки).
-      const palette = [0xF5F6FA, 0xE9ECF2, 0xDDE1EA, 0xF3E3C3, 0xE8CFA8, brickColor];
+      const brickColor = 0x9E4B3E;
+      // Гармоничная благородная палитра фасадов: теплый штукатурный, песчаник, светло-серый, кирпич
+      const palette = [0xF0ECE1, 0xE5DFD3, 0xD8D0C2, 0xEAE2D5, 0xD2D7DC, brickColor];
       const color = forcedColor ?? palette[Math.abs(Math.round(x * 3 + z * 5)) % palette.length];
       const kind = forcedKind ?? (color === brickColor ? 'brick' : (Math.abs(Math.round(x + z)) % 3 === 0 ? 'plaster' : 'panel'));
 
@@ -940,7 +946,10 @@
       }
       group.add(roof);
 
-      // Окна всех фасадов — одной сеткой.
+      const hasAwning = (kind !== 'plaster' && !opts.pitched && opts.awning !== false);
+      const awningW = hasAwning ? Math.min(w - 3.2, 7.5) : 0;
+
+      // Окна всех фасадов — аккуратной сеткой без наложения на козырьки
       const panes = [];
       const pane = (px, py, pz, ry) => {
         const g = new THREE.PlaneGeometry(1.15, 1.35);
@@ -948,12 +957,17 @@
         panes.push(g);
       };
       for (let wy = 2.4; wy < h - 1.2; wy += 2.7) {
-        for (let wx = -w / 2 + 1.4; wx <= w / 2 - 1.4; wx += 2.1) {
-          pane(wx, wy, d / 2 + 0.02, 0);
+        for (let wx = -w / 2 + 1.8; wx <= w / 2 - 1.8; wx += 2.2) {
+          // Если на первом этаже есть маркиза, окна заменяются на полноценную витрину под ней
+          if (!hasAwning || wy >= 3.8 || Math.abs(wx) > awningW / 2 + 0.3) {
+            pane(wx, wy, d / 2 + 0.02, 0);
+          }
           pane(wx, wy, -d / 2 - 0.02, Math.PI);
         }
         for (const side of [-1, 1]) {
-          for (let wz = -d / 2 + 1.4; wz <= d / 2 - 1.4; wz += 2.1) pane(side * (w / 2 + 0.02), wy, wz, side * Math.PI / 2);
+          for (let wz = -d / 2 + 1.8; wz <= d / 2 - 1.8; wz += 2.2) {
+            pane(side * (w / 2 + 0.02), wy, wz, side * Math.PI / 2);
+          }
         }
       }
       if (panes.length) {
@@ -962,13 +976,28 @@
         group.add(windows);
       }
 
-      // Магазинный козырек / маркиза на первом этаже
-      if (kind !== 'plaster' && !opts.pitched && opts.awning !== false) {
+      // Магазинный козырек и витрина на первом этаже
+      if (hasAwning) {
         const awningMat = awningMats[Math.abs(Math.round(x + z)) % awningMats.length];
-        const awning = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w - 2, 7.5), 0.08, 1.1), awningMat);
-        awning.position.set(0, 2.65, d / 2 + 0.55);
+        const awning = new THREE.Mesh(new THREE.BoxGeometry(awningW, 0.08, 1.1), awningMat);
+        awning.position.set(0, 2.70, d / 2 + 0.55);
         awning.rotation.x = 0.28;
         group.add(awning);
+
+        // Стильная цельная витрина магазина под маркизой
+        const storeGlass = new THREE.Mesh(
+          new THREE.PlaneGeometry(awningW - 0.6, 1.8),
+          new THREE.MeshBasicMaterial({ color: 0x486072 })
+        );
+        storeGlass.position.set(0, 1.25, d / 2 + 0.02);
+        group.add(storeGlass);
+
+        const storeFrame = new THREE.Mesh(
+          new THREE.BoxGeometry(awningW - 0.5, 0.08, 0.06),
+          new THREE.MeshLambertMaterial({ color: 0x1E293B })
+        );
+        storeFrame.position.set(0, 2.16, d / 2 + 0.03);
+        group.add(storeFrame);
       }
 
       if (opts.pitched) {
@@ -984,7 +1013,16 @@
         group.add(ridge);
         roof.visible = false;
       }
-      occupied.push({ x, z, r: Math.hypot(w, d) / 2 + 1.5 });
+      const isRotated = (Math.abs(rotY % Math.PI - Math.PI / 2) < 0.1);
+      const spanX = isRotated ? d : w;
+      const spanZ = isRotated ? w : d;
+      occupied.push({
+        x,
+        z,
+        halfW: spanX / 2,
+        halfD: spanZ / 2,
+        r: Math.hypot(w, d) / 2 + 1.5
+      });
       houseTarget.add(group);
       return group;
     }
@@ -1035,12 +1073,17 @@
     const E = HALF_ROAD;
     const house = (w, h, d, x, z, rot, kind, color, opts) => houseFactory(w, h, d, x, 0, z, rot, kind, color, opts);
     const trees = [];
-    // Не в домах, не на проезжей части и не на аллее бульвара
+    // Не в домах, не на проезжей части и не на тротуарах (точный AABB с буфером)
     const free = (x, z, pad = 0) => {
       const onNS = Math.abs(x) < E + 7.5;
       const onEW = Math.abs(z) < E + 7.5;
       if (onNS || onEW) return false;
-      return occupied.every(o => Math.hypot(o.x - x, o.z - z) > o.r + pad);
+      return occupied.every(o => {
+        if (o.halfW !== undefined && o.halfD !== undefined) {
+          return Math.abs(x - o.x) >= o.halfW + 2.5 + pad || Math.abs(z - o.z) >= o.halfD + 2.5 + pad;
+        }
+        return Math.hypot(o.x - x, o.z - z) > o.r + pad;
+      });
     };
     const scatter = (count, minR, maxR, scale = 1) => {
       for (let i = 0, tries = 0; i < count && tries < count * 8; tries++) {
@@ -1053,55 +1096,56 @@
     };
 
     if (name === 'quarter') {
-      house(22, 14, 14, -(E + 16), -(E + 18), 0, 'plaster', SAND);
-      house(20, 12, 14, -(E + 40), -(E + 18), 0, 'panel', PALE);
-      house(18, 15, 16, -(E + 16), -(E + 42), -Math.PI / 2, 'brick', BRICK);
-      house(20, 13, 14, E + 16, -(E + 18), 0, 'panel', GREY);
-      house(18, 15, 16, E + 16, -(E + 42), Math.PI / 2, 'plaster', WARM);
-      house(20, 12, 14, E + 40, -(E + 18), 0, 'plaster', SAND);
-      house(20, 12, 14, -(E + 18), E + 18, Math.PI / 2, 'panel', PALE);
-      house(20, 11, 14, -(E + 40), E + 18, 0, 'plaster', WARM);
-      house(18, 12, 14, E + 18, E + 22, 0, 'panel', LIGHT);
+      // Исторический квартал: здания строго за пределами 6-метрового тротуара
+      house(20, 14, 14, -(E + 20), -(E + 20), 0, 'plaster', SAND);
+      house(20, 12, 14, -(E + 42), -(E + 20), 0, 'panel', PALE);
+      house(18, 15, 16, -(E + 20), -(E + 44), -Math.PI / 2, 'brick', BRICK);
+      house(20, 13, 14, E + 20, -(E + 20), 0, 'panel', GREY);
+      house(18, 15, 16, E + 20, -(E + 44), Math.PI / 2, 'plaster', WARM);
+      house(20, 12, 14, E + 42, -(E + 20), 0, 'plaster', SAND);
+      house(20, 12, 14, -(E + 20), E + 22, Math.PI / 2, 'panel', PALE);
+      house(20, 11, 14, -(E + 42), E + 22, 0, 'plaster', WARM);
+      house(18, 12, 14, E + 20, E + 24, 0, 'panel', LIGHT);
       scatter(34, 20, 75);
     } else if (name === 'park') {
       // Сквер: пышный зеленый парк в одном секторе и городские фасады напротив
-      house(12, 4.2, 8, -(E + 16), -(E + 16), 0, 'brick', BRICK, { awning: true }); // Парковое кафе
-      house(24, 15, 14, E + 18, -(E + 20), 0, 'plaster', SAND);
-      house(20, 13, 14, E + 44, -(E + 20), 0, 'panel', PALE);
-      house(20, 14, 14, -(E + 18), E + 22, Math.PI / 2, 'brick', BRICK);
-      house(22, 13, 14, E + 22, E + 26, 0, 'panel', GREY);
+      house(12, 4.2, 8, -(E + 18), -(E + 18), 0, 'brick', BRICK, { awning: true }); // Парковое кафе
+      house(24, 15, 14, E + 22, -(E + 22), 0, 'plaster', SAND);
+      house(20, 13, 14, E + 48, -(E + 22), 0, 'panel', PALE);
+      house(20, 14, 14, -(E + 22), E + 24, Math.PI / 2, 'brick', BRICK);
+      house(22, 13, 14, E + 24, E + 28, 0, 'panel', GREY);
       for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
         for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
-          const x = sx * (E + 12 + i * 8 + rnd() * 3), z = sz * (E + 12 + j * 8 + rnd() * 3);
+          const x = sx * (E + 14 + i * 8 + rnd() * 3), z = sz * (E + 14 + j * 8 + rnd() * 3);
           if (free(x, z)) trees.push({ x, z, s: 0.95 + rnd() * 0.45 });
         }
       }
       scatter(45, 20, 85);
     } else if (name === 'suburb') {
-      // Частный сектор: одноэтажные дома с двускатными крышами.
+      // Частный сектор: одноэтажные дома с двускатными крышами
       for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
         for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) {
           // Угол со стороны камеры — без домов, чтобы не заслонять машины.
           if (sx > 0 && sz > 0) continue;
-          const x = sx * (E + 14 + i * 15), z = sz * (E + 14 + j * 16);
+          const x = sx * (E + 16 + i * 15), z = sz * (E + 16 + j * 16);
           const w = 8 + rnd() * 3, d = 7.5 + rnd() * 2;
           house(w, 4.2 + rnd() * 1.6, d, x, z, sz > 0 ? Math.PI : 0, 'plaster', COTTAGE[Math.floor(rnd() * COTTAGE.length)], { pitched: true });
         }
       }
       scatter(48, 16, 80);
     } else if (name === 'shops') {
-      // Торговая улица: магазины с маркизами у угла, дома за ними.
+      // Торговая улица: магазины с маркизами у угла, дома за ними
       for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
-        house(14, 4.8, 10, sx * (E + 13), sz * (E + 12), sz > 0 ? Math.PI : 0, 'brick', [BRICK, SAND, LIGHT, WARM][Math.floor(rnd() * 4)], { awning: true });
-        if (!(sx > 0 && sz > 0)) house(20, 15, 14, sx * (E + 22), sz * (E + 36), sz > 0 ? Math.PI : 0, 'panel', [PALE, GREY, LIGHT][Math.floor(rnd() * 3)]);
+        house(14, 4.8, 10, sx * (E + 16), sz * (E + 16), sz > 0 ? Math.PI : 0, 'brick', [BRICK, SAND, WARM][Math.floor(rnd() * 3)], { awning: true });
+        if (!(sx > 0 && sz > 0)) house(20, 15, 14, sx * (E + 26), sz * (E + 38), sz > 0 ? Math.PI : 0, 'panel', [PALE, GREY, LIGHT][Math.floor(rnd() * 3)]);
       }
       scatter(24, 25, 75);
     } else {
-      // Новый микрорайон: современные жилые дома ближе к перекрестку
-      house(36, 18, 13, -(E + 18), -(E + 22), 0, 'panel', LIGHT);
-      house(13, 18, 36, E + 20, -(E + 24), 0, 'panel', PALE);
-      house(34, 16, 13, -(E + 20), E + 24, 0, 'panel', GREY);
-      house(13, 14, 30, E + 24, E + 28, 0, 'panel', LIGHT);
+      // Новый микрорайон: современные жилые корпуса с четким отступом от улицы
+      house(26, 18, 14, -(E + 22), -(E + 22), 0, 'panel', LIGHT);
+      house(14, 18, 26, E + 22, -(E + 24), 0, 'panel', PALE);
+      house(26, 16, 14, -(E + 22), E + 24, 0, 'panel', GREY);
+      house(14, 14, 26, E + 24, E + 28, 0, 'panel', LIGHT);
       scatter(44, 16, 80);
     }
     // Дальний пояс: деревья, чтобы при отдалении не было пустых полей.
@@ -1114,10 +1158,10 @@
       const bKind = bColor === BRICK ? 'brick' : (rnd() > 0.4 ? 'panel' : 'plaster');
       if (ns) {
         // T-образный перекресток: Север или Юг закрыт
-        const zCenter = sign * (E + 14);
+        const zCenter = sign * (E + 15);
         const rot = sign > 0 ? Math.PI : 0;
         // Центральное здание, перекрывающее тупик
-        house(38, 16, 14, 0, zCenter, rot, bKind, bColor, { awning: true });
+        house(36, 16, 14, 0, zCenter, rot, bKind, bColor, { awning: true });
         // Дворовые корпуса за ним
         house(22, 14, 14, -18, sign * (E + 34), rot, 'panel', PALE);
         house(22, 14, 14, 18, sign * (E + 34), rot, 'plaster', SAND);
@@ -1126,10 +1170,10 @@
         }
       } else {
         // T-образный перекресток: Восток или Запад закрыт
-        const xCenter = sign * (E + 14);
+        const xCenter = sign * (E + 15);
         const rot = sign > 0 ? -Math.PI / 2 : Math.PI / 2;
         // Центральное здание, перекрывающее тупик
-        house(38, 16, 14, xCenter, 0, rot, bKind, bColor, { awning: true });
+        house(36, 16, 14, xCenter, 0, rot, bKind, bColor, { awning: true });
         // Дворовые корпуса за ним
         house(22, 14, 14, sign * (E + 34), -18, rot, 'panel', PALE);
         house(22, 14, 14, sign * (E + 34), 18, rot, 'plaster', SAND);
@@ -1319,13 +1363,14 @@
       const plateMat = new THREE.MeshLambertMaterial({ map: plateTex });
       const plateGeo = new THREE.PlaneGeometry(1.25, 1.25);
 
+      // Четкий вертикальный зазор 25 см между нижним углом знака и табличкой 8.13
       const plate = new THREE.Mesh(plateGeo, plateMat);
-      plate.position.set(0, -0.90, 0.02);
+      plate.position.set(0, -1.60, 0.02);
       group.add(plate);
 
       const plateBackMat = new THREE.MeshLambertMaterial({ color: 0x7E858E });
       const plateBack = new THREE.Mesh(plateGeo, plateBackMat);
-      plateBack.position.set(0, -0.90, 0.00);
+      plateBack.position.set(0, -1.60, 0.00);
       plateBack.rotation.y = Math.PI;
       group.add(plateBack);
     }
@@ -1337,17 +1382,17 @@
     const group = new THREE.Group();
 
     if (!underTL) {
-      // Металлическая оцинкованная стойка знака
+      // Металлическая оцинкованная стойка знака по ГОСТ
       const poleMat = new THREE.MeshLambertMaterial({ color: 0x9FA3A9 });
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 3.5, 12), poleMat);
-      pole.position.set(0, 1.75, -0.06);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 4.1, 12), poleMat);
+      pole.position.set(0, 2.05, -0.06);
       pole.castShadow = true;
       group.add(pole);
     }
 
-    // Щит и табличка
+    // Щит и табличка на правильной высоте
     const faceGroup = createSignFaceGroup(code, table8_13);
-    faceGroup.position.set(0, underTL ? 1.65 : 2.85, 0);
+    faceGroup.position.set(0, underTL ? 1.75 : 3.15, 0);
     group.add(faceGroup);
 
     // Знак стоит справа от своего подъезда перед стоп-линией
@@ -1535,7 +1580,12 @@
     // 6. Монтирование знака приоритета под светофором (п. 13.3)
     if (signData) {
       const signGroup = createSignFaceGroup(signData.code, signData.table8_13);
-      signGroup.position.set(0, 1.70, 0.05);
+      if (signData.table8_13) {
+        signGroup.scale.set(0.78, 0.78, 0.78);
+        signGroup.position.set(0, 1.65, 0.05);
+      } else {
+        signGroup.position.set(0, 1.70, 0.05);
+      }
       group.add(signGroup);
     }
 
@@ -2655,49 +2705,75 @@
       return new THREE.CubicBezierCurve3(pStart, pC1, pC2, pEnd);
     }
 
-    let pEnd, pMid;
     if (maneuver === 'straight') {
+      let pEnd;
       if (side === 'south') pEnd = new THREE.Vector3(laneX, 0, -exitD);
       else if (side === 'north') pEnd = new THREE.Vector3(-laneX, 0, exitD);
       else if (side === 'east') pEnd = new THREE.Vector3(-exitD, 0, -laneX);
       else pEnd = new THREE.Vector3(exitD, 0, laneX); // west
-
-      pMid = new THREE.Vector3(
-        (pStart.x + pEnd.x) * 0.5,
-        0,
-        (pStart.z + pEnd.z) * 0.5
-      );
-    } else if (maneuver === 'right') {
-      if (side === 'south') {
-        pEnd = new THREE.Vector3(exitD, 0, laneX);
-        pMid = new THREE.Vector3(laneX + 2.0, 0, laneX + 2.0);
-      } else if (side === 'north') {
-        pEnd = new THREE.Vector3(-exitD, 0, -laneX);
-        pMid = new THREE.Vector3(-laneX - 2.0, 0, -laneX - 2.0);
-      } else if (side === 'east') {
-        pEnd = new THREE.Vector3(laneX, 0, -exitD);
-        pMid = new THREE.Vector3(laneX + 2.0, 0, -laneX - 2.0);
-      } else { // west
-        pEnd = new THREE.Vector3(-laneX, 0, exitD);
-        pMid = new THREE.Vector3(-laneX - 2.0, 0, laneX + 2.0);
-      }
-    } else { // left
-      if (side === 'south') {
-        pEnd = new THREE.Vector3(-exitD, 0, -laneX);
-        pMid = new THREE.Vector3(laneX * 0.6, 0, -laneX * 0.6);
-      } else if (side === 'north') {
-        pEnd = new THREE.Vector3(exitD, 0, laneX);
-        pMid = new THREE.Vector3(-laneX * 0.6, 0, laneX * 0.6);
-      } else if (side === 'east') {
-        pEnd = new THREE.Vector3(-laneX, 0, exitD);
-        pMid = new THREE.Vector3(-laneX * 0.6, 0, -laneX * 0.6);
-      } else { // west
-        pEnd = new THREE.Vector3(laneX, 0, -exitD);
-        pMid = new THREE.Vector3(laneX * 0.6, 0, laneX * 0.6);
-      }
+      return new THREE.LineCurve3(pStart, pEnd);
     }
 
-    return new THREE.QuadraticBezierCurve3(pStart, pMid, pEnd);
+    if (maneuver === 'right') {
+      // Поворот направо: дуга строго по проезжей части, без срезания тротуаров и бордюров
+      const pts = [pStart];
+      if (side === 'south') {
+        pts.push(new THREE.Vector3(laneX, 0, 5.8));
+        pts.push(new THREE.Vector3(Math.max(laneX, 4.8), 0, 4.8));
+        pts.push(new THREE.Vector3(HALF_ROAD, 0, laneX));
+        pts.push(new THREE.Vector3(HALF_ROAD + 14.0, 0, laneX));
+        pts.push(new THREE.Vector3(exitD, 0, laneX));
+      } else if (side === 'north') {
+        pts.push(new THREE.Vector3(-laneX, 0, -5.8));
+        pts.push(new THREE.Vector3(Math.min(-laneX, -4.8), 0, -4.8));
+        pts.push(new THREE.Vector3(-HALF_ROAD, 0, -laneX));
+        pts.push(new THREE.Vector3(-(HALF_ROAD + 14.0), 0, -laneX));
+        pts.push(new THREE.Vector3(-exitD, 0, -laneX));
+      } else if (side === 'east') {
+        pts.push(new THREE.Vector3(5.8, 0, -laneX));
+        pts.push(new THREE.Vector3(4.8, 0, Math.min(-laneX, -4.8)));
+        pts.push(new THREE.Vector3(laneX, 0, -HALF_ROAD));
+        pts.push(new THREE.Vector3(laneX, 0, -(HALF_ROAD + 14.0)));
+        pts.push(new THREE.Vector3(laneX, 0, -exitD));
+      } else { // west
+        pts.push(new THREE.Vector3(-5.8, 0, laneX));
+        pts.push(new THREE.Vector3(-4.8, 0, Math.max(laneX, 4.8)));
+        pts.push(new THREE.Vector3(-laneX, 0, HALF_ROAD));
+        pts.push(new THREE.Vector3(-laneX, 0, HALF_ROAD + 14.0));
+        pts.push(new THREE.Vector3(-laneX, 0, exitD));
+      }
+      return new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.15);
+    }
+
+    // maneuver === 'left'
+    // Поворот налево: проезд к центру перекрестка, плавный огиб центра и выезд на целевую полосу
+    const pts = [pStart];
+    if (side === 'south') {
+      pts.push(new THREE.Vector3(laneX, 0, 4.0));
+      pts.push(new THREE.Vector3(laneX * 0.4, 0, -0.6));
+      pts.push(new THREE.Vector3(-HALF_ROAD, 0, -laneX));
+      pts.push(new THREE.Vector3(-(HALF_ROAD + 14.0), 0, -laneX));
+      pts.push(new THREE.Vector3(-exitD, 0, -laneX));
+    } else if (side === 'north') {
+      pts.push(new THREE.Vector3(-laneX, 0, -4.0));
+      pts.push(new THREE.Vector3(-laneX * 0.4, 0, 0.6));
+      pts.push(new THREE.Vector3(HALF_ROAD, 0, laneX));
+      pts.push(new THREE.Vector3(HALF_ROAD + 14.0, 0, laneX));
+      pts.push(new THREE.Vector3(exitD, 0, laneX));
+    } else if (side === 'east') {
+      pts.push(new THREE.Vector3(4.0, 0, -laneX));
+      pts.push(new THREE.Vector3(-0.6, 0, -laneX * 0.4));
+      pts.push(new THREE.Vector3(-laneX, 0, HALF_ROAD));
+      pts.push(new THREE.Vector3(-laneX, 0, HALF_ROAD + 14.0));
+      pts.push(new THREE.Vector3(-laneX, 0, exitD));
+    } else { // west
+      pts.push(new THREE.Vector3(-4.0, 0, laneX));
+      pts.push(new THREE.Vector3(0.6, 0, laneX * 0.4));
+      pts.push(new THREE.Vector3(laneX, 0, -HALF_ROAD));
+      pts.push(new THREE.Vector3(laneX, 0, -(HALF_ROAD + 14.0)));
+      pts.push(new THREE.Vector3(laneX, 0, -exitD));
+    }
+    return new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.15);
   }
 
   function getVehicleCollisionExtents(actor) {
@@ -2751,21 +2827,9 @@
       }
     }
 
-    let lateralOffset = null;
-    let impactPoint;
-
-    if (bestDist > 3.0) {
-      // Встречные параллельные полосы: сближение у центра перекрестка
-      const ptW = pathW.getPoint(bestTW);
-      const ptP = pathP.getPoint(bestTP);
-      impactPoint = new THREE.Vector3((ptW.x + ptP.x) * 0.5, 0.65, (ptW.z + ptP.z) * 0.5);
-      lateralOffset = impactPoint.clone().sub(ptW);
-      lateralOffset.y = 0;
-    } else {
-      const ptW = pathW.getPoint(bestTW);
-      const ptP = pathP.getPoint(bestTP);
-      impactPoint = new THREE.Vector3((ptW.x + ptP.x) * 0.5, 0.65, (ptW.z + ptP.z) * 0.5);
-    }
+    const ptW = pathW.getPoint(bestTW);
+    const ptP = pathP.getPoint(bestTP);
+    const impactPoint = new THREE.Vector3((ptW.x + ptP.x) * 0.5, 0.65, (ptW.z + ptP.z) * 0.5);
 
     // Рассчитываем параметры остановки (stopTW, stopTP), чтобы бампер упирался в точку контакта
     const curveLenW = 48.0;
@@ -2790,7 +2854,6 @@
       stopTP,
       steerAngleW,
       steerAngleP,
-      lateralOffset,
       impactPoint,
       extW,
       extP,
@@ -2953,7 +3016,7 @@
 
         const extA = getVehicleCollisionExtents(animA.actorRecord);
         const extB = getVehicleCollisionExtents(animB.actorRecord);
-        const threshold = Math.max(extA.side + extB.side + 0.5, (extA.front + extB.front) * 0.70);
+        const threshold = Math.max(extA.side + extB.side + 0.8, (extA.front + extB.front) * 0.82);
 
         if (dist < threshold) {
           triggerDynamicCollision(animA, animB);
@@ -3119,13 +3182,9 @@
       const curTW = ease * c.stopTW;
       const curTP = ease * c.stopTP;
 
-      // Позиция строго по кривой маршрута участников
+      // Позиция строго по кривой маршрута участников (без бокового сдвига)
       const posW = c.pathW.getPoint(curTW);
       const posP = c.pathP.getPoint(curTP);
-
-      if (c.lateralOffset) {
-        posW.addScaledVector(c.lateralOffset, ease * ease);
-      }
 
       c.wrongActor.mesh.position.copy(posW);
       c.priorityActor.mesh.position.copy(posP);
