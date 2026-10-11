@@ -240,6 +240,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
     _send('configure', [
       {
         'country': CountryConfig.current.code,
+        // Language of the game's own texts (assets/game/i18n.js).
+        'language': appL10n.localeName,
         'sessionId': _game.sessionId,
         'soundEnabled': SoundEffectsService.instance.isEnabled,
         'firstRun': _firstRun,

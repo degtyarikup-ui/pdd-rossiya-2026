@@ -8309,7 +8309,7 @@
         'Авто'
       ) : 'Авто'
     );
-    const badge = createActorBadge(badgeLabel, cfg.color || BRAND.accent);
+    const badge = createActorBadge(window.PDD_T(badgeLabel), cfg.color || BRAND.accent);
     badge.position.y = badgeHeight;
     actorMesh.add(badge);
     actorMesh.userData.badge = badge;
@@ -9900,7 +9900,7 @@
     for(const x of [-2.75,2.75])box(.6,6.6,.6,x,3.3,13,trim,'plaster');
     box(6.1,1.1,.6,0,6.05,13,trim,'plaster');
     const c=document.createElement('canvas');c.width=256;c.height=64;const g=c.getContext('2d');
-    g.fillStyle='#2F5D8A';g.fillRect(0,0,256,64);g.fillStyle='#FFFFFF';g.font='bold 40px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('ДЕПО',128,34);
+    g.fillStyle='#2F5D8A';g.fillRect(0,0,256,64);g.fillStyle='#FFFFFF';g.font='bold 40px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(window.PDD_T('ДЕПО'),128,34);
     const sign=new THREE.Mesh(new THREE.PlaneGeometry(2.6,.65),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));sign.position.set(0,6.05,13.31);depot.add(sign);
     // Open gate leaves folded back against the portal.
     for(const x of [-1,1]){const leaf=box(.08,4.8,2.4,x*2.95,2.4,14.2,steel,'metal');leaf.rotation.y=x*.08;}
@@ -11267,7 +11267,7 @@
     ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 896, 200);
     ctx.strokeStyle = '#151515'; ctx.lineWidth = 14; ctx.strokeRect(14, 14, 868, 172);
     ctx.fillStyle = '#151515'; ctx.font = 'bold 118px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(town.toUpperCase(), 448, 106, 800);
+    ctx.fillText(window.PDD_T(town).toUpperCase(), 448, 106, 800);
     if (code === '5.24.1') { // end of the settlement: red diagonal across the name
       ctx.strokeStyle = '#cc1725'; ctx.lineWidth = 16;
       ctx.beginPath(); ctx.moveTo(40, 180); ctx.lineTo(856, 20); ctx.stroke();
@@ -12453,7 +12453,7 @@
     const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,256,256);
     g.strokeStyle='#171717';g.lineWidth=8;g.strokeRect(5,5,246,246);
     g.fillStyle='#171717';g.textAlign='center';g.font='bold 62px Arial';g.fillText('STOP',128,96);
-    g.font='bold 55px Arial';g.fillText(distance+' м',128,194);
+    g.font='bold 55px Arial';g.fillText(distance+' '+window.PDD_T('м'),128,194);
     return new THREE.CanvasTexture(c);
   }
 
@@ -12765,7 +12765,7 @@
     const [town, nextTown] = townPair();
     ev.towns = [town, nextTown];
     (sc.signs || []).forEach((sg, i) => {
-      const sign = addRoadSign(group, sg.code, stopZ + sg.z, sg.side, sg.stopDistance ? 'STOP · ' + sg.stopDistance + ' м' : sg.plate || null, sg.offsetX || 0, sg.speedValue ?? null,
+      const sign = addRoadSign(group, sg.code, stopZ + sg.z, sg.side, sg.stopDistance ? 'STOP · ' + sg.stopDistance + ' ' + window.PDD_T('м') : sg.plate ? sg.plate.replace(/ м$/, ' ' + window.PDD_T('м')) : null, sg.offsetX || 0, sg.speedValue ?? null,
         sg.code === '5.23.1' ? nextTown : town, sg.plateSign || null);
       if (sg.stopDistance) {
         const plate = group.children.at(-1);
@@ -13554,7 +13554,7 @@
     if (pBlinker) {
       state.blinker = { side: pBlinker, remaining: Infinity, elapsed: 0, fromSituation: true };
     }
-    sendToFlutter({ event: 'approach_situation', situation: ev.situation });
+    sendToFlutter({ event: 'approach_situation', situation: window.PDD_LOCALIZE_SITUATION(ev.situation) });
   }
 
   function releaseRoadActors(ev) { ev.actors.forEach(a => { a.waitsForPlayer = false; }); }
@@ -15587,7 +15587,7 @@
       if (pBlinker) {
         state.blinker = { side: pBlinker, remaining: Infinity, elapsed: 0, fromSituation: true };
       }
-      sendToFlutter({ event: 'approach_situation', situation: active.situation });
+      sendToFlutter({ event: 'approach_situation', situation: window.PDD_LOCALIZE_SITUATION(active.situation) });
     }
   }
 
@@ -16111,6 +16111,7 @@
     },
     configure(config) {
       state.nativeControls = true;
+      if (config.language) window.PDD_LANG = String(config.language);
       if (config.labels) Object.assign(state.labels, config.labels);
       // A first-time player sees clear weather for the whole session.
       state.firstRun = Boolean(config.firstRun);
