@@ -77,6 +77,11 @@ class ErrorReporter {
       'item_unavailable',
       'developer_error',
       'storage_error',
+      // Общие сбои канала плагина покупок: без них в отчёте остаётся sdk_error
+      // и не видно, что именно не ответило магазину.
+      'channel-error',
+      'null-error',
+      'error',
     };
     if (known.contains(code)) return code!;
     // Коды плагина покупок (storekit_…, storekit2_…): технические метки без

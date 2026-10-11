@@ -200,31 +200,69 @@ class IapService extends ChangeNotifier {
     _retryTimer = Timer(const Duration(seconds: 30), retryPendingPurchases);
   }
 
-  Future<void> loadProducts() async {
+  /// Сколько раз запрашиваем тарифы, прежде чем сообщить о сбое.
+  static const _productAttempts = 3;
+
+  /// Пауза перед повтором запроса тарифов: 2 с, затем 4 с. В тестах — ноль.
+  @visibleForTesting
+  static Duration productRetryUnit = const Duration(seconds: 2);
+
+  Future<void>? _loadingProducts;
+
+  /// Параллельные вызовы (экран Premium, покупка, старт) ждут одну загрузку.
+  Future<void> loadProducts() =>
+      _loadingProducts ??= _loadProducts().whenComplete(() {
+        _loadingProducts = null;
+      });
+
+  Future<void> _loadProducts() async {
     try {
       if (!_isAvailable) {
         _isAvailable = await _iap.isAvailable();
         if (!_isAvailable) return;
       }
-      final response = await _iap.queryProductDetails(_productIds);
-      if (response.error != null) {
-        _report(
-          'iap.products',
-          code: ErrorReporter.sdkCode(response.error!.code),
-        );
-        debugPrint('IapService: query error: ${response.error}');
-        _lastErrorMessage = response.error!.message;
+    } catch (e) {
+      debugPrint('IapService: loadProducts error: $e');
+      _report('iap.products', error: e);
+      _lastErrorMessage = e.toString();
+      return;
+    }
+    // Магазин иногда ошибается на одном запросе и отвечает на следующем.
+    for (var attempt = 1; ; attempt++) {
+      final failure = await _queryProducts();
+      if (failure == null) return;
+      if (attempt == _productAttempts) {
+        _report('iap.products', code: failure);
+        return;
       }
+      await Future<void>.delayed(productRetryUnit * attempt);
+    }
+  }
+
+  /// Один запрос тарифов. Возвращает код сбоя или null, если тарифы получены.
+  Future<String?> _queryProducts() async {
+    try {
+      final response = await _iap.queryProductDetails(_productIds);
       if (response.productDetails.isNotEmpty) {
         for (final product in response.productDetails) {
           _products[product.id] = product;
         }
         notifyListeners();
       }
+      final error = response.error;
+      if (error != null) {
+        debugPrint('IapService: query error: $error');
+        _lastErrorMessage = error.message;
+        return ErrorReporter.sdkCode(error.code);
+      }
+      // Магазин ответил без ошибки, но без нашего тарифа: чаще всего он не
+      // «Готов к продаже» или идентификатор не совпадает.
+      if (response.productDetails.isEmpty) return 'products_not_found';
+      return null;
     } catch (e) {
       debugPrint('IapService: loadProducts error: $e');
-      _report('iap.products', error: e);
       _lastErrorMessage = e.toString();
+      return ErrorReporter.codeFor(e);
     }
   }
 

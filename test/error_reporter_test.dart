@@ -200,6 +200,9 @@ void main() {
       'storekit2_failed_to_fetch_product',
     );
     expect(ErrorReporter.sdkCode('storekit_error'), 'storekit_error');
+    // Общие коды канала плагина покупок — иначе не видно, что не ответило.
+    expect(ErrorReporter.sdkCode('channel-error'), 'channel-error');
+    expect(ErrorReporter.sdkCode('null-error'), 'null-error');
     expect(ErrorReporter.sdkCode('user@example.com'), 'sdk_error');
     expect(ErrorReporter.sdkCode('storekit_Account user@x.com'), 'sdk_error');
     expect(ErrorReporter.sdkCode(null), 'sdk_error');

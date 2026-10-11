@@ -144,10 +144,11 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
         } else if (result == PurchaseResult.canceled) {
           // Пользователь закрыл окно оплаты Apple/Google — ошибку не показываем
         } else if (result == PurchaseResult.productNotFound) {
+          // Тарифы уже запрошены заново (с повторами): «подождите» не поможет.
           AppToast.show(
             context,
-            appL10n.payErrorPricesLoading,
-            type: AppToastType.normal,
+            _purchaseErrorText(PurchaseResult.storeUnavailable),
+            type: AppToastType.error,
           );
         } else {
           AppToast.show(
