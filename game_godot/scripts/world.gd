@@ -1479,7 +1479,9 @@ func _process(delta: float) -> void:
 		camera.size = lerpf(camera.size, 42.0, 1 - exp(-5 * delta))
 	# The look point glides to its target (game.js: cameraLook.lerp): a sudden
 	# change of framing never jumps the picture.
-	if not cam_ready:
+	# A jump of the look point (the car placed far away, a question at a new junction) is not a
+	# pan: the camera goes there at once, else the junction is out of frame for seconds.
+	if not cam_ready or cam_look.distance_to(look) > 60.0:
 		cam_look = look
 		cam_ready = true
 	else:
