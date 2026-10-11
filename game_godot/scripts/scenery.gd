@@ -94,8 +94,22 @@ class Pool:
 
 	## A frozen copy of everything placed now, under `parent` (the old street kept after a turn).
 	func snapshot(parent: Node3D) -> void:
-		var copy := node.duplicate() as MultiMeshInstance3D
-		copy.multimesh = multi.duplicate()
+		# Not duplicate(): MultiMesh.duplicate and the buffer property fail ("Cannot set a buffer ...
+		# different size"; the buffer is not readable as a whole). Copied instance by instance.
+		var copy := MultiMeshInstance3D.new()
+		copy.material_override = node.material_override
+		copy.cast_shadow = node.cast_shadow
+		var frozen := MultiMesh.new()
+		frozen.transform_format = multi.transform_format
+		frozen.use_colors = multi.use_colors
+		frozen.use_custom_data = multi.use_custom_data
+		frozen.mesh = multi.mesh
+		frozen.instance_count = multi.instance_count
+		for i in multi.instance_count:
+			frozen.set_instance_transform(i, multi.get_instance_transform(i))
+			frozen.set_instance_color(i, multi.get_instance_color(i))
+			frozen.set_instance_custom_data(i, multi.get_instance_custom_data(i))
+		copy.multimesh = frozen
 		parent.add_child(copy)
 
 	func begin(slot: int) -> void:
