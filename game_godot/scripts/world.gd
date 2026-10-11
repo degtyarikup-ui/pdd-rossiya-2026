@@ -97,6 +97,11 @@ var road_phase := ""              # approach | question | passed (while road != 
 var road_after := 300.0           # world z after which the next road question may come
 var road_base_limit := 60         # the built-up limit to return to after a zone
 var road_force := ""              # --road=<id>: this road question first, no junctions (tests)
+var lobby: Lobby                  # the garage before a run (--garage=<json>); null when not shown
+var lobby_mode := false
+var lobby_turn := 0.0             # the car's turn on the stand (radians)
+var run_started := false          # a run began (the app charges one run then)
+var chosen := {}                  # { id, paint } of the car the player drove, for the app
 
 
 func _ready() -> void:
@@ -149,6 +154,8 @@ func _ready() -> void:
 	controls.pressed.connect(hud.mark_input)
 	_apply_tier(Quality.classify(RenderingServer.get_video_adapter_name()))
 	spawn_after = drive.pos.z + 40
+	if _has_arg("--garage"):
+		_open_lobby()
 	# Desktop checks: `godot --path game_godot -- --shot=out.png [--season=winter]
 	# [--situation=<id>] [--auto] [--overview] [--start=<z>] [--wait=<s>]`.
 	for arg in OS.get_cmdline_user_args():
@@ -409,12 +416,28 @@ func _recycle_chunks() -> void:
 func _build_player() -> void:
 	player = Node3D.new()
 	add_child(player)
-	var id := "hatch"
-	var car := Models.player_car(id, Color("#F08A24"))
+	_mount_car("hatch", "#F08A24")
+	drive.pos = Vector3(-1.8, 0, 5)
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--start="):
+			drive.pos.z = float(arg.trim_prefix("--start="))
+
+
+## The player's car: a model of the garage in a paint (hex). Replaces the car on the stand.
+func _mount_car(id: String, hex: String) -> void:
+	var old := player.get_node_or_null("car")
+	if old:
+		player.remove_child(old)
+		old.queue_free()
+	var car := Models.player_car(id, Color(hex))
+	car.name = "car"
 	player.add_child(car)
 	var meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://models/index.json"))["vehicles/" + id].meta
 	drive.half_width = meta.halfWidth
 	drive.half_length = meta.halfLength
+	wheels.clear()
+	front_axles.clear()
+	blinkers.clear()
 	for node in car.find_children("wheel_*", "", true, false):
 		wheels.append(node)
 	for node in car.find_children("axle_front_*", "", true, false):
@@ -427,10 +450,6 @@ func _build_player() -> void:
 		(node as MeshInstance3D).material_override = brake_mat
 	for side in ["L", "R"]:
 		blinkers[side] = car.find_child("blink_" + side, true, false)
-	drive.pos = Vector3(-1.8, 0, 5)
-	for arg in OS.get_cmdline_user_args():
-		if arg.begins_with("--start="):
-			drive.pos.z = float(arg.trim_prefix("--start="))
 
 
 ## World services for Drive (game.js roadSupports / obstacles / faults).
@@ -878,9 +897,11 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	if run.finished():
 		phase = "over"
 		controls.set_active(false)
-		ui.show_result(run.summary())
 		event.emit({ "event": "run_finished", "summary": run.summary() })
-		Host.send({ "event": "run_finished", "summary": run.summary() })
+		if Host.embedded():
+			_on_exit()   # the app shows the score, the restart and the mistakes (one result screen)
+		else:
+			ui.show_result(run.summary())
 	print("[game] cleared ", sit.id, " by ", exit_direction)
 	if follow:
 		print("[jerk] %s %s: max yaw %.2f rad/s, camera %.2f m/s, camera heading %.2f rad/s" % [sit.id, exit_direction, jerk.yaw, jerk.cam, jerk.heading])
@@ -1141,7 +1162,7 @@ func _update_walkers(delta: float) -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
-		if phase == "over" or paused:
+		if lobby_mode or phase == "over" or paused:
 			_on_exit()
 		else:
 			_on_pause()
@@ -1151,7 +1172,7 @@ func _notification(what: int) -> void:
 
 ## Pause (top-left button, Android «back»): not while a question waits for its answer.
 func _on_pause() -> void:
-	if paused or phase in ["question", "over"] or (road != null and road_phase == "question"):
+	if lobby_mode or paused or phase in ["question", "over"] or (road != null and road_phase == "question"):
 		return
 	paused = true
 	controls.set_active(false)
@@ -1165,10 +1186,91 @@ func _on_resume() -> void:
 
 
 func _on_exit() -> void:
-	Host.exit(run.summary(), get_tree())
+	Host.exit(_exit_summary(), get_tree())
+
+
+## The garage before a run (lobby.gd): the car turns on a stand in the street, the camera
+## looks at it from the driving side, traffic and walkers are off. The run starts from here.
+func _open_lobby() -> void:
+	var garage: Dictionary = JSON.parse_string(_arg_text("--garage"))
+	lobby = Lobby.new(garage)
+	add_child(lobby)
+	lobby.changed.connect(_on_lobby_changed)
+	lobby.start_requested.connect(_on_lobby_start)
+	lobby.spin.connect(_on_lobby_spin)
+	lobby_mode = true
+	paused = true
+	controls.set_active(false)
+	ui.visible = false
+	_set_street_objects(false)
+	var car: Dictionary = lobby.current()
+	_mount_car(car.id, car.hex)
+	_lobby_frame(0.0)
+	if _has_arg("--lobby-start"):   # test: press «Начать заезд» by itself after a second
+		get_tree().create_timer(1.0).timeout.connect(lobby._try_start)
+
+
+func _lobby_frame(delta: float) -> void:
+	lobby_turn += delta * 0.35
+	player.rotation.y = lobby_turn
+	var target := player.position + Vector3(0, 0.6, 0)
+	camera.size = lerpf(camera.size, 12.0, 1 - exp(-5.0 * delta))
+	# The car sits above the sheet: the view is shifted up (the picture moves, the look does not).
+	camera.v_offset = -0.22
+	# Above the carriageway, behind the car: the buildings on the kerb do not hide it.
+	camera.position = target + Vector3(-3.0, 17.0, -15.0)
+	camera.look_at(target)
+
+
+func _on_lobby_changed(id: String, _paint: String, hex: String) -> void:
+	_mount_car(id, hex)
+
+
+func _on_lobby_spin(radians: float) -> void:
+	lobby_turn += radians
+
+
+func _on_lobby_start(id: String, paint: String, hex: String) -> void:
+	chosen = { "id": id, "paint": paint }
+	_mount_car(id, hex)
+	run_started = true
+	lobby_mode = false
+	lobby.queue_free()
+	lobby = null
+	_set_street_objects(true)
+	ui.visible = true
+	controls.set_active(true)
+	paused = false
+	cam_ready = false
+	player.rotation.y = drive.yaw
+
+
+func _set_street_objects(on: bool) -> void:
+	for node in find_children("*", "MultiMeshInstance3D", true, false):
+		var mi := node as MultiMeshInstance3D
+		if traffic_mm.has(mi.multimesh) or walker_mm.has(mi.multimesh):
+			mi.visible = on
+
+
+func _arg_text(name: String) -> String:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with(name + "="):
+			return arg.trim_prefix(name + "=")
+	return ""
+
+
+## What the app gets back: the run (run.gd summary), whether a run began, the car driven.
+func _exit_summary() -> Dictionary:
+	var out := run.summary()
+	out["run_started"] = run_started
+	out["car"] = chosen
+	return out
 
 
 func _process(delta: float) -> void:
+	if lobby_mode:
+		_lobby_frame(delta)
+		return
 	if paused:
 		return
 	delta = minf(delta, 0.05)
