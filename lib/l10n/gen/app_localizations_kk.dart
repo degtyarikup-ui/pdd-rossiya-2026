@@ -3393,4 +3393,29 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get crossroadsArticleEarlyExit => 'ЖЖЕ 13.8-тармағы';
+
+  @override
+  String get supportChatTitle => 'Қолдау';
+
+  @override
+  String get supportChatSubtitle => 'Әдетте бірнеше минут ішінде жауап береміз';
+
+  @override
+  String get supportChatPlaceholder => 'Хабарлама жазыңыз...';
+
+  @override
+  String get supportChatEmptyTitle => 'Қолдау чаты';
+
+  @override
+  String get supportChatEmptySubtitle =>
+      'Билеттер, ережелер немесе қолданба туралы кез келген сұрақ қойыңыз — көмектесеміз.';
+
+  @override
+  String get supportChatSendFailed => 'Хабарлама жіберілмеді';
+
+  @override
+  String get supportChatRetry => 'Қайталау';
+
+  @override
+  String get supportChatStaff => 'Қолдау';
 }

@@ -13,6 +13,7 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/user_avatar.dart';
 import 'package:pdd_app/presentation/screens/profile/widgets/achievement_badge.dart';
 import 'package:pdd_app/presentation/screens/settings/settings_screen.dart';
+import 'package:pdd_app/presentation/screens/support/support_chat_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_banner_card.dart';
@@ -218,6 +219,19 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
+                  AppChromeIconButton(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    onTap: () {
+                      HapticFeedbackHelper.tap();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => const SupportChatScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: AppDimensions.spacingS),
                   AppChromeIconButton(
                     icon: Icons.settings_outlined,
                     onTap: () {

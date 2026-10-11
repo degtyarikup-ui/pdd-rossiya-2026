@@ -5655,6 +5655,54 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Пункт 13.8 ПДД РФ'**
   String get crossroadsArticleEarlyExit;
+
+  /// No description provided for @supportChatTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поддержка'**
+  String get supportChatTitle;
+
+  /// No description provided for @supportChatSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отвечаем обычно в течение нескольких минут'**
+  String get supportChatSubtitle;
+
+  /// No description provided for @supportChatPlaceholder.
+  ///
+  /// In ru, this message translates to:
+  /// **'Напишите сообщение...'**
+  String get supportChatPlaceholder;
+
+  /// No description provided for @supportChatEmptyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Чат с поддержкой'**
+  String get supportChatEmptyTitle;
+
+  /// No description provided for @supportChatEmptySubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Напишите любой вопрос о билетах, правилах или приложении — мы поможем разобраться.'**
+  String get supportChatEmptySubtitle;
+
+  /// No description provided for @supportChatSendFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось отправить сообщение'**
+  String get supportChatSendFailed;
+
+  /// No description provided for @supportChatRetry.
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторить'**
+  String get supportChatRetry;
+
+  /// No description provided for @supportChatStaff.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поддержка'**
+  String get supportChatStaff;
 }
 
 class _AppLocalizationsDelegate

@@ -1081,5 +1081,13 @@
   "crossroadsReasonRedLight": "Тыйым салатын бағдаршам сигналында өту (ЖЖЕ 6.2-тармағы). Қызыл жанғанда қозғалуға қатаң тыйым салынады!",
   "crossroadsReasonEarlyExit": "Тым ерте шығу: жол бермедіңіз және қиылысты қозғалыстағы көліктер босатқанын күтпедіңіз! (ЖЖЕ 13.8-тармағы)",
   "crossroadsArticleRedLight": "ЖЖЕ 6.2-тармағы",
-  "crossroadsArticleEarlyExit": "ЖЖЕ 13.8-тармағы"
+  "crossroadsArticleEarlyExit": "ЖЖЕ 13.8-тармағы",
+  "supportChatTitle": "Қолдау",
+  "supportChatSubtitle": "Әдетте бірнеше минут ішінде жауап береміз",
+  "supportChatPlaceholder": "Хабарлама жазыңыз...",
+  "supportChatEmptyTitle": "Қолдау чаты",
+  "supportChatEmptySubtitle": "Билеттер, ережелер немесе қолданба туралы кез келген сұрақ қойыңыз — көмектесеміз.",
+  "supportChatSendFailed": "Хабарлама жіберілмеді",
+  "supportChatRetry": "Қайталау",
+  "supportChatStaff": "Қолдау"
 }

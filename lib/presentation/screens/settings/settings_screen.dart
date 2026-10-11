@@ -15,6 +15,7 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/screens/pdd/pdd_screen.dart';
+import 'package:pdd_app/presentation/screens/support/support_chat_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -25,9 +26,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  static final Uri _telegramSupportUri = Uri.parse(
-    'https://t.me/sergei_degtyarik',
-  );
 
   Future<void> _showThemePicker(
     AppSettings settings,
@@ -196,15 +194,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Future<void> _openTelegramSupport() async {
+  void _openSupportChat() {
     HapticFeedbackHelper.tap();
-    final ok = await launchUrl(
-      _telegramSupportUri,
-      mode: LaunchMode.externalApplication,
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => const SupportChatScreen(),
+      ),
     );
-    if (!ok && mounted) {
-      AppToast.show(context, appL10n.linkOpenFailed, type: AppToastType.error);
-    }
   }
 
   Future<void> _openPrivacyPolicy() async {
@@ -503,7 +500,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     runSpacing: 4,
                     children: [
                       GestureDetector(
-                        onTap: _openTelegramSupport,
+                        onTap: _openSupportChat,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: AppDimensions.spacingS,

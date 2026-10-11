@@ -3413,4 +3413,30 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get crossroadsArticleEarlyExit => 'Пункт 13.8 ПДД РФ';
+
+  @override
+  String get supportChatTitle => 'Поддержка';
+
+  @override
+  String get supportChatSubtitle =>
+      'Отвечаем обычно в течение нескольких минут';
+
+  @override
+  String get supportChatPlaceholder => 'Напишите сообщение...';
+
+  @override
+  String get supportChatEmptyTitle => 'Чат с поддержкой';
+
+  @override
+  String get supportChatEmptySubtitle =>
+      'Напишите любой вопрос о билетах, правилах или приложении — мы поможем разобраться.';
+
+  @override
+  String get supportChatSendFailed => 'Не удалось отправить сообщение';
+
+  @override
+  String get supportChatRetry => 'Повторить';
+
+  @override
+  String get supportChatStaff => 'Поддержка';
 }

@@ -3401,4 +3401,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get crossroadsArticleEarlyExit =>
       'Clause 13.8 of the Russian Traffic Regulations';
+
+  @override
+  String get supportChatTitle => 'Support';
+
+  @override
+  String get supportChatSubtitle => 'We usually reply within a few minutes';
+
+  @override
+  String get supportChatPlaceholder => 'Type a message...';
+
+  @override
+  String get supportChatEmptyTitle => 'Support chat';
+
+  @override
+  String get supportChatEmptySubtitle =>
+      'Ask any question about tickets, rules or the app — we\'re here to help.';
+
+  @override
+  String get supportChatSendFailed => 'Failed to send message';
+
+  @override
+  String get supportChatRetry => 'Retry';
+
+  @override
+  String get supportChatStaff => 'Support';
 }

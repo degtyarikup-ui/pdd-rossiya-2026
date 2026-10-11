@@ -13,6 +13,13 @@ import { getAdsConfig, filterAdsForClient } from './ads_config.js';
 export { TrafficState } from './traffic_state.js';
 export { TelegramQueue, resolveTopicThreadId, getTopicThreadId, telegramChatId } from './telegram_queue.js';
 import { pollErrorCommands, resolveTopicThreadId, telegramChatId } from './telegram_queue.js';
+import {
+  handleSupportSendMessage,
+  handleSupportGetMessages,
+  handleTelegramWebhook,
+  handleSupportSetupWebhook,
+  handleSupportWebhookInfo,
+} from './support_chat.js';
 import { trafficRequest } from './traffic_state.js';
 import { closeFinishedGameWeeks, bestGameRank, deleteGameBest } from './game_weeks.js';
 export { PurchaseClaims } from './purchase_claims.js';
@@ -3776,6 +3783,33 @@ const workerHandlers = {
       }
 
       return jsonResponse({ ok: true, topics: topicsMap });
+    }
+
+    // ────────────────────── Support Chat API ──────────────────────
+    if (url.pathname === '/api/support/send' && request.method === 'POST') {
+      return handleSupportSendMessage(request, env);
+    }
+
+    if (url.pathname === '/api/support/messages' && request.method === 'GET') {
+      return handleSupportGetMessages(request, env);
+    }
+
+    if (url.pathname === '/api/telegram/webhook') {
+      return handleTelegramWebhook(request, env);
+    }
+
+    if (url.pathname === '/api/admin/support/setup-webhook' && request.method === 'POST') {
+      const isAuthorized = (await verifyAdminAuth(request, env)) ||
+        (Boolean(env.SHARED_SECRET) && request.headers.get('x-install-secret') === env.SHARED_SECRET);
+      if (!isAuthorized) return jsonResponse({ error: 'unauthorized' }, 401);
+      return handleSupportSetupWebhook(request, env);
+    }
+
+    if (url.pathname === '/api/admin/support/webhook-info' && request.method === 'GET') {
+      const isAuthorized = (await verifyAdminAuth(request, env)) ||
+        (Boolean(env.SHARED_SECRET) && request.headers.get('x-install-secret') === env.SHARED_SECRET);
+      if (!isAuthorized) return jsonResponse({ error: 'unauthorized' }, 401);
+      return handleSupportWebhookInfo(request, env);
     }
 
     if (url.pathname === '/api/admin/links') {

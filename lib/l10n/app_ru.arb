@@ -1581,5 +1581,13 @@
   "crossroadsReasonRedLight": "Проезд на запрещающий сигнал светофора (п. 6.2 ПДД РФ). Движение на красный свет категорически запрещено!",
   "crossroadsReasonEarlyExit": "Слишком ранний выезд: не уступил дорогу и не дождался освобождения перекрестка движущимся транспортом! (п. 13.8 ПДД РФ)",
   "crossroadsArticleRedLight": "Пункт 6.2 ПДД РФ",
-  "crossroadsArticleEarlyExit": "Пункт 13.8 ПДД РФ"
+  "crossroadsArticleEarlyExit": "Пункт 13.8 ПДД РФ",
+  "supportChatTitle": "Поддержка",
+  "supportChatSubtitle": "Отвечаем обычно в течение нескольких минут",
+  "supportChatPlaceholder": "Напишите сообщение...",
+  "supportChatEmptyTitle": "Чат с поддержкой",
+  "supportChatEmptySubtitle": "Напишите любой вопрос о билетах, правилах или приложении — мы поможем разобраться.",
+  "supportChatSendFailed": "Не удалось отправить сообщение",
+  "supportChatRetry": "Повторить",
+  "supportChatStaff": "Поддержка"
 }

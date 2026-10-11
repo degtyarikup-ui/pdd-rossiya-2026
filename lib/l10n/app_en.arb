@@ -1081,5 +1081,13 @@
   "crossroadsReasonRedLight": "Driving through a red light (clause 6.2 of the Russian Traffic Regulations). Driving on red is strictly forbidden!",
   "crossroadsReasonEarlyExit": "Entering too early: you did not yield and did not wait for the moving traffic to clear the intersection! (clause 13.8 of the Russian Traffic Regulations)",
   "crossroadsArticleRedLight": "Clause 6.2 of the Russian Traffic Regulations",
-  "crossroadsArticleEarlyExit": "Clause 13.8 of the Russian Traffic Regulations"
+  "crossroadsArticleEarlyExit": "Clause 13.8 of the Russian Traffic Regulations",
+  "supportChatTitle": "Support",
+  "supportChatSubtitle": "We usually reply within a few minutes",
+  "supportChatPlaceholder": "Type a message...",
+  "supportChatEmptyTitle": "Support chat",
+  "supportChatEmptySubtitle": "Ask any question about tickets, rules or the app — we're here to help.",
+  "supportChatSendFailed": "Failed to send message",
+  "supportChatRetry": "Retry",
+  "supportChatStaff": "Support"
 }
