@@ -1,4 +1,5 @@
 import { buildIncidentMessage } from './diagnostics.js';
+import { EXPORT_COMMAND_MAX_AGE_MS, buildErrorCsv, errorLevelLabel, errorLogKey, errorLogRecord, exportStart, mskStamp, parseExportCommand, ERROR_LOG_PREFIX } from './telegram_export.js';
 
 export function telegramChatId(env) {
   const id = env?.CHAT_ID ? String(env.CHAT_ID) : '';
@@ -36,6 +37,15 @@ export async function getTopicThreadId(env, topic, fallback = null) {
   return fallback;
 }
 
+// Крон проверяет команды выгрузки. Тот же экземпляр очереди, что и у алертов:
+// журнал и отправка идут через одну сериализованную очередь.
+export async function pollErrorCommands(env) {
+  if (!env?.TELEGRAM || !env.BOT_TOKEN || !env.CHAT_ID) return null;
+  const stub = env.TELEGRAM.get(env.TELEGRAM.idFromName(String(env.CHAT_ID)));
+  const response = await stub.fetch('https://telegram/poll-commands', { method: 'POST' });
+  return response.ok ? response.json() : null;
+}
+
 // Persist before acknowledging a notification. One chat is drained at a
 // conservative group-safe rate; Telegram retry_after survives worker restarts.
 export class TelegramQueue {
@@ -52,6 +62,7 @@ export class TelegramQueue {
   fetch(request) {
     return this.serial(async () => {
       if (new URL(request.url).pathname === '/incident') return this.enqueueIncident(await request.json());
+      if (new URL(request.url).pathname === '/poll-commands') return Response.json(await this.pollErrorCommands());
       const body = await request.json();
       const { text, dedupKey, photoBase64, messages, topic } = body;
       const explicitThreadId = body.threadId ?? body.message_thread_id;
@@ -111,7 +122,103 @@ export class TelegramQueue {
         await txn.put('sequence', sequence);
       }
     });
+    await this.logIncident(incident, Boolean(text), now);
     return Response.json({ ok: true, suppressed: !text });
+  }
+  // Журнал для выгрузки. Запись после очереди и в отдельном try: сбой журнала
+  // не должен терять уведомление или менять ответ.
+  async logIncident(incident, sent, now) {
+    try {
+      const ts = Number.isFinite(incident.ts) ? incident.ts : now;
+      const record = errorLogRecord(incident, { ts, sent, level: errorLevelLabel(incident) });
+      await this.state.storage.put(errorLogKey(ts, record.id || now), record);
+    } catch (error) {
+      console.error('Error log write failed', error?.name || 'unknown');
+    }
+  }
+  // Команды из подчата ошибок. Telegram отдаёт их через getUpdates (webhook не
+  // нужен), крон опрашивает раз в 5 минут. Смещение сохраняется до обработки:
+  // команда не выполнится дважды, даже если выгрузка упадёт.
+  async pollErrorCommands() {
+    if (!this.env.BOT_TOKEN || !this.env.CHAT_ID) return { ok: false, reason: 'not configured' };
+    try {
+      const offset = (await this.state.storage.get('tg:offset')) || 0;
+      const response = await fetch(`https://api.telegram.org/bot${this.env.BOT_TOKEN}/getUpdates`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ offset, timeout: 0, limit: 50, allowed_updates: ['message'] }),
+        signal: AbortSignal.timeout(10000),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.ok || !Array.isArray(result.result)) return { ok: false, status: response.status };
+      let handled = 0;
+      for (const update of result.result) {
+        await this.state.storage.put('tg:offset', update.update_id + 1);
+        if (await this.handleErrorCommand(update.message)) handled++;
+      }
+      return { ok: true, updates: result.result.length, handled };
+    } catch (error) {
+      console.error('Telegram command poll failed', error?.name || 'unknown');
+      return { ok: false, reason: 'poll failed' };
+    }
+  }
+  async handleErrorCommand(message) {
+    const mode = parseExportCommand(message?.text);
+    if (!mode || String(message.chat?.id) !== telegramChatId(this.env)) return false;
+    const now = Date.now();
+    if (now - Number(message.date || 0) * 1000 > EXPORT_COMMAND_MAX_AGE_MS) return false;
+    const errorsThread = await getTopicThreadId(this.env, 'errors');
+    const replyThread = message.message_thread_id;
+    if (mode === 'help' || !errorsThread || Number(replyThread) !== errorsThread) {
+      const text = mode === 'help'
+        ? 'Выгрузка журнала ошибок:\n/export_day — за последние сутки\n/export_all — за всё время работы журнала (раньше записей нет)\nКоманды работают в подчате «Ошибки и падения».'
+        : 'Выгрузка работает в подчате «Ошибки и падения».';
+      await this.sendBotMessage(replyThread, text);
+      return true;
+    }
+    const records = await this.readErrorLog(exportStart(mode, now));
+    if (!records.length) {
+      await this.sendBotMessage(errorsThread, mode === 'day'
+        ? 'За последние сутки записей об ошибках нет.'
+        : 'Записей об ошибках пока нет.');
+      return true;
+    }
+    const first = records.reduce((min, record) => Math.min(min, record.ts), Infinity);
+    const label = mode === 'day' ? 'за последние сутки' : 'за всё время';
+    const caption = `Журнал ошибок ${label}: записей ${records.length}.` + (mode === 'all' ? ` Самая ранняя запись: ${mskStamp(first).slice(0, 10)}.` : '');
+    const fileName = `pdd-errors-${mode === 'day' ? 'sutki' : 'vse'}-${new Date(now + 3 * 3600000).toISOString().slice(0, 10)}.csv`;
+    await this.sendBotDocument(errorsThread, fileName, buildErrorCsv(records.sort((a, b) => a.ts - b.ts)), caption);
+    return true;
+  }
+  // Записи читаются страницами: за всё время их может накопиться много.
+  async readErrorLog(since) {
+    const records = [];
+    let start = ERROR_LOG_PREFIX + String(since).padStart(15, '0');
+    for (;;) {
+      const page = await this.state.storage.list({ prefix: ERROR_LOG_PREFIX, start, limit: 1000 });
+      if (!page.size) break;
+      for (const value of page.values()) records.push(value);
+      start = [...page.keys()].pop() + '\u0000';
+    }
+    return records;
+  }
+  async sendBotMessage(threadId, text) {
+    const payload = { chat_id: telegramChatId(this.env), text, disable_web_page_preview: true };
+    if (threadId) payload.message_thread_id = Number(threadId);
+    await fetch(`https://api.telegram.org/bot${this.env.BOT_TOKEN}/sendMessage`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload), signal: AbortSignal.timeout(10000),
+    });
+  }
+  async sendBotDocument(threadId, fileName, csv, caption) {
+    const body = new FormData();
+    body.set('chat_id', telegramChatId(this.env));
+    body.set('message_thread_id', String(threadId));
+    body.set('caption', caption);
+    body.set('document', new Blob([csv], { type: 'text/csv' }), fileName);
+    const response = await fetch(`https://api.telegram.org/bot${this.env.BOT_TOKEN}/sendDocument`, {
+      method: 'POST', body, signal: AbortSignal.timeout(30000),
+    });
+    if (!response.ok) console.error('Error export upload failed', response.status);
   }
   alarm() {
     return this.serial(async () => {

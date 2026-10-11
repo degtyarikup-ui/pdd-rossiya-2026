@@ -12,7 +12,7 @@ import { renderDailyChart, pngBase64 } from './daily_chart.js';
 import { getAdsConfig, filterAdsForClient } from './ads_config.js';
 export { TrafficState } from './traffic_state.js';
 export { TelegramQueue, resolveTopicThreadId, getTopicThreadId, telegramChatId } from './telegram_queue.js';
-import { resolveTopicThreadId, telegramChatId } from './telegram_queue.js';
+import { pollErrorCommands, resolveTopicThreadId, telegramChatId } from './telegram_queue.js';
 import { trafficRequest } from './traffic_state.js';
 import { closeFinishedGameWeeks, bestGameRank, deleteGameBest } from './game_weeks.js';
 export { PurchaseClaims } from './purchase_claims.js';
@@ -4312,6 +4312,10 @@ export default {
   async scheduled(event, env, ctx) {
     const notify = error => deferIncident(ctx, env, { category: 'infrastructure', operation: 'cron.' + (event.cron === HOURLY_CRON ? 'maintenance' : event.cron === WEEKLY_CRON ? 'game_week' : 'daily_report'), code: errorCode(error) });
     const guardedContext = { waitUntil: task => ctx.waitUntil(Promise.resolve(task).catch(notify)) };
+    // Команды выгрузки журнала ошибок из Telegram (/export_day, /export_all).
+    ctx.waitUntil(pollErrorCommands(env)
+      .then(result => { if (result && !result.ok) console.error('Command poll failed', result.status || result.reason); })
+      .catch(error => console.error('Command poll unavailable', errorCode(error))));
     try { await workerHandlers.scheduled(event, env, guardedContext); }
     catch (error) { await notify(error); }
   },
