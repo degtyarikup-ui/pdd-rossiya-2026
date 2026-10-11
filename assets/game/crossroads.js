@@ -1986,10 +1986,9 @@
     updateCameraPosition();
   }
 
-  // Тап по машине или метке. Если палец чуть промахнулся — берём ближайшую
   // Тап по машине или метке. Экранный радиус доводки ~100 px от точки касания.
   function onTap(event) {
-    if (activeCollision || !currentScenario) return;
+    if (activeCollision || isResolving || !currentScenario) return;
     const rect = renderer.domElement.getBoundingClientRect();
     const clientX = event.clientX - rect.left;
     const clientY = event.clientY - rect.top;
