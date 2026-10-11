@@ -45,6 +45,9 @@ class GodotGame {
   static const _vehicleKey = 'game_vehicle';
   static const _paintKey = 'game_vehicle_paint';
   static const _seenModelsKey = 'game_seen_models';
+  // The same keys as the WebView game (game_screen.dart): the tips and the first-drive gas hint.
+  static const _tipsSeenKey = 'game_tips_seen';
+  static const _firstRunSeenKey = 'game_seen';
   static Future<bool>? _available;
   static bool _running = false;
 
@@ -133,6 +136,7 @@ class GodotGame {
       'cars': cars,
       'selected': {'id': selectedId, 'paint': selectedPaint},
       'record': prefs?.getInt(_bestScoreKey) ?? 0,
+      'tips': !(prefs?.containsKey(_tipsSeenKey) ?? false),
       'can_start': unlimited || runs > 0,
       'texts': {
         'start': appL10n.gameLobbyStart,
@@ -179,6 +183,9 @@ class GodotGame {
     final car = summary['car'];
     if (car is Map && car['id'] is String && car['paint'] is String) {
       await _saveVehicle(car['id'] as String, car['paint'] as String);
+    }
+    if (summary['tips_seen'] == true) {
+      await _rememberTips();
     }
     if (!started) return;
 
@@ -233,6 +240,16 @@ class GodotGame {
       await prefs.setString(_paintKey, paint);
     } catch (_) {
       /* The car is kept for the next garage visit; a failed save is not a game error. */
+    }
+  }
+
+  static Future<void> _rememberTips() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_tipsSeenKey, true);
+      await prefs.setBool(_firstRunSeenKey, true);
+    } catch (_) {
+      /* The tips come back next time: harmless. */
     }
   }
 

@@ -11,10 +11,13 @@ signal continue_pressed
 signal pause_pressed
 signal exit_pressed
 signal resume_pressed
+signal tip_next
 
 var snow := false                 # winter: HUD numbers are dark on the light snow
 
 var _root: Control
+var _tip: PanelContainer           # the first-drive tips card (three steps)
+var _gas_hint: PanelContainer      # «Зажмите и держите — это газ» beside the gas pedal
 var _top := 0.0
 var _bottom := 0.0
 var _limit: Control
@@ -212,6 +215,89 @@ func set_hud_visible(on: bool) -> void:
 		_notice.visible = false
 
 
+# --- first-drive tips (game.js tips; the app remembers that they were seen) ----------
+
+## One step of the tips card at the top: the text, the dots, «Дальше» / «Поехали».
+func show_tip(text: String, step: int, last: bool) -> void:
+	if _tip == null:
+		_tip = PanelContainer.new()
+		_tip.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 20))
+		_tip.mouse_filter = Control.MOUSE_FILTER_STOP
+		_tip.set_anchors_preset(Control.PRESET_TOP_WIDE)
+		_tip.offset_left = 16.0
+		_tip.offset_right = -16.0
+		_tip.offset_top = _top + 84.0
+		_root.add_child(_tip)
+	for child in _tip.get_children():
+		child.queue_free()
+	var m := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		m.add_theme_constant_override("margin_" + side, 14 if side in ["left", "top"] else 10)
+	_tip.add_child(m)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	m.add_child(box)
+	box.add_child(Ui.label(text, 15, 500, Ui.c("text"), true))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	box.add_child(row)
+	for i in 3:
+		var dot := ColorRect.new()
+		dot.custom_minimum_size = Vector2(7, 7)
+		dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		dot.color = Ui.c("accent") if i == step else Ui.c("divider")
+		row.add_child(dot)
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(spacer)
+	var button := PanelContainer.new()
+	button.add_theme_stylebox_override("panel", Ui.box(Ui.c("accent"), 10))
+	var bl := Ui.label(Ui.t("gameTipDone") if last else Ui.t("gameTipNext"), 14, 700, Color.WHITE)
+	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var bm := MarginContainer.new()
+	bm.add_theme_constant_override("margin_left", 14)
+	bm.add_theme_constant_override("margin_right", 14)
+	bm.add_theme_constant_override("margin_top", 6)
+	bm.add_theme_constant_override("margin_bottom", 6)
+	button.add_child(bm)
+	bm.add_child(bl)
+	_tap(button, func(): tip_next.emit())
+	row.add_child(button)
+	_tip.visible = true
+
+
+func hide_tip() -> void:
+	if _tip != null:
+		_tip.visible = false
+
+
+## The gas hint beside the pedal (the brake sits above the gas pedal).
+func show_gas_hint(text: String) -> void:
+	if _gas_hint == null:
+		_gas_hint = PanelContainer.new()
+		_gas_hint.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 12))
+		_gas_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_gas_hint.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		_gas_hint.offset_right = -130.0
+		_gas_hint.offset_left = -330.0
+		_gas_hint.offset_bottom = -(_bottom + 150.0)
+		_gas_hint.offset_top = _gas_hint.offset_bottom - 46.0
+		_root.add_child(_gas_hint)
+		var m := MarginContainer.new()
+		m.add_theme_constant_override("margin_left", 12)
+		m.add_theme_constant_override("margin_right", 12)
+		m.add_theme_constant_override("margin_top", 8)
+		m.add_theme_constant_override("margin_bottom", 8)
+		_gas_hint.add_child(m)
+		m.add_child(Ui.label(text, 13, 600, Ui.c("text")))
+	_gas_hint.visible = true
+
+
+func hide_gas_hint() -> void:
+	if _gas_hint != null:
+		_gas_hint.visible = false
+
+
 # --- question card ---------------------------------------------------------------
 
 func _tap(node: Control, fn: Callable) -> void:
@@ -281,7 +367,7 @@ func _ticket_chip(text: String, scene_id := "") -> PanelContainer:
 	m.add_theme_constant_override("margin_bottom", 4)
 	p.add_child(m)
 	var has_picture := scene_id != "" and _picture_of(scene_id) != ""
-	m.add_child(Ui.label(text + ("  ▸ билет" if has_picture else ""), 12, 600, Ui.c("accent") if has_picture else Ui.c("secondary")))
+	m.add_child(Ui.label(text + ("  ▸ " + Ui.t("ticket") if has_picture else ""), 12, 600, Ui.c("accent") if has_picture else Ui.c("secondary")))
 	if has_picture:
 		# Tapping the chip shows the original ticket picture the scene was made from.
 		p.mouse_filter = Control.MOUSE_FILTER_STOP

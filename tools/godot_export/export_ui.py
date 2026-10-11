@@ -13,6 +13,7 @@ KEYS = [
     'gameOffroad', 'gamePriorityViolation', 'gameSpeeding', 'gameOvertakingProhibited', 'gamePedestrianYield',
     'gameRailwayViolation', 'gameStopViolation', 'gameRedLightViolation', 'gameWrongManeuver', 'gameLeft',
     'gameRight', 'gameGas', 'gameOver', 'gameCorrectAnswers', 'gameAnswersOf', 'gameNoViolations', 'gameScore', 'gameBrake', 'gameGasHint', 'gameResolving', 'gameExit', 'gameLobbyContinue',
+    'ticket', 'gameTipGas', 'gameTipSteer', 'gameTipTurn', 'gameTipNext', 'gameTipDone',
 ]
 out = {}
 for lang in ('ru', 'en', 'kk'):

@@ -102,6 +102,12 @@ var lobby_mode := false
 var lobby_turn := 0.0             # the car's turn on the stand (radians)
 var run_started := false          # a run began (the app charges one run then)
 var chosen := {}                  # { id, paint } of the car the player drove, for the app
+var tips_enabled := false         # the app's garage says the first-drive tips are not seen yet
+var tip_step := -1                # 0..2 the tips card on the screen; -1 none
+var tip_drawn := -1               # the step shown on the card now
+var tips_seen := false            # the player went through the tips (the app remembers it)
+var gas_hint_on := false          # «Зажмите и держите — это газ» until the first press
+const TIP_KEYS := ["gameTipGas", "gameTipSteer", "gameTipTurn"]
 
 
 func _ready() -> void:
@@ -146,10 +152,13 @@ func _ready() -> void:
 	ui.pause_pressed.connect(_on_pause)
 	ui.resume_pressed.connect(_on_resume)
 	ui.exit_pressed.connect(_on_exit)
+	ui.tip_next.connect(_on_tip_next)
 	# Android «back» opens the pause instead of closing the app's game screen at once.
 	get_tree().quit_on_go_back = false
 	hud = PerfHud.new()
 	add_child(hud)
+	# Shown in debug builds and with --perf only: the players do not see the counters.
+	hud.visible = OS.is_debug_build() or _has_arg("--perf")
 	hud.tier_changed.connect(_apply_tier)
 	controls.pressed.connect(hud.mark_input)
 	_apply_tier(Quality.classify(RenderingServer.get_video_adapter_name()))
@@ -1198,6 +1207,7 @@ func _open_lobby() -> void:
 	lobby.changed.connect(_on_lobby_changed)
 	lobby.start_requested.connect(_on_lobby_start)
 	lobby.spin.connect(_on_lobby_spin)
+	tips_enabled = bool(garage.get("tips", false))
 	lobby_mode = true
 	paused = true
 	controls.set_active(false)
@@ -1243,6 +1253,8 @@ func _on_lobby_start(id: String, paint: String, hex: String) -> void:
 	paused = false
 	cam_ready = false
 	player.rotation.y = drive.yaw
+	tip_step = 0 if tips_enabled else -1
+	tip_drawn = -1
 
 
 func _set_street_objects(on: bool) -> void:
@@ -1264,13 +1276,43 @@ func _exit_summary() -> Dictionary:
 	var out := run.summary()
 	out["run_started"] = run_started
 	out["car"] = chosen
+	out["tips_seen"] = tips_seen
 	return out
+
+
+## The first-drive tips: the card while driving (hidden under a question or a pause),
+## then the gas hint until the gas is pressed once.
+func _tips_frame() -> void:
+	if gas_hint_on and controls.gas:
+		gas_hint_on = false
+		ui.hide_gas_hint()
+	if tip_step < 0:
+		return
+	if phase != "driving" or paused:
+		ui.hide_tip()
+		tip_drawn = -1
+		return
+	if tip_drawn != tip_step:
+		ui.show_tip(Ui.t(TIP_KEYS[tip_step]), tip_step, tip_step == TIP_KEYS.size() - 1)
+		tip_drawn = tip_step
+
+
+func _on_tip_next() -> void:
+	tip_step += 1
+	tip_drawn = -1
+	if tip_step >= TIP_KEYS.size():
+		tip_step = -1
+		ui.hide_tip()
+		tips_seen = true
+		gas_hint_on = true
+		ui.show_gas_hint(Ui.t("gameGasHint"))
 
 
 func _process(delta: float) -> void:
 	if lobby_mode:
 		_lobby_frame(delta)
 		return
+	_tips_frame()
 	if paused:
 		return
 	delta = minf(delta, 0.05)

@@ -38,7 +38,13 @@
   "gameGasHint": "Зажмите и держите — это газ",
   "gameResolving": "Газ — ехать · стрелки — рулить",
   "gameExit": "Выйти",
-  "gameLobbyContinue": "Продолжить заезд"
+  "gameLobbyContinue": "Продолжить заезд",
+  "ticket": "билет",
+  "gameTipGas": "Держи педаль газа — машина едет. Отпусти — плавно остановится",
+  "gameTipSteer": "Держи стрелку — машина поворачивает. Отпустишь — сама выровняется в полосе",
+  "gameTipTurn": "На перекрёстке держи стрелку, пока машина поворачивает, затем отпусти — она выровняется сама",
+  "gameTipNext": "Дальше",
+  "gameTipDone": "Поехали"
  },
  "en": {
   "gameSeconds": "s",
@@ -79,7 +85,13 @@
   "gameGasHint": "Press and hold - this is gas",
   "gameResolving": "Gas - drive · arrows - steer",
   "gameExit": "Exit",
-  "gameLobbyContinue": "Continue race"
+  "gameLobbyContinue": "Continue race",
+  "ticket": "ticket",
+  "gameTipGas": "Hold the gas pedal - the car drives. Let go -",
+  "gameTipSteer": "will stop smoothly. Hold the arrow - the car turns. If you let go, it will align itself in the lane",
+  "gameTipTurn": "At the intersection, hold the arrow while the car turns, then let go - it will straighten itself",
+  "gameTipNext": "Next",
+  "gameTipDone": "Let's go"
  },
  "kk": {
   "gameSeconds": "с",
@@ -120,6 +132,12 @@
   "gameGasHint": "Басып ұстап тұрыңыз - бұл газ",
   "gameResolving": "Газ — жүру · көрсеткілер — бұру",
   "gameExit": "Шығу",
-  "gameLobbyContinue": "Жүруді жалғастырыңыз"
+  "gameLobbyContinue": "Жүруді жалғастырыңыз",
+  "ticket": "билет",
+  "gameTipGas": "Газ педальын ұстаңыз - машина қозғалады. Жіберіңіз - ол біркелкі тоқтайды",
+  "gameTipSteer": "Көрсеткіні ұстаңыз - машина айналады. Егер сіз жіберсеңіз, ол жолақпен тураланады",
+  "gameTipTurn": "Қиылыста көлік бұрылып жатқанда көрсеткіні ұстаңыз, содан кейін жіберіңіз - ол өздігінен түзетіледі",
+  "gameTipNext": "Келесі",
+  "gameTipDone": "кеттік"
  }
 }
