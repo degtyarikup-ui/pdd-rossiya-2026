@@ -72,6 +72,15 @@
       <span class="scale"><i id="scale-bar"></i><b id="scale-text">10 м</b><em id="zoom-text"></em></span>
     </div>
 
+    <aside id="legend" class="legend collapsed" aria-label="Что означают линии">
+      <b id="legend-head">Что значат линии</b>
+      <div><i class="sw" style="--c:#2f6fed"></i>Выезд: манёвр. Жирная — правильный по условию</div>
+      <div><i class="sw" style="--c:#e0533d"></i>А <i class="sw" style="--c:#8b5cf6"></i>Б <i class="sw" style="--c:#0891b2"></i>В — варианты ответа</div>
+      <div><i class="sw" style="--c:#16a34a"></i>Подъезд к стоп-линии</div>
+      <div><i class="sw dash" style="--c:#e09a2a"></i>Путь участника (машины, пешехода)</div>
+      <small>Наведите на линию, и остальные станут бледными</small>
+    </aside>
+
     <div id="empty" class="empty">
       <div>
         <h2>Выберите сцену слева</h2>
@@ -114,6 +123,11 @@
 
 <script src="/static/vendor/three.min.js"></script>
 <script src="/static/vendor/GLTFLoader.js"></script>
+<script src="/static/vendor/LineSegmentsGeometry.js"></script>
+<script src="/static/vendor/LineGeometry.js"></script>
+<script src="/static/vendor/LineMaterial.js"></script>
+<script src="/static/vendor/LineSegments2.js"></script>
+<script src="/static/vendor/Line2.js"></script>
 <script src="/static/scene3d.js"></script>
 <script src="/static/ui.js"></script>
 </body>

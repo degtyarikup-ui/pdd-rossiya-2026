@@ -151,7 +151,12 @@ const TOKEN_BLUE := Color("#0574F8")
 
 
 func _build_evidence(dir: String) -> void:
-	if FileAccess.file_exists(dir + "guide.glb"):
+	# The question's route lines come from the network's trajectories (what the editor shows);
+	# guide.glb is only the fallback for a scene without them.
+	if data.trajectories is Array and not data.trajectories.is_empty():
+		_guide = _trajectory_guide()
+		add_child(_guide)
+	elif FileAccess.file_exists(dir + "guide.glb"):
 		_guide = (load(dir + "guide.glb") as PackedScene).instantiate()
 		for mi in _guide.find_children("*", "MeshInstance3D", true, false):
 			var mat := StandardMaterial3D.new()
@@ -166,10 +171,74 @@ func _build_evidence(dir: String) -> void:
 			(mi as MeshInstance3D).position.y = 0.12
 		add_child(_guide)
 	for l in data.labels:
-		var token := _letter_node(l.letter)
+		var token := _letter_node(l.letter, letter_colour(str(l.letter)))
 		token.position = _v(l.pos)
 		add_child(token)
 		_evidence.append(token)
+
+
+## One colour per answer letter: the route line, its arrow and the letter on the road match.
+const LETTER_COLOUR := { "А": "#E0533D", "Б": "#8B5CF6", "В": "#0891B2", "Г": "#D98E04", "Д": "#16A34A" }
+const GUIDE_WIDTH := 0.5      # metres: a thin line, the route can be followed by eye
+const GUIDE_LIFT := 0.12
+
+
+static func letter_colour(letter: String) -> Color:
+	return Color(LETTER_COLOUR.get(letter, "#0574F8"))
+
+
+func _trajectory_guide() -> Node3D:
+	var root := Node3D.new()
+	for tr in data.trajectories:
+		var pts: Array = tr.points
+		if pts.size() < 2:
+			continue
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		for i in pts.size() - 1:
+			_ribbon_segment(st, _p2(pts[i]), _p2(pts[i + 1]))
+		_arrowhead(st, _p2(pts[pts.size() - 2]), _p2(pts[pts.size() - 1]))
+		var mi := MeshInstance3D.new()
+		mi.mesh = st.commit()
+		mi.material_override = _guide_material(letter_colour(str(tr.label)))
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(mi)
+	return root
+
+
+static func _p2(a: Array) -> Vector2:
+	return Vector2(float(a[0]), float(a[1]))
+
+
+static func _ribbon_segment(st: SurfaceTool, a: Vector2, b: Vector2) -> void:
+	var d := (b - a).normalized()
+	var n := Vector2(-d.y, d.x) * (GUIDE_WIDTH * 0.5)
+	var pa0 := Vector3(a.x + n.x, GUIDE_LIFT, a.y + n.y)
+	var pa1 := Vector3(a.x - n.x, GUIDE_LIFT, a.y - n.y)
+	var pb0 := Vector3(b.x + n.x, GUIDE_LIFT, b.y + n.y)
+	var pb1 := Vector3(b.x - n.x, GUIDE_LIFT, b.y - n.y)
+	for v in [pa0, pa1, pb0, pa1, pb1, pb0]:
+		st.add_vertex(v)
+
+
+## The arrow at the end of a route: a triangle pointing along the last segment.
+static func _arrowhead(st: SurfaceTool, prev: Vector2, tip: Vector2) -> void:
+	var d := (tip - prev).normalized()
+	var n := Vector2(-d.y, d.x)
+	var base := tip - d * 1.6
+	var w := n * 0.9
+	st.add_vertex(Vector3(tip.x, GUIDE_LIFT, tip.y))
+	st.add_vertex(Vector3(base.x + w.x, GUIDE_LIFT, base.y + w.y))
+	st.add_vertex(Vector3(base.x - w.x, GUIDE_LIFT, base.y - w.y))
+
+
+static func _guide_material(colour: Color) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(colour.r, colour.g, colour.b, 0.9)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return mat
 
 
 func set_evidence_visible(on: bool) -> void:
@@ -255,7 +324,7 @@ static func _badge_node(text: String, color: Color) -> Node3D:
 ## createLetterToken: a white disc with a blue letter and a soft shadow. Drawn
 ## on top of the route ribbons (the game draws them without a depth test), the
 ## letter above its disc.
-static func _letter_node(letter: String) -> Node3D:
+static func _letter_node(letter: String, colour := TOKEN_BLUE) -> Node3D:
 	var root := Node3D.new()
 	var shadow := _billboard(_plate(Color(0, 0, 0, 0.28), Vector2i(96, 96), 40, true), Vector2(2.2, 2.2))
 	shadow.position = Vector3(0, -0.06, 0)
@@ -264,7 +333,7 @@ static func _letter_node(letter: String) -> Node3D:
 	var disc := _billboard(_plate(Color.WHITE, Vector2i(96, 96), 40, true), Vector2(2.2, 2.2))
 	_on_top(disc, 2)
 	root.add_child(disc)
-	var label := _text3d(letter, 50, TOKEN_BLUE, 800)
+	var label := _text3d(letter, 50, colour, 800)
 	label.pixel_size = 2.2 / 96.0
 	_on_top(label, 3)
 	root.add_child(label)

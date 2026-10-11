@@ -34,14 +34,21 @@ PAVEMENT = "#747970"
 KERB_COLOUR = "#b9b4ab"
 
 
+def crop_box(scene: dict) -> Polygon:
+    """The square the junction is drawn in: beyond it the game's own street goes on (street.gd)."""
+    c = float(scene.get("crop", 90.0))
+    return Polygon([(-c, -c), (c, -c), (c, c), (-c, c)])
+
+
 def road_geometry(scene: dict):
-    """(road without islands, islands) as shapely geometry."""
+    """(road without islands, islands) as shapely geometry, inside the crop square."""
     filled, holes = [], []
     for r in scene.get("roads", []):
         filled.append(Polygon(r["outer"]).buffer(0))
         for h in r.get("holes", []):
             holes.append(Polygon(h).buffer(0))
-    road = unary_union(filled) if filled else Polygon()
+    box = crop_box(scene)
+    road = (unary_union(filled) if filled else Polygon()).intersection(box)
     islands = unary_union(holes).intersection(road) if holes else Polygon()
     return road.difference(islands), islands
 
@@ -71,8 +78,17 @@ def triangulate(geom):
     return flat, result["triangles"].ravel().tolist()
 
 
-def walls(geom):
-    """Flat [x0, z0, x1, z1, ...] pairs for every boundary edge of the road."""
+def on_crop_edge(a, b, c: float, tol: float = 1e-3) -> bool:
+    """Both ends lie on the same side of the crop square: the cut through the road, not a kerb."""
+    for axis in (0, 1):
+        for side in (-c, c):
+            if abs(a[axis] - side) < tol and abs(b[axis] - side) < tol:
+                return True
+    return False
+
+
+def walls(geom, crop: float = 90.0):
+    """Flat [x0, z0, x1, z1, ...] pairs for every kerb edge of the road (not the cut at the crop edge)."""
     out = []
     parts = list(geom.geoms) if hasattr(geom, "geoms") else [geom]
     for p in parts:
@@ -81,15 +97,19 @@ def walls(geom):
         for ring in [p.exterior, *p.interiors]:
             c = list(ring.coords)
             for a, b in zip(c[:-1], c[1:]):
+                if on_crop_edge(a, b, crop):
+                    continue
                 out.extend([round(a[0], 3), round(a[1], 3), round(b[0], 3), round(b[1], 3)])
     return out
 
 
 def build(scene: dict) -> dict:
     road, islands = road_geometry(scene)
+    # The pavement ring is cut at the crop square too: past it the street's own pavement goes on,
+    # and a ring that ran on would stand across the carriageway there.
     pavement = unary_union(
         [Polygon(r["outer"]).buffer(0) for r in scene.get("roads", [])]
-    ).buffer(SIDEWALK, quad_segs=8).difference(road.union(islands))
+    ).buffer(SIDEWALK, quad_segs=8).difference(road.union(islands)).intersection(crop_box(scene))
     v, t = triangulate(road)
     asphalt = {"id": "asphalt", "y": ROAD_Y, "layer": "asphalt", "colour": ASPHALT, "verts": v, "idx": t}
     v, t = triangulate(islands)
@@ -99,7 +119,7 @@ def build(scene: dict) -> dict:
     return {
         "id": scene["id"],
         "surfaces": [asphalt, island, pave],
-        "kerbs": {"y0": ROAD_Y, "y1": KERB, "colour": KERB_COLOUR, "segs": walls(road)},
+        "kerbs": {"y0": ROAD_Y, "y1": KERB, "colour": KERB_COLOUR, "segs": walls(road, float(scene.get("crop", 90.0)))},
     }
 
 

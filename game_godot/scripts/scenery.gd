@@ -4,6 +4,12 @@
 class_name Scenery
 extends RefCounted
 
+## How much the detail map shows, per kind. The painted maps vary by only about 3 %, which
+## reads as flat colour on a phone: the road and the ground get a clearly visible grain.
+const GAIN := { "asphalt": 4.0, "pavement": 3.5, "grass": 3.0, "gravel": 2.5, "ballast": 2.5, "sleeper": 2.5,
+	"leaves": 2.0, "plaster": 2.0, "brick": 1.8, "wood": 1.8, "bark": 1.8, "deck": 1.8, "roofTile": 1.8,
+	"roofFlat": 1.5, "metal": 1.5 }
+
 var index: Dictionary
 var layers: Array = []            # kind names, layer i -> kind
 var kinds := {}                   # kind -> params (period, macro ...)
@@ -17,9 +23,11 @@ func _init(season_name: String) -> void:
 	var images: Array[Image] = []
 	var macro := PackedFloat32Array()
 	var macro_scale := PackedFloat32Array()
+	var gains := PackedFloat32Array()
 	for t in index.textures:
 		layers.append(t.kind)
 		kinds[t.kind] = t
+		gains.append(GAIN.get(t.kind, 1.0))
 		var img: Image = (load("res://textures/detail/%s.png" % t.kind) as Texture2D).get_image()
 		if img.is_compressed():
 			img.decompress()
@@ -31,6 +39,7 @@ func _init(season_name: String) -> void:
 	while macro.size() < 24:
 		macro.append(0.0)
 		macro_scale.append(1.0)
+		gains.append(1.0)
 	var array := Texture2DArray.new()
 	array.create_from_images(images)
 	material = ShaderMaterial.new()
@@ -38,6 +47,7 @@ func _init(season_name: String) -> void:
 	material.set_shader_parameter("detail", array)
 	material.set_shader_parameter("macro", macro)
 	material.set_shader_parameter("macro_scale", macro_scale)
+	material.set_shader_parameter("gain", gains)
 
 
 func layer_of(kind: String) -> int:

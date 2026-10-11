@@ -35,6 +35,7 @@ ASSET_RULES = [
     (re.compile(r"^scene/([a-z0-9_]+)/((scene|actor_\d+|light_\d+)\.glb)$"), lambda m: SIT / m[1] / m[2]),
     (re.compile(r"^scenery/([a-z0-9_/]+)\.glb$"), lambda m: GAME / "scenery" / f"{m[1]}.glb"),
     (re.compile(r"^models/([a-z0-9_/]+)\.glb$"), lambda m: GAME / "models" / f"{m[1]}.glb"),
+    (re.compile(r"^texture/([a-z]+)\.png$"), lambda m: GAME / "textures" / "detail" / f"{m[1]}.png"),
 ]
 
 

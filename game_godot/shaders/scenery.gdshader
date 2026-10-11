@@ -15,6 +15,7 @@ render_mode diffuse_lambert, specular_disabled, cull_disabled;
 uniform sampler2DArray detail : repeat_enable, filter_linear_mipmap;
 uniform float macro[24];
 uniform float macro_scale[24];
+uniform float gain[24];               // contrast of the detail per kind: the maps are very quiet (about +-3 %)
 uniform vec3 plain_tint = vec3(1.0);   // tint of a non-instanced mesh (roads)
 uniform vec3 snow_color = vec3(0.78, 0.82, 0.85);  // sRGB, like COLOR
 
@@ -37,8 +38,9 @@ void fragment() {
 	if (layer >= 0) {
 		float side = step(0.5, UV2.y);
 		vec4 d = texture(detail, vec3(UV, float(layer)));
-		float fine = mix(d.r, d.b, side);
-		float large = mix(texture(detail, vec3(UV * macro_scale[layer] + vec2(0.31, 0.17), float(layer))).g, 0.5, side);
+		float g = gain[layer];
+		float fine = 0.5 + (mix(d.r, d.b, side) - 0.5) * g;
+		float large = 0.5 + (mix(texture(detail, vec3(UV * macro_scale[layer] + vec2(0.31, 0.17), float(layer))).g, 0.5, side) - 0.5) * g;
 		base *= fine * 2.0 * (1.0 + (large * 2.0 - 1.0) * macro[layer]);
 	}
 	// As-is, no sRGB decode: the WebView game (three.js r128) renders without

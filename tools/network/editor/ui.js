@@ -440,7 +440,9 @@ const Ed = (() => {
       const owner = drag.owner;
       const target = owner.t === "route" ? routeOf(owner.id)?.points : ringOf(owner);
       if (!target) return;
-      target[drag.index] = pt;
+      // A displayed offset is not stored: the point follows the pointer, minus that offset.
+      const off = owner.t === "route" ? Scene3D.routeOffset(routeOf(owner.id), drag.index) : [0, 0];
+      target[drag.index] = [pt[0] - off[0], pt[1] - off[1]];
       drag.moved = true;
       Scene3D.refresh(S);
       Scene3D.setSelection(sel);
@@ -1074,6 +1076,7 @@ const Ed = (() => {
     $("#save").onclick = save;
     $("#help").onclick = () => $("#help-dialog").hidden = false;
     $("#help-dialog").addEventListener("click", (e) => { if (e.target.id === "help-dialog" || e.target.dataset.close !== undefined) $("#help-dialog").hidden = true; });
+    $("#legend-head").onclick = () => $("#legend").classList.toggle("collapsed");
     $("#zin").onclick = () => Scene3D.zoomBy(1.25);
     $("#zout").onclick = () => Scene3D.zoomBy(0.8);
     $("#zfit").onclick = () => Scene3D.fit();

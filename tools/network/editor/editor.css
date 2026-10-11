@@ -547,3 +547,28 @@ details summary { cursor: pointer; color: var(--accent); font-size: 12px; }
 @media (max-width: 1280px) {
   .app { grid-template-columns: 240px 1fr 300px; }
 }
+
+/* Legend of the route lines: what each colour means. */
+.legend {
+  position: absolute;
+  right: 14px;
+  bottom: 54px;
+  max-width: 300px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, .96);
+  border-radius: 11px;
+  box-shadow: var(--shadow), 0 6px 18px rgba(16, 24, 40, .1);
+  font-size: 12px;
+  color: var(--ink-2);
+  line-height: 1.35;
+}
+.legend b { display: block; margin-bottom: 6px; color: var(--ink); font-size: 12px; cursor: pointer; user-select: none; }
+.legend b::after { content: "  ▾"; color: var(--muted); }
+.legend.collapsed b { margin-bottom: 0; }
+.legend.collapsed b::after { content: "  ▸"; }
+.legend.collapsed > div, .legend.collapsed > small { display: none; }
+.legend div { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+.legend small { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; }
+.legend .sw { display: inline-block; width: 14px; height: 4px; border-radius: 2px; background: var(--c); flex: none; }
+.legend .sw.dash { background: repeating-linear-gradient(90deg, var(--c) 0 4px, transparent 4px 7px); height: 3px; }
+.legend .sw + .sw { margin-left: -2px; }

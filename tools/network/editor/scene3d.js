@@ -12,7 +12,7 @@ const Scene3D = (() => {
   const TYPE_COLOUR = { car: 0x4a7fd6, truck: 0xd98b3a, bus: 0xe8c44a, tram: 0xc94a4a, pedestrian: 0x8e5fc9,
     cyclist: 0x3ea37a, motorcycle: 0x2b2f36, special: 0xf0f0f0, van: 0x7c8a99, tanker: 0x6a7c4a, cart: 0x9a7b4f };
 
-  let container, renderer, scene, camera, labelsEl;
+  let container, renderer, scene, camera, labelsEl, ground = null;
   let mode = "plan";                       // "plan" (top-down, orthographic) or "3d" (orbit)
   let pxPerM = 6, target = new THREE.Vector3(0, 0, 0), orbitYaw = 0, orbitPitch = 0.9, orbitDist = 260;
   let width = 1, height = 1, needsRender = true, frame = 0;
@@ -116,24 +116,79 @@ const Scene3D = (() => {
 
   // ---- model -------------------------------------------------------------------------
 
+  // Detail maps of the game (game_godot/textures/detail): their red channel is the fine grain,
+  // read as a grey map, with the same contrast the game uses (scenery.gd GAIN).
+  const DETAIL = { asphalt: { period: 6.4, gain: 4 }, pavement: { period: 5.6, gain: 3.5 }, grass: { period: 4.8, gain: 3 } };
+  const detailMaps = {};
+  let detailLoaded = false;
+  function loadDetail() {
+    const kinds = Object.keys(DETAIL);
+    Promise.all(kinds.map((kind) => new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement("canvas");
+        c.width = img.width; c.height = img.height;
+        const x = c.getContext("2d");
+        x.drawImage(img, 0, 0);
+        const data = x.getImageData(0, 0, c.width, c.height);
+        for (let i = 0; i < data.data.length; i += 4) {
+          const v = Math.max(0, Math.min(1, 0.5 + (data.data[i] / 255 - 0.5) * DETAIL[kind].gain));
+          data.data[i] = data.data[i + 1] = data.data[i + 2] = Math.round(v * 255);
+        }
+        x.putImageData(data, 0, 0);
+        const tex = new THREE.CanvasTexture(c);
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        tex.anisotropy = 8;
+        detailMaps[kind] = tex;
+        resolve();
+      };
+      img.onerror = resolve;
+      img.src = `/asset/texture/${kind}.png`;
+    }))).then(() => {
+      detailLoaded = true;
+      if (model) { rebuildRoads(); rebuildGround(); needsRender = true; }
+    });
+  }
+
+  // A surface's colour multiplied by its detail map (the map averages to 0.5, hence x2).
+  function surfaceMaterial(kind, colour) {
+    const c = new THREE.Color(colour).multiplyScalar(2);
+    const map = detailMaps[kind] || null;
+    return new THREE.MeshLambertMaterial({ color: map ? c : new THREE.Color(colour), map, side: THREE.DoubleSide });
+  }
+
+  function rebuildGround() {
+    if (!ground) return;
+    const grass = detailMaps.grass;
+    ground.material = grass ? surfaceMaterial("grass", GROUND) : mat(GROUND);
+    if (grass) {
+      grass.repeat.set(4000 / DETAIL.grass.period, 4000 / DETAIL.grass.period);
+      grass.needsUpdate = true;
+    }
+  }
+
   function rebuildRoads() {
     const g = setGroup("roads");
     if (!build) return;
     for (const s of build.surfaces) {
+      const kind = s.id === "asphalt" ? "asphalt" : "pavement";
+      const period = DETAIL[kind].period;
       const geo = new THREE.BufferGeometry();
-      const pos = [], col = new THREE.Color(s.colour);
+      const pos = [], uv = [];
       const verts = s.verts;
       for (let k = 0; k < s.idx.length; k++) {
         const i = s.idx[k] * 2;
         pos.push(verts[i], s.y, verts[i + 1]);
+        uv.push(verts[i] / period, verts[i + 1] / period);
       }
       geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
       geo.computeVertexNormals();
-      const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: col, side: THREE.DoubleSide }));
+      const m = new THREE.Mesh(geo, surfaceMaterial(kind, s.colour));
       m.userData.own = true;
       g.add(m);
     }
-    const kerbs = build.kerbs, kc = new THREE.Color(kerbs.colour), segs = kerbs.segs;
+    const kerbs = build.kerbs, kc = kerbs.colour, segs = kerbs.segs;
     const pos = [];
     for (let j = 0; j < segs.length; j += 4) {
       const ax = segs[j], az = segs[j + 1], bx = segs[j + 2], bz = segs[j + 3];
@@ -169,34 +224,95 @@ const Scene3D = (() => {
     });
   }
 
+  // What the colours mean: exits blue; the answers A, B, V... in their letter's colour (the same
+  // as on the road in the game); the stop lane green; a participant's path thin and dashed orange.
+  const LETTER_COLOUR = { "А": 0xe0533d, "Б": 0x8b5cf6, "В": 0x0891b2, "Г": 0xd98e04, "Д": 0x16a34a };
+  const EXIT_COLOUR = 0x2f6fed, APPROACH_COLOUR = 0x16a34a, ACTOR_COLOUR = 0xe09a2a;
+  const ROUTE_LIFT = 0.12;
+  const lineMaterials = new Set();
+  let hoverId = null;
+
+  // Answers and participant paths run alongside the exit lanes they share a road with, a little
+  // to either side, so every route can be seen and picked. The data keeps the true points.
+  const SIDE = { choice: 0.35, actor: -0.35 };
+  function routeOffset(r, i) {
+    const side = SIDE[r.kind];
+    if (!side) return [0, 0];
+    const pts = r.points;
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+    const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz) || 1;
+    return [(-dz / len) * side, (dx / len) * side];
+  }
+  function displayPoints(r) {
+    return r.points.map((p, i) => {
+      const o = routeOffset(r, i);
+      return [p[0] + o[0], p[1] + o[1]];
+    });
+  }
+
+  function routeStyle(r) {
+    if (r.kind === "manoeuvre") return { colour: EXIT_COLOUR, px: r.exit === model?.question?.maneuver ? 3 : 2 };
+    if (r.kind === "choice") return { colour: LETTER_COLOUR[r.label] || EXIT_COLOUR, px: 2.5 };
+    if (r.kind === "approach") return { colour: APPROACH_COLOUR, px: 3 };
+    return { colour: ACTOR_COLOUR, px: 1.5, dashed: true };
+  }
+
+  function lineMaterialFor(style, opacity) {
+    const m = new THREE.LineMaterial({
+      color: style.colour, linewidth: style.px, transparent: true, opacity,
+      dashed: !!style.dashed, dashScale: 1, dashSize: 0.9, gapSize: 0.6,
+      resolution: new THREE.Vector2(width, height),
+    });
+    lineMaterials.add(m);
+    return m;
+  }
+
+  // Which route the attention is on: the selected one (or the participant's own path), else the
+  // one under the pointer. Every other route is faded so the chosen one reads clearly.
+  function focusRoute() {
+    if (sel && sel.t === "route") return sel.id;
+    if (sel && sel.t === "actor") return `actor_${sel.id}`;
+    return hoverId;
+  }
+
   function rebuildRoutes() {
     const g = setGroup("routes");
     dropLabels("route");
     if (!model) return;
+    const focus = focusRoute();
     for (const r of model.routes) {
-      const colour = r.kind === "choice" ? KIND_COLOUR.choice : KIND_COLOUR[r.kind] || KIND_COLOUR.manoeuvre;
-      const selected = sel && sel.t === "route" && sel.id === r.id;
-      const w = ROUTE_WIDTH * (selected ? SELECTED_BOOST : 1);
-      const m = new THREE.Mesh(ribbon(r.points, w, 0.09), lineMat(colour));
-      m.userData = { own: true, routeId: r.id };
-      g.add(m);
-      const head = arrowhead(r.points, w, 0.1);
+      const style = routeStyle(r);
+      const dim = focus && r.id !== focus;
+      const opacity = dim ? 0.22 : 1;
+      const shown = displayPoints(r);
+      const flat = [];
+      shown.forEach((p) => flat.push(p[0], ROUTE_LIFT, p[1]));
+      const geo = new THREE.LineGeometry();
+      geo.setPositions(flat);
+      const line = new THREE.Line2(geo, lineMaterialFor(style, opacity));
+      if (style.dashed) line.computeLineDistances();
+      line.userData = { own: true, routeId: r.id };
+      g.add(line);
+      const head = arrowhead(shown, dim ? 0.3 : 0.45, ROUTE_LIFT);
       if (head) {
-        const hm = new THREE.Mesh(head, lineMat(colour));
+        const hm = new THREE.Mesh(head, new THREE.MeshBasicMaterial({ color: style.colour, transparent: true, opacity, side: THREE.DoubleSide }));
         hm.userData.own = true;
         g.add(hm);
       }
       const name = routeName(r);
-      if (name && r.points.length > 1) {
-        const mid = r.points[Math.floor(r.points.length / 2)];
-        labels.push({ text: name, colour, world: [mid[0], 0.5, mid[1]], cls: "route" });
+      if (name && shown.length > 1 && !dim) {
+        const mid = shown[Math.floor(shown.length / 2)];
+        labels.push({ text: name, colour: style.colour, world: [mid[0], 0.6, mid[1]], cls: "route", anchor: { kind: "route", id: r.id } });
       }
     }
     if (draft && draft.points.length) {
       const pts = draft.cursor ? [...draft.points, draft.cursor] : draft.points;
-      const m = new THREE.Mesh(ribbon(pts, 0.4, 0.12), lineMat(0x6b7685));
-      m.userData.own = true;
-      g.add(m);
+      const geo = new THREE.LineGeometry();
+      geo.setPositions(pts.flatMap((p) => [p[0], ROUTE_LIFT, p[1]]));
+      const line = new THREE.Line2(geo, lineMaterialFor({ colour: 0x6b7685, px: 1.5, dashed: true }, 1));
+      line.computeLineDistances();
+      line.userData.own = true;
+      g.add(line);
     }
   }
 
@@ -204,7 +320,8 @@ const Scene3D = (() => {
     if (r.kind === "manoeuvre") return { left: "налево", right: "направо", straight: "прямо", uturn: "разворот" }[r.exit] || "";
     if (r.kind === "choice") return r.label;
     if (r.kind === "approach") return "подъезд";
-    return "путь";
+    const a = model && model.actors.find((x) => x.route === r.id);
+    return a ? (a.name || a.id) : "путь";
   }
 
   function rebuildAnchors() {
@@ -253,7 +370,9 @@ const Scene3D = (() => {
       g.add(dg);
       const fallback = box(0xb9b4ab, [2, 3, 2]);
       dg.add(fallback);
-      loadGltf(`/asset/scenery/${d.prop}.glb`).then((root) => {
+      // A parked car is the traffic sedan model in the game (scripts/situation.gd).
+      const modelUrl = d.prop === "parked" ? "/asset/models/traffic/sedan.glb" : `/asset/scenery/${d.prop}.glb`;
+      loadGltf(modelUrl).then((root) => {
         if (!root || groups.anchors !== g) return;
         dg.remove(fallback);
         if (d.tint) {
@@ -313,7 +432,7 @@ const Scene3D = (() => {
     if (!model || !s) return [];
     if (s.t === "route") {
       const r = model.routes.find((x) => x.id === s.id);
-      return r ? r.points : [];
+      return r ? displayPoints(r) : [];
     }
     if (s.t === "road") {
       const r = model.roads[s.i];
@@ -337,10 +456,11 @@ const Scene3D = (() => {
     const sun = new THREE.DirectionalLight(0xffffff, 0.55);
     sun.position.set(-40, 120, 60);
     scene.add(sun);
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), mat(GROUND));
+    ground = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), mat(GROUND));
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.02;
     scene.add(ground);
+    loadDetail();
     camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 5000);
     resize();
     new ResizeObserver(resize).observe(el);
@@ -353,6 +473,7 @@ const Scene3D = (() => {
     width = container.clientWidth || 1;
     height = container.clientHeight || 1;
     renderer.setSize(width, height);
+    lineMaterials.forEach((m) => m.resolution.set(width, height));
     applyCamera();
     needsRender = true;
   }
@@ -545,7 +666,7 @@ const Scene3D = (() => {
     }
     if (best) return best;
     const lines = [];
-    model.routes.forEach((r) => lines.push({ kind: "route", id: r.id, points: r.points }));
+    model.routes.forEach((r) => lines.push({ kind: "route", id: r.id, points: displayPoints(r) }));
     model.roads.forEach((r, i) => {
       lines.push({ kind: "road", i, part: -1, points: r.outer });
       r.holes.forEach((h, k) => lines.push({ kind: "road", i, part: k, points: h }));
@@ -627,6 +748,12 @@ const Scene3D = (() => {
       }
       last = p;
       const w = worldAt(p.x, p.y);
+      if (!down) {
+        // Hovering a route fades the others, so the one under the pointer can be followed.
+        const h = hitAt(p.x, p.y);
+        const id = h && h.kind === "route" ? h.id : null;
+        if (id !== hoverId) { hoverId = id; rebuildRoutes(); needsRender = true; }
+      }
       emit("pointer", { type: "move", world: w && snapWorld(w, e), buttons: e.buttons, shift: e.shiftKey, alt: e.altKey, native: e });
       if (down && Math.hypot(p.x - down.x, p.y - down.y) > 3) {
         emit("pointer", { type: "drag", world: w && snapWorld(w, e), hit: down.hit, start: down, shift: e.shiftKey, alt: e.altKey, native: e });
@@ -666,5 +793,6 @@ const Scene3D = (() => {
     get spaceDown() { return spaceDown; },
     requestRender() { needsRender = true; },
     pointsOf,
+    hitAt, routeOffset,
   };
 })();
