@@ -207,7 +207,12 @@ class AuthService extends ChangeNotifier {
   /// Also the side-by-side test install (`-Pdev`, package `*.dev`), which is
   /// a release build: the store package never ends in `.dev`.
   static bool get debugSignInAvailable =>
-      const bool.fromEnvironment('GAME_DEBUG') && (kDebugMode || _devPackage);
+      const bool.fromEnvironment('GAME_DEBUG') &&
+      (kDebugMode ||
+          _devPackage ||
+          // iOS has no `.dev` package: a test build on a phone is made with
+          // both defines, the store build never gets either.
+          const bool.fromEnvironment('GAME_DEBUG_DEVICE'));
   static bool _devPackage = false;
 
   Future<bool> signInDebug() async {

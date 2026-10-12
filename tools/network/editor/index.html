@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Редактор сцен</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%232f6fed'/%3E%3Cpath d='M4 11 L8 4 L12 11' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/editor.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">Редактор сцен</div>
+    <div class="scene-head">
+      <span id="title" class="title">Выберите сцену</span>
+      <span id="status" class="chip"></span>
+    </div>
+    <div class="spacer"></div>
+    <span id="dirty" class="dirty" hidden>Несохранённые правки</span>
+    <button id="undo" class="btn ghost" title="Отменить (⌘Z)" disabled>Отменить</button>
+    <button id="redo" class="btn ghost" title="Вернуть (⇧⌘Z)" disabled>Вернуть</button>
+    <button id="save" class="btn primary" title="Сохранить (⌘S)" disabled>Сохранить <kbd>⌘S</kbd></button>
+    <button id="help" class="btn ghost icon" title="Горячие клавиши (?)">?</button>
+  </header>
+
+  <aside class="left">
+    <nav class="tabs">
+      <button class="on" data-ltab="scenes">Сцены <em id="count-scenes"></em></button>
+      <button data-ltab="objects">Объекты</button>
+    </nav>
+    <section id="pane-scenes" class="pane">
+      <input id="q" class="search" type="search" placeholder="Поиск: 10_15 или билет 10">
+      <div id="filters" class="seg">
+        <button class="on" data-f="all">Все</button>
+        <button data-f="err">С ошибками</button>
+        <button data-f="todo">Не сверены</button>
+      </div>
+      <div id="scene-list" class="list"></div>
+    </section>
+    <section id="pane-objects" class="pane" hidden>
+      <input id="oq" class="search" type="search" placeholder="Найти объект">
+      <div id="object-tree" class="list tree"></div>
+    </section>
+  </aside>
+
+  <main class="stage">
+    <div id="view" class="view"></div>
+    <div id="labels" class="labels"></div>
+
+    <nav id="tools" class="tools" aria-label="Инструменты">
+      <button data-tool="select" title="Выбор (V)"><span>↖</span><small>V</small></button>
+      <button data-tool="route" title="Маршрут (M)"><span>⤳</span><small>M</small></button>
+      <button data-tool="road" title="Дорога (D)"><span>▭</span><small>D</small></button>
+      <button data-tool="straight" title="Прямой участок (R)"><span>═</span><small>R</small></button>
+      <button data-tool="island" title="Островок (I)"><span>◻</span><small>I</small></button>
+      <button data-tool="lawn" title="Газон или клумба (G)"><span>❀</span><small>G</small></button>
+      <button data-tool="marking" title="Разметка (K)"><span>┆</span><small>K</small></button>
+      <button data-tool="actor" title="Участник (A)"><span>🚗</span><small>A</small></button>
+      <button data-tool="decor" title="Декор (P)"><span>🌳</span><small>P</small></button>
+      <button data-tool="light" title="Светофор (L)"><span>🚦</span><small>L</small></button>
+      <button data-tool="stop" title="Стоп-линия (S)"><span>━</span><small>S</small></button>
+    </nav>
+    <div id="tool-opts" class="tool-opts" hidden></div>
+
+    <div class="view-ctl">
+      <button id="mode" class="btn ghost">3D вид</button>
+      <button id="zin" class="btn ghost icon" title="Приблизить">+</button>
+      <button id="zout" class="btn ghost icon" title="Отдалить">−</button>
+      <button id="zfit" class="btn ghost icon" title="Вся сцена (F)">⤢</button>
+    </div>
+
+    <div class="statusbar">
+      <span id="cursor" class="cursor">x — · z — м</span>
+      <span id="hint" class="hint"></span>
+      <span class="scale"><i id="scale-bar"></i><b id="scale-text">10 м</b><em id="zoom-text"></em></span>
+    </div>
+
+    <aside id="legend" class="legend collapsed" aria-label="Что означают линии">
+      <b id="legend-head">Что значат линии</b>
+      <div><i class="sw" style="--c:#2f6fed"></i>Выезд: манёвр. Жирная — правильный по условию</div>
+      <div><i class="sw" style="--c:#e0533d"></i>А <i class="sw" style="--c:#8b5cf6"></i>Б <i class="sw" style="--c:#0891b2"></i>В — варианты ответа</div>
+      <div><i class="sw" style="--c:#16a34a"></i>Подъезд к стоп-линии</div>
+      <div><i class="sw dash" style="--c:#e09a2a"></i>Путь участника (машины, пешехода)</div>
+      <small>Наведите на линию, и остальные станут бледными</small>
+    </aside>
+
+    <div id="empty" class="empty">
+      <div>
+        <h2>Выберите сцену слева</h2>
+        <p>Здесь вид сверху с настоящими моделями: машины, пешеходы, светофоры, деревья и дома. Дорогу, маршруты и участников можно двигать и добавлять.</p>
+      </div>
+    </div>
+    <div id="toast" class="toast"></div>
+  </main>
+
+  <aside class="right">
+    <nav id="rtabs" class="tabs">
+      <button class="on" data-rtab="props">Свойства</button>
+      <button data-rtab="question">Билет</button>
+      <button data-rtab="checks">Проверка <b id="check-count"></b></button>
+    </nav>
+    <div id="rpane" class="rpane"></div>
+  </aside>
+</div>
+
+<div id="help-dialog" class="modal" hidden>
+  <div class="dialog">
+    <h2>Горячие клавиши</h2>
+    <dl>
+      <dt><kbd>V</kbd></dt><dd>выбор объекта, перетаскивание точек и объектов</dd>
+      <dt><kbd>M</kbd> <kbd>D</kbd> <kbd>R</kbd> <kbd>I</kbd></dt><dd>рисовать маршрут, дорогу, прямой участок (две точки), островок</dd>
+      <dt><kbd>G</kbd> <kbd>K</kbd></dt><dd>газон или клумба; разметка (тип и цвет выбираются в панели над инструментами)</dd>
+      <dt><kbd>A</kbd> <kbd>P</kbd> <kbd>L</kbd> <kbd>S</kbd></dt><dd>поставить участника, декор, светофор, стоп-линию</dd>
+      <dt><kbd>Enter</kbd></dt><dd>закончить рисование</dd>
+      <dt><kbd>Esc</kbd></dt><dd>отменить рисование и снять выбор</dd>
+      <dt><kbd>Delete</kbd></dt><dd>удалить выбранную точку или объект</dd>
+      <dt><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd></dt><dd>сдвинуть на 5 см, с Shift — на 50 см</dd>
+      <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>повернуть на 5°, с Shift — на 45°</dd>
+      <dt>двойной клик</dt><dd>добавить точку на линию или закончить рисование</dd>
+      <dt>колесо, Пробел + тяни</dt><dd>масштаб и сдвиг вида; в 3D — правая кнопка вращает</dd>
+      <dt><kbd>⌘Z</kbd> <kbd>⇧⌘Z</kbd> <kbd>⌘S</kbd></dt><dd>отмена, повтор, сохранение</dd>
+      <dt><kbd>F</kbd></dt><dd>показать всю сцену</dd>
+    </dl>
+    <button class="btn primary" data-close>Понятно</button>
+  </div>
+</div>
+
+<script src="/static/vendor/three.min.js"></script>
+<script src="/static/vendor/GLTFLoader.js"></script>
+<script src="/static/vendor/LineSegmentsGeometry.js"></script>
+<script src="/static/vendor/LineGeometry.js"></script>
+<script src="/static/vendor/LineMaterial.js"></script>
+<script src="/static/vendor/LineSegments2.js"></script>
+<script src="/static/vendor/Line2.js"></script>
+<script src="/static/scene3d.js"></script>
+<script src="/static/ui.js"></script>
+</body>
+</html>

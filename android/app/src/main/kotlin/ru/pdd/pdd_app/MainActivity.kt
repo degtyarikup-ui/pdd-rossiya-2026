@@ -14,11 +14,19 @@ import java.util.Locale
 
 class MainActivity : FlutterActivity() {
     private var appUpdates: AppUpdatesBridge? = null
+    private var godotGame: GodotGameBridge? = null
+
+    @Deprecated("Activity results of the game screen")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        if (godotGame?.onResult(requestCode, resultCode, data) == true) return
+        super.onActivityResult(requestCode, resultCode, data)
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         appUpdates?.close()
         appUpdates = AppUpdatesBridge(this, flutterEngine.dartExecutor.binaryMessenger)
+        godotGame = GodotGameBridge(this, flutterEngine.dartExecutor.binaryMessenger)
         // Страна устройства для выбора способа оплаты (Dart: device_region.dart).
         // Сначала сеть оператора — там телефон реально подключён; VPN её не
         // меняет. Запасные варианты — SIM и системная локаль.

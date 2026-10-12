@@ -1,7 +1,20 @@
 # 3D-игра «Живой город» — карта
 
-Игра — Three.js в WebView. Flutter-обёртка: `lib/presentation/screens/game/`
-(мост событий — `game_controller.dart`, `game_screen.dart`).
+Две реализации, пока идёт замена:
+
+- **Godot (новая)** — `game_godot/`, см. `game_godot/README.md` и план
+  `godot-roadmap.md`. Android — отдельный экран (процесс `:game`), iOS — окно
+  поверх приложения (`ios/Runner/PddGodotGame.mm`), web — `iframe` на сайте
+  (`godot/`). Flutter-обёртка: `lib/presentation/screens/game/godot_game.dart`
+  (гараж, оплата заезда, итоги, разбор ошибок, продолжение заезда).
+- **WebView / Three.js (старая)** — описана ниже; запускается, пока у платформы
+  нет сборки Godot (`GodotGame.available()` = false). Flutter-обёртка:
+  `lib/presentation/screens/game/` (мост событий — `game_controller.dart`,
+  `game_screen.dart`).
+
+Сборка Godot-версии: `./scripts/godot_android_assets.sh` (Android),
+`./scripts/godot_ios_assets.sh` (iOS), `./scripts/godot_dev.sh web` (web). Файлы
+движка и сцен в git не попадают.
 
 ## Файлы движка (`assets/game/`)
 
@@ -20,6 +33,7 @@
 | `seasons.js` | Палитры сезонов, листопад |
 | `crossroads.js`, `traffic-controller*.js` | Мини-игры |
 | `touch-controls.js` | Педали и стрелки руля, нарисованные самой страницей (нажатие доходит до движка без моста Flutter → WebView). Flutter шлёт только `setTouchControls({visible, enabled, colors, labels, insets})`; обратно — события `haptic`, `gas_pressed`. В браузерной сборке остаётся Flutter-виджет `GameControlsOverlay` |
+| `quality-tier.js` | Уровень качества `low/mid/high` по названию видеочипа (Adreno 610 = low, а не «8 ядер = мощный»); профили: сглаживание, плотность пикселей, тени, лимит 30 к/с на low. Принудительно — `setQualityTier` из скрытого меню (имитация бюджетника); тест классификации — `tools/game_tests/game-quality-tier-test.cjs` |
 | `perf-hud.js` | Счётчик производительности (fps, худший кадр, draw calls, задержка нажатия, видеочип); включается в скрытом меню (долгое нажатие на гараж, dev-сборка) → `setPerfHud`; раз в 5 с строка `[game-perf]` в logcat |
 | `ambient-audio.js` | Звук мини-игр (WebAudio, без файлов): фон улицы, мотор, трамвай, сирена, удар; включается настройкой «Звук» (`setSoundEnabled` / `TrafficControllerGame.setSound`) |
 

@@ -9,6 +9,8 @@ class HapticFeedbackHelper {
     _enabled = enabled;
   }
 
+  static bool get enabled => _enabled;
+
   static void tap() {
     if (!_enabled) return;
     HapticFeedback.lightImpact();

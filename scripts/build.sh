@@ -187,6 +187,16 @@ case "$TARGET" in
       ${NOTIFY_DEFINES[@]+"${NOTIFY_DEFINES[@]}"} \
       ${EXTRA_DEFINES_ARR[@]+"${EXTRA_DEFINES_ARR[@]}"}
     python3 tools/web/version_web_build.py build/web
+    # The Godot game for the site (build/web/godot/, opened by «Живой город»):
+    # only when godot is installed and the scenes are exported (game_godot/situations,
+    # ./scripts/godot_dev.sh export). Otherwise the site keeps the WebView game.
+    if [[ "${SKIP_GODOT_WEB:-0}" != "1" ]]; then
+      if command -v godot >/dev/null && [[ -d game_godot/situations ]]; then
+        ./scripts/godot_dev.sh web
+      else
+        echo "Godot для сайта не собран (нет godot или game_godot/situations): на сайте останется старая игра."
+      fi
+    fi
     echo "Web: build/web (COUNTRY=$COUNTRY)"
     ;;
   *) echo "unknown target: $TARGET (expected aab|apk|rustore-apk|ipa|web)"; exit 1 ;;

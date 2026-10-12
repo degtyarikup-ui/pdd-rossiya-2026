@@ -1,0 +1,35 @@
+; Godot 4.7 project: the 3D game spike (see README.md).
+config_version=5
+
+[application]
+
+boot_splash/show_image=false
+boot_splash/bg_color=Color(0.957, 0.961, 0.969, 1)
+config/name="PDD Game Spike"
+run/main_scene="res://main.tscn"
+config/icon="res://icon.png"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+
+[display]
+window/size/viewport_width=390
+window/size/viewport_height=844
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=1
+
+[input_devices]
+pointing/emulate_touch_from_mouse=true
+
+[rendering]
+; Compatibility (OpenGL ES 3 / ANGLE-Metal on iOS): the renderer that runs on
+; every budget GPU; the Vulkan "mobile" one is heavier on Adreno 6xx / Mali-G5x.
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
+lights_and_shadows/directional_shadow/size=2048
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=1
+anti_aliasing/quality/msaa_3d=1
+
+[autoload]
+
+EmbeddedIO="*res://scripts/embedded_io.gd"

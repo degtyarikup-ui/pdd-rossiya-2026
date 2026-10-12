@@ -1,0 +1,314 @@
+{
+ "vehicles/hatch": {
+  "before": {
+   "meshes": 65,
+   "tris": 1574
+  },
+  "after": {
+   "meshes": 27,
+   "tris": 1574
+  },
+  "meta": {
+   "halfWidth": 0.86,
+   "halfLength": 1.75,
+   "height": 1.4,
+   "defaultPaint": "#ed4621"
+  }
+ },
+ "vehicles/sedan": {
+  "before": {
+   "meshes": 64,
+   "tris": 1564
+  },
+  "after": {
+   "meshes": 27,
+   "tris": 1564
+  },
+  "meta": {
+   "halfWidth": 0.9,
+   "halfLength": 2.1,
+   "height": 1.35,
+   "defaultPaint": "#317ed4"
+  }
+ },
+ "vehicles/coupe": {
+  "before": {
+   "meshes": 65,
+   "tris": 1576
+  },
+  "after": {
+   "meshes": 27,
+   "tris": 1552
+  },
+  "meta": {
+   "halfWidth": 0.9,
+   "halfLength": 2.15,
+   "height": 1.25,
+   "defaultPaint": "#2b2f36"
+  }
+ },
+ "vehicles/wagon": {
+  "before": {
+   "meshes": 66,
+   "tris": 1586
+  },
+  "after": {
+   "meshes": 27,
+   "tris": 1586
+  },
+  "meta": {
+   "halfWidth": 0.9,
+   "halfLength": 2.25,
+   "height": 1.45,
+   "defaultPaint": "#6e8e6a"
+  }
+ },
+ "vehicles/suv": {
+  "before": {
+   "meshes": 69,
+   "tris": 1742
+  },
+  "after": {
+   "meshes": 28,
+   "tris": 1742
+  },
+  "meta": {
+   "halfWidth": 0.95,
+   "halfLength": 2.125,
+   "height": 1.85,
+   "defaultPaint": "#4d7768"
+  }
+ },
+ "vehicles/pickup": {
+  "before": {
+   "meshes": 70,
+   "tris": 1648
+  },
+  "after": {
+   "meshes": 27,
+   "tris": 1624
+  },
+  "meta": {
+   "halfWidth": 0.95,
+   "halfLength": 2.3,
+   "height": 1.65,
+   "defaultPaint": "#d7aa60"
+  }
+ },
+ "vehicles/cyber": {
+  "before": {
+   "meshes": 53,
+   "tris": 1300
+  },
+  "after": {
+   "meshes": 22,
+   "tris": 1300
+  },
+  "meta": {
+   "halfWidth": 1,
+   "halfLength": 2.5,
+   "height": 1.75,
+   "defaultPaint": "#d4af37"
+  }
+ },
+ "traffic/hatch": {
+  "before": {
+   "meshes": 65,
+   "tris": 1574
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 1526
+  }
+ },
+ "traffic/sedan": {
+  "before": {
+   "meshes": 64,
+   "tris": 1564
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 1516
+  }
+ },
+ "traffic/coupe": {
+  "before": {
+   "meshes": 65,
+   "tris": 1576
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 1504
+  }
+ },
+ "traffic/wagon": {
+  "before": {
+   "meshes": 66,
+   "tris": 1586
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 1538
+  }
+ },
+ "traffic/suv": {
+  "before": {
+   "meshes": 69,
+   "tris": 1742
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 1694
+  }
+ },
+ "traffic/pickup": {
+  "before": {
+   "meshes": 70,
+   "tris": 1648
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 1576
+  }
+ },
+ "traffic/cyber": {
+  "before": {
+   "meshes": 53,
+   "tris": 1300
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 1252
+  }
+ },
+ "walkers/walker_0": {
+  "before": {
+   "meshes": 5,
+   "tris": 348
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 348
+  }
+ },
+ "walkers/walker_1": {
+  "before": {
+   "meshes": 5,
+   "tris": 348
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 348
+  }
+ },
+ "walkers/walker_2": {
+  "before": {
+   "meshes": 5,
+   "tris": 348
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 348
+  }
+ },
+ "walkers/walker_3": {
+  "before": {
+   "meshes": 5,
+   "tris": 360
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 360
+  }
+ },
+ "walkers/walker_4": {
+  "before": {
+   "meshes": 5,
+   "tris": 336
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 336
+  }
+ },
+ "walkers/walker_5": {
+  "before": {
+   "meshes": 5,
+   "tris": 360
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 360
+  }
+ },
+ "walkers/walker_6": {
+  "before": {
+   "meshes": 5,
+   "tris": 348
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 348
+  }
+ },
+ "walkers/walker_7": {
+  "before": {
+   "meshes": 5,
+   "tris": 348
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 348
+  }
+ },
+ "walkers/walker_8": {
+  "before": {
+   "meshes": 5,
+   "tris": 348
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 348
+  }
+ },
+ "walkers/walker_9": {
+  "before": {
+   "meshes": 5,
+   "tris": 360
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 360
+  }
+ },
+ "walkers/walker_10": {
+  "before": {
+   "meshes": 5,
+   "tris": 336
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 336
+  }
+ },
+ "walkers/walker_11": {
+  "before": {
+   "meshes": 5,
+   "tris": 360
+  },
+  "after": {
+   "meshes": 1,
+   "tris": 360
+  }
+ },
+ "street/lamp": {
+  "before": {
+   "meshes": 2,
+   "tris": 112
+  },
+  "after": {
+   "meshes": 2,
+   "tris": 112
+  }
+ }
+}

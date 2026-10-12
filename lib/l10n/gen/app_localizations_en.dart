@@ -858,6 +858,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameDebugUnlimitedFuel => 'Endless races';
 
   @override
+  String get gameDebugTier => 'Graphics level';
+
+  @override
+  String get gameDebugTierHint =>
+      'Auto picks by the GPU; “Low” simulates a budget phone (antialiasing applies after a restart)';
+
+  @override
+  String get gameDebugTierLow => 'Low';
+
+  @override
+  String get gameDebugTierMid => 'Medium';
+
+  @override
+  String get gameDebugTierHigh => 'High';
+
+  @override
   String get gameDebugPerf => 'Performance counter';
 
   @override

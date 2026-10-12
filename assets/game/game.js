@@ -5471,21 +5471,26 @@
     // iOS WebKit reports a capped hardwareConcurrency (so every iPhone looked
     // "weak" and rendered at 1x without antialiasing — visibly pixelated).
     // Only a clearly weak device (≤2 cores or ≤3 GB) gets the cheap profile.
-    const lowEnd = (navigator.hardwareConcurrency || 8) <= 2 || (navigator.deviceMemory || 8) <= 3;
+    // The tier comes from the GPU name (quality-tier.js), not from cores/RAM.
+    const quality0 = window.PDD_QUALITY.detect();
+    state.tier = quality0;
+    const profile = quality0.profile;
+    const lowEnd = quality0.tier === 'low';
     state.lowEnd = lowEnd;
     // A wider "weak" hint (4 GB, few cores) turns on only savings that leave
     // the picture as it is (a still question drawn at 30 FPS). The shadow map
     // is refreshed every frame: at half rate the car's shadow jittered.
     // The look is chosen by lowEnd alone.
     state.weak = lowEnd || (navigator.deviceMemory || 8) <= 4 || (navigator.hardwareConcurrency || 8) <= 4;
-    renderer = new THREE.WebGLRenderer({ antialias: !lowEnd, powerPreference: 'high-performance' });
+    renderer = new THREE.WebGLRenderer({ antialias: profile.antialias, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(lowEnd ? 1 : Math.min(window.devicePixelRatio, 1.75));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, profile.maxRatio));
     renderer.shadowMap.enabled = true;
     // PCF with a blur radius: soft-edged shadows (PCFSoft ignores radius).
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.localClippingEnabled = true;
     window.PDD_PERF?.init(renderer, sendToFlutter);
+    window.PDD_PERF?.setTier(state.tier.tier);
     window.PDD_TOUCH?.init(sendToFlutter);
     // Road surfaces get their texture phase from the road they continue.
     window.PDD_ROADS.attach(renderer, { roots: () => state.roadSegments, lineage: () => state.exitRoad || currentCorridor });
@@ -5534,7 +5539,7 @@
     if (loader) loader.style.display = 'none';
 
     // Notify Flutter that engine is ready
-    sendToFlutter({ event: 'ready', season: seasonName() });
+    sendToFlutter({ event: 'ready', season: seasonName(), forcedTier: state.tier.forced, tier: state.tier.tier });
 
     // Animation Loop
     streamScenery=true;
@@ -5551,17 +5556,17 @@
     dirLight = new THREE.DirectionalLight(0xFFF9EE, 0.85);
     dirLight.position.set(12, 70, -7);
     dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = state.lowEnd ? 512 : 1024;
-    dirLight.shadow.mapSize.height = state.lowEnd ? 512 : 1024;
+    dirLight.shadow.mapSize.width = state.tier.profile.shadowMap;
+    dirLight.shadow.mapSize.height = state.tier.profile.shadowMap;
     dirLight.shadow.camera.near = 10;
     dirLight.shadow.camera.far = 200;
-    const d = 40;
+    const d = state.tier.profile.shadowSpan;
     dirLight.shadow.camera.left = -d;
     dirLight.shadow.camera.right = d;
     dirLight.shadow.camera.top = d;
     dirLight.shadow.camera.bottom = -d;
     dirLight.shadow.bias = -0.0005;
-    dirLight.shadow.radius = state.lowEnd ? 2 : 5;
+    dirLight.shadow.radius = state.tier.profile.shadowRadius;
     scene.add(dirLight);
 
     sunTarget = new THREE.Object3D();
@@ -14575,6 +14580,10 @@
     // then would leave it null: every later frame would read 0 too and be
     // skipped for good, freezing the engine at a question on a weak phone.
     if (lastTime !== null && (state.weak || quality.struggling) && still && elapsed < 0.03) return;
+    // Weak-GPU tier: the picture is drawn at 30 FPS (every other frame at 60 Hz);
+    // the work saved goes to keep the frame time even instead of 20-60 jitter.
+    const fpsCap = state.tier.profile.fpsCap;
+    if (fpsCap && lastTime !== null && elapsed < 0.85 / fpsCap) return;
     processSceneryJobs(elapsed>.035?1:3);
     // The release after a violation runs on its own clock: it used to tick
     // inside updatePlayerMovement only, which is skipped at a question and
@@ -14636,8 +14645,28 @@
   // when there is headroom. A fast phone never leaves its full quality. At
   // the lowest step the shadow map is refreshed every other frame.
   var quality = { sum: 0, frames: 0, max: 1, ratio: 1, min: 0.8, frame: 0 };
+  function applyQualityTier(tier) {
+    window.PDD_QUALITY.force(tier);
+    const q = window.PDD_QUALITY.detect();
+    state.tier = q; state.lowEnd = q.tier === 'low';
+    window.PDD_PERF?.setTier(q.tier);
+    const p = q.profile;
+    quality.max = quality.ratio = Math.min(window.devicePixelRatio, p.maxRatio);
+    quality.min = Math.min(quality.max, p.minRatio);
+    quality.struggling = false;
+    renderer.setPixelRatio(quality.ratio);
+    dirLight.shadow.radius = p.shadowRadius;
+    const span = p.shadowSpan;
+    Object.assign(dirLight.shadow.camera, { left: -span, right: span, top: span, bottom: -span });
+    dirLight.shadow.camera.updateProjectionMatrix();
+    if (dirLight.shadow.mapSize.x !== p.shadowMap) {
+      dirLight.shadow.mapSize.set(p.shadowMap, p.shadowMap);
+      if (dirLight.shadow.map) { dirLight.shadow.map.dispose(); dirLight.shadow.map = null; }
+    }
+    return q.tier;
+  }
   function adaptQuality(elapsed) {
-    if (!quality.frames && !quality.sum) { quality.max = quality.ratio = renderer.getPixelRatio(); quality.min = Math.min(quality.max, state.lowEnd ? 1 : 1.3); }
+    if (!quality.frames && !quality.sum) { quality.max = quality.ratio = renderer.getPixelRatio(); quality.min = Math.min(quality.max, state.tier.profile.minRatio); }
     // A question is a still scene to be read: always at full sharpness.
     const reading = !!state.isAtSituation || !!state.resolution;
     const want = reading ? quality.max : quality.ratio;
@@ -15979,6 +16008,9 @@
     // On-screen pedals/arrows (touch-controls.js) and the performance probe (perf-hud.js).
     setTouchControls(config) { window.PDD_TOUCH?.configure(config || {}); },
     setPerfHud(on) { window.PDD_PERF?.set(on); },
+    // Debug / "budget phone" simulation: 'low' | 'mid' | 'high' | null (auto).
+    // Applies at once except antialiasing, which needs the next engine start.
+    setQualityTier(tier) { return applyQualityTier(tier); },
     setGas(isPressed) {
       if (isPressed) gameAudio?.unlock();
       if (state.attract) { state.isAccelerating = false; return; }

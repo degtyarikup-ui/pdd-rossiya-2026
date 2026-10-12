@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/presentation/screens/game/game_screen.dart';
+import 'package:pdd_app/presentation/screens/game/godot_game.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_leaderboard_sheet.dart';
 
 import 'package:flutter/material.dart';
@@ -78,6 +79,20 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
     await Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => screen));
+    await _refreshRuns();
+    await _refreshRating();
+  }
+
+  /// Android and iOS with the Godot game in the build: the new game on its own
+  /// screen; elsewhere the WebView game.
+  Future<void> _openCity() async {
+    if (!await GodotGame.available()) {
+      if (mounted) await _open(context, const GameScreen());
+      return;
+    }
+    if (!mounted) return;
+    HapticFeedbackHelper.tap();
+    await GodotGame.play(context, ref);
     await _refreshRuns();
     await _refreshRating();
   }
@@ -162,7 +177,7 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
                 : appL10n.gamesRunsAvailable(_runs),
             statusIcon: Icons.local_gas_station_rounded,
             secondaryScore: _cityBest,
-            onTap: () => _open(context, const GameScreen()),
+            onTap: _openCity,
           ),
           const SizedBox(height: AppDimensions.spacingL),
           _GameCard(

@@ -1,2 +1,4 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
 #include "Generated.xcconfig"
+// The Godot game engine (scripts/godot_ios_assets.sh); absent in builds without the game.
+#include? "../Godot/engine.xcconfig"

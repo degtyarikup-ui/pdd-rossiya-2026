@@ -73,6 +73,8 @@ android {
     buildTypes {
         release {
             isDebuggable = false
+            // The Godot engine's classes are called by name from native code: see proguard-godot.pro.
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-godot.pro")
             // Never silently sign a store release with the debug key.
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
@@ -87,6 +89,33 @@ android {
 
 flutter {
     source = "../.."
+}
+
+// The 3D game on Godot (game_godot/): engine and exported files are prepared by
+// scripts/godot_android_assets.sh into android/godot/ (not in git). Without them
+// the app builds as before and the game tab keeps the WebView game.
+val godotDir = rootProject.file("godot")
+val godotEngine = File(godotDir, "godot-lib.aar")
+if (godotEngine.exists()) {
+    android {
+        sourceSets.getByName("main").assets.srcDir(File(godotDir, "assets"))
+        // The game screen's classes need the engine: compiled only with it (src/godot/).
+        sourceSets.getByName("main").java.srcDir("src/godot/kotlin")
+        // Godot's project files include hidden ones (.godot/): the default pattern drops them.
+        androidResources.ignoreAssetsPattern = "!.svn:!.git:!.gitignore:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~"
+        packaging.jniLibs.pickFirsts += "**/libc++_shared.so"
+        // The engine only for 64-bit ARM (every phone the game is tested on, ~75 MB per
+        // architecture): elsewhere the bridge reports it missing and the WebView game stays.
+        packaging.jniLibs.excludes += listOf("lib/armeabi-v7a/libgodot_android.so", "lib/x86/libgodot_android.so", "lib/x86_64/libgodot_android.so")
+        // Game assets are read in place (memory-mapped by Godot), not unpacked.
+        androidResources.noCompress += listOf("pck", "sparsepck", "scn", "res", "ctex", "glb")
+    }
+    dependencies {
+        implementation(files(godotEngine))
+        implementation("androidx.fragment:fragment:1.8.6")
+        implementation("androidx.core:core-splashscreen:1.0.1")
+        implementation("androidx.documentfile:documentfile:1.1.0")
+    }
 }
 
 dependencies {

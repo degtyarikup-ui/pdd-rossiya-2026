@@ -22,6 +22,7 @@ class BrowserGame {
     _allowPointerEvents = allow;
     _frame.style.pointerEvents = allow ? 'auto' : 'none';
   }
+
   BrowserGame({
     required void Function(String) onMessage,
     required VoidCallback onBlur,
