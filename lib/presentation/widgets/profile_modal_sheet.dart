@@ -33,6 +33,8 @@ class ProfileModalSheet extends ConsumerWidget {
         return 'Apple ID';
       case AuthProviderType.yandex:
         return appL10n.profileProviderYandex;
+      case AuthProviderType.telegram:
+        return 'Telegram';
     }
   }
 
