@@ -130,14 +130,12 @@ test('progress failures show real profile identity, plain explanation and techni
   await reportIncident(env, event({ category: 'infrastructure', origin: 'server', operation: 'api.user.progress.sync', code: 'operation_failed', status: 500, userId: 'google_real', platform: null, appVersion: null }));
   const message = (await messages(state))[0];
   assert.match(message, /Не удалось синхронизировать прогресс/);
-  assert.match(message, /Локальный прогресс сохраняется на устройстве/);
   assert.match(message, /Точная причина пока не определена/);
   assert.match(message, /Анна &lt;Тест&gt;/);
   assert.match(message, /anna@example.org/);
-  assert.match(message, /Вход:<\/b> Google/);
-  assert.match(message, /Android · v2.1.8\+47/);
-  assert.ok(message.indexOf('Пользователь:') < message.indexOf('Для диагностики:'));
-  assert.ok(message.indexOf('Для диагностики:') < message.indexOf('api.user.progress.sync'));
+  assert.match(message, /Google/);
+  assert.match(message, /Android v2.1.8\+47/);
+  assert.ok(message.indexOf('👤') < message.indexOf('api.user.progress.sync'));
 });
 
 test('storage outage retains trusted session context and unverified clients cannot invent a name', async () => {
@@ -158,10 +156,10 @@ test('known payment reasons are readable, unknown codes remain honest and messag
   assert.match(message, /Эта покупка уже привязана к другому аккаунту/);
   assert.match(message, /App Store/);
   const signIn = buildIncidentMessage(event({ operation: 'auth.provider', code: 'sign_in_failed:10', store: 'rustore' }));
-  assert.match(signIn, /Код: <code>sign_in_failed:10<\/code>/);
+  assert.match(signIn, /<code>sign_in_failed:10<\/code>/);
   assert.match(signIn, /Сервис входа сообщил об ошибке/);
-  assert.match(signIn, /Магазин:<\/b> RuStore/);
-  assert.doesNotMatch(buildIncidentMessage(event({ store: null })), /Магазин/);
+  assert.match(signIn, /RuStore/);
+  assert.doesNotMatch(buildIncidentMessage(event({ store: null })), /RuStore/);
   assert.match(buildIncidentMessage(event({ operation: 'constructor', code: '__proto__', provider: '__proto__', platform: 'constructor' })), /Точная причина пока не определена/);
   assert.match(incidentCopy(event({ operation: 'new.unknown', code: 'sdk_error' })).reason, /Точная причина пока не определена/);
   const longest = buildIncidentMessage(event({ category: 'infrastructure', origin: 'server', operation: 'api.user.progress.sync', code: 'storage_rate_limited', userId: '&'.repeat(200), userName: '&'.repeat(120), userEmail: '&'.repeat(160), device: '&'.repeat(100), installation: 'a'.repeat(16), diagnosticId: 'a'.repeat(36), status: 500 }), 1000000, 1000000);

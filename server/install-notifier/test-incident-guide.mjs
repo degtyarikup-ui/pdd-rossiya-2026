@@ -57,11 +57,10 @@ test('неизвестные операции и коды не ломают со
 test('сообщение: уровень, «Что делать», страна; имена экранируются; влезает в Telegram', () => {
   const text = buildIncidentMessage({ ...base, userName: 'Анна <b>', country: 'BY', platform: 'ios', appVersion: '2.2.3+59', device: 'iPhone14,5', code: 'timeout:3x' });
   assert.match(text, /🟠 <b>Не удалось войти в аккаунт<\/b>/);
-  assert.match(text, /<b>Что делать:<\/b>/);
-  assert.match(text, /Страна по IP:<\/b> BY/);
+  assert.match(text, /→ /);
+  assert.match(text, / BY/);
   assert.match(text, /Анна &lt;b&gt;/);
-  assert.ok(text.indexOf('Что делать:') < text.indexOf('Пользователь:'));
-  assert.ok(text.indexOf('Пользователь:') < text.indexOf('Для диагностики:'));
+  assert.ok(text.indexOf('→ ') < text.indexOf('👤'));
   // Самый длинный вариант: максимум советов и длинные данные пользователя.
   const longest = buildIncidentMessage({ ...base, userName: '&'.repeat(120), userEmail: '&'.repeat(160), device: '&'.repeat(100), userId: '&'.repeat(200), country: 'BY', platform: 'android', appVersion: '2.2.3+59', store: 'rustore', installation: 'a'.repeat(16), diagnosticId: 'a'.repeat(8) + '-' + 'a'.repeat(4) + '-' + 'a'.repeat(4) + '-' + 'a'.repeat(4) + '-' + 'a'.repeat(12), category: 'purchase', operation: 'premium.verify', code: 'purchase_belongs_to_another_account', status: 403 }, 99, 99);
   assert.ok(longest.length < 4096, 'длина ' + longest.length);
@@ -73,7 +72,7 @@ test('платформа приходит из приложения именем
   assert.equal(platformLabel('android'), 'Android');
   assert.equal(platformLabel('plan9'), 'Не определена');
   assert.equal(platformLabel(undefined), 'Не определена');
-  assert.match(buildIncidentMessage({ ...base, platform: 'iOS' }), /Платформа:<\/b> iOS/);
+  assert.match(buildIncidentMessage({ ...base, platform: 'iOS' }), /📱 iOS/);
 });
 
 test('пустой ответ магазина объясняется понятной причиной, а не «Точная причина не определена»', () => {
