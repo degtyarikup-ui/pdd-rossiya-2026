@@ -55,6 +55,7 @@
 	<array>
 		<string>primaryyandexloginsdk</string>
 		<string>secondaryyandexloginsdk</string>
+		<string>tg</string>
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>

@@ -233,6 +233,15 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                       () => AuthService.instance.signInWithYandex(context),
                     ),
                   ),
+                  const SizedBox(height: 10),
+
+                  _buildAuthButton(
+                    svgAsset: 'assets/icons/auth/telegram.svg',
+                    label: appL10n.authTelegram,
+                    onTap: () => _handleAuth(
+                      () => AuthService.instance.signInWithTelegram(context),
+                    ),
+                  ),
                   if (AuthService.debugSignInAvailable) ...[
                     const SizedBox(height: 10),
                     TextButton.icon(

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-enum AuthProviderType { google, apple, yandex }
+enum AuthProviderType { google, apple, yandex, telegram }
 
 class UserProfile {
   final String id;

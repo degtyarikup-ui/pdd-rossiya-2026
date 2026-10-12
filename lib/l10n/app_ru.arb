@@ -596,6 +596,17 @@
   "authApple": "Продолжить с Apple ID",
   "authGoogle": "Продолжить с Google",
   "authYandex": "Продолжить с Яндекс ID",
+  "authTelegram": "Продолжить с Telegram",
+  "authTelegramWaitingTitle": "Подтверждение в Telegram",
+  "authTelegramWaitingDesc": "Открываем Telegram... Нажмите кнопку «Запустить» в боте @{botName}, чтобы войти в аккаунт.",
+  "@authTelegramWaitingDesc": {
+    "placeholders": {
+      "botName": {
+        "type": "String"
+      }
+    }
+  },
+  "authTelegramOpenAgain": "Открыть Telegram ещё раз",
   "authDebug": "Тестовый вход (debug-сборка)",
   "accountDeleted": "Аккаунт и данные удалены",
   "accountDeleteFailed": "Не удалось удалить аккаунт. Проверьте подключение и попробуйте ещё раз.",

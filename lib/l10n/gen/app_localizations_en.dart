@@ -1208,6 +1208,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authYandex => 'Continue with Yandex ID';
 
   @override
+  String get authTelegram => 'Continue with Telegram';
+
+  @override
+  String get authTelegramWaitingTitle => 'Confirmation in Telegram';
+
+  @override
+  String authTelegramWaitingDesc(String botName) {
+    return 'Opening Telegram... Press the \"Start\" button in @$botName to sign in.';
+  }
+
+  @override
+  String get authTelegramOpenAgain => 'Open Telegram again';
+
+  @override
   String get authDebug => 'Test login (debug build)';
 
   @override

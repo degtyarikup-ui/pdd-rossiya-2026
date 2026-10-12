@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/presentation/widgets/yandex_auth_sheet.dart';
+import 'package:pdd_app/presentation/widgets/telegram_auth_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:pdd_app/data/services/web_oauth_state.dart';
@@ -522,6 +523,61 @@ class AuthService extends ChangeNotifier {
       _recordSignInError(e);
       return false;
     }
+  }
+
+  Future<bool> signInWithTelegram(BuildContext context) async {
+    _beginSignIn('telegram');
+    try {
+      final result = await TelegramAuthSheet.show(context);
+      if (result != null) {
+        return await completeServerSession(
+          user: result.user,
+          token: result.token,
+          expiresAt: result.expiresAt,
+        );
+      }
+      return false;
+    } catch (e) {
+      _recordSignInError(e);
+      return false;
+    }
+  }
+
+  Future<bool> completeServerSession({
+    required UserProfile user,
+    required String token,
+    required DateTime expiresAt,
+  }) async {
+    final revision = _accountRevision;
+    var temporarySession = false;
+    try {
+      await _writeSession({
+        'userId': user.id,
+        'token': token,
+        'expiresAt': expiresAt.toIso8601String(),
+      }).timeout(const Duration(seconds: 5));
+    } catch (_) {
+      temporarySession = true;
+      debugPrint(
+        'AuthService: session storage unavailable; using memory session',
+      );
+    }
+    if (revision != _accountRevision) return false;
+    final avatarPrefs = await SharedPreferences.getInstance();
+    if (revision != _accountRevision) return false;
+    _sessionToken = token;
+    _sessionExpiresAt = expiresAt;
+    _currentUser = user.withAvatarChoice(
+      avatarPrefs.getBool('default_avatar_${user.id}') ?? false,
+    );
+    sessionIsTemporary = temporarySession;
+    lastFailure = null;
+    _accountRevision++;
+    await _saveUser();
+    notifyListeners();
+    await PremiumService.instance.onAuthChanged(user);
+    unawaited(ProgressSyncService.instance.syncWithServer());
+    return true;
   }
 
   Future<bool> _completeSignIn(UserProfile profile, String? credential) =>

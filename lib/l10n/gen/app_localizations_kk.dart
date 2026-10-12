@@ -1208,6 +1208,20 @@ class AppLocalizationsKk extends AppLocalizations {
   String get authYandex => 'Яндекс идентификаторымен жалғастырыңыз';
 
   @override
+  String get authTelegram => 'Telegram арқылы жалғастырыңыз';
+
+  @override
+  String get authTelegramWaitingTitle => 'Telegram арқылы растау';
+
+  @override
+  String authTelegramWaitingDesc(String botName) {
+    return 'Telegram ашылуда... Есептік жазбаға кіру үшін @$botName ботында «Бастау» түймесін басыңыз.';
+  }
+
+  @override
+  String get authTelegramOpenAgain => 'Telegram-ды қайта ашу';
+
+  @override
   String get authDebug => 'Сынақ енгізу (отлад құрастыру)';
 
   @override

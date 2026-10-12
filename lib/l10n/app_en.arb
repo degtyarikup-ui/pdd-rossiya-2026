@@ -360,6 +360,17 @@
   "authApple": "Continue with Apple ID",
   "authGoogle": "Continue with Google",
   "authYandex": "Continue with Yandex ID",
+  "authTelegram": "Continue with Telegram",
+  "authTelegramWaitingTitle": "Confirmation in Telegram",
+  "authTelegramWaitingDesc": "Opening Telegram... Press the \"Start\" button in @{botName} to sign in.",
+  "@authTelegramWaitingDesc": {
+    "placeholders": {
+      "botName": {
+        "type": "String"
+      }
+    }
+  },
+  "authTelegramOpenAgain": "Open Telegram again",
   "authDebug": "Test login (debug build)",
   "accountDeleted": "Account and data deleted",
   "accountDeleteFailed": "Failed to delete account. Check your connection and try again.",

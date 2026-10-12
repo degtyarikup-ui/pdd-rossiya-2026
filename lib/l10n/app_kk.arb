@@ -360,6 +360,17 @@
   "authApple": "Apple ID арқылы жалғастырыңыз",
   "authGoogle": "Google арқылы жалғастырыңыз",
   "authYandex": "Яндекс идентификаторымен жалғастырыңыз",
+  "authTelegram": "Telegram арқылы жалғастырыңыз",
+  "authTelegramWaitingTitle": "Telegram арқылы растау",
+  "authTelegramWaitingDesc": "Telegram ашылуда... Есептік жазбаға кіру үшін @{botName} ботында «Бастау» түймесін басыңыз.",
+  "@authTelegramWaitingDesc": {
+    "placeholders": {
+      "botName": {
+        "type": "String"
+      }
+    }
+  },
+  "authTelegramOpenAgain": "Telegram-ды қайта ашу",
   "authDebug": "Сынақ енгізу (отлад құрастыру)",
   "accountDeleted": "Есептік жазба мен деректер жойылды",
   "accountDeleteFailed": "Есептік жазба жойылмады. Байланысты тексеріп, әрекетті қайталаңыз.",

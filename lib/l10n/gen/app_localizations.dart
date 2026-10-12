@@ -2164,6 +2164,30 @@ abstract class AppLocalizations {
   /// **'Продолжить с Яндекс ID'**
   String get authYandex;
 
+  /// No description provided for @authTelegram.
+  ///
+  /// In ru, this message translates to:
+  /// **'Продолжить с Telegram'**
+  String get authTelegram;
+
+  /// No description provided for @authTelegramWaitingTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подтверждение в Telegram'**
+  String get authTelegramWaitingTitle;
+
+  /// No description provided for @authTelegramWaitingDesc.
+  ///
+  /// In ru, this message translates to:
+  /// **'Открываем Telegram... Нажмите кнопку «Запустить» в боте @{botName}, чтобы войти в аккаунт.'**
+  String authTelegramWaitingDesc(String botName);
+
+  /// No description provided for @authTelegramOpenAgain.
+  ///
+  /// In ru, this message translates to:
+  /// **'Открыть Telegram ещё раз'**
+  String get authTelegramOpenAgain;
+
   /// No description provided for @authDebug.
   ///
   /// In ru, this message translates to:

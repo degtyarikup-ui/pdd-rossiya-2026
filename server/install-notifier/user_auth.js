@@ -68,6 +68,31 @@ export async function verifyIdentity(body, env) {
       email: info.default_email || '', email_verified: true,
       picture: !info.is_avatar_empty && info.default_avatar_id
         ? `https://avatars.yandex.net/get-yapic/${encodeURIComponent(info.default_avatar_id)}/islands-200` : null };
+  } else if (provider === 'telegram') {
+    const token = env.TELEGRAM_AUTH_BOT_TOKEN || env.BOT_TOKEN;
+    if (!token) throw authFailure('bot not configured', 'telegram_bot_unconfigured');
+    let data;
+    try { data = typeof credential === 'object' ? credential : JSON.parse(credential); } catch {
+      data = Object.fromEntries(new URLSearchParams(credential));
+    }
+    const hash = data?.hash;
+    if (!hash || !data?.id || !data?.auth_date) throw authFailure('invalid credential', 'telegram_missing_fields');
+    if (Math.abs(Date.now() / 1000 - Number(data.auth_date)) > 86400) throw authFailure('expired credential', 'telegram_expired');
+    const checkString = Object.keys(data)
+      .filter(k => k !== 'hash')
+      .sort()
+      .map(k => `${k}=${data[k]}`)
+      .join('\n');
+    const secretKey = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+    const hmacKey = await crypto.subtle.importKey('raw', secretKey, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const sig = new Uint8Array(await crypto.subtle.sign('HMAC', hmacKey, new TextEncoder().encode(checkString)));
+    const calculatedHash = [...sig].map(b => b.toString(16).padStart(2, '0')).join('');
+    if (calculatedHash !== hash) throw authFailure('invalid signature', 'telegram_invalid_hash');
+    claims = {
+      sub: String(data.id),
+      name: [data.first_name, data.last_name].filter(Boolean).join(' ') || data.username || 'Пользователь',
+      picture: typeof data.photo_url === 'string' && data.photo_url.startsWith('https://') ? data.photo_url : null,
+    };
   } else throw new Error('invalid provider');
   if (typeof claims.sub !== 'string' || !claims.sub || claims.sub.length > 180) throw authFailure('invalid identity', 'identity_subject');
   return {
@@ -151,7 +176,7 @@ export async function handleAuth(request, env, verify = verifyIdentity, onFailur
     if (!env.SHARED_SECRET || request.headers.get('x-install-secret') !== env.SHARED_SECRET) return finish({ error: 'forbidden' }, 403, 'app_key_rejected');
     let body;
     try { body = await request.json(); } catch { return finish({ error: 'invalid json' }, 400, 'invalid_json'); }
-    if (['google', 'yandex', 'apple'].includes(body?.provider)) provider = body.provider;
+    if (['google', 'yandex', 'apple', 'telegram'].includes(body?.provider)) provider = body.provider;
     metadata = { platform: body?.platform, appVersion: body?.appVersion, device: body?.device };
     if (!env.INSTALLS) return finish({ error: 'unavailable' }, 503, 'storage_not_configured');
     let user;

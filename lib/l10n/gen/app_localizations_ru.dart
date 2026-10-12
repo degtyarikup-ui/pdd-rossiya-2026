@@ -1224,6 +1224,20 @@ class AppLocalizationsRu extends AppLocalizations {
   String get authYandex => 'Продолжить с Яндекс ID';
 
   @override
+  String get authTelegram => 'Продолжить с Telegram';
+
+  @override
+  String get authTelegramWaitingTitle => 'Подтверждение в Telegram';
+
+  @override
+  String authTelegramWaitingDesc(String botName) {
+    return 'Открываем Telegram... Нажмите кнопку «Запустить» в боте @$botName, чтобы войти в аккаунт.';
+  }
+
+  @override
+  String get authTelegramOpenAgain => 'Открыть Telegram ещё раз';
+
+  @override
   String get authDebug => 'Тестовый вход (debug-сборка)';
 
   @override

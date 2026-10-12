@@ -1,6 +1,7 @@
 // Чат техподдержки: создание отдельной ветки (Forum Topic) в Telegram на каждого
 // пользователя, отправка сообщений и приём ответов от команды через Webhook/Updates.
 import { telegramChatId } from './telegram_queue.js';
+import { processTelegramAuthMessage, telegramWebhookVerified, telegramWebhookSecret } from './telegram_auth.js';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -327,7 +328,10 @@ export async function handleTelegramWebhook(request, env) {
   }
 
   if (update?.message) {
-    await processTelegramMessageUpdate(update.message, env);
+    const handledAuth = await processTelegramAuthMessage(update.message, env, await telegramWebhookVerified(request, env));
+    if (!handledAuth) {
+      await processTelegramMessageUpdate(update.message, env);
+    }
   }
 
   return jsonResponse({ ok: true });
@@ -346,7 +350,7 @@ export async function handleSupportSetupWebhook(request, env) {
   const resp = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/setWebhook`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ url: webhookUrl, allowed_updates: ['message'] }),
+    body: JSON.stringify({ url: webhookUrl, allowed_updates: ['message'], secret_token: await telegramWebhookSecret(env) || undefined }),
     signal: AbortSignal.timeout(10000),
   });
 

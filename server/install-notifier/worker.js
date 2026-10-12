@@ -28,6 +28,7 @@ import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntit
 import { setEntitlement } from './entitlements.js';
 import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, listPayIntents, webPaymentsLive } from './payments.js';
 import { handleAuth, authorizeUserRequest, revokeUserSessions, readSession } from './user_auth.js';
+import { handleTelegramAuthRequest, handleTelegramAuthCheck } from './telegram_auth.js';
 import { handleClientIncident, deferIncident, errorCode } from './diagnostics.js';
 import { APPLE_WEB_CALLBACK_PATH, handleAppleWebCallback } from './apple_web_callback.js';
 import { premiumEventSource, isPaidPremiumEvent } from './premium_analytics.js';
@@ -3364,7 +3365,13 @@ const workerHandlers = {
       return jsonResponse({ ok: true, config: body });
     }
 
-    
+    if (url.pathname === '/api/auth/telegram/request' && request.method === 'POST') {
+      return handleTelegramAuthRequest(request, env);
+    }
+    if (url.pathname === '/api/auth/telegram/check' && request.method === 'POST') {
+      return handleTelegramAuthCheck(request, env);
+    }
+
     const authResponse = await handleAuth(request, env, undefined, event => deferIncident(ctx, env, event));
     if (authResponse) {
       for (const [key, value] of Object.entries(CORS_HEADERS)) authResponse.headers.set(key, value);
