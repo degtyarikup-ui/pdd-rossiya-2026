@@ -13,6 +13,9 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
+import 'package:pdd_app/data/services/support_inbox.dart';
+import 'package:pdd_app/presentation/screens/support/support_chat_screen.dart';
+import 'package:pdd_app/presentation/widgets/support_reply_banner.dart';
 import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/data/services/install_reporter.dart';
 import 'package:pdd_app/data/services/notification_service.dart';
@@ -210,6 +213,21 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Operator replies while the app is open: a sound and a banner that opens the chat.
+    SupportInbox.instance.onSound = () => SoundEffectsService.instance.playMessage();
+    SupportInbox.instance.onReply = (reply) {
+      final navigator = _navigatorKey.currentState;
+      final overlay = navigator?.overlay;
+      if (navigator == null || overlay == null) return;
+      SupportReplyBanner.show(
+        overlay,
+        reply,
+        onTap: () => navigator.push(
+          MaterialPageRoute<void>(builder: (_) => const SupportChatScreen()),
+        ),
+      );
+    };
+    SupportInbox.instance.start();
     final returned = widget.webAuthReturn;
     if (returned != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -228,6 +246,7 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    SupportInbox.instance.stop();
     super.dispose();
   }
 
@@ -242,6 +261,9 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       unawaited(UsageReporter.instance.flush());
       unawaited(ErrorReporter.instance.flush());
+      SupportInbox.instance.start();
+    } else if (state == AppLifecycleState.paused) {
+      SupportInbox.instance.stop();
     }
     if (kIsWeb) return;
     if (state == AppLifecycleState.resumed) {

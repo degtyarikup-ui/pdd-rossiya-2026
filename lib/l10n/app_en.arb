@@ -1096,6 +1096,7 @@
   "supportChatSendFailed": "Failed to send message",
   "supportChatRetry": "Retry",
   "supportChatStaff": "Support",
+  "supportManagerName": "Manager Sergei",
   "appVersion": "Version {version}",
   "@appVersion": {
     "placeholders": {

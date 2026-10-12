@@ -1596,6 +1596,7 @@
   "supportChatSendFailed": "Не удалось отправить сообщение",
   "supportChatRetry": "Повторить",
   "supportChatStaff": "Поддержка",
+  "supportManagerName": "Менеджер Сергей",
   "appVersion": "Версия {version}",
   "@appVersion": {
     "placeholders": {

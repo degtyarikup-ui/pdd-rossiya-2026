@@ -1096,6 +1096,7 @@
   "supportChatSendFailed": "Хабарлама жіберілмеді",
   "supportChatRetry": "Қайталау",
   "supportChatStaff": "Қолдау",
+  "supportManagerName": "Менеджер Сергей",
   "appVersion": "{version} нұсқасы",
   "@appVersion": {
     "placeholders": {

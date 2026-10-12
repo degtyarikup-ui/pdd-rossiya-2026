@@ -3460,6 +3460,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get supportChatStaff => 'Поддержка';
 
   @override
+  String get supportManagerName => 'Менеджер Сергей';
+
+  @override
   String appVersion(String version) {
     return 'Версия $version';
   }

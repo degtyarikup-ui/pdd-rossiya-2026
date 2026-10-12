@@ -11,6 +11,7 @@ class SoundEffectsService {
   AudioPlayer? _incorrectPlayer;
   AudioPlayer? _streakPlayer;
   AudioPlayer? _tickPlayer;
+  AudioPlayer? _messagePlayer;
 
   bool _initialized = false;
   bool _enabled = true;
@@ -25,6 +26,7 @@ class SoundEffectsService {
   AudioPlayer _getIncorrectPlayer() => _incorrectPlayer ??= AudioPlayer();
   AudioPlayer _getStreakPlayer() => _streakPlayer ??= AudioPlayer();
   AudioPlayer _getTickPlayer() => _tickPlayer ??= AudioPlayer();
+  AudioPlayer _getMessagePlayer() => _messagePlayer ??= AudioPlayer();
 
   Future<void> init() async {
     if (_initialized) return;
@@ -86,6 +88,20 @@ class SoundEffectsService {
       );
     } catch (e) {
       debugPrint('SoundEffectsService: playTick error: $e');
+    }
+  }
+
+  /// A short two-note chime for an incoming support message (chat or the banner over the app).
+  Future<void> playMessage() async {
+    if (!_enabled) return;
+    try {
+      await init();
+      await _getMessagePlayer().play(
+        AssetSource('audio/message.wav'),
+        mode: PlayerMode.lowLatency,
+      );
+    } catch (e) {
+      debugPrint('SoundEffectsService: playMessage error: $e');
     }
   }
 

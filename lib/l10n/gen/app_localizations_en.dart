@@ -3447,6 +3447,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get supportChatStaff => 'Support';
 
   @override
+  String get supportManagerName => 'Manager Sergei';
+
+  @override
   String appVersion(String version) {
     return 'Version $version';
   }

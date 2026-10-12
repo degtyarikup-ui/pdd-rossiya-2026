@@ -72,7 +72,6 @@ export async function processTelegramMessageUpdate(msg, env) {
   if (msg.document) text = (text ? text + ' ' : '') + '[Документ]';
   if (!text) text = '[Вложение]';
 
-  const authorName = [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(' ') || 'Поддержка';
   const replyMsg = {
     id: 'tg_' + msg.message_id,
     sender: 'support',
@@ -80,7 +79,8 @@ export async function processTelegramMessageUpdate(msg, env) {
     // Время прихода на сервер, а не время Telegram: оно в секундах и может быть раньше
     // сообщения пользователя, которое мы уже сохранили; приложение показывает только ts > since.
     ts: Date.now(),
-    authorName,
+    // Всегда один и тот же подписанный ответ, а не имя аккаунта Telegram оператора.
+    authorName: 'Менеджер Сергей',
   };
 
   const msgKey = 'support:messages:' + clientId;

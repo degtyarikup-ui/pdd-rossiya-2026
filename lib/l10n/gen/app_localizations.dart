@@ -5740,6 +5740,12 @@ abstract class AppLocalizations {
   /// **'Поддержка'**
   String get supportChatStaff;
 
+  /// No description provided for @supportManagerName.
+  ///
+  /// In ru, this message translates to:
+  /// **'Менеджер Сергей'**
+  String get supportManagerName;
+
   /// No description provided for @appVersion.
   ///
   /// In ru, this message translates to:

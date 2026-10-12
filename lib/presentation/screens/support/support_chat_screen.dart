@@ -5,7 +5,9 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/support_chat_message.dart';
+import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/support_chat_service.dart';
+import 'package:pdd_app/data/services/support_inbox.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 
@@ -30,11 +32,14 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   @override
   void initState() {
     super.initState();
+    // While the chat is on screen the inbox does not show a banner: this screen shows the reply.
+    SupportInbox.instance.chatOpen = true;
     _initChat();
   }
 
   @override
   void dispose() {
+    SupportInbox.instance.chatOpen = false;
     _pollTimer?.cancel();
     _textController.dispose();
     _scrollController.dispose();
@@ -85,6 +90,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       });
       await SupportChatService.instance.saveCachedMessages(_messages);
       _scrollToBottom();
+      if (newItems.any((m) => m.isSupport)) {
+        SoundEffectsService.instance.playMessage();
+      }
       if (!silent) HapticFeedbackHelper.tap();
     }
   }
@@ -354,14 +362,13 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
               width: 28,
               height: 28,
               margin: const EdgeInsets.only(right: 8, bottom: 4),
-              decoration: BoxDecoration(
-                color: colors.accent.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.support_agent_rounded,
-                color: colors.accent,
-                size: 16,
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/images/support_manager.webp',
+                  width: 28,
+                  height: 28,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           ],
@@ -395,7 +402,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                 children: [
                   if (!isUser) ...[
                     Text(
-                      msg.authorName ?? appL10n.supportChatStaff,
+                      appL10n.supportManagerName,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
