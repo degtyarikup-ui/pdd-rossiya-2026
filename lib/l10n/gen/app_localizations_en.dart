@@ -3442,4 +3442,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get supportChatStaff => 'Support';
+
+  @override
+  String appVersion(String version) {
+    return 'Version $version';
+  }
 }
