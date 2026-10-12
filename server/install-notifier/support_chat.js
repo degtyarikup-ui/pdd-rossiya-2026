@@ -123,7 +123,9 @@ async function checkPendingTelegramUpdates(env) {
 
     if (resp.status === 409) {
       // Telegram сообщил, что активен webhook — запоминаем и больше getUpdates не вызываем
-      if (env.INSTALLS) await env.INSTALLS.put('tg:webhook_active', '1');
+      // Флаг живёт час, потом getUpdates проверяется снова: иначе устаревший флаг отключал
+      // опрос навсегда (так и случилось: вебхук был пуст, а сообщения копились в Telegram).
+      if (env.INSTALLS) await env.INSTALLS.put('tg:webhook_active', '1', { expirationTtl: 3600 });
       return;
     }
 
@@ -295,7 +297,8 @@ export async function handleTelegramWebhook(request, env) {
   }
 
   if (env.INSTALLS) {
-    await env.INSTALLS.put('tg:webhook_active', '1');
+    // Вебхук присылает сообщения — пока они идут, getUpdates не нужен.
+    await env.INSTALLS.put('tg:webhook_active', '1', { expirationTtl: 86400 });
   }
 
   if (update?.message) {
@@ -324,7 +327,7 @@ export async function handleSupportSetupWebhook(request, env) {
 
   const data = await resp.json().catch(() => ({}));
   if (data.ok && env.INSTALLS) {
-    await env.INSTALLS.put('tg:webhook_active', '1');
+    await env.INSTALLS.put('tg:webhook_active', '1', { expirationTtl: 3600 });
   }
 
   return jsonResponse({ ok: Boolean(data.ok), webhookUrl, description: data.description });
