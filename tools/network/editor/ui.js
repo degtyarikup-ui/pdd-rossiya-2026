@@ -25,17 +25,17 @@ const Ed = (() => {
   };
   // The tools, in the order of the toolbar. icon: the picture in the toolbar and the guide.
   const TOOLS = {
-    select: { key: "V", label: "Выбрать", icon: "cursor", hint: "Нажмите линию, дорогу, участника или светофор на плане — или выберите его в списке «Объекты». Тяните точки и объекты." },
-    road: { key: "D", label: "Дорога", icon: "road", hint: "Кликайте точки оси дороги. Enter — готово." },
-    contour: { key: "C", label: "Контур", icon: "contour", hint: "Кликайте углы контура по порядку. Клик у первой точки или Enter — замкнуть." },
-    island: { key: "I", label: "Островок", icon: "island", hint: "Контур островка внутри дороги. Клик у первой точки или Enter — контур замкнётся." },
-    lawn: { key: "G", label: "Газон", icon: "lawn", hint: "Контур газона или клумбы. Клик у первой точки или Enter — замкнуть. Газон не заходит на дорогу." },
-    marking: { key: "K", label: "Разметка", icon: "marking", hint: "Сплошная и прерывистая: кликайте точки линии, Enter — готово. Стоп-линия и зебра: две точки поперёк дороги." },
-    route: { key: "M", label: "Маршрут", icon: "route", hint: "Кликайте точки пути по порядку. Двойной клик или Enter — готово, Esc — отмена." },
-    stop: { key: "S", label: "Стоп-линия", icon: "stopline", hint: "Кликните место, где начинается остановка. Подъезд подстроится под неё." },
-    actor: { key: "A", label: "Участник", icon: "car", hint: "Кликните место, чтобы поставить машину или пешехода. Потом нарисуйте ему путь." },
-    light: { key: "L", label: "Светофор", icon: "light", hint: "Кликните место у дороги, чтобы поставить светофор." },
-    decor: { key: "P", label: "Декор", icon: "tree", hint: "Кликните место, чтобы поставить выбранный предмет: дом, дерево, киоск или фонарь." },
+    select: { key: "Q", label: "Выбрать", icon: "cursor", hint: "Выберите объект на плане или в списке слева." },
+    road: { key: "D", label: "Дорога", icon: "road", hint: "Клики — точки оси. Enter — готово." },
+    contour: { key: "C", label: "Контур", icon: "contour", hint: "Клики — углы. Enter или клик у первой точки — замкнуть." },
+    island: { key: "I", label: "Островок", icon: "island", hint: "Контур внутри дороги. Enter — замкнуть." },
+    lawn: { key: "G", label: "Газон", icon: "lawn", hint: "Контур газона. Enter — замкнуть." },
+    marking: { key: "K", label: "Разметка", icon: "marking", hint: "Линия: клики, Enter. Стоп-линия и зебра: две точки поперёк." },
+    route: { key: "M", label: "Маршрут", icon: "route", hint: "Клики — точки пути. Enter — готово." },
+    stop: { key: "S", label: "Стоп-линия", icon: "stopline", hint: "Клик — место стоп-линии." },
+    actor: { key: "A", label: "Участник", icon: "car", hint: "Клик или протяжка — место и направление." },
+    light: { key: "L", label: "Светофор", icon: "light", hint: "Клик — место светофора." },
+    decor: { key: "P", label: "Декор", icon: "tree", hint: "Клик или протяжка — место и направление." },
   };
   const TOOL_GROUPS = [["select"], ["road", "contour", "island"], ["lawn", "marking"], ["route", "stop"], ["actor", "light", "decor"]];
   const GROUP_ICON = { roads: "road", lawns: "lawn", marks: "marking", routes: "route", stop: "flag", actors: "car", lights: "light", decor: "tree" };
@@ -1045,12 +1045,11 @@ const Ed = (() => {
     if (ltab === "textures") {
       icon = "tiles";
       title = texSel ? `Текстура: ${Textures.INFO[texSel]?.name || texSel}` : "Текстуры игры";
-      hint = texSel ? "Ползунки меняют вид на плане сразу. «Сохранить» записывает их в игру." : "Выберите текстуру слева, чтобы поменять её контраст, пятна, масштаб или картинку.";
+      hint = texSel ? "Ползунки видны на плане сразу." : "Выберите текстуру слева.";
     } else if (tool === "select") {
       icon = "cursor";
       title = sel ? `Выбрано: ${selectionName(sel)}` : "Выберите объект";
-      hint = sel ? "Тяните точки и объект мышью. Стрелки — сдвиг (Shift — на 50 см), [ ] — поворот, Delete — удалить."
-        : TOOLS.select.hint;
+      hint = sel ? "W — переместить · E — повернуть · R — на 15° · Delete — удалить" : TOOLS.select.hint;
     }
     $("#guide-icon").setAttribute("href", `#i-${icon}`);
     $("#guide-title").textContent = title;
@@ -1222,14 +1221,13 @@ const Ed = (() => {
         </dl>
       </section>
       <section class="card">
-        ${subhead("bulb", "Как работать")}
-        <ol class="howto">
-          <li>${ic("cursor")}<span>Нажмите объект на плане или выберите его в списке «Объекты».</span></li>
-          <li>${ic("points")}<span>Тяните точки и объекты. Координаты можно ввести справа.</span></li>
-          <li>${ic("road")}<span>Слева на плане — инструменты: дорога, газон, разметка, участники.</span></li>
-          <li>${ic("tiles")}<span>Вкладка «Текстуры» — фактура асфальта, тротуаров и газонов.</span></li>
-          <li>${ic("save")}<span>Сохранить — <kbd>⌘S</kbd>. Изменения попадут в игру.</span></li>
-        </ol>
+        ${subhead("keyboard", "Клавиши")}
+        <dl class="keys">
+          <dt><kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd></dt><dd>выбор, перемещение, поворот, поворот на 15°</dd>
+          <dt><kbd>D</kbd> <kbd>C</kbd> <kbd>I</kbd> <kbd>G</kbd> <kbd>K</kbd></dt><dd>дорога, контур, островок, газон, разметка</dd>
+          <dt><kbd>M</kbd> <kbd>S</kbd> <kbd>A</kbd> <kbd>L</kbd> <kbd>P</kbd></dt><dd>маршрут, стоп, участник, светофор, декор</dd>
+          <dt><kbd>T</kbd> <kbd>F</kbd></dt><dd>вид сверху и 3D; вся сцена</dd>
+        </dl>
       </section>`;
   }
 
@@ -1628,8 +1626,8 @@ const Ed = (() => {
         </div>
         <p class="tex-file">${meta.width ? `${meta.width} × ${meta.height} px` : "картинка не найдена"} · textures/detail/${kind}.png</p>
         <p class="tex-note ${inScene ? "" : "plain"}">${inScene
-          ? `${ic("info")} Видна на плане справа: дороги, тротуары и газоны.`
-          : `${ic("info")} На плане не рисуется: в игре это здания и предметы. Предпросмотр выше показывает, как она выглядит.`}</p>
+          ? `${ic("info")} Видна на плане.`
+          : `${ic("info")} Только в игре.`}</p>
       </section>
       <section class="card">
         ${subhead("sliders", "Настройки")}
@@ -1641,7 +1639,7 @@ const Ed = (() => {
       </section>
       <section class="card">
         ${subhead("upload", "Картинка")}
-        <p class="note">PNG, лучше 256 × 256. Красный канал — зерно, зелёный — пятна. Прежняя картинка сохраняется, её можно вернуть.</p>
+        <p class="note">PNG 256 × 256. Прежняя картинка сохранится.</p>
         <div class="actions" style="margin-top:0">
           <button class="btn" data-act="tex-upload">${ic("upload")}Заменить картинку</button>
           <button class="btn" data-act="tex-restore" ${meta.backups ? "" : "disabled"}>${ic("undo")}Вернуть прежнюю${meta.backups ? ` (${meta.backups})` : ""}</button>

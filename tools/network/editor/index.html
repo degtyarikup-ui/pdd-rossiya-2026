@@ -105,7 +105,7 @@
     </section>
     <section id="pane-textures" class="pane" hidden>
       <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="tq" type="search" placeholder="Найти текстуру" autocomplete="off"></label>
-      <p class="pane-note">Фактура дорог, тротуаров, газонов и зданий. Ползунки видны на плане сразу, «Сохранить» записывает их в игру.</p>
+      <p class="pane-note">Фактура дорог, газонов и зданий.</p>
       <div id="tex-list" class="list"></div>
     </section>
   </aside>
@@ -169,11 +169,11 @@
       <div class="empty-card">
         <span class="empty-ico"><svg class="i"><use href="#i-map"/></svg></span>
         <h2>Выберите сцену слева</h2>
-        <p>Перекрёсток из билета: дорога, разметка, машины и светофоры — как в игре. Всё можно двигать и добавлять прямо на плане.</p>
+        <p>Перекрёсток из билета, как в игре.</p>
         <ol class="steps">
           <li><span class="step-n">1</span><svg class="i"><use href="#i-search"/></svg>Найдите перекрёсток по номеру билета</li>
-          <li><span class="step-n">2</span><svg class="i"><use href="#i-cursor"/></svg>Нажмите объект на плане или в списке и тяните его</li>
-          <li><span class="step-n">3</span><svg class="i"><use href="#i-save"/></svg>Сохраните — изменения попадут в игру</li>
+          <li><span class="step-n">2</span><svg class="i"><use href="#i-cursor"/></svg>Выберите объект и двигайте его</li>
+          <li><span class="step-n">3</span><svg class="i"><use href="#i-save"/></svg>Сохраните</li>
         </ol>
       </div>
     </div>
@@ -201,38 +201,37 @@
     </div>
     <div class="help-grid">
       <section>
+        <h3>Выбор и перемещение</h3>
+        <dl>
+          <dt><kbd>Q</kbd></dt><dd>выбрать</dd>
+          <dt><kbd>W</kbd> <kbd>E</kbd></dt><dd>перемещать и поворачивать стрелками в виде</dd>
+          <dt><kbd>R</kbd></dt><dd>повернуть на 15° (призрак при размещении тоже)</dd>
+          <dt><kbd>Delete</kbd></dt><dd>удалить выбранное</dd>
+        </dl>
+      </section>
+      <section>
         <h3>Инструменты</h3>
         <dl>
-          <dt><kbd>V</kbd></dt><dd>выбрать и двигать объект или точку</dd>
-          <dt><kbd>D</kbd> <kbd>R</kbd> <kbd>I</kbd></dt><dd>дорога, прямой участок, островок</dd>
-          <dt><kbd>G</kbd> <kbd>K</kbd></dt><dd>газон или клумба; разметка</dd>
-          <dt><kbd>M</kbd> <kbd>S</kbd></dt><dd>маршрут; стоп-линия</dd>
+          <dt><kbd>D</kbd> <kbd>C</kbd></dt><dd>дорога по линии, контур</dd>
+          <dt><kbd>I</kbd> <kbd>G</kbd> <kbd>K</kbd></dt><dd>островок, газон, разметка</dd>
+          <dt><kbd>M</kbd> <kbd>S</kbd></dt><dd>маршрут, стоп-линия</dd>
           <dt><kbd>A</kbd> <kbd>L</kbd> <kbd>P</kbd></dt><dd>участник, светофор, декор</dd>
         </dl>
       </section>
       <section>
         <h3>Рисование</h3>
         <dl>
-          <dt><kbd>Enter</kbd></dt><dd>готово: контур замкнут, линия закончена</dd>
-          <dt><kbd>Esc</kbd></dt><dd>отменить рисование и снять выбор</dd>
-          <dt>двойной клик</dt><dd>добавить точку на линию или закончить</dd>
+          <dt><kbd>Enter</kbd></dt><dd>готово</dd>
+          <dt><kbd>Esc</kbd></dt><dd>отмена</dd>
         </dl>
       </section>
       <section>
-        <h3>Изменение</h3>
+        <h3>Вид</h3>
         <dl>
-          <dt><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd></dt><dd>сдвиг на 5 см; с Shift — 50 см</dd>
-          <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>поворот на 5°; с Shift — 45°</dd>
-          <dt><kbd>Delete</kbd></dt><dd>удалить выбранное</dd>
-          <dt><kbd>⌘Z</kbd> <kbd>⇧⌘Z</kbd></dt><dd>отменить и вернуть</dd>
-        </dl>
-      </section>
-      <section>
-        <h3>Вид и сохранение</h3>
-        <dl>
-          <dt><kbd>F</kbd></dt><dd>показать всю сцену</dd>
-          <dt>колесо, Пробел + тяни</dt><dd>масштаб и сдвиг вида; в 3D правая кнопка вращает</dd>
-          <dt><kbd>⌘S</kbd></dt><dd>сохранить сцену и текстуры</dd>
+          <dt><kbd>T</kbd></dt><dd>сверху и 3D</dd>
+          <dt><kbd>F</kbd></dt><dd>вся сцена</dd>
+          <dt>ПКМ или Alt+ЛКМ</dt><dd>вращать (3D)</dd>
+          <dt>Shift+ПКМ, колесо</dt><dd>сдвинуть, масштаб</dd>
         </dl>
       </section>
     </div>

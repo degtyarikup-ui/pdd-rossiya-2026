@@ -793,3 +793,8 @@ details summary { cursor: pointer; color: var(--accent); font-size: 13px; font-w
 .chk-row .i { width: 18px; height: 18px; }
 .chk-row.ok { background: var(--green-soft); color: var(--green-ink); }
 .chk-row.bad { background: var(--red-soft); color: var(--red); }
+
+/* The overview's key table. */
+.keys { margin: 0; display: grid; gap: 8px; }
+.keys dt { display: flex; flex-wrap: wrap; gap: 4px; }
+.keys dd { margin: 0 0 4px; color: var(--ink-2); font-size: 13px; line-height: 1.4; }
