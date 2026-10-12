@@ -273,13 +273,18 @@ def build(scene: dict) -> dict:
 
     v, t = triangulate(road)
     asphalt = {"id": "asphalt", "y": ROAD_Y, "layer": "asphalt", "colour": ASPHALT, "verts": v, "idx": t}
-    v, t = triangulate(islands)
+    # Dividing strips (a road item with "green": its islands are lawns, raised like the pavement).
+    green = unary_union([Polygon(h).buffer(0) for r in scene.get("roads", []) if r.get("green") for h in r.get("holes", [])])
+    green = green.intersection(islands) if not green.is_empty else Polygon()
+    v, t = triangulate(islands.difference(green) if not green.is_empty else islands)
     island = {"id": "island", "y": KERB, "layer": "pavement", "colour": PAVEMENT, "verts": v, "idx": t}
+    v, t = triangulate(green)
+    median = {"id": "median", "y": KERB + 0.005, "layer": "grass", "colour": LAWN_COLOUR, "verts": v, "idx": t}
     v, t = triangulate(pavement)
     pave = {"id": "pavement", "y": KERB, "layer": "pavement", "colour": PAVEMENT, "verts": v, "idx": t}
     v, t = triangulate(lawn)
     lawn_surface = {"id": "lawn", "y": LAWN_Y, "layer": "grass", "colour": LAWN_COLOUR, "verts": v, "idx": t}
-    surfaces = [asphalt, island, pave, lawn_surface]
+    surfaces = [asphalt, island, median, pave, lawn_surface]
     if scene.get("layout"):
         # A scene laid out from a road plan (the editor) has its own ground everywhere else: the baked
         # scene's old roads (where the plan has none now) are covered, and the game drops them (covers()).

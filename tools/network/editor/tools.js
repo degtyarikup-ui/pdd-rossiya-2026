@@ -490,7 +490,7 @@ const Tools = (() => {
       url = null;
       half = [0.3, 1.5];
       y = yaw ?? Math.PI;
-      const spot = s.layout && yaw === null ? lightSpot([x, z]) : null;
+      const spot = s.layout && yaw === null && !Layout.onMedian(s, [x, z]) ? lightSpot([x, z]) : null;
       if (spot) {
         // A little further out than a traffic light: before the junction, on the right.
         x = r3(spot.pos[0] + Math.sin(spot.yaw) * 2); z = r3(spot.pos[1] + Math.cos(spot.yaw) * 2); y = spot.yaw;
@@ -502,8 +502,9 @@ const Tools = (() => {
     } else if (kind === "light") {
       url = App.state.catalog.lightAsset ? `/asset/scene/${App.state.catalog.lightAsset}` : null;
       half = [0.5, 0.5];
-      const spot = s.layout && yaw === null ? lightSpot([x, z]) : null;
+      const spot = s.layout && yaw === null && !Layout.onMedian(s, [x, z]) ? lightSpot([x, z]) : null;
       if (spot) { x = spot.pos[0]; z = spot.pos[1]; y = spot.yaw; }
+      else if (yaw === null) y = Math.PI;
     } else {
       url = opts.prop === "parked" ? "/asset/models/traffic/sedan.glb" : `/asset/scenery/${opts.prop}.glb`;
       const size = App.catalogSize(opts.prop) || [2, 2, 2];

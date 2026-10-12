@@ -396,7 +396,9 @@
     const isPlayer = pl && pl.st.id === st.id;
     p.innerHTML = `${head(`<span class="ibadge">${ic("road")}</span>`, Layout.KINDS[st.kind || "street"].title, isPlayer ? "по ней едет игрок" : "")}
       ${card("Ширина", chips("kind", Object.entries(Layout.KINDS).map(([k, v]) => ({ value: k, html: `<span class="road-pic k-${k}"></span>`, title: v.title })), st.kind || "street", { cls: "tiles" }))}
-      ${st.kind !== "yard" ? card("Линия по центру", chips("centre", [{ value: "dashed", html: `<span class="mark-pic m-dashed"></span>`, tip: "Прерывистая" }, { value: "solid", html: `<span class="mark-pic m-solid"></span>`, tip: "Сплошная" },
+      ${st.kind !== "yard" ? card("Разделительная полоса", chips("median", [{ value: 0, title: "Нет" }, { value: 2, title: "2 м" }, { value: 3, title: "3 м" }, { value: 5, title: "5 м" }], Number(st.median) || 0)
+        + `<p class="muted">Газон с бордюром посередине. На него можно ставить знаки и светофоры: кликните прямо на полосу.</p>`) : ""}
+      ${st.kind !== "yard" && !Number(st.median) ? card("Линия по центру", chips("centre", [{ value: "dashed", html: `<span class="mark-pic m-dashed"></span>`, tip: "Прерывистая" }, { value: "solid", html: `<span class="mark-pic m-solid"></span>`, tip: "Сплошная" },
         { value: "double", html: `<span class="mark-pic m-double"></span>`, tip: "Двойная сплошная" }, { value: "none", title: "Нет" }], centre, { cls: "tiles" })) : ""}
       ${st.kind !== "yard" ? card("Разметка вручную", st.manualMarks
         ? `<p class="muted">Линии этой улицы — ваши: выберите линию, чтобы менять вид, резать и двигать точки.</p>${button("marks-auto", "Снова строить сами", "restart", "ghost wide")}`
@@ -416,6 +418,7 @@
       del: () => App.remove(),
       "chip:kind": (v) => App.edit(() => { st.kind = v; }),
       "chip:centre": (v) => App.edit(() => { st.centre = v; }),
+      "chip:median": (v) => App.edit(() => { if (Number(v)) st.median = Number(v); else delete st.median; }),
       "toggle:walk": (on) => App.edit(() => { if (on) delete st.walk; else st.walk = false; }),
       straighten: () => App.edit(() => { st.bend = null; }),
       "marks-own": () => App.edit((sc) => {

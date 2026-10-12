@@ -36,7 +36,9 @@ const Layout = (() => {
   const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a <= -Math.PI) a += 2 * Math.PI; return a; };
 
   const kindOf = (st) => KINDS[st.kind] || KINDS.street;
-  const widthOf = (st) => kindOf(st).width;
+  // A street with a dividing strip (median, m) is that much wider: the strip in the middle, the lanes beside it.
+  const medianOf = (st) => (st.kind === "yard" ? 0 : Number(st.median) || 0);
+  const widthOf = (st) => kindOf(st).width + medianOf(st);
 
   // ---- the plan as a graph ------------------------------------------------------------
   function nodeOf(L, id) { return L.nodes.find((n) => n.id === id); }
@@ -179,7 +181,15 @@ const Layout = (() => {
       };
       ext(st.a, true);
       ext(st.b, false);
-      roads.push({ id: `road_${st.id}`, auto: true, outer: outline(pts, w), holes: [] });
+      // With a dividing strip the street meets the game's own street (no strip) at the sides of the
+      // scene: its last metres there narrow back to the plain width (the builder rounds the step).
+      const borderA = nodeKind(L, nodeOf(L, st.a), crop) === "border", borderB = nodeKind(L, nodeOf(L, st.b), crop) === "border";
+      const plainEnds = medianOf(st) > 0 && (borderA || borderB);
+      const lenAll = polyLen(pts);
+      const wide = plainEnds ? cut(pts, borderA ? 22 : 0, lenAll - (borderB ? 22 : 0)) : pts;
+      const roadItem = { id: `road_${st.id}`, auto: true, outer: outline(wide.length >= 2 ? wide : pts, w), holes: [] };
+      roads.push(roadItem);
+      if (plainEnds) roads.push({ id: `road_${st.id}_plain`, auto: true, outer: outline(pts, kindOf(st).width), holes: [] });
       if (st.walk === false) {
         for (const side of [1, -1]) {
           const inner = offsetRight(pts, side * w / 2), outer = offsetRight(pts, side * (w / 2 + 3.4)).reverse();
@@ -199,7 +209,22 @@ const Layout = (() => {
       let d0 = startD(st.a), d1 = total - startD(st.b);
       const ext0 = d0 < 0 ? -d0 : 0, ext1 = d1 > total ? d1 - total : 0;
       const body = cut(line, Math.max(0, d0), Math.min(total, d1));
-      if (body.length >= 2) {
+      // The dividing strip: a raised island of grass along the middle, ending a little before the stop
+      // lines (cars turn round its nose); signs and lights can stand on it.
+      if (medianOf(st) > 0 && body.length >= 2) {
+        const m = medianOf(st);
+        const a0 = d0 > 0 ? d0 + 1.0 : (borderA ? 30 : 0), a1 = d1 < total ? d1 - 1.0 : total - (borderB ? 30 : 0);
+        const strip = cut(line, Math.max(0, a0), Math.min(total, a1));
+        if (strip.length >= 2) {
+          roadItem.holes.push(outline(strip, m));
+          roadItem.green = true;
+        }
+        if (st.kind === "avenue") for (const side of [1, -1]) mark({ type: "dashed", points: offsetRight(body, side * (m / 2 + 3.5)).map(P) });
+        // Where the strip has ended (towards the side of the scene) the plain street's centre line goes on.
+        if (borderA) mark({ type: "dashed", points: cut(line, 0, 26).map(P) });
+        if (borderB) mark({ type: "dashed", points: cut(line, total - 26, total).map(P) });
+      }
+      if (body.length >= 2 && !medianOf(st)) {
         if (ext0) body[0] = add(body[0], mul(unit(sub(body[0], body[1])), ext0));
         if (ext1) body[body.length - 1] = add(body.at(-1), mul(unit(sub(body.at(-1), body.at(-2))), ext1));
         const c = st.manualMarks ? "none" : st.centre || (st.kind === "yard" ? "none" : st.kind === "avenue" ? "double" : "dashed");
@@ -258,7 +283,7 @@ const Layout = (() => {
     return offsetRight(pts, offset);
   }
 
-  function laneOffsets(st) { return kindOf(st).lanes; }
+  function laneOffsets(st) { return kindOf(st).lanes.map((x) => x + medianOf(st) / 2); }
 
   // Classifies every way out of a junction for a car coming in on street `inSt`: straight, left, right, uturn.
   function exitsOf(L, inSt, nid) {
@@ -539,6 +564,22 @@ const Layout = (() => {
     return best.at;
   }
 
+  // A point on a dividing strip (signs and lights stand there where they are put).
+  function onMedian(scene, p) {
+    for (const r of scene.roads || []) {
+      if (!r.green) continue;
+      for (const h of r.holes || []) {
+        let c = false;
+        for (let i = 0, j = h.length - 1; i < h.length; j = i++) {
+          const [xi, zi] = h[i], [xj, zj] = h[j];
+          if ((zi > p[1]) !== (zj > p[1]) && p[0] < ((xj - xi) * (p[1] - zi)) / (zj - zi) + xi) c = !c;
+        }
+        if (c) return true;
+      }
+    }
+    return false;
+  }
+
   // ---- pedestrians: across the road by the nearest zebra --------------------------------------
   // From where the person stands to the near end of the zebra, over it, and a few steps on.
   function zebraPath(scene, p) {
@@ -718,6 +759,7 @@ const Layout = (() => {
     else if (kind === "straight") L = { nodes: [s, n], streets: [S("s1", "s", "n")] };
     else if (kind === "yard-left") L = { nodes: [c, s, n, e], streets: [S("s1", "s", "c", { ends: stopEnd }), S("s2", "c", "n"), S("s3", "c", "e", { kind: "yard" })] };
     else if (kind === "yard-right") L = { nodes: [c, s, n, w], streets: [S("s1", "s", "c", { ends: stopEnd }), S("s2", "c", "n"), S("s4", "c", "w", { kind: "yard" })] };
+    else if (kind === "median") L = { nodes: [c, s, n, e, w], streets: [S("s1", "s", "c", { ends: stopEnd, median: 3 }), S("s2", "c", "n", { median: 3 }), S("s3", "c", "e"), S("s4", "c", "w")] };
     else if (kind === "avenue") L = { nodes: [c, s, n, e, w], streets: [S("s1", "s", "c", { ends: stopEnd }), S("s2", "c", "n"), S("s3", "c", "e", { kind: "avenue" }), S("s4", "c", "w", { kind: "avenue" })] };
     else return null;
     L.player = { street: "s1", toward: L.streets[0].b };
@@ -731,6 +773,7 @@ const Layout = (() => {
     { id: "tee-right", title: "Примыкание справа" },
     { id: "ring", title: "Кольцо" },
     { id: "avenue", title: "С проспектом" },
+    { id: "median", title: "С разделительной полосой" },
     { id: "yard-left", title: "Выезд со двора слева" },
     { id: "yard-right", title: "Выезд со двора справа" },
     { id: "bend-left", title: "Поворот налево" },
@@ -772,7 +815,7 @@ const Layout = (() => {
   }
 
   return {
-    KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf,
+    medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf,
     nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, snapPoint, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
     splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading,
   };
