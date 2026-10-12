@@ -70,7 +70,6 @@ app.*.map.json
 app.*.symbols
 assets/videos/signs_reel/
 exports/
-game_godot/network/build/
 migrate_working_dir/
 node_modules/
 output/game-reels/
