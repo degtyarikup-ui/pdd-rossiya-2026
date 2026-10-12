@@ -102,7 +102,7 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 		if mi.name == "tex_0":
 			mi.visible = false
 		# The exported sign pictures (tex_1...): a scene with its own signs (the editor) draws them anew.
-		if mi.name.begins_with("tex_") and s.network and s.network.data.has("signs"):
+		if s.network and mi.name in s.network.data.get("bakedSigns", []):
 			mi.visible = false
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	s.add_child(scene)
@@ -160,7 +160,8 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 			var plate: String = sg.get("plate") if sg.get("plate") is String else ""
 			var plate_sign: String = sg.get("plateSign") if sg.get("plateSign") is String else ""
 			var main_road: Array = sg.get("mainRoad") if sg.get("mainRoad") is Array else []
-			var sign := RoadBuild.sign_node(str(sg.code), plate, plate_sign, main_road)
+			var roads: Array = sg.get("roads") if sg.get("roads") is Array else []
+			var sign := RoadBuild.sign_node(str(sg.code), plate, plate_sign, main_road, roads)
 			if sign == null:
 				continue
 			sign.position = Vector3(sg.pos[0], 0.0, sg.pos[1])

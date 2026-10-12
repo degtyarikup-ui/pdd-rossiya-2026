@@ -44,9 +44,10 @@ const SIGN_LEAN := deg_to_rad(38.0)   # the board leans back towards the camera 
 
 ## A road sign at the origin, facing a driver who comes from -Z: a pole, and on it the board (the
 ## sign, its picture plate and its text plate) leaning back so the game's camera from above sees it
-## whole. A grey back keeps the picture from showing through when it is seen from behind.
-static func sign_node(code: String, plate := "", plate_sign := "", main_road: Array = []) -> Node3D:
-	var tex := load("res://signs/%s.svg" % code) as Texture2D
+## whole.
+static func sign_node(code: String, plate := "", plate_sign := "", main_road: Array = [], roads: Array = []) -> Node3D:
+	# 8.13 alone (on a light pole, or the old scenes): the plate is the sign.
+	var tex: Texture2D = main_road_plate(main_road, roads) if code == "8.13" else load("res://signs/%s.svg" % code) as Texture2D
 	if tex == null:
 		push_warning("no picture for road sign %s" % code)
 		return null
@@ -69,8 +70,8 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 		if ptex != null:
 			var pw := SIGN_WIDTH * 0.8
 			parts.append(["pic", ptex, pw, pw * float(ptex.get_height()) / float(ptex.get_width())])
-	if not main_road.is_empty():
-		var mt := main_road_plate(main_road)
+	if not main_road.is_empty() and code != "8.13":
+		var mt := main_road_plate(main_road, roads)
 		parts.append(["pic", mt, SIGN_WIDTH * 0.8, SIGN_WIDTH * 0.8 * 0.75])
 	parts.append(["pic", tex, SIGN_WIDTH, SIGN_WIDTH * float(tex.get_height()) / float(tex.get_width())])
 	for part in parts:
@@ -81,13 +82,6 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 			board.add_child(_text_plate(part[1], at, w, h))
 		else:
 			board.add_child(_face(part[1], at, w, h))
-			var back := MeshInstance3D.new()
-			var box := BoxMesh.new()
-			box.size = Vector3(w * 0.92, h * 0.92, 0.03)
-			back.mesh = box
-			back.material_override = steel
-			back.position = at + Vector3(0, 0, 0.03)
-			board.add_child(back)
 		y += h + 0.05
 	# The pole: up from the pavement into the board's middle, behind its face.
 	var top := SIGN_BOTTOM + y * 0.5 * cos(SIGN_LEAN)
@@ -105,7 +99,7 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 
 ## The plate 8.13 «Направление главной дороги»: the main road thick, the other roads thin, as the
 ## driver sees the junction ahead (north is ahead, east to the right).
-static func main_road_plate(main_road: Array) -> ImageTexture:
+static func main_road_plate(main_road: Array, roads: Array = []) -> ImageTexture:
 	var w := 256
 	var h := 192
 	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
@@ -118,14 +112,24 @@ static func main_road_plate(main_road: Array) -> ImageTexture:
 		for y in h:
 			img.set_pixel(i, y, black)
 			img.set_pixel(w - 1 - i, y, black)
-	var c := Vector2i(w / 2, h / 2)
-	var ends := {"north": Vector2i(w / 2, 22), "south": Vector2i(w / 2, h - 22), "east": Vector2i(w - 28, h / 2), "west": Vector2i(28, h / 2)}
+	var c := Vector2(w / 2.0, h / 2.0)
+	var ends := {"north": Vector2(0, -1), "south": Vector2(0, 1), "east": Vector2(1, 0), "west": Vector2(-1, 0),
+		"ne": Vector2(0.71, -0.71), "se": Vector2(0.71, 0.71), "sw": Vector2(-0.71, 0.71), "nw": Vector2(-0.71, -0.71)}
+	var all: Array = roads if not roads.is_empty() else ["north", "south", "east", "west"]
 	for dir in ends:
-		var thick := 18 if dir in main_road else 6
-		var e: Vector2i = ends[dir]
-		var lo := Vector2i(mini(c.x, e.x) - thick / 2, mini(c.y, e.y) - thick / 2)
-		var hi := Vector2i(maxi(c.x, e.x) + thick / 2, maxi(c.y, e.y) + thick / 2)
-		img.fill_rect(Rect2i(lo, hi - lo), black)
+		if not (dir in all or dir in main_road):
+			continue
+		var half := 9.0 if dir in main_road else 3.0
+		var d: Vector2 = ends[dir]
+		var reach := 70.0 if absf(d.y) > 0.5 else 100.0
+		# A band from the centre outwards: every pixel within `half` of the segment.
+		for step in int(reach):
+			var at := c + d * step
+			for ox in range(-int(half), int(half) + 1):
+				for oy in range(-int(half), int(half) + 1):
+					var q := Vector2i(int(at.x) + ox, int(at.y) + oy)
+					if q.x > 6 and q.y > 6 and q.x < w - 7 and q.y < h - 7:
+						img.set_pixelv(q, black)
 	img.generate_mipmaps()
 	return ImageTexture.create_from_image(img)
 

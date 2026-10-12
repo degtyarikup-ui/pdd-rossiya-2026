@@ -438,3 +438,8 @@ body.framing .toolbar, body.framing .popover, body.framing .hint, body.framing .
 .sign-grid button.on { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent); }
 .sign-grid img { width: 100%; height: 38px; object-fit: contain; }
 .insp-head .sign-big { width: 64px; height: 64px; object-fit: contain; flex: none; }
+.dir-grid { display: grid; grid-template-columns: repeat(3, 40px); gap: 4px; justify-content: center; }
+.dir-grid button { height: 36px; border-radius: 8px; background: var(--field); font-size: 18px; }
+.dir-grid button:nth-child(5) { grid-column: 3; }
+.dir-grid button:nth-child(4) { grid-column: 1; }
+.dir-grid button.on { background: var(--accent); color: #fff; }

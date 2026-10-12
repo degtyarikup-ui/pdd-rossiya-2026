@@ -283,12 +283,13 @@
   // ---- a road sign --------------------------------------------------------------------------------
   function signInspector(p, ref, o) {
     const codes = state.catalog.signs || [];
-    const dirs = [["north", "arrow-up", "Вперёд"], ["west", "arrow-left", "Налево"], ["east", "arrow-right", "Направо"], ["south", "arrow-uturn", "Назад"]];
-    const main = o.mainRoad || [];
+    const DIRS = [["nw", "↖"], ["north", "↑"], ["ne", "↗"], ["west", "←"], ["east", "→"], ["sw", "↙"], ["south", "↓"], ["se", "↘"]];
+    const main = o.mainRoad || [], roads = o.roads || ["north", "south", "east", "west"];
+    const dirChips = (name, on) => `<div class="dir-grid">${DIRS.map(([d, t]) => `<button class="${on.includes(d) ? "on" : ""}" data-chip="${name}" data-value="${d}">${t}</button>`).join("")}</div>`;
     p.innerHTML = `${head(`<img class="sign-big" src="/asset/sign/${o.code}.svg" alt="">`, Catalog.signName(o.code), `знак ${o.code}`)}
       ${card("Знак", `<div class="sign-grid">${codes.map((c) => `<button class="${c === o.code ? "on" : ""}" data-chip="code" data-value="${c}" data-tip="${esc(Catalog.signName(c))}"><img src="/asset/sign/${c}.svg" alt=""></button>`).join("")}</div>`)}
-      ${card("Табличка «Направление главной дороги»", `<div class="seg-chips arrows">${dirs.map(([d, icn, t]) => `<button class="${main.includes(d) ? "on" : ""}" data-chip="main" data-value="${d}" data-tip="${t}">${ic(icn)}</button>`).join("")}</div>
-        <p class="muted">Отметьте два направления главной дороги — табличка 8.13 появится под знаком. Ничего не отмечено — таблички нет.</p>`)}
+      ${card("Табличка 8.13: главная дорога", `${dirChips("main", main)}
+        ${main.length ? `<div class="sub-h">Все дороги перекрёстка</div>${dirChips("roads", roads)}` : `<p class="muted">Отметьте два направления главной дороги — под знаком появится табличка.</p>`}`)}
       ${card("Надпись на табличке", `<input type="text" data-text="plate" value="${esc(o.plate || "")}" placeholder="Например: 150 м">`)}
       ${card("", `<div class="turn-row">${dial(o.yaw)}<div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rot90", "90°", "", "ghost")}${button("rotr", "", "rotr", "ghost icon")}</div></div>${deleteRow()}`)}`;
     bind({
@@ -298,6 +299,11 @@
         const set = new Set(o.mainRoad || []);
         set.has(v) ? set.delete(v) : set.add(v);
         if (set.size) o.mainRoad = [...set]; else delete o.mainRoad;
+      }),
+      "chip:roads": (v) => App.edit(() => {
+        const set = new Set(o.roads || ["north", "south", "east", "west"]);
+        set.has(v) ? set.delete(v) : set.add(v);
+        o.roads = [...set];
       }),
       "text:plate": (v) => App.edit(() => { if (v.trim()) o.plate = v.trim(); else delete o.plate; }),
       rotl: () => App.rotate(-15), rotr: () => App.rotate(15), rot90: () => App.rotate(90),

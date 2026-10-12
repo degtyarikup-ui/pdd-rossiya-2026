@@ -219,7 +219,7 @@ const Scene3D = (() => {
     root.traverse((o) => {
       if (!o.isMesh || !o.geometry || !o.geometry.index) return;
       // tex_0: dirt strips the game does not draw (situation.gd).
-      if (o.name === "tex_0" || (o.name.startsWith("tex_") && model && model.signs)) { o.visible = false; return; }
+      if (o.name === "tex_0" || (model && (model.bakedSigns || []).includes(o.name))) { o.visible = false; return; }
       if (o.name !== "static") return;
       const geo = o.geometry = o.geometry.clone(), pos = geo.attributes.position, index = geo.index.array;
       const keep = [];
@@ -385,7 +385,7 @@ const Scene3D = (() => {
     if (t === "actor") return `${o.asset}|${o.type}`;
     if (t === "light") return `${o.asset}|${o.state}`;
     if (t === "officer") return `officer|${o.gesture}`;
-    if (t === "sign") return `sign|${o.code}|${o.plate || ""}|${(o.mainRoad || []).join(",")}`;
+    if (t === "sign") return `sign|${o.code}|${o.plate || ""}|${(o.mainRoad || []).join(",")}|${(o.roads || []).join(",")}`;
     return t;
   }
 
@@ -437,15 +437,17 @@ const Scene3D = (() => {
     if (!signTex.has(code)) signTex.set(code, new THREE.TextureLoader().load(`/asset/sign/${code}.svg`, () => { needsRender = true; }));
     return signTex.get(code);
   }
-  function mainRoadTexture(main) {
+  function mainRoadTexture(main, roads) {
     const c = document.createElement("canvas");
     c.width = 256; c.height = 192;
     const x = c.getContext("2d");
     x.fillStyle = "#fff"; x.fillRect(0, 0, 256, 192);
     x.strokeStyle = "#151515"; x.lineWidth = 10; x.strokeRect(5, 5, 246, 182);
-    const ends = { north: [128, 22], south: [128, 170], east: [228, 96], west: [28, 96] };
+    const ends = { north: [128, 22], south: [128, 170], east: [228, 96], west: [28, 96], ne: [190, 34], se: [190, 158], sw: [66, 158], nw: [66, 34] };
+    const all = roads && roads.length ? roads : ["north", "south", "east", "west"];
     x.lineCap = "square";
     for (const [d, e] of Object.entries(ends)) {
+      if (!all.includes(d) && !main.includes(d)) continue;
       x.lineWidth = main.includes(d) ? 18 : 6;
       x.beginPath(); x.moveTo(128, 96); x.lineTo(...e); x.stroke();
     }
@@ -467,8 +469,17 @@ const Scene3D = (() => {
       y += h + 0.05;
       return m;
     };
-    if (o.mainRoad && o.mainRoad.length) add(mainRoadTexture(o.mainRoad), SIGN_W * 0.8, SIGN_W * 0.6);
-    const tex = signTexture(o.code);
+    if (o.code === "8.13") { add(mainRoadTexture(o.mainRoad || [], o.roads), SIGN_W, SIGN_W * 0.75); }
+    else if (o.mainRoad && o.mainRoad.length) add(mainRoadTexture(o.mainRoad, o.roads), SIGN_W * 0.8, SIGN_W * 0.6);
+    const tex = o.code === "8.13" ? null : signTexture(o.code);
+    if (!tex) {
+      const top0 = SIGN_BOTTOM + 1.1 * Math.cos(SIGN_LEAN);
+      const p0 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, top0, 8), mat(0x7a7f87));
+      p0.position.set(0, top0 / 2, 0.09 + 1.1 * Math.sin(SIGN_LEAN));
+      g.add(p0);
+      g.rotation.y = -Math.PI;
+      return g;
+    }
     const face = add(tex, SIGN_W, SIGN_W);
     // The picture's proportions once it has loaded (most signs are square, some are tall plates).
     const fit = () => {

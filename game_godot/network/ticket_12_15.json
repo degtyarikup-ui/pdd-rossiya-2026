@@ -7429,5 +7429,32 @@
     }
    ]
   }
+ ],
+ "signs": [
+  {
+   "id": "sign_1",
+   "code": "2.1",
+   "pos": [
+    -5.4,
+    -10.97
+   ],
+   "yaw": -3.142,
+   "mainRoad": [
+    "north",
+    "east"
+   ],
+   "roads": [
+    "north",
+    "south",
+    "west",
+    "east"
+   ]
+  }
+ ],
+ "bakedSigns": [
+  "tex_0",
+  "tex_1",
+  "tex_2",
+  "tex_3"
  ]
 }
