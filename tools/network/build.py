@@ -246,7 +246,14 @@ def build(scene: dict) -> dict:
             continue
         # The carriageway with a 0.3 m margin (the baked paint reached a little past the edge), islands cut out.
         geom = unary_union(marks[colour]).intersection(road.buffer(0.3).difference(islands))
-        v, t = triangulate(geom)
+        # Every separate piece (a dash, a zebra bar) is triangulated on its own: in one triangulation the
+        # gaps between the pieces would be filled.
+        v, t = [], []
+        for piece in (geom.geoms if hasattr(geom, "geoms") else [geom]):
+            pv, pt = triangulate(piece)
+            base = len(v) // 2
+            v.extend(pv)
+            t.extend(i + base for i in pt)
         surfaces.append({"id": f"marking_{colour}", "y": MARK_Y, "layer": "", "colour": MARK_COLOURS[colour],
                          "verts": v, "idx": t})
     return {
