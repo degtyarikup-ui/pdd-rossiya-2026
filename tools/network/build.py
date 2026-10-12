@@ -77,6 +77,22 @@ def polygon_of(item: dict):
     return poly
 
 
+CURB_RADIUS = 5.0   # the inner corners of a junction get a curb radius (m), not a chamfer
+
+
+def polygons_json(geom) -> list:
+    """A shapely (multi)polygon as [{outer, holes}] lists, for the game (RoadNetwork.carriageway)."""
+    out = []
+    for p in (geom.geoms if hasattr(geom, "geoms") else [geom]):
+        if p.is_empty or p.geom_type != "Polygon":
+            continue
+        out.append({
+            "outer": [[round(x, 3), round(y, 3)] for x, y in p.exterior.coords[:-1]],
+            "holes": [[[round(x, 3), round(y, 3)] for x, y in ring.coords[:-1]] for ring in p.interiors],
+        })
+    return out
+
+
 def road_geometry(scene: dict):
     """(road without islands, islands, all roads) as shapely geometry, inside the crop square."""
     filled, holes = [], []
@@ -85,7 +101,9 @@ def road_geometry(scene: dict):
         for h in r.get("holes", []):
             holes.append(Polygon(h).buffer(0))
     box = crop_box(scene)
-    roads = (unary_union(filled) if filled else Polygon()).intersection(box)
+    roads = unary_union(filled) if filled else Polygon()
+    # Closing: the concave corners of the outline (where two roads meet) get a rounded fillet.
+    roads = roads.buffer(CURB_RADIUS, quad_segs=32).buffer(-CURB_RADIUS, quad_segs=32).intersection(box)
     islands = unary_union(holes).intersection(roads) if holes else Polygon()
     return roads.difference(islands), islands, roads
 
@@ -194,7 +212,7 @@ def ground(scene: dict):
     # The pavement ring around the roads (offset by the pavement width), raised.
     ring = unary_union(
         [Polygon(r["outer"]).buffer(0) for r in scene.get("roads", [])]
-    ).buffer(SIDEWALK, quad_segs=8).difference(road.union(islands)).intersection(box)
+    ).buffer(SIDEWALK, quad_segs=32).difference(road.union(islands)).intersection(box)   # 32: smooth corners, no steps
     return road, islands, roads_all, ring
 
 
@@ -235,6 +253,8 @@ def build(scene: dict) -> dict:
         "id": scene["id"],
         "surfaces": surfaces,
         "kerbs": {"y0": ROAD_Y, "y1": KERB, "colour": KERB_COLOUR, "segs": walls(road, crop)},
+        # The drivable carriageway as the drawing has it (the car drives where the asphalt is).
+        "carriageway": polygons_json(road),
     }
 
 

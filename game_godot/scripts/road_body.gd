@@ -107,10 +107,11 @@ static func model(kind_name: String, colour: Color) -> Node3D:
 				_wheel(root, Vector3(x, 0.85, -1.2), 0.85, 0.45)
 				_wheel(root, Vector3(x * 0.8, 0.5, 1.0), 0.5, 0.3)
 		"motorcycle":
-			_part(root, Vector3(0.3, 0.45, 1.5), Vector3(0.0, 0.55, 0.0), Color("#2A2D33"))
-			_part(root, Vector3(0.4, 0.75, 0.5), Vector3(0.0, 1.2, -0.1), colour)
-			_wheel(root, Vector3(0.0, 0.33, -0.65), 0.33, 0.12)
-			_wheel(root, Vector3(0.0, 0.33, 0.65), 0.33, 0.12)
+			# The junction's own motorcycle model (models/road/motorcycle.glb, from ticket_19_14),
+			# its colours as they are: the same bike as at the junctions.
+			var bike := (load("res://models/road/motorcycle.glb") as PackedScene).instantiate()
+			Situation._vertex_colours_as_albedo(bike)
+			root.add_child(bike)
 		"cart":
 			_part(root, Vector3(1.6, 0.2, 2.4), Vector3(0.0, 0.85, 0.0), colour)
 			_part(root, Vector3(0.12, 0.12, 1.6), Vector3(0.0, 0.65, 1.4), Color("#5A4632"))

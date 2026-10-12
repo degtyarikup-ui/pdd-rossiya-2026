@@ -310,10 +310,17 @@ func _topdown_shot(sit: Situation, path: String) -> void:
 		if l:
 			l.visible = false
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 190.0
+	# --zoom=<m> --look=<x>,<z>: a close-up of one place of the junction (relative to its centre).
+	camera.size = float(_arg_text("--zoom")) if _arg_text("--zoom") != "" else 190.0
 	camera.keep_aspect = Camera3D.KEEP_HEIGHT
-	camera.position = sit.global_position + Vector3(0, 300, 0)
-	camera.look_at(sit.global_position, Vector3(0, 0, 1))
+	var look := Vector3.ZERO
+	var look_text := _arg_text("--look")
+	if look_text != "":
+		var parts := look_text.split(",")
+		look = Vector3(float(parts[0]), 0, float(parts[1]))
+	var target := sit.global_position + look
+	camera.position = target + Vector3(0, 300, 0)
+	camera.look_at(target, Vector3(0, 0, 1))
 	topdown_cam_locked = true
 	await get_tree().create_timer(1.5).timeout
 	get_viewport().get_texture().get_image().save_png(path)
@@ -525,6 +532,14 @@ class AmbientObstacle:
 	func footprint() -> Dictionary:
 		return { "p": Vector3(car.x, 0, car.z), "yaw": 0.0 if car.dir > 0.0 else PI, "hw": 0.95, "hl": 2.2 }
 
+	## The player keeps the gas on a car it is pushing: a moving car takes the push and rolls on
+	## at the pace of the gas (its shove), the player follows. A parked car does not move: 1.5 m/s.
+	func push(speed_now: float) -> float:
+		if not car.get("moves", false):
+			return minf(speed_now, 1.5)
+		car.shove = maxf(car.shove, speed_now * 0.9)
+		return minf(speed_now, car.shove)
+
 
 class WalkerObstacle:
 	var w: Dictionary
@@ -583,11 +598,17 @@ func on_collision(o) -> void:
 		o.w.v = 0.0     # the pedestrian stops
 		on_fault("collision", "collision:pedestrian")
 	else:
-		drive.recovery = 0.38
-		drive.speed = 0
-		if "car" in o and o.car != null:
+		# A car on the ring: it is shoved away from the player (the harder the hit, the further it
+		# rolls) and the player bounces back a little, then drives on.
+		var away := 1.0 if o.car.z >= drive.pos.z else -1.0
+		if o.car.get("moves", false):
+			o.car.shove = away * (maxf(0.0, drive.speed) * 0.8 + 2.0)   # at least 2 m/s: a visible roll
+		else:
 			o.car.spd = 0.0
 			o.car.v = 0.0
+		drive.recovery = 0.38
+		drive.speed = 0
+		drive.bounce = -2.0
 		on_fault("collision", "collision:ambient")
 
 
@@ -1035,6 +1056,7 @@ func _spawn_traffic() -> void:
 		var base: float = rng.randf_range(cfg.traffic.speed_min, cfg.traffic.speed_max)
 		traffic.append({
 			"dir": dir, "base": base, "spd": base, "v": dir * base,
+			"shove": 0.0, "moves": true,   # a hit car rolls away (m/s along the road) and slows back
 			"x": -dir * 1.8, "z": drive.pos.z + 50.0 + i * 65.0,
 			"mm": multi, "slot": slot,
 		})
@@ -1197,7 +1219,8 @@ func _update_traffic(delta: float) -> void:
 			var follow_v: float = maxf(0.0, drive.speed) if behind_gap > 6.0 else 0.0
 			want = minf(want, follow_v)
 		car.spd = move_toward(car.spd, want, (8.0 if want < car.spd else 3.0) * delta)
-		car.z += car.dir * car.spd * delta
+		car.z += (car.dir * car.spd + car.shove) * delta
+		car.shove = move_toward(car.shove, 0.0, 2.5 * delta)   # the push runs out on its own
 	# A hard rule on top of the speeds: no car ever overlaps the one ahead of it.
 	for car in traffic:
 		var lead = _lead_of(car, span)
@@ -1208,11 +1231,13 @@ func _update_traffic(delta: float) -> void:
 		car.v = car.dir * car.spd
 		# A car in the player's lane ahead: smooth speed regulation without snapping
 		var gap: float = (car.z - drive.pos.z) * car.dir
+		# A car rolling away from the player's push moves at its shove speed too (see shove).
+		var rolling: float = car.spd + maxf(0.0, car.shove * car.dir)
 		if absf(car.x - drive.pos.x) < 1.8 and gap > 0.0 and gap < 9.0 and car.dir > 0.0 and not _in_blank(car.z):
 			if gap < 4.6:
-				drive.speed = minf(drive.speed, maxf(0.0, car.spd))
+				drive.speed = minf(drive.speed, maxf(0.0, rolling))
 			else:
-				var approach_limit: float = car.spd + (gap - 4.6) * 2.5
+				var approach_limit: float = rolling + (gap - 4.6) * 2.5
 				drive.speed = minf(drive.speed, maxf(0.0, approach_limit))
 		if car.z < behind:
 			car.z += span
@@ -1615,8 +1640,7 @@ func _update_lamps(delta: float) -> void:
 	blink.clock += delta
 	var on: bool = blink.side != "" and int(blink.clock * 3.0) % 2 == 0
 	if on and not blinker_on:
-		sound.play("click")
-		GameSound.buzz(8)
+		sound.play("click")   # the sound only: the indicator does not buzz the phone
 	blinker_on = on
 	for side in blinkers:
 		if blinkers[side]:

@@ -35,6 +35,15 @@ static func load_scene(scene_id: String) -> RoadNetwork:
 		net._roads.append({ "outer": outer, "holes": holes, "box": _box(outer) })
 	for rt in net.data.routes:
 		net._routes[rt.id] = _pts(rt.points)
+	# The drawn carriageway (its curb fillets) is what the car may drive on; the data outline is the fallback.
+	if not net.build.is_empty() and net.build.has("carriageway"):
+		net._roads.clear()
+		for r in net.build.carriageway:
+			var outer := _pts(r.outer)
+			var holes := []
+			for h in r.holes:
+				holes.append(_pts(h))
+			net._roads.append({ "outer": outer, "holes": holes, "box": _box(outer) })
 	net._build_cover()
 	return net
 

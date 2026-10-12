@@ -22,6 +22,7 @@ var turning_at_junction := false # free steering inside a junction: ~20 km/h
 var curb_clear_time := 0.0
 var distance_traveled := 0.0
 var recovery := 0.0              # control released after an impact (s)
+var bounce := 0.0                # the speed the car has when the control comes back (a bounce off a car)
 
 
 func footprint() -> Dictionary:
@@ -116,6 +117,9 @@ func integrate(dt: float, limit: float) -> void:
 	if recovery > 0:
 		recovery = maxf(0.0, recovery - dt)
 		speed = 0
+		if recovery <= 0.0 and bounce != 0.0:
+			speed = bounce
+			bounce = 0.0
 		return
 	assist(dt)
 	# A held arrow is a turn being made: the car eases off to ~20 km/h like a
@@ -190,7 +194,11 @@ func integrate(dt: float, limit: float) -> void:
 					if pos.distance_to(m.pos) < before.distance_to(m.pos):
 						pos = before
 						yaw = old_yaw
-					speed = signf(speed) * minf(absf(speed), 1.5)
+					# A traffic car takes the push and rolls away: the car follows at its pace.
+					if m.has_method("push"):
+						speed = signf(speed) * m.push(absf(speed))
+					else:
+						speed = signf(speed) * minf(absf(speed), 1.5)
 					break
 		if speed > 0:
 			distance_traveled += pos.distance_to(before)
