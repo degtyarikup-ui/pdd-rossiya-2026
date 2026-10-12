@@ -199,6 +199,7 @@ const Ed = (() => {
     draft = null;
     tool = "select";
     stitch.dx = stitch.dz = null;
+    stitch.bid = stitch.build = null;   // the neighbour may have changed since it was last read
     Scene3D.load(S, r.build);
     if (stitch.b) stitchUpdate();
     Scene3D.setSelection(null);
@@ -872,6 +873,7 @@ const Ed = (() => {
         savedJson = JSON.stringify(S);
         findings = r.findings;
         removed = r.removed || [];
+        stitch.bid = stitch.build = null;
         const gone = removed.length ? ` · удалено: ${removed.join(", ")}` : "";
         done.push(`сцена: ${r.findings.filter((f) => f.level === "error").length} ошибок${gone}`);
         await loadList();
@@ -1529,6 +1531,7 @@ const Ed = (() => {
   // ---- stitching -----------------------------------------------------------------------
   // The report comes from the server (the seam of each scene, measured where the game joins them).
   async function stitchUpdate() {
+    if (stitch.b === id) stitch.b = null;   // a scene is not its own neighbour (after switching scenes)
     if (!S || !stitch.b) {
       stitch.report = null;
       Scene3D.setNeighbour(null);
