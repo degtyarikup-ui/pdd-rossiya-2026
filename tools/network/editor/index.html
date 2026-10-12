@@ -130,6 +130,9 @@
 
     <div id="selbar" class="selbar" hidden>
       <span class="selbar-name" id="selbar-name"></span>
+      <button id="sel-move" class="btn ghost small icon" data-tip="Переместить · W"><svg class="i"><use href="#i-move"/></svg></button>
+      <button id="sel-turn" class="btn ghost small icon" data-tip="Повернуть · E"><svg class="i"><use href="#i-rotr"/></svg></button>
+      <span class="sep"></span>
       <button id="sel-rotl" class="btn ghost small icon" data-tip="Повернуть на −15° · ["><svg class="i"><use href="#i-rotl"/></svg></button>
       <button id="sel-rotr" class="btn ghost small icon" data-tip="Повернуть на +15° · ]"><svg class="i"><use href="#i-rotr"/></svg></button>
       <button id="sel-del" class="btn danger small" data-tip="Удалить · Delete"><svg class="i"><use href="#i-trash"/></svg>Удалить</button>
@@ -151,8 +154,8 @@
       <span class="spacer"></span>
       <button id="legend-toggle" class="btn ghost small" data-tip="Что значат линии"><svg class="i"><use href="#i-legend"/></svg>Легенда</button>
       <div class="seg2" role="group" aria-label="Вид">
-        <button id="mode-plan" class="on" data-tip="Вид сверху"><svg class="i"><use href="#i-map"/></svg>Сверху</button>
-        <button id="mode-3d" data-tip="Объёмный вид: правой кнопкой вращать"><svg class="i"><use href="#i-cube"/></svg>3D</button>
+        <button id="mode-plan" data-tip="Вид сверху"><svg class="i"><use href="#i-map"/></svg>Сверху</button>
+        <button id="mode-3d" class="on" data-tip="Объёмный вид: правой кнопкой вращать"><svg class="i"><use href="#i-cube"/></svg>3D</button>
       </div>
       <div class="zoom" role="group" aria-label="Масштаб">
         <button id="zout" class="btn ghost small icon" data-tip="Отдалить"><svg class="i"><use href="#i-zoomout"/></svg></button>

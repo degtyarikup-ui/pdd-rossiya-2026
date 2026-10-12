@@ -516,6 +516,13 @@ const Ed = (() => {
   function pointerDown(e) {
     const h = e.hit;
     if (tool !== "select") return drawClick(e);
+    if (h && h.kind === "gizmo" && sel) {
+      const w = e.world || cursorWorld;
+      const c = gizmoTarget();
+      snap();
+      drag = { kind: "gizmo", axis: h.axis, mode: Scene3D.gizmoMode, start: { x: w.x, z: w.z }, c, base: captureObject(sel), moved: false };
+      return;
+    }
     if (!h) { if (!e.shift) select(null); return; }
     if (h.kind === "vertex") {
       sel = h.owner.t === "route" ? { t: "route", id: h.owner.id } : { ...h.owner };
@@ -641,6 +648,13 @@ const Ed = (() => {
     if (!drag) return;
     const w = e.world;
     if (!w) return;
+    if (drag.kind === "gizmo") {
+      applyGizmo(w, e.shift);
+      Scene3D.refresh(S);
+      Scene3D.setGizmo(gizmoTarget(), drag.mode);
+      renderStatus();
+      return;
+    }
     if (drag.kind === "body") {
       bodyDrag(w);
       Scene3D.refresh(S);
@@ -778,8 +792,8 @@ const Ed = (() => {
     const o = objectOf(sel);
     if (!o || sel.v !== undefined && sel.v >= 0) return;
     commit(() => {
-      if (sel.t === "stop") S.stop.yaw += (deg * Math.PI) / 180;
-      else o.yaw += (deg * Math.PI) / 180;
+      if (sel.t === "stop") S.stop.yaw -= (deg * Math.PI) / 180;
+      else o.yaw -= (deg * Math.PI) / 180;
     });
   }
 
@@ -839,8 +853,78 @@ const Ed = (() => {
     renderTextures();
   }
 
+  // ---- gizmo: move (W) and turn (E) the selection with the handles in the view ----------
+  function gizmoTarget() {
+    if (!S || tool !== "select" || !sel || (ltab === "textures" && texSel)) return null;
+    const o = objectOf(sel);
+    if (!o || (sel.v !== undefined && sel.v >= 0) || sel.t === "route") return null;
+    if (sel.t === "stop") return { x: S.stop.x, z: S.stop.z, yaw: S.stop.yaw };
+    if (o.pos) return { x: o.pos[0], z: o.pos[1], yaw: o.yaw || 0 };
+    const pts = ringsOfObject(sel).flat();
+    if (!pts.length) return null;
+    return { x: pts.reduce((a, p) => a + p[0], 0) / pts.length, z: pts.reduce((a, p) => a + p[1], 0) / pts.length };
+  }
+
+  function setGizmoMode(mode) {
+    Scene3D.setGizmo(gizmoTarget(), mode);
+    renderSelBar();
+  }
+
+  // The state of the selection when a gizmo drag starts: the drag moves or turns it from here.
+  function captureObject(s) {
+    if (s.t === "stop") {
+      const ap = routeOf("approach");
+      return { x: S.stop.x, z: S.stop.z, yaw: S.stop.yaw, end: ap ? [...ap.points.at(-1)] : null };
+    }
+    const o = objectOf(s);
+    if (o && o.pos) {
+      const r = s.t === "actor" && o.route ? routeOf(o.route) : null;
+      return { pos: [...o.pos], yaw: o.yaw || 0, start: r ? [...r.points[0]] : null };
+    }
+    return { rings: JSON.parse(JSON.stringify(ringsOfObject(s))) };
+  }
+
+  // Moves the selection by (dx, dz) from its state at the start of the drag.
+  function moveFromBase(s, b, dx, dz) {
+    if (s.t === "stop") return moveStop(r3(b.x + dx), r3(b.z + dz));
+    const o = objectOf(s);
+    if (b.pos) {
+      o.pos = [r3(b.pos[0] + dx), r3(b.pos[1] + dz)];
+      if (b.start) routeOf(o.route).points[0] = [...o.pos];
+      return;
+    }
+    ringsOfObject(s).forEach((ring, k) => ring.forEach((p, j) => { p[0] = r3(b.rings[k][j][0] + dx); p[1] = r3(b.rings[k][j][1] + dz); }));
+  }
+
+  // Turns the selection by `ang` (radians) about the point c. Objects turn their heading the other way
+  // round, so the handle and the model turn together.
+  function turnFromBase(s, b, ang, c) {
+    const cos = Math.cos(ang), sin = Math.sin(ang);
+    const turn = (x, z) => [r3(c.x + (x - c.x) * cos - (z - c.z) * sin), r3(c.z + (x - c.x) * sin + (z - c.z) * cos)];
+    if (s.t === "stop") { S.stop.yaw = b.yaw - ang; return; }
+    const o = objectOf(s);
+    if (b.pos) { o.yaw = b.yaw - ang; return; }
+    ringsOfObject(s).forEach((ring, k) => ring.forEach((p, j) => { [p[0], p[1]] = turn(b.rings[k][j][0], b.rings[k][j][1]); }));
+  }
+
+  function applyGizmo(w, fineAngles) {
+    const d = drag;
+    if (d.mode === "move") {
+      let dx = w.x - d.start.x, dz = w.z - d.start.z;
+      if (d.axis === "x") dz = 0;
+      if (d.axis === "z") dx = 0;
+      moveFromBase(sel, d.base, dx, dz);
+    } else {
+      let ang = Math.atan2(w.z - d.c.z, w.x - d.c.x) - Math.atan2(d.start.z - d.c.z, d.start.x - d.c.x);
+      if (fineAngles) ang = Math.round(ang / (Math.PI / 12)) * (Math.PI / 12);
+      turnFromBase(sel, d.base, ang, d.c);
+    }
+    d.moved = true;
+  }
+
   // ---- rendering ---------------------------------------------------------------------
   function renderAll() {
+    Scene3D.setGizmo(gizmoTarget(), Scene3D.gizmoMode);
     renderHeader();
     renderTree();
     renderTextures();
@@ -956,6 +1040,8 @@ const Ed = (() => {
     const rot = canRotate(sel);
     $("#sel-rotl").hidden = !rot;
     $("#sel-rotr").hidden = !rot;
+    $("#sel-move").classList.toggle("on", Scene3D.gizmoMode === "move");
+    $("#sel-turn").classList.toggle("on", Scene3D.gizmoMode === "rotate");
   }
 
   function renderStatus() {
@@ -1674,6 +1760,8 @@ const Ed = (() => {
     $("#legend-close").onclick = () => { legendOpen = false; renderStatus(); };
     $("#draft-done").onclick = () => finishDraft();
     $("#draft-cancel").onclick = () => { cancelDraft(); renderTools(); };
+    $("#sel-move").onclick = () => setGizmoMode("move");
+    $("#sel-turn").onclick = () => setGizmoMode("rotate");
     $("#sel-rotl").onclick = () => rotate(-15);
     $("#sel-rotr").onclick = () => rotate(15);
     $("#sel-del").onclick = () => deleteSelected();
@@ -1681,8 +1769,8 @@ const Ed = (() => {
     $("#zin").onclick = () => Scene3D.zoomBy(1.25);
     $("#zout").onclick = () => Scene3D.zoomBy(0.8);
     $("#zfit").onclick = () => Scene3D.fit();
-    $("#mode-plan").onclick = () => { Scene3D.setMode("plan"); renderStatus(); };
-    $("#mode-3d").onclick = () => { Scene3D.setMode("3d"); renderStatus(); };
+    $("#mode-plan").onclick = () => setView("plan");
+    $("#mode-3d").onclick = () => setView("3d");
     $("#texture-file").addEventListener("change", uploadTexture);
     addEventListener("beforeunload", (e) => { if (anyDirty()) { e.preventDefault(); e.returnValue = ""; } });
     document.addEventListener("keydown", onKey);
@@ -1713,6 +1801,11 @@ const Ed = (() => {
     }
   }
 
+  function setView(m) {
+    Scene3D.setMode(m);
+    renderStatus();
+  }
+
   function focusSelection(s) {
     const o = objectOf(s);
     if (!o) return;
@@ -1737,7 +1830,11 @@ const Ed = (() => {
     if (isTyping(e) || mod) return;
     if (!S) return;
     const k = e.key.toLowerCase();
-    const map = { v: "select", m: "route", d: "road", r: "straight", i: "island", g: "lawn", k: "marking", p: "decor", a: "actor", l: "light", s: "stop" };
+    if (k === "w" && sel) { e.preventDefault(); return setGizmoMode("move"); }
+    if (k === "e" && sel) { e.preventDefault(); return setGizmoMode("rotate"); }
+    if (k === "r" && sel) { e.preventDefault(); return rotate(15); }
+    if (k === "t") { e.preventDefault(); return setView(Scene3D.mode === "plan" ? "3d" : "plan"); }
+    const map = { q: "select", v: "select", m: "route", d: "road", c: "road", i: "island", g: "lawn", k: "marking", p: "decor", a: "actor", l: "light", s: "stop" };
     if (map[k] && !e.altKey) { e.preventDefault(); return setTool(map[k]); }
     if (k === "escape") { cancelDraft(); setTool("select"); select(null); return; }
     if (k === "enter") { e.preventDefault(); return finishDraft(); }

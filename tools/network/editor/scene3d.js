@@ -13,7 +13,7 @@ const Scene3D = (() => {
     cyclist: 0x3ea37a, motorcycle: 0x2b2f36, special: 0xf0f0f0, van: 0x7c8a99, tanker: 0x6a7c4a, cart: 0x9a7b4f };
 
   let container, renderer, scene, camera, labelsEl, ground = null;
-  let mode = "plan";                       // "plan" (top-down, orthographic) or "3d" (orbit)
+  let mode = "3d";                         // "3d" (orbit, the default) or "plan" (top-down, orthographic)
   let pxPerM = 6, target = new THREE.Vector3(0, 0, 0), orbitYaw = 0, orbitPitch = 0.9, orbitDist = 260;
   let width = 1, height = 1, needsRender = true, frame = 0;
   let model = null, build = null, sel = null, draft = null, cursor = null, stopCursor = null;
@@ -621,6 +621,7 @@ const Scene3D = (() => {
       camera.lookAt(target.x, 0, target.z);
     }
     camera.updateMatrixWorld();
+    updateGizmo();
     needsRender = true;
   }
 
@@ -770,6 +771,8 @@ const Scene3D = (() => {
   // (stop, lights, participants, props), route and outline lines, the inside of a road.
   function hitAt(sx, sy) {
     if (!model) return null;
+    const handle = gizmoHit(sx, sy);
+    if (handle) return handle;
     let best = null, bd = 10;
     for (const p of pointsOf(sel)) {
       const s = screenOf(p[0], p[1], 0.4);
@@ -842,9 +845,106 @@ const Scene3D = (() => {
     return c;
   }
 
+  // ---- gizmo: the handles of the selected object -------------------------------------
+  // Move (W): an arrow per ground axis and a square in the middle for both. Turn (E): a ring round the
+  // object. The handles keep the same size on screen at any zoom, as in 3D editors.
+  const GIZMO_PX = 120;                   // length of an arrow on screen (px)
+  const AXIS_COLOUR = { x: 0xe5484d, z: 0x3e63dd, rot: 0xf5a524, xz: 0xffffff };
+  let gizmoPos = null, gizmoMode = "move", gizmoGroup = null, gizmoYaw = null;
+
+  // Metres per screen pixel at a point of the ground.
+  function worldPerPixel(x, z) {
+    if (mode === "plan") return 1 / pxPerM;
+    const d = camera.position.distanceTo(new THREE.Vector3(x, 0, z));
+    return (2 * d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) / height;
+  }
+
+  function gizmoFrame() {
+    if (!gizmoPos) return null;
+    const wpp = worldPerPixel(gizmoPos.x, gizmoPos.z);
+    return { x: gizmoPos.x, z: gizmoPos.z, y: 0.3, L: GIZMO_PX * wpp, R: GIZMO_PX * 0.62 * wpp, wpp };
+  }
+
+  // The gizmo as data on screen: which handle (if any) lies under the pointer.
+  function gizmoHit(sx, sy) {
+    const f = gizmoFrame();
+    if (!f) return null;
+    if (gizmoMode === "move") {
+      const o = screenOf(f.x, f.z, f.y);
+      if (Math.hypot(o.x - sx, o.y - sy) < 14) return { kind: "gizmo", axis: "xz" };
+      const best = ["x", "z"].map((axis) => {
+        const end = axis === "x" ? screenOf(f.x + f.L, f.z, f.y) : screenOf(f.x, f.z + f.L, f.y);
+        return { axis, d: segDist(sx, sy, o, end) };
+      }).sort((a, b) => a.d - b.d)[0];
+      return best.d < 12 ? { kind: "gizmo", axis: best.axis } : null;
+    }
+    let near = 1e9;
+    for (let i = 0; i < 72; i++) {
+      const a = (i / 72) * Math.PI * 2;
+      const p = screenOf(f.x + Math.cos(a) * f.R, f.z + Math.sin(a) * f.R, f.y);
+      near = Math.min(near, Math.hypot(p.x - sx, p.y - sy));
+    }
+    return near < 16 ? { kind: "gizmo", axis: "rot" } : null;
+  }
+
+  // Draws the gizmo for the given object: { x, z } is its centre, yaw its heading (for the ring's handle).
+  function updateGizmo() {
+    if (gizmoGroup) { scene.remove(gizmoGroup); gizmoGroup.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); gizmoGroup = null; }
+    const f = gizmoFrame();
+    if (!f) { needsRender = true; return; }
+    const g = new THREE.Group();
+    g.userData.own = true;
+    if (gizmoMode === "move") {
+      for (const axis of ["x", "z"]) {
+        const end = axis === "x" ? [f.x + f.L, f.y, f.z] : [f.x, f.y, f.z + f.L];
+        const geo = new THREE.LineGeometry();
+        geo.setPositions([f.x, f.y, f.z, ...end]);
+        const line = new THREE.Line2(geo, lineMaterialFor({ colour: AXIS_COLOUR[axis], px: 3.5 }, 1));
+        g.add(line);
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(f.wpp * 6, f.wpp * 14, 16), mat(AXIS_COLOUR[axis]));
+        cone.position.set(end[0], end[1], end[2]);
+        if (axis === "x") cone.rotation.z = -Math.PI / 2; else cone.rotation.x = Math.PI / 2;
+        g.add(cone);
+      }
+      const square = new THREE.Mesh(new THREE.BoxGeometry(f.wpp * 12, f.wpp * 2, f.wpp * 12), mat(AXIS_COLOUR.xz));
+      square.position.set(f.x, f.y, f.z);
+      g.add(square);
+    } else {
+      const pts = [];
+      for (let i = 0; i <= 72; i++) {
+        const a = (i / 72) * Math.PI * 2;
+        pts.push(f.x + Math.cos(a) * f.R, f.y, f.z + Math.sin(a) * f.R);
+      }
+      const geo = new THREE.LineGeometry();
+      geo.setPositions(pts);
+      g.add(new THREE.Line2(geo, lineMaterialFor({ colour: AXIS_COLOUR.rot, px: 3.5 }, 1)));
+      // The heading: a spoke to the ring, its end is the handle. A model faces (sin yaw, cos yaw).
+      if (gizmoYaw !== null) {
+        const a = Math.PI / 2 - gizmoYaw;
+        const ex = f.x + Math.cos(a) * f.R, ez = f.z + Math.sin(a) * f.R;
+        const spoke = new THREE.LineGeometry();
+        spoke.setPositions([f.x, f.y, f.z, ex, f.y, ez]);
+        g.add(new THREE.Line2(spoke, lineMaterialFor({ colour: AXIS_COLOUR.rot, px: 5 }, 1)));
+        const dot = new THREE.Mesh(new THREE.SphereGeometry(f.wpp * 7, 12, 8), mat(AXIS_COLOUR.rot));
+        dot.position.set(ex, f.y, ez);
+        g.add(dot);
+      }
+    }
+    scene.add(g);
+    gizmoGroup = g;
+    needsRender = true;
+  }
+
+  function setGizmo(target, mode2 = gizmoMode) {
+    gizmoPos = target ? { x: target.x, z: target.z } : null;
+    gizmoYaw = target && target.yaw !== undefined ? target.yaw : null;
+    gizmoMode = mode2;
+    updateGizmo();
+  }
+
   function bindPointer() {
     const el = renderer.domElement;
-    let down = null, panning = false, last = null;
+    let down = null, panning = false, last = null, panKind = "pan";
     const local = (e) => { const r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
     const snapWorld = (w, e) => (e.altKey ? w : { x: Math.round(w.x * 20) / 20, z: Math.round(w.z * 20) / 20 });
     el.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -852,8 +952,9 @@ const Scene3D = (() => {
       const p = local(e);
       last = p;
       const w = worldAt(p.x, p.y);
-      if (e.button === 1 || e.button === 2 || (e.button === 0 && spaceDown)) {
+      if (e.button === 1 || e.button === 2 || (e.button === 0 && (spaceDown || e.altKey))) {
         panning = true;
+        panKind = mode === "3d" && (e.button === 2 && !e.shiftKey || e.button === 0 && e.altKey) ? "orbit" : "pan";
         el.setPointerCapture(e.pointerId);
         return;
       }
@@ -869,7 +970,7 @@ const Scene3D = (() => {
         if (mode === "plan") {
           const w0 = worldAt(last.x, last.y), w1 = worldAt(p.x, p.y);
           if (w0 && w1) { target.x += w0.x - w1.x; target.z += w0.z - w1.z; }
-        } else if (e.buttons & 2) {
+        } else if (panKind === "orbit") {
           orbitYaw -= dx * 0.008;
           orbitPitch = Math.max(0.15, Math.min(1.5, orbitPitch + dy * 0.008));
         } else {
@@ -883,6 +984,8 @@ const Scene3D = (() => {
       last = p;
       const w = worldAt(p.x, p.y);
       if (!down) {
+        // The handles of the gizmo show a pointer, the way 3D editors do.
+        el.style.cursor = gizmoHit(p.x, p.y) ? "pointer" : "";
         // Hovering a route fades the others, so the one under the pointer can be followed.
         const h = hitAt(p.x, p.y);
         const id = h && h.kind === "route" ? h.id : null;
@@ -921,7 +1024,7 @@ const Scene3D = (() => {
 
   return {
     mount, load, refresh, setBuild, setSelection, setDraft, setMode, fit, focus, zoomBy, worldAt, screenOf,
-    setTextures, reloadPicture,
+    setTextures, reloadPicture, setGizmo, get gizmoMode() { return gizmoMode; },
     on(name, fn) { (listeners[name] = listeners[name] || []).push(fn); },
     get mode() { return mode; },
     get pxPerM() { return pxPerM; },
