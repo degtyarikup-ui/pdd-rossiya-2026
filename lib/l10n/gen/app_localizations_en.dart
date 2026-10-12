@@ -1810,19 +1810,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameRoundaboutTitle => 'Roundabout 3D';
 
   @override
-  String get gameCrossroadsPriorityTitle => 'Cleared the intersection';
+  String get gameCrossroadsPriorityTitle => 'Clear the intersection';
 
   @override
   String get gameCrossroadsPromptWhoGoesFirst => 'Who will pass first?';
 
   @override
   String gameCrossroadsPromptWhoGoesNext(int step) {
-    return 'Who will pass next ($step-th)?';
+    return 'Who will pass next?';
   }
 
   @override
   String gameCrossroadsStepOf(int current, int total) {
-    return 'Step $current from $total';
+    return 'Step $current of $total';
   }
 
   @override

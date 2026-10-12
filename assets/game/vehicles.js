@@ -272,7 +272,7 @@
     }
 
     // Indicators (front, with repeaters at the rear) — the game drives them.
-    car.blinkerL = box(0.12, 0.09, 0.05, W / 2 - 0.08, faceY + 0.06, zf + 0.065, surfaces.material('lens', 0xFFAE25));
+    car.blinkerL = box(0.12, 0.09, 0.05, -(W / 2 - 0.08), faceY + 0.06, zf + 0.065, surfaces.material('lens', 0xFFAE25));
     addRearBlinker(car.blinkerL, L + 0.01);
     car.blinkerR = car.blinkerL.clone(); car.blinkerR.position.x *= -1; car.add(car.blinkerR);
     car.blinkerL.visible = car.blinkerR.visible = false;
@@ -338,7 +338,7 @@
       car.userData.wheels.push(w.tyre);
       if (z > 0) car.userData.frontAxles.push(w.axle);
     }
-    car.blinkerL = box(0.14, 0.06, 0.05, W / 2 - 0.1, noseY - 0.12, zf + 0.01, surfaces.material('lens', 0xFFAE25));
+    car.blinkerL = box(0.14, 0.06, 0.05, -(W / 2 - 0.1), noseY - 0.12, zf + 0.01, surfaces.material('lens', 0xFFAE25));
     addRearBlinker(car.blinkerL, L + 0.02);
     car.blinkerR = car.blinkerL.clone(); car.blinkerR.position.x *= -1; car.add(car.blinkerR);
     car.blinkerL.visible = car.blinkerR.visible = false;

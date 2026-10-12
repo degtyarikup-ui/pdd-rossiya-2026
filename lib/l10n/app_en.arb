@@ -529,10 +529,10 @@
   "gameComboStreak": "COMBO x{combo}!",
   "gameSoonBadge": "Coming soon",
   "gameRoundaboutTitle": "Roundabout 3D",
-  "gameCrossroadsPriorityTitle": "Cleared the intersection",
+  "gameCrossroadsPriorityTitle": "Clear the intersection",
   "gameCrossroadsPromptWhoGoesFirst": "Who will pass first?",
-  "gameCrossroadsPromptWhoGoesNext": "Who will pass next ({step}-th)?",
-  "gameCrossroadsStepOf": "Step {current} from {total}",
+  "gameCrossroadsPromptWhoGoesNext": "Who will pass next?",
+  "gameCrossroadsStepOf": "Step {current} of {total}",
   "gameCrossroadsCollision": "Accident! Right-of-way violation",
   "gameCrossroadsShouldGo": "Going now: {name}",
   "@gameCrossroadsShouldGo": {

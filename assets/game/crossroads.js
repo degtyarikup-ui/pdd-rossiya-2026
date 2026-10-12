@@ -29,7 +29,7 @@
 
   // --- Переменные сцены ---
   let scene, camera, renderer, container;
-  let envGroup, vehiclesGroup, signsGroup, trafficLightsGroup, fxGroup, scenarioGroup, locationGroup;
+  let envGroup, vehiclesGroup, signsGroup, trafficLightsGroup, fxGroup, scenarioGroup, locationGroup, trajectoriesGroup;
   let curbMatShared = null;
   // Текстуры знаков и табличек 8.13 создаются один раз на всю игру.
   const signTextureCache = new Map(), plateTextureCache = new Map();
@@ -220,6 +220,7 @@
     scenarioGroup = new THREE.Group();
     fxGroup = new THREE.Group();
     locationGroup = new THREE.Group();
+    trajectoriesGroup = new THREE.Group();
 
     scene.add(envGroup);
     scene.add(vehiclesGroup);
@@ -228,6 +229,7 @@
     scene.add(scenarioGroup);
     scene.add(fxGroup);
     scene.add(locationGroup);
+    scene.add(trajectoriesGroup);
     window._pddCrossroads = {
       scene, camera, renderer, envGroup, vehiclesGroup, scenarioGroup, signsGroup, trafficLightsGroup, locationGroup,
       location: () => currentLocation,
@@ -356,6 +358,7 @@
       camera.position.x += (Math.random() - 0.5) * camShake * 2.0;
       camera.position.z += (Math.random() - 0.5) * camShake * 2.0;
     }
+    updateBadgeRotations();
   }
 
   // --- Построение перекрестка и окружения ---
@@ -2260,33 +2263,76 @@
     ctx.restore();
   }
 
-  function drawManeuver(ctx, maneuver, ink) {
-    if (maneuver === 'cross') {
-      drawPedestrianIcon(ctx, ink);
-      return;
+  const MANEUVER_TEXTURES = (function() {
+    function makeTex(drawFn) {
+      const c = document.createElement('canvas');
+      c.width = c.height = 256;
+      const ctx = c.getContext('2d');
+      drawFn(ctx);
+      const tex = new THREE.CanvasTexture(c);
+      tex.anisotropy = 4;
+      return tex;
     }
-    ctx.save();
-    ctx.translate(128, 104);
-    ctx.strokeStyle = ink; ctx.fillStyle = ink;
-    ctx.lineWidth = 17; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    const head = (x, y, angle) => {
+
+    const ink = '#101828';
+    const head = (ctx, x, y, angle) => {
       ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
-      ctx.beginPath(); ctx.moveTo(0, -24); ctx.lineTo(22, 6); ctx.lineTo(-22, 6); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0, -26); ctx.lineTo(24, 8); ctx.lineTo(-24, 8); ctx.closePath(); ctx.fill();
       ctx.restore();
     };
-    ctx.beginPath();
-    if (maneuver === 'left' || maneuver === 'right') {
-      const k = maneuver === 'left' ? -1 : 1;
-      ctx.moveTo(-k * 14, 46); ctx.lineTo(-k * 14, -2); ctx.quadraticCurveTo(-k * 14, -22, k * 6, -22); ctx.lineTo(k * 20, -22);
-      ctx.stroke(); head(k * 26, -22, k * Math.PI / 2);
-    } else if (maneuver === 'uTurn') {
-      ctx.moveTo(22, 46); ctx.lineTo(22, -8); ctx.arc(0, -8, 22, 0, Math.PI, true); ctx.lineTo(-22, 14);
-      ctx.stroke(); head(-22, 22, Math.PI);
-    } else {
-      ctx.moveTo(0, 46); ctx.lineTo(0, -18); ctx.stroke(); head(0, -26, 0);
-    }
-    ctx.restore();
-  }
+
+    return {
+      straight: makeTex(ctx => {
+        ctx.save();
+        ctx.translate(128, 128);
+        ctx.strokeStyle = ink; ctx.fillStyle = ink;
+        ctx.lineWidth = 18; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(0, 52); ctx.lineTo(0, -22); ctx.stroke();
+        head(ctx, 0, -32, 0);
+        ctx.restore();
+      }),
+      curvedLeft: makeTex(ctx => {
+        ctx.save();
+        ctx.translate(128, 128);
+        ctx.strokeStyle = ink; ctx.fillStyle = ink;
+        ctx.lineWidth = 18; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(18, 52); ctx.lineTo(18, 4); ctx.quadraticCurveTo(18, -24, -8, -24); ctx.lineTo(-24, -24);
+        ctx.stroke();
+        head(ctx, -32, -24, -Math.PI / 2);
+        ctx.restore();
+      }),
+      curvedRight: makeTex(ctx => {
+        ctx.save();
+        ctx.translate(128, 128);
+        ctx.strokeStyle = ink; ctx.fillStyle = ink;
+        ctx.lineWidth = 18; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-18, 52); ctx.lineTo(-18, 4); ctx.quadraticCurveTo(-18, -24, 8, -24); ctx.lineTo(24, -24);
+        ctx.stroke();
+        head(ctx, 32, -24, Math.PI / 2);
+        ctx.restore();
+      }),
+      uTurn: makeTex(ctx => {
+        ctx.save();
+        ctx.translate(128, 128);
+        ctx.strokeStyle = ink; ctx.fillStyle = ink;
+        ctx.lineWidth = 18; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(24, 52); ctx.lineTo(24, -8); ctx.arc(0, -8, 24, 0, Math.PI, true); ctx.lineTo(-24, 16);
+        ctx.stroke();
+        head(ctx, -24, 26, Math.PI);
+        ctx.restore();
+      }),
+      cross: makeTex(ctx => {
+        ctx.save();
+        ctx.translate(0, 26);
+        drawPedestrianIcon(ctx, ink);
+        ctx.restore();
+      }),
+    };
+  })();
 
   function drawTrafficLightBadge(ctx, tl) {
     ctx.save();
@@ -2370,7 +2416,7 @@
       ctx.closePath();
       ctx.fillStyle = u.color;
       ctx.fill();
-      drawManeuver(ctx, u.maneuver, style.ink);
+      if (u.arrowSprite) u.arrowSprite.visible = true;
       if (u.siren) {
         ctx.beginPath(); ctx.arc(196, 40, 22, 0, Math.PI * 2); ctx.fillStyle = '#ED4621'; ctx.fill();
       }
@@ -2378,6 +2424,7 @@
         drawTrafficLightBadge(ctx, u.trafficLight);
       }
     } else {
+      if (u.arrowSprite) u.arrowSprite.visible = false;
       ctx.fillStyle = style.ink;
       ctx.font = '700 96px -apple-system, Roboto, "Segoe UI", sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -2409,8 +2456,21 @@
     sprite.userData.actorId = actorData.id;
     badgeGroup.add(sprite);
 
+    const arrowSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: MANEUVER_TEXTURES.straight,
+      transparent: true,
+      depthTest: false,
+      fog: false,
+    }));
+    arrowSprite.center.set(0.5, 0.5);
+    arrowSprite.scale.set(2.0, 2.0, 1);
+    arrowSprite.position.set(0, 2.02, 0.03);
+    arrowSprite.renderOrder = 12;
+    arrowSprite.userData.actorId = actorData.id;
+    badgeGroup.add(arrowSprite);
+
     badgeGroup.userData = {
-      canvas, ctx, sprite, tex,
+      canvas, ctx, sprite, tex, arrowSprite,
       actorId: actorData.id,
       baseY: h,
       order: actorData.order,
@@ -2485,6 +2545,162 @@
     }
   }
 
+  // Построение 3D-направляющей траектории на асфальте перед машиной
+  function createRoadTrajectoryGuide(mesh, side, maneuver, isTram, colorHex) {
+    const group = new THREE.Group();
+    const c = typeof colorHex === 'number' ? colorHex : (parseInt(String(colorHex).replace('#', ''), 16) || 0xFFFFFF);
+    const path = generateTrajectory(mesh, side, maneuver, isTram);
+
+    const mat = new THREE.MeshBasicMaterial({
+      color: c,
+      transparent: true,
+      opacity: 0.58,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+
+    if (maneuver === 'cross') {
+      for (let t = 0.15; t <= 0.85; t += 0.22) {
+        const p = path.getPoint(t);
+        const dot = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.35), mat);
+        dot.rotation.x = -Math.PI / 2;
+        dot.position.set(p.x, 0.034, p.z);
+        group.add(dot);
+      }
+      return group;
+    }
+
+    const N = 12;
+    const tMin = 0.05, tMax = (maneuver === 'straight') ? 0.38 : 0.46;
+    const pts = [];
+    for (let i = 0; i <= N; i++) {
+      pts.push(path.getPoint(tMin + (tMax - tMin) * (i / N)));
+    }
+
+    const halfWidth = isTram ? 0.42 : 0.30;
+    const vertices = [];
+    const indices = [];
+
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      let dir;
+      if (i < pts.length - 1) {
+        dir = pts[i + 1].clone().sub(p);
+      } else {
+        dir = p.clone().sub(pts[i - 1]);
+      }
+      dir.y = 0;
+      if (dir.lengthSq() > 0.0001) dir.normalize();
+      else dir.set(0, 0, 1);
+
+      const perp = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
+      const left = p.clone().addScaledVector(perp, halfWidth);
+      const right = p.clone().addScaledVector(perp, -halfWidth);
+
+      vertices.push(left.x, 0.034, left.z);
+      vertices.push(right.x, 0.034, right.z);
+
+      if (i < pts.length - 1) {
+        const idx = i * 2;
+        indices.push(idx, idx + 1, idx + 2);
+        indices.push(idx + 1, idx + 3, idx + 2);
+      }
+    }
+
+    const ribbonGeo = new THREE.BufferGeometry();
+    ribbonGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    ribbonGeo.setIndex(indices);
+    ribbonGeo.computeVertexNormals();
+    const ribbonMesh = new THREE.Mesh(ribbonGeo, mat);
+    group.add(ribbonMesh);
+
+    const lastPt = pts[pts.length - 1];
+    const prevPt = pts[pts.length - 2];
+    const arrowDir = lastPt.clone().sub(prevPt);
+    arrowDir.y = 0;
+    if (arrowDir.lengthSq() > 0.0001) arrowDir.normalize();
+    else arrowDir.set(0, 0, 1);
+    const arrowPerp = new THREE.Vector3(-arrowDir.z, 0, arrowDir.x).normalize();
+
+    const arrowLen = 1.3;
+    const arrowWing = halfWidth * 2.2;
+    const tip = lastPt.clone().addScaledVector(arrowDir, arrowLen);
+    const finL = lastPt.clone().addScaledVector(arrowPerp, arrowWing);
+    const finR = lastPt.clone().addScaledVector(arrowPerp, -arrowWing);
+
+    const headGeo = new THREE.BufferGeometry();
+    headGeo.setAttribute('position', new THREE.Float32BufferAttribute([
+      tip.x, 0.035, tip.z,
+      finL.x, 0.035, finL.z,
+      finR.x, 0.035, finR.z,
+    ], 3));
+    headGeo.setIndex([0, 1, 2]);
+    headGeo.computeVertexNormals();
+    const headMesh = new THREE.Mesh(headGeo, mat);
+    group.add(headMesh);
+
+    return group;
+  }
+
+  // Динамический пересчёт угла стрелки на бейдже в зависимости от ракурса камеры
+  function updateBadgeRotations() {
+    if (!camera) return;
+    activeActors.forEach(({ mesh, badge, data }) => {
+      if (!badge || !badge.userData || !badge.userData.arrowSprite) return;
+      const u = badge.userData;
+      if (u.status !== 'normal') {
+        u.arrowSprite.visible = false;
+        return;
+      }
+      const arrow = u.arrowSprite;
+      const maneuver = data.maneuver;
+      if (maneuver === 'cross') {
+        arrow.material.map = MANEUVER_TEXTURES.cross;
+        arrow.material.rotation = 0;
+        arrow.visible = true;
+        return;
+      }
+
+      if (!u.cachedTrajectory) {
+        u.cachedTrajectory = generateTrajectory(mesh, data.side, maneuver, data.type === 'tram');
+      }
+      const path = u.cachedTrajectory;
+      const p0 = path.getPoint(0.0);
+      const p1 = path.getPoint(0.12);
+      const p2 = path.getPoint(0.55);
+
+      const v0 = p0.clone().project(camera);
+      const v1 = p1.clone().project(camera);
+      const v2 = p2.clone().project(camera);
+
+      const dxIn = v1.x - v0.x;
+      const dyIn = v1.y - v0.y;
+      const angleIn = Math.atan2(dyIn, dxIn);
+
+      const dxOut = v2.x - v0.x;
+      const dyOut = v2.y - v0.y;
+
+      const cross = dxIn * dyOut - dyIn * dxOut;
+      const rot = angleIn - Math.PI / 2;
+
+      if (maneuver === 'straight') {
+        arrow.material.map = MANEUVER_TEXTURES.straight;
+        arrow.material.rotation = rot;
+      } else if (maneuver === 'uTurn') {
+        arrow.material.map = MANEUVER_TEXTURES.uTurn;
+        arrow.material.rotation = rot;
+      } else {
+        if (cross >= 0) {
+          arrow.material.map = MANEUVER_TEXTURES.curvedLeft;
+        } else {
+          arrow.material.map = MANEUVER_TEXTURES.curvedRight;
+        }
+        arrow.material.rotation = rot;
+      }
+      arrow.visible = true;
+    });
+  }
+
   // --- Загрузка сценария перекрестка ---
   function loadScenario(scenarioData) {
     currentScenario = scenarioData;
@@ -2499,6 +2715,13 @@
     }
     while (fxGroup.children.length > 0) {
       fxGroup.remove(fxGroup.children[0]);
+    }
+    if (trajectoriesGroup) {
+      while (trajectoriesGroup.children.length > 0) {
+        const c = trajectoriesGroup.children[0];
+        trajectoriesGroup.remove(c);
+        disposeObject(c);
+      }
     }
 
     // Очищаем предыдущие машины, знаки и светофоры
@@ -2564,6 +2787,12 @@
         placeActorAtStart(mesh, a.side);
         vehiclesGroup.add(mesh);
 
+        const guide = createRoadTrajectoryGuide(mesh, a.side, a.maneuver, a.type === 'tram', a.color || '#FFFFFF');
+        if (guide && trajectoriesGroup) {
+          trajectoriesGroup.add(guide);
+          mesh.userData.trajectoryGuide = guide;
+        }
+
         activeActors.set(a.id, {
           mesh,
           badge: mesh.userData.badge,
@@ -2575,6 +2804,7 @@
 
     // Кадр под этот сценарий
     fitCameraToScenario();
+    updateBadgeRotations();
   }
 
   // --- Жесты: тап — выбрать машину, палец — крутить, щипок — приблизить ---
@@ -2644,7 +2874,10 @@
     activeActors.forEach(({ mesh, badge, state }) => {
       if (state !== 'waiting') return;
       candidates.push(mesh);
-      if (badge && badge.userData && badge.userData.sprite) candidates.push(badge.userData.sprite);
+      if (badge && badge.userData) {
+        if (badge.userData.sprite) candidates.push(badge.userData.sprite);
+        if (badge.userData.arrowSprite) candidates.push(badge.userData.arrowSprite);
+      }
     });
     let actorId = null;
     const hit = raycaster.intersectObjects(candidates, true)[0];
@@ -2777,10 +3010,15 @@
       audio.engine(data.type, isTram ? 2.6 : 2.0);
       if (data.hasSiren) audio.siren(2.2);
     }
+    if (mesh.userData.trajectoryGuide) {
+      mesh.userData.trajectoryGuide.visible = false;
+    }
+    const extents = getVehicleCollisionExtents(actorRecord);
     drivingAnimations.push({
       actorRecord,
       mesh,
       path,
+      extents,
       progress: 0,
       speed: isPedestrian ? 0.32 : (isTram ? 0.38 : 0.48),
       isPedestrian,
@@ -3294,7 +3532,13 @@
       if (u.pop !== undefined && u.pop < 1) { u.pop = Math.min(1, u.pop + dt * 4); k *= 1 + Math.sin(u.pop * Math.PI) * 0.25; }
       const size = 3.8 * k * badgeScale;
       u.sprite.scale.set(size, size, 1);
+      if (u.arrowSprite) {
+        const arrowSize = 2.0 * k * badgeScale;
+        u.arrowSprite.scale.set(arrowSize, arrowSize, 1);
+        u.arrowSprite.position.y = 2.02 * (size / 3.8);
+      }
     });
+    updateBadgeRotations();
 
     // Мигание спецмаячков и поворотников
     const blinkCycle = Math.floor(time * 4) % 2 === 0;
@@ -3315,7 +3559,34 @@
     // Обновление активных анимаций проезда машин
     for (let i = drivingAnimations.length - 1; i >= 0; i--) {
       const anim = drivingAnimations[i];
-      anim.progress += dt * anim.speed;
+
+      // Интеллектуальное соблюдение дистанции:
+      // если впереди есть участник с более высоким приоритетом (стартовал раньше),
+      // плавно притормаживаем и не допускаем наезда/ДТП!
+      let speedFactor = 1.0;
+      for (let j = 0; j < drivingAnimations.length; j++) {
+        if (i === j) continue;
+        const other = drivingAnimations[j];
+        if (!other || !other.actorRecord || !other.mesh) continue;
+
+        // Только участники, стартовавшие раньше / имеющие более высокий приоритет
+        if (other.actorRecord.data.order < anim.actorRecord.data.order) {
+          const dist = Math.hypot(
+            anim.mesh.position.x - other.mesh.position.x,
+            anim.mesh.position.z - other.mesh.position.z
+          );
+          const extA = anim.extents || getVehicleCollisionExtents(anim.actorRecord);
+          const extB = other.extents || getVehicleCollisionExtents(other.actorRecord);
+          const safeDist = Math.max(extA.side + extB.side + 3.0, (extA.front + extB.front) * 1.6 + 2.5);
+
+          if (dist < safeDist) {
+            const factor = Math.max(0.0, (dist - safeDist * 0.45) / (safeDist * 0.55));
+            speedFactor = Math.min(speedFactor, factor);
+          }
+        }
+      }
+
+      anim.progress += dt * anim.speed * speedFactor;
 
       if (anim.progress >= 1.0) {
         anim.onComplete && anim.onComplete();
@@ -3357,11 +3628,6 @@
           anim.blinker = null;
         }
       }
-    }
-
-    // Проверка динамических столкновений между движущимися ТС в реальном времени
-    if (!activeCollision && drivingAnimations.length >= 2) {
-      checkDynamicCollisions();
     }
 
     // Обновление активной анимации ДТП

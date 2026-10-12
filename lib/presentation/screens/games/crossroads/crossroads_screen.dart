@@ -666,9 +666,9 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                             ),
                           ),
                           const Spacer(),
-                          IconButton(
-                            icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                            onPressed: () {
+                          AppChromeIconButton(
+                            icon: Icons.arrow_back_ios_new_rounded,
+                            onTap: () {
                               final count = _filteredScenarios.length;
                               setState(() {
                                 _scenarioIndex =
@@ -678,9 +678,10 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                               _sendScenarioToEngine();
                             },
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.arrow_forward_ios_rounded),
-                            onPressed: () {
+                          const SizedBox(width: AppDimensions.spacingS),
+                          AppChromeIconButton(
+                            icon: Icons.arrow_forward_ios_rounded,
+                            onTap: () {
                               final count = _filteredScenarios.length;
                               setState(() {
                                 _scenarioIndex = (_scenarioIndex + 1) % count;
@@ -689,6 +690,7 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
                               _sendScenarioToEngine();
                             },
                           ),
+                          const SizedBox(width: AppDimensions.spacingS),
                           Tooltip(
                             message: appL10n.gameCrossroadsModeArcade,
                             child: AppChromeIconButton(
