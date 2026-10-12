@@ -7,6 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/data/models/support_chat_message.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:pdd_app/data/services/network_retry.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -154,6 +155,11 @@ class SupportChatService {
     }
   }
 
+  /// Сбой отправки уходит в отчёты с операцией support.send (без текста сообщения).
+  void _reportSendFailure(String code) {
+    ErrorReporter.report(ErrorCategory.app, 'support.send', code: code);
+  }
+
   /// Отправить сообщение в поддержку
   Future<SupportChatMessage?> sendMessage(String text) async {
     if (!BackendConfig.hasNotifier) return null;
@@ -195,15 +201,26 @@ class SupportChatService {
         ],
       );
 
-      if (response.statusCode != 200) return null;
+      if (response.statusCode != 200) {
+        _reportSendFailure('http_${response.statusCode}');
+        return null;
+      }
       final body = jsonDecode(response.body) as Map<String, dynamic>?;
-      if (body == null || body['ok'] != true) return null;
+      if (body == null || body['ok'] != true) {
+        _reportSendFailure('bad_response');
+        return null;
+      }
 
       final msgJson = body['message'] as Map<String, dynamic>?;
-      if (msgJson == null) return null;
+      if (msgJson == null) {
+        // Сервер ответил ok, но без сообщения: так отвечает старый воркер без этого маршрута.
+        _reportSendFailure('no_message');
+        return null;
+      }
 
       return SupportChatMessage.fromJson(msgJson);
-    } catch (_) {
+    } catch (error) {
+      _reportSendFailure(ErrorReporter.codeFor(error));
       return null;
     }
   }
