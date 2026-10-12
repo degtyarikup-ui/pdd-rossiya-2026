@@ -784,3 +784,12 @@ details summary { cursor: pointer; color: var(--accent); font-size: 13px; font-w
   .statusbar .seg2 .i { width: 18px; height: 18px; }
   .statusbar #legend-toggle { font-size: 0; }
 }
+
+/* Stitching: the side of the neighbour and the rows of the seam report. */
+.sides { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 12px; }
+.side { height: 34px; border: 0; border-radius: var(--radius-btn); background: var(--gray); color: var(--ink-2); font-weight: 500; font-size: 13px; }
+.side.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; box-shadow: inset 0 0 0 1px var(--accent-line); }
+.chk-row { display: flex; align-items: center; gap: 9px; padding: 8px 10px; margin-bottom: 6px; border-radius: var(--radius-btn); font-size: 13px; line-height: 1.35; }
+.chk-row .i { width: 18px; height: 18px; }
+.chk-row.ok { background: var(--green-soft); color: var(--green-ink); }
+.chk-row.bad { background: var(--red-soft); color: var(--red); }

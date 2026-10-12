@@ -52,6 +52,8 @@ const Ed = (() => {
   // Placement: the tools that put an object under the cursor. Its heading follows the drag, or R.
   const PLACE = ["actor", "light", "decor", "stop"];
   let placeYaw = 0, placeDrag = null;
+  // Stitching: the scene next to this one, its side, and the offset (null: where the game would put it).
+  let stitch = { b: null, side: "n", dx: null, dz: null, report: null, build: null, bid: null }, stitchSeq = 0;
 
   // ---- api ---------------------------------------------------------------------------
   async function api(path, body) {
@@ -196,7 +198,9 @@ const Ed = (() => {
     texSel = null;
     draft = null;
     tool = "select";
+    stitch.dx = stitch.dz = null;
     Scene3D.load(S, r.build);
+    if (stitch.b) stitchUpdate();
     Scene3D.setSelection(null);
     $("#empty").hidden = true;
     renderAll();
@@ -840,7 +844,7 @@ const Ed = (() => {
   // ---- live preview and saving -------------------------------------------------------
   function schedulePreview() {
     clearTimeout(previewTimer);
-    previewTimer = setTimeout(runPreview, 260);
+    previewTimer = setTimeout(() => { runPreview(); if (stitch.b) stitchUpdate(); }, 260);
   }
 
   async function runPreview() {
@@ -1179,6 +1183,7 @@ const Ed = (() => {
     const pane = $("#rpane");
     document.querySelectorAll("#rtabs [data-rtab]").forEach((b) => b.classList.toggle("on", b.dataset.rtab === rtab));
     if (!S) { pane.innerHTML = `<div class="empty-pane">Выберите сцену слева, чтобы начать.</div>`; return; }
+    if (rtab === "stitch") return renderStitch(pane);
     if (rtab === "question") return renderQuestion(pane);
     if (rtab === "checks") return renderChecks();
     if (ltab === "textures" && texSel && Textures.state.list.length) return renderTexture(pane);
@@ -1520,6 +1525,75 @@ const Ed = (() => {
       yaw: (el) => commit(() => { S.stop.yaw = Number(el.value) / RAD; }),
       "stop-to-approach": () => ap && commit(() => moveStop(ap.points.at(-1)[0], ap.points.at(-1)[1])),
       "approach-sel": () => select({ t: "route", id: "approach" }),
+    });
+  }
+
+  // ---- stitching -----------------------------------------------------------------------
+  // The report comes from the server (the seam of each scene, measured where the game joins them).
+  async function stitchUpdate() {
+    if (!S || !stitch.b) {
+      stitch.report = null;
+      Scene3D.setNeighbour(null);
+      return renderInspector();
+    }
+    const mine = ++stitchSeq;
+    const q = new URLSearchParams({ side: stitch.side });
+    if (stitch.dx !== null) q.set("dx", stitch.dx);
+    if (stitch.dz !== null) q.set("dz", stitch.dz);
+    const [rep, B] = await Promise.all([
+      api(`/api/stitch/${id}/${stitch.b}?${q}`),
+      stitch.bid === stitch.b && stitch.build ? stitch.build : api(`/api/scene/${stitch.b}`).then((r) => r.build),
+    ]).catch((e) => { toast(e.message, "bad"); return [null, null]; });
+    if (mine !== stitchSeq || !rep) return;
+    stitch.build = B;
+    stitch.bid = stitch.b;
+    stitch.report = rep;
+    Scene3D.setNeighbour(B, rep.dx, rep.dz, rep.seam);
+    renderInspector();
+  }
+
+  function renderStitch(pane) {
+    const r = stitch.report;
+    const options = scenes.filter((s) => s.id !== id)
+      .map((s) => `<option value="${s.id}" ${stitch.b === s.id ? "selected" : ""}>${esc(sceneTitle(s.id))}</option>`).join("");
+    const sides = [["n", "Север ↑"], ["s", "Юг ↓"], ["e", "Восток →"], ["w", "Запад ←"]]
+      .map(([k, label]) => `<button class="side ${stitch.side === k ? "on" : ""}" data-side="${k}">${label}</button>`).join("");
+    const line = (ok, text) => `<div class="chk-row ${ok ? "ok" : "bad"}">${ic(ok ? "check-circle" : "error")}<span>${text}</span></div>`;
+    let report = `<p class="note">Выберите соседнюю сцену.</p>`;
+    if (r && r.error) report = line(false, r.error);
+    else if (r) {
+      const gap = r.gap;
+      report = [
+        line(r.a.street, `Этот край: ${fmt(r.a.width)} м${r.a.street ? ", как улица" : ""}`),
+        line(r.b.street, `Сосед: ${fmt(r.b.width)} м${r.b.street ? ", как улица" : ""}`),
+        Math.abs(gap) < 0.2 ? line(true, "Без зазора") : line(false, gap > 0 ? `Зазор ${fmt(gap)} м: его заполнит улица` : `Наложение ${fmt(-gap)} м`),
+        line(Math.abs(r.offset) < 0.1, `Сдвиг по стыку ${fmt(r.offset, 2)} м`),
+        line(Math.abs(r.widthDiff) < 0.1, `Разница ширины ${fmt(r.widthDiff, 2)} м`),
+      ].join("");
+    }
+    pane.innerHTML = `
+      <section class="card">
+        ${head("link", "Соседняя сцена")}
+        <label class="field"><span>Сцена</span><select id="st-b"><option value="">Нет</option>${options}</select></label>
+        <div class="sides">${sides}</div>
+        <div class="row2">
+          <label class="field"><span>Сдвиг X <em>м</em></span><input type="number" step="0.1" id="st-dx" value="${r && !r.error ? r.dx : ""}"></label>
+          <label class="field"><span>Сдвиг Z <em>м</em></span><input type="number" step="0.1" id="st-dz" value="${r && !r.error ? r.dz : ""}"></label>
+        </div>
+        <div class="actions" style="margin-top:0">
+          <button class="btn" data-act="st-auto">${ic("move")}Совместить</button>
+          <button class="btn" data-act="st-open" ${stitch.b ? "" : "disabled"}>${ic("scenes")}Открыть</button>
+        </div>
+      </section>
+      <section class="card">${subhead("check", "На стыке")}${report}</section>`;
+    const st = (fn) => () => { fn(); stitchUpdate(); };
+    pane.querySelector("#st-b").addEventListener("change", (e) => { stitch.b = e.target.value || null; stitch.dx = stitch.dz = null; stitch.bid = null; st(() => {})(); });
+    pane.querySelectorAll("[data-side]").forEach((b) => b.addEventListener("click", () => { stitch.side = b.dataset.side; stitch.dx = stitch.dz = null; st(() => {})(); }));
+    pane.querySelector("#st-dx").addEventListener("change", (e) => { stitch.dx = e.target.value === "" ? null : Number(e.target.value); st(() => {})(); });
+    pane.querySelector("#st-dz").addEventListener("change", (e) => { stitch.dz = e.target.value === "" ? null : Number(e.target.value); st(() => {})(); });
+    bindForm(pane, {
+      "st-auto": () => { stitch.dx = stitch.dz = null; stitchUpdate(); },
+      "st-open": () => { if (stitch.b) openScene(stitch.b).catch((err) => toast(err.message, "bad")); },
     });
   }
 

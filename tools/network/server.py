@@ -16,6 +16,9 @@ import threading
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs
+
+from shapely.geometry import LineString
 
 sys.path.insert(0, str(Path(__file__).parent))
 import build  # noqa: E402
@@ -134,6 +137,82 @@ def keep_texture_backup(kind: str, keep: int = 10) -> None:
         old.unlink()
 
 
+# ---- stitching: how a scene meets its neighbour in the game ---------------------------------
+# The game lays a junction into the street: the junction's crop square ends where the street goes on, and
+# the carriageway of its edge must be the street's (8.4 m, centred on x = 0). Two scenes that touch must
+# also meet each other. Only moves (no turns): the neighbour is placed by (dx, dz) from the origin.
+STITCH_EPS = 0.05     # the seam is measured just inside each scene's edge (m)
+STREET_WIDTH = 8.4    # the street of the game: two 4.2 m lanes (scripts/street.gd ROAD_HALF)
+OPPOSITE = {"n": "s", "s": "n", "e": "w", "w": "e"}
+
+
+def seam_line(side: str, c: float) -> LineString:
+    """The line at distance c from the centre on a side (n: z = c, s: z = -c, e: x = c, w: x = -c)."""
+    if side in ("n", "s"):
+        z = c if side == "n" else -c
+        return LineString([(-400, z), (400, z)])
+    x = c if side == "e" else -c
+    return LineString([(x, -400), (x, 400)])
+
+
+def stitch(a_id: str, b_id: str, side: str, dx=None, dz=None) -> dict:
+    A, B = check.load(a_id), check.load(b_id)
+    _, _, roads_a, ring_a = build.ground(A)
+    _, _, roads_b, ring_b = build.ground(B)
+    ca, cb = float(A.get("crop", 90.0)), float(B.get("crop", 90.0))
+    horizontal = side in ("n", "s")
+    lo_hi = (lambda b: (b[0], b[2])) if horizontal else (lambda b: (b[1], b[3]))
+
+    def profile(geom, line):
+        inter = geom.intersection(line)
+        return None if inter.is_empty else lo_hi(inter.bounds)
+
+    a_road = profile(roads_a, seam_line(side, ca - STITCH_EPS))
+    a_pave = profile(ring_a, seam_line(side, ca - STITCH_EPS))
+    facing = OPPOSITE[side]
+    b_road = profile(roads_b, seam_line(facing, cb - STITCH_EPS))
+    b_pave = profile(ring_b, seam_line(facing, cb - STITCH_EPS))
+    if a_road is None or b_road is None:
+        return {"match": False, "error": "У края нет проезжей части", "auto": None}
+
+    def centre(p):
+        return (p[0] + p[1]) / 2
+
+    # Placed to touch: the neighbour's facing edge on this scene's edge, its road centred on this one's.
+    along = centre(a_road) - centre(b_road)
+    if horizontal:
+        auto = {"dx": along, "dz": ca + cb if side == "n" else -(ca + cb)}
+    else:
+        auto = {"dx": ca + cb if side == "e" else -(ca + cb), "dz": along}
+    dx = auto["dx"] if dx is None else float(dx)
+    dz = auto["dz"] if dz is None else float(dz)
+    shift = dx if horizontal else dz
+    b_road = (b_road[0] + shift, b_road[1] + shift)
+    # The gap between the two edges: positive where the street fills the space, negative where they overlap.
+    gap = {"n": (dz - cb) - ca, "s": -ca - (dz + cb), "e": (dx - cb) - ca, "w": -ca - (dx + cb)}[side]
+    width_a, width_b = a_road[1] - a_road[0], b_road[1] - b_road[0]
+    offset = centre(b_road) - centre(a_road)
+    seam_at = {"n": ca, "s": -ca, "e": ca, "w": -ca}[side]
+    if horizontal:
+        seam = [[a_road[0], seam_at], [a_road[1], seam_at]]
+    else:
+        seam = [[seam_at, a_road[0]], [seam_at, a_road[1]]]
+
+    def street(p):
+        return abs((p[1] - p[0]) - STREET_WIDTH) < 0.15 and abs(centre(p)) < 0.15
+
+    return {
+        "auto": {"dx": round(auto["dx"], 3), "dz": round(auto["dz"], 3)},
+        "dx": round(dx, 3), "dz": round(dz, 3), "gap": round(gap, 3), "offset": round(offset, 3),
+        "widthDiff": round(width_b - width_a, 3),
+        "a": {"width": round(width_a, 3), "centre": round(centre(a_road), 3),
+              "street": street(a_road)},
+        "b": {"width": round(width_b, 3), "centre": round(centre(b_road), 3),
+              "street": street(b_road)},
+        "seam": seam, "match": abs(offset) < 0.1 and abs(width_b - width_a) < 0.1 and abs(gap) < 0.2,
+    }
+
+
 def reimport_game() -> bool:
     """Godot draws a texture from its import cache, so a changed PNG reaches the game only after
     `--import`: about 5 s, and no tracked file changes. False when Godot is not installed."""
@@ -198,6 +277,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, self.catalog())
         if path == "/api/textures":
             return self.send(200, self.texture_list())
+        m = re.match(r"^/api/stitch/([a-z0-9_]+)/([a-z0-9_]+)$", path)
+        if m and (NET / f"{m[1]}.json").exists() and (NET / f"{m[2]}.json").exists():
+            q = {k: v[0] for k, v in parse_qs(self.path.partition("?")[2]).items()}
+            if q.get("side") not in OPPOSITE:
+                return self.send(400, {"error": "side: n, s, e или w"})
+            return self.send(200, stitch(m[1], m[2], q["side"], q.get("dx"), q.get("dz")))
         m = re.match(r"^/api/scene/([a-z0-9_]+)$", path)
         if m and (NET / f"{m[1]}.json").exists():
             s = check.load(m[1])

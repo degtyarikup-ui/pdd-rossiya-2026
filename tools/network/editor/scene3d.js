@@ -979,6 +979,47 @@ const Scene3D = (() => {
     needsRender = true;
   }
 
+  // ---- neighbour: the scene beside this one, as ghost surfaces placed where the game would put it ----
+  // B: the neighbour's build; (dx, dz): its origin in this scene; seam: the edge line in this scene's metres.
+  let neighbour = null, neighbourSeam = null;
+  function setNeighbour(B, dx = 0, dz = 0, seam = null) {
+    if (neighbour) { scene.remove(neighbour); neighbour.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); neighbour = null; }
+    if (neighbourSeam) { scene.remove(neighbourSeam); neighbourSeam = null; }
+    if (!B) { needsRender = true; return; }
+    const g = new THREE.Group();
+    g.userData.own = true;
+    g.position.set(dx, 0, dz);
+    for (const s of B.surfaces) {
+      if (!s.idx.length) continue;
+      const kind = s.layer === "" ? null : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
+      const period = kind ? periodOf(kind) : 1;
+      const pos = [], uv = [];
+      for (let k = 0; k < s.idx.length; k++) {
+        const i = s.idx[k] * 2;
+        pos.push(s.verts[i], s.y, s.verts[i + 1]);
+        uv.push(s.verts[i] / period, s.verts[i + 1] / period);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+      geo.computeVertexNormals();
+      const m = layerMaterial(s);
+      m.transparent = true;
+      m.opacity = 0.55;
+      m.depthWrite = false;
+      g.add(new THREE.Mesh(geo, m));
+    }
+    scene.add(g);
+    neighbour = g;
+    if (seam) {
+      const geo = new THREE.LineGeometry();
+      geo.setPositions([seam[0][0], 0.6, seam[0][1], seam[1][0], 0.6, seam[1][1]]);
+      neighbourSeam = new THREE.Line2(geo, lineMaterialFor({ colour: 0xed4621, px: 4 }, 1));
+      scene.add(neighbourSeam);
+    }
+    needsRender = true;
+  }
+
   function setGizmo(target, mode2 = gizmoMode) {
     gizmoPos = target ? { x: target.x, z: target.z } : null;
     gizmoYaw = target && target.yaw !== undefined ? target.yaw : null;
@@ -1068,7 +1109,7 @@ const Scene3D = (() => {
 
   return {
     mount, load, refresh, setBuild, setSelection, setDraft, setMode, fit, focus, zoomBy, worldAt, screenOf,
-    setTextures, reloadPicture, setGizmo, setGhost, get gizmoMode() { return gizmoMode; },
+    setTextures, reloadPicture, setGizmo, setGhost, setNeighbour, get gizmoMode() { return gizmoMode; },
     on(name, fn) { (listeners[name] = listeners[name] || []).push(fn); },
     get mode() { return mode; },
     get pxPerM() { return pxPerM; },
