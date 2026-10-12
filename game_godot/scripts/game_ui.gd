@@ -18,6 +18,8 @@ var snow := false                 # winter: HUD numbers are dark on the light sn
 var _root: Control
 var _tip: PanelContainer           # the first-drive tips card (three steps)
 var _gas_hint: PanelContainer      # «Зажмите и держите — это газ» beside the gas pedal
+var _grey: ColorRect               # the pause: the picture behind it in grey
+const GREY_SHADER := preload("res://shaders/grey.gdshader")
 var _top := 0.0
 var _bottom := 0.0
 var _limit: Control
@@ -565,6 +567,9 @@ func _update_timer() -> void:
 
 
 func hide_cards() -> void:
+	if _grey != null:
+		_grey.queue_free()
+		_grey = null
 	for n in [_card, _sheet]:
 		if n != null:
 			n.queue_free()
@@ -640,6 +645,14 @@ func show_result(summary: Dictionary) -> void:
 ## Pause: back to the road or leave the run (the app keeps its score).
 func show_pause() -> void:
 	hide_cards()
+	# The world behind the pause turns black and white (the picture as it is, desaturated).
+	_grey = ColorRect.new()
+	_grey.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_grey.mouse_filter = Control.MOUSE_FILTER_STOP
+	var mat := ShaderMaterial.new()
+	mat.shader = GREY_SHADER
+	_grey.material = mat
+	_root.add_child(_grey)
 	var shell := _sheet_shell(0.5)
 	_sheet = shell[0]
 	var box: VBoxContainer = shell[1]
@@ -648,6 +661,14 @@ func show_pause() -> void:
 	box.add_child(_wide_button(Ui.t("gameExit"), Ui.c("gray"), Ui.c("text"), func(): exit_pressed.emit()))
 	_root.add_child(_sheet)
 	_place_sheet(_sheet)
+
+
+## Back to colour: the pause is over.
+func hide_pause() -> void:
+	if _grey != null:
+		_grey.queue_free()
+	_grey = null
+	hide_cards()
 
 
 func _wide_button(text: String, bg: Color, fg: Color, action: Callable) -> PanelContainer:

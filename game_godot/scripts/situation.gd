@@ -97,6 +97,10 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 		if mi.name == "static":
 			mi.mesh = _without_baked_ground(mi.mesh, s.network)
 			mi.material_override = scenery.material
+		# tex_0: the web game's dirt strips along the exits (a brown track over the asphalt). The
+		# exits are asphalt in the game, the same as the entrance: the strips are not drawn.
+		if mi.name == "tex_0":
+			mi.visible = false
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	s.add_child(scene)
 	s._crop = s.data.crop

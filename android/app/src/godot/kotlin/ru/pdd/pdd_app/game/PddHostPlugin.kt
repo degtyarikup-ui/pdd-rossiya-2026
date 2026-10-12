@@ -17,9 +17,15 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
         }
     }
 
-    /** The player leaves the game: the summary goes back to the app. */
+    /** The player leaves the game: the summary is kept as the result. The game then stops itself
+     *  (Host.exit calls quit), and the activity closes in onGodotTerminating. Closing the activity
+     *  from here, while the engine still draws a frame, crashed the render thread (SIGSEGV). */
     @UsedByGodot
-    fun exit(summary: String) {
-        host.runOnUiThread { host.leave(summary) }
+    fun result(summary: String) {
+        host.runOnUiThread { host.keepSummary(summary) }
+    }
+
+    override fun onGodotTerminating() {
+        host.runOnUiThread { host.finish() }
     }
 }

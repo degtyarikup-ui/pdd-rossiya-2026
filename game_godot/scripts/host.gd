@@ -72,7 +72,10 @@ static func begin_events() -> void:
 ## On the web the page closes the frame; standalone (no parent) the game stays.
 static func exit(summary: Dictionary, tree: SceneTree) -> void:
 	if embedded():
-		Engine.get_singleton("PddHost").exit(JSON.stringify(summary))
+		# The result first, then the engine stops itself: the app closes the activity when it
+		# terminates (never from here, while a frame is still being drawn).
+		Engine.get_singleton("PddHost").result(JSON.stringify(summary))
+		tree.quit()
 	elif io != "":
 		_write({ "event": "exit", "summary": summary })
 		tree.paused = true

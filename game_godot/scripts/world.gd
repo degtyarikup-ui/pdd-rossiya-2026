@@ -339,6 +339,9 @@ func _shot(path: String) -> void:
 	for arg in Host.user_args():
 		if arg.begins_with("--wait="):
 			wait = float(arg.trim_prefix("--wait="))
+	if _has_arg("--pause"):   # the pause sheet over the picture (black and white)
+		await get_tree().create_timer(1.0).timeout
+		_on_pause()
 	await get_tree().create_timer(wait).timeout
 	get_viewport().get_texture().get_image().save_png(path)
 	get_tree().quit()
@@ -1300,7 +1303,7 @@ func _on_pause() -> void:
 
 func _on_resume() -> void:
 	paused = false
-	ui.hide_cards()
+	ui.hide_pause()
 	controls.set_active(true)
 
 

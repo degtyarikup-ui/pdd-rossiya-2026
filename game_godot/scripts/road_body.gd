@@ -81,25 +81,10 @@ static func model(kind_name: String, colour: Color) -> Node3D:
 			var blue := _lamp(root, Vector3(-0.22, 1.6, 0.2), Color("#2F6BFF"))
 			var red := _lamp(root, Vector3(0.22, 1.6, 0.2), Color("#FF2D2D"))
 			root.set_meta("lights", [blue, red])
-		"truck":
-			_part(root, Vector3(2.0, 2.2, 6.0), Vector3(0.0, 1.4, -1.2), Color("#D9DCE0"))
-			_part(root, Vector3(1.9, 1.9, 2.2), Vector3(0.0, 1.2, 3.1), colour)
-			for z in [-3.0, -0.6]:
-				for x in [-0.95, 0.95]:
-					_wheel(root, Vector3(x, 0.5, z), 0.5, 0.3)
-			for x in [-0.95, 0.95]:
-				_wheel(root, Vector3(x, 0.5, 2.8), 0.5, 0.3)
-		"van":
-			_part(root, Vector3(1.9, 2.1, 4.4), Vector3(0.0, 1.2, 0.0), colour)
-			for z in [-1.5, 1.5]:
-				for x in [-0.9, 0.9]:
-					_wheel(root, Vector3(x, 0.4, z), 0.4, 0.28)
-		"bus":
-			_part(root, Vector3(2.2, 3.0, 10.0), Vector3(0.0, 1.7, 0.0), colour)
-			_part(root, Vector3(2.24, 0.9, 9.4), Vector3(0.0, 2.2, 0.0), Color("#1B2430"))
-			for z in [-3.5, 3.5]:
-				for x in [-1.0, 1.0]:
-					_wheel(root, Vector3(x, 0.5, z), 0.5, 0.3)
+		"truck", "van", "bus":
+			# The junctions' own models (models/road/<kind>.glb, taken from the junction actors): the
+			# same vehicles as in the junction scenes, in their own paint.
+			root.add_child(_vehicle_model(kind_name))
 		"tractor":
 			_part(root, Vector3(1.5, 1.0, 2.6), Vector3(0.0, 0.8, -0.2), colour)
 			_part(root, Vector3(1.3, 1.1, 1.2), Vector3(0.0, 1.7, -0.9), colour)
@@ -122,6 +107,12 @@ static func model(kind_name: String, colour: Color) -> Node3D:
 		_:
 			_part(root, Vector3(1.8, 1.4, 4.0), Vector3(0.0, 0.7, 0.0), colour)
 	return root
+
+
+static func _vehicle_model(kind_name: String) -> Node3D:
+	var vehicle := (load("res://models/road/%s.glb" % kind_name) as PackedScene).instantiate()
+	Situation._vertex_colours_as_albedo(vehicle)
+	return vehicle
 
 
 static func _part(root: Node3D, size: Vector3, at: Vector3, colour: Color) -> void:

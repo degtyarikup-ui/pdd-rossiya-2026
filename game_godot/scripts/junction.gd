@@ -298,9 +298,9 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 			var before_d := a.distance
 			a.distance += advance / steps
 			var t := a.path.tangent_at(a.distance)
-			var p := a.path.point_at(a.distance)
-			if a.distance > a.path.length:
-				p += t * (a.distance - a.path.length)
+			# At the end of its path a participant is gone: it does not drive on straight beyond the
+			# junction (through the houses of the street there). See the retirement below.
+			var p := a.path.point_at(minf(a.distance, a.path.length))
 			a.node.position = p
 			a.node.rotation.y = atan2(t.x, t.z)
 			var me := a.footprint()
@@ -324,8 +324,8 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 		for w in a.wheels:
 			w.rotate_x(a.speed * dt / 0.36)
 		a.cleared = a.crashed or a.distance >= a.clear_distance
-		# Past the planned path, well out of the junction view: retire it.
-		if a.distance >= a.path.length + 80.0 or a.node.position.length() > 95.0:
+		# At the end of the planned path (it ends where the road ends) or far out: retire it.
+		if a.distance >= a.path.length or a.node.position.length() > 95.0:
 			a.done = true
 			a.node.visible = false
 	return hit
