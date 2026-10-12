@@ -50,7 +50,7 @@ def main():
         routes = {r["id"]: r for r in s["routes"]}
         expect("approach" in routes, f"{name}: approach")
         if item["template"] == "cross" and item["maneuver"] == "straight":
-            expect(abs(s["stop"]["x"] + 1.8) < 1e-6 and abs(s["stop"]["z"] + 10.7) < 1e-6 and s["stop"]["yaw"] == 0,
+            expect(abs(s["stop"]["x"] + 1.8) < 1e-6 and abs(s["stop"]["z"] + 13.1) < 1e-6 and s["stop"]["yaw"] == 0,
                    f"cross: stop at the game's usual place {s['stop']}")
             left, right = routes["manoeuvre_left"], routes["manoeuvre_right"]
             expect(left["points"][-1][0] > 15 and abs(left["exitYaw"] - math.pi / 2) < 0.01, "cross: left goes to +x, exitYaw +90")

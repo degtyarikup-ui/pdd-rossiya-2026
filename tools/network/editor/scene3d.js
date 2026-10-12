@@ -323,7 +323,9 @@ const Scene3D = (() => {
       if (r.points.length < 2) continue;
       // With answer lines on the road the manoeuvres are only drawn when picked: they are how the car
       // drives, not what the question shows.
-      if (answers && r.kind === "manoeuvre" && focusRoute !== r.id && !simMode) continue;
+      // The exits are where the game continues the street after each way out (and its autopilot's path):
+      // not something the player is told to drive. Drawn only when one is picked.
+      if (r.kind === "manoeuvre" && focusRoute !== r.id) continue;
       // The question's way and the answers always show; the other exits only on focus or in the test.
       const st = routeStyle(r);
       const focused = focusRoute === r.id;
@@ -474,7 +476,6 @@ const Scene3D = (() => {
     const want = new Map();
     if (model) {
       want.set("player:", ["player", model.stop]);
-      want.set("stop:", ["stop", model.stop]);
       for (const d of model.decor) want.set(`decor:${d.id}`, ["decor", d]);
       for (const a of model.actors) want.set(`actor:${a.id}`, ["actor", a]);
       for (const l of model.lights) want.set(`light:${l.id}`, ["light", l]);

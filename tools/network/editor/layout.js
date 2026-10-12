@@ -13,7 +13,8 @@ const Layout = (() => {
     street: { width: 8.4, lanes: [1.8], title: "Улица" },
     avenue: { width: 14.0, lanes: [1.75, 5.25], title: "Проспект" },
   };
-  const KERB_R = 5.0;          // the kerb radius the builder rounds every inner corner with (build.py CURB_RADIUS)
+  const KERB_R = 5.0;
+  const CAR_BACK = 2.4;        // the player's car centre behind its stop line (half a car and a gap)          // the kerb radius the builder rounds every inner corner with (build.py CURB_RADIUS)
   const ZEBRA_LEN = 4.0;       // zebra bars along the traffic (build.py ZEBRA_LENGTH)
   const PORT_SNAP = 8.0;       // an end within this of a side's middle snaps to it (the game's street goes on there)
   const NODE_SNAP = 4.0;
@@ -361,10 +362,12 @@ const Layout = (() => {
     // (the scene's middle, where the game lays the junction), as on a junction scene.
     const sd = kind === "junction" || kind === "ring" ? stopDistance(L, st, nid, crop)
       : Math.min(total - 2, projectOn(inLine, [0, 0]) + 10.7);
-    const s = along(inLine, sd);
+    // The car stands with its front at the stop line, not on it (the game puts its centre at the stop).
+    const carD = sd + CAR_BACK;
+    const s = along(inLine, carD);
     const tin = mul(s.t, -1);
     const stop = add(s.p, mul(right(tin), lo));
-    return { st, nid, kind, lo, stop, tin, sd, total };
+    return { st, nid, kind, lo, stop, tin, sd: carD, total };
   }
 
   // Without a choice: the street that comes in from the south side, driven north.
