@@ -431,3 +431,10 @@ body.framing .toolbar, body.framing .popover, body.framing .hint, body.framing .
 .gesture { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border-radius: var(--r); background: var(--field); font-size: 11.5px; }
 .gesture.on { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
 .btn.small.wide { margin-top: 6px; }
+.sign-pic { object-fit: contain; padding: 4px; }
+.lib-grid.signs .lib-tile span { white-space: normal; font-size: 10px; line-height: 1.1; height: 2.2em; overflow: hidden; }
+.sign-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; max-height: 260px; overflow: auto; }
+.sign-grid button { padding: 4px; border-radius: 8px; background: var(--field); }
+.sign-grid button.on { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.sign-grid img { width: 100%; height: 38px; object-fit: contain; }
+.insp-head .sign-big { width: 64px; height: 64px; object-fit: contain; flex: none; }

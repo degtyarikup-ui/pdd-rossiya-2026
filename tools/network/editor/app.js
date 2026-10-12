@@ -56,6 +56,7 @@ const App = (() => {
       case "actor": return s.actors.find((x) => x.id === ref.id);
       case "light": return s.lights.find((x) => x.id === ref.id);
       case "officer": return (s.officers || []).find((x) => x.id === ref.id);
+      case "sign": return (s.signs || []).find((x) => x.id === ref.id);
       case "route": return s.routes.find((x) => x.id === ref.id);
       case "marking": return (s.markings || []).find((x) => x.id === ref.id);
       case "lawn": return (s.lawns || []).find((x) => x.id === ref.id);
@@ -77,7 +78,7 @@ const App = (() => {
     return null;
   }
   const isPaint = (ref) => objectOf(ref)?.type === "paint";
-  const layerOf = (ref) => ({ decor: "decor", actor: "actors", officer: "actors", light: "lights", route: "routes", marking: "marks", lawn: "roads",
+  const layerOf = (ref) => ({ decor: "decor", sign: "signs", actor: "actors", officer: "actors", light: "lights", route: "routes", marking: "marks", lawn: "roads",
     road: "roads", street: "roads", node: "roads", bend: "roads", stop: "actors" }[ref.t]);
   const catalogSize = (prop) => prop === "parked" ? [1.9, 1.4, 4.2] : state.catalog?.props.find((p) => p.id === prop)?.size;
   const sameRef = (a, b) => a && b && a.t === b.t && (a.id ?? null) === (b.id ?? null) && (a.part ?? -1) === (b.part ?? -1);
@@ -90,6 +91,7 @@ const App = (() => {
       case "actor": return o.name || Catalog.ACTORS[o.type]?.name || o.type;
       case "light": return "Светофор";
       case "officer": return "Регулировщик";
+      case "sign": return Catalog.signName(o.code);
       case "route":
         if (o.kind === "manoeuvre") return `Манёвр: ${Catalog.EXITS[o.exit]?.title.toLowerCase() || o.exit}`;
         if (o.kind === "choice") return `Ответ ${o.label}`;
@@ -308,12 +310,12 @@ const App = (() => {
   }
 
   // ---- moving, turning, copying, deleting ------------------------------------------------------
-  const movable = (ref) => ["decor", "actor", "officer", "light", "marking", "lawn", "road", "route", "stop", "node"].includes(ref.t);
+  const movable = (ref) => ["decor", "sign", "actor", "officer", "light", "marking", "lawn", "road", "route", "stop", "node"].includes(ref.t);
   function moveRef(s, ref, dx, dz) {
     const o = objectOf(ref);
     if (!o) return;
     const shift = (p) => { p[0] = r3(p[0] + dx); p[1] = r3(p[1] + dz); };
-    if (ref.t === "decor" || ref.t === "actor" || ref.t === "light" || ref.t === "officer") {
+    if (ref.t === "decor" || ref.t === "actor" || ref.t === "light" || ref.t === "officer" || ref.t === "sign") {
       o.pos = [r3(o.pos[0] + dx), r3(o.pos[1] + dz)];
       if (ref.t === "actor" && o.route && !o.way) {
         const r = s.routes.find((x) => x.id === o.route);
@@ -364,7 +366,7 @@ const App = (() => {
 
   // Turns the selection by `deg` degrees: each object about itself; a shape about its middle.
   function rotate(deg) {
-    const list = state.sel.filter((r) => ["decor", "actor", "officer", "light", "marking", "lawn", "road"].includes(r.t));
+    const list = state.sel.filter((r) => ["decor", "sign", "actor", "officer", "light", "marking", "lawn", "road"].includes(r.t));
     if (!list.length) return;
     const a = (deg * Math.PI) / 180;
     edit((s) => {
@@ -395,7 +397,7 @@ const App = (() => {
   }
 
   // Copies of things: props, participants (with their path), lights, markings, lawns.
-  const COPYABLE = ["decor", "actor", "officer", "light", "marking", "lawn"];
+  const COPYABLE = ["decor", "sign", "actor", "officer", "light", "marking", "lawn"];
   function copy() {
     const list = state.sel.filter((r) => COPYABLE.includes(r.t));
     if (!list.length) return false;
@@ -414,8 +416,8 @@ const App = (() => {
   }
   function pasteOne(s, c, offset) {
     const o = JSON.parse(JSON.stringify(c.o));
-    const listKey = { decor: "decor", actor: "actors", officer: "officers", light: "lights", marking: "markings", lawn: "lawns" }[c.t];
-    const prefix = c.t === "actor" ? `${o.type}_` : { decor: "decor_", officer: "officer_", light: "light_", marking: "mark_", lawn: "lawn_" }[c.t];
+    const listKey = { decor: "decor", sign: "signs", actor: "actors", officer: "officers", light: "lights", marking: "markings", lawn: "lawns" }[c.t];
+    const prefix = c.t === "actor" ? `${o.type}_` : { decor: "decor_", sign: "sign_", officer: "officer_", light: "light_", marking: "mark_", lawn: "lawn_" }[c.t];
     s[listKey] = s[listKey] || [];
     o.id = uniqueId(prefix, s[listKey].map((x) => x.id));
     delete o.auto;
@@ -455,7 +457,7 @@ const App = (() => {
         if (ref.t === "street") { Layout.removeStreet(s, ref.id); continue; }
         if (ref.t === "node") { Layout.removeNode(s, ref.id); continue; }
         if (ref.t === "road" && ref.part >= 0) { objectOf(ref)?.holes.splice(ref.part, 1); continue; }
-        const key = { decor: "decor", actor: "actors", officer: "officers", light: "lights", route: "routes", marking: "markings", lawn: "lawns", road: "roads" }[ref.t];
+        const key = { decor: "decor", sign: "signs", actor: "actors", officer: "officers", light: "lights", route: "routes", marking: "markings", lawn: "lawns", road: "roads" }[ref.t];
         const o = objectOf(ref);
         if (!o) continue;
         s[key] = s[key].filter((x) => x !== o);

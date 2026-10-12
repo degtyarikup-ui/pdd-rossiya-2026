@@ -53,6 +53,7 @@ ASSET_RULES = [
     (re.compile(r"^scenery/([a-z0-9_/]+)\.glb$"), lambda m: GAME / "scenery" / f"{m[1]}.glb"),
     (re.compile(r"^models/([a-z0-9_/]+)\.glb$"), lambda m: GAME / "models" / f"{m[1]}.glb"),
     (re.compile(r"^texture/([A-Za-z]+)\.png$"), lambda m: DETAIL / f"{m[1]}.png"),
+    (re.compile(r"^sign/([0-9.]+)\.svg$"), lambda m: GAME / "signs" / f"{m[1]}.svg"),
 ]
 STREET_WIDTH = 8.4    # the street of the game: two 4.2 m lanes (scripts/street.gd ROAD_HALF)
 EDGE_EPS = 0.05       # an edge is measured just inside the scene's square (m)
@@ -507,7 +508,8 @@ class Handler(BaseHTTPRequestHandler):
                     "asset": f"{p.parent.name}/actor_{k}.glb", "name": a.get("name", ""),
                     "maxSpeed": a.get("maxSpeed"), "clearDistance": a.get("clearDistance"),
                     "halfLength": a.get("halfLength"), "halfWidth": a.get("halfWidth")})
-        return {"props": [{"id": k, "size": v.get("size")} for k, v in index["props"].items()],
+        signs = sorted((p.stem for p in (GAME / "signs").glob("*.svg")), key=lambda c: [int(x) for x in c.split(".")])
+        return {"props": [{"id": k, "size": v.get("size")} for k, v in index["props"].items()], "signs": signs,
                 "actorTypes": {t: v[0] for t, v in models.items()},
                 "lightAsset": next((f"{p.parent.name}/light_0.glb" for p in sorted(SIT.glob("*/engine.json"))
                                     if json.loads(p.read_text(encoding="utf-8")).get("lights")), None)}

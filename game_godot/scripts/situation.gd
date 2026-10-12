@@ -101,6 +101,9 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 		# exits are asphalt in the game, the same as the entrance: the strips are not drawn.
 		if mi.name == "tex_0":
 			mi.visible = false
+		# The exported sign pictures (tex_1...): a scene with its own signs (the editor) draws them anew.
+		if mi.name.begins_with("tex_") and s.network and s.network.data.has("signs"):
+			mi.visible = false
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	s.add_child(scene)
 	s._crop = s.data.crop
@@ -151,6 +154,18 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 		cop.position = Vector3(of.pos[0], 0.0, of.pos[1])
 		cop.rotation.y = float(of.get("yaw", 0.0))
 		s.add_child(cop)
+	# Road signs of the junction (the editor's «Знаки»): faces towards their yaw, as the lights.
+	if s.network:
+		for sg in s.network.data.get("signs", []):
+			var plate: String = sg.get("plate") if sg.get("plate") is String else ""
+			var plate_sign: String = sg.get("plateSign") if sg.get("plateSign") is String else ""
+			var main_road: Array = sg.get("mainRoad") if sg.get("mainRoad") is Array else []
+			var sign := RoadBuild.sign_node(str(sg.code), plate, plate_sign, main_road)
+			if sign == null:
+				continue
+			sign.position = Vector3(sg.pos[0], 0.0, sg.pos[1])
+			sign.rotation.y = float(sg.get("yaw", PI)) - PI
+			s.add_child(sign)
 	s.set_evidence_visible(false)
 	return s
 

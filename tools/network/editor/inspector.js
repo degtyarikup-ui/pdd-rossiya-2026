@@ -58,7 +58,7 @@
     if (sel.length > 1) return multiInspector(p);
     const ref = sel[0], o = App.objectOf(ref);
     if (!o && ref.t !== "stop") return sceneInspector(p);
-    const view = { decor: decorInspector, actor: actorInspector, officer: officerInspector, light: lightInspector, street: streetInspector, node: nodeInspector,
+    const view = { decor: decorInspector, actor: actorInspector, officer: officerInspector, sign: signInspector, light: lightInspector, street: streetInspector, node: nodeInspector,
       route: routeInspector, marking: markingInspector, lawn: shapeInspector, road: shapeInspector, stop: stopInspector }[ref.t];
     view(p, ref, o);
     Thumbs.fillAll(p);
@@ -278,6 +278,31 @@
       rotl: () => App.rotate(-15), rotr: () => App.rotate(15),
     });
     bindDial(p, a);
+  }
+
+  // ---- a road sign --------------------------------------------------------------------------------
+  function signInspector(p, ref, o) {
+    const codes = state.catalog.signs || [];
+    const dirs = [["north", "arrow-up", "Вперёд"], ["west", "arrow-left", "Налево"], ["east", "arrow-right", "Направо"], ["south", "arrow-uturn", "Назад"]];
+    const main = o.mainRoad || [];
+    p.innerHTML = `${head(`<img class="sign-big" src="/asset/sign/${o.code}.svg" alt="">`, Catalog.signName(o.code), `знак ${o.code}`)}
+      ${card("Знак", `<div class="sign-grid">${codes.map((c) => `<button class="${c === o.code ? "on" : ""}" data-chip="code" data-value="${c}" data-tip="${esc(Catalog.signName(c))}"><img src="/asset/sign/${c}.svg" alt=""></button>`).join("")}</div>`)}
+      ${card("Табличка «Направление главной дороги»", `<div class="seg-chips arrows">${dirs.map(([d, icn, t]) => `<button class="${main.includes(d) ? "on" : ""}" data-chip="main" data-value="${d}" data-tip="${t}">${ic(icn)}</button>`).join("")}</div>
+        <p class="muted">Отметьте два направления главной дороги — табличка 8.13 появится под знаком. Ничего не отмечено — таблички нет.</p>`)}
+      ${card("Надпись на табличке", `<input type="text" data-text="plate" value="${esc(o.plate || "")}" placeholder="Например: 150 м">`)}
+      ${card("", `<div class="turn-row">${dial(o.yaw)}<div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rot90", "90°", "", "ghost")}${button("rotr", "", "rotr", "ghost icon")}</div></div>${deleteRow()}`)}`;
+    bind({
+      ...common,
+      "chip:code": (v) => App.edit(() => { o.code = v; }),
+      "chip:main": (v) => App.edit(() => {
+        const set = new Set(o.mainRoad || []);
+        set.has(v) ? set.delete(v) : set.add(v);
+        if (set.size) o.mainRoad = [...set]; else delete o.mainRoad;
+      }),
+      "text:plate": (v) => App.edit(() => { if (v.trim()) o.plate = v.trim(); else delete o.plate; }),
+      rotl: () => App.rotate(-15), rotr: () => App.rotate(15), rot90: () => App.rotate(90),
+    });
+    bindDial(p, o);
   }
 
   // ---- a traffic controller ----------------------------------------------------------------------

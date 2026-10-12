@@ -14,13 +14,14 @@ const Tools = (() => {
     { sep: true },
     { id: "actor", key: "C", title: "Машины и люди", icon: "car", hint: "Клик по дороге — встанет на полосу. Тяните — задать направление" },
     { id: "light", key: "L", title: "Светофор", icon: "light", hint: "Клик у перекрёстка — встанет на угол лицом к машинам" },
+    { id: "sign", key: "N", title: "Знак", icon: "flag", hint: "Клик у дороги — знак встанет справа лицом к машинам. Знак выберите слева" },
     { id: "officer", key: "U", title: "Регулировщик", icon: "person", hint: "Клик — поставить регулировщика. Тяните — куда он смотрит" },
     { id: "answer", key: "A", title: "Вариант ответа", icon: "route", hint: "Кликайте точки пути. ↵ — готово" },
     { sep: true },
     { id: "prop", key: "O", title: "Объект", icon: "tree", hint: "Клик — поставить, тянуть — повернуть. Выберите объект слева" },
     { id: "brush", key: "B", title: "Кисть деревьев", icon: "brush", hint: "Ведите с зажатой кнопкой — посадите деревья. ⌥ — стирать" },
   ];
-  const opts = { roadKind: "street", mark: "dashed", actorType: "car", prop: "trees/round_0", brushProps: ["trees/round_0", "trees/pine_0", "trees/birch_0"], brushSize: 8 };
+  const opts = { sign: "2.4", roadKind: "street", mark: "dashed", actorType: "car", prop: "trees/round_0", brushProps: ["trees/round_0", "trees/pine_0", "trees/birch_0"], brushSize: 8 };
   let tool = "select", drag = null, draft = null, placeYaw = null, hoverRef = null, lastWorld = null;
 
   const S = () => App.state.S;
@@ -205,7 +206,7 @@ const Tools = (() => {
       if (e.shift) { App.toggle(h); return; }
       // Things (props, cars, lights, junction points) move at once; a road, a line or a lawn is picked
       // first and moved by a second drag, so a click on the asphalt never shifts the road by accident.
-      const thing = ["decor", "actor", "officer", "light", "node", "stop"].includes(h.t);
+      const thing = ["decor", "sign", "actor", "officer", "light", "node", "stop"].includes(h.t);
       if (!already) App.select(h);
       if (!already && !thing) return;
       // Alt: drag a copy, the original stays.
@@ -484,6 +485,15 @@ const Tools = (() => {
         const hit = Layout.nearestLane(s, [x, z]);
         if (hit && hit.d < 5) { x = hit.point[0]; z = hit.point[1]; y = hit.yaw; }
       }
+    } else if (kind === "sign") {
+      url = null;
+      half = [0.3, 1.5];
+      y = yaw ?? Math.PI;
+      const spot = s.layout && yaw === null ? lightSpot([x, z]) : null;
+      if (spot) {
+        // A little further out than a traffic light: before the junction, on the right.
+        x = r3(spot.pos[0] + Math.sin(spot.yaw) * 2); z = r3(spot.pos[1] + Math.cos(spot.yaw) * 2); y = spot.yaw;
+      }
     } else if (kind === "officer") {
       half = [0.4, 0.4];
       x = snapGrid(x); z = snapGrid(z);
@@ -575,6 +585,13 @@ const Tools = (() => {
           a.yaw = r3(Math.atan2(walk[1][0] - walk[0][0], walk[1][1] - walk[0][1]));
         }
         return { t: "actor", id };
+      });
+    } else if (kind === "sign") {
+      ref = App.edit((sc) => {
+        sc.signs = sc.signs || [];
+        const id = App.uniqueId("sign_", sc.signs.map((o) => o.id));
+        sc.signs.push({ id, code: opts.sign, pos: [r3(g.x), r3(g.z)], yaw: r3(yaw) });
+        return { t: "sign", id };
       });
     } else if (kind === "officer") {
       ref = App.edit((sc) => {
@@ -668,7 +685,7 @@ const Tools = (() => {
     return w1 >= 0 && w2 >= 0 && 1 - w1 - w2 >= 0;
   }
 
-  const HANDLERS = { select, hand, road, junction: select, marking, lawn, answer, actor: placer("actor"), light: placer("light"), officer: placer("officer"), prop: placer("prop"), brush };
+  const HANDLERS = { select, hand, road, junction: select, marking, lawn, answer, actor: placer("actor"), light: placer("light"), officer: placer("officer"), sign: placer("sign"), prop: placer("prop"), brush };
 
   // ---- finishing a drawing ------------------------------------------------------------------------
   function finishDraft(cancel = false) {
@@ -754,6 +771,10 @@ const Tools = (() => {
     opts.prop = prop;
     set("prop");
   }
+  function pickSign(code) {
+    opts.sign = code;
+    set("sign");
+  }
   function pickActor(type) {
     opts.actorType = type;
     set("actor");
@@ -773,6 +794,7 @@ const Tools = (() => {
     else if (item.kind === "actor") { opts.actorType = item.id; const g = ghostFor("actor", w, null); place("actor", g, g.yaw); }
     else if (item.kind === "light") { const g = ghostFor("light", w, null); place("light", g, g.yaw); }
     else if (item.kind === "officer") place("officer", ghostFor("officer", w, null), 0);
+    else if (item.kind === "sign") { opts.sign = item.id; const g = ghostFor("sign", w, null); place("sign", g, g.yaw); }
   }
 
   function init() {
@@ -790,6 +812,6 @@ const Tools = (() => {
     });
   }
 
-  return { init, set, current, list: () => LIST.filter((t) => !t.sep), escape, enter, fitSelection, pickProp, pickActor, drawPathFor, convertScene,
+  return { init, set, current, list: () => LIST.filter((t) => !t.sep), escape, enter, fitSelection, pickProp, pickActor, pickSign, drawPathFor, convertScene,
     applyTemplate, renderBar, renderHint, lightSpot, get opts() { return opts; } };
 })();

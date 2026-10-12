@@ -6,8 +6,12 @@
 class_name RoadBuild
 extends RefCounted
 
-const SIGN_WIDTH := 0.8        # m, the face of a road sign
-const SIGN_TOP := 2.4          # m, the top of the pole
+const SIGN_WIDTH := 3.0        # m, the face of a road sign: almost four times the old size, read from afar
+const SIGN_TOP := 4.6          # m, the top of every sign (all signs share it: they line up)
+const SIGN_OUT := 2.6          # m, a sign's centre from the carriageway edge (it stands on the pavement)
+const POLE_BACK := 0.09        # m, the pole stands behind the face: it never cuts across the picture
+const POLE_RADIUS := 0.05
+const SIGN_SCALE := SIGN_WIDTH / 0.8   # the plates and their lettering grow with the face
 const COVER_Y := 0.046         # asphalt over the street's own paint
 const PAINT_Y := 0.052         # the markings of the question
 const WHITE := Color("#F2F4F8")
@@ -27,35 +31,103 @@ const BARRIER_RED := Color("#D43C36")
 ## picture plate under it (1.4.x).
 static func sign_at(parent: Node3D, code: String, z: float, side: String, half: float,
 		offset_x: float, plate: String, plate_sign: String) -> void:
+	var node := sign_node(code, plate, plate_sign)
+	if node == null:
+		return
+	node.position = Vector3((-(half + SIGN_OUT) if side == "right" else half + SIGN_OUT) + offset_x, 0.0, z)
+	parent.add_child(node)
+
+
+const SIGN_BOTTOM := 2.2       # m, the lower edge of the board (plates included) above the pavement
+const SIGN_LEAN := deg_to_rad(38.0)   # the board leans back towards the camera above: read face-on, not squeezed
+
+
+## A road sign at the origin, facing a driver who comes from -Z: a pole, and on it the board (the
+## sign, its picture plate and its text plate) leaning back so the game's camera from above sees it
+## whole. A grey back keeps the picture from showing through when it is seen from behind.
+static func sign_node(code: String, plate := "", plate_sign := "", main_road: Array = []) -> Node3D:
 	var tex := load("res://signs/%s.svg" % code) as Texture2D
 	if tex == null:
 		push_warning("no picture for road sign %s" % code)
-		return
-	var x := (-(half + 1.6) if side == "right" else half + 1.6) + offset_x
+		return null
+	var root := Node3D.new()
+	root.name = "sign_" + code
 	var steel := StandardMaterial3D.new()
 	steel.albedo_color = Color("#7A7F87")
 	steel.roughness = 0.6
-	var pole := MeshInstance3D.new()
-	var cyl := CylinderMesh.new()
-	cyl.top_radius = 0.04
-	cyl.bottom_radius = 0.04
-	cyl.height = SIGN_TOP
-	pole.mesh = cyl
-	pole.material_override = steel
-	pole.position = Vector3(x, SIGN_TOP * 0.5, z)
-	parent.add_child(pole)
-	var h := SIGN_WIDTH * float(tex.get_height()) / float(tex.get_width())
-	var bottom := SIGN_TOP - h
-	parent.add_child(_face(tex, Vector3(x, SIGN_TOP - h * 0.5, z), SIGN_WIDTH, h))
+	var board := Node3D.new()
+	board.position = Vector3(0, SIGN_BOTTOM, 0)
+	board.rotation.x = SIGN_LEAN
+	root.add_child(board)
+	# The board's parts from the bottom up: text plate, picture plate, the sign.
+	var y := 0.0
+	var parts: Array = []
+	if plate != "":
+		parts.append(["text", plate, SIGN_WIDTH * 0.8, 0.28 * SIGN_SCALE])
 	if plate_sign != "":
 		var ptex := load("res://signs/%s.svg" % plate_sign) as Texture2D
 		if ptex != null:
 			var pw := SIGN_WIDTH * 0.8
-			var ph := pw * float(ptex.get_height()) / float(ptex.get_width())
-			parent.add_child(_face(ptex, Vector3(x, bottom - 0.04 - ph * 0.5, z), pw, ph))
-			bottom -= 0.04 + ph
-	if plate != "":
-		parent.add_child(_text_plate(plate, Vector3(x, bottom - 0.04 - 0.14, z), SIGN_WIDTH * 0.8, 0.28))
+			parts.append(["pic", ptex, pw, pw * float(ptex.get_height()) / float(ptex.get_width())])
+	if not main_road.is_empty():
+		var mt := main_road_plate(main_road)
+		parts.append(["pic", mt, SIGN_WIDTH * 0.8, SIGN_WIDTH * 0.8 * 0.75])
+	parts.append(["pic", tex, SIGN_WIDTH, SIGN_WIDTH * float(tex.get_height()) / float(tex.get_width())])
+	for part in parts:
+		var w: float = part[2]
+		var h: float = part[3]
+		var at := Vector3(0, y + h * 0.5, 0)
+		if part[0] == "text":
+			board.add_child(_text_plate(part[1], at, w, h))
+		else:
+			board.add_child(_face(part[1], at, w, h))
+			var back := MeshInstance3D.new()
+			var box := BoxMesh.new()
+			box.size = Vector3(w * 0.92, h * 0.92, 0.03)
+			back.mesh = box
+			back.material_override = steel
+			back.position = at + Vector3(0, 0, 0.03)
+			board.add_child(back)
+		y += h + 0.05
+	# The pole: up from the pavement into the board's middle, behind its face.
+	var top := SIGN_BOTTOM + y * 0.5 * cos(SIGN_LEAN)
+	var pole := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = POLE_RADIUS
+	cyl.bottom_radius = POLE_RADIUS
+	cyl.height = top
+	pole.mesh = cyl
+	pole.material_override = steel
+	pole.position = Vector3(0, top * 0.5, POLE_BACK + y * 0.5 * sin(SIGN_LEAN))
+	root.add_child(pole)
+	return root
+
+
+## The plate 8.13 «Направление главной дороги»: the main road thick, the other roads thin, as the
+## driver sees the junction ahead (north is ahead, east to the right).
+static func main_road_plate(main_road: Array) -> ImageTexture:
+	var w := 256
+	var h := 192
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	img.fill(Color.WHITE)
+	var black := Color("#151515")
+	for i in 5:
+		for x in w:
+			img.set_pixel(x, i, black)
+			img.set_pixel(x, h - 1 - i, black)
+		for y in h:
+			img.set_pixel(i, y, black)
+			img.set_pixel(w - 1 - i, y, black)
+	var c := Vector2i(w / 2, h / 2)
+	var ends := {"north": Vector2i(w / 2, 22), "south": Vector2i(w / 2, h - 22), "east": Vector2i(w - 28, h / 2), "west": Vector2i(28, h / 2)}
+	for dir in ends:
+		var thick := 18 if dir in main_road else 6
+		var e: Vector2i = ends[dir]
+		var lo := Vector2i(mini(c.x, e.x) - thick / 2, mini(c.y, e.y) - thick / 2)
+		var hi := Vector2i(maxi(c.x, e.x) + thick / 2, maxi(c.y, e.y) + thick / 2)
+		img.fill_rect(Rect2i(lo, hi - lo), black)
+	img.generate_mipmaps()
+	return ImageTexture.create_from_image(img)
 
 
 ## A picture facing the driver who comes from -Z (the face looks back along the road).
@@ -71,6 +143,9 @@ static func _face(tex: Texture2D, at: Vector3, w: float, h: float) -> MeshInstan
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	# The picture's transparent corners are cut out (alpha), not drawn black.
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	mat.alpha_scissor_threshold = 0.5
 	face.material_override = mat
 	return face
 
@@ -88,7 +163,7 @@ static func _text_plate(text: String, at: Vector3, w: float, h: float) -> Node3D
 	var label := Label3D.new()
 	label.text = text
 	label.font_size = 64
-	label.pixel_size = 0.0055
+	label.pixel_size = 0.0055 * SIGN_SCALE
 	label.modulate = Color("#151515")
 	label.outline_size = 0
 	label.position = Vector3(0, 0, -0.02)

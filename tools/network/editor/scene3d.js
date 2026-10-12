@@ -219,7 +219,7 @@ const Scene3D = (() => {
     root.traverse((o) => {
       if (!o.isMesh || !o.geometry || !o.geometry.index) return;
       // tex_0: dirt strips the game does not draw (situation.gd).
-      if (o.name === "tex_0") { o.visible = false; return; }
+      if (o.name === "tex_0" || (o.name.startsWith("tex_") && model && model.signs)) { o.visible = false; return; }
       if (o.name !== "static") return;
       const geo = o.geometry = o.geometry.clone(), pos = geo.attributes.position, index = geo.index.array;
       const keep = [];
@@ -385,6 +385,7 @@ const Scene3D = (() => {
     if (t === "actor") return `${o.asset}|${o.type}`;
     if (t === "light") return `${o.asset}|${o.state}`;
     if (t === "officer") return `officer|${o.gesture}`;
+    if (t === "sign") return `sign|${o.code}|${o.plate || ""}|${(o.mainRoad || []).join(",")}`;
     return t;
   }
 
@@ -416,6 +417,8 @@ const Scene3D = (() => {
       g.add(lamp);
     } else if (t === "officer") {
       g.add(officerModel(o.gesture));
+    } else if (t === "sign") {
+      g.add(signModel(o));
     } else if (t === "player") {
       g.add(playerCar());
     } else if (t === "stop") {
@@ -423,6 +426,66 @@ const Scene3D = (() => {
       bar.position.y = 0.07;
       g.add(bar);
     }
+    return g;
+  }
+
+  // A road sign as the game draws it (road_build.gd sign_node): a pole and the board leaning back so
+  // the camera above reads it; the picture's own proportions, the 8.13 plate under it if any.
+  const SIGN_W = 3.0, SIGN_BOTTOM = 2.2, SIGN_LEAN = 38 * Math.PI / 180;
+  const signTex = new Map();
+  function signTexture(code) {
+    if (!signTex.has(code)) signTex.set(code, new THREE.TextureLoader().load(`/asset/sign/${code}.svg`, () => { needsRender = true; }));
+    return signTex.get(code);
+  }
+  function mainRoadTexture(main) {
+    const c = document.createElement("canvas");
+    c.width = 256; c.height = 192;
+    const x = c.getContext("2d");
+    x.fillStyle = "#fff"; x.fillRect(0, 0, 256, 192);
+    x.strokeStyle = "#151515"; x.lineWidth = 10; x.strokeRect(5, 5, 246, 182);
+    const ends = { north: [128, 22], south: [128, 170], east: [228, 96], west: [28, 96] };
+    x.lineCap = "square";
+    for (const [d, e] of Object.entries(ends)) {
+      x.lineWidth = main.includes(d) ? 18 : 6;
+      x.beginPath(); x.moveTo(128, 96); x.lineTo(...e); x.stroke();
+    }
+    return new THREE.CanvasTexture(c);
+  }
+  function signModel(o) {
+    const g = new THREE.Group();
+    const board = new THREE.Group();
+    board.position.y = SIGN_BOTTOM;
+    board.rotation.x = SIGN_LEAN;
+    g.add(board);
+    const faceMat = (tex) => new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide });
+    let y = 0;
+    const add = (tex, w, h) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), faceMat(tex));
+      m.rotation.y = Math.PI;
+      m.position.y = y + h / 2;
+      board.add(m);
+      y += h + 0.05;
+      return m;
+    };
+    if (o.mainRoad && o.mainRoad.length) add(mainRoadTexture(o.mainRoad), SIGN_W * 0.8, SIGN_W * 0.6);
+    const tex = signTexture(o.code);
+    const face = add(tex, SIGN_W, SIGN_W);
+    // The picture's proportions once it has loaded (most signs are square, some are tall plates).
+    const fit = () => {
+      const im = tex.image;
+      if (!im || !im.width) return;
+      const h = SIGN_W * im.height / im.width;
+      face.geometry.dispose();
+      face.geometry = new THREE.PlaneGeometry(SIGN_W, h);
+      face.position.y = face.position.y - SIGN_W / 2 + h / 2;
+      needsRender = true;
+    };
+    if (tex.image && tex.image.width) fit(); else setTimeout(function wait() { tex.image && tex.image.width ? fit() : setTimeout(wait, 100); }, 100);
+    const top = SIGN_BOTTOM + 1.5 * Math.cos(SIGN_LEAN);
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, top, 8), mat(0x7a7f87));
+    pole.position.set(0, top / 2, 0.09 + 1.5 * Math.sin(SIGN_LEAN));
+    g.add(pole);
+    g.rotation.y = -Math.PI;   // yaw as the game's: the way the face looks (as a light's), the model faces -z
     return g;
   }
 
@@ -480,6 +543,7 @@ const Scene3D = (() => {
       for (const a of model.actors) want.set(`actor:${a.id}`, ["actor", a]);
       for (const l of model.lights) want.set(`light:${l.id}`, ["light", l]);
       for (const o of model.officers || []) want.set(`officer:${o.id}`, ["officer", o]);
+      for (const o of model.signs || []) want.set(`sign:${o.id}`, ["sign", o]);
     }
     for (const [key, entry] of anchors) {
       const w = want.get(key);
@@ -496,7 +560,7 @@ const Scene3D = (() => {
         groups.anchors.add(entry.group);
       }
       if (!(simMode && (t === "player" || t === "actor"))) placeAnchor(entry.group, t, o);
-      const layer = t === "decor" ? "decor" : t === "light" ? "lights" : "actors";
+      const layer = t === "decor" ? "decor" : t === "light" ? "lights" : t === "sign" ? "signs" : "actors";
       if (t === "officer") entry.group.userData.ref = { t: "officer", id: o.id };
       entry.group.visible = !hidden.has(layer);
     }
@@ -581,6 +645,10 @@ const Scene3D = (() => {
       if (!a) return null;
       const ped = a.type === "pedestrian" || a.type === "cyclist";
       return { x: a.pos[0], z: a.pos[1], yaw: a.yaw || 0, hx: ped ? 0.6 : (a.halfWidth || 0.9) + 0.2, hz: ped ? 0.6 : (a.halfLength || 2.1) + 0.2 };
+    }
+    if (ref.t === "sign") {
+      const o = (model.signs || []).find((x) => x.id === ref.id);
+      return o ? { x: o.pos[0], z: o.pos[1], yaw: o.yaw || 0, hx: 1.6, hz: 0.6 } : null;
     }
     if (ref.t === "officer") {
       const o = (model.officers || []).find((x) => x.id === ref.id);
