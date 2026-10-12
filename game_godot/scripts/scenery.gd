@@ -6,6 +6,8 @@ extends RefCounted
 
 ## How much the detail map shows, per kind. The painted maps vary by only about 3 %, which
 ## reads as flat colour on a phone: the road and the ground get a clearly visible grain.
+## The live value is the "gain" field of scenery/index.json (the network editor edits it);
+## this table is only the fallback for a texture that has none.
 const GAIN := { "asphalt": 4.0, "pavement": 3.5, "gravel": 2.5, "ballast": 2.5, "sleeper": 2.5,
 	"grass": 1.3, "leaves": 1.0, "bark": 1.0, "plaster": 1.6, "brick": 1.6, "wood": 1.4, "deck": 1.6,
 	"roofTile": 1.4, "roofFlat": 1.3, "metal": 1.3 }
@@ -27,7 +29,7 @@ func _init(season_name: String) -> void:
 	for t in index.textures:
 		layers.append(t.kind)
 		kinds[t.kind] = t
-		gains.append(GAIN.get(t.kind, 1.0))
+		gains.append(t.get("gain", GAIN.get(t.kind, 1.0)))
 		var img: Image = (load("res://textures/detail/%s.png" % t.kind) as Texture2D).get_image()
 		if img.is_compressed():
 			img.decompress()
