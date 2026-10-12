@@ -3367,7 +3367,7 @@ const workerHandlers = {
     }
 
     if (url.pathname === '/api/auth/telegram/request' && request.method === 'POST') {
-      return handleTelegramAuthRequest(request, env);
+      return handleTelegramAuthRequest(request, env, ctx);
     }
     if (url.pathname === '/api/auth/telegram/check' && request.method === 'POST') {
       return handleTelegramAuthCheck(request, env);

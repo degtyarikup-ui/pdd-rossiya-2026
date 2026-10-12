@@ -117,7 +117,7 @@ async function ensureWebhookSecret(request, env) {
  * POST /api/auth/telegram/request
  * Генерирует одноразовый nonce и ссылки для перехода в бота.
  */
-export async function handleTelegramAuthRequest(request, env) {
+export async function handleTelegramAuthRequest(request, env, ctx) {
   if (request.method !== 'POST') return reply({ error: 'method_not_allowed' }, 405);
   if (!env.SHARED_SECRET || request.headers.get('x-install-secret') !== env.SHARED_SECRET) {
     return reply({ error: 'forbidden' }, 403);
@@ -126,11 +126,19 @@ export async function handleTelegramAuthRequest(request, env) {
     return reply({ error: 'storage_not_configured' }, 503);
   }
 
-  await ensureWebhookSecret(request, env);
+  // Фоном: ответ приложению не должен ждать Telegram.
+  const warm = ensureWebhookSecret(request, env).catch(() => {});
+  if (ctx?.waitUntil) ctx.waitUntil(warm);
   const nonce = 'auth_' + crypto.randomUUID().replace(/-/g, '');
   const username = telegramBotUsername(env);
 
-  await authPut(env, nonce, { status: 'pending', createdAt: Date.now() }); // 5 минут на подтверждение
+  try {
+    await authPut(env, nonce, { status: 'pending', createdAt: Date.now() }); // 5 минут на подтверждение
+  } catch (_) {
+    try { await authPut(env, nonce, { status: 'pending', createdAt: Date.now() }); } catch (e) {
+      return reply({ error: 'storage_unavailable' }, 503);
+    }
+  }
 
   return reply({
     ok: true,

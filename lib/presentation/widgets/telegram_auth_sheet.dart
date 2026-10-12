@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
@@ -86,20 +87,31 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
     });
 
     try {
-      final response = await http
-          .post(
-            Uri.parse('${BackendConfig.notifierUrl}/api/auth/telegram/request'),
-            headers: {
-              'content-type': 'application/json',
-              if (BackendConfig.notifierSecret.isNotEmpty)
-                'x-install-secret': BackendConfig.notifierSecret,
-            },
-          )
-          .timeout(const Duration(seconds: 10));
-
-      if (response.statusCode != 200) {
-        throw StateError('Server error: ${response.statusCode}');
+      http.Response? response;
+      Object? lastError;
+      for (var attempt = 0; attempt < 3; attempt++) {
+        try {
+          response = await http
+              .post(
+                Uri.parse(
+                  '${BackendConfig.notifierUrl}/api/auth/telegram/request',
+                ),
+                headers: {
+                  'content-type': 'application/json',
+                  if (BackendConfig.notifierSecret.isNotEmpty)
+                    'x-install-secret': BackendConfig.notifierSecret,
+                },
+              )
+              .timeout(const Duration(seconds: 8));
+          if (response.statusCode == 200) break;
+          lastError = StateError('Server error: ${response.statusCode}');
+        } catch (e) {
+          lastError = e;
+        }
+        response = null;
+        await Future<void>.delayed(const Duration(milliseconds: 600));
       }
+      if (response == null) throw lastError ?? StateError('no response');
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       if (data['ok'] != true || data['nonce'] == null) {
@@ -137,10 +149,14 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
     if (_tgUrl != null) {
       final uri = Uri.parse(_tgUrl!);
       try {
-        if (await canLaunchUrl(uri)) {
+        // На iOS canLaunchUrl для tg:// ненадёжен — пробуем открыть сразу.
+        if (defaultTargetPlatform == TargetPlatform.iOS ||
+            await canLaunchUrl(uri)) {
           final launched = await launchUrl(
             uri,
-            mode: LaunchMode.externalNonBrowserApplication,
+            mode: defaultTargetPlatform == TargetPlatform.iOS
+                ? LaunchMode.externalApplication
+                : LaunchMode.externalNonBrowserApplication,
           );
           if (launched) return;
         }
