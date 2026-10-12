@@ -75,6 +75,8 @@ tools/network/build.py ─►  game_godot/network/build/<id>.json (поверх�
 tools/network/engine_sync.py ► game_godot/situations/<id>/scene.json (то, что читает игра)
 ```
 
+Редактор сцен (конструктор дорог, тест, текстуры) — `docs/game/editor.md`.
+
 После правки сети (редактор: `./scripts/network_editor.sh` → http://127.0.0.1:8950/, он
 сам вызывает сборку при сохранении) закоммитьте и `network/*.json`, и `network/build/`,
 и `situations/*/scene.json`. Проверка сети: `tools/network/.venv/bin/python tools/network/check.py`

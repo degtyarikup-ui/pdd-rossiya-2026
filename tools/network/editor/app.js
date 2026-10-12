@@ -222,10 +222,8 @@ const App = (() => {
   };
 
   async function save() {
-    const textures = Textures.dirtyKinds();
-    for (const kind of textures) await Textures.save(kind);
-    if (textures.length) App.renderPanels?.();
-    if (!state.S || !state.dirty) { if (!textures.length) toast("Всё сохранено"); renderTop(); return; }
+    // Textures are not part of a scene: they reach the game by their own "Применить в игре".
+    if (!state.S || !state.dirty) { toast("Всё сохранено"); renderTop(); return; }
     try {
       const r = await api(`/api/scene/${state.id}`, state.S);
       state.savedJson = snapshotText();
@@ -492,9 +490,8 @@ const App = (() => {
     chip.className = "chip " + (err ? "bad" : state.playable ? "good" : "");
     chip.innerHTML = !s ? "" : err ? `${ic("error")}${err} ${plural(err, ["ошибка", "ошибки", "ошибок"])}` : state.playable ? `${ic("check-circle")}в игре` : "не в игре";
     chip.dataset.tip = err ? "Открыть проверку" : "";
-    const unsaved = state.dirty || Textures.dirtyKinds().length > 0;
-    $("#save").disabled = !unsaved;
-    $("#save").classList.toggle("pulse", unsaved);
+    $("#save").disabled = !state.dirty;
+    $("#save").classList.toggle("pulse", state.dirty);
     $("#undo").disabled = !state.undo.length;
     $("#redo").disabled = !state.redo.length;
     $("#test").disabled = $("#play").disabled = !s;
