@@ -57,6 +57,7 @@ const App = (() => {
       case "light": return s.lights.find((x) => x.id === ref.id);
       case "officer": return (s.officers || []).find((x) => x.id === ref.id);
       case "sign": return (s.signs || []).find((x) => x.id === ref.id);
+      case "track": return (s.tracks || []).find((x) => x.id === ref.id);
       case "route": return s.routes.find((x) => x.id === ref.id);
       case "marking": return (s.markings || []).find((x) => x.id === ref.id);
       case "lawn": return (s.lawns || []).find((x) => x.id === ref.id);
@@ -71,14 +72,14 @@ const App = (() => {
   function pointsOfRef(ref) {
     const o = objectOf(ref);
     if (!o) return null;
-    if (ref.t === "route") return o.points;
+    if (ref.t === "route" || ref.t === "track") return o.points;
     if (ref.t === "marking") return o.points || (o.polygons && o.polygons[0] && o.polygons[0].outer);
     if (ref.t === "lawn") return o.outer;
     if (ref.t === "road") return ref.part >= 0 ? o.holes[ref.part] : o.outer;
     return null;
   }
   const isPaint = (ref) => objectOf(ref)?.type === "paint";
-  const layerOf = (ref) => ({ decor: "decor", sign: "signs", actor: "actors", officer: "actors", light: "lights", route: "routes", marking: "marks", lawn: "roads",
+  const layerOf = (ref) => ({ decor: "decor", track: "roads", sign: "signs", actor: "actors", officer: "actors", light: "lights", route: "routes", marking: "marks", lawn: "roads",
     road: "roads", street: "roads", node: "roads", bend: "roads", stop: "actors" }[ref.t]);
   const catalogSize = (prop) => prop === "parked" ? [1.9, 1.4, 4.2] : state.catalog?.props.find((p) => p.id === prop)?.size;
   const sameRef = (a, b) => a && b && a.t === b.t && (a.id ?? null) === (b.id ?? null) && (a.part ?? -1) === (b.part ?? -1);
@@ -92,6 +93,7 @@ const App = (() => {
       case "light": return "Светофор";
       case "officer": return "Регулировщик";
       case "sign": return Catalog.signName(o.code);
+      case "track": return o.depot ? "Рельсы в депо" : "Рельсы";
       case "route":
         if (o.kind === "manoeuvre") return `Манёвр: ${Catalog.EXITS[o.exit]?.title.toLowerCase() || o.exit}`;
         if (o.kind === "choice") return `Ответ ${o.label}`;
@@ -115,6 +117,7 @@ const App = (() => {
     const before = snapshotText();
     const result = fn(state.S);
     if (state.S.layout) Layout.apply(state.S);
+    if (state.S.tracks) Tracks.apply(state.S);
     const after = snapshotText();
     if (after === before) return result;
     if (!opts.merge || !state.undo.length) state.undo.push(before);
@@ -129,6 +132,7 @@ const App = (() => {
   function dragMove(fn) {
     fn(state.S);
     if (state.S.layout) Layout.apply(state.S);
+    if (state.S.tracks) Tracks.apply(state.S);
     Scene3D.refresh(state.S);
     App.renderSelection?.();
   }
@@ -310,7 +314,7 @@ const App = (() => {
   }
 
   // ---- moving, turning, copying, deleting ------------------------------------------------------
-  const movable = (ref) => ["decor", "sign", "actor", "officer", "light", "marking", "lawn", "road", "route", "stop", "node"].includes(ref.t);
+  const movable = (ref) => ["decor", "track", "sign", "actor", "officer", "light", "marking", "lawn", "road", "route", "stop", "node"].includes(ref.t);
   function moveRef(s, ref, dx, dz) {
     const o = objectOf(ref);
     if (!o) return;
@@ -332,6 +336,8 @@ const App = (() => {
       if (o.auto) return;
       o.points.forEach(shift);
       if (o.labelPosition) shift(o.labelPosition);
+    } else if (ref.t === "track") {
+      o.points.forEach(shift);
     } else if (ref.t === "marking") {
       if (o.points) o.points.forEach(shift);
       (o.polygons || []).forEach((p) => { p.outer.forEach(shift); (p.holes || []).forEach((h) => h.forEach(shift)); });
@@ -457,7 +463,7 @@ const App = (() => {
         if (ref.t === "street") { Layout.removeStreet(s, ref.id); continue; }
         if (ref.t === "node") { Layout.removeNode(s, ref.id); continue; }
         if (ref.t === "road" && ref.part >= 0) { objectOf(ref)?.holes.splice(ref.part, 1); continue; }
-        const key = { decor: "decor", sign: "signs", actor: "actors", officer: "officers", light: "lights", route: "routes", marking: "markings", lawn: "lawns", road: "roads" }[ref.t];
+        const key = { decor: "decor", track: "tracks", sign: "signs", actor: "actors", officer: "officers", light: "lights", route: "routes", marking: "markings", lawn: "lawns", road: "roads" }[ref.t];
         const o = objectOf(ref);
         if (!o) continue;
         s[key] = s[key].filter((x) => x !== o);

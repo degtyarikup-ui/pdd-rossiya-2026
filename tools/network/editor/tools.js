@@ -10,6 +10,7 @@ const Tools = (() => {
     { id: "road", key: "R", title: "Дорога", icon: "road", hint: "Кликайте точки дороги. Пересечения станут перекрёстками. ↵ — готово" },
     { id: "junction", key: "J", title: "Готовые перекрёстки", icon: "junction", hint: "Выберите перекрёсток — он заменит дороги сцены" },
     { id: "marking", key: "M", title: "Разметка", icon: "marking", hint: "" },
+    { id: "track", key: "T", title: "Рельсы", icon: "rails", hint: "Кликайте точки рельсов, начало ветки прилипает к путям. ↵ — готово" },
     { id: "lawn", key: "G", title: "Газон вместо тротуара", icon: "lawn", hint: "Кликайте углы газона, клик в первую точку — готово" },
     { sep: true },
     { id: "actor", key: "C", title: "Машины и люди", icon: "car", hint: "Клик по дороге — встанет на полосу. Тяните — задать направление" },
@@ -570,11 +571,21 @@ const Tools = (() => {
       if (!tpl) return App.toast("Для этого типа нет модели", "bad");
       ref = App.edit((sc) => {
         const id = App.uniqueId(`${opts.actorType}_`, sc.actors.map((a) => a.id));
-        const lane = sc.layout && Catalog.ACTORS[opts.actorType].lane;
+        const onRails = opts.actorType === "tram" && Tracks.nearest(sc, [g.x, g.z]);
+        const lane = sc.layout && Catalog.ACTORS[opts.actorType].lane && !(onRails && onRails.d < 6);
         sc.actors.push({ id, type: opts.actorType, name: Catalog.ACTORS[opts.actorType].name, asset: tpl.asset, route: null,
           pos: [r3(g.x), r3(g.z)], yaw: r3(yaw), scale: [1, 1, 1], maxSpeed: tpl.maxSpeed ?? 10, clearDistance: tpl.clearDistance ?? 6,
           halfLength: tpl.halfLength ?? 2, halfWidth: tpl.halfWidth ?? 0.9, behaviour: { staysPut: !lane, waitsForPlayer: true },
           ...(lane ? { way: "straight" } : {}) });
+        if (onRails && onRails.d < 6) {
+          const a = sc.actors.at(-1);
+          a.track = onRails.track.id;
+          // The way along the rails nearest to the heading it was put down with.
+          const pts = onRails.track.points;
+          const fw = [pts.at(-1)[0] - pts[0][0], pts.at(-1)[1] - pts[0][1]];
+          a.trackDir = fw[0] * Math.sin(yaw) + fw[1] * Math.cos(yaw) >= 0 ? 1 : -1;
+          delete a.way;
+        }
         // A pedestrian put down near a zebra crosses the road by it.
         const walk = opts.actorType === "pedestrian" && Layout.zebraPath(sc, [r3(g.x), r3(g.z)]);
         if (walk && Math.hypot(walk[1][0] - g.x, walk[1][1] - g.z) < 12) {
@@ -685,7 +696,23 @@ const Tools = (() => {
     return w1 >= 0 && w2 >= 0 && 1 - w1 - w2 >= 0;
   }
 
-  const HANDLERS = { select, hand, road, junction: select, marking, lawn, answer, actor: placer("actor"), light: placer("light"), officer: placer("officer"), sign: placer("sign"), prop: placer("prop"), brush };
+  // Tram tracks: a line by clicks, its points snap onto the tracks already there.
+  const track = {
+    move(e) {
+      if (!e.world) return;
+      const p = Tracks.snap(S(), [r3(e.world.x), r3(e.world.z)]);
+      Scene3D.setDraft({ kind: "line", points: draft ? draft.points : [], cursor: p, colour: 0x8b5cf6 });
+    },
+    down(e) {
+      if (!e.world) return;
+      if (!draft) draft = { points: [] };
+      draft.points.push(Tracks.snap(S(), [r3(e.world.x), r3(e.world.z)]));
+      track.move(e);
+    },
+    dblclick() { finishDraft(); },
+  };
+
+  const HANDLERS = { select, hand, road, junction: select, marking, lawn, track, answer, actor: placer("actor"), light: placer("light"), officer: placer("officer"), sign: placer("sign"), prop: placer("prop"), brush };
 
   // ---- finishing a drawing ------------------------------------------------------------------------
   function finishDraft(cancel = false) {
@@ -702,6 +729,14 @@ const Tools = (() => {
         if (opts.mark === "zebra") m.length = 4;
         s.markings.push(m);
         return { t: "marking", id };
+      });
+      App.select(ref);
+    } else if (tool === "track" && pts.length >= 2) {
+      const ref = App.edit((s) => {
+        s.tracks = s.tracks || [];
+        const id = App.uniqueId("track_", s.tracks.map((t) => t.id));
+        s.tracks.push({ id, points: pts });
+        return { t: "track", id };
       });
       App.select(ref);
     } else if (tool === "lawn" && pts.length >= 3) {

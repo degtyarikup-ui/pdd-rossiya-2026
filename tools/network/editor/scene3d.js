@@ -595,6 +595,15 @@ const Scene3D = (() => {
   // ---- the road plan: streets and their nodes --------------------------------------------
   function rebuildPlan() {
     const g = setGroup("plan");
+    // Tram tracks: their centre line with an arrow the way they run (the rails come from the build).
+    for (const t of (model && model.tracks) || []) {
+      if (t.points.length < 2) continue;
+      const on = sel.some((x) => x.t === "track" && x.id === t.id), hov = hover && hover.t === "track" && hover.id === t.id;
+      const colour = on ? ACCENT : hov ? HOVER : t.depot ? 0xd98e04 : 0x8b5cf6;
+      g.add(polyline(t.points, 0.18, colour, on ? 3 : 2, on || hov ? 1 : 0.7, !on));
+      const head = arrowhead(t.points, 0.9, 0.18, colour, 1);
+      if (head) g.add(head);
+    }
     if (!model || !model.layout || simMode) return;
     const L = model.layout;
     const crop = model.crop || 90;
@@ -707,7 +716,7 @@ const Scene3D = (() => {
       turnHandle = { x: p[0], z: p[1], cx: one.x, cz: one.z };
     }
     // The points of a drawn shape or route, when it is the one selected.
-    if (sel.length === 1 && ["route", "road", "lawn", "marking"].includes(sel[0].t)) {
+    if (sel.length === 1 && ["route", "road", "lawn", "marking", "track"].includes(sel[0].t)) {
       const pts = App.pointsOfRef(sel[0]);
       if (pts && !(sel[0].t === "marking" && App.isPaint(sel[0]))) {
         pts.forEach((p, i) => g.add(handle(p, "circle", i === sel[0].v ? ACCENT : 0xffffff, ACCENT, 0.8)));
@@ -1073,7 +1082,7 @@ const Scene3D = (() => {
         if (at && near(at, 15, 0.8) && !skip({ t: "route", id: r.id })) return { t: "letter", id: r.id };
       }
     }
-    if (sel.length === 1 && ["route", "road", "lawn", "marking"].includes(sel[0].t)) {
+    if (sel.length === 1 && ["route", "road", "lawn", "marking", "track"].includes(sel[0].t)) {
       const pts = App.pointsOfRef(sel[0]) || [];
       for (let i = 0; i < pts.length; i++) if (near(pts[i], 10)) return { ...sel[0], v: i, point: true };
     }
@@ -1131,6 +1140,12 @@ const Scene3D = (() => {
       }
     }
     if (!w) return null;
+    if (!hidden.has("roads")) {
+      for (const t of model.tracks || []) {
+        const ref = { t: "track", id: t.id };
+        if (!skip(ref) && lineHit(t.points, Math.max(wpp * 8, 1.0))) return ref;
+      }
+    }
     if (!hidden.has("marks")) {
       for (const m of model.markings || []) {
         if (m.auto) continue;

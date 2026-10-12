@@ -56,7 +56,7 @@ ASPHALT = "#2c2f36"
 PAVEMENT = "#747970"
 KERB_COLOUR = "#b9b4ab"
 LAWN_COLOUR = "#9ca66b"            # the game draws lawns in the season's ground colour (layer grass)
-MARK_COLOURS = {"white": "#f2f4f8", "yellow": "#f5b025"}   # game.js BRAND.asphaltMarking / asphaltMarkingYellow
+MARK_COLOURS = {"white": "#f2f4f8", "yellow": "#f5b025", "rail": "#9ea6ae"}   # game.js BRAND.asphaltMarking / asphaltMarkingYellow
 MARK_WIDTH = {"solid": 0.13, "dashed": 0.13, "stop": 0.4}
 DASH, GAP = 2.0, 3.0                 # game.js corridorDashes: 2 m line, 3 m gap
 ZEBRA_LENGTH, ZEBRA_STRIPE = 4.0, 0.7
@@ -93,9 +93,33 @@ def polygons_json(geom) -> list:
     return out
 
 
+TRACK_GAUGE = 1.524    # m between the rails (Russian tram gauge)
+RAIL_WIDTH = 0.09      # m, a rail seen from above
+TRACK_BED = 3.2        # m, the paved strip a track takes where it leaves the road (a depot entry)
+
+
+def track_lines(scene: dict) -> list:
+    return [LineString([tuple(p) for p in t["points"]]) for t in scene.get("tracks", []) if len(t.get("points", [])) >= 2]
+
+
+def rails(scene: dict):
+    """Both rails of every tram track (editor «Рельсы»): two thin lines a gauge apart."""
+    parts = []
+    for line in track_lines(scene):
+        for side in (-1, 1):
+            off = line.offset_curve(side * TRACK_GAUGE / 2)
+            if not off.is_empty:
+                parts.append(off.buffer(RAIL_WIDTH / 2, cap_style=2))
+    return unary_union(parts) if parts else Polygon()
+
+
 def road_geometry(scene: dict):
-    """(road without islands, islands, all roads) as shapely geometry, inside the crop square."""
+    """(road without islands, islands, all roads) as shapely geometry, inside the crop square.
+    A tram track is paved too: where it leaves the road (into a depot) the kerb and the pavement
+    open for it, the way a driveway does."""
     filled, holes = [], []
+    for line in track_lines(scene):
+        filled.append(line.buffer(TRACK_BED / 2, cap_style=2, join_style=1))
     for r in scene.get("roads", []):
         filled.append(Polygon(r["outer"]).buffer(0))
         for h in r.get("holes", []):
@@ -261,6 +285,8 @@ def build(scene: dict) -> dict:
         # scene's old roads (where the plan has none now) are covered, and the game drops them (covers()).
         v, t = triangulate(box.difference(roads_all.union(pavement).union(lawn)))
         surfaces.append({"id": "ground", "y": LAWN_Y, "layer": "grass", "colour": LAWN_COLOUR, "verts": v, "idx": t})
+    if scene.get("tracks"):
+        marks.setdefault("rail", []).append(rails(scene))
     for colour in MARK_COLOURS:
         if colour not in marks:
             continue

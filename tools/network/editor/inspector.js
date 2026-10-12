@@ -58,7 +58,7 @@
     if (sel.length > 1) return multiInspector(p);
     const ref = sel[0], o = App.objectOf(ref);
     if (!o && ref.t !== "stop") return sceneInspector(p);
-    const view = { decor: decorInspector, actor: actorInspector, officer: officerInspector, sign: signInspector, light: lightInspector, street: streetInspector, node: nodeInspector,
+    const view = { decor: decorInspector, actor: actorInspector, officer: officerInspector, sign: signInspector, track: trackInspector, light: lightInspector, street: streetInspector, node: nodeInspector,
       route: routeInspector, marking: markingInspector, lawn: shapeInspector, road: shapeInspector, stop: stopInspector }[ref.t];
     view(p, ref, o);
     Thumbs.fillAll(p);
@@ -221,6 +221,17 @@
   }
 
   // ---- a participant ---------------------------------------------------------------------------
+  // A tram on the rails: which track, which way, and the branch it turns onto (its depot).
+  function tramCard(s, a) {
+    const tr = Tracks.of(s, a.track);
+    const pr = tr ? Tracks.project(tr.points, a.pos) : null;
+    const branches = tr ? Tracks.branchesAhead(s, tr, pr.at, a.trackDir === -1 ? -1 : 1) : [];
+    const label = (t) => `${t.depot ? "Депо" : "Путь"} ${s.tracks.indexOf(t) + 1}`;
+    return card("По рельсам", `${chips("track", [{ value: "", title: "Нет" }, ...s.tracks.map((t) => ({ value: t.id, title: label(t) }))], a.track || "")}
+      ${tr ? `<div class="sub-h">Направление</div>${chips("tdir", [{ value: 1, icon: "arrow-up", title: "Как рельсы" }, { value: -1, icon: "arrow-uturn", title: "Обратно" }], a.trackDir === -1 ? -1 : 1)}` : ""}
+      ${branches.length ? `<div class="sub-h">Дальше</div>${chips("branch", [{ value: "", title: "Прямо" }, ...branches.map((b) => ({ value: b.track.id, title: `на ${label(b.track)}` }))], a.branch || "")}` : ""}`, { icon: "rails" });
+  }
+
   function actorInspector(p, ref, a) {
     const s = state.S;
     const lane = s.layout && Catalog.ACTORS[a.type]?.lane;
@@ -231,7 +242,8 @@
     p.innerHTML = `${head(Thumbs.img("actor", a.type, "big"), a.name || Catalog.ACTORS[a.type]?.name, Catalog.ACTORS[a.type]?.name)}
       ${card("Кто это", `<div class="variant-grid">${types.map((t) => `<button class="variant ${t === a.type ? "on" : ""}" data-chip="type" data-value="${t}" data-tip="${esc(Catalog.ACTORS[t].name)}">${Thumbs.img("actor", t)}</button>`).join("")}</div>
         <input class="name-input" type="text" data-text="name" value="${esc(a.name || "")}" placeholder="Подпись над ним в игре">`)}
-      ${card("Куда едет", lane
+      ${a.type === "tram" && (s.tracks || []).length ? tramCard(s, a) : ""}
+      ${a.track ? "" : card("Куда едет", lane
         ? `${chips("way", [{ value: "stay", icon: "parked", tip: "Стоит" }, ...["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: !ways.includes(k) }))], moving ? (a.way || "straight") : "stay", { cls: "arrows" })}`
         : `${chips("move", [{ value: "stay", title: "Стоит", icon: "parked" }, { value: "go", title: "Едет по пути", icon: "route" }], moving ? "go" : "stay")}
            ${moving ? button("draw-path", route ? "Перерисовать путь" : "Нарисовать путь", "route", "ghost wide") : ""}
@@ -242,6 +254,12 @@
       ${card("", `<div class="turn-row">${dial(a.yaw)}<div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rotr", "", "rotr", "ghost icon")}</div></div>${deleteRow()}`)}`;
     bind({
       ...common,
+      "chip:track": (v) => App.edit((sc) => {
+        if (v) { a.track = v; delete a.way; delete a.branch; }
+        else { delete a.track; delete a.branch; delete a.trackDir; sc.routes = sc.routes.filter((x) => x.id !== `actor_${a.id}`); a.route = null; }
+      }),
+      "chip:tdir": (v) => App.edit(() => { a.trackDir = Number(v); delete a.branch; }),
+      "chip:branch": (v) => App.edit(() => { if (v) a.branch = v; else delete a.branch; }),
       "chip:type": (v) => App.edit(() => {
         const tpl = state.catalog.actorTypes[v];
         a.type = v; a.asset = tpl.asset;
@@ -278,6 +296,22 @@
       rotl: () => App.rotate(-15), rotr: () => App.rotate(15),
     });
     bindDial(p, a);
+  }
+
+  // ---- tram tracks ----------------------------------------------------------------------------------
+  function trackInspector(p, ref, t) {
+    const trams = state.S.actors.filter((a) => a.track === t.id);
+    p.innerHTML = `${head(`<span class="ibadge">${ic("rails")}</span>`, t.depot ? "Рельсы в депо" : "Рельсы", `трамваев: ${trams.length}`)}
+      ${card("", `${toggle("depot", "Заезд в депо", !!t.depot, "home")}
+        <p class="muted">Трамвай, который сворачивает на эти рельсы, уезжает с дороги и не мешает. Там, где рельсы идут по тротуару, бордюр и тротуар раскрываются под них сами.</p>
+        ${button("reverse", "Развернуть направление", "rotr", "ghost wide")}
+        <p class="muted">Тяните точки на виде, двойной клик по линии — новая точка. Начало ветки прилипает к другим рельсам.</p>`)}
+      ${card("", `<div class="insp-actions">${button("del", "Удалить рельсы", "trash", "danger ghost")}</div>`)}`;
+    bind({
+      del: () => App.remove(),
+      "toggle:depot": (on) => App.edit(() => { if (on) t.depot = true; else delete t.depot; }),
+      reverse: () => App.edit(() => { t.points.reverse(); }),
+    });
   }
 
   // ---- a road sign --------------------------------------------------------------------------------
