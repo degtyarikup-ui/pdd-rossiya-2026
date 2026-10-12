@@ -37,9 +37,10 @@ FONTS = check.ROOT / "assets" / "fonts"
 QUESTIONS = check.ROOT / "assets" / "countries" / "ru" / "questions"
 IMAGES = check.ROOT / "assets" / "countries" / "ru" / "images"
 ID = re.compile(r"^[a-z0-9_]+$")
-# The triangulation library keeps global state and crashes when two threads use it at once (the server
-# is threaded): every build of a scene goes through this lock.
-BUILD_LOCK = threading.Lock()
+# The triangulation library keeps global state and crashes when two threads use it at once, and the
+# geometry code (shapely, triangle) is not made for parallel use from here: every request that loads or
+# builds a scene runs under this one lock. One editor, short requests: the lock costs nothing visible.
+BUILD_LOCK = threading.RLock()   # re-entrant: the builds inside a request take it again
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 # Limits of a texture edit: numbers the game can draw sensibly (scenery.gdshader).
 TEXTURE_LIMITS = {"gain": (0.0, 8.0), "macro": (0.0, 0.5), "macroScale": (0.01, 2.0), "period": (0.4, 40.0)}
@@ -245,6 +246,14 @@ class Handler(BaseHTTPRequestHandler):
         return json.loads(self.rfile.read(int(self.headers["Content-Length"])))
 
     def do_GET(self):
+        with BUILD_LOCK:
+            self.route_get()
+
+    def do_POST(self):
+        with BUILD_LOCK:
+            self.route_post()
+
+    def route_get(self):
         path = self.path.split("?")[0]
         if path in ("/", "/index.html"):
             return self.file(EDITOR / "index.html")
@@ -292,7 +301,7 @@ class Handler(BaseHTTPRequestHandler):
                                    "source": ticket_question(m[1])})
         self.send(404, {"error": "not found"})
 
-    def do_POST(self):
+    def route_post(self):
         path = self.path.split("?")[0]
         m = re.match(r"^/api/texture/([A-Za-z]+)(/image|/restore)?$", path)
         if m:
