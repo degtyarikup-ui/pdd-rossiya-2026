@@ -1,3 +1,4 @@
+import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import java.util.Properties
 
@@ -39,7 +40,7 @@ android {
     // На обычные сборки (без -Pdev) не влияет никак.
     val devSuffix = if (project.hasProperty("dev")) ".dev" else ""
     val gitCommit = try {
-        val stdout = java.io.ByteArrayOutputStream()
+        val stdout = ByteArrayOutputStream()
         project.exec {
             commandLine("git", "rev-parse", "--short", "HEAD")
             standardOutput = stdout

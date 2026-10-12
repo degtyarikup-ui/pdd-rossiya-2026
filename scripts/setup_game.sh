@@ -12,8 +12,9 @@ HAVE="$(godot --version | cut -d. -f1-3)"
 [[ "$HAVE" == "$WANT" ]] || echo "Внимание: Godot $HAVE, а проект на $WANT — файлы .import и .uid могут отличаться."
 
 # Export templates (Android/iOS/Web builds): Godot → Editor → Manage Export Templates.
-TPL="$HOME/Library/Application Support/Godot/export_templates/$WANT.stable"
-[[ -d "$TPL" ]] || echo "Нет шаблонов экспорта $WANT ($TPL): без них не собрать Android/iOS/Web (запуск на компьютере работает)."
+TPL="$HOME/.local/share/godot/export_templates/$WANT.stable"
+[[ -d "$TPL" ]] || TPL="$HOME/Library/Application Support/Godot/export_templates/$WANT.stable"
+[[ -d "$TPL" ]] || echo "Нет шаблонов экспорта $WANT: без них не собрать Android/iOS/Web (запуск на компьютере работает)."
 
 # Python of the road-network tools (editor, build.py, check.py, engine_sync.py).
 if [[ ! -x tools/network/.venv/bin/python ]]; then
