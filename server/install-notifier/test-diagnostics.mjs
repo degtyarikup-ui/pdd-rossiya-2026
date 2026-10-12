@@ -68,7 +68,7 @@ test('durable cooldown survives restarts, counts repeats and limits error storms
   Object.values(stored.groups)[0].at -= 600001;
   await state.storage.put('errors:state', stored);
   await reportIncident(env, event({ id: 'e'.repeat(32) }));
-  assert.match((await messages(state))[1], /Повторов с прошлого сообщения:<\/b> 2/);
+  assert.match((await messages(state))[1], /Повторов с прошлого сообщения: 2/);
   for (let i = 0; i < 30; i++) await reportIncident(env, event({ id: crypto.randomUUID(), operation: 'test.failure_' + i }));
   assert.equal((await messages(state)).length, 20);
   await restarted.fetch(new Request('https://queue/enqueue', { method: 'POST', body: JSON.stringify({ text: 'Purchase success' }) }));

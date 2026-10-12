@@ -17,33 +17,30 @@ export function buildIncidentMessage(event, repeats = 0, overflow = 0) {
   const guide = incidentGuide(event);
   const account = event.userName || (event.userId ? 'Имя не получено' : 'Аккаунт ещё не определён');
   const authProvider = event.authProvider || (['google', 'apple', 'yandex'].includes(event.provider) ? event.provider : null);
-  const who = [
-    event.userId || event.category !== 'infrastructure' ? escape(account) + (event.userEmail ? ' (' + escape(event.userEmail) + ')' : '') : null,
-    authProvider ? providerLabel(authProvider) : null,
-    event.provider && event.provider !== authProvider ? providerLabel(event.provider) : null,
-  ].filter(Boolean).join(' · ');
-  const where = [
-    event.platform ? platformLabel(event.platform) + (event.appVersion ? ' v' + escape(event.appVersion) : '') : null,
-    event.store ? storeLabel(event.store) : null,
-    event.device ? escape(event.device) : null,
-    event.country ? escape(event.country) : null,
-  ].filter(Boolean).join(' · ');
   const ids = [
     event.userId ? 'ID аккаунта: <code>' + escape(event.userId) + '</code>' : null,
     event.installation ? 'Установка: <code>' + escape(event.installation) + '</code>' : null,
     event.diagnosticId ? 'Диагностика: <code>' + escape(event.diagnosticId) + '</code>' : null,
-  ].filter(Boolean).join('\n');
+  ];
   return [
     guide.emoji + ' <b>' + copy.title + '</b>',
     '<b>Причина:</b> ' + copy.reason + (guide.what ? ' ' + guide.what : ''),
     guide.steps[0] ? '→ ' + guide.steps[0] : null,
     '',
-    who ? '👤 ' + who : null,
-    where ? '📱 ' + where : null,
-    (event.origin === 'client' ? 'Приложение' : 'Сервер') + ' · <code>' + escape(event.operation) + '</code> · <code>' + escape(event.code) + '</code>' + (event.status ? ' · HTTP ' + event.status : ''),
-    repeats ? '🔁 <b>Повторов с прошлого сообщения:</b> ' + repeats : null,
+    event.userId || event.category !== 'infrastructure' ? '👤 ' + escape(account) : null,
+    event.userEmail ? '✉️ ' + escape(event.userEmail) : null,
+    authProvider ? '🔑 Вход: ' + providerLabel(authProvider) : null,
+    event.provider && event.provider !== authProvider ? '🧩 Сервис: ' + providerLabel(event.provider) : null,
+    event.platform ? '📱 ' + platformLabel(event.platform) + (event.appVersion ? ' v' + escape(event.appVersion) : '') : null,
+    event.store ? '🏪 ' + storeLabel(event.store) : null,
+    event.device ? '📟 ' + escape(event.device) : null,
+    event.country ? '🌍 ' + escape(event.country) : null,
+    '',
+    (event.origin === 'client' ? 'Приложение' : 'Сервер') + ': <code>' + escape(event.operation) + '</code>',
+    'Код: <code>' + escape(event.code) + '</code>' + (event.status ? ' · HTTP ' + event.status : ''),
+    repeats ? '🔁 Повторов с прошлого сообщения: ' + repeats : null,
     overflow ? 'Других сообщений ограничено: ' + overflow : null,
-    ids || null,
+    ...ids,
     '🕒 ' + new Date(event.ts).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }) + ' МСК',
   ].filter(line => line !== null).join('\n');
 }
