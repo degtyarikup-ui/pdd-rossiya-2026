@@ -73,6 +73,8 @@ android {
     buildTypes {
         release {
             isDebuggable = false
+            // The Godot engine's classes are called by name from native code: see proguard-godot.pro.
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-godot.pro")
             // Never silently sign a store release with the debug key.
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
