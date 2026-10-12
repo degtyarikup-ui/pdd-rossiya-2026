@@ -1,8 +1,9 @@
 # 3D-игра «Живой город» — как запустить и где что лежит
 
 Игра — **Godot 4.7.2** (Compatibility), папка `game_godot/`. Старая WebView-игра (Three.js)
-удалена; последний коммит с ней — тег `game-webview-final`. Мини-игры «Перекрёсток» и
-«Регулировщик» остаются на `assets/game/` (это другие игры, к городской не относятся).
+удалена; последний коммит с ней — тег `game-webview-final`. Мини-игра «Регулировщик»
+также перенесена на Godot (`game_godot/regulator.tscn`, флаг `--regulator`). Мини-игра
+«Перекрёсток» остаётся на `assets/game/`.
 
 В git лежит всё для запуска: код, модели, сцены перекрёстков (`game_godot/situations/`,
 207 МБ), данные сети и их сборка (`game_godot/network/`, `network/build/`), строки интерфейса
@@ -40,6 +41,7 @@ godot --path game_godot -- --garage="$(cat scratch/garage.json)"    # с гар�
 ## Проверки (headless)
 
 ```bash
+godot --headless --path game_godot --script res://tests/regulator_check.gd # регулировщик: 36 проверок
 godot --headless --path game_godot --script res://tests/rules_check.gd      # нарушения: 47 проверок
 godot --headless --path game_godot --script res://tests/road_check.gd       # дорожные вопросы: 70 проверок
 godot --headless --path game_godot --script res://tests/surface_check.gd    # перекрёстки без дублей дорожного слоя

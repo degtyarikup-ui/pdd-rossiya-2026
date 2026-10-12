@@ -16,6 +16,7 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/screens/game/godot_game.dart';
 import 'package:pdd_app/presentation/screens/game/platform/browser_game.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -78,14 +79,23 @@ class _TrafficControllerScreenState
   static const double _maxZoom = 2.6;
   double _zoom = 1;
   double _zoomAtGestureStart = 1;
+  bool _godotAvailable = false;
 
   @override
   void initState() {
     super.initState();
+    _checkGodot();
     if (kIsWeb) {
       _initWebGame();
     } else {
       _initWebView();
+    }
+  }
+
+  Future<void> _checkGodot() async {
+    final available = await GodotGame.available();
+    if (mounted && available) {
+      setState(() => _godotAvailable = true);
     }
   }
 
@@ -555,6 +565,17 @@ class _TrafficControllerScreenState
             Navigator.of(context).pop();
           },
         ),
+        if (_godotAvailable) ...[
+          const SizedBox(width: AppDimensions.spacingS),
+          AppChromeIconButton(
+            icon: Icons.view_in_ar_rounded,
+            onTap: () async {
+              HapticFeedbackHelper.tap();
+              await GodotGame.playRegulator(context, ref);
+              if (mounted) Navigator.of(context).pop();
+            },
+          ),
+        ],
         const SizedBox(width: AppDimensions.spacingM),
         Expanded(child: _buildHud(colors)),
       ],

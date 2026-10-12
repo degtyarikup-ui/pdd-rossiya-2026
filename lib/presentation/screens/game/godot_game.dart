@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:pdd_app/core/config/country_config.dart';
+import 'package:pdd_app/core/config/game_economy.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/game_situation.dart';
@@ -101,6 +102,66 @@ class GodotGame {
     final decoded = jsonDecode(json);
     if (decoded is! Map || !context.mounted) return;
     await _afterGame(context, ref, decoded.cast<String, dynamic>());
+  }
+
+  /// Plays the 3D Regulator mini-game on Godot.
+  static Future<void> playRegulator(BuildContext context, WidgetRef ref) async {
+    if (_running) return;
+    HapticFeedbackHelper.tap();
+    final lang = Localizations.localeOf(context).languageCode;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final prefs = await _prefs();
+    final vehicle = prefs?.getString(_vehicleKey) ?? 'sedan';
+    final paint = prefs?.getString(_paintKey) ?? 'red';
+    final paintHex = gamePaintColors[paint] != null
+        ? _hex(gamePaintColors[paint]!)
+        : '#0574F8';
+    if (!context.mounted) return;
+    _running = true;
+    String? json;
+    try {
+      json = await _start(context, [
+        '--regulator',
+        '--lang=$lang',
+        if (dark) '--dark',
+        '--vehicle=$vehicle',
+        '--paint=$paintHex',
+        if (!SoundEffectsService.instance.isEnabled) '--mute',
+      ]);
+    } on PlatformException {
+      json = null;
+    } finally {
+      _running = false;
+    }
+    if (json == null) return;
+    final decoded = jsonDecode(json);
+    if (decoded is! Map || !context.mounted) return;
+    final map = decoded.cast<String, dynamic>();
+    final score = (map['score'] as num?)?.toInt() ?? 0;
+    final solved = (map['solved'] as num?)?.toInt() ?? 0;
+    final combo = (map['combo'] as num?)?.toInt() ?? 0;
+    final wrong = (map['wrong'] as num?)?.toInt() ?? 0;
+
+    if (score > 0 || solved > 0) {
+      unawaited(
+        GameLeaderboardService.instance.submitRun(
+          GameEconomy.rankedScore(
+            score,
+            correct: solved,
+            wrong: wrong,
+          ),
+          runId: GameLeaderboardService.newRunId(),
+        ),
+      );
+      ref
+          .read(trafficControllerProgressProvider.notifier)
+          .recordGameResult(
+            score: score,
+            combo: combo,
+            solved: solved,
+          );
+      unawaited(ProgressSyncService.instance.syncWithServer());
+    }
   }
 
   /// Opens the game and waits for its summary (JSON), null if it did not end

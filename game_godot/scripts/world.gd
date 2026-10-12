@@ -118,6 +118,9 @@ const TEST_TAIL := 12.0
 
 
 func _ready() -> void:
+	if _has_arg("--regulator") or _has_arg("--mode=regulator"):
+		get_tree().change_scene_to_file("res://regulator.tscn")
+		return
 	cfg = JSON.parse_string(FileAccess.get_file_as_string("res://data/world.json"))
 	L = cfg.chunk_length
 	chunk_count = int(cfg.chunks_ahead) + int(cfg.chunks_behind) + 1
