@@ -1089,5 +1089,13 @@
   "supportChatEmptySubtitle": "Билеттер, ережелер немесе қолданба туралы кез келген сұрақ қойыңыз — көмектесеміз.",
   "supportChatSendFailed": "Хабарлама жіберілмеді",
   "supportChatRetry": "Қайталау",
-  "supportChatStaff": "Қолдау"
+  "supportChatStaff": "Қолдау",
+  "appVersion": "{version} нұсқасы",
+  "@appVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  }
 }

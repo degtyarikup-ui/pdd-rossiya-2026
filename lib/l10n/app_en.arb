@@ -1089,5 +1089,13 @@
   "supportChatEmptySubtitle": "Ask any question about tickets, rules or the app — we're here to help.",
   "supportChatSendFailed": "Failed to send message",
   "supportChatRetry": "Retry",
-  "supportChatStaff": "Support"
+  "supportChatStaff": "Support",
+  "appVersion": "Version {version}",
+  "@appVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  }
 }

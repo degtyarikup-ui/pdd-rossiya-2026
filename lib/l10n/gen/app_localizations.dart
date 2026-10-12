@@ -5703,6 +5703,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Поддержка'**
   String get supportChatStaff;
+
+  /// No description provided for @appVersion.
+  ///
+  /// In ru, this message translates to:
+  /// **'Версия {version}'**
+  String appVersion(String version);
 }
 
 class _AppLocalizationsDelegate

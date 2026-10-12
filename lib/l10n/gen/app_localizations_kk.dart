@@ -3418,4 +3418,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get supportChatStaff => 'Қолдау';
+
+  @override
+  String appVersion(String version) {
+    return '$version нұсқасы';
+  }
 }

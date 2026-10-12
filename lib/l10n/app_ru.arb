@@ -1589,5 +1589,13 @@
   "supportChatEmptySubtitle": "Напишите любой вопрос о билетах, правилах или приложении — мы поможем разобраться.",
   "supportChatSendFailed": "Не удалось отправить сообщение",
   "supportChatRetry": "Повторить",
-  "supportChatStaff": "Поддержка"
+  "supportChatStaff": "Поддержка",
+  "appVersion": "Версия {version}",
+  "@appVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  }
 }
