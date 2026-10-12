@@ -12,6 +12,7 @@ import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/notification_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/core/config/build_info.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -28,6 +29,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String? _appVersionText;
+  String? _gitCommit;
 
   @override
   void initState() {
@@ -40,8 +42,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final info = await PackageInfo.fromPlatform();
       if (!mounted) return;
       final build = info.buildNumber.isNotEmpty ? ' (${info.buildNumber})' : '';
+      final commit = await BuildInfo.getGitCommit(packageInfo: info);
+      if (!mounted) return;
       setState(() {
         _appVersionText = '${info.version}$build';
+        _gitCommit = commit.isNotEmpty ? commit : null;
       });
     } catch (_) {}
   }
@@ -598,13 +603,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   if (_appVersionText != null) ...[
                     const SizedBox(height: AppDimensions.spacingM),
-                    Text(
-                      appL10n.appVersion(_appVersionText!),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colors.secondaryText.withValues(alpha: 0.6),
+                    GestureDetector(
+                      onLongPress: () {
+                        final text = _gitCommit != null
+                            ? '${appL10n.appVersion(_appVersionText!)} · $_gitCommit'
+                            : appL10n.appVersion(_appVersionText!);
+                        Clipboard.setData(ClipboardData(text: text));
+                        HapticFeedbackHelper.tap();
+                      },
+                      child: Text(
+                        _gitCommit != null
+                            ? '${appL10n.appVersion(_appVersionText!)} · $_gitCommit'
+                            : appL10n.appVersion(_appVersionText!),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colors.secondaryText.withValues(alpha: 0.6),
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ],
                 ],

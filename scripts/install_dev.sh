@@ -49,8 +49,10 @@ if [[ $build -eq 1 || ! -f $APK ]]; then
   # DEVICE_REGION=RU ./scripts/install_dev.sh --build — показать российский
   # пейволл (СБП + Google Play на выбор), когда телефон не в России.
   region_define=()
-  [[ -n "${DEVICE_REGION:-}" ]] && region_define=(--dart-define=DEVICE_REGION="$DEVICE_REGION")
-  flutter build apk --flavor ru --release --dart-define=COUNTRY=ru --dart-define=GAME_DEBUG=true "${key_define[@]}" ${region_define[@]+"${region_define[@]}"} -Pdev --build-number="$(date +%y%m%d%H)"
+  commit="$(git rev-parse --short HEAD 2>/dev/null || true)"
+  commit_define=()
+  [[ -n "$commit" ]] && commit_define=(--dart-define=GIT_COMMIT="$commit")
+  flutter build apk --flavor ru --release --dart-define=COUNTRY=ru --dart-define=GAME_DEBUG=true "${key_define[@]}" ${region_define[@]+"${region_define[@]}"} "${commit_define[@]}" -Pdev --build-number="$(date +%y%m%d%H)"
 fi
 
 connected() { adb devices | awk 'NR>1 && $2=="device" {print $1; exit}'; }

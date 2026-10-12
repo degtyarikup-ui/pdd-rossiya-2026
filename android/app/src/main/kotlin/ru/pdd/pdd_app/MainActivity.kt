@@ -41,6 +41,15 @@ class MainActivity : FlutterActivity() {
             val locale = Locale.getDefault().country.takeIf { it.isNotEmpty() }
             result.success(network ?: sim ?: locale)
         }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdd/build_info").setMethodCallHandler { call, result ->
+            if (call.method == "gitCommit") {
+                val resId = resources.getIdentifier("git_commit", "string", packageName)
+                val commit = if (resId != 0) getString(resId) else ""
+                result.success(commit)
+            } else {
+                result.notImplemented()
+            }
+        }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdd/acquisition").setMethodCallHandler { call, result ->
             if (call.method != "installReferrer") {
                 result.notImplemented()

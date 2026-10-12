@@ -5,7 +5,10 @@ DEVICE_ID="00008030-0005785A01D3C02E"
 COUNTRY="${1:-ru}"
 
 echo "🔨 Сборка iOS Release-версии (COUNTRY=${COUNTRY})..."
-flutter build ios --release --dart-define=COUNTRY="${COUNTRY}"
+COMMIT="$(git rev-parse --short HEAD 2>/dev/null || true)"
+COMMIT_DEFINE=()
+[[ -n "$COMMIT" ]] && COMMIT_DEFINE=(--dart-define=GIT_COMMIT="${COMMIT}")
+flutter build ios --release --dart-define=COUNTRY="${COUNTRY}" "${COMMIT_DEFINE[@]}"
 
 APP_PATH="build/ios/Release-iphoneos/Runner.app"
 

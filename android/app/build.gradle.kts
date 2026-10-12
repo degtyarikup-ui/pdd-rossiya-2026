@@ -38,6 +38,16 @@ android {
     // возможна только после удаления магазинной, вместе со всем прогрессом.
     // На обычные сборки (без -Pdev) не влияет никак.
     val devSuffix = if (project.hasProperty("dev")) ".dev" else ""
+    val gitCommit = try {
+        val stdout = java.io.ByteArrayOutputStream()
+        project.exec {
+            commandLine("git", "rev-parse", "--short", "HEAD")
+            standardOutput = stdout
+        }
+        stdout.toString().trim()
+    } catch (_: Exception) {
+        ""
+    }
 
     defaultConfig {
         applicationId = "ru.pdd.pdd_app"
@@ -56,6 +66,7 @@ android {
             dimension = "country"
             applicationId = "ru.pdd.pdd_app"
             resValue("string", "app_name", if (devSuffix.isNotEmpty()) "ПДД Россия · Тест" else "ПДД Россия 2026")
+            resValue("string", "git_commit", if (devSuffix.isNotEmpty()) gitCommit else "")
         }
     }
 
