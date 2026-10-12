@@ -76,11 +76,10 @@ static func model(kind_name: String, colour: Color) -> Node3D:
 		"car":
 			root.add_child(Models.player_car(CAR_MODELS[absi(colour.to_rgba32()) % CAR_MODELS.size()], colour))
 		"police":
-			root.add_child(Models.player_car("cyber", colour))
-			_part(root, Vector3(0.9, 0.16, 0.4), Vector3(0.0, 1.45, 0.2), Color("#222429"))
-			var blue := _lamp(root, Vector3(-0.22, 1.6, 0.2), Color("#2F6BFF"))
-			var red := _lamp(root, Vector3(0.22, 1.6, 0.2), Color("#FF2D2D"))
-			root.set_meta("lights", [blue, red])
+			# The traffic police car (ДПС), the same one as at the junctions (fleet.gd).
+			var dps := Fleet.dps_car()
+			root.add_child(dps)
+			root.set_meta("lights", dps.get_meta("lights"))
 		"truck", "van", "bus":
 			# The junctions' own models (models/road/<kind>.glb, taken from the junction actors): the
 			# same vehicles as in the junction scenes, in their own paint.

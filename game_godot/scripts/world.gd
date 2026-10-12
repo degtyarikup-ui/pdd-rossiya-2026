@@ -379,6 +379,9 @@ func _setup_environment() -> void:
 	sun.shadow_enabled = true
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	sun.directional_shadow_max_distance = 70.0
+	# Soft, steady edges: a blurred filter over a finer map, so the shadow does not crawl as the view moves.
+	sun.shadow_blur = 2.0
+	sun.directional_shadow_fade_start = 0.9
 	add_child(sun)
 	var snow := Color(s.roof) if s.roof != null else Color("#C7D0D8")
 	scenery.material.set_shader_parameter("snow_color", Vector3(snow.r, snow.g, snow.b))
@@ -1045,28 +1048,50 @@ func _pick(list: Array, rng: RandomNumberGenerator) -> Color:
 
 
 func _spawn_traffic() -> void:
-	var per_type := ceili(float(cfg.traffic.cars) / Models.CARS.size())
-	for id in Models.CARS:
-		traffic_mm.append(Models.crowd(self, "res://models/traffic/%s.glb" % id, per_type))
-	for multi in traffic_mm:
-		for slot in multi.instance_count:
-			multi.set_instance_transform(slot, Transform3D(Basis(), Vector3(0, -100, 0)))
+	# A mixed flow (fleet.gd): ordinary cars of several models and paints, and now and then a bus,
+	# a lorry, a van, a taxi or a traffic police car. Cars are MultiMesh copies; the big ones are nodes.
+	var n := int(cfg.traffic.cars)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
-	for i in int(cfg.traffic.cars):
+	var kinds: Array = []
+	for i in n:
+		kinds.append(Fleet.BIG[(i / 4) % Fleet.BIG.size()] if i % 4 == 3 else Fleet.CARS[rng.randi() % Fleet.CARS.size()])
+	var models := {}
+	for k in kinds:
+		if not k in Fleet.BIG:
+			models[k] = models.get(k, 0) + 1
+	var mm := {}
+	for id in models:
+		mm[id] = Models.crowd(self, "res://models/traffic/%s.glb" % id, models[id])
+		traffic_mm.append(mm[id])
+		for slot in mm[id].instance_count:
+			mm[id].set_instance_transform(slot, Transform3D(Basis(), Vector3(0, -100, 0)))
+	var used := {}
+	var spacing := L * chunk_count / maxf(1.0, n / 2.0)
+	for i in n:
 		# Direction is decided once: the flow on the driver's side (+1) and the oncoming one (-1).
 		# The speed is kept apart from it, so a car that stops keeps its lane.
 		var dir := 1.0 if i % 2 == 0 else -1.0
-		var multi: MultiMesh = traffic_mm[i % traffic_mm.size()]
-		var slot := i / traffic_mm.size()
+		var kind: String = kinds[i]
 		var base: float = rng.randf_range(cfg.traffic.speed_min, cfg.traffic.speed_max)
-		traffic.append({
-			"dir": dir, "base": base, "spd": base, "v": dir * base,
+		var car := {
+			"dir": dir, "base": base, "spd": base, "v": dir * base, "len": CAR_LENGTH,
 			"shove": 0.0, "moves": true,   # a hit car rolls away (m/s along the road) and slows back
-			"x": -dir * 1.8, "z": drive.pos.z + 50.0 + i * 65.0,
-			"mm": multi, "slot": slot,
-		})
-		multi.set_instance_custom_data(slot, _pick(cfg.colors.car, rng))
+			"x": -dir * 1.8, "z": drive.pos.z + 50.0 + (i / 2) * spacing + (spacing * 0.5 if dir < 0 else 0.0),
+		}
+		if kind in Fleet.BIG:
+			var node: Node3D = Fleet.dps_car() if kind == "dps" else Fleet.taxi() if kind == "taxi" else RoadBody.model(kind, Fleet.paint(rng))
+			add_child(node)
+			car.node = node
+			car.len = {"bus": 11.0, "truck": 8.0, "van": 5.5}.get(kind, CAR_LENGTH)
+			car.base = minf(base, 11.0)
+			car.spd = car.base
+		else:
+			car.mm = mm[kind]
+			car.slot = used.get(kind, 0)
+			used[kind] = car.slot + 1
+			(car.mm as MultiMesh).set_instance_custom_data(car.slot, Fleet.paint(rng))
+		traffic.append(car)
 
 
 func _spawn_walkers() -> void:
@@ -1214,7 +1239,7 @@ func _update_traffic(delta: float) -> void:
 		var want: float = car.base
 		var lead = _lead_of(car, span)
 		if lead != null:
-			var gap: float = lead.dist - CAR_LENGTH
+			var gap: float = lead.dist - (car.len + lead.car.len) * 0.5
 			var safe: float = CAR_GAP + car.spd * HEADWAY
 			if gap < safe + 25.0:
 				want = minf(want, maxf(0.0, lead.car.spd + (gap - safe) * 0.6))
@@ -1230,8 +1255,9 @@ func _update_traffic(delta: float) -> void:
 	# A hard rule on top of the speeds: no car ever overlaps the one ahead of it.
 	for car in traffic:
 		var lead = _lead_of(car, span)
-		if lead != null and lead.dist < CAR_LENGTH + CAR_GAP:
-			car.z -= car.dir * (CAR_LENGTH + CAR_GAP - lead.dist)
+		var need: float = (car.len + lead.car.len) * 0.5 + CAR_GAP if lead != null else 0.0
+		if lead != null and lead.dist < need:
+			car.z -= car.dir * (need - lead.dist)
 			car.spd = minf(car.spd, lead.car.spd)
 	for car in traffic:
 		car.v = car.dir * car.spd
@@ -1251,7 +1277,10 @@ func _update_traffic(delta: float) -> void:
 			car.z -= span
 		var face := 0.0 if car.dir > 0.0 else PI
 		var at := Vector3(car.x, 0, car.z)
-		(car.mm as MultiMesh).set_instance_transform(car.slot, Transform3D(Basis(Vector3.UP, face), at))
+		if car.has("node"):
+			(car.node as Node3D).transform = Transform3D(Basis(Vector3.UP, face), at)
+		else:
+			(car.mm as MultiMesh).set_instance_transform(car.slot, Transform3D(Basis(Vector3.UP, face), at))
 
 
 func _update_walkers(delta: float) -> void:

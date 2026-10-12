@@ -122,8 +122,13 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 	s._build_evidence(dir)
 	for i in s.data.actors.size():
 		var a: Dictionary = s.data.actors[i]
-		var actor: Node3D = PackFiles.instance(dir + "actor_%d.glb" % i)
-		_vertex_colours_as_albedo(actor)
+		var actor: Node3D
+		if a.type == "special":
+			# An emergency car of the tickets is a traffic police car (ДПС) with its lights (fleet.gd).
+			actor = Fleet.dps_car()
+		else:
+			actor = PackFiles.instance(dir + "actor_%d.glb" % i)
+			_vertex_colours_as_albedo(actor)
 		actor.position = _v(a.pos)
 		actor.rotation.y = a.yaw
 		actor.scale = _v(a.scale)
