@@ -77,7 +77,9 @@ export async function processTelegramMessageUpdate(msg, env) {
     id: 'tg_' + msg.message_id,
     sender: 'support',
     text,
-    ts: msg.date ? msg.date * 1000 : Date.now(),
+    // Время прихода на сервер, а не время Telegram: оно в секундах и может быть раньше
+    // сообщения пользователя, которое мы уже сохранили; приложение показывает только ts > since.
+    ts: Date.now(),
     authorName,
   };
 
