@@ -26,8 +26,8 @@ const Ed = (() => {
   // The tools, in the order of the toolbar. icon: the picture in the toolbar and the guide.
   const TOOLS = {
     select: { key: "V", label: "Выбрать", icon: "cursor", hint: "Нажмите линию, дорогу, участника или светофор на плане — или выберите его в списке «Объекты». Тяните точки и объекты." },
-    road: { key: "D", label: "Дорога", icon: "road", hint: "Кликайте углы контура дороги по порядку. Клик у первой точки или Enter — контур замкнётся." },
-    straight: { key: "R", label: "Прямой участок", icon: "straight", hint: "Две точки — начало и конец оси. Концы примыкают к ближайшим углам дороги (до 1,5 м)." },
+    road: { key: "D", label: "Дорога", icon: "road", hint: "Кликайте точки оси дороги. Enter — готово." },
+    contour: { key: "C", label: "Контур", icon: "contour", hint: "Кликайте углы контура по порядку. Клик у первой точки или Enter — замкнуть." },
     island: { key: "I", label: "Островок", icon: "island", hint: "Контур островка внутри дороги. Клик у первой точки или Enter — контур замкнётся." },
     lawn: { key: "G", label: "Газон", icon: "lawn", hint: "Контур газона или клумбы. Клик у первой точки или Enter — замкнуть. Газон не заходит на дорогу." },
     marking: { key: "K", label: "Разметка", icon: "marking", hint: "Сплошная и прерывистая: кликайте точки линии, Enter — готово. Стоп-линия и зебра: две точки поперёк дороги." },
@@ -37,7 +37,7 @@ const Ed = (() => {
     light: { key: "L", label: "Светофор", icon: "light", hint: "Кликните место у дороги, чтобы поставить светофор." },
     decor: { key: "P", label: "Декор", icon: "tree", hint: "Кликните место, чтобы поставить выбранный предмет: дом, дерево, киоск или фонарь." },
   };
-  const TOOL_GROUPS = [["select"], ["road", "straight", "island"], ["lawn", "marking"], ["route", "stop"], ["actor", "light", "decor"]];
+  const TOOL_GROUPS = [["select"], ["road", "contour", "island"], ["lawn", "marking"], ["route", "stop"], ["actor", "light", "decor"]];
   const GROUP_ICON = { roads: "road", lawns: "lawn", marks: "marking", routes: "route", stop: "flag", actors: "car", lights: "light", decor: "tree" };
   const DRIVEN = ["car", "truck", "bus", "motorcycle", "tram", "van", "special", "tanker"];
 
@@ -45,10 +45,13 @@ const Ed = (() => {
   let S = null, id = null, findings = [], source = null, seq = 0, previewTimer = null;
   let sel = null, tool = "select", ltab = "scenes", rtab = "props", texSel = null, texView = "final";
   let opts = { route: "manoeuvre", exit: "left", label: "А", actorType: "car", prop: "", draw: null,
-    mark: "solid", markColour: "white", roadWidth: 8.4 };
+    mark: "solid", markColour: "white", roadWidth: 8.4, pave: true, centre: false };
   let undoStack = [], redoStack = [], dirty = false, savedJson = "", drag = null, draft = null, cursorWorld = null;
   let openGroups = { roads: true, lawns: true, marks: true, routes: true, actors: true, lights: true, decor: false, stop: true };
   let legendOpen = false;
+  // Placement: the tools that put an object under the cursor. Its heading follows the drag, or R.
+  const PLACE = ["actor", "light", "decor", "stop"];
+  let placeYaw = 0, placeDrag = null;
 
   // ---- api ---------------------------------------------------------------------------
   async function api(path, body) {
@@ -252,9 +255,9 @@ const Ed = (() => {
   // Points each drawing needs, and what to say when there are fewer. Too few keeps the drawing:
   // one more click (or Enter after it) is enough, nothing is lost by an accidental double click.
   const FEW = {
-    route: [2, "У маршрута должно быть хотя бы две точки"], road: [3, "У дороги должно быть хотя бы три точки"],
-    island: [3, "Островку нужно хотя бы три точки"], lawn: [3, "Газону нужно хотя бы три точки"],
-    marking: [2, "Разметке нужно хотя бы две точки"], straight: [2, "Прямому участку нужны начало и конец"],
+    route: [2, "У маршрута должно быть хотя бы две точки"], path: [2, "Дороге нужно хотя бы две точки"],
+    contour: [3, "У контура должно быть хотя бы три точки"], island: [3, "Островку нужно хотя бы три точки"],
+    lawn: [3, "Газону нужно хотя бы три точки"], marking: [2, "Разметке нужно хотя бы две точки"],
   };
 
   function finishDraft() {
@@ -268,7 +271,9 @@ const Ed = (() => {
         const r = addRoute(d.meta, d.points);
         if (r) sel = { t: "route", id: r.id };
       });
-    } else if (d.kind === "road") {
+    } else if (d.kind === "path") {
+      commit(() => addPathRoad(d.points, d.opts));
+    } else if (d.kind === "contour") {
       commit(() => {
         const rid = uniqueId("road_", S.roads.map((r) => r.id));
         S.roads.push({ id: rid, outer: d.points, holes: [] });
@@ -290,8 +295,6 @@ const Ed = (() => {
       });
     } else if (d.kind === "marking") {
       commit(() => addMarking(d.type, d.points));
-    } else if (d.kind === "straight") {
-      commit(() => addStraight(d.points[0], d.points[1], opts.roadWidth));
     }
   }
 
@@ -306,30 +309,23 @@ const Ed = (() => {
     sel = { t: "marking", id: mid };
   }
 
-  // A straight piece of road from a to b, `width` wide. Its ends run 1 m past the points, so they
-  // overlap the road they join; an end within 1.5 m of a corner of another road snaps to that corner.
-  function addStraight(a, b, width) {
-    const corners = S.roads.flatMap((r) => r.outer);
-    const snapTo = (p) => {
-      let best = null, bd = 1.5;
-      for (const c of corners) {
-        const d = dist(p, c);
-        if (d < bd) { bd = d; best = c; }
-      }
-      return best ? [best[0], best[1]] : p;
-    };
-    const p = snapTo(a), q = snapTo(b);
-    const len = Math.hypot(q[0] - p[0], q[1] - p[1]);
-    if (len < 2) return toast("Прямой участок слишком короткий", "warn");
-    const ux = (q[0] - p[0]) / len, uz = (q[1] - p[1]) / len;
-    const nx = -uz * width / 2, nz = ux * width / 2, o = 1.0;
-    const s0 = [p[0] - ux * o, p[1] - uz * o], s1 = [q[0] + ux * o, q[1] + uz * o];
-    const outer = [
-      [r3(s0[0] + nx), r3(s0[1] + nz)], [r3(s1[0] + nx), r3(s1[1] + nz)],
-      [r3(s1[0] - nx), r3(s1[1] - nz)], [r3(s0[0] - nx), r3(s0[1] - nz)],
-    ];
+  // A road laid along the drawn line, in the format the options ask for: the carriageway, then either the
+  // pavement (the builder's own, on both sides) or grass in its place, and the centre marking.
+  function addPathRoad(points, o) {
+    const pts = RoadGeom.clean(points);
+    if (pts.length < 2) return toast("Дороге нужно хотя бы две точки", "warn");
     const rid = uniqueId("road_", S.roads.map((r) => r.id));
-    S.roads.push({ id: rid, outer, holes: [] });
+    S.roads.push({ id: rid, outer: RoadGeom.outline(pts, o.width), holes: [] });
+    if (!o.pave) {
+      for (const side of [1, -1]) {
+        const lid = uniqueId("lawn_", S.lawns.map((l) => l.id));
+        S.lawns.push({ id: lid, outer: RoadGeom.strip(pts, o.width, side), holes: [] });
+      }
+    }
+    if (o.centre) {
+      const mid = uniqueId("mark_", S.markings.map((m) => m.id));
+      S.markings.push({ id: mid, type: "dashed", colour: "white", width: 0.13, points: pts });
+    }
     sel = { t: "road", i: S.roads.length - 1, part: -1 };
   }
 
@@ -445,14 +441,14 @@ const Ed = (() => {
     }
   }
 
-  function placeAt(t, world) {
+  function placeAt(t, world, yaw = 0) {
     const p = [Math.round(world.x * 20) / 20, Math.round(world.z * 20) / 20];
     if (t === "decor") {
       const prop = opts.prop || (catalog && catalog.props[0] && catalog.props[0].id);
       if (!prop) return;
       commit(() => {
         const did = uniqueId("decor_", S.decor.map((d) => d.id));
-        S.decor.push({ id: did, prop, pos: p, yaw: 0, scale: [1, 1, 1], tint: null });
+        S.decor.push({ id: did, prop, pos: p, yaw, scale: [1, 1, 1], tint: null });
         sel = { t: "decor", id: did };
       });
     } else if (t === "actor") {
@@ -461,7 +457,7 @@ const Ed = (() => {
       commit(() => {
         const aid = uniqueId(`${opts.actorType}_`, S.actors.map((a) => a.id));
         S.actors.push({ id: aid, type: opts.actorType, name: tpl.name || TYPE[opts.actorType], asset: tpl.asset, route: null,
-          pos: p, yaw: 0, scale: [1, 1, 1], maxSpeed: tpl.maxSpeed ?? 12, clearDistance: tpl.clearDistance ?? 6,
+          pos: p, yaw, scale: [1, 1, 1], maxSpeed: tpl.maxSpeed ?? 12, clearDistance: tpl.clearDistance ?? 6,
           halfLength: tpl.halfLength ?? 2, halfWidth: tpl.halfWidth ?? 0.9, behaviour: { staysPut: false, waitsForPlayer: true } });
         sel = { t: "actor", id: aid };
       });
@@ -469,11 +465,11 @@ const Ed = (() => {
       if (!catalog || !catalog.lightAsset) return toast("Нет модели светофора", "bad");
       commit(() => {
         const lid = uniqueId("light_", S.lights.map((l) => l.id));
-        S.lights.push({ id: lid, pos: p, yaw: 0, scale: 1, arrow: null, state: "red", asset: catalog.lightAsset });
+        S.lights.push({ id: lid, pos: p, yaw, scale: 1, arrow: null, state: "red", asset: catalog.lightAsset });
         sel = { t: "light", id: lid };
       });
     } else if (t === "stop") {
-      commit(() => moveStop(p[0], p[1]));
+      commit(() => { moveStop(p[0], p[1]); S.stop.yaw = yaw; });
       sel = { t: "stop" };
     }
   }
@@ -500,13 +496,14 @@ const Ed = (() => {
     if (e.type === "move") {
       cursorWorld = e.world;
       renderStatus();
+      if (PLACE.includes(tool) && !placeDrag) showGhost(tool, e.world, placeYaw);
       if (draft && e.world) {
         draft.cursor = [e.world.x, e.world.z];
         Scene3D.setDraft(draft);
       }
       return;
     }
-    if (e.type === "leave") { cursorWorld = null; renderStatus(); return; }
+    if (e.type === "leave") { cursorWorld = null; Scene3D.setGhost(null); renderStatus(); return; }
     if (e.type === "down") return pointerDown(e);
     if (e.type === "drag") return pointerDrag(e);
     if (e.type === "up") return pointerUp(e);
@@ -596,9 +593,33 @@ const Ed = (() => {
     drag.moved = true;
   }
 
+  // The footprint of the object as it will be placed (metres from its centre along and across its heading).
+  function ghostHalf(t) {
+    if (t === "actor") {
+      const tpl = catalog && catalog.actorTypes[opts.actorType];
+      return [tpl && tpl.halfLength || 2, tpl && tpl.halfWidth || 0.9];
+    }
+    if (t === "decor") {
+      const prop = catalog && catalog.props.find((p) => p.id === opts.prop);
+      const size = prop && prop.size || [2, 2, 2];
+      return [size[2] / 2, size[0] / 2];
+    }
+    if (t === "stop") return [0.4, 4.2];
+    return [0.4, 0.4];
+  }
+
+  function showGhost(t, w, yaw) {
+    if (!PLACE.includes(t) || !S || !w) return Scene3D.setGhost(null);
+    Scene3D.setGhost({ kind: t, x: w.x, z: w.z, yaw, half: ghostHalf(t) });
+  }
+
   function drawClick(e) {
     const w = e.world;
     if (!w) return;
+    if (PLACE.includes(tool)) {
+      placeDrag = { x: w.x, z: w.z, yaw: placeYaw, moved: false };
+      return;
+    }
     const pt = [Math.round(w.x * 20) / 20, Math.round(w.z * 20) / 20];
     if (tool === "route") {
       if (!draft) draft = { kind: "route", meta: routeMeta(), points: [] };
@@ -608,7 +629,15 @@ const Ed = (() => {
       renderTools();
       return;
     }
-    if (tool === "road" || tool === "island" || tool === "lawn") {
+    if (tool === "road") {
+      if (!draft) draft = { kind: "path", points: [], opts: { width: opts.roadWidth, pave: opts.pave, centre: opts.centre } };
+      if (dist(pt, draft.points.at(-1) || [NaN, NaN]) < 0.05) return;
+      draft.points.push(pt);
+      Scene3D.setDraft(draft);
+      renderTools();
+      return;
+    }
+    if (tool === "contour" || tool === "island" || tool === "lawn") {
       if (!draft) draft = { kind: tool, points: [] };
       if (draft.points.length >= 3 && dist(pt, draft.points[0]) < 1.2) return finishDraft();
       draft.points.push(pt);
@@ -624,18 +653,15 @@ const Ed = (() => {
       renderTools();
       return;
     }
-    if (tool === "straight") {
-      if (!draft) draft = { kind: "straight", points: [] };
-      draft.points.push(pt);
-      if (draft.points.length === 2) return finishDraft();
-      Scene3D.setDraft(draft);
-      renderTools();
-      return;
-    }
-    if (tool === "stop" || tool === "decor" || tool === "actor" || tool === "light") placeAt(tool, w);
+  }
+
+  function finishPlace() {
+    const pd = placeDrag;
+    placeDrag = null;
+    placeYaw = pd.moved ? pd.yaw : placeYaw;
+    placeAt(tool, { x: pd.x, z: pd.z }, placeYaw);
+    showGhost(tool, { x: pd.x, z: pd.z }, placeYaw);
     renderAll();
-    if (tool !== "stop" && tool !== "decor" && tool !== "actor" && tool !== "light") return;
-    setTool("select");
   }
 
   function routeMeta() {
@@ -645,8 +671,17 @@ const Ed = (() => {
   }
 
   function pointerDrag(e) {
-    if (!drag) return;
     const w = e.world;
+    if (placeDrag && w) {
+      const dx = w.x - placeDrag.x, dz = w.z - placeDrag.z;
+      if (Math.hypot(dx, dz) > 0.3) {
+        placeDrag.yaw = Math.atan2(dx, dz);
+        placeDrag.moved = true;
+        showGhost(tool, { x: placeDrag.x, z: placeDrag.z }, placeDrag.yaw);
+      }
+      return;
+    }
+    if (!drag) return;
     if (!w) return;
     if (drag.kind === "gizmo") {
       applyGizmo(w, e.shift);
@@ -696,6 +731,7 @@ const Ed = (() => {
   }
 
   function pointerUp() {
+    if (placeDrag) return finishPlace();
     if (!drag) return;
     const d = drag;
     drag = null;
@@ -710,7 +746,7 @@ const Ed = (() => {
       if (draft.points.length > 1 && JSON.stringify(draft.points.at(-1)) === JSON.stringify(draft.points.at(-2))) draft.points.pop();
       return finishDraft();
     }
-    if ((tool === "road" || tool === "island" || tool === "lawn" || tool === "marking") && draft) {
+    if ((tool === "road" || tool === "contour" || tool === "island" || tool === "lawn" || tool === "marking") && draft) {
       if (draft.points.length > 1 && JSON.stringify(draft.points.at(-1)) === JSON.stringify(draft.points.at(-2))) draft.points.pop();
       return finishDraft();
     }
@@ -960,6 +996,7 @@ const Ed = (() => {
 
   function renderTools() {
     document.querySelectorAll("#tools [data-tool]").forEach((b) => b.classList.toggle("on", b.dataset.tool === tool));
+    if (!PLACE.includes(tool) || placeDrag) { if (!PLACE.includes(tool)) Scene3D.setGhost(null); }
     renderGuide();
     renderSelBar();
   }
@@ -986,7 +1023,11 @@ const Ed = (() => {
       parts.push(`<label>Тип <select id="o-mark">${Object.entries(MARK_TYPES).map(([k, v]) => `<option value="${k}" ${opts.mark === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>`);
       parts.push(`<label>Цвет <select id="o-mcolour">${Object.entries(MARK_COLOURS).map(([k, v]) => `<option value="${k}" ${opts.markColour === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>`);
     }
-    if (tool === "straight") parts.push(`<label>Ширина, м <input id="o-rwidth" type="number" step="0.1" value="${opts.roadWidth}"></label>`);
+    if (tool === "road") {
+      parts.push(`<label>Ширина, м <input id="o-width" type="number" step="0.1" min="3" max="20" value="${opts.roadWidth}"></label>`);
+      parts.push(`<label class="chk"><input id="o-pave" type="checkbox" ${opts.pave ? "checked" : ""}> Тротуары</label>`);
+      parts.push(`<label class="chk"><input id="o-centre" type="checkbox" ${opts.centre ? "checked" : ""}> Разметка</label>`);
+    }
     return parts.join("");
   }
 
@@ -1021,7 +1062,9 @@ const Ed = (() => {
     const bind = (sel, fn) => { const el = $(sel); if (el) el.onchange = () => fn(el); };
     bind("#o-mark", (el) => { opts.mark = el.value; renderTools(); });
     bind("#o-mcolour", (el) => { opts.markColour = el.value; });
-    bind("#o-rwidth", (el) => { opts.roadWidth = Number(el.value) || 8.4; });
+    bind("#o-width", (el) => { opts.roadWidth = Math.min(20, Math.max(3, Number(el.value) || 8.4)); });
+    bind("#o-pave", (el) => { opts.pave = el.checked; });
+    bind("#o-centre", (el) => { opts.centre = el.checked; });
     bind("#o-route", (el) => { opts.route = el.value; renderTools(); });
     bind("#o-exit", (el) => { opts.exit = el.value; });
     bind("#o-label", (el) => { opts.label = el.value; });
@@ -1832,9 +1875,14 @@ const Ed = (() => {
     const k = e.key.toLowerCase();
     if (k === "w" && sel) { e.preventDefault(); return setGizmoMode("move"); }
     if (k === "e" && sel) { e.preventDefault(); return setGizmoMode("rotate"); }
+    if (k === "r" && PLACE.includes(tool)) {
+      e.preventDefault();
+      placeYaw += Math.PI / 12;
+      return showGhost(tool, cursorWorld, placeYaw);
+    }
     if (k === "r" && sel) { e.preventDefault(); return rotate(15); }
     if (k === "t") { e.preventDefault(); return setView(Scene3D.mode === "plan" ? "3d" : "plan"); }
-    const map = { q: "select", v: "select", m: "route", d: "road", c: "road", i: "island", g: "lawn", k: "marking", p: "decor", a: "actor", l: "light", s: "stop" };
+    const map = { q: "select", v: "select", m: "route", d: "road", c: "contour", i: "island", g: "lawn", k: "marking", p: "decor", a: "actor", l: "light", s: "stop" };
     if (map[k] && !e.altKey) { e.preventDefault(); return setTool(map[k]); }
     if (k === "escape") { cancelDraft(); setTool("select"); select(null); return; }
     if (k === "enter") { e.preventDefault(); return finishDraft(); }

@@ -428,6 +428,18 @@ const Scene3D = (() => {
       line.userData.own = true;
       g.add(line);
     }
+    // A road being laid: its two edges show the width while the axis is drawn.
+    if (draft && draft.kind === "path" && draft.points.length >= 2) {
+      const axis = RoadGeom.clean(draft.cursor ? [...draft.points, draft.cursor] : draft.points);
+      const w = (draft.opts && draft.opts.width) || 8.4;
+      for (const d of [w / 2, -w / 2]) {
+        const geo = new THREE.LineGeometry();
+        geo.setPositions(RoadGeom.offset(axis, d).flatMap((p) => [p[0], ROUTE_LIFT, p[1]]));
+        const line = new THREE.Line2(geo, lineMaterialFor({ colour: 0x2b2f36, px: 2 }, 0.85));
+        line.userData.own = true;
+        g.add(line);
+      }
+    }
   }
 
   function routeName(r) {
@@ -935,6 +947,38 @@ const Scene3D = (() => {
     needsRender = true;
   }
 
+  // ---- ghost: the object being placed, under the cursor, with its heading ----------------
+  let ghost = null, ghostObj = null;
+  const GHOST_COLOUR = { actor: 0x3e63dd, decor: 0x1f9d67, light: 0xf5a524, stop: 0x7b5cd6 };
+  // g: { kind, x, z, yaw, half: [along the heading, across it] } or null to hide it.
+  function setGhost(g) {
+    ghost = g;
+    if (ghostObj) { scene.remove(ghostObj); ghostObj.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); ghostObj = null; }
+    if (!ghost) { needsRender = true; return; }
+    const [hl, hw] = ghost.half;
+    const colour = GHOST_COLOUR[ghost.kind] || 0x1d2430;
+    const body = new THREE.MeshLambertMaterial({ color: colour, transparent: true, opacity: 0.42, depthWrite: false });
+    const g2 = new THREE.Group();
+    const box = new THREE.Mesh(new THREE.BoxGeometry(hw * 2, 0.5, hl * 2), body);
+    box.position.y = 0.25;
+    g2.add(box);
+    // The arrow points where the object will look: along +Z, turned by yaw like the model.
+    const arrowLen = hl + 2.5;
+    const geo = new THREE.LineGeometry();
+    geo.setPositions([0, 0.6, 0, 0, 0.6, arrowLen]);
+    g2.add(new THREE.Line2(geo, lineMaterialFor({ colour, px: 3 }, 1)));
+    const head = new THREE.Mesh(new THREE.ConeGeometry(hw * 0.7 + 0.3, 1.2, 12), body);
+    head.rotation.x = Math.PI / 2;
+    head.position.set(0, 0.6, arrowLen);
+    g2.add(head);
+    g2.position.set(ghost.x, 0, ghost.z);
+    g2.rotation.y = ghost.yaw;
+    g2.userData.own = true;
+    scene.add(g2);
+    ghostObj = g2;
+    needsRender = true;
+  }
+
   function setGizmo(target, mode2 = gizmoMode) {
     gizmoPos = target ? { x: target.x, z: target.z } : null;
     gizmoYaw = target && target.yaw !== undefined ? target.yaw : null;
@@ -1024,7 +1068,7 @@ const Scene3D = (() => {
 
   return {
     mount, load, refresh, setBuild, setSelection, setDraft, setMode, fit, focus, zoomBy, worldAt, screenOf,
-    setTextures, reloadPicture, setGizmo, get gizmoMode() { return gizmoMode; },
+    setTextures, reloadPicture, setGizmo, setGhost, get gizmoMode() { return gizmoMode; },
     on(name, fn) { (listeners[name] = listeners[name] || []).push(fn); },
     get mode() { return mode; },
     get pxPerM() { return pxPerM; },
