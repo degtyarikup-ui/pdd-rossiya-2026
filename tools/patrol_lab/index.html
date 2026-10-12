@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ПДД Россия 2026 · Дорожный патруль (Найди нарушителя) — Тестовый стенд</title>
+  <style>
+    :root {
+      --bg: #0f141c;
+      --card-bg: #18202c;
+      --card-border: #263345;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --accent: #38bdf8;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --gold: #facc15;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --road: #334155;
+      --road-mark: #ffffff;
+      --yellow-grid: #fbbf24;
+      --grass: #1e3a2f;
+      --sidewalk: #475569;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(24, 32, 44, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .badge-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #1e40af, #3b82f6);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+    .brand h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .brand p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .header-stats {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .stat-pill {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .stat-pill.gold { border-color: rgba(250, 204, 21, 0.4); color: var(--gold); }
+    .stat-pill.hearts { border-color: rgba(239, 68, 68, 0.4); color: var(--danger); letter-spacing: 2px; }
+
+    .mode-switch {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 3px;
+      display: flex;
+      gap: 4px;
+    }
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mode-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    main {
+      flex: 1;
+      max-width: 1240px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 20px 24px 40px;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+    }
+
+    @media (max-width: 980px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Left side: Viewport */
+    .arena-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .scenario-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .sc-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .sc-btn:hover {
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .sc-btn.active {
+      background: rgba(37, 99, 235, 0.2);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .arena-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .arena-header {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(15, 23, 42, 0.5);
+    }
+    .arena-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge-scenario {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .timer-bar-wrap {
+      height: 4px;
+      background: #334155;
+      width: 100%;
+      position: relative;
+    }
+    .timer-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);
+      width: 100%;
+      transition: width 0.1s linear;
+    }
+
+    .svg-wrapper {
+      position: relative;
+      width: 100%;
+      height: 440px;
+      background: #141c26;
+      cursor: crosshair;
+      user-select: none;
+    }
+    svg.road-scene {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .car-interactive {
+      cursor: pointer;
+      transition: filter 0.15s, transform 0.2s;
+    }
+    .car-interactive:hover {
+      filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.8)) brightness(1.2);
+    }
+    .car-interactive.violator-hit {
+      filter: drop-shadow(0 0 16px rgba(239, 68, 68, 0.95)) brightness(1.3);
+      animation: pulse-violator 0.6s infinite alternate;
+    }
+    .car-interactive.innocent-hit {
+      filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.9)) brightness(1.1);
+    }
+
+    @keyframes pulse-violator {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.04); }
+    }
+
+    .scene-controls {
+      padding: 10px 18px;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      background: rgba(15, 23, 42, 0.4);
+    }
+    .ctrl-btn {
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .ctrl-btn:hover { background: #334155; }
+
+    /* Right side: Sidebar & Question */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .question-card h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .question-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .car-picks {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .car-pick-btn {
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .car-pick-btn:hover {
+      border-color: var(--accent);
+      background: #283548;
+      transform: translateX(3px);
+    }
+    .car-badge-mini {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .car-color-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+
+    /* Subquestion step (Choose law) */
+    .law-step {
+      display: none;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--card-border);
+      animation: fadeIn 0.3s ease;
+    }
+    .law-step h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .law-opt {
+      background: #131b26;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--text);
+      transition: all 0.2s;
+    }
+    .law-opt:hover {
+      border-color: var(--primary);
+      background: #1e293b;
+    }
+
+    /* Feedback & Explanation Sheet */
+    .result-sheet {
+      display: none;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .result-banner {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .result-banner.success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--success);
+      color: var(--success);
+    }
+    .result-banner.fail {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+    }
+
+    .rule-box {
+      background: #0f172a;
+      border-left: 3px solid var(--accent);
+      padding: 12px 14px;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    .rule-title {
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .fine-tag {
+      display: inline-block;
+      background: rgba(239, 68, 68, 0.18);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+
+    .innocents-list {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--card-border);
+    }
+    .innocents-list h4 {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .innocent-item {
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+      line-height: 1.4;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .innocent-item span.dot {
+      color: var(--success);
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .action-btn {
+      width: 100%;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+    .action-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    /* Tooltip */
+    .scene-tooltip {
+      position: absolute;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--accent);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      pointer-events: none;
+      transform: translate(-50%, -130%);
+      opacity: 0;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+      z-index: 20;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+    .scene-tooltip.show { opacity: 1; }
+
+    /* Sound indicator */
+    .sound-toggle {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      padding: 6px 10px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .sound-toggle.on { color: var(--gold); border-color: rgba(250, 204, 21, 0.4); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="badge-icon">🚔</div>
+      <div>
+        <h1>Дорожный патруль: Найди нарушителя</h1>
+        <p>ПДД РФ 2026 · Интерактивный стенд для тестирования механики</p>
+      </div>
+    </div>
+
+    <div class="header-stats">
+      <div class="stat-pill gold">
+        <span>🏆 Очки:</span>
+        <span id="scoreDisplay">0</span>
+      </div>
+      <div class="stat-pill hearts" id="livesPill" title="Попытки">
+        ❤️❤️❤️
+      </div>
+      <div class="mode-switch">
+        <button class="mode-btn active" id="btnModeGame" onclick="setMode('game')">🎮 Игра с таймером</button>
+        <button class="mode-btn" id="btnModeLab" onclick="setMode('lab')">🔬 Свободный стенд</button>
+      </div>
+      <button class="sound-toggle on" id="soundToggle" onclick="toggleSound()" title="Звук (WebAudio)">🔔</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Left: SVG Scene & Nav -->
+    <div class="arena-container">
+      <div class="scenario-nav" id="scenarioNav">
+        <!-- populated dynamically -->
+      </div>
+
+      <div class="arena-card">
+        <div class="arena-header">
+          <div class="arena-title">
+            <span class="badge-scenario" id="badgeScenarioId">СИТУАЦИЯ 1</span>
+            <span id="scenarioHeading">Вафельница и затор</span>
+          </div>
+          <div style="font-size: 13px; font-weight: 700; color: var(--accent);" id="timerLabel">15 сек</div>
+        </div>
+
+        <div class="timer-bar-wrap">
+          <div class="timer-bar" id="timerBar"></div>
+        </div>
+
+        <div class="svg-wrapper" id="svgContainer">
+          <div class="scene-tooltip" id="sceneTooltip">Автомобиль</div>
+          <svg class="road-scene" id="roadScene" viewBox="0 0 800 440">
+            <!-- Road graphics inserted dynamically -->
+          </svg>
+        </div>
+
+        <div class="scene-controls">
+          <div>💡 <em>Наведи на участников, чтобы увидеть их манёвр, или кликни для задержания!</em></div>
+          <button class="ctrl-btn" onclick="togglePauseTimer()" id="pauseBtn">⏸ Пауза</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Question & Card -->
+    <div class="sidebar">
+      <!-- Step 1: Who is violating? -->
+      <div class="card question-card" id="questionCard">
+        <h2><span>🎯</span> Кто нарушает ПДД?</h2>
+        <div class="question-desc" id="questionPrompt">
+          Внимательно осмотрите перекрёсток, дорожную разметку и сигналы светофоров. Один из участников движения грубо нарушает действующие правила РФ. Кликните по нарушителю на схеме или выберите из списка:
+        </div>
+
+        <div class="car-picks" id="carPicksList">
+          <!-- populated dynamically -->
+        </div>
+
+        <!-- Step 2: Which law is violated? -->
+        <div class="law-step" id="lawStep">
+          <h3>⚖️ Какая норма ПДД нарушена?</h3>
+          <div id="lawOptions">
+            <!-- populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Explanation & Result Sheet -->
+      <div class="card result-sheet" id="resultSheet">
+        <div class="result-banner" id="resultBanner">
+          <span id="resultBannerIcon">✅</span>
+          <span id="resultBannerText">Нарушитель пойман точно!</span>
+        </div>
+
+        <div class="rule-box">
+          <div class="rule-title" id="ruleTitle">Пункт 13.2 ПДД РФ</div>
+          <div id="ruleText">Официальная норма...</div>
+          <div class="fine-tag" id="fineTag">Штраф 1 000 ₽ · ст. 12.13 КоАП РФ</div>
+        </div>
+
+        <div class="innocents-list">
+          <h4>Почему другие участники едут по правилам:</h4>
+          <div id="innocentsDetails">
+            <!-- populated dynamically -->
+          </div>
+        </div>
+
+        <button class="action-btn" id="nextBtn" onclick="nextScenario()">
+          <span>Следующая ситуация</span> ➔
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // --- Scenarios Database (6 deep RF PDD situations) ---
+    const SCENARIOS = [
+      {
+        id: 1,
+        title: "Жёлтая сетка (Вафельница) и затор",
+        shortDesc: "Регулируемый перекрёсток с разметкой 1.26. За перекрёстком образовался затор.",
+        heading: "Вафельница (разметка 1.26) и затор",
+        violatorId: "car_red",
+        violatorLaw: 0,
+        lawChoices: [
+          {
+            text: "п. 13.2 ПДД: выезд на перекрёсток или разметку 1.26 при заторе, вынудившем остановиться прямо на пересечении",
+            correct: true
+          },
+          {
+            text: "п. 6.13 ПДД: проезд на запрещающий сигнал светофора при отсутствии стоп-линии",
+            correct: false
+          },
+          {
+            text: "п. 8.5 ПДД: заблаговременное занятие крайнего положения перед поворотом",
+            correct: false
+          }
+        ],
+        ruleArticle: "Пункт 13.2 ПДД РФ & ст. 12.13 ч. 1 КоАП РФ",
+        ruleText: "«Запрещается выезжать на перекресток, пересечение проезжих частей или участка перекрестка, обозначенного разметкой 1.26, если образовался затор, который вынудит водителя остановиться, создав препятствие для движения транспортных средств в поперечном направлении, за исключением поворота направо или налево...»",
+        fine: "Штраф 1 000 ₽ (ч. 1 ст. 12.13 КоАП РФ)",
+        participants: [
+          {
+            id: "car_red",
+            label: "Красный седан",
+            color: "#ef4444",
+            maneuver: "Выехал прямо на зелёный и встал на жёлтой сетке 1.26 из-за затора",
+            isViolator: true,
+            whyLegalOrIllegal: "Грубое нарушение п. 13.2 ПДД: за перекрёстком был затор, седан встал прямо на сетке и заблокировал поперечную улицу.",
+            pos: { x: 380, y: 195, rot: 0 }
+          },
+          {
+            id: "car_white",
+            label: "Белый кроссовер",
+            color: "#f8fafc",
+            maneuver: "Выехал на перекрёсток на зелёный и поворачивает направо на свободную улицу",
+            isViolator: false,
+            whyLegalOrIllegal: "Действует строго по ПДД! Пункт 13.2 прямо разрешает выезд на перекрёсток с разметкой 1.26 для поворота направо или налево.",
+            pos: { x: 440, y: 260, rot: -45 }
+          },
+          {
+            id: "car_blue",
+            label: "Синий хэтчбек",
+            color: "#3b82f6",
+            maneuver: "Остановился перед стоп-линией на горящий зелёный сигнал",
+            isViolator: false,
+            whyLegalOrIllegal: "Образцовый водитель! Видя затор за перекрёстком, не стал выезжать на пересечение даже на зелёный свет, выполнив требование п. 13.2.",
+            pos: { x: 380, y: 350, rot: 0 }
+          },
+          {
+            id: "car_taxi",
+            label: "Жёлтое такси",
+            color: "#eab308",
+            maneuver: "Поворачивает налево на свободный проезд, пропуская встречный транспорт",
+            isViolator: false,
+            whyLegalOrIllegal: "Поворот налево на незанятую улицу разрешён через разметку 1.26 согласно исключению в п. 13.2.",
+            pos: { x: 340, y: 160, rot: 45 }
+          }
+        ],
+        drawScene: function(svg) {
+          // Intersection with yellow grid 1.26 and stopped cars
+          return `
+            <!-- Grass & Ground -->
+            <rect x="0" y="0" width="800" height="440" fill="#1e293b"/>
+            <rect x="0" y="0" width="280" height="130" fill="#1e3a2f"/>
+            <rect x="520" y="0" width="280" height="130" fill="#1e3a2f"/>
+            <rect x="0" y="310" width="280" height="130" fill="#1e3a2f"/>
+            <rect x="520" y="310" width="280" height="130" fill="#1e3a2f"/>
+
+            <!-- Roads -->
+            <rect x="280" y="0" width="240" height="440" fill="#334155"/>
+            <rect x="0" y="130" width="800" height="180" fill="#334155"/>
+
+            <!-- Yellow Waffle Grid (1.26) -->
+            <g opacity="0.85">
+              <rect x="300" y="150" width="200" height="140" fill="none" stroke="#fbbf24" stroke-width="2"/>
+              ${[0, 25, 50, 75, 100, 125, 150, 175, 200].map(x => `
+                <line x1="${300+x}" y1="150" x2="${Math.min(500, 300+x+140)}" y2="${150 + Math.min(140, 200-x)}" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 4"/>
+                <line x1="${300+x}" y1="290" x2="${Math.min(500, 300+x+140)}" y2="${290 - Math.min(140, 200-x)}" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 4"/>
+              `).join('')}
+            </g>
+
+            <!-- Lane Markings -->
+            <line x1="400" y1="0" x2="400" y2="130" stroke="#fff" stroke-width="3" stroke-dasharray="8 8"/>
+            <line x1="400" y1="310" x2="400" y2="440" stroke="#fff" stroke-width="3" stroke-dasharray="8 8"/>
+            <line x1="0" y1="220" x2="280" y2="220" stroke="#fff" stroke-width="3" stroke-dasharray="8 8"/>
+            <line x1="520" y1="220" x2="800" y2="220" stroke="#fff" stroke-width="3" stroke-dasharray="8 8"/>
+
+            <!-- Stop line -->
+            <line x1="340" y1="310" x2="520" y2="310" stroke="#fff" stroke-width="6"/>
+
+            <!-- Congestion cars ahead (jam) -->
+            <rect x="375" y="40" width="28" height="48" rx="5" fill="#64748b" opacity="0.9"/>
+            <rect x="375" y="95" width="28" height="40" rx="5" fill="#475569" opacity="0.9"/>
+            <text x="390" y="25" fill="#f87171" font-size="11" font-weight="bold" text-anchor="middle">ЗАТОР ВПЕРЕДИ</text>
+
+            <!-- Traffic Lights -->
+            <g transform="translate(530, 315)">
+              <rect x="0" y="0" width="14" height="34" rx="3" fill="#000"/>
+              <circle cx="7" cy="7" r="4" fill="#333"/>
+              <circle cx="7" cy="17" r="4" fill="#333"/>
+              <circle cx="7" cy="27" r="4" fill="#10b981" filter="drop-shadow(0 0 6px #10b981)"/>
+            </g>
+          `;
+        }
+      },
+      {
+        id: 2,
+        title: "Стрелка с красным и разворот на зелёный",
+        shortDesc: "Поворот направо под зелёную стрелку при основном красном сигнале светофора.",
+        heading: "Дополнительная стрелка светофора (п. 13.5)",
+        violatorId: "car_black",
+        violatorLaw: 0,
+        lawChoices: [
+          {
+            text: "п. 13.5 ПДД: при движении по стрелке с красным обязан уступить дорогу ТС с других направлений",
+            correct: true
+          },
+          {
+            text: "п. 13.11 ПДД: не уступил помехе справа при проезде равнозначного перекрестка",
+            correct: false
+          },
+          {
+            text: "п. 8.11 ПДД: разворот запрещен в местах с видимостью дороги менее 100 метров",
+            correct: false
+          }
+        ],
+        ruleArticle: "Пункт 13.5 ПДД РФ & ст. 12.13 ч. 2 КоАП РФ",
+        ruleText: "«При движении в направлении стрелки, включенной в дополнительной секции одновременно с желтым или красным сигналом светофора, водитель обязан уступить дорогу транспортным средствам, движущимся с других направлений».",
+        fine: "Штраф 1 000 ₽ (ч. 2 ст. 12.13 КоАП РФ)",
+        participants: [
+          {
+            id: "car_black",
+            label: "Чёрный внедорожник",
+            color: "#1e293b",
+            maneuver: "Поворачивает направо под стрелку с красным и не уступает разворачивающемуся автобусу",
+            isViolator: true,
+            whyLegalOrIllegal: "Нарушение п. 13.5: стрелка с красным даёт право ехать ТОЛЬКО при условии, что уступлена дорога абсолютно всем машинам с других направлений!",
+            pos: { x: 500, y: 260, rot: -90 }
+          },
+          {
+            id: "car_bus",
+            label: "Зелёный автобус",
+            color: "#10b981",
+            maneuver: "Разворачивается на перекрёстке на свой основной зелёный сигнал",
+            isViolator: false,
+            whyLegalOrIllegal: "Едет по правилам! У него горит полноценный зелёный свет. Правило «помехи справа» здесь не действует против автомобиля, едущего под дополнительную стрелку с красным.",
+            pos: { x: 380, y: 160, rot: 135 }
+          },
+          {
+            id: "car_silver",
+            label: "Серебристый седан",
+            color: "#94a3b8",
+            maneuver: "Стоит перед стоп-линией в среднем ряду на основной красный",
+            isViolator: false,
+            whyLegalOrIllegal: "Соблюдает п. 6.13: остановился перед стоп-линией на запрещающий сигнал светофора.",
+            pos: { x: 580, y: 260, rot: -90 }
+          }
+        ],
+        drawScene: function(svg) {
+          return `
+            <rect x="0" y="0" width="800" height="440" fill="#1e293b"/>
+            <rect x="0" y="0" width="300" height="150" fill="#1e3a2f"/>
+            <rect x="500" y="0" width="300" height="150" fill="#1e3a2f"/>
+            <rect x="0" y="290" width="300" height="150" fill="#1e3a2f"/>
+            <rect x="500" y="290" width="300" height="150" fill="#1e3a2f"/>
+
+            <rect x="300" y="0" width="200" height="440" fill="#334155"/>
+            <rect x="0" y="150" width="800" height="140" fill="#334155"/>
+
+            <!-- Lines -->
+            <line x1="400" y1="0" x2="400" y2="440" stroke="#fff" stroke-width="3" stroke-dasharray="8 8"/>
+            <line x1="0" y1="220" x2="800" y2="220" stroke="#fff" stroke-width="3" stroke-dasharray="8 8"/>
+            <line x1="500" y1="220" x2="500" y2="290" stroke="#fff" stroke-width="6"/>
+
+            <!-- East Traffic Light with Arrow -->
+            <g transform="translate(510, 305)">
+              <rect x="0" y="0" width="22" height="34" rx="3" fill="#000"/>
+              <circle cx="7" cy="7" r="4" fill="#ef4444" filter="drop-shadow(0 0 6px #ef4444)"/>
+              <circle cx="7" cy="17" r="4" fill="#333"/>
+              <circle cx="7" cy="27" r="4" fill="#333"/>
+              <!-- Green Arrow section -->
+              <rect x="14" y="20" width="10" height="14" rx="2" fill="#000"/>
+              <polygon points="17,27 21,24 21,30" fill="#10b981" filter="drop-shadow(0 0 5px #10b981)"/>
+            </g>
+
+            <!-- West Traffic Light (Main Green for Bus) -->
+            <g transform="translate(280, 110)">
+              <rect x="0" y="0" width="14" height="34" rx="3" fill="#000"/>
+              <circle cx="7" cy="7" r="4" fill="#333"/>
+              <circle cx="7" cy="17" r="4" fill="#333"/>
+              <circle cx="7" cy="27" r="4" fill="#10b981" filter="drop-shadow(0 0 6px #10b981)"/>
+            </g>
+
+            <!-- Bus turn trajectory arc -->
+            <path d="M 370 120 A 40 40 0 0 1 370 200" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="4 4"/>
+          `;
+        }
+      },
+      {
+        id: 3,
+        title: "Сплошная линия 1.1 и медленный транспорт",
+        shortDesc: "Загородная трасса. Знак 3.20 «Обгон запрещён» и сплошная линия 1.1.",
+        heading: "Обгон через сплошную линию (п. 1.3, 11.1, знак 3.20)",
+        violatorId: "car_wagon",
+        violatorLaw: 0,
+        lawChoices: [
+          {
+            text: "ч. 4 ст. 12.15 КоАП / Приложение 2: выезд на встречную через сплошную 1.1 запрещён даже при знаке 3.20",
+            correct: true
+          },
+          {
+            text: "п. 9.4 ПДД: движение по левой полосе при свободной правой вне населенного пункта",
+            correct: false
+          },
+          {
+            text: "п. 10.3 ПДД: превышение разрешенной скорости движения вне населенных пунктов",
+            correct: false
+          }
+        ],
+        ruleArticle: "Приложение 2 к ПДД (разметка 1.1) & ст. 12.15 ч. 4 КоАП РФ",
+        ruleText: "«Линию 1.1 пересекать запрещается. Выезд на полосу встречного движения через сплошную линию разметки 1.1 образует состав правонарушения по ч. 4 ст. 12.15 КоАП РФ независимо от наличия знака 3.20 (Постановление Пленума ВС РФ № 20)». Кроме того, на тракторе отсутствует знак тихоходного ТС.",
+        fine: "Штраф 5 000 ₽ или лишение прав на 4–6 месяцев (ч. 4 ст. 12.15 КоАП РФ)",
+        participants: [
+          {
+            id: "car_wagon",
+            label: "Красный универсал",
+            color: "#dc2626",
+            maneuver: "Выехал на встречную полосу через сплошную 1.1 для обгона трактора",
+            isViolator: true,
+            whyLegalOrIllegal: "Грубейшее нарушение: сплошную 1.1 нельзя пересекать! Трактор не имел знака тихохода, а даже если бы имел — разметка 1.1 запрещает обгон категорически.",
+            pos: { x: 380, y: 160, rot: 0 }
+          },
+          {
+            id: "tractor",
+            label: "Трактор (15 км/ч)",
+            color: "#ea580c",
+            maneuver: "Движется прямо по своей полосе без знака «Тихоходное ТС»",
+            isViolator: false,
+            whyLegalOrIllegal: "Едет в своей полосе по правилам. Поскольку знака тихоходного ТС у него нет (скорость по паспорту свыше 30 км/ч), обгонять его под 3.20 нельзя никому.",
+            pos: { x: 480, y: 140, rot: 0 }
+          },
+          {
+            id: "car_blue2",
+            label: "Синий хэтчбек",
+            color: "#2563eb",
+            maneuver: "Движется за трактором на безопасной дистанции",
+            isViolator: false,
+            whyLegalOrIllegal: "Терпеливо ждёт прерывистой линии разметки, не нарушая п. 9.10 и 11.1.",
+            pos: { x: 480, y: 280, rot: 0 }
+          },
+          {
+            id: "car_broken",
+            label: "Белый аварийный авто",
+            color: "#cbd5e1",
+            maneuver: "Стоит на обочине с аварийной сигнализацией и знаком",
+            isViolator: false,
+            whyLegalOrIllegal: "Соблюдает раздел 7 и 12: вынужденная остановка на обочине с выставленным знаком аварийной остановки.",
+            pos: { x: 570, y: 60, rot: 0 }
+          }
+        ],
+        drawScene: function(svg) {
+          return `
+            <rect x="0" y="0" width="800" height="440" fill="#14532d"/>
+            <!-- Road -->
+            <rect x="250" y="0" width="300" height="440" fill="#334155"/>
+            <!-- Solid center line 1.1 -->
+            <line x1="400" y1="0" x2="400" y2="440" stroke="#fff" stroke-width="5"/>
+            <!-- Road edges 1.2 -->
+            <line x1="270" y1="0" x2="270" y2="440" stroke="#fff" stroke-width="4"/>
+            <line x1="530" y1="0" x2="530" y2="440" stroke="#fff" stroke-width="4"/>
+
+            <!-- Road Sign 3.20 (No Overtaking) -->
+            <g transform="translate(560, 320)">
+              <circle cx="20" cy="20" r="18" fill="#fff" stroke="#ef4444" stroke-width="4"/>
+              <rect x="12" y="14" width="7" height="12" rx="2" fill="#ef4444"/>
+              <rect x="22" y="14" width="7" height="12" rx="2" fill="#000"/>
+              <text x="20" y="50" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">3.20</text>
+            </g>
+
+            <!-- Warning triangle for broken car -->
+            <polygon points="575,100 565,115 585,115" fill="#ef4444" stroke="#fff" stroke-width="1"/>
+          `;
+        }
+      },
+      {
+        id: 4,
+        title: "Трамвайные пути и разворот на остановке",
+        shortDesc: "Улица с трамвайными путями на одном уровне. Остановка маршрутных ТС справа.",
+        heading: "Разворот на остановке трамвая/автобуса (п. 8.11, 8.5)",
+        violatorId: "car_taxi_rev",
+        violatorLaw: 0,
+        lawChoices: [
+          {
+            text: "п. 8.11 ПДД: разворот категорически запрещен в местах остановок маршрутных ТС",
+            correct: true
+          },
+          {
+            text: "п. 9.6 ПДД: запрещается выезжать на трамвайные пути попутного направления",
+            correct: false
+          },
+          {
+            text: "п. 12.4 ПДД: запрещается остановка ближе 15 метров от остановочного пункта",
+            correct: false
+          }
+        ],
+        ruleArticle: "Пункт 8.11 ПДД РФ & ст. 12.14 ч. 2 КоАП РФ",
+        ruleText: "«Разворот запрещается: на пешеходных переходах; в тоннелях; на мостах, путепроводах, эстакадах и под ними; на железнодорожных переездах; в местах с видимостью дороги хотя бы в одном направлении менее 100 м; в местах остановок маршрутных транспортных средств».",
+        fine: "Штраф 500 ₽ (ч. 2 ст. 12.14 КоАП РФ)",
+        participants: [
+          {
+            id: "car_taxi_rev",
+            label: "Жёлтое такси",
+            color: "#eab308",
+            maneuver: "Выполняет разворот непосредственно в зоне остановки маршрутных ТС",
+            isViolator: true,
+            whyLegalOrIllegal: "Пункт 8.11 прямо запрещает разворот на остановках маршрутных ТС независимо от наличия разметки или запрещающих знаков!",
+            pos: { x: 380, y: 190, rot: -70 }
+          },
+          {
+            id: "car_white_tram",
+            label: "Белый седан",
+            color: "#f8fafc",
+            maneuver: "Поворачивает налево на перекрёстке с попутных трамвайных путей",
+            isViolator: false,
+            whyLegalOrIllegal: "Поступает строго по п. 8.5 ПДД: при отсутствии знаков 5.15.1/2 поворот налево ОБЯЗАН выполняться именно с трамвайных путей попутного направления!",
+            pos: { x: 375, y: 70, rot: -30 }
+          },
+          {
+            id: "tram",
+            label: "Красный трамвай",
+            color: "#b91c1c",
+            maneuver: "Движется прямо по попутным рельсам",
+            isViolator: false,
+            whyLegalOrIllegal: "Движется по своему маршруту в пределах трамвайных путей.",
+            pos: { x: 375, y: 320, rot: 0 }
+          },
+          {
+            id: "car_gray",
+            label: "Серый кроссовер",
+            color: "#64748b",
+            maneuver: "Движется прямо по крайней правой полосе",
+            isViolator: false,
+            whyLegalOrIllegal: "Соблюдает рядность и не заезжает на рельсы при свободной проезжей части.",
+            pos: { x: 500, y: 220, rot: 0 }
+          }
+        ],
+        drawScene: function(svg) {
+          return `
+            <rect x="0" y="0" width="800" height="440" fill="#1e293b"/>
+            <!-- Road with rails in center -->
+            <rect x="200" y="0" width="400" height="440" fill="#334155"/>
+            <!-- Sidewalk / Stop platform -->
+            <rect x="600" y="140" width="50" height="120" fill="#475569" stroke="#94a3b8" stroke-width="2"/>
+            <text x="625" y="205" fill="#f8fafc" font-size="11" font-weight="bold" text-anchor="middle" transform="rotate(90, 625, 205)">ОСТАНОВКА</text>
+
+            <!-- Yellow zigzag 1.17.1 -->
+            <path d="M 590 140 L 580 155 L 590 170 L 580 185 L 590 200 L 580 215 L 590 230 L 580 245 L 590 260" fill="none" stroke="#fbbf24" stroke-width="3"/>
+
+            <!-- Tram Rails -->
+            <line x1="365" y1="0" x2="365" y2="440" stroke="#94a3b8" stroke-width="3"/>
+            <line x1="385" y1="0" x2="385" y2="440" stroke="#94a3b8" stroke-width="3"/>
+            <line x1="415" y1="0" x2="415" y2="440" stroke="#94a3b8" stroke-width="3"/>
+            <line x1="435" y1="0" x2="435" y2="440" stroke="#94a3b8" stroke-width="3"/>
+
+            <!-- Bus stop sign 5.16 -->
+            <g transform="translate(615, 120)">
+              <rect x="0" y="0" width="18" height="24" fill="#2563eb" rx="2"/>
+              <rect x="3" y="3" width="12" height="12" fill="#fff"/>
+              <rect x="5" y="6" width="8" height="6" fill="#000" rx="1"/>
+            </g>
+          `;
+        }
+      },
+      {
+        id: 5,
+        title: "Круговое движение: съезд со второй полосы",
+        shortDesc: "Перекрёсток с круговым движением (знак 4.3). Две полосы на кольце.",
+        heading: "Съезд с кругового движения (п. 8.5, 13.11.1)",
+        violatorId: "car_blue_round",
+        violatorLaw: 0,
+        lawChoices: [
+          {
+            text: "п. 8.5 ПДД: съезд с кругового движения разрешен только из крайнего правого положения",
+            correct: true
+          },
+          {
+            text: "п. 13.11.1 ПДД: водитель на круге обязан уступить дорогу въезжающему ТС",
+            correct: false
+          },
+          {
+            text: "п. 8.4 ПДД: при одновременном перестроении уступает ТС, находящееся слева",
+            correct: false
+          }
+        ],
+        ruleArticle: "Пункт 8.5 ПДД РФ & ст. 12.14 ч. 1.1 КоАП РФ",
+        ruleText: "«Перед поворотом направо, налево или разворотом водитель обязан заблаговременно занять соответствующее крайнее положение на проезжей части, предназначенной для движения в данном направлении, кроме случаев въезда на перекресток с круговым движением». Съезд с кольца является поворотом направо и разрешён ТОЛЬКО из крайнего правого положения!",
+        fine: "Штраф 500 ₽ (ч. 1.1 ст. 12.14 КоАП РФ)",
+        participants: [
+          {
+            id: "car_blue_round",
+            label: "Синий седан",
+            color: "#2563eb",
+            maneuver: "Съезжает с кольца направо со второй (внутренней) полосы, подрезая правый ряд",
+            isViolator: true,
+            whyLegalOrIllegal: "Частая грубая ошибка: въезжать на кольцо можно с любой полосы, но съезжать разрешено ТОЛЬКО из крайнего правого ряда!",
+            pos: { x: 420, y: 190, rot: 45 }
+          },
+          {
+            id: "car_red_round",
+            label: "Красный хэтчбек",
+            color: "#ef4444",
+            maneuver: "Въезжает на круг из левой полосы",
+            isViolator: false,
+            whyLegalOrIllegal: "Поступает абсолютно правильно: п. 8.5 делает прямое исключение — въезд на круговое движение разрешён с любой полосы попутного направления.",
+            pos: { x: 260, y: 240, rot: 0 }
+          },
+          {
+            id: "car_white_round",
+            label: "Белый кроссовер",
+            color: "#f8fafc",
+            maneuver: "Движется по правому (внешнему) ряду кольца мимо съезда",
+            isViolator: false,
+            whyLegalOrIllegal: "Имеет полное право продолжать круговое движение по правому ряду и пользуется приоритетом перед съезжающими слева.",
+            pos: { x: 500, y: 210, rot: 80 }
+          },
+          {
+            id: "car_gray_entry",
+            label: "Серый авто на въезде",
+            color: "#64748b",
+            maneuver: "Остановился перед въездом на круг, уступая дорогу",
+            isViolator: false,
+            whyLegalOrIllegal: "Соблюдает п. 13.11.1 ПДД: при въезде на круговой перекрёсток водитель обязан уступить дорогу ТС на кольце.",
+            pos: { x: 200, y: 240, rot: 0 }
+          }
+        ],
+        drawScene: function(svg) {
+          return `
+            <rect x="0" y="0" width="800" height="440" fill="#1e3a2f"/>
+
+            <!-- Roundabout Rings -->
+            <circle cx="400" cy="220" r="170" fill="#334155"/>
+            <circle cx="400" cy="220" r="120" stroke="#fff" stroke-width="2" stroke-dasharray="6 6" fill="none"/>
+            <circle cx="400" cy="220" r="70" fill="#1e3a2f" stroke="#fff" stroke-width="3"/>
+
+            <!-- Connecting Roads (West entry, East exit, North exit) -->
+            <rect x="0" y="180" width="250" height="80" fill="#334155"/>
+            <rect x="550" y="180" width="250" height="80" fill="#334155"/>
+            <rect x="360" y="0" width="80" height="100" fill="#334155"/>
+
+            <line x1="0" y1="220" x2="250" y2="220" stroke="#fff" stroke-width="3" stroke-dasharray="6 6"/>
+            <line x1="550" y1="220" x2="800" y2="220" stroke="#fff" stroke-width="3" stroke-dasharray="6 6"/>
+
+            <!-- Sign 4.3 (Roundabout) -->
+            <g transform="translate(180, 270)">
+              <circle cx="16" cy="16" r="15" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+              <circle cx="16" cy="16" r="8" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="8 6"/>
+            </g>
+          `;
+        }
+      },
+      {
+        id: 6,
+        title: "Пешеходный переход и остановившийся сосед",
+        shortDesc: "Нерегулируемый пешеходный переход. В правом ряду остановился автобус.",
+        heading: "Опережение перед пешеходным переходом (п. 14.2)",
+        violatorId: "car_black_sport",
+        violatorLaw: 0,
+        lawChoices: [
+          {
+            text: "п. 14.2 ПДД: если перед переходом остановилось ТС, водители в соседних полосах обязаны снизить скорость или остановиться",
+            correct: true
+          },
+          {
+            text: "п. 11.4 ПДД: запрещен обгон на пешеходных переходах независимо от наличия пешеходов",
+            correct: false
+          },
+          {
+            text: "п. 14.3 ПДД: на регулируемых переходах при включении желтого сигнала",
+            correct: false
+          }
+        ],
+        ruleArticle: "Пункт 14.2 ПДД РФ & ст. 12.18 КоАП РФ",
+        ruleText: "«Если перед нерегулируемым пешеходным переходом остановилось или снизило скорость транспортное средство, то водители других транспортных средств, движущихся по соседним полосам, могут продолжать движение лишь убедившись, что перед указанным транспортным средством нет пешеходов (обязаны остановиться или снизить скорость)».",
+        fine: "Штраф 1 500 – 2 500 ₽ (ст. 12.18 КоАП РФ)",
+        participants: [
+          {
+            id: "car_black_sport",
+            label: "Чёрный седан",
+            color: "#0f172a",
+            maneuver: "Пролетает переход по левой полосе без снижения скорости мимо стоящего автобуса",
+            isViolator: true,
+            whyLegalOrIllegal: "Смертельно опасное нарушение п. 14.2 ПДД! Если в соседней полосе ТС встало перед зеброй, водитель ОБЯЗАН снизить скорость или остановиться.",
+            pos: { x: 340, y: 190, rot: 0 }
+          },
+          {
+            id: "bus_ped",
+            label: "Зелёный автобус",
+            color: "#10b981",
+            maneuver: "Остановился перед зеброй в правом ряду, уступая пешеходу",
+            isViolator: false,
+            whyLegalOrIllegal: "Действует образцово по п. 14.1 ПДД: уступает дорогу пешеходу, переходящему проезжую часть.",
+            pos: { x: 460, y: 240, rot: 0 }
+          },
+          {
+            id: "pedestrian",
+            label: "Пешеход на зебре",
+            color: "#f59e0b",
+            maneuver: "Переходит проезжую часть по нерегулируемому переходу справа налево",
+            isViolator: false,
+            whyLegalOrIllegal: "Пользуется преимуществом на нерегулируемом переходе по п. 4.5 и 14.1 ПДД.",
+            pos: { x: 420, y: 160, rot: -90 }
+          },
+          {
+            id: "car_white_back",
+            label: "Белый хэтчбек",
+            color: "#f8fafc",
+            maneuver: "Остановился позади автобуса в правом ряду",
+            isViolator: false,
+            whyLegalOrIllegal: "Соблюдает дистанцию за стоящим автобусом (п. 9.10).",
+            pos: { x: 460, y: 350, rot: 0 }
+          }
+        ],
+        drawScene: function(svg) {
+          return `
+            <rect x="0" y="0" width="800" height="440" fill="#1e3a2f"/>
+            <rect x="220" y="0" width="360" height="440" fill="#334155"/>
+
+            <!-- Sidewalks -->
+            <rect x="180" y="0" width="40" height="440" fill="#475569"/>
+            <rect x="580" y="0" width="40" height="440" fill="#475569"/>
+
+            <!-- Lanes -->
+            <line x1="400" y1="0" x2="400" y2="440" stroke="#fff" stroke-width="4"/>
+            <line x1="310" y1="0" x2="310" y2="440" stroke="#fff" stroke-width="2" stroke-dasharray="6 6"/>
+            <line x1="490" y1="0" x2="490" y2="440" stroke="#fff" stroke-width="2" stroke-dasharray="6 6"/>
+
+            <!-- Zebra Crosswalk 1.14.1 -->
+            <g>
+              ${[0, 18, 36, 54, 72, 90, 108, 126, 144, 162, 180, 198, 216, 234, 252, 270, 288, 306, 324, 342].map(x => `
+                <rect x="${220+x}" y="145" width="10" height="40" fill="#fff"/>
+              `).join('')}
+            </g>
+
+            <!-- Sign 5.19.1 Pedestrian Crossing -->
+            <g transform="translate(190, 195)">
+              <rect x="0" y="0" width="22" height="22" fill="#2563eb" rx="2"/>
+              <polygon points="11,2 2,20 20,20" fill="#fff"/>
+              <circle cx="11" cy="7" r="2" fill="#000"/>
+              <line x1="11" y1="9" x2="11" y2="15" stroke="#000" stroke-width="1.5"/>
+              <line x1="7" y1="18" x2="15" y2="12" stroke="#000" stroke-width="1.5"/>
+            </g>
+          `;
+        }
+      }
+    ];
+
+    // --- State Variables ---
+    let currentIdx = 0;
+    let mode = 'game'; // 'game' or 'lab'
+    let score = 0;
+    let lives = 3;
+    let timeLeft = 15;
+    let timerInterval = null;
+    let isPaused = false;
+    let answered = false;
+    let soundEnabled = true;
+
+    // --- Audio Synthesis via Web Audio API ---
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioCtx;
+    }
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudio();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        const now = ctx.currentTime;
+        if (type === 'tap') {
+          osc.frequency.setValueAtTime(440, now);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'success') {
+          // Whistle / Chime
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(587.33, now); // D5
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.15); // A5
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        } else if (type === 'fail') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.25);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        }
+      } catch (e) {
+        // audio might be blocked until user gesture
+      }
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const btn = document.getElementById('soundToggle');
+      btn.className = 'sound-toggle ' + (soundEnabled ? 'on' : '');
+      btn.textContent = soundEnabled ? '🔔' : '🔕';
+    }
+
+    // --- Core UI & Logic ---
+    function init() {
+      renderNav();
+      loadScenario(0);
+    }
+
+    function renderNav() {
+      const nav = document.getElementById('scenarioNav');
+      nav.innerHTML = '';
+      SCENARIOS.forEach((sc, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'sc-btn' + (i === currentIdx ? ' active' : '');
+        btn.innerHTML = `<strong>#${sc.id}</strong> ${sc.title}`;
+        btn.onclick = () => {
+          playSound('tap');
+          loadScenario(i);
+        };
+        nav.appendChild(btn);
+      });
+    }
+
+    function setMode(m) {
+      mode = m;
+      document.getElementById('btnModeGame').className = 'mode-btn' + (m === 'game' ? ' active' : '');
+      document.getElementById('btnModeLab').className = 'mode-btn' + (m === 'lab' ? ' active' : '');
+      const timerWrap = document.querySelector('.timer-bar-wrap');
+      const timerLabel = document.getElementById('timerLabel');
+      const pauseBtn = document.getElementById('pauseBtn');
+
+      if (m === 'lab') {
+        clearInterval(timerInterval);
+        timerWrap.style.display = 'none';
+        timerLabel.textContent = '🔬 Стенд';
+        pauseBtn.style.display = 'none';
+      } else {
+        timerWrap.style.display = 'block';
+        pauseBtn.style.display = 'block';
+        startTimer();
+      }
+    }
+
+    function loadScenario(idx) {
+      currentIdx = idx;
+      answered = false;
+      isPaused = false;
+      document.getElementById('pauseBtn').textContent = '⏸ Пауза';
+
+      const sc = SCENARIOS[idx];
+
+      // Update Nav
+      const navBtns = document.querySelectorAll('.sc-btn');
+      navBtns.forEach((b, i) => b.className = 'sc-btn' + (i === idx ? ' active' : ''));
+
+      // Header labels
+      document.getElementById('badgeScenarioId').textContent = `СИТУАЦИЯ ${sc.id} ИЗ ${SCENARIOS.length}`;
+      document.getElementById('scenarioHeading').textContent = sc.heading;
+
+      // Draw SVG Scene
+      renderSvgScene(sc);
+
+      // Populate Car Picks List
+      renderCarPicks(sc);
+
+      // Reset panels
+      document.getElementById('lawStep').style.display = 'none';
+      document.getElementById('resultSheet').style.display = 'none';
+      document.getElementById('questionCard').style.display = 'block';
+
+      // Timer
+      if (mode === 'game') {
+        startTimer();
+      }
+    }
+
+    function renderSvgScene(sc) {
+      const svg = document.getElementById('roadScene');
+      // Background & road infrastructure
+      let html = sc.drawScene(svg);
+
+      // Render cars & participants
+      sc.participants.forEach(p => {
+        html += renderCarElement(p);
+      });
+
+      svg.innerHTML = html;
+      bindSvgEvents(sc);
+    }
+
+    function renderCarElement(p) {
+      const isLarge = p.id.includes('bus') || p.id.includes('tram');
+      const isPed = p.id.includes('pedestrian');
+      const isTractor = p.id.includes('tractor');
+
+      let w = isLarge ? 34 : (isPed ? 14 : 28);
+      let h = isLarge ? 80 : (isPed ? 14 : 52);
+      if (isTractor) { w = 32; h = 48; }
+
+      const x = p.pos.x - w / 2;
+      const y = p.pos.y - h / 2;
+      const rot = p.pos.rot;
+
+      if (isPed) {
+        return `
+          <g class="car-interactive" id="svg_${p.id}" data-id="${p.id}" transform="translate(${p.pos.x}, ${p.pos.y}) rotate(${rot})">
+            <circle cx="0" cy="0" r="7" fill="${p.color}" stroke="#fff" stroke-width="2"/>
+            <line x1="-5" y1="0" x2="5" y2="0" stroke="#fff" stroke-width="2"/>
+          </g>
+        `;
+      }
+
+      return `
+        <g class="car-interactive" id="svg_${p.id}" data-id="${p.id}" transform="translate(${p.pos.x}, ${p.pos.y}) rotate(${rot})">
+          <!-- Shadow -->
+          <rect x="${-w/2}" y="${-h/2 + 2}" width="${w}" height="${h}" rx="6" fill="#000" opacity="0.4"/>
+          <!-- Body -->
+          <rect x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="6" fill="${p.color}" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+          <!-- Roof / Windows -->
+          <rect x="${-w/2 + 3}" y="${-h/2 + 8}" width="${w - 6}" height="${h - 16}" rx="3" fill="#0f172a" opacity="0.85"/>
+          <rect x="${-w/2 + 5}" y="${-h/2 + 14}" width="${w - 10}" height="${h - 28}" rx="2" fill="${p.color}" opacity="0.9"/>
+          <!-- Headlights -->
+          <circle cx="${-w/2 + 5}" cy="${-h/2 + 2}" r="2.5" fill="#fef08a"/>
+          <circle cx="${w/2 - 5}" cy="${-h/2 + 2}" r="2.5" fill="#fef08a"/>
+          <!-- Taillights -->
+          <rect x="${-w/2 + 3}" y="${h/2 - 3}" width="5" height="2" fill="#ef4444"/>
+          <rect x="${w/2 - 8}" y="${h/2 - 3}" width="5" height="2" fill="#ef4444"/>
+          <!-- Label Number badge -->
+          <circle cx="0" cy="0" r="8" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+          <text x="0" y="3.5" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">!</text>
+        </g>
+      `;
+    }
+
+    function bindSvgEvents(sc) {
+      const tooltip = document.getElementById('sceneTooltip');
+      const container = document.getElementById('svgContainer');
+
+      sc.participants.forEach(p => {
+        const el = document.getElementById(`svg_${p.id}`);
+        if (!el) return;
+
+        el.addEventListener('mouseenter', (e) => {
+          tooltip.textContent = `${p.label} · ${p.maneuver}`;
+          tooltip.classList.add('show');
+        });
+
+        el.addEventListener('mousemove', (e) => {
+          const rect = container.getBoundingClientRect();
+          tooltip.style.left = `${e.clientX - rect.left}px`;
+          tooltip.style.top = `${e.clientY - rect.top}px`;
+        });
+
+        el.addEventListener('mouseleave', () => {
+          tooltip.classList.remove('show');
+        });
+
+        el.addEventListener('click', () => {
+          if (answered) return;
+          handleCarSelection(p.id);
+        });
+      });
+    }
+
+    function renderCarPicks(sc) {
+      const list = document.getElementById('carPicksList');
+      list.innerHTML = '';
+      sc.participants.forEach(p => {
+        const btn = document.createElement('button');
+        btn.className = 'car-pick-btn';
+        btn.id = `pick_${p.id}`;
+        btn.innerHTML = `
+          <div class="car-badge-mini">
+            <span class="car-color-dot" style="background:${p.color}"></span>
+            <span>${p.label}</span>
+          </div>
+          <span style="font-size:11px; color:var(--text-muted); font-weight:normal;">${p.maneuver.slice(0, 34)}...</span>
+        `;
+        btn.onclick = () => {
+          if (answered) return;
+          handleCarSelection(p.id);
+        };
+        list.appendChild(btn);
+      });
+    }
+
+    function handleCarSelection(selectedId) {
+      const sc = SCENARIOS[currentIdx];
+      const participant = sc.participants.find(p => p.id === selectedId);
+      if (!participant) return;
+
+      const svgEl = document.getElementById(`svg_${selectedId}`);
+      const btnEl = document.getElementById(`pick_${selectedId}`);
+
+      if (participant.isViolator) {
+        // VIOLATOR CAUGHT!
+        playSound('success');
+        svgEl.classList.add('violator-hit');
+        if (btnEl) btnEl.style.borderColor = 'var(--danger)';
+
+        score += 100;
+        document.getElementById('scoreDisplay').textContent = score;
+
+        // Open Step 2: Select exact law
+        showLawStep(sc);
+      } else {
+        // INNOCENT ARRESTED!
+        playSound('fail');
+        svgEl.classList.add('innocent-hit');
+        if (btnEl) btnEl.style.borderColor = 'var(--success)';
+
+        if (mode === 'game') {
+          lives--;
+          updateLivesDisplay();
+          if (lives <= 0) {
+            alert("⚠️ Все попытки исчерпаны! Начнём заново с полными силами.");
+            lives = 3;
+            score = 0;
+            document.getElementById('scoreDisplay').textContent = score;
+            updateLivesDisplay();
+            loadScenario(0);
+            return;
+          }
+        }
+
+        // Show immediate hint why innocent
+        alert(`❌ Ошибка! ${participant.label} едет ПО ПРАВИЛАМ:\n\n${participant.whyLegalOrIllegal}\n\nПопробуйте найти настоящего нарушителя!`);
+      }
+    }
+
+    function showLawStep(sc) {
+      const lawStep = document.getElementById('lawStep');
+      const lawOpts = document.getElementById('lawOptions');
+      lawOpts.innerHTML = '';
+
+      sc.lawChoices.forEach((choice, i) => {
+        const opt = document.createElement('div');
+        opt.className = 'law-opt';
+        opt.textContent = choice.text;
+        opt.onclick = () => {
+          if (answered) return;
+          handleLawChoice(choice, sc);
+        };
+        lawOpts.appendChild(opt);
+      });
+
+      lawStep.style.display = 'block';
+      lawStep.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function handleLawChoice(choice, sc) {
+      answered = true;
+      clearInterval(timerInterval);
+
+      if (choice.correct) {
+        playSound('success');
+        score += 50;
+        document.getElementById('scoreDisplay').textContent = score;
+        showResultSheet(true, sc);
+      } else {
+        playSound('fail');
+        showResultSheet(false, sc);
+      }
+    }
+
+    function showResultSheet(perfectLaw, sc) {
+      const sheet = document.getElementById('resultSheet');
+      const banner = document.getElementById('resultBanner');
+      const bannerIcon = document.getElementById('resultBannerIcon');
+      const bannerText = document.getElementById('resultBannerText');
+
+      if (perfectLaw) {
+        banner.className = 'result-banner success';
+        bannerIcon.textContent = '🚔';
+        bannerText.textContent = 'Идеально! Нарушитель задержан и статья определена верно (+150)';
+      } else {
+        banner.className = 'result-banner fail';
+        bannerIcon.textContent = '⚠️';
+        bannerText.textContent = 'Нарушитель найден верно, но статья выбрана с ошибкой (+100)';
+      }
+
+      document.getElementById('ruleTitle').textContent = sc.ruleArticle;
+      document.getElementById('ruleText').textContent = sc.ruleText;
+      document.getElementById('fineTag').textContent = sc.fine;
+
+      // Innocents breakdown
+      const innocentsBox = document.getElementById('innocentsDetails');
+      innocentsBox.innerHTML = '';
+      sc.participants.forEach(p => {
+        if (!p.isViolator) {
+          const item = document.createElement('div');
+          item.className = 'innocent-item';
+          item.innerHTML = `
+            <span class="dot">✔</span>
+            <div><strong>${p.label}:</strong> ${p.whyLegalOrIllegal}</div>
+          `;
+          innocentsBox.appendChild(item);
+        }
+      });
+
+      sheet.style.display = 'block';
+      sheet.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function nextScenario() {
+      playSound('tap');
+      if (currentIdx + 1 < SCENARIOS.length) {
+        loadScenario(currentIdx + 1);
+      } else {
+        alert(`🎉 Поздравляем! Вы прошли все ситуации тестового стенда!\nИтоговый счёт: ${score} очков.`);
+        loadScenario(0);
+      }
+    }
+
+    function updateLivesDisplay() {
+      const el = document.getElementById('livesPill');
+      el.textContent = '❤️'.repeat(lives) + '🖤'.repeat(3 - lives);
+    }
+
+    // --- Timer System ---
+    function startTimer() {
+      clearInterval(timerInterval);
+      timeLeft = 15;
+      updateTimerUI();
+
+      timerInterval = setInterval(() => {
+        if (isPaused || answered) return;
+        timeLeft--;
+        updateTimerUI();
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          playSound('fail');
+          alert("⏰ Время вышло! Нарушитель успел скрыться. Давайте разберём эту ситуацию.");
+          const sc = SCENARIOS[currentIdx];
+          showResultSheet(false, sc);
+        }
+      }, 1000);
+    }
+
+    function updateTimerUI() {
+      document.getElementById('timerLabel').textContent = `${timeLeft} сек`;
+      const bar = document.getElementById('timerBar');
+      const pct = (timeLeft / 15) * 100;
+      bar.style.width = `${pct}%`;
+    }
+
+    function togglePauseTimer() {
+      isPaused = !isPaused;
+      const btn = document.getElementById('pauseBtn');
+      btn.textContent = isPaused ? '▶ Продолжить' : '⏸ Пауза';
+    }
+
+    // Start on load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
