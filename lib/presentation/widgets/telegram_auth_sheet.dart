@@ -41,7 +41,8 @@ class TelegramAuthSheet extends StatefulWidget {
   State<TelegramAuthSheet> createState() => _TelegramAuthSheetState();
 }
 
-class _TelegramAuthSheetState extends State<TelegramAuthSheet> {
+class _TelegramAuthSheetState extends State<TelegramAuthSheet>
+    with WidgetsBindingObserver {
   bool _isLoading = true;
   String? _error;
   String? _nonce;
@@ -50,18 +51,32 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet> {
   String _botUsername = 'pdda_bot';
   Timer? _pollTimer;
   int _pollCount = 0;
+  bool _checking = false;
+  bool _done = false;
   static const int _maxPollAttempts = 60; // 60 * 1.5s = 90s
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _startAuthFlow();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pollTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Вернулись из Telegram — проверяем сразу, не дожидаясь таймера.
+    if (state == AppLifecycleState.resumed &&
+        _pollTimer != null &&
+        _error == null) {
+      _checkStatus(_pollTimer!);
+    }
   }
 
   Future<void> _startAuthFlow() async {
@@ -98,8 +113,8 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet> {
 
       if (mounted) {
         setState(() => _isLoading = false);
-        await _openTelegram();
         _startPolling();
+        unawaited(_openTelegram());
       }
     } catch (e) {
       debugPrint('TelegramAuthSheet: start error: $e');
@@ -151,10 +166,20 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet> {
   }
 
   Future<void> _checkStatus(Timer timer) async {
-    if (!mounted || _nonce == null) {
+    if (!mounted || _nonce == null || _done) {
       timer.cancel();
       return;
     }
+    if (_checking) return;
+    _checking = true;
+    try {
+      await _doCheck(timer);
+    } finally {
+      _checking = false;
+    }
+  }
+
+  Future<void> _doCheck(Timer timer) async {
 
     _pollCount++;
     if (_pollCount > _maxPollAttempts) {
@@ -182,6 +207,7 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet> {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         if (data['ok'] == true && data['status'] == 'confirmed') {
           timer.cancel();
+          _done = true;
           final userMap = Map<String, dynamic>.from(data['user'] as Map);
           final user = UserProfile.fromMap(userMap);
           final token = data['token'] as String;
@@ -196,15 +222,21 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet> {
               ),
             );
           }
+        } else if (data['status'] == 'invalid') {
+          timer.cancel();
+          if (mounted) setState(() => _error = appL10n.authErrorServer);
         } else if (data['status'] == 'expired') {
           timer.cancel();
           if (mounted) {
             setState(() => _error = appL10n.authErrorTimeout);
           }
         }
+      } else {
+        debugPrint('TelegramAuthSheet: check status ${response.statusCode}');
       }
-    } catch (_) {
-      // Игнорируем единичные сетевые сбои опроса
+    } catch (e) {
+      // Единичные сетевые сбои опроса игнорируем
+      debugPrint('TelegramAuthSheet: poll error: $e');
     }
   }
 
