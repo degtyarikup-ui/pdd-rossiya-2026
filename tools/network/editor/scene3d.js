@@ -1,86 +1,43 @@
-// The 3D view of the editor: the scene as the game draws it (road surfaces from the build,
-// the baked scene, roadside props, participants and lights from their GLB models) with the
-// routes, the stop line and the handles drawn over it. It reports pointer events in metres;
-// what they mean (select, move, draw) is decided by ui.js.
+// The editor's view: the scene as the game draws it (road surfaces from the build, the baked scene's
+// ground, props, participants and lights from their models), with the routes, the road plan's handles,
+// the selection and the object being placed drawn over it. It moves the camera itself (orbit, pan, zoom)
+// and reports the rest of the pointer to tools.js in metres; what a click means is decided there.
+//
+// Plan view: +z (the player's way) is up and +x (the driver's left) is on the left, the way a driver
+// sees the road ahead. The 3D view starts behind the player.
 const Scene3D = (() => {
-  const KIND_COLOUR = {
-    manoeuvre: 0x2f6fed, choice: 0xe0533d, approach: 0x1f9d67, actor: 0xe09a2a,
-  };
-  const SELECTED_BOOST = 1.45;
-  const ROUTE_WIDTH = 0.7;
-  const ASPHALT = 0x2c2f36, GROUND = 0xc9d2a6, WATER = 0x9fb0c4;
+  const ASPHALT = 0x2c2f36, GROUND = 0xc9d2a6;
+  const ACCENT = 0x0574f8, HOVER = 0x5aa2ff;
   const TYPE_COLOUR = { car: 0x4a7fd6, truck: 0xd98b3a, bus: 0xe8c44a, tram: 0xc94a4a, pedestrian: 0x8e5fc9,
     cyclist: 0x3ea37a, motorcycle: 0x2b2f36, special: 0xf0f0f0, van: 0x7c8a99, tanker: 0x6a7c4a, cart: 0x9a7b4f };
+  const LETTER_COLOUR = { "А": 0xe0533d, "Б": 0x8b5cf6, "В": 0x0891b2, "Г": 0xd98e04, "Д": 0x16a34a };
+  const EXIT_COLOUR = 0x0574f8, APPROACH_COLOUR = 0x16a34a, ACTOR_COLOUR = 0xe09a2a;
+  const ROUTE_Y = 0.12;
 
-  let container, renderer, scene, camera, labelsEl, ground = null;
-  let mode = "3d";                         // "3d" (orbit, the default) or "plan" (top-down, orthographic)
-  let pxPerM = 6, target = new THREE.Vector3(0, 0, 0), orbitYaw = 0, orbitPitch = 0.9, orbitDist = 260;
-  let width = 1, height = 1, needsRender = true, frame = 0;
-  let model = null, build = null, sel = null, draft = null, cursor = null, stopCursor = null;
-  let groups = {}, labels = [], handlesObj = null, gltfCache = new Map(), loadToken = 0;
+  let container, renderer, scene, camera, labelsEl;
+  let mode = "3d";
+  let pxPerM = 6, target = new THREE.Vector3(0, 0, 0), orbitYaw = Math.PI, orbitPitch = 0.95, orbitDist = 240;
+  let width = 1, height = 1, needsRender = true;
+  let model = null, build = null, sel = [], hover = null, draft = null, hidden = new Set(), planHandles = true;
+  let groups = {}, labels = [], loadToken = 0, simMode = false, follow = null;
+  const anchors = new Map();      // key "t:id" -> { group, sig }
+  const gltfCache = new Map();
   const listeners = {};
   const emit = (name, data) => (listeners[name] || []).forEach((fn) => fn(data));
   const loader = new THREE.GLTFLoader();
   const tmp = new THREE.Vector3();
   const materials = new Map();
+  const keyOf = (r) => r ? `${r.t}:${r.id ?? ""}${r.part !== undefined && r.part >= 0 ? ":" + r.part : ""}` : "";
 
   function mat(colour, opts = {}) {
     const key = colour + JSON.stringify(opts);
     if (!materials.has(key)) materials.set(key, new THREE.MeshLambertMaterial({ color: colour, ...opts }));
     return materials.get(key);
   }
-
-  function lineMat(colour) {
-    const key = "line" + colour;
-    if (!materials.has(key)) materials.set(key, new THREE.MeshBasicMaterial({ color: colour, side: THREE.DoubleSide }));
+  function basic(colour, opts = {}) {
+    const key = "b" + colour + JSON.stringify(opts);
+    if (!materials.has(key)) materials.set(key, new THREE.MeshBasicMaterial({ color: colour, side: THREE.DoubleSide, ...opts }));
     return materials.get(key);
-  }
-
-  function circleTexture() {
-    const c = document.createElement("canvas");
-    c.width = c.height = 64;
-    const x = c.getContext("2d");
-    x.fillStyle = "#ffffff";
-    x.beginPath();
-    x.arc(32, 32, 26, 0, Math.PI * 2);
-    x.fill();
-    x.lineWidth = 6;
-    x.strokeStyle = "#1d2430";
-    x.stroke();
-    return new THREE.CanvasTexture(c);
-  }
-  let circleTex = null;
-
-  // A flat ribbon along a polyline (x, z), `width` metres wide, at height y.
-  function ribbon(points, w, y) {
-    const pos = [];
-    for (let i = 0; i + 1 < points.length; i++) {
-      const [ax, az] = points[i], [bx, bz] = points[i + 1];
-      const dx = bx - ax, dz = bz - az, len = Math.hypot(dx, dz) || 1;
-      const nx = (-dz / len) * (w / 2), nz = (dx / len) * (w / 2);
-      pos.push(ax + nx, y, az + nz, ax - nx, y, az - nz, bx + nx, y, bz + nz,
-        ax - nx, y, az - nz, bx - nx, y, bz - nz, bx + nx, y, bz + nz);
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-    return g;
-  }
-
-  function arrowhead(points, w, y) {
-    const n = points.length;
-    if (n < 2) return null;
-    const [ex, ez] = points[n - 1], [sx, sz] = points[n - 2];
-    const dx = ex - sx, dz = ez - sz, len = Math.hypot(dx, dz) || 1, ux = dx / len, uz = dz / len;
-    const back = 1.6, side = w * 1.6;
-    const bx = ex - ux * back, bz = ez - uz * back;
-    const pos = [ex, y, ez, bx - uz * side, y, bz + ux * side, bx + uz * side, y, bz - ux * side];
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-    return g;
-  }
-
-  function polyPoints(list, y, lift = 0) {
-    return list.map((p) => new THREE.Vector3(p[0], y + lift, p[1]));
   }
 
   function setGroup(name) {
@@ -89,9 +46,12 @@ const Scene3D = (() => {
       groups[name].traverse((o) => { if (o.geometry && o.userData.own) o.geometry.dispose(); });
     }
     groups[name] = new THREE.Group();
+    groups[name].visible = !hidden.has(GROUP_LAYER[name] || "");
     scene.add(groups[name]);
     return groups[name];
   }
+  // Which layer of the layers panel a drawing group belongs to (its eye hides it).
+  const GROUP_LAYER = { static: "roads", roads: "roads", marks: "marks", routes: "routes", plan: "roads" };
 
   function loadGltf(url) {
     if (!gltfCache.has(url)) {
@@ -102,36 +62,15 @@ const Scene3D = (() => {
     return gltfCache.get(url).then((root) => (root ? root.clone(true) : null));
   }
 
-  function box(colour, size) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(size[0], size[1], size[2]), mat(colour));
-    m.position.y = size[1] / 2;
-    return m;
-  }
-
-  function anchorFor(kind, item) {
-    const g = new THREE.Group();
-    g.userData.anchor = { kind, id: item.id };
-    return g;
-  }
-
-  // ---- model -------------------------------------------------------------------------
-
-  // ---- textures ----------------------------------------------------------------------
-  // The game shades a surface with its detail map (game_godot/shaders/scenery.gdshader): the fine
-  // grain (red channel) and the coarse patches (green, sampled at macroScale) scale the colour, each
-  // with the kind's gain. The numbers come from the texture panel (textures.js) and are the saved
-  // ones unless the user is editing, so the view shows what the game will show.
-  const TEXTURE_KINDS = ["asphalt", "pavement", "grass"];   // the surfaces the network draws, and the ground
-  const GRASS_COLOUR = "#86a97a";                           // the season's ground colour (scenery/index.json)
-  const texParams = {};     // kind -> { gain, macro, macroScale, period }
-  const texMaps = {};       // kind -> THREE.Texture of the picture (its image is swapped in place)
-  const texUniforms = {};   // kind -> shader uniforms, shared by every material of the kind: a slider needs no rebuild
+  // ---- textures: the game's detail shading (game_godot/shaders/scenery.gdshader) -------------
+  const TEXTURE_KINDS = ["asphalt", "pavement", "grass"];
+  const GRASS_COLOUR = "#86a97a";
+  const texParams = {}, texMaps = {}, texUniforms = {};
   const DETAIL_SHADE = `{
     float fine = 0.5 + (texture2D(map, vUv).r - 0.5) * uGain;
     float large = 0.5 + (texture2D(map, vUv * uMacroScale + vec2(0.31, 0.17)).g - 0.5) * uGain;
     diffuseColor.rgb *= fine * 2.0 * (1.0 + (large * 2.0 - 1.0) * uMacro);
   }`;
-
   function uniformsOf(kind) {
     if (!texUniforms[kind]) {
       const p = texParams[kind] || { gain: 1, macro: 0, macroScale: 1 };
@@ -139,9 +78,7 @@ const Scene3D = (() => {
     }
     return texUniforms[kind];
   }
-
   const periodOf = (kind) => (texParams[kind] && texParams[kind].period) || 1;
-
   function pictureFor(kind) {
     if (!texMaps[kind]) {
       const t = new THREE.Texture();
@@ -152,18 +89,11 @@ const Scene3D = (() => {
     }
     return texMaps[kind];
   }
-
-  function loadPicture(kind) {
+  function loadPicture(kind, src) {
     const img = new Image();
-    img.onload = () => {
-      texMaps[kind].image = img;
-      texMaps[kind].needsUpdate = true;
-      needsRender = true;
-    };
-    img.src = `/asset/texture/${kind}.png?v=${Date.now()}`;
+    img.onload = () => { texMaps[kind].image = img; texMaps[kind].needsUpdate = true; needsRender = true; };
+    img.src = src || `/asset/texture/${kind}.png?v=${Date.now()}`;
   }
-
-  // A colour shaded by the kind's picture, as the game does it (the factor averages to 1 hence x2).
   function detailMaterial(kind, colour) {
     const u = uniformsOf(kind);
     const m = new THREE.MeshLambertMaterial({ color: colour, map: pictureFor(kind), side: THREE.DoubleSide });
@@ -175,8 +105,6 @@ const Scene3D = (() => {
     };
     return m;
   }
-
-  // The editor's numbers: the shading is updated in place; a new tile size rebuilds the geometry.
   function setTextures(params) {
     const before = TEXTURE_KINDS.map(periodOf);
     for (const kind of TEXTURE_KINDS) {
@@ -191,16 +119,13 @@ const Scene3D = (() => {
     if (TEXTURE_KINDS.some((k, i) => periodOf(k) !== before[i])) { rebuildRoads(); rebuildGround(); }
     needsRender = true;
   }
+  // A picture changed (a file, or a style tried out before it is applied): src is a data URL or nothing.
+  function reloadPicture(kind, src) { if (texMaps[kind]) loadPicture(kind, src); }
 
-  // A picture file was replaced: the texture takes the new image.
-  function reloadPicture(kind) {
-    if (texMaps[kind]) loadPicture(kind);
-  }
-
+  let ground = null;
   function rebuildGround() {
     if (!ground) return;
     ground.material = detailMaterial("grass", GRASS_COLOUR);
-    // One picture repeat per tile over the 4 km ground: the uv is scaled, the texture stays shared.
     const k = 4000 / periodOf("grass");
     ground.geometry.dispose();
     ground.geometry = new THREE.PlaneGeometry(4000, 4000);
@@ -208,9 +133,6 @@ const Scene3D = (() => {
     for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * k, uv.getY(i) * k);
   }
 
-  // One material per layer of the network (build.py): asphalt, pavement, lawns (grass detail) and
-  // paint (flat). Every network layer takes a polygon offset, so where a copy of the same ground
-  // is left in the baked scene, the network's surface wins the depth test instead of flickering.
   const OFFSET = { polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 };
   function layerMaterial(s) {
     if (s.layer === "") return new THREE.MeshLambertMaterial({ color: s.colour, side: THREE.DoubleSide, ...OFFSET });
@@ -220,46 +142,47 @@ const Scene3D = (() => {
     return m;
   }
 
+  function surfaceMesh(s) {
+    const kind = s.layer === "" ? null : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
+    const period = kind ? periodOf(kind) : 1;
+    const pos = [], uv = [];
+    for (let k = 0; k < s.idx.length; k++) {
+      const i = s.idx[k] * 2;
+      pos.push(s.verts[i], s.y, s.verts[i + 1]);
+      uv.push(s.verts[i] / period, s.verts[i + 1] / period);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+    geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, layerMaterial(s));
+    m.userData.own = true;
+    return m;
+  }
+
   function rebuildRoads() {
     const g = setGroup("roads");
+    const mk = setGroup("marks");
     if (!build) return;
     for (const s of build.surfaces) {
       if (!s.idx.length) continue;
-      const kind = s.layer === "" ? null : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
-      const period = kind ? periodOf(kind) : 1;
-      const geo = new THREE.BufferGeometry();
-      const pos = [], uv = [];
-      const verts = s.verts;
-      for (let k = 0; k < s.idx.length; k++) {
-        const i = s.idx[k] * 2;
-        pos.push(verts[i], s.y, verts[i + 1]);
-        uv.push(verts[i] / period, verts[i + 1] / period);
-      }
-      geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-      geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-      geo.computeVertexNormals();
-      const m = new THREE.Mesh(geo, layerMaterial(s));
-      m.userData.own = true;
-      g.add(m);
+      (s.layer === "" ? mk : g).add(surfaceMesh(s));
     }
-    const kerbs = build.kerbs, kc = kerbs.colour, segs = kerbs.segs;
-    const pos = [];
+    const kerbs = build.kerbs, segs = kerbs.segs, pos = [];
     for (let j = 0; j < segs.length; j += 4) {
       const ax = segs[j], az = segs[j + 1], bx = segs[j + 2], bz = segs[j + 3];
-      const y0 = kerbs.y0, y1 = kerbs.y1;
-      pos.push(ax, y0, az, bx, y0, bz, bx, y1, bz, ax, y0, az, bx, y1, bz, ax, y1, az);
+      pos.push(ax, kerbs.y0, az, bx, kerbs.y0, bz, bx, kerbs.y1, bz, ax, kerbs.y0, az, bx, kerbs.y1, bz, ax, kerbs.y1, az);
     }
     const kg = new THREE.BufferGeometry();
     kg.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
     kg.computeVertexNormals();
-    const km = new THREE.Mesh(kg, new THREE.MeshLambertMaterial({ color: kc, side: THREE.DoubleSide }));
+    const km = new THREE.Mesh(kg, new THREE.MeshLambertMaterial({ color: kerbs.colour, side: THREE.DoubleSide }));
     km.userData.own = true;
     g.add(km);
   }
 
-  // The game's filter of the baked scene (game_godot/scripts/situation.gd _without_baked_ground):
-  // the static mesh loses the flat triangles the network draws itself, so the editor shows what the
-  // game shows. Textured meshes (the dirt overlay) are kept, as the game keeps them.
+  // The game's filter of the baked scene (situation.gd _without_baked_ground): the static mesh keeps only
+  // the flat ground the network does not draw itself.
   const COVER_CELL = 5;
   function coverIndex(B) {
     const cover = new Map();
@@ -294,8 +217,10 @@ const Scene3D = (() => {
   function filterBaked(root, B) {
     const cover = coverIndex(B);
     root.traverse((o) => {
-      if (!o.isMesh || o.name !== "static" || !o.geometry || !o.geometry.index) return;
-      // The loader's cache shares geometry with its clones: filter a copy, so a redraw starts afresh.
+      if (!o.isMesh || !o.geometry || !o.geometry.index) return;
+      // tex_0: dirt strips the game does not draw (situation.gd).
+      if (o.name === "tex_0") { o.visible = false; return; }
+      if (o.name !== "static") return;
       const geo = o.geometry = o.geometry.clone(), pos = geo.attributes.position, index = geo.index.array;
       const keep = [];
       for (let k = 0; k < index.length; k += 3) {
@@ -310,278 +235,462 @@ const Scene3D = (() => {
           const cx = (pos.getX(a) + pos.getX(b) + pos.getX(c)) / 3, cz = (pos.getZ(a) + pos.getZ(b) + pos.getZ(c)) / 3;
           drop = covered(cover, cx, cz);
         } else if (!flat && lo > -0.02 && hi < 0.215) drop = true;
+        else if (!flat && (hi >= 0.215 || lo <= -0.05)) drop = true;
+        else if (flat && ya >= 0.215) drop = true;
+        else if (ya < -0.05) drop = true;
         if (!drop) keep.push(a, b, c);
       }
       geo.setIndex(keep);
     });
   }
-
   function rebuildStatic() {
     const g = setGroup("static");
     if (!model) return;
-    const url = `/asset/scene/${model.id}/scene.glb`;
     const token = loadToken;
-    loadGltf(url).then((root) => {
+    loadGltf(`/asset/scene/${model.id}/scene.glb`).then((root) => {
       if (!root || token !== loadToken || groups.static !== g) return;
       if (build) filterBaked(root, build);
-      root.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
       g.add(root);
       needsRender = true;
     });
   }
 
-  function dropLabels(cls) {
-    labels = labels.filter((l) => {
-      if (l.cls !== cls) return true;
-      if (l.el) l.el.remove();
-      return false;
-    });
-  }
-
-  // What the colours mean: exits blue; the answers A, B, V... in their letter's colour (the same
-  // as on the road in the game); the stop lane green; a participant's path thin and dashed orange.
-  const LETTER_COLOUR = { "А": 0xe0533d, "Б": 0x8b5cf6, "В": 0x0891b2, "Г": 0xd98e04, "Д": 0x16a34a };
-  const EXIT_COLOUR = 0x2f6fed, APPROACH_COLOUR = 0x16a34a, ACTOR_COLOUR = 0xe09a2a;
-  const ROUTE_LIFT = 0.12;
+  // ---- routes ----------------------------------------------------------------------------
   const lineMaterials = new Set();
-  let hoverId = null;
-
-  // Answers and participant paths run alongside the exit lanes they share a road with, a little
-  // to either side, so every route can be seen and picked. The data keeps the true points.
-  const SIDE = { choice: 0.35, actor: -0.35 };
-  function routeOffset(r, i) {
-    const side = SIDE[r.kind];
-    if (!side) return [0, 0];
-    const pts = r.points;
-    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
-    const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz) || 1;
-    return [(-dz / len) * side, (dx / len) * side];
-  }
-  function displayPoints(r) {
-    return r.points.map((p, i) => {
-      const o = routeOffset(r, i);
-      return [p[0] + o[0], p[1] + o[1]];
-    });
-  }
-
-  function routeStyle(r) {
-    if (r.kind === "manoeuvre") return { colour: EXIT_COLOUR, px: r.exit === model?.question?.maneuver ? 3 : 2 };
-    if (r.kind === "choice") return { colour: LETTER_COLOUR[r.label] || EXIT_COLOUR, px: 2.5 };
-    if (r.kind === "approach") return { colour: APPROACH_COLOUR, px: 3 };
-    return { colour: ACTOR_COLOUR, px: 1.5, dashed: true };
-  }
-
-  function lineMaterialFor(style, opacity) {
-    const m = new THREE.LineMaterial({
-      color: style.colour, linewidth: style.px, transparent: true, opacity,
-      dashed: !!style.dashed, dashScale: 1, dashSize: 0.9, gapSize: 0.6,
-      resolution: new THREE.Vector2(width, height),
-    });
+  function lineMat(colour, px, opacity = 1, dashed = false) {
+    const m = new THREE.LineMaterial({ color: colour, linewidth: px, transparent: opacity < 1, opacity, dashed,
+      dashScale: 1, dashSize: 0.9, gapSize: 0.6, resolution: new THREE.Vector2(width, height) });
     lineMaterials.add(m);
     return m;
   }
-
-  // Which route the attention is on: the selected one (or the participant's own path), else the
-  // one under the pointer. Every other route is faded so the chosen one reads clearly.
-  function focusRoute() {
-    if (sel && sel.t === "route") return sel.id;
-    if (sel && sel.t === "actor") return `actor_${sel.id}`;
-    return hoverId;
+  function polyline(points, y, colour, px, opacity = 1, dashed = false) {
+    const geo = new THREE.LineGeometry();
+    geo.setPositions(points.flatMap((p) => [p[0], y, p[1]]));
+    const line = new THREE.Line2(geo, lineMat(colour, px, opacity, dashed));
+    if (dashed) line.computeLineDistances();
+    line.userData.own = true;
+    line.renderOrder = 5;
+    return line;
   }
+
+  // Catmull-Rom through the points, as the game draws a route (situation.gd).
+  function smooth(pts, step = 0.4) {
+    if (!pts || pts.length < 3) return pts || [];
+    const n = pts.length, out = [];
+    for (let i = 0; i < n - 1; i++) {
+      const p0 = pts[Math.max(i - 1, 0)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(i + 2, n - 1)];
+      const steps = Math.max(1, Math.ceil(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) / step));
+      for (let s = 0; s < steps; s++) {
+        const t = s / steps, t2 = t * t, t3 = t2 * t;
+        out.push([0, 1].map((k) => 0.5 * (2 * p1[k] + (p2[k] - p0[k]) * t + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t2 + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * t3)));
+      }
+    }
+    out.push(pts[n - 1]);
+    return out;
+  }
+
+  function arrowhead(points, w, y, colour, opacity) {
+    const n = points.length;
+    if (n < 2) return null;
+    const [ex, ez] = points[n - 1], [sx, sz] = points[Math.max(0, n - 4)];
+    const dx = ex - sx, dz = ez - sz, l = Math.hypot(dx, dz) || 1, ux = dx / l, uz = dz / l;
+    const back = 2.2, side = w;
+    const bx = ex - ux * back, bz = ez - uz * back;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute([ex, y, ez, bx - uz * side, y, bz + ux * side, bx + uz * side, y, bz - ux * side], 3));
+    const m = new THREE.Mesh(g, basic(colour, { transparent: opacity < 1, opacity }));
+    m.userData.own = true;
+    m.renderOrder = 5;
+    return m;
+  }
+
+  function routeStyle(r) {
+    if (r.kind === "manoeuvre") return { colour: EXIT_COLOUR, px: r.exit === model?.question?.maneuver ? 4 : 2.5 };
+    if (r.kind === "choice") return { colour: LETTER_COLOUR[r.label] || EXIT_COLOUR, px: 3.5 };
+    if (r.kind === "approach") return { colour: APPROACH_COLOUR, px: 3 };
+    return { colour: ACTOR_COLOUR, px: 2, dashed: true };
+  }
+  const isSel = (r) => sel.some((s) => keyOf(s) === keyOf(r));
 
   function rebuildRoutes() {
     const g = setGroup("routes");
     dropLabels("route");
     if (!model) return;
-    const focus = focusRoute();
+    const focusRoute = sel.find((s) => s.t === "route")?.id || (sel.find((s) => s.t === "actor") ? `actor_${sel.find((s) => s.t === "actor").id}` : null)
+      || (hover && hover.t === "route" ? hover.id : null);
     for (const r of model.routes) {
-      const style = routeStyle(r);
-      const dim = focus && r.id !== focus;
-      const opacity = dim ? 0.22 : 1;
-      const shown = displayPoints(r);
-      const flat = [];
-      shown.forEach((p) => flat.push(p[0], ROUTE_LIFT, p[1]));
-      const geo = new THREE.LineGeometry();
-      geo.setPositions(flat);
-      const line = new THREE.Line2(geo, lineMaterialFor(style, opacity));
-      if (style.dashed) line.computeLineDistances();
-      line.userData = { own: true, routeId: r.id };
-      g.add(line);
-      const head = arrowhead(shown, dim ? 0.3 : 0.45, ROUTE_LIFT);
-      if (head) {
-        const hm = new THREE.Mesh(head, new THREE.MeshBasicMaterial({ color: style.colour, transparent: true, opacity, side: THREE.DoubleSide }));
-        hm.userData.own = true;
-        g.add(hm);
+      if (r.points.length < 2) continue;
+      // The question's way and the answers always show; the other exits only on focus or in the test.
+      const st = routeStyle(r);
+      const focused = focusRoute === r.id;
+      const main = r.kind === "choice" || r.kind === "approach" || (r.kind === "manoeuvre" && r.exit === model.question?.maneuver);
+      const dim = focusRoute ? !focused : !main;
+      const opacity = dim ? 0.28 : 1;
+      const shown = smooth(r.points);
+      g.add(polyline(shown, ROUTE_Y, st.colour, focused ? st.px + 1.5 : st.px, opacity, st.dashed));
+      const head = arrowhead(shown, focused ? 1.1 : 0.8, ROUTE_Y, st.colour, opacity);
+      if (head) g.add(head);
+      if (r.kind === "choice" && (r.labelPosition || r.points.length)) {
+        const at = r.labelPosition || r.points[Math.floor(r.points.length / 2)];
+        labels.push({ text: r.label, cls: "letter", colour: st.colour, world: [at[0], 0.8, at[1]], ref: { t: "route", id: r.id } });
       }
-      const name = routeName(r);
-      if (name && shown.length > 1 && !dim) {
-        const mid = shown[Math.floor(shown.length / 2)];
-        labels.push({ text: name, colour: style.colour, world: [mid[0], 0.6, mid[1]], cls: "route", anchor: { kind: "route", id: r.id } });
-      }
-    }
-    if (draft && draft.points.length) {
-      const pts = draft.cursor ? [...draft.points, draft.cursor] : draft.points;
-      const geo = new THREE.LineGeometry();
-      geo.setPositions(pts.flatMap((p) => [p[0], ROUTE_LIFT, p[1]]));
-      const line = new THREE.Line2(geo, lineMaterialFor({ colour: 0x6b7685, px: 1.5, dashed: true }, 1));
-      line.computeLineDistances();
-      line.userData.own = true;
-      g.add(line);
-    }
-    // A road being laid: its two edges show the width while the axis is drawn.
-    if (draft && draft.kind === "path" && draft.points.length >= 2) {
-      const axis = RoadGeom.clean(draft.cursor ? [...draft.points, draft.cursor] : draft.points);
-      const w = (draft.opts && draft.opts.width) || 8.4;
-      for (const d of [w / 2, -w / 2]) {
-        const geo = new THREE.LineGeometry();
-        geo.setPositions(RoadGeom.offset(axis, d).flatMap((p) => [p[0], ROUTE_LIFT, p[1]]));
-        const line = new THREE.Line2(geo, lineMaterialFor({ colour: 0x2b2f36, px: 2 }, 0.85));
-        line.userData.own = true;
-        g.add(line);
+      if (r.kind === "manoeuvre" && (focused || simMode)) {
+        const end = r.points.at(-1);
+        labels.push({ text: { left: "налево", right: "направо", straight: "прямо", uturn: "разворот" }[r.exit], cls: "exit", colour: st.colour, world: [end[0], 0.8, end[1]], ref: { t: "route", id: r.id } });
       }
     }
   }
 
-  function routeName(r) {
-    if (r.kind === "manoeuvre") return { left: "налево", right: "направо", straight: "прямо", uturn: "разворот" }[r.exit] || "";
-    if (r.kind === "choice") return r.label;
-    if (r.kind === "approach") return "подъезд";
-    const a = model && model.actors.find((x) => x.route === r.id);
-    return a ? (a.name || a.id) : "путь";
+  // ---- participants, lights, props, the player ------------------------------------------
+  function fallbackBox(colour, size, opacity = 1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(size[0], size[1], size[2]), opacity < 1 ? new THREE.MeshLambertMaterial({ color: colour, transparent: true, opacity }) : mat(colour));
+    m.position.y = size[1] / 2;
+    return m;
   }
 
-  function rebuildAnchors() {
-    const g = setGroup("anchors");
-    if (!model) return;
-    const stop = model.stop;
-    // stop line: a bar across the lane and an arrow for the driving direction
-    const sg = anchorFor("stop", { id: "stop" });
-    sg.position.set(stop.x, 0, stop.z);
-    sg.rotation.y = stop.yaw;
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.05, 0.5), mat(0xe8e8e8));
-    bar.position.set(0, 0.12, 0);
-    sg.add(bar);
-    sg.add(box(0xf6c744, [0.5, 0.25, 1.2]).translateZ(-0.5));
-    g.add(sg);
-    labels.push({ text: "стоп / старт", colour: 0x7b5cd6, world: [stop.x, 1.8, stop.z], cls: "stop", anchor: { kind: "stop", id: "stop" } });
-
-    for (const l of model.lights) {
-      const lg = anchorFor("light", l);
-      lg.position.set(l.pos[0], 0, l.pos[1]);
-      lg.rotation.y = l.yaw;
-      lg.scale.setScalar(l.scale || 1);
-      g.add(lg);
-      const fallback = box(0x3a3f47, [0.3, 3.4, 0.3]);
-      lg.add(fallback);
-      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), mat(lampColour(l.state)));
-      lamp.position.y = 3.2;
-      lg.add(lamp);
-      const url = `/asset/scene/${l.asset}`;
-      if (l.asset) {
-        loadGltf(url).then((root) => {
-          if (!root || groups.anchors !== g) return;
-          lg.remove(fallback, lamp);
-          lg.add(root);
-          needsRender = true;
-        });
-      }
-      labels.push({ text: "светофор", colour: 0x6b5a10, world: [l.pos[0], 4.2, l.pos[1]], cls: "light", anchor: { kind: "light", id: l.id } });
+  function playerCar() {
+    const car = new THREE.Group();
+    const paint = new THREE.MeshLambertMaterial({ color: 0xf08a24 }), glass = new THREE.MeshLambertMaterial({ color: 0x1e2530 });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.6, 4.2), paint);
+    body.position.y = 0.55;
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.62, 0.6, 2.3), glass);
+    cabin.position.set(0, 1.12, -0.2);
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(1.58, 0.08, 2.1), paint);
+    roof.position.set(0, 1.45, -0.2);
+    car.add(body, cabin, roof);
+    const wheel = new THREE.CylinderGeometry(0.35, 0.35, 0.22, 14);
+    wheel.rotateZ(Math.PI / 2);
+    for (const [x, z] of [[0.92, 1.3], [-0.92, 1.3], [0.92, -1.3], [-0.92, -1.3]]) {
+      const w = new THREE.Mesh(wheel, mat(0x15171c));
+      w.position.set(x, 0.35, z);
+      car.add(w);
     }
+    return car;
+  }
 
-    for (const d of model.decor) {
-      const dg = anchorFor("decor", d);
-      dg.position.set(d.pos[0], 0, d.pos[1]);
-      dg.rotation.y = d.yaw;
-      dg.scale.set(d.scale[0], d.scale[1], d.scale[2]);
-      g.add(dg);
-      const fallback = box(0xb9b4ab, [2, 3, 2]);
-      dg.add(fallback);
-      // A parked car is the traffic sedan model in the game (scripts/situation.gd).
-      const modelUrl = d.prop === "parked" ? "/asset/models/traffic/sedan.glb" : `/asset/scenery/${d.prop}.glb`;
-      loadGltf(modelUrl).then((root) => {
-        if (!root || groups.anchors !== g) return;
-        dg.remove(fallback);
-        if (d.tint) {
-          root.traverse((o) => {
-            if (o.isMesh && o.material && o.material.color) {
-              o.material = o.material.clone();
-              o.material.color.set(d.tint);
-            }
-          });
-        }
-        dg.add(root);
+  // Each object of the scene is a group under "anchors", kept between redraws while its model is the
+  // same (only moved): dragging 200 trees about does not reload them.
+  function anchorSig(t, o) {
+    if (t === "decor") return `${o.prop}|${o.tint}`;
+    if (t === "actor") return `${o.asset}|${o.type}`;
+    if (t === "light") return `${o.asset}|${o.state}`;
+    return t;
+  }
+
+  function makeAnchor(t, o, key) {
+    const g = new THREE.Group();
+    g.userData.ref = t === "stop" || t === "player" ? { t } : { t, id: o.id };
+    const token = loadToken;
+    const attach = (url, fallback, tint) => {
+      g.add(fallback);
+      loadGltf(url).then((root) => {
+        if (!root || anchors.get(key)?.group !== g || token !== loadToken) return;
+        g.remove(fallback);
+        if (tint) root.traverse((m) => { if (m.isMesh && m.material && m.material.color) { m.material = m.material.clone(); m.material.color.set(tint); } });
+        g.add(root);
         needsRender = true;
       });
+    };
+    if (t === "decor") {
+      const url = o.prop === "parked" ? "/asset/models/traffic/sedan.glb" : `/asset/scenery/${o.prop}.glb`;
+      attach(url, fallbackBox(0xb9b4ab, [2, 2, 2]), o.tint);
+    } else if (t === "actor") {
+      const ped = o.type === "pedestrian" || o.type === "cyclist";
+      attach(`/asset/scene/${o.asset}`, fallbackBox(TYPE_COLOUR[o.type] || 0x888888, ped ? [0.6, 1.7, 0.6] : [1.9, 1.4, 4.2]));
+    } else if (t === "light") {
+      const pole = fallbackBox(0x3a3f47, [0.3, 3.4, 0.3]);
+      if (o.asset) attach(`/asset/scene/${o.asset}`, pole); else g.add(pole);
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 8), basic(lampColour(o.state)));
+      lamp.position.set(0, 4.4, 0);
+      g.add(lamp);
+    } else if (t === "player") {
+      g.add(playerCar());
+    } else if (t === "stop") {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.04, 0.45), mat(0xf2f4f8));
+      bar.position.y = 0.07;
+      g.add(bar);
     }
-
-    for (const a of model.actors) {
-      const ag = anchorFor("actor", a);
-      ag.position.set(a.pos[0], 0, a.pos[1]);
-      ag.rotation.y = a.yaw;
-      ag.scale.set(a.scale[0], a.scale[1], a.scale[2]);
-      g.add(ag);
-      const colour = TYPE_COLOUR[a.type] || 0x888888;
-      const fallback = box(colour, [a.type === "pedestrian" ? 0.6 : 1.9, a.type === "pedestrian" ? 1.7 : 1.4, a.type === "pedestrian" ? 0.6 : 4.2]);
-      ag.add(fallback);
-      loadGltf(`/asset/scene/${a.asset}`).then((root) => {
-        if (!root || groups.anchors !== g) return;
-        ag.remove(fallback);
-        ag.add(root);
-        needsRender = true;
-      });
-      labels.push({ text: a.name || a.type, colour: 0x1d2430, world: [a.pos[0], 3.2, a.pos[1]], cls: "actor", anchor: { kind: "actor", id: a.id } });
-    }
+    return g;
   }
 
   function lampColour(state) {
     return { red: 0xff3b30, yellow: 0xffcc00, green: 0x34c759, flashing_yellow: 0xffcc00 }[state] || 0x555555;
   }
 
-  function rebuildHandles() {
-    if (handlesObj) { scene.remove(handlesObj); handlesObj.geometry.dispose(); handlesObj = null; }
-    if (!model || !sel) return;
-    const pts = [];
-    const selPoints = pointsOf(sel);
-    selPoints.forEach((p) => pts.push(p[0], 0.4, p[1]));
-    if (!pts.length) return;
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
-    if (!circleTex) circleTex = circleTexture();
-    const m = new THREE.Points(g, new THREE.PointsMaterial({ size: 11, sizeAttenuation: false, map: circleTex, transparent: true, alphaTest: 0.3, color: 0xffffff }));
-    m.renderOrder = 10;
-    handlesObj = m;
-    scene.add(m);
+  function placeAnchor(g, t, o) {
+    if (t === "stop" || t === "player") {
+      g.position.set(model.stop.x, 0, model.stop.z);
+      g.rotation.y = model.stop.yaw || 0;
+      return;
+    }
+    g.position.set(o.pos[0], 0, o.pos[1]);
+    g.rotation.y = o.yaw || 0;
+    if (t === "light") g.scale.setScalar(o.scale || 1);
+    else if (o.scale) g.scale.set(o.scale[0], o.scale[1], o.scale[2]);
   }
 
-  // The points of the selected object (route, road or lawn ring, a marking's line), as [x, z].
-  function pointsOf(s) {
-    if (!model || !s) return [];
-    if (s.t === "route") {
-      const r = model.routes.find((x) => x.id === s.id);
-      return r ? displayPoints(r) : [];
+  function syncAnchors() {
+    if (!groups.anchors) groups.anchors = new THREE.Group(), scene.add(groups.anchors);
+    const want = new Map();
+    if (model) {
+      want.set("player:", ["player", model.stop]);
+      want.set("stop:", ["stop", model.stop]);
+      for (const d of model.decor) want.set(`decor:${d.id}`, ["decor", d]);
+      for (const a of model.actors) want.set(`actor:${a.id}`, ["actor", a]);
+      for (const l of model.lights) want.set(`light:${l.id}`, ["light", l]);
     }
-    if (s.t === "road") {
-      const r = model.roads[s.i];
-      if (!r) return [];
-      return s.part === -1 ? r.outer : (r.holes[s.part] || []);
+    for (const [key, entry] of anchors) {
+      const w = want.get(key);
+      if (!w || anchorSig(w[0], w[1]) !== entry.sig) {
+        groups.anchors.remove(entry.group);
+        anchors.delete(key);
+      }
     }
-    if (s.t === "lawn") {
-      const l = (model.lawns || [])[s.i];
-      if (!l) return [];
-      return s.part === -1 ? l.outer : (l.holes[s.part] || []);
+    for (const [key, [t, o]] of want) {
+      let entry = anchors.get(key);
+      if (!entry) {
+        entry = { group: makeAnchor(t, o, key), sig: anchorSig(t, o), t };
+        anchors.set(key, entry);
+        groups.anchors.add(entry.group);
+      }
+      if (!(simMode && (t === "player" || t === "actor"))) placeAnchor(entry.group, t, o);
+      const layer = t === "decor" ? "decor" : t === "light" ? "lights" : "actors";
+      entry.group.visible = !hidden.has(layer);
     }
-    if (s.t === "marking") {
-      const m = (model.markings || []).find((x) => x.id === s.id);
-      return m && m.points ? m.points : [];
+    dropLabels("anchor");
+    if (!model) return;
+    for (const a of model.actors) {
+      if (!a.name || hidden.has("actors")) continue;
+      labels.push({ text: a.name, cls: "anchor actor", world: [a.pos[0], 3.4, a.pos[1]], ref: { t: "actor", id: a.id }, follow: `actor:${a.id}` });
     }
-    return [];
   }
 
-  // ---- public ------------------------------------------------------------------------
+  // Moves an object's model without touching the data (the test drive).
+  function setPose(key, x, z, yaw) {
+    const e = anchors.get(key);
+    if (!e) return;
+    e.group.position.set(x, 0, z);
+    e.group.rotation.y = yaw;
+    needsRender = true;
+  }
 
+  // ---- the road plan: streets and their nodes --------------------------------------------
+  function rebuildPlan() {
+    const g = setGroup("plan");
+    if (!model || !model.layout || simMode) return;
+    const L = model.layout;
+    const crop = model.crop || 90;
+    const selStreets = new Set(sel.filter((s) => s.t === "street").map((s) => s.id));
+    const selNodes = new Set(sel.filter((s) => s.t === "node").map((s) => s.id));
+    for (const st of L.streets) {
+      const pts = Layout.centreline(L, st);
+      const on = selStreets.has(st.id), hov = hover && hover.t === "street" && hover.id === st.id;
+      if (on || hov) {
+        const w = Layout.widthOf(st);
+        const outline = [...Layout.offsetRight(pts, -w / 2), ...Layout.offsetRight(pts, w / 2).reverse()];
+        outline.push(outline[0]);
+        g.add(polyline(outline, 0.16, on ? ACCENT : HOVER, on ? 3 : 2));
+      }
+      if (planHandles || on) g.add(polyline(pts, 0.15, on ? ACCENT : 0xffffff, 1.5, on ? 1 : 0.55, !on));
+      if (on) {
+        const mid = Layout.along(pts, Layout.polyLen(pts) / 2).p;
+        g.add(handle(mid, "diamond", 0xffffff, ACCENT));
+      }
+    }
+    if (!planHandles && !selNodes.size && !selStreets.size) return;
+    for (const n of L.nodes) {
+      const kind = Layout.nodeKind(L, n, crop);
+      const on = selNodes.has(n.id);
+      if (!planHandles && !on && !L.streets.some((s) => selStreets.has(s.id) && (s.a === n.id || s.b === n.id))) continue;
+      g.add(handle([n.x, n.z], kind === "border" ? "square" : "circle", on ? ACCENT : 0xffffff, ACCENT, kind === "junction" || kind === "ring" ? 1.25 : 1));
+    }
+  }
+
+  // A handle drawn the same size on screen at any zoom (rescaled in the render loop).
+  function handle(p, shape, fill, stroke, size = 1) {
+    const g = new THREE.Group();
+    const geo = shape === "square" ? new THREE.PlaneGeometry(1.6, 1.6) : shape === "diamond" ? new THREE.PlaneGeometry(1.4, 1.4) : new THREE.CircleGeometry(0.9, 24);
+    const ring = shape === "square" ? new THREE.PlaneGeometry(2.1, 2.1) : shape === "diamond" ? new THREE.PlaneGeometry(1.9, 1.9) : new THREE.CircleGeometry(1.2, 24);
+    const a = new THREE.Mesh(ring, basic(stroke, { depthTest: false }));
+    const b = new THREE.Mesh(geo, basic(fill, { depthTest: false }));
+    for (const m of [a, b]) { m.rotation.x = -Math.PI / 2; m.renderOrder = 20; m.userData.own = true; }
+    if (shape === "diamond") { a.rotation.z = b.rotation.z = Math.PI / 4; }
+    b.position.y = 0.01;
+    g.add(a, b);
+    g.position.set(p[0], 0.4, p[1]);
+    g.userData.screenSize = size;
+    handles.push(g);
+    return g;
+  }
+  let handles = [];
+
+  // ---- selection: outlines, points, the turn handle -------------------------------------
+  function footprintOf(ref) {
+    if (!model) return null;
+    if (ref.t === "decor") {
+      const d = model.decor.find((x) => x.id === ref.id);
+      if (!d) return null;
+      const size = (App.catalogSize(d.prop) || [2, 2, 2]);
+      return { x: d.pos[0], z: d.pos[1], yaw: d.yaw || 0, hx: size[0] * d.scale[0] / 2, hz: size[2] * d.scale[2] / 2 };
+    }
+    if (ref.t === "actor") {
+      const a = model.actors.find((x) => x.id === ref.id);
+      if (!a) return null;
+      const ped = a.type === "pedestrian" || a.type === "cyclist";
+      return { x: a.pos[0], z: a.pos[1], yaw: a.yaw || 0, hx: ped ? 0.6 : (a.halfWidth || 0.9) + 0.2, hz: ped ? 0.6 : (a.halfLength || 2.1) + 0.2 };
+    }
+    if (ref.t === "light") {
+      const l = model.lights.find((x) => x.id === ref.id);
+      return l ? { x: l.pos[0], z: l.pos[1], yaw: l.yaw || 0, hx: 0.9, hz: 0.9 } : null;
+    }
+    if (ref.t === "player" || ref.t === "stop") return { x: model.stop.x, z: model.stop.z, yaw: model.stop.yaw || 0, hx: 1.2, hz: 2.4 };
+    return null;
+  }
+
+  function rect(f, pad) {
+    const c = Math.cos(f.yaw), s = Math.sin(f.yaw);
+    const corner = (u, v) => [f.x + u * c + v * s, f.z - u * s + v * c];
+    const hx = f.hx + pad, hz = f.hz + pad;
+    return [corner(-hx, -hz), corner(hx, -hz), corner(hx, hz), corner(-hx, hz), corner(-hx, -hz)];
+  }
+
+  let turnHandle = null;
+  function rebuildSelection() {
+    const g = setGroup("selection");
+    turnHandle = null;
+    if (!model || simMode) return;
+    const draw = (ref, colour, px) => {
+      const f = footprintOf(ref);
+      if (f) { g.add(polyline(rect(f, 0.35), 0.2, colour, px)); return f; }
+      const pts = App.pointsOfRef(ref);
+      if (pts && pts.length > 1) {
+        const closed = ref.t === "road" || ref.t === "lawn" || (ref.t === "marking" && App.isPaint(ref));
+        g.add(polyline(closed ? [...pts, pts[0]] : pts, 0.2, colour, px));
+      }
+      return null;
+    };
+    if (hover && !isSel(hover)) draw(hover, HOVER, 2);
+    let one = null;
+    for (const ref of sel) one = draw(ref, ACCENT, 2.5) || one;
+    // One object with a heading: a handle in front of it turns it.
+    if (sel.length === 1 && one && sel[0].t !== "stop") {
+      const reach = one.hz + 2.4;
+      const p = [one.x + Math.sin(one.yaw) * reach, one.z + Math.cos(one.yaw) * reach];
+      g.add(polyline([[one.x + Math.sin(one.yaw) * (one.hz + 0.35), one.z + Math.cos(one.yaw) * (one.hz + 0.35)], p], 0.2, ACCENT, 2));
+      g.add(handle(p, "circle", 0xffffff, ACCENT, 1.1));
+      turnHandle = { x: p[0], z: p[1], cx: one.x, cz: one.z };
+    }
+    // The points of a drawn shape or route, when it is the one selected.
+    if (sel.length === 1 && ["route", "road", "lawn", "marking"].includes(sel[0].t)) {
+      const pts = App.pointsOfRef(sel[0]);
+      if (pts && !(sel[0].t === "marking" && App.isPaint(sel[0]))) {
+        pts.forEach((p, i) => g.add(handle(p, "circle", i === sel[0].v ? ACCENT : 0xffffff, ACCENT, 0.8)));
+      }
+    }
+  }
+
+  // ---- draft (a road or a line being drawn) and ghost (an object being placed) -----------
+  function rebuildDraft() {
+    const g = setGroup("draft");
+    if (!draft) return;
+    const pts = draft.cursor ? [...draft.points, draft.cursor] : draft.points;
+    if (draft.kind === "road" && pts.length >= 2) {
+      const w = draft.width || 8.4;
+      const ribbon = [...Layout.offsetRight(pts, -w / 2), ...Layout.offsetRight(pts, w / 2).reverse()];
+      const shape = new THREE.Shape(ribbon.map((p) => new THREE.Vector2(p[0], p[1])));
+      const geo = new THREE.ShapeGeometry(shape);
+      geo.rotateX(Math.PI / 2);
+      const m = new THREE.Mesh(geo, basic(ACCENT, { transparent: true, opacity: 0.35, depthWrite: false }));
+      m.position.y = 0.25;
+      m.userData.own = true;
+      g.add(m);
+      g.add(polyline(pts, 0.3, ACCENT, 2, 1, true));
+    } else if (pts.length >= 2) {
+      g.add(polyline(draft.closed ? [...pts, pts[0]] : pts, 0.3, draft.colour || ACCENT, 2.5, 1, !draft.bare));
+    }
+    if (!draft.bare) for (const p of draft.points) g.add(handle(p, "circle", 0xffffff, ACCENT, 0.7));
+    if (draft.snap) g.add(handle(draft.snap, draft.snapKind === "port" ? "square" : "circle", ACCENT, 0xffffff, 1.2));
+  }
+
+  let ghostObj = null, ghostKey = "";
+  function setGhost(gh) {
+    const key = gh ? `${gh.url}|${gh.tint}` : "";
+    if (key !== ghostKey) {
+      if (ghostObj) { scene.remove(ghostObj); ghostObj = null; }
+      ghostKey = key;
+      if (gh) {
+        const g = new THREE.Group();
+        const body = new THREE.MeshLambertMaterial({ color: ACCENT, transparent: true, opacity: 0.5, depthWrite: false });
+        const box = new THREE.Mesh(new THREE.BoxGeometry(gh.half[1] * 2, 1, gh.half[0] * 2), body);
+        box.position.y = 0.5;
+        g.add(box);
+        if (gh.url) {
+          loadGltf(gh.url).then((root) => {
+            if (!root || ghostObj !== g) return;
+            g.remove(box);
+            root.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.6; o.material.depthWrite = false; } });
+            g.add(root);
+            needsRender = true;
+          });
+        }
+        const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.4, 12), basic(ACCENT, { transparent: true, opacity: 0.8 }));
+        arrow.rotation.x = Math.PI / 2;
+        arrow.position.set(0, 0.3, gh.half[0] + 1.4);
+        g.add(arrow);
+        scene.add(g);
+        ghostObj = g;
+      }
+    }
+    if (ghostObj && gh) {
+      ghostObj.position.set(gh.x, 0, gh.z);
+      ghostObj.rotation.y = gh.yaw || 0;
+      ghostObj.scale.setScalar(gh.scale || 1);
+    }
+    needsRender = true;
+  }
+
+  // ---- labels (HTML over the view) -----------------------------------------------------
+  function dropLabels(cls) {
+    labels = labels.filter((l) => {
+      if (!l.cls.startsWith(cls)) return true;
+      if (l.el) l.el.remove();
+      return false;
+    });
+  }
+  function placeLabels() {
+    if (!labelsEl) return;
+    const placed = [];
+    for (const l of labels) {
+      if (!l.el) {
+        l.el = document.createElement("div");
+        l.el.className = "tag " + l.cls;
+        l.el.textContent = l.text;
+        if (l.colour) l.el.style.setProperty("--c", "#" + new THREE.Color(l.colour).getHexString());
+        labelsEl.appendChild(l.el);
+      }
+      const at = l.follow && anchors.get(l.follow) ? anchors.get(l.follow).group.position : null;
+      tmp.set(at ? at.x : l.world[0], l.world[1], at ? at.z : l.world[2]).project(camera);
+      const x = (tmp.x + 1) / 2 * width, y = (1 - tmp.y) / 2 * height;
+      const w = l.text.length * 7 + 16, h = 22;
+      const box = { x0: x - w / 2, y0: y - h, x1: x + w / 2, y1: y };
+      const clash = placed.some((b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0);
+      const visible = tmp.z < 1 && x > -40 && x < width + 40 && y > -20 && y < height + 20 && !clash && (mode === "3d" || pxPerM > 1.6 || l.cls === "letter");
+      if (visible) placed.push(box);
+      l.el.style.display = visible ? "" : "none";
+      l.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      l.el.classList.toggle("sel", !!(l.ref && isSel(l.ref)));
+    }
+  }
+  function clearLabels() {
+    labels.forEach((l) => l.el && l.el.remove());
+    labels = [];
+  }
+
+  // ---- camera ---------------------------------------------------------------------------
+  let planCam, perspCam;
   function mount(el) {
     container = el;
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: false });
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     renderer.setClearColor(0xe6ebdf, 1);
     el.appendChild(renderer.domElement);
@@ -593,10 +702,12 @@ const Scene3D = (() => {
     scene.add(sun);
     ground = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), mat(GROUND));
     ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.15;   // the world's lawn (game_godot/scripts/world.gd), under the junction's own lawn
+    ground.position.y = -0.15;
     scene.add(ground);
     rebuildGround();
-    camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 5000);
+    planCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 5000);
+    perspCam = new THREE.PerspectiveCamera(40, 1, 0.5, 5000);
+    camera = perspCam;
     resize();
     new ResizeObserver(resize).observe(el);
     bindPointer();
@@ -610,244 +721,299 @@ const Scene3D = (() => {
     renderer.setSize(width, height);
     lineMaterials.forEach((m) => m.resolution.set(width, height));
     applyCamera();
-    needsRender = true;
   }
 
   function applyCamera() {
+    if (follow) {
+      target.set(follow.x, 0, follow.z);
+      orbitYaw = follow.yaw + Math.PI;
+      if (follow.dist) orbitDist = follow.dist;
+      if (follow.pitch) orbitPitch = follow.pitch;
+      if (mode !== "3d") mode = "3d";
+    }
     if (mode === "plan") {
+      camera = planCam;
       const hw = width / 2 / pxPerM, hh = height / 2 / pxPerM;
-      camera = camera.isOrthographicCamera ? camera : new THREE.OrthographicCamera();
-      camera.left = -hw; camera.right = hw; camera.top = hh; camera.bottom = -hh;
-      camera.near = 0.1; camera.far = 5000;
+      Object.assign(camera, { left: -hw, right: hw, top: hh, bottom: -hh });
       camera.updateProjectionMatrix();
       camera.position.set(target.x, 1000, target.z);
       camera.up.set(0, 0, 1);
       camera.lookAt(target.x, 0, target.z);
     } else {
-      if (!camera.isPerspectiveCamera) camera = new THREE.PerspectiveCamera(40, width / height, 0.5, 5000);
+      camera = perspCam;
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       const cp = Math.cos(orbitPitch), sp = Math.sin(orbitPitch);
-      camera.position.set(target.x + Math.sin(orbitYaw) * cp * orbitDist, sp * orbitDist, target.z + Math.cos(orbitYaw) * cp * orbitDist);
+      camera.position.set(target.x + Math.sin(orbitYaw) * cp * orbitDist, sp * orbitDist + (follow ? 1.5 : 0), target.z + Math.cos(orbitYaw) * cp * orbitDist);
       camera.up.set(0, 1, 0);
-      camera.lookAt(target.x, 0, target.z);
+      camera.lookAt(target.x, follow ? 1.5 : 0, target.z);
     }
     camera.updateMatrixWorld();
-    updateGizmo();
     needsRender = true;
+    emit("camera", { mode, pxPerM });
+  }
+
+  // Metres per screen pixel at a point of the ground.
+  function worldPerPixel(x, z) {
+    if (mode === "plan") return 1 / pxPerM;
+    const d = camera.position.distanceTo(new THREE.Vector3(x, 0, z));
+    return (2 * d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) / height;
   }
 
   function loop() {
     requestAnimationFrame(loop);
+    emit("frame", performance.now());
     if (!needsRender) return;
     needsRender = false;
-    frame++;
+    for (const h of handles) {
+      if (!h.parent) continue;
+      const k = worldPerPixel(h.position.x, h.position.z) * 7 * h.userData.screenSize;
+      h.scale.set(k, 1, k);
+    }
+    handles = handles.filter((h) => h.parent);
     renderer.render(scene, camera);
     placeLabels();
   }
 
-  // Labels keep apart: the selected object, then the stop, participants and lights, then the
-  // route names; a label that would sit on another one is hidden (its object stays visible).
-  const LABEL_PRIORITY = { stop: 0, actor: 1, light: 2, route: 3 };
-  function placeLabels() {
-    if (!labelsEl) return;
-    const show = mode === "plan" ? pxPerM >= 1.2 : true;
-    const placed = [];
-    const isSel = (l) => !!(sel && l.anchor && sel.t === l.anchor.kind && sel.id === l.anchor.id);
-    const order = labels.slice().sort((a, b) => (isSel(b) - isSel(a)) || ((LABEL_PRIORITY[a.cls] ?? 9) - (LABEL_PRIORITY[b.cls] ?? 9)));
-    order.forEach((l) => {
-      if (!l.el) {
-        l.el = document.createElement("div");
-        l.el.className = "tag " + (l.cls || "");
-        l.el.textContent = l.text;
-        l.el.style.setProperty("--c", "#" + new THREE.Color(l.colour || 0x1d2430).getHexString());
-        labelsEl.appendChild(l.el);
-      }
-      tmp.set(l.world[0], l.world[1], l.world[2]).project(camera);
-      const x = (tmp.x + 1) / 2 * width, y = (1 - tmp.y) / 2 * height;
-      const w = l.text.length * 6.6 + 14, h = 19;
-      const box = { x0: x + 6, y0: y - h / 2 - 8, x1: x + 6 + w, y1: y + h / 2 - 8 };
-      const clash = placed.some((b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0);
-      const inside = x > -40 && x < width + 40 && y > -20 && y < height + 20;
-      const visible = show && tmp.z < 1 && inside && (isSel(l) || !clash);
-      if (visible) placed.push(box);
-      l.el.style.display = visible ? "" : "none";
-      l.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
-      l.el.classList.toggle("sel", isSel(l));
-    });
-  }
-
-  function clearLabels() {
-    labels.forEach((l) => l.el && l.el.remove());
-    labels = [];
-  }
-
+  // ---- public: content -------------------------------------------------------------------
   function load(S, B) {
     loadToken++;
     model = S; build = B;
+    for (const [, e] of anchors) groups.anchors.remove(e.group);
+    anchors.clear();
+    sel = []; hover = null; draft = null;
     clearLabels();
     rebuildStatic();
     rebuildRoads();
-    rebuildRoutes();
-    rebuildAnchors();
-    rebuildHandles();
-    if (!S) return;
+    refresh(S);
     fit();
   }
-
   function refresh(S) {
     if (S) model = S;
-    clearLabels();
+    if (!model) return;
+    syncAnchors();
     rebuildRoutes();
-    rebuildAnchors();
-    rebuildHandles();
+    rebuildPlan();
+    rebuildSelection();
     needsRender = true;
   }
-
   function setBuild(B) {
     build = B;
     rebuildRoads();
     needsRender = true;
   }
-
-  function setSelection(s) {
-    sel = s;
+  function setSelection(list) {
+    sel = list || [];
     rebuildRoutes();
-    rebuildHandles();
-    labels.forEach((l) => { if (l.el) l.el.classList.toggle("sel", !!(sel && l.anchor && sel.t === l.anchor.kind && sel.id === l.anchor.id)); });
+    rebuildPlan();
+    rebuildSelection();
     needsRender = true;
   }
-
+  function setHover(ref) {
+    if (keyOf(ref) === keyOf(hover)) return;
+    hover = ref;
+    rebuildRoutes();
+    rebuildPlan();
+    rebuildSelection();
+    needsRender = true;
+  }
   function setDraft(d) {
     draft = d;
-    rebuildRoutes();
+    rebuildDraft();
     needsRender = true;
   }
+  function setHidden(set) {
+    hidden = new Set(set);
+    for (const [name, g] of Object.entries(groups)) if (GROUP_LAYER[name]) g.visible = !hidden.has(GROUP_LAYER[name]);
+    refresh();
+  }
+  function setPlanHandles(on) {
+    planHandles = !!on;
+    rebuildPlan();
+    needsRender = true;
+  }
+  function setSimMode(on) {
+    simMode = !!on;
+    if (!on) follow = null;
+    refresh();
+    applyCamera();
+  }
+  function setFollow(f) {
+    follow = f;
+    applyCamera();
+  }
+  // The camera as it is, to come back to (after the test drive).
+  const getView = () => ({ mode, pxPerM, orbitYaw, orbitPitch, orbitDist, x: target.x, z: target.z });
+  function setView(v) {
+    ({ mode, pxPerM, orbitYaw, orbitPitch, orbitDist } = v);
+    target.set(v.x, 0, v.z);
+    applyCamera();
+  }
 
+  // ---- public: camera ----------------------------------------------------------------------
   function setMode(m) {
     mode = m;
     applyCamera();
-    emit("mode", m);
   }
-
-  // Centres the plan on a point (metres) without changing the zoom.
+  // Shows the box [x0, z0, x1, z1] (the whole scene by default).
+  function fit(box) {
+    const crop = (model && model.crop) || 90;
+    const b = box || [-crop, -crop, crop, crop];
+    const cx = (b[0] + b[2]) / 2, cz = (b[1] + b[3]) / 2, span = Math.max(b[2] - b[0], b[3] - b[1], 12);
+    target.set(cx, 0, cz);
+    pxPerM = Math.min(width, height) / (span * 1.08);
+    orbitDist = span * 1.25 + 20;
+    if (!box) { orbitYaw = Math.PI; orbitPitch = 0.95; }
+    applyCamera();
+  }
   function focus(x, z) {
     target.set(x, 0, z);
     applyCamera();
-    emit("zoom", pxPerM);
   }
-
-  function fit() {
-    target.set(0, 0, 0);
-    pxPerM = Math.min(width, height) / 190;
-    orbitDist = 260;
-    applyCamera();
-    emit("zoom", pxPerM);
-  }
-
   function zoomBy(f, at) {
-    if (mode === "plan") {
-      const before = at ? worldAt(at.x, at.y) : null;
-      pxPerM = Math.max(0.8, Math.min(60, pxPerM * f));
-      applyCamera();
-      if (before && at) {
-        const after = worldAt(at.x, at.y);
-        target.x += before.x - after.x;
-        target.z += before.z - after.z;
-        applyCamera();
-      }
-    } else {
-      orbitDist = Math.max(40, Math.min(900, orbitDist / f));
-      applyCamera();
+    const before = at ? worldAt(at.x, at.y) : null;
+    if (mode === "plan") pxPerM = Math.max(0.8, Math.min(80, pxPerM * f));
+    else orbitDist = Math.max(8, Math.min(900, orbitDist / f));
+    applyCamera();
+    if (before) {
+      const after = worldAt(at.x, at.y);
+      if (after) { target.x += before.x - after.x; target.z += before.z - after.z; applyCamera(); }
     }
-    emit("zoom", pxPerM);
+  }
+  function panBy(dx, dy) {
+    const w0 = worldAt(width / 2, height / 2), w1 = worldAt(width / 2 + dx, height / 2 + dy);
+    if (!w0 || !w1) return;
+    target.x -= w1.x - w0.x;
+    target.z -= w1.z - w0.z;
+    applyCamera();
   }
 
-  // World (x, z) at a screen point (plan mode and the ground plane in 3D).
   function worldAt(sx, sy) {
     const ndc = new THREE.Vector2((sx / width) * 2 - 1, -(sy / height) * 2 + 1);
     const ray = new THREE.Raycaster();
     ray.setFromCamera(ndc, camera);
     const hit = new THREE.Vector3();
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    if (!ray.ray.intersectPlane(plane, hit)) return null;
+    if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit)) return null;
     return { x: hit.x, z: hit.z };
   }
-
   function screenOf(x, z, y = 0) {
     tmp.set(x, y, z).project(camera);
     return { x: (tmp.x + 1) / 2 * width, y: (1 - tmp.y) / 2 * height };
   }
 
-  // What is under the pointer, in order of priority: the selected object's handles, anchors
-  // (stop, lights, participants, props), route and outline lines, the inside of a road.
-  function hitAt(sx, sy) {
+  // ---- picking -----------------------------------------------------------------------------
+  // What is under the pointer: the turn handle, points of the selection, plan handles, the models
+  // (by their meshes), routes, then the ground: markings, streets, roads and lawns.
+  function hitAt(sx, sy, skip = () => false) {
     if (!model) return null;
-    const handle = gizmoHit(sx, sy);
-    if (handle) return handle;
-    let best = null, bd = 10;
-    for (const p of pointsOf(sel)) {
-      const s = screenOf(p[0], p[1], 0.4);
-      const d = Math.hypot(s.x - sx, s.y - sy);
-      if (d < bd) { bd = d; best = { kind: "vertex", owner: { ...sel }, index: pointsOf(sel).indexOf(p) }; }
+    const near = (p, r = 12, y = 0.4) => { const s = screenOf(p[0], p[1], y); return Math.hypot(s.x - sx, s.y - sy) < r; };
+    if (turnHandle && near([turnHandle.x, turnHandle.z], 14)) return { t: "turn", ...sel[0] };
+    if (sel.length === 1 && ["route", "road", "lawn", "marking"].includes(sel[0].t)) {
+      const pts = App.pointsOfRef(sel[0]) || [];
+      for (let i = 0; i < pts.length; i++) if (near(pts[i], 10)) return { ...sel[0], v: i, point: true };
     }
-    if (best) return best;
-    const anchors = [{ kind: "stop", id: "stop", x: model.stop.x, z: model.stop.z }];
-    model.lights.forEach((l) => anchors.push({ kind: "light", id: l.id, x: l.pos[0], z: l.pos[1] }));
-    model.actors.forEach((a) => anchors.push({ kind: "actor", id: a.id, x: a.pos[0], z: a.pos[1] }));
-    model.decor.forEach((d) => anchors.push({ kind: "decor", id: d.id, x: d.pos[0], z: d.pos[1] }));
-    bd = 16;
-    for (const a of anchors) {
-      const s = screenOf(a.x, a.z, 0.5);
-      const d = Math.hypot(s.x - sx, s.y - sy) - (a.kind === "decor" ? 4 : 0);
-      if (d < bd) { bd = d; best = { kind: "anchor", t: a.kind, id: a.id }; }
-    }
-    if (best) return best;
-    const lines = [];
-    model.routes.forEach((r) => lines.push({ kind: "route", id: r.id, points: displayPoints(r) }));
-    model.roads.forEach((r, i) => {
-      lines.push({ kind: "road", i, part: -1, points: r.outer });
-      r.holes.forEach((h, k) => lines.push({ kind: "road", i, part: k, points: h }));
-    });
-    (model.lawns || []).forEach((l, i) => {
-      lines.push({ kind: "lawn", i, part: -1, points: l.outer });
-      l.holes.forEach((h, k) => lines.push({ kind: "lawn", i, part: k, points: h }));
-    });
-    (model.markings || []).forEach((m) => { if (m.points) lines.push({ kind: "marking", id: m.id, points: m.points }); });
-    bd = 7;
-    for (const l of lines) {
-      for (let k = 0; k + 1 < l.points.length; k++) {
-        const a = screenOf(l.points[k][0], l.points[k][1]), b = screenOf(l.points[k + 1][0], l.points[k + 1][1]);
-        const d = segDist(sx, sy, a, b);
-        if (d < bd) {
-          bd = d;
-          if (l.kind === "route") best = { kind: "route", id: l.id, seg: k };
-          else if (l.kind === "marking") best = { kind: "marking", id: l.id, seg: k };
-          else best = { kind: l.kind, i: l.i, part: l.part, seg: k };
+    const L = model.layout;
+    if (L && !skip({ t: "street" })) {
+      const selStreet = sel.find((s) => s.t === "street");
+      if (selStreet) {
+        const st = Layout.streetOf(L, selStreet.id);
+        if (st) {
+          const pts = Layout.centreline(L, st);
+          if (near(Layout.along(pts, Layout.polyLen(pts) / 2).p, 12)) return { t: "bend", id: st.id };
         }
       }
+      if (planHandles || sel.some((s) => s.t === "street" || s.t === "node")) {
+        for (const n of L.nodes) if (near([n.x, n.z], 11)) return { t: "node", id: n.id };
+      }
+    }
+    // Models: a ray against their meshes (a building is picked by its roof as well as its foot).
+    const ndc = new THREE.Vector2((sx / width) * 2 - 1, -(sy / height) * 2 + 1);
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(ndc, camera);
+    if (groups.anchors) {
+      const hits = ray.intersectObjects(groups.anchors.children.filter((g) => g.visible), true);
+      for (const h of hits) {
+        let o = h.object;
+        while (o && !o.userData.ref) o = o.parent;
+        if (o && !skip(o.userData.ref)) return o.userData.ref.t === "player" ? { t: "stop" } : { ...o.userData.ref };
+      }
+    }
+    // Small things seen from far away: the nearest anchor point within a few pixels.
+    let best = null, bd = 10;
+    const anchorsList = [];
+    model.actors.forEach((a) => anchorsList.push([{ t: "actor", id: a.id }, a.pos, "actors"]));
+    model.lights.forEach((l) => anchorsList.push([{ t: "light", id: l.id }, l.pos, "lights"]));
+    model.decor.forEach((d) => anchorsList.push([{ t: "decor", id: d.id }, d.pos, "decor"]));
+    for (const [ref, p, layer] of anchorsList) {
+      if (hidden.has(layer) || skip(ref)) continue;
+      const s = screenOf(p[0], p[1], 0.5), d = Math.hypot(s.x - sx, s.y - sy);
+      if (d < bd) { bd = d; best = ref; }
     }
     if (best) return best;
     const w = worldAt(sx, sy);
-    if (w) {
-      for (let i = (model.lawns || []).length - 1; i >= 0; i--) {
-        const l = model.lawns[i];
-        if (inside(w, l.outer) && !l.holes.some((h) => inside(w, h))) return { kind: "lawn", i, part: -1 };
+    const wpp = w ? worldPerPixel(w.x, w.z) : 0.2;
+    const lineHit = (pts, tol) => {
+      if (!w) return false;
+      for (let k = 0; k + 1 < pts.length; k++) if (segDist(w, pts[k], pts[k + 1]) < tol) return true;
+      return false;
+    };
+    if (!hidden.has("routes")) {
+      for (const r of model.routes) {
+        const ref = { t: "route", id: r.id };
+        if (!skip(ref) && lineHit(smooth(r.points), wpp * 8)) return ref;
       }
-      for (let i = model.roads.length - 1; i >= 0; i--) {
-        const r = model.roads[i];
-        if (inside(w, r.outer) && !r.holes.some((h) => inside(w, h))) return { kind: "road", i, part: -1 };
+    }
+    if (!w) return null;
+    if (!hidden.has("marks")) {
+      for (const m of model.markings || []) {
+        if (m.auto) continue;
+        const ref = { t: "marking", id: m.id };
+        if (skip(ref)) continue;
+        if (m.points && lineHit(m.points, Math.max(wpp * 6, (m.type === "zebra" ? (m.length || 4) / 2 : 0.4)))) return ref;
       }
+    }
+    if (hidden.has("roads")) return null;
+    if (L) {
+      let bestSt = null, bestD = Infinity;
+      for (const st of L.streets) {
+        const pts = Layout.centreline(L, st);
+        for (let k = 0; k + 1 < pts.length; k++) {
+          const d = segDist(w, pts[k], pts[k + 1]);
+          if (d < Layout.widthOf(st) / 2 + 0.5 && d < bestD) { bestD = d; bestSt = st; }
+        }
+      }
+      if (bestSt && !skip({ t: "street", id: bestSt.id })) return { t: "street", id: bestSt.id };
+      for (const n of L.nodes) {
+        if (n.ring && Math.hypot(w.x - n.x, w.z - n.z) < n.ring.r && !skip({ t: "node", id: n.id })) return { t: "node", id: n.id };
+      }
+    }
+    for (const l of model.lawns || []) {
+      if (l.auto) continue;
+      const ref = { t: "lawn", id: l.id };
+      if (!skip(ref) && inside(w, l.outer)) return ref;
+    }
+    for (const r of model.roads) {
+      if (r.auto) continue;
+      for (let k = 0; k < (r.holes || []).length; k++) {
+        const ref = { t: "road", id: r.id, part: k };
+        if (!skip(ref) && inside(w, r.holes[k])) return ref;
+      }
+      const ref = { t: "road", id: r.id, part: -1 };
+      if (!skip(ref) && inside(w, r.outer)) return ref;
+    }
+    for (const m of model.markings || []) {
+      if (m.auto || m.points) continue;
+      const ref = { t: "marking", id: m.id };
+      if (!skip(ref) && (m.polygons || []).some((p) => inside(w, p.outer))) return ref;
     }
     return null;
   }
 
-  function segDist(px, py, a, b) {
-    const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy || 1;
-    const t = Math.max(0, Math.min(1, ((px - a.x) * dx + (py - a.y) * dy) / l2));
-    return Math.hypot(px - (a.x + t * dx), py - (a.y + t * dy));
+  function segDist(p, a, b) {
+    const dx = b[0] - a[0], dz = b[1] - a[1], l2 = dx * dx + dz * dz || 1;
+    const t = Math.max(0, Math.min(1, ((p.x - a[0]) * dx + (p.z - a[1]) * dz) / l2));
+    return Math.hypot(p.x - (a[0] + t * dx), p.z - (a[1] + t * dz));
   }
-
   function inside(p, poly) {
     let c = false;
     for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -857,265 +1023,115 @@ const Scene3D = (() => {
     return c;
   }
 
-  // ---- gizmo: the handles of the selected object -------------------------------------
-  // Move (W): an arrow per ground axis and a square in the middle for both. Turn (E): a ring round the
-  // object. The handles keep the same size on screen at any zoom, as in 3D editors.
-  const GIZMO_PX = 120;                   // length of an arrow on screen (px)
-  const AXIS_COLOUR = { x: 0xe5484d, z: 0x3e63dd, rot: 0xf5a524, xz: 0xffffff };
-  let gizmoPos = null, gizmoMode = "move", gizmoGroup = null, gizmoYaw = null;
-
-  // Metres per screen pixel at a point of the ground.
-  function worldPerPixel(x, z) {
-    if (mode === "plan") return 1 / pxPerM;
-    const d = camera.position.distanceTo(new THREE.Vector3(x, 0, z));
-    return (2 * d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) / height;
+  // Everything whose anchor lies in the screen rectangle (the marquee).
+  function inRect(x0, y0, x1, y1, skip) {
+    if (!model) return [];
+    const out = [];
+    const take = (ref, p, layer) => {
+      if (hidden.has(layer) || skip(ref)) return;
+      const s = screenOf(p[0], p[1], 0.3);
+      if (s.x >= x0 && s.x <= x1 && s.y >= y0 && s.y <= y1) out.push(ref);
+    };
+    model.decor.forEach((d) => take({ t: "decor", id: d.id }, d.pos, "decor"));
+    model.actors.forEach((a) => take({ t: "actor", id: a.id }, a.pos, "actors"));
+    model.lights.forEach((l) => take({ t: "light", id: l.id }, l.pos, "lights"));
+    return out;
   }
 
-  function gizmoFrame() {
-    if (!gizmoPos) return null;
-    const wpp = worldPerPixel(gizmoPos.x, gizmoPos.z);
-    return { x: gizmoPos.x, z: gizmoPos.z, y: 0.3, L: GIZMO_PX * wpp, R: GIZMO_PX * 0.62 * wpp, wpp };
-  }
-
-  // The gizmo as data on screen: which handle (if any) lies under the pointer.
-  function gizmoHit(sx, sy) {
-    const f = gizmoFrame();
-    if (!f) return null;
-    if (gizmoMode === "move") {
-      const o = screenOf(f.x, f.z, f.y);
-      if (Math.hypot(o.x - sx, o.y - sy) < 14) return { kind: "gizmo", axis: "xz" };
-      const best = ["x", "z"].map((axis) => {
-        const end = axis === "x" ? screenOf(f.x + f.L, f.z, f.y) : screenOf(f.x, f.z + f.L, f.y);
-        return { axis, d: segDist(sx, sy, o, end) };
-      }).sort((a, b) => a.d - b.d)[0];
-      return best.d < 12 ? { kind: "gizmo", axis: best.axis } : null;
-    }
-    let near = 1e9;
-    for (let i = 0; i < 72; i++) {
-      const a = (i / 72) * Math.PI * 2;
-      const p = screenOf(f.x + Math.cos(a) * f.R, f.z + Math.sin(a) * f.R, f.y);
-      near = Math.min(near, Math.hypot(p.x - sx, p.y - sy));
-    }
-    return near < 16 ? { kind: "gizmo", axis: "rot" } : null;
-  }
-
-  // Draws the gizmo for the given object: { x, z } is its centre, yaw its heading (for the ring's handle).
-  function updateGizmo() {
-    if (gizmoGroup) { scene.remove(gizmoGroup); gizmoGroup.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); gizmoGroup = null; }
-    const f = gizmoFrame();
-    if (!f) { needsRender = true; return; }
-    const g = new THREE.Group();
-    g.userData.own = true;
-    if (gizmoMode === "move") {
-      for (const axis of ["x", "z"]) {
-        const end = axis === "x" ? [f.x + f.L, f.y, f.z] : [f.x, f.y, f.z + f.L];
-        const geo = new THREE.LineGeometry();
-        geo.setPositions([f.x, f.y, f.z, ...end]);
-        const line = new THREE.Line2(geo, lineMaterialFor({ colour: AXIS_COLOUR[axis], px: 3.5 }, 1));
-        g.add(line);
-        const cone = new THREE.Mesh(new THREE.ConeGeometry(f.wpp * 6, f.wpp * 14, 16), mat(AXIS_COLOUR[axis]));
-        cone.position.set(end[0], end[1], end[2]);
-        if (axis === "x") cone.rotation.z = -Math.PI / 2; else cone.rotation.x = Math.PI / 2;
-        g.add(cone);
-      }
-      const square = new THREE.Mesh(new THREE.BoxGeometry(f.wpp * 12, f.wpp * 2, f.wpp * 12), mat(AXIS_COLOUR.xz));
-      square.position.set(f.x, f.y, f.z);
-      g.add(square);
-    } else {
-      const pts = [];
-      for (let i = 0; i <= 72; i++) {
-        const a = (i / 72) * Math.PI * 2;
-        pts.push(f.x + Math.cos(a) * f.R, f.y, f.z + Math.sin(a) * f.R);
-      }
-      const geo = new THREE.LineGeometry();
-      geo.setPositions(pts);
-      g.add(new THREE.Line2(geo, lineMaterialFor({ colour: AXIS_COLOUR.rot, px: 3.5 }, 1)));
-      // The heading: a spoke to the ring, its end is the handle. A model faces (sin yaw, cos yaw).
-      if (gizmoYaw !== null) {
-        const a = Math.PI / 2 - gizmoYaw;
-        const ex = f.x + Math.cos(a) * f.R, ez = f.z + Math.sin(a) * f.R;
-        const spoke = new THREE.LineGeometry();
-        spoke.setPositions([f.x, f.y, f.z, ex, f.y, ez]);
-        g.add(new THREE.Line2(spoke, lineMaterialFor({ colour: AXIS_COLOUR.rot, px: 5 }, 1)));
-        const dot = new THREE.Mesh(new THREE.SphereGeometry(f.wpp * 7, 12, 8), mat(AXIS_COLOUR.rot));
-        dot.position.set(ex, f.y, ez);
-        g.add(dot);
-      }
-    }
-    scene.add(g);
-    gizmoGroup = g;
-    needsRender = true;
-  }
-
-  // ---- ghost: the object being placed, under the cursor, with its heading ----------------
-  let ghost = null, ghostObj = null;
-  const GHOST_COLOUR = { actor: 0x3e63dd, decor: 0x1f9d67, light: 0xf5a524, stop: 0x7b5cd6 };
-  // g: { kind, x, z, yaw, half: [along the heading, across it] } or null to hide it.
-  function setGhost(g) {
-    ghost = g;
-    if (ghostObj) { scene.remove(ghostObj); ghostObj.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); ghostObj = null; }
-    if (!ghost) { needsRender = true; return; }
-    const [hl, hw] = ghost.half;
-    const colour = GHOST_COLOUR[ghost.kind] || 0x1d2430;
-    const body = new THREE.MeshLambertMaterial({ color: colour, transparent: true, opacity: 0.42, depthWrite: false });
-    const g2 = new THREE.Group();
-    const box = new THREE.Mesh(new THREE.BoxGeometry(hw * 2, 0.5, hl * 2), body);
-    box.position.y = 0.25;
-    g2.add(box);
-    // The arrow points where the object will look: along +Z, turned by yaw like the model.
-    const arrowLen = hl + 2.5;
-    const geo = new THREE.LineGeometry();
-    geo.setPositions([0, 0.6, 0, 0, 0.6, arrowLen]);
-    g2.add(new THREE.Line2(geo, lineMaterialFor({ colour, px: 3 }, 1)));
-    const head = new THREE.Mesh(new THREE.ConeGeometry(hw * 0.7 + 0.3, 1.2, 12), body);
-    head.rotation.x = Math.PI / 2;
-    head.position.set(0, 0.6, arrowLen);
-    g2.add(head);
-    g2.position.set(ghost.x, 0, ghost.z);
-    g2.rotation.y = ghost.yaw;
-    g2.userData.own = true;
-    scene.add(g2);
-    ghostObj = g2;
-    needsRender = true;
-  }
-
-  // ---- neighbour: the scene beside this one, as ghost surfaces placed where the game would put it ----
-  // B: the neighbour's build; (dx, dz): its origin in this scene; seam: the edge line in this scene's metres.
-  let neighbour = null, neighbourSeam = null;
-  function setNeighbour(B, dx = 0, dz = 0, seam = null) {
-    if (neighbour) { scene.remove(neighbour); neighbour.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); neighbour = null; }
-    if (neighbourSeam) { scene.remove(neighbourSeam); neighbourSeam = null; }
-    if (!B) { needsRender = true; return; }
-    const g = new THREE.Group();
-    g.userData.own = true;
-    g.position.set(dx, 0, dz);
-    for (const s of B.surfaces) {
-      if (!s.idx.length) continue;
-      const kind = s.layer === "" ? null : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
-      const period = kind ? periodOf(kind) : 1;
-      const pos = [], uv = [];
-      for (let k = 0; k < s.idx.length; k++) {
-        const i = s.idx[k] * 2;
-        pos.push(s.verts[i], s.y, s.verts[i + 1]);
-        uv.push(s.verts[i] / period, s.verts[i + 1] / period);
-      }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-      geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-      geo.computeVertexNormals();
-      const m = layerMaterial(s);
-      m.transparent = true;
-      m.opacity = 0.55;
-      m.depthWrite = false;
-      g.add(new THREE.Mesh(geo, m));
-    }
-    scene.add(g);
-    neighbour = g;
-    if (seam) {
-      const geo = new THREE.LineGeometry();
-      geo.setPositions([seam[0][0], 0.6, seam[0][1], seam[1][0], 0.6, seam[1][1]]);
-      neighbourSeam = new THREE.Line2(geo, lineMaterialFor({ colour: 0xed4621, px: 4 }, 1));
-      scene.add(neighbourSeam);
-    }
-    needsRender = true;
-  }
-
-  function setGizmo(target, mode2 = gizmoMode) {
-    gizmoPos = target ? { x: target.x, z: target.z } : null;
-    gizmoYaw = target && target.yaw !== undefined ? target.yaw : null;
-    gizmoMode = mode2;
-    updateGizmo();
-  }
-
+  // ---- the pointer: camera moves here, the rest goes to the tools ------------------------------
+  let panTool = false, spaceDown = false;
   function bindPointer() {
     const el = renderer.domElement;
-    let down = null, panning = false, last = null, panKind = "pan";
+    let nav = null;
     const local = (e) => { const r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
-    const snapWorld = (w, e) => (e.altKey ? w : { x: Math.round(w.x * 20) / 20, z: Math.round(w.z * 20) / 20 });
+    const pack = (type, e, p) => ({ type, sx: p.x, sy: p.y, world: worldAt(p.x, p.y), shift: e.shiftKey, alt: e.altKey, meta: e.metaKey || e.ctrlKey, button: e.button, detail: e.detail });
     el.addEventListener("contextmenu", (e) => e.preventDefault());
     el.addEventListener("pointerdown", (e) => {
       const p = local(e);
-      last = p;
-      const w = worldAt(p.x, p.y);
-      if (e.button === 1 || e.button === 2 || (e.button === 0 && (spaceDown || e.altKey))) {
-        panning = true;
-        panKind = mode === "3d" && (e.button === 2 && !e.shiftKey || e.button === 0 && e.altKey) ? "orbit" : "pan";
+      el.focus();
+      const panning = e.button === 1 || (e.button === 0 && (spaceDown || panTool));
+      const orbit = e.button === 2;
+      if (panning || orbit) {
+        nav = { kind: orbit && mode === "3d" && !e.shiftKey ? "orbit" : "pan", last: p };
         el.setPointerCapture(e.pointerId);
+        el.classList.add("grabbing");
         return;
       }
       if (e.button !== 0) return;
-      down = { x: p.x, y: p.y, hit: hitAt(p.x, p.y), t: performance.now() };
       el.setPointerCapture(e.pointerId);
-      emit("pointer", { type: "down", world: w && snapWorld(w, e), hit: down.hit, shift: e.shiftKey, alt: e.altKey, native: e });
+      emit("pointer", pack("down", e, p));
     });
     el.addEventListener("pointermove", (e) => {
       const p = local(e);
-      if (panning && last) {
-        const dx = p.x - last.x, dy = p.y - last.y;
-        if (mode === "plan") {
-          const w0 = worldAt(last.x, last.y), w1 = worldAt(p.x, p.y);
-          if (w0 && w1) { target.x += w0.x - w1.x; target.z += w0.z - w1.z; }
-        } else if (panKind === "orbit") {
+      if (nav) {
+        const dx = p.x - nav.last.x, dy = p.y - nav.last.y;
+        if (nav.kind === "orbit") {
+          follow = null;
           orbitYaw -= dx * 0.008;
-          orbitPitch = Math.max(0.15, Math.min(1.5, orbitPitch + dy * 0.008));
-        } else {
-          target.x -= dx * orbitDist * 0.0016 * Math.cos(orbitYaw) + dy * orbitDist * 0.0016 * Math.sin(orbitYaw);
-          target.z += dx * orbitDist * 0.0016 * Math.sin(orbitYaw) - dy * orbitDist * 0.0016 * Math.cos(orbitYaw);
-        }
-        last = p;
-        applyCamera();
+          orbitPitch = Math.max(0.12, Math.min(1.52, orbitPitch + dy * 0.008));
+          applyCamera();
+        } else panBy(dx, dy);
+        nav.last = p;
         return;
       }
-      last = p;
-      const w = worldAt(p.x, p.y);
-      if (!down) {
-        // The handles of the gizmo show a pointer, the way 3D editors do.
-        el.style.cursor = gizmoHit(p.x, p.y) ? "pointer" : "";
-        // Hovering a route fades the others, so the one under the pointer can be followed.
-        const h = hitAt(p.x, p.y);
-        const id = h && h.kind === "route" ? h.id : null;
-        if (id !== hoverId) { hoverId = id; rebuildRoutes(); needsRender = true; }
-      }
-      emit("pointer", { type: "move", world: w && snapWorld(w, e), buttons: e.buttons, shift: e.shiftKey, alt: e.altKey, native: e });
-      if (down && Math.hypot(p.x - down.x, p.y - down.y) > 3) {
-        emit("pointer", { type: "drag", world: w && snapWorld(w, e), hit: down.hit, start: down, shift: e.shiftKey, alt: e.altKey, native: e });
-        down.dragging = true;
-      }
+      emit("pointer", pack("move", e, p));
     });
     el.addEventListener("pointerup", (e) => {
-      if (panning) { panning = false; return; }
-      if (!down) return;
       const p = local(e);
-      const w = worldAt(p.x, p.y);
-      emit("pointer", { type: "up", world: w && snapWorld(w, e), hit: down.hit, dragged: !!down.dragging, shift: e.shiftKey, alt: e.altKey, native: e });
-      down = null;
+      if (nav) { nav = null; el.classList.remove("grabbing"); return; }
+      emit("pointer", pack("up", e, p));
     });
-    el.addEventListener("dblclick", (e) => {
-      const p = local(e);
-      const w = worldAt(p.x, p.y);
-      emit("pointer", { type: "dblclick", world: w && snapWorld(w, e), hit: hitAt(p.x, p.y), native: e });
-    });
+    el.addEventListener("dblclick", (e) => emit("pointer", pack("dblclick", e, local(e))));
+    el.addEventListener("pointerleave", () => emit("pointer", { type: "leave" }));
+    // A trackpad scrolls to pan and pinches to zoom (as in Figma); a mouse wheel zooms.
     el.addEventListener("wheel", (e) => {
       e.preventDefault();
-      zoomBy(Math.exp(-e.deltaY * 0.0012), local(e));
+      const p = local(e);
+      const wheel = e.deltaMode !== 0 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 40 && Number.isInteger(e.deltaY));
+      if (e.ctrlKey || e.metaKey || wheel) zoomBy(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), p);
+      else panBy(-e.deltaX, -e.deltaY);
     }, { passive: false });
-    el.addEventListener("pointerleave", () => emit("pointer", { type: "leave" }));
+    window.addEventListener("keydown", (e) => { if (e.code === "Space" && !typing(e)) { spaceDown = true; el.classList.add("grab"); } });
+    window.addEventListener("keyup", (e) => { if (e.code === "Space") { spaceDown = false; el.classList.remove("grab"); } });
+  }
+  const typing = (e) => { const t = e.target; return t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable); };
+
+  // A square picture of the whole scene from above (the scene list's card).
+  function capture(size = 360) {
+    const keep = { mode, pxPerM, tx: target.x, tz: target.z };
+    const keepSel = sel, keepHover = hover, keepHandles = planHandles;
+    sel = []; hover = null; planHandles = false;
+    rebuildPlan(); rebuildSelection();
+    groups.routes && (groups.routes.visible = false);
+    mode = "plan";
+    const crop = (model && model.crop) || 90;
+    target.set(0, 0, 0);
+    pxPerM = Math.min(width, height) / (crop * 2);
+    applyCamera();
+    renderer.render(scene, camera);
+    const c = document.createElement("canvas");
+    c.width = c.height = size;
+    const side = Math.min(width, height) * renderer.getPixelRatio();
+    const src = renderer.domElement;
+    c.getContext("2d").drawImage(src, (src.width - side) / 2, (src.height - side) / 2, side, side, 0, 0, size, size);
+    mode = keep.mode; pxPerM = keep.pxPerM; target.set(keep.tx, 0, keep.tz);
+    sel = keepSel; hover = keepHover; planHandles = keepHandles;
+    groups.routes && (groups.routes.visible = !hidden.has("routes"));
+    rebuildPlan(); rebuildSelection();
+    applyCamera();
+    return c;
   }
 
-  let spaceDown = false;
-  window.addEventListener("keydown", (e) => { if (e.code === "Space" && !isTyping(e)) { spaceDown = true; } });
-  window.addEventListener("keyup", (e) => { if (e.code === "Space") spaceDown = false; });
-  function isTyping(e) { const t = e.target; return t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable); }
-
   return {
-    mount, load, refresh, setBuild, setSelection, setDraft, setMode, fit, focus, zoomBy, worldAt, screenOf,
-    setTextures, reloadPicture, setGizmo, setGhost, setNeighbour, get gizmoMode() { return gizmoMode; },
+    mount, load, refresh, setBuild, setSelection, setHover, setDraft, setGhost, setHidden, setPlanHandles,
+    setSimMode, setFollow, getView, setView, setPose, setMode, fit, focus, zoomBy, panBy, worldAt, screenOf, worldPerPixel, hitAt, inRect,
+    setTextures, reloadPicture, capture, smooth,
     on(name, fn) { (listeners[name] = listeners[name] || []).push(fn); },
+    setPanTool(on) { panTool = !!on; renderer && renderer.domElement.classList.toggle("grab", panTool); },
+    requestRender() { needsRender = true; },
     get mode() { return mode; },
     get pxPerM() { return pxPerM; },
     get spaceDown() { return spaceDown; },
-    requestRender() { needsRender = true; },
-    pointsOf,
-    hitAt, routeOffset,
+    get turnHandle() { return turnHandle; },
   };
 })();

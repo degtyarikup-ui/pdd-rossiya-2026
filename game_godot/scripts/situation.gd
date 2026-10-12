@@ -231,9 +231,12 @@ static func _without_baked_ground(mesh: Mesh, net: RoadNetwork = null) -> Mesh:
 			if not flat and lo > -0.02 and hi < 0.215:
 				continue
 			keep.append_array([idx[k], idx[k + 1], idx[k + 2]])
+		# A scene laid out in the editor's road plan draws all its ground itself: nothing may be left.
+		if keep.is_empty():
+			continue
 		arrays[Mesh.ARRAY_INDEX] = keep
 		out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-		out.surface_set_material(s, mesh.surface_get_material(s))
+		out.surface_set_material(out.get_surface_count() - 1, mesh.surface_get_material(s))
 	return out
 
 

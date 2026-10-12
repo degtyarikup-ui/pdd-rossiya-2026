@@ -40,6 +40,14 @@
         "tools/game_lab/server.py"
       ],
       "port": 8940
+    },
+    {
+      "name": "network-editor",
+      "runtimeExecutable": "tools/network/.venv/bin/python",
+      "runtimeArgs": [
+        "tools/network/server.py"
+      ],
+      "port": 8950
     }
   ]
 }

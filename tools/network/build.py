@@ -241,6 +241,11 @@ def build(scene: dict) -> dict:
     v, t = triangulate(lawn)
     lawn_surface = {"id": "lawn", "y": LAWN_Y, "layer": "grass", "colour": LAWN_COLOUR, "verts": v, "idx": t}
     surfaces = [asphalt, island, pave, lawn_surface]
+    if scene.get("layout"):
+        # A scene laid out from a road plan (the editor) has its own ground everywhere else: the baked
+        # scene's old roads (where the plan has none now) are covered, and the game drops them (covers()).
+        v, t = triangulate(box.difference(roads_all.union(pavement).union(lawn)))
+        surfaces.append({"id": "ground", "y": LAWN_Y, "layer": "grass", "colour": LAWN_COLOUR, "verts": v, "idx": t})
     for colour in MARK_COLOURS:
         if colour not in marks:
             continue

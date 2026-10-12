@@ -6,17 +6,18 @@
 The editor reads and writes the road network (game_godot/network/<id>.json). Every save runs
 the invariants (check.py), rebuilds the surfaces (build.py) and writes the game's scene file
 (engine_sync.py). /api/preview checks and builds an unsaved scene, so the editor can show the
-result while it is being edited.
+result while it is being edited. A save keeps the file's own number format (90.0 stays 90.0), so
+git shows only what was changed.
 """
 import json
 import re
+import shutil
 import subprocess
 import sys
 import threading
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs
 
 from shapely.geometry import LineString
 
@@ -29,6 +30,7 @@ HERE = Path(__file__).parent
 EDITOR = HERE / "editor"
 NET = check.NET
 HISTORY = NET / "history"
+PREVIEW = NET / "preview"
 SIT = engine_sync.SIT
 GAME = check.ROOT / "game_godot"
 SCENERY = GAME / "scenery" / "index.json"
@@ -52,6 +54,9 @@ ASSET_RULES = [
     (re.compile(r"^models/([a-z0-9_/]+)\.glb$"), lambda m: GAME / "models" / f"{m[1]}.glb"),
     (re.compile(r"^texture/([A-Za-z]+)\.png$"), lambda m: DETAIL / f"{m[1]}.png"),
 ]
+STREET_WIDTH = 8.4    # the street of the game: two 4.2 m lanes (scripts/street.gd ROAD_HALF)
+EDGE_EPS = 0.05       # an edge is measured just inside the scene's square (m)
+GODOT_RUN = {"proc": None}   # the game window the editor opened last (one at a time)
 
 
 def ticket_question(sid: str):
@@ -77,9 +82,31 @@ def removed_items(old: dict, new: dict) -> list:
     out = []
     for key, label in (("routes", "маршрут"), ("actors", "участник"), ("lights", "светофор"), ("roads", "дорога"),
                        ("decor", "предмет"), ("lawns", "газон"), ("markings", "разметка")):
-        before = {x.get("id") for x in old.get(key, [])}
-        after = {x.get("id") for x in new.get(key, [])}
+        before = {x.get("id") for x in old.get(key, []) if not x.get("auto")}
+        after = {x.get("id") for x in new.get(key, []) if not x.get("auto")}
         out += [f"{label} {x}" for x in sorted(before - after)]
+    return out
+
+
+def keep_format(new, old):
+    """The editor's JSON has no floats with a zero fraction (90.0 comes back as 90): where the file had
+    the same number as a float, the float is kept, so a save does not rewrite untouched values."""
+    if isinstance(new, dict) and isinstance(old, dict):
+        return {k: keep_format(v, old.get(k)) for k, v in new.items()}
+    if isinstance(new, list) and isinstance(old, list):
+        return [keep_format(v, old[i] if i < len(old) else None) for i, v in enumerate(new)]
+    if isinstance(new, int) and not isinstance(new, bool) and isinstance(old, float) and float(new) == old:
+        return old
+    return new
+
+
+def normalised(scene: dict, old: dict) -> dict:
+    """The scene as it will be written: the old file's number format, and no empty lists the file
+    did not have (the editor works with empty lawns and markings where a file has none)."""
+    out = keep_format(scene, old)
+    for key in ("lawns", "markings"):
+        if key not in old and out.get(key) == []:
+            out.pop(key)
     return out
 
 
@@ -125,7 +152,7 @@ def texture_backups(kind: str) -> list:
 
 
 def keep_texture_backup(kind: str, keep: int = 10) -> None:
-    """The picture of a texture as it is now, kept before it is replaced (\"Вернуть прежнюю\")."""
+    """The picture of a texture as it is now, kept before it is replaced ("Вернуть прежнюю")."""
     src = DETAIL / f"{kind}.png"
     if not src.exists():
         return
@@ -138,15 +165,10 @@ def keep_texture_backup(kind: str, keep: int = 10) -> None:
         old.unlink()
 
 
-# ---- stitching: how a scene meets its neighbour in the game ---------------------------------
-# The game lays a junction into the street: the junction's crop square ends where the street goes on, and
-# the carriageway of its edge must be the street's (8.4 m, centred on x = 0). Two scenes that touch must
-# also meet each other. Only moves (no turns): the neighbour is placed by (dx, dz) from the origin.
-STITCH_EPS = 0.05     # the seam is measured just inside each scene's edge (m)
-STREET_WIDTH = 8.4    # the street of the game: two 4.2 m lanes (scripts/street.gd ROAD_HALF)
-OPPOSITE = {"n": "s", "s": "n", "e": "w", "w": "e"}
-
-
+# ---- edges: how the scene meets the game's street -----------------------------------------
+# The game lays a junction into its street: the street comes in at the south side and goes on from the
+# side of the exit taken (turned so the exit runs along +z through x = 0). So every side the road reaches
+# must have the street's carriageway: 8.4 m, centred on the middle of the side.
 def seam_line(side: str, c: float) -> LineString:
     """The line at distance c from the centre on a side (n: z = c, s: z = -c, e: x = c, w: x = -c)."""
     if side in ("n", "s"):
@@ -156,69 +178,110 @@ def seam_line(side: str, c: float) -> LineString:
     return LineString([(x, -400), (x, 400)])
 
 
-def stitch(a_id: str, b_id: str, side: str, dx=None, dz=None) -> dict:
-    A, B = check.load(a_id), check.load(b_id)
-    _, _, roads_a, ring_a = build.ground(A)
-    _, _, roads_b, ring_b = build.ground(B)
-    ca, cb = float(A.get("crop", 90.0)), float(B.get("crop", 90.0))
-    horizontal = side in ("n", "s")
-    lo_hi = (lambda b: (b[0], b[2])) if horizontal else (lambda b: (b[1], b[3]))
+def edges(scene: dict) -> dict:
+    """For each side: the carriageway that reaches it (width, centre) and whether it is the street's."""
+    _, _, roads, _ = build.ground(scene)
+    crop = float(scene.get("crop", 90.0))
+    out = {}
+    for side in ("n", "s", "e", "w"):
+        inter = roads.intersection(seam_line(side, crop - EDGE_EPS))
+        if inter.is_empty:
+            out[side] = None
+            continue
+        b = inter.bounds
+        lo, hi = (b[0], b[2]) if side in ("n", "s") else (b[1], b[3])
+        width, centre = hi - lo, (lo + hi) / 2
+        out[side] = {"width": round(width, 2), "centre": round(centre, 2),
+                     "street": abs(width - STREET_WIDTH) < 0.2 and abs(centre) < 0.2}
+    return out
 
-    def profile(geom, line):
-        inter = geom.intersection(line)
-        return None if inter.is_empty else lo_hi(inter.bounds)
 
-    a_road = profile(roads_a, seam_line(side, ca - STITCH_EPS))
-    a_pave = profile(ring_a, seam_line(side, ca - STITCH_EPS))
-    facing = OPPOSITE[side]
-    b_road = profile(roads_b, seam_line(facing, cb - STITCH_EPS))
-    b_pave = profile(ring_b, seam_line(facing, cb - STITCH_EPS))
-    if a_road is None or b_road is None:
-        return {"match": False, "error": "У края нет проезжей части", "auto": None}
+# ---- road plan of a traced scene ------------------------------------------------------------
+def detect_layout(scene: dict) -> dict:
+    """A road plan (editor/layout.js) that matches a traced scene: its arms where the road meets the
+    sides, a junction where they cross, a roundabout where an island sits in the middle."""
+    crop = float(scene.get("crop", 90.0))
+    road, islands, _, _ = build.ground(scene)
+    sides = edges(scene)
 
-    def centre(p):
-        return (p[0] + p[1]) / 2
+    def kind(w):
+        return "yard" if w < 6.5 else "street" if w < 11.0 else "avenue"
 
-    # Placed to touch: the neighbour's facing edge on this scene's edge, its road centred on this one's.
-    along = centre(a_road) - centre(b_road)
-    if horizontal:
-        auto = {"dx": along, "dz": ca + cb if side == "n" else -(ca + cb)}
-    else:
-        auto = {"dx": ca + cb if side == "e" else -(ca + cb), "dz": along}
-    dx = auto["dx"] if dx is None else float(dx)
-    dz = auto["dz"] if dz is None else float(dz)
-    shift = dx if horizontal else dz
-    b_road = (b_road[0] + shift, b_road[1] + shift)
-    # The gap between the two edges: positive where the street fills the space, negative where they overlap.
-    gap = {"n": (dz - cb) - ca, "s": -ca - (dz + cb), "e": (dx - cb) - ca, "w": -ca - (dx + cb)}[side]
-    width_a, width_b = a_road[1] - a_road[0], b_road[1] - b_road[0]
-    offset = centre(b_road) - centre(a_road)
-    seam_at = {"n": ca, "s": -ca, "e": ca, "w": -ca}[side]
-    if horizontal:
-        seam = [[a_road[0], seam_at], [a_road[1], seam_at]]
-    else:
-        seam = [[seam_at, a_road[0]], [seam_at, a_road[1]]]
+    arms = {k: v for k, v in sides.items() if v}
+    cx = sum(arms[k]["centre"] for k in ("n", "s") if k in arms) / max(1, sum(1 for k in ("n", "s") if k in arms))
+    cz = sum(arms[k]["centre"] for k in ("e", "w") if k in arms) / max(1, sum(1 for k in ("e", "w") if k in arms))
+    port = {"n": lambda a: (a["centre"], crop), "s": lambda a: (a["centre"], -crop),
+            "e": lambda a: (crop, a["centre"]), "w": lambda a: (-crop, a["centre"])}
+    nodes, streets = [], []
+    centre = {"id": "c", "x": round(cx, 2), "z": round(cz, 2)}
+    ring = None
+    parts = list(islands.geoms) if hasattr(islands, "geoms") else ([islands] if not islands.is_empty else [])
+    for p in parts:
+        c = p.centroid
+        if p.area > 40 and abs(c.x - cx) < 8 and abs(c.y - cz) < 8:
+            island = (p.area / 3.14159) ** 0.5
+            ring = {"r": round(min(30.0, island + 10.0), 1), "island": round(island, 1)}
+            centre.update({"x": round(c.x, 2), "z": round(c.y, 2), "ring": ring})
+    order = [k for k in ("s", "n", "e", "w") if k in arms]
+    if len(order) == 2 and not ring:
+        a, b = order
+        na = {"id": a, "x": round(port[a](arms[a])[0], 2), "z": round(port[a](arms[a])[1], 2)}
+        nb = {"id": b, "x": round(port[b](arms[b])[0], 2), "z": round(port[b](arms[b])[1], 2)}
+        nodes += [na, nb]
+        st = {"id": "s1", "a": a, "b": b, "kind": kind(arms[a]["width"]), "ends": {}}
+        if {a, b} != {"n", "s"} and {a, b} != {"e", "w"}:
+            st["bend"] = [centre["x"], centre["z"]]
+        streets.append(st)
+        return {"nodes": nodes, "streets": streets, "player": {"street": "s1", "toward": b if a == "s" else a}}
+    nodes.append(centre)
+    for k in order:
+        x, z = port[k](arms[k])
+        nodes.append({"id": k, "x": round(x, 2), "z": round(z, 2)})
+        st = {"id": f"s_{k}", "a": k, "b": "c", "kind": kind(arms[k]["width"]), "ends": {}}
+        if k == "s":
+            st["ends"] = {"b": {"stop": True}}
+        streets.append(st)
+    player = {"street": "s_s", "toward": "c"} if "s" in arms else None
+    out = {"nodes": nodes, "streets": streets}
+    if player:
+        out["player"] = player
+    return out
 
-    def street(p):
-        return abs((p[1] - p[0]) - STREET_WIDTH) < 0.15 and abs(centre(p)) < 0.15
 
-    return {
-        "auto": {"dx": round(auto["dx"], 3), "dz": round(auto["dz"], 3)},
-        "dx": round(dx, 3), "dz": round(dz, 3), "gap": round(gap, 3), "offset": round(offset, 3),
-        "widthDiff": round(width_b - width_a, 3),
-        "a": {"width": round(width_a, 3), "centre": round(centre(a_road), 3),
-              "street": street(a_road)},
-        "b": {"width": round(width_b, 3), "centre": round(centre(b_road), 3),
-              "street": street(b_road)},
-        "seam": seam, "match": abs(offset) < 0.1 and abs(width_b - width_a) < 0.1 and abs(gap) < 0.2,
-    }
+# ---- the game -----------------------------------------------------------------------------
+def find_godot():
+    found = shutil.which("godot")
+    if found:
+        return found
+    for c in (Path("/Applications/Godot.app/Contents/MacOS/Godot"), Path("/Applications/Godot_4.app/Contents/MacOS/Godot")):
+        if c.is_file():
+            return str(c)
+    return None
+
+
+def run_game(sid: str, auto: bool) -> dict:
+    """Opens the game on one junction (the car just before it); the window opened before is closed."""
+    godot = find_godot()
+    if not godot:
+        return {"launched": False, "error": "Godot не найден: поставьте Godot 4.7.2 (docs/game/README.md)"}
+    old = GODOT_RUN["proc"]
+    if old and old.poll() is None:
+        old.terminate()
+    args = [godot, "--path", str(GAME), "--", f"--situation={sid}", "--near"]
+    if auto:
+        args.append("--auto")
+    GODOT_RUN["proc"] = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return {"launched": True}
 
 
 def reimport_game() -> bool:
     """Godot draws a texture from its import cache, so a changed PNG reaches the game only after
     `--import`: about 5 s, and no tracked file changes. False when Godot is not installed."""
+    godot = find_godot()
+    if not godot:
+        return False
     try:
-        r = subprocess.run(["godot", "--headless", "--path", str(GAME), "--import"], capture_output=True, timeout=180)
+        r = subprocess.run([godot, "--headless", "--path", str(GAME), "--import"], capture_output=True, timeout=180)
         return r.returncode == 0
     except (OSError, subprocess.TimeoutExpired):
         return False
@@ -242,8 +305,14 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(404, {"error": "not found"})
         return self.send(200, path.read_bytes(), TYPES.get(path.suffix, "application/octet-stream"))
 
+    def raw(self, limit=8_000_000) -> bytes:
+        length = int(self.headers.get("Content-Length", 0))
+        if length > limit:
+            raise ValueError("слишком большой файл")
+        return self.rfile.read(length)
+
     def body(self):
-        return json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        return json.loads(self.raw() or b"{}")
 
     # A failure inside a scene's checks or build is an answer for the editor (422 with the reason), not a
     # dropped connection that looks like "Failed to fetch".
@@ -261,6 +330,9 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:  # noqa: BLE001 - reported to the editor, the server goes on
             self.send(422, {"error": f"Сцена не собралась: {type(e).__name__}: {e}"})
 
+    def scene_exists(self, sid: str) -> bool:
+        return bool(ID.match(sid)) and (NET / f"{sid}.json").exists()
+
     def route_get(self):
         path = self.path.split("?")[0]
         if path in ("/", "/index.html"):
@@ -276,7 +348,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.file(EDITOR / rel)
         m = re.match(r"^/preview/([a-z0-9_]+)\.png$", path)
         if m:
-            return self.file(NET / "preview" / f"{m[1]}.png")
+            return self.file(PREVIEW / f"{m[1]}.png")
         m = re.match(r"^/asset/source/([a-f0-9]{32})\.webp$", path)
         if m:
             f = source_image(m[1])
@@ -294,23 +366,33 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, self.catalog())
         if path == "/api/textures":
             return self.send(200, self.texture_list())
-        m = re.match(r"^/api/stitch/([a-z0-9_]+)/([a-z0-9_]+)$", path)
-        if m and (NET / f"{m[1]}.json").exists() and (NET / f"{m[2]}.json").exists():
-            q = {k: v[0] for k, v in parse_qs(self.path.partition("?")[2]).items()}
-            if q.get("side") not in OPPOSITE:
-                return self.send(400, {"error": "side: n, s, e или w"})
-            return self.send(200, stitch(m[1], m[2], q["side"], q.get("dx"), q.get("dz")))
         m = re.match(r"^/api/scene/([a-z0-9_]+)$", path)
-        if m and (NET / f"{m[1]}.json").exists():
+        if m and self.scene_exists(m[1]):
             s = check.load(m[1])
-            with BUILD_LOCK:
-                built = build.build(s)
-            return self.send(200, {"scene": s, "findings": check.check_scene(s), "build": built,
-                                   "source": ticket_question(m[1])})
+            built = build.build(s)
+            return self.send(200, {"scene": s, "findings": check.check_scene(s), "build": built, "edges": edges(s),
+                                   "source": ticket_question(m[1]), "playable": engine_sync.playable(m[1])})
+        m = re.match(r"^/api/layout/detect/([a-z0-9_]+)$", path)
+        if m and self.scene_exists(m[1]):
+            return self.send(200, {"layout": detect_layout(check.load(m[1]))})
         self.send(404, {"error": "not found"})
 
     def route_post(self):
         path = self.path.split("?")[0]
+        m = re.match(r"^/api/game/run/([a-z0-9_]+)$", path)
+        if m and self.scene_exists(m[1]):
+            return self.send(200, run_game(m[1], bool(self.body().get("auto"))))
+        m = re.match(r"^/api/game/include/([a-z0-9_]+)$", path)
+        if m and self.scene_exists(m[1]):
+            return self.include(m[1], bool(self.body().get("playable")))
+        m = re.match(r"^/api/thumb/([a-z0-9_]+)$", path)
+        if m and self.scene_exists(m[1]):
+            data = self.raw()
+            if png_size(data[:24]) is None:
+                return self.send(400, {"error": "Нужен PNG"})
+            PREVIEW.mkdir(parents=True, exist_ok=True)
+            (PREVIEW / f"{m[1]}.png").write_bytes(data)
+            return self.send(200, {"ok": True})
         m = re.match(r"^/api/texture/([A-Za-z]+)(/image|/restore)?$", path)
         if m:
             return self.texture_post(m[1], m[2])
@@ -322,20 +404,33 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": "scene id does not match the URL"})
         findings = check.check_scene(scene)
         if m[1] == "preview":
-            with BUILD_LOCK:
-                built = build.build(scene)
-            return self.send(200, {"findings": findings, "build": built})
+            return self.send(200, {"findings": findings, "build": build.build(scene), "edges": edges(scene)})
+        if not (SIT / m[2] / "engine.json").exists():
+            return self.send(400, {"error": "У сцены нет основы игры (situations/<id>/engine.json)"})
         target = NET / f"{m[2]}.json"
-        removed = removed_items(check.load(m[2]) if target.exists() else {}, scene)
+        old = check.load(m[2]) if target.exists() else {}
+        removed = removed_items(old, scene)
         keep_history(m[2])
-        target.write_text(json.dumps(scene, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-        with BUILD_LOCK:
-            build.main([m[2]])
+        target.write_text(json.dumps(normalised(scene, old), ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        build.main([m[2]])
         try:
             synced = engine_sync.sync(m[2])
         except (ValueError, KeyError) as e:
             return self.send(422, {"error": str(e), "findings": findings})
         self.send(200, {"findings": findings, "synced": synced, "removed": removed})
+
+    def include(self, sid: str, playable: bool):
+        """In the game or not: the scene's "reviewed" flag and the game's list of junctions."""
+        target = NET / f"{sid}.json"
+        s = check.load(sid)
+        if playable and any(f["level"] == "error" for f in check.check_scene(s)):
+            return self.send(400, {"error": "Сначала исправьте ошибки сцены"})
+        if bool(s.get("reviewed", True)) != playable:
+            s["reviewed"] = playable
+            keep_history(sid)
+            target.write_text(json.dumps(s, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        ids = engine_sync.write_index()
+        return self.send(200, {"playable": engine_sync.playable(sid), "count": len(ids)})
 
     def texture_list(self):
         out = []
@@ -355,10 +450,7 @@ class Handler(BaseHTTPRequestHandler):
         if entry is None:
             return self.send(404, {"error": f"Нет текстуры «{kind}»"})
         if action == "/image":
-            length = int(self.headers.get("Content-Length", 0))
-            if length > 8_000_000:
-                return self.send(413, {"error": "Картинка больше 8 МБ"})
-            data = self.rfile.read(length)
+            data = self.raw()
             size = png_size(data[:24])
             if size is None:
                 return self.send(400, {"error": "Нужен файл PNG"})
@@ -392,16 +484,19 @@ class Handler(BaseHTTPRequestHandler):
             s = json.loads(p.read_text(encoding="utf-8"))
             found = check.check_scene(s)
             q = s.get("question") or {}
-            title = ((q.get("text") or {}).get("ru") or {}).get("ticket", "")
-            out.append({"id": p.stem, "title": title, "status": (s.get("compliance") or {}).get("status"),
+            ru = (q.get("text") or {}).get("ru") or {}
+            out.append({"id": p.stem, "status": (s.get("compliance") or {}).get("status"),
                         "errors": sum(f["level"] == "error" for f in found),
                         "warns": sum(f["level"] == "warn" for f in found),
                         "playable": bool(s.get("reviewed", True)) and not s.get("regulator", False),
-                        "regulator": bool(s.get("regulator", False))})
+                        "regulator": bool(s.get("regulator", False)),
+                        "layout": bool(s.get("layout")),
+                        "preview": (PREVIEW / f"{p.stem}.png").exists(),
+                        "questionText": ru.get("title", "")})
         return out
 
     def catalog(self):
-        index = json.loads((GAME / "scenery" / "index.json").read_text(encoding="utf-8"))
+        index = scenery_index()
         models = {}
         for p in sorted(SIT.glob("*/engine.json")):
             for k, a in enumerate(json.loads(p.read_text(encoding="utf-8")).get("actors", [])):
