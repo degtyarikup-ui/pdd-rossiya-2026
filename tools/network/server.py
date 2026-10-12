@@ -12,6 +12,7 @@ import json
 import re
 import subprocess
 import sys
+import threading
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -33,6 +34,9 @@ FONTS = check.ROOT / "assets" / "fonts"
 QUESTIONS = check.ROOT / "assets" / "countries" / "ru" / "questions"
 IMAGES = check.ROOT / "assets" / "countries" / "ru" / "images"
 ID = re.compile(r"^[a-z0-9_]+$")
+# The triangulation library keeps global state and crashes when two threads use it at once (the server
+# is threaded): every build of a scene goes through this lock.
+BUILD_LOCK = threading.Lock()
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 # Limits of a texture edit: numbers the game can draw sensibly (scenery.gdshader).
 TEXTURE_LIMITS = {"gain": (0.0, 8.0), "macro": (0.0, 0.5), "macroScale": (0.01, 2.0), "period": (0.4, 40.0)}
@@ -197,7 +201,9 @@ class Handler(BaseHTTPRequestHandler):
         m = re.match(r"^/api/scene/([a-z0-9_]+)$", path)
         if m and (NET / f"{m[1]}.json").exists():
             s = check.load(m[1])
-            return self.send(200, {"scene": s, "findings": check.check_scene(s), "build": build.build(s),
+            with BUILD_LOCK:
+                built = build.build(s)
+            return self.send(200, {"scene": s, "findings": check.check_scene(s), "build": built,
                                    "source": ticket_question(m[1])})
         self.send(404, {"error": "not found"})
 
@@ -214,12 +220,15 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": "scene id does not match the URL"})
         findings = check.check_scene(scene)
         if m[1] == "preview":
-            return self.send(200, {"findings": findings, "build": build.build(scene)})
+            with BUILD_LOCK:
+                built = build.build(scene)
+            return self.send(200, {"findings": findings, "build": built})
         target = NET / f"{m[2]}.json"
         removed = removed_items(check.load(m[2]) if target.exists() else {}, scene)
         keep_history(m[2])
         target.write_text(json.dumps(scene, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-        build.main([m[2]])
+        with BUILD_LOCK:
+            build.main([m[2]])
         try:
             synced = engine_sync.sync(m[2])
         except (ValueError, KeyError) as e:
