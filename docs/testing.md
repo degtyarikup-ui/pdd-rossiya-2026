@@ -14,7 +14,7 @@ flutter test                        # все тесты Flutter
 | Строки `*.arb` | `flutter gen-l10n`, затем `flutter test` |
 | Вход / Премиум / оплату | список из `docs/premium/README.md` + `npm run test:security` в `server/install-notifier` |
 | Воркер | `cd server/install-notifier && npm test` и нужные `npm run test:*` |
-| Игру (`assets/game/`) | нужные `tools/game_tests/*.cjs`, см. `docs/game/README.md` |
+| Игру (`game_godot/`) | тесты Godot из `game_godot/tests/`, см. `docs/game/README.md`; мини-игры (`assets/game/`) — `tools/game_tests/*.cjs` |
 | Правила экзамена | `flutter test test/exam_flow_test.dart` |
 | Контент ПДД | `python3 tools/ru_content/parse_pdd.py` (падает при сбое нумерации) |
 

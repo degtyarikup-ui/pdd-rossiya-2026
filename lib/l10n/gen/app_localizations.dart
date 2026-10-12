@@ -2638,6 +2638,12 @@ abstract class AppLocalizations {
   /// **'Не удалось открыть обновление. Попробуйте позже.'**
   String get appUpdateOpenFailed;
 
+  /// No description provided for @gameUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Игра пока недоступна на этом устройстве'**
+  String get gameUnavailable;
+
   /// No description provided for @profile.
   ///
   /// In ru, this message translates to:

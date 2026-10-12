@@ -4,7 +4,6 @@
 #   ./scripts/godot_dev.sh android   # APK -> Pixel over Wi-Fi (adb), launch
 #   ./scripts/godot_dev.sh ios       # Xcode project -> build -> iPhone (cable), launch
 #   ./scripts/godot_dev.sh all
-#   ./scripts/godot_dev.sh export    # re-export models and the 112 junction scenes (~20 min)
 #   ./scripts/godot_dev.sh web       # the game for the site: build/web/godot/ (after build.sh web)
 #
 # Separate app ru.pdd.godotspike: the store app is not touched.
@@ -15,9 +14,6 @@ PIXEL=${PIXEL:-$(cat .dev-device 2>/dev/null || echo 192.168.31.143:5555)}
 IPHONE=${IPHONE:-00008030-0005785A01D3C02E}
 OUT=output/godot
 mkdir -p "$OUT"
-
-export_models() { NODE_PATH="$PWD/node_modules" node tools/godot_export/export_models.cjs; }
-export_situations() { NODE_PATH="$PWD/node_modules" node tools/godot_export/export_situations.cjs; }
 
 android() {
   godot --headless --path game_godot --import >/dev/null 2>&1 || true
@@ -47,7 +43,7 @@ ios() {
 web() {
   local out="build/web/godot"
   command -v godot >/dev/null || { echo "Web: нет godot в PATH"; exit 1; }
-  [ -d "game_godot/situations" ] || { echo "Web: нет game_godot/situations — сначала ./scripts/godot_dev.sh export"; exit 1; }
+  [ -d "game_godot/situations" ] || { echo "Web: нет game_godot/situations (они лежат в git: git pull / проверьте клон)"; exit 1; }
   rm -rf "$out"; mkdir -p "$out"
   godot --headless --path game_godot --import >/dev/null 2>&1 || true
   godot --headless --path game_godot --export-release "Web" "../$out/index.html" 2>&1 | grep -E "ERROR" || true
@@ -66,10 +62,9 @@ web() {
 }
 
 case "${1:-all}" in
-  export) export_models; export_situations ;;
   android) android ;;
   ios) ios ;;
   web) web ;;
   all) android; ios ;;
-  *) echo "usage: $0 android|ios|all|export|web"; exit 1 ;;
+  *) echo "usage: $0 android|ios|all|web"; exit 1 ;;
 esac

@@ -1509,6 +1509,9 @@ class AppLocalizationsKk extends AppLocalizations {
       'Жаңартуды ашу мүмкін болмады. Тағы жасауды сәл кейінірек көріңізді өтінеміз.';
 
   @override
+  String get gameUnavailable => 'Ойын бұл құрылғыда әлі қолжетімсіз';
+
+  @override
   String get profile => 'Профиль';
 
   @override

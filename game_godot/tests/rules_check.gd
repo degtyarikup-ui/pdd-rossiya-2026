@@ -5,7 +5,7 @@
 ## questions: world._update_road with road_event.gd (overtaking, one-way, stop, solid line, U-turn,
 ## works, bus). The junctions (junction.gd through world.gd): red light, the stop line, priority,
 ## collision with a pedestrian or a car, a wrong exit. The junction checks need the exported junctions
-## in game_godot/situations/ (not in git: scripts/godot_dev.sh export); without them they are skipped.
+## in game_godot/situations/ (in git); without them they are skipped.
 ## road_check.gd keeps the detailed checks of every road question.
 ## Events (Host.send): violation, answer, run_start, run_end, and the events file of iOS (events.jsonl).
 ## Prints ok / FAIL / skip per check and PASS or FAIL; exit status 1 on a failure.

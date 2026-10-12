@@ -69,11 +69,10 @@ lib/
 
 | Папка | Что |
 | --- | --- |
-| `game_lab/` | Стенд сцен игры (`./scripts/game_lab.sh`) |
-| `game_tests/` | Браузерные тесты и аудиты игры (Playwright), `game_preview.dart` — отдельный запуск игры для нативного теста |
-| `game_content/` | Сборка дорожных ситуаций игры, обложки мини-игр |
+| `game_tests/` | Тесты мини-игр «Перекрёсток» и «Регулировщик» (Playwright) |
+| `game_content/` | Обложки мини-игр |
 | `web/` | Версионирование веб-сборки (вызывает `scripts/build.sh`), локальный сервер `build/web` |
-| `game_reels/`, `signs_reel/`, `yt_upload/` | Ролики для соцсетей |
+| `signs_reel/`, `yt_upload/` | Ролики для соцсетей |
 | `blog_admin/`, `seo/` | Генератор блога и SEO |
 | `ru_content/`, `l10n/` | Сборка текста ПДД, SVG знаков, переводы контента |
 | `achievements/`, `store_graphics/` | Графика достижений и сторов |

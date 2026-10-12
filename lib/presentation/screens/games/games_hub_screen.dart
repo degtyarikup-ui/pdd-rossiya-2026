@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'package:pdd_app/data/services/game_runs_service.dart';
-import 'package:pdd_app/presentation/screens/game/game_screen.dart';
 import 'package:pdd_app/presentation/screens/game/godot_game.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_leaderboard_sheet.dart';
 
@@ -83,11 +82,13 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
     await _refreshRating();
   }
 
-  /// Android and iOS with the Godot game in the build: the new game on its own
-  /// screen; elsewhere the WebView game.
+  /// The Godot game on its own screen (Android, iOS, the site). A platform without the
+  /// game in its build says so: the old WebView game is gone.
   Future<void> _openCity() async {
     if (!await GodotGame.available()) {
-      if (mounted) await _open(context, const GameScreen());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(appL10n.gameUnavailable)));
+      }
       return;
     }
     if (!mounted) return;

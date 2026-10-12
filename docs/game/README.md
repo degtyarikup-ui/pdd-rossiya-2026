@@ -1,78 +1,95 @@
-# 3D-игра «Живой город» — карта
+# 3D-игра «Живой город» — как запустить и где что лежит
 
-Две реализации, пока идёт замена:
+Игра — **Godot 4.7.2** (Compatibility), папка `game_godot/`. Старая WebView-игра (Three.js)
+удалена; последний коммит с ней — тег `game-webview-final`. Мини-игры «Перекрёсток» и
+«Регулировщик» остаются на `assets/game/` (это другие игры, к городской не относятся).
 
-- **Godot (новая)** — `game_godot/`, см. `game_godot/README.md` и план
-  `godot-roadmap.md`. Android — отдельный экран (процесс `:game`), iOS — окно
-  поверх приложения (`ios/Runner/PddGodotGame.mm`), web — `iframe` на сайте
-  (`godot/`). Flutter-обёртка: `lib/presentation/screens/game/godot_game.dart`
-  (гараж, оплата заезда, итоги, разбор ошибок, продолжение заезда).
-- **WebView / Three.js (старая)** — описана ниже; запускается, пока у платформы
-  нет сборки Godot (`GodotGame.available()` = false). Flutter-обёртка:
-  `lib/presentation/screens/game/` (мост событий — `game_controller.dart`,
-  `game_screen.dart`).
+В git лежит всё для запуска: код, модели, сцены перекрёстков (`game_godot/situations/`,
+207 МБ), данные сети и их сборка (`game_godot/network/`, `network/build/`), строки интерфейса
+(`data/ui.json`). Не в git только то, что строится само: кэш импорта `game_godot/.godot/`,
+движок и пакет для Android/iOS (`android/godot/`, `ios/Godot/`), превью редактора
+(`network/preview/`).
 
-Сборка Godot-версии: `./scripts/godot_android_assets.sh` (Android),
-`./scripts/godot_ios_assets.sh` (iOS), `./scripts/godot_dev.sh web` (web). Файлы
-движка и сцен в git не попадают.
+## Что поставить (один раз)
 
-## Файлы движка (`assets/game/`)
-
-| Файл | Что |
-| --- | --- |
-| `game.js` | Движок: мир, дороги, перекрёстки, физика, камера, мост во Flutter |
-| `junction-situations.js` | Перекрёстки из билетов (геометрия, участники, знаки) |
-| `scenario-routes.js` | Проверенные маршруты и правки сцен по билетам (`overrides`) |
-| `road-situations.js` | Дорожные вопросы на прямых участках |
-| `scene-edits.js` | Ручные правки стенда — **генерируется стендом, руками не править** |
-| `model-edits.js` | Правки моделей из мастерской стенда (генерируется) |
-| `vehicles.js`, `vehicle-materials.js` | Машина игрока и транспорт |
-| `road-materials.js` | Текстуры асфальта, тротуаров, травы, фасадов |
-| `street-models.js` | Пешеходы, фонари |
-| `sign-textures.js` | Текстуры знаков (большой файл с base64) |
-| `seasons.js` | Палитры сезонов, листопад |
-| `crossroads.js`, `traffic-controller*.js` | Мини-игры |
-| `touch-controls.js` | Педали и стрелки руля, нарисованные самой страницей (нажатие доходит до движка без моста Flutter → WebView). Flutter шлёт только `setTouchControls({visible, enabled, colors, labels, insets})`; обратно — события `haptic`, `gas_pressed`. В браузерной сборке остаётся Flutter-виджет `GameControlsOverlay` |
-| `quality-tier.js` | Уровень качества `low/mid/high` по названию видеочипа (Adreno 610 = low, а не «8 ядер = мощный»); профили: сглаживание, плотность пикселей, тени, лимит 30 к/с на low. Принудительно — `setQualityTier` из скрытого меню (имитация бюджетника); тест классификации — `tools/game_tests/game-quality-tier-test.cjs` |
-| `perf-hud.js` | Счётчик производительности (fps, худший кадр, draw calls, задержка нажатия, видеочип); включается в скрытом меню (долгое нажатие на гараж, dev-сборка) → `setPerfHud`; раз в 5 с строка `[game-perf]` в logcat |
-| `ambient-audio.js` | Звук мини-игр (WebAudio, без файлов): фон улицы, мотор, трамвай, сирена, удар; включается настройкой «Звук» (`setSoundEnabled` / `TrafficControllerGame.setSound`) |
-
-## Соглашения движка
-
-- Фабрики дорог строят в координатах «X = правая рука водителя»;
-  `registerRoadSegment` один раз зеркалирует позиции детей. Запечённая в
-  геометрию разметка/полигоны **не** зеркалируются — держать их симметричными
-  или задавать в мировых X.
-- Проезжая часть — меши с `userData.surface = 'road'` (непрямоугольные — с
-  `containsRoad`), непроезжие острова — `userData.noRoad`. Машина физически не
-  покидает дорогу.
-- Тяжёлые декорации строятся генератором через `enqueueScenery` (по шагам,
-  бюджет ~3 мс на кадр); повторяющиеся мелочи сливаются `mergeStatic`.
-- После поворота мир «перебазируется» (`finishManeuver`, `maybeReverseWorld`):
-  игрок всегда едет по +Z.
-- Тупик (знак 6.8.x): `buildDeadEndSegment`, `deadEndAhead()`. За закрытым
-  концом ничего не строится. Ситуация включает его полем `deadEnd: 'right'`.
-
-## Стенд и проверки
+| Что | Зачем |
+|---|---|
+| Godot **4.7.2** Standard, команда `godot` в PATH | запуск и тесты |
+| Шаблоны экспорта 4.7.2 (Godot → Editor → Manage Export Templates) | сборка Android / iOS / Web |
+| Flutter (`~/flutter/bin`) + JDK 17 + Android SDK | сборка приложения |
+| Python 3 | редактор и сборка сети |
 
 ```bash
-./scripts/game_lab.sh                    # http://127.0.0.1:8940/
-NODE_PATH=<playwright> node tools/game_tests/game-deadend-test.cjs
+./scripts/setup_game.sh      # проверит Godot, поставит Python-пакеты сети, импортирует проект
 ```
 
-Тесты в `tools/game_tests/` ждут сервер: большинство — статический сервер
-корня репо на :8938 (`python3 -m http.server 8938`), лабораторные — стенд
-(`GAME_LAB_PORT=8941 python3 tools/game_lab/server.py`). Порт задаётся
-`GAME_URL` / `GAME_LAB_URL`. Playwright и Chrome — локально (`NODE_PATH`).
+Для сборок под Android нужны ключ подписи `android/key.properties` и
+`android/upload-keystore.jks`, а для связи с сервером — `secrets/install_notify_secret.txt`
+(их нет в git: возьмите у владельца).
 
-Известно на 2026-10-10: `game-engine-test` (стрелки маршрута) и
-`game-final-driving-test` (билет 31·14) падают и на прежнем коде.
+## Запуск на компьютере
+
+```bash
+godot --path game_godot                          # окно: игра с первого перекрёстка
+godot --path game_godot -- --situation=ticket_10_13 --auto --near   # один перекрёсток, автопилот
+godot --path game_godot -- --garage="$(cat scratch/garage.json)"    # с гаражом (JSON от приложения)
+```
+
+Флаги — в `game_godot/README.md`. Без `--garage` гаража нет и игра стартует сразу.
+
+## Проверки (headless)
+
+```bash
+godot --headless --path game_godot --script res://tests/rules_check.gd      # нарушения: 47 проверок
+godot --headless --path game_godot --script res://tests/road_check.gd       # дорожные вопросы: 70 проверок
+godot --headless --path game_godot --script res://tests/surface_check.gd    # перекрёстки без дублей дорожного слоя
+godot --headless --path game_godot --script res://tests/collision_check.gd  # столкновения
+godot --headless --path game_godot --script res://tests/ghost_check.gd      # призрак улицы
+godot --headless --path game_godot --script res://tests/traffic_check.gd    # трафик
+```
+
+Скрипт с ошибкой в headless-режиме **зависает**, а не падает: ставьте таймаут
+(`perl -e 'alarm 300; exec @ARGV' godot ...`). После изменения скриптов с `class_name`
+выполните `godot --headless --path game_godot --import`.
+
+## Сборка и установка
+
+```bash
+./scripts/godot_android_assets.sh     # движок + файлы игры → android/godot/ (не в git)
+./scripts/install_dev.sh --build      # тестовый APK ru.pdd.pdd_app.dev на телефон по Wi-Fi
+./scripts/godot_ios_assets.sh         # то же для iOS (ios/Godot/)
+./scripts/godot_dev.sh web            # игра для сайта: build/web/godot/
+```
+
+Без `android/godot/` приложение собирается, но в разделе «Игры» игра недоступна
+(`GodotGame.available()` = false, показывается сообщение). Подробности — `game_godot/README.md` и
+комментарии в начале скриптов.
+
+## Данные: откуда что берётся
+
+```
+tools/network/editor  ──►  game_godot/network/<id>.json      (сеть дорог: источник правды)
+tools/network/build.py ─►  game_godot/network/build/<id>.json (поверхности, бордюры, проезжая часть)
+tools/network/engine_sync.py ► game_godot/situations/<id>/scene.json (то, что читает игра)
+```
+
+После правки сети (редактор: `./scripts/network_editor.sh` → http://127.0.0.1:8950/, он
+сам вызывает сборку при сохранении) закоммитьте и `network/*.json`, и `network/build/`,
+и `situations/*/scene.json`. Проверка сети: `tools/network/.venv/bin/python tools/network/check.py`
+(23 известные ошибки «маршрут вне дороги» — не растут).
+
+Строки интерфейса игры берутся из `lib/l10n/*.arb`: `python3 tools/godot_export/export_ui.py`
+пересобирает `game_godot/data/ui.json` (ru/en/kk одновременно).
+
+## Приложение (Flutter)
+
+`lib/presentation/screens/game/godot_game.dart` — гараж, оплата заезда, итоги, продолжение заезда,
+разбор ошибок; канал `pdd/godot_game`. Android — `android/app/src/godot/` (экран игры в процессе
+`:game`), iOS — `ios/Runner/PddGodotGame.mm`, web — iframe `/app/godot/`.
+Экономика заездов и очков — `docs/game/game-economy-2026-10-10.md`.
 
 ## Документы
 
-- `game-implementation.md` — общее устройство и история
-- `game-scenario-audit.md` — сверка сцен с билетами
-- `game-review-fixes.md`, `game-texture-passes.md`, `game-streaming-and-trams.md`,
-  `game-city-polish-2026-10-10.md`, `game-economy-2026-10-10.md` — проходы доработок
-- `mini-games-pdd-audit.md`, `mini-game-covers.md` — мини-игры
-- `tools/game_lab/README.md` — стенд, `tools/game_reels/README.md` — ролики
+- `godot-roadmap.md` — что сделано и что открыто
+- `godot-migration.md` — как и почему перешли на Godot
+- `game-economy-2026-10-10.md`, `game-covers-2026-10-10.md`, `mini-game*.md` — экономика, обложки, мини-игры

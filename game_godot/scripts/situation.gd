@@ -1,5 +1,5 @@
 ## One exam situation exported from the WebView game
-## (tools/godot_export/export_situations.cjs): the junction scene, its
+## (the data of game_godot/situations/): the junction scene, its
 ## roadside props, traffic lights and participants, plus everything the
 ## engine computed for it (scene.json: paths, exits, stop line, lanes).
 ## Coordinates: origin = junction centre, the player approaches along +Z.

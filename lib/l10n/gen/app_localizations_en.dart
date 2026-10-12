@@ -1509,6 +1509,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'The update could not be opened. Please try again later.';
 
   @override
+  String get gameUnavailable => 'The game is not available on this device yet';
+
+  @override
   String get profile => 'Profile';
 
   @override

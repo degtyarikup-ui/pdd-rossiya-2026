@@ -32,7 +32,7 @@ Markings (`markings`): each item is one of
              of `length` (default 4 m) along the traffic, 0.7 m wide, 0.7 m apart;
 and the `colour` is "white" (default) or "yellow". Markings are drawn at MARK_Y, cut to the
 carriageway with a 0.3 m margin (the baked paint reached a little past the edge).
-Signs are not built here (they are baked props, see export_situations.cjs).
+Signs are not built here (they are baked props of the scene, see situation.gd).
 """
 import json
 import sys

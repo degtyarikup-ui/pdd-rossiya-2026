@@ -1528,6 +1528,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось открыть обновление. Попробуйте позже.';
 
   @override
+  String get gameUnavailable => 'Игра пока недоступна на этом устройстве';
+
+  @override
   String get profile => 'Профиль';
 
   @override

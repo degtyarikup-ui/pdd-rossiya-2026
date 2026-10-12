@@ -48,7 +48,7 @@ class GodotGame {
   static const _vehicleKey = 'game_vehicle';
   static const _paintKey = 'game_vehicle_paint';
   static const _seenModelsKey = 'game_seen_models';
-  // The same keys as the WebView game (game_screen.dart): the tips and the first-drive gas hint.
+  // The tips and the first-drive gas hint.
   static const _tipsSeenKey = 'game_tips_seen';
   static const _firstRunSeenKey = 'game_seen';
   static const _pendingRunKey = 'game_run_pending';

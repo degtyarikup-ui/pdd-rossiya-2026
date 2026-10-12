@@ -1,2 +1,2 @@
-// Hand edits from the game lab (tools/game_lab) — generated, do not edit by hand.
+// Hand edits of the models (the game lab was removed with the city game) — generated, do not edit by hand.
 window.PDD_MODEL_EDITS = {};

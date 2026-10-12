@@ -767,6 +767,7 @@
   "appUpdateReadyBody": "Новая версия уже скачана. Перезапустите приложение, чтобы установить её.",
   "appUpdateRestart": "Перезапустить",
   "appUpdateOpenFailed": "Не удалось открыть обновление. Попробуйте позже.",
+  "gameUnavailable": "Игра пока недоступна на этом устройстве",
   "@appUpdateVersion": {
     "placeholders": {
       "version": {

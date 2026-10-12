@@ -439,6 +439,7 @@
   "appUpdateReadyBody": "New version has already been downloaded. Restart the application to install it.",
   "appUpdateRestart": "Restart",
   "appUpdateOpenFailed": "The update could not be opened. Please try again later.",
+  "gameUnavailable": "The game is not available on this device yet",
   "profile": "Profile",
   "signInCardTitle": "Login to your account",
   "signInCardSubtitle": "Save progress and premium",

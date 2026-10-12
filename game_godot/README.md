@@ -1,7 +1,7 @@
-# Игра на Godot — пробная сцена (spike)
+# Игра на Godot — «Живой город»
 
-Ветка `game-rewrite`. Проверка, что Godot 4.7 даёт быстрый кадр на телефонах,
-до переноса игры целиком. Откат к прежней игре — тег `game-before-rewrite`.
+Основная игра приложения (Godot 4.7.2, Compatibility). Как поставить, запустить и проверить —
+`docs/game/README.md`. Старая WebView-игра удалена; последний коммит с ней — тег `game-webview-final`.
 
 ## Запуск
 
@@ -87,4 +87,4 @@ device install app`. Пакет `ru.pdd.godotspike` — отдельное пр�
 - `--mute` — выключить звук.
 - `--season=winter|summer|autumn`, `--lang=ru|en|kk`, `--dark`, `--overview`.
 
-Перекрёстки (`situations/`) не коммитятся: их выгружает `./scripts/godot_dev.sh export` (около 30 минут).
+Перекрёстки (`situations/`) лежат в git: это источник данных игры (старая WebView-игра, из которой их выгружали, удалена).
