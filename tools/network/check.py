@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 from shapely.geometry import LineString, Point, Polygon
+from shapely import make_valid
 from shapely.ops import unary_union
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -23,11 +24,13 @@ DRIVEN_TYPES = ("car", "truck", "bus", "motorcycle", "tram", "van", "special", "
 
 
 def road_area(scene: dict):
+    # make_valid: an outline that crosses itself (a drawn road doubling back) is repaired for the sums;
+    # its own finding (road-invalid) tells the user what is wrong.
     polys = []
     for r in scene.get("roads", []):
-        outer = Polygon(r["outer"])
+        outer = make_valid(Polygon(r["outer"]))
         for h in r.get("holes", []):
-            outer = outer.difference(Polygon(h))
+            outer = outer.difference(make_valid(Polygon(h)))
         polys.append(outer)
     return unary_union(polys) if polys else Polygon()
 
@@ -46,11 +49,12 @@ def check_layers(scene: dict, area, out: list) -> None:
     """Lawns and markings (build.py): polygons that are valid, known types, paint on the carriageway."""
     for l in scene.get("lawns", []):
         ref = {"type": "lawn", "id": l.get("id")}
-        p = Polygon(l.get("outer", []))
-        if len(l.get("outer", [])) < 3 or not p.is_valid or p.area < 1.0:
+        raw = Polygon(l.get("outer", []))
+        p = make_valid(raw)
+        if len(l.get("outer", [])) < 3 or not raw.is_valid or p.area < 1.0:
             finding(out, "error", "lawn-invalid", f"{l.get('id')}: контур газона не является корректным многоугольником", ref)
         for h in l.get("holes", []):
-            if not Polygon(h).is_valid or not p.buffer(0.05).covers(Polygon(h)):
+            if not Polygon(h).is_valid or not p.buffer(0.05).covers(make_valid(Polygon(h))):
                 finding(out, "error", "lawn-hole", f"{l.get('id')}: дыра газона лежит вне газона", ref)
     for m in scene.get("markings", []):
         ref = {"type": "marking", "id": m.get("id")}
@@ -87,13 +91,14 @@ def check_scene(scene: dict) -> list:
     if not roads:
         finding(out, "error", "no-road", "в сцене нет ни одной дороги")
     for r in roads:
-        p = Polygon(r["outer"])
-        if len(r["outer"]) < 3 or not p.is_valid or p.area < 1.0:
+        raw = Polygon(r["outer"])
+        p = make_valid(raw)
+        if len(r["outer"]) < 3 or not raw.is_valid or p.area < 1.0:
             finding(out, "error", "road-invalid", f"{r.get('id')}: контур дороги не является корректным многоугольником",
                     {"type": "road", "id": r.get("id")})
         for h in r.get("holes", []):
             hp = Polygon(h)
-            if not hp.is_valid or not p.buffer(0.05).covers(hp):
+            if not hp.is_valid or not p.buffer(0.05).covers(make_valid(hp)):
                 finding(out, "error", "hole-outside", f"{r.get('id')}: островок лежит вне дороги",
                         {"type": "road", "id": r.get("id")})
     area = road_area(scene)

@@ -245,13 +245,21 @@ class Handler(BaseHTTPRequestHandler):
     def body(self):
         return json.loads(self.rfile.read(int(self.headers["Content-Length"])))
 
+    # A failure inside a scene's checks or build is an answer for the editor (422 with the reason), not a
+    # dropped connection that looks like "Failed to fetch".
     def do_GET(self):
         with BUILD_LOCK:
-            self.route_get()
+            self.guarded(self.route_get)
 
     def do_POST(self):
         with BUILD_LOCK:
-            self.route_post()
+            self.guarded(self.route_post)
+
+    def guarded(self, route):
+        try:
+            route()
+        except Exception as e:  # noqa: BLE001 - reported to the editor, the server goes on
+            self.send(422, {"error": f"Сцена не собралась: {type(e).__name__}: {e}"})
 
     def route_get(self):
         path = self.path.split("?")[0]
