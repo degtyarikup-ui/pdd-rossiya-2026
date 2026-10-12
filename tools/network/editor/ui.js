@@ -1,8 +1,10 @@
-// The editor's logic: scenes, the object tree, tools, the inspector, the question panel,
-// checks, undo/redo, live preview and saving. The 3D view is in scene3d.js.
+// The editor's logic: scenes, the object tree, the tools and their guide, the inspector, the question
+// panel, checks, the textures, undo/redo, live preview and saving. The 3D view is in scene3d.js,
+// the textures' numbers and pictures in textures.js.
 const Ed = (() => {
   const $ = (s) => document.querySelector(s);
   const esc = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const ic = (name, cls = "") => `<svg class="i ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
   const RAD = 180 / Math.PI;
   const EXIT = { left: "налево", right: "направо", straight: "прямо", uturn: "разворот" };
   const TYPE = { car: "Легковой автомобиль", truck: "Грузовик", bus: "Автобус", tram: "Трамвай", pedestrian: "Пешеход",
@@ -12,27 +14,41 @@ const Ed = (() => {
   const LETTERS = ["А", "Б", "В", "Г", "Д"];
   const MARK_TYPES = { solid: "Сплошная", dashed: "Прерывистая", stop: "Стоп-линия", zebra: "Зебра" };
   const MARK_COLOURS = { white: "Белая", yellow: "Жёлтая" };
-  const TOOLS = {
-    select: { key: "V", hint: "Выбор: нажмите объект или линию. Тяните точку или объект. Тяните внутри дороги, чтобы её сдвинуть. Стрелки и [ ] — сдвиг и поворот." },
-    route: { key: "M", hint: "Маршрут: кликайте точки пути. Двойной клик или Enter — готово, Esc — отмена." },
-    road: { key: "D", hint: "Дорога: кликайте углы контура. Клик у первой точки или Enter — замкнуть." },
-    straight: { key: "R", hint: "Прямой участок: две точки — начало и конец оси. Концы примыкают к ближайшим углам дороги (до 1,5 м)." },
-    island: { key: "I", hint: "Островок: контур внутри дороги. Клик у первой точки или Enter — замкнуть." },
-    lawn: { key: "G", hint: "Газон: контур газона или клумбы. Клик у первой точки или Enter — замкнуть. Газон ложится на тротуар, но не на дорогу." },
-    marking: { key: "K", hint: "Разметка: сплошная и прерывистая — кликайте точки линии, Enter — готово. Стоп-линия и зебра — две точки поперёк дороги." },
-    decor: { key: "P", hint: "Декор: кликните место, чтобы поставить выбранный предмет." },
-    actor: { key: "A", hint: "Участник: кликните место, чтобы поставить машину или пешехода." },
-    light: { key: "L", hint: "Светофор: кликните место у дороги." },
-    stop: { key: "S", hint: "Стоп-линия: кликните место, где начинается остановка (подъезд подстроится)." },
+  // What the props of the game are called (scenery/index.json keys: group/name_n).
+  const PROP_GROUP = { buildings: "Здания", trees: "Деревья", street: "Уличные предметы" };
+  const PROP_NAME = { home: "Частный дом", block: "Жилой дом", tower: "Высотка", pine: "Ель", round: "Дерево", birch: "Берёза",
+    bush: "Куст", fence: "Забор", kiosk: "Киоск", lamp: "Фонарь" };
+  const propTitle = (p) => {
+    const [group, name = ""] = p.split("/");
+    const base = name.replace(/_\d+$/, "");
+    return PROP_NAME[base] || `${PROP_GROUP[group] || group} · ${name}`;
   };
+  // The tools, in the order of the toolbar. icon: the picture in the toolbar and the guide.
+  const TOOLS = {
+    select: { key: "V", label: "Выбрать", icon: "cursor", hint: "Нажмите линию, дорогу, участника или светофор на плане — или выберите его в списке «Объекты». Тяните точки и объекты." },
+    road: { key: "D", label: "Дорога", icon: "road", hint: "Кликайте углы контура дороги по порядку. Клик у первой точки или Enter — контур замкнётся." },
+    straight: { key: "R", label: "Прямой участок", icon: "straight", hint: "Две точки — начало и конец оси. Концы примыкают к ближайшим углам дороги (до 1,5 м)." },
+    island: { key: "I", label: "Островок", icon: "island", hint: "Контур островка внутри дороги. Клик у первой точки или Enter — контур замкнётся." },
+    lawn: { key: "G", label: "Газон", icon: "lawn", hint: "Контур газона или клумбы. Клик у первой точки или Enter — замкнуть. Газон не заходит на дорогу." },
+    marking: { key: "K", label: "Разметка", icon: "marking", hint: "Сплошная и прерывистая: кликайте точки линии, Enter — готово. Стоп-линия и зебра: две точки поперёк дороги." },
+    route: { key: "M", label: "Маршрут", icon: "route", hint: "Кликайте точки пути по порядку. Двойной клик или Enter — готово, Esc — отмена." },
+    stop: { key: "S", label: "Стоп-линия", icon: "stopline", hint: "Кликните место, где начинается остановка. Подъезд подстроится под неё." },
+    actor: { key: "A", label: "Участник", icon: "car", hint: "Кликните место, чтобы поставить машину или пешехода. Потом нарисуйте ему путь." },
+    light: { key: "L", label: "Светофор", icon: "light", hint: "Кликните место у дороги, чтобы поставить светофор." },
+    decor: { key: "P", label: "Декор", icon: "tree", hint: "Кликните место, чтобы поставить выбранный предмет: дом, дерево, киоск или фонарь." },
+  };
+  const TOOL_GROUPS = [["select"], ["road", "straight", "island"], ["lawn", "marking"], ["route", "stop"], ["actor", "light", "decor"]];
+  const GROUP_ICON = { roads: "road", lawns: "lawn", marks: "marking", routes: "route", stop: "flag", actors: "car", lights: "light", decor: "tree" };
   const DRIVEN = ["car", "truck", "bus", "motorcycle", "tram", "van", "special", "tanker"];
 
-  let scenes = [], catalog = null, filter = "all", query = "", objQuery = "";
+  let scenes = [], catalog = null, filter = "all", query = "", objQuery = "", texQuery = "";
   let S = null, id = null, findings = [], source = null, seq = 0, previewTimer = null;
-  let sel = null, tool = "select", ltab = "scenes", rtab = "props", opts = { route: "manoeuvre", exit: "left", label: "А", actorType: "car", prop: "", draw: null,
+  let sel = null, tool = "select", ltab = "scenes", rtab = "props", texSel = null, texView = "final";
+  let opts = { route: "manoeuvre", exit: "left", label: "А", actorType: "car", prop: "", draw: null,
     mark: "solid", markColour: "white", roadWidth: 8.4 };
   let undoStack = [], redoStack = [], dirty = false, savedJson = "", drag = null, draft = null, cursorWorld = null;
   let openGroups = { roads: true, lawns: true, marks: true, routes: true, actors: true, lights: true, decor: false, stop: true };
+  let legendOpen = false;
 
   // ---- api ---------------------------------------------------------------------------
   async function api(path, body) {
@@ -44,10 +60,10 @@ const Ed = (() => {
 
   function toast(text, kind = "") {
     const t = $("#toast");
-    t.textContent = text;
+    t.innerHTML = `${ic(kind === "bad" ? "error" : kind === "warn" ? "alert" : kind === "good" ? "check-circle" : "info")}<span>${esc(text)}</span>`;
     t.className = "toast show " + kind;
     clearTimeout(toast.timer);
-    toast.timer = setTimeout(() => (t.className = "toast"), 3200);
+    toast.timer = setTimeout(() => (t.className = "toast"), 3600);
   }
 
   // ---- geometry ----------------------------------------------------------------------
@@ -57,7 +73,8 @@ const Ed = (() => {
     const q = poly[(i + 1) % poly.length];
     return s + p[0] * q[1] - q[0] * p[1];
   }, 0)) / 2;
-  const pad = (n) => String(n).padStart(2, "0");
+  const r3 = (v) => Math.round(v * 1000) / 1000;
+  const fmt = (v, digits = 1) => Number(v).toLocaleString("ru-RU", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
   // ---- data helpers ------------------------------------------------------------------
   const routeOf = (rid) => S.routes.find((r) => r.id === rid);
@@ -65,7 +82,6 @@ const Ed = (() => {
   const lightOf = (lid) => S.lights.find((l) => l.id === lid);
   const decorOf = (did) => S.decor.find((d) => d.id === did);
   const isApproach = (r) => r.kind === "approach";
-
   const markingOf = (mid) => (S.markings || []).find((m) => m.id === mid);
 
   function objectOf(s) {
@@ -81,6 +97,28 @@ const Ed = (() => {
     return null;
   }
 
+  // What the selection is called in the guide and the bar of the selection.
+  function selectionName(s) {
+    if (!s) return "";
+    if (s.t === "road") return s.part === -1 || s.part === undefined ? `Дорога ${s.i + 1}` : `Островок ${s.part + 1} дороги ${s.i + 1}`;
+    if (s.t === "lawn") return s.part === -1 || s.part === undefined ? `Газон ${s.i + 1}` : `Дыра в газоне ${s.i + 1}`;
+    if (s.t === "marking") { const m = markingOf(s.id); return m ? (m.type === "paint" ? "Разметка из сцены" : MARK_TYPES[m.type] || m.type) : ""; }
+    if (s.t === "route") {
+      const r = routeOf(s.id);
+      if (!r) return "";
+      if (r.kind === "manoeuvre") return `Манёвр «${EXIT[r.exit]}»`;
+      if (r.kind === "choice") return `Вариант ${r.label}`;
+      if (r.kind === "approach") return "Подъезд к стоп-линии";
+      const a = actorOf(r.id.replace("actor_", ""));
+      return `Путь: ${a ? a.name || a.id : r.id}`;
+    }
+    if (s.t === "actor") { const a = actorOf(s.id); return a ? a.name || a.id : ""; }
+    if (s.t === "light") return `Светофор ${String(s.id).replace("light_", "")}`;
+    if (s.t === "decor") { const d = decorOf(s.id); return d ? propTitle(d.prop) : ""; }
+    if (s.t === "stop") return "Стоп-линия и старт";
+    return "";
+  }
+
   function uniqueId(prefix, taken) {
     let n = 1;
     while (taken.includes(`${prefix}${n}`)) n++;
@@ -92,6 +130,10 @@ const Ed = (() => {
     if (undoStack.length > 300) undoStack.shift();
     redoStack = [];
   }
+
+  // Dirty means the scene or a texture differs from what is saved.
+  const sceneDirty = () => dirty;
+  const anyDirty = () => dirty || Textures.dirtyKinds().length > 0;
 
   function changed(redraw = true) {
     dirty = JSON.stringify(S) !== savedJson;
@@ -135,7 +177,7 @@ const Ed = (() => {
   }
 
   async function openScene(sid) {
-    if (dirty && !confirm("Есть несохранённые правки. Открыть другую сцену без сохранения?")) return;
+    if (dirty && !confirm("Есть несохранённые правки в этой сцене. Открыть другую сцену без сохранения?")) return;
     const r = await api(`/api/scene/${sid}`);
     S = r.scene;
     S.lawns = S.lawns || [];
@@ -148,6 +190,7 @@ const Ed = (() => {
     dirty = false;
     savedJson = JSON.stringify(S);
     sel = null;
+    texSel = null;
     draft = null;
     tool = "select";
     Scene3D.load(S, r.build);
@@ -162,29 +205,34 @@ const Ed = (() => {
     return m ? `Билет ${m[1]} · вопрос ${m[2]}` : sid;
   }
 
-  function renderScenes() {
-    const q = query.trim().toLowerCase();
-    const list = scenes.filter((s) => (!q || s.id.includes(q) || sceneTitle(s.id).toLowerCase().includes(q)) &&
-      (filter === "all" || (filter === "err" && s.errors) || (filter === "todo" && s.status === "unverified")));
-    $("#scene-list").innerHTML = list.map((s) => {
-      const ok = !s.errors;
-      return `<button class="scene-row ${s.id === id ? "on" : ""}" data-id="${s.id}">
-        <img src="/preview/${s.id}.png" loading="lazy" onerror="this.style.visibility='hidden'" alt="">
-        <span class="scene-text"><b>${esc(sceneTitle(s.id))}</b>
-        <small>${s.errors ? `${s.errors} ${plural(s.errors, ["ошибка", "ошибки", "ошибок"])}` : "проверка пройдена"}${s.warns ? ` · ${s.warns} замеч.` : ""}
-        · ${s.status === "ok" ? "сверено" : s.status === "fixed" ? "исправлено" : "не сверено"}</small>
-        ${s.playable ? "" : `<em class="note-tag">${s.regulator ? "регулировщик" : "нет в игре"}</em>`}</span>
-        <i class="dot ${s.errors ? "bad" : ok && s.status !== "unverified" ? "good" : "todo"}"></i></button>`;
-    }).join("") || `<div class="empty-list">Ничего не найдено</div>`;
-    $("#count-scenes").textContent = `${list.length} из ${scenes.length}`;
-  }
-
   function plural(n, forms) {
     const m = n % 100, k = n % 10;
     if (m > 10 && m < 20) return forms[2];
     if (k === 1) return forms[0];
     if (k > 1 && k < 5) return forms[1];
     return forms[2];
+  }
+
+  function renderScenes() {
+    const q = query.trim().toLowerCase();
+    const match = (s) => !q || s.id.includes(q) || sceneTitle(s.id).toLowerCase().includes(q);
+    const list = scenes.filter((s) => match(s) &&
+      (filter === "all" || (filter === "err" && s.errors) || (filter === "todo" && s.status === "unverified")));
+    $("#scene-list").innerHTML = list.map((s) => {
+      const parts = [s.errors ? `${s.errors} ${plural(s.errors, ["ошибка", "ошибки", "ошибок"])}` : "без ошибок"];
+      if (s.warns) parts.push(`${s.warns} замеч.`);
+      parts.push(s.status === "ok" ? "сверено" : s.status === "fixed" ? "исправлено" : "не сверено");
+      const dot = s.errors ? "bad" : s.status !== "unverified" ? "good" : "";
+      return `<button class="scene-row ${s.id === id ? "on" : ""}" data-id="${s.id}">
+        <img src="/preview/${s.id}.png" loading="lazy" onerror="this.style.visibility='hidden'" alt="">
+        <span class="scene-text"><b>${esc(sceneTitle(s.id))}</b>
+        <span class="scene-meta"><i class="dot ${dot}"></i>${parts.join(" · ")}</span>
+        ${s.playable ? "" : `<span class="note-tag">${s.regulator ? "регулировщик" : "нет в игре"}</span>`}</span></button>`;
+    }).join("") || `<div class="empty-list">Ничего не найдено. Попробуйте номер билета, например «10».</div>`;
+    const count = (f) => scenes.filter(f).length;
+    $("#n-all").textContent = scenes.length;
+    $("#n-err").textContent = count((s) => s.errors);
+    $("#n-todo").textContent = count((s) => s.status === "unverified");
   }
 
   // ---- tools -------------------------------------------------------------------------
@@ -201,27 +249,32 @@ const Ed = (() => {
     Scene3D.setDraft(null);
   }
 
+  // Points each drawing needs, and what to say when there are fewer. Too few keeps the drawing:
+  // one more click (or Enter after it) is enough, nothing is lost by an accidental double click.
+  const FEW = {
+    route: [2, "У маршрута должно быть хотя бы две точки"], road: [3, "У дороги должно быть хотя бы три точки"],
+    island: [3, "Островку нужно хотя бы три точки"], lawn: [3, "Газону нужно хотя бы три точки"],
+    marking: [2, "Разметке нужно хотя бы две точки"], straight: [2, "Прямому участку нужны начало и конец"],
+  };
+
   function finishDraft() {
     if (!draft) return;
+    if (draft.points.length < FEW[draft.kind][0]) return toast(FEW[draft.kind][1], "warn");
     const d = draft;
     draft = null;
     Scene3D.setDraft(null);
     if (d.kind === "route") {
-      const min = 2;
-      if (d.points.length < min) return toast("У маршрута должно быть хотя бы две точки", "warn");
       commit(() => {
         const r = addRoute(d.meta, d.points);
         if (r) sel = { t: "route", id: r.id };
       });
     } else if (d.kind === "road") {
-      if (d.points.length < 3) return toast("У дороги должно быть хотя бы три точки", "warn");
       commit(() => {
         const rid = uniqueId("road_", S.roads.map((r) => r.id));
         S.roads.push({ id: rid, outer: d.points, holes: [] });
         sel = { t: "road", i: S.roads.length - 1, part: -1 };
       });
     } else if (d.kind === "island") {
-      if (d.points.length < 3) return toast("Островку нужно хотя бы три точки", "warn");
       const c = centroid(d.points);
       const i = S.roads.findIndex((r) => inside(c, r.outer));
       if (i < 0) return toast("Островок должен лежать внутри дороги", "bad");
@@ -230,17 +283,14 @@ const Ed = (() => {
         sel = { t: "road", i, part: S.roads[i].holes.length - 1 };
       });
     } else if (d.kind === "lawn") {
-      if (d.points.length < 3) return toast("Газону нужно хотя бы три точки", "warn");
       commit(() => {
         const lid = uniqueId("lawn_", S.lawns.map((l) => l.id));
         S.lawns.push({ id: lid, outer: d.points, holes: [] });
         sel = { t: "lawn", i: S.lawns.length - 1, part: -1 };
       });
     } else if (d.kind === "marking") {
-      if (d.points.length < 2) return toast("Разметке нужно хотя бы две точки", "warn");
       commit(() => addMarking(d.type, d.points));
     } else if (d.kind === "straight") {
-      if (d.points.length < 2) return toast("Прямому участку нужны начало и конец", "warn");
       commit(() => addStraight(d.points[0], d.points[1], opts.roadWidth));
     }
   }
@@ -274,7 +324,6 @@ const Ed = (() => {
     const ux = (q[0] - p[0]) / len, uz = (q[1] - p[1]) / len;
     const nx = -uz * width / 2, nz = ux * width / 2, o = 1.0;
     const s0 = [p[0] - ux * o, p[1] - uz * o], s1 = [q[0] + ux * o, q[1] + uz * o];
-    const r3 = (v) => Math.round(v * 1000) / 1000;
     const outer = [
       [r3(s0[0] + nx), r3(s0[1] + nz)], [r3(s1[0] + nx), r3(s1[1] + nz)],
       [r3(s1[0] - nx), r3(s1[1] - nz)], [r3(s0[0] - nx), r3(s0[1] - nz)],
@@ -308,8 +357,6 @@ const Ed = (() => {
       p[1] = r3(cz + x * n + z * c);
     });
   }
-
-  const r3 = (v) => Math.round(v * 1000) / 1000;
 
   function centroid(poly) {
     const n = poly.length;
@@ -440,7 +487,9 @@ const Ed = (() => {
   }
 
   // ---- selection and dragging --------------------------------------------------------
+  // Choosing an object leaves the texture being edited: the inspector shows the object.
   function select(s) {
+    if (s) texSel = null;
     sel = s;
     Scene3D.setSelection(s && s.t !== "question" ? s : null);
     renderAll();
@@ -471,6 +520,7 @@ const Ed = (() => {
     if (h.kind === "vertex") {
       sel = h.owner.t === "route" ? { t: "route", id: h.owner.id } : { ...h.owner };
       sel.v = h.index;
+      texSel = null;
       Scene3D.setSelection(sel);
       snap();
       drag = { kind: "vertex", owner: { ...sel }, index: h.index, moved: false };
@@ -479,6 +529,7 @@ const Ed = (() => {
     }
     if (h.kind === "anchor") {
       sel = { t: h.t, id: h.id };
+      texSel = null;
       Scene3D.setSelection(sel);
       snap();
       drag = { kind: "anchor", t: h.t, id: h.id, moved: false };
@@ -487,12 +538,14 @@ const Ed = (() => {
     }
     if (h.kind === "route") {
       sel = { t: "route", id: h.id };
+      texSel = null;
       Scene3D.setSelection(sel);
       renderAll();
       return;
     }
     if (h.kind === "road" || h.kind === "lawn") {
       sel = { t: h.kind, i: h.i, part: h.part };
+      texSel = null;
       Scene3D.setSelection(sel);
       // Dragging the outline or the inside moves the whole object; a click alone changes nothing.
       if (e.world) { snap(); startBodyDrag(sel, e.world); }
@@ -501,6 +554,7 @@ const Ed = (() => {
     }
     if (h.kind === "marking") {
       sel = { t: "marking", id: h.id };
+      texSel = null;
       Scene3D.setSelection(sel);
       if (e.world) { snap(); startBodyDrag(sel, e.world); }
       renderAll();
@@ -731,8 +785,9 @@ const Ed = (() => {
 
   // Roads, lawns and markings are shapes: moved and turned as a whole (an island, a hole, only itself).
   const isShape = (s) => !!s && (s.t === "road" || s.t === "lawn" || s.t === "marking");
+  const canRotate = (s) => !!s && s.v === undefined && (isShape(s) || ["actor", "light", "decor", "stop"].includes(s.t));
 
-  // ---- live preview ------------------------------------------------------------------
+  // ---- live preview and saving -------------------------------------------------------
   function schedulePreview() {
     clearTimeout(previewTimer);
     previewTimer = setTimeout(runPreview, 260);
@@ -751,27 +806,44 @@ const Ed = (() => {
     renderScenes();
   }
 
-  async function save() {
-    if (!S) return;
-    if (!dirty) return toast("Все правки сохранены");
+  // Saves what has changed: the scene (its checks, the game's scene file) and the textures.
+  async function saveAll() {
+    if (!anyDirty()) return toast("Все правки сохранены");
+    const done = [];
+    let removed = [];
     try {
-      const r = await api(`/api/scene/${id}`, S);
-      dirty = false;
-      savedJson = JSON.stringify(S);
-      findings = r.findings;
-      const gone = r.removed && r.removed.length ? ` · удалено: ${r.removed.join(", ")}` : "";
-      toast(`Сохранено · ${r.findings.filter((f) => f.level === "error").length} ошибок${gone}`, r.removed && r.removed.length ? "warn" : "good");
-      await loadList();
-      renderAll();
+      if (S && dirty) {
+        const r = await api(`/api/scene/${id}`, S);
+        dirty = false;
+        savedJson = JSON.stringify(S);
+        findings = r.findings;
+        removed = r.removed || [];
+        const gone = removed.length ? ` · удалено: ${removed.join(", ")}` : "";
+        done.push(`сцена: ${r.findings.filter((f) => f.level === "error").length} ошибок${gone}`);
+        await loadList();
+      }
+      const kinds = Textures.dirtyKinds();
+      for (const kind of kinds) {
+        const p = Textures.draftOf(kind);
+        const body = { gain: p.gain, macro: p.macro, macroScale: p.macroScale };
+        if (p.period !== undefined) body.period = p.period;
+        await api(`/api/texture/${kind}`, body);
+        Textures.markSaved(kind);
+      }
+      if (kinds.length) done.push(`текстуры: ${kinds.length}`);
+      if (done.length) toast(`Сохранено · ${done.join(" · ")}`, removed.length ? "warn" : "good");
     } catch (e) {
       toast(`Не сохранено: ${e.message}`, "bad");
     }
+    renderAll();
+    renderTextures();
   }
 
   // ---- rendering ---------------------------------------------------------------------
   function renderAll() {
     renderHeader();
     renderTree();
+    renderTextures();
     renderInspector();
     renderChecks();
     renderTools();
@@ -785,16 +857,31 @@ const Ed = (() => {
     $("#title").textContent = S ? sceneTitle(id) : "Выберите сцену";
     $("#status").className = "chip " + (!S ? "" : err ? "bad" : "good");
     $("#status").textContent = !S ? "" : err ? `${err} ${plural(err, ["ошибка", "ошибки", "ошибок"])}` : warn ? `${warn} замеч.` : "всё в порядке";
-    $("#dirty").hidden = !dirty;
-    $("#save").disabled = !S || !dirty;
+    $("#dirty").hidden = !anyDirty();
+    $("#save").disabled = !anyDirty();
     $("#undo").disabled = !undoStack.length;
     $("#redo").disabled = !redoStack.length;
     document.title = S ? `${sceneTitle(id)} · Редактор сцен` : "Редактор сцен";
   }
 
+  // The toolbar: one button per tool, grouped. Its state and the guide follow the tool.
+  function buildTools() {
+    $("#tools").innerHTML = TOOL_GROUPS.map((g) => `<div class="grp">${g.map((t) => `
+      <button data-tool="${t}" data-tip="${TOOLS[t].label} · ${TOOLS[t].key}">${ic(TOOLS[t].icon)}<span>${TOOLS[t].label}</span></button>`).join("")}</div>`).join("");
+    $("#tools").querySelectorAll("[data-tool]").forEach((b) => b.addEventListener("click", () => {
+      if (!S) return toast("Сначала выберите сцену слева", "warn");
+      setTool(b.dataset.tool);
+    }));
+  }
+
   function renderTools() {
     document.querySelectorAll("#tools [data-tool]").forEach((b) => b.classList.toggle("on", b.dataset.tool === tool));
-    const o = $("#tool-opts");
+    renderGuide();
+    renderSelBar();
+  }
+
+  // Options of the tool in use (in the guide): what to draw, which exit, which letter or type.
+  function toolOptions() {
     const parts = [];
     if (tool === "route") {
       parts.push(`<label>Что рисуем
@@ -806,7 +893,7 @@ const Ed = (() => {
       if (opts.route === "actor") parts.push(`<label>Участник <select id="o-actor">${S ? S.actors.map((a) => `<option value="${a.id}" ${opts.actorFor === a.id ? "selected" : ""}>${esc(a.name || a.id)}</option>`).join("") : ""}</select></label>`);
     }
     if (tool === "decor" && catalog) {
-      parts.push(`<label>Предмет <select id="o-prop">${catalog.props.map((p) => `<option ${opts.prop === p.id ? "selected" : ""}>${p.id}</option>`).join("")}</select></label>`);
+      parts.push(`<label>Предмет <select id="o-prop">${catalog.props.map((p) => `<option value="${p.id}" ${opts.prop === p.id ? "selected" : ""}>${esc(propTitle(p.id))}</option>`).join("")}</select></label>`);
     }
     if (tool === "actor" && catalog) {
       parts.push(`<label>Тип <select id="o-type">${Object.keys(catalog.actorTypes).map((t) => `<option value="${t}" ${opts.actorType === t ? "selected" : ""}>${TYPE[t] || t}</option>`).join("")}</select></label>`);
@@ -816,9 +903,37 @@ const Ed = (() => {
       parts.push(`<label>Цвет <select id="o-mcolour">${Object.entries(MARK_COLOURS).map(([k, v]) => `<option value="${k}" ${opts.markColour === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>`);
     }
     if (tool === "straight") parts.push(`<label>Ширина, м <input id="o-rwidth" type="number" step="0.1" value="${opts.roadWidth}"></label>`);
-    if (draft) parts.push(`<span class="pill">точек: ${draft.points.length}</span>`);
-    o.innerHTML = parts.join("");
-    o.hidden = !parts.length;
+    return parts.join("");
+  }
+
+  // The guide: what the tool does now, its options, and the buttons that finish a drawing.
+  function renderGuide() {
+    const g = $("#guide");
+    g.hidden = !S;
+    if (!S) return;
+    const drawing = tool !== "select" && !(ltab === "textures");
+    let icon = TOOLS[tool].icon, title = TOOLS[tool].label, hint = TOOLS[tool].hint;
+    if (ltab === "textures") {
+      icon = "tiles";
+      title = texSel ? `Текстура: ${Textures.INFO[texSel]?.name || texSel}` : "Текстуры игры";
+      hint = texSel ? "Ползунки меняют вид на плане сразу. «Сохранить» записывает их в игру." : "Выберите текстуру слева, чтобы поменять её контраст, пятна, масштаб или картинку.";
+    } else if (tool === "select") {
+      icon = "cursor";
+      title = sel ? `Выбрано: ${selectionName(sel)}` : "Выберите объект";
+      hint = sel ? "Тяните точки и объект мышью. Стрелки — сдвиг (Shift — на 50 см), [ ] — поворот, Delete — удалить."
+        : TOOLS.select.hint;
+    }
+    $("#guide-icon").setAttribute("href", `#i-${icon}`);
+    $("#guide-title").textContent = title;
+    $("#guide-hint").textContent = hint;
+    $("#tool-opts").innerHTML = drawing ? toolOptions() : "";
+    bindToolOptions();
+    const actions = $("#draft-actions");
+    actions.hidden = !(drawing && draft);
+    $("#draft-count").textContent = draft ? `Точек: ${draft.points.length}` : "";
+  }
+
+  function bindToolOptions() {
     const bind = (sel, fn) => { const el = $(sel); if (el) el.onchange = () => fn(el); };
     bind("#o-mark", (el) => { opts.mark = el.value; renderTools(); });
     bind("#o-mcolour", (el) => { opts.markColour = el.value; });
@@ -829,7 +944,18 @@ const Ed = (() => {
     bind("#o-actor", (el) => { opts.actorFor = el.value; });
     bind("#o-prop", (el) => { opts.prop = el.value; });
     bind("#o-type", (el) => { opts.actorType = el.value; });
-    $("#hint").textContent = TOOLS[tool].hint;
+  }
+
+  // The bar of the selection: its name and its quick actions (the same keys work too).
+  function renderSelBar() {
+    const bar = $("#selbar");
+    const show = !!S && !!sel && tool === "select" && ltab !== "textures" && !!objectOf(sel);
+    bar.hidden = !show;
+    if (!show) return;
+    $("#selbar-name").textContent = selectionName(sel) + (sel.v !== undefined && sel.v >= 0 ? ` · точка ${sel.v + 1}` : "");
+    const rot = canRotate(sel);
+    $("#sel-rotl").hidden = !rot;
+    $("#sel-rotr").hidden = !rot;
   }
 
   function renderStatus() {
@@ -837,11 +963,15 @@ const Ed = (() => {
     const px = Scene3D.pxPerM;
     const bar = Math.min(200, Math.max(30, Math.round(10 * px)));
     $("#scale-bar").style.width = bar + "px";
-    $("#scale-text").textContent = `10 м`;
+    $("#scale-text").textContent = "10 м";
     $("#zoom-text").textContent = Scene3D.mode === "plan" ? `${px.toFixed(1)} px/м` : "3D";
+    $("#mode-plan").classList.toggle("on", Scene3D.mode === "plan");
+    $("#mode-3d").classList.toggle("on", Scene3D.mode !== "plan");
+    $("#legend").hidden = !legendOpen;
+    $("#legend-toggle").classList.toggle("on", legendOpen);
   }
 
-  // The object tree (left panel, "Объекты").
+  // Object tree (left panel, "Объекты").
   function renderTree() {
     if (!S) { $("#object-tree").innerHTML = `<div class="empty-list">Откройте сцену, чтобы увидеть её объекты</div>`; return; }
     const q = objQuery.trim().toLowerCase();
@@ -849,42 +979,70 @@ const Ed = (() => {
     const group = (key, title, count, body) => {
       const open = openGroups[key] !== false;
       return `<div class="tree-group"><button class="tree-head" data-group="${key}">
-        <span class="caret">${open ? "▾" : "▸"}</span>${title}<em>${count}</em></button>${open ? `<div class="tree-body">${body}</div>` : ""}</div>`;
+        <span class="caret ${open ? "open" : ""}">${ic("chevron")}</span>${ic(GROUP_ICON[key])}${title}<em>${count}</em></button>${open ? `<div class="tree-body">${body}</div>` : ""}</div>`;
     };
-    const row = (s, label, extra = "", cls = "") => {
+    const row = (s, label, extra = "", cls = "", icon = "") => {
       const on = sel && sel.t === s.t && (s.t === "stop" || sel.id === s.id) && (sel.i === undefined || sel.i === s.i) && (sel.part === undefined || sel.part === s.part);
-      return `<button class="tree-row ${on ? "on" : ""} ${cls}" data-sel='${esc(JSON.stringify(s))}'>${label}${extra ? `<small>${extra}</small>` : ""}</button>`;
+      return `<button class="tree-row ${on && !texSel ? "on" : ""} ${cls}" data-sel='${esc(JSON.stringify(s))}'>${icon ? ic(icon) : ""}${label}${extra ? `<small>${extra}</small>` : ""}</button>`;
     };
     const roads = S.roads.map((r, i) => {
-      const main = row({ t: "road", i, part: -1 }, `Дорога ${i + 1}`, `${Math.round(area(r.outer))} м²${r.holes.length ? ` · островков ${r.holes.length}` : ""}`);
-      const holes = r.holes.map((h, k) => row({ t: "road", i, part: k }, `Островок ${k + 1}`, `${Math.round(area(h))} м²`, "sub")).join("");
+      const main = row({ t: "road", i, part: -1 }, `Дорога ${i + 1}`, `${Math.round(area(r.outer))} м²${r.holes.length ? ` · островков ${r.holes.length}` : ""}`, "", "road");
+      const holes = r.holes.map((h, k) => row({ t: "road", i, part: k }, `Островок ${k + 1}`, `${Math.round(area(h))} м²`, "sub", "island")).join("");
       return hit(`дорога ${i + 1}`) || holes ? main + holes : "";
     }).join("");
     const routeRows = (kind) => S.routes.filter((r) => r.kind === kind).map((r) => {
       const name = kind === "manoeuvre" ? `Манёвр «${EXIT[r.exit]}»` : kind === "choice" ? `Вариант ${r.label}` : kind === "approach" ? "Подъезд к стоп-линии" : `Путь: ${actorOf(r.id.replace("actor_", ""))?.name || r.id}`;
-      return hit(name) ? row({ t: "route", id: r.id }, name, `${r.points.length} точ.`) : "";
+      return hit(name) ? row({ t: "route", id: r.id }, name, `${r.points.length} точ.`, "", "route") : "";
     }).join("");
-    const actors = S.actors.map((a) => hit(a.name || a.id) ? row({ t: "actor", id: a.id }, esc(a.name || a.id), TYPE[a.type] || a.type) : "").join("");
-    const lights = S.lights.map((l) => hit("светофор") ? row({ t: "light", id: l.id }, `Светофор ${l.id.replace("light_", "")}`, LIGHT[l.state] || "") : "").join("");
+    const actors = S.actors.map((a) => hit(a.name || a.id) ? row({ t: "actor", id: a.id }, esc(a.name || a.id), TYPE[a.type] || a.type, "", "car") : "").join("");
+    const lights = S.lights.map((l) => hit("светофор") ? row({ t: "light", id: l.id }, `Светофор ${l.id.replace("light_", "")}`, LIGHT[l.state] || "", "", "light") : "").join("");
     const decorByProp = {};
     S.decor.forEach((d) => { (decorByProp[d.prop] = decorByProp[d.prop] || []).push(d); });
-    const decor = Object.entries(decorByProp).map(([p, list]) => hit(p) ? `<div class="tree-sub"><span>${p}</span><em>${list.length}</em></div>${list.map((d, k) => row({ t: "decor", id: d.id }, `${p.split("/").pop()} ${k + 1}`, `${d.pos[0].toFixed(1)}, ${d.pos[1].toFixed(1)}`, "sub")).join("")}` : "").join("");
+    const decor = Object.entries(decorByProp).map(([p, list]) => hit(propTitle(p)) ? `<div class="tree-sub"><span>${esc(propTitle(p))}</span><em>${list.length}</em></div>${list.map((d, k) => row({ t: "decor", id: d.id }, `Предмет ${k + 1}`,`${d.pos[0].toFixed(1)}, ${d.pos[1].toFixed(1)}`, "sub", "tree")).join("")}` : "").join("");
     const lawns = (S.lawns || []).map((l, i) => hit(`газон ${i + 1}`)
-      ? row({ t: "lawn", i, part: -1 }, `Газон ${i + 1}`, `${Math.round(area(l.outer) - l.holes.reduce((s, h) => s + area(h), 0))} м²`) : "").join("");
+      ? row({ t: "lawn", i, part: -1 }, `Газон ${i + 1}`, `${Math.round(area(l.outer) - l.holes.reduce((s, h) => s + area(h), 0))} м²`, "", "lawn") : "").join("");
     const marks = (S.markings || []).map((m) => {
       const name = m.type === "paint" ? "Разметка из сцены" : MARK_TYPES[m.type] || m.type;
-      return hit(name) ? row({ t: "marking", id: m.id }, name, MARK_COLOURS[m.colour] || "") : "";
+      return hit(name) ? row({ t: "marking", id: m.id }, name, MARK_COLOURS[m.colour] || "", "", "marking") : "";
     }).join("");
     $("#object-tree").innerHTML = [
       group("roads", "Дорожное полотно", S.roads.length, roads || `<div class="tree-none">Нет дорог</div>`),
       group("lawns", "Газоны и клумбы", (S.lawns || []).length, lawns || `<div class="tree-none">Нет газонов</div>`),
       group("marks", "Разметка", (S.markings || []).length, marks || `<div class="tree-none">Нет разметки</div>`),
       group("routes", "Маршруты", S.routes.length, ["manoeuvre", "choice", "approach", "actor"].map((k) => routeRows(k)).join("") || `<div class="tree-none">Нет маршрутов</div>`),
-      group("stop", "Стоп-линия и старт", 1, row({ t: "stop" }, "Стоп-линия / старт", `${S.stop.x.toFixed(2)}, ${S.stop.z.toFixed(2)}`)),
+      group("stop", "Стоп-линия и старт", 1, row({ t: "stop" }, "Стоп-линия и старт", `${S.stop.x.toFixed(2)}, ${S.stop.z.toFixed(2)}`, "", "flag")),
       group("actors", "Участники", S.actors.length, actors || `<div class="tree-none">Нет участников</div>`),
       group("lights", "Светофоры", S.lights.length, lights || `<div class="tree-none">Нет светофоров</div>`),
       group("decor", "Декор у дороги", S.decor.length, decor || `<div class="tree-none">Нет декора</div>`),
     ].join("");
+  }
+
+  // Textures (left panel, "Текстуры"): every texture of the game, grouped, with its picture.
+  function renderTextures() {
+    const list = $("#tex-list");
+    if (!list || ltab !== "textures" || !Textures.state.list.length) return;
+    const q = texQuery.trim().toLowerCase();
+    const kinds = Textures.state.list.map((t) => t.kind).filter((k) => {
+      const info = Textures.INFO[k] || {};
+      return !q || k.toLowerCase().includes(q) || (info.name || "").toLowerCase().includes(q);
+    });
+    list.innerHTML = Textures.GROUPS.map((g) => {
+      const items = kinds.filter((k) => (Textures.INFO[k] || {}).group === g.id);
+      if (!items.length) return "";
+      return `<div class="tex-group-title">${g.title}</div>` + items.map((k) => {
+        const info = Textures.INFO[k] || { name: k, where: "" };
+        const sub = Textures.isGround(k) ? `${info.where} · плитка ${fmt(Textures.draftOf(k).period)} м` : info.where;
+        return `<button class="tex-row ${texSel === k ? "on" : ""}" data-tex="${k}">
+          <canvas class="tex-thumb" width="88" height="88" data-thumb="${k}"></canvas>
+          <span class="tex-text"><span class="tex-name">${esc(info.name)}</span><span class="tex-sub">${esc(sub)}</span></span>
+          ${Textures.isDirty(k) ? `<span class="tex-mark">изменено</span>` : ""}</button>`;
+      }).join("");
+    }).join("") || `<div class="empty-list">Такой текстуры нет</div>`;
+    drawThumbs(list);
+  }
+
+  function drawThumbs(root) {
+    root.querySelectorAll("canvas[data-thumb]").forEach((c) => Textures.draw(c, c.dataset.thumb, "final", 1));
   }
 
   // The right panel: properties of the selection, or the scene overview.
@@ -894,6 +1052,7 @@ const Ed = (() => {
     if (!S) { pane.innerHTML = `<div class="empty-pane">Выберите сцену слева, чтобы начать.</div>`; return; }
     if (rtab === "question") return renderQuestion(pane);
     if (rtab === "checks") return renderChecks();
+    if (ltab === "textures" && texSel && Textures.state.list.length) return renderTexture(pane);
     if (!sel) return renderOverview(pane);
     const o = objectOf(sel);
     if (!o) return renderOverview(pane);
@@ -907,23 +1066,36 @@ const Ed = (() => {
     if (sel.t === "stop") return renderStop(pane);
   }
 
+  const head = (icon, title, pill = "") => `<div class="card-h"><span class="ibadge">${ic(icon)}</span><h3>${title}</h3>${pill ? `<span class="pill">${esc(pill)}</span>` : ""}</div>`;
+  const subhead = (icon, title) => `<h3>${ic(icon)}${title}</h3>`;
+
   function renderOverview(pane) {
     const err = findings.filter((f) => f.level === "error").length;
+    const ok = err === 0;
     pane.innerHTML = `
       <section class="card">
-        <h3>Сцена</h3>
-        <dl class="kv"><dt>Дороги</dt><dd>${S.roads.length}</dd><dt>Газоны</dt><dd>${S.lawns.length}</dd><dt>Разметка</dt><dd>${S.markings.length}</dd><dt>Маршруты</dt><dd>${S.routes.length}</dd>
-        <dt>Участники</dt><dd>${S.actors.length}</dd><dt>Светофоры</dt><dd>${S.lights.length}</dd><dt>Декор</dt><dd>${S.decor.length}</dd>
-        <dt>Проверка</dt><dd class="${err ? "bad-t" : "good-t"}">${err ? `${err} ${plural(err, ["ошибка", "ошибки", "ошибок"])}` : "ошибок нет"}</dd></dl>
+        ${head("layers", "Сцена", sceneTitle(id))}
+        <dl class="kv">
+          <dt>${ic("road")}Дороги</dt><dd>${S.roads.length}</dd>
+          <dt>${ic("lawn")}Газоны</dt><dd>${S.lawns.length}</dd>
+          <dt>${ic("marking")}Разметка</dt><dd>${S.markings.length}</dd>
+          <dt>${ic("route")}Маршруты</dt><dd>${S.routes.length}</dd>
+          <dt>${ic("car")}Участники</dt><dd>${S.actors.length}</dd>
+          <dt>${ic("light")}Светофоры</dt><dd>${S.lights.length}</dd>
+          <dt>${ic("tree")}Декор</dt><dd>${S.decor.length}</dd>
+          <dt>${ic(ok ? "check-circle" : "error")}Проверка</dt>
+          <dd class="${ok ? "good-t" : "bad-t"}">${ok ? "ошибок нет" : `${err} ${plural(err, ["ошибка", "ошибки", "ошибок"])}`}</dd>
+        </dl>
       </section>
       <section class="card">
-        <h3>Как работать</h3>
-        <ul class="howto">
-          <li>Нажмите объект на плане или в списке «Объекты» слева.</li>
-          <li>Тяните точки линий и объекты. Стрелки двигают на 5 см, Shift — на 50 см.</li>
-          <li><kbd>V</kbd> выбор, <kbd>M</kbd> маршрут, <kbd>D</kbd> дорога, <kbd>I</kbd> островок, <kbd>P</kbd> декор, <kbd>A</kbd> участник, <kbd>L</kbd> светофор, <kbd>S</kbd> стоп-линия.</li>
-          <li><kbd>⌘Z</kbd> отмена, <kbd>⌘S</kbd> сохранить, <kbd>F</kbd> весь вид, <kbd>?</kbd> все клавиши.</li>
-        </ul>
+        ${subhead("bulb", "Как работать")}
+        <ol class="howto">
+          <li>${ic("cursor")}<span>Нажмите объект на плане или выберите его в списке «Объекты».</span></li>
+          <li>${ic("points")}<span>Тяните точки и объекты. Координаты можно ввести справа.</span></li>
+          <li>${ic("road")}<span>Слева на плане — инструменты: дорога, газон, разметка, участники.</span></li>
+          <li>${ic("tiles")}<span>Вкладка «Текстуры» — фактура асфальта, тротуаров и газонов.</span></li>
+          <li>${ic("save")}<span>Сохранить — <kbd>⌘S</kbd>. Изменения попадут в игру.</span></li>
+        </ol>
       </section>`;
   }
 
@@ -950,32 +1122,32 @@ const Ed = (() => {
     const pts = r.points;
     const title = r.kind === "manoeuvre" ? `Манёвр «${EXIT[r.exit]}»` : r.kind === "choice" ? `Вариант ${r.label}` : approach ? "Подъезд к стоп-линии" : `Путь участника${actor ? `: ${esc(actor.name)}` : ""}`;
     const extra = r.kind === "manoeuvre"
-      ? `<div class="row">${`<label class="field"><span>Выезд</span><select data-f="exit">${Object.entries(EXIT).map(([k, v]) => `<option value="${k}" ${r.exit === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>`}</div>
+      ? `<label class="field"><span>Выезд</span><select data-f="exit">${Object.entries(EXIT).map(([k, v]) => `<option value="${k}" ${r.exit === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
          ${fieldNum("Поворот выезда", (r.exitYaw || 0) * RAD, "exitYaw", 1, "°")}
          <p class="note">${S.question.maneuver === r.exit ? "Это правильный манёвр по условию вопроса — по нему поедет машина." : "Альтернативный выезд. Машина поедет по нему, только если его выберет игрок."}</p>`
       : r.kind === "choice"
         ? `<label class="field"><span>Буква на дороге</span><select data-f="label">${LETTERS.map((l) => `<option ${r.label === l ? "selected" : ""}>${l}</option>`).join("")}</select></label>
-           <div class="row"><button class="btn" data-act="letter-mid">Поставить букву в середину пути</button></div>`
+           <div class="row"><button class="btn" data-act="letter-mid">${ic("pin")}Поставить букву в середину пути</button></div>`
         : approach
-          ? `<p class="note">Конец подъезда всегда совпадает со стоп-линией. Двигайте стоп-линию — подъезд подстроится.</p>`
-          : `<div class="row"><button class="btn" data-act="actor-of-route">Открыть участника</button>
-              <button class="btn danger" data-act="route-unlink">Отвязать путь</button></div>`;
+          ? `<p class="note">${ic("info")}Конец подъезда всегда совпадает со стоп-линией. Двигайте стоп-линию — подъезд подстроится.</p>`
+          : `<div class="actions"><button class="btn" data-act="actor-of-route">${ic("car")}Открыть участника</button>
+              <button class="btn danger" data-act="route-unlink">${ic("x")}Отвязать путь</button></div>`;
     pane.innerHTML = `
       <section class="card">
-        <div class="card-head"><h3>${title}</h3><span class="pill">${r.id}</span></div>
+        ${head("route", title, r.id)}
         ${extra}
         <div class="stats">Точек: <b>${pts.length}</b> · длина: <b>${polyLength(pts).toFixed(1)} м</b></div>
         ${sel.v !== undefined && sel.v >= 0 ? `<div class="sel-pt">Точка ${sel.v + 1}: ${pts[sel.v][0].toFixed(2)}, ${pts[sel.v][1].toFixed(2)}</div>` : ""}
         <div class="actions">
-          <button class="btn" data-act="pt-add">Добавить точку в конец</button>
-          <button class="btn danger" data-act="route-del" ${approach ? "disabled" : ""}>Удалить маршрут</button>
+          <button class="btn" data-act="pt-add">${ic("plus")}Добавить точку в конец</button>
+          <button class="btn danger" data-act="route-del" ${approach ? "disabled" : ""}>${ic("trash")}Удалить маршрут</button>
         </div>
       </section>
       <section class="card">
-        <h3>Точки</h3>
+        ${subhead("points", "Точки")}
         <div class="pts">${pts.map((p, i) => `<div class="pt ${sel.v === i ? "on" : ""}" data-pt="${i}"><span>${i + 1}</span>
-          <input type="number" step="0.05" value="${p[0].toFixed(2)}" data-pt-x="${i}"><input type="number" step="0.05" value="${p[1].toFixed(2)}" data-pt-z="${i}">
-          <button class="icon-btn" data-pt-del="${i}" title="Удалить точку">×</button></div>`).join("")}</div>
+          <input type="number" step="0.05" value="${p[0].toFixed(2)}" data-pt-x="${i}" aria-label="X точки ${i + 1}"><input type="number" step="0.05" value="${p[1].toFixed(2)}" data-pt-z="${i}" aria-label="Z точки ${i + 1}">
+          <button class="icon-btn" data-pt-del="${i}" title="Удалить точку">${ic("x")}</button></div>`).join("")}</div>
       </section>`;
     bindForm(pane, {
       exit: (el) => commit(() => { r.exit = el.value; r.id = `manoeuvre_${el.value}`; sel = { t: "route", id: r.id }; }),
@@ -1002,23 +1174,23 @@ const Ed = (() => {
 
   function renderRoad(pane, road) {
     const ring = ringOf(sel);
-    const holes = road.holes.map((h, k) => `<button class="tree-row ${sel.part === k ? "on" : ""}" data-hole="${k}">Островок ${k + 1}<small>${Math.round(area(h))} м² · точек ${h.length}</small></button>`).join("");
+    const holes = road.holes.map((h, k) => `<button class="tree-row ${sel.part === k ? "on" : ""}" data-hole="${k}">${ic("island")}Островок ${k + 1}<small>${Math.round(area(h))} м² · точек ${h.length}</small></button>`).join("");
     pane.innerHTML = `
       <section class="card">
-        <div class="card-head"><h3>${sel.part === -1 ? "Дорога" : `Островок ${sel.part + 1}`}</h3><span class="pill">road_${sel.i}</span></div>
+        ${head("road", sel.part === -1 ? "Дорога" : `Островок ${sel.part + 1}`, `road_${sel.i}`)}
         <div class="stats">Площадь: <b>${Math.round(area(road.outer))} м²</b> · точек контура: <b>${road.outer.length}</b>${road.holes.length ? ` · островков: <b>${road.holes.length}</b>` : ""}</div>
-        <p class="note">Дорога — это контур. Островки внутри него не едут. Тяните углы на плане, двойной клик по стороне добавляет угол.</p>
+        <p class="note">${ic("info")}Дорога — это контур. Островки внутри него не едут. Тяните углы на плане, двойной клик по стороне добавляет угол.</p>
         ${sel.part === -1 ? shapeControls() : ""}
         <div class="actions">
-          <button class="btn" data-act="island">Нарисовать островок</button>
-          ${sel.part !== -1 ? `<button class="btn danger" data-act="hole-del">Удалить островок</button>` : `<button class="btn danger" data-act="road-del">Удалить дорогу</button>`}
+          <button class="btn" data-act="island">${ic("island")}Нарисовать островок</button>
+          ${sel.part !== -1 ? `<button class="btn danger" data-act="hole-del">${ic("trash")}Удалить островок</button>` : `<button class="btn danger" data-act="road-del">${ic("trash")}Удалить дорогу</button>`}
         </div>
       </section>
-      ${holes ? `<section class="card"><h3>Островки</h3>${holes}</section>` : ""}
-      <section class="card"><h3>Точки ${sel.part === -1 ? "контура" : "островка"}</h3>
+      ${holes ? `<section class="card">${subhead("island", "Островки")}${holes}</section>` : ""}
+      <section class="card">${subhead("points", sel.part === -1 ? "Точки контура" : "Точки островка")}
         <div class="pts">${ring.map((p, i) => `<div class="pt ${sel.v === i ? "on" : ""}" data-pt="${i}"><span>${i + 1}</span>
-          <input type="number" step="0.05" value="${p[0].toFixed(2)}" data-rx="${i}"><input type="number" step="0.05" value="${p[1].toFixed(2)}" data-rz="${i}">
-          <button class="icon-btn" data-rdel="${i}" title="Удалить точку">×</button></div>`).join("")}</div>
+          <input type="number" step="0.05" value="${p[0].toFixed(2)}" data-rx="${i}" aria-label="X точки ${i + 1}"><input type="number" step="0.05" value="${p[1].toFixed(2)}" data-rz="${i}" aria-label="Z точки ${i + 1}">
+          <button class="icon-btn" data-rdel="${i}" title="Удалить точку">${ic("x")}</button></div>`).join("")}</div>
       </section>`;
     bindForm(pane, {
       "island": () => setTool("island"),
@@ -1027,25 +1199,15 @@ const Ed = (() => {
     });
     if (sel.part === -1) bindShape(pane);
     pane.querySelectorAll("[data-hole]").forEach((el) => el.addEventListener("click", () => select({ t: "road", i: sel.i, part: Number(el.dataset.hole) })));
-    pane.querySelectorAll("[data-rx],[data-rz]").forEach((el) => el.addEventListener("change", () => {
-      const i = Number(el.dataset.rx ?? el.dataset.rz);
-      commit(() => { ring[i] = [el.dataset.rx !== undefined ? Number(el.value) : ring[i][0], el.dataset.rz !== undefined ? Number(el.value) : ring[i][1]]; });
-    }));
-    pane.querySelectorAll("[data-rdel]").forEach((el) => el.addEventListener("click", () => deleteVertex(sel, Number(el.dataset.rdel))));
-    pane.querySelectorAll("[data-pt]").forEach((el) => el.addEventListener("click", (e) => {
-      if (e.target.closest("input,button")) return;
-      sel = { ...sel, v: Number(el.dataset.pt) };
-      Scene3D.setSelection(sel);
-      renderInspector();
-    }));
+    bindRing(pane, ring);
   }
 
   // Shared by roads, lawns and markings: a move and a turn of the whole shape.
   function shapeControls() {
     return `<div class="row2">${fieldNum("Сдвиг по X", 0, "dx", 0.1, "м")}${fieldNum("по Z", 0, "dz", 0.1, "м")}</div>
-      <div class="row2">${fieldNum("Поворот", 0, "deg", 1, "°")}<div class="field"><span>&nbsp;</span><button class="btn" data-act="shape-apply">Сдвинуть и повернуть</button></div></div>
-      <div class="row"><button class="btn" data-act="shape-rot-l">Повернуть на −15°</button><button class="btn" data-act="shape-rot-r">Повернуть на +15°</button></div>
-      <p class="note">Клавиши: стрелки — сдвиг (Shift — на 50 см), [ ] — поворот. Поворот идёт вокруг центра фигуры.</p>`;
+      <div class="row2">${fieldNum("Поворот", 0, "deg", 1, "°")}<div class="field"><span>&nbsp;</span><button class="btn" data-act="shape-apply">${ic("move")}Сдвинуть и повернуть</button></div></div>
+      <div class="row"><button class="btn" data-act="shape-rot-l">${ic("rotl")}Повернуть на −15°</button><button class="btn" data-act="shape-rot-r">${ic("rotr")}Повернуть на +15°</button></div>
+      <p class="note">${ic("info")}Клавиши: стрелки — сдвиг (Shift — на 50 см), [ ] — поворот. Поворот идёт вокруг центра фигуры.</p>`;
   }
 
   function bindShape(pane) {
@@ -1060,8 +1222,8 @@ const Ed = (() => {
 
   function pointsList(ring) {
     return `<div class="pts">${ring.map((p, i) => `<div class="pt ${sel.v === i ? "on" : ""}" data-pt="${i}"><span>${i + 1}</span>
-      <input type="number" step="0.05" value="${p[0].toFixed(2)}" data-rx="${i}"><input type="number" step="0.05" value="${p[1].toFixed(2)}" data-rz="${i}">
-      <button class="icon-btn" data-rdel="${i}" title="Удалить точку">×</button></div>`).join("")}</div>`;
+      <input type="number" step="0.05" value="${p[0].toFixed(2)}" data-rx="${i}" aria-label="X точки ${i + 1}"><input type="number" step="0.05" value="${p[1].toFixed(2)}" data-rz="${i}" aria-label="Z точки ${i + 1}">
+      <button class="icon-btn" data-rdel="${i}" title="Удалить точку">${ic("x")}</button></div>`).join("")}</div>`;
   }
 
   function bindRing(pane, ring) {
@@ -1080,17 +1242,17 @@ const Ed = (() => {
 
   function renderLawn(pane, l) {
     const ring = ringOf(sel);
-    const holes = sel.part === -1 ? `<p class="note">Дыры в газоне: ${l.holes.length}. Островок в газоне можно удалить, выбрав его в списке «Газоны и клумбы».</p>` : "";
+    const holes = sel.part === -1 ? `<p class="note">${ic("info")}Дыры в газоне: ${l.holes.length}. Островок в газоне можно удалить, выбрав его в списке «Объекты».</p>` : "";
     pane.innerHTML = `
       <section class="card">
-        <div class="card-head"><h3>${sel.part === -1 ? "Газон или клумба" : `Дыра ${sel.part + 1}`}</h3><span class="pill">lawn_${sel.i}</span></div>
+        ${head("lawn", sel.part === -1 ? "Газон или клумба" : `Дыра ${sel.part + 1}`, `lawn_${sel.i}`)}
         <div class="stats">Площадь: <b>${Math.round(area(l.outer))} м²</b> · точек контура: <b>${l.outer.length}</b></div>
-        <p class="note">Газон рисуется сетью на своём уровне (−3 см от асфальта). Там, где газон лежит на тротуаре, тротуар уступает ему место. По дорогам газон не идёт.</p>
+        <p class="note">${ic("info")}Газон рисуется на своём уровне, чуть ниже асфальта. Там, где он лежит на тротуаре, тротуар уступает ему место. По дорогам газон не идёт.</p>
         ${holes}
         ${shapeControls()}
-        <div class="actions"><button class="btn danger" data-act="shape-del">${sel.part === -1 ? "Удалить газон" : "Удалить дыру"}</button></div>
+        <div class="actions"><button class="btn danger" data-act="shape-del">${ic("trash")}${sel.part === -1 ? "Удалить газон" : "Удалить дыру"}</button></div>
       </section>
-      <section class="card"><h3>Точки ${sel.part === -1 ? "контура" : "дыры"}</h3>${pointsList(ring)}</section>`;
+      <section class="card">${subhead("points", sel.part === -1 ? "Точки контура" : "Точки дыры")}${pointsList(ring)}</section>`;
     bindShape(pane);
     bindRing(pane, ring);
   }
@@ -1101,17 +1263,17 @@ const Ed = (() => {
     const width = m.type === "stop" ? 0.4 : 0.13;
     pane.innerHTML = `
       <section class="card">
-        <div class="card-head"><h3>${paint ? "Разметка из сцены" : MARK_TYPES[m.type] || m.type}</h3><span class="pill">${m.id}</span></div>
+        ${head("marking", paint ? "Разметка из сцены" : MARK_TYPES[m.type] || m.type, m.id)}
         ${paint
-          ? `<p class="note">Разметка перенесена из запечённой сцены: контур не правится точками, но её можно сдвинуть, повернуть или удалить.</p>`
+          ? `<p class="note">${ic("info")}Разметка перенесена из запечённой сцены: контур не правится точками, но её можно сдвинуть, повернуть или удалить.</p>`
           : `<label class="field"><span>Тип</span><select data-f="mtype">${Object.entries(MARK_TYPES).map(([k, v]) => `<option value="${k}" ${m.type === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>`}
         <label class="field"><span>Цвет</span><select data-f="mcolour">${Object.entries(MARK_COLOURS).map(([k, v]) => `<option value="${k}" ${(m.colour || "white") === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
         ${m.type === "solid" || m.type === "dashed" || m.type === "stop" ? fieldNum("Ширина", m.width || width, "mwidth", 0.01, "м") : ""}
         ${m.type === "zebra" ? fieldNum("Длина полос", m.length || 4, "mlength", 0.5, "м") : ""}
         ${shapeControls()}
-        <div class="actions"><button class="btn danger" data-act="shape-del">Удалить разметку</button></div>
+        <div class="actions"><button class="btn danger" data-act="shape-del">${ic("trash")}Удалить разметку</button></div>
       </section>
-      ${line ? `<section class="card"><h3>Точки линии</h3>${pointsList(m.points)}</section>` : ""}`;
+      ${line ? `<section class="card">${subhead("points", "Точки линии")}${pointsList(m.points)}</section>` : ""}`;
     bindShape(pane);
     if (line) bindRing(pane, m.points);
     bindForm(pane, {
@@ -1131,24 +1293,24 @@ const Ed = (() => {
     const types = catalog ? Object.keys(catalog.actorTypes) : [a.type];
     pane.innerHTML = `
       <section class="card">
-        <div class="card-head"><h3>${esc(a.name || a.id)}</h3><span class="pill">${a.id}</span></div>
+        ${head("car", esc(a.name || a.id), a.id)}
         <label class="field"><span>Название</span><input type="text" value="${esc(a.name)}" data-f="name"></label>
         <label class="field"><span>Тип</span><select data-f="type">${types.map((t) => `<option value="${t}" ${a.type === t ? "selected" : ""}>${TYPE[t] || t}</option>`).join("")}</select></label>
         <div class="row2">${fieldNum("X", a.pos[0], "x", 0.05, "м")}${fieldNum("Z", a.pos[1], "z", 0.05, "м")}</div>
         <div class="row2">${fieldNum("Поворот", a.yaw * RAD, "yaw", 1, "°")}${fieldNum("Масштаб", a.scale[0], "scale", 0.05)}</div>
       </section>
       <section class="card">
-        <h3>Движение</h3>
+        ${subhead("route", "Движение")}
         <div class="row2">${fieldNum("Скорость", a.maxSpeed, "maxSpeed", 0.5, "м/с")}${fieldNum("Дистанция", a.clearDistance, "clearDistance", 0.5, "м")}</div>
         <label class="check"><input type="checkbox" data-f="staysPut" ${a.behaviour?.staysPut ? "checked" : ""}> Стоит на месте (припаркован)</label>
         <label class="check"><input type="checkbox" data-f="waitsForPlayer" ${a.behaviour?.waitsForPlayer ? "checked" : ""}> Пропускает игрока</label>
-        <div class="route-line">${r ? `Путь: ${r.points.length} точек, ${polyLength(r.points).toFixed(1)} м` : "Пути нет — участник стоит"}</div>
+        <div class="route-line">${r ? `Путь: ${r.points.length} точек, ${polyLength(r.points).toFixed(1)} м` : "Пути нет — участник стоит на месте"}</div>
         <div class="actions">
-          <button class="btn" data-act="actor-route">${r ? "Перерисовать путь" : "Нарисовать путь"}</button>
-          ${r ? `<button class="btn" data-act="actor-route-sel">Показать путь</button>` : ""}
+          <button class="btn" data-act="actor-route">${ic("route")}${r ? "Перерисовать путь" : "Нарисовать путь"}</button>
+          ${r ? `<button class="btn" data-act="actor-route-sel">${ic("cursor")}Показать путь</button>` : ""}
         </div>
       </section>
-      <section class="card"><div class="actions"><button class="btn danger" data-act="actor-del">Удалить участника</button></div></section>`;
+      <section class="card"><div class="actions" style="margin-top:0"><button class="btn danger" data-act="actor-del">${ic("trash")}Удалить участника</button></div></section>`;
     bindForm(pane, {
       name: (el) => commit(() => { a.name = el.value; }),
       type: (el) => commit(() => { a.type = el.value; const tpl = catalog.actorTypes[el.value]; if (tpl) { a.asset = tpl.asset; } }),
@@ -1169,12 +1331,12 @@ const Ed = (() => {
   function renderLight(pane, l) {
     pane.innerHTML = `
       <section class="card">
-        <div class="card-head"><h3>Светофор</h3><span class="pill">${l.id}</span></div>
+        ${head("light", "Светофор", l.id)}
         <label class="field"><span>Сигнал</span><select data-f="state">${Object.entries(LIGHT).map(([k, v]) => `<option value="${k}" ${l.state === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
         <label class="field"><span>Стрелка</span><select data-f="arrow">${Object.entries(ARROW).map(([k, v]) => `<option value="${k}" ${(l.arrow || "") === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
         <div class="row2">${fieldNum("X", l.pos[0], "x", 0.05, "м")}${fieldNum("Z", l.pos[1], "z", 0.05, "м")}</div>
         <div class="row2">${fieldNum("Поворот", l.yaw * RAD, "yaw", 1, "°")}${fieldNum("Масштаб", l.scale, "scale", 0.05)}</div>
-        <div class="actions"><button class="btn danger" data-act="light-del">Удалить светофор</button></div>
+        <div class="actions"><button class="btn danger" data-act="light-del">${ic("trash")}Удалить светофор</button></div>
       </section>`;
     bindForm(pane, {
       state: (el) => commit(() => { l.state = el.value; }, false),
@@ -1191,12 +1353,12 @@ const Ed = (() => {
     const props = catalog ? catalog.props.map((p) => p.id) : [d.prop];
     pane.innerHTML = `
       <section class="card">
-        <div class="card-head"><h3>${d.prop.split("/").pop()}</h3><span class="pill">${d.id}</span></div>
-        <label class="field"><span>Предмет</span><select data-f="prop">${props.map((p) => `<option ${d.prop === p ? "selected" : ""}>${p}</option>`).join("")}</select></label>
+        ${head("tree", esc(propTitle(d.prop)), d.id)}
+        <label class="field"><span>Предмет</span><select data-f="prop">${props.map((p) => `<option value="${p}" ${d.prop === p ? "selected" : ""}>${esc(propTitle(p))}</option>`).join("")}</select></label>
         <div class="row2">${fieldNum("X", d.pos[0], "x", 0.05, "м")}${fieldNum("Z", d.pos[1], "z", 0.05, "м")}</div>
         <div class="row2">${fieldNum("Поворот", d.yaw * RAD, "yaw", 1, "°")}${fieldNum("Масштаб", d.scale[0], "scale", 0.05)}</div>
         <label class="field"><span>Оттенок</span><div class="tint"><input type="color" value="${d.tint || "#ffffff"}" data-f="tint"><button class="btn" data-act="tint-clear">Без оттенка</button></div></label>
-        <div class="actions"><button class="btn danger" data-act="decor-del">Удалить предмет</button></div>
+        <div class="actions"><button class="btn danger" data-act="decor-del">${ic("trash")}Удалить предмет</button></div>
       </section>`;
     bindForm(pane, {
       prop: (el) => commit(() => { d.prop = el.value; }),
@@ -1214,13 +1376,13 @@ const Ed = (() => {
     const ap = routeOf("approach");
     pane.innerHTML = `
       <section class="card">
-        <div class="card-head"><h3>Стоп-линия и старт</h3><span class="pill">stop</span></div>
+        ${head("flag", "Стоп-линия и старт", "stop")}
         <div class="row2">${fieldNum("X", S.stop.x, "x", 0.05, "м")}${fieldNum("Z", S.stop.z, "z", 0.05, "м")}</div>
         ${fieldNum("Направление", S.stop.yaw * RAD, "yaw", 1, "°")}
-        <p class="note">Стоп-линия и конец подъезда — одна точка. Перетащите её на плане или введите координаты.</p>
+        <p class="note">${ic("info")}Стоп-линия и конец подъезда — одна точка. Перетащите её на плане или введите координаты.</p>
         <div class="actions">
-          <button class="btn" data-act="stop-to-approach">Поставить в конец подъезда</button>
-          ${ap ? `<button class="btn" data-act="approach-sel">Показать подъезд</button>` : ""}
+          <button class="btn" data-act="stop-to-approach">${ic("pin")}Поставить в конец подъезда</button>
+          ${ap ? `<button class="btn" data-act="approach-sel">${ic("route")}Показать подъезд</button>` : ""}
         </div>
       </section>`;
     bindForm(pane, {
@@ -1232,6 +1394,138 @@ const Ed = (() => {
     });
   }
 
+  // ---- textures: the inspector of one texture ------------------------------------------
+  function renderTexture(pane) {
+    const kind = texSel;
+    const info = Textures.INFO[kind] || { name: kind, where: "" };
+    const meta = Textures.metaOf(kind);
+    const p = Textures.draftOf(kind);
+    const ground = Textures.isGround(kind);
+    const numberRow = (key) => {
+      const d = Textures.PARAMS[key];
+      const digits = d.step < 0.1 ? 2 : 1;
+      return `<div class="tex-param">
+        <div class="tex-param-h"><span>${d.label}</span><em data-val="${key}">${fmt(p[key], digits)}${d.unit ? ` ${d.unit}` : ""}</em></div>
+        <p class="hint">${d.hint}</p>
+        <div class="pair">
+          <input type="range" min="${d.min}" max="${d.max}" step="${d.step}" value="${p[key]}" data-range="${key}" aria-label="${d.label}">
+          <input type="number" min="${d.min}" max="${d.max}" step="${d.step}" value="${p[key]}" data-num="${key}" aria-label="${d.label}, число">
+        </div></div>`;
+    };
+    const inScene = !!info.inScene;
+    pane.innerHTML = `
+      <section class="card">
+        <div class="tex-head"><canvas class="tex-thumb" width="96" height="96" data-thumb="${kind}"></canvas><div><b>${esc(info.name)}</b><small>${kind}</small></div></div>
+        <p class="tex-where">${esc(info.where)}</p>
+        <div class="tex-preview"><canvas id="tex-canvas" width="360" height="360"></canvas></div>
+        <div class="tex-views" role="group" aria-label="Что показать">
+          <button data-view="final" class="${texView === "final" ? "on" : ""}">Как в игре</button>
+          <button data-view="fine" class="${texView === "fine" ? "on" : ""}">Зерно</button>
+          <button data-view="large" class="${texView === "large" ? "on" : ""}">Пятна</button>
+        </div>
+        <p class="tex-file">${meta.width ? `${meta.width} × ${meta.height} px` : "картинка не найдена"} · textures/detail/${kind}.png</p>
+        <p class="tex-note ${inScene ? "" : "plain"}">${inScene
+          ? `${ic("info")} Видна на плане справа: дороги, тротуары и газоны.`
+          : `${ic("info")} На плане не рисуется: в игре это здания и предметы. Предпросмотр выше показывает, как она выглядит.`}</p>
+      </section>
+      <section class="card">
+        ${subhead("sliders", "Настройки")}
+        ${numberRow("gain")}${numberRow("macro")}${numberRow("macroScale")}${ground ? numberRow("period") : ""}
+        <div class="actions" style="margin-top:4px">
+          <button class="btn" data-act="tex-reset">${ic("reset")}Вернуть как было</button>
+          <button class="btn primary" data-act="tex-save">${ic("save")}Сохранить текстуру</button>
+        </div>
+      </section>
+      <section class="card">
+        ${subhead("upload", "Картинка")}
+        <p class="note">PNG, лучше 256 × 256. Красный канал — зерно, зелёный — пятна. Прежняя картинка сохраняется, её можно вернуть.</p>
+        <div class="actions" style="margin-top:0">
+          <button class="btn" data-act="tex-upload">${ic("upload")}Заменить картинку</button>
+          <button class="btn" data-act="tex-restore" ${meta.backups ? "" : "disabled"}>${ic("undo")}Вернуть прежнюю${meta.backups ? ` (${meta.backups})` : ""}</button>
+        </div>
+      </section>`;
+    drawTexturePreview();
+    drawThumbs(pane);
+    updateTextureButtons();
+    pane.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => {
+      texView = b.dataset.view;
+      pane.querySelectorAll("[data-view]").forEach((x) => x.classList.toggle("on", x === b));
+      drawTexturePreview();
+    }));
+    // A slider and its number box move together; the plan follows at once, the list on the change.
+    pane.querySelectorAll("[data-range],[data-num]").forEach((el) => {
+      const key = el.dataset.range ?? el.dataset.num;
+      const d = Textures.PARAMS[key];
+      el.addEventListener("input", () => {
+        if (el.value === "") return;
+        const v = Math.min(d.max, Math.max(d.min, Number(el.value)));
+        if (!Number.isFinite(v)) return;
+        Textures.setParam(kind, key, v);
+        pane.querySelectorAll(`[data-range="${key}"],[data-num="${key}"]`).forEach((x) => { if (x !== el) x.value = v; });
+        pane.querySelector(`[data-val="${key}"]`).textContent = fmt(v, d.step < 0.1 ? 2 : 1) + (d.unit ? ` ${d.unit}` : "");
+        textureChanged(kind, false);
+      });
+      el.addEventListener("change", () => textureChanged(kind, true));
+    });
+    bindForm(pane, {
+      "tex-reset": () => { Textures.reset(kind); renderInspector(); textureChanged(kind, true); },
+      "tex-save": () => saveTexture(kind),
+      "tex-upload": () => $("#texture-file").click(),
+      "tex-restore": () => restoreTexture(kind),
+    });
+  }
+
+  function drawTexturePreview() {
+    const c = $("#tex-canvas");
+    if (c && texSel) Textures.draw(c, texSel, texView, 2);
+  }
+
+  function updateTextureButtons() {
+    const dirtyNow = texSel && Textures.isDirty(texSel);
+    document.querySelectorAll('[data-act="tex-reset"],[data-act="tex-save"]').forEach((b) => { b.disabled = !dirtyNow; });
+  }
+
+  // A texture changed: the 3D view, its thumbnail and the list follow; `commit` also marks the list.
+  function textureChanged(kind, commitNow) {
+    Scene3D.setTextures(Textures.forScene());
+    drawTexturePreview();
+    const thumb = document.querySelector(`canvas[data-thumb="${kind}"]`);
+    if (thumb) Textures.draw(thumb, kind, "final", 1);
+    updateTextureButtons();
+    if (commitNow) { renderTextures(); renderHeader(); }
+    else renderHeader();
+  }
+
+  async function saveTexture(kind) {
+    const p = Textures.draftOf(kind);
+    const body = { gain: p.gain, macro: p.macro, macroScale: p.macroScale };
+    if (p.period !== undefined) body.period = p.period;
+    try {
+      await api(`/api/texture/${kind}`, body);
+      Textures.markSaved(kind);
+      toast(`Текстура «${Textures.INFO[kind]?.name || kind}» сохранена. Игра возьмёт её при следующем запуске`, "good");
+    } catch (e) {
+      toast(`Не сохранено: ${e.message}`, "bad");
+    }
+    renderTextures();
+    renderHeader();
+    updateTextureButtons();
+  }
+
+  async function restoreTexture(kind) {
+    try {
+      const r = await api(`/api/texture/${kind}/restore`, {});
+      await Textures.reloadPicture(kind, {});
+      Scene3D.reloadPicture(kind);
+      toast(r.imported ? "Прежняя картинка возвращена" : "Прежняя картинка возвращена. Godot не найден: откройте проект в Godot, чтобы он переимпортировал текстуру", r.imported ? "good" : "warn");
+      renderInspector();
+      renderTextures();
+    } catch (e) {
+      toast(`Не возвращено: ${e.message}`, "bad");
+    }
+  }
+
+  // ---- the question ------------------------------------------------------------------
   // The question: the original ticket picture and text, and the answer and rules the game uses.
   function renderQuestion(pane) {
     const q = S.question;
@@ -1239,7 +1533,7 @@ const Ed = (() => {
     const src = source;
     const srcBlock = src ? `
       <section class="card">
-        <div class="card-head"><h3>Оригинал билета</h3><span class="pill">${src.category === "ab" ? "A/B" : "C/D"} · билет ${src.ticket}, вопрос ${src.number}</span></div>
+        ${head("ticket", "Оригинал билета", `${src.category === "ab" ? "A/B" : "C/D"} · билет ${src.ticket}, вопрос ${src.number}`)}
         ${src.image ? `<img class="orig" src="/asset/source/${src.image}.webp" alt="Картинка из билета">` : ""}
         <p class="orig-q">${esc(src.question)}</p>
         <ol class="answers">${src.answers.map((a) => `<li class="${a.correct ? "ok" : ""}">${esc(a.text)}${a.correct ? " ✓" : ""}</li>`).join("")}</ol>
@@ -1250,7 +1544,7 @@ const Ed = (() => {
     pane.innerHTML = `
       ${srcBlock}
       <section class="card">
-        <h3>Что видит игрок</h3>
+        ${subhead("cursor", "Что видит игрок")}
         <p class="qtitle">${esc(ru.title || "")}</p>
         <div class="options">${options.map((o, i) => `<label class="opt ${q.correct === i ? "on" : ""}"><input type="radio" name="correct" value="${i}" ${q.correct === i ? "checked" : ""}> ${esc(o)}</label>`).join("")}</div>
         <div class="row2">
@@ -1261,7 +1555,7 @@ const Ed = (() => {
         <div class="field"><span>Уступить дорогу</span><div class="checks">${yieldActors || `<em class="note">Участников нет</em>`}</div></div>
       </section>
       <section class="card">
-        <h3>Сверка с билетом</h3>
+        ${subhead("check", "Сверка с билетом")}
         <label class="field"><span>Статус</span><select data-f="status">${[["unverified", "Не сверено"], ["ok", "Соответствует билету"], ["fixed", "Исправлено вручную"]].map(([k, v]) => `<option value="${k}" ${(S.compliance || {}).status === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
         <label class="field"><span>Заметки</span><textarea rows="3" data-f="notes" placeholder="Что не так, что поправили">${esc((S.compliance || {}).notes || "")}</textarea></label>
       </section>`;
@@ -1287,14 +1581,13 @@ const Ed = (() => {
     const err = findings.filter((f) => f.level === "error").length;
     const warn = findings.filter((f) => f.level === "warn").length;
     $("#check-count").textContent = findings.length ? `${err + warn}` : "";
-    $("#check-count").className = err ? "count bad" : warn ? "count warn" : "count";
+    $("#check-count").className = err ? "bad" : warn ? "warn" : "";
     if (rtab !== "checks") return;
     if (!S) return;
     const items = findings.length ? findings.map((f, i) => `
-      <button class="finding ${f.level}" data-finding="${i}">
-        <i>${f.level === "error" ? "✕" : "!"}</i><span>${esc(f.message)}</span></button>`).join("")
-      : `<div class="ok-box">✓ Ошибок нет: дорога, маршруты и участники на месте.</div>`;
-    pane.innerHTML = `<section class="card"><h3>Проверка сцены</h3><p class="note">Ошибки мешают игре. Предупреждения — проверьте глазами. Нажмите строку, чтобы перейти к объекту.</p>${items}</section>`;
+      <button class="finding ${f.level}" data-finding="${i}"><i>${ic(f.level === "error" ? "error" : "alert")}</i><span>${esc(f.message)}</span>${ic("chevron")}</button>`).join("")
+      : `<div class="ok-box">${ic("check-circle")}Ошибок нет: дорога, маршруты и участники на месте.</div>`;
+    pane.innerHTML = `<section class="card">${head("check", "Проверка сцены")}<p class="note">Ошибки мешают игре. Предупреждения проверьте глазами. Нажмите строку, чтобы перейти к объекту.</p>${items}</section>`;
     pane.querySelectorAll("[data-finding]").forEach((el) => el.addEventListener("click", () => focusFinding(findings[Number(el.dataset.finding)])));
   }
 
@@ -1313,6 +1606,8 @@ const Ed = (() => {
     else if (ref.type === "prop") s = ref.id ? { t: "decor", id: ref.id } : null;
     if (!s) return;
     rtab = "props";
+    ltab = "scenes";
+    setLeftTab("scenes");
     select(s);
     const o = objectOf(s);
     const at = o && (o.points || o.outer || (o.pos ? o.pos : null));
@@ -1323,6 +1618,17 @@ const Ed = (() => {
   }
 
   // ---- boot --------------------------------------------------------------------------
+  function setLeftTab(name) {
+    // Textures are not drawn on the plan: a clicked drawing tool would start a shape there, so it is put away.
+    if (name === "textures" && tool !== "select") { cancelDraft(); tool = "select"; }
+    ltab = name;
+    document.querySelectorAll("[data-ltab]").forEach((x) => x.classList.toggle("on", x.dataset.ltab === name));
+    $("#pane-scenes").hidden = name !== "scenes";
+    $("#pane-objects").hidden = name !== "objects";
+    $("#pane-textures").hidden = name !== "textures";
+    renderAll();
+  }
+
   function bindUi() {
     $("#scene-list").addEventListener("click", (e) => {
       const b = e.target.closest("[data-id]");
@@ -1336,12 +1642,7 @@ const Ed = (() => {
       document.querySelectorAll("#filters button").forEach((x) => x.classList.toggle("on", x === b));
       renderScenes();
     });
-    document.querySelectorAll("[data-ltab]").forEach((b) => b.addEventListener("click", () => {
-      ltab = b.dataset.ltab;
-      document.querySelectorAll("[data-ltab]").forEach((x) => x.classList.toggle("on", x === b));
-      $("#pane-scenes").hidden = ltab !== "scenes";
-      $("#pane-objects").hidden = ltab !== "objects";
-    }));
+    document.querySelectorAll("[data-ltab]").forEach((b) => b.addEventListener("click", () => setLeftTab(b.dataset.ltab)));
     $("#oq").addEventListener("input", (e) => { objQuery = e.target.value; renderTree(); });
     $("#object-tree").addEventListener("click", (e) => {
       const g = e.target.closest("[data-group]");
@@ -1349,26 +1650,67 @@ const Ed = (() => {
       const r = e.target.closest("[data-sel]");
       if (r) { const s = JSON.parse(r.dataset.sel); select(s); focusSelection(s); }
     });
+    $("#tq").addEventListener("input", (e) => { texQuery = e.target.value; renderTextures(); });
+    $("#tex-list").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-tex]");
+      if (!b) return;
+      texSel = b.dataset.tex;
+      sel = null;
+      Scene3D.setSelection(null);
+      rtab = "props";
+      renderAll();
+    });
     document.querySelectorAll("[data-rtab]").forEach((b) => b.addEventListener("click", () => {
       rtab = b.dataset.rtab;
       renderInspector();
       renderChecks();
     }));
-    document.querySelectorAll("#tools [data-tool]").forEach((b) => b.addEventListener("click", () => setTool(b.dataset.tool)));
     $("#undo").onclick = undo;
     $("#redo").onclick = redo;
-    $("#save").onclick = save;
+    $("#save").onclick = saveAll;
     $("#help").onclick = () => $("#help-dialog").hidden = false;
     $("#help-dialog").addEventListener("click", (e) => { if (e.target.id === "help-dialog" || e.target.dataset.close !== undefined) $("#help-dialog").hidden = true; });
-    $("#legend-head").onclick = () => $("#legend").classList.toggle("collapsed");
+    $("#legend-toggle").onclick = () => { legendOpen = !legendOpen; renderStatus(); };
+    $("#legend-close").onclick = () => { legendOpen = false; renderStatus(); };
+    $("#draft-done").onclick = () => finishDraft();
+    $("#draft-cancel").onclick = () => { cancelDraft(); renderTools(); };
+    $("#sel-rotl").onclick = () => rotate(-15);
+    $("#sel-rotr").onclick = () => rotate(15);
+    $("#sel-del").onclick = () => deleteSelected();
+    $("#sel-off").onclick = () => select(null);
     $("#zin").onclick = () => Scene3D.zoomBy(1.25);
     $("#zout").onclick = () => Scene3D.zoomBy(0.8);
     $("#zfit").onclick = () => Scene3D.fit();
-    $("#mode").onclick = () => { Scene3D.setMode(Scene3D.mode === "plan" ? "3d" : "plan"); $("#mode").textContent = Scene3D.mode === "plan" ? "3D вид" : "Вид сверху"; renderStatus(); };
-    addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+    $("#mode-plan").onclick = () => { Scene3D.setMode("plan"); renderStatus(); };
+    $("#mode-3d").onclick = () => { Scene3D.setMode("3d"); renderStatus(); };
+    $("#texture-file").addEventListener("change", uploadTexture);
+    addEventListener("beforeunload", (e) => { if (anyDirty()) { e.preventDefault(); e.returnValue = ""; } });
     document.addEventListener("keydown", onKey);
     Scene3D.on("pointer", onPointer);
     Scene3D.on("zoom", renderStatus);
+    Scene3D.on("mode", renderStatus);
+  }
+
+  // A PNG chosen for the texture: the server keeps the old one and the game reimports the new.
+  async function uploadTexture(e) {
+    const file = e.target.files[0];
+    e.target.value = "";
+    const kind = texSel;
+    if (!file || !kind) return;
+    try {
+      const r = await fetch(`/api/texture/${kind}/image`, { method: "POST", headers: { "Content-Type": "image/png" }, body: file });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || r.statusText);
+      const backups = (Textures.metaOf(kind).backups || 0) + 1;
+      await Textures.reloadPicture(kind, { width: data.width, height: data.height, backups });
+      Scene3D.reloadPicture(kind);
+      toast(data.imported ? `Картинка «${Textures.INFO[kind]?.name || kind}» заменена` : "Картинка заменена. Godot не найден: откройте проект в Godot, чтобы он переимпортировал текстуру",
+        data.imported ? "good" : "warn");
+      renderInspector();
+      renderTextures();
+    } catch (err) {
+      toast(`Не заменено: ${err.message}`, "bad");
+    }
   }
 
   function focusSelection(s) {
@@ -1390,7 +1732,7 @@ const Ed = (() => {
 
   function onKey(e) {
     const mod = e.metaKey || e.ctrlKey;
-    if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); return save(); }
+    if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); return saveAll(); }
     if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); return e.shiftKey ? redo() : undo(); }
     if (isTyping(e) || mod) return;
     if (!S) return;
@@ -1413,12 +1755,14 @@ const Ed = (() => {
   }
 
   async function boot() {
+    buildTools();
     bindUi();
     Scene3D.mount($("#view"));
     catalog = await api("/api/catalog");
+    await Textures.load();
+    Scene3D.setTextures(Textures.forScene());
     await loadList();
     renderAll();
-    renderTools();
     renderStatus();
     const first = new URLSearchParams(location.search).get("scene");
     if (first) openScene(first).catch((err) => toast(err.message, "bad"));

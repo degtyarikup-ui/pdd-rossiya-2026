@@ -116,55 +116,96 @@ const Scene3D = (() => {
 
   // ---- model -------------------------------------------------------------------------
 
-  // Detail maps of the game (game_godot/textures/detail): their red channel is the fine grain,
-  // read as a grey map, with the same contrast the game uses (scenery.gd GAIN).
-  const DETAIL = { asphalt: { period: 6.4, gain: 4 }, pavement: { period: 5.6, gain: 3.5 }, grass: { period: 4.8, gain: 3 } };
-  const detailMaps = {};
-  let detailLoaded = false;
-  function loadDetail() {
-    const kinds = Object.keys(DETAIL);
-    Promise.all(kinds.map((kind) => new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const c = document.createElement("canvas");
-        c.width = img.width; c.height = img.height;
-        const x = c.getContext("2d");
-        x.drawImage(img, 0, 0);
-        const data = x.getImageData(0, 0, c.width, c.height);
-        for (let i = 0; i < data.data.length; i += 4) {
-          const v = Math.max(0, Math.min(1, 0.5 + (data.data[i] / 255 - 0.5) * DETAIL[kind].gain));
-          data.data[i] = data.data[i + 1] = data.data[i + 2] = Math.round(v * 255);
-        }
-        x.putImageData(data, 0, 0);
-        const tex = new THREE.CanvasTexture(c);
-        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-        tex.anisotropy = 8;
-        detailMaps[kind] = tex;
-        resolve();
-      };
-      img.onerror = resolve;
-      img.src = `/asset/texture/${kind}.png`;
-    }))).then(() => {
-      detailLoaded = true;
-      if (model) { rebuildRoads(); rebuildGround(); needsRender = true; }
-    });
+  // ---- textures ----------------------------------------------------------------------
+  // The game shades a surface with its detail map (game_godot/shaders/scenery.gdshader): the fine
+  // grain (red channel) and the coarse patches (green, sampled at macroScale) scale the colour, each
+  // with the kind's gain. The numbers come from the texture panel (textures.js) and are the saved
+  // ones unless the user is editing, so the view shows what the game will show.
+  const TEXTURE_KINDS = ["asphalt", "pavement", "grass"];   // the surfaces the network draws, and the ground
+  const GRASS_COLOUR = "#86a97a";                           // the season's ground colour (scenery/index.json)
+  const texParams = {};     // kind -> { gain, macro, macroScale, period }
+  const texMaps = {};       // kind -> THREE.Texture of the picture (its image is swapped in place)
+  const texUniforms = {};   // kind -> shader uniforms, shared by every material of the kind: a slider needs no rebuild
+  const DETAIL_SHADE = `{
+    float fine = 0.5 + (texture2D(map, vUv).r - 0.5) * uGain;
+    float large = 0.5 + (texture2D(map, vUv * uMacroScale + vec2(0.31, 0.17)).g - 0.5) * uGain;
+    diffuseColor.rgb *= fine * 2.0 * (1.0 + (large * 2.0 - 1.0) * uMacro);
+  }`;
+
+  function uniformsOf(kind) {
+    if (!texUniforms[kind]) {
+      const p = texParams[kind] || { gain: 1, macro: 0, macroScale: 1 };
+      texUniforms[kind] = { uGain: { value: p.gain }, uMacro: { value: p.macro }, uMacroScale: { value: p.macroScale } };
+    }
+    return texUniforms[kind];
   }
 
-  // A surface's colour multiplied by its detail map (the map averages to 0.5, hence x2).
-  function surfaceMaterial(kind, colour) {
-    const c = new THREE.Color(colour).multiplyScalar(2);
-    const map = detailMaps[kind] || null;
-    return new THREE.MeshLambertMaterial({ color: map ? c : new THREE.Color(colour), map, side: THREE.DoubleSide });
+  const periodOf = (kind) => (texParams[kind] && texParams[kind].period) || 1;
+
+  function pictureFor(kind) {
+    if (!texMaps[kind]) {
+      const t = new THREE.Texture();
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.anisotropy = 8;
+      texMaps[kind] = t;
+      loadPicture(kind);
+    }
+    return texMaps[kind];
+  }
+
+  function loadPicture(kind) {
+    const img = new Image();
+    img.onload = () => {
+      texMaps[kind].image = img;
+      texMaps[kind].needsUpdate = true;
+      needsRender = true;
+    };
+    img.src = `/asset/texture/${kind}.png?v=${Date.now()}`;
+  }
+
+  // A colour shaded by the kind's picture, as the game does it (the factor averages to 1 hence x2).
+  function detailMaterial(kind, colour) {
+    const u = uniformsOf(kind);
+    const m = new THREE.MeshLambertMaterial({ color: colour, map: pictureFor(kind), side: THREE.DoubleSide });
+    m.onBeforeCompile = (shader) => {
+      Object.assign(shader.uniforms, u);
+      shader.fragmentShader = shader.fragmentShader
+        .replace("void main() {", "uniform float uGain;\nuniform float uMacro;\nuniform float uMacroScale;\nvoid main() {")
+        .replace("#include <map_fragment>", DETAIL_SHADE);
+    };
+    return m;
+  }
+
+  // The editor's numbers: the shading is updated in place; a new tile size rebuilds the geometry.
+  function setTextures(params) {
+    const before = TEXTURE_KINDS.map(periodOf);
+    for (const kind of TEXTURE_KINDS) {
+      if (!params[kind]) continue;
+      texParams[kind] = { ...params[kind] };
+      const u = uniformsOf(kind);
+      u.uGain.value = params[kind].gain;
+      u.uMacro.value = params[kind].macro;
+      u.uMacroScale.value = params[kind].macroScale;
+    }
+    if (!scene) return;
+    if (TEXTURE_KINDS.some((k, i) => periodOf(k) !== before[i])) { rebuildRoads(); rebuildGround(); }
+    needsRender = true;
+  }
+
+  // A picture file was replaced: the texture takes the new image.
+  function reloadPicture(kind) {
+    if (texMaps[kind]) loadPicture(kind);
   }
 
   function rebuildGround() {
     if (!ground) return;
-    const grass = detailMaps.grass;
-    ground.material = grass ? surfaceMaterial("grass", GROUND) : mat(GROUND);
-    if (grass) {
-      grass.repeat.set(4000 / DETAIL.grass.period, 4000 / DETAIL.grass.period);
-      grass.needsUpdate = true;
-    }
+    ground.material = detailMaterial("grass", GRASS_COLOUR);
+    // One picture repeat per tile over the 4 km ground: the uv is scaled, the texture stays shared.
+    const k = 4000 / periodOf("grass");
+    ground.geometry.dispose();
+    ground.geometry = new THREE.PlaneGeometry(4000, 4000);
+    const uv = ground.geometry.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * k, uv.getY(i) * k);
   }
 
   // One material per layer of the network (build.py): asphalt, pavement, lawns (grass detail) and
@@ -174,7 +215,7 @@ const Scene3D = (() => {
   function layerMaterial(s) {
     if (s.layer === "") return new THREE.MeshLambertMaterial({ color: s.colour, side: THREE.DoubleSide, ...OFFSET });
     const kind = s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
-    const m = surfaceMaterial(kind, s.layer === "grass" ? "#86a97a" : s.colour);
+    const m = detailMaterial(kind, s.layer === "grass" ? GRASS_COLOUR : s.colour);
     Object.assign(m, OFFSET);
     return m;
   }
@@ -185,7 +226,7 @@ const Scene3D = (() => {
     for (const s of build.surfaces) {
       if (!s.idx.length) continue;
       const kind = s.layer === "" ? null : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
-      const period = kind ? DETAIL[kind].period : 1;
+      const period = kind ? periodOf(kind) : 1;
       const geo = new THREE.BufferGeometry();
       const pos = [], uv = [];
       const verts = s.verts;
@@ -542,7 +583,7 @@ const Scene3D = (() => {
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.15;   // the world's lawn (game_godot/scripts/world.gd), under the junction's own lawn
     scene.add(ground);
-    loadDetail();
+    rebuildGround();
     camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 5000);
     resize();
     new ResizeObserver(resize).observe(el);
@@ -880,6 +921,7 @@ const Scene3D = (() => {
 
   return {
     mount, load, refresh, setBuild, setSelection, setDraft, setMode, fit, focus, zoomBy, worldAt, screenOf,
+    setTextures, reloadPicture,
     on(name, fn) { (listeners[name] = listeners[name] || []).push(fn); },
     get mode() { return mode; },
     get pxPerM() { return pxPerM; },

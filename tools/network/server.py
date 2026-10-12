@@ -10,6 +10,7 @@ result while it is being edited.
 """
 import json
 import re
+import subprocess
 import sys
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -26,16 +27,22 @@ NET = check.NET
 HISTORY = NET / "history"
 SIT = engine_sync.SIT
 GAME = check.ROOT / "game_godot"
+SCENERY = GAME / "scenery" / "index.json"
+DETAIL = GAME / "textures" / "detail"
+FONTS = check.ROOT / "assets" / "fonts"
 QUESTIONS = check.ROOT / "assets" / "countries" / "ru" / "questions"
 IMAGES = check.ROOT / "assets" / "countries" / "ru" / "images"
 ID = re.compile(r"^[a-z0-9_]+$")
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+# Limits of a texture edit: numbers the game can draw sensibly (scenery.gdshader).
+TEXTURE_LIMITS = {"gain": (0.0, 8.0), "macro": (0.0, 0.5), "macroScale": (0.01, 2.0), "period": (0.4, 40.0)}
 TYPES = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".png": "image/png",
-         ".webp": "image/webp", ".glb": "model/gltf-binary", ".json": "application/json", ".svg": "image/svg+xml"}
+         ".webp": "image/webp", ".glb": "model/gltf-binary", ".json": "application/json", ".svg": "image/svg+xml", ".ttf": "font/ttf"}
 ASSET_RULES = [
     (re.compile(r"^scene/([a-z0-9_]+)/((scene|actor_\d+|light_\d+)\.glb)$"), lambda m: SIT / m[1] / m[2]),
     (re.compile(r"^scenery/([a-z0-9_/]+)\.glb$"), lambda m: GAME / "scenery" / f"{m[1]}.glb"),
     (re.compile(r"^models/([a-z0-9_/]+)\.glb$"), lambda m: GAME / "models" / f"{m[1]}.glb"),
-    (re.compile(r"^texture/([a-z]+)\.png$"), lambda m: GAME / "textures" / "detail" / f"{m[1]}.png"),
+    (re.compile(r"^texture/([A-Za-z]+)\.png$"), lambda m: DETAIL / f"{m[1]}.png"),
 ]
 
 
@@ -89,6 +96,50 @@ def source_image(image: str):
     return None
 
 
+def scenery_index() -> dict:
+    return json.loads(SCENERY.read_text(encoding="utf-8"))
+
+
+def texture_entry(index: dict, kind: str):
+    return next((t for t in index["textures"] if t["kind"] == kind), None)
+
+
+def png_size(head: bytes):
+    """(width, height) of a PNG from its first 24 bytes, or None if they are not a PNG header."""
+    if len(head) < 24 or not head.startswith(PNG_SIGNATURE) or head[12:16] != b"IHDR":
+        return None
+    return int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
+
+
+def texture_backups(kind: str) -> list:
+    folder = HISTORY / "textures" / kind
+    return sorted(folder.glob("*.png")) if folder.is_dir() else []
+
+
+def keep_texture_backup(kind: str, keep: int = 10) -> None:
+    """The picture of a texture as it is now, kept before it is replaced (\"Вернуть прежнюю\")."""
+    src = DETAIL / f"{kind}.png"
+    if not src.exists():
+        return
+    folder = HISTORY / "textures" / kind
+    folder.mkdir(parents=True, exist_ok=True)
+    (HISTORY / ".gdignore").touch()   # Godot skips this folder: the backups are not game assets to import
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+    (folder / f"{stamp}.png").write_bytes(src.read_bytes())
+    for old in texture_backups(kind)[:-keep]:
+        old.unlink()
+
+
+def reimport_game() -> bool:
+    """Godot draws a texture from its import cache, so a changed PNG reaches the game only after
+    `--import`: about 5 s, and no tracked file changes. False when Godot is not installed."""
+    try:
+        r = subprocess.run(["godot", "--headless", "--path", str(GAME), "--import"], capture_output=True, timeout=180)
+        return r.returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
@@ -114,6 +165,10 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         if path in ("/", "/index.html"):
             return self.file(EDITOR / "index.html")
+        if path.startswith("/static/fonts/"):
+            # The app's own font (assets/fonts), so the editor reads like the app.
+            name = path[len("/static/fonts/"):]
+            return self.file(FONTS / name) if re.fullmatch(r"Onest-[A-Za-z]+\.ttf", name) else self.send(404, {"error": "not found"})
         if path.startswith("/static/"):
             rel = path[len("/static/"):]
             if ".." in rel:
@@ -137,6 +192,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, self.scene_list())
         if path == "/api/catalog":
             return self.send(200, self.catalog())
+        if path == "/api/textures":
+            return self.send(200, self.texture_list())
         m = re.match(r"^/api/scene/([a-z0-9_]+)$", path)
         if m and (NET / f"{m[1]}.json").exists():
             s = check.load(m[1])
@@ -146,6 +203,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = self.path.split("?")[0]
+        m = re.match(r"^/api/texture/([A-Za-z]+)(/image|/restore)?$", path)
+        if m:
+            return self.texture_post(m[1], m[2])
         m = re.match(r"^/api/(scene|preview)/([a-z0-9_]+)$", path)
         if not m or not ID.match(m[2]):
             return self.send(404, {"error": "not found"})
@@ -165,6 +225,55 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, KeyError) as e:
             return self.send(422, {"error": str(e), "findings": findings})
         self.send(200, {"findings": findings, "synced": synced, "removed": removed})
+
+    def texture_list(self):
+        out = []
+        for t in scenery_index()["textures"]:
+            f = DETAIL / f"{t['kind']}.png"
+            size = None
+            if f.exists():
+                with f.open("rb") as fh:
+                    size = png_size(fh.read(24))
+            out.append({**t, "width": size and size[0], "height": size and size[1],
+                        "backups": len(texture_backups(t["kind"]))})
+        return out
+
+    def texture_post(self, kind: str, action):
+        index = scenery_index()
+        entry = texture_entry(index, kind)
+        if entry is None:
+            return self.send(404, {"error": f"Нет текстуры «{kind}»"})
+        if action == "/image":
+            length = int(self.headers.get("Content-Length", 0))
+            if length > 8_000_000:
+                return self.send(413, {"error": "Картинка больше 8 МБ"})
+            data = self.rfile.read(length)
+            size = png_size(data[:24])
+            if size is None:
+                return self.send(400, {"error": "Нужен файл PNG"})
+            keep_texture_backup(kind)
+            (DETAIL / f"{kind}.png").write_bytes(data)
+            return self.send(200, {"width": size[0], "height": size[1], "imported": reimport_game()})
+        if action == "/restore":
+            backups = texture_backups(kind)
+            if not backups:
+                return self.send(404, {"error": "Прежней картинки нет"})
+            previous = backups[-1]
+            keep_texture_backup(kind)
+            (DETAIL / f"{kind}.png").write_bytes(previous.read_bytes())
+            previous.unlink(missing_ok=True)
+            return self.send(200, {"imported": reimport_game()})
+        # Numbers of the texture (scenery/index.json): only the fields the editor shows, inside their limits.
+        body = self.body()
+        for key, (lo, hi) in TEXTURE_LIMITS.items():
+            if key not in body or (key == "period" and not entry.get("period")):
+                continue
+            v = body[key]
+            if not isinstance(v, (int, float)) or not lo <= v <= hi:
+                return self.send(400, {"error": f"Параметр «{key}»: число от {lo} до {hi}"})
+            entry[key] = float(v)
+        SCENERY.write_text(json.dumps(index, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        self.send(200, {"texture": entry})
 
     def scene_list(self):
         out = []
@@ -195,6 +304,11 @@ class Handler(BaseHTTPRequestHandler):
                                     if json.loads(p.read_text(encoding="utf-8")).get("lights")), None)}
 
 
+class Server(ThreadingHTTPServer):
+    request_queue_size = 64      # the scene list asks for ~150 previews at once; the default queue refuses most
+    daemon_threads = True
+
+
 if __name__ == "__main__":
     print("scene editor: http://127.0.0.1:8950/")
-    ThreadingHTTPServer(("127.0.0.1", 8950), Handler).serve_forever()
+    Server(("127.0.0.1", 8950), Handler).serve_forever()

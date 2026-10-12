@@ -4,42 +4,108 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Редактор сцен</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%232f6fed'/%3E%3Cpath d='M4 11 L8 4 L12 11' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='5' fill='%230574f8'/%3E%3Cpath d='M4 11.5 8 4l4 7.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/static/editor.css">
 </head>
 <body>
+<!-- Icons (24 x 24, outline). Used as <use href="#i-…">; the stroke comes from .i in editor.css. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-cursor" viewBox="0 0 24 24"><path d="M5 3.5 18 12l-6.2 1.3L9.2 20 5 3.5Z"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24"><circle cx="5.5" cy="18.5" r="2.2"/><circle cx="18.5" cy="5.5" r="2.2"/><path d="M7.5 17C12 16.5 11 8.5 16.5 7.5"/></symbol>
+  <symbol id="i-road" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M7 12h2.5M11.75 12h2.5M16.5 12h1.5"/></symbol>
+  <symbol id="i-straight" viewBox="0 0 24 24"><path d="M4 7v10M20 7v10"/><path d="M4 12h16" stroke-dasharray="2.5 2"/></symbol>
+  <symbol id="i-island" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><rect x="8" y="8.5" width="8" height="7" rx="2" fill="currentColor" fill-opacity=".22"/></symbol>
+  <symbol id="i-lawn" viewBox="0 0 24 24"><path d="M5 19c0-8.5 5.2-13.5 14-14-.6 8.6-5.5 14-14 14Z"/><path d="M5 19 13 11"/></symbol>
+  <symbol id="i-marking" viewBox="0 0 24 24"><path d="M3 12h4M10 12h4M17 12h4" stroke-width="2.6"/></symbol>
+  <symbol id="i-stopline" viewBox="0 0 24 24"><rect x="3" y="10" width="18" height="4" rx="1" fill="currentColor"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="M3.5 15v-2.2c0-.6.3-1.2.8-1.5L6.6 9.2A2 2 0 0 1 8.3 8h7.4a2 2 0 0 1 1.7 1.2l2.3 4.1c.5.3.8.9.8 1.5V15"/><path d="M3.5 15h17v3h-17z"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="16.5" cy="18.5" r="1.5"/></symbol>
+  <symbol id="i-light" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="18" rx="2.5"/><circle cx="12" cy="7.5" r="1.4"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="16.5" r="1.4"/></symbol>
+  <symbol id="i-tree" viewBox="0 0 24 24"><circle cx="12" cy="9.5" r="5.5"/><path d="M12 15v6"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3.5 21 8l-9 4.5L3 8z"/><path d="m3 12.5 9 4.5 9-4.5M3 17l9 4.5 9-4.5"/></symbol>
+  <symbol id="i-scenes" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="m4 17 5-4.5 3.5 3 2.5-2 5 4.5"/></symbol>
+  <symbol id="i-tiles" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 3.5v17M14.5 3.5v17"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 5 3.5 7v12l5.5-2 6 2 5.5-2V5l-5.5 2z"/><path d="M9 5v12M15 7v12"/></symbol>
+  <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 3.5 19.5 7.5v9L12 20.5l-7.5-4v-9z"/><path d="m4.5 7.5 7.5 4 7.5-4M12 11.5v9"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+  <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3.5 7.5A1.5 1.5 0 0 0 5 6h14a1.5 1.5 0 0 0 1.5 1.5v2.8a2.2 2.2 0 0 0 0 4.4v2.8A1.5 1.5 0 0 0 19 18.5H5a1.5 1.5 0 0 0-1.5-1.5v-2.8a2.2 2.2 0 0 0 0-4.4z"/><path d="M14.5 6.5v11" stroke-dasharray="1.5 2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><rect x="5" y="4.5" width="14" height="16" rx="2.5"/><path d="M9 4.5h6v3H9z"/><path d="m9 13 2.2 2.2L15.5 11"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.3 2.5 2.4 4.7-5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4 21 19.5H3z"/><path d="M12 10v4.5M12 17.2v.1"/></symbol>
+  <symbol id="i-error" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6M15 9l-6 6"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3.5h11.5L20 7v12.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z"/><path d="M8 3.5v5h7v-5M8 20.5v-6h8v6"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6v.4"/><path d="M12 16.8h.01" stroke-width="2.4"/></symbol>
+  <symbol id="i-zoomin" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M11 8.5v5M8.5 11h5"/></symbol>
+  <symbol id="i-zoomout" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M8.5 11h5"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4.5h4.5M15.5 4.5H20V9M20 15v4.5h-4.5M8.5 19.5H4V15"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.8 12.2a1.5 1.5 0 0 0 1.5 1.3h6.4a1.5 1.5 0 0 0 1.5-1.3L17.5 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 17.5h6M10 20.5h4"/><path d="M12 3.5a5.5 5.5 0 0 0-3.2 10c.6.5.9 1.1.9 1.8h4.6c0-.7.3-1.3.9-1.8A5.5 5.5 0 0 0 12 3.5Z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01" stroke-width="2.2"/></symbol>
+  <symbol id="i-rotl" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></symbol>
+  <symbol id="i-rotr" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4.5v4.5h4.5"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15.5V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 15v3.5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V15"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="m4 17 5-4.5 3.5 3 2.5-2 5 4.5"/></symbol>
+  <symbol id="i-contrast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18.5a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.4 1.4 4 4 0 0 1-.3 7.6z"/></symbol>
+  <symbol id="i-ruler" viewBox="0 0 24 24"><path d="M3.5 16.5 16.5 3.5l4 4-13 13z"/><path d="m7.5 12.5 2 2M10.5 9.5l2 2M13.5 6.5l2 2"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5.5 21V4"/><path d="M5.5 4.5h11l-2.2 4 2.2 4h-11"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21Z"/><circle cx="12" cy="10.5" r="2.3"/></symbol>
+  <symbol id="i-points" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="9" cy="18" r="2"/><path d="M7.6 7.2 16.4 7.9M16.2 9.8l-5.6 6.4"/></symbol>
+  <symbol id="i-move" viewBox="0 0 24 24"><path d="M12 3.5v17M3.5 12h17M9 6.5l3-3 3 3M9 17.5l3 3 3-3M6.5 9l-3 3 3 3M17.5 9l3 3-3 3"/></symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="6.5" width="19" height="11" rx="2.5"/><path d="M6.5 10.5h.01M10 10.5h.01M13.5 10.5h.01M17 10.5h.01M7.5 14h9"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></symbol>
+  <symbol id="i-legend" viewBox="0 0 24 24"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.5" cy="6.5" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="17.5" r="1"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+</svg>
+
 <div class="app">
   <header class="top">
-    <div class="brand">Редактор сцен</div>
+    <div class="brand">
+      <span class="logo"><svg class="i"><use href="#i-map"/></svg></span>
+      <div><b>Редактор сцен</b><small>Перекрёстки игры</small></div>
+    </div>
     <div class="scene-head">
       <span id="title" class="title">Выберите сцену</span>
       <span id="status" class="chip"></span>
     </div>
     <div class="spacer"></div>
-    <span id="dirty" class="dirty" hidden>Несохранённые правки</span>
-    <button id="undo" class="btn ghost" title="Отменить (⌘Z)" disabled>Отменить</button>
-    <button id="redo" class="btn ghost" title="Вернуть (⇧⌘Z)" disabled>Вернуть</button>
-    <button id="save" class="btn primary" title="Сохранить (⌘S)" disabled>Сохранить <kbd>⌘S</kbd></button>
-    <button id="help" class="btn ghost icon" title="Горячие клавиши (?)">?</button>
+    <span id="dirty" class="dirty" hidden><i></i>Есть несохранённые правки</span>
+    <button id="undo" class="btn ghost" data-tip="Отменить · ⌘Z" disabled><svg class="i"><use href="#i-undo"/></svg><span>Отменить</span></button>
+    <button id="redo" class="btn ghost" data-tip="Вернуть · ⇧⌘Z" disabled><svg class="i"><use href="#i-redo"/></svg><span>Вернуть</span></button>
+    <span class="sep"></span>
+    <button id="save" class="btn primary" data-tip="Сохранить всё · ⌘S" disabled><svg class="i"><use href="#i-save"/></svg><span>Сохранить</span></button>
+    <button id="help" class="btn ghost icon" data-tip="Подсказки и клавиши · ?"><svg class="i"><use href="#i-help"/></svg></button>
   </header>
 
   <aside class="left">
-    <nav class="tabs">
-      <button class="on" data-ltab="scenes">Сцены <em id="count-scenes"></em></button>
-      <button data-ltab="objects">Объекты</button>
+    <nav class="tabs" id="ltabs">
+      <button class="on" data-ltab="scenes"><svg class="i"><use href="#i-scenes"/></svg>Сцены</button>
+      <button data-ltab="objects"><svg class="i"><use href="#i-layers"/></svg>Объекты</button>
+      <button data-ltab="textures"><svg class="i"><use href="#i-tiles"/></svg>Текстуры</button>
     </nav>
     <section id="pane-scenes" class="pane">
-      <input id="q" class="search" type="search" placeholder="Поиск: 10_15 или билет 10">
-      <div id="filters" class="seg">
-        <button class="on" data-f="all">Все</button>
-        <button data-f="err">С ошибками</button>
-        <button data-f="todo">Не сверены</button>
+      <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="q" type="search" placeholder="Номер билета: 10 или 10_15" autocomplete="off"></label>
+      <div id="filters" class="chips">
+        <button class="on" data-f="all">Все <em id="n-all"></em></button>
+        <button data-f="err">С ошибками <em id="n-err"></em></button>
+        <button data-f="todo">Не сверены <em id="n-todo"></em></button>
       </div>
       <div id="scene-list" class="list"></div>
     </section>
     <section id="pane-objects" class="pane" hidden>
-      <input id="oq" class="search" type="search" placeholder="Найти объект">
+      <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="oq" type="search" placeholder="Найти дорогу, участника, светофор" autocomplete="off"></label>
       <div id="object-tree" class="list tree"></div>
+    </section>
+    <section id="pane-textures" class="pane" hidden>
+      <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="tq" type="search" placeholder="Найти текстуру" autocomplete="off"></label>
+      <p class="pane-note">Фактура дорог, тротуаров, газонов и зданий. Ползунки видны на плане сразу, «Сохранить» записывает их в игру.</p>
+      <div id="tex-list" class="list"></div>
     </section>
   </aside>
 
@@ -47,81 +113,125 @@
     <div id="view" class="view"></div>
     <div id="labels" class="labels"></div>
 
-    <nav id="tools" class="tools" aria-label="Инструменты">
-      <button data-tool="select" title="Выбор (V)"><span>↖</span><small>V</small></button>
-      <button data-tool="route" title="Маршрут (M)"><span>⤳</span><small>M</small></button>
-      <button data-tool="road" title="Дорога (D)"><span>▭</span><small>D</small></button>
-      <button data-tool="straight" title="Прямой участок (R)"><span>═</span><small>R</small></button>
-      <button data-tool="island" title="Островок (I)"><span>◻</span><small>I</small></button>
-      <button data-tool="lawn" title="Газон или клумба (G)"><span>❀</span><small>G</small></button>
-      <button data-tool="marking" title="Разметка (K)"><span>┆</span><small>K</small></button>
-      <button data-tool="actor" title="Участник (A)"><span>🚗</span><small>A</small></button>
-      <button data-tool="decor" title="Декор (P)"><span>🌳</span><small>P</small></button>
-      <button data-tool="light" title="Светофор (L)"><span>🚦</span><small>L</small></button>
-      <button data-tool="stop" title="Стоп-линия (S)"><span>━</span><small>S</small></button>
-    </nav>
-    <div id="tool-opts" class="tool-opts" hidden></div>
+    <nav id="tools" class="tools" aria-label="Инструменты"></nav>
 
-    <div class="view-ctl">
-      <button id="mode" class="btn ghost">3D вид</button>
-      <button id="zin" class="btn ghost icon" title="Приблизить">+</button>
-      <button id="zout" class="btn ghost icon" title="Отдалить">−</button>
-      <button id="zfit" class="btn ghost icon" title="Вся сцена (F)">⤢</button>
-    </div>
-
-    <div class="statusbar">
-      <span id="cursor" class="cursor">x — · z — м</span>
-      <span id="hint" class="hint"></span>
-      <span class="scale"><i id="scale-bar"></i><b id="scale-text">10 м</b><em id="zoom-text"></em></span>
-    </div>
-
-    <aside id="legend" class="legend collapsed" aria-label="Что означают линии">
-      <b id="legend-head">Что значат линии</b>
-      <div><i class="sw" style="--c:#2f6fed"></i>Выезд: манёвр. Жирная — правильный по условию</div>
-      <div><i class="sw" style="--c:#e0533d"></i>А <i class="sw" style="--c:#8b5cf6"></i>Б <i class="sw" style="--c:#0891b2"></i>В — варианты ответа</div>
-      <div><i class="sw" style="--c:#16a34a"></i>Подъезд к стоп-линии</div>
-      <div><i class="sw dash" style="--c:#e09a2a"></i>Путь участника (машины, пешехода)</div>
-      <small>Наведите на линию, и остальные станут бледными</small>
-    </aside>
-
-    <div id="empty" class="empty">
-      <div>
-        <h2>Выберите сцену слева</h2>
-        <p>Здесь вид сверху с настоящими моделями: машины, пешеходы, светофоры, деревья и дома. Дорогу, маршруты и участников можно двигать и добавлять.</p>
+    <div id="guide" class="guide" hidden>
+      <div class="guide-main">
+        <span class="guide-icon"><svg class="i"><use id="guide-icon" href="#i-cursor"/></svg></span>
+        <div class="guide-text"><b id="guide-title"></b><span id="guide-hint"></span></div>
+      </div>
+      <div id="tool-opts" class="tool-opts"></div>
+      <div id="draft-actions" class="draft-actions" hidden>
+        <span id="draft-count" class="pill"></span>
+        <button id="draft-cancel" class="btn ghost small">Отмена <kbd>Esc</kbd></button>
+        <button id="draft-done" class="btn primary small">Готово <kbd>Enter</kbd></button>
       </div>
     </div>
-    <div id="toast" class="toast"></div>
+
+    <div id="selbar" class="selbar" hidden>
+      <span class="selbar-name" id="selbar-name"></span>
+      <button id="sel-rotl" class="btn ghost small icon" data-tip="Повернуть на −15° · ["><svg class="i"><use href="#i-rotl"/></svg></button>
+      <button id="sel-rotr" class="btn ghost small icon" data-tip="Повернуть на +15° · ]"><svg class="i"><use href="#i-rotr"/></svg></button>
+      <button id="sel-del" class="btn danger small" data-tip="Удалить · Delete"><svg class="i"><use href="#i-trash"/></svg>Удалить</button>
+      <button id="sel-off" class="btn ghost small icon" data-tip="Снять выбор · Esc"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+
+    <aside id="legend" class="legend" hidden aria-label="Что значат линии">
+      <div class="legend-head"><b><svg class="i"><use href="#i-legend"/></svg>Что значат линии</b><button id="legend-close" class="btn ghost small icon" data-tip="Закрыть"><svg class="i"><use href="#i-x"/></svg></button></div>
+      <div class="legend-row"><i class="sw" style="--c:#0574f8"></i>Выезд: манёвр. Жирная — правильный по условию</div>
+      <div class="legend-row"><i class="sw" style="--c:#ed4621"></i><span>А <i class="sw" style="--c:#8b5cf6"></i>Б <i class="sw" style="--c:#0891b2"></i>В — варианты ответа</span></div>
+      <div class="legend-row"><i class="sw" style="--c:#2bc280"></i>Подъезд к стоп-линии</div>
+      <div class="legend-row"><i class="sw dash" style="--c:#ffa53c"></i>Путь участника: машины, пешехода</div>
+      <small>Наведите на линию — остальные станут бледными.</small>
+    </aside>
+
+    <div class="statusbar">
+      <span class="cursor"><svg class="i"><use href="#i-pin"/></svg><span id="cursor">x — · z — м</span></span>
+      <span class="scale"><i id="scale-bar"></i><b id="scale-text">10 м</b><em id="zoom-text"></em></span>
+      <span class="spacer"></span>
+      <button id="legend-toggle" class="btn ghost small" data-tip="Что значат линии"><svg class="i"><use href="#i-legend"/></svg>Легенда</button>
+      <div class="seg2" role="group" aria-label="Вид">
+        <button id="mode-plan" class="on" data-tip="Вид сверху"><svg class="i"><use href="#i-map"/></svg>Сверху</button>
+        <button id="mode-3d" data-tip="Объёмный вид: правой кнопкой вращать"><svg class="i"><use href="#i-cube"/></svg>3D</button>
+      </div>
+      <div class="zoom" role="group" aria-label="Масштаб">
+        <button id="zout" class="btn ghost small icon" data-tip="Отдалить"><svg class="i"><use href="#i-zoomout"/></svg></button>
+        <button id="zfit" class="btn ghost small icon" data-tip="Вся сцена · F"><svg class="i"><use href="#i-fit"/></svg></button>
+        <button id="zin" class="btn ghost small icon" data-tip="Приблизить"><svg class="i"><use href="#i-zoomin"/></svg></button>
+      </div>
+    </div>
+
+    <div id="empty" class="empty">
+      <div class="empty-card">
+        <span class="empty-ico"><svg class="i"><use href="#i-map"/></svg></span>
+        <h2>Выберите сцену слева</h2>
+        <p>Перекрёсток из билета: дорога, разметка, машины и светофоры — как в игре. Всё можно двигать и добавлять прямо на плане.</p>
+        <ol class="steps">
+          <li><span class="step-n">1</span><svg class="i"><use href="#i-search"/></svg>Найдите перекрёсток по номеру билета</li>
+          <li><span class="step-n">2</span><svg class="i"><use href="#i-cursor"/></svg>Нажмите объект на плане или в списке и тяните его</li>
+          <li><span class="step-n">3</span><svg class="i"><use href="#i-save"/></svg>Сохраните — изменения попадут в игру</li>
+        </ol>
+      </div>
+    </div>
+    <div id="toast" class="toast" role="status"></div>
   </main>
 
   <aside class="right">
     <nav id="rtabs" class="tabs">
-      <button class="on" data-rtab="props">Свойства</button>
-      <button data-rtab="question">Билет</button>
-      <button data-rtab="checks">Проверка <b id="check-count"></b></button>
+      <button class="on" data-rtab="props"><svg class="i"><use href="#i-sliders"/></svg>Свойства</button>
+      <button data-rtab="question"><svg class="i"><use href="#i-ticket"/></svg>Билет</button>
+      <button data-rtab="checks"><svg class="i"><use href="#i-check"/></svg>Проверка <b id="check-count"></b></button>
     </nav>
     <div id="rpane" class="rpane"></div>
   </aside>
 </div>
 
+<input id="texture-file" type="file" accept="image/png" hidden>
+
 <div id="help-dialog" class="modal" hidden>
   <div class="dialog">
-    <h2>Горячие клавиши</h2>
-    <dl>
-      <dt><kbd>V</kbd></dt><dd>выбор объекта, перетаскивание точек и объектов</dd>
-      <dt><kbd>M</kbd> <kbd>D</kbd> <kbd>R</kbd> <kbd>I</kbd></dt><dd>рисовать маршрут, дорогу, прямой участок (две точки), островок</dd>
-      <dt><kbd>G</kbd> <kbd>K</kbd></dt><dd>газон или клумба; разметка (тип и цвет выбираются в панели над инструментами)</dd>
-      <dt><kbd>A</kbd> <kbd>P</kbd> <kbd>L</kbd> <kbd>S</kbd></dt><dd>поставить участника, декор, светофор, стоп-линию</dd>
-      <dt><kbd>Enter</kbd></dt><dd>закончить рисование</dd>
-      <dt><kbd>Esc</kbd></dt><dd>отменить рисование и снять выбор</dd>
-      <dt><kbd>Delete</kbd></dt><dd>удалить выбранную точку или объект</dd>
-      <dt><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd></dt><dd>сдвинуть на 5 см, с Shift — на 50 см</dd>
-      <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>повернуть на 5°, с Shift — на 45°</dd>
-      <dt>двойной клик</dt><dd>добавить точку на линию или закончить рисование</dd>
-      <dt>колесо, Пробел + тяни</dt><dd>масштаб и сдвиг вида; в 3D — правая кнопка вращает</dd>
-      <dt><kbd>⌘Z</kbd> <kbd>⇧⌘Z</kbd> <kbd>⌘S</kbd></dt><dd>отмена, повтор, сохранение</dd>
-      <dt><kbd>F</kbd></dt><dd>показать всю сцену</dd>
-    </dl>
-    <button class="btn primary" data-close>Понятно</button>
+    <div class="dialog-head">
+      <span class="ibadge"><svg class="i"><use href="#i-keyboard"/></svg></span>
+      <h2>Подсказки и клавиши</h2>
+    </div>
+    <div class="help-grid">
+      <section>
+        <h3>Инструменты</h3>
+        <dl>
+          <dt><kbd>V</kbd></dt><dd>выбрать и двигать объект или точку</dd>
+          <dt><kbd>D</kbd> <kbd>R</kbd> <kbd>I</kbd></dt><dd>дорога, прямой участок, островок</dd>
+          <dt><kbd>G</kbd> <kbd>K</kbd></dt><dd>газон или клумба; разметка</dd>
+          <dt><kbd>M</kbd> <kbd>S</kbd></dt><dd>маршрут; стоп-линия</dd>
+          <dt><kbd>A</kbd> <kbd>L</kbd> <kbd>P</kbd></dt><dd>участник, светофор, декор</dd>
+        </dl>
+      </section>
+      <section>
+        <h3>Рисование</h3>
+        <dl>
+          <dt><kbd>Enter</kbd></dt><dd>готово: контур замкнут, линия закончена</dd>
+          <dt><kbd>Esc</kbd></dt><dd>отменить рисование и снять выбор</dd>
+          <dt>двойной клик</dt><dd>добавить точку на линию или закончить</dd>
+        </dl>
+      </section>
+      <section>
+        <h3>Изменение</h3>
+        <dl>
+          <dt><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd></dt><dd>сдвиг на 5 см; с Shift — 50 см</dd>
+          <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>поворот на 5°; с Shift — 45°</dd>
+          <dt><kbd>Delete</kbd></dt><dd>удалить выбранное</dd>
+          <dt><kbd>⌘Z</kbd> <kbd>⇧⌘Z</kbd></dt><dd>отменить и вернуть</dd>
+        </dl>
+      </section>
+      <section>
+        <h3>Вид и сохранение</h3>
+        <dl>
+          <dt><kbd>F</kbd></dt><dd>показать всю сцену</dd>
+          <dt>колесо, Пробел + тяни</dt><dd>масштаб и сдвиг вида; в 3D правая кнопка вращает</dd>
+          <dt><kbd>⌘S</kbd></dt><dd>сохранить сцену и текстуры</dd>
+        </dl>
+      </section>
+    </div>
+    <div class="dialog-foot"><button class="btn primary" data-close>Понятно</button></div>
   </div>
 </div>
 
@@ -132,6 +242,7 @@
 <script src="/static/vendor/LineMaterial.js"></script>
 <script src="/static/vendor/LineSegments2.js"></script>
 <script src="/static/vendor/Line2.js"></script>
+<script src="/static/textures.js"></script>
 <script src="/static/scene3d.js"></script>
 <script src="/static/ui.js"></script>
 </body>
