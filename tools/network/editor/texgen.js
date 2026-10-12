@@ -99,6 +99,47 @@ const TexGen = (() => {
     return blur(out, soft);
   }
 
+  // One shade per tile, brick or plank (the same cells as joints()): a quiet, even variation.
+  function cells(rows, cols, offset, sd, seed) {
+    const out = new Float32Array(N * N);
+    const hash = (a, b) => { let h = (a * 374761393 + b * 668265263 + seed * 2147483647) | 0; h = (h ^ (h >>> 13)) * 1274126177; return ((h ^ (h >>> 16)) >>> 0) / 4294967295; };
+    for (let y = 0; y < N; y++) {
+      const row = Math.floor((y / N) * rows);
+      for (let x = 0; x < N; x++) {
+        let rx = cols ? (x / N) * cols + (row % 2 ? offset : 0) : 0;
+        const col = cols ? ((Math.floor(rx) % cols) + cols) % cols : 0;
+        out[y * N + x] = (hash(row, col) - 0.5) * 2 * sd;
+      }
+    }
+    return out;
+  }
+  // Tiles: 0.5 plus each tile's shade, darker joints. depth: how much darker a joint is.
+  function tiles(rows, cols, offset, width, depth, sd, seed) {
+    const j = joints(rows, cols, offset, width, 1), c = cells(rows, cols, offset, sd, seed);
+    return j.map((v, i) => 0.5 + c[i] - (1 - v) * depth);
+  }
+  const flat = (seed, sd, rad = 2) => spread(blur(fbm(16, 2, 0.5, seed), rad), sd);
+  const patches = (seed, sd) => spread(fbm(3, 3, 0.5, seed + 7), sd);
+  // Minimal: almost even colour, a calm large variation, clean joints where the material has them.
+  // Made for gain 1 (the picture's numbers are the contrast itself).
+  const MINIMAL = {
+    asphalt: (s) => ({ r: flat(s, 0.006), g: patches(s, 0.12), pick: { gain: 1, macro: 0.04 } }),
+    pavement: (s) => { const t = tiles(4, 4, 0, 3, 0.07, 0.022, s); return { r: t, b: t, g: patches(s, 0.1), pick: { gain: 1, macro: 0.03 } }; },
+    grass: (s) => ({ r: flat(s, 0.006), g: patches(s, 0.16), pick: { gain: 1, macro: 0.07 } }),
+    gravel: (s) => ({ r: flat(s, 0.02, 1), g: patches(s, 0.1), pick: { gain: 1, macro: 0.04 } }),
+    ballast: (s) => ({ r: flat(s, 0.02, 1), g: patches(s, 0.1), pick: { gain: 1, macro: 0.04 } }),
+    plaster: (s) => ({ r: flat(s, 0.005), g: patches(s, 0.1), pick: { gain: 1, macro: 0.03 } }),
+    panel: (s) => ({ r: tiles(3, 2, 0, 3, 0.05, 0.015, s), g: patches(s, 0.1), pick: { gain: 1, macro: 0.03 } }),
+    brick: (s) => ({ r: tiles(16, 8, 0.5, 3, 0.06, 0.02, s), g: patches(s, 0.1), pick: { gain: 1, macro: 0.03 } }),
+    roofTile: (s) => ({ r: tiles(10, 0, 0, 4, 0.06, 0.015, s), g: patches(s, 0.1), pick: { gain: 1, macro: 0.03 } }),
+    roofFlat: (s) => ({ r: flat(s, 0.005), g: patches(s, 0.1), pick: { gain: 1, macro: 0.03 } }),
+    wood: (s) => ({ r: tiles(2, 6, 0.5, 2, 0.05, 0.02, s), g: patches(s, 0.1), pick: { gain: 1, macro: 0.03 } }),
+    deck: (s) => ({ r: tiles(2, 6, 0.5, 2, 0.05, 0.02, s), g: patches(s, 0.1), pick: { gain: 1, macro: 0.03 } }),
+    metal: (s) => ({ r: flat(s, 0.005), g: patches(s, 0.08), pick: { gain: 1, macro: 0.02 } }),
+    leaves: (s) => ({ r: flat(s, 0.015), g: patches(s, 0.12), pick: { gain: 1, macro: 0.05 } }),
+    bark: (s) => ({ r: flat(s, 0.012), g: patches(s, 0.08), pick: { gain: 1, macro: 0.02 } }),
+  };
+
   // The styles a kind offers. pick: the numbers that suit the picture (gain, macro).
   const BASE = [
     // Fine, but without the pixel-sharp sparkle: grain softened by a pixel, quiet patches.
@@ -113,7 +154,8 @@ const TexGen = (() => {
     grass: [{ id: "meadow", title: "Луг", make: (seed) => ({ r: spread(blur(fbm(24, 3, 0.55, seed), 1), 0.035), g: spread(fbm(3, 4, 0.55, seed + 7), 0.2) }), pick: { gain: 1.2, macro: 0.14 } }],
   };
 
-  const styles = (kind) => [{ id: "current", title: "Сейчас" }, ...BASE, ...(EXTRA[kind] || [])];
+  const styles = (kind) => [{ id: "current", title: "Сейчас" },
+    ...(MINIMAL[kind] ? [{ id: "minimal", title: "Минимал", make: MINIMAL[kind] }] : []), ...BASE, ...(EXTRA[kind] || [])];
   const cache = new Map();
   // The style's channels as numbers 0..1 ({ w, h, r, g, b }) and the numbers it suits.
   function build(kind, id) {
@@ -122,8 +164,8 @@ const TexGen = (() => {
       const st = styles(kind).find((s) => s.id === id);
       if (!st || !st.make) return null;
       const seed = [...kind].reduce((a, c) => a * 31 + c.charCodeAt(0), 7) & 0xffff;
-      const { r, g } = st.make(seed);
-      cache.set(key, { w: N, h: N, r, g, b: r, pick: st.pick });
+      const made = st.make(seed);
+      cache.set(key, { w: N, h: N, r: made.r, g: made.g, b: made.b || made.r, pick: made.pick || st.pick });
     }
     return cache.get(key);
   }
