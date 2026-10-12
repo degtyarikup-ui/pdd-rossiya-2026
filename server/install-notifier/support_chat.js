@@ -16,6 +16,47 @@ function jsonResponse(data, status = 200, extraHeaders = {}) {
   });
 }
 
+// Messages of one client live in a Durable Object (support_thread.js): read right after a write.
+// Without the binding they fall back to KV (eventually consistent, slower to show replies).
+function threadStub(env, clientId) {
+  return env.SUPPORT ? env.SUPPORT.get(env.SUPPORT.idFromName(clientId)) : null;
+}
+
+async function appendSupportMessage(env, clientId, msg) {
+  const stub = threadStub(env, clientId);
+  if (stub) {
+    await stub.fetch('https://support.internal/append', { method: 'POST', body: JSON.stringify(msg) });
+    return;
+  }
+  const key = 'support:messages:' + clientId;
+  let msgs = env.INSTALLS ? ((await env.INSTALLS.get(key, { type: 'json' })) || []) : [];
+  if (!msgs.some((m) => m.id === msg.id)) {
+    msgs.push(msg);
+    if (msgs.length > 200) msgs = msgs.slice(-200);
+    if (env.INSTALLS) await env.INSTALLS.put(key, JSON.stringify(msgs));
+  }
+}
+
+async function listSupportMessages(env, clientId, since) {
+  const stub = threadStub(env, clientId);
+  if (!stub) {
+    const key = 'support:messages:' + clientId;
+    const msgs = env.INSTALLS ? ((await env.INSTALLS.get(key, { type: 'json' })) || []) : [];
+    return since > 0 ? msgs.filter((m) => m.ts > since) : msgs;
+  }
+  const read = async () => (await (await stub.fetch(`https://support.internal/list?since=${since}`)).json()).messages || [];
+  let messages = await read();
+  if (messages.length === 0 && env.INSTALLS) {
+    // Messages kept in KV before the thread existed: copy them once.
+    const legacy = await env.INSTALLS.get('support:messages:' + clientId, { type: 'json' });
+    if (Array.isArray(legacy) && legacy.length) {
+      await stub.fetch('https://support.internal/seed', { method: 'POST', body: JSON.stringify(legacy) });
+      messages = await read();
+    }
+  }
+  return messages;
+}
+
 function escapeHtml(s) {
   return String(s ?? '')
     .replaceAll('&', '&amp;')
@@ -83,13 +124,7 @@ export async function processTelegramMessageUpdate(msg, env) {
     authorName: 'Менеджер Сергей',
   };
 
-  const msgKey = 'support:messages:' + clientId;
-  let msgs = env.INSTALLS ? ((await env.INSTALLS.get(msgKey, { type: 'json' })) || []) : [];
-  if (!msgs.some((m) => m.id === replyMsg.id)) {
-    msgs.push(replyMsg);
-    if (msgs.length > 200) msgs = msgs.slice(-200);
-    if (env.INSTALLS) await env.INSTALLS.put(msgKey, JSON.stringify(msgs));
-  }
+  await appendSupportMessage(env, clientId, replyMsg);
 
   // Обновляем метку последней активности клиента
   const clientKey = 'support:client:' + clientId;
@@ -247,17 +282,10 @@ export async function handleSupportSendMessage(request, env) {
     authorName: displayName,
   };
 
-  const msgKey = 'support:messages:' + clientId;
-  let msgs = env.INSTALLS ? ((await env.INSTALLS.get(msgKey, { type: 'json' })) || []) : [];
-  msgs.push(newMsg);
-  if (msgs.length > 200) msgs = msgs.slice(-200);
-
-  if (env.INSTALLS) {
-    await env.INSTALLS.put(msgKey, JSON.stringify(msgs));
-    if (client) {
-      client.lastMsgAt = Date.now();
-      await env.INSTALLS.put(clientKey, JSON.stringify(client));
-    }
+  await appendSupportMessage(env, clientId, newMsg);
+  if (env.INSTALLS && client) {
+    client.lastMsgAt = Date.now();
+    await env.INSTALLS.put(clientKey, JSON.stringify(client));
   }
 
   return jsonResponse({ ok: true, message: newMsg });
@@ -274,11 +302,8 @@ export async function handleSupportGetMessages(request, env) {
   // Проверяем новые сообщения из Telegram через getUpdates, если webhook не настроен
   await checkPendingTelegramUpdates(env);
 
-  const msgKey = 'support:messages:' + clientId;
-  const msgs = env.INSTALLS ? ((await env.INSTALLS.get(msgKey, { type: 'json' })) || []) : [];
-
   const since = Number(url.searchParams.get('since') || 0);
-  const result = since > 0 ? msgs.filter((m) => m.ts > since) : msgs;
+  const result = await listSupportMessages(env, clientId, since);
 
   return jsonResponse({ ok: true, messages: result });
 }

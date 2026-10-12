@@ -23,6 +23,7 @@ import {
 import { trafficRequest } from './traffic_state.js';
 import { closeFinishedGameWeeks, bestGameRank, deleteGameBest } from './game_weeks.js';
 export { PurchaseClaims } from './purchase_claims.js';
+export { SupportThread } from './support_thread.js';
 import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntitlementExpiry, StoreError } from './store_verification.js';
 import { setEntitlement } from './entitlements.js';
 import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, listPayIntents, webPaymentsLive } from './payments.js';
