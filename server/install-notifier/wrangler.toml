@@ -40,7 +40,7 @@ crons = ["0 19 * * *", "*/5 * * * *", "5 21 * * SUN"]
 # Аналитика (stats_buffer.js): durable-очередь, пачки раз в 5 минут.
 # TrafficState сериализует счётчики и рейтинг; TelegramQueue повторяет доставку.
 [durable_objects]
-bindings = [{ name = "STATS", class_name = "StatsBuffer" }, { name = "PURCHASE_CLAIMS", class_name = "PurchaseClaims" }, { name = "TRAFFIC", class_name = "TrafficState" }, { name = "TELEGRAM", class_name = "TelegramQueue" }, { name = "NOTIFICATIONS", class_name = "NotificationsState" }, { name = "SUPPORT", class_name = "SupportThread" }]
+bindings = [{ name = "STATS", class_name = "StatsBuffer" }, { name = "PURCHASE_CLAIMS", class_name = "PurchaseClaims" }, { name = "TRAFFIC", class_name = "TrafficState" }, { name = "TELEGRAM", class_name = "TelegramQueue" }, { name = "NOTIFICATIONS", class_name = "NotificationsState" }, { name = "SUPPORT", class_name = "SupportThread" }, { name = "TG_AUTH", class_name = "TelegramAuthState" }]
 
 [[migrations]]
 tag = "v1"
@@ -61,3 +61,7 @@ new_sqlite_classes = ["NotificationsState"]
 [[migrations]]
 tag = "v5-support"
 new_sqlite_classes = ["SupportThread"]
+
+[[migrations]]
+tag = "v6-telegram-auth"
+new_sqlite_classes = ["TelegramAuthState"]

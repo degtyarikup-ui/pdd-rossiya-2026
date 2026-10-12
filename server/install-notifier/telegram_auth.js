@@ -33,6 +33,48 @@ export function telegramBotUsername(env) {
 
 const SESSION_SECONDS = 30 * 86400;
 
+// Состояние входа (nonce) живёт в Durable Object: у KV согласованность
+// «в конечном счёте» — подтверждение из вебхука доходило до опроса минутами.
+// Без привязки TG_AUTH (тесты) используется KV.
+export class TelegramAuthState {
+  constructor(state) { this.state = state; }
+  async fetch(request) {
+    const { op, entry } = await request.json();
+    const cur = await this.state.storage.get('e');
+    const alive = cur && cur.expiresAt > Date.now() ? cur : null;
+    if (op === 'put') {
+      await this.state.storage.put('e', { ...entry, expiresAt: Date.now() + 300000 });
+      return Response.json({ ok: true });
+    }
+    if (!alive && cur) await this.state.storage.deleteAll();
+    if (op === 'claim' && alive?.status === 'confirmed') await this.state.storage.deleteAll();
+    return Response.json({ entry: alive });
+  }
+}
+
+function authStub(env, nonce) {
+  return env.TG_AUTH.get(env.TG_AUTH.idFromName(nonce));
+}
+async function authOp(env, nonce, op, entry) {
+  const r = await authStub(env, nonce).fetch('https://do/', { method: 'POST', body: JSON.stringify({ op, entry }) });
+  return (await r.json()).entry || null;
+}
+async function authGet(env, nonce) {
+  if (env.TG_AUTH) return authOp(env, nonce, 'get');
+  const raw = await env.INSTALLS.get('tg_auth:' + nonce);
+  try { return raw ? JSON.parse(raw) : null; } catch { return null; }
+}
+async function authPut(env, nonce, entry) {
+  if (env.TG_AUTH) return authOp(env, nonce, 'put', entry);
+  await env.INSTALLS.put('tg_auth:' + nonce, JSON.stringify(entry), { expirationTtl: 300 });
+}
+async function authClaim(env, nonce) {
+  if (env.TG_AUTH) return authOp(env, nonce, 'claim');
+  const entry = await authGet(env, nonce);
+  if (entry?.status === 'confirmed') await env.INSTALLS.delete('tg_auth:' + nonce);
+  return entry;
+}
+
 // Секрет вебхука Telegram (заголовок X-Telegram-Bot-Api-Secret-Token): без него
 // любой, кто знает ключ приложения, мог подделать «нажатие Start» от чужого id.
 export async function telegramWebhookSecret(env) {
@@ -88,11 +130,7 @@ export async function handleTelegramAuthRequest(request, env) {
   const nonce = 'auth_' + crypto.randomUUID().replace(/-/g, '');
   const username = telegramBotUsername(env);
 
-  await env.INSTALLS.put(
-    'tg_auth:' + nonce,
-    JSON.stringify({ status: 'pending', createdAt: Date.now() }),
-    { expirationTtl: 300 } // 5 минут на подтверждение
-  );
+  await authPut(env, nonce, { status: 'pending', createdAt: Date.now() }); // 5 минут на подтверждение
 
   return reply({
     ok: true,
@@ -128,26 +166,16 @@ export async function handleTelegramAuthCheck(request, env, signSessionFn) {
     return reply({ error: 'invalid_nonce' }, 400);
   }
 
-  const key = 'tg_auth:' + nonce;
-  const raw = await env.INSTALLS.get(key);
-  if (!raw) {
-    return reply({ ok: false, status: 'expired' });
-  }
-
-  let entry;
-  try {
-    entry = JSON.parse(raw);
-  } catch (_) {
-    return reply({ ok: false, status: 'expired' });
-  }
+  const entry = await authGet(env, nonce);
+  if (!entry) return reply({ ok: false, status: 'expired' });
 
   if (entry?.status === 'pending') {
     return reply({ ok: false, status: 'pending' });
   }
 
   if (entry?.status === 'confirmed' && entry?.user?.id) {
-    // Однократное использование кода: удаляем сразу при первой успешной выдаче сессии.
-    await env.INSTALLS.delete(key);
+    // Однократное использование кода: забираем атомарно, повторный запрос получит expired.
+    if (!(await authClaim(env, nonce))) return reply({ ok: false, status: 'expired' });
 
     const user = entry.user;
     const expiresAt = Date.now() + SESSION_SECONDS * 1000;
@@ -191,14 +219,7 @@ export async function processTelegramAuthMessage(msg, env, verified = false) {
   if (param.startsWith('auth_')) {
     // Подтверждать вход можно только запросом, подписанным секретом вебхука.
     if (!verified || msg.chat?.type !== 'private') return true;
-    const key = 'tg_auth:' + param;
-    let entry = null;
-    if (env.INSTALLS) {
-      const raw = await env.INSTALLS.get(key);
-      if (raw) {
-        try { entry = JSON.parse(raw); } catch (_) {}
-      }
-    }
+    const entry = await authGet(env, param);
 
     if (entry?.status === 'pending') {
       const from = msg.from || {};
@@ -219,13 +240,7 @@ export async function processTelegramAuthMessage(msg, env, verified = false) {
         createdAt: new Date().toISOString(),
       };
 
-      if (env.INSTALLS) {
-        await env.INSTALLS.put(
-          key,
-          JSON.stringify({ status: 'confirmed', user, confirmedAt: Date.now() }),
-          { expirationTtl: 300 }
-        );
-      }
+      await authPut(env, param, { status: 'confirmed', user, confirmedAt: Date.now() });
 
       if (token) {
         await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {

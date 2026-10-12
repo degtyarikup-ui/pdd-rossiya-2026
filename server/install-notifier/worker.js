@@ -2,6 +2,7 @@ import { gameProfile } from './game_profile.js';
 import { awardGameScore, gameDailySummary, validGameRunId } from './game_scoring.js';
 import { notificationRequest, uploadNotificationImage, serveNotificationImage } from './notifications.js';
 export { NotificationsState } from './notifications.js';
+export { TelegramAuthState } from './telegram_auth.js';
 import { NOTIFICATIONS_NAV_HTML, NOTIFICATIONS_VIEW_HTML, NOTIFICATIONS_CLIENT_JS } from './notifications_ui.js';
 import { TASKS_NAV_HTML, TASKS_VIEW_HTML, TASKS_CLIENT_JS } from './tasks_ui.js';
 import { handleTasksAdmin } from './tasks_admin.js';
