@@ -89,8 +89,7 @@
       <button id="undo" class="icon-btn" data-tip="Отменить  ⌘Z" disabled><svg class="i"><use href="#i-undo"/></svg></button>
       <button id="redo" class="icon-btn" data-tip="Вернуть  ⇧⌘Z" disabled><svg class="i"><use href="#i-redo"/></svg></button>
       <span class="sep"></span>
-      <button id="test" class="btn ghost" data-tip="Проверить сцену прямо здесь  P"><svg class="i"><use href="#i-play"/></svg><span>Тест</span></button>
-      <button id="play" class="btn ghost" data-tip="Открыть в игре  ⌘↵"><svg class="i"><use href="#i-gamepad"/></svg><span>В игре</span></button>
+      <button id="play" class="btn ghost" data-tip="Проверить в игре: этот перекрёсток  P"><svg class="i"><use href="#i-play"/></svg><span>Тест в игре</span></button>
       <button id="save" class="btn primary" data-tip="Сохранить  ⌘S" disabled><svg class="i"><use href="#i-save"/></svg><span>Сохранить</span></button>
       <button id="help" class="icon-btn" data-tip="Клавиши  ?"><svg class="i"><use href="#i-keyboard"/></svg></button>
     </div>
@@ -122,7 +121,8 @@
       <button id="z-fit" class="icon-btn" data-tip="Показать всё  F"><svg class="i"><use href="#i-fit"/></svg></button>
       <button id="z-in" class="icon-btn" data-tip="Приблизить  +"><svg class="i"><use href="#i-zoomin"/></svg></button>
     </div>
-    <div id="testbar" class="testbar" hidden></div>
+    <div id="phone" class="phone" hidden></div>
+    <div id="refpic" class="refpic" hidden><div class="refpic-head"><span>Фото билета</span><button class="icon-btn" data-big data-tip="Крупно"><svg class="i"><use href="#i-fit"/></svg></button><button class="icon-btn" data-unpin data-tip="Убрать"><svg class="i"><use href="#i-x"/></svg></button></div><img alt=""></div>
     <div id="drop" class="drop" hidden><div><svg class="i"><use href="#i-upload"/></svg><b>Отпустите PNG</b></div></div>
     <div id="toast" class="toast" role="status"></div>
   </main>
@@ -131,6 +131,8 @@
 
   <section id="home-screen" class="home" hidden></section>
 </div>
+
+<div id="lightbox" class="modal lightbox" hidden></div>
 
 <div id="keys" class="modal" hidden>
   <div class="dialog keys-dialog">
@@ -164,7 +166,7 @@
 <script src="/static/thumbs.js"></script>
 <script src="/static/app.js"></script>
 <script src="/static/tools.js"></script>
-<script src="/static/sim.js"></script>
+<script src="/static/framing.js"></script>
 <script src="/static/panels.js"></script>
 <script src="/static/inspector.js"></script>
 <script>App.boot();</script>

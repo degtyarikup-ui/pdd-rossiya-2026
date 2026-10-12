@@ -53,13 +53,12 @@
     const p = pane();
     if (state.ltab === "textures" && state.texSel) return textureInspector(p);
     if (!state.S) { p.innerHTML = `<div class="empty-pane">${ic("map")}<p>Откройте сцену</p></div>`; bind({}); return; }
-    if (state.testing) return Sim.renderInspector(p);
     const sel = state.sel;
     if (!sel.length) return sceneInspector(p);
     if (sel.length > 1) return multiInspector(p);
     const ref = sel[0], o = App.objectOf(ref);
     if (!o && ref.t !== "stop") return sceneInspector(p);
-    const view = { decor: decorInspector, actor: actorInspector, light: lightInspector, street: streetInspector, node: nodeInspector,
+    const view = { decor: decorInspector, actor: actorInspector, officer: officerInspector, light: lightInspector, street: streetInspector, node: nodeInspector,
       route: routeInspector, marking: markingInspector, lawn: shapeInspector, road: shapeInspector, stop: stopInspector }[ref.t];
     view(p, ref, o);
     Thumbs.fillAll(p);
@@ -84,9 +83,9 @@
     p.innerHTML = `
       ${head(`<span class="ibadge">${ic("map")}</span>`, App.sceneTitle(state.id), s.layout ? "Дороги в конструкторе" : "Дороги из картинки билета")}
       ${card("", `${toggle("playable", "Сцена в игре", state.playable, "gamepad")}
-        <div class="insp-actions">${button("test", "Тест здесь", "play", "primary")}${button("run", "Открыть в игре", "gamepad", "ghost")}</div>
+        <div class="insp-actions">${button("run", "Тест в игре", "play", "primary")}</div>
         ${button("run-auto", "В игре на автопилоте", "video", "ghost small wide")}`)}
-      ${card("Вопрос", `${src && src.image ? `<img class="ticket-pic" src="/asset/source/${src.image}.webp" alt="">` : ""}
+      ${card("Вопрос", `${src && src.image ? `<img class="ticket-pic" data-act="photo" src="/asset/source/${src.image}.webp" alt="" data-tip="Крупно">${button("pin", "Закрепить фото над сценой", "image", "ghost small wide")}` : ""}
         <p class="qtext">${esc(src ? src.question : ru.title || "")}</p>
         <div class="answers">${answers.map((a, i) => `<button class="answer ${correct === i ? "on" : ""}" data-act="correct" data-i="${i}"><i>${correct === i ? ic("check-circle") : i + 1}</i><span>${esc(a)}</span></button>`).join("")}</div>
         ${src && src.comment ? `<details><summary>Комментарий</summary><p class="comment">${esc(src.comment)}</p></details>` : ""}`, { icon: "ticket" })}
@@ -97,6 +96,7 @@
       ${card("Дороги", s.layout
         ? `<p class="muted">Двигайте узлы, тяните дороги инструментом ${ic("road", "inline")} R. Разметка и маршруты строятся сами.</p>${button("templates", "Готовые перекрёстки", "junction", "ghost wide")}`
         : `<p class="muted">Дороги сняты с картинки билета. В конструкторе их можно двигать и менять как в SimCity.</p>${button("convert", "Перевести в конструктор", "magic", "primary wide")}`, { icon: "road" })}
+      ${card("Камера вопроса", `<p class="muted">${s.questionView ? "Кадр задан вручную." : "Кадр подбирается сам."} Видно, что попадёт на экран телефона над карточкой вопроса.</p>${button("frame", "Настроить кадр", "video", "primary wide")}`, { icon: "video" })}
       ${card("Края сцены", `<div class="edges"><span class="edge-box"><i class="e-n ${side("n")}"></i><i class="e-s ${side("s")}"></i><i class="e-e ${side("e")}"></i><i class="e-w ${side("w")}"></i>${ic("car")}</span>
         <p class="muted">${Object.values(edges).some((e) => e && !e.street) ? "Дорога у края не совпадает с улицей игры (8,4 м по центру стороны). Подвиньте конец дороги к середине стороны." : "На краях дорога встречает улицу игры без ступенек."}</p></div>`, { icon: "edges" })}
       <section class="card" id="checks"><h3>${ic(errors.length ? "error" : "check-circle")}Проверка${errors.length + warns.length ? `<em class="count ${errors.length ? "bad" : "warn"}">${errors.length + warns.length}</em>` : ""}</h3>
@@ -106,7 +106,6 @@
     Thumbs.fillAll(p);
     bind({
       "toggle:playable": (on) => App.setPlayable(on),
-      test: () => Sim.start(),
       run: () => App.runInGame(false),
       "run-auto": () => App.runInGame(true),
       correct: (d) => App.edit((sc) => { sc.question.correct = Number(d.i); }),
@@ -120,6 +119,9 @@
         sc.question.yieldTo = [...set];
       }),
       templates: () => Tools.set("junction"),
+      frame: () => Framing.start(),
+      photo: () => Framing.openPhoto(),
+      pin: () => Framing.pin(true),
       convert: () => Tools.convertScene(),
       finding: (d) => focusFinding(state.findings[Number(d.i)]),
     });
@@ -232,7 +234,8 @@
       ${card("Куда едет", lane
         ? `${chips("way", [{ value: "stay", icon: "parked", tip: "Стоит" }, ...["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: !ways.includes(k) }))], moving ? (a.way || "straight") : "stay", { cls: "arrows" })}`
         : `${chips("move", [{ value: "stay", title: "Стоит", icon: "parked" }, { value: "go", title: "Едет по пути", icon: "route" }], moving ? "go" : "stay")}
-           ${moving ? button("draw-path", route ? "Перерисовать путь" : "Нарисовать путь", "route", "ghost wide") : ""}`)}
+           ${moving ? button("draw-path", route ? "Перерисовать путь" : "Нарисовать путь", "route", "ghost wide") : ""}
+           ${(a.type === "pedestrian" || a.type === "cyclist") && Layout.zebraPath(s, a.pos) ? button("zebra-path", "Идти по пешеходному переходу", "zebra", "primary wide") : ""}`)}
       ${moving ? card("Скорость", chips("speed", Catalog.SPEEDS.map((x) => ({ value: x.id, title: x.title })), Catalog.speedOf(a.maxSpeed || 10).id)
         + toggle("waits", "Пропускает игрока", (a.behaviour || {}).waitsForPlayer, "flag")) : ""}
       ${card("", toggle("yield", "Игрок должен уступить ему", (s.question.yieldTo || []).includes(a.id), "alert"))}
@@ -255,6 +258,16 @@
         if (v === "stay") { sc.routes = sc.routes.filter((r) => r.id !== a.route); a.route = null; }
       }),
       "draw-path": () => Tools.drawPathFor(a.id),
+      "zebra-path": () => App.edit((sc) => {
+        const path = Layout.zebraPath(sc, a.pos);
+        if (!path) return;
+        const rid = `actor_${a.id}`;
+        sc.routes = sc.routes.filter((x) => x.id !== rid);
+        sc.routes.push({ id: rid, kind: "actor", points: path });
+        a.route = rid;
+        a.behaviour = { ...(a.behaviour || {}), staysPut: false };
+        a.yaw = App.r3(Math.atan2(path[1][0] - path[0][0], path[1][1] - path[0][1]));
+      }),
       "chip:speed": (v) => App.edit(() => { a.maxSpeed = Catalog.SPEEDS.find((x) => x.id === v).v; }),
       "toggle:waits": (on) => App.edit(() => { a.behaviour = { ...(a.behaviour || {}), waitsForPlayer: on }; }),
       "toggle:yield": (on) => App.edit((sc) => {
@@ -265,6 +278,28 @@
       rotl: () => App.rotate(-15), rotr: () => App.rotate(15),
     });
     bindDial(p, a);
+  }
+
+  // ---- a traffic controller ----------------------------------------------------------------------
+  const GESTURES = [
+    { value: "sides", title: "Руки в стороны" }, { value: "forward", title: "Правая рука вперёд" },
+    { value: "up", title: "Рука вверх" }, { value: "down", title: "Руки опущены" },
+  ];
+  function officerInspector(p, ref, o) {
+    p.innerHTML = `${head(`<span class="ibadge">${ic("person")}</span>`, "Регулировщик", GESTURES.find((g) => g.value === o.gesture)?.title || "")}
+      ${card("Сигнал", `<div class="gestures">${GESTURES.map((g) => `<button class="gesture ${o.gesture === g.value ? "on" : ""}" data-chip="gesture" data-value="${g.value}">${gesturePic(g.value)}<span>${g.title}</span></button>`).join("")}</div>`)}
+      ${card("Куда смотрит грудью", `<div class="turn-row">${dial(o.yaw)}<div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rot90", "90°", "", "ghost")}${button("rotr", "", "rotr", "ghost icon")}</div></div>${deleteRow()}`)}`;
+    bind({
+      ...common,
+      "chip:gesture": (v) => App.edit(() => { o.gesture = v; }),
+      rotl: () => App.rotate(-15), rotr: () => App.rotate(15), rot90: () => App.rotate(90),
+    });
+    bindDial(p, o);
+  }
+  // The signal as a small figure: the arms as the officer holds them.
+  function gesturePic(g) {
+    const arms = { sides: "M8 16 H40", forward: "M8 16 L14 26 M40 16 L32 14", up: "M8 16 L14 26 M40 16 L40 2", down: "M8 16 L10 28 M40 16 L38 28" }[g];
+    return `<svg viewBox="0 0 48 44" width="48" height="44"><circle cx="24" cy="7" r="4" fill="#1f2a44"/><path d="M24 12 V30 M24 30 L19 42 M24 30 L29 42 M14 16 H34" stroke="#1f2a44" stroke-width="4" stroke-linecap="round" fill="none"/><path d="${arms}" stroke="#1f2a44" stroke-width="4" stroke-linecap="round" fill="none"/></svg>`;
   }
 
   // ---- a traffic light -------------------------------------------------------------------------
@@ -298,6 +333,9 @@
       ${card("Ширина", chips("kind", Object.entries(Layout.KINDS).map(([k, v]) => ({ value: k, html: `<span class="road-pic k-${k}"></span>`, title: v.title })), st.kind || "street", { cls: "tiles" }))}
       ${st.kind !== "yard" ? card("Линия по центру", chips("centre", [{ value: "dashed", html: `<span class="mark-pic m-dashed"></span>`, tip: "Прерывистая" }, { value: "solid", html: `<span class="mark-pic m-solid"></span>`, tip: "Сплошная" },
         { value: "double", html: `<span class="mark-pic m-double"></span>`, tip: "Двойная сплошная" }, { value: "none", title: "Нет" }], centre, { cls: "tiles" })) : ""}
+      ${st.kind !== "yard" ? card("Разметка вручную", st.manualMarks
+        ? `<p class="muted">Линии этой улицы — ваши: выберите линию, чтобы менять вид, резать и двигать точки.</p>${button("marks-auto", "Снова строить сами", "restart", "ghost wide")}`
+        : `<p class="muted">Чтобы задать участок сплошной, двойную или сплошную рядом с прерывистой.</p>${button("marks-own", "Сделать линии редактируемыми", "marking", "ghost wide")}`) : ""}
       ${card("", toggle("walk", "Тротуары", st.walk !== false, "person") + (st.bend ? button("straighten", "Выпрямить", "road", "ghost wide") : `<p class="muted">Тяните ромб на середине, чтобы изогнуть.</p>`))}
       ${ends.length ? card("У перекрёстка", ends.map((e, i) => `<div class="end-row"><span>${ends.length > 1 ? `Конец ${i + 1}` : "Въезд"}</span>
           <button class="pick ${e.set.stop ? "on" : ""}" data-act="end" data-end="${e.end}" data-what="stop">${ic("stopline")}Стоп-линия</button>
@@ -315,6 +353,12 @@
       "chip:centre": (v) => App.edit(() => { st.centre = v; }),
       "toggle:walk": (on) => App.edit(() => { if (on) delete st.walk; else st.walk = false; }),
       straighten: () => App.edit(() => { st.bend = null; }),
+      "marks-own": () => App.edit((sc) => {
+        const own = sc.markings.filter((m) => m.auto && m.street === st.id && (m.type === "solid" || m.type === "dashed"));
+        for (const m of own) sc.markings.push({ ...JSON.parse(JSON.stringify(m)), id: App.uniqueId("mark_", sc.markings.map((x) => x.id)), auto: undefined, street: undefined });
+        st.manualMarks = true;
+      }),
+      "marks-auto": () => App.edit(() => { delete st.manualMarks; }),
       end: (d) => App.edit(() => {
         st.ends = st.ends || {};
         st.ends[d.end] = { ...(st.ends[d.end] || {}) };
@@ -382,8 +426,14 @@
       const main = s.question.maneuver === r.exit;
       p.innerHTML = `${head(`<span class="ibadge">${ic(Catalog.EXITS[r.exit]?.icon || "route")}</span>`, `Манёвр: ${Catalog.EXITS[r.exit]?.title.toLowerCase()}`, main ? "так едет игрок" : "другой выезд")}
         ${card("", `${main ? `<p class="ok-line">${ic("check-circle")}Этот манёвр — по условию вопроса</p>` : button("make-main", "Игрок едет так", "flag", "primary wide")}
-          ${r.auto ? `<p class="muted">Путь строится сам по дорогам.</p>` : `<p class="muted">Тяните точки на виде.</p>`}`)}`;
-      bind({ "make-main": () => App.edit((sc) => { sc.question.maneuver = r.exit; sc.spec = { ...(sc.spec || {}), maneuver: r.exit }; }) });
+          ${r.auto ? `<p class="muted">Путь строится сам по дорогам.</p>${button("own-path", "Править путь вручную", "points", "ghost wide")}`
+            : `<p class="muted">Тяните точки на виде, двойной клик по линии — новая точка.</p>${r.manual ? button("auto-path", "Снова строить по дорогам", "restart", "ghost wide") : ""}`}
+          <p class="muted">По этой линии машина игрока едет после ответа. Если в вопросе есть линии ответов, она видна только когда выбрана.</p>`)}`;
+      bind({
+        "make-main": () => App.edit((sc) => { sc.question.maneuver = r.exit; sc.spec = { ...(sc.spec || {}), maneuver: r.exit }; }),
+        "own-path": () => App.edit((sc) => { const x = sc.routes.find((y) => y.id === r.id); x.manual = true; delete x.auto; }),
+        "auto-path": () => App.edit((sc) => { if (sc.layout.paths) delete sc.layout.paths[r.exit]; const x = sc.routes.find((y) => y.id === r.id); delete x.manual; x.auto = true; }),
+      });
       return;
     }
     const actor = r.kind === "actor" ? s.actors.find((a) => a.route === r.id) : null;
@@ -398,6 +448,9 @@
     p.innerHTML = `${head(`<span class="ibadge">${ic("marking")}</span>`, App.nameOf(ref), paint ? "снята с картинки билета" : "")}
       ${paint ? "" : card("Вид", chips("type", Object.entries(Catalog.MARKS).map(([k, v]) => ({ value: k, html: `<span class="mark-pic m-${k}"></span>`, tip: v.title })), m.type, { cls: "tiles" }))}
       ${card("Цвет", chips("colour", [{ value: "white", html: `<span class="paint w"></span>`, title: "Белая" }, { value: "yellow", html: `<span class="paint y"></span>`, title: "Жёлтая" }], m.colour || "white"))}
+      ${m.type === "solid" || m.type === "dashed" ? card("Вторая линия рядом", chips("double", [{ value: "", title: "Нет" }, { value: "solid", html: `<span class="mark-pic m-solid"></span>`, tip: "Сплошная" }, { value: "dashed", html: `<span class="mark-pic m-dashed"></span>`, tip: "Прерывистая" }], m.double || "", { cls: "tiles" })
+        + (m.double ? button("flip", "На другую сторону", "rotr", "ghost wide") : "")
+        + (ref.v !== undefined && ref.v > 0 && ref.v < m.points.length - 1 ? button("split", "Разрезать в выбранной точке", "marking", "ghost wide") : `<p class="muted">Выберите точку на линии, чтобы разрезать её: у частей может быть разный вид.</p>`)) : ""}
       ${card("", `<div class="insp-actions">${button("rotl", "−15°", "rotl", "ghost")}${button("rotr", "+15°", "rotr", "ghost")}</div>${deleteRow()}`)}`;
     bind({
       ...common,
@@ -409,6 +462,19 @@
         if (v === "stop") m.width = 0.4; else delete m.width;
       }),
       "chip:colour": (v) => App.edit(() => { m.colour = v; }),
+      "chip:double": (v) => App.edit(() => { if (v) { m.double = v; m.side = m.side || 1; } else { delete m.double; delete m.side; } }),
+      flip: () => App.edit(() => { m.side = -(m.side || 1); }),
+      split: () => {
+        const at = ref.v;
+        const ref2 = App.edit((sc) => {
+          const id = App.uniqueId("mark_", sc.markings.map((x) => x.id));
+          const rest = { ...JSON.parse(JSON.stringify(m)), id, points: m.points.slice(at) };
+          m.points = m.points.slice(0, at + 1);
+          sc.markings.push(rest);
+          return { t: "marking", id };
+        });
+        App.select(ref2);
+      },
     });
   }
   function shapeInspector(p, ref, o) {

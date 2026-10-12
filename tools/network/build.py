@@ -159,7 +159,22 @@ def walls(geom, crop: float = 90.0):
 
 
 def marking_geometry(m: dict):
-    """One marking item as shapely geometry (before the cut to the carriageway)."""
+    """One marking item as shapely geometry (before the cut to the carriageway). A line may carry a
+    second one beside it ("double": "solid" | "dashed", "side": 1 or -1, DOUBLE_GAP apart): a double
+    solid line, or a solid and a broken one side by side (1.11)."""
+    geom = single_marking(m)
+    second = m.get("double")
+    if second in ("solid", "dashed") and m.get("type") in ("solid", "dashed") and len(m.get("points", [])) >= 2:
+        line = LineString([tuple(p) for p in m["points"]]).offset_curve(DOUBLE_GAP * float(m.get("side", 1)))
+        if not line.is_empty and line.geom_type == "LineString":
+            geom = unary_union([geom, single_marking({**m, "type": second, "points": list(line.coords)})])
+    return geom
+
+
+DOUBLE_GAP = 0.28    # centre to centre of the two lines of a double marking (m)
+
+
+def single_marking(m: dict):
     kind = m.get("type", "solid")
     if kind == "paint":
         parts = [polygon_of(p) for p in m.get("polygons", [])]

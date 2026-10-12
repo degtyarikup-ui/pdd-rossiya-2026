@@ -126,7 +126,7 @@
           ...s.lawns.map((l) => ({ t: "lawn", id: l.id }))];
       case "marks": return s.markings.filter((m) => !m.auto).map((m) => ({ t: "marking", id: m.id }));
       case "routes": return s.routes.filter((r) => r.kind !== "actor").map((r) => ({ t: "route", id: r.id }));
-      case "actors": return [{ t: "stop" }, ...s.actors.map((a) => ({ t: "actor", id: a.id }))];
+      case "actors": return [{ t: "stop" }, ...s.actors.map((a) => ({ t: "actor", id: a.id })), ...(s.officers || []).map((o) => ({ t: "officer", id: o.id }))];
       case "lights": return s.lights.map((l) => ({ t: "light", id: l.id }));
       case "decor": return s.decor.map((d) => ({ t: "decor", id: d.id }));
       default: return [];
@@ -137,7 +137,7 @@
     if (ref.t === "decor") return Thumbs.img("prop", o.prop, "mini");
     if (ref.t === "actor") return Thumbs.img("actor", o.type, "mini");
     return ic({ node: o?.ring ? "ring" : "junction", street: "road", road: ref.part >= 0 ? "lawn" : "road", lawn: "lawn", marking: "marking",
-      route: "route", light: "light", stop: "flag" }[ref.t] || "info");
+      route: "route", light: "light", stop: "flag", officer: "person" }[ref.t] || "info");
   }
   function layersPane() {
     if (!state.S) return `<p class="empty-note">Откройте сцену</p>`;
@@ -196,6 +196,7 @@
       if (!state.S) return App.toast("Сначала откройте сцену", "warn");
       if (item.kind === "prop") Tools.pickProp(item.id);
       else if (item.kind === "actor") Tools.pickActor(item.id);
+      else if (item.kind === "officer") Tools.set("officer");
       else Tools.set("light");
       return renderLeft();
     }
@@ -213,6 +214,7 @@
     const sections = [];
     const vehicles = Catalog.ACTOR_ORDER.filter((t) => cat.actorTypes[t] && hit(Catalog.ACTORS[t].name));
     if (vehicles.length) sections.push(`<h4>${ic("car")}Машины и люди</h4><div class="lib-grid">${vehicles.map((t) => tile({ kind: "actor", id: t }, Catalog.ACTORS[t].name, Thumbs.img("actor", t), Tools.current() === "actor" && Tools.opts.actorType === t)).join("")}</div>`);
+    if (hit("регулировщик")) sections.push(`<h4>${ic("person")}Регулировщик</h4><div class="lib-grid">${tile({ kind: "officer", id: "officer" }, "Регулировщик", `<span class="lib-icon">${ic("person")}</span>`, Tools.current() === "officer")}</div>`);
     if (cat.lightAsset && hit("светофор")) sections.push(`<h4>${ic("light")}Светофор</h4><div class="lib-grid">${tile({ kind: "light", id: "light" }, "Светофор", Thumbs.img("light", "light"), Tools.current() === "light")}</div>`);
     const props = [...cat.props.map((p) => p.id), "parked"];
     for (const g of Catalog.PROP_GROUPS) {

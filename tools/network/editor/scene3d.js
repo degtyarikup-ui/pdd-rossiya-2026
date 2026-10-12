@@ -318,12 +318,17 @@ const Scene3D = (() => {
     if (!model) return;
     const focusRoute = sel.find((s) => s.t === "route")?.id || (sel.find((s) => s.t === "actor") ? `actor_${sel.find((s) => s.t === "actor").id}` : null)
       || (hover && hover.t === "route" ? hover.id : null);
+    const answers = model.routes.some((x) => x.kind === "choice");
     for (const r of model.routes) {
       if (r.points.length < 2) continue;
+      // With answer lines on the road the manoeuvres are only drawn when picked: they are how the car
+      // drives, not what the question shows.
+      if (answers && r.kind === "manoeuvre" && focusRoute !== r.id && !simMode) continue;
       // The question's way and the answers always show; the other exits only on focus or in the test.
       const st = routeStyle(r);
       const focused = focusRoute === r.id;
-      const main = r.kind === "choice" || r.kind === "approach" || (r.kind === "manoeuvre" && r.exit === model.question?.maneuver);
+      const main = r.kind === "choice" || r.kind === "approach" || (r.kind === "manoeuvre" && r.exit === model.question?.maneuver) || r.kind === "actor";
+      if (!main && !focused && !simMode) continue;
       const dim = focusRoute ? !focused : !main;
       const opacity = dim ? 0.28 : 1;
       const shown = smooth(r.points);
@@ -332,11 +337,14 @@ const Scene3D = (() => {
       if (head) g.add(head);
       if (r.kind === "choice" && (r.labelPosition || r.points.length)) {
         const at = r.labelPosition || r.points[Math.floor(r.points.length / 2)];
-        labels.push({ text: r.label, cls: "letter", colour: st.colour, world: [at[0], 0.8, at[1]], ref: { t: "route", id: r.id } });
+        if (at) labels.push({ text: r.label, cls: "letter", colour: st.colour, world: [at[0], 0.8, at[1]], ref: { t: "route", id: r.id } });
       }
       if (r.kind === "manoeuvre" && (focused || simMode)) {
         const end = r.points.at(-1);
-        labels.push({ text: { left: "налево", right: "направо", straight: "прямо", uturn: "разворот" }[r.exit], cls: "exit", colour: st.colour, world: [end[0], 0.8, end[1]], ref: { t: "route", id: r.id } });
+        const text = { left: "налево", right: "направо", straight: "прямо", uturn: "разворот" }[r.exit] || r.exit;
+        if (text && end) {
+          labels.push({ text, cls: "exit", colour: st.colour, world: [end[0], 0.8, end[1]], ref: { t: "route", id: r.id } });
+        }
       }
     }
   }
@@ -374,6 +382,7 @@ const Scene3D = (() => {
     if (t === "decor") return `${o.prop}|${o.tint}`;
     if (t === "actor") return `${o.asset}|${o.type}`;
     if (t === "light") return `${o.asset}|${o.state}`;
+    if (t === "officer") return `officer|${o.gesture}`;
     return t;
   }
 
@@ -403,6 +412,8 @@ const Scene3D = (() => {
       const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 8), basic(lampColour(o.state)));
       lamp.position.set(0, 4.4, 0);
       g.add(lamp);
+    } else if (t === "officer") {
+      g.add(officerModel(o.gesture));
     } else if (t === "player") {
       g.add(playerCar());
     } else if (t === "stop") {
@@ -410,6 +421,35 @@ const Scene3D = (() => {
       bar.position.y = 0.07;
       g.add(bar);
     }
+    return g;
+  }
+
+  // A traffic controller as the game draws him (scripts/regulator_officer.gd, simplified): a white
+  // helmet, a dark blue uniform, the arms in the chosen signal, a striped baton.
+  function officerModel(gesture) {
+    const g = new THREE.Group();
+    const add = (size, colour, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(...size), mat(colour)); m.position.set(x, y, z); g.add(m); return m; };
+    add([0.32, 0.85, 0.24], 0x1f2a44, 0.12, 0.43, 0); add([0.32, 0.85, 0.24], 0x1f2a44, -0.12, 0.43, 0);
+    add([0.62, 0.75, 0.34], 0x253858, 0, 1.25, 0);
+    add([0.64, 0.12, 0.36], 0xd9ff3d, 0, 1.45, 0);
+    add([0.26, 0.28, 0.26], 0xe8c4a0, 0, 1.78, 0);
+    add([0.3, 0.14, 0.3], 0xf4f6f8, 0, 1.97, 0);
+    const arm = (side, rx, rz) => {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.38, 1.55, 0);
+      pivot.rotation.set(rx, 0, rz);
+      const a = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.7, 0.16), mat(0x253858));
+      a.position.y = -0.35;
+      pivot.add(a);
+      g.add(pivot);
+      return pivot;
+    };
+    const R = { down: [0, 0, 0, 0], sides: [0, -Math.PI / 2, 0, Math.PI / 2], forward: [0, 0, -Math.PI / 2, 0], up: [0, 0, 0, Math.PI] }[gesture] || [0, -Math.PI / 2, 0, Math.PI / 2];
+    arm(1, R[0], -R[1]);
+    const right = arm(-1, R[2], -R[3]);
+    const baton = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.5, 0.07), mat(0xffffff));
+    baton.position.y = -0.85;
+    right.add(baton);
     return g;
   }
 
@@ -438,6 +478,7 @@ const Scene3D = (() => {
       for (const d of model.decor) want.set(`decor:${d.id}`, ["decor", d]);
       for (const a of model.actors) want.set(`actor:${a.id}`, ["actor", a]);
       for (const l of model.lights) want.set(`light:${l.id}`, ["light", l]);
+      for (const o of model.officers || []) want.set(`officer:${o.id}`, ["officer", o]);
     }
     for (const [key, entry] of anchors) {
       const w = want.get(key);
@@ -455,6 +496,7 @@ const Scene3D = (() => {
       }
       if (!(simMode && (t === "player" || t === "actor"))) placeAnchor(entry.group, t, o);
       const layer = t === "decor" ? "decor" : t === "light" ? "lights" : "actors";
+      if (t === "officer") entry.group.userData.ref = { t: "officer", id: o.id };
       entry.group.visible = !hidden.has(layer);
     }
     dropLabels("anchor");
@@ -538,6 +580,10 @@ const Scene3D = (() => {
       if (!a) return null;
       const ped = a.type === "pedestrian" || a.type === "cyclist";
       return { x: a.pos[0], z: a.pos[1], yaw: a.yaw || 0, hx: ped ? 0.6 : (a.halfWidth || 0.9) + 0.2, hz: ped ? 0.6 : (a.halfLength || 2.1) + 0.2 };
+    }
+    if (ref.t === "officer") {
+      const o = (model.officers || []).find((x) => x.id === ref.id);
+      return o ? { x: o.pos[0], z: o.pos[1], yaw: o.yaw || 0, hx: 0.6, hz: 0.6 } : null;
     }
     if (ref.t === "light") {
       const l = model.lights.find((x) => x.id === ref.id);
@@ -650,9 +696,10 @@ const Scene3D = (() => {
   }
 
   // ---- labels (HTML over the view) -----------------------------------------------------
-  function dropLabels(cls) {
+  function dropLabels(kind) {
     labels = labels.filter((l) => {
-      if (!l.cls.startsWith(cls)) return true;
+      const match = (l.ref && l.ref.t === kind) || l.cls.split(/\s+/).includes(kind) || l.cls.startsWith(kind);
+      if (!match) return true;
       if (l.el) l.el.remove();
       return false;
     });
@@ -684,6 +731,7 @@ const Scene3D = (() => {
   function clearLabels() {
     labels.forEach((l) => l.el && l.el.remove());
     labels = [];
+    if (labelsEl) labelsEl.innerHTML = "";
   }
 
   // ---- camera ---------------------------------------------------------------------------
@@ -723,7 +771,37 @@ const Scene3D = (() => {
     applyCamera();
   }
 
+  // The question's camera of the game (world.gd): orthographic, pitched atan2(42, 44), looking along +z,
+  // framed on a phone held upright. phone: { centre: [x, z], height (m above the card), card (px of 844) }.
+  const PHONE_W = 390, PHONE_H = 844, TILT = Math.sin(Math.atan2(42, 44));
+  let phone = null;
+  function phoneRect() {
+    const ph = Math.min(height - 40, (width - 40) * PHONE_H / PHONE_W), pw = ph * PHONE_W / PHONE_H;
+    return { x: (width - pw) / 2, y: (height - ph) / 2, w: pw, h: ph };
+  }
+  function applyPhoneCamera() {
+    const rc = phoneRect();
+    const free = Math.max(0.3, 1 - phone.card / PHONE_H);
+    const size = phone.height / free;
+    const up = (1 - free) * size * 0.5 / TILT;
+    const look = new THREE.Vector3(phone.centre[0], 0, phone.centre[1] - up);
+    const V = size * height / rc.h;
+    camera = planCam;
+    Object.assign(camera, { left: -V / 2 * width / height, right: V / 2 * width / height, top: V / 2, bottom: -V / 2 });
+    camera.updateProjectionMatrix();
+    camera.position.set(look.x, 42, look.z - 44);
+    camera.up.set(0, 1, 0);
+    camera.lookAt(look);
+    camera.updateMatrixWorld();
+    needsRender = true;
+  }
+  function setPhone(p) {
+    phone = p ? { ...p } : null;
+    applyCamera();
+  }
+
   function applyCamera() {
+    if (phone) return applyPhoneCamera();
     if (follow) {
       target.set(follow.x, 0, follow.z);
       orbitYaw = follow.yaw + Math.PI;
@@ -908,6 +986,13 @@ const Scene3D = (() => {
     if (!model) return null;
     const near = (p, r = 12, y = 0.4) => { const s = screenOf(p[0], p[1], y); return Math.hypot(s.x - sx, s.y - sy) < r; };
     if (turnHandle && near([turnHandle.x, turnHandle.z], 14)) return { t: "turn", ...sel[0] };
+    if (!hidden.has("routes")) {
+      for (const r of model.routes) {
+        if (r.kind !== "choice") continue;
+        const at = r.labelPosition || r.points[Math.floor(r.points.length / 2)];
+        if (at && near(at, 15, 0.8) && !skip({ t: "route", id: r.id })) return { t: "letter", id: r.id };
+      }
+    }
     if (sel.length === 1 && ["route", "road", "lawn", "marking"].includes(sel[0].t)) {
       const pts = App.pointsOfRef(sel[0]) || [];
       for (let i = 0; i < pts.length; i++) if (near(pts[i], 10)) return { ...sel[0], v: i, point: true };
@@ -959,6 +1044,8 @@ const Scene3D = (() => {
     };
     if (!hidden.has("routes")) {
       for (const r of model.routes) {
+        const isMain = r.kind === "choice" || r.kind === "approach" || (r.kind === "manoeuvre" && r.exit === model.question?.maneuver) || r.kind === "actor";
+        if (!isMain && !simMode && !sel.some((s) => s.t === "route" && s.id === r.id)) continue;
         const ref = { t: "route", id: r.id };
         if (!skip(ref) && lineHit(smooth(r.points), wpp * 8)) return ref;
       }
@@ -1059,13 +1146,20 @@ const Scene3D = (() => {
       }
       if (e.button !== 0) return;
       el.setPointerCapture(e.pointerId);
+      if (phone) { nav = { kind: "phone", last: p }; return; }
       emit("pointer", pack("down", e, p));
     });
     el.addEventListener("pointermove", (e) => {
       const p = local(e);
       if (nav) {
         const dx = p.x - nav.last.x, dy = p.y - nav.last.y;
-        if (nav.kind === "orbit") {
+        if (nav.kind === "phone") {
+          // Dragging the picture: the scene follows the finger (screen right is -x, up is +z).
+          const rc = phoneRect(), V = phone.height / Math.max(0.3, 1 - phone.card / PHONE_H) * height / rc.h, k = V / height;
+          phone.centre = [phone.centre[0] + dx * k, phone.centre[1] + dy * k / TILT];
+          applyCamera();
+          emit("phone", phone);
+        } else if (nav.kind === "orbit") {
           follow = null;
           orbitYaw -= dx * 0.008;
           orbitPitch = Math.max(0.12, Math.min(1.52, orbitPitch + dy * 0.008));
@@ -1087,6 +1181,12 @@ const Scene3D = (() => {
     el.addEventListener("wheel", (e) => {
       e.preventDefault();
       const p = local(e);
+      if (phone) {
+        phone.height = Math.max(8, Math.min(140, phone.height * Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0015))));
+        applyCamera();
+        emit("phone", phone);
+        return;
+      }
       const wheel = e.deltaMode !== 0 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 40 && Number.isInteger(e.deltaY));
       if (e.ctrlKey || e.metaKey || wheel) zoomBy(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), p);
       else panBy(-e.deltaX, -e.deltaY);
@@ -1124,7 +1224,7 @@ const Scene3D = (() => {
 
   return {
     mount, load, refresh, setBuild, setSelection, setHover, setDraft, setGhost, setHidden, setPlanHandles,
-    setSimMode, setFollow, getView, setView, setPose, setMode, fit, focus, zoomBy, panBy, worldAt, screenOf, worldPerPixel, hitAt, inRect,
+    setSimMode, setFollow, setPhone, phoneRect, getView, setView, setPose, setMode, fit, focus, zoomBy, panBy, worldAt, screenOf, worldPerPixel, hitAt, inRect,
     setTextures, reloadPicture, capture, smooth,
     on(name, fn) { (listeners[name] = listeners[name] || []).push(fn); },
     setPanTool(on) { panTool = !!on; renderer && renderer.domElement.classList.toggle("grab", panTool); },

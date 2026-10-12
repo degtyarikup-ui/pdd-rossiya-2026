@@ -132,6 +132,11 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 		actor.position = _v(a.pos)
 		actor.rotation.y = a.yaw
 		actor.scale = _v(a.scale)
+		# A participant that turns shows it: indicators on the side of the turn.
+		var side := Fleet.turn_side(a.get("path", []))
+		if side != "" and a.type in ["car", "truck", "bus", "van", "special", "tanker", "motorcycle"]:
+			var k := maxf(0.01, float(a.scale[0]))
+			Fleet.add_blinkers(actor, side, float(a.get("halfLength", 2.1)) / k, float(a.get("halfWidth", 0.9)) / k)
 		s.add_child(actor)
 		s.actors.append(actor)
 		if a.badge != null:
@@ -140,6 +145,12 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 			plate.scale = Vector3.ONE / actor.scale
 			actor.add_child(plate)
 			s._badges.append(plate)
+	# Traffic controllers (the editor's «Регулировщик»): the model in the signal the ticket shows.
+	for of in (s.network.data.get("officers", []) if s.network else s.data.get("officers", [])):
+		var cop := Fleet.officer(str(of.get("gesture", "sides")))
+		cop.position = Vector3(of.pos[0], 0.0, of.pos[1])
+		cop.rotation.y = float(of.get("yaw", 0.0))
+		s.add_child(cop)
 	s.set_evidence_visible(false)
 	return s
 

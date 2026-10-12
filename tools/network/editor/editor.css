@@ -406,3 +406,28 @@ details summary { cursor: pointer; color: var(--ink-3); margin-top: 8px; font-si
 .confirm-dialog { width: 420px; }
 .confirm-dialog p { color: var(--ink-2); line-height: 1.5; }
 .dialog-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* ---- question camera on a phone, the ticket photo ---- */
+body.framing .toolbar, body.framing .popover, body.framing .hint, body.framing .viewbar { display: none; }
+.phone { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
+.phone-frame { position: absolute; border-radius: 26px; box-shadow: 0 0 0 4000px rgba(18, 20, 24, .62), inset 0 0 0 3px #111; }
+.phone-card { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: .35em; padding: 1em; border-radius: 1.4em 1.4em 23px 23px; background: rgba(255, 255, 255, .96); color: var(--ink); overflow: hidden; line-height: 1.25; }
+.phone-card span { padding: .45em .6em; border-radius: .6em; background: var(--field); }
+.phone-bar { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 14px; border-radius: 14px; background: #fff; box-shadow: var(--float); pointer-events: auto; white-space: nowrap; }
+.phone-bar .muted { margin: 0; }
+.lightbox { flex-direction: column; gap: 12px; }
+.lightbox img { max-width: calc(100vw - 80px); max-height: calc(100vh - 140px); border-radius: 14px; box-shadow: var(--float); }
+.lightbox:not([hidden]) { display: flex; align-items: center; justify-content: center; }
+.lightbox-bar { display: flex; gap: 8px; }
+.refpic { position: absolute; left: 16px; top: 60px; width: 300px; min-width: 160px; z-index: 6; border-radius: 12px; background: #fff; box-shadow: var(--float); overflow: hidden; resize: horizontal; }
+.refpic img { display: block; width: 100%; }
+.refpic-head { display: flex; align-items: center; gap: 2px; padding: 2px 4px 2px 10px; cursor: grab; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.refpic-head span { flex: 1; }
+.refpic-head .icon-btn { width: 26px; height: 26px; }
+.ticket-pic { cursor: zoom-in; }
+.lib-icon { display: grid; place-items: center; width: 64px; height: 56px; color: #1f2a44; }
+.lib-icon .i { width: 34px; height: 34px; }
+.gestures { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.gesture { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border-radius: var(--r); background: var(--field); font-size: 11.5px; }
+.gesture.on { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.btn.small.wide { margin-top: 6px; }

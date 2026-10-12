@@ -147,6 +147,8 @@ const Layout = (() => {
 
   // Where the stop line of a street end lies (from the node), with or without a zebra before it.
   function stopDistance(L, st, nid, crop) {
+    // The player's stop moved by hand (dragging the car in the editor): metres from the junction.
+    if (L.player && L.player.street === st.id && L.player.toward === nid && L.player.stopAt) return L.player.stopAt;
     const end = (st.ends || {})[endOf(st, nid)] || {};
     const n = nodeOf(L, nid);
     const gap = gapAt(L, st, nid, crop);
@@ -160,9 +162,11 @@ const Layout = (() => {
     const L = scene.layout, crop = Number(scene.crop || 90);
     const roads = [], markings = [], lawns = [];
     let mid = 0;
-    const mark = (m) => markings.push({ id: `auto_mark_${++mid}`, auto: true, colour: "white", ...m });
+    let streetId = null;
+    const mark = (m) => markings.push({ id: `auto_mark_${++mid}`, auto: true, colour: "white", street: streetId, ...m });
 
     for (const st of L.streets) {
+      streetId = st.id;
       const w = widthOf(st);
       let pts = centreline(L, st);
       // A border end reaches a metre past the square (the builder cuts it there); others end at the node.
@@ -197,14 +201,14 @@ const Layout = (() => {
       if (body.length >= 2) {
         if (ext0) body[0] = add(body[0], mul(unit(sub(body[0], body[1])), ext0));
         if (ext1) body[body.length - 1] = add(body.at(-1), mul(unit(sub(body.at(-1), body.at(-2))), ext1));
-        const c = st.centre || (st.kind === "yard" ? "none" : st.kind === "avenue" ? "double" : "dashed");
+        const c = st.manualMarks ? "none" : st.centre || (st.kind === "yard" ? "none" : st.kind === "avenue" ? "double" : "dashed");
         if (c === "dashed") mark({ type: "dashed", points: body.map(P) });
         else if (c === "solid") mark({ type: "solid", points: body.map(P) });
         else if (c === "double") {
           mark({ type: "solid", points: offsetRight(body, 0.15).map(P) });
           mark({ type: "solid", points: offsetRight(body, -0.15).map(P) });
         }
-        if (st.kind === "avenue") {
+        if (st.kind === "avenue" && !st.manualMarks) {
           mark({ type: "dashed", points: offsetRight(body, 3.5).map(P) });
           mark({ type: "dashed", points: offsetRight(body, -3.5).map(P) });
         }
@@ -285,7 +289,7 @@ const Layout = (() => {
 
   // The path through node `nid` for a car on street `inSt` (lane offset `loIn`), out by `exit` (an exitsOf entry),
   // as points: the start (already on the lane), the junction, then `tail` metres along the way out.
-  function through(L, inSt, nid, exitKey, exit, start, loIn, crop, tail = 30) {
+  function through(L, inSt, nid, exitKey, exit, start, loIn, crop, tail = 20) {
     const n = nodeOf(L, nid), C = xy(n);
     const inLine = lineFrom(L, inSt, nid);
     const tin = mul(along(inLine, 1).t, -1);
@@ -400,7 +404,8 @@ const Layout = (() => {
       for (const [key, ex] of Object.entries(exits)) {
         const r = through(L, st, nid, key, ex, stop, lo, crop);
         const tout = key === "uturn" ? mul(tin, -1) : along(lineFrom(L, ex.street, nid), 1).t;
-        routes.push({ id: `manoeuvre_${key}`, kind: "manoeuvre", auto: true, exit: key, points: r.points.map(P),
+        const own = (L.paths || {})[key];
+        routes.push({ id: `manoeuvre_${key}`, kind: "manoeuvre", auto: !own, manual: !!own, exit: key, points: own ? own.map(P) : r.points.map(P),
           exitYaw: r3(key === "uturn" ? Math.PI : wrap(heading(tout) - heading(tin))) });
         exitWidths[key] = widthOf(ex.street);
       }
@@ -437,6 +442,8 @@ const Layout = (() => {
       for (const key of ["roads", "markings", "lawns", "routes"]) scene[key] = (scene[key] || []).filter((x) => !x.auto);
       return scene;
     }
+    // A manoeuvre edited by hand keeps its points (layout.paths): its drawn route is the source.
+    for (const x of scene.routes || []) if (x.kind === "manoeuvre" && x.manual) (scene.layout.paths = scene.layout.paths || {})[x.exit] = x.points.map(P);
     const g = generate(scene);
     const r = generateRoutes(scene);
     const mine = (list) => (list || []).filter((x) => !x.auto);
@@ -527,6 +534,23 @@ const Layout = (() => {
       acc += l;
     }
     return best.at;
+  }
+
+  // ---- pedestrians: across the road by the nearest zebra --------------------------------------
+  // From where the person stands to the near end of the zebra, over it, and a few steps on.
+  function zebraPath(scene, p) {
+    let best = null;
+    for (const m of scene.markings || []) {
+      if (m.type !== "zebra" || !m.points || m.points.length < 2) continue;
+      const [a, b] = m.points;
+      const near = dist(p, a) < dist(p, b) ? [a, b] : [b, a];
+      const d = dist(p, near[0]);
+      if (!best || d < best.d) best = { d, from: near[0], to: near[1] };
+    }
+    if (!best || best.d > 40) return null;
+    const t = unit(sub(best.to, best.from));
+    const start = sub(best.from, mul(t, 1.5)), end = add(best.to, mul(t, 1.5));
+    return [P(p), P(start), P(end), P(add(end, mul(t, 4)))];
   }
 
   // ---- editing the plan ---------------------------------------------------------------
@@ -746,7 +770,7 @@ const Layout = (() => {
 
   return {
     KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf,
-    nearestLane, waysFrom, pathFrom, snapPoint, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
+    nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, snapPoint, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
     splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading,
   };
 })();

@@ -100,3 +100,55 @@ static func _text(root: Node3D, text: String, size: float, colour: Color) -> Lab
 	l.double_sided = false
 	root.add_child(l)
 	return l
+
+
+## Which way a path turns: "L" or "R" when its end heads 30° or more away from its start, else "".
+## Paths are in the junction's frame (+x is the driver's left).
+static func turn_side(path: Array) -> String:
+	if path.size() < 3:
+		return ""
+	var p := func(i: int) -> Vector2: return Vector2(path[i][0], path[i][path[i].size() - 1])
+	var a: Vector2 = p.call(1) - p.call(0)
+	var b: Vector2 = p.call(path.size() - 1) - p.call(path.size() - 2)
+	if a.length() < 0.01 or b.length() < 0.01:
+		return ""
+	# Positive: turning to the driver's left (see editor/layout.js turnAngle).
+	var ang := atan2(-(a.x * b.y - a.y * b.x), a.dot(b))
+	if absf(ang) < deg_to_rad(30.0):
+		return ""
+	return "L" if ang > 0.0 else "R"
+
+
+## Turn indicators of a junction participant: amber lamps at the front and rear corner of one side,
+## blinking like the player's. hl, hw: the half-length and half-width of the vehicle (m, its own frame).
+static func add_blinkers(vehicle: Node3D, side: String, hl: float, hw: float, height := 0.75) -> void:
+	var x := hw * (1.0 if side == "L" else -1.0)
+	var lamps: Array = []
+	for z in [hl - 0.05, -hl + 0.05]:
+		lamps.append(_lamp(vehicle, Vector3(x * 0.92, height, z), Color("#FFB300")))
+	var flash := Blinker.new()
+	flash.lamps = lamps
+	vehicle.add_child(flash)
+
+
+## Indicators: all lamps on together, 1.5 times a second.
+class Blinker extends Node:
+	var lamps: Array = []
+	var clock := 0.0
+
+	func _process(delta: float) -> void:
+		clock += delta
+		var on := int(clock * 3.0) % 2 == 0
+		for m in lamps:
+			(m as StandardMaterial3D).emission_energy_multiplier = 3.0 if on else 0.0
+			(m as StandardMaterial3D).albedo_color = Color("#FFB300") if on else Color("#7A5200")
+
+
+## A traffic controller standing at a junction in one of his signals (the mini-game's model).
+static func officer(gesture: String) -> Node3D:
+	var o := RegulatorOfficer.new()
+	var g := {"down": RegulatorRules.Gesture.HANDS_DOWN, "sides": RegulatorRules.Gesture.HANDS_SIDES,
+		"forward": RegulatorRules.Gesture.RIGHT_ARM_FORWARD, "up": RegulatorRules.Gesture.ARM_UP}
+	o.cur_gesture = g.get(gesture, RegulatorRules.Gesture.HANDS_SIDES)
+	o.cur_approach = RegulatorRules.Approach.FRONT
+	return o

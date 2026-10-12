@@ -180,6 +180,11 @@ def sync(sid: str) -> dict:
         if k in q:
             out[k] = q[k]
     out["spec"] = {**(out.get("spec") or {}), "maneuver": q.get("maneuver"), "yieldTo": q.get("yieldTo", [])}
+    if net.get("questionView"):
+        out["questionView"] = net["questionView"]     # the question's camera, framed in the editor
+    else:
+        out.pop("questionView", None)
+    out["officers"] = net.get("officers", [])        # traffic controllers (editor: «Регулировщик»)
     out["approachW"] = net.get("approachWidth", out.get("approachW"))
     out["exitWidths"] = net.get("exitWidths", out.get("exitWidths"))
 

@@ -264,6 +264,9 @@ def run_game(sid: str, auto: bool) -> dict:
     godot = find_godot()
     if not godot:
         return {"launched": False, "error": "Godot не найден: поставьте Godot 4.7.2 (docs/game/README.md)"}
+    # The game loads the junction's models from Godot's import cache: files the save has just copied
+    # (participants, lights) must be imported first, or an older junction shows up.
+    reimport_game()
     old = GODOT_RUN["proc"]
     if old and old.poll() is None:
         old.terminate()

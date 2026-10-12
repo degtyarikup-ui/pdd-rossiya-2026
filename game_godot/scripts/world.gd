@@ -96,6 +96,7 @@ var preparing := false            # its files are being fetched (web)
 var road_queue: Array = []        # the road questions still to come (road_scenes.json, all kinds)
 var road: RoadEvent = null        # the road question on the street now
 var road_phase := ""              # approach | question | passed (while road != null)
+var only_id := ""                 # --situation: the one junction of a test run
 var road_after := 300.0           # world z after which the next road question may come
 var road_base_limit := 60         # the built-up limit to return to after a zone
 var lobby: Lobby                  # the garage before a run (--garage=<json>); null when not shown
@@ -182,13 +183,16 @@ func _ready() -> void:
 	# [--situation=<id>] [--auto] [--overview] [--start=<z>] [--wait=<s>]`.
 	for arg in Host.user_args():
 		if arg.begins_with("--situation="):
-			bag = [arg.trim_prefix("--situation=")]
+			# A test of one junction (the editor's «В игре»): that junction, again and again.
+			only_id = arg.trim_prefix("--situation=")
+			bag = [only_id]
 		if arg.begins_with("--road="):
 			road_force = arg.trim_prefix("--road=")
 		if arg == "--auto":
 			auto_answer = true
 		if arg == "--near":
 			near_debug = true
+			spawn_after = drive.pos.z   # the junction is laid out at once: no jump after a stretch of street
 		if arg == "--debug":
 			dbg_every = 1.0
 		if arg == "--previews":
@@ -689,6 +693,8 @@ func _junctions() -> Array:
 # --- exam junctions --------------------------------------------------------
 
 func _next_id() -> String:
+	if only_id != "":
+		return only_id
 	if bag.is_empty():
 		var ids: Array = JSON.parse_string(FileAccess.get_file_as_string("res://situations/index.json"))
 		ids.shuffle()
@@ -728,7 +734,8 @@ func _maybe_spawn() -> void:
 		_topdown_shot(sit, topdown)
 	if near_debug:
 		near_debug = false
-		drive.pos.z = zc + float(sit.data.stopZ) - 12.0
+		# 45 m out: the approach to the question is driven, not skipped.
+		drive.pos.z = zc + float(sit.data.stopZ) - 45.0
 		drive.yaw = 0.0
 	_rebuild_ring()
 
@@ -1277,6 +1284,10 @@ func _update_traffic(delta: float) -> void:
 			car.z -= span
 		var face := 0.0 if car.dir > 0.0 else PI
 		var at := Vector3(car.x, 0, car.z)
+		# Inside a junction's square the street does not go on (a bend, a T, a roundabout): the ring
+		# traffic is not drawn there, or it would drive straight over lawns and through houses.
+		if _in_blank(car.z):
+			at.y = -100.0
 		if car.has("node"):
 			(car.node as Node3D).transform = Transform3D(Basis(Vector3.UP, face), at)
 		else:
@@ -1609,8 +1620,17 @@ func _process(delta: float) -> void:
 ## Question framing exported from the game for card heights 0..540 px of 844:
 ## interpolated for this card (its real height relative to the screen).
 func _question_framing() -> Dictionary:
-	var samples: Array = current.sit.data.questionCamera
 	var covered := ui.card_height() / get_viewport().get_visible_rect().size.y * 844.0
+	# Framed by hand in the editor: the point in the middle of the picture above the card and the
+	# height of that picture (m). Any card height keeps both: a taller card pulls the camera back.
+	var qv = current.sit.network.data.get("questionView") if current.sit.network else current.sit.data.get("questionView")
+	if qv is Dictionary:
+		var free_part := clampf(1.0 - covered / 844.0, 0.3, 1.0)
+		var view_size := float(qv.height) / free_part
+		var tilt := sin(atan2(42.0, 44.0))     # the camera's pitch (see the camera below)
+		var up := (1.0 - free_part) * view_size * 0.5 / tilt
+		return { "look": Vector2(qv.centre[0], qv.centre[1] - up), "size": view_size }
+	var samples: Array = current.sit.data.questionCamera
 	var lo: Dictionary = samples[0]
 	var hi: Dictionary = samples[samples.size() - 1]
 	for i in samples.size() - 1:

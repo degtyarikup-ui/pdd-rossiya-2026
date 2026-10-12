@@ -14,6 +14,7 @@ const Tools = (() => {
     { sep: true },
     { id: "actor", key: "C", title: "Машины и люди", icon: "car", hint: "Клик по дороге — встанет на полосу. Тяните — задать направление" },
     { id: "light", key: "L", title: "Светофор", icon: "light", hint: "Клик у перекрёстка — встанет на угол лицом к машинам" },
+    { id: "officer", key: "U", title: "Регулировщик", icon: "person", hint: "Клик — поставить регулировщика. Тяните — куда он смотрит" },
     { id: "answer", key: "A", title: "Вариант ответа", icon: "route", hint: "Кликайте точки пути. ↵ — готово" },
     { sep: true },
     { id: "prop", key: "O", title: "Объект", icon: "tree", hint: "Клик — поставить, тянуть — повернуть. Выберите объект слева" },
@@ -35,7 +36,6 @@ const Tools = (() => {
 
   function set(id) {
     if (!LIST.find((t) => t.id === id)) return;
-    if (App.state.testing && id !== "select" && id !== "hand") Sim.stop();
     finishDraft(true);
     tool = id;
     opts.pathFor = null;
@@ -82,7 +82,7 @@ const Tools = (() => {
       ? (S()?.layout ? "Клик у перекрёстка — включить или выключить на этом въезде" : "Два клика поперёк дороги")
       : "Кликайте точки линии. ↵ — готово";
     const el = $("#hint");
-    el.hidden = !S() || !h || App.state.testing;
+    el.hidden = !S() || !h;
     el.innerHTML = h ? `${ic(t ? t.icon : "info")}<span>${esc(h)}</span>` : "";
   }
 
@@ -173,7 +173,6 @@ const Tools = (() => {
     if (!S()) return;
     if (e.type === "leave") { Scene3D.setGhost(null); setHover(null); return; }
     if (e.world) lastWorld = e.world;
-    if (App.state.testing) return;
     const handler = HANDLERS[tool] || HANDLERS.select;
     handler[e.type] && handler[e.type](e);
   }
@@ -193,6 +192,8 @@ const Tools = (() => {
       const h = Scene3D.hitAt(e.sx, e.sy, skipLocked);
       if (!h) { drag = { kind: "marquee", x0: e.sx, y0: e.sy, add: e.shift }; return; }
       if (h.t === "turn") return startTurn(e);
+      if (h.t === "letter") { App.select({ t: "route", id: h.id }); App.beginDrag(); drag = { kind: "letter", id: h.id }; return; }
+      if (h.t === "stop" && S().layout) { App.select({ t: "stop" }); App.beginDrag(); drag = { kind: "stop" }; return; }
       if (h.point) {
         App.select({ ...h, v: h.v });
         App.beginDrag();
@@ -204,7 +205,7 @@ const Tools = (() => {
       if (e.shift) { App.toggle(h); return; }
       // Things (props, cars, lights, junction points) move at once; a road, a line or a lawn is picked
       // first and moved by a second drag, so a click on the asphalt never shifts the road by accident.
-      const thing = ["decor", "actor", "light", "node"].includes(h.t);
+      const thing = ["decor", "actor", "officer", "light", "node", "stop"].includes(h.t);
       if (!already) App.select(h);
       if (!already && !thing) return;
       // Alt: drag a copy, the original stays.
@@ -225,6 +226,23 @@ const Tools = (() => {
       }
       if (!e.world) return;
       if (drag.kind === "turn") return turnMove(e);
+      if (drag.kind === "letter") {
+        return App.dragMove((s) => { const rt = s.routes.find((x) => x.id === drag.id); if (rt) rt.labelPosition = [r3(e.world.x), r3(e.world.z)]; });
+      }
+      if (drag.kind === "stop") {
+        // The player's car slides along its lane: how far before the junction the question comes.
+        return App.dragMove((s) => {
+          const plan = Layout.playerPlan(s);
+          if (!plan) return;
+          const line = Layout.lineFrom(s.layout, plan.st, plan.nid);
+          let best = 0, bd = Infinity;
+          for (let d = 2; d < plan.total - 1; d += 0.25) {
+            const p = Layout.along(line, d).p, dd = Math.hypot(p[0] - e.world.x, p[1] - e.world.z);
+            if (dd < bd) { bd = dd; best = d; }
+          }
+          s.layout.player = { ...s.layout.player, street: plan.st.id, toward: plan.nid, stopAt: r3(best) };
+        });
+      }
       if (drag.kind === "point") {
         drag.moved = true;
         const ref = drag.ref;
@@ -282,7 +300,7 @@ const Tools = (() => {
         if (other) App.dragMove((sc) => Layout.mergeNodes(sc, n.id, other.id));
       }
       if (d.kind === "move" && d.moved) snapActorsToLanes();
-      if (d.kind === "turn" || d.moved || d.kind === "point" || d.kind === "bend") App.endDrag();
+      if (["turn", "point", "bend", "letter", "stop"].includes(d.kind) || d.moved) App.endDrag();
       else App.cancelDrag();
       App.renderPanels?.();
     },
@@ -466,6 +484,10 @@ const Tools = (() => {
         const hit = Layout.nearestLane(s, [x, z]);
         if (hit && hit.d < 5) { x = hit.point[0]; z = hit.point[1]; y = hit.yaw; }
       }
+    } else if (kind === "officer") {
+      half = [0.4, 0.4];
+      x = snapGrid(x); z = snapGrid(z);
+      y = yaw ?? 0;
     } else if (kind === "light") {
       url = App.state.catalog.lightAsset ? `/asset/scene/${App.state.catalog.lightAsset}` : null;
       half = [0.5, 0.5];
@@ -543,7 +565,23 @@ const Tools = (() => {
           pos: [r3(g.x), r3(g.z)], yaw: r3(yaw), scale: [1, 1, 1], maxSpeed: tpl.maxSpeed ?? 10, clearDistance: tpl.clearDistance ?? 6,
           halfLength: tpl.halfLength ?? 2, halfWidth: tpl.halfWidth ?? 0.9, behaviour: { staysPut: !lane, waitsForPlayer: true },
           ...(lane ? { way: "straight" } : {}) });
+        // A pedestrian put down near a zebra crosses the road by it.
+        const walk = opts.actorType === "pedestrian" && Layout.zebraPath(sc, [r3(g.x), r3(g.z)]);
+        if (walk && Math.hypot(walk[1][0] - g.x, walk[1][1] - g.z) < 12) {
+          const a = sc.actors.at(-1);
+          sc.routes.push({ id: `actor_${id}`, kind: "actor", points: walk });
+          a.route = `actor_${id}`;
+          a.behaviour.staysPut = false;
+          a.yaw = r3(Math.atan2(walk[1][0] - walk[0][0], walk[1][1] - walk[0][1]));
+        }
         return { t: "actor", id };
+      });
+    } else if (kind === "officer") {
+      ref = App.edit((sc) => {
+        sc.officers = sc.officers || [];
+        const id = App.uniqueId("officer_", sc.officers.map((o) => o.id));
+        sc.officers.push({ id, pos: [r3(g.x), r3(g.z)], yaw: r3(yaw), gesture: "sides" });
+        return { t: "officer", id };
       });
     } else if (kind === "light") {
       if (!cat.lightAsset) return App.toast("Нет модели светофора", "bad");
@@ -630,7 +668,7 @@ const Tools = (() => {
     return w1 >= 0 && w2 >= 0 && 1 - w1 - w2 >= 0;
   }
 
-  const HANDLERS = { select, hand, road, junction: select, marking, lawn, answer, actor: placer("actor"), light: placer("light"), prop: placer("prop"), brush };
+  const HANDLERS = { select, hand, road, junction: select, marking, lawn, answer, actor: placer("actor"), light: placer("light"), officer: placer("officer"), prop: placer("prop"), brush };
 
   // ---- finishing a drawing ------------------------------------------------------------------------
   function finishDraft(cancel = false) {
@@ -687,7 +725,6 @@ const Tools = (() => {
     if (drag) { App.cancelDrag(); drag = null; $("#marquee").hidden = true; return; }
     if (draft) return finishDraft(true);
     if (tool !== "select") return set("select");
-    if (App.state.testing) return Sim.stop();
     App.select([]);
   }
   function enter() {
@@ -735,6 +772,7 @@ const Tools = (() => {
     if (item.kind === "prop") { opts.prop = item.id; place("prop", ghostFor("prop", w, null), 0); }
     else if (item.kind === "actor") { opts.actorType = item.id; const g = ghostFor("actor", w, null); place("actor", g, g.yaw); }
     else if (item.kind === "light") { const g = ghostFor("light", w, null); place("light", g, g.yaw); }
+    else if (item.kind === "officer") place("officer", ghostFor("officer", w, null), 0);
   }
 
   function init() {
