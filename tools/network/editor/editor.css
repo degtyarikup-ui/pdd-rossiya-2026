@@ -200,7 +200,9 @@ kbd { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 6px
 .pchip { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px 0 8px; border-radius: 10px; font-weight: 500; white-space: nowrap; }
 .pchip:hover { background: var(--field); }
 .pchip.on { background: var(--accent-soft); color: var(--accent); }
-.ptile { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 76px; padding: 6px 6px 5px; border-radius: 10px; font-size: 11px; color: var(--ink-2); white-space: nowrap; }
+.ptile { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 84px; flex: none; padding: 6px 4px 5px; border-radius: 10px; font-size: 10.5px; line-height: 1.15; color: var(--ink-2); text-align: center; }
+.ptile span { display: block; max-width: 100%; }
+.popover.grid { flex-wrap: wrap; justify-content: center; width: min(560px, calc(100% - 32px)); overflow: visible; }
 .ptile svg { border-radius: 9px; }
 .ptile .thumb { width: 52px; height: 44px; object-fit: contain; }
 .ptile:hover { background: var(--field); }

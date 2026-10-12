@@ -517,6 +517,7 @@ const App = (() => {
   const KEYS = [];
   function key(group, combo, label, fn, opts = {}) { KEYS.push({ group, combo, label, fn, ...opts }); }
   function matches(e, combo) {
+    if (combo === "+") return !e.metaKey && !e.ctrlKey && !e.altKey && (e.key === "+" || e.key === "=");
     const parts = combo.toLowerCase().split("+");
     const k = parts.pop();
     const mod = parts.includes("mod"), shift = parts.includes("shift"), alt = parts.includes("alt");
@@ -542,7 +543,7 @@ const App = (() => {
   }
   const KEY_TEXT = { mod: "⌘", shift: "⇧", alt: "⌥", enter: "↵", escape: "Esc", delete: "Delete", backspace: "⌫",
     arrowup: "↑", arrowdown: "↓", arrowleft: "←", arrowright: "→", space: "Пробел" };
-  const keyLabel = (combo) => combo.split("+").map((p) => KEY_TEXT[p.toLowerCase()] || p.toUpperCase()).join("");
+  const keyLabel = (combo) => combo === "+" ? "+" : combo.split("+").map((p) => KEY_TEXT[p.toLowerCase()] || p.toUpperCase()).join("");
   function renderKeys() {
     const groups = [...new Set(KEYS.filter((k) => !k.hiddenInHelp).map((k) => k.group))];
     $("#keys-body").innerHTML = groups.map((g) => `<section><h3>${g}</h3><dl>${KEYS.filter((k) => k.group === g && !k.hiddenInHelp)

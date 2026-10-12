@@ -70,6 +70,7 @@ const Tools = (() => {
       html = `<button class="ptile wide on">${Thumbs.img("prop", opts.prop)}<span>${esc(Catalog.propName(opts.prop))}</span></button>`;
     }
     pop.innerHTML = html;
+    pop.classList.toggle("grid", tool === "junction");
     pop.hidden = !html || !S();
     pop.querySelectorAll("img[data-thumb]").forEach((img) => Thumbs.fill(img));
   }
@@ -201,7 +202,11 @@ const Tools = (() => {
       if (h.t === "bend") { App.beginDrag(); drag = { kind: "bend", id: h.id }; return; }
       const already = App.state.sel.some((r) => App.sameRef(r, h));
       if (e.shift) { App.toggle(h); return; }
+      // Things (props, cars, lights, junction points) move at once; a road, a line or a lawn is picked
+      // first and moved by a second drag, so a click on the asphalt never shifts the road by accident.
+      const thing = ["decor", "actor", "light", "node"].includes(h.t);
       if (!already) App.select(h);
+      if (!already && !thing) return;
       // Alt: drag a copy, the original stays.
       if (e.alt && App.copy()) { App.paste(0); }
       App.beginDrag();
