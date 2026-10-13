@@ -9,6 +9,7 @@ extends Node3D
 var id: String
 var data: Dictionary
 var lights: Array[Node3D] = []
+var officers: Array[Node3D] = []
 var actors: Array[Node3D] = []       # same order as data.actors
 var _pools := {}                     # prop -> MultiMesh
 var network: RoadNetwork             # the road network (network/<id>.json); the source of truth
@@ -155,6 +156,7 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 		cop.position = Vector3(of.pos[0], 0.0, of.pos[1])
 		cop.rotation.y = float(of.get("yaw", 0.0))
 		s.add_child(cop)
+		s.officers.append(cop)
 	# Road signs of the junction (the editor's «Знаки»): faces towards their yaw, as the lights.
 	if s.network:
 		for sg in s.network.data.get("signs", []):

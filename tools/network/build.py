@@ -152,7 +152,10 @@ def road_geometry(scene: dict):
     # its square corners (the neighbouring scene meets the road there, see the stitching of the editor).
     cut_band = box.exterior.buffer(1.5, quad_segs=8)
     roads = tidy(roads).difference(cut_band).union(roads.intersection(cut_band)).intersection(box)
-    roads = street_ends(roads, box)
+    # Layout streets already define their own end widths and curved centre lines.
+    # Legacy square-end alignment would add a straight strip beside a curved sand road.
+    if not (scene.get("layout") and any(r.get("surface") == "sand" for r in scene.get("roads", []))):
+        roads = street_ends(roads, box)
     islands = tidy(unary_union(holes)).intersection(roads) if holes else Polygon()
     return roads.difference(islands), islands, roads
 
@@ -378,7 +381,12 @@ def build(scene: dict) -> dict:
     # lie outside the original rectangular arms and must also lose their edge paint.
     disabled_edges = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("edge") is False])
     no_edge = disabled_edges.buffer(CURB_RADIUS, quad_segs=32).buffer(-CURB_RADIUS, quad_segs=32).buffer(0.6)
-    sand = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("surface") == "sand"]).intersection(road)
+    sand_raw = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("surface") == "sand"])
+    asphalt_raw = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("surface") != "sand"]
+                              + [line.buffer(TRACK_BED / 2, cap_style=2) for line in track_lines(scene)])
+    # Give the smoothed shoulder the same material as its road. Only genuine asphalt
+    # roads can create an asphalt transition; a contour adjustment must not create one.
+    sand = road.intersection(sand_raw.buffer(CURB_RADIUS + TIDY_RADIUS)).difference(asphalt_raw) if not sand_raw.is_empty else Polygon()
     # Markings lie on the carriageway only; the island and the pavement are never painted over.
     marks = {}
     for m in scene.get("markings", []):

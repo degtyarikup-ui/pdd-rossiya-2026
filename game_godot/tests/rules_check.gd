@@ -178,7 +178,9 @@ func _plain_street() -> void:
 	world.on_collision(WORLD.AmbientObstacle.new({ "x": -1.8, "z": 22.0, "dir": 1.0, "v": 5.0, "spd": 5.0, "base": 5.0 }))
 	_check("collision: a car hit is one collision (a second car in the same episode is not counted again)",
 		_count("violation", "collision") == 1)
-	world.on_collision(WORLD.WalkerObstacle.new({ "x": 6.0, "zw": 5.0, "z": 5.0, "v": 1.2, "alive": true, "dir": 1.0 }))
+	var pedestrian: Dictionary = world.walkers[0].duplicate()
+	pedestrian.merge({ "x": 6.0, "zw": 5.0, "z": 5.0, "v": 1.2, "alive": true, "dir": 1.0 }, true)
+	world.on_collision(WORLD.WalkerObstacle.new(pedestrian))
 	_check("collision: a pedestrian hit is a collision too", _count("violation", "collision") == 2)
 	_check("collision: no speeding or oncoming came with it", _count("violation", "speeding") + _count("violation", "oncoming") == 0)
 

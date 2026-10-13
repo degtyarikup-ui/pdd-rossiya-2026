@@ -47,6 +47,7 @@ godot --headless --path game_godot --script res://tests/road_check.gd       # д
 godot --headless --path game_godot --script res://tests/surface_check.gd    # перекрёстки без дублей дорожного слоя
 godot --headless --path game_godot --script res://tests/street_check.gd     # улица: сужение перед перекрёстком, застройка вне проезжей части
 godot --headless --path game_godot --script res://tests/collision_check.gd  # столкновения
+godot --headless --path game_godot --script res://tests/human_collision_check.gd # наезд: регулировщик и пешеходы
 godot --headless --path game_godot --script res://tests/ghost_check.gd      # призрак улицы
 godot --headless --path game_godot --script res://tests/traffic_check.gd    # трафик
 ```

@@ -451,6 +451,15 @@ func _build_ground() -> void:
 	ground.mesh = st.commit()
 	ground.material_override = scenery.material
 	ground.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if not has_node("HumanPhysicsGround"):
+		var floor_body := StaticBody3D.new()
+		floor_body.name = "HumanPhysicsGround"
+		floor_body.collision_layer = 2
+		floor_body.collision_mask = 0
+		var shape := CollisionShape3D.new()
+		shape.shape = WorldBoundaryShape3D.new()
+		floor_body.add_child(shape)
+		add_child(floor_body)
 	ground.position.y = -0.15   # well below the carriageway
 
 
@@ -605,6 +614,20 @@ class WorldMotion:
 		m.node.position += (xf.basis.inverse() * world_dir) * dist
 
 
+class HumanObstacle:
+	var node: Node3D
+	var pos: Vector3:
+		get: return node.global_position
+	var crashed: bool:
+		get: return node.get_meta("knocked_down", false)
+
+	func _init(person: Node3D) -> void:
+		node = person
+
+	func footprint() -> Dictionary:
+		return { "p": pos, "yaw": node.global_rotation.y, "hw": 0.3, "hl": 0.3 }
+
+
 class AmbientObstacle:
 	var car: Dictionary
 	var crashed := false
@@ -647,6 +670,9 @@ class WalkerObstacle:
 func obstacles() -> Array:
 	var out := []
 	for j in _junctions():
+		for officer in j.sit.officers:
+			if is_instance_valid(officer) and not officer.get_meta("knocked_down", false):
+				out.append(HumanObstacle.new(officer))
 		for m in j.junction.motions:
 			if not m.done:
 				out.append(WorldMotion.new(m, j.sit.global_transform))
@@ -661,7 +687,7 @@ func obstacles() -> Array:
 				out.append(AmbientObstacle.new({ "x": pos.x, "z": pos.z, "dir": 1.0, "v": 0.0, "spd": 0.0, "base": 0.0 }))
 	# Pedestrians are solid too (only the ones near the car: a cheap filter).
 	for w in walkers:
-		if w.get("alive", false) and absf(w.zw - drive.pos.z) < 8.0:
+		if w.get("alive", false) and not w.get("knocked_down", false) and absf(w.zw - drive.pos.z) < 8.0:
 			out.append(WalkerObstacle.new(w))
 	if road != null:
 		out.append_array(road.obstacles())
@@ -669,21 +695,41 @@ func obstacles() -> Array:
 
 
 func on_collision(o) -> void:
+	if o is HumanObstacle:
+		_knock_down(o.node)
+		_person_hit("officer")
+		return
 	if o is RoadBody:
 		_road_hit(o)
 		return
 	if "m" in o and o.m != null:
 		var m: Junction.Motion = o.m
+		if m.type == "pedestrian":
+			m.done = true
+			m.cleared = true
+			m.crashed = true
+			m.speed = 0
+			_knock_down(m.node)
+			_person_hit(m.id)
+			return
 		m.crashed = true
 		m.speed = 0
 		drive.recovery = 0.38
 		drive.speed = 0
 		on_fault("collision", "collision:" + m.id)
 	elif "w" in o and o.w != null:
-		drive.recovery = 0.38
-		drive.speed = 0
-		o.w.v = 0.0     # the pedestrian stops
-		on_fault("collision", "collision:pedestrian")
+		o.w.knocked_down = true
+		var visual := MeshInstance3D.new()
+		visual.mesh = (o.w.mm as MultiMesh).mesh
+		var material := ShaderMaterial.new()
+		material.shader = preload("res://shaders/fallen_person.gdshader")
+		material.set_shader_parameter("paint", (o.w.mm as MultiMesh).get_instance_custom_data(o.w.slot))
+		visual.material_override = material
+		add_child(visual)
+		visual.transform = Transform3D(Basis(Vector3.UP, 0.0 if o.w.v > 0 else PI), Vector3(o.w.x, Street.KERB, o.w.zw))
+		(o.w.mm as MultiMesh).set_instance_transform(o.w.slot, Transform3D(Basis(), Vector3(0, -100, 0)))
+		_knock_down(visual)
+		_person_hit("pedestrian")
 	else:
 		# A car on the ring: it is shoved away from the player (the harder the hit, the further it
 		# rolls) and the player bounces back a little, then drives on.
@@ -697,6 +743,50 @@ func on_collision(o) -> void:
 		drive.speed = 0
 		drive.bounce = -2.0
 		on_fault("collision", "collision:ambient")
+
+
+func _person_hit(id: String) -> void:
+	drive.recovery = 0.38
+	drive.speed = 0
+	on_fault("collision", "collision:" + id)
+
+
+## Hand a struck character over to Godot gravity, contact and angular momentum.
+func _knock_down(visual: Node3D) -> RigidBody3D:
+	visual.set_meta("knocked_down", true)
+	visual.set_process(false)
+	var pose := visual.global_transform
+	var body := RigidBody3D.new()
+	body.mass = 75.0
+	body.collision_layer = 4
+	body.collision_mask = 2 | 4
+	body.continuous_cd = true
+	body.linear_damp = 0.5
+	body.angular_damp = 1.5
+	var material := PhysicsMaterial.new()
+	material.friction = 0.8
+	material.bounce = 0.1
+	body.physics_material_override = material
+	var capsule := CapsuleShape3D.new()
+	capsule.radius = 0.28
+	capsule.height = 1.7
+	var shape := CollisionShape3D.new()
+	shape.shape = capsule
+	body.add_child(shape)
+	add_child(body)
+	body.add_to_group("fallen_people")
+	body.global_position = pose.origin + Vector3.UP * 0.85
+	visual.reparent(body)
+	visual.global_transform = pose
+	var direction := Vector3(sin(drive.yaw), 0, cos(drive.yaw)) * (-1.0 if drive.speed < 0 else 1.0)
+	var impact := clampf(absf(drive.speed), 1.5, 18.0)
+	# Initial velocities also work on the creation frame, before inertia is calculated.
+	body.linear_velocity = direction * (impact * 0.7 + 1.0) + Vector3.UP * minf(4.5, 1.0 + impact * 0.2)
+	body.angular_velocity = Vector3.UP.cross(direction) * (1.5 + impact * 0.15)
+	get_tree().create_timer(20.0).timeout.connect(func():
+		if is_instance_valid(body):
+			body.queue_free())
+	return body
 
 
 ## The point 4 m ahead on the approach route of the current junction, in world
@@ -1138,6 +1228,10 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	for j in _junctions():
 		j.sit.transform=xf*j.sit.transform
 		j.sit.refresh_uv(scenery,texture_frame)
+	for body: RigidBody3D in get_tree().get_nodes_in_group("fallen_people"):
+		body.global_transform = xf * body.global_transform
+		body.linear_velocity = rotation * body.linear_velocity
+		body.angular_velocity = rotation * body.angular_velocity
 	drive.pos=xf*drive.pos
 	drive.yaw-=heading
 	cam_heading-=heading
@@ -1281,6 +1375,7 @@ func _reset_ambient() -> void:
 	for i in traffic.size():
 		traffic[i].z = drive.pos.z + 50.0 + i * 65.0
 	for i in walkers.size():
+		walkers[i].erase("knocked_down")
 		walkers[i].z = drive.pos.z + (i * 10.0) - 40.0
 
 
@@ -1457,11 +1552,14 @@ func _update_walkers(delta: float) -> void:
 	var span := L * 4
 	var base := drive.pos.z - L
 	for w in walkers:
-		w.z += w.v * delta
+		if not w.get("knocked_down", false):
+			w.z += w.v * delta
 	# People walking the same way in one lane keep a step apart: the one behind waits.
 	for w in walkers:
+		if w.get("knocked_down", false):
+			continue
 		for o in walkers:
-			if o == w or o.dir != w.dir or signf(o.v) != signf(w.v):
+			if o.get("knocked_down", false) or o == w or o.dir != w.dir or signf(o.v) != signf(w.v):
 				continue
 			var ahead: float = fposmod((o.z - w.z) * signf(w.v), span)
 			if ahead > 0.0 and ahead < 1.0:

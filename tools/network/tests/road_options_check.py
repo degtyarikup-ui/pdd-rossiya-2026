@@ -35,6 +35,18 @@ assert all(r['walk'] is False and r['edge'] is False for r in s['roads'])
 assert not s['markings']
 sandy = build.build(s)
 assert surface(sandy, 'sand').area > 0
+assert surface(sandy, 'asphalt').area < 0.001
+assert all(not x['idx'] for x in sandy['surfaces'] if x['id'].startswith('sand_join_'))
+# A curved end must keep its drawn width, with grass outside and no legacy straight strip.
+curved = scene({'surface': 'sand'})
+for r in curved['roads']:
+    r['outer'] = [[x + 0.35 * (1 - (z / 90) ** 2), z] for x, z in r['outer']]
+curved_out = build.build(curved)
+assert surface(curved_out, 'asphalt').area < 0.001
+assert all(not x['idx'] for x in curved_out['surfaces'] if x['id'].startswith('sand_join_'))
+raw = unary_union([build.polygon_of(r) for r in curved['roads']])
+road, _, _, _ = build.ground(curved)
+assert road.intersection(build.crop_box(curved).exterior.buffer(0.2)).difference(raw.buffer(0.02)).area < 0.001
 assert surface(sandy, 'pavement').area < 0.01
 # Add an asphalt branch: the road remains drivable and the join receives blended bands.
 s['roads'].append({'id':'asphalt_branch','outer':[[-30,-4],[30,-4],[30,4],[-30,4]],'holes':[]})
