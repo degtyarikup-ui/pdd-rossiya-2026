@@ -315,9 +315,9 @@ const Scene3D = (() => {
   function rebuildRoutes() {
     const g = setGroup("routes");
     dropLabels("route");
-    if (!model) return;
-    const focusRoute = sel.find((s) => s.t === "route")?.id || (sel.find((s) => s.t === "actor") ? `actor_${sel.find((s) => s.t === "actor").id}` : null)
-      || (hover && hover.t === "route" ? hover.id : null);
+    const selActor = sel.find((s) => s.t === "actor");
+    const actorRouteId = selActor ? (model.actors.find((x) => x.id === selActor.id)?.route || `actor_${selActor.id}`) : null;
+    const focusRoute = sel.find((s) => s.t === "route")?.id || actorRouteId || (hover && hover.t === "route" ? hover.id : null);
     const answers = model.routes.some((x) => x.kind === "choice");
     for (const r of model.routes) {
       if (r.points.length < 2) continue;
@@ -383,7 +383,7 @@ const Scene3D = (() => {
   function anchorSig(t, o) {
     if (t === "decor") return `${o.prop}|${o.tint}`;
     if (t === "actor") return `${o.asset}|${o.type}`;
-    if (t === "light") return `${o.asset}|${o.state}|${(o.mountedSigns || []).join(",")}|${(o.mountedMainRoad || []).join(",")}`;
+    if (t === "light") return `${o.asset}|${o.state}|${o.arrow || ""}|${o.tram || ""}|${(o.mountedSigns || []).join(",")}|${(o.mountedMainRoad || []).join(",")}`;
     if (t === "officer") return `officer|${o.gesture}`;
     if (t === "sign") return `sign|${o.code}|${o.plate || ""}|${(o.mainRoad || []).join(",")}|${(o.roads || []).join(",")}`;
     return t;
@@ -411,14 +411,58 @@ const Scene3D = (() => {
       const ped = o.type === "pedestrian" || o.type === "cyclist";
       attach(`/asset/scene/${o.asset}`, fallbackBox(TYPE_COLOUR[o.type] || 0x888888, ped ? [0.6, 1.7, 0.6] : [1.9, 1.4, 4.2]));
     } else if (t === "light") {
-      const isTram = false;
+      const isTram = !!o.tram;
       const mounted = (o.mountedSigns || []).filter(Boolean);
       let lift = mounted.length * 2.4, lightRoot = null;
-      const pole = fallbackBox(0x3a3f47, [0.3, 3.4, 0.3]);
+      const pole = fallbackBox(0x3a3f47, [0.3, isTram ? 5.4 : 3.4, 0.3]);
       pole.position.y += lift;
-      if (o.asset) attach(`/asset/scene/${o.asset}`, pole, null, root => { root.position.y += lift; lightRoot = root; }); else g.add(pole);
-      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 8), basic(lampColour(o.state)));
-      lamp.position.set(0, 4.4 + lift, 0);
+      const configureLight = (root) => {
+        root.position.y += lift;
+        lightRoot = root;
+        root.traverse((m) => {
+          if (m.name === "cffffff" || m.material?.name === "cffffff") {
+            if (!o.arrow) {
+              m.visible = false;
+            } else if (o.arrow === "left") {
+              m.visible = true;
+              if (m.material) { m.material = m.material.clone(); m.material.side = THREE.DoubleSide; }
+              m.scale.x = -1;
+            } else {
+              m.visible = true;
+              m.scale.x = 1;
+            }
+          }
+          if (m.name?.startsWith("lamp_red")) {
+            const on = (o.state === "red");
+            if (m.material) { m.material = m.material.clone(); m.material.color.setHex(on ? 0xFF3838 : 0x351719); }
+          }
+          if (m.name?.startsWith("lamp_yellow")) {
+            const on = (o.state === "yellow" || o.state === "flashing_yellow");
+            if (m.material) { m.material = m.material.clone(); m.material.color.setHex(on ? 0xFFD52A : 0x352D14); }
+          }
+          if (m.name?.startsWith("lamp_green")) {
+            const on = (o.state === "green");
+            if (m.material) { m.material = m.material.clone(); m.material.color.setHex(on ? 0x36FF88 : 0x123126); }
+          }
+          if (isTram && m.name?.startsWith("lamp_tram_")) {
+            const tSig = o.tram || "straight";
+            let on = false;
+            if (tSig === "straight") on = m.name.includes("bottom") || m.name.includes("mid");
+            else if (tSig === "left") on = m.name.includes("bottom") || m.name.includes("left");
+            else if (tSig === "right") on = m.name.includes("bottom") || m.name.includes("right");
+            else if (tSig === "stop") on = !m.name.includes("bottom");
+            else if (tSig === "all") on = true;
+            else if (tSig === "off") on = false;
+            else on = m.name.includes("bottom") || m.name.includes("mid");
+            if (m.material) { m.material = m.material.clone(); m.material.color.setHex(on ? 0xF0F6FF : 0x20252C); }
+          }
+        });
+      };
+      const asset = o.asset || (isTram ? (App.state.catalog?.lightTramAsset || App.state.catalog?.lightAssets?.tram) : null)
+        || (App.state.catalog?.lightAssets?.[o.arrow || ""] || App.state.catalog?.lightAsset);
+      if (asset) attach(`/asset/scene/${asset}`, pole, null, configureLight); else g.add(pole);
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(isTram ? 0.22 : 0.28, 12, 8), basic(lampColour(o.state)));
+      lamp.position.set(0, (isTram ? 5.6 : 4.4) + lift, 0);
       g.add(lamp);
       if (mounted.length) {
         const extension = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, lift, 12), mat(0x3a3f47));
@@ -748,11 +792,17 @@ const Scene3D = (() => {
       g.add(handle(p, "circle", 0xffffff, ACCENT, 1.1));
       turnHandle = { x: p[0], z: p[1], cx: one.x, cz: one.z };
     }
-    // The points of a drawn shape or route, when it is the one selected.
-    if (sel.length === 1 && ["route", "road", "lawn", "marking", "track"].includes(sel[0].t)) {
-      const pts = App.pointsOfRef(sel[0]);
-      if (pts && !(sel[0].t === "marking" && App.isPaint(sel[0]))) {
-        pts.forEach((p, i) => g.add(handle(p, "circle", i === sel[0].v ? ACCENT : 0xffffff, ACCENT, 0.8)));
+    // The points of a drawn shape or route, when it is the one selected, or an actor with a route.
+    let pointRef = (sel.length === 1 && ["route", "road", "lawn", "marking", "track"].includes(sel[0].t)) ? sel[0] : null;
+    if (!pointRef && sel.length === 1 && sel[0].t === "actor") {
+      const a = model.actors.find((x) => x.id === sel[0].id);
+      const r = a && model.routes.find((x) => x.id === (a.route || `actor_${a.id}`));
+      if (r) pointRef = { t: "route", id: r.id, v: sel[0].v };
+    }
+    if (pointRef) {
+      const pts = App.pointsOfRef(pointRef);
+      if (pts && !(pointRef.t === "marking" && App.isPaint(pointRef))) {
+        pts.forEach((p, i) => g.add(handle(p, "circle", i === pointRef.v ? ACCENT : 0xffffff, ACCENT, 0.8)));
       }
     }
   }
@@ -1115,9 +1165,15 @@ const Scene3D = (() => {
         if (at && near(at, 15, 0.8) && !skip({ t: "route", id: r.id })) return { t: "letter", id: r.id };
       }
     }
-    if (sel.length === 1 && ["route", "road", "lawn", "marking", "track"].includes(sel[0].t)) {
-      const pts = App.pointsOfRef(sel[0]) || [];
-      for (let i = 0; i < pts.length; i++) if (near(pts[i], 10)) return { ...sel[0], v: i, point: true };
+    let pointRef = (sel.length === 1 && ["route", "road", "lawn", "marking", "track"].includes(sel[0].t)) ? sel[0] : null;
+    if (!pointRef && sel.length === 1 && sel[0].t === "actor") {
+      const a = model.actors.find((x) => x.id === sel[0].id);
+      const r = a && model.routes.find((x) => x.id === (a.route || `actor_${a.id}`));
+      if (r) pointRef = { t: "route", id: r.id };
+    }
+    if (pointRef) {
+      const pts = App.pointsOfRef(pointRef) || [];
+      for (let i = 0; i < pts.length; i++) if (near(pts[i], 14)) return { ...pointRef, v: i, point: true };
     }
     const L = model.layout;
     if (L && !skip({ t: "street" })) {
@@ -1361,5 +1417,6 @@ const Scene3D = (() => {
     get pxPerM() { return pxPerM; },
     get spaceDown() { return spaceDown; },
     get turnHandle() { return turnHandle; },
+    get anchors() { return anchors; },
   };
 })();

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +6,7 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/utils/safe_user_message.dart';
+import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
@@ -19,6 +21,30 @@ class FavoritesScreen extends ConsumerStatefulWidget {
 class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   final _searchController = TextEditingController();
   String _query = '';
+  List<String>? _cachedIds;
+  Future<List<Map<String, dynamic>>>? _cachedFuture;
+  TicketCategory? _cachedCategory;
+  String? _cachedLang;
+
+  Future<List<Map<String, dynamic>>> _getFavoritesFuture(
+    WidgetRef ref,
+    List<String> favoriteIds,
+  ) {
+    final settings = ref.read(appSettingsProvider);
+    final category = settings.ticketCategory;
+    final lang = settings.effectiveLanguageCode;
+    if (_cachedFuture == null ||
+        _cachedCategory != category ||
+        _cachedLang != lang ||
+        _cachedIds == null ||
+        !listEquals(_cachedIds!, favoriteIds)) {
+      _cachedIds = List.of(favoriteIds);
+      _cachedCategory = category;
+      _cachedLang = lang;
+      _cachedFuture = _loadFavoriteQuestions(ref, favoriteIds);
+    }
+    return _cachedFuture!;
+  }
 
   @override
   void dispose() {
@@ -28,6 +54,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(appSettingsProvider.select((s) => s.ticketCategory));
+    ref.watch(appSettingsProvider.select((s) => s.effectiveLanguageCode));
     final colors = AppColors.of(context);
     final favoriteIdsAsync = ref.watch(favoriteQuestionsProvider);
 
@@ -74,8 +102,24 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                 }
 
                 return FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _loadFavoriteQuestions(ref, favoriteIds),
+                  future: _getFavoritesFuture(ref, favoriteIds),
                   builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppDimensions.screenPadding),
+                          child: Text(
+                            dataLoadErrorMessage(snapshot.error),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              height: 1.4,
+                              color: colors.secondaryText,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
                     if (!snapshot.hasData) {
                       return const Center(child: CircularProgressIndicator());
                     }
@@ -235,17 +279,21 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   List<Map<String, dynamic>> _filterQuestions(
     List<Map<String, dynamic>> questions,
   ) {
-    if (_query.isEmpty) {
+    final query = _query.trim().toLowerCase().replaceAll('ё', 'е');
+    if (query.isEmpty) {
       return questions;
     }
 
     return questions.where((question) {
-      final text = (question['question'] as String).toLowerCase();
-      final topics = ((question['topic'] as List?) ?? const [])
-          .cast<String>()
-          .join(' ')
-          .toLowerCase();
-      return text.contains(_query) || topics.contains(_query);
+      final text = ((question['question'] as String?) ?? '')
+          .toLowerCase()
+          .replaceAll('ё', 'е');
+      final topics = (((question['topic'] as List?) ?? const [])
+          .map((e) => e.toString())
+          .join(' '))
+          .toLowerCase()
+          .replaceAll('ё', 'е');
+      return text.contains(query) || topics.contains(query);
     }).toList();
   }
 

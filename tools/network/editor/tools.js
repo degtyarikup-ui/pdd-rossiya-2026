@@ -22,7 +22,7 @@ const Tools = (() => {
     { id: "prop", key: "O", title: "Объект", icon: "tree", hint: "Клик — поставить, тянуть — повернуть. Выберите объект слева" },
     { id: "brush", key: "B", title: "Кисть деревьев", icon: "brush", hint: "Ведите с зажатой кнопкой — посадите деревья. ⌥ — стирать" },
   ];
-  const opts = { sign: "2.4", roadKind: "street", mark: "dashed", actorType: "car", prop: "trees/round_0", brushProps: ["trees/round_0", "trees/pine_0", "trees/birch_0"], brushSize: 8 };
+  const opts = { sign: "2.4", roadKind: "street", mark: "dashed", actorType: "car", prop: "trees/round_0", brushProps: ["trees/round_0", "trees/pine_0", "trees/birch_0"], brushSize: 8, tram: false };
   let tool = "select", drag = null, draft = null, placeYaw = null, hoverRef = null, lastWorld = null;
 
   const S = () => App.state.S;
@@ -70,6 +70,11 @@ const Tools = (() => {
         + `<span class="psep"></span>` + [4, 8, 16].map((s) => `<button class="pchip ${opts.brushSize === s ? "on" : ""}" data-bsize="${s}"><span class="dot-pic" style="--d:${4 + s}px"></span></button>`).join("");
     } else if (tool === "prop") {
       html = `<button class="ptile wide on">${Thumbs.img("prop", opts.prop)}<span>${esc(Catalog.propName(opts.prop))}</span></button>`;
+    } else if (tool === "light") {
+      html = `<button class="pchip ${!opts.tram ? "on" : ""}" data-light-type="std">
+        <span class="lib-icon">${ic("light")}</span><span>Обычный</span></button>
+        <button class="pchip ${opts.tram ? "on" : ""}" data-light-type="tram">
+        <span class="lib-icon">${ic("light")}</span><span>С трамвайной секцией</span></button>`;
     }
     pop.innerHTML = html;
     pop.classList.toggle("grid", tool === "junction");
@@ -108,6 +113,7 @@ const Tools = (() => {
         renderPopover();
       }
       if (b.dataset.bsize) { opts.brushSize = Number(b.dataset.bsize); renderPopover(); }
+      if (b.dataset.lightType) { opts.tram = b.dataset.lightType === "tram"; renderPopover(); Scene3D.wake(); }
     });
   }
 
@@ -232,7 +238,7 @@ const Tools = (() => {
         return App.dragMove((s) => { const rt = s.routes.find((x) => x.id === drag.id); if (rt) rt.labelPosition = [r3(e.world.x), r3(e.world.z)]; });
       }
       if (drag.kind === "stop") {
-        // The player's car slides along its lane: how far before the junction the question comes.
+        // The player's car slides along its lane and across lanes: how far before the junction and which lane.
         return App.dragMove((s) => {
           const plan = Layout.playerPlan(s);
           if (!plan) return;
@@ -242,17 +248,45 @@ const Tools = (() => {
             const p = Layout.along(line, d).p, dd = Math.hypot(p[0] - e.world.x, p[1] - e.world.z);
             if (dd < bd) { bd = dd; best = d; }
           }
-          s.layout.player = { ...s.layout.player, street: plan.st.id, toward: plan.nid, questionAt: r3(Math.max(plan.stopLineDistance + 2.4, best)) };
+          const sPt = Layout.along(line, best);
+          const tin = [-sPt.t[0], -sPt.t[1]];
+          const rDir = [-tin[1], tin[0]];
+          const lateral = (e.world.x - sPt.p[0]) * rDir[0] + (e.world.z - sPt.p[1]) * rDir[1];
+          const lanes = plan.lanes || Layout.laneOffsets(plan.st);
+          let bestLane = 0, minLaneDist = Infinity;
+          for (let i = 0; i < lanes.length; i++) {
+            const d = Math.abs(lateral - lanes[i]);
+            if (d < minLaneDist) { minLaneDist = d; bestLane = i; }
+          }
+          s.layout.player = {
+            ...s.layout.player,
+            street: plan.st.id,
+            toward: plan.nid,
+            questionAt: r3(Math.max(plan.stopLineDistance + 2.4, best)),
+            lane: bestLane,
+          };
         });
       }
       if (drag.kind === "point") {
         drag.moved = true;
         const ref = drag.ref;
         return App.dragMove(() => {
-          const pts = App.pointsOfRef(ref);
-          if (pts) pts[ref.v] = [r3(snapGrid(e.world.x, e)), r3(snapGrid(e.world.z, e))];
           const o = App.objectOf(ref);
-          if (ref.t === "route" && o.kind === "approach" && ref.v === pts.length - 1) { S().stop.x = pts[ref.v][0]; S().stop.z = pts[ref.v][1]; }
+          if (ref.t === "route" && o) {
+            o.manual = true;
+            delete o.auto;
+          }
+          const pts = App.pointsOfRef(ref);
+          if (pts && pts[ref.v]) pts[ref.v] = [r3(snapGrid(e.world.x, e)), r3(snapGrid(e.world.z, e))];
+          if (ref.t === "route" && o) {
+            if (o.kind === "approach" && pts && ref.v === pts.length - 1) {
+              S().stop.x = pts[ref.v][0];
+              S().stop.z = pts[ref.v][1];
+            } else if (o.kind === "actor" && ref.v === 0 && pts) {
+              const a = S().actors.find((x) => x.route === o.id || x.id === o.id.replace("actor_", ""));
+              if (a) a.pos = [pts[0][0], pts[0][1]];
+            }
+          }
         });
       }
       if (drag.kind === "bend") {
@@ -310,8 +344,16 @@ const Tools = (() => {
       // A point more on a route, a road's or lawn's outline: double click on its line.
       const sel = App.state.sel;
       if (sel.length !== 1 || !e.world) return;
-      const ref = sel[0], pts = App.pointsOfRef(ref);
-      if (!pts || (ref.t === "route" && App.objectOf(ref).auto)) return;
+      let ref = sel[0];
+      if (ref.t === "actor") {
+        const a = App.objectOf(ref);
+        const r = a && (App.S.routes || []).find((x) => x.id === (a.route || `actor_${a.id}`));
+        if (r) ref = { t: "route", id: r.id };
+      }
+      const pts = App.pointsOfRef(ref);
+      if (!pts) return;
+      const o = App.objectOf(ref);
+      if (ref.t === "route" && o && o.kind === "approach") return;
       const closed = ref.t === "road" || ref.t === "lawn";
       let best = -1, bd = 3;
       for (let i = 0; i < pts.length - (closed ? 0 : 1); i++) {
@@ -320,7 +362,13 @@ const Tools = (() => {
         if (d < bd) { bd = d; best = i; }
       }
       if (best < 0) return;
-      App.edit(() => pts.splice(best + 1, 0, [r3(e.world.x), r3(e.world.z)]));
+      App.edit(() => {
+        if (ref.t === "route" && o) {
+          o.manual = true;
+          delete o.auto;
+        }
+        pts.splice(best + 1, 0, [r3(e.world.x), r3(e.world.z)]);
+      });
       App.select({ ...ref, v: best + 1 });
     },
   };
@@ -349,15 +397,23 @@ const Tools = (() => {
 
   // A participant moved on a planned road stands on the nearest lane, facing the traffic.
   function snapActorsToLanes() {
-    const s = S();
-    if (!s.layout) return;
+    const s = App.planScene();
+    if (!s) return;
     App.dragMove(() => {
       for (const ref of App.state.sel) {
         if (ref.t !== "actor") continue;
         const a = App.objectOf(ref);
-        if (!Catalog.ACTORS[a.type]?.lane) continue;
+        if (!Catalog.ACTORS[a.type]?.lane || a.track) continue;
+        // A traced scene's car with a path drawn by hand keeps it.
+        if (!S().layout && !a.way && a.route) continue;
         const hit = Layout.nearestLane(s, a.pos, a.yaw);
-        if (hit && hit.d < 4) { a.pos = [r3(hit.point[0]), r3(hit.point[1])]; a.yaw = r3(hit.yaw); a.way = a.way || "straight"; }
+        if (hit && hit.d < 4) {
+          a.pos = [r3(hit.point[0]), r3(hit.point[1])];
+          a.yaw = r3(hit.yaw);
+          a.way = a.way || "straight";
+          const r = S().routes?.find((x) => x.id === (a.route || `actor_${a.id}`));
+          if (r && r.manual && r.points?.length) r.points[0] = [a.pos[0], a.pos[1]];
+        }
       }
     });
   }
@@ -482,8 +538,8 @@ const Tools = (() => {
       const tpl = App.state.catalog.actorTypes[opts.actorType];
       url = tpl ? `/asset/scene/${tpl.asset}` : null;
       half = [tpl?.halfLength || 2, tpl?.halfWidth || 0.9];
-      if (s.layout && Catalog.ACTORS[opts.actorType]?.lane && yaw === null) {
-        const hit = Layout.nearestLane(s, [x, z]);
+      if (App.planScene() && Catalog.ACTORS[opts.actorType]?.lane && yaw === null) {
+        const hit = Layout.nearestLane(App.planScene(), [x, z]);
         if (hit && hit.d < 5) { x = hit.point[0]; z = hit.point[1]; y = hit.yaw; }
       }
     } else if (kind === "sign") {
@@ -500,8 +556,10 @@ const Tools = (() => {
       x = snapGrid(x); z = snapGrid(z);
       y = yaw ?? 0;
     } else if (kind === "light") {
-      url = App.state.catalog.lightAsset ? `/asset/scene/${App.state.catalog.lightAsset}` : null;
-      half = [0.5, 0.5];
+      const isTram = !!opts.tram;
+      const asset = (isTram ? (App.state.catalog?.lightTramAsset || App.state.catalog?.lightAssets?.tram) : null) || App.state.catalog?.lightAsset;
+      url = asset ? `/asset/scene/${asset}` : null;
+      half = isTram ? [0.7, 0.5] : [0.5, 0.5];
       const spot = s.layout && yaw === null && !Layout.onMedian(s, [x, z]) ? lightSpot([x, z]) : null;
       if (spot) { x = spot.pos[0]; z = spot.pos[1]; y = spot.yaw; }
       else if (yaw === null) y = Math.PI;
@@ -573,7 +631,7 @@ const Tools = (() => {
       ref = App.edit((sc) => {
         const id = App.uniqueId(`${opts.actorType}_`, sc.actors.map((a) => a.id));
         const onRails = opts.actorType === "tram" && Tracks.nearest(sc, [g.x, g.z]);
-        const lane = sc.layout && Catalog.ACTORS[opts.actorType].lane && !(onRails && onRails.d < 6);
+        const lane = !!App.planScene() && Catalog.ACTORS[opts.actorType].lane && !(onRails && onRails.d < 6);
         sc.actors.push({ id, type: opts.actorType, name: Catalog.ACTORS[opts.actorType].name, asset: tpl.asset, route: null,
           pos: [r3(g.x), r3(g.z)], yaw: r3(yaw), scale: [1, 1, 1], maxSpeed: tpl.maxSpeed ?? 10, clearDistance: tpl.clearDistance ?? 6,
           halfLength: tpl.halfLength ?? 2, halfWidth: tpl.halfWidth ?? 0.9, behaviour: { staysPut: !lane, waitsForPlayer: true },
@@ -613,11 +671,13 @@ const Tools = (() => {
         return { t: "officer", id };
       });
     } else if (kind === "light") {
-      if (!cat.lightAsset) return App.toast("Нет модели светофора", "bad");
+      const isTram = !!opts.tram;
+      const asset = (isTram ? (cat.lightTramAsset || cat.lightAssets?.tram) : null) || cat.lightAsset;
+      if (!asset) return App.toast("Нет модели светофора", "bad");
       ref = App.edit((sc) => {
         const id = App.uniqueId("light_", sc.lights.map((l) => l.id));
         const state0 = sc.lights[0]?.state || "green";
-        sc.lights.push({ id, pos: [r3(g.x), r3(g.z)], yaw: r3(yaw), scale: 1, arrow: null, state: state0, asset: cat.lightAsset });
+        sc.lights.push({ id, pos: [r3(g.x), r3(g.z)], yaw: r3(yaw), scale: 1, arrow: null, tram: isTram ? "straight" : null, state: state0, asset });
         return { t: "light", id };
       });
     } else {
@@ -755,7 +815,7 @@ const Tools = (() => {
         if (!a) return;
         const rid = `actor_${a.id}`;
         s.routes = s.routes.filter((r) => r.id !== rid);
-        s.routes.push({ id: rid, kind: "actor", points: [[a.pos[0], a.pos[1]], ...pts] });
+        s.routes.push({ id: rid, kind: "actor", manual: true, points: [[a.pos[0], a.pos[1]], ...pts] });
         a.route = rid;
         a.behaviour = { ...(a.behaviour || {}), staysPut: false };
       });
@@ -822,13 +882,18 @@ const Tools = (() => {
     renderHint("Кликайте точки пути участника от него. ↵ — готово");
   }
 
+  function pickLight(tram = false) {
+    opts.tram = !!tram;
+    set("light");
+  }
+
   // Dropped from the library onto the view.
   function dropAt(sx, sy, item) {
     const w = Scene3D.worldAt(sx, sy);
     if (!w || !S()) return;
     if (item.kind === "prop") { opts.prop = item.id; place("prop", ghostFor("prop", w, null), 0); }
     else if (item.kind === "actor") { opts.actorType = item.id; const g = ghostFor("actor", w, null); place("actor", g, g.yaw); }
-    else if (item.kind === "light") { const g = ghostFor("light", w, null); place("light", g, g.yaw); }
+    else if (item.kind === "light") { opts.tram = !!(item.tram || item.id === "light_tram"); const g = ghostFor("light", w, null); place("light", g, g.yaw); }
     else if (item.kind === "officer") place("officer", ghostFor("officer", w, null), 0);
     else if (item.kind === "sign") { opts.sign = item.id; const g = ghostFor("sign", w, null); place("sign", g, g.yaw); }
   }
@@ -848,6 +913,6 @@ const Tools = (() => {
     });
   }
 
-  return { init, set, current, list: () => LIST.filter((t) => !t.sep), escape, enter, fitSelection, pickProp, pickActor, pickSign, drawPathFor, convertScene,
+  return { init, set, current, list: () => LIST.filter((t) => !t.sep), escape, enter, fitSelection, pickProp, pickActor, pickSign, pickLight, drawPathFor, convertScene,
     applyTemplate, renderBar, renderHint, lightSpot, get opts() { return opts; } };
 })();

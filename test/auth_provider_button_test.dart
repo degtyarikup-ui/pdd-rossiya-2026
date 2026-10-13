@@ -21,7 +21,7 @@ void main() {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    for (final provider in ['apple', 'google', 'yandex'])
+                    for (final provider in ['apple', 'google', 'yandex', 'telegram'])
                       AuthProviderButton(
                         key: ValueKey(provider),
                         svgAsset: 'assets/icons/auth/$provider.svg',
@@ -39,7 +39,7 @@ void main() {
       await show();
       await tester.pump();
       final sizes = [
-        for (final p in ['apple', 'google', 'yandex'])
+        for (final p in ['apple', 'google', 'yandex', 'telegram'])
           tester.getSize(find.byKey(ValueKey(p))),
       ];
       expect(sizes.toSet().length, 1);

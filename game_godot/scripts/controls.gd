@@ -42,7 +42,7 @@ func _ready() -> void:
 	_add(root, "left", "res://icons/steer_left.svg", "", Vector2(74, 76), CARD, ACCENT, 8, 36)
 	_add(root, "right", "res://icons/steer_right.svg", "", Vector2(74, 76), CARD, ACCENT, 8, 36)
 	_add(root, "brake", "res://icons/pedal_brake.svg", "", Vector2(100, 76), DARK, Color.WHITE, 8, 40)
-	_add(root, "gas", "res://icons/pedal_gas.svg", "ГАЗ", Vector2(100, 100), CARD, Color("#121212"), 50, 52)
+	_add(root, "gas", "res://icons/pedal_gas.svg", "", Vector2(100, 100), CARD, Color("#121212"), 50, 52)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 
@@ -151,7 +151,7 @@ func _press(name: String, down: bool) -> void:
 	style.bg_color = (RED if name == "brake" else ACCENT) if down else panel.get_meta("bg")
 	var fg: Color = Color.WHITE if down else panel.get_meta("fg")
 	(panel.get_meta("icon") as TextureRect).modulate = fg
-	var caption = panel.get_meta("label")
+	var caption = panel.get_meta("label", null)   # no label for a button without a caption (gas)
 	if caption:
 		(caption as Label).add_theme_color_override("font_color", fg)
 	match name:

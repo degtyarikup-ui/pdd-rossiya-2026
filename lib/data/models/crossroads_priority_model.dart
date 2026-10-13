@@ -1390,22 +1390,10 @@ class CrossroadsScenariosLibrary {
           'Работающий светофор отменяет действие знаков приоритета. Водители руководствуются только светофором.',
       pddArticle: 'Пункты 13.3 и 6.15 ПДД РФ',
       signs: [
-        CrossroadsSignPlacement(
-          code: '2.4',
-          side: CrossroadsSide.south,
-        ),
-        CrossroadsSignPlacement(
-          code: '2.4',
-          side: CrossroadsSide.north,
-        ),
-        CrossroadsSignPlacement(
-          code: '2.1',
-          side: CrossroadsSide.west,
-        ),
-        CrossroadsSignPlacement(
-          code: '2.1',
-          side: CrossroadsSide.east,
-        ),
+        CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.south),
+        CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.north),
+        CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.west),
+        CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.east),
       ],
       trafficLights: [
         CrossroadsTrafficLight(side: CrossroadsSide.south, state: 'green'),
@@ -1736,8 +1724,7 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'hard_priority_main_turns_right_pedestrian',
       title: 'Главная дорога поворачивает направо и пешеход',
-      subtitle:
-          'Разъезд на главной дороге со знаком 8.13 и пропуск пешехода.',
+      subtitle: 'Разъезд на главной дороге со знаком 8.13 и пропуск пешехода.',
       pddArticle: 'Пункты 13.1, 13.10 и 13.11 ПДД РФ',
       isHardSituation: true,
       signs: [

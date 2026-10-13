@@ -348,11 +348,15 @@ func _place_sheet(panel: PanelContainer) -> void:
 	var size := get_viewport().get_visible_rect().size
 	var scroll: ScrollContainer = panel.get_meta("scroll")
 	var box: VBoxContainer = panel.get_meta("box")
-	# The sheet is sized to fit all content cleanly without scrolling.
-	await get_tree().process_frame
-	var content_h := box.get_combined_minimum_size().y + 12 + 10 + _bottom
 	var available_h := size.y - (_top + 100.0)
 	var max_h: float = minf(float(panel.get_meta("max_h")), available_h)
+	panel.size = Vector2(size.x, max_h)
+	panel.position = Vector2(0, size.y - max_h)
+	# The sheet is sized to fit all content cleanly without scrolling.
+	await get_tree().process_frame
+	if not is_instance_valid(panel):
+		return
+	var content_h := box.get_combined_minimum_size().y + 12 + 10 + _bottom
 	var height := minf(content_h, max_h)
 	scroll.custom_minimum_size.y = height - 22 - _bottom
 	panel.size = Vector2(size.x, height)

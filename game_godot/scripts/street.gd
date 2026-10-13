@@ -20,7 +20,8 @@ const ROW := 20.0
 const GROUP_CHUNKS := 2           # chunks per district (then it blends on)
 const DISTRICTS := 4
 const GROUND_OUT := 90.0
-const STRIP := 5.0
+const STRIP := 5.0               # metres per strip of carriageway mesh: a width change is cut into strips
+const TAPER := 60.0              # metres over which the carriageway narrows before an exam junction
 
 const HOMES := ["home_0", "home_1", "home_2", "home_3", "home_4", "home_5"]
 const BLOCKS := ["block_0", "block_1", "block_2", "block_3", "block_4", "block_5", "block_6", "block_7"]
@@ -33,13 +34,13 @@ var sc: Scenery
 var L: float
 var pools := {}                   # prop -> Scenery.Pool
 var parked := {}                  # car id -> Scenery.Pool (baked material)
-var edge := 0.0
 var texture_frame := Transform3D()
 var visible_ranges: Array = []
 var profile := {}
 
 var parked_spots := {}            # ring slot -> [Vector3] parked cars there (they are solid: world.gd obstacles)
 var winter := false
+var edge := 0.0                   # the row being laid out: how far the carriageway is wider than ROAD_HALF
 
 
 func _init(parent: Node3D, scenery: Scenery, chunk_length: float, chunks: int) -> void:
@@ -103,17 +104,16 @@ func build_chunk(slot: int, index: int, blank := false, half_at := Callable(), r
 	rng.seed = hash(index * 7919)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_road(st,z0,half_at)
+	_road(st, z0, half_at)
 	var z := z0 + ROW / 2
 	while z < z0 + L:
 		if not _visible(z-z0):
 			z+=ROW
 			continue
-		edge=_half(half_at,z)-ROAD_HALF
 		var style := style_at(z)
 		var row := int(floor(z / ROW))
+		edge = _half(half_at, z) - ROAD_HALF
 		for side: float in [-1.0, 1.0]:
-			_verge(st,side,z,style,_half(half_at,z))
 			_plot(slot, rng, side, z, style, row)
 		z += ROW
 	for p in pools.values():
@@ -180,11 +180,6 @@ func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
 	# Stacked grass planes a few centimetres apart flicker on a phone's depth buffer.
 
 
-func _verge(_st: SurfaceTool, _side: float, _z: float, _style: int, _half: float) -> void:
-	# The verge is the world's lawn: a tinted strip stacked on it flickered (z-fighting).
-	pass
-
-
 func _half(half_at: Callable, z: float) -> float:
 	if half_at.is_valid():
 		return float(half_at.call(z))
@@ -235,8 +230,14 @@ func _kerb(st: SurfaceTool, xa: float, xb: float, za: float, zb: float, color: C
 
 # --- plots (buildStraightScenery) ------------------------------------------
 
+## A plot position is laid out for ROAD_HALF; a wider carriageway moves it out by `edge`.
+func _from_kerb(pos: Vector3) -> Vector3:
+	pos.x += signf(pos.x) * edge
+	return pos
+
+
 func _put(slot: int, prop: String, pos: Vector3, yaw := 0.0, scale := Vector3.ONE, tint := Color.WHITE) -> void:
-	var t := Transform3D(Basis(Vector3.UP,yaw).scaled(scale),_from_kerb(pos))
+	var t := Transform3D(Basis(Vector3.UP, yaw).scaled(scale), _from_kerb(pos))
 	pools[prop].put(slot, t, Color(tint.r, tint.g, tint.b, 1.0 if winter else 0.0))
 
 
@@ -261,8 +262,6 @@ func _building(slot: int, rng: RandomNumberGenerator, style: int, pos: Vector3, 
 	var size := sc.size_of(prop)
 	if not centred:
 		pos.x += signf(pos.x) * size.x / 2
-	else:
-		pos.x=signf(pos.x)*maxf(absf(pos.x),ROAD_HALF+SIDEWALK+size.x/2.0+0.3)
 	_put(slot, prop, pos, yaw, Vector3.ONE, Color(colors[rng.randi() % colors.size()]))
 	return size.x
 
@@ -320,7 +319,7 @@ func _bush() -> Color:
 func _park(slot: int, rng: RandomNumberGenerator, pos: Vector3, yaw: float) -> void:
 	var id: String = Models.CARS[rng.randi() % Models.CARS.size()]
 	var paint := Color(PARKED_COLORS[rng.randi() % PARKED_COLORS.size()])
-	pos=_from_kerb(pos)
+	pos = _from_kerb(pos)
 	if parked[id].put(slot, Transform3D(Basis(Vector3.UP, yaw), pos), Color(paint.r, paint.g, paint.b, 0)):
 		parked_spots[slot].append(pos)
 
@@ -329,8 +328,3 @@ func _visible(z: float) -> bool:
 	for span in visible_ranges:
 		if z>=span[0]-0.001 and z<=span[1]+0.001: return true
 	return false
-
-
-func _from_kerb(pos: Vector3) -> Vector3:
-	pos.x += signf(pos.x)*edge
-	return pos

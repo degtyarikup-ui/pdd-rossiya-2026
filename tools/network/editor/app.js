@@ -48,6 +48,8 @@ const App = (() => {
 
   // ---- the scene's objects --------------------------------------------------------------------
   const S = () => state.S;
+  // The scene with a road plan to find lanes in: its own, or the one detected for a traced scene.
+  const planScene = () => (state.S && state.S.layout ? state.S : state.S && state.plan ? { ...state.S, layout: state.plan } : null);
   function objectOf(ref) {
     const s = state.S;
     if (!s || !ref) return null;
@@ -118,6 +120,7 @@ const App = (() => {
     const result = fn(state.S);
     if (state.S.layout) Layout.apply(state.S);
     if (state.S.tracks) Tracks.apply(state.S);
+    if (!state.S.layout && state.plan) Layout.applyActors(state.S, planScene());
     const after = snapshotText();
     if (after === before) return result;
     if (!opts.merge || !state.undo.length) state.undo.push(before);
@@ -133,6 +136,7 @@ const App = (() => {
     fn(state.S);
     if (state.S.layout) Layout.apply(state.S);
     if (state.S.tracks) Tracks.apply(state.S);
+    if (!state.S.layout && state.plan) Layout.applyActors(state.S, planScene());
     Scene3D.refresh(state.S);
     App.renderSelection?.();
   }
@@ -207,6 +211,9 @@ const App = (() => {
     state.S.markings = state.S.markings || [];
     state.S.lawns = state.S.lawns || [];
     state.id = sid;
+    // A traced scene has no road plan: one detected from its roads finds the lanes and ways of its cars.
+    state.plan = null;
+    if (!state.S.layout) api(`/api/layout/detect/${sid}`).then((d) => { if (state.id === sid) { state.plan = d.layout; App.renderInspector?.(); } }).catch(() => {});
     state.findings = r.findings;
     state.edges = r.edges;
     state.build = r.build;
@@ -322,15 +329,16 @@ const App = (() => {
     const shift = (p) => { p[0] = r3(p[0] + dx); p[1] = r3(p[1] + dz); };
     if (ref.t === "decor" || ref.t === "actor" || ref.t === "light" || ref.t === "officer" || ref.t === "sign") {
       o.pos = [r3(o.pos[0] + dx), r3(o.pos[1] + dz)];
-      if (ref.t === "actor" && o.route && !o.way) {
-        const r = s.routes.find((x) => x.id === o.route);
-        if (r) r.points.forEach(shift);
+      if (ref.t === "actor") {
+        const rid = o.route || `actor_${o.id}`;
+        const r = s.routes.find((x) => x.id === rid);
+        if (r && (!o.way || r.manual)) r.points.forEach(shift);
       }
     } else if (ref.t === "stop") {
       if (s.layout) return;
       s.stop.x = r3(s.stop.x + dx); s.stop.z = r3(s.stop.z + dz);
       const ap = s.routes.find((r) => r.id === "approach");
-      if (ap) ap.points[ap.points.length - 1] = [s.stop.x, s.stop.z];
+      if (ap && ap.points) ap.points.forEach(shift);
     } else if (ref.t === "node") {
       Layout.moveNode(s, ref.id, [o.x + dx, o.z + dz]);
     } else if (ref.t === "route") {
@@ -454,7 +462,14 @@ const App = (() => {
       const ref = list[0], pts = pointsOfRef(ref);
       const least = ref.t === "route" || (ref.t === "marking") ? 2 : 3;
       if (!pts || pts.length <= least) return toast("Меньше точек нельзя", "warn");
-      edit(() => pts.splice(ref.v, 1));
+      const o = objectOf(ref);
+      edit(() => {
+        if (ref.t === "route" && o) {
+          o.manual = true;
+          delete o.auto;
+        }
+        pts.splice(ref.v, 1);
+      });
       return select({ ...ref, v: undefined });
     }
     const removable = list.filter((r) => r.t !== "stop" && !(r.t === "route" && (objectOf(r)?.auto || objectOf(r)?.kind === "approach")) && !(r.t === "marking" && objectOf(r)?.auto));
@@ -472,7 +487,7 @@ const App = (() => {
           s.routes = s.routes.filter((r) => r.id !== o.route);
           if (s.question?.yieldTo) s.question.yieldTo = s.question.yieldTo.filter((x) => x !== o.id);
         }
-        if (ref.t === "route") s.actors.forEach((a) => { if (a.route === o.id) { a.route = null; delete a.way; } });
+        if (ref.t === "route") s.actors.forEach((a) => { if (a.route === o.id || o.id === `actor_${a.id}`) { a.route = null; delete a.way; } });
       }
     });
     select([]);
@@ -648,7 +663,7 @@ const App = (() => {
   }
 
   return {
-    state, api, toast, confirm: confirmBox, esc, ic, r3, objectOf, pointsOfRef, isPaint, layerOf, catalogSize, sameRef, nameOf,
+    state, planScene, api, toast, confirm: confirmBox, esc, ic, r3, objectOf, pointsOfRef, isPaint, layerOf, catalogSize, sameRef, nameOf,
     edit, beginDrag, dragMove, endDrag, cancelDrag, undo, redo, changed, openScene, sceneTitle, save, setPlayable, runInGame,
     select, toggle, pickable, isLocked, moveRef, nudge, rotate, copy, paste, duplicate, remove, uniqueId, toggleHidden, toggleLocked,
     renderTop, showHome, setView, plural, thumbRev, boot, loadList,

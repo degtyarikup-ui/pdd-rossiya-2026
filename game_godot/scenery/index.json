@@ -82,8 +82,8 @@
   },
   {
    "kind": "brick",
-   "gain": 1.0,
-   "macro": 0.03,
+   "gain": 1.3,
+   "macro": 0.0,
    "macroScale": 0.16666666666666666,
    "period": 0,
    "side": 0,
@@ -92,8 +92,8 @@
   },
   {
    "kind": "roofTile",
-   "gain": 1.0,
-   "macro": 0.03,
+   "gain": 1.1,
+   "macro": 0.08,
    "macroScale": 0.25,
    "period": 0,
    "side": 0,

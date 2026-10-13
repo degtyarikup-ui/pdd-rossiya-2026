@@ -68,12 +68,15 @@ class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
     final colors = AppColors.of(context);
     final session = widget.session;
     final isExam = session['kind'] == 'exam';
-    final index = session['index'] as int;
-    final total = session['total'] as int;
-    final questions = (session['questions'] as List)
-        .cast<Map<String, dynamic>>();
+    final questions = ((session['questions'] as List?) ?? const [])
+        .whereType<Map>()
+        .map((m) => Map<String, dynamic>.from(m))
+        .toList();
+    final index = (session['index'] as num?)?.toInt() ?? 0;
+    final total = (session['total'] as num?)?.toInt() ??
+        (questions.isNotEmpty ? questions.length : 1);
     // У экзамена своего названия нет — он один, в отличие от билетов и тем.
-    final title = isExam ? appL10n.exam : session['title'] as String;
+    final title = isExam ? appL10n.exam : ((session['title'] as String?) ?? '');
 
     return SizeTransition(
       sizeFactor: _collapse,
