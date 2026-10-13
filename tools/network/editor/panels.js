@@ -38,7 +38,7 @@
   }
 
   // ---- scenes --------------------------------------------------------------------------------
-  const FILTERS = [["all", "Все"], ["game", "В игре"], ["err", "С ошибками"], ["plan", "Конструктор"]];
+  const FILTERS = [["all", "Все"], ["game", "В игре"], ["err", "С ошибками"]];
   function filtered() {
     const q = query.trim().toLowerCase();
     return state.scenes.filter((s) => {
@@ -56,14 +56,13 @@
       <div class="chips">${FILTERS.map(([k, t]) => `<button class="${filter === k ? "on" : ""}" data-filter="${k}">${t}</button>`).join("")}</div></div>
       <div class="scene-list">${list.map((s) => `<button class="scene-row ${s.id === state.id ? "on" : ""}" data-scene="${s.id}">
         <span class="scene-pic">${s.preview ? `<img src="${thumbUrl(s)}" loading="lazy" alt="">` : ""}</span>
-        <span class="scene-text"><b>${esc(App.sceneTitle(s.id))}</b><small>${esc(s.questionText)}</small>
+        <span class="scene-text"><b>${esc(App.sceneTitle(s.id))}</b>
         <span class="badges">${badges(s)}</span></span></button>`).join("") || `<p class="empty-note">Ничего не нашлось</p>`}</div>`;
   }
   function badges(s) {
     const out = [];
     if (s.errors) out.push(`<i class="badge bad">${ic("error")}${s.errors}</i>`);
     if (s.playable) out.push(`<i class="badge good">${ic("gamepad")}в игре</i>`);
-    if (s.layout) out.push(`<i class="badge">${ic("junction")}конструктор</i>`);
     if (s.regulator) out.push(`<i class="badge">регулировщик</i>`);
     return out.join("");
   }
@@ -79,7 +78,7 @@
       <div class="chips home-chips">${FILTERS.map(([k, t]) => `<button class="${filter === k ? "on" : ""}" data-filter="${k}">${t} <em>${count(k)}</em></button>`).join("")}</div>
       <div class="home-grid">${list.map((s) => `<button class="card-scene" data-scene="${s.id}">
         <span class="card-pic">${s.preview ? `<img src="${thumbUrl(s)}" loading="lazy" alt="">` : `<span class="no-pic">${ic("image")}</span>`}</span>
-        <span class="card-body"><b>${esc(App.sceneTitle(s.id))}</b><small>${esc(s.questionText)}</small><span class="badges">${badges(s)}</span></span>
+        <span class="card-body"><b>${esc(App.sceneTitle(s.id))}</b><span class="badges">${badges(s)}</span></span>
       </button>`).join("") || `<p class="empty-note">Ничего не нашлось</p>`}</div>`;
     const q = $("#home-q");
     if (renderHome.focus) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); }

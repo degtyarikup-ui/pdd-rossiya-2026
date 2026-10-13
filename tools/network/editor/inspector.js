@@ -108,7 +108,7 @@
       <section class="card" id="checks"><h3>${ic(errors.length ? "error" : "check-circle")}Проверка${errors.length + warns.length ? `<em class="count ${errors.length ? "bad" : "warn"}">${errors.length + warns.length}</em>` : ""}</h3>
         ${state.findings.length ? state.findings.map((f, i) => `<button class="finding ${f.level}" data-act="finding" data-i="${i}">${ic(f.level === "error" ? "error" : "alert")}<span>${esc(f.message)}</span></button>`).join("")
           : `<p class="ok-line">${ic("check-circle")}Ошибок нет</p>`}</section>
-      ${card("Сверка с билетом", chips("status", [{ value: "unverified", title: "Не сверено" }, { value: "ok", title: "Совпадает" }, { value: "fixed", title: "Исправлено" }], (s.compliance || {}).status || "unverified"), { icon: "check-circle" })}`;
+      `;
     compactHelp(p);
     Thumbs.fillAll(p);
     bind({
@@ -119,7 +119,6 @@
       "chip:maneuver": (v) => App.edit((sc) => { sc.question.maneuver = v; sc.spec = { ...(sc.spec || {}), maneuver: v }; }),
       "chip:speed": (v) => App.edit((sc) => { if (v === "") delete sc.question.speedLimit; else sc.question.speedLimit = Number(v); }),
       "chip:redWait": (v) => App.edit((sc) => { if (v === "") delete sc.question.redWait; else sc.question.redWait = Number(v); }),
-      "chip:status": (v) => App.edit((sc) => { sc.compliance = { ...(sc.compliance || {}), status: v }; }),
       yield: (d) => App.edit((sc) => {
         const set = new Set(sc.question.yieldTo || []);
         set.has(d.id) ? set.delete(d.id) : set.add(d.id);
