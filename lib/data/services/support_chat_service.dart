@@ -160,11 +160,18 @@ class SupportChatService {
     ErrorReporter.report(ErrorCategory.app, 'support.send', code: code);
   }
 
-  /// Отправить сообщение в поддержку
-  Future<SupportChatMessage?> sendMessage(String text) async {
+  /// Отправить сообщение в поддержку (с опциональным изображением)
+  Future<SupportChatMessage?> sendMessage(
+    String text, {
+    List<int>? imageBytes,
+    String? imageMimeType,
+    String? localImagePath,
+  }) async {
     if (!BackendConfig.hasNotifier) return null;
     final trimmed = text.trim();
-    if (trimmed.isEmpty) return null;
+    if (trimmed.isEmpty && (imageBytes == null || imageBytes.isEmpty)) {
+      return null;
+    }
 
     final clientId = await getClientId();
     final userName = getUserDisplayName();
@@ -182,6 +189,10 @@ class SupportChatService {
     if (userName != null) {
       payload['userName'] = userName;
     }
+    if (imageBytes != null && imageBytes.isNotEmpty) {
+      payload['imageBase64'] = base64Encode(imageBytes);
+      payload['imageMimeType'] = imageMimeType ?? 'image/jpeg';
+    }
 
     try {
       final response = await sendWithRetry(
@@ -196,8 +207,8 @@ class SupportChatService {
         ),
         hosts: BackendConfig.notifierHosts,
         attempts: const [
-          Duration(seconds: 6),
           Duration(seconds: 8),
+          Duration(seconds: 12),
         ],
       );
 
@@ -218,7 +229,11 @@ class SupportChatService {
         return null;
       }
 
-      return SupportChatMessage.fromJson(msgJson);
+      final parsed = SupportChatMessage.fromJson(msgJson);
+      if (localImagePath != null && parsed.localImagePath == null) {
+        return parsed.copyWith(localImagePath: localImagePath);
+      }
+      return parsed;
     } catch (error) {
       _reportSendFailure(ErrorReporter.codeFor(error));
       return null;

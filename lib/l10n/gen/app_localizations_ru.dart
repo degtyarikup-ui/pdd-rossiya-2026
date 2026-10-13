@@ -3477,6 +3477,22 @@ class AppLocalizationsRu extends AppLocalizations {
   String get supportManagerName => 'Менеджер Сергей';
 
   @override
+  String get supportChatAttachPhoto => 'Прикрепить фото';
+
+  @override
+  String get supportChatCamera => 'Сделать снимок';
+
+  @override
+  String get supportChatGallery => 'Выбрать из галереи';
+
+  @override
+  String get supportChatPhoto => 'Фотография';
+
+  @override
+  String get supportChatImageTooLarge =>
+      'Изображение слишком большое (макс. 10 МБ)';
+
+  @override
   String appVersion(String version) {
     return 'Версия $version';
   }

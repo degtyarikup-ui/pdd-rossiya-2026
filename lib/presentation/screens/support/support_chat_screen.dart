@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
@@ -28,6 +31,10 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   bool _isLoading = true;
   bool _isSending = false;
   Timer? _pollTimer;
+
+  XFile? _selectedImage;
+  Uint8List? _selectedImageBytes;
+  final Map<String, Uint8List> _pendingBytesMap = {};
 
   @override
   void initState() {
@@ -108,18 +115,163 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     });
   }
 
+  Future<void> _showImageSourcePicker() async {
+    HapticFeedbackHelper.tap();
+    final colors = AppColors.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colors.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: colors.accent.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.camera_alt_rounded, color: colors.accent, size: 22),
+                ),
+                title: Text(
+                  appL10n.supportChatCamera,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: colors.primaryText,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: colors.accent.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.photo_library_rounded, color: colors.accent, size: 22),
+                ),
+                title: Text(
+                  appL10n.supportChatGallery,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: colors.primaryText,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 85,
+      );
+      if (picked == null || !mounted) return;
+      final bytes = await picked.readAsBytes();
+      if (bytes.lengthInBytes > 10 * 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(appL10n.supportChatImageTooLarge)),
+          );
+        }
+        return;
+      }
+      setState(() {
+        _selectedImage = picked;
+        _selectedImageBytes = bytes;
+      });
+    } catch (_) {}
+  }
+
+  ImageProvider? _resolveImageProvider(SupportChatMessage msg) {
+    if (_pendingBytesMap.containsKey(msg.id)) {
+      return MemoryImage(_pendingBytesMap[msg.id]!);
+    }
+    if (!kIsWeb && msg.localImagePath != null && File(msg.localImagePath!).existsSync()) {
+      return FileImage(File(msg.localImagePath!));
+    }
+    if (msg.fullImageUrl != null) {
+      return NetworkImage(msg.fullImageUrl!);
+    }
+    return null;
+  }
+
+  void _openImageViewer(BuildContext context, ImageProvider imageProvider) {
+    HapticFeedbackHelper.tap();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (ctx) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.close_rounded, color: Colors.white),
+              onPressed: () => Navigator.of(ctx).pop(),
+            ),
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image(image: imageProvider),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleSend() async {
     final text = _textController.text.trim();
-    if (text.isEmpty || _isSending) return;
+    final image = _selectedImage;
+    final imageBytes = _selectedImageBytes;
+    if ((text.isEmpty && imageBytes == null) || _isSending) return;
 
     HapticFeedbackHelper.tap();
     _textController.clear();
-    setState(() => _isSending = true);
+    setState(() {
+      _isSending = true;
+      _selectedImage = null;
+      _selectedImageBytes = null;
+    });
 
     final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+    if (imageBytes != null) {
+      _pendingBytesMap[tempId] = imageBytes;
+    }
+
     final pendingMsg = SupportChatMessage(
       id: tempId,
       text: text,
+      localImagePath: kIsWeb ? null : image?.path,
       sender: SupportMessageSender.user,
       timestamp: DateTime.now().millisecondsSinceEpoch,
       status: SupportMessageStatus.sending,
@@ -130,7 +282,12 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     });
     _scrollToBottom();
 
-    final result = await SupportChatService.instance.sendMessage(text);
+    final result = await SupportChatService.instance.sendMessage(
+      text,
+      imageBytes: imageBytes,
+      imageMimeType: image?.mimeType ?? 'image/jpeg',
+      localImagePath: image?.path,
+    );
 
     if (!mounted) return;
 
@@ -139,6 +296,10 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       final index = _messages.indexWhere((m) => m.id == tempId);
       if (index != -1) {
         if (result != null) {
+          if (imageBytes != null) {
+            _pendingBytesMap[result.id] = imageBytes;
+            _pendingBytesMap.remove(tempId);
+          }
           _messages[index] = result;
         } else {
           _messages[index] = pendingMsg.copyWith(
@@ -163,13 +324,31 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       }
     });
 
-    final result = await SupportChatService.instance.sendMessage(failedMsg.text);
+    Uint8List? retryBytes = _pendingBytesMap[failedMsg.id];
+    if (retryBytes == null && failedMsg.localImagePath != null && !kIsWeb) {
+      try {
+        final f = File(failedMsg.localImagePath!);
+        if (f.existsSync()) {
+          retryBytes = await f.readAsBytes();
+        }
+      } catch (_) {}
+    }
+
+    final result = await SupportChatService.instance.sendMessage(
+      failedMsg.text,
+      imageBytes: retryBytes,
+      localImagePath: failedMsg.localImagePath,
+    );
     if (!mounted) return;
 
     setState(() {
       final index = _messages.indexWhere((m) => m.id == failedMsg.id);
       if (index != -1) {
         if (result != null) {
+          if (retryBytes != null) {
+            _pendingBytesMap[result.id] = retryBytes;
+            _pendingBytesMap.remove(failedMsg.id);
+          }
           _messages[index] = result;
         } else {
           _messages[index] = failedMsg.copyWith(
@@ -349,6 +528,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   Widget _buildMessageItem(SupportChatMessage msg, AppThemeColors colors) {
     final isUser = msg.isUser;
     final timeStr = _formatTime(msg.timestamp);
+    final imageProvider = _resolveImageProvider(msg);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDimensions.spacingM),
@@ -377,9 +557,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.76,
               ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.spacingM,
-                vertical: AppDimensions.spacingS + 2,
+              padding: EdgeInsets.symmetric(
+                horizontal: imageProvider != null ? 8 : AppDimensions.spacingM,
+                vertical: imageProvider != null ? 8 : AppDimensions.spacingS + 2,
               ),
               decoration: BoxDecoration(
                 color: isUser ? colors.accent : colors.cardBackground,
@@ -401,79 +581,124 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                     isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
                   if (!isUser) ...[
-                    Text(
-                      appL10n.supportManagerName,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: colors.accent,
+                    Padding(
+                      padding: EdgeInsets.only(
+                        left: imageProvider != null ? 4 : 0,
+                        bottom: 4,
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                  ],
-                  Text(
-                    msg.text,
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      color: isUser ? Colors.white : colors.primaryText,
-                      height: 1.35,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        timeStr,
+                      child: Text(
+                        appL10n.supportManagerName,
                         style: TextStyle(
-                          fontSize: 10.5,
-                          color: isUser
-                              ? Colors.white.withValues(alpha: 0.7)
-                              : colors.secondaryText,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: colors.accent,
                         ),
                       ),
-                      if (isUser) ...[
-                        const SizedBox(width: 4),
-                        if (msg.status == SupportMessageStatus.sending)
-                          SizedBox(
-                            width: 10,
-                            height: 10,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 1.5,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          )
-                        else if (msg.status == SupportMessageStatus.sent)
-                          Icon(
-                            Icons.done_all_rounded,
-                            size: 13,
-                            color: Colors.white.withValues(alpha: 0.8),
-                          )
-                        else if (msg.status == SupportMessageStatus.failed)
-                          GestureDetector(
-                            onTap: () => _handleRetry(msg),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.error_outline_rounded,
-                                  size: 13,
-                                  color: Colors.redAccent,
+                    ),
+                  ],
+                  if (imageProvider != null) ...[
+                    GestureDetector(
+                      onTap: () => _openImageViewer(context, imageProvider),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxHeight: 260,
+                          ),
+                          child: Image(
+                            image: imageProvider,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              height: 120,
+                              color: colors.divider.withValues(alpha: 0.2),
+                              child: Center(
+                                child: Icon(
+                                  Icons.broken_image_rounded,
+                                  color: colors.secondaryText,
                                 ),
-                                const SizedBox(width: 2),
-                                Text(
-                                  appL10n.supportChatRetry,
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.redAccent,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
+                        ),
+                      ),
+                    ),
+                    if (msg.text.isNotEmpty) const SizedBox(height: 6),
+                  ],
+                  if (msg.text.isNotEmpty)
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: imageProvider != null ? 4 : 0,
+                      ),
+                      child: Text(
+                        msg.text,
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          color: isUser ? Colors.white : colors.primaryText,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      right: imageProvider != null ? 4 : 0,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          timeStr,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: isUser
+                                ? Colors.white.withValues(alpha: 0.7)
+                                : colors.secondaryText,
+                          ),
+                        ),
+                        if (isUser) ...[
+                          const SizedBox(width: 4),
+                          if (msg.status == SupportMessageStatus.sending)
+                            SizedBox(
+                              width: 10,
+                              height: 10,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                                color: Colors.white.withValues(alpha: 0.7),
+                              ),
+                            )
+                          else if (msg.status == SupportMessageStatus.sent)
+                            Icon(
+                              Icons.done_all_rounded,
+                              size: 13,
+                              color: Colors.white.withValues(alpha: 0.8),
+                            )
+                          else if (msg.status == SupportMessageStatus.failed)
+                            GestureDetector(
+                              onTap: () => _handleRetry(msg),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.error_outline_rounded,
+                                    size: 13,
+                                    color: Colors.redAccent,
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    appL10n.supportChatRetry,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.redAccent,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ],
               ),
@@ -499,80 +724,188 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
           ),
         ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Container(
+          if (_selectedImageBytes != null) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: AppDimensions.spacingS),
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: colors.background,
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: colors.divider.withValues(alpha: 0.5),
                   width: 0.5,
                 ),
               ),
-              child: TextField(
-                controller: _textController,
-                focusNode: _focusNode,
-                minLines: 1,
-                maxLines: 4,
-                textCapitalization: TextCapitalization.sentences,
-                style: TextStyle(
-                  fontSize: 14.5,
-                  color: colors.primaryText,
-                ),
-                decoration: InputDecoration(
-                  hintText: appL10n.supportChatPlaceholder,
-                  hintStyle: TextStyle(
-                    fontSize: 14,
-                    color: colors.secondaryText,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.memory(
+                      _selectedImageBytes!,
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
+                  const SizedBox(width: 10),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 180),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          appL10n.supportChatPhoto,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: colors.primaryText,
+                          ),
+                        ),
+                        if (_selectedImage != null)
+                          Text(
+                            _selectedImage!.name,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: colors.secondaryText,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                onChanged: (_) => setState(() {}),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedImage = null;
+                        _selectedImageBytes = null;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: colors.divider.withValues(alpha: 0.25),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: colors.secondaryText,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(width: AppDimensions.spacingS),
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: _textController,
-            builder: (context, value, _) {
-              final canSend = value.text.trim().isNotEmpty && !_isSending;
-              return GestureDetector(
-                onTap: canSend ? _handleSend : null,
+          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              GestureDetector(
+                onTap: _isSending ? null : _showImageSourcePicker,
                 child: Container(
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: canSend
-                        ? colors.accent
-                        : colors.divider.withValues(alpha: 0.4),
+                    color: colors.background,
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: colors.divider.withValues(alpha: 0.5),
+                      width: 0.5,
+                    ),
                   ),
                   child: Center(
-                    child: _isSending
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.send_rounded,
-                            color: Colors.white,
-                            size: 19,
-                          ),
+                    child: Icon(
+                      Icons.add_photo_alternate_rounded,
+                      color: colors.accent,
+                      size: 20,
+                    ),
                   ),
                 ),
-              );
-            },
+              ),
+              const SizedBox(width: AppDimensions.spacingS),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: colors.background,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: colors.divider.withValues(alpha: 0.5),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: TextField(
+                    controller: _textController,
+                    focusNode: _focusNode,
+                    minLines: 1,
+                    maxLines: 4,
+                    textCapitalization: TextCapitalization.sentences,
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      color: colors.primaryText,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: appL10n.supportChatPlaceholder,
+                      hintStyle: TextStyle(
+                        fontSize: 14,
+                        color: colors.secondaryText,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppDimensions.spacingS),
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _textController,
+                builder: (context, value, _) {
+                  final canSend = (value.text.trim().isNotEmpty ||
+                          _selectedImageBytes != null) &&
+                      !_isSending;
+                  return GestureDetector(
+                    onTap: canSend ? _handleSend : null,
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: canSend
+                            ? colors.accent
+                            : colors.divider.withValues(alpha: 0.4),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: _isSending
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.send_rounded,
+                                color: Colors.white,
+                                size: 19,
+                              ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),

@@ -49,6 +49,10 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Приложению требуется доступ к галерее для отправки изображений и скриншотов в техподдержку.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Приложению требуется доступ к камере для отправки фотографий в техподдержку.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>LSApplicationQueriesSchemes</key>

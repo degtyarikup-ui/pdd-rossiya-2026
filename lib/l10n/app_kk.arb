@@ -1108,6 +1108,11 @@
   "supportChatRetry": "Қайталау",
   "supportChatStaff": "Қолдау",
   "supportManagerName": "Менеджер Сергей",
+  "supportChatAttachPhoto": "Фотосурет қосу",
+  "supportChatCamera": "Суретке түсіру",
+  "supportChatGallery": "Галереядан таңдау",
+  "supportChatPhoto": "Фотосурет",
+  "supportChatImageTooLarge": "Сурет тым үлкен (макс. 10 МБ)",
   "appVersion": "{version} нұсқасы",
   "@appVersion": {
     "placeholders": {

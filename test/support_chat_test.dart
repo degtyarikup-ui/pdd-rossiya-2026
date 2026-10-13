@@ -57,6 +57,32 @@ void main() {
       expect(fromJson.authorName, 'Поддержка');
     });
 
+    test('Сериализация и десериализация сообщения с изображением', () {
+      final msg = SupportChatMessage(
+        id: 'img_msg_1',
+        text: 'Посмотрите скриншот',
+        imageUrl: '/api/support/file?fileId=xyz123',
+        localImagePath: '/tmp/test.jpg',
+        sender: SupportMessageSender.user,
+        timestamp: 1728600000000,
+        authorName: 'Анна',
+        status: SupportMessageStatus.sent,
+      );
+
+      expect(msg.hasImage, isTrue);
+      expect(msg.fullImageUrl, contains('/api/support/file?fileId=xyz123'));
+
+      final json = msg.toJson();
+      expect(json['imageUrl'], '/api/support/file?fileId=xyz123');
+      expect(json['localImagePath'], '/tmp/test.jpg');
+
+      final fromJson = SupportChatMessage.fromJson(json);
+      expect(fromJson.imageUrl, msg.imageUrl);
+      expect(fromJson.localImagePath, msg.localImagePath);
+      expect(fromJson.hasImage, isTrue);
+      expect(fromJson.fullImageUrl, msg.fullImageUrl);
+    });
+
     test('copyWith обновляет поля без мутации оригинала', () {
       final original = SupportChatMessage(
         id: 'temp_1',
@@ -100,12 +126,14 @@ void main() {
         SupportChatMessage(
           id: '1',
           text: 'Сообщение 1',
+          imageUrl: '/api/support/file?fileId=test1',
           sender: SupportMessageSender.user,
           timestamp: 1000,
         ),
         SupportChatMessage(
           id: '2',
           text: 'Ответ 1',
+          imageUrl: '/api/support/file?fileId=test2',
           sender: SupportMessageSender.support,
           timestamp: 2000,
         ),
@@ -117,8 +145,10 @@ void main() {
       expect(loaded.length, 2);
       expect(loaded[0].id, '1');
       expect(loaded[0].text, 'Сообщение 1');
+      expect(loaded[0].imageUrl, '/api/support/file?fileId=test1');
       expect(loaded[1].id, '2');
       expect(loaded[1].text, 'Ответ 1');
+      expect(loaded[1].imageUrl, '/api/support/file?fileId=test2');
       expect(loaded[1].isSupport, isTrue);
     });
   });
@@ -136,9 +166,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Проверяем наличие поля ввода и иконки отправки
+      // Проверяем наличие поля ввода, иконки отправки и кнопки прикрепления фото
       expect(find.byType(TextField), findsOneWidget);
       expect(find.byIcon(Icons.send_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.add_photo_alternate_rounded), findsOneWidget);
       expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
       expect(find.byIcon(Icons.support_agent_rounded), findsWidgets);
     });

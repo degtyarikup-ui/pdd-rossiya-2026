@@ -43,3 +43,25 @@ test('seed copies the legacy messages once and never overwrites a thread that ha
   const all = await (await thread.fetch(get('/list'))).json();
   assert.deepEqual(all.messages.map((m) => m.id), ['old']);
 });
+
+test('persists and lists messages with imageUrl', async () => {
+  const thread = new SupportThread(fakeState());
+  await thread.fetch(post('/append', {
+    id: 'u_img',
+    sender: 'user',
+    text: 'Вот скриншот ошибки',
+    imageUrl: '/api/support/file?fileId=abc123xyz',
+    ts: 1000,
+  }));
+  await thread.fetch(post('/append', {
+    id: 'tg_img',
+    sender: 'support',
+    text: 'Ответ с фото',
+    imageUrl: '/api/support/file?fileId=def456uvw',
+    ts: 2000,
+  }));
+  const all = await (await thread.fetch(get('/list'))).json();
+  assert.equal(all.messages.length, 2);
+  assert.equal(all.messages[0].imageUrl, '/api/support/file?fileId=abc123xyz');
+  assert.equal(all.messages[1].imageUrl, '/api/support/file?fileId=def456uvw');
+});

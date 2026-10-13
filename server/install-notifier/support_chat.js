@@ -89,6 +89,48 @@ async function sendToTelegram(env, text, threadId = null) {
   });
 }
 
+async function sendPhotoToTelegram(env, base64Data, mimeType, caption = '', threadId = null) {
+  const chatId = telegramChatId(env);
+  if (!env.BOT_TOKEN || !chatId) return null;
+  try {
+    const binaryStr = atob(base64Data);
+    const len = binaryStr.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryStr.charCodeAt(i);
+    }
+    const cleanMime = mimeType || 'image/jpeg';
+    const blob = new Blob([bytes], { type: cleanMime });
+    const ext = cleanMime.includes('png') ? 'png' : 'jpg';
+
+    const formData = new FormData();
+    formData.append('chat_id', chatId);
+    if (threadId) {
+      formData.append('message_thread_id', String(threadId));
+    }
+    formData.append('photo', blob, `photo.${ext}`);
+    if (caption) {
+      formData.append('caption', caption.slice(0, 1024));
+      formData.append('parse_mode', 'HTML');
+    }
+
+    const resp = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendPhoto`, {
+      method: 'POST',
+      body: formData,
+      signal: AbortSignal.timeout(20000),
+    });
+    const data = await resp.json().catch(() => null);
+    if (data?.ok && data.result) {
+      return data.result;
+    }
+    console.warn('sendPhotoToTelegram error:', data?.description || resp.status);
+    return null;
+  } catch (err) {
+    console.error('sendPhotoToTelegram exception:', err);
+    return null;
+  }
+}
+
 /**
  * Обработка входящего сообщения от Telegram (webhook или getUpdates).
  */
@@ -107,17 +149,33 @@ export async function processTelegramMessageUpdate(msg, env) {
   const clientId = env.INSTALLS ? await env.INSTALLS.get('support:thread:' + threadId) : null;
   if (!clientId) return false;
 
-  let text = msg.text || msg.caption || '';
-  if (msg.photo) text = (text ? text + ' ' : '') + '[Фотография]';
-  if (msg.sticker) text = (text ? text + ' ' : '') + '[Стикер]';
-  if (msg.voice) text = (text ? text + ' ' : '') + '[Голосовое сообщение]';
-  if (msg.document) text = (text ? text + ' ' : '') + '[Документ]';
-  if (!text) text = '[Вложение]';
+  let text = msg.caption ? msg.caption.trim() : (msg.text ? msg.text.trim() : '');
+  let imageUrl = null;
+
+  if (Array.isArray(msg.photo) && msg.photo.length > 0) {
+    const largestPhoto = msg.photo[msg.photo.length - 1];
+    if (largestPhoto?.file_id) {
+      imageUrl = `/api/support/file?fileId=${encodeURIComponent(largestPhoto.file_id)}`;
+    }
+  } else if (msg.document && msg.document.mime_type?.startsWith('image/') && msg.document.file_id) {
+    imageUrl = `/api/support/file?fileId=${encodeURIComponent(msg.document.file_id)}`;
+  } else if (msg.sticker) {
+    text = (text ? text + ' ' : '') + '[Стикер]';
+  } else if (msg.voice) {
+    text = (text ? text + ' ' : '') + '[Голосовое сообщение]';
+  } else if (msg.document) {
+    text = (text ? text + ' ' : '') + '[Документ]';
+  }
+
+  if (!text && !imageUrl) {
+    text = '[Вложение]';
+  }
 
   const replyMsg = {
     id: 'tg_' + msg.message_id,
     sender: 'support',
     text,
+    ...(imageUrl ? { imageUrl } : {}),
     // Время прихода на сервер, а не время Telegram: оно в секундах и может быть раньше
     // сообщения пользователя, которое мы уже сохранили; приложение показывает только ts > since.
     ts: Date.now(),
@@ -199,11 +257,17 @@ export async function handleSupportSendMessage(request, env) {
 
   const clientId = String(body.clientId || '').trim();
   const text = String(body.text || '').trim();
-  if (!clientId || !text) {
+  const imageBase64 = body.imageBase64 ? String(body.imageBase64).trim() : null;
+  const imageMimeType = body.imageMimeType ? String(body.imageMimeType).trim() : 'image/jpeg';
+
+  if (!clientId || (!text && !imageBase64)) {
     return jsonResponse({ error: 'missing_fields' }, 400);
   }
   if (text.length > 4000) {
     return jsonResponse({ error: 'message_too_long' }, 400);
+  }
+  if (imageBase64 && imageBase64.length > 15 * 1024 * 1024) {
+    return jsonResponse({ error: 'image_too_large' }, 400);
   }
 
   const rawName = String(body.userName || '').trim();
@@ -270,15 +334,33 @@ export async function handleSupportSendMessage(request, env) {
     }
   }
 
-  // Отправляем текст пользователя в Telegram
-  const tgUserText = `<b>${escapeHtml(displayName)}:</b>\n${escapeHtml(text)}`;
-  await sendToTelegram(env, tgUserText, threadId);
+  let imageUrl = null;
+  if (imageBase64) {
+    const caption = text
+      ? `<b>${escapeHtml(displayName)}:</b>\n${escapeHtml(text)}`
+      : `<b>${escapeHtml(displayName)}</b>`;
+    const tgPhotoResult = await sendPhotoToTelegram(env, imageBase64, imageMimeType, caption, threadId);
+    if (tgPhotoResult?.photo && Array.isArray(tgPhotoResult.photo) && tgPhotoResult.photo.length > 0) {
+      const fileId = tgPhotoResult.photo[tgPhotoResult.photo.length - 1].file_id;
+      imageUrl = `/api/support/file?fileId=${encodeURIComponent(fileId)}`;
+    }
+    // Если текст длиннее лимита caption в Telegram, досылаем его отдельным сообщением
+    if (text && caption.length > 1024) {
+      const tgUserText = `<b>${escapeHtml(displayName)}:</b>\n${escapeHtml(text)}`;
+      await sendToTelegram(env, tgUserText, threadId);
+    }
+  } else {
+    // Отправляем обычный текст пользователя в Telegram
+    const tgUserText = `<b>${escapeHtml(displayName)}:</b>\n${escapeHtml(text)}`;
+    await sendToTelegram(env, tgUserText, threadId);
+  }
 
   // Сохраняем сообщение в локальной истории
   const newMsg = {
     id: 'usr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
     sender: 'user',
     text,
+    ...(imageUrl ? { imageUrl } : {}),
     ts: Date.now(),
     authorName: displayName,
   };
@@ -370,4 +452,71 @@ export async function handleSupportWebhookInfo(request, env) {
   const resp = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/getWebhookInfo`);
   const data = await resp.json().catch(() => ({}));
   return jsonResponse(data);
+}
+
+/**
+ * GET /api/support/file?fileId=<id>
+ * Проксирует загрузку изображений из Telegram Bot API без раскрытия токена клиентам.
+ */
+export async function handleSupportGetFile(request, env) {
+  if (request.method !== 'GET') return jsonResponse({ error: 'method_not_allowed' }, 405);
+  const url = new URL(request.url);
+  const fileId = url.searchParams.get('fileId');
+  if (!fileId || !env.BOT_TOKEN) {
+    return jsonResponse({ error: 'invalid_request' }, 400);
+  }
+
+  // Проверяем кэш Cloudflare (при наличии)
+  const cacheKey = new Request(url.toString(), request);
+  let cache = null;
+  try {
+    cache = caches.default;
+    const cached = await cache.match(cacheKey);
+    if (cached) return cached;
+  } catch (_) {}
+
+  try {
+    // 1. Получаем путь к файлу у Telegram Bot API
+    const fileRes = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/getFile?file_id=${encodeURIComponent(fileId)}`, {
+      signal: AbortSignal.timeout(10000),
+    });
+    const fileData = await fileRes.json().catch(() => null);
+    if (!fileData?.ok || !fileData.result?.file_path) {
+      return jsonResponse({ error: 'file_not_found' }, 404);
+    }
+
+    const filePath = fileData.result.file_path;
+
+    // 2. Скачиваем файл из Telegram
+    const imgRes = await fetch(`https://api.telegram.org/file/bot${env.BOT_TOKEN}/${filePath}`, {
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!imgRes.ok) {
+      return jsonResponse({ error: 'failed_to_fetch_file' }, imgRes.status);
+    }
+
+    const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
+    const responseHeaders = {
+      'content-type': contentType,
+      'cache-control': 'public, max-age=604800, s-maxage=604800, immutable',
+      ...CORS_HEADERS,
+    };
+
+    const response = new Response(imgRes.body, {
+      status: 200,
+      headers: responseHeaders,
+    });
+
+    if (cache) {
+      try {
+        await cache.put(cacheKey, response.clone());
+      } catch (_) {}
+    }
+
+    return response;
+  } catch (err) {
+    console.error('handleSupportGetFile error:', err);
+    return jsonResponse({ error: 'internal_error' }, 500);
+  }
 }

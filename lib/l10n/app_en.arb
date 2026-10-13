@@ -1108,6 +1108,11 @@
   "supportChatRetry": "Retry",
   "supportChatStaff": "Support",
   "supportManagerName": "Manager Sergei",
+  "supportChatAttachPhoto": "Attach photo",
+  "supportChatCamera": "Take photo",
+  "supportChatGallery": "Choose from gallery",
+  "supportChatPhoto": "Photo",
+  "supportChatImageTooLarge": "Image is too large (max 10 MB)",
   "appVersion": "Version {version}",
   "@appVersion": {
     "placeholders": {

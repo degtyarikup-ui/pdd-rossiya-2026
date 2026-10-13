@@ -5770,6 +5770,36 @@ abstract class AppLocalizations {
   /// **'Менеджер Сергей'**
   String get supportManagerName;
 
+  /// No description provided for @supportChatAttachPhoto.
+  ///
+  /// In ru, this message translates to:
+  /// **'Прикрепить фото'**
+  String get supportChatAttachPhoto;
+
+  /// No description provided for @supportChatCamera.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сделать снимок'**
+  String get supportChatCamera;
+
+  /// No description provided for @supportChatGallery.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать из галереи'**
+  String get supportChatGallery;
+
+  /// No description provided for @supportChatPhoto.
+  ///
+  /// In ru, this message translates to:
+  /// **'Фотография'**
+  String get supportChatPhoto;
+
+  /// No description provided for @supportChatImageTooLarge.
+  ///
+  /// In ru, this message translates to:
+  /// **'Изображение слишком большое (макс. 10 МБ)'**
+  String get supportChatImageTooLarge;
+
   /// No description provided for @appVersion.
   ///
   /// In ru, this message translates to:

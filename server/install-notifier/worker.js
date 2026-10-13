@@ -17,6 +17,7 @@ import { pollErrorCommands, resolveTopicThreadId, telegramChatId } from './teleg
 import {
   handleSupportSendMessage,
   handleSupportGetMessages,
+  handleSupportGetFile,
   handleTelegramWebhook,
   handleSupportSetupWebhook,
   handleSupportWebhookInfo,
@@ -3801,6 +3802,10 @@ const workerHandlers = {
 
     if (url.pathname === '/api/support/messages' && request.method === 'GET') {
       return handleSupportGetMessages(request, env);
+    }
+
+    if (url.pathname === '/api/support/file' && request.method === 'GET') {
+      return handleSupportGetFile(request, env);
     }
 
     if (url.pathname === '/api/telegram/webhook') {

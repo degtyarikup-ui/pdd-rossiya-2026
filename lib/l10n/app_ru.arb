@@ -1608,6 +1608,11 @@
   "supportChatRetry": "Повторить",
   "supportChatStaff": "Поддержка",
   "supportManagerName": "Менеджер Сергей",
+  "supportChatAttachPhoto": "Прикрепить фото",
+  "supportChatCamera": "Сделать снимок",
+  "supportChatGallery": "Выбрать из галереи",
+  "supportChatPhoto": "Фотография",
+  "supportChatImageTooLarge": "Изображение слишком большое (макс. 10 МБ)",
   "appVersion": "Версия {version}",
   "@appVersion": {
     "placeholders": {

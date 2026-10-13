@@ -24,6 +24,7 @@ dependencies:
   package_info_plus: ^10.2.0
   web: ^1.1.1
   share_plus: ^13.2.1
+  image_picker: ^1.1.2
   qr_flutter: ^4.1.0
   flutter_local_notifications: ^19.4.2
   timezone: ^0.10.1

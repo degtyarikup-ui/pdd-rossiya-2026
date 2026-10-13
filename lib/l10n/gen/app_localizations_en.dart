@@ -3464,6 +3464,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get supportManagerName => 'Manager Sergei';
 
   @override
+  String get supportChatAttachPhoto => 'Attach photo';
+
+  @override
+  String get supportChatCamera => 'Take photo';
+
+  @override
+  String get supportChatGallery => 'Choose from gallery';
+
+  @override
+  String get supportChatPhoto => 'Photo';
+
+  @override
+  String get supportChatImageTooLarge => 'Image is too large (max 10 MB)';
+
+  @override
   String appVersion(String version) {
     return 'Version $version';
   }

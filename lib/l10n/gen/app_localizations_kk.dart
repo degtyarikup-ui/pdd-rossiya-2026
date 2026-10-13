@@ -3456,6 +3456,21 @@ class AppLocalizationsKk extends AppLocalizations {
   String get supportManagerName => 'Менеджер Сергей';
 
   @override
+  String get supportChatAttachPhoto => 'Фотосурет қосу';
+
+  @override
+  String get supportChatCamera => 'Суретке түсіру';
+
+  @override
+  String get supportChatGallery => 'Галереядан таңдау';
+
+  @override
+  String get supportChatPhoto => 'Фотосурет';
+
+  @override
+  String get supportChatImageTooLarge => 'Сурет тым үлкен (макс. 10 МБ)';
+
+  @override
   String appVersion(String version) {
     return '$version нұсқасы';
   }
