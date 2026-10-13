@@ -14,6 +14,7 @@ class GodotWebFrame {
 
   final _frame = web.HTMLIFrameElement();
   final void Function(String summaryJson) _onExit;
+  final void Function(String summaryJson)? _onSummary;
   late final String _viewType;
   late final JSFunction _listener;
   bool _disposed = false;
@@ -21,7 +22,9 @@ class GodotWebFrame {
   GodotWebFrame({
     required List<String> args,
     required void Function(String summaryJson) onExit,
-  }) : _onExit = onExit {
+    void Function(String summaryJson)? onSummary,
+  }) : _onExit = onExit,
+       _onSummary = onSummary {
     _viewType = 'pdd-godot-${++_sequence}';
     _frame.style
       ..border = '0'
@@ -38,13 +41,19 @@ class GodotWebFrame {
       if (raw is! String) return;
       try {
         final data = jsonDecode(raw);
-        if (data is! Map ||
-            data['bridge'] != 'pdd-godot' ||
-            data['kind'] != 'exit') {
-          return;
-        }
+        if (data is! Map || data['bridge'] != 'pdd-godot') return;
         final json = data['json'];
-        if (json is String) _onExit(json);
+        if (json is! String) return;
+        if (data['kind'] == 'exit') {
+          _onExit(json);
+        } else if (data['kind'] == 'send') {
+          final event = jsonDecode(json);
+          if (event is Map &&
+              event['event'] == 'run_finished' &&
+              event['summary'] is Map) {
+            _onSummary?.call(jsonEncode(event['summary']));
+          }
+        }
       } catch (_) {
         /* Not from the game or malformed: nothing to do. */
       }

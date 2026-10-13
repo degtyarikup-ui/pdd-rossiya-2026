@@ -25,8 +25,12 @@ var sc: Scenery
 var pools := {}
 
 
-func _init() -> void:
-	sc = Scenery.new("summer")
+func _init(season_name := "summer") -> void:
+	sc = Scenery.new(season_name)
+	var roof = sc.season.roof
+	if roof != null:
+		var snow_color := Color(roof)
+		sc.material.set_shader_parameter("snow_color", Vector3(snow_color.r, snow_color.g, snow_color.b))
 	_create_materials()
 	_build_ground()
 	_build_surfaces()
@@ -50,11 +54,11 @@ func _create_materials() -> void:
 	curb_mat.roughness = 0.8
 
 	sidewalk_mat = StandardMaterial3D.new()
-	sidewalk_mat.albedo_color = Color("#8A8F86")
+	sidewalk_mat.albedo_color = Color(sc.season.sidewalk)
 	sidewalk_mat.roughness = 0.85
 
 	grass_mat = StandardMaterial3D.new()
-	grass_mat.albedo_color = Color("#496D42")
+	grass_mat.albedo_color = Color(sc.season.ground)
 	grass_mat.roughness = 0.95
 
 
@@ -368,6 +372,7 @@ func _put_prop(prop: String, pos: Vector3, yaw := 0.0, scale := Vector3.ONE, tin
 	var p := _get_pool(prop, 64, shadows)
 	if p == null:
 		return
+	tint.a = 1.0 if sc.season.precipitation == "snow" else 0.0
 	p.put(0, Transform3D(Basis(Vector3.UP, yaw).scaled(scale), pos), tint)
 
 

@@ -18,13 +18,17 @@ class _GodotWebScreenState extends State<GodotWebScreen> {
   late final GodotWebFrame _frame = GodotWebFrame(
     args: widget.args,
     onExit: _exit,
+    onSummary: (json) => _summary = json,
   );
   bool _closing = false;
+  String? _summary;
 
   void _exit(String summaryJson) {
     if (_closing || !mounted) return;
-    _closing = true;
-    Navigator.of(context).pop(summaryJson);
+    setState(() => _closing = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.of(context).pop(summaryJson);
+    });
   }
 
   @override
@@ -35,9 +39,15 @@ class _GodotWebScreenState extends State<GodotWebScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SizedBox.expand(child: _frame.widget),
+    return PopScope<String>(
+      canPop: _closing || !widget.args.contains('--regulator'),
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _exit(_summary ?? '{"game":"regulator","runs":[]}');
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SizedBox.expand(child: _frame.widget),
+      ),
     );
   }
 }

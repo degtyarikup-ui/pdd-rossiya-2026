@@ -17,8 +17,10 @@ KEYS = [
     'gameTrafficControllerTitle', 'gameTrafficSignalQuestion', 'gameTrafficHintButton',
     'gameTrafficHintArmUp', 'gameTrafficHintForwardFront', 'gameTrafficHintForwardRight',
     'gameTrafficHintForwardLeft', 'gameTrafficHintWall', 'gameTrafficHintSide',
+    'gameTrafficHintBack', 'gameTrafficHintTramLeft', 'gameTrafficHintTramStraight',
     'gameActionStraight', 'gameActionRight', 'gameActionLeft', 'gameActionUTurn', 'gameActionStand',
     'gameRestart', 'gameBestScoreLabel', 'gameNewRecord', 'gameSolvedLabel', 'gameAccuracyLabel', 'gameComboLabel',
+    'gameBestScore', 'gameCurrentCombo', 'gameSecondsLeft', 'gameOverTitle',
 ]
 out = {}
 for lang in ('ru', 'en', 'kk'):

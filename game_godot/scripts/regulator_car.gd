@@ -72,13 +72,13 @@ func start_maneuver(move: RegulatorRules.Move) -> void:
 	match move:
 		RegulatorRules.Move.RIGHT:
 			active_blinker = "R"
-			move_duration = 1.9
+			move_duration = 1.95
 		RegulatorRules.Move.LEFT:
 			active_blinker = "L"
-			move_duration = 2.05
+			move_duration = 1.95
 		RegulatorRules.Move.UTURN:
 			active_blinker = "L"
-			move_duration = 2.25
+			move_duration = 2.05
 		RegulatorRules.Move.STRAIGHT:
 			active_blinker = ""
 			move_duration = 1.8
@@ -128,50 +128,39 @@ func _evaluate_trajectory(move: RegulatorRules.Move, t: float) -> Array:
 	match move:
 		RegulatorRules.Move.STRAIGHT:
 			# Directly through to the other side
-			pos = START_POS.lerp(Vector3(1.8, 0.0, -18.0), t)
+			pos = START_POS.lerp(Vector3(1.8, 0.0, -13.5), t)
 			yaw = START_YAW
 
 		RegulatorRules.Move.RIGHT:
-			# Quarter circle curve right into East road
+			# Approach, tangent quarter-circle, then the outgoing right-hand lane.
 			if t < 0.35:
-				var u := t / 0.35
-				pos = START_POS.lerp(Vector3(1.8, 0.0, 4.0), u)
-				yaw = START_YAW
+				pos = START_POS.lerp(Vector3(1.8, 0, 4.5), t / 0.35)
+			elif t < 0.7:
+				var angle := (t - 0.35) / 0.35 * PI * 0.5
+				pos = Vector3(4.5 - cos(angle) * 2.7, 0, 4.5 - sin(angle) * 2.7)
+				yaw = START_YAW - angle
 			else:
-				var u := (t - 0.35) / 0.65
-				var angle := START_YAW - u * PI * 0.5
-				var center := Vector3(4.5, 0.0, 4.0)
-				var radius := 2.7
-				var x := center.x - cos(u * PI * 0.5) * radius + (u * 10.8)
-				var z := center.z - sin(u * PI * 0.5) * (radius * 2.1)
-				pos = Vector3(1.8 + u * 16.2, 0.0, 4.0 - u * 5.8)
-				yaw = START_YAW - u * PI * 0.5
-
+				pos = Vector3(4.5, 0, 1.8).lerp(Vector3(13.5, 0, 1.8), (t - 0.7) / 0.3)
+				yaw = PI * 0.5
 		RegulatorRules.Move.LEFT:
-			# Curves left around center into West road
 			if t < 0.3:
-				var u := t / 0.3
-				pos = START_POS.lerp(Vector3(1.8, 0.0, 1.5), u)
-				yaw = START_YAW
+				pos = START_POS.lerp(Vector3(1.8, 0, 4.5), t / 0.3)
+			elif t < 0.75:
+				var angle := (t - 0.3) / 0.45 * PI * 0.5
+				pos = Vector3(-4.5 + cos(angle) * 6.3, 0, 4.5 - sin(angle) * 6.3)
+				yaw = START_YAW + angle
 			else:
-				var u := (t - 0.3) / 0.7
-				pos = Vector3(1.8 - u * 19.8, 0.0, 1.5 + sin(u * PI) * 1.5 - u * 0.5)
-				yaw = START_YAW + u * PI * 0.5
-
+				pos = Vector3(-4.5, 0, -1.8).lerp(Vector3(-13.5, 0, -1.8), (t - 0.75) / 0.25)
+				yaw = -PI * 0.5
 		RegulatorRules.Move.UTURN:
-			# 180-degree loop back to opposite lane
 			if t < 0.4:
-				var u := t / 0.4
-				pos = START_POS.lerp(Vector3(1.8, 0.0, 1.0), u)
-				yaw = START_YAW
+				pos = START_POS.lerp(Vector3(1.8, 0, 1), t / 0.4)
 			elif t < 0.8:
-				var u := (t - 0.4) / 0.4
-				var angle := START_YAW + u * PI
-				pos = Vector3(cos(angle) * 1.8, 0.0, 1.0 - sin(u * PI) * 2.0)
-				yaw = angle
+				var angle := (t - 0.4) / 0.4 * PI
+				pos = Vector3(cos(angle) * 1.8, 0, 1.0 - sin(angle) * 1.8)
+				yaw = START_YAW + angle
 			else:
-				var u := (t - 0.8) / 0.2
-				pos = Vector3(-1.8, 0.0, 1.0).lerp(Vector3(-1.8, 0.0, 16.0), u)
+				pos = Vector3(-1.8, 0, 1).lerp(Vector3(-1.8, 0, 13.5), (t - 0.8) / 0.2)
 				yaw = 0.0
 
 	return [pos, yaw]

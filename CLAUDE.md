@@ -210,7 +210,8 @@ flutter test                           # все тесты
 коммитить `network/*.json`, `network/build/` и `situations/*/scene.json`. Строки игры — из `lib/l10n/*.arb`
 через `tools/godot_export/export_ui.py` (ru/en/kk сразу). Проверки — `game_godot/tests/*.gd` (список в
 `docs/game/README.md`). Старая WebView-игра и её стенд/ролики удалены, последний коммит с ними — тег
-`game-webview-final`. Мини-игры «Перекрёсток» и «Регулировщик» — отдельно, `assets/game/`.
+`game-webview-final`. «Регулировщик» — также Godot (`game_godot/regulator.tscn`, `--regulator`);
+старый WebView-формат удалён. «Перекрёсток» остаётся в `assets/game/`.
 
 ## Два формата коротких видео
 

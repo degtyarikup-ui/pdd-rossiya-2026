@@ -38,12 +38,15 @@ static func user_args() -> Array:
 
 
 static func _query_args() -> Array:
+	return parse_query(str(JavaScriptBridge.eval("window.location.search", true)))
+
+
+static func parse_query(search: String) -> Array:
 	var out: Array = []
-	var search := str(JavaScriptBridge.eval("window.location.search", true))
 	for pair in search.trim_prefix("?").split("&", false):
 		var kv := pair.split("=", true, 1)
-		var key := kv[0]
-		var value := kv[1] if kv.size() > 1 else "1"
+		var key := kv[0].uri_decode()
+		var value := kv[1].uri_decode() if kv.size() > 1 else "1"
 		if key.is_empty():
 			continue
 		out.append("--" + key if value == "1" else "--%s=%s" % [key, value])

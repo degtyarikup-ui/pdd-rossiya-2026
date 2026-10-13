@@ -10,7 +10,8 @@
 | `lib/` | Flutter-приложение (iOS, Android, веб) |
 | `test/` | Flutter-тесты (`flutter test`) |
 | `assets/countries/ru/` | Контент: билеты, знаки, ПДД, разметка, картинки |
-| `assets/game/` | 3D-игра «Живой город» и мини-игры (Three.js в WebView) |
+| `game_godot/` | «Живой город» и «Регулировщик» (Godot); проверки — `docs/game/README.md` |
+| `assets/game/` | Мини-игра «Перекрёсток» (Three.js в WebView) |
 | `server/install-notifier/` | Cloudflare Worker: аккаунты, Премиум, оплаты, аналитика, админка |
 | `web_landing/` | Лендинг и блог pdd-drive.ru (статика + генератор) |
 | `scripts/` | Сборка, деплой, установка на телефон, генерация роликов |
@@ -69,7 +70,7 @@ lib/
 
 | Папка | Что |
 | --- | --- |
-| `game_tests/` | Тесты мини-игр «Перекрёсток» и «Регулировщик» (Playwright) |
+| `game_tests/` | Проверки «Перекрёстка» и общих WebView-ресурсов |
 | `game_content/` | Обложки мини-игр |
 | `web/` | Версионирование веб-сборки (вызывает `scripts/build.sh`), локальный сервер `build/web` |
 | `signs_reel/`, `yt_upload/` | Ролики для соцсетей |

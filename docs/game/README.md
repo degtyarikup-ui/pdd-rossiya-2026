@@ -41,7 +41,7 @@ godot --path game_godot -- --garage="$(cat scratch/garage.json)"    # с гар�
 ## Проверки (headless)
 
 ```bash
-godot --headless --path game_godot --script res://tests/regulator_check.gd # регулировщик: 36 проверок
+godot --headless --path game_godot --script res://tests/regulator_check.gd # регулировщик: правила, экономика, UI, рестарты
 godot --headless --path game_godot --script res://tests/rules_check.gd      # нарушения: 47 проверок
 godot --headless --path game_godot --script res://tests/road_check.gd       # дорожные вопросы: 70 проверок
 godot --headless --path game_godot --script res://tests/surface_check.gd    # перекрёстки без дублей дорожного слоя
@@ -94,6 +94,7 @@ tools/network/engine_sync.py ► game_godot/situations/<id>/scene.json (то, ч
 
 ## Документы
 
+- `regulator-migration-2026-10-13.md` — паритет регулировщика и удаление WebView
 - `godot-roadmap.md` — что сделано и что открыто
 - `godot-migration.md` — как и почему перешли на Godot
 - `game-economy-2026-10-10.md`, `game-covers-2026-10-10.md`, `mini-game*.md` — экономика, обложки, мини-игры

@@ -125,13 +125,20 @@ class GodotGame {
         ? _hex(gamePaintColors[paint]!)
         : '#0574F8';
     if (!context.mounted) return;
+    final safe = _safeArea(context);
     _running = true;
     String? json;
     try {
       json = await _start(context, [
         '--regulator',
+        '--text-scale=${MediaQuery.textScalerOf(context).scale(14) / 14}',
+        '--best-score=${ref.read(trafficControllerProgressProvider).bestScore}',
+        '--session-id=${GameLeaderboardService.newRunId()}',
+        '--economy=${jsonEncode({'seconds': GameEconomy.miniGameSeconds, 'lives': GameEconomy.miniGameLives, 'maxScore': GameEconomy.maxRunScore, 'base': GameEconomy.regulator(1), 'step': GameEconomy.regulator(2) - GameEconomy.regulator(1), 'bonusCap': 4})}',
+        if (!HapticFeedbackHelper.enabled) '--no-haptics',
         '--lang=$lang',
         if (dark) '--dark',
+        ...safe,
         '--vehicle=$vehicle',
         '--paint=$paintHex',
         if (!SoundEffectsService.instance.isEnabled) '--mute',
@@ -145,35 +152,44 @@ class GodotGame {
     final decoded = jsonDecode(json);
     if (decoded is! Map || !context.mounted) return;
     final map = decoded.cast<String, dynamic>();
-    final score = (map['score'] as num?)?.toInt() ?? 0;
-    final solved = (map['solved'] as num?)?.toInt() ?? 0;
-    final combo = (map['combo'] as num?)?.toInt() ?? 0;
-    final wrong = (map['wrong'] as num?)?.toInt() ?? 0;
-
-    if (score > 0 || solved > 0) {
-      unawaited(
-        GameLeaderboardService.instance.submitRun(
-          GameEconomy.rankedScore(
-            score,
-            correct: solved,
-            wrong: wrong,
-          ),
-          runId: GameLeaderboardService.newRunId(),
-        ),
+    // A single native screen can contain several restarted rounds. Book each
+    // round separately, including an unfinished round left with system Back.
+    final runs = map['runs'] is List ? map['runs'] as List : [map];
+    final seen = <String>{};
+    var changed = false;
+    for (final run in runs.whereType<Map>()) {
+      final id = run['id'] as String? ?? GameLeaderboardService.newRunId();
+      if (!seen.add(id)) continue;
+      final solved = ((run['solved'] as num?)?.toInt() ?? 0).clamp(0, 10000);
+      final wrong = ((run['wrong'] as num?)?.toInt() ?? 0).clamp(0, 10000);
+      if (solved + wrong == 0) continue;
+      final score = GameEconomy.rankedScore(
+        (run['score'] as num?)?.toInt() ?? 0,
+        correct: solved,
+        wrong: wrong,
       );
-      ref
+      final combo = ((run['combo'] as num?)?.toInt() ?? 0).clamp(0, solved);
+      unawaited(GameLeaderboardService.instance.submitRun(score, runId: id));
+      await ref
           .read(trafficControllerProgressProvider.notifier)
-          .recordGameResult(
-            score: score,
-            combo: combo,
-            solved: solved,
-          );
-      unawaited(ProgressSyncService.instance.syncWithServer());
+          .recordGameResult(score: score, combo: combo, solved: solved);
+      changed = true;
     }
+    if (changed) unawaited(ProgressSyncService.instance.syncWithServer());
   }
 
   /// Opens the game and waits for its summary (JSON), null if it did not end
   /// with one. Android and iOS: the native screen; web: the game's route.
+  static List<String> _safeArea(BuildContext context) {
+    final padding = MediaQuery.paddingOf(context);
+    final width = MediaQuery.sizeOf(context).width;
+    return [
+      '--safe-top=${padding.top.toStringAsFixed(1)}',
+      '--safe-bottom=${padding.bottom.toStringAsFixed(1)}',
+      '--screen-dp=${width.toStringAsFixed(1)}',
+    ];
+  }
+
   static Future<String?> _start(BuildContext context, List<String> args) {
     if (kIsWeb) {
       return Navigator.of(context).push<String>(

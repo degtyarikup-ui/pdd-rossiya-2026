@@ -6,6 +6,7 @@ class GodotWebFrame {
   GodotWebFrame({
     required List<String> args,
     required void Function(String summaryJson) onExit,
+    void Function(String summaryJson)? onSummary,
   });
 
   static Future<bool> available() async => false;

@@ -1,15 +1,16 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/core/config/game_economy.dart';
+import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/data/sources/sign_scenarios_library.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
 import 'package:pdd_app/data/models/traffic_controller_progress.dart';
-import 'package:pdd_app/data/models/traffic_controller_rules.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
@@ -20,7 +21,6 @@ import 'package:pdd_app/presentation/screens/games/games_hub_screen.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_screen.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/widgets/swipe_card_view.dart';
 import 'package:pdd_app/presentation/screens/game/godot_game.dart';
-import 'package:pdd_app/presentation/screens/games/traffic_controller/traffic_controller_screen.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -64,22 +64,18 @@ void main() {
     web = _TrafficWebPlatform();
     WebViewPlatform.instance = web;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-      const MethodChannel('pdd/godot_game'),
-      (call) async {
-        if (call.method == 'available') return false;
-        return null;
-      },
-    );
+        .setMockMethodCallHandler(const MethodChannel('pdd/godot_game'), (
+          call,
+        ) async {
+          if (call.method == 'available') return false;
+          return null;
+        });
   });
 
   tearDown(() {
     SoundEffectsService.instance.setEnabled(true);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-      const MethodChannel('pdd/godot_game'),
-      null,
-    );
+        .setMockMethodCallHandler(const MethodChannel('pdd/godot_game'), null);
     if (originalWebPlatform != null) {
       WebViewPlatform.instance = originalWebPlatform;
     }
@@ -141,26 +137,101 @@ void main() {
     await tester.pump();
   }
 
-  Future<void> answerTraffic(
-    WidgetTester tester,
-    _TrafficWebController controller, {
-    required bool correct,
-  }) async {
-    final allowed = controller.allowedMoves;
-    final move = correct
-        ? allowed.first
-        : TrafficMove.values.firstWhere((move) => !allowed.contains(move));
-    await tester.tap(find.text(_moveLabel(move)));
-    await tester.pump();
-    if (!correct) {
-      await tester.pump(const Duration(milliseconds: 1100));
-    } else if (move == TrafficMove.none) {
-      await tester.pump(const Duration(milliseconds: 700));
-    } else {
-      controller.emitMoveComplete();
-      await tester.pump(const Duration(milliseconds: 160));
-    }
-  }
+  testWidgets(
+    'Godot regulator passes settings and saves every restarted round once',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      HapticFeedbackHelper.setEnabled(false);
+      addTearDown(() => HapticFeedbackHelper.setEnabled(true));
+      await progress.saveTrafficControllerProgress(
+        const TrafficControllerProgress(bestScore: 72, totalSolved: 3),
+      );
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('game_vehicle', 'sedan');
+      await prefs.setString('game_vehicle_paint', 'red');
+      List<String>? launch;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(const MethodChannel('pdd/godot_game'), (
+            call,
+          ) async {
+            if (call.method != 'start') return true;
+            launch = List<String>.from((call.arguments as Map)['args'] as List);
+            return jsonEncode({
+              'game': 'regulator',
+              'runs': [
+                {
+                  'id': 'first',
+                  'score': 100,
+                  'solved': 4,
+                  'wrong': 1,
+                  'combo': 3,
+                  'finished': true,
+                },
+                {
+                  'id': 'first',
+                  'score': 100,
+                  'solved': 4,
+                  'wrong': 1,
+                  'combo': 3,
+                  'finished': true,
+                },
+                {
+                  'id': 'second',
+                  'score': 24,
+                  'solved': 1,
+                  'wrong': 0,
+                  'combo': 1,
+                  'finished': false,
+                },
+                {
+                  'id': 'empty',
+                  'score': 0,
+                  'solved': 0,
+                  'wrong': 0,
+                  'combo': 0,
+                },
+              ],
+            });
+          });
+      await open(
+        tester,
+        Consumer(
+          builder: (context, ref, _) => TextButton(
+            onPressed: () => GodotGame.playRegulator(context, ref),
+            child: const Text('Launch'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Launch'));
+      await tester.pumpAndSettle();
+      expect(
+        launch,
+        containsAll([
+          '--regulator',
+          '--best-score=72',
+          '--mute',
+          '--no-haptics',
+          '--vehicle=sedan',
+        ]),
+      );
+      final economy =
+          jsonDecode(
+                launch!
+                    .singleWhere((s) => s.startsWith('--economy='))
+                    .substring('--economy='.length),
+              )
+              as Map;
+      expect(economy['base'], GameEconomy.regulator(1));
+      expect(economy['maxScore'], GameEconomy.maxRunScore);
+      expect(progress.getTrafficControllerProgress().bestScore, 100);
+      expect(progress.getTrafficControllerProgress().maxCombo, 3);
+      expect(progress.getTrafficControllerProgress().totalSolved, 8);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      debugDefaultTargetPlatformOverride = null;
+    },
+  );
 
   testWidgets('Swiper starts immediately, expires once and restarts', (
     tester,
@@ -348,312 +419,6 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('Traffic round begins when the scene is ready and counts down', (
-    tester,
-  ) async {
-    await open(tester, const TrafficControllerScreen());
-    expectNoModeChoice();
-    // Loading the 3D scene does not consume the answer time.
-    await tester.pump(const Duration(seconds: 10));
-    expect(find.text(appL10n.gameSecondsLeft(25)), findsNothing);
-    web.controllers.single.emitReady();
-    await tester.pump();
-    expect(find.text(appL10n.gameSecondsLeft(60)), findsOneWidget);
-    expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 5);
-    expect(
-      web.controllers.single.scripts,
-      contains(contains('setMode("arcade")')),
-    );
-    await tester.pump(const Duration(seconds: 1));
-    expect(find.text(appL10n.gameSecondsLeft(59)), findsOneWidget);
-    web.controllers.single.emitReady();
-    await tester.pump();
-    expect(find.text(appL10n.gameSecondsLeft(59)), findsOneWidget);
-    await tester.pump(const Duration(seconds: 59));
-    expect(find.byType(GameResultOverlay), findsOneWidget);
-    expect(find.text(appL10n.gameTimeUp), findsOneWidget);
-    await tester.tap(find.text(appL10n.gameRestart));
-    await tester.pump();
-    expect(find.byType(GameResultOverlay), findsNothing);
-    expect(find.text(appL10n.gameSecondsLeft(60)), findsOneWidget);
-    await tester.pumpWidget(const SizedBox());
-  });
-
-  testWidgets('Traffic timer is fixed while mistakes retain earned rewards', (
-    tester,
-  ) async {
-    await open(tester, const TrafficControllerScreen());
-    final controller = web.controllers.single..emitReady();
-    await tester.pump();
-    final startedAt = tester.binding.clock.now();
-    var previousScore = 0;
-    for (final correct in [true, true, false, true, false, true, false]) {
-      await answerTraffic(tester, controller, correct: correct);
-      final score = tester
-          .widget<GameScoreLabel>(find.byType(GameScoreLabel))
-          .score;
-      expect(score, correct ? greaterThan(previousScore) : previousScore);
-      previousScore = score;
-      final elapsed = tester.binding.clock.now().difference(startedAt);
-      expect(
-        find.text(appL10n.gameSecondsLeft(60 - elapsed.inSeconds)),
-        findsOneWidget,
-      );
-    }
-    expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 2);
-    expect(find.byType(GameResultOverlay), findsNothing);
-    await tester.pumpWidget(const SizedBox());
-  });
-
-  testWidgets(
-    'Traffic perfect play has bounded rewards and ends at sixty seconds',
-    (tester) async {
-      await open(tester, const TrafficControllerScreen());
-      final controller = web.controllers.single..emitReady();
-      await tester.pump();
-      final startedAt = tester.binding.clock.now();
-      for (var i = 0; i < 80; i++) {
-        await answerTraffic(tester, controller, correct: true);
-      }
-      expect(
-        tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
-        GameEconomy.maxRunScore,
-      );
-      expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 5);
-      final elapsed = tester.binding.clock.now().difference(startedAt);
-      await tester.pump(const Duration(seconds: 60) - elapsed);
-      expect(find.byType(GameResultOverlay), findsOneWidget);
-      expect(find.text(appL10n.gameTimeUp), findsOneWidget);
-      expect(
-        progress.getTrafficControllerProgress().bestScore,
-        GameEconomy.maxRunScore,
-      );
-      expect(progress.getTrafficControllerProgress().totalSolved, 80);
-      await tester.pumpWidget(const SizedBox());
-    },
-  );
-
-  testWidgets('Traffic actions follow driving directions and fit large text', (
-    tester,
-  ) async {
-    await open(
-      tester,
-      const TrafficControllerScreen(),
-      size: const Size(320, 568),
-      textScale: 2,
-    );
-    for (final move in TrafficMove.values) {
-      final button = find.ancestor(
-        of: find.text(_moveLabel(move)),
-        matching: find.byType(InkWell),
-      );
-      expect(tester.widget<InkWell>(button).onTap, isNull);
-    }
-    web.controllers.single.emitReady();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    expectNoModeChoice();
-    final left = tester.getCenter(find.text(appL10n.gameActionLeft));
-    final straight = tester.getCenter(find.text(appL10n.gameActionStraight));
-    final right = tester.getCenter(find.text(appL10n.gameActionRight));
-    final turn = tester.getCenter(find.text(appL10n.gameActionUTurn));
-    final stop = tester.getCenter(find.text(appL10n.gameActionStand));
-    expect(left.dx, lessThan(straight.dx));
-    expect(straight.dx, lessThan(right.dx));
-    expect(left.dy, closeTo(straight.dy, 1));
-    expect(right.dy, closeTo(straight.dy, 1));
-    expect(turn.dy, greaterThan(straight.dy));
-    expect(turn.dy, closeTo(stop.dy, 1));
-    expect(turn.dx, lessThan(stop.dx));
-    expect(find.byIcon(Icons.add_rounded), findsNothing);
-    expect(find.byIcon(Icons.remove_rounded), findsNothing);
-    final hint = find.byTooltip(appL10n.gameTrafficHintButton);
-    final panel = find
-        .ancestor(
-          of: find.text(appL10n.gameTrafficSignalQuestion),
-          matching: find.byType(Container),
-        )
-        .last;
-    expect(tester.getRect(hint).bottom, lessThan(tester.getRect(panel).top));
-    for (final move in TrafficMove.values) {
-      final button = find.ancestor(
-        of: find.text(_moveLabel(move)),
-        matching: find.byType(InkWell),
-      );
-      final bounds = tester.getRect(button);
-      expect(bounds.left, greaterThanOrEqualTo(0));
-      expect(bounds.right, lessThanOrEqualTo(320));
-      expect(bounds.top, greaterThanOrEqualTo(0));
-      expect(bounds.bottom, lessThanOrEqualTo(568));
-      expect(tester.widget<InkWell>(button).onTap, isNotNull);
-    }
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox());
-  });
-
-  testWidgets(
-    'Traffic hint toggles inline and halves points only for the assisted round',
-    (tester) async {
-      await open(tester, const TrafficControllerScreen());
-      final controller = web.controllers.single..emitReady();
-      await tester.pump();
-      await tester.pump();
-      final hint = find.byTooltip(appL10n.gameTrafficHintButton);
-      await tester.tap(hint);
-      await tester.pump();
-      expect(find.byType(BottomSheet), findsNothing);
-      expect(find.text(appL10n.gameTrafficHintTitle), findsNothing);
-      final scenario = RegExp(r'setScenario\("([^"]+)", "([^"]+)"').firstMatch(
-        controller.scripts.lastWhere((s) => s.contains('setScenario(')),
-      )!;
-      final verse = TrafficControllerRules.mnemonicVerse(
-        gesture: ControllerGesture.values.byName(scenario.group(1)!),
-        approach: ApproachDirection.values.byName(scenario.group(2)!),
-        vehicle: VehicleKind.car,
-      );
-      expect(find.text(verse), findsOneWidget);
-      await tester.pump(const Duration(seconds: 1));
-      expect(find.text(appL10n.gameSecondsLeft(59)), findsOneWidget);
-      await tester.tap(hint);
-      await tester.pump();
-      expect(find.text(verse), findsNothing);
-      await tester.tap(hint);
-      await tester.pump();
-      expect(find.text(verse), findsOneWidget);
-
-      for (var i = 0; i < 40; i++) {
-        expect(
-          controller.scripts.lastWhere((s) => s.contains('setScenario(')),
-          contains('"car")'),
-        );
-        // Closing a viewed hint must not restore the unassisted reward.
-        if (i == 1) {
-          await tester.tap(hint);
-          await tester.pump();
-          await tester.tap(hint);
-          await tester.pump();
-        }
-        final correct = controller.allowedMoves.first;
-        await tester.tap(find.text(_moveLabel(correct)));
-        await tester.pump();
-        if (i == 0) expect(find.text(verse), findsNothing);
-        expect(
-          tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
-          i < 4 ? [12, 25, 53, 83][i] : 115 + (i - 4) * 32,
-          reason:
-              'Viewed hints halve the first two rewards; later rounds restore the full combo reward',
-        );
-        if (correct == TrafficMove.none) {
-          await tester.pump(const Duration(milliseconds: 700));
-        } else {
-          controller.emitMoveComplete();
-          await tester.pump(const Duration(milliseconds: 160));
-        }
-      }
-      expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox());
-    },
-  );
-
-  testWidgets('Traffic reveals every allowed direction after answering', (
-    tester,
-  ) async {
-    await open(tester, const TrafficControllerScreen());
-    final controller = web.controllers.single..emitReady();
-    await tester.pump();
-    for (var round = 0; round < 12; round++) {
-      final allowed = controller.allowedMoves;
-      await tester.tap(find.text(_moveLabel(allowed.first)));
-      await tester.pump(const Duration(milliseconds: 200));
-      for (final move in TrafficMove.values) {
-        final icon = tester.widget<Icon>(
-          find.descendant(
-            of: find.ancestor(
-              of: find.text(_moveLabel(move)),
-              matching: find.byType(AnimatedContainer),
-            ),
-            matching: find.byType(Icon),
-          ),
-        );
-        expect(
-          icon.color,
-          allowed.contains(move) ? Colors.white : isNot(Colors.white),
-        );
-      }
-      if (allowed.first == TrafficMove.none) {
-        await tester.pump(const Duration(milliseconds: 500));
-      } else {
-        controller.emitMoveComplete();
-        await tester.pump(const Duration(milliseconds: 160));
-      }
-    }
-    await tester.pumpWidget(const SizedBox());
-  });
-
-  testWidgets(
-    'Traffic preserves each earned reward and ends after five mistakes',
-    (tester) async {
-      await open(tester, const TrafficControllerScreen());
-      final controller = web.controllers.single..emitReady();
-      await tester.pump();
-      final correct = controller.allowedMoves.first;
-      await tester.tap(find.text(_moveLabel(correct)));
-      await tester.pump();
-      await tester.tap(find.text(_moveLabel(correct)));
-      await tester.pump();
-      expect(
-        tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
-        24,
-      );
-      // The screen must wait for the vehicle, not cut the animation at 1.25s.
-      if (correct != TrafficMove.none) {
-        await tester.pump(const Duration(milliseconds: 1500));
-        final scenariosBefore = controller.scripts
-            .where((s) => s.contains('setScenario('))
-            .length;
-        controller.emitMoveComplete(stale: true);
-        await tester.pump(const Duration(milliseconds: 200));
-        expect(
-          controller.scripts.where((s) => s.contains('setScenario(')).length,
-          scenariosBefore,
-        );
-        controller.emitMoveComplete();
-        await tester.pump(const Duration(milliseconds: 160));
-        expect(
-          controller.scripts.where((s) => s.contains('setScenario(')).length,
-          scenariosBefore + 1,
-        );
-      } else {
-        await tester.pump(const Duration(milliseconds: 700));
-      }
-
-      for (var mistakes = 1; mistakes <= 5; mistakes++) {
-        final allowed = controller.allowedMoves;
-        final wrong = TrafficMove.values.firstWhere(
-          (move) => !allowed.contains(move),
-        );
-        await tester.tap(find.text(_moveLabel(wrong)));
-        await tester.pump();
-        expect(
-          tester.widget<GameLives>(find.byType(GameLives)).lives,
-          5 - mistakes,
-        );
-        expect(
-          tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
-          24,
-        );
-        if (mistakes < 5) {
-          await tester.pump(const Duration(milliseconds: 1200));
-        }
-      }
-      expect(find.byType(GameResultOverlay), findsOneWidget);
-      expect(progress.getTrafficControllerProgress().bestScore, 24);
-      expect(progress.getTrafficControllerProgress().totalSolved, 1);
-      expect(progress.getTrafficControllerProgress().trainingCount, 0);
-      await tester.pumpWidget(const SizedBox());
-    },
-  );
-
   for (final (name, art) in [
     ('Traffic', const TrafficControllerArt()),
     ('Swiper', const SignSwiperArt()),
@@ -794,7 +559,6 @@ void main() {
     await tester.tap(find.text(appL10n.gameRoundaboutTitle));
     await tester.pumpAndSettle();
     expect(find.byType(GamesHubScreen), findsOneWidget);
-    expect(find.byType(TrafficControllerScreen), findsNothing);
     expect(find.byType(SignSwiperScreen), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.scrollUntilVisible(
@@ -900,14 +664,6 @@ void main() {
   });
 }
 
-String _moveLabel(TrafficMove move) => switch (move) {
-  TrafficMove.straight => appL10n.gameActionStraight,
-  TrafficMove.left => appL10n.gameActionLeft,
-  TrafficMove.right => appL10n.gameActionRight,
-  TrafficMove.uTurn => appL10n.gameActionUTurn,
-  TrafficMove.none => appL10n.gameActionStand,
-};
-
 /// Executes the actual screen bridge without requiring an iOS/Android view.
 class _TrafficWebPlatform extends WebViewPlatform {
   final controllers = <_TrafficWebController>[];
@@ -947,32 +703,6 @@ class _TrafficWebController extends PlatformWebViewController {
   void emitReady() => channel.onMessageReceived(
     const JavaScriptMessage(message: '{"type":"ready"}'),
   );
-
-  void emitMoveComplete({bool stale = false}) {
-    final command = scripts.lastWhere((s) => s.contains('makeMove('));
-    final id = int.parse(
-      RegExp(r'makeMove\("[^"]+", (\d+)\)').firstMatch(command)!.group(1)!,
-    );
-    channel.onMessageReceived(
-      JavaScriptMessage(
-        message: '{"type":"move_complete","id":${stale ? id - 1 : id}}',
-      ),
-    );
-  }
-
-  Set<TrafficMove> get allowedMoves {
-    final scenario = scripts.lastWhere(
-      (script) => script.contains('setScenario('),
-    );
-    final args = RegExp(
-      r'setScenario\("([^"]+)", "([^"]+)", "([^"]+)"\)',
-    ).firstMatch(scenario)!;
-    return TrafficControllerRules.allowedMoves(
-      gesture: ControllerGesture.values.byName(args.group(1)!),
-      approach: ApproachDirection.values.byName(args.group(2)!),
-      vehicle: VehicleKind.values.byName(args.group(3)!),
-    );
-  }
 
   @override
   Future<void> setJavaScriptMode(JavaScriptMode mode) async {}

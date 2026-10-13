@@ -34,6 +34,14 @@ var seconds_left := 60
 var solved_count := 0
 var wrong_count := 0
 var previous_best := 0
+var completed_runs: Array[Dictionary] = []
+var session_id := "regulator"
+var run_sequence := 0
+var ready_for_play := false
+var economy := { "seconds": 60, "lives": 5, "maxScore": 1500, "base": 24, "step": 2, "bonusCap": 4 }
+var season_name := "summer"
+var leaves: Leaves
+var atmosphere: RegulatorAtmosphere
 var is_new_record := false
 
 var round_timer := 0.0
@@ -42,35 +50,69 @@ var next_delay := 0.0
 # Camera framing
 var cam_base_pos := Vector3(1.8, 3.25, 20.0)
 var cam_base_look := Vector3(0.0, 1.55, 0.0)
+const ZOOM_MIN := 0.4
+const ZOOM_MAX := 2.6
 var cur_zoom := 1.0
+var _touches := {}              # finger index -> position, for the pinch
+var _pinch_zoom := 1.0          # the zoom when the pinch began
+var _pinch_span := 0.0          # the distance between the two fingers when it began (0: no pinch)
 var auto_answer := false
 var shot_path := ""
 
 
 func _ready() -> void:
 	_setup_args()
+	var loader := Loader.attach(self)
 	_setup_environment()
 	_setup_audio()
 	_setup_scene_objects()
 	_setup_ui()
+	_dismiss_loader(loader)
+
+
+## The loader stays over the first frames: the scene is built, shaded and drawn before it goes. The
+## screenshot (--shot) is taken after it, so it shows the game and not the loader.
+func _dismiss_loader(loader: Loader) -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	ready_for_play = true
 	_start_game()
+	loader.dismiss()
 	if shot_path != "":
+		await get_tree().create_timer(Loader.FADE + 0.2).timeout
 		_take_screenshot(shot_path)
 
 
 func _setup_args() -> void:
+	GameSound.haptics = true
 	Ui.lang = "ru"
 	Ui.dark = DisplayServer.is_dark_mode()
+	var month := int(Time.get_date_dict_from_system().month)
+	season_name = "winter" if month == 12 or month <= 2 else ("autumn" if month >= 9 else "summer")
 
 	for arg in Host.user_args():
 		if arg.begins_with("--lang="):
 			Ui.lang = arg.trim_prefix("--lang=")
 		elif arg == "--dark":
 			Ui.dark = true
+		elif arg == "--no-haptics":
+			GameSound.haptics = false
+		elif arg.begins_with("--best-score="):
+			previous_best = maxi(0, int(arg.trim_prefix("--best-score=")))
+		elif arg.begins_with("--session-id="):
+			session_id = arg.trim_prefix("--session-id=")
+		elif arg.begins_with("--economy="):
+			var config = JSON.parse_string(arg.trim_prefix("--economy="))
+			if config is Dictionary:
+				economy.merge(config, true)
+		elif arg.begins_with("--season="):
+			season_name = arg.trim_prefix("--season=")
 		elif arg == "--auto":
 			auto_answer = true
 		elif arg.begins_with("--shot="):
 			shot_path = arg.trim_prefix("--shot=")
+		elif arg.begins_with("--zoom="):
+			_set_zoom(float(arg.trim_prefix("--zoom=")))
 
 
 func _setup_environment() -> void:
@@ -99,9 +141,9 @@ func _setup_environment() -> void:
 	sky.sky_material = sky_mat
 	e.sky = sky
 
-	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	e.ambient_light_sky_contribution = 0.55
-	e.ambient_light_color = Color("#8EBEEC")
+	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	e.ambient_light_sky_contribution = 0.0
+	e.ambient_light_color = Color.WHITE
 	e.ambient_light_energy = 0.65
 
 	# Atmospheric depth fog
@@ -112,7 +154,7 @@ func _setup_environment() -> void:
 	e.fog_depth_end = 190.0
 	e.fog_sky_affect = 0.0
 
-	e.tonemap_mode = Environment.TONE_MAPPER_ACES
+	e.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	env.environment = e
 	add_child(env)
 
@@ -134,7 +176,7 @@ func _setup_audio() -> void:
 
 
 func _setup_scene_objects() -> void:
-	junction = RegulatorJunctionScript.new()
+	junction = RegulatorJunctionScript.new(season_name)
 	junction.name = "Crossroad"
 	add_child(junction)
 
@@ -155,6 +197,12 @@ func _setup_scene_objects() -> void:
 	car.name = "PlayerCar"
 	car.maneuver_finished.connect(_on_car_maneuver_finished)
 	add_child(car)
+	if season_name == "autumn":
+		leaves = Leaves.new(junction.sc.season.canopy, 12)
+		leaves.scale = Vector3.ONE * 0.4
+		add_child(leaves)
+	atmosphere = RegulatorAtmosphere.new(camera, env.environment, sun, junction, car)
+	add_child(atmosphere)
 
 
 func _setup_ui() -> void:
@@ -168,11 +216,13 @@ func _setup_ui() -> void:
 
 
 func _start_game() -> void:
+	run_sequence += 1
+	next_delay = 0.0
 	score = 0
 	combo = 0
 	max_combo = 0
-	lives = 5
-	seconds_left = 60
+	lives = int(economy.lives)
+	seconds_left = int(economy.seconds)
 	solved_count = 0
 	wrong_count = 0
 	is_game_over = false
@@ -189,6 +239,7 @@ func _start_game() -> void:
 
 func _pick_next_situation() -> void:
 	awaiting_next = false
+	next_delay = 0.0
 	hint_used = false
 	ui.reset_buttons_visuals()
 	car.reset_to_start()
@@ -241,13 +292,15 @@ func _on_move_selected(move: RegulatorRules.Move) -> void:
 		combo += 1
 		if combo > max_combo: max_combo = combo
 		# Full score or halved if hint was viewed
-		var gain := (50 if hint_used else 100) * combo
-		score = clampi(score + gain, 0, 20000)
+		var gain := int(economy.base) + mini(combo - 1, int(economy.bonusCap)) * int(economy.step)
+		if hint_used: gain = int(gain / 2)
+		score = clampi(score + gain, 0, int(economy.maxScore))
+		GameSound.buzz(15)
 		solved_count += 1
 		ui.update_hud(score, combo, seconds_left, lives)
 
 		if move == RegulatorRules.Move.NONE:
-			next_delay = 0.75
+			next_delay = 0.7
 		else:
 			car.start_maneuver(move)
 			next_delay = 0.0 # Will advance on car.maneuver_finished
@@ -263,12 +316,14 @@ func _on_move_selected(move: RegulatorRules.Move) -> void:
 			_end_game()
 			return
 
-		next_delay = 1.15
+		next_delay = 1.1
+
+	_checkpoint()
 
 
 func _on_car_maneuver_finished(_move: RegulatorRules.Move) -> void:
 	if awaiting_next and not is_game_over:
-		next_delay = 0.25
+		next_delay = 0.16
 
 
 func _on_hint_toggled() -> void:
@@ -278,12 +333,15 @@ func _on_hint_toggled() -> void:
 
 
 func _process(delta: float) -> void:
-	if is_game_over:
+	_update_camera(delta)
+	if leaves:
+		leaves.step(delta, Vector3.ZERO)
+	if is_game_over or not ready_for_play:
 		return
 
 	# Blitz countdown timer (1s ticks)
 	round_timer += delta
-	if round_timer >= 1.0:
+	while round_timer >= 1.0:
 		round_timer -= 1.0
 		seconds_left -= 1
 		if seconds_left <= 10 and seconds_left > 0:
@@ -299,23 +357,66 @@ func _process(delta: float) -> void:
 		if next_delay <= 0.0 and not is_game_over:
 			_pick_next_situation()
 
-	# Dynamic camera tracking / zoom
-	_update_camera(delta)
+
+
+## Pinch zoom: the fingers apart bring the camera closer, together move it away; a trackpad's magnify
+## gesture does the same on desktop. Buttons still take their taps: this only reads the touches.
+func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_touches[event.index] = event.position
+		else:
+			_touches.erase(event.index)
+		_pinch_span = 0.0
+		_pinch_update()
+	elif event is InputEventScreenDrag:
+		_touches[event.index] = event.position
+		_pinch_update()
+	elif event is InputEventMagnifyGesture:
+		_set_zoom(cur_zoom / event.factor)
+
+
+func _pinch_update() -> void:
+	if _touches.size() != 2:
+		_pinch_span = 0.0
+		return
+	var points := _touches.values()
+	var span: float = (points[0] as Vector2).distance_to(points[1] as Vector2)
+	if _pinch_span <= 0.0:
+		_pinch_span = span
+		_pinch_zoom = cur_zoom
+		return
+	_set_zoom(_pinch_zoom * _pinch_span / maxf(span, 1.0))
+
+
+func _set_zoom(value: float) -> void:
+	cur_zoom = clampf(value, ZOOM_MIN, ZOOM_MAX)
 
 
 func _update_camera(delta: float) -> void:
-	var want_pos := cam_base_pos
-	var want_look := cam_base_look
-
-	if car.is_moving:
-		# Smoothly pan camera slightly towards turning vehicle
-		var car_pos := car.position
-		want_pos = cam_base_pos + Vector3(car_pos.x * 0.2, 0.8, -car_pos.z * 0.15)
-		want_look = (cam_base_look + car_pos) * 0.5
-
-	var blend := 1.0 - exp(-6.0 * delta)
-	camera.position = camera.position.lerp(want_pos, blend)
-	camera.look_at(want_look)
+	if not camera: return
+	# Same near / far camera and automatic maneuver widening as the old scene.
+	var maneuver := smoothstep(0.0, 0.65, car.move_progress) if car else 0.0
+	var zoom := lerpf(cur_zoom, maxf(cur_zoom, 2.1), maneuver)
+	var want_pos: Vector3
+	var want_look: Vector3
+	if zoom < 1.0:
+		var close := smoothstep(0.4, 1.0, zoom)
+		want_pos = Vector3(1.4 + close, 2.4 + 2.1 * close, 6.8 + 15.2 * close)
+		want_look = Vector3(0.8 * close, 1.25 - 0.2 * close, 0)
+	else:
+		var far := (zoom - 1.0) / 1.6
+		want_pos = Vector3(2.4, 4.5 + 33.5 * far, 22 + 28 * far)
+		want_look = Vector3(0.8 * (1.0 - far), 1.05 * (1.0 - far), 0)
+	camera.look_at_from_position(camera.position.lerp(want_pos, 1.0 - exp(-7.0 * delta)), want_look)
+	if ui and ui.is_inside_tree():
+		# Off-centre frustum: place the optical centre above the answer panel.
+		var height := get_viewport().get_visible_rect().size.y
+		var panel := ui._panel.size.y * ui.scale.y
+		var inset := clampf(panel / maxf(height, 1.0), 0, 0.8)
+		var full_height := 2.0 * camera.near * tan(deg_to_rad(42.0) * 0.5) / (1.0 - inset)
+		camera.keep_aspect = Camera3D.KEEP_HEIGHT
+		camera.set_frustum(full_height, Vector2(0, -full_height * inset * 0.5), camera.near, 300.0)
 
 
 func _end_game() -> void:
@@ -325,32 +426,39 @@ func _end_game() -> void:
 	awaiting_next = false
 	is_new_record = score > 0 and score > previous_best
 
-	ui.show_game_over(score, solved_count, wrong_count, max_combo, is_new_record)
+	ui.show_game_over(score, solved_count, wrong_count, max_combo, is_new_record, seconds_left <= 0, previous_best)
 
-	var summary := {
-		"game": "regulator",
-		"score": score,
-		"solved": solved_count,
-		"wrong": wrong_count,
-		"combo": max_combo,
-		"finished": true,
+	car.is_moving = false
+	completed_runs.append(_run_summary())
+	previous_best = maxi(previous_best, score)
+	_checkpoint()
+
+
+func _run_summary() -> Dictionary:
+	return {
+		"id": "%s-%d" % [session_id, run_sequence],
+		"game": "regulator", "score": score, "solved": solved_count,
+		"wrong": wrong_count, "combo": max_combo, "finished": is_game_over,
 	}
-	Host.send({ "event": "run_end", "summary": summary })
 
-	if shot_path != "":
-		_take_screenshot(shot_path)
+
+func _session_summary() -> Dictionary:
+	var runs := completed_runs.duplicate(true)
+	if not is_game_over and solved_count + wrong_count > 0:
+		runs.append(_run_summary())
+	return { "game": "regulator", "runs": runs }
+
+
+## Android's system Back keeps the last checkpoint, including an unfinished run.
+func _checkpoint() -> void:
+	var summary := _session_summary()
+	Host.send({ "event": "run_finished", "summary": summary })
+	if Host.io != "":
+		Host._write({ "event": "run_finished", "summary": summary })
 
 
 func _on_exit_pressed() -> void:
-	var summary := {
-		"game": "regulator",
-		"score": score,
-		"solved": solved_count,
-		"wrong": wrong_count,
-		"combo": max_combo,
-		"finished": is_game_over,
-	}
-	Host.exit(summary, get_tree())
+	Host.exit(_session_summary(), get_tree())
 
 
 func _take_screenshot(path: String) -> void:

@@ -15,6 +15,9 @@ func _init() -> void:
 	_check_car_trajectories()
 	_check_junction_layout()
 	_check_ui_layout()
+	_check_arcade()
+	_check_fixture()
+	_check("Web arguments decode paint and economy JSON", Host.parse_query("?regulator=1&paint=%230574F8&economy=%7B%22base%22%3A24%7D") == ["--regulator", "--paint=#0574F8", '--economy={"base":24}'])
 	_report_results()
 
 
@@ -100,6 +103,13 @@ func _check_mnemonic_verses() -> void:
 
 	var v_left := RegulatorRules.mnemonic_verse(RegulatorRules.Gesture.RIGHT_ARM_FORWARD, RegulatorRules.Approach.LEFT)
 	_check("Forward from left has 'влево' mnemonic in Russian", v_left.length() > 5 and v_left.contains("влево"))
+	for language in ["ru", "en", "kk"]:
+		Ui.lang = language
+		for gesture in RegulatorRules.Gesture.values():
+			for approach in RegulatorRules.Approach.values():
+				var verse := RegulatorRules.mnemonic_verse(gesture, approach)
+				_check("Localised hint %s/%d/%d" % [language, gesture, approach], not verse.begins_with("gameTraffic") and not verse.is_empty())
+	Ui.lang = "ru"
 
 
 func _check_officer_poses() -> void:
@@ -123,7 +133,7 @@ func _check_car_trajectories() -> void:
 	var p_start: Array = car._evaluate_trajectory(RegulatorRules.Move.STRAIGHT, 0.0)
 	var p_end: Array = car._evaluate_trajectory(RegulatorRules.Move.STRAIGHT, 1.0)
 	_check("Car straight starts at Z=12.5", is_equal_approx(p_start[0].z, 12.5))
-	_check("Car straight ends across crossroad at Z=-18", is_equal_approx(p_end[0].z, -18.0))
+	_check("Car straight ends across crossroad at Z=-13.5", is_equal_approx(p_end[0].z, -13.5))
 
 	# Test right trajectory
 	var r_end: Array = car._evaluate_trajectory(RegulatorRules.Move.RIGHT, 1.0)
@@ -133,6 +143,16 @@ func _check_car_trajectories() -> void:
 	var l_end: Array = car._evaluate_trajectory(RegulatorRules.Move.LEFT, 1.0)
 	_check("Car left turns West into negative X", l_end[0].x < -10.0)
 
+	for move in [RegulatorRules.Move.RIGHT, RegulatorRules.Move.LEFT, RegulatorRules.Move.UTURN]:
+		var continuous := true
+		var last: Vector3 = car._evaluate_trajectory(move, 0.0)[0]
+		for i in range(1, 1001):
+			var pos: Vector3 = car._evaluate_trajectory(move, float(i) / 1000)[0]
+			continuous = continuous and last.distance_to(pos) < 0.2
+			last = pos
+		_check("No jumps throughout " + RegulatorRules.move_name(move), continuous)
+	_check("Right exits in eastbound lane", is_equal_approx(r_end[0].z, 1.8))
+	_check("Left exits in westbound lane", is_equal_approx(l_end[0].z, -1.8))
 	car.free()
 
 
@@ -144,30 +164,108 @@ func _check_junction_layout() -> void:
 
 func _check_ui_layout() -> void:
 	var ui := RegulatorUi.new()
-	_check("RegulatorUi builds bottom panel", ui.bottom_panel != null)
-	_check("RegulatorUi has floating hint row", ui.hint_row != null and ui.hint_btn != null)
-	_check("RegulatorUi prompt label is present", ui.prompt_label != null)
+	_check("RegulatorUi builds bottom panel", ui._panel != null)
+	_check("RegulatorUi has floating hint row", ui._hint_row != null and ui._hint_bulb != null)
+	_check("RegulatorUi prompt label is present", ui._question != null)
 	_check("RegulatorUi has 5 move buttons", ui.move_buttons.size() == 5)
 
-	var left_btn: Button = ui.move_buttons[RegulatorRules.Move.LEFT]["btn"]
+	var left_btn: PanelContainer = ui.move_buttons[RegulatorRules.Move.LEFT]["panel"]
 	_check("Directional button has 80px min height", is_equal_approx(left_btn.custom_minimum_size.y, 80.0))
 
-	var stand_btn: Button = ui.move_buttons[RegulatorRules.Move.NONE]["btn"]
+	var stand_btn: PanelContainer = ui.move_buttons[RegulatorRules.Move.NONE]["panel"]
 	_check("Non-directional button has 56px min height", is_equal_approx(stand_btn.custom_minimum_size.y, 56.0))
 
 	ui.set_hint_verse("Палка смотрит в рот")
-	_check("Hint verse set and initially hidden", not ui.hint_text.visible)
+	_check("Hint verse set and initially hidden", not ui._hint_text.visible)
 
 	ui._on_hint_pressed()
-	_check("Hint verse visible after hint pressed", ui.hint_text.visible)
+	_check("Hint verse visible after hint pressed", ui._hint_text.visible)
 
 	ui.show_answer_feedback(RegulatorRules.Move.LEFT, [RegulatorRules.Move.LEFT], true)
-	_check("Answer feedback hides hint and applies style", not ui.hint_text.visible)
+	_check("Answer feedback hides hint and applies style", not ui._hint_text.visible)
 
 	ui.reset_buttons_visuals()
-	_check("Reset visuals restores button accents", true)
+	_check("Reset visuals restores button accents", ui.move_buttons[RegulatorRules.Move.LEFT].icon.get_theme_color("font_color") == Ui.c("accent"))
 
 	ui.free()
+
+
+func _check_fixture() -> void:
+	# Same 32-case fixture used by Flutter; shipping copy generated for Godot.
+	var rows: Array = JSON.parse_string(FileAccess.get_file_as_string(ProjectSettings.globalize_path("res://").path_join("../test/fixtures/traffic_controller_pdd_6_10.json")))
+	for row in rows:
+		var allowed := RegulatorRules.allowed_moves(RegulatorRules.parse_gesture(row.gesture),
+			RegulatorRules.parse_approach(row.approach), row.vehicle)
+		var names: Array = []
+		for move in allowed: names.append(RegulatorRules.move_name(move))
+		names.sort()
+		var expected: Array = row.moves.duplicate()
+		expected.sort()
+		_check("Fixture %s/%s/%s" % [row.gesture, row.approach, row.vehicle], names == expected)
+
+
+func _check_arcade() -> void:
+	var game := Regulator.new()
+	game.ui = RegulatorUi.new()
+	game.car = RegulatorCar.new()
+	game.officer = RegulatorOfficer.new()
+	game.sound = GameSound.new()
+	game.sound.enabled = false
+	game.camera = Camera3D.new()
+	game.ready_for_play = true
+	for node in [game.ui, game.car, game.officer, game.sound, game.camera]: game.add_child(node)
+	game._start_game()
+	_check("Round starts at 60 seconds / 5 lives", game.seconds_left == 60 and game.lives == 5)
+	game.cur_gesture = RegulatorRules.Gesture.ARM_UP
+	game._on_hint_toggled()
+	game._on_move_selected(RegulatorRules.Move.NONE)
+	_check("Hint halves first reward", game.score == 12 and game.combo == 1)
+	game._on_move_selected(RegulatorRules.Move.NONE)
+	_check("Repeated tap cannot answer twice", game.score == 12 and game.solved_count == 1)
+	game._process(0.7)
+	_check("Stop advances after 700 ms", not game.awaiting_next and not game.hint_used)
+	game.cur_gesture = RegulatorRules.Gesture.ARM_UP
+	game._on_move_selected(RegulatorRules.Move.NONE)
+	_check("Next unassisted combo earns 26", game.score == 38)
+	game._process(0.7)
+	game.cur_gesture = RegulatorRules.Gesture.ARM_UP
+	game._on_move_selected(RegulatorRules.Move.LEFT)
+	_check("Mistake retains earned score and resets combo", game.score == 38 and game.combo == 0 and game.lives == 4)
+	game._process(1.1)
+	_check("Wrong answer advances after 1100 ms", not game.awaiting_next)
+	game.cur_gesture = RegulatorRules.Gesture.RIGHT_ARM_FORWARD
+	game.cur_approach = RegulatorRules.Approach.LEFT
+	game._on_move_selected(RegulatorRules.Move.LEFT)
+	game._process(1.5)
+	_check("Moving answer waits for car completion", game.awaiting_next)
+	game._on_car_maneuver_finished(RegulatorRules.Move.LEFT)
+	game._process(0.16)
+	_check("Completed maneuver advances after 160 ms", not game.awaiting_next)
+	for i in 4:
+		game.cur_gesture = RegulatorRules.Gesture.ARM_UP
+		game._on_move_selected(RegulatorRules.Move.LEFT)
+		if i < 3: game._process(1.1)
+	_check("Five mistakes end the round", game.is_game_over and game.lives == 0 and game.wrong_count == 5)
+	_check("Finished round retained once", game._session_summary().runs.size() == 1)
+	game._end_game()
+	_check("Repeated end cannot duplicate result", game.completed_runs.size() == 1)
+	var record := game.previous_best
+	game._start_game()
+	_check("Restart resets state but retains best", game.score == 0 and game.seconds_left == 60 and game.previous_best == record)
+	for i in 80:
+		game._pick_next_situation()
+		game.cur_gesture = RegulatorRules.Gesture.ARM_UP
+		game._on_move_selected(RegulatorRules.Move.NONE)
+	_check("Perfect play capped at 1500", game.score == 1500 and game.solved_count == 80)
+	_check("Exit keeps completed and unfinished rounds", game._session_summary().runs.size() == 2)
+	game._process(60.0)
+	_check("Time expires at zero, even after long frame", game.is_game_over and game.seconds_left == 0)
+	_check("Restarted rounds have different ids", game.completed_runs[0].id != game.completed_runs[1].id)
+	game._set_zoom(0.01)
+	_check("Near zoom bounded at 0.4", is_equal_approx(game.cur_zoom, 0.4))
+	game._set_zoom(100)
+	_check("Far zoom bounded at 2.6", is_equal_approx(game.cur_zoom, 2.6))
+	game.free()
 
 
 func _report_results() -> void:

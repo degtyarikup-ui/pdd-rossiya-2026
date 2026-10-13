@@ -54,6 +54,9 @@
   "gameTrafficHintForwardLeft": "Если палка смотрит влево — поезжай как королева.",
   "gameTrafficHintWall": "Грудь и спина — для водителя стена.",
   "gameTrafficHintSide": "Боком встал регулировщик — прямо и направо путь открыт.",
+  "gameTrafficHintBack": "Спина — стена.",
+  "gameTrafficHintTramLeft": "Трамвай едет из рукава в рукав — только налево.",
+  "gameTrafficHintTramStraight": "Трамвай едет из рукава в рукав — только прямо.",
   "gameActionStraight": "Прямо",
   "gameActionRight": "Направо",
   "gameActionLeft": "Налево",
@@ -64,7 +67,11 @@
   "gameNewRecord": "Новый рекорд!",
   "gameSolvedLabel": "Решено",
   "gameAccuracyLabel": "Точность",
-  "gameComboLabel": "Макс. комбо"
+  "gameComboLabel": "Макс. комбо",
+  "gameBestScore": "Рекорд {score}",
+  "gameCurrentCombo": "Комбо {count}",
+  "gameSecondsLeft": "{seconds} с",
+  "gameOverTitle": "Игра окончена"
  },
  "en": {
   "gameSeconds": "s",
@@ -121,6 +128,9 @@
   "gameTrafficHintForwardLeft": "If the stick points to the left, ride like a queen.",
   "gameTrafficHintWall": "The chest and back are a wall for the driver.",
   "gameTrafficHintSide": "The traffic controller stood sideways - the path was open straight and to the right.",
+  "gameTrafficHintBack": "The back is a wall.",
+  "gameTrafficHintTramLeft": "The tram goes from arm to arm - only to the left.",
+  "gameTrafficHintTramStraight": "The tram goes from arm to arm - only straight.",
   "gameActionStraight": "Straight",
   "gameActionRight": "Right",
   "gameActionLeft": "Left",
@@ -131,7 +141,11 @@
   "gameNewRecord": "New record!",
   "gameSolvedLabel": "Solved",
   "gameAccuracyLabel": "Accuracy",
-  "gameComboLabel": "Max. combo"
+  "gameComboLabel": "Max. combo",
+  "gameBestScore": "Record {score}",
+  "gameCurrentCombo": "Combo {count}",
+  "gameSecondsLeft": "{seconds} s",
+  "gameOverTitle": "Game over"
  },
  "kk": {
   "gameSeconds": "с",
@@ -188,6 +202,9 @@
   "gameTrafficHintForwardLeft": "Егер таяқ солға қараса, патшайым сияқты мініңіз.",
   "gameTrafficHintWall": "Кеуде мен арқа жүргізуші үшін қабырға.",
   "gameTrafficHintSide": "Жол диспетчері бүйірде тұрды - жол түзу және оңға ашық болды.",
+  "gameTrafficHintBack": "Артқы жағы қабырға.",
+  "gameTrafficHintTramLeft": "Трамвай қолдан қолға - тек солға қарай жүреді.",
+  "gameTrafficHintTramStraight": "Трамвай қолынан қолға өтеді - тек түзу.",
   "gameActionStraight": "Тіке",
   "gameActionRight": "Оңға",
   "gameActionLeft": "Солға",
@@ -198,6 +215,10 @@
   "gameNewRecord": "Жаңа рекорд!",
   "gameSolvedLabel": "Шешілді",
   "gameAccuracyLabel": "Дәлдік",
-  "gameComboLabel": "Макс. комбо"
+  "gameComboLabel": "Макс. комбо",
+  "gameBestScore": "Жазба {score}",
+  "gameCurrentCombo": "Комбо {count}",
+  "gameSecondsLeft": "{seconds} с",
+  "gameOverTitle": "Ойын аяқталды"
  }
 }
