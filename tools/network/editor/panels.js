@@ -201,6 +201,7 @@
       else if (item.kind === "actor") Tools.pickActor(item.id);
       else if (item.kind === "officer") Tools.set("officer");
       else if (item.kind === "sign") Tools.pickSign(item.id);
+      else if (item.kind === "light") Tools.pickLight(item.id === "light_tram" || !!item.tram);
       else Tools.set("light");
       return renderLeft();
     }
@@ -221,7 +222,12 @@
     const signs = (cat.signs || []).filter((c) => hit(Catalog.signName(c)) || c.startsWith(q));
     if (signs.length) sections.push(`<h4>${ic("flag")}Знаки</h4><div class="lib-grid signs">${signs.map((c) => tile({ kind: "sign", id: c }, Catalog.signName(c), `<img class="thumb sign-pic" src="/asset/sign/${c}.svg" alt="">`, Tools.current() === "sign" && Tools.opts.sign === c)).join("")}</div>`);
     if (hit("регулировщик")) sections.push(`<h4>${ic("person")}Регулировщик</h4><div class="lib-grid">${tile({ kind: "officer", id: "officer" }, "Регулировщик", `<span class="lib-icon">${ic("person")}</span>`, Tools.current() === "officer")}</div>`);
-    if (cat.lightAsset && hit("светофор")) sections.push(`<h4>${ic("light")}Светофор</h4><div class="lib-grid">${tile({ kind: "light", id: "light" }, "Светофор", Thumbs.img("light", "light"), Tools.current() === "light")}</div>`);
+    if (cat.lightAsset && hit("светофор")) {
+      sections.push(`<h4>${ic("light")}Светофоры</h4><div class="lib-grid">
+        ${tile({ kind: "light", id: "light" }, "Светофор", Thumbs.img("light", "light"), Tools.current() === "light" && !Tools.opts.tram)}
+        ${cat.lightTramAsset ? tile({ kind: "light", id: "light_tram", tram: true }, "С трамвайной секцией", Thumbs.img("light", "light_tram"), Tools.current() === "light" && Tools.opts.tram) : ""}
+      </div>`);
+    }
     const props = [...cat.props.map((p) => p.id), "parked"];
     for (const g of Catalog.PROP_GROUPS) {
       const items = props.filter((p) => g.match(p) && hit(Catalog.propName(p)));

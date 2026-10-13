@@ -492,7 +492,7 @@ class Handler(BaseHTTPRequestHandler):
             out.append({"id": p.stem, "status": (s.get("compliance") or {}).get("status"),
                         "errors": sum(f["level"] == "error" for f in found),
                         "warns": sum(f["level"] == "warn" for f in found),
-                        "playable": bool(s.get("reviewed", True)) and not s.get("regulator", False),
+                        "playable": bool(s.get("reviewed", True)),
                         "regulator": bool(s.get("regulator", False)),
                         "layout": bool(s.get("layout")),
                         "preview": (PREVIEW / f"{p.stem}.png").exists(),
@@ -509,10 +509,22 @@ class Handler(BaseHTTPRequestHandler):
                     "maxSpeed": a.get("maxSpeed"), "clearDistance": a.get("clearDistance"),
                     "halfLength": a.get("halfLength"), "halfWidth": a.get("halfWidth")})
         signs = sorted((p.stem for p in (GAME / "signs").glob("*.svg")), key=lambda c: [int(x) for x in c.split(".")])
+        light_models = {}
+        for p in sorted(SIT.glob("*/engine.json")):
+            for k, l in enumerate(json.loads(p.read_text(encoding="utf-8")).get("lights", [])):
+                key = "tram" if l.get("tram") else (l.get("arrow") or "")
+                if key not in light_models:
+                    light_models[key] = f"{p.parent.name}/light_{k}.glb"
+        if "tram" not in light_models:
+            if (SIT / "ticket_6_13" / "parts" / "light_0.glb").exists():
+                light_models["tram"] = "ticket_6_13/light_0.glb"
+            elif (SIT / "ticket_13_13" / "parts" / "light_0.glb").exists():
+                light_models["tram"] = "ticket_13_13/light_0.glb"
         return {"props": [{"id": k, "size": v.get("size")} for k, v in index["props"].items()], "signs": signs,
                 "actorTypes": {t: v[0] for t, v in models.items()},
-                "lightAsset": next((f"{p.parent.name}/light_0.glb" for p in sorted(SIT.glob("*/engine.json"))
-                                    if json.loads(p.read_text(encoding="utf-8")).get("lights")), None)}
+                "lightAsset": light_models.get("", "ticket_11_15/light_0.glb"),
+                "lightTramAsset": light_models.get("tram", "ticket_6_13/light_0.glb"),
+                "lightAssets": light_models}
 
 
 class Server(ThreadingHTTPServer):

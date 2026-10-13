@@ -58,6 +58,9 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
 
+  static String _normalize(String s) =>
+      s.trim().toLowerCase().replaceAll('ё', 'е');
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -157,15 +160,69 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
 
               final categories = [...signCategories, ...markupCategories];
 
-              final normalizedQuery = _query.trim().toLowerCase();
-              final filteredCategories = normalizedQuery.isEmpty
-                  ? categories
-                  : categories
-                        .where(
-                          (c) =>
-                              c.title.toLowerCase().contains(normalizedQuery),
-                        )
-                        .toList();
+              final normalizedQuery = _normalize(_query);
+              final List<_SignCategoryMeta> filteredCategories;
+              if (normalizedQuery.isEmpty) {
+                filteredCategories = categories;
+              } else {
+                filteredCategories = [];
+                for (final cat in categories) {
+                  final catTitleMatches =
+                      _normalize(cat.title).contains(normalizedQuery);
+                  if (cat.markupEntries != null) {
+                    final matchingEntries = cat.markupEntries!.where((e) {
+                      return catTitleMatches ||
+                          _normalize(e.title).contains(normalizedQuery) ||
+                          _normalize(e.description).contains(normalizedQuery);
+                    }).toList();
+                    if (matchingEntries.isNotEmpty) {
+                      filteredCategories.add(
+                        _SignCategoryMeta(
+                          title: cat.title,
+                          assetPath: cat.assetPath,
+                          markupEntries: matchingEntries,
+                        ),
+                      );
+                    }
+                  } else {
+                    final signsMap = cat.signs is Map
+                        ? (cat.signs as Map).cast<String, dynamic>()
+                        : <String, dynamic>{};
+                    final matchingSigns = <String, dynamic>{};
+                    signsMap.forEach((key, val) {
+                      if (catTitleMatches) {
+                        matchingSigns[key] = val;
+                      } else if (val is Map) {
+                        final title = _normalize(
+                          val['title'] as String? ??
+                              val['name'] as String? ??
+                              '',
+                        );
+                        final desc =
+                            _normalize(val['description'] as String? ?? '');
+                        final folk =
+                            _normalize(val['folkName'] as String? ?? '');
+                        final num = _normalize(key);
+                        if (title.contains(normalizedQuery) ||
+                            desc.contains(normalizedQuery) ||
+                            folk.contains(normalizedQuery) ||
+                            num.contains(normalizedQuery)) {
+                          matchingSigns[key] = val;
+                        }
+                      }
+                    });
+                    if (matchingSigns.isNotEmpty) {
+                      filteredCategories.add(
+                        _SignCategoryMeta(
+                          title: cat.title,
+                          assetPath: cat.assetPath,
+                          signs: matchingSigns,
+                        ),
+                      );
+                    }
+                  }
+                }
+              }
 
               if (filteredCategories.isEmpty) {
                 return Center(
@@ -379,7 +436,9 @@ class SignCategoryScreen extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final entry = entries[index];
                       final signNumber = entry.key;
-                      final signData = entry.value as Map<String, dynamic>;
+                      final signData = (entry.value is Map)
+                          ? (entry.value as Map).cast<String, dynamic>()
+                          : <String, dynamic>{};
                       final signName =
                           signData['title'] as String? ??
                           signData['name'] as String? ??

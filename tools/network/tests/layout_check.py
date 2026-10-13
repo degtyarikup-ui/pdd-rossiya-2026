@@ -68,6 +68,11 @@ def main():
         if item["template"].startswith("bend"):
             key = "left" if item["template"] == "bend-left" else "right"
             expect(f"manoeuvre_{key}" in routes, f"{item['template']}: one way, {key}")
+        if item["template"] == "avenue-lane-1":
+            expect(abs(s["stop"]["z"] + 5.25) < 1e-3, f"avenue lane 1: stop at right lane z={s['stop']['z']}")
+            straight = routes["manoeuvre_straight"]
+            expect(abs(straight["points"][0][1] + 5.25) < 1e-3, "avenue lane 1: straight starts at right lane")
+            expect(abs(straight["points"][-1][1] + 5.25) < 1e-3, "avenue lane 1: straight ends at right lane")
     print(f"{len(failures)} failures")
     return 1 if failures else 0
 

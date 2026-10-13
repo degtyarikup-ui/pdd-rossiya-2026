@@ -542,6 +542,12 @@ func _set_booms() -> void:
 		(b.node as Node3D).rotation.z = float(rail.lift) * 0.47 * PI * float(b.dir)
 
 
+## A police lamp is lit (emissive) with its halo, or dark.
+static func light_lamp(mat: StandardMaterial3D, on: bool) -> void:
+	mat.emission_enabled = on
+	(mat.get_meta("halo") as Node3D).visible = on
+
+
 func _animate(_dt: float) -> void:
 	if not rail.is_empty():
 		var lamps: Array = rail.red
@@ -553,5 +559,5 @@ func _animate(_dt: float) -> void:
 			mat.albedo_color = Color("#FF3434") if on else Color("#3A1414")
 	if police != null and police.node.visible and police.lights.size() == 2:
 		var phase_blue := int(floor(clock / 0.25)) % 2 == 0
-		(police.lights[0] as StandardMaterial3D).emission_enabled = phase_blue
-		(police.lights[1] as StandardMaterial3D).emission_enabled = not phase_blue
+		light_lamp(police.lights[0] as StandardMaterial3D, phase_blue)
+		light_lamp(police.lights[1] as StandardMaterial3D, not phase_blue)

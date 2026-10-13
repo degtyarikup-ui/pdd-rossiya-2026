@@ -83,14 +83,17 @@ void main() {
     }
   });
 
-  test('общий сбой покупки ведёт к «Восстановить» и не обещает, что деньги не списаны', () {
-    // Общий сбой покупки и сбой подтверждения: можно потерять деньги и доступ,
-    // поэтому текст ведёт к «Восстановить», а не обещает, что денег не списали.
-    expect(ru['payErrorGeneric'] as String, contains('Восстановить'));
-    expect(ru['purchaseVerificationPending'] as String, contains('повторно'));
-    expect(
-      ru['purchaseVerificationPending'] as String,
-      contains('Восстановить'),
-    );
-  });
+  test(
+    'общий сбой покупки ведёт к «Восстановить» и не обещает, что деньги не списаны',
+    () {
+      // Общий сбой покупки и сбой подтверждения: можно потерять деньги и доступ,
+      // поэтому текст ведёт к «Восстановить», а не обещает, что денег не списали.
+      expect(ru['payErrorGeneric'] as String, contains('Восстановить'));
+      expect(ru['purchaseVerificationPending'] as String, contains('повторно'));
+      expect(
+        ru['purchaseVerificationPending'] as String,
+        contains('Восстановить'),
+      );
+    },
+  );
 }

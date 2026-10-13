@@ -162,30 +162,36 @@ void main() {
     await service.refresh();
     expect(service.banners.value, isEmpty);
   });
-  test('signed-in user passes userId and email for personal test campaigns', () async {
-    Uri? requested;
-    final service = RemoteNotificationsService.forTesting(
-      client: MockClient((request) async {
-        requested = request.url;
-        return http.Response(
-          jsonEncode({'config': config, 'messages': [notice()]}),
-          200,
-        );
-      }),
-      userProvider: () => UserProfile(
-        id: 'google_123',
-        name: 'Sergei',
-        email: 'admin@test.ru',
-        provider: AuthProviderType.google,
-        createdAt: DateTime(2026, 1, 1),
-      ),
-    );
-    await service.refresh();
-    expect(requested?.queryParameters['userId'], 'google_123');
-    expect(requested?.queryParameters['email'], 'admin@test.ru');
-    expect(
-      RemoteNotificationsService.userTopic('  Admin@Test.ru '),
-      'pdd_u_61646d696e40746573742e7275',
-    );
-  });
+  test(
+    'signed-in user passes userId and email for personal test campaigns',
+    () async {
+      Uri? requested;
+      final service = RemoteNotificationsService.forTesting(
+        client: MockClient((request) async {
+          requested = request.url;
+          return http.Response(
+            jsonEncode({
+              'config': config,
+              'messages': [notice()],
+            }),
+            200,
+          );
+        }),
+        userProvider: () => UserProfile(
+          id: 'google_123',
+          name: 'Sergei',
+          email: 'admin@test.ru',
+          provider: AuthProviderType.google,
+          createdAt: DateTime(2026, 1, 1),
+        ),
+      );
+      await service.refresh();
+      expect(requested?.queryParameters['userId'], 'google_123');
+      expect(requested?.queryParameters['email'], 'admin@test.ru');
+      expect(
+        RemoteNotificationsService.userTopic('  Admin@Test.ru '),
+        'pdd_u_61646d696e40746573742e7275',
+      );
+    },
+  );
 }

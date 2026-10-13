@@ -151,7 +151,9 @@ final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
   final saved = progress.loadUnfinishedSession(category);
   if (saved == null) return null;
 
-  final ids = (saved['questionIds'] as List).cast<String>();
+  final rawIds = saved['questionIds'] as List?;
+  if (rawIds == null || rawIds.isEmpty) return null;
+  final ids = rawIds.map((e) => e.toString()).toList();
   final all = await ref
       .watch(questionsDataSourceProvider)
       .loadTickets(category, lang);
@@ -164,9 +166,12 @@ final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
   }
   // Половина вопросов потерялась — набор уже не тот, что был; лучше не
   // предлагать возврат, чем вернуть человека в поломанную сессию.
-  if (questions.length < ids.length / 2) return null;
+  if (questions.isEmpty || questions.length < ids.length / 2) return null;
 
-  final index = (saved['index'] as int? ?? 0).clamp(0, questions.length - 1);
+  final index = ((saved['index'] as num?)?.toInt() ?? 0).clamp(
+    0,
+    questions.length - 1,
+  );
 
   // Прерванный экзамен возвращается со всем своим состоянием: ответами,
   // остатком времени и доп. фазой. Если хоть один вопрос выпал из базы,
@@ -174,7 +179,9 @@ final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
   if (saved['kind'] == 'exam') {
     if (questions.length != ids.length) return null;
     final answers =
-        (saved['answers'] as List?)?.map((e) => e as int?).toList() ??
+        (saved['answers'] as List?)
+            ?.map((e) => (e as num?)?.toInt())
+            .toList() ??
         List<int?>.filled(questions.length, null);
     if (answers.length != questions.length) return null;
     return {
@@ -183,12 +190,12 @@ final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
       'index': index,
       'total': questions.length,
       'answers': answers,
-      'remainingSeconds': saved['remainingSeconds'] as int? ?? 0,
-      'totalSeconds': saved['totalSeconds'] as int? ?? 0,
+      'remainingSeconds': (saved['remainingSeconds'] as num?)?.toInt() ?? 0,
+      'totalSeconds': (saved['totalSeconds'] as num?)?.toInt() ?? 0,
       'additionalPhase': saved['additionalPhase'] as bool? ?? false,
       'additionalQuestionsCount':
-          saved['additionalQuestionsCount'] as int? ?? 0,
-      'initialWrongCount': saved['initialWrongCount'] as int? ?? 0,
+          (saved['additionalQuestionsCount'] as num?)?.toInt() ?? 0,
+      'initialWrongCount': (saved['initialWrongCount'] as num?)?.toInt() ?? 0,
     };
   }
 
@@ -629,7 +636,11 @@ final crossroadsPriorityProgressProvider =
       CrossroadsPriorityProgress
     >((ref) {
       final ds = ref.watch(progressDataSourceProvider);
-      return CrossroadsPriorityProgressController(ds);
+      final controller = CrossroadsPriorityProgressController(ds);
+      ref.listen(progressImportsProvider, (_, next) {
+        if (next.hasValue) controller.reload();
+      });
+      return controller;
     });
 
 class CrossroadsPriorityProgressController

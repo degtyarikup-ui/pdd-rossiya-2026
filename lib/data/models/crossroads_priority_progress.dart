@@ -37,10 +37,10 @@ class CrossroadsPriorityProgress {
 
   factory CrossroadsPriorityProgress.fromJson(Map<String, dynamic> json) {
     return CrossroadsPriorityProgress(
-      bestScore: json['bestScore'] as int? ?? 0,
-      maxCombo: json['maxCombo'] as int? ?? 0,
-      totalSolved: json['totalSolved'] as int? ?? 0,
-      trainingCount: json['trainingCount'] as int? ?? 0,
+      bestScore: (json['bestScore'] as num?)?.toInt() ?? 0,
+      maxCombo: (json['maxCombo'] as num?)?.toInt() ?? 0,
+      totalSolved: (json['totalSolved'] as num?)?.toInt() ?? 0,
+      trainingCount: (json['trainingCount'] as num?)?.toInt() ?? 0,
     );
   }
 }

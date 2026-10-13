@@ -32,11 +32,7 @@ Future<void> handleWebPaymentReturn(BuildContext context) async {
   if (!context.mounted) return;
   switch (status) {
     case 'confirmed':
-      AppToast.show(
-        context,
-        appL10n.webPaySuccess,
-        type: AppToastType.success,
-      );
+      AppToast.show(context, appL10n.webPaySuccess, type: AppToastType.success);
     case 'canceled':
       AppToast.show(context, appL10n.webPayCanceled);
     default:

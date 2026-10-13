@@ -62,10 +62,18 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
   List<int> _order = const [];
   CrossroadsScenario get _curScenario {
     final list = _filteredScenarios;
+    if (list.isEmpty) {
+      return CrossroadsScenariosLibrary.allScenarios.first;
+    }
     if (_order.length != list.length) {
-      _order = List.generate(list.length, (i) => i);
-      if (_mode == CrossroadsGameMode.arcade) {
-        _order.shuffle();
+      if (_mode == CrossroadsGameMode.arcade &&
+          _selectedCategory == CrossroadsCategory.all) {
+        _order = _createBalancedArcadeOrder();
+      } else {
+        _order = List.generate(list.length, (i) => i);
+        if (_mode == CrossroadsGameMode.arcade) {
+          _order.shuffle();
+        }
       }
     }
     return list[_order[_scenarioIndex % _order.length]];
@@ -240,32 +248,22 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
     final list = _filteredScenarios;
     final signs = <int>[];
     final lights = <int>[];
-    final hard = <int>[];
     for (int i = 0; i < list.length; i++) {
-      if (list[i].isHardSituation) {
-        hard.add(i);
-      } else if (list[i].category == CrossroadsCategory.trafficLights) {
+      if (list[i].category == CrossroadsCategory.trafficLights) {
         lights.add(i);
       } else {
         signs.add(i);
       }
     }
-    signs.shuffle();
-    lights.shuffle();
-    hard.shuffle();
+    final sCopy = List<int>.from(signs)..shuffle();
+    final lCopy = List<int>.from(lights)..shuffle();
 
-    // Гарантируем сбалансированную ротацию со сложной ситуацией каждые 4 перекрестка (25% шанс)
     final order = <int>[];
-    int si = 0, li = 0, hi = 0;
-    while (si < signs.length || li < lights.length || hi < hard.length) {
-      if (si < signs.length) order.add(signs[si++]);
-      if (li < lights.length) order.add(lights[li++]);
-      if (si < signs.length) order.add(signs[si++]);
-      if (hi < hard.length) {
-        order.add(hard[hi++]);
-      } else if (hard.isNotEmpty) {
-        order.add(hard[math.Random().nextInt(hard.length)]);
-      }
+    int si = 0, li = 0;
+    while (si < sCopy.length || li < lCopy.length) {
+      if (si < sCopy.length) order.add(sCopy[si++]);
+      if (li < lCopy.length) order.add(lCopy[li++]);
+      if (si < sCopy.length) order.add(sCopy[si++]);
     }
     return order;
   }
@@ -781,7 +779,10 @@ class _CrossroadsScreenState extends ConsumerState<CrossroadsScreen> {
               if (_showHardBonusToast) ...[
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.greenLight,
                     borderRadius: BorderRadius.circular(6),

@@ -46,8 +46,8 @@ class FeedRepository {
       category,
       lang,
     );
-    final List<Map<String, dynamic>> signsManifest =
-        await _questionsDataSource.loadSignsFeedManifest(lang);
+    final List<Map<String, dynamic>> signsManifest = await _questionsDataSource
+        .loadSignsFeedManifest(lang);
 
     final excluded = excludeQuestionIds ?? const <String>{};
 

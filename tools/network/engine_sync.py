@@ -71,8 +71,19 @@ def find_template(kind: str, typ: str, name: str = "") -> str | None:
                         return f"{sid}/actor_{k}.glb"
                     best = best or f"{sid}/actor_{k}.glb"
         else:
-            if engine_base(sid).get("lights"):
-                return f"{sid}/light_0.glb"
+            lights = engine_base(sid).get("lights", [])
+            for k, l in enumerate(lights):
+                arr = l.get("arrow") or ""
+                is_tram = bool(l.get("tram"))
+                target_tram = (typ == "tram")
+                if target_tram and is_tram:
+                    return f"{sid}/light_{k}.glb"
+                if not target_tram and not is_tram and arr == (typ or ""):
+                    return f"{sid}/light_{k}.glb"
+                if best is None and not arr and not is_tram and not target_tram:
+                    best = f"{sid}/light_{k}.glb"
+    if typ == "tram" and (SIT / "ticket_6_13" / "parts" / "light_0.glb").exists():
+        return "ticket_6_13/light_0.glb"
     return best
 
 
@@ -125,10 +136,11 @@ def sync(sid: str) -> dict:
     out["labels"] = labels
 
     out["lights"] = [{"pos": [l["pos"][0], 0.0, l["pos"][1]], "yaw": l["yaw"], "scale": l["scale"],
-                      "arrow": l.get("arrow"), "mountedSigns": l.get("mountedSigns", []), "mountedMainRoad": l.get("mountedMainRoad", [])}
+                      "arrow": l.get("arrow"), "tram": l.get("tram"), "mountedSigns": l.get("mountedSigns", []), "mountedMainRoad": l.get("mountedMainRoad", [])}
                      for l in net.get("lights", [])]
     if net.get("lights") and net["lights"][0].get("state") is not None:
-        out["trafficLights"] = {"state": net["lights"][0]["state"], "arrow": net["lights"][0].get("arrow")}
+        out["trafficLights"] = {"state": net["lights"][0]["state"], "arrow": net["lights"][0].get("arrow"),
+                                "tram": net["lights"][0].get("tram")}
 
     actors = []
     for na in net.get("actors", []):
@@ -199,7 +211,20 @@ def sync(sid: str) -> dict:
     for old in d.glob("light_*.glb"):
         old.unlink()
     for i, l in enumerate(net.get("lights", [])):
-        asset = l.get("asset") or find_template("light", "", "")
+        arrow = l.get("arrow") or ""
+        is_tram = bool(l.get("tram"))
+        typ = "tram" if is_tram else arrow
+        asset = l.get("asset")
+        if asset:
+            src_scene, fname = asset.split("/")
+            k = int(fname[len("light_"):-len(".glb")]) if fname.startswith("light_") else 0
+            base_lights = engine_base(src_scene).get("lights", [])
+            base_arrow = (base_lights[k].get("arrow") or "") if k < len(base_lights) else ""
+            base_is_tram = bool(base_lights[k].get("tram")) if k < len(base_lights) else False
+            if is_tram != base_is_tram or (not is_tram and arrow != base_arrow):
+                asset = find_template("light", typ)
+        else:
+            asset = find_template("light", typ)
         src_scene, fname = asset.split("/")
         shutil.copy(SIT / src_scene / "parts" / fname, d / f"light_{i}.glb")
     return {"actors": len(actors), "lights": len(out["lights"]), "props": len(out["props"]),
@@ -239,9 +264,9 @@ def backfill(sid: str) -> bool:
 
 
 def playable(sid: str) -> bool:
-    """The game plays a scene that is reviewed and has no traffic controller (regulator)."""
+    """The game plays a scene that has been reviewed."""
     net = check.load(sid)
-    return bool(net.get("reviewed", True)) and not net.get("regulator", False)
+    return bool(net.get("reviewed", True))
 
 
 def write_index() -> list:

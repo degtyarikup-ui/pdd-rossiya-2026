@@ -12,12 +12,18 @@ void main() {
     await initializeDateFormatting('en');
     await initializeDateFormatting('ru');
 
-    expect(DateFormat('d MMMM yyyy, HH:mm', 'en').format(expiry),
-        '3 November 2026, 14:05');
-    expect(DateFormat('d MMMM yyyy, HH:mm', 'ru').format(expiry),
-        '3 ноября 2026, 14:05');
-    expect(DateFormat('d MMMM yyyy, HH:mm', 'kk').format(expiry),
-        contains('қараша'));
+    expect(
+      DateFormat('d MMMM yyyy, HH:mm', 'en').format(expiry),
+      '3 November 2026, 14:05',
+    );
+    expect(
+      DateFormat('d MMMM yyyy, HH:mm', 'ru').format(expiry),
+      '3 ноября 2026, 14:05',
+    );
+    expect(
+      DateFormat('d MMMM yyyy, HH:mm', 'kk').format(expiry),
+      contains('қараша'),
+    );
   });
 
   test('numeric fallback works without locale data', () {
