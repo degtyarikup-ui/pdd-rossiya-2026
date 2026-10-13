@@ -6111,6 +6111,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Советы'**
   String get driverTipCategoryOther;
+
+  /// No description provided for @gameIllegalManeuver.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нарушение правил маневрирования'**
+  String get gameIllegalManeuver;
 }
 
 class _AppLocalizationsDelegate

@@ -1671,5 +1671,6 @@
   "driverTipCategoryComfort": "Комфорт",
   "driverTipCategoryFuel": "Экономия",
   "driverTipCategoryMirrors": "Зеркала",
-  "driverTipCategoryOther": "Советы"
+  "driverTipCategoryOther": "Советы",
+  "gameIllegalManeuver": "Нарушение правил маневрирования"
 }

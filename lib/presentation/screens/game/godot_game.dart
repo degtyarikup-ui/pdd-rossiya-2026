@@ -101,6 +101,7 @@ class GodotGame {
     try {
       json = await _start(context, [
         '--lang=$lang',
+        '--text-scale=${MediaQuery.textScalerOf(context).scale(14) / 14}',
         if (dark) '--dark',
         ...safe,
         '--garage=${jsonEncode(garage)}',

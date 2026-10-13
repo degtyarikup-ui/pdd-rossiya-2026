@@ -1171,5 +1171,6 @@
   "driverTipCategoryComfort": "Жайлылық",
   "driverTipCategoryFuel": "Үнемдеу",
   "driverTipCategoryMirrors": "Айналар",
-  "driverTipCategoryOther": "Кеңестер"
+  "driverTipCategoryOther": "Кеңестер",
+  "gameIllegalManeuver": "Манёвр жасау ережесін бұзу"
 }

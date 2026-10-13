@@ -45,5 +45,11 @@ func _initialize() -> void:
 			sign.free()
 	for code in ["5.15.1", "5.15.2", "5.15.3", "5.15.4", "5.15.5", "5.15.6", "5.15.7", "5.15.8"]:
 		assert(ResourceLoader.exists("res://signs/%s.svg" % code), "Lane-direction signs must be available")
+	for code in ["1.4.1", "1.4.2", "1.4.3", "1.4.6"]:
+		sign = RoadBuild.sign_node(code)
+		var face := sign.get_node("sign_board").get_child(0) as MeshInstance3D
+		var size := (face.mesh as QuadMesh).size
+		assert(size.x < 1.0 and size.y < 2.0, "Railway distance markers must remain narrow and proportional")
+		sign.free()
 	print("Sign mounting: all checks passed")
 	quit(0)

@@ -8,10 +8,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 KEYS = [
     'gameSeconds', 'gameContinue', 'gameCorrect', 'gameMistake', 'gameTimeUp', 'gameCorrectAnswer',
+    'gameGarage', 'gameLobbyRecord', 'gameLobbyColour', 'gameLobbyNewRun', 'gameRunsTitle',
     'gameSpeedUnit', 'gameMeters', 'gameKilometers', 'gameViolations', 'gamePause', 'gameRunProgress',
     'gameSpeedLimitLabel', 'gameOncoming', 'gameOneWayAgainst', 'gameRoadworksHit', 'gameCollision',
     'gameOffroad', 'gamePriorityViolation', 'gameSpeeding', 'gameOvertakingProhibited', 'gamePedestrianYield',
-    'gameRailwayViolation', 'gameStopViolation', 'gameRedLightViolation', 'gameWrongManeuver', 'gameLeft',
+    'gameRailwayViolation', 'gameStopViolation', 'gameRedLightViolation', 'gameWrongManeuver', 'gameIllegalManeuver', 'gameLeft',
     'gameRight', 'gameGas', 'gameOver', 'gameCorrectAnswers', 'gameAnswersOf', 'gameNoViolations', 'gameScore', 'gameBrake', 'gameGasHint', 'gameResolving', 'gameExit', 'gameLobbyContinue',
     'ticket', 'gameTipGas', 'gameTipSteer', 'gameTipTurn', 'gameTipNext', 'gameTipDone',
     'gameTrafficControllerTitle', 'gameTrafficSignalQuestion', 'gameTrafficHintButton',

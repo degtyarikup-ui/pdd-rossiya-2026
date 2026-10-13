@@ -3655,4 +3655,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverTipCategoryOther => 'Tips';
+
+  @override
+  String get gameIllegalManeuver => 'Illegal maneuver';
 }

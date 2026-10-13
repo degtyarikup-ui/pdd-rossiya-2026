@@ -3669,4 +3669,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverTipCategoryOther => 'Советы';
+
+  @override
+  String get gameIllegalManeuver => 'Нарушение правил маневрирования';
 }

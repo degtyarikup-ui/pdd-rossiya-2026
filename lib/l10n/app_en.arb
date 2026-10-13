@@ -1171,5 +1171,6 @@
   "driverTipCategoryComfort": "Comfort",
   "driverTipCategoryFuel": "Economy",
   "driverTipCategoryMirrors": "Mirrors",
-  "driverTipCategoryOther": "Tips"
+  "driverTipCategoryOther": "Tips",
+  "gameIllegalManeuver": "Illegal maneuver"
 }

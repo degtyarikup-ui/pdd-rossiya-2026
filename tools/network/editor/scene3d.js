@@ -530,6 +530,7 @@ const Scene3D = (() => {
   }
   function signModel(o, withPole = true, onHeight = null) {
     const g = new THREE.Group(), board = new THREE.Group(), support = new THREE.Group();
+    const faceWidth = o.code.startsWith("1.4.") ? SIGN_W * 0.25 : SIGN_W;
     g.add(board); g.add(support);
     let y = 0;
     const faceMat = tex => new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.5, side: THREE.FrontSide });
@@ -560,16 +561,16 @@ const Scene3D = (() => {
       const c = document.createElement("canvas"); c.width = 512; c.height = 120;
       const ctx = c.getContext("2d"); ctx.fillStyle = "white"; ctx.fillRect(0, 0, 512, 120);
       ctx.fillStyle = "#151515"; ctx.font = "bold 60px sans-serif"; ctx.textAlign = "center"; ctx.fillText(o.plate, 256, 82, 490);
-      add(new THREE.CanvasTexture(c), SIGN_W * 0.8, 0.28 * SIGN_W / 0.8);
+      add(new THREE.CanvasTexture(c), faceWidth * 0.8, 0.28 * SIGN_W / 0.8);
     }
     if (o.code === "8.13") add(mainRoadTexture(o.mainRoad || [], o.roads), SIGN_W, SIGN_W * 0.75);
     else {
       if (o.mainRoad && o.mainRoad.length) add(mainRoadTexture(o.mainRoad, o.roads), SIGN_W * 0.8, SIGN_W * 0.6);
-      const tex = signTexture(o.code), face = add(tex, SIGN_W, SIGN_W), oldHeight = SIGN_W;
+      const tex = signTexture(o.code), face = add(tex, faceWidth, faceWidth), oldHeight = faceWidth;
       const fit = () => {
         const im = tex.image; if (!im?.width) return;
-        const h = SIGN_W * im.height / im.width;
-        face.geometry.dispose(); face.geometry = new THREE.PlaneGeometry(SIGN_W, h);
+        const h = faceWidth * im.height / im.width;
+        face.geometry.dispose(); face.geometry = new THREE.PlaneGeometry(faceWidth, h);
         face.position.y += (h - oldHeight) / 2; y += h - oldHeight;
         if (onHeight) onHeight(h); updateSupport(); needsRender = true;
       };

@@ -3647,4 +3647,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverTipCategoryOther => 'Кеңестер';
+
+  @override
+  String get gameIllegalManeuver => 'Манёвр жасау ережесін бұзу';
 }

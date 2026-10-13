@@ -38,6 +38,11 @@ static func sign_at(parent: Node3D, code: String, z: float, side: String, half: 
 	parent.add_child(node)
 
 
+## Narrow distance boards 1.4.x must not inherit the width of a full road sign.
+static func face_width(code: String) -> float:
+	return SIGN_WIDTH * 0.25 if code.begins_with("1.4.") else SIGN_WIDTH
+
+
 const SIGN_BOTTOM := 2.2       # m, the lower edge of the board (plates included) above the pavement
 const SIGN_LEAN := 0.0   # boards stay vertical and centred on their pole
 
@@ -62,18 +67,19 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 	root.add_child(board)
 	# The board's parts from the bottom up: text plate, picture plate, the sign.
 	var y := 0.0
+	var width := face_width(code)
 	var parts: Array = []
 	if plate != "":
-		parts.append(["text", plate, SIGN_WIDTH * 0.8, 0.28 * SIGN_SCALE])
+		parts.append(["text", plate, width * 0.8, 0.28 * SIGN_SCALE])
 	if plate_sign != "":
 		var ptex := load("res://signs/%s.svg" % plate_sign) as Texture2D
 		if ptex != null:
-			var pw := SIGN_WIDTH * 0.8
+			var pw := face_width(plate_sign) if plate_sign.begins_with("1.4.") else width * 0.8
 			parts.append(["pic", ptex, pw, pw * float(ptex.get_height()) / float(ptex.get_width())])
 	if not main_road.is_empty() and code != "8.13":
 		var mt := main_road_plate(main_road, roads)
 		parts.append(["pic", mt, SIGN_WIDTH * 0.8, SIGN_WIDTH * 0.8 * 0.75])
-	parts.append(["pic", tex, SIGN_WIDTH, SIGN_WIDTH * float(tex.get_height()) / float(tex.get_width())])
+	parts.append(["pic", tex, width, width * float(tex.get_height()) / float(tex.get_width())])
 	for part in parts:
 		var w: float = part[2]
 		var h: float = part[3]
@@ -156,7 +162,7 @@ static func light_with_signs(light: Node3D, codes: Array, main_road: Array = [])
 			continue
 		var sign := sign_node(str(code), "", "", main_road if code == "8.13" else [], [], false)
 		signs.append(sign)
-		heights.append(SIGN_WIDTH * 0.8 * float(tex.get_height()) / float(tex.get_width()))
+		heights.append(face_width(str(code)) * 0.8 * float(tex.get_height()) / float(tex.get_width()))
 	if signs.is_empty():
 		return light
 	var root := Node3D.new()
