@@ -10,6 +10,7 @@ import 'package:pdd_app/data/sources/questions_data_source.dart';
 import 'package:pdd_app/presentation/screens/signs/signs_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_pill_search_field.dart';
+import 'package:pdd_app/core/utils/safe_user_message.dart';
 
 /// Вкладка «ПДД»: разделы правил из контента страны
 /// (assets/countries/{code}/questions/pdd_sections.json) и знаки/разметка.
@@ -41,6 +42,16 @@ class _PddScreenState extends ConsumerState<PddScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(
+      appSettingsProvider.select((s) => s.effectiveLanguageCode),
+      (prev, next) {
+        if (prev != next) {
+          setState(() {
+            _sectionsFuture = QuestionsDataSource().loadPddSections(next);
+          });
+        }
+      },
+    );
     final colors = AppColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -175,15 +186,36 @@ class _PddScreenState extends ConsumerState<PddScreen> {
     return FutureBuilder<List<Map<String, String>>>(
       future: _sectionsFuture,
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppDimensions.screenPadding),
+              child: Text(
+                dataLoadErrorMessage(snapshot.error),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: colors.secondaryText,
+                ),
+              ),
+            ),
+          );
+        }
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final normalizedQuery = _query.trim().toLowerCase();
+        final normalizedQuery =
+            _query.trim().toLowerCase().replaceAll('ё', 'е');
         final filteredSections = snapshot.data!.where((section) {
           if (normalizedQuery.isEmpty) return true;
-          return section['title']!.toLowerCase().contains(normalizedQuery) ||
-              section['content']!.toLowerCase().contains(normalizedQuery);
+          final title =
+              (section['title'] ?? '').toLowerCase().replaceAll('ё', 'е');
+          final content =
+              (section['content'] ?? '').toLowerCase().replaceAll('ё', 'е');
+          return title.contains(normalizedQuery) ||
+              content.contains(normalizedQuery);
         }).toList();
 
         if (filteredSections.isEmpty) {

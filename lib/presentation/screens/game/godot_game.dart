@@ -53,6 +53,8 @@ class GodotGame {
   static const _tipsSeenKey = 'game_tips_seen';
   static const _firstRunSeenKey = 'game_seen';
   static const _pendingRunKey = 'game_run_pending';
+  // The cars earned by a run ("id|paint"), until the next garage visit shows them rolling out.
+  static const _pendingRevealKey = 'game_reveal_pending';
   static const _runQuestions = GameState.runQuestions;
   static Future<bool>? _available;
   static Future<bool>? _webAvailable;
@@ -85,12 +87,14 @@ class GodotGame {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final garage = await _garageJson(ref, lang: lang);
     if (!context.mounted) return;
+    final safe = _safeArea(context);
     _running = true;
     String? json;
     try {
       json = await _start(context, [
         '--lang=$lang',
         if (dark) '--dark',
+        ...safe,
         '--garage=${jsonEncode(garage)}',
       ]);
     } on PlatformException {
@@ -117,6 +121,7 @@ class GodotGame {
         ? _hex(gamePaintColors[paint]!)
         : '#0574F8';
     if (!context.mounted) return;
+    final safe = _safeArea(context);
     _running = true;
     String? json;
     try {
@@ -124,6 +129,7 @@ class GodotGame {
         '--regulator',
         '--lang=$lang',
         if (dark) '--dark',
+        ...safe,
         '--vehicle=$vehicle',
         '--paint=$paintHex',
         if (!SoundEffectsService.instance.isEnabled) '--mute',
@@ -166,6 +172,19 @@ class GodotGame {
 
   /// Opens the game and waits for its summary (JSON), null if it did not end
   /// with one. Android and iOS: the native screen; web: the game's route.
+  /// The layout the app measures, in dp: the status and navigation bars (the engine does not report the
+  /// status bar on Android, so the game would draw its top bar under it) and the screen width, which
+  /// sets the game's dp scale (Ui.dp) so its sizes are the app's sizes.
+  static List<String> _safeArea(BuildContext context) {
+    final padding = MediaQuery.paddingOf(context);
+    final width = MediaQuery.sizeOf(context).width;
+    return [
+      '--safe-top=${padding.top.toStringAsFixed(1)}',
+      '--safe-bottom=${padding.bottom.toStringAsFixed(1)}',
+      '--screen-dp=${width.toStringAsFixed(1)}',
+    ];
+  }
+
   static Future<String?> _start(BuildContext context, List<String> args) {
     if (kIsWeb) {
       return Navigator.of(context).push<String>(
@@ -219,9 +238,11 @@ class GodotGame {
     final pending = await _pendingRun();
     final selectedId = prefs?.getString(_vehicleKey) ?? GameGarageService.starter.id;
     final selectedPaint = prefs?.getString(_paintKey) ?? GameGarageService.starter.paint;
+    final reveal = await _takeReveal(selectedId, selectedPaint);
     return {
       'cars': cars,
       'selected': {'id': selectedId, 'paint': selectedPaint},
+      'reveal': ?reveal,
       'record': prefs?.getInt(_bestScoreKey) ?? 0,
       'tips': !(prefs?.containsKey(_tipsSeenKey) ?? false),
       // The app's own switches: sound effects and the vibration.
@@ -251,6 +272,31 @@ class GodotGame {
   static String _hex(Color c) {
     String channel(double v) => (v * 255).round().toRadixString(16).padLeft(2, '0');
     return '#${channel(c.r)}${channel(c.g)}${channel(c.b)}'.toUpperCase();
+  }
+
+  /// The cars a run earned wait until the next garage visit.
+  static Future<void> _addPendingReveals(List<GameCar> cars) async {
+    final prefs = await _prefs();
+    if (prefs == null) return;
+    final waiting = prefs.getStringList(_pendingRevealKey) ?? const <String>[];
+    await prefs.setStringList(_pendingRevealKey, [
+      ...waiting,
+      for (final car in cars) '${car.id}|${car.paint}',
+    ]);
+  }
+
+  /// The car on the stand rolls out of the garage once, if a run has just earned it. The waiting
+  /// list is cleared on every garage visit: a car that was not chosen in the reveal dialog stays
+  /// in the garage without the roll-out.
+  static Future<Map<String, String>?> _takeReveal(String id, String paint) async {
+    final prefs = await _prefs();
+    if (prefs == null) return null;
+    final waiting = prefs.getStringList(_pendingRevealKey);
+    if (waiting == null) return null;
+    await prefs.remove(_pendingRevealKey);
+    final color = gamePaintColors[paint];
+    if (color == null || !waiting.contains('$id|$paint')) return null;
+    return {'id': id, 'paint': paint, 'hex': _hex(color)};
   }
 
   static Future<SharedPreferences?> _prefs() async {
@@ -322,6 +368,7 @@ class GodotGame {
         if (car != null) unlocked.add(car);
       }
       if (unlocked.isNotEmpty) {
+        await _addPendingReveals(unlocked);
         unawaited(ProgressSyncService.instance.syncWithServer());
       }
     }

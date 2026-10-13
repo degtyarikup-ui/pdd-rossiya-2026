@@ -435,10 +435,14 @@ class RemoteNotificationsService {
       }
       _subscriptionState = enabled;
     }
-    for (final oldTopic in _subscribedUserTopics.difference(desiredUserTopics)) {
+    for (final oldTopic in _subscribedUserTopics.difference(
+      desiredUserTopics,
+    )) {
       await messaging.unsubscribeFromTopic(oldTopic);
     }
-    for (final newTopic in desiredUserTopics.difference(_subscribedUserTopics)) {
+    for (final newTopic in desiredUserTopics.difference(
+      _subscribedUserTopics,
+    )) {
       await messaging.subscribeToTopic(newTopic);
     }
     _subscribedUserTopics = desiredUserTopics;

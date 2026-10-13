@@ -1,6 +1,9 @@
-## Native Godot UI for the Regulator arcade mini-game.
-## Styled with PDD Rossiya brand design tokens (AppColors, fonts, Onest).
-## Top HUD (score, timer, lives), prompt, hint popover, 5 move buttons, and Game Over dialog.
+## Native Godot UI of the Regulator mini-game. It draws the same overlays as the Flutter screen it replaces
+## (lib/presentation/screens/games/traffic_controller/traffic_controller_screen.dart): the top bar (close,
+## 3D, the HUD card with score, combo, time and lives), the question panel with five moves, the hint bulb
+## with its verse, and the result card. Everything is laid out in dp, the unit the app's layout uses:
+## the root is scaled by Ui.dp, so the sizes below are the Flutter ones. Colours are AppColors (Ui.c),
+## icons are the app's Material icon font (Ui.icon).
 class_name RegulatorUi
 extends Control
 
@@ -9,361 +12,558 @@ signal hint_toggled()
 signal restart_pressed()
 signal exit_pressed()
 
-var score_label: Label
-var combo_label: Label
-var timer_label: Label
-var timer_icon: Label
-var lives_container: HBoxContainer
-var prompt_label: Label
+const COVER := "res://art/traffic_controller_cover.webp"
 
-var hint_btn: Button
-var hint_card: PanelContainer
-var hint_text: Label
+# Codepoints of Icons.*_rounded in the Flutter app (the same icon font).
+const ICON_CLOSE := 0xf647
+const ICON_CUBE := 0xf0289
+const ICON_STAR := 0xf01d4
+const ICON_HEART := 0xf738
+const ICON_HEART_EMPTY := 0xf737
+const ICON_TIMER := 0xf44a
+const ICON_BULB := 0xf855
+const ICON_BULB_OUTLINE := 0xf854
+const ICON_TROPHY := 0xf707
+const ICON_TURN_LEFT := 0xf03a2
+const ICON_STRAIGHT := 0xf0389
+const ICON_TURN_RIGHT := 0xf03a3
+const ICON_U_TURN := 0xf03a8
+const ICON_HAND := 0xf0328
 
+const SCREEN_PAD := 20.0
+const CHROME := 40.0
+const ANSWER_H := 56.0
+const DIRECTIONAL_H := 80.0
+const LIVES := 5
+const HUD_PAD := 12.0
+
+var _top_bar: HBoxContainer
+var _hud: PanelContainer
+var _line1: HBoxContainer
+var _line2: HBoxContainer
+var _score_group: HBoxContainer
+var _timer_group: HBoxContainer
+var _lives: HBoxContainer
+var _spacer_after_timer: Control
+var _score_label: Label
+var _combo_chip: PanelContainer
+var _combo_label: Label
+var _timer_icon: Label
+var _timer_label: Label
+var _hearts: Array[Label] = []
+
+var _bottom: VBoxContainer
+var _hint_row: MarginContainer
+var _hint_bulb: Label
+var _hint_text: Label
+var _panel: PanelContainer
+var _panel_style: StyleBoxFlat
+var _question: Label
 var move_buttons := {}
-var buttons_container: VBoxContainer
-var result_modal: Control
 
-var final_score_label: Label
-var stats_solved_val: Label
-var stats_acc_val: Label
-var stats_combo_val: Label
-var record_badge: PanelContainer
+var _result: Control
+var _result_card: PanelContainer
+var _cover: TextureRect
+var _result_title: Label
+var _final_score: Label
+var _record_box: VBoxContainer
+var _record_badge: PanelContainer
+var _best_label: Label
+var _stat_values: Array[Label] = []
 
 var hint_open := false
+var awaiting := false
 
 
 func _init() -> void:
-	anchor_right = 1.0
-	anchor_bottom = 1.0
+	# Sized by _layout(): the root is in dp and scaled to the viewport.
+	anchor_right = 0.0
+	anchor_bottom = 0.0
 	mouse_filter = MOUSE_FILTER_IGNORE
-	_build_ui()
+	_build_top_bar()
+	_build_bottom()
+	_build_result()
 
 
-func _build_ui() -> void:
-	# 1. Top Bar: Close button + HUD card
-	var top_bar := HBoxContainer.new()
-	top_bar.name = "TopBar"
-	top_bar.set_anchors_preset(PRESET_TOP_WIDE)
-	top_bar.offset_left = 16
-	top_bar.offset_right = -16
-	top_bar.offset_top = 16
-	top_bar.add_theme_constant_override("separation", 12)
-	add_child(top_bar)
-
-	# Close button
-	var close_btn := Button.new()
-	close_btn.text = "✕"
-	close_btn.custom_minimum_size = Vector2(44, 44)
-	close_btn.add_theme_font_override("font", Ui.font(700))
-	close_btn.add_theme_font_size_override("font_size", 18)
-	close_btn.add_theme_color_override("font_color", Ui.c("text"))
-	var close_style := Ui.box(Ui.c("card"), 12)
-	close_btn.add_theme_stylebox_override("normal", close_style)
-	close_btn.add_theme_stylebox_override("hover", close_style)
-	close_btn.add_theme_stylebox_override("pressed", close_style)
-	close_btn.pressed.connect(func(): exit_pressed.emit())
-	top_bar.add_child(close_btn)
-
-	# HUD Card
-	var hud_card := PanelContainer.new()
-	hud_card.size_flags_horizontal = SIZE_EXPAND_FILL
-	hud_card.custom_minimum_size = Vector2(0, 44)
-	hud_card.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 12))
-	top_bar.add_child(hud_card)
-
-	var hud_box := HBoxContainer.new()
-	hud_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	hud_box.add_theme_constant_override("separation", 16)
-	hud_card.add_child(hud_box)
-
-	# Score & Combo
-	var score_box := HBoxContainer.new()
-	score_box.add_theme_constant_override("separation", 4)
-	score_label = Ui.label("0", 16, 700, Ui.c("text"))
-	combo_label = Ui.label("", 13, 600, Ui.c("accent"))
-	score_box.add_child(score_label)
-	score_box.add_child(combo_label)
-	hud_box.add_child(score_box)
-
-	# Timer
-	var timer_box := HBoxContainer.new()
-	timer_box.add_theme_constant_override("separation", 4)
-	timer_icon = Ui.label("⏱", 14, 400, Ui.c("secondary"))
-	timer_label = Ui.label("60 с", 15, 600, Ui.c("text"))
-	timer_box.add_child(timer_icon)
-	timer_box.add_child(timer_label)
-	hud_box.add_child(timer_box)
-
-	# Lives (5 heart indicators)
-	lives_container = HBoxContainer.new()
-	lives_container.add_theme_constant_override("separation", 4)
-	for i in range(5):
-		var heart := Label.new()
-		heart.text = "♥"
-		heart.add_theme_font_override("font", Ui.font(700))
-		heart.add_theme_font_size_override("font_size", 16)
-		heart.add_theme_color_override("font_color", Ui.c("red"))
-		lives_container.add_child(heart)
-	hud_box.add_child(lives_container)
-
-	# 2. Bottom Panel: Question Prompt, Hint, 5 Move Buttons
-	var bottom_panel := PanelContainer.new()
-	bottom_panel.name = "BottomPanel"
-	bottom_panel.set_anchors_preset(PRESET_BOTTOM_WIDE)
-	bottom_panel.offset_top = -240
-	bottom_panel.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 20, true))
-	add_child(bottom_panel)
-
-	var bottom_vbox := VBoxContainer.new()
-	bottom_vbox.offset_left = 16
-	bottom_vbox.offset_right = -16
-	bottom_vbox.offset_top = 14
-	bottom_vbox.offset_bottom = -14
-	bottom_vbox.add_theme_constant_override("separation", 10)
-	bottom_panel.add_child(bottom_vbox)
-
-	# Header row: Question prompt & Hint button
-	var prompt_row := HBoxContainer.new()
-	prompt_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	bottom_vbox.add_child(prompt_row)
-
-	hint_btn = Button.new()
-	hint_btn.text = "💡"
-	hint_btn.custom_minimum_size = Vector2(36, 36)
-	var hint_style := Ui.box(Ui.c("gray"), 10)
-	hint_btn.add_theme_stylebox_override("normal", hint_style)
-	hint_btn.add_theme_stylebox_override("hover", hint_style)
-	hint_btn.add_theme_stylebox_override("pressed", hint_style)
-	hint_btn.pressed.connect(_on_hint_pressed)
-	prompt_row.add_child(hint_btn)
-
-	prompt_label = Ui.label(Ui.t("gameTrafficSignalQuestion"), 15, 600, Ui.c("text"))
-	prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	prompt_label.size_flags_horizontal = SIZE_EXPAND_FILL
-	prompt_row.add_child(prompt_label)
-
-	# Hint banner (shown when bulb is clicked)
-	hint_card = PanelContainer.new()
-	hint_card.visible = false
-	hint_card.add_theme_stylebox_override("panel", Ui.box(Ui.c("gray"), 10))
-	bottom_vbox.add_child(hint_card)
-
-	hint_text = Ui.label("", 14, 500, Ui.c("text"), true)
-	hint_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint_card.add_child(hint_text)
-
-	# Move Buttons Container
-	buttons_container = VBoxContainer.new()
-	buttons_container.add_theme_constant_override("separation", 8)
-	bottom_vbox.add_child(buttons_container)
-
-	# Row 1: Left, Straight, Right
-	var row1 := HBoxContainer.new()
-	row1.add_theme_constant_override("separation", 8)
-	buttons_container.add_child(row1)
-
-	row1.add_child(_create_move_btn(RegulatorRules.Move.LEFT, "↰ " + Ui.t("gameActionLeft")))
-	row1.add_child(_create_move_btn(RegulatorRules.Move.STRAIGHT, "↑ " + Ui.t("gameActionStraight")))
-	row1.add_child(_create_move_btn(RegulatorRules.Move.RIGHT, "↱ " + Ui.t("gameActionRight")))
-
-	# Row 2: U-Turn, Stand
-	var row2 := HBoxContainer.new()
-	row2.add_theme_constant_override("separation", 8)
-	buttons_container.add_child(row2)
-
-	row2.add_child(_create_move_btn(RegulatorRules.Move.UTURN, "↶ " + Ui.t("gameActionUTurn")))
-	row2.add_child(_create_move_btn(RegulatorRules.Move.NONE, "✋ " + Ui.t("gameActionStand")))
-
-	# 3. Game Over / Result Overlay
-	_build_result_overlay()
+func _ready() -> void:
+	get_viewport().size_changed.connect(_layout)
+	_layout()
 
 
-func _create_move_btn(move: RegulatorRules.Move, label_text: String) -> Button:
-	var btn := Button.new()
-	btn.text = label_text
-	btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	btn.custom_minimum_size = Vector2(0, 46)
-	btn.add_theme_font_override("font", Ui.font(600))
-	btn.add_theme_font_size_override("font_size", 14)
-	btn.add_theme_color_override("font_color", Ui.c("text"))
+## Sizes the root in dp (the viewport units per dp scale it back) and places the parts that depend on the
+## safe area: the top bar sits under the status bar, the panel above the home indicator.
+func _layout() -> void:
+	var viewport := get_viewport()
+	var u := Ui.dp(viewport)
+	scale = Vector2(u, u)
+	position = Vector2.ZERO
+	size = viewport.get_visible_rect().size / u
+	var safe := Ui.insets(viewport)
+	var top := float(safe["top"]) / u
+	var bottom := float(safe["bottom"]) / u
+	_top_bar.offset_top = top + 8.0
+	_top_bar.offset_bottom = _top_bar.offset_top + CHROME
+	_panel_style.content_margin_bottom = 16.0 + bottom
+	var card_width := minf(420.0, size.x - 40.0)
+	_result_card.custom_minimum_size.x = card_width
+	# The cover is 16:9 of the card's inner width (the card has 20 dp padding on both sides).
+	_cover.custom_minimum_size.y = (card_width - 2.0 * SCREEN_PAD) * 9.0 / 16.0
+	_fit_hud()
 
-	var normal_style := Ui.box(Ui.c("gray"), 10)
-	btn.add_theme_stylebox_override("normal", normal_style)
-	btn.add_theme_stylebox_override("hover", normal_style)
-	btn.add_theme_stylebox_override("pressed", normal_style)
 
-	btn.pressed.connect(func(): move_selected.emit(move))
-	move_buttons[move] = btn
-	return btn
+# --- Top bar: close, 3D, HUD ---
+
+func _build_top_bar() -> void:
+	_top_bar = HBoxContainer.new()
+	_top_bar.set_anchors_preset(PRESET_TOP_WIDE)
+	_top_bar.offset_left = SCREEN_PAD
+	_top_bar.offset_right = -SCREEN_PAD
+	_top_bar.add_theme_constant_override("separation", 8)
+	add_child(_top_bar)
+
+	_top_bar.add_child(_chrome_button(ICON_CLOSE, func(): exit_pressed.emit()))
+	# The 3D button of the app opens the 3D game, which this screen already is.
+	_top_bar.add_child(_chrome_button(ICON_CUBE, Callable()))
+	_top_bar.add_child(_spacer(4.0, 0.0))
+
+	_hud = PanelContainer.new()
+	_hud.size_flags_horizontal = SIZE_EXPAND_FILL
+	_hud.custom_minimum_size = Vector2(0, CHROME)
+	_hud.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 12, HUD_PAD, 8.0))
+	_top_bar.add_child(_hud)
+
+	var lines := VBoxContainer.new()
+	lines.add_theme_constant_override("separation", 8)
+	_hud.add_child(lines)
+	_line1 = HBoxContainer.new()
+	_line1.add_theme_constant_override("separation", 12)
+	lines.add_child(_line1)
+	_line2 = HBoxContainer.new()
+	_line2.add_theme_constant_override("separation", 12)
+	_line2.visible = false
+	lines.add_child(_line2)
+
+	_score_group = HBoxContainer.new()
+	_score_group.add_theme_constant_override("separation", 6)
+	_line1.add_child(_score_group)
+	var score_value := HBoxContainer.new()
+	score_value.add_theme_constant_override("separation", 4)
+	_score_group.add_child(score_value)
+	score_value.add_child(Ui.icon(ICON_STAR, 22, Ui.c("gold")))
+	_score_label = Ui.label("0", 18, 800, Ui.c("text"))
+	score_value.add_child(_score_label)
+	_combo_chip = PanelContainer.new()
+	_combo_chip.add_theme_stylebox_override("panel", _padded(Ui.c("gold_surface"), 6, 6.0, 2.0))
+	_combo_label = Ui.label("", 12, 800, Ui.c("gold"))
+	_combo_chip.add_child(_combo_label)
+	_combo_chip.visible = false
+	_score_group.add_child(_combo_chip)
+
+	_line1.add_child(_spacer_expand())
+
+	_timer_group = HBoxContainer.new()
+	_timer_group.add_theme_constant_override("separation", 4)
+	_line1.add_child(_timer_group)
+	_timer_icon = Ui.icon(ICON_TIMER, 18, Ui.c("secondary"))
+	_timer_group.add_child(_timer_icon)
+	_timer_label = Ui.label("", 14, 600, Ui.c("text"))
+	_timer_group.add_child(_timer_label)
+
+	# Lives sit on the first line when the HUD has room, on the second when it does not (the app's Wrap).
+	_spacer_after_timer = _spacer_expand()
+	_line1.add_child(_spacer_after_timer)
+	_lives = HBoxContainer.new()
+	_lives.add_theme_constant_override("separation", 3)
+	for i in LIVES:
+		var heart := Ui.icon(ICON_HEART, 15, Ui.c("red"))
+		_hearts.append(heart)
+		_lives.add_child(heart)
+	_line1.add_child(_lives)
 
 
-func _build_result_overlay() -> void:
-	result_modal = Control.new()
-	result_modal.name = "ResultOverlay"
-	result_modal.set_anchors_preset(PRESET_FULL_RECT)
-	result_modal.visible = false
-	add_child(result_modal)
+## Keeps the HUD on one line when it fits, like the app's Wrap with spaceBetween; otherwise the lives
+## wrap to a second line, left-aligned.
+func _fit_hud() -> void:
+	if _hud == null or _lives == null:
+		return
+	var available := _hud.size.x - 2.0 * HUD_PAD
+	var needed := _score_group.get_combined_minimum_size().x + _timer_group.get_combined_minimum_size().x \
+			+ _lives.get_combined_minimum_size().x + 2.0 * _line1.get_theme_constant("separation")
+	var one_line := needed <= available
+	if one_line and _lives.get_parent() != _line1:
+		_line2.remove_child(_lives)
+		_line1.add_child(_lives)
+	elif not one_line and _lives.get_parent() != _line2:
+		_line1.remove_child(_lives)
+		_line2.add_child(_lives)
+	_line2.visible = not one_line
+	# Space is shared between the score, the timer and the lives on one line; with two lines the timer
+	# takes the rest of the first line, so it ends at the right edge as in the app.
+	_spacer_after_timer.size_flags_horizontal = SIZE_EXPAND_FILL if one_line else SIZE_SHRINK_CENTER
 
-	# Scrim backdrop
+
+# --- Bottom: hint row above the question panel ---
+
+func _build_bottom() -> void:
+	_bottom = VBoxContainer.new()
+	_bottom.set_anchors_preset(PRESET_BOTTOM_WIDE)
+	_bottom.grow_vertical = GROW_DIRECTION_BEGIN
+	_bottom.add_theme_constant_override("separation", 0)
+	add_child(_bottom)
+
+	_hint_row = MarginContainer.new()
+	_hint_row.add_theme_constant_override("margin_left", 20)
+	_hint_row.add_theme_constant_override("margin_right", 20)
+	_hint_row.add_theme_constant_override("margin_bottom", 12)
+	_bottom.add_child(_hint_row)
+
+	var hint := HBoxContainer.new()
+	hint.add_theme_constant_override("separation", 12)
+	_hint_row.add_child(hint)
+
+	var bulb := PanelContainer.new()
+	bulb.custom_minimum_size = Vector2(48, 48)
+	bulb.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 12))
+	_hint_bulb = Ui.icon(ICON_BULB_OUTLINE, 22, Ui.c("accent"))
+	bulb.add_child(_centered(_hint_bulb))
+	bulb.add_child(_tap(_on_hint_pressed))
+	hint.add_child(bulb)
+
+	# The verse floats over the scene in white, with a shadow (the app's style).
+	_hint_text = Ui.label("", 17, 600, Color.WHITE, true)
+	_hint_text.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.87))
+	_hint_text.add_theme_constant_override("shadow_offset_x", 0)
+	_hint_text.add_theme_constant_override("shadow_offset_y", 1)
+	_hint_text.add_theme_constant_override("shadow_outline_size", 4)
+	_hint_text.visible = false
+	hint.add_child(_hint_text)
+
+	_panel = PanelContainer.new()
+	_panel_style = Ui.box(Ui.c("card"), 24, true)
+	_panel_style.content_margin_left = SCREEN_PAD
+	_panel_style.content_margin_right = SCREEN_PAD
+	_panel_style.content_margin_top = 16.0
+	_panel_style.content_margin_bottom = 16.0
+	_panel.add_theme_stylebox_override("panel", _panel_style)
+	_bottom.add_child(_panel)
+
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 0)
+	_panel.add_child(column)
+
+	_question = Ui.label(Ui.t("gameTrafficSignalQuestion"), 14, 600, Ui.c("text"))
+	_question.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_question)
+	column.add_child(_spacer(0.0, 12.0))
+
+	var directions := HBoxContainer.new()
+	directions.add_theme_constant_override("separation", 8)
+	column.add_child(directions)
+	directions.add_child(_move_button(RegulatorRules.Move.LEFT, ICON_TURN_LEFT, "gameActionLeft", true))
+	directions.add_child(_move_button(RegulatorRules.Move.STRAIGHT, ICON_STRAIGHT, "gameActionStraight", true))
+	directions.add_child(_move_button(RegulatorRules.Move.RIGHT, ICON_TURN_RIGHT, "gameActionRight", true))
+
+	column.add_child(_spacer(0.0, 8.0))
+
+	var rest := HBoxContainer.new()
+	rest.add_theme_constant_override("separation", 8)
+	column.add_child(rest)
+	rest.add_child(_move_button(RegulatorRules.Move.UTURN, ICON_U_TURN, "gameActionUTurn", false))
+	rest.add_child(_move_button(RegulatorRules.Move.NONE, ICON_HAND, "gameActionStand", false))
+
+
+func _move_button(move: RegulatorRules.Move, icon_code: int, label_key: String, directional: bool) -> PanelContainer:
+	var box := PanelContainer.new()
+	box.size_flags_horizontal = SIZE_EXPAND_FILL
+	box.custom_minimum_size = Vector2(0, DIRECTIONAL_H if directional else ANSWER_H)
+	var pad_y := 12.0 if directional else 8.0
+	var style := _padded(Ui.c("gray"), 12, 8.0, pad_y)
+	box.add_theme_stylebox_override("panel", style)
+
+	var icon := Ui.icon(icon_code, 28 if directional else 20, Ui.c("accent"))
+	var label := Ui.label(Ui.t(label_key), 14 if directional else 16, 600, Ui.c("text"))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Stacked (directional) the icon and the caption fill the width; in a row they stay together, centred.
+	var fill := SIZE_EXPAND_FILL if directional else SIZE_SHRINK_CENTER
+	label.size_flags_horizontal = fill
+	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	icon.size_flags_horizontal = fill
+
+	var content: BoxContainer
+	if directional:
+		content = VBoxContainer.new()
+	else:
+		content = HBoxContainer.new()
+	content.add_theme_constant_override("separation", 8)
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.add_child(icon)
+	content.add_child(label)
+	box.add_child(content)
+	box.add_child(_tap(func(): move_selected.emit(move)))
+
+	move_buttons[move] = { "panel": box, "style": style, "icon": icon, "label": label }
+	return box
+
+
+func _paint_move(entry: Dictionary, background: Color, text: Color, icon: Color) -> void:
+	(entry.style as StyleBoxFlat).bg_color = background
+	(entry.icon as Label).add_theme_color_override("font_color", icon)
+	(entry.label as Label).add_theme_color_override("font_color", text)
+
+
+# --- Result card: the app's GameResultOverlay ---
+
+func _build_result() -> void:
+	_result = Control.new()
+	_result.set_anchors_preset(PRESET_FULL_RECT)
+	_result.mouse_filter = MOUSE_FILTER_STOP
+	_result.visible = false
+	add_child(_result)
+
 	var scrim := ColorRect.new()
 	scrim.set_anchors_preset(PRESET_FULL_RECT)
-	scrim.color = Color(0, 0, 0, 0.6)
-	result_modal.add_child(scrim)
+	scrim.color = Color(0, 0, 0, 0.5)
+	scrim.mouse_filter = MOUSE_FILTER_STOP
+	_result.add_child(scrim)
 
-	# Dialog Card
-	var dialog := PanelContainer.new()
-	dialog.set_anchors_preset(PRESET_CENTER)
-	dialog.custom_minimum_size = Vector2(340, 360)
-	dialog.offset_left = -170
-	dialog.offset_top = -180
-	dialog.offset_right = 170
-	dialog.offset_bottom = 180
-	dialog.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 20))
-	result_modal.add_child(dialog)
+	var center := CenterContainer.new()
+	center.set_anchors_preset(PRESET_FULL_RECT)
+	_result.add_child(center)
 
-	var dialog_box := VBoxContainer.new()
-	dialog_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	dialog_box.add_theme_constant_override("separation", 16)
-	dialog.add_child(dialog_box)
+	_result_card = PanelContainer.new()
+	_result_card.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 24, SCREEN_PAD, SCREEN_PAD))
+	center.add_child(_result_card)
 
-	var title := Ui.label(Ui.t("gameTimeUp"), 22, 700, Ui.c("text"))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	dialog_box.add_child(title)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 0)
+	_result_card.add_child(column)
 
-	record_badge = PanelContainer.new()
-	record_badge.visible = false
-	record_badge.add_theme_stylebox_override("panel", Ui.box(Ui.c("gold"), 8))
-	var record_lbl := Ui.label(Ui.t("gameNewRecord"), 13, 700, Color.WHITE)
-	record_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	record_badge.add_child(record_lbl)
-	dialog_box.add_child(record_badge)
+	_cover = TextureRect.new()
+	_cover.texture = load(COVER)
+	_cover.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_cover.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_cover.size_flags_horizontal = SIZE_EXPAND_FILL
+	column.add_child(_cover)
+	column.add_child(_spacer(0.0, 10.0))
 
-	# Final Score
-	final_score_label = Ui.label("0", 38, 800, Ui.c("accent"))
-	final_score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	dialog_box.add_child(final_score_label)
+	_result_title = Ui.label("", 22, 800, Ui.c("text"))
+	_result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_result_title)
+	column.add_child(_spacer(0.0, 18.0))
 
-	# Stats grid
-	var stats_box := HBoxContainer.new()
-	stats_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	stats_box.add_theme_constant_override("separation", 24)
-	dialog_box.add_child(stats_box)
+	var score_row := HBoxContainer.new()
+	score_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	score_row.add_theme_constant_override("separation", 6)
+	column.add_child(score_row)
+	score_row.add_child(Ui.icon(ICON_STAR, 40, Ui.c("gold")))
+	_final_score = Ui.label("0", 44, 800, Ui.c("gold"))
+	score_row.add_child(_final_score)
 
-	stats_solved_val = _add_stat(stats_box, Ui.t("gameSolvedLabel"), "0")
-	stats_acc_val = _add_stat(stats_box, Ui.t("gameAccuracyLabel"), "0%")
-	stats_combo_val = _add_stat(stats_box, Ui.t("gameComboLabel"), "x0")
+	_record_box = VBoxContainer.new()
+	_record_box.add_theme_constant_override("separation", 6)
+	_record_box.visible = false
+	column.add_child(_record_box)
+	_record_badge = PanelContainer.new()
+	_record_badge.size_flags_horizontal = SIZE_SHRINK_CENTER
+	_record_badge.add_theme_stylebox_override("panel", _padded(_alpha(Ui.c("gold"), 0.16), 12, 12.0, 5.0))
+	var badge_row := HBoxContainer.new()
+	badge_row.add_theme_constant_override("separation", 5)
+	_record_badge.add_child(badge_row)
+	badge_row.add_child(Ui.icon(ICON_TROPHY, 16, Ui.c("gold")))
+	badge_row.add_child(Ui.label(Ui.t("gameNewRecord"), 13, 800, Ui.c("gold")))
+	_record_box.add_child(_record_badge)
+	_best_label = Ui.label("", 12, 600, Ui.c("secondary"))
+	_best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_record_box.add_child(_best_label)
 
-	# Buttons
-	var restart_btn := Button.new()
-	restart_btn.text = Ui.t("gameRestart")
-	restart_btn.custom_minimum_size = Vector2(0, 48)
-	restart_btn.add_theme_font_override("font", Ui.font(600))
-	restart_btn.add_theme_font_size_override("font_size", 16)
-	restart_btn.add_theme_color_override("font_color", Color.WHITE)
-	var restart_style := Ui.box(Ui.c("accent"), 12)
-	restart_btn.add_theme_stylebox_override("normal", restart_style)
-	restart_btn.add_theme_stylebox_override("hover", restart_style)
-	restart_btn.add_theme_stylebox_override("pressed", restart_style)
-	restart_btn.pressed.connect(func(): restart_pressed.emit())
-	dialog_box.add_child(restart_btn)
+	column.add_child(_spacer(0.0, 18.0))
 
-	var exit_btn := Button.new()
-	exit_btn.text = Ui.t("gameExit")
-	exit_btn.custom_minimum_size = Vector2(0, 44)
-	exit_btn.add_theme_font_override("font", Ui.font(600))
-	exit_btn.add_theme_font_size_override("font_size", 15)
-	exit_btn.add_theme_color_override("font_color", Ui.c("secondary"))
-	var exit_style := Ui.box(Ui.c("gray"), 12)
-	exit_btn.add_theme_stylebox_override("normal", exit_style)
-	exit_btn.add_theme_stylebox_override("hover", exit_style)
-	exit_btn.add_theme_stylebox_override("pressed", exit_style)
-	exit_btn.pressed.connect(func(): exit_pressed.emit())
-	dialog_box.add_child(exit_btn)
+	var stats := HBoxContainer.new()
+	stats.add_theme_constant_override("separation", 0)
+	column.add_child(stats)
+	for label_key in ["gameSolvedLabel", "gameAccuracyLabel", "gameComboLabel"]:
+		stats.add_child(_stat(Ui.t(label_key)))
+
+	column.add_child(_spacer(0.0, 18.0))
+
+	var restart := PanelContainer.new()
+	restart.custom_minimum_size = Vector2(0, 50)
+	restart.add_theme_stylebox_override("panel", Ui.box(Ui.c("accent"), 12))
+	var restart_label := Ui.label(Ui.t("gameRestart"), 15, 700, Color.WHITE)
+	restart_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	restart_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	restart.add_child(restart_label)
+	restart.add_child(_tap(func(): restart_pressed.emit()))
+	column.add_child(restart)
+
+	column.add_child(_spacer(0.0, 4.0))
+
+	var exit := PanelContainer.new()
+	exit.custom_minimum_size = Vector2(0, 44)
+	exit.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	var exit_label := Ui.label(Ui.t("gameExit"), 14, 700, Ui.c("secondary"))
+	exit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	exit_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	exit.add_child(exit_label)
+	exit.add_child(_tap(func(): exit_pressed.emit()))
+	column.add_child(exit)
 
 
-func _add_stat(parent: HBoxContainer, label_text: String, init_val: String) -> Label:
+func _stat(label_text: String) -> VBoxContainer:
 	var box := VBoxContainer.new()
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	var val := Ui.label(init_val, 17, 700, Ui.c("text"))
-	val.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var lbl := Ui.label(label_text, 12, 500, Ui.c("secondary"))
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(val)
-	box.add_child(lbl)
-	parent.add_child(box)
-	return val
+	box.size_flags_horizontal = SIZE_EXPAND_FILL
+	box.add_theme_constant_override("separation", 2)
+	var value := Ui.label("0", 18, 800, Ui.c("text"))
+	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var caption := Ui.label(label_text, 12, 600, Ui.c("secondary"))
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(value)
+	box.add_child(caption)
+	_stat_values.append(value)
+	return box
 
 
-func _on_hint_pressed() -> void:
-	hint_open = not hint_open
-	hint_card.visible = hint_open
-	hint_toggled.emit()
-
+# --- Public API (regulator.gd) ---
 
 func update_hud(score: int, combo: int, seconds_left: int, lives: int) -> void:
-	score_label.text = str(score)
-	combo_label.text = "x%d" % combo if combo > 1 else ""
+	_score_label.text = str(score)
+	_combo_chip.visible = combo > 1
+	_combo_label.text = Ui.t("gameCurrentCombo", { "count": combo })
 
-	timer_label.text = "%d %s" % [seconds_left, Ui.t("gameSeconds")]
-	if seconds_left <= 10:
-		timer_label.add_theme_color_override("font_color", Ui.c("red"))
-		timer_icon.add_theme_color_override("font_color", Ui.c("red"))
-	else:
-		timer_label.add_theme_color_override("font_color", Ui.c("text"))
-		timer_icon.add_theme_color_override("font_color", Ui.c("secondary"))
+	var urgent := seconds_left <= 10
+	_timer_label.text = Ui.t("gameSecondsLeft", { "seconds": seconds_left })
+	_timer_label.add_theme_color_override("font_color", Ui.c("red") if urgent else Ui.c("text"))
+	_timer_icon.add_theme_color_override("font_color", Ui.c("red") if urgent else Ui.c("secondary"))
 
-	for i in range(5):
-		var heart := lives_container.get_child(i) as Label
-		heart.add_theme_color_override("font_color", Ui.c("red") if i < lives else Ui.c("secondary"))
+	for i in _hearts.size():
+		var alive := i < lives
+		var heart := _hearts[i]
+		heart.text = char(ICON_HEART if alive else ICON_HEART_EMPTY)
+		heart.add_theme_color_override("font_color", Ui.c("red") if alive else Ui.c("secondary"))
+		heart.pivot_offset = heart.size / 2.0
+		heart.scale = Vector2.ONE if alive else Vector2(0.85, 0.85)
+	_fit_hud()
 
 
 func set_hint_verse(verse: String) -> void:
-	hint_text.text = verse
-	hint_open = false
-	hint_card.visible = false
+	_hint_text.text = verse
+	_set_hint_open(false)
 
 
 func show_answer_feedback(chosen_move: RegulatorRules.Move, allowed_moves: Array[RegulatorRules.Move], is_correct: bool) -> void:
-	hint_card.visible = false
-	hint_open = false
-
+	awaiting = true
+	_set_hint_open(false)
+	_refresh_hint_bulb()
 	for move in move_buttons:
-		var btn: Button = move_buttons[move]
+		var entry: Dictionary = move_buttons[move]
 		if allowed_moves.has(move):
-			var green_style := Ui.box(Ui.c("green"), 10)
-			btn.add_theme_stylebox_override("normal", green_style)
-			btn.add_theme_color_override("font_color", Color.WHITE)
+			_paint_move(entry, Ui.c("green"), Ui.c("white"), Ui.c("white"))
 		elif move == chosen_move and not is_correct:
-			var red_style := Ui.box(Ui.c("red"), 10)
-			btn.add_theme_stylebox_override("normal", red_style)
-			btn.add_theme_color_override("font_color", Color.WHITE)
+			_paint_move(entry, Ui.c("red"), Ui.c("white"), Ui.c("white"))
 		else:
-			btn.add_theme_color_override("font_color", Ui.c("secondary"))
+			_paint_move(entry, Ui.c("gray"), Ui.c("secondary"), Ui.c("secondary"))
 
 
 func reset_buttons_visuals() -> void:
+	awaiting = false
+	_refresh_hint_bulb()
 	for move in move_buttons:
-		var btn: Button = move_buttons[move]
-		var normal_style := Ui.box(Ui.c("gray"), 10)
-		btn.add_theme_stylebox_override("normal", normal_style)
-		btn.add_theme_stylebox_override("hover", normal_style)
-		btn.add_theme_stylebox_override("pressed", normal_style)
-		btn.add_theme_color_override("font_color", Ui.c("text"))
+		_paint_move(move_buttons[move], Ui.c("gray"), Ui.c("text"), Ui.c("accent"))
 
 
-func show_game_over(score: int, solved: int, wrong: int, max_combo: int, is_record: bool) -> void:
-	result_modal.visible = true
-	final_score_label.text = str(score)
-	record_badge.visible = is_record
+func show_game_over(score: int, solved: int, wrong: int, max_combo: int, is_record: bool, time_up := false, best := 0) -> void:
+	_hint_row.visible = false
+	_result.visible = true
+	_result_title.text = Ui.t("gameTimeUp") if time_up else Ui.t("gameOverTitle")
+	_final_score.text = str(score)
+	_record_badge.visible = is_record
+	_best_label.visible = not is_record and best > 0
+	_best_label.text = Ui.t("gameBestScore", { "score": best })
+	_record_box.visible = is_record or best > 0
 
 	var total := solved + wrong
 	var accuracy := int(round(float(solved) * 100.0 / float(total))) if total > 0 else 0
-
-	stats_solved_val.text = str(solved)
-	stats_acc_val.text = "%d%%" % accuracy
-	stats_combo_val.text = "x%d" % max_combo
+	_stat_values[0].text = str(solved)
+	_stat_values[1].text = "%d%%" % accuracy
+	_stat_values[2].text = "x%d" % max_combo
 
 
 func hide_game_over() -> void:
-	result_modal.visible = false
+	_result.visible = false
+	_hint_row.visible = true
+
+
+# --- Helpers ---
+
+func _on_hint_pressed() -> void:
+	if awaiting:
+		return
+	_set_hint_open(not hint_open)
+	hint_toggled.emit()
+
+
+func _set_hint_open(open: bool) -> void:
+	hint_open = open
+	_hint_text.visible = open
+	_hint_bulb.text = char(ICON_BULB if open else ICON_BULB_OUTLINE)
+
+
+func _refresh_hint_bulb() -> void:
+	_hint_bulb.add_theme_color_override("font_color", Ui.c("secondary") if awaiting else Ui.c("accent"))
+
+
+func _chrome_button(icon_code: int, action: Callable) -> PanelContainer:
+	var box := PanelContainer.new()
+	box.custom_minimum_size = Vector2(CHROME, CHROME)
+	box.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 12))
+	box.add_child(_centered(Ui.icon(icon_code, 18, Ui.c("text"))))
+	if action.is_valid():
+		box.add_child(_tap(action))
+	return box
+
+
+## A transparent layer over a control: it takes the taps, the control draws the look. The action runs on a
+## press inside the layer. A Button would run it on the release, and a release that came from another screen
+## (the app's 3D button hands over to this game) would then answer a question or open the hint by itself.
+func _tap(action: Callable) -> Control:
+	var layer := Control.new()
+	layer.set_anchors_preset(PRESET_FULL_RECT)
+	layer.mouse_filter = MOUSE_FILTER_STOP
+	layer.gui_input.connect(_on_tap_input.bind(action))
+	return layer
+
+
+func _on_tap_input(event: InputEvent, action: Callable) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		action.call()
+
+
+func _centered(child: Control) -> CenterContainer:
+	var center := CenterContainer.new()
+	center.add_child(child)
+	return center
+
+
+func _padded(color: Color, radius: int, pad_x: float, pad_y: float) -> StyleBoxFlat:
+	var box := Ui.box(color, radius)
+	box.content_margin_left = pad_x
+	box.content_margin_right = pad_x
+	box.content_margin_top = pad_y
+	box.content_margin_bottom = pad_y
+	return box
+
+
+func _alpha(color: Color, alpha: float) -> Color:
+	return Color(color.r, color.g, color.b, alpha)
+
+
+func _spacer(width: float, height: float) -> Control:
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(width, height)
+	return gap
+
+
+func _spacer_expand() -> Control:
+	var gap := Control.new()
+	gap.size_flags_horizontal = SIZE_EXPAND_FILL
+	return gap

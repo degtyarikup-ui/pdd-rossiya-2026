@@ -150,18 +150,22 @@ class QuestionsDataSource {
       _config.markupJson(lang),
       _config.markupJson(),
     );
-    final Map<String, dynamic> data =
-        json.decode(content) as Map<String, dynamic>;
-    return data.map((group, entries) {
-      final list = (entries as List<dynamic>)
+    final dynamic decoded = json.decode(content);
+    if (decoded is! Map) return {};
+    return decoded.map((group, entries) {
+      if (entries is! List) {
+        return MapEntry(group.toString(), <Map<String, String>>[]);
+      }
+      final list = entries
+          .whereType<Map>()
           .map(
             (e) => {
-              'title': (e as Map)['title'] as String,
-              'description': e['description'] as String,
+              'title': (e['title'] as String?) ?? '',
+              'description': (e['description'] as String?) ?? '',
             },
           )
           .toList();
-      return MapEntry(group, list);
+      return MapEntry(group.toString(), list);
     });
   }
 
@@ -171,12 +175,14 @@ class QuestionsDataSource {
       _config.pddSectionsJson(lang),
       _config.pddSectionsJson(),
     );
-    final List<dynamic> sections = json.decode(content) as List<dynamic>;
-    return sections
+    final dynamic decoded = json.decode(content);
+    if (decoded is! List) return [];
+    return decoded
+        .whereType<Map>()
         .map(
           (s) => {
-            'title': s['title'] as String,
-            'content': s['content'] as String,
+            'title': (s['title'] as String?) ?? '',
+            'content': (s['content'] as String?) ?? '',
           },
         )
         .toList();

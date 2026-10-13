@@ -64,7 +64,11 @@
   "gameNewRecord": "Новый рекорд!",
   "gameSolvedLabel": "Решено",
   "gameAccuracyLabel": "Точность",
-  "gameComboLabel": "Макс. комбо"
+  "gameComboLabel": "Макс. комбо",
+  "gameBestScore": "Рекорд {score}",
+  "gameCurrentCombo": "Комбо {count}",
+  "gameSecondsLeft": "{seconds} с",
+  "gameOverTitle": "Игра окончена"
  },
  "en": {
   "gameSeconds": "s",
@@ -131,7 +135,11 @@
   "gameNewRecord": "New record!",
   "gameSolvedLabel": "Solved",
   "gameAccuracyLabel": "Accuracy",
-  "gameComboLabel": "Max. combo"
+  "gameComboLabel": "Max. combo",
+  "gameBestScore": "Record {score}",
+  "gameCurrentCombo": "Combo {count}",
+  "gameSecondsLeft": "{seconds} s",
+  "gameOverTitle": "Game over"
  },
  "kk": {
   "gameSeconds": "с",
@@ -198,6 +206,10 @@
   "gameNewRecord": "Жаңа рекорд!",
   "gameSolvedLabel": "Шешілді",
   "gameAccuracyLabel": "Дәлдік",
-  "gameComboLabel": "Макс. комбо"
+  "gameComboLabel": "Макс. комбо",
+  "gameBestScore": "Жазба {score}",
+  "gameCurrentCombo": "Комбо {count}",
+  "gameSecondsLeft": "{seconds} с",
+  "gameOverTitle": "Ойын аяқталды"
  }
 }

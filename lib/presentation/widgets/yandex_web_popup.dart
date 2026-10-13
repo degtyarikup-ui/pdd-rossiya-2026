@@ -14,7 +14,9 @@ Future<String?> openYandexPopup(String url) async {
   final listener = (web.MessageEvent event) {
     if (event.origin != origin) return;
     final data = event.data.dartify();
-    if (data is Map && data['type'] == 'yandex-oauth' && data['fragment'] is String) {
+    if (data is Map &&
+        data['type'] == 'yandex-oauth' &&
+        data['fragment'] is String) {
       if (!done.isCompleted) done.complete(data['fragment'] as String);
     }
   }.toJS;

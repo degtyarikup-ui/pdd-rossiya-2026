@@ -19,6 +19,7 @@ KEYS = [
     'gameTrafficHintForwardLeft', 'gameTrafficHintWall', 'gameTrafficHintSide',
     'gameActionStraight', 'gameActionRight', 'gameActionLeft', 'gameActionUTurn', 'gameActionStand',
     'gameRestart', 'gameBestScoreLabel', 'gameNewRecord', 'gameSolvedLabel', 'gameAccuracyLabel', 'gameComboLabel',
+    'gameBestScore', 'gameCurrentCombo', 'gameSecondsLeft', 'gameOverTitle',
 ]
 out = {}
 for lang in ('ru', 'en', 'kk'):

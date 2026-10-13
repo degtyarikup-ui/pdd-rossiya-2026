@@ -34,6 +34,9 @@ var player: Node3D
 var drive: Drive
 var camera: Camera3D
 var sun: DirectionalLight3D
+var environment: Environment       # the scene's (the garage changes its sky)
+const GARAGE_SKY := Color("#7CC6F0")   # the garage's daylight sky, as the WebView game's garage
+const GARAGE_TURN := 3.6           # the car's first turn on its pad: front-left of the picture, three quarters (WebView lobby)
 var controls: Controls
 var hud: PerfHud
 
@@ -45,6 +48,9 @@ var wheels: Array[Node3D] = []
 var front_axles: Array[Node3D] = []
 var brake_mat: StandardMaterial3D        # shared by the car's stop lamps
 var blinkers := {}                        # "L"/"R" -> Node3D
+const BLINK_COLOUR := Color("#FFB300")
+const BLINK_SIZE := 2.6                   # the indicators are drawn this many times larger
+const BLINK_HALO := 2.4                   # m, the halo across
 var steer_hold := 0.0
 var blink := { "side": "", "left": 0.0, "clock": 0.0 }
 var tier := "high"
@@ -53,6 +59,7 @@ var leaves: Leaves                # autumn only
 var cam_heading := 0.0            # smoothed like cameraHeading in game.js
 var cam_look := Vector3.ZERO      # smoothed look point (game.js cameraLook)
 var cam_ready := false
+var cam_covered := 280.0
 var ground: MeshInstance3D        # lawn under everything, follows the player
 var run := Run.new()
 var ui: GameUi
@@ -101,7 +108,9 @@ var road_after := 300.0           # world z after which the next road question m
 var road_base_limit := 60         # the built-up limit to return to after a zone
 var lobby: Lobby                  # the garage before a run (--garage=<json>); null when not shown
 var lobby_mode := false
-var lobby_turn := 0.0             # the car's turn on the stand (radians)
+var loader: Loader                # the preloader over the first frames (loader.gd); null once dismissed
+var garage_set: GarageSet         # the garage the lobby stands in (built when the lobby opens)
+var lobby_turn := 0.0             # the car's turn on its pad (radians)
 var run_started := false          # a run began (the app charges one run then)
 var run_end_sent := false         # the run_end event went out (once per visit)
 var chosen := {}                  # { id, paint } of the car the player drove, for the app
@@ -120,8 +129,13 @@ const TEST_TAIL := 12.0
 
 func _ready() -> void:
 	if _has_arg("--regulator") or _has_arg("--mode=regulator"):
-		get_tree().change_scene_to_file("res://regulator.tscn")
+		# This node is still being added to the tree: switch scenes after the frame, and stop this
+		# world from running meanwhile (its _process would read the drive that is not built yet).
+		process_mode = Node.PROCESS_MODE_DISABLED
+		get_tree().change_scene_to_file.call_deferred("res://regulator.tscn")
 		return
+	_setup_language()
+	loader = Loader.attach(self)
 	cfg = JSON.parse_string(FileAccess.get_file_as_string("res://data/world.json"))
 	L = cfg.chunk_length
 	chunk_count = int(cfg.chunks_ahead) + int(cfg.chunks_behind) + 1
@@ -150,7 +164,6 @@ func _ready() -> void:
 	_spawn_walkers()
 	controls = Controls.new()
 	add_child(controls)
-	_setup_language()
 	ui = GameUi.new()
 	ui.snow = scenery.season.precipitation == "snow"
 	add_child(ui)
@@ -179,6 +192,7 @@ func _ready() -> void:
 	spawn_after = drive.pos.z + 40
 	if _has_arg("--garage"):
 		_open_lobby()
+	_dismiss_loader()
 	# Desktop checks: `godot --path game_godot -- --shot=out.png [--season=winter]
 	# [--situation=<id>] [--auto] [--overview] [--start=<z>] [--wait=<s>]`.
 	for arg in Host.user_args():
@@ -229,6 +243,15 @@ func _ready() -> void:
 	for arg in Host.user_args():
 		if arg.begins_with("--shot="):
 			_shot(arg.trim_prefix("--shot="))
+
+
+## The loader stays over the first frames, once the garage or the street is up, and then goes.
+func _dismiss_loader() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if loader != null:
+		loader.dismiss()
+		loader = null
 
 
 func _has_arg(name: String) -> bool:
@@ -372,6 +395,7 @@ func _setup_environment() -> void:
 	env.fog_light_color = Color(s.sky)
 	env.fog_depth_begin = 90.0
 	env.fog_depth_end = 220.0
+	environment = env
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -433,9 +457,21 @@ func _blank(index: int) -> bool:
 	return false
 
 
+## The carriageway's half-width at world z. Before an exam junction the street narrows to the
+## junction's approach (two lanes) over the last Street.TAPER metres: a multi-lane street meets
+## it in a taper, not in one step.
+func _half_at(z: float) -> float:
+	var half := street_half
+	for b in blanks:
+		var before: float = b[0] - z
+		if before >= 0.0 and before < Street.TAPER:
+			half = minf(half, lerpf(Street.ROAD_HALF, street_half, before / Street.TAPER))
+	return half
+
+
 func _place_chunk(slot: int, index: int) -> void:
 	chunk_index[slot] = index
-	road_nodes[slot].mesh = street.build_chunk(slot, index, _blank(index), street_half)
+	road_nodes[slot].mesh = street.build_chunk(slot, index, _blank(index), _half_at)
 	road_nodes[slot].position = Vector3(0, 0, index * L)
 
 
@@ -491,7 +527,31 @@ func _mount_car(id: String, hex: String) -> void:
 	for node in car.find_children("brake_*", "MeshInstance3D", true, false):
 		(node as MeshInstance3D).material_override = brake_mat
 	for side in ["L", "R"]:
-		blinkers[side] = car.find_child("blink_" + side, true, false)
+		# The front and the rear indicator of a side blink together. The model nests the rear one inside the
+		# front: it moves to the car first, or the front's enlargement would carry it far behind.
+		var front := car.find_child("blink_" + side, true, false)
+		var rear := car.find_child("blink_%s_rear" % side, true, false)
+		if rear and rear.get_parent() != car:
+			rear.reparent(car, true)
+		blinkers[side] = [front, rear]
+		for node in blinkers[side]:
+			_make_blinker(node)
+
+
+## An indicator is drawn large and bright, with a halo and a light of its own: it shows from the
+## top-down camera. Shown and hidden with the node (_update_lamps); its light goes out with it.
+func _make_blinker(node: Node3D) -> void:
+	if node == null:
+		return
+	node.scale *= BLINK_SIZE
+	for mi in node.find_children("*", "MeshInstance3D", true, false):
+		(mi as MeshInstance3D).material_override = Glow.lamp_material(BLINK_COLOUR, BLINK_COLOUR, true)
+	node.add_child(Glow.halo(BLINK_COLOUR, BLINK_HALO))
+	var light := OmniLight3D.new()
+	light.light_color = BLINK_COLOUR
+	light.light_energy = 1.0
+	light.omni_range = 5.0
+	node.add_child(light)
 
 
 ## World services for Drive (game.js roadSupports / obstacles / faults).
@@ -504,7 +564,7 @@ func road_supports(p: Vector3) -> bool:
 	for b in blanks:
 		if p.z > b[0] and p.z < b[1]:
 			return false
-	return absf(p.x) <= street_half
+	return absf(p.x) <= _half_at(p.z)
 
 
 ## Junction participants, as seen in world coordinates.
@@ -650,7 +710,13 @@ func _guide_target(p: Vector3) -> Vector3:
 	while j < pts.size() - 1 and acc < 4.0:
 		acc += pts[j].distance_to(pts[j + 1])
 		j += 1
-	return sit.global_transform * Vector3(pts[j].x, 0.0, pts[j].y)
+	var ahead := Vector3(pts[j].x, 0.0, pts[j].y)
+	# The assist never steers at a point beside a kerb or an island: the car would be pushed into it.
+	for k in 8:
+		var a := TAU * k / 8.0
+		if not sit.network.is_drivable(ahead + Vector3(cos(a), 0.0, sin(a)) * 0.9):
+			return Vector3.INF
+	return sit.global_transform * ahead
 
 
 ## A violation, counted once per episode (game.js drivingFault / roadViolation):
@@ -729,6 +795,8 @@ func _maybe_spawn() -> void:
 	junction.fault.connect(func(type, key): on_fault(type, key))
 	junction.finished.connect(_on_finished)
 	current = { "sit": sit, "junction": junction, "zc": zc }
+	var sit_d: Dictionary = sit.network.data if sit.network else sit.data
+	cam_covered = _estimate_card_height(sit_d)
 	blanks.append([zc - crop, zc + crop])
 	if topdown != "":
 		_topdown_shot(sit, topdown)
@@ -1186,7 +1254,7 @@ func _measure_jerk(delta: float) -> void:
 	var yaw_step := absf(atan2(sin(drive.yaw - prev_yaw), cos(drive.yaw - prev_yaw)))
 	var cam_step := camera.position.distance_to(prev_cam)
 	var head_step := absf(atan2(sin(cam_heading - prev_heading), cos(cam_heading - prev_heading)))
-	if phase == "resolving" or phase == "driving":
+	if phase == "resolving" or phase == "driving" or phase == "question":
 		jerk.yaw = maxf(jerk.yaw, yaw_step / delta)
 		jerk.cam = maxf(jerk.cam, cam_step / delta)
 		if follow and cam_step / delta > 60.0:
@@ -1311,7 +1379,7 @@ func _update_walkers(delta: float) -> void:
 		var face := 0.0 if w.v > 0 else PI
 		# Two walking lanes on the pavement, one per walking direction: people going opposite
 		# ways never meet head-on in one lane (they walked through each other).
-		var x: float = w.dir * (street_half + 1.0 + (0.0 if w.v > 0 else 1.1))
+		var x: float = w.dir * (_half_at(z) + 1.0 + (0.0 if w.v > 0 else 1.1))
 		var at := Vector3(x, Street.KERB, z)
 		# Never on a carriageway: inside a junction's streets or in a blank zone a
 		# walker is simply not there (the junction has its own pedestrians).
@@ -1374,8 +1442,9 @@ func _report_answer(situation_id: String, is_correct: bool, index: int) -> void:
 		"timeout": index < 0, "time_left": snappedf(left, 0.1) })
 
 
-## The garage before a run (lobby.gd): the car turns on a stand in the street, the camera
-## looks at it from the driving side, traffic and walkers are off. The run starts from here.
+## The garage before a run (lobby.gd, garage_set.gd): the car waits on its pad in the garage, the
+## street is hidden, the garage camera looks at it. A newly earned car rolls out of the garage first
+## (garage.reveal). The run starts from here.
 func _open_lobby() -> void:
 	var garage: Dictionary = JSON.parse_string(_arg_text("--garage"))
 	lobby = Lobby.new(garage)
@@ -1383,6 +1452,7 @@ func _open_lobby() -> void:
 	lobby.changed.connect(_on_lobby_changed)
 	lobby.start_requested.connect(_on_lobby_start)
 	lobby.spin.connect(_on_lobby_spin)
+	lobby.close_requested.connect(_on_lobby_close)
 	tips_enabled = bool(garage.get("tips", false))
 	resume_state = garage.get("resume", {})
 	sound.enabled = bool(garage.get("sound", true)) and not _is_test_run()
@@ -1392,23 +1462,40 @@ func _open_lobby() -> void:
 	controls.set_active(false)
 	ui.visible = false
 	_set_street_objects(false)
+	garage_set = GarageSet.new()
+	add_child(garage_set)
+	garage_set.build(scenery)
+	garage_set.revealed.connect(_on_revealed)
+	garage_set.camera.make_current()
 	var car: Dictionary = lobby.current()
 	_mount_car(car.id, car.hex)
+	player.position = GarageSet.PAD
+	lobby_turn = GARAGE_TURN
+	environment.background_color = GARAGE_SKY
+	if not (garage.get("reveal", {}) as Dictionary).is_empty():
+		lobby.set_active(false)
+		garage_set.start_reveal(player)
 	_lobby_frame(0.0)
 	if _has_arg("--lobby-start"):   # test: press «Начать заезд» by itself after a second
 		get_tree().create_timer(1.0).timeout.connect(lobby._try_start)
 
 
 func _lobby_frame(delta: float) -> void:
+	if garage_set.revealing():
+		return
 	lobby_turn += delta * 0.35
 	player.rotation.y = lobby_turn
-	var target := player.position + Vector3(0, 0.6, 0)
-	camera.size = lerpf(camera.size, 12.0, 1 - exp(-5.0 * delta))
-	# The car sits above the sheet: the view is shifted up (the picture moves, the look does not).
-	camera.v_offset = -0.22
-	# Above the carriageway, behind the car: the buildings on the kerb do not hide it.
-	camera.position = target + Vector3(-3.0, 17.0, -15.0)
-	camera.look_at(target)
+
+
+## The close button: the garage closes and the app gets the car it chose (no run was started).
+func _on_lobby_close() -> void:
+	Host.exit(_exit_summary(), get_tree())
+
+
+## The new car has rolled out and stopped on its pad: the panel comes back, the car turns from there.
+func _on_revealed() -> void:
+	lobby_turn = player.rotation.y
+	lobby.set_active(true)
 
 
 func _on_lobby_changed(id: String, _paint: String, hex: String) -> void:
@@ -1430,6 +1517,10 @@ func _on_lobby_start(id: String, paint: String, hex: String) -> void:
 	lobby_mode = false
 	lobby.queue_free()
 	lobby = null
+	garage_set.queue_free()
+	garage_set = null
+	camera.make_current()
+	environment.background_color = Color(scenery.season.sky)
 	_set_street_objects(true)
 	ui.visible = true
 	controls.set_active(true)
@@ -1440,11 +1531,19 @@ func _on_lobby_start(id: String, paint: String, hex: String) -> void:
 	tip_drawn = -1
 
 
+## The street (the ring's road and props, the ground, traffic, walkers, the junctions) is hidden
+## while the garage is shown: the garage has its own set around the car.
 func _set_street_objects(on: bool) -> void:
-	for node in find_children("*", "MultiMeshInstance3D", true, false):
-		var mi := node as MultiMeshInstance3D
-		if traffic_mm.has(mi.multimesh) or walker_mm.has(mi.multimesh):
-			mi.visible = on
+	for node in get_children():
+		if node is MeshInstance3D or node is MultiMeshInstance3D:
+			(node as Node3D).visible = on
+	for j in _junctions():
+		j.sit.visible = on
+	for car in traffic:
+		if car.has("node"):
+			(car.node as Node3D).visible = on
+	if ghost:
+		ghost.visible = on
 
 
 func _arg_text(name: String) -> String:
@@ -1566,24 +1665,48 @@ func _process(delta: float) -> void:
 	# The camera heading follows the car's slowly (game.js updateCamera:
 	# exp(-3 dt)) and only for real turns: small corrections and U-turn
 	# wobbles must not swing the view.
-	var want := drive.yaw if phase != "question" else 0.0
-	if phase == "resolving" or phase == "driving":
-		cam_heading += atan2(sin(want - cam_heading), cos(want - cam_heading)) * (1.0 - exp(-3.0 * delta))
-	var fwd := Vector3(sin(cam_heading), 0, cos(cam_heading))
-	var look := Vector3(drive.pos.x, 0, drive.pos.z) + fwd * 10.0
-	if phase == "question" and current:
-		# The question view the game settles on (exported from updateCamera).
+	# While approaching an exam junction (within 35 m of the stop line), smoothly
+	# blend target look, size and heading towards the question framing position
+	# configured in the editor. By the time the car stops, the camera is already
+	# in position with zero jerking or sudden jump.
+	var blend := 0.0
+	var question_look := Vector3.ZERO
+	var question_size := 42.0
+
+	if current and current.has("sit") and current.sit and current.sit.data:
+		var target_cov := _card_covered()
+		cam_covered = lerpf(cam_covered, target_cov, 1.0 - exp(-10.0 * delta))
+
+		var stop_z: float = current.zc + float(current.sit.data.stopZ)
+		var dist_to_stop: float = stop_z - drive.pos.z
 		var qc := _question_framing()
-		look = current.sit.global_transform * Vector3(qc.look.x, 0, qc.look.y)
-		camera.size = lerpf(camera.size, qc.size, 1 - exp(-5 * delta))
-	else:
-		camera.size = lerpf(camera.size, 42.0, 1 - exp(-5 * delta))
+		question_look = current.sit.global_transform * Vector3(qc.look.x, 0, qc.look.y)
+		question_size = qc.size
+
+		if phase == "question":
+			blend = 1.0
+		elif phase == "driving" and dist_to_stop <= 35.0 and dist_to_stop > -5.0 and cos(drive.yaw) > 0.2:
+			var t := clampf(1.0 - maxf(0.0, dist_to_stop) / 35.0, 0.0, 1.0)
+			blend = t * t * (3.0 - 2.0 * t)   # smoothstep cubic curve
+
+	var want := lerp_angle(drive.yaw, 0.0, blend) if phase != "question" else 0.0
+	cam_heading += atan2(sin(want - cam_heading), cos(want - cam_heading)) * (1.0 - exp(-3.0 * delta))
+
+	var fwd := Vector3(sin(cam_heading), 0, cos(cam_heading))
+	var driving_look := Vector3(drive.pos.x, 0, drive.pos.z) + fwd * 10.0
+	var look := driving_look.lerp(question_look, blend) if blend > 0.0 else driving_look
+	var target_size := lerpf(42.0, question_size, blend)
+
+	camera.size = lerpf(camera.size, target_size, 1.0 - exp(-5.0 * delta))
+
 	# The look point glides to its target (game.js: cameraLook.lerp): a sudden
 	# change of framing never jumps the picture.
 	# A jump of the look point (the car placed far away, a question at a new junction) is not a
 	# pan: the camera goes there at once, else the junction is out of frame for seconds.
 	if not cam_ready or cam_look.distance_to(look) > 60.0:
 		cam_look = look
+		camera.size = target_size
+		cam_heading = want
 		cam_ready = true
 	else:
 		# Exponential glide, but never faster than 25 m/s: a long way to catch up
@@ -1617,39 +1740,79 @@ func _process(delta: float) -> void:
 		last_tick_second = 0
 
 
+## Card height on an 844 px phone screen, matching Framing.cardHeight in the web editor
+## (tools/network/editor/framing.js).
+func _estimate_card_height(sit_data: Dictionary) -> float:
+	var q = sit_data.get("question", {})
+	var t = sit_data.get("text", {})
+	var ru = t.get("ru", {}) if t is Dictionary else {}
+	var title: String = ""
+	var options: Array = []
+	if q is Dictionary and q.has("text") and q.text is Dictionary:
+		var q_ru = q.text.get("ru", {})
+		title = str(q_ru.get("title", ""))
+		options = q_ru.get("options", [])
+	elif ru is Dictionary:
+		title = str(ru.get("title", ""))
+		options = ru.get("options", [])
+	var lines := func(s: String, per: int) -> int:
+		return maxi(1, ceili(float(s.length()) / float(per)))
+	var h: float = 78.0 + 21.0 * lines.call(title, 40)
+	for opt in options:
+		h += 22.0 + 19.0 * lines.call(str(opt), 42) + 10.0
+	return clampf(h, 200.0, 560.0)
+
+
+func _card_covered() -> float:
+	if ui and ui.card_height() > 50.0:
+		var vp_h: float = get_viewport().get_visible_rect().size.y
+		if vp_h > 0.0:
+			var cov := ui.card_height() / vp_h * 844.0
+			if cov >= 150.0 and cov <= 560.0:
+				return cov
+	if current and current.has("sit") and current.sit:
+		var d: Dictionary = current.sit.network.data if current.sit.network else current.sit.data
+		return _estimate_card_height(d)
+	return 280.0
+
+
 ## Question framing exported from the game for card heights 0..540 px of 844:
 ## interpolated for this card (its real height relative to the screen).
 func _question_framing() -> Dictionary:
-	var covered := ui.card_height() / get_viewport().get_visible_rect().size.y * 844.0
+	var covered := cam_covered
 	# Framed by hand in the editor: the point in the middle of the picture above the card and the
 	# height of that picture (m). Any card height keeps both: a taller card pulls the camera back.
-	var qv = current.sit.network.data.get("questionView") if current.sit.network else current.sit.data.get("questionView")
+	var qv = null
+	if current.sit.network and current.sit.network.data:
+		qv = current.sit.network.data.get("questionView")
+	if qv == null and current.sit.data:
+		qv = current.sit.data.get("questionView")
 	if qv is Dictionary:
 		var free_part := clampf(1.0 - covered / 844.0, 0.3, 1.0)
 		var view_size := float(qv.height) / free_part
 		var tilt := sin(atan2(42.0, 44.0))     # the camera's pitch (see the camera below)
 		var up := (1.0 - free_part) * view_size * 0.5 / tilt
 		return { "look": Vector2(qv.centre[0], qv.centre[1] - up), "size": view_size }
-	var samples: Array = current.sit.data.questionCamera
-	var lo: Dictionary = samples[0]
-	var hi: Dictionary = samples[samples.size() - 1]
+	var samples: Array = current.sit.data.get("questionCamera", [])
+	var lo: Dictionary = samples[0] if not samples.is_empty() else {}
+	var hi: Dictionary = samples[samples.size() - 1] if not samples.is_empty() else {}
 	for i in samples.size() - 1:
 		if covered >= samples[i].bottom and covered <= samples[i + 1].bottom:
 			lo = samples[i]
 			hi = samples[i + 1]
 			break
-	var k := clampf((covered - lo.bottom) / maxf(1.0, hi.bottom - lo.bottom), 0.0, 1.0)
-	var a := Vector2(lo.look[0], lo.look[1])
-	var b := Vector2(hi.look[0], hi.look[1])
+	var k := clampf((covered - lo.get("bottom", 0.0)) / maxf(1.0, hi.get("bottom", 0.0) - lo.get("bottom", 0.0)), 0.0, 1.0) if not lo.is_empty() and not hi.is_empty() else 0.0
+	var a := Vector2(lo.look[0], lo.look[1]) if lo.has("look") else Vector2(0, -8)
+	var b := Vector2(hi.look[0], hi.look[1]) if hi.has("look") else Vector2(0, -8)
 	var look := a.lerp(b, k)
-	var size := lerpf(lo.size, hi.size, k)
+	var size := lerpf(float(lo.get("size", 42.0)), float(hi.get("size", 42.0)), k)
 	# Everything the answer depends on must be in view above the card: the answer routes, the
 	# manoeuvre, the participants and the stop line. Their box decides the zoom when the
 	# exported framing is too tight.
 	var d: Dictionary = current.sit.data
 	var pts: Array[Vector2] = [Vector2(float(d.get("playerStartX", -1.8) if d.get("playerStartX") != null else -1.8), float(d.stopZ))]
-	for tr in d.get("trajectories", []):
-		for q in tr.points:
+	for traj in d.get("trajectories", []):
+		for q in traj.points:
 			pts.append(Vector2(q[0], q[1]))
 	var man = d.spec.maneuver if d.spec.maneuver != null else "straight"
 	var ex = d.exits.get(man)
@@ -1698,8 +1861,9 @@ func _update_lamps(delta: float) -> void:
 		sound.play("click")   # the sound only: the indicator does not buzz the phone
 	blinker_on = on
 	for side in blinkers:
-		if blinkers[side]:
-			blinkers[side].visible = on and blink.side == side
+		for node in blinkers[side]:
+			if node:
+				node.visible = on and blink.side == side
 
 
 func _apply_tier(next: String) -> void:

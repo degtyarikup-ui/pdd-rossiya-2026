@@ -42,19 +42,36 @@ var next_delay := 0.0
 # Camera framing
 var cam_base_pos := Vector3(1.8, 3.4, 20.0)
 var cam_base_look := Vector3(0.0, 1.35, 0.0)
+## The zoom, as in the app's regulator: 0.4 close .. 2.6 far, 1 is the start view.
+const ZOOM_MIN := 0.4
+const ZOOM_MAX := 2.6
 var cur_zoom := 1.0
+var _touches := {}              # finger index -> position, for the pinch
+var _pinch_zoom := 1.0          # the zoom when the pinch began
+var _pinch_span := 0.0          # the distance between the two fingers when it began (0: no pinch)
 var auto_answer := false
 var shot_path := ""
 
 
 func _ready() -> void:
 	_setup_args()
+	var loader := Loader.attach(self)
 	_setup_environment()
 	_setup_audio()
 	_setup_scene_objects()
 	_setup_ui()
 	_start_game()
+	_dismiss_loader(loader)
+
+
+## The loader stays over the first frames: the scene is built, shaded and drawn before it goes. The
+## screenshot (--shot) is taken after it, so it shows the game and not the loader.
+func _dismiss_loader(loader: Loader) -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	loader.dismiss()
 	if shot_path != "":
+		await get_tree().create_timer(Loader.FADE + 0.2).timeout
 		_take_screenshot(shot_path)
 
 
@@ -71,6 +88,8 @@ func _setup_args() -> void:
 			auto_answer = true
 		elif arg.begins_with("--shot="):
 			shot_path = arg.trim_prefix("--shot=")
+		elif arg.begins_with("--zoom="):
+			_set_zoom(float(arg.trim_prefix("--zoom=")))
 
 
 func _setup_environment() -> void:
@@ -283,14 +302,50 @@ func _process(delta: float) -> void:
 	_update_camera(delta)
 
 
+## Pinch zoom: the fingers apart bring the camera closer, together move it away; a trackpad's magnify
+## gesture does the same on desktop. Buttons still take their taps: this only reads the touches.
+func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_touches[event.index] = event.position
+		else:
+			_touches.erase(event.index)
+		_pinch_span = 0.0
+		_pinch_update()
+	elif event is InputEventScreenDrag:
+		_touches[event.index] = event.position
+		_pinch_update()
+	elif event is InputEventMagnifyGesture:
+		_set_zoom(cur_zoom / event.factor)
+
+
+func _pinch_update() -> void:
+	if _touches.size() != 2:
+		_pinch_span = 0.0
+		return
+	var points := _touches.values()
+	var span: float = (points[0] as Vector2).distance_to(points[1] as Vector2)
+	if _pinch_span <= 0.0:
+		_pinch_span = span
+		_pinch_zoom = cur_zoom
+		return
+	_set_zoom(_pinch_zoom * _pinch_span / maxf(span, 1.0))
+
+
+func _set_zoom(value: float) -> void:
+	cur_zoom = clampf(value, ZOOM_MIN, ZOOM_MAX)
+
+
 func _update_camera(delta: float) -> void:
-	var want_pos := cam_base_pos
+	# The zoom moves the camera along its line of sight to the junction; 1 is the start view.
+	var home := cam_base_look + (cam_base_pos - cam_base_look) * cur_zoom
+	var want_pos := home
 	var want_look := cam_base_look
 
 	if car.is_moving:
 		# Smoothly pan camera slightly towards turning vehicle
 		var car_pos := car.position
-		want_pos = cam_base_pos + Vector3(car_pos.x * 0.2, 0.8, -car_pos.z * 0.15)
+		want_pos = home + Vector3(car_pos.x * 0.2, 0.8, -car_pos.z * 0.15)
 		want_look = (cam_base_look + car_pos) * 0.5
 
 	var blend := 1.0 - exp(-6.0 * delta)
@@ -305,7 +360,7 @@ func _end_game() -> void:
 	awaiting_next = false
 	is_new_record = score > 0 and score > previous_best
 
-	ui.show_game_over(score, solved_count, wrong_count, max_combo, is_new_record)
+	ui.show_game_over(score, solved_count, wrong_count, max_combo, is_new_record, seconds_left <= 0, previous_best)
 
 	var summary := {
 		"game": "regulator",

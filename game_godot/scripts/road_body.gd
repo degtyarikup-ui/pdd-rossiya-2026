@@ -145,7 +145,13 @@ static func _lamp(root: Node3D, at: Vector3, colour: Color) -> StandardMaterial3
 	mat.albedo_color = colour
 	mat.emission = colour
 	mat.emission_enabled = false
+	mat.emission_energy_multiplier = 4.0
 	mi.material_override = mat
+	# The lamp's halo: shown with the lit lamp (RoadEvent.light_lamp).
+	var halo := Glow.halo(colour, 1.8)
+	halo.visible = false
+	mi.add_child(halo)
+	mat.set_meta("halo", halo)
 	root.add_child(mi)
 	return mat
 

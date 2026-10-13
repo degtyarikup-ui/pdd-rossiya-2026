@@ -86,8 +86,8 @@ func _build_surfaces() -> void:
 	# 4. Sidewalks outside curbs
 	_build_sidewalks(arm_len)
 
-	# 5. Grass quadrants
-	_build_lawns(arm_len)
+	# 5. Grass quadrants: omitted; the world's flat ground plane lies under everything
+	# _build_lawns(arm_len)
 
 
 func _build_curbs(arm_len: float) -> void:
@@ -135,19 +135,8 @@ func _build_sidewalks(arm_len: float) -> void:
 			add_child(sw_c)
 
 
-func _build_lawns(arm_len: float) -> void:
-	var lawn_size := arm_len - 3.4
-	if lawn_size <= 0: return
-
-	for sign_x in [-1.0, 1.0]:
-		for sign_z in [-1.0, 1.0]:
-			var lawn := _box(Vector3(lawn_size, 0.12, lawn_size), grass_mat)
-			lawn.position = Vector3(
-				sign_x * (HALF_ROAD + 3.4 + lawn_size * 0.5),
-				0.06,
-				sign_z * (HALF_ROAD + 3.4 + lawn_size * 0.5)
-			)
-			add_child(lawn)
+func _build_lawns(_arm_len: float) -> void:
+	pass
 
 
 func _build_markings() -> void:
