@@ -31,5 +31,19 @@ func _initialize() -> void:
 	assert(RoadBuild.light_with_signs(light, []) == light)
 	assert(is_zero_approx(light.position.y), "Removing the board restores normal height")
 	light.free()
+	for side in ["left", "right"]:
+		for reach in [0.5, 4.5, 15.0]:
+			sign = RoadBuild.sign_node("5.15.1", "", "", [], [], true, {"mount": "cantilever", "reach": reach, "armSide": side, "clearance": 5.5})
+			board = sign.get_node("sign_board")
+			var post := sign.get_node("cantilever_post") as MeshInstance3D
+			var beam := sign.get_node("cantilever_beam") as MeshInstance3D
+			assert(is_equal_approx(board.position.x, reach * (1.0 if side == "left" else -1.0)))
+			assert(is_equal_approx(board.position.y, 5.5), "The lower edge must clear road traffic")
+			assert(is_zero_approx(post.position.x), "Changing reach must leave the support on the roadside")
+			assert((beam.mesh as BoxMesh).size.x > reach, "The arm must reach past the sign centre")
+			assert(post.position.y * 2.0 > board.position.y + 2.0, "Post connects to the overhead arm")
+			sign.free()
+	for code in ["5.15.1", "5.15.2", "5.15.3", "5.15.4", "5.15.5", "5.15.6", "5.15.7", "5.15.8"]:
+		assert(ResourceLoader.exists("res://signs/%s.svg" % code), "Lane-direction signs must be available")
 	print("Sign mounting: all checks passed")
 	quit(0)

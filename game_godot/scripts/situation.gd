@@ -164,7 +164,7 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 			var plate_sign: String = sg.get("plateSign") if sg.get("plateSign") is String else ""
 			var main_road: Array = sg.get("mainRoad") if sg.get("mainRoad") is Array else []
 			var roads: Array = sg.get("roads") if sg.get("roads") is Array else []
-			var sign := RoadBuild.sign_node(str(sg.code), plate, plate_sign, main_road, roads)
+			var sign := RoadBuild.sign_node(str(sg.code), plate, plate_sign, main_road, roads, true, sg)
 			if sign == null:
 				continue
 			sign.position = Vector3(sg.pos[0], 0.0, sg.pos[1])

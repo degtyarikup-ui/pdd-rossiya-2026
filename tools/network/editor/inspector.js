@@ -359,12 +359,21 @@
     const dirChips = (name, on) => `<div class="dir-grid">${DIRS.map(([d, t]) => `<button class="${on.includes(d) ? "on" : ""}" data-chip="${name}" data-value="${d}">${t}</button>`).join("")}</div>`;
     p.innerHTML = `${head(`<img class="sign-big" src="/asset/sign/${o.code}.svg" alt="">`, Catalog.signName(o.code), `знак ${o.code}`)}
       ${card("Знак", `<div class="sign-grid">${codes.map((c) => `<button class="${c === o.code ? "on" : ""}" data-chip="code" data-value="${c}" data-tip="${esc(Catalog.signName(c))}"><img src="/asset/sign/${c}.svg" alt=""></button>`).join("")}</div>`)}
+      ${card("Крепление", `${chips("mount", [{value:"pole",title:"На стойке"},{value:"cantilever",title:"Над дорогой"}], o.mount || "pole")}
+        ${o.mount === "cantilever" ? `${slider("reach", "Вылет от опоры", o.reach ?? 4.5, 0.5, 15, 0.25, `${o.reach ?? 4.5} м`)}
+          ${chips("armSide", [{value:"left",title:"Влево от опоры"},{value:"right",title:"Вправо от опоры"}], o.armSide || "left")}
+          ${slider("clearance", "Высота нижнего края", o.clearance ?? 5.5, 5, 8, 0.25, `${o.clearance ?? 5.5} м`)}
+          <p class="muted">Поставьте опору на обочине. Вылет перемещает щит над дорогой; сторону выбирайте, глядя на лицевую сторону знака.</p>` : ""}`)}
       ${card("Табличка 8.13: главная дорога", `${dirChips("main", main)}
         ${main.length ? `<div class="sub-h">Все дороги перекрёстка</div>${dirChips("roads", roads)}` : `<p class="muted">Отметьте два направления главной дороги — под знаком появится табличка.</p>`}`)}
       ${card("Надпись на табличке", `<input type="text" data-text="plate" value="${esc(o.plate || "")}" placeholder="Например: 150 м">`)}
       ${card("", `<div class="turn-row">${dial(o.yaw)}<div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rot90", "90°", "", "ghost")}${button("rotr", "", "rotr", "ghost icon")}</div></div>${deleteRow()}`)}`;
     bind({
       ...common,
+      "chip:mount": (v) => App.edit(() => { if (v === "cantilever") { o.mount = v; o.reach ??= 4.5; o.armSide ??= "left"; o.clearance ??= 5.5; } else delete o.mount; }),
+      "chip:armSide": (v) => App.edit(() => { o.armSide = v; }),
+      "slider:reach": live((_s, v) => { o.reach = r3(v); }, v => { const label = pane().querySelector('[data-shown="reach"]'); if (label) label.textContent = `${v} м`; }),
+      "slider:clearance": live((_s, v) => { o.clearance = r3(v); }, v => { const label = pane().querySelector('[data-shown="clearance"]'); if (label) label.textContent = `${v} м`; }),
       "chip:code": (v) => App.edit(() => { o.code = v; if (v === "8.13" && !(o.mainRoad || []).length) o.mainRoad = ["south", "west"]; }),
       "chip:main": (v) => App.edit(() => {
         const set = new Set(o.mainRoad || []);

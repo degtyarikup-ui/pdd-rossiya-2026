@@ -385,7 +385,7 @@ const Scene3D = (() => {
     if (t === "actor") return `${o.asset}|${o.type}`;
     if (t === "light") return `${o.asset}|${o.state}|${o.arrow || ""}|${o.tram || ""}|${(o.mountedSigns || []).join(",")}|${(o.mountedMainRoad || []).join(",")}`;
     if (t === "officer") return `officer|${o.gesture}`;
-    if (t === "sign") return `sign|${o.code}|${o.plate || ""}|${(o.mainRoad || []).join(",")}|${(o.roads || []).join(",")}`;
+    if (t === "sign") return `sign|${o.mount || "pole"}|${o.reach ?? 4.5}|${o.armSide || "left"}|${o.clearance ?? 5.5}|${o.code}|${o.plate || ""}|${(o.mainRoad || []).join(",")}|${(o.roads || []).join(",")}`;
     return t;
   }
 
@@ -529,51 +529,54 @@ const Scene3D = (() => {
     return new THREE.CanvasTexture(c);
   }
   function signModel(o, withPole = true, onHeight = null) {
-    const g = new THREE.Group();
-    const board = new THREE.Group();
-    board.position.y = SIGN_BOTTOM;
-    board.rotation.x = SIGN_LEAN;
-    g.add(board);
-    const faceMat = (tex) => new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide });
+    const g = new THREE.Group(), board = new THREE.Group(), support = new THREE.Group();
+    g.add(board); g.add(support);
     let y = 0;
+    const faceMat = tex => new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.5, side: THREE.FrontSide });
     const add = (tex, w, h) => {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), faceMat(tex));
-      m.rotation.y = Math.PI;
-      m.position.y = y + h / 2;
-      board.add(m);
-      y += h + 0.05;
-      return m;
+      m.rotation.y = Math.PI; m.position.y = y + h / 2; board.add(m);
+      y += h + 0.05; return m;
     };
-    if (o.code === "8.13") { add(mainRoadTexture(o.mainRoad || [], o.roads), SIGN_W, SIGN_W * 0.75); }
-    else if (o.mainRoad && o.mainRoad.length) add(mainRoadTexture(o.mainRoad, o.roads), SIGN_W * 0.8, SIGN_W * 0.6);
-    const tex = o.code === "8.13" ? null : signTexture(o.code);
-    if (!tex) {
-      if (onHeight) onHeight(SIGN_W * 0.75);
-      const top0 = SIGN_BOTTOM + 1.1 * Math.cos(SIGN_LEAN);
-      const p0 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, top0, 8), mat(0x7a7f87));
-      p0.position.set(0, top0 / 2, 0.09 + 1.1 * Math.sin(SIGN_LEAN));
-      if (withPole) g.add(p0);
-      g.rotation.y = -Math.PI;
-      return g;
+    const updateSupport = () => {
+      const spec = SignMount.layout(withPole ? o : {}, Math.max(0, y - 0.05));
+      board.position.set(spec.x, spec.bottom, -0.16);
+      while (support.children.length) { const m = support.children[0]; support.remove(m); m.geometry.dispose(); m.material.dispose(); }
+      if (!withPole) return;
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(spec.overhead ? 0.16 : 0.05, spec.overhead ? 0.16 : 0.05, spec.postHeight, 12), mat(0x7a7f87));
+      post.position.set(0, spec.postHeight / 2, 0.09); support.add(post);
+      if (spec.overhead) {
+        const part = (size, pos, colour = 0x7a7f87) => { const m = new THREE.Mesh(new THREE.BoxGeometry(...size), mat(colour)); m.position.set(...pos); support.add(m); return m; };
+        part([0.7, 0.3, 0.7], [0, 0.15, 0.09], 0x62676d);
+        part([spec.armLength, 0.22, 0.22], [spec.side * spec.armLength / 2, spec.postHeight, 0.09]);
+        // A diagonal brace behind the board connects the arm to its roadside post.
+        const start = new THREE.Vector3(0, spec.postHeight - 1.4, 0.24), end = new THREE.Vector3(spec.x, spec.postHeight, 0.24);
+        const brace = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, start.distanceTo(end), 8), mat(0x7a7f87));
+        brace.position.copy(start.clone().add(end).multiplyScalar(0.5));
+        brace.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), end.clone().sub(start).normalize()); support.add(brace);
+      }
+    };
+    if (o.plate) {
+      const c = document.createElement("canvas"); c.width = 512; c.height = 120;
+      const ctx = c.getContext("2d"); ctx.fillStyle = "white"; ctx.fillRect(0, 0, 512, 120);
+      ctx.fillStyle = "#151515"; ctx.font = "bold 60px sans-serif"; ctx.textAlign = "center"; ctx.fillText(o.plate, 256, 82, 490);
+      add(new THREE.CanvasTexture(c), SIGN_W * 0.8, 0.28 * SIGN_W / 0.8);
     }
-    const face = add(tex, SIGN_W, SIGN_W);
-    // The picture's proportions once it has loaded (most signs are square, some are tall plates).
-    const fit = () => {
-      const im = tex.image;
-      if (!im || !im.width) return;
-      const h = SIGN_W * im.height / im.width;
-      face.geometry.dispose();
-      face.geometry = new THREE.PlaneGeometry(SIGN_W, h);
-      face.position.y = face.position.y - SIGN_W / 2 + h / 2;
-      if (onHeight) onHeight(h);
-      needsRender = true;
-    };
-    if (tex.image && tex.image.width) fit(); else setTimeout(function wait() { tex.image && tex.image.width ? fit() : setTimeout(wait, 100); }, 100);
-    const top = SIGN_BOTTOM + 1.5 * Math.cos(SIGN_LEAN);
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, top, 8), mat(0x7a7f87));
-    pole.position.set(0, top / 2, 0.09 + 1.5 * Math.sin(SIGN_LEAN));
-    if (withPole) g.add(pole);
-    g.rotation.y = -Math.PI;   // yaw as the game's: the way the face looks (as a light's), the model faces -z
+    if (o.code === "8.13") add(mainRoadTexture(o.mainRoad || [], o.roads), SIGN_W, SIGN_W * 0.75);
+    else {
+      if (o.mainRoad && o.mainRoad.length) add(mainRoadTexture(o.mainRoad, o.roads), SIGN_W * 0.8, SIGN_W * 0.6);
+      const tex = signTexture(o.code), face = add(tex, SIGN_W, SIGN_W), oldHeight = SIGN_W;
+      const fit = () => {
+        const im = tex.image; if (!im?.width) return;
+        const h = SIGN_W * im.height / im.width;
+        face.geometry.dispose(); face.geometry = new THREE.PlaneGeometry(SIGN_W, h);
+        face.position.y += (h - oldHeight) / 2; y += h - oldHeight;
+        if (onHeight) onHeight(h); updateSupport(); needsRender = true;
+      };
+      if (tex.image?.width) fit(); else setTimeout(function wait() { tex.image?.width ? fit() : setTimeout(wait, 100); }, 100);
+    }
+    if (o.code === "8.13" && onHeight) onHeight(SIGN_W * 0.75);
+    updateSupport(); g.rotation.y = -Math.PI;
     return g;
   }
 

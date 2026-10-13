@@ -44,7 +44,7 @@ const SIGN_LEAN := 0.0   # boards stay vertical and centred on their pole
 
 ## A road sign at the origin, facing a driver who comes from -Z: a pole, and on it the board (the
 ## sign, its picture plate and its text plate) mounted vertically on one pole.
-static func sign_node(code: String, plate := "", plate_sign := "", main_road: Array = [], roads: Array = [], with_pole := true) -> Node3D:
+static func sign_node(code: String, plate := "", plate_sign := "", main_road: Array = [], roads: Array = [], with_pole := true, mounting: Dictionary = {}) -> Node3D:
 	# 8.13 alone (on a light pole, or the old scenes): the plate is the sign.
 	var tex: Texture2D = main_road_plate(main_road, roads) if code == "8.13" else load("res://signs/%s.svg" % code) as Texture2D
 	if tex == null:
@@ -56,6 +56,7 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 	steel.albedo_color = Color("#7A7F87")
 	steel.roughness = 0.6
 	var board := Node3D.new()
+	board.name = "sign_board"
 	board.position = Vector3(0, SIGN_BOTTOM, -0.16)  # In front of both new and baked poles.
 	board.rotation.x = SIGN_LEAN
 	root.add_child(board)
@@ -82,6 +83,9 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 		else:
 			board.add_child(_face(part[1], at, w, h))
 		y += h + 0.05
+	if with_pole and mounting.get("mount", "pole") == "cantilever":
+		_cantilever(root, board, y - 0.05, mounting)
+		return root
 	# The pole: up from the pavement into the board's middle, behind its face.
 	var top := SIGN_BOTTOM + y * 0.5 * cos(SIGN_LEAN)
 	var pole := MeshInstance3D.new()
@@ -97,6 +101,47 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 	else:
 		pole.free()
 	return root
+
+
+## The anchor stays on the roadside; reach moves the sign's centre over the carriageway.
+static func _cantilever(root: Node3D, board: Node3D, height: float, mounting: Dictionary) -> void:
+	var reach := clampf(float(mounting.get("reach", 4.5)), 0.5, 15.0)
+	var clearance := clampf(float(mounting.get("clearance", 5.5)), 5.0, 8.0)
+	var side := -1.0 if mounting.get("armSide", "left") == "right" else 1.0
+	board.position = Vector3(side * reach, clearance, -0.16)
+	var top := clearance + height + 0.3
+	var steel := _paint(Color("#7A7F87"))
+	var post := MeshInstance3D.new()
+	post.name = "cantilever_post"
+	var cylinder := CylinderMesh.new()
+	cylinder.top_radius = 0.16
+	cylinder.bottom_radius = 0.16
+	cylinder.height = top
+	post.mesh = cylinder
+	post.material_override = steel
+	post.position = Vector3(0, top * 0.5, 0.09)
+	root.add_child(post)
+	_part(root, Vector3(0.7, 0.3, 0.7), Vector3(0, 0.15, 0.09), Color("#62676D"))
+	var beam := MeshInstance3D.new()
+	beam.name = "cantilever_beam"
+	var box := BoxMesh.new()
+	box.size = Vector3(reach + 1.7, 0.22, 0.22)
+	beam.mesh = box
+	beam.material_override = steel
+	beam.position = Vector3(side * (reach + 1.7) * 0.5, top, 0.09)
+	root.add_child(beam)
+	var start := Vector3(0, top - 1.4, 0.24)
+	var end := Vector3(side * reach, top, 0.24)
+	var brace := MeshInstance3D.new()
+	var rod := CylinderMesh.new()
+	rod.top_radius = 0.07
+	rod.bottom_radius = 0.07
+	rod.height = start.distance_to(end)
+	brace.mesh = rod
+	brace.material_override = steel
+	brace.position = (start + end) * 0.5
+	brace.basis = Basis(Quaternion(Vector3.UP, (end - start).normalized()))
+	root.add_child(brace)
 
 
 ## Raise the traffic light and mount a vertical board on the same continuous pole.
