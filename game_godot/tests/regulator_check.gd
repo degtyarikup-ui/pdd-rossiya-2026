@@ -14,6 +14,7 @@ func _init() -> void:
 	_check_officer_poses()
 	_check_car_trajectories()
 	_check_junction_layout()
+	_check_ui_layout()
 	_report_results()
 
 
@@ -139,6 +140,34 @@ func _check_junction_layout() -> void:
 	var junction := RegulatorJunction.new()
 	_check("Junction builds without errors", junction.get_child_count() > 5)
 	junction.free()
+
+
+func _check_ui_layout() -> void:
+	var ui := RegulatorUi.new()
+	_check("RegulatorUi builds bottom panel", ui.bottom_panel != null)
+	_check("RegulatorUi has floating hint row", ui.hint_row != null and ui.hint_btn != null)
+	_check("RegulatorUi prompt label is present", ui.prompt_label != null)
+	_check("RegulatorUi has 5 move buttons", ui.move_buttons.size() == 5)
+
+	var left_btn: Button = ui.move_buttons[RegulatorRules.Move.LEFT]["btn"]
+	_check("Directional button has 80px min height", is_equal_approx(left_btn.custom_minimum_size.y, 80.0))
+
+	var stand_btn: Button = ui.move_buttons[RegulatorRules.Move.NONE]["btn"]
+	_check("Non-directional button has 56px min height", is_equal_approx(stand_btn.custom_minimum_size.y, 56.0))
+
+	ui.set_hint_verse("Палка смотрит в рот")
+	_check("Hint verse set and initially hidden", not ui.hint_text.visible)
+
+	ui._on_hint_pressed()
+	_check("Hint verse visible after hint pressed", ui.hint_text.visible)
+
+	ui.show_answer_feedback(RegulatorRules.Move.LEFT, [RegulatorRules.Move.LEFT], true)
+	_check("Answer feedback hides hint and applies style", not ui.hint_text.visible)
+
+	ui.reset_buttons_visuals()
+	_check("Reset visuals restores button accents", true)
+
+	ui.free()
 
 
 func _report_results() -> void:

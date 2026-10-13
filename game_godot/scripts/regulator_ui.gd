@@ -9,6 +9,8 @@ signal hint_toggled()
 signal restart_pressed()
 signal exit_pressed()
 
+const BASE_PANEL_HEIGHT := 214.0
+
 var score_label: Label
 var combo_label: Label
 var timer_label: Label
@@ -16,10 +18,11 @@ var timer_icon: Label
 var lives_container: HBoxContainer
 var prompt_label: Label
 
+var hint_row: HBoxContainer
 var hint_btn: Button
-var hint_card: PanelContainer
 var hint_text: Label
 
+var bottom_panel: PanelContainer
 var move_buttons := {}
 var buttons_container: VBoxContainer
 var result_modal: Control
@@ -38,6 +41,15 @@ func _init() -> void:
 	anchor_bottom = 1.0
 	mouse_filter = MOUSE_FILTER_IGNORE
 	_build_ui()
+
+
+func _ready() -> void:
+	_update_bottom_layout()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		_update_bottom_layout()
 
 
 func _build_ui() -> void:
@@ -107,94 +119,182 @@ func _build_ui() -> void:
 		lives_container.add_child(heart)
 	hud_box.add_child(lives_container)
 
-	# 2. Bottom Panel: Question Prompt, Hint, 5 Move Buttons
-	var bottom_panel := PanelContainer.new()
-	bottom_panel.name = "BottomPanel"
-	bottom_panel.set_anchors_preset(PRESET_BOTTOM_WIDE)
-	bottom_panel.offset_top = -240
-	bottom_panel.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 20, true))
-	add_child(bottom_panel)
-
-	var bottom_vbox := VBoxContainer.new()
-	bottom_vbox.offset_left = 16
-	bottom_vbox.offset_right = -16
-	bottom_vbox.offset_top = 14
-	bottom_vbox.offset_bottom = -14
-	bottom_vbox.add_theme_constant_override("separation", 10)
-	bottom_panel.add_child(bottom_vbox)
-
-	# Header row: Question prompt & Hint button
-	var prompt_row := HBoxContainer.new()
-	prompt_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	bottom_vbox.add_child(prompt_row)
+	# 2. Floating Hint Row (outside & above bottom panel, exactly as in original Flutter/WebView)
+	hint_row = HBoxContainer.new()
+	hint_row.name = "HintRow"
+	hint_row.set_anchors_preset(PRESET_BOTTOM_WIDE)
+	hint_row.add_theme_constant_override("separation", 12)
+	hint_row.mouse_filter = MOUSE_FILTER_IGNORE
+	add_child(hint_row)
 
 	hint_btn = Button.new()
-	hint_btn.text = "💡"
-	hint_btn.custom_minimum_size = Vector2(36, 36)
-	var hint_style := Ui.box(Ui.c("gray"), 10)
-	hint_btn.add_theme_stylebox_override("normal", hint_style)
-	hint_btn.add_theme_stylebox_override("hover", hint_style)
-	hint_btn.add_theme_stylebox_override("pressed", hint_style)
+	hint_btn.custom_minimum_size = Vector2(48, 48)
+	hint_btn.focus_mode = FOCUS_NONE
+	var hint_btn_style := Ui.box(Ui.c("card"), 12)
+	hint_btn.add_theme_stylebox_override("normal", hint_btn_style)
+	hint_btn.add_theme_stylebox_override("hover", hint_btn_style)
+	hint_btn.add_theme_stylebox_override("pressed", hint_btn_style)
+
+	var hint_icon := Label.new()
+	hint_icon.text = "💡"
+	hint_icon.set_anchors_preset(PRESET_FULL_RECT)
+	hint_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hint_icon.add_theme_font_size_override("font_size", 22)
+	hint_icon.mouse_filter = MOUSE_FILTER_IGNORE
+	hint_btn.add_child(hint_icon)
 	hint_btn.pressed.connect(_on_hint_pressed)
-	prompt_row.add_child(hint_btn)
+	hint_row.add_child(hint_btn)
 
-	prompt_label = Ui.label(Ui.t("gameTrafficSignalQuestion"), 15, 600, Ui.c("text"))
+	hint_text = Label.new()
+	hint_text.size_flags_horizontal = SIZE_EXPAND_FILL
+	hint_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint_text.add_theme_font_override("font", Ui.font(600))
+	hint_text.add_theme_font_size_override("font_size", 16)
+	hint_text.add_theme_color_override("font_color", Color.WHITE)
+	hint_text.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	hint_text.add_theme_constant_override("shadow_offset_x", 1)
+	hint_text.add_theme_constant_override("shadow_offset_y", 2)
+	hint_text.add_theme_constant_override("shadow_outline_size", 4)
+	hint_text.mouse_filter = MOUSE_FILTER_IGNORE
+	hint_text.visible = false
+	hint_row.add_child(hint_text)
+
+	# 3. Bottom Panel (Card with Question and 5 Move Buttons)
+	bottom_panel = PanelContainer.new()
+	bottom_panel.name = "BottomPanel"
+	bottom_panel.set_anchors_preset(PRESET_BOTTOM_WIDE)
+	bottom_panel.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 24, true))
+	add_child(bottom_panel)
+
+	var panel_margin := MarginContainer.new()
+	panel_margin.add_theme_constant_override("margin_left", 16)
+	panel_margin.add_theme_constant_override("margin_right", 16)
+	panel_margin.add_theme_constant_override("margin_top", 16)
+	panel_margin.add_theme_constant_override("margin_bottom", 16)
+	bottom_panel.add_child(panel_margin)
+
+	var bottom_vbox := VBoxContainer.new()
+	bottom_vbox.add_theme_constant_override("separation", 8)
+	panel_margin.add_child(bottom_vbox)
+
+	# Question prompt (centered, exactly like original)
+	prompt_label = Ui.label(Ui.t("gameTrafficSignalQuestion"), 14, 600, Ui.c("text"))
 	prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	prompt_label.size_flags_horizontal = SIZE_EXPAND_FILL
-	prompt_row.add_child(prompt_label)
+	bottom_vbox.add_child(prompt_label)
 
-	# Hint banner (shown when bulb is clicked)
-	hint_card = PanelContainer.new()
-	hint_card.visible = false
-	hint_card.add_theme_stylebox_override("panel", Ui.box(Ui.c("gray"), 10))
-	bottom_vbox.add_child(hint_card)
-
-	hint_text = Ui.label("", 14, 500, Ui.c("text"), true)
-	hint_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint_card.add_child(hint_text)
+	var prompt_spacer := Control.new()
+	prompt_spacer.custom_minimum_size = Vector2(0, 4)
+	bottom_vbox.add_child(prompt_spacer)
 
 	# Move Buttons Container
 	buttons_container = VBoxContainer.new()
 	buttons_container.add_theme_constant_override("separation", 8)
 	bottom_vbox.add_child(buttons_container)
 
-	# Row 1: Left, Straight, Right
+	# Row 1: Left, Straight, Right (3 directional vertical buttons with icon on top)
 	var row1 := HBoxContainer.new()
 	row1.add_theme_constant_override("separation", 8)
 	buttons_container.add_child(row1)
 
-	row1.add_child(_create_move_btn(RegulatorRules.Move.LEFT, "↰ " + Ui.t("gameActionLeft")))
-	row1.add_child(_create_move_btn(RegulatorRules.Move.STRAIGHT, "↑ " + Ui.t("gameActionStraight")))
-	row1.add_child(_create_move_btn(RegulatorRules.Move.RIGHT, "↱ " + Ui.t("gameActionRight")))
+	row1.add_child(_create_move_btn(RegulatorRules.Move.LEFT, "↰", Ui.t("gameActionLeft"), true))
+	row1.add_child(_create_move_btn(RegulatorRules.Move.STRAIGHT, "↑", Ui.t("gameActionStraight"), true))
+	row1.add_child(_create_move_btn(RegulatorRules.Move.RIGHT, "↱", Ui.t("gameActionRight"), true))
 
-	# Row 2: U-Turn, Stand
+	# Row 2: U-Turn, Stand (2 non-directional horizontal buttons with icon on left)
 	var row2 := HBoxContainer.new()
 	row2.add_theme_constant_override("separation", 8)
 	buttons_container.add_child(row2)
 
-	row2.add_child(_create_move_btn(RegulatorRules.Move.UTURN, "↶ " + Ui.t("gameActionUTurn")))
-	row2.add_child(_create_move_btn(RegulatorRules.Move.NONE, "✋ " + Ui.t("gameActionStand")))
+	row2.add_child(_create_move_btn(RegulatorRules.Move.UTURN, "↶", Ui.t("gameActionUTurn"), false))
+	row2.add_child(_create_move_btn(RegulatorRules.Move.NONE, "✋", Ui.t("gameActionStand"), false))
 
-	# 3. Game Over / Result Overlay
+	_update_bottom_layout()
+
+	# 4. Game Over / Result Overlay
 	_build_result_overlay()
 
 
-func _create_move_btn(move: RegulatorRules.Move, label_text: String) -> Button:
-	var btn := Button.new()
-	btn.text = label_text
-	btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	btn.custom_minimum_size = Vector2(0, 46)
-	btn.add_theme_font_override("font", Ui.font(600))
-	btn.add_theme_font_size_override("font_size", 14)
-	btn.add_theme_color_override("font_color", Ui.c("text"))
+func _update_bottom_layout() -> void:
+	var b_inset := 0.0
+	if is_inside_tree() and get_viewport():
+		b_inset = Ui.insets(get_viewport()).bottom
 
-	var normal_style := Ui.box(Ui.c("gray"), 10)
+	var total_h := BASE_PANEL_HEIGHT + b_inset
+
+	if bottom_panel:
+		bottom_panel.offset_left = 0
+		bottom_panel.offset_right = 0
+		bottom_panel.offset_top = -total_h
+		bottom_panel.offset_bottom = 0
+
+		if bottom_panel.get_child_count() > 0:
+			var margin: MarginContainer = bottom_panel.get_child(0) as MarginContainer
+			if margin:
+				margin.add_theme_constant_override("margin_bottom", int(16 + b_inset))
+
+	if hint_row:
+		hint_row.offset_left = 16
+		hint_row.offset_right = -16
+		hint_row.offset_bottom = -(total_h + 12.0)
+		hint_row.offset_top = -(total_h + 12.0 + 48.0)
+
+
+func _create_move_btn(move: RegulatorRules.Move, icon_char: String, label_text: String, directional: bool) -> Button:
+	var btn := Button.new()
+	btn.size_flags_horizontal = SIZE_EXPAND_FILL
+	btn.custom_minimum_size = Vector2(0, 80 if directional else 56)
+	btn.focus_mode = FOCUS_NONE
+
+	var normal_style := Ui.box(Ui.c("gray"), 12)
 	btn.add_theme_stylebox_override("normal", normal_style)
 	btn.add_theme_stylebox_override("hover", normal_style)
 	btn.add_theme_stylebox_override("pressed", normal_style)
 
+	var icon_lbl := Label.new()
+	icon_lbl.text = icon_char
+	icon_lbl.add_theme_font_override("font", Ui.font(700))
+	icon_lbl.add_theme_font_size_override("font_size", 26 if directional else 20)
+	icon_lbl.add_theme_color_override("font_color", Ui.c("accent"))
+	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	icon_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	icon_lbl.mouse_filter = MOUSE_FILTER_IGNORE
+
+	var text_lbl := Label.new()
+	text_lbl.text = label_text
+	text_lbl.add_theme_font_override("font", Ui.font(600))
+	text_lbl.add_theme_font_size_override("font_size", 14 if directional else 16)
+	text_lbl.add_theme_color_override("font_color", Ui.c("text"))
+	text_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	text_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	text_lbl.mouse_filter = MOUSE_FILTER_IGNORE
+
+	if directional:
+		var vbox := VBoxContainer.new()
+		vbox.set_anchors_preset(PRESET_FULL_RECT)
+		vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+		vbox.add_theme_constant_override("separation", 6)
+		vbox.mouse_filter = MOUSE_FILTER_IGNORE
+		vbox.add_child(icon_lbl)
+		vbox.add_child(text_lbl)
+		btn.add_child(vbox)
+	else:
+		var hbox := HBoxContainer.new()
+		hbox.set_anchors_preset(PRESET_FULL_RECT)
+		hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+		hbox.add_theme_constant_override("separation", 8)
+		hbox.mouse_filter = MOUSE_FILTER_IGNORE
+		hbox.add_child(icon_lbl)
+		hbox.add_child(text_lbl)
+		btn.add_child(hbox)
+
 	btn.pressed.connect(func(): move_selected.emit(move))
-	move_buttons[move] = btn
+	move_buttons[move] = {
+		"btn": btn,
+		"icon_lbl": icon_lbl,
+		"text_lbl": text_lbl,
+		"directional": directional,
+	}
 	return btn
 
 
@@ -297,7 +397,7 @@ func _add_stat(parent: HBoxContainer, label_text: String, init_val: String) -> L
 
 func _on_hint_pressed() -> void:
 	hint_open = not hint_open
-	hint_card.visible = hint_open
+	hint_text.visible = hint_open
 	hint_toggled.emit()
 
 
@@ -321,35 +421,61 @@ func update_hud(score: int, combo: int, seconds_left: int, lives: int) -> void:
 func set_hint_verse(verse: String) -> void:
 	hint_text.text = verse
 	hint_open = false
-	hint_card.visible = false
+	hint_text.visible = false
+
+
+func _hide_hint() -> void:
+	hint_open = false
+	hint_text.visible = false
 
 
 func show_answer_feedback(chosen_move: RegulatorRules.Move, allowed_moves: Array[RegulatorRules.Move], is_correct: bool) -> void:
-	hint_card.visible = false
-	hint_open = false
+	_hide_hint()
 
 	for move in move_buttons:
-		var btn: Button = move_buttons[move]
+		var data: Dictionary = move_buttons[move]
+		var btn: Button = data["btn"]
+		var icon_lbl: Label = data["icon_lbl"]
+		var text_lbl: Label = data["text_lbl"]
+
 		if allowed_moves.has(move):
-			var green_style := Ui.box(Ui.c("green"), 10)
+			var green_style := Ui.box(Ui.c("green"), 12)
 			btn.add_theme_stylebox_override("normal", green_style)
-			btn.add_theme_color_override("font_color", Color.WHITE)
+			btn.add_theme_stylebox_override("hover", green_style)
+			btn.add_theme_stylebox_override("pressed", green_style)
+			icon_lbl.add_theme_color_override("font_color", Color.WHITE)
+			text_lbl.add_theme_color_override("font_color", Color.WHITE)
 		elif move == chosen_move and not is_correct:
-			var red_style := Ui.box(Ui.c("red"), 10)
+			var red_style := Ui.box(Ui.c("red"), 12)
 			btn.add_theme_stylebox_override("normal", red_style)
-			btn.add_theme_color_override("font_color", Color.WHITE)
+			btn.add_theme_stylebox_override("hover", red_style)
+			btn.add_theme_stylebox_override("pressed", red_style)
+			icon_lbl.add_theme_color_override("font_color", Color.WHITE)
+			text_lbl.add_theme_color_override("font_color", Color.WHITE)
 		else:
-			btn.add_theme_color_override("font_color", Ui.c("secondary"))
+			var gray_style := Ui.box(Ui.c("gray"), 12)
+			btn.add_theme_stylebox_override("normal", gray_style)
+			btn.add_theme_stylebox_override("hover", gray_style)
+			btn.add_theme_stylebox_override("pressed", gray_style)
+			icon_lbl.add_theme_color_override("font_color", Ui.c("secondary"))
+			text_lbl.add_theme_color_override("font_color", Ui.c("secondary"))
 
 
 func reset_buttons_visuals() -> void:
+	_hide_hint()
+
 	for move in move_buttons:
-		var btn: Button = move_buttons[move]
-		var normal_style := Ui.box(Ui.c("gray"), 10)
+		var data: Dictionary = move_buttons[move]
+		var btn: Button = data["btn"]
+		var icon_lbl: Label = data["icon_lbl"]
+		var text_lbl: Label = data["text_lbl"]
+
+		var normal_style := Ui.box(Ui.c("gray"), 12)
 		btn.add_theme_stylebox_override("normal", normal_style)
 		btn.add_theme_stylebox_override("hover", normal_style)
 		btn.add_theme_stylebox_override("pressed", normal_style)
-		btn.add_theme_color_override("font_color", Ui.c("text"))
+		icon_lbl.add_theme_color_override("font_color", Ui.c("accent"))
+		text_lbl.add_theme_color_override("font_color", Ui.c("text"))
 
 
 func show_game_over(score: int, solved: int, wrong: int, max_combo: int, is_record: bool) -> void:
