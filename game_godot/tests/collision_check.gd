@@ -13,8 +13,19 @@ func _initialize() -> void:
 	root.add_child(world)
 	for i in 3:
 		await process_frame
+	world.set_process(false)
+	for frame in 600:
+		if not world.staging:
+			break
+		await process_frame
+	if world.staging:
+		push_error("initial scene staging timeout")
+		quit(1)
+		return
 	var status := _run(world)
 	world.queue_free()
+	await process_frame
+	await process_frame
 	quit(status)
 
 

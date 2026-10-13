@@ -20,9 +20,20 @@ func _initialize() -> void:
 	root.add_child(world)
 	for i in 3:
 		await process_frame
+	world.set_process(false)
+	for frame in 600:
+		if not world.staging:
+			break
+		await process_frame
+	if world.staging:
+		push_error("initial scene staging timeout")
+		quit(1)
+		return
 	_build_all()
 	_rules(world)
 	world.queue_free()
+	await process_frame
+	await process_frame
 	print("road check: %d checks, %d failed" % [checks, failed])
 	print("PASS" if failed == 0 else "FAIL")
 	quit(1 if failed else 0)
@@ -128,12 +139,12 @@ func _rules(world: Node) -> void:
 	var solid := _event("road_31_5")
 	solid.step(0.1, Vector3(-1.8, 0, 120.0), 0.0, 8.0, 0.86, 1.75)
 	var out: Array = solid.step(0.1, Vector3(1.8, 0, 120.0), 0.0, 8.0, 0.86, 1.75)
-	_check("solid line: crossing the centre solid line is a wrong manoeuvre", out.has("wrong_maneuver"))
+	_check("solid line: crossing the centre solid line is a wrong manoeuvre", out.has("illegal_maneuver"))
 
 	# U-turn in a forbidden stretch (9_9 forbidUturn [6, 29]): turning round there is a fault.
 	var uturn := _event("road_9_9")
 	var u_out: Array = uturn.step(0.1, Vector3(-1.8, 0, 110.0), PI, 3.0, 0.86, 1.75)
-	_check("U-turn: turning round in the forbidden stretch is a wrong manoeuvre", u_out.has("wrong_maneuver"))
+	_check("U-turn: turning round in the forbidden stretch is a wrong manoeuvre", u_out.has("illegal_maneuver"))
 
 	# Roadworks barrier (35_5): hitting it is a roadworks fault; the barrier is knocked over.
 	var detour := _event("road_35_5")

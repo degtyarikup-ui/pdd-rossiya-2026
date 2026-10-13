@@ -40,6 +40,14 @@ var speed := 0.0
 var max_speed := 10.0
 var offset := Vector3.ZERO          # moved aside by a nudge
 var accel := 4.0
+var impact_wait := 0.0
+var contact_player := false
+var original_length := 0.0
+var extended := false
+var continuation := Callable()
+var tail_retry := 0.0
+var contact_cooldown := 0.0
+var player_contact_latched := false
 
 
 ## A body on `route` (world points), driving at `speed` m/s once released. `node` is its model.
@@ -54,6 +62,7 @@ static func make(body_id: String, body_kind: String, body_node: Node3D, route: P
 	b.node = body_node
 	b.set_route(route)
 	b.max_speed = top_speed
+	b.original_length = b.length
 	if badge_text != "":
 		var label := Label3D.new()
 		label.text = badge_text
@@ -184,9 +193,23 @@ func nudge(world_dir: Vector3, metres: float) -> void:
 
 
 ## One frame: a held or crashed body stays; a moving one drives its route, and waits at its stop.
-func update(dt: float) -> void:
+func update(dt: float, boxes: Array = [], player_pos := Vector3.INF) -> void:
+	contact_player = false
+	tail_retry = maxf(0.0, tail_retry - dt)
+	contact_cooldown = maxf(0.0, contact_cooldown - dt)
+	for entry in boxes:
+		if entry.get("player", false) and not Drive.overlap(footprint(), entry.box, 0.3):
+			player_contact_latched = false
 	if done or length <= 0.0:
 		return
+	if crashed:
+		if impact_wait <= 0.0:
+			impact_wait = 3.0
+			Fleet.hazards(node, hl, hw)
+		impact_wait -= dt
+		if impact_wait <= 0.0:
+			crashed = false
+			impact_wait = 0.0
 	if held or crashed:
 		speed = 0.0
 	else:
@@ -194,14 +217,76 @@ func update(dt: float) -> void:
 		if dist >= stop_at and stop_for > 0.0:
 			target = 0.0
 			stop_for -= dt
+		var forward := Vector3(sin(_heading(dist)), 0, cos(_heading(dist)))
+		var right := Vector3(forward.z, 0, -forward.x)
+		# Anticipatory braking plus a swept physical boundary. A stopped player is always solid.
+		for entry in boxes:
+			if entry.get("who") == self:
+				continue
+			var box: Dictionary = entry.box
+			var delta: Vector3 = box.p - pos
+			var alignment := cos(box.yaw - _heading(dist))
+			var across := absf(sin(box.yaw - _heading(dist)))
+			var ahead := delta.dot(forward)
+			var width: float = absf(alignment) * box.hw + across * box.hl
+			if ahead <= 0.0 or absf(delta.dot(right)) >= hw + width + 0.1:
+				continue
+			var gap: float = ahead - hl - absf(alignment) * box.hl - across * box.hw
+			var lead_speed: float = maxf(0.0, float(entry.get("speed", 0.0)) * alignment)
+			var room := maxf(0.0, gap - 3.0)
+			var safe := sqrt(64.0 + lead_speed * lead_speed + 16.0 * room) - 8.0
+			target = minf(target, maxf(0.0, safe))
 		speed = move_toward(speed, target, (8.0 if target < speed else accel) * dt)
-		dist += speed * dt
-	if dist >= length:
-		dist = length
+		if player_pos != Vector3.INF and dist >= length - 20.0 and tail_retry <= 0.0:
+			_extend_departure()
+		var advance := minf(speed * dt, maxf(0.0, length - dist))
+		var steps := maxi(1, ceili(advance / 0.15))
+		for i in steps:
+			var before := dist
+			dist += advance / steps
+			var blocked := false
+			var struck = null
+			for entry in boxes:
+				if entry.get("who") == self:
+					continue
+				var box: Dictionary = entry.box
+				if Drive.overlap(footprint(), box, 0.04):
+					blocked = true
+					struck = entry.get("who")
+					if entry.get("player", false) and not player_contact_latched:
+						contact_player = true
+						player_contact_latched = true
+					break
+			if blocked:
+				dist = before
+				if contact_cooldown <= 0.0 and speed > 0.5:
+					contact_cooldown = 3.0
+					Fleet.hazard_obstacle(self)
+					Fleet.hazard_obstacle(struck)
+				speed = 0.0
+				break
+	if (player_pos == Vector3.INF and dist >= length) or (dist > original_length and pos.distance_to(player_pos) > 240.0):
 		done = true
 		solid = false
 		node.visible = false
 	place()
+
+
+func _extend_departure() -> void:
+	extended = true
+	var end := _sample(length)
+	var toward := Vector3(sin(_heading(length)), 0, cos(_heading(length)))
+	var tail := PackedVector3Array()
+	if continuation.is_valid():
+		tail = continuation.call(end, toward, hw, hl)
+		if tail.is_empty():
+			tail_retry = 1.0
+			return
+	if tail.is_empty():
+		tail.append(end + toward * 240.0)
+	var all := points.duplicate()
+	all.append_array(tail)
+	set_route(all)
 
 
 func place() -> void:
@@ -233,7 +318,8 @@ func _heading(d: float) -> float:
 	if points.size() < 2:
 		return 0.0
 	var i := _seg(d)
-	var v := points[i + 1] - points[i]
-	if Vector2(v.x, v.z).length() < 0.0001:
-		return 0.0
-	return atan2(v.x, v.z)
+	for index in range(i, -1, -1):
+		var v := points[index + 1] - points[index]
+		if Vector2(v.x, v.z).length_squared() > 0.000001:
+			return atan2(v.x, v.z)
+	return 0.0

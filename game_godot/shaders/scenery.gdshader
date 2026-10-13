@@ -22,6 +22,8 @@ uniform vec3 snow_color = vec3(0.78, 0.82, 0.85);  // sRGB, like COLOR
 
 // Procedural regulator surfaces use the same maps on the world metre grid.
 uniform bool world_uv = false;
+uniform bool grid_uv = false;
+uniform float texture_periods[24];
 uniform mat4 surface_frame = mat4(1.0);
 uniform int surface_layer = 0;
 uniform float texture_period = 1.0;
@@ -48,7 +50,7 @@ void fragment() {
 	else if (COLOR.a > 0.25) base = mix(base, snow_color, snow);
 	int layer = world_uv ? surface_layer - 1 : int(UV2.x + 0.5) - 1;
 	if (world_uv) base = surface_colour;
-	vec2 detail_uv = world_uv ? (surface_side > 0.5 ? vec2(surface_position.x + surface_position.z, surface_position.y) : surface_position.xz) / texture_period : UV;
+	vec2 detail_uv = world_uv ? (surface_side > 0.5 ? vec2(surface_position.x + surface_position.z, surface_position.y) : surface_position.xz) / texture_period : (grid_uv && layer >= 0 ? surface_position.xz / texture_periods[layer] : UV);
 	if (layer >= 0) {
 		float side = world_uv ? surface_side : step(0.5, UV2.y);
 		vec4 d = texture(detail, vec3(detail_uv, float(layer)));

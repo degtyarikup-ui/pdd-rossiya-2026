@@ -21,6 +21,7 @@ const PerfHud := preload("res://scripts/perf_hud.gd")
 var cfg: Dictionary
 var L: float                      # chunk length
 var chunk_count: int
+var chunk_signatures := {}
 var chunk_index: Array[int] = []  # world chunk number shown in each ring slot
 var road_nodes: Array[MeshInstance3D] = []
 var scenery: Scenery
@@ -69,6 +70,7 @@ var dbg_t := 0.0
 var dbg_every := 0.0
 var last_tick_second := 0
 var blinker_on := false
+var warm_signals := true
 var text: Dictionary = {}          # current question's text in the UI language
 var drive_faults := {}              # episodes on the plain street (cleared like driveFaults)
 var speeding_time := 0.0           # over the limit by 5+ km/h (game.js updateRoadEvent)
@@ -104,6 +106,17 @@ var pending_connection := {}
 var connection_cache := {}
 var insert_road := false
 
+var playable_ids: Array = []
+var staged_sit: Situation
+var staging := false
+var frozen_nodes: Array[Dictionary] = []
+var frozen_bodies: Array[Dictionary] = []
+var frozen_audio: Array[Dictionary] = []
+var saved_ride := {}
+var garage_data := {
+	"cars": [{"id": "hatch", "name": "", "owned": true, "paints": [{"paint": "orange", "name": "", "hex": "#F08A24", "owned": true}]}],
+	"record": 0, "can_start": true, "texts": {},
+}
 var next_id := ""                 # the junction picked next (its files may still be coming)
 var preparing := false            # its files are being fetched (web)
 var road_queue: Array = []        # the road questions still to come (road_scenes.json, all kinds)
@@ -141,12 +154,20 @@ func _ready() -> void:
 		get_tree().change_scene_to_file.call_deferred("res://regulator.tscn")
 		return
 	_setup_language()
+	garage_data.texts = {"runs": Ui.t("gameGarage"), "record": Ui.t("gameLobbyRecord"), "colour": Ui.t("gameLobbyColour"), "start": Ui.t("gameLobbyNewRun")}
 	loader = Loader.attach(self)
 	cfg = JSON.parse_string(FileAccess.get_file_as_string("res://data/world.json"))
 	L = cfg.chunk_length
 	chunk_count = int(cfg.chunks_ahead) + int(cfg.chunks_behind) + 1
 	var roads: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://roads/road_scenes.json"))
-	road_queue = roads.scenes.duplicate()
+	# Only editor-approved situations participate in normal drives.
+	road_queue = []
+	for candidate in JSON.parse_string(FileAccess.get_file_as_string("res://situations/index.json")):
+		var path := "res://network/%s.json" % candidate
+		if FileAccess.file_exists(path):
+			var authored = JSON.parse_string(FileAccess.get_file_as_string(path))
+			if authored is Dictionary and authored.get("reviewed", false) == true:
+				playable_ids.append(candidate)
 	road_queue.shuffle()
 	scenery = Scenery.new(_season())
 	_setup_environment()
@@ -238,6 +259,7 @@ func _ready() -> void:
 		call_deferred("_run_previews")
 	if road_force != "":
 		# A test of one road question (tests/road_all.sh): only that question, no junctions.
+		road_queue = roads.scenes.duplicate()
 		road_queue = road_queue.filter(func(s): return s.id == road_force)
 		if road_queue.is_empty():
 			push_error("no road question %s" % road_force)
@@ -246,6 +268,8 @@ func _ready() -> void:
 		spawn_after = 1.0e9
 	if topdown_now:
 		spawn_after = -1.0e9   # the junction is laid out at once
+	_prestage.call_deferred()
+	_warm_connections()
 	for arg in Host.user_args():
 		if arg.begins_with("--shot="):
 			_shot(arg.trim_prefix("--shot="))
@@ -253,8 +277,17 @@ func _ready() -> void:
 
 ## The loader stays over the first frames, once the garage or the street is up, and then goes.
 func _dismiss_loader() -> void:
+	# Render the existing emissive/halo variants under the opaque loading screen once,
+	# so their first real collision/turn does not compile shaders during the ride.
+	for side in blinkers:
+		for node in blinkers[side]:
+			if node: node.visible=true
 	await get_tree().process_frame
+	if is_queued_for_deletion() or not is_inside_tree(): return
 	await get_tree().process_frame
+	if is_queued_for_deletion() or not is_inside_tree(): return
+	warm_signals=false
+	_update_lamps(0.0)
 	if loader != null:
 		loader.dismiss()
 		loader = null
@@ -412,13 +445,16 @@ func _setup_environment() -> void:
 	sun.light_energy = float(s.sunIntensity) * 0.8
 	sun.shadow_enabled = true
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
-	sun.directional_shadow_max_distance = 70.0
+	sun.directional_shadow_max_distance = 52.0
 	# Soft, steady edges: a blurred filter over a finer map, so the shadow does not crawl as the view moves.
-	sun.shadow_blur = 2.0
+	sun.shadow_blur = 1.25
+	sun.shadow_bias = 0.025
+	sun.shadow_normal_bias = 0.35
 	sun.directional_shadow_fade_start = 0.9
 	add_child(sun)
 	var snow := Color(s.roof) if s.roof != null else Color("#C7D0D8")
 	scenery.material.set_shader_parameter("snow_color", Vector3(snow.r, snow.g, snow.b))
+	scenery.building_material.set_shader_parameter("snow_color", Vector3(snow.r, snow.g, snow.b))
 	# The game's camera: orthographic, 42 m tall view, pitched atan2(42, 44)
 	# behind the car, looking 10 m ahead of it (game.js updateCamera).
 	camera = Camera3D.new()
@@ -488,6 +524,10 @@ func _half_at(z: float) -> float:
 func _place_chunk(slot: int, index: int) -> void:
 	chunk_index[slot] = index
 	var ranges := _street_ranges(index)
+	var signature := hash([index, ranges, street.profile, street_half, texture_frame])
+	if chunk_signatures.get(slot) == signature:
+		return
+	chunk_signatures[slot] = signature
 	road_nodes[slot].mesh = street.build_chunk(slot, index, ranges.is_empty(), _half_at, ranges)
 	road_nodes[slot].position = Vector3(0, 0, index * L)
 
@@ -562,8 +602,8 @@ func _mount_car(id: String, hex: String) -> void:
 			_make_blinker(node)
 
 
-## An indicator is drawn large and bright, with a halo and a light of its own: it shows from the
-## top-down camera. Shown and hidden with the node (_update_lamps); its light goes out with it.
+## Bright emissive indicators and additive halos remain visible from the overhead camera.
+## No real point lights are needed: they compile costly dynamic-light variants on first collision.
 func _make_blinker(node: Node3D) -> void:
 	if node == null:
 		return
@@ -571,11 +611,7 @@ func _make_blinker(node: Node3D) -> void:
 	for mi in node.find_children("*", "MeshInstance3D", true, false):
 		(mi as MeshInstance3D).material_override = Glow.lamp_material(BLINK_COLOUR, BLINK_COLOUR, true)
 	node.add_child(Glow.halo(BLINK_COLOUR, BLINK_HALO))
-	var light := OmniLight3D.new()
-	light.light_color = BLINK_COLOUR
-	light.light_energy = 1.0
-	light.omni_range = 5.0
-	node.add_child(light)
+
 
 
 ## World services for Drive (game.js roadSupports / obstacles / faults).
@@ -588,7 +624,7 @@ func road_supports(p: Vector3) -> bool:
 	for b in blanks:
 		if p.z > b[0] and p.z < b[1]:
 			return false
-	return absf(p.x) <= _half_at(p.z)
+	return absf(p.x) <= _half_at(p.z) and absf(p.x) >= float(street.profile.get("median", 0.0))*0.5
 
 
 ## Junction participants, as seen in world coordinates.
@@ -641,7 +677,7 @@ class AmbientObstacle:
 		car = c
 
 	func footprint() -> Dictionary:
-		return { "p": Vector3(car.x, 0, car.z), "yaw": 0.0 if car.dir > 0.0 else PI, "hw": 0.95, "hl": 2.2 }
+		return { "p": Vector3(car.x, 0, car.z), "yaw": float(car.get("yaw", 0.0 if car.dir > 0.0 else PI)), "hw": 0.95, "hl": float(car.get("len", CAR_LENGTH)) * 0.5 }
 
 	## The player keeps the gas on a car it is pushing: a moving car takes the push and rolls on
 	## at the pace of the gas (its shove), the player follows. A parked car does not move: 1.5 m/s.
@@ -679,7 +715,7 @@ func obstacles() -> Array:
 				out.append(WorldMotion.new(m, j.sit.global_transform))
 	for car in traffic:
 		# Inside a junction's own streets the ring traffic is not there at all.
-		if not _in_blank(car.z) and not car.get("sheltered", false):
+		if not car.get("sheltered", false):
 			out.append(AmbientObstacle.new(car))
 	# Parked cars at the kerb are solid too (only the ones near the car).
 	for spots in street.parked_spots.values():
@@ -696,6 +732,7 @@ func obstacles() -> Array:
 
 
 func on_collision(o) -> void:
+	drive.hazards_left = 3.0
 	if o is HumanObstacle:
 		_knock_down(o.node)
 		_person_hit("officer")
@@ -714,6 +751,7 @@ func on_collision(o) -> void:
 			_person_hit(m.id)
 			return
 		m.crashed = true
+		Fleet.hazards(m.node, m.hl, m.hw)
 		m.speed = 0
 		drive.recovery = 0.38
 		drive.speed = 0
@@ -734,6 +772,14 @@ func on_collision(o) -> void:
 	else:
 		# A car on the ring: it is shoved away from the player (the harder the hit, the further it
 		# rolls) and the player bounces back a little, then drives on.
+		o.car.hazards_left = 3.0
+		if o.car.has("node"):
+			Fleet.hazards(o.car.node, float(o.car.get("len", CAR_LENGTH)) * 0.5, 0.95)
+		else:
+			if not o.car.has("lamps"):
+				o.car.lamps = Node3D.new()
+				add_child(o.car.lamps)
+			Fleet.hazards(o.car.lamps, float(o.car.get("len", CAR_LENGTH)) * 0.5, 0.95)
 		var away := 1.0 if o.car.z >= drive.pos.z else -1.0
 		if o.car.get("moves", false):
 			o.car.shove = away * (maxf(0.0, drive.speed) * 0.8 + 2.0)   # at least 2 m/s: a visible roll
@@ -832,6 +878,8 @@ func on_fault(type: String, key: String) -> void:
 	if faults.has(key):
 		return
 	faults[key] = true
+	if type in ["maneuver", "wrong_maneuver", "wrong_exit"]:
+		return
 	if type == "collision":
 		sound.play("crash")
 		GameSound.buzz(300)
@@ -874,23 +922,28 @@ func _scene_connections(id: String) -> Dictionary:
 func _next_id() -> String:
 	if only_id != "": return only_id
 	if bag.is_empty():
-		bag = JSON.parse_string(FileAccess.get_file_as_string("res://situations/index.json"))
+		bag = playable_ids.duplicate()
 		bag.shuffle()
-	if pending_connection.is_empty(): return bag.pop_front()
+	if bag.is_empty(): return ""
+	var next_port: Dictionary = pending_connection.get("port", {})
+	if next_port.is_empty() and current and current.sit.network:
+		var maneuver: String = str(current.sit.data.spec.get("maneuver", "straight"))
+		next_port = current.sit.network.connections.exits.get(maneuver, {})
+	if next_port.is_empty(): return bag.pop_front()
 	var best := 0;var score := INF
 	for i in bag.size():
 		var entry: Dictionary = _scene_connections(str(bag[i])).get("entry",{})
 		if entry.is_empty(): continue
-		var cost := SceneStitch.match_score(pending_connection.port,entry)
+		var cost := SceneStitch.match_score(next_port,entry)
 		if cost<score: score=cost;best=i
 	# Prefer another scene with the same number of lanes over an unnecessary lane-drop road.
 	if score>=1000.0:
-		var ids: Array = JSON.parse_string(FileAccess.get_file_as_string("res://situations/index.json"))
+		var ids: Array = playable_ids.duplicate()
 		ids.shuffle()
 		for id in ids:
 			var entry: Dictionary = _scene_connections(id).get("entry",{})
 			if entry.is_empty(): continue
-			var cost := SceneStitch.match_score(pending_connection.port,entry)
+			var cost := SceneStitch.match_score(next_port,entry)
 			if cost<score:
 				score=cost
 				if not bag.has(id): bag.append(id)
@@ -903,21 +956,46 @@ func _next_id() -> String:
 ## The next junction is laid out ahead, beyond the view: its streets replace
 ## the ring there (blank chunks), chunk-aligned on both ends. On the web its
 ## files come first (PackFiles): the junction waits for them, the car drives on.
-func _maybe_spawn() -> void:
-	if current or road != null or insert_road or drive.pos.z < spawn_after:
-		return
-	if next_id == "":
-		next_id = _next_id()
-	if not Situation.prepared(next_id):
-		if not preparing:
-			preparing = true
-			Situation.prepare(next_id, _on_prepared.bind(next_id))
-		if not Situation.prepared(next_id):
-			return
-	var id := next_id
-	next_id = ""
-	var sit := Situation.load_scene(id, scenery)
+func _prestage() -> void:
+	if staging or staged_sit != null or road_force != "": return
+	if next_id == "": next_id = _next_id()
+	if next_id == "": return
+	staging = true
+	Situation.prepare(next_id, _on_prepared.bind(next_id))
+
+func _build_staged(id: String) -> void:
+	var started := Time.get_ticks_msec()
+	staged_sit = await Situation.load_scene_staged(id, scenery, get_tree(), self)
+	if staged_sit!=null and staged_sit.network:
+		var entry: Dictionary=staged_sit.network.connections.entry
+		if not entry.is_empty():
+			var bases: Array=[Situation.bindings_with([],entry,float(entry.width))]
+			if current and current.sit.network:
+				var previous: Situation=current.sit
+				for out in previous.network.connections.exits.values():
+					var profile:=SceneStitch.joint_profile(out,entry)
+					var candidate:=Situation.bindings_with([],entry,float(profile.width),profile)
+					if not bases.has(candidate): bases.append(candidate)
+					await previous.warm_bindings(Situation.bindings_with(previous.network.stitch_bindings,out,float(out.width)),scenery,get_tree())
+					await previous.warm_bindings(Situation.bindings_with(previous.network.stitch_bindings,out,float(profile.width),profile),scenery,get_tree())
+			for base in bases:
+				await staged_sit.warm_bindings(base,scenery,get_tree())
+				for out in staged_sit.network.connections.exits.values():
+					await staged_sit.warm_bindings(Situation.bindings_with(base,out,float(out.width)),scenery,get_tree())
 	Situation.forget(id)
+	staging = false
+	if dbg_every > 0.0: print("[stream] staged ", id, " in ", Time.get_ticks_msec()-started, " ms across frames")
+
+func _maybe_spawn() -> void:
+	_prestage()
+	if current or road != null or insert_road or drive.pos.z < spawn_after or staged_sit == null or staging:
+		return
+	var sit := staged_sit
+	staged_sit = null
+	if sit.get_parent(): sit.get_parent().remove_child(sit)
+	sit.visible = true
+	next_id = ""
+	var activation := Time.get_ticks_usec()
 	var crop: float = sit.data.crop
 	var entry: Dictionary = sit.network.connections.entry if sit.network else {}
 	var zc := ceili((drive.pos.z+150.0)/L)*L+crop
@@ -940,13 +1018,32 @@ func _maybe_spawn() -> void:
 		sit.place_at(zc,scenery)
 	pending_connection={}
 	add_child(sit)
+	_rebase_timing("activate_bind_surfaces",activation)
+	activation=Time.get_ticks_usec()
 	var junction := Junction.new(sit)
+	junction.continuation = func(p, toward, hw, hl): return _departure_path(sit.global_transform * p, sit.basis * toward, hw, hl, sit.global_transform)
+	junction.cycle_continuation = func(p, toward, hw, hl): return _cycle_departure_path(sit.global_transform * p, sit.basis * toward, hw, hl, sit.global_transform)
 	junction.fault.connect(func(type, key): on_fault(type, key))
 	junction.finished.connect(_on_finished)
 	current = { "sit": sit, "junction": junction, "zc": zc }
 	var sit_d: Dictionary = sit.network.data if sit.network else sit.data
 	cam_covered = _estimate_card_height(sit_d)
 	blanks.append([zc - crop, zc + crop])
+	# Exact stitched bounds are needed before validating ambient lanes (crop bounds include trimmed ground).
+	_rebuild_ring()
+	# A newly installed road can have a divider/lane profile different from the filler street.
+	# Put already distant ambient vehicles in valid lanes before the scene enters the camera.
+	for car in traffic:
+		if _in_blank(car.z) and Vector3(car.x,0,car.z).distance_to(drive.pos)>80.0:
+			var pose := Vector3(car.x,0,car.z)
+			var direction := Vector3(0,0,car.dir)
+			if not _departure_clear(pose,direction,0.95,float(car.len)*0.5) or not _departure_clear(pose+direction*12.0,direction,0.95,float(car.len)*0.5):
+				var lane_pos := _safe_ambient_lane(car,12.0)
+				if lane_pos != Vector3.INF:
+					car.x=lane_pos.x;car.z=lane_pos.z
+					car.yaw=0.0 if car.dir>0.0 else PI
+				else:
+					car.sheltered=true
 	if topdown != "":
 		_topdown_shot(sit, topdown)
 	if near_debug:
@@ -957,12 +1054,16 @@ func _maybe_spawn() -> void:
 		drive.pos = point-Vector3.BACK*45.0
 		drive.yaw = SceneStitch.yaw(sit.basis*Vector3(sin(float(sit.data.playerStartRotY)),0,cos(float(sit.data.playerStartRotY))))
 	_rebuild_ring()
+	_rebase_timing("activate_ring_and_lanes",activation)
 
 
-func _on_prepared(ok: bool, _id: String) -> void:
+func _on_prepared(ok: bool, id: String) -> void:
 	preparing = false
-	if not ok:
-		spawn_after = drive.pos.z + 20.0   # the files did not come: try again a little further on
+	if ok:
+		_build_staged(id)
+	else:
+		staging = false
+		spawn_after = drive.pos.z + 20.0
 
 
 func _update_junction(dt: float) -> void:
@@ -971,7 +1072,7 @@ func _update_junction(dt: float) -> void:
 		var fwd: Vector3 = j.sit.global_transform.basis.inverse() * Vector3(sin(drive.yaw), 0, cos(drive.yaw))
 		var me := { "p": local, "yaw": atan2(fwd.x, fwd.z), "hw": drive.half_width, "hl": drive.half_length }
 		var hit = j.junction.update_actors(dt, me, drive.speed)
-		if hit and phase == "resolving" and j == current:
+		if hit:
 			on_collision(WorldMotion.new(hit, j.sit.global_transform))
 	if not current:
 		return
@@ -1023,6 +1124,7 @@ func _update_road(dt: float) -> void:
 		road = RoadEvent.make(item, drive.pos.z + 150.0, street_half)
 		road.match_surface(scenery, texture_frame)
 		add_child(road)
+		road.continuation = _departure_path
 		road_phase = "approach"
 		pending_connection={}
 		return
@@ -1044,8 +1146,10 @@ func _update_road(dt: float) -> void:
 		if auto_answer:
 			get_tree().create_timer(1.5).timeout.connect(func(): _on_answer_chosen(int(road.entry.correctAnswerIndex)))
 	if road_phase != "approach":
-		for rule in road.step(dt, drive.pos, drive.yaw, drive.speed, drive.half_width, drive.half_length):
+		for rule in road.step(dt, drive.pos, drive.yaw, drive.speed, drive.half_width, drive.half_length, obstacles()):
 			road_violation(str(rule))
+		if road.player_hit != null:
+			on_collision(road.player_hit)
 	if road.limit_kmh > 0 and z > road.limit_z and z <= road.end_sign_z:
 		if limit_kmh != road.limit_kmh:
 			print("[road] zone limit ", road.limit_kmh, " from z ", snappedf(z, 0.1))
@@ -1098,6 +1202,7 @@ func _road_hit(b: RoadBody) -> void:
 		road_violation("roadworks")
 		return
 	b.crashed = true
+	Fleet.hazards(b.node, b.hl, b.hw)
 	b.speed = 0.0
 	drive.recovery = 0.38
 	drive.speed = 0
@@ -1119,11 +1224,11 @@ func _on_road_answer(index: int) -> void:
 	if index >= 0:
 		ui.mark_answer(index, right)
 	if is_correct:
-		await get_tree().create_timer(0.9).timeout
+		await _wait_active(0.9)
 		ui.hide_cards()
 		_road_resume()
 	else:
-		await get_tree().create_timer(0.9 if index >= 0 else 0.0).timeout
+		await _wait_active(0.9 if index >= 0 else 0.0)
 		ui.show_explanation(road.question_text(), right, index < 0)
 
 
@@ -1194,12 +1299,12 @@ func _on_answer_chosen(index: int) -> void:
 		ui.mark_answer(index, right)
 	if is_correct:
 		# The card stays a moment so the green answer is seen, then the car goes.
-		await get_tree().create_timer(0.9).timeout
+		await _wait_active(0.9)
 		ui.hide_cards()
 		answer(true)
 	else:
 		current.junction.release()
-		await get_tree().create_timer(0.9 if index >= 0 else 0.0).timeout
+		await _wait_active(0.9 if index >= 0 else 0.0)
 		ui.show_explanation(text, right, index < 0)
 
 
@@ -1214,6 +1319,8 @@ func _on_continue() -> void:
 ## finishManeuver: the player has left by an exit. A turn rebases the world
 ## so the road ahead is +Z again; the exit street continues as the ring.
 func _on_finished(exit_direction: String, exit_yaw: float) -> void:
+	var perf_start := Time.get_ticks_usec()
+	var perf_step := perf_start
 	var sit: Situation = current.sit
 	var crop: float = sit.data.crop
 	var centre := sit.position
@@ -1224,18 +1331,23 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	var joint: Vector3 = sit.global_transform*port.p
 	var heading := SceneStitch.yaw(sit.basis*port.out)
 	sit.bind_end(port,float(port.width),scenery,texture_frame)
+	perf_step=_rebase_timing("bind_exit",perf_step)
 	var rotation := Basis(Vector3.UP,-heading)
 	var xf := Transform3D(rotation,-(rotation*joint))
 	texture_frame=texture_frame*xf.affine_inverse()
 	for j in _junctions():
 		j.sit.transform=xf*j.sit.transform
 		j.sit.refresh_uv(scenery,texture_frame)
+	perf_step=_rebase_timing("transform_and_refresh_uv",perf_step)
 	for body: RigidBody3D in get_tree().get_nodes_in_group("fallen_people"):
 		body.global_transform = xf * body.global_transform
 		body.linear_velocity = rotation * body.linear_velocity
 		body.angular_velocity = rotation * body.angular_velocity
 	drive.pos=xf*drive.pos
 	drive.yaw-=heading
+	# The rebase and the visual car move in the SAME frame (no one-frame disappearance).
+	player.position = drive.pos
+	player.rotation.y = drive.yaw
 	cam_heading-=heading
 	cam_look=xf*cam_look
 	skip_jerk=true
@@ -1259,16 +1371,24 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 				var copy := node.duplicate() as MeshInstance3D
 				copy.mesh=trimmed
 				ghost.add_child(copy)
+	perf_step=_rebase_timing("clip_road_meshes",perf_step)
 	street.snapshot(ghost)
+	perf_step=_rebase_timing("snapshot_scenery",perf_step)
 	for node: MultiMeshInstance3D in ghost.find_children("*","MultiMeshInstance3D",true,false):
+		var poses: Array = node.get_meta("instance_transforms",[])
 		for i in node.multimesh.instance_count:
-			var at := node.multimesh.get_instance_transform(i)
+			var at: Transform3D = poses[i] if poses.size()>i else node.multimesh.get_instance_transform(i)
 			if (xf*at.origin).z>0.0:
-				node.multimesh.set_instance_transform(i,Transform3D(Basis.from_scale(Vector3.ONE*0.001),Vector3(0,-50,0)))
+				node.multimesh.set_instance_transform(i,Scenery.Pool.HIDDEN)
+				if poses.size()>i: poses[i]=Scenery.Pool.HIDDEN
 	ghost_until=260.0
+	perf_step=_rebase_timing("trim_scenery",perf_step)
 	_keep_ambient(ghost)
+	perf_step=_rebase_timing("keep_ambient",perf_step)
 	_reset_ambient()
+	perf_step=_rebase_timing("reset_ambient",perf_step)
 	_build_ground()
+	perf_step=_rebase_timing("ground",perf_step)
 	street_half=float(port.width)/2.0
 	pending_connection={"port":port.duplicate(),"local_port":port,"sit":sit}
 	pending_connection.port.p=Vector3.ZERO
@@ -1278,9 +1398,11 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	phase="driving"
 	spawn_after=drive.pos.z
 	# Additional straights contain a road episode; empty filler straights are not added between tickets.
-	insert_road=road_force!="" or (only_id=="" and run.answered%3==0 and not road_queue.is_empty())
+	insert_road=road_force!=""
 	if insert_road: road_after=drive.pos.z
 	_rebuild_ring()
+	perf_step=_rebase_timing("rebuild_ring",perf_step)
+	_rebase_timing("TOTAL",perf_start)
 	event.emit({ "event": "situation_cleared", "situationId": sit.id, "exit": exit_direction })
 	if run.finished():
 		phase = "over"
@@ -1341,7 +1463,7 @@ func _spawn_traffic() -> void:
 		var car := {
 			"dir": dir, "base": base, "spd": base, "v": dir * base, "len": CAR_LENGTH,
 			"shove": 0.0, "moves": true,   # a hit car rolls away (m/s along the road) and slows back
-			"x": -dir * 1.8, "z": drive.pos.z + 50.0 + (i / 2) * spacing + (spacing * 0.5 if dir < 0 else 0.0),
+			"x": -dir * _ambient_lane_offset(), "z": drive.pos.z + 50.0 + (i / 2) * spacing + (spacing * 0.5 if dir < 0 else 0.0),
 		}
 		if kind in Fleet.BIG:
 			var node: Node3D = Fleet.dps_car() if kind == "dps" else Fleet.taxi() if kind == "taxi" else RoadBody.model(kind, Fleet.paint(rng))
@@ -1375,7 +1497,7 @@ func _spawn_walkers() -> void:
 		# Two walking lanes on the pavement (5.2 and 6.3 m), as in the game.
 		walkers.append({
 			"dir": dir, "lane": (i / 2) % 2,
-			"z": rng.randf_range(-L * float(cfg.chunks_behind), L * float(cfg.chunks_ahead)), "v": v, "mm": multi, "slot": slot,
+			"z": -L * float(cfg.chunks_behind) + (i + rng.randf_range(0.15, 0.85)) * L * chunk_count / float(cfg.pedestrians), "v": v, "mm": multi, "slot": slot,
 		})
 		var jacket: Color = _pick(cfg.colors.people, rng)
 		multi.set_instance_custom_data(slot, Color(jacket.r, jacket.g, jacket.b, rng.randf()))
@@ -1385,11 +1507,12 @@ func _spawn_walkers() -> void:
 func _reset_ambient() -> void:
 	for i in traffic.size():
 		traffic[i].erase("sheltered")
+		traffic[i].erase("lane_target")
 		traffic[i].z = drive.pos.z + 250.0 + i * 8.0
 	for i in walkers.size():
 		walkers[i].erase("knocked_down")
 		walkers[i].erase("sheltered")
-		walkers[i].z = drive.pos.z + 250.0 + (i * 3.0)
+		walkers[i].z = drive.pos.z + 250.0 + i * L * chunk_count / maxf(1.0, walkers.size())
 
 
 ## Distance along an ambient lane to the next junction boundary (before the exclusion margin).
@@ -1519,7 +1642,7 @@ const HEADWAY := 1.5
 func _lead_of(car: Dictionary, span: float):
 	var best = null
 	for other in traffic:
-		if other == car or other.dir != car.dir or absf(other.x - car.x) > 1.0:
+		if other == car or other.get("sheltered", false) or other.dir != car.dir or absf(other.x - car.x) > 1.0:
 			continue
 		var d: float = fposmod((other.z - car.z) * car.dir, span)
 		if d > 0.0 and (best == null or d < best.dist):
@@ -1530,13 +1653,19 @@ func _lead_of(car: Dictionary, span: float):
 func _update_traffic(delta: float) -> void:
 	var span := L * chunk_count
 	var behind := drive.pos.z - L * float(cfg.chunks_behind)
-	var lane := street_half * 3.0 / 7.0
+	var lane := _ambient_lane_offset()
+	var solids: Array = []
+	for obstacle in obstacles(): solids.append({"source": obstacle, "body": obstacle.footprint()})
+	solids.append({"source": null, "body": drive.footprint()})
 	for car in traffic:
+		car.contact_cooldown = maxf(0.0, float(car.get("contact_cooldown", 0.0))-delta)
 		# Lanes follow the carriageway as it is now: the flow on the driver's side (-X),
 		# the oncoming on the other (+X). The lane is set by the direction, never by the speed.
-		car.x = -car.dir * lane
+		if not _in_blank(car.z):
+			car.x = -car.dir * lane
+			car.yaw = 0.0 if car.dir > 0.0 else PI
 		car.z = behind + fposmod(car.z - behind, span)
-		if _in_blank(car.z):
+		if _in_blank(car.z) and not road_supports(Vector3(car.x, 0, car.z)) and absf(car.z-drive.pos.z)>230.0:
 			car.sheltered = true
 		elif car.get("sheltered", false) and absf(car.z - drive.pos.z) > 230.0:
 			car.erase("sheltered")
@@ -1561,26 +1690,22 @@ func _update_traffic(delta: float) -> void:
 			var player_speed := maxf(0.0, drive.speed * cos(drive.yaw) * car.dir)
 			var safe: float = CAR_GAP + car.spd * HEADWAY
 			want = minf(want, maxf(0.0, player_speed + (gap - safe) * 0.6))
-		# Ambient cars stop outside a ticket's road, instead of vanishing at its edge.
-		var boundary := _ambient_boundary(car.z, car.dir)
-		if boundary != INF:
-			var clearance: float = boundary - car.len * 0.5 - CAR_GAP
-			want = minf(want, sqrt(maxf(0.0, clearance) * 8.0))
 		car.spd = move_toward(car.spd, want, (8.0 if want < car.spd else 3.0) * delta)
 		var step: float = (car.dir * car.spd + car.shove) * delta
 		if player_leads:
 			step = car.dir * minf(step * car.dir, maxf(0.0, behind_gap - car.len * 0.5 - player_extent - CAR_GAP))
-		if boundary != INF:
-			step = car.dir * minf(step * car.dir, maxf(0.0, boundary - car.len * 0.5 - CAR_GAP))
-		car.z += step
+		# Clamp this frame's displacement from the snapshot, without moving a queue backward.
+		if lead != null and step * car.dir > 0.0:
+			var need: float = (car.len + lead.car.len) * 0.5 + 0.08
+			step = car.dir * minf(step * car.dir, maxf(0.0, lead.dist - need))
+		if step * car.dir < 0.0:
+			for other in traffic:
+				if other == car or other.get("sheltered", false) or absf(other.x-car.x)>1.8: continue
+				var rear: float = (car.z-other.z)*car.dir
+				if rear>0.0:
+					step = car.dir * maxf(step*car.dir, -maxf(0.0,rear-(car.len+other.len)*0.5-0.08))
+		_ambient_advance(car, step, solids)
 		car.shove = move_toward(car.shove, 0.0, 2.5 * delta)   # the push runs out on its own
-	# A hard rule on top of the speeds: no car ever overlaps the one ahead of it.
-	for car in traffic:
-		var lead = _lead_of(car, span)
-		var need: float = (car.len + lead.car.len) * 0.5 + CAR_GAP if lead != null else 0.0
-		if lead != null and lead.dist < need:
-			car.z -= car.dir * (need - lead.dist)
-			car.spd = minf(car.spd, lead.car.spd)
 	for car in traffic:
 		car.v = car.dir * car.spd
 		# A car in the player's lane ahead: smooth speed regulation without snapping
@@ -1597,12 +1722,14 @@ func _update_traffic(delta: float) -> void:
 			car.z += span
 		elif car.z > behind + span:
 			car.z -= span
-		var face := 0.0 if car.dir > 0.0 else PI
+		var face: float = car.get("yaw", 0.0 if car.dir > 0.0 else PI)
 		var at := Vector3(car.x, 0, car.z)
 		# Inside a junction's square the street does not go on (a bend, a T, a roundabout): the ring
 		# traffic is not drawn there, or it would drive straight over lawns and through houses.
-		if _in_blank(car.z) or car.get("sheltered", false):
+		if car.get("sheltered", false):
 			at.y = -100.0
+		if car.has("lamps"):
+			(car.lamps as Node3D).transform = Transform3D(Basis(Vector3.UP, face), at)
 		if car.has("node"):
 			(car.node as Node3D).transform = Transform3D(Basis(Vector3.UP, face), at)
 		else:
@@ -1665,17 +1792,53 @@ func _notification(what: int) -> void:
 
 ## Pause (top-left button, Android «back»): not while a question waits for its answer.
 func _on_pause() -> void:
-	if lobby_mode or paused or phase in ["question", "over"] or (road != null and road_phase == "question"):
+	if lobby_mode or paused or phase == "over":
 		return
 	paused = true
+	saved_ride = {"transform": player.transform, "camera": camera.transform, "cam_size": camera.size, "controls": controls.active}
 	controls.set_active(false)
-	ui.show_pause()
+	_freeze_world_actors()
+	lobby = Lobby.new(garage_data.duplicate(true))
+	add_child(lobby)
+	lobby.set_resume_mode(true)
+	lobby.resume_requested.connect(_on_resume)
+	lobby.close_requested.connect(_on_exit)
+	lobby.spin.connect(_on_lobby_spin)
+	lobby_mode = true
+	ui.visible = false
+	ui.process_mode = Node.PROCESS_MODE_DISABLED
+	_set_street_objects(false)
+	garage_set = GarageSet.new()
+	add_child(garage_set)
+	garage_set.build(scenery)
+	garage_set.camera.make_current()
+	player.position = GarageSet.PAD
+	lobby_turn = GARAGE_TURN
+	player.rotation.y = lobby_turn
+	environment.background_color = GARAGE_SKY
 
 
 func _on_resume() -> void:
+	var resume_controls: bool = saved_ride.get("controls", true)
+	if not saved_ride.is_empty():
+		lobby_mode = false
+		lobby.queue_free()
+		lobby = null
+		garage_set.queue_free()
+		garage_set = null
+		_thaw_world_actors()
+		player.transform = saved_ride.transform
+		camera.transform = saved_ride.camera
+		camera.size = saved_ride.cam_size
+		camera.make_current()
+		environment.background_color = Color(scenery.season.sky)
+		_set_street_objects(true)
+		ui.visible = true
+		ui.process_mode = Node.PROCESS_MODE_INHERIT
+		saved_ride.clear()
 	paused = false
 	ui.hide_pause()
-	controls.set_active(true)
+	controls.set_active(resume_controls)
 
 
 func _on_exit() -> void:
@@ -1707,11 +1870,13 @@ func _report_answer(situation_id: String, is_correct: bool, index: int) -> void:
 ## (garage.reveal). The run starts from here.
 func _open_lobby() -> void:
 	var garage: Dictionary = JSON.parse_string(_arg_text("--garage"))
+	garage_data = garage.duplicate(true)
 	lobby = Lobby.new(garage)
 	add_child(lobby)
 	lobby.changed.connect(_on_lobby_changed)
 	lobby.start_requested.connect(_on_lobby_start)
 	lobby.spin.connect(_on_lobby_spin)
+	lobby.resume_requested.connect(_on_resume)
 	lobby.close_requested.connect(_on_lobby_close)
 	tips_enabled = bool(garage.get("tips", false))
 	resume_state = garage.get("resume", {})
@@ -1740,10 +1905,9 @@ func _open_lobby() -> void:
 		get_tree().create_timer(1.0).timeout.connect(lobby._try_start)
 
 
-func _lobby_frame(delta: float) -> void:
+func _lobby_frame(_delta: float) -> void:
 	if garage_set.revealing():
 		return
-	lobby_turn += delta * 0.35
 	player.rotation.y = lobby_turn
 
 
@@ -1992,6 +2156,7 @@ func _process(delta: float) -> void:
 		camera.size = 220.0
 		camera.position = current.sit.global_position + Vector3(0, 300, -1.0)
 		camera.look_at(current.sit.global_position)
+	_update_occlusion(delta)
 	if leaves:
 		leaves.step(delta, look)
 	hud.speed_kmh = drive.speed * 3.6
@@ -2127,14 +2292,16 @@ func _update_lamps(delta: float) -> void:
 		if blink.left <= 0.0:
 			blink.side = ""
 	blink.clock += delta
-	var on: bool = blink.side != "" and int(blink.clock * 3.0) % 2 == 0
-	if on and not blinker_on:
+	drive.hazards_left = maxf(0.0, drive.hazards_left - delta)
+	var hazards := drive.hazards_left > 0.0
+	var on: bool = (hazards or blink.side != "") and int(blink.clock * 3.0) % 2 == 0
+	if on and not blinker_on and not warm_signals:
 		sound.play("click")   # the sound only: the indicator does not buzz the phone
 	blinker_on = on
 	for side in blinkers:
 		for node in blinkers[side]:
 			if node:
-				node.visible = on and blink.side == side
+				node.visible = warm_signals or (on and (hazards or blink.side == side))
 
 
 func _apply_tier(next: String) -> void:
@@ -2167,3 +2334,328 @@ func _street_ranges(index: int) -> Array:
 				if b<span[1]-0.001: next.append([b,span[1]])
 		spans=next
 	return spans
+
+
+## Only buildings receive this material; roads, trees and all vehicles keep their opaque material.
+func _update_occlusion(delta := 1.0/60.0) -> void:
+	var targets: Array[Vector3] = [player.global_position + Vector3.UP * 1.2]
+	for j in _junctions():
+		if j.sit.network == null: continue
+		for sg in j.sit.network.data.get("signs", []):
+			var p: Vector3 = j.sit.global_transform * _sign_reveal_point(sg)
+			if p.distance_to(drive.pos) < 65.0 and targets.size() < 16: targets.append(p)
+	for old in older_ghosts + ([ghost] if ghost else []):
+		for node in old.find_children("*","MultiMeshInstance3D",true,false):
+			if node.get_meta("building_pool",false): scenery.register_building_pool(node)
+	scenery.update_occluders(camera,targets,delta)
+
+
+## Runtime continuation follows the existing driveable mask, never the authored arrow endpoint.
+func _departure_path(start: Vector3, toward: Vector3, hw: float, hl: float, local_frame := Transform3D()) -> PackedVector3Array:
+	var result := PackedVector3Array()
+	var at := start
+	var direction := toward.normalized()
+	for i in 180:
+		var best := Vector3.ZERO
+		var found := false
+		var align := _departure_alignment(at, direction, hw)
+		for turn in [align, 0.0, 0.06, -0.06, 0.12, -0.12, 0.24, -0.24, 0.4, -0.4]:
+			var candidate := direction.rotated(Vector3.UP, turn)
+			var next := at + candidate * 1.5
+			if _departure_clear(at, candidate, hw, hl) and _departure_clear(at+candidate*0.75, candidate, hw, hl) and _departure_clear(next, candidate, hw, hl):
+				best = candidate; found = true; break
+		if not found: break
+		direction = best
+		at += direction * 1.5
+		result.append(local_frame.affine_inverse() * at)
+	return result
+
+
+## Passing traffic follows the actual road at a scene boundary instead of queueing on an artificial wall.
+func _ambient_advance(car: Dictionary, step: float, solids: Array) -> void:
+	if absf(step)<0.00001: return
+	var at := Vector3(car.x, 0, car.z)
+	var heading: float = car.get("yaw", 0.0 if car.dir > 0.0 else PI)
+	var direction := Vector3(sin(heading), 0, cos(heading))
+	if _in_blank(car.z):
+		# A supported future lane is a steering target, not an artificial stop at a divider cap.
+		# Reuse it across frames; scanning the mask is only needed after reaching the previous target.
+		var goal: Vector3=car.get("lane_target",Vector3.INF)
+		if goal==Vector3.INF or (goal-at).dot(direction)<4.0:
+			goal=Vector3.INF
+			for look in [12.0,9.0,6.0]:
+				var future: Vector3=at+direction*look
+				var probe: Dictionary={"x":future.x,"z":future.z,"yaw":heading,"dir":car.dir,"len":car.len}
+				goal=_safe_ambient_lane(probe)
+				if goal!=Vector3.INF: break
+			car.lane_target=goal
+		var aim := direction if goal==Vector3.INF else (goal-at).normalized()
+		var preferred := clampf(atan2(direction.cross(aim).y,direction.dot(aim)),-0.03,0.03)
+		var found := false
+		for angle in [preferred,0.0,0.015,-0.015,0.03,-0.03,0.06,-0.06,0.12,-0.12,0.24,-0.24,0.4,-0.4,0.7,-0.7,1.0,-1.0,PI/2.0,-PI/2.0]:
+			var candidate := direction.rotated(Vector3.UP, angle)
+			if _departure_clear(at+candidate*maxf(0.5,absf(step)), candidate, 0.95, float(car.len)*0.5):
+				direction = candidate
+				found = true
+				break
+		if not found:
+			if at.distance_to(drive.pos)>230.0: car.sheltered=true
+			car.spd=0.0
+			return
+	var target_heading := atan2(direction.x, direction.z)
+	var movement: float = step * float(car.dir)
+	var yaw_distance := absf(wrapf(target_heading-heading,-PI,PI))*float(car.len)*0.5
+	var count := maxi(1, ceili(maxf(absf(movement),yaw_distance)/0.15))
+	var last_heading := heading
+	var candidates: Array = []
+	# Fixed snapshot + short broadphase radius: full-body sweeps only touch nearby obstacles.
+	for solid in solids:
+		var source = solid.source
+		if source is AmbientObstacle and source.car == car: continue
+		var body: Dictionary = solid.body
+		if body.p.distance_to(at) < float(car.len)*0.5+float(body.hl)+float(body.hw)+absf(movement)+3.0:
+			candidates.append(solid)
+	for i in count:
+		var next := at+direction*movement/count
+		var swept_heading := lerp_angle(heading,target_heading,float(i+1)/count)
+		var swept_direction := Vector3(sin(swept_heading),0,cos(swept_heading))
+		var body := {"p":next,"yaw":swept_heading,"hw":0.95,"hl":float(car.len)*0.5}
+		for solid in candidates:
+			var live_body: Dictionary = solid.source.footprint() if solid.source is AmbientObstacle else solid.body
+			if Drive.overlap(body,live_body,0.06):
+				if absf(step)>0.035 and float(car.contact_cooldown)<=0.0:
+					_ambient_hazards(car)
+					if solid.source != null: Fleet.hazard_obstacle(solid.source)
+					else: drive.hazards_left=3.0
+					car.contact_cooldown=3.0
+				car.spd=0.0
+				car.shove=0.0
+				car.x=at.x;car.z=at.z;car.yaw=last_heading
+				return
+		if not _departure_clear(next,swept_direction,0.95,float(car.len)*0.5):
+			car.spd=0.0
+			break
+		at=next
+		last_heading=swept_heading
+	car.yaw=last_heading
+	car.x=at.x;car.z=at.z
+
+func _ambient_hazards(car: Dictionary) -> void:
+	var node: Node3D = car.get("node",car.get("lamps"))
+	if node == null:
+		node=Node3D.new()
+		add_child(node)
+		car.lamps=node
+	Fleet.hazards(node,float(car.get("len",CAR_LENGTH))*0.5,0.95)
+
+
+## Exported exits have a finite crop. Continue straight beyond that crop along the same lane,
+## where the visible road is already fading into the fog; no saved geometry is modified.
+func _departure_support(p: Vector3) -> bool:
+	if road_supports(p): return true
+	for j in _junctions():
+		if j.sit.network == null: continue
+		var local: Vector3 = j.sit.global_transform.affine_inverse() * p
+		for port in j.sit.network.connections.get("ports", []):
+			var d: float = (local-port.boundary).dot(port.out)
+			# A diagonal exit is cut by the square scene crop before its perpendicular end.
+			# Join that cropped corner to its departure strip, only outside the authored scene.
+			var half_width := float(port.width)*0.5
+			var crop := float(j.sit.data.get("crop",90.0))
+			var outside_crop := absf(local.x)>crop or absf(local.z)>crop
+			var minimum := -half_width if outside_crop else 0.0
+			if d >= minimum and d <= 270.0 and absf((local-port.boundary).dot(SceneStitch.right(port.out))) < half_width:
+				return true
+	return false
+
+
+
+func _sign_reveal_point(sg: Dictionary) -> Vector3:
+	var at := Vector3(sg.pos[0], 2.8, sg.pos[1])
+	if sg.get("mount", "pole") == "cantilever":
+		var offset := Vector3((1.0 if sg.get("armSide", "left") == "left" else -1.0) * float(sg.get("reach", 4.5)),float(sg.get("clearance", 5.5)),-0.16)
+		at = Vector3(sg.pos[0],0,sg.pos[1]) + Basis(Vector3.UP,float(sg.get("yaw", PI))-PI)*offset
+	return at
+
+
+func _exit_tree() -> void:
+	Situation.finish_background_work()
+
+
+func _wait_active(seconds: float) -> void:
+	var left := seconds
+	while left > 0.0:
+		await get_tree().process_frame
+		if not paused: left -= get_process_delta_time()
+
+
+func _warm_connections() -> void:
+	for id in playable_ids:
+		await get_tree().process_frame
+		_scene_connections(id)
+
+
+func _departure_clear(at: Vector3, toward: Vector3, hw: float, hl: float) -> bool:
+	var side := SceneStitch.right(toward) * (hw + 0.06)
+	for along in [-hl, 0.0, hl]:
+		if not _departure_support(at+toward*along+side) or not _departure_support(at+toward*along-side): return false
+	return true
+
+func _departure_alignment(at: Vector3, toward: Vector3, hw: float) -> float:
+	for j in _junctions():
+		if j.sit.network == null: continue
+		var local: Vector3 = j.sit.global_transform.affine_inverse() * at
+		for port in j.sit.network.connections.get("ports", []):
+			var d: float = (local-port.boundary).dot(port.out)
+			var heading: Vector3 = j.sit.basis * port.out
+			var side := SceneStitch.right(port.out)
+			var lateral: float = (local-port.boundary).dot(side)
+			if d < -15.0 or d > 270.0 or toward.dot(heading)<0.9 or absf(lateral)>float(port.width)*0.5: continue
+			var lane := clampf(lateral,-float(port.width)*0.5+hw+0.3,float(port.width)*0.5-hw-0.3)
+			var target: Vector3 = j.sit.global_transform*(local+port.out*12.0+side*(lane-lateral))
+			var desired := (target-at).normalized()
+			return clampf(atan2(toward.cross(desired).y, toward.dot(desired)), -0.06, 0.06)
+	return 0.0
+
+
+## Bicycles keep the roadside path explicitly authored for them; ordinary vehicles never use this mask.
+func _cycle_departure_path(start: Vector3, toward: Vector3, hw: float, hl: float, local_frame := Transform3D()) -> PackedVector3Array:
+	var result := PackedVector3Array()
+	var at := start
+	var direction := toward.normalized()
+	for i in 180:
+		var found := false
+		var align := _cycle_departure_alignment(at, direction, hw)
+		for turn in [align, 0.0, 0.015, -0.015, 0.03, -0.03, 0.06, -0.06, 0.12, -0.12]:
+			var candidate := direction.rotated(Vector3.UP, turn)
+			var side := SceneStitch.right(candidate) * hw
+			var clear := true
+			for advance in [0.0, 0.75, 1.5]:
+				for along in [-hl, 0.0, hl]:
+					var p: Vector3 = at + candidate * (advance + along)
+					clear = clear and _cycle_departure_support(p + side) and _cycle_departure_support(p - side)
+			if clear:
+				direction = candidate
+				found = true
+				break
+		if not found:
+			break
+		at += direction * 1.5
+		result.append(local_frame.affine_inverse() * at)
+	return result
+
+
+## A saved roadside route can meet a narrower outgoing shoulder. Merge gradually before the
+## boundary, keeping the whole bicycle inside the cycle-only corridor; do not edit its teaching path.
+func _cycle_departure_alignment(at: Vector3, toward: Vector3, hw: float) -> float:
+	for j in _junctions():
+		if j.sit.network == null:
+			continue
+		var local: Vector3 = j.sit.global_transform.affine_inverse() * at
+		for port in j.sit.network.connections.get("ports", []):
+			var d: float = (local - port.boundary).dot(port.out)
+			var heading: Vector3 = j.sit.basis * port.out
+			if d < -45.0 or d > 270.0 or toward.dot(heading) < 0.9:
+				continue
+			var right := SceneStitch.right(port.out)
+			var lateral: float = (local - port.boundary).dot(right)
+			var outer: float = float(port.width) * 0.5 + (Street.SIDEWALK if port.get("walk", true) else 0.75)
+			if absf(lateral) > outer + 1.0:
+				continue
+			var lane := clampf(lateral, -outer + hw + 0.1, outer - hw - 0.1)
+			var target: Vector3 = j.sit.global_transform * (local + port.out * 8.0 + right * (lane - lateral))
+			var desired := (target - at).normalized()
+			return clampf(atan2(toward.cross(desired).y, toward.dot(desired)), -0.02, 0.02)
+	return 0.0
+
+
+func _cycle_departure_support(p: Vector3) -> bool:
+	if _departure_support(p): return true
+	for j in _junctions():
+		if j.sit.network == null: continue
+		var local: Vector3 = j.sit.global_transform.affine_inverse()*p
+		# Port widths are measured before a saved road's end taper. Actual paving can lie inside
+		# that nominal width after a narrowing, so use the drawn sidewalk too, only for bicycles.
+		var net: RoadNetwork = j.sit.network
+		if not net.has_meta("cycle_pavement_triangles"):
+			var triangles: Array = []
+			for surface in net.build.get("surfaces", []):
+				if surface.get("layer", "") != "pavement":
+					continue
+				var verts: Array = surface.verts
+				var indices: Array = surface.idx
+				for k in range(0, indices.size(), 3):
+					var polygon := PackedVector2Array()
+					for corner in range(k, k + 3):
+						var vertex: int = int(indices[corner]) * 2
+						polygon.append(Vector2(verts[vertex], verts[vertex + 1]))
+					var bounds := Rect2(polygon[0], Vector2.ZERO).expand(polygon[1]).expand(polygon[2])
+					triangles.append({"polygon": polygon, "bounds": bounds})
+			net.set_meta("cycle_pavement_triangles", triangles)
+		var warped := SceneStitch.warp(local, net.stitch_bindings, true)
+		var point := Vector2(warped.x, warped.z)
+		for triangle in net.get_meta("cycle_pavement_triangles"):
+			var bounds: Rect2 = triangle.bounds
+			if bounds.grow(0.0001).has_point(point) and Geometry2D.is_point_in_polygon(point, triangle.polygon):
+				return true
+		for port in j.sit.network.connections.get("ports",[]):
+			var d: float = (local-port.boundary).dot(port.out)
+			var x: float = absf((local-port.boundary).dot(SceneStitch.right(port.out)))
+			var outer: float = float(port.width)*0.5+(Street.SIDEWALK if port.get("walk",true) else 0.75)
+			if d>=-float(j.sit.data.crop)*2.0 and d<=270.0 and x>=float(port.width)*0.5 and x<outer: return true
+	return false
+
+
+## Resolve a changed filler-road lane against the actual authored carriageway, without editing it.
+func _safe_ambient_lane(car: Dictionary, ahead := 0.0) -> Vector3:
+	var at := Vector3(car.x,0,car.z)
+	var yaw: float=car.get("yaw",0.0 if car.dir>0.0 else PI)
+	var toward:=Vector3(sin(yaw),0,cos(yaw))
+	var side:=SceneStitch.right(toward)
+	if _departure_clear(at,toward,0.95,float(car.len)*0.5) and _departure_clear(at+toward*ahead,toward,0.95,float(car.len)*0.5): return at
+	for offset in 40:
+		for sign in [-1.0,1.0]:
+			var candidate: Vector3=at+side*(offset+1)*0.25*sign
+			if _departure_clear(candidate,toward,0.95,float(car.len)*0.5) and _departure_clear(candidate+toward*ahead,toward,0.95,float(car.len)*0.5): return candidate
+	return Vector3.INF
+
+
+func _ambient_lane_offset() -> float:
+	var median_half: float=maxf(float(street.profile.get("median",0.0)),float(street.profile.get("declared_median",0.0)))*0.5
+	var lane_count: int=maxi(1,int(street.profile.get("lanes",2))/2)
+	return median_half+(street_half-median_half)/lane_count*0.5
+
+
+func _rebase_timing(label: String, start: int) -> int:
+	var now:=Time.get_ticks_usec()
+	if _has_arg("--perf"): print("[rebase timing] ",label," ",(now-start)/1000.0,"ms")
+	return now
+
+
+func _freeze_world_actors() -> void:
+	for node in get_children():
+		if node is Node3D and node!=player:
+			frozen_nodes.append({"node":weakref(node),"mode":node.process_mode})
+			node.process_mode=Node.PROCESS_MODE_DISABLED
+	for node in find_children("*","RigidBody3D",true,false):
+		frozen_bodies.append({"node":weakref(node),"freeze":node.freeze,"linear":node.linear_velocity,"angular":node.angular_velocity,"transform":node.global_transform})
+		node.freeze=true
+	for node in find_children("*","AudioStreamPlayer",true,false):
+		frozen_audio.append({"node":weakref(node),"paused":node.stream_paused})
+		node.stream_paused=true
+
+func _thaw_world_actors() -> void:
+	for saved in frozen_nodes:
+		var node=saved.node.get_ref()
+		if node!=null: node.process_mode=saved.mode
+	for saved in frozen_bodies:
+		var node=saved.node.get_ref()
+		if node!=null:
+			node.global_transform=saved.transform
+			node.freeze=saved.freeze
+			node.linear_velocity=saved.linear
+			node.angular_velocity=saved.angular
+	for saved in frozen_audio:
+		var node=saved.node.get_ref()
+		if node!=null: node.stream_paused=saved.paused
+	frozen_nodes.clear();frozen_bodies.clear();frozen_audio.clear()

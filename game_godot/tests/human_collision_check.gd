@@ -17,9 +17,22 @@ func run() -> void:
 	root.add_child(world)
 	for i in 3:
 		await process_frame
+	world.set_process(false)
+	for frame in 600:
+		if not world.staging:
+			break
+		await process_frame
+	if world.staging:
+		push_error("initial scene staging did not complete within 600 frames")
+		world.queue_free()
+		quit(1)
+		return
 	world.spawn_after = -INF
 	world.insert_road = false
 	world.only_id = "ticket_1_13"
+	if world.staged_sit != null:
+		world.staged_sit.free()
+	world.staged_sit = Situation.load_scene("ticket_1_13", world.scenery)
 	world._maybe_spawn()
 	world.set_process(false)
 	world.traffic.clear()

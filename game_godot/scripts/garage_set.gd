@@ -50,7 +50,6 @@ func build(scenery_: Scenery) -> void:
 	_build_driveway()
 	_build_garage()
 	_build_neighbourhood()
-	_build_pad()
 	_place_props()
 	_open_door()
 	camera = Camera3D.new()
@@ -62,8 +61,8 @@ func build(scenery_: Scenery) -> void:
 	add_child(camera)
 	# The lobby's picture: the car fills the middle of the screen, the door and the workshop open
 	# behind it on the right, the front pier on the left (the WebView garage's view).
-	camera.position = PAD + Vector3(0.6, 2.2, -5.4)
-	camera.look_at(PAD + Vector3(0.0, 0.0, 0.0))
+	camera.position = PAD + Vector3(0.6, 2.8, -6.7)
+	camera.look_at(PAD + Vector3(0.0, 0.5, 0.0))
 
 
 ## The door stands open, as in the lobby's picture: the slats rolled up into the lintel.
@@ -479,28 +478,6 @@ func _build_clouds() -> void:
 		cloud.scale = Vector3(1.4 + (k % 2) * 0.4, 0.62, 0.8)
 		cloud.position = Vector3(c[0], c[1], c[2])
 		add_child(cloud)
-
-
-## The pad the car stands on: a light stone ring, and the brick disc inside it.
-func _build_pad() -> void:
-	var ring := CylinderMesh.new()
-	ring.top_radius = 2.4
-	ring.bottom_radius = 2.4
-	ring.height = 0.05
-	var ring_mi := MeshInstance3D.new()
-	ring_mi.mesh = ring
-	ring_mi.material_override = _mat(STONE)
-	ring_mi.position = Vector3(PAD.x, 0.025, PAD.z)
-	add_child(ring_mi)
-	var disc := CylinderMesh.new()
-	disc.top_radius = 2.1
-	disc.bottom_radius = 2.1
-	disc.height = 0.06
-	var disc_mi := MeshInstance3D.new()
-	disc_mi.mesh = disc
-	disc_mi.material_override = _mat(BRICK, _brick_texture(), Vector3(2.0, 2.0, 1.0))
-	disc_mi.position = Vector3(PAD.x, 0.035, PAD.z)
-	add_child(disc_mi)
 
 
 ## One pool per scenery model: every placed copy is an instance (one draw call per model).

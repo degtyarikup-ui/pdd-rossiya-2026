@@ -58,6 +58,16 @@ static func label(text: String, size: int, weight: int, color: Color, wrap := fa
 	return l
 
 
+## Native city UI honours the app's text setting without scaling icon glyphs.
+static func scaled_label(text: String, size: int, weight: int, color: Color, wrap := false) -> Label:
+	return label(text, roundi(size * text_scale()), weight, color, wrap)
+
+
+static func text_scale() -> float:
+	var value := _arg_value("text-scale")
+	return clampf(value, 0.5, 3.0) if value > 0.0 else 1.0
+
+
 static func box(color: Color, radius := 8, top_only := false) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = color

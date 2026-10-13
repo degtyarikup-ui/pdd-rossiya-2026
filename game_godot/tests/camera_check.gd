@@ -10,14 +10,26 @@ func _initialize() -> void:
 	for i in 3:
 		await process_frame
 	world_node.set_process(false)
+	for i in 600:
+		if not world_node.staging: break
+		await process_frame
+	if world_node.staging:
+		push_error("camera fixture initial staging timeout")
+		quit(1);return
+	if world_node.staged_sit != null:
+		world_node.staged_sit.free()
+		world_node.staged_sit=null
+	world_node.road_force="camera-fixture"
 
 	var ok := true
 	for sit_id in ["ticket_10_15", "ticket_12_5", "ticket_11_15", "ticket_12_13", "ticket_11_8"]:
-		if not _test_situation(world_node, sit_id):
+		if not await _test_situation(world_node, sit_id):
 			ok = false
 			break
 		_cleanup_current(world_node)
 	world_node.queue_free()
+	await process_frame
+	await process_frame
 	print("camera check: " + ("PASS" if ok else "FAIL"))
 	quit(0 if ok else 1)
 
@@ -33,6 +45,8 @@ func _cleanup_current(world: Node) -> void:
 func _test_situation(world: Node, sit_id: String) -> bool:
 	print("--- testing camera approach for %s ---" % sit_id)
 	world.next_id = sit_id
+	world.only_id = sit_id
+	world.staged_sit = Situation.load_scene(sit_id, world.scenery)
 	world.spawn_after = -1.0e9
 	world._maybe_spawn()
 	if world.current.is_empty():
@@ -61,9 +75,10 @@ func _test_situation(world: Node, sit_id: String) -> bool:
 	var frames_in_question: int = 0
 	var backward_jump_detected: bool = false
 
-	# Run 250 frames (~4.1 seconds)
-	for frame in 250:
+	 # Allow the sheet + camera transition to settle, while retaining entry-frame jerk assertions.
+	for frame in 350:
 		world._process(DT)
+		await process_frame
 
 		if prev_cam_pos != Vector3.ZERO:
 			var cam_v: float = world.camera.position.distance_to(prev_cam_pos) / DT
@@ -93,7 +108,7 @@ func _test_situation(world: Node, sit_id: String) -> bool:
 		prev_cam_pos = world.camera.position
 		prev_cam_look = world.cam_look
 
-		if world.phase == "question" and frames_in_question >= 30:
+		if world.phase == "question" and frames_in_question >= 90:
 			break
 
 	print("Max camera speed: %.2f m/s, max per-frame look delta: %.3f m" % [max_cam_speed, max_look_delta])

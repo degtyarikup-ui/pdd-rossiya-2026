@@ -49,6 +49,8 @@ var prev_yaw := 0.0
 var prev_valid := false
 var stop_wait := 0.0
 var stop_done := false
+var player_hit: RoadBody = null
+var continuation := Callable()
 var police_wait := 0.0
 var police_yielded := false
 
@@ -368,7 +370,7 @@ func blocks_ahead(pos: Vector3, metres: float) -> bool:
 
 ## One frame after the approach: the participants move (after the answer), the rules report their
 ## violations (a list of rule names, each reported once per episode). `pos` and `yaw` are the car's.
-func step(dt: float, pos: Vector3, yaw: float, speed: float, hw: float, hl: float) -> Array:
+func step(dt: float, pos: Vector3, yaw: float, speed: float, hw: float, hl: float, other_obstacles: Array = []) -> Array:
 	var out: Array = []
 	clock += dt
 	_animate(dt)
@@ -377,8 +379,21 @@ func step(dt: float, pos: Vector3, yaw: float, speed: float, hw: float, hl: floa
 		prev_yaw = yaw
 		prev_valid = true
 		return out
+	player_hit = null
 	for b in bodies:
-		b.update(dt)
+		if not b.solid or b.done:
+			continue
+		var boxes: Array = [{ "who": null, "player": true, "box": {"p": pos, "yaw": yaw, "hw": hw, "hl": hl}, "speed": speed }]
+		for other in bodies:
+			if other.solid and not other.done:
+				boxes.append({"who": other, "box": other.footprint(), "speed": other.speed})
+		for other in other_obstacles:
+			if not other is RoadBody:
+				boxes.append({"who": other, "box": other.footprint(), "speed": 0.0})
+		b.continuation = continuation
+		b.update(dt, boxes, pos)
+		if b.contact_player:
+			player_hit = b
 	var z := pos.z
 	var x := pos.x
 	var c := cos(yaw)
@@ -466,7 +481,7 @@ func _lane_rules(pos: Vector3, yaw: float, hw: float, hl: float, out: Array) -> 
 	var z := pos.z
 	if bool(sc.get("oneWayRoad", false)) and z >= stop_z + 10.0 and c < -0.3 and not lane_fault:
 		lane_fault = true
-		out.append("wrong_maneuver")
+		out.append("illegal_maneuver")
 	if absf(s) > 0.35 and not turn_started:
 		turn_started = true
 		turn_z = z
@@ -475,7 +490,7 @@ func _lane_rules(pos: Vector3, yaw: float, hw: float, hl: float, out: Array) -> 
 	var zone: Variant = sc.get("forbidUturn")
 	if zone is Array and (_in_zone(z, zone) or (turn_started and _in_zone(turn_z, zone))) and c < -0.3 and not lane_fault:
 		lane_fault = true
-		out.append("wrong_maneuver")
+		out.append("illegal_maneuver")
 	if prev_valid:
 		var extent := hw * absf(c) + hl * absf(s)
 		var old_extent := hw * absf(cos(prev_yaw)) + hl * absf(sin(prev_yaw))
@@ -489,7 +504,7 @@ func _lane_rules(pos: Vector3, yaw: float, hw: float, hl: float, out: Array) -> 
 				var at_z := prev.z + (z - prev.z) * t
 				if at_z >= stop_z + float(line.fromZ) and at_z <= stop_z + float(line.toZ) and not lane_fault:
 					lane_fault = true
-					out.append("wrong_maneuver")
+					out.append("illegal_maneuver")
 
 
 func _in_zone(q: float, zone: Array) -> bool:
@@ -554,6 +569,7 @@ func _set_booms() -> void:
 ## A police lamp is lit (emissive) with its halo, or dark.
 static func light_lamp(mat: StandardMaterial3D, on: bool) -> void:
 	mat.emission_enabled = on
+	mat.emission_energy_multiplier = 4.0
 	if mat.has_meta("halo"):
 		var halo := mat.get_meta("halo") as Node3D
 		if is_instance_valid(halo): halo.visible=on

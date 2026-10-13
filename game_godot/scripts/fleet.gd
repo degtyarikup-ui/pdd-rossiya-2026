@@ -62,7 +62,7 @@ class Flasher extends Node:
 		var on := int(clock * 4.0) % 2
 		for i in lamps.size():
 			var m: StandardMaterial3D = lamps[i]
-			m.emission_energy_multiplier = 3.0 if i == on else 0.2
+			RoadEvent.light_lamp(m, i == on)
 
 
 static func _box(root: Node3D, size: Vector3, at: Vector3, colour: Color) -> MeshInstance3D:
@@ -84,7 +84,12 @@ static func _lamp(root: Node3D, at: Vector3, colour: Color) -> StandardMaterial3
 	var mat := mi.material_override as StandardMaterial3D
 	mat.emission_enabled = true
 	mat.emission = colour
-	mat.emission_energy_multiplier = 1.0
+	mat.emission_energy_multiplier = 4.0
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var halo := Glow.halo(colour, 2.4)
+	halo.visible = false
+	mi.add_child(halo)
+	mat.set_meta("halo", halo)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mat
 
@@ -122,26 +127,70 @@ static func turn_side(path: Array) -> String:
 ## Turn indicators of a junction participant: amber lamps at the front and rear corner of one side,
 ## blinking like the player's. hl, hw: the half-length and half-width of the vehicle (m, its own frame).
 static func add_blinkers(vehicle: Node3D, side: String, hl: float, hw: float, height := 0.75) -> void:
-	var x := hw * (1.0 if side == "L" else -1.0)
-	var lamps: Array = []
-	for z in [hl - 0.05, -hl + 0.05]:
-		lamps.append(_lamp(vehicle, Vector3(x * 0.92, height, z), Color("#FFB300")))
-	var flash := Blinker.new()
-	flash.lamps = lamps
-	vehicle.add_child(flash)
+	var signals := _signals(vehicle, hl, hw, height)
+	signals.side = side
 
 
-## Indicators: all lamps on together, 1.5 times a second.
-class Blinker extends Node:
-	var lamps: Array = []
+## A short hazard indication after contact. Lamps are created once, only for vehicles that need them.
+static func hazards(vehicle: Node3D, hl: float, hw: float, seconds := 3.0) -> void:
+	if not is_instance_valid(vehicle):
+		return
+	var signals := _signals(vehicle, hl / maxf(0.01, absf(vehicle.scale.z)), hw / maxf(0.01, absf(vehicle.scale.x)), 0.75 / maxf(0.01, absf(vehicle.scale.y)))
+	signals.hazard_left = seconds
+
+
+## Common contact visuals for lightweight world wrappers and local participants.
+static func hazard_obstacle(body) -> void:
+	if body == null:
+		return
+	if "type" in body and body.type == "pedestrian":
+		return
+	if "kind" in body and body.kind in ["barrier", "train"]:
+		return
+	if "node" in body and "hl" in body and "hw" in body and is_instance_valid(body.node):
+		hazards(body.node, body.hl, body.hw)
+	elif "m" in body and body.m != null:
+		hazard_obstacle(body.m)
+	elif "car" in body:
+		var car: Dictionary = body.car
+		car.hazards_left = 3.0
+		if car.has("node"):
+			hazards(car.node, float(car.get("len", 4.4)) * 0.5, 0.95)
+		elif car.has("lamps"):
+			hazards(car.lamps, float(car.get("len", 4.4)) * 0.5, 0.95)
+
+
+static func _signals(vehicle: Node3D, hl: float, hw: float, height: float) -> Signals:
+	var existing := vehicle.get_node_or_null("vehicle_signals") as Signals
+	if existing != null:
+		return existing
+	var signals := Signals.new()
+	signals.name = "vehicle_signals"
+	for side in ["L", "R"]:
+		var lamps: Array = []
+		for z in [hl - 0.05, -hl + 0.05]:
+			lamps.append(_lamp(vehicle, Vector3(hw * (0.92 if side == "L" else -0.92), height, z), Color("#FFB300")))
+		signals.lamps[side] = lamps
+	vehicle.add_child(signals)
+	return signals
+
+
+## Matching the player's amber halos without shadow-casting point lights or post-processing.
+class Signals extends Node:
+	var lamps := {}
+	var side := ""
+	var hazard_left := 0.0
 	var clock := 0.0
 
 	func _process(delta: float) -> void:
 		clock += delta
-		var on := int(clock * 3.0) % 2 == 0
-		for m in lamps:
-			(m as StandardMaterial3D).emission_energy_multiplier = 3.0 if on else 0.0
-			(m as StandardMaterial3D).albedo_color = Color("#FFB300") if on else Color("#7A5200")
+		hazard_left = maxf(0.0, hazard_left - delta)
+		var pulse := int(clock * 3.0) % 2 == 0
+		for key in lamps:
+			var on: bool = pulse and (hazard_left > 0.0 or key == side)
+			for m: StandardMaterial3D in lamps[key]:
+				RoadEvent.light_lamp(m, on)
+				m.albedo_color = Color("#FFB300") if on else Color("#7A5200")
 
 
 ## A traffic controller standing at a junction in one of his signals (the mini-game's model).

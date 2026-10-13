@@ -16,6 +16,9 @@ var index: Dictionary
 var layers: Array = []            # kind names, layer i -> kind
 var kinds := {}                   # kind -> params (period, macro ...)
 var material: ShaderMaterial
+var occluder_material: ShaderMaterial
+var building_material: ShaderMaterial
+var occluders: Array[Dictionary] = []
 var season: Dictionary
 
 
@@ -26,9 +29,11 @@ func _init(season_name: String) -> void:
 	var macro := PackedFloat32Array()
 	var macro_scale := PackedFloat32Array()
 	var gains := PackedFloat32Array()
+	var periods := PackedFloat32Array()
 	for t in index.textures:
 		layers.append(t.kind)
 		kinds[t.kind] = t
+		periods.append(float(t.period))
 		gains.append(t.get("gain", GAIN.get(t.kind, 1.0)))
 		var img: Image = (load("res://textures/detail/%s.png" % t.kind) as Texture2D).get_image()
 		if img.is_compressed():
@@ -42,6 +47,7 @@ func _init(season_name: String) -> void:
 		macro.append(0.0)
 		macro_scale.append(1.0)
 		gains.append(1.0)
+		periods.append(1.0)
 	var array := Texture2DArray.new()
 	array.create_from_images(images)
 	material = ShaderMaterial.new()
@@ -50,6 +56,10 @@ func _init(season_name: String) -> void:
 	material.set_shader_parameter("macro", macro)
 	material.set_shader_parameter("macro_scale", macro_scale)
 	material.set_shader_parameter("gain", gains)
+	material.set_shader_parameter("texture_periods", periods)
+	occluder_material = material
+	building_material = material.duplicate()
+	building_material.shader = load("res://shaders/buildings.gdshader")
 
 
 ## A procedural surface on the same metre grid and with the same detail maps as the street.
@@ -84,6 +94,8 @@ class Pool:
 	var per_chunk: int
 	var used := {}                 # ring slot -> instances placed
 	var node: MultiMeshInstance3D
+	var transforms: Array[Transform3D] = []
+	var tints: Array[Color] = []
 
 	func _init(parent: Node, mesh: Mesh, mat: Material, chunks: int, cap: int, shadows: bool) -> void:
 		per_chunk = cap
@@ -96,8 +108,12 @@ class Pool:
 		for i in multi.instance_count:
 			multi.set_instance_color(i, Color.WHITE)
 			multi.set_instance_transform(i, HIDDEN)
+			transforms.append(HIDDEN)
+			tints.append(Color.WHITE)
 		node = MultiMeshInstance3D.new()
 		node.multimesh = multi
+		node.set_meta("instance_transforms",transforms)
+		node.set_meta("instance_tints",tints)
 		node.material_override = mat
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		parent.add_child(node)
@@ -112,16 +128,28 @@ class Pool:
 		var copy := MultiMeshInstance3D.new()
 		copy.material_override = node.material_override
 		copy.cast_shadow = node.cast_shadow
+		var visible: Array[int] = []
+		for i in multi.instance_count:
+			if (node.get_meta("occlusion_originals",{}).get(i,transforms[i]) as Transform3D).origin.y > -10.0: visible.append(i)
 		var frozen := MultiMesh.new()
 		frozen.transform_format = multi.transform_format
 		frozen.use_colors = multi.use_colors
 		frozen.use_custom_data = multi.use_custom_data
 		frozen.mesh = multi.mesh
-		frozen.instance_count = multi.instance_count
-		for i in multi.instance_count:
-			frozen.set_instance_transform(i, multi.get_instance_transform(i))
-			frozen.set_instance_color(i, multi.get_instance_color(i))
-			frozen.set_instance_custom_data(i, multi.get_instance_custom_data(i))
+		frozen.instance_count = visible.size()
+		var frozen_transforms: Array[Transform3D] = []
+		var frozen_tints: Array[Color] = []
+		for slot in visible.size():
+			var i: int = visible[slot]
+			var xf: Transform3D = node.get_meta("occlusion_originals",{}).get(i,transforms[i])
+			frozen.set_instance_transform(slot, xf)
+			frozen_transforms.append(xf)
+			frozen.set_instance_color(slot, Color.WHITE)
+			frozen.set_instance_custom_data(slot, tints[i])
+			frozen_tints.append(tints[i])
+		copy.set_meta("instance_transforms",frozen_transforms)
+		copy.set_meta("instance_tints",frozen_tints)
+		copy.set_meta("building_pool",node.get_meta("building_pool",false))
 		copy.multimesh = frozen
 		parent.add_child(copy)
 
@@ -134,11 +162,105 @@ class Pool:
 			push_warning("pool full")
 			return false
 		var i := slot * per_chunk + n
+		Scenery.clear_fade_slot(node,i)
+		transforms[i]=xform
 		multi.set_instance_transform(i, xform)
+		tints[i]=tint
 		multi.set_instance_custom_data(i, tint)
 		used[slot] = n + 1
 		return true
 
 	func finish(slot: int) -> void:
 		for n in range(used.get(slot, 0), per_chunk):
+			Scenery.clear_fade_slot(node,slot * per_chunk + n)
+			transforms[slot * per_chunk + n]=HIDDEN
 			multi.set_instance_transform(slot * per_chunk + n, HIDDEN)
+
+
+## Keep ordinary buildings in their original opaque instanced draw. Only a building that
+## intersects a target sightline moves to the shared transparent batch of the same model.
+func register_building_pool(node: MultiMeshInstance3D) -> void:
+	if node.has_meta("fade_registered"): return
+	node.set_meta("fade_registered",true)
+	node.set_meta("building_pool",true)
+	var originals := {}
+	node.set_meta("occlusion_originals", originals)
+	var fades := {}
+	node.set_meta("occlusion_fades",fades)
+	occluders.append({"node":weakref(node),"originals":originals,"fades":fades,"fade_node":null})
+
+func update_occluders(camera: Camera3D, targets: Array[Vector3], delta: float) -> void:
+	for state in occluders.duplicate():
+		var node: MultiMeshInstance3D = state.node.get_ref()
+		if node == null:
+			occluders.erase(state)
+			continue
+		if not node.is_visible_in_tree(): continue
+		var multi := node.multimesh
+		var bounds := multi.mesh.get_aabb().grow(0.12)
+		var poses: Array = node.get_meta("instance_transforms",[])
+		for i in multi.instance_count:
+			var xf: Transform3D = state.originals.get(i,poses[i] if poses.size()>i else multi.get_instance_transform(i))
+			if xf.origin.y < -10.0: continue
+			var world: Transform3D = node.global_transform * xf
+			var nearby := world.origin.distance_to(targets[0]) < 85.0
+			if not nearby and not state.fades.has(i): continue
+			var blocked := false
+			if nearby:
+				var inv := world.affine_inverse()
+				var origin: Vector3 = inv * camera.global_position
+				for target in targets:
+					if bounds.intersects_segment(origin,inv*target) != null:
+						blocked=true;break
+			var opacity := move_toward(float(state.fades.get(i,1.0)),0.25 if blocked else 1.0,delta*4.0)
+			if opacity >= 0.999:
+				if state.originals.has(i): multi.set_instance_transform(i,xf)
+				state.originals.erase(i)
+				state.fades.erase(i)
+				continue
+			if state.fade_node == null:
+				var faded := MultiMeshInstance3D.new()
+				var transparent := MultiMesh.new()
+				transparent.transform_format=MultiMesh.TRANSFORM_3D
+				transparent.use_colors=true
+				transparent.use_custom_data=true
+				transparent.mesh=multi.mesh
+				transparent.instance_count=8
+				transparent.visible_instance_count=0
+				faded.multimesh=transparent
+				faded.material_override=building_material
+				faded.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				node.add_child(faded)
+				state.fade_node=faded
+				node.set_meta("occlusion_fade_node",weakref(faded))
+			state.originals[i]=xf
+			state.fades[i]=opacity
+			multi.set_instance_transform(i,Pool.HIDDEN)
+		if state.fade_node != null: sync_fade_batch(node)
+
+
+static func clear_fade_slot(node: MultiMeshInstance3D, index: int) -> void:
+	(node.get_meta("occlusion_originals",{}) as Dictionary).erase(index)
+	var fades: Dictionary = node.get_meta("occlusion_fades",{})
+	fades.erase(index)
+	if node.has_meta("occlusion_fade_node"): sync_fade_batch(node)
+
+static func sync_fade_batch(node: MultiMeshInstance3D) -> void:
+	var faded: MultiMeshInstance3D=node.get_meta("occlusion_fade_node").get_ref()
+	if faded == null: return
+	var fades: Dictionary=node.get_meta("occlusion_fades",{})
+	var originals: Dictionary=node.get_meta("occlusion_originals",{})
+	var ids:=fades.keys()
+	var multi:=faded.multimesh
+	if ids.size()>multi.instance_count:
+		multi.instance_count=maxi(8,int(pow(2.0,ceil(log(float(ids.size()))/log(2.0)))))
+	multi.visible_instance_count=ids.size()
+	for slot in ids.size():
+		var index: int=ids[slot]
+		var tints: Array=node.get_meta("instance_tints",[])
+		var custom: Color=tints[index] if tints.size()>index else node.multimesh.get_instance_custom_data(index)
+		custom.a=floor(custom.a)+float(fades[index])*0.5
+		multi.set_instance_transform(slot,originals[index])
+		multi.set_instance_color(slot,Color.WHITE)
+		multi.set_instance_custom_data(slot,custom)
+	faded.visible=not ids.is_empty()

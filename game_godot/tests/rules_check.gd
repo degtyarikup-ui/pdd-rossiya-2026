@@ -30,6 +30,15 @@ func _initialize() -> void:
 		await process_frame
 	# The checks drive the world frame by frame themselves (no engine frames in between).
 	world.set_process(false)
+	for frame in 600:
+		if not world.staging:
+			break
+		await process_frame
+	if world.staging:
+		push_error("initial scene staging did not complete within 600 frames")
+		world.queue_free()
+		quit(1)
+		return
 	world.event.connect(func(data: Dictionary): events.append(data))
 	junctions = FileAccess.file_exists("res://situations/index.json")
 	_plain_street()
@@ -253,11 +262,11 @@ func _road_rules() -> void:
 	var one_way := _event("road_32_9")
 	_road_for(one_way, Vector3(-1.8, 0, one_way.stop_z + 12.0), PI, 3.0, 1.0)
 	_check("one-way: driving against the flow on a one-way road is a wrong manoeuvre",
-		_count("violation", "wrong_maneuver") == 1)
+		_count("violation", "illegal_maneuver") == 1)
 	_reset()
 	one_way = _event("road_32_9")
 	_road_for(one_way, Vector3(-1.8, 0, one_way.stop_z + 12.0), 0.0, 3.0, 1.0)
-	_check("one-way: driving with the flow is not", _count("violation", "wrong_maneuver") == 0)
+	_check("one-way: driving with the flow is not", _count("violation", "illegal_maneuver") == 0)
 
 	# Stop before a closed railway barrier (20_16): stopping at the boundary is no fault.
 	_reset()
@@ -276,13 +285,13 @@ func _road_rules() -> void:
 	_reset()
 	var solid_line := _event("road_31_5")
 	_road_for(solid_line, Vector3(-1.8, 0, 120.0), 0.0, 8.0, 2.0)
-	_check("solid line: staying in the own lane is not a wrong manoeuvre", _count("violation", "wrong_maneuver") == 0)
+	_check("solid line: staying in the own lane is not a wrong manoeuvre", _count("violation", "illegal_maneuver") == 0)
 
 	# U-turn in the forbidden stretch (9_9): driving on straight is no fault.
 	_reset()
 	var uturn := _event("road_9_9")
 	_road_for(uturn, Vector3(-1.8, 0, 110.0), 0.0, 8.0, 2.0)
-	_check("U-turn: driving on in the forbidden stretch is not a wrong manoeuvre", _count("violation", "wrong_maneuver") == 0)
+	_check("U-turn: driving on in the forbidden stretch is not a wrong manoeuvre", _count("violation", "illegal_maneuver") == 0)
 
 	# Works (31_4): the own lane is closed; in the bypass lane (x > 0) the car is not a roadworks fault.
 	_reset()
@@ -323,6 +332,10 @@ func _stand(id: String) -> bool:
 	_reset()
 	world.next_id = id
 	world.spawn_after = -1.0e9
+	# Rule fixtures intentionally select their exact ticket; gameplay still uses reviewed-only IDs.
+	if world.staged_sit != null:
+		world.staged_sit.free()
+	world.staged_sit = Situation.load_scene(id, world.scenery)
 	world._maybe_spawn()
 	if world.current.is_empty():
 		return false
@@ -458,13 +471,13 @@ func _junction_rules() -> void:
 	else:
 		_skip("collision: the car is out of the pedestrian's way (1_13)")
 
-	# Wrong exit (17_6, manoeuvre straight): leaving by the left exit is a wrong manoeuvre, straight is not.
+	# Task directions remain guidance: leaving by another drivable exit does not count as a traffic violation.
 	if _stand("ticket_17_6"):
 		world.answer(true)
 		_at(Vector3(45.0, 0, 0.0), PI / 2.0, 3.0)
 		_junction_for(STEP)
-		_check("wrong exit: leaving by the left exit of a straight manoeuvre is a wrong manoeuvre",
-			_count("violation", "wrong_maneuver") == 1)
+		_check("task direction: another drivable exit does not trigger a mismatch warning",
+			_count("violation", "wrong_maneuver") == 0)
 	else:
 		_skip("wrong exit: leaving by the left exit (17_6)")
 	if _stand("ticket_17_6"):

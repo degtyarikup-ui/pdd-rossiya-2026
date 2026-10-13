@@ -173,7 +173,7 @@ static func warp(p: Vector3,bindings: Array,inverse := false) -> Vector3:
 		if inverse:
 			var swap := source;source=target;target=swap
 		if absf(x)>source+WALK_WIDTH+2.0: continue
-		var sm: float = float(port.get("median",0.0))/2.0
+		var sm: float = maxf(float(port.get("median",0.0)),float(port.get("declared_median",0.0)))/2.0
 		var tm: float = lerpf(sm,float(binding.get("median",sm*2.0))/2.0,smoothstep(END_BLEND,0.0,d))
 		if inverse:
 			var swap := sm;sm=tm;tm=swap

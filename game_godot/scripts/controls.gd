@@ -36,13 +36,13 @@ func _ready() -> void:
 	layer = 10
 	var root := Control.new()
 	_root = root
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.size = get_viewport().get_visible_rect().size
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
-	_add(root, "left", "res://icons/steer_left.svg", "", Vector2(74, 76), CARD, ACCENT, 8, 36)
-	_add(root, "right", "res://icons/steer_right.svg", "", Vector2(74, 76), CARD, ACCENT, 8, 36)
-	_add(root, "brake", "res://icons/pedal_brake.svg", "", Vector2(100, 76), DARK, Color.WHITE, 8, 40)
-	_add(root, "gas", "res://icons/pedal_gas.svg", "", Vector2(100, 100), CARD, Color("#121212"), 50, 52)
+	_add(root, "left", "res://icons/steer_left.svg", "", Vector2(64, 64), CARD, ACCENT, 14, 30)
+	_add(root, "right", "res://icons/steer_right.svg", "", Vector2(64, 64), CARD, ACCENT, 14, 30)
+	_add(root, "brake", "res://icons/pedal_brake.svg", "", Vector2(88, 60), DARK, Color.WHITE, 14, 32)
+	_add(root, "gas", "res://icons/pedal_gas.svg", "", Vector2(88, 88), CARD, Color("#121212"), 44, 44)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 
@@ -84,14 +84,17 @@ func _add(root: Control, name: String, icon_path: String, caption: String, size:
 
 
 func _layout() -> void:
-	var view := get_viewport().get_visible_rect().size
+	var unit := Ui.dp(get_viewport())
+	_root.scale = Vector2(unit, unit)
+	var view := get_viewport().get_visible_rect().size / unit
+	_root.size = view
 	var ins := Ui.insets(get_viewport())
 	var safe := 20.0
-	var bottom: float = view.y - safe - ins.bottom
-	_buttons.left.position = Vector2(safe, bottom - 76)
-	_buttons.right.position = Vector2(safe + 84, bottom - 76)
-	_buttons.gas.position = Vector2(view.x - safe - 100, bottom - 100)
-	_buttons.brake.position = Vector2(view.x - safe - 100, bottom - 186)
+	var bottom: float = view.y - safe - ins.bottom / unit
+	_buttons.left.position = Vector2(safe, bottom - _buttons.left.size.y)
+	_buttons.right.position = Vector2(safe + _buttons.left.size.x + 8.0, bottom - _buttons.right.size.y)
+	_buttons.gas.position = Vector2(view.x - safe - _buttons.gas.size.x, bottom - _buttons.gas.size.y)
+	_buttons.brake.position = Vector2(view.x - safe - _buttons.brake.size.x, _buttons.gas.position.y - 10.0 - _buttons.brake.size.y)
 
 
 ## Hidden and released while a question is on screen.
@@ -151,7 +154,7 @@ func _press(name: String, down: bool) -> void:
 	style.bg_color = (RED if name == "brake" else ACCENT) if down else panel.get_meta("bg")
 	var fg: Color = Color.WHITE if down else panel.get_meta("fg")
 	(panel.get_meta("icon") as TextureRect).modulate = fg
-	var caption = panel.get_meta("label", null)   # no label for a button without a caption (gas)
+	var caption = panel.get_meta("label") if panel.has_meta("label") else null   # no label for a button without a caption (gas)
 	if caption:
 		(caption as Label).add_theme_color_override("font_color", fg)
 	match name:

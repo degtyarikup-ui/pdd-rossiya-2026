@@ -22,6 +22,8 @@ var turning_at_junction := false # free steering inside a junction: ~20 km/h
 var curb_clear_time := 0.0
 var distance_traveled := 0.0
 var recovery := 0.0              # control released after an impact (s)
+var hazards_left := 0.0          # automatic hazard signal after contact (s)
+var _contact_key: Variant = null
 var bounce := 0.0                # the speed the car has when the control comes back (a bounce off a car)
 
 
@@ -142,6 +144,16 @@ func integrate(dt: float, limit: float) -> void:
 		speed = minf(limit, speed + dt * 9) if accelerating else maxf(0.0, speed - dt * 22)
 	var steps := maxi(1, ceili(absf(speed) * dt / 0.15))
 	var curb := false
+	# Reuse the world wrappers through all swept substeps; contact stays active in every game phase.
+	var solids: Array = world.obstacles()
+	if _contact_key != null:
+		var touching := false
+		for body in solids:
+			if _same_contact(_obstacle_key(body), _contact_key) and overlap(footprint(), body.footprint(), 0.3):
+				touching = true
+				break
+		if not touching:
+			_contact_key = null
 	for i in steps:
 		var before := pos
 		var old_yaw := yaw
@@ -173,21 +185,18 @@ func integrate(dt: float, limit: float) -> void:
 				yaw = old_yaw
 		if absf(step) > 0.0001:
 			var me := footprint()
-			for m in world.obstacles():
+			for m in solids:
 				if overlap(me, m.footprint(), 0.025):
-					if m.crashed and step > 0.0:
-						# A wreck left standing is nudged aside at walking pace (game.js
-						# integrateDriving): it never traps the player.
-						var fwd := Vector3(sin(yaw), 0, cos(yaw))
-						var right := Vector3(fwd.z, 0, -fwd.x)
-						var side := signf((m.pos - pos).dot(right))
-						m.nudge((fwd * 0.35 + right * (side if side != 0.0 else 1.0)).normalized(), absf(step) * 1.6)
-						speed = minf(speed, 1.5)
-						continue
 					var was := overlap({ "p": before, "yaw": old_yaw, "hw": half_width, "hl": half_length }, m.footprint(), 0.025)
 					if not was:
 						pos = before
 						yaw = old_yaw
+						var key: Variant = _obstacle_key(m)
+						if _same_contact(key, _contact_key):
+							speed = 0.0
+							return
+						_contact_key = key
+						hazards_left = 3.0
 						world.on_collision(m)
 						return
 					# Pushing deeper into an existing contact: blocked like a kerb.
@@ -208,3 +217,16 @@ func integrate(dt: float, limit: float) -> void:
 		curb_clear_time = 0.0
 	else:
 		curb_clear_time += dt
+
+
+## World wrappers are reconstructed every frame; latch the actual actor/car, not its wrapper.
+static func _obstacle_key(body) -> Variant:
+	if "m" in body: return body.m
+	if "car" in body: return body.car
+	if "w" in body: return body.w
+	if "node" in body: return body.node
+	return body
+
+
+static func _same_contact(a: Variant, b: Variant) -> bool:
+	return typeof(a) == typeof(b) and a == b

@@ -10,6 +10,7 @@ const CARS := ["hatch", "sedan", "coupe", "wagon", "suv", "pickup"]
 const WALKERS := 12
 
 static var _baked: ShaderMaterial
+static var _meshes := {}
 
 
 static func baked_material() -> ShaderMaterial:
@@ -21,12 +22,15 @@ static func baked_material() -> ShaderMaterial:
 
 ## The single mesh of a baked glb.
 static func mesh_of(path: String) -> Mesh:
+	if _meshes.has(path):
+		return _meshes[path]
 	var root: Node = (load(path) as PackedScene).instantiate()
 	var found: Mesh = null
 	for node in root.find_children("*", "MeshInstance3D", true, false):
 		found = (node as MeshInstance3D).mesh
 		break
 	root.free()
+	_meshes[path] = found
 	return found
 
 
@@ -65,3 +69,20 @@ static func player_car(id: String, paint: Color) -> Node3D:
 		if b:
 			b.visible = false
 	return car
+
+
+static var _contact_mesh: PlaneMesh
+static var _contact_material: ShaderMaterial
+
+## One cheap ground-contact layer, even on phones with dynamic shadows disabled.
+static func contact_mesh() -> PlaneMesh:
+	if _contact_mesh == null:
+		_contact_mesh = PlaneMesh.new()
+		_contact_mesh.size = Vector2(2.0, 2.0)
+	return _contact_mesh
+
+static func contact_material() -> ShaderMaterial:
+	if _contact_material == null:
+		_contact_material = ShaderMaterial.new()
+		_contact_material.shader = load("res://shaders/contact.gdshader")
+	return _contact_material

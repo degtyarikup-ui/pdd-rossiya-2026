@@ -11,6 +11,10 @@ var data: Dictionary
 var lights: Array[Node3D] = []
 var officers: Array[Node3D] = []
 var actors: Array[Node3D] = []       # same order as data.actors
+var _surface_cache := {}
+var _surface_signature := 0
+var _surface_material: ShaderMaterial
+var _pool_nodes := {}
 var _pools := {}                     # prop -> MultiMesh
 var network: RoadNetwork             # the road network (network/<id>.json); the source of truth
 var _mask: Image                     # legacy drivable area (road.png) for scenes without a network
@@ -20,19 +24,24 @@ var _evidence: Array[Node3D] = []    # letter tokens
 var _badges: Array[Node3D] = []      # name plates over the participants
 
 
+static var _tasks: Array[int] = []
+static var _native_resources := {}
 static var _ready_ids := {}          # web: junctions whose files are in memory
 
 
 ## Web: the junction's files come over the network (PackFiles). Native: always.
 static func prepared(situation_id: String) -> bool:
-	return not PackFiles.web() or _ready_ids.has(situation_id)
+	return _ready_ids.has(situation_id)
 
 
 ## Web: fetches the junction's files and parses its models, then on_done(ok).
 ## Native: at once, nothing to fetch.
 static func prepare(situation_id: String, on_done: Callable) -> void:
 	if prepared(situation_id):
-		on_done.call(true)
+		if on_done.is_valid(): on_done.call(true)
+		return
+	if not PackFiles.web():
+		_native_prepare(situation_id, on_done)
 		return
 	var dir := "res://situations/%s/" % situation_id
 	var first: Array = [dir + "scene.json", dir + "scene.glb"]
@@ -40,11 +49,11 @@ static func prepare(situation_id: String, on_done: Callable) -> void:
 		first.append(dir + "road.png")   # the mask: only for a scene without a network
 	PackFiles.fetch_all(first, func(ok: bool):
 		if not ok or not PackFiles.exists(dir + "scene.json"):
-			on_done.call(false)
+			if on_done.is_valid(): on_done.call(false)
 			return
 		var data = JSON.parse_string(PackFiles.text(dir + "scene.json"))
 		if not (data is Dictionary):
-			on_done.call(false)
+			if on_done.is_valid(): on_done.call(false)
 			return
 		# Required: the lights and participants the scene names (they must be here).
 		var more: Array = []
@@ -65,21 +74,31 @@ static func prepare(situation_id: String, on_done: Callable) -> void:
 				if not PackFiles.exists(p):
 					parsed = false
 			for p in first + more + optional:
+				if p.ends_with(".glb"): await (Engine.get_main_loop() as SceneTree).process_frame
+				if not on_done.is_valid(): return
 				if p.ends_with(".glb") and PackFiles.exists(p) and not PackFiles.parse_glb(p):
 					parsed = false
 			if parsed:
 				_ready_ids[situation_id] = true
-			on_done.call(parsed)))
+			if on_done.is_valid(): on_done.call(parsed)))
 
 
 ## Web: frees the junction's files once it is built.
 static func forget(situation_id: String) -> void:
 	_ready_ids.erase(situation_id)
+	_native_resources.erase(situation_id)
 	PackFiles.forget("res://situations/%s/" % situation_id)
 
 
 static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
+	return load_scene_staged.call(situation_id, scenery)
+
+
+static func load_scene_staged(situation_id: String, scenery: Scenery, frames: SceneTree = null, staging_parent: Node = null) -> Situation:
 	var s := Situation.new()
+	if staging_parent:
+		s.visible = false
+		staging_parent.add_child(s)
 	s.id = situation_id
 	s.name = situation_id
 	var dir := "res://situations/%s/" % situation_id
@@ -92,11 +111,24 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 	if not s.data.has("exitWidths") or not (s.data.exitWidths is Dictionary):
 		s.data["exitWidths"] = {}
 	var scene: Node3D = PackFiles.instance(dir + "scene.glb")
+	# Attach immediately: cancelling during a mesh job must also free this GLB node tree.
+	s.add_child(scene)
 	s.network = RoadNetwork.load_scene(situation_id)
 	for node in scene.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
 		if mi.name == "static":
-			mi.mesh = _without_baked_ground(mi.mesh, s.network)
+			if frames and PackFiles.web():
+				var processed := await _without_baked_ground_staged(mi.mesh, s.network, frames)
+				if not is_instance_valid(s): return null
+				mi.mesh = processed
+			elif frames:
+				var immutable_mesh := mi.mesh
+				var immutable_network := s.network
+				var processed := await _mesh_in_background(func(): return _without_baked_ground(immutable_mesh, immutable_network), frames)
+				if not is_instance_valid(s): return null
+				mi.mesh = processed
+			else:
+				mi.mesh = _without_baked_ground(mi.mesh, s.network)
 			mi.material_override = scenery.material
 		# tex_0: the web game's dirt strips along the exits (a brown track over the asphalt). The
 		# exits are asphalt in the game, the same as the entrance: the strips are not drawn.
@@ -106,16 +138,35 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 		if s.network and mi.name in s.network.data.get("bakedSigns", []):
 			mi.visible = false
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	s.add_child(scene)
 	s._crop = s.data.crop
 	if s.network:
-		s.add_child(_surface_node(s.network, scenery))
+		if frames:
+			var surf := MeshInstance3D.new()
+			surf.name = "surfaces"
+			surf.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			s.add_child(surf)
+			if PackFiles.web():
+				var processed: Mesh = await s.network.surface_mesh_staged(scenery, frames)
+				if not is_instance_valid(s): return null
+				surf.mesh = processed
+			else:
+				var immutable_network := s.network
+				var processed: Mesh = await _mesh_in_background(func(): return immutable_network.surface_mesh(scenery), frames)
+				if not is_instance_valid(s): return null
+				surf.mesh = processed
+		else:
+			s.add_child(_surface_node(s.network, scenery))
 	else:
 		s._mask = PackFiles.image(dir + "road.png")
 		if s._mask.is_compressed():
 			s._mask.decompress()
-	s._place_props(scenery)
+	if frames:
+		await s._place_props(scenery, frames)
+	else:
+		s._place_props.call(scenery)
 	for i in s.data.lights.size():
+		if frames: await frames.process_frame
+		if not is_instance_valid(s): return null
 		var l: Dictionary = s.data.lights[i]
 		var light: Node3D = PackFiles.instance(dir + "light_%d.glb" % i)
 		light = RoadBuild.light_with_signs(light, l.get("mountedSigns", []), l.get("mountedMainRoad", []))
@@ -126,6 +177,8 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 		s.lights.append(light)
 	s._build_evidence(dir)
 	for i in s.data.actors.size():
+		if frames: await frames.process_frame
+		if not is_instance_valid(s): return null
 		var a: Dictionary = s.data.actors[i]
 		var actor: Node3D
 		if a.type == "special":
@@ -160,6 +213,7 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 	# Road signs of the junction (the editor's «Знаки»): faces towards their yaw, as the lights.
 	if s.network:
 		for sg in s.network.data.get("signs", []):
+			if frames: await frames.process_frame
 			var plate: String = sg.get("plate") if sg.get("plate") is String else ""
 			var plate_sign: String = sg.get("plateSign") if sg.get("plateSign") is String else ""
 			var main_road: Array = sg.get("mainRoad") if sg.get("mainRoad") is Array else []
@@ -171,6 +225,10 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 			sign.rotation.y = float(sg.get("yaw", PI)) - PI
 			s.add_child(sign)
 	s.set_evidence_visible(false)
+	if s.network:
+		s._surface_signature=hash(s.network.stitch_bindings)
+		s._surface_cache[s._surface_signature]=s.get_node("surfaces").mesh
+		s.refresh_uv(scenery)
 	return s
 
 
@@ -180,14 +238,26 @@ func place_at(z: float, scenery: Scenery) -> void:
 	position = Vector3(0.0, 0.0, z)
 	var node := get_node_or_null("surfaces") as MeshInstance3D
 	if node and network:
-		node.mesh = network.surface_mesh(scenery, z)
+		refresh_uv(scenery)
 
 
 ## The detail map follows the world grid again after the world was rebased (a turn).
 func refresh_uv(scenery: Scenery, texture_frame := Transform3D()) -> void:
 	var node := get_node_or_null("surfaces") as MeshInstance3D
 	if node and network:
-		node.mesh = network.surface_mesh(scenery, 0.0, texture_frame * transform)
+		var signature:=hash(network.stitch_bindings)
+		if signature!=_surface_signature:
+			node.mesh=_surface_cache.get(signature)
+			if node.mesh==null:
+				node.mesh=network.surface_mesh(scenery)
+				_surface_cache[signature]=node.mesh
+			_surface_signature=signature
+		if _surface_material==null:
+			_surface_material=scenery.material.duplicate()
+			_surface_material.set_shader_parameter("grid_uv",true)
+			node.material_override=_surface_material
+		_surface_material.set_shader_parameter("surface_frame",texture_frame)
+
 
 
 ## The point (situation coordinates) is inside this junction's own streets.
@@ -233,6 +303,10 @@ static func _vertex_colours_as_albedo(root: Node3D) -> void:
 ## flicker against each other and the world's lawn. Flat triangles below the carriageway are
 ## dropped: the world's one lawn (world.gd) is under the junction.
 static func _without_baked_ground(mesh: Mesh, net: RoadNetwork = null) -> Mesh:
+	return _without_baked_ground_staged.call(mesh, net)
+
+
+static func _without_baked_ground_staged(mesh: Mesh, net: RoadNetwork = null, frames: SceneTree = null) -> Mesh:
 	var out := ArrayMesh.new()
 	for s in mesh.get_surface_count():
 		var arrays := mesh.surface_get_arrays(s)
@@ -241,7 +315,11 @@ static func _without_baked_ground(mesh: Mesh, net: RoadNetwork = null) -> Mesh:
 		if idx.is_empty():
 			idx = PackedInt32Array(range(verts.size()))
 		var keep := PackedInt32Array()
+		var slice := Time.get_ticks_usec()
 		for k in range(0, idx.size(), 3):
+			if frames and Time.get_ticks_usec()-slice > 2000:
+				await frames.process_frame
+				slice = Time.get_ticks_usec()
 			var a := verts[idx[k]]
 			var b := verts[idx[k + 1]]
 			var c := verts[idx[k + 2]]
@@ -286,7 +364,7 @@ static func _v(a: Array) -> Vector3:
 	return Vector3(a[0], a[1], a[2])
 
 
-func _place_props(scenery: Scenery) -> void:
+func _place_props(scenery: Scenery, frames: SceneTree = null) -> void:
 	var groups := {}
 	for p in data.props:
 		if not groups.has(p.prop):
@@ -294,6 +372,7 @@ func _place_props(scenery: Scenery) -> void:
 		groups[p.prop].append(p)
 	var winter: bool = scenery.season.precipitation == "snow"
 	for prop in groups:
+		if frames: await frames.process_frame
 		var list: Array = groups[prop]
 		var parked: bool = prop == "parked"
 		var multi := MultiMesh.new()
@@ -302,19 +381,44 @@ func _place_props(scenery: Scenery) -> void:
 		multi.use_custom_data = true
 		multi.mesh = Models.mesh_of("res://models/traffic/sedan.glb" if parked else "res://scenery/%s.glb" % prop)
 		multi.instance_count = list.size()
+		var poses: Array[Transform3D] = []
+		var tints: Array[Color] = []
 		for i in list.size():
 			var p: Dictionary = list[i]
 			var basis := Basis(Vector3.UP, p.yaw).scaled(_v(p.scale))
-			multi.set_instance_transform(i, Transform3D(basis, _v(p.pos)))
+			var xf := Transform3D(basis, _v(p.pos))
+			multi.set_instance_transform(i, xf)
+			poses.append(xf)
 			multi.set_instance_color(i, Color.WHITE)
 			var tint := Color(p.tint) if p.get("tint") else Color.WHITE
-			multi.set_instance_custom_data(i, Color(tint.r, tint.g, tint.b, 0.0 if parked else (1.0 if winter else 0.0)))
+			var custom := Color(tint.r, tint.g, tint.b, 0.0 if parked else (1.0 if winter else 0.0))
+			multi.set_instance_custom_data(i, custom)
+			tints.append(custom)
 		var node := MultiMeshInstance3D.new()
 		node.multimesh = multi
-		node.material_override = Models.baked_material() if parked else scenery.material
+		node.set_meta("instance_transforms",poses)
+		node.set_meta("instance_tints",tints)
+		node.material_override = Models.baked_material() if parked else scenery.occluder_material if prop.begins_with("buildings/") else scenery.material
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if prop.begins_with("trees/") else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(node)
 		_pools[prop] = multi
+		_pool_nodes[prop] = node
+		if prop.begins_with("buildings/"): scenery.register_building_pool(node)
+
+	var trees: Array = data.props.filter(func(p): return str(p.prop).begins_with("trees/"))
+	if not trees.is_empty():
+		var contact := MultiMesh.new()
+		contact.transform_format = MultiMesh.TRANSFORM_3D
+		contact.mesh = Models.contact_mesh()
+		contact.instance_count = trees.size()
+		for i in trees.size():
+			var p: Dictionary = trees[i]
+			contact.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3(1.4*p.scale[0],1.0,1.4*p.scale[2])),Vector3(p.pos[0],0.012,p.pos[2])))
+		var mi := MultiMeshInstance3D.new()
+		mi.multimesh = contact
+		mi.material_override = Models.contact_material()
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
 
 
 # --- question evidence -------------------------------------------------------------
@@ -607,18 +711,36 @@ static func _on_top(node: GeometryInstance3D, priority: int) -> void:
 ## Runtime trimming affects only the outer road ends; saved geometry stays in editor coordinates.
 func bind_end(port: Dictionary, width: float, scenery: Scenery, texture_frame := Transform3D(), profile: Dictionary = {}) -> void:
 	if network == null or port.is_empty(): return
-	for binding in network.stitch_bindings:
-		if binding.port.id == port.id:
-			binding.width=width
-			binding.merge(profile,true)
-			_trim_end_props()
-			refresh_uv(scenery,texture_frame)
-			return
-	var binding := {"port":port,"width":width}
-	binding.merge(profile,true)
-	network.stitch_bindings.append(binding)
+	network.stitch_bindings=bindings_with(network.stitch_bindings,port,width,profile)
 	_trim_end_props()
 	refresh_uv(scenery,texture_frame)
+
+static func bindings_with(bindings: Array, port: Dictionary, width: float, profile: Dictionary = {}) -> Array:
+	var result:=bindings.duplicate(true)
+	for binding in result:
+		if binding.port.id==port.id:
+			binding.width=width
+			binding.merge(profile,true)
+			return result
+	var binding: Dictionary={"port":port,"width":width}
+	binding.merge(profile,true)
+	result.append(binding)
+	return result
+
+## Precompute clipping/width variants while driving toward the question. Only immutable meshes
+## run in the worker; the saved network and its current runtime bindings are never modified here.
+func warm_bindings(bindings: Array, scenery: Scenery, frames: SceneTree) -> void:
+	var signature:=hash(bindings)
+	if _surface_cache.has(signature): return
+	var work:=RoadNetwork.new()
+	work.build=network.build
+	work.data=network.data
+	work.stitch_bindings=bindings.duplicate(true)
+	var mesh: Mesh
+	if PackFiles.web(): mesh=await work.surface_mesh_staged(scenery,frames)
+	else: mesh=await _mesh_in_background(func(): return work.surface_mesh(scenery),frames)
+	if not is_instance_valid(self): return
+	_surface_cache[signature]=mesh
 
 
 ## Exact intersection of the rendered footprint with the street axis (not chunk-rounded bounds).
@@ -647,4 +769,51 @@ func _trim_end_props() -> void:
 		var xf := Transform3D(Basis(Vector3.UP,p.yaw).scaled(_v(p.scale)),at)
 		if not SceneStitch.contains(at,network.stitch_bindings):
 			xf=Transform3D(Basis.from_scale(Vector3.ONE*0.001),Vector3(0,-50,0))
+		(_pool_nodes[prop].get_meta("instance_transforms") as Array)[index]=xf
+		Scenery.clear_fade_slot(_pool_nodes[prop],index)
 		(_pools[prop] as MultiMesh).set_instance_transform(index,xf)
+
+
+## Only immutable mesh processing runs off-thread; Node trees are always assembled on the main thread.
+static func _mesh_in_background(work: Callable, frames: SceneTree) -> Mesh:
+	var result := [null]
+	var task := WorkerThreadPool.add_task(func(): result[0] = work.call())
+	_tasks.append(task)
+	while _tasks.has(task) and not WorkerThreadPool.is_task_completed(task):
+		await frames.process_frame
+	# World exit already joined/removed the task; never poll or join an invalid task ID.
+	if not _tasks.has(task): return null
+	WorkerThreadPool.wait_for_task_completion(task)
+	_tasks.erase(task)
+	return result[0]
+
+
+static func _native_prepare(situation_id: String, on_done: Callable) -> void:
+	var dir := "res://situations/%s/" % situation_id
+	var d = JSON.parse_string(PackFiles.text(dir + "scene.json"))
+	if not d is Dictionary:
+		if on_done.is_valid(): on_done.call(false)
+		return
+	var paths: Array[String] = [dir + "scene.glb"]
+	for i in d.lights.size(): paths.append(dir + "light_%d.glb" % i)
+	for i in d.actors.size(): paths.append(dir + "actor_%d.glb" % i)
+	for path in paths: ResourceLoader.load_threaded_request(path)
+	var frames := Engine.get_main_loop() as SceneTree
+	var resources: Array = []
+	for path in paths:
+		while ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			await frames.process_frame
+		if ResourceLoader.load_threaded_get_status(path) != ResourceLoader.THREAD_LOAD_LOADED:
+			if on_done.is_valid(): on_done.call(false)
+			return
+		resources.append(ResourceLoader.load_threaded_get(path))
+	_native_resources[situation_id] = resources
+	_ready_ids[situation_id] = true
+	if on_done.is_valid(): on_done.call(true)
+
+
+static func finish_background_work() -> void:
+	# Exit can happen mid-load. Join immutable worker jobs before the rendering server shuts down.
+	for task in _tasks: WorkerThreadPool.wait_for_task_completion(task)
+	_tasks.clear()
+	_native_resources.clear()

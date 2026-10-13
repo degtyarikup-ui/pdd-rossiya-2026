@@ -54,6 +54,19 @@ godot --headless --path game_godot --script res://tests/collision_check.gd  # с
 godot --headless --path game_godot --script res://tests/human_collision_check.gd # наезд: регулировщик и пешеходы
 godot --headless --path game_godot --script res://tests/ghost_check.gd      # призрак улицы
 godot --headless --path game_godot --script res://tests/traffic_check.gd    # трафик
+godot --headless --path game_godot --script res://tests/participant_motion_check.gd # коллизии и отъезд после стрелки
+godot --headless --path game_godot --script res://tests/reviewed_departure_check.gd # продолжение всех отмеченных сцен
+godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза
+godot --headless --path game_godot --script res://tests/exit_loading_check.gd # выход во время фоновой сборки без потерянных узлов
+godot --headless --path game_godot --script res://tests/pause_actor_check.gd # заморозка независимых и физических участников в гараже
+godot --headless --path game_godot --script res://tests/game_ui_check.gd # анимации, фото, гараж
+godot --headless --path game_godot --script res://tests/garage_resume_check.gd # настоящий мир, цвет и возврат из гаража
+godot --path game_godot --script res://tests/building_fade_check.gd # нужен рендер: пачки прозрачных зданий и переиспользование
+godot --headless --path game_godot --script res://tests/median_join_check.gd # границы разделительных островов
+godot --headless --path game_godot --script res://tests/ambient_lane_check.gd # фоновые машины и разделитель на стыке
+godot --path game_godot --script res://tests/sound_check.gd # аудио: запуск, выключение, включение и освобождение
+godot --path game_godot --script res://tests/occlusion_render_check.gd # нужен рендер: прозрачность зданий
+godot --path game_godot --script res://tests/stitch_shader_render_check.gd # нужен рендер: мировая сетка текстур после стыковки
 ```
 
 Скрипт с ошибкой в headless-режиме **зависает**, а не падает: ставьте таймаут
@@ -107,6 +120,7 @@ tools/network/engine_sync.py ► game_godot/situations/<id>/scene.json (то, ч
 ## Документы
 
 - `regulator-migration-2026-10-13.md` — паритет регулировщика и удаление WebView
+- `ride-fixes-2026-10-13.md` — загрузка сцен, коллизии, продолжение маршрутов, интерфейс и гараж
 - `godot-roadmap.md` — что сделано и что открыто
 - `godot-migration.md` — как и почему перешли на Godot
 - `game-economy-2026-10-10.md`, `game-covers-2026-10-10.md`, `mini-game*.md` — экономика, обложки, мини-игры

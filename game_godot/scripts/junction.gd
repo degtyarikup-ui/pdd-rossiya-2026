@@ -32,6 +32,14 @@ class Path:
 			length += points[i].distance_to(points[i - 1])
 			cum.append(length)
 
+	func append_route(tail: PackedVector3Array) -> void:
+		for p in tail:
+			if not points.is_empty() and points[-1].distance_to(p) < 0.01:
+				continue
+			length += points[-1].distance_to(p) if not points.is_empty() else 0.0
+			points.append(p)
+			cum.append(length)
+
 	func _index(d: float) -> int:
 		var lo := 0
 		var hi := cum.size() - 1
@@ -54,7 +62,16 @@ class Path:
 	func tangent_at(d: float) -> Vector3:
 		d = clampf(d, 0.0, length)
 		var i := mini(_index(d), points.size() - 2)
-		return (points[i + 1] - points[i]).normalized()
+		# Editor routes can end with a duplicate control point. It is not a zero heading:
+		# keep the last real lane direction when continuing past the teaching arrow.
+		for offset in points.size() - 1:
+			for index in [i + offset, i - offset]:
+				if index < 0 or index >= points.size() - 1:
+					continue
+				var delta := points[index + 1] - points[index]
+				if delta.length_squared() > 0.000001:
+					return delta.normalized()
+		return Vector3.BACK
 
 
 ## One participant (the motion object of game.js buildActorMotion).
@@ -81,6 +98,12 @@ class Motion:
 	var stop_for = null
 	var hold_for = null
 	var stays_put := false
+	var exported_length := 0.0
+	var extended := false
+	var impact_wait := 0.0
+	var tail_retry := 0.0
+	var contact_cooldown := 0.0
+	var player_contact_latched := false
 	var gait := 0.0
 	var wheels: Array[Node3D] = []
 	var legs: Array[Node3D] = []
@@ -100,6 +123,9 @@ var released := false
 var resolution = null            # Dictionary while the player passes through
 var complete := false            # the player has left by an exit
 var spec: Dictionary
+## World-supplied road continuation in local coordinates, beyond the authored arrow.
+var continuation := Callable()
+var cycle_continuation := Callable()
 
 
 func _init(sit: Situation) -> void:
@@ -116,6 +142,7 @@ func _init(sit: Situation) -> void:
 		m.hw = a.halfWidth
 		m.hl = a.halfLength
 		m.path = Path.new(a.path)
+		m.exported_length = m.path.length
 		m.max_speed = a.maxSpeed
 		m.clear_distance = a.clearDistance
 		m.stop_at = a.stopAtDistance
@@ -320,10 +347,10 @@ func _following_speed(a: Motion, boxes: Array, dt: float) -> float:
 		if absf(delta.dot(right)) >= box.hw + width + 0.15:
 			continue
 		var gap: float = ahead - box.hl - alignment * leader.hl - across * leader.hw
-		var room := maxf(0.0, gap - 1.4)
+		var room := maxf(0.0, gap - 3.0)
 		var spd: float = entry.speed * alignment
 		var braking := 8.0
-		var headway := 0.8
+		var headway := 1.2
 		var safe := sqrt(pow(braking * headway, 2) + spd * spd + 2 * braking * room) - braking * headway
 		limit = minf(limit, minf(safe, room / maxf(dt, 0.001)))
 	return maxf(0.0, limit)
@@ -350,8 +377,20 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 	boxes.append({ "who": null, "type": "player", "box": player, "speed": maxf(0.0, player_speed) })
 	var hit: Motion = null
 	for a in motions:
-		if a.done or a.crashed:
+		a.contact_cooldown = maxf(0.0, a.contact_cooldown - dt)
+		if a.player_contact_latched and not DRIVE.overlap(a.footprint(), player, 0.3):
+			a.player_contact_latched = false
+		if a.done:
 			continue
+		if a.crashed:
+			if a.impact_wait <= 0.0:
+				a.impact_wait = 3.0
+				Fleet.hazards(a.node, a.hl, a.hw)
+			a.impact_wait -= dt
+			if a.impact_wait > 0.0:
+				continue
+			a.crashed = false
+			a.impact_wait = 0.0
 		if a.stays_put:
 			a.cleared = true
 			continue
@@ -369,7 +408,9 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 			a.speed = 0
 			continue
 		a.speed = minf(_following_speed(a, boxes, dt), a.speed + dt * (8.0 if a.type == "pedestrian" else 12.0))
-		var advance := a.speed * dt
+		a.tail_retry = maxf(0.0, a.tail_retry - dt)
+		_ensure_tail(a)
+		var advance := minf(a.speed * dt, maxf(0.0, a.path.length - a.distance))
 		var steps := maxi(1, ceili(advance / 0.15))
 		for i in steps:
 			var before := a.node.position
@@ -377,25 +418,30 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 			var before_d := a.distance
 			a.distance += advance / steps
 			var t := a.path.tangent_at(a.distance)
-			# A route ends at the edge of the saved road: keep its endpoint, without
-			# driving through houses or hiding a participant still in view.
-			var p := a.path.point_at(minf(a.distance, a.path.length))
+			var p := a.path.point_at(a.distance)
 			a.node.position = p
 			a.node.rotation.y = atan2(t.x, t.z)
 			var me := a.footprint()
 			var player_contact := DRIVE.overlap(me, player, 0.04)
 			var traffic_contact := false
+			var struck = null
 			for entry in boxes:
-				if entry.who != null and entry.who != a and not entry.who.done and DRIVE.overlap(me, entry.box, 0.04):
+				if entry.who != null and entry.who != a and not entry.who.done and DRIVE.overlap(me, entry.who.footprint(), 0.04):
 					traffic_contact = true
+					struck = entry.who
 					break
 			if player_contact or traffic_contact:
 				a.node.position = before
 				a.node.rotation.y = before_yaw
 				a.distance = before_d
-				a.speed = 0
-				if player_contact and resolution != null:
+				if a.contact_cooldown <= 0.0 and a.speed > 0.5:
+					a.contact_cooldown = 3.0
+					Fleet.hazard_obstacle(a)
+					Fleet.hazard_obstacle(struck)
+				if player_contact and not a.player_contact_latched:
+					a.player_contact_latched = true
 					hit = a
+				a.speed = 0
 				break
 		a.gait += a.speed * dt * 3.5
 		for i in a.legs.size():
@@ -403,13 +449,52 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 		for w in a.wheels:
 			w.rotate_x(a.speed * dt / 0.36)
 		a.cleared = a.crashed or a.distance >= a.clear_distance
-		# A finite exported route may end in plain view. Keep the participant there (and solid)
-		# until its whole street retires, rather than making it vanish beside the player.
-		if a.distance >= a.path.length:
-			a.stays_put = true
-			a.speed = 0.0
+		# Retire only after the participant has driven away from the actual visible question.
+		if a.distance > a.exported_length and a.node.position.distance_to(player.p) > 240.0:
+			a.done = true
+			a.node.visible = false
 			a.cleared = true
+
 	return hit
+
+
+## The exported polyline is the teaching arrow, not a parking destination. Preserve it exactly;
+## append a runtime-only departure on the saved road's exit, or the world's connected road.
+func _ensure_tail(a: Motion) -> void:
+	if a.path.length < 0.1 or a.distance < a.path.length - 20.0 or a.tail_retry > 0.0:
+		return
+	a.extended = true
+	var end := a.path.point_at(a.path.length)
+	var toward := a.path.tangent_at(a.path.length)
+	var tail := PackedVector3Array()
+	if a.type == "cyclist" and cycle_continuation.is_valid():
+		tail = cycle_continuation.call(end, toward, a.hw, a.hl)
+		if tail.is_empty():
+			a.tail_retry = 1.0
+			return
+	elif continuation.is_valid() and a.type != "pedestrian":
+		tail = continuation.call(end, toward, a.hw, a.hl)
+		if tail.is_empty():
+			a.tail_retry = 1.0
+			return  # The world found no drivable departure: never improvise over a lawn or house.
+	if tail.is_empty():
+		# Outbound exported paths point along their lane. Match an actual exit port, keeping
+		# the authored lane offset, rather than heading diagonally through adjacent scenery.
+		if situation.network and a.type != "pedestrian":
+			var best := INF
+			for key in situation.network.connections.exits:
+				var port: Dictionary = situation.network.connections.exits[key]
+				var out: Vector3 = port.out
+				var remaining: float = (port.p - end).dot(out)
+				var lateral: float = absf((end - port.p).dot(SceneStitch.right(out)))
+				if toward.dot(out) < 0.7 or lateral + a.hw > float(port.width) * 0.5 + 0.2:
+					continue
+				if absf(remaining) < best:
+					best = absf(remaining)
+					tail = PackedVector3Array([end + out * maxf(1.0, remaining), end + out * (maxf(1.0, remaining) + 240.0)])
+		if tail.is_empty():
+			tail.append(end + toward * 240.0)
+	a.path.append_route(tail)
 
 
 ## updateResolution: faults and the moment the player has left by an exit.
@@ -448,8 +533,6 @@ func update_resolution(dt: float, player: Drive, local_pos: Vector3) -> void:
 			var footprint := player.half_width*absf(cos(error))+player.half_length*absf(sin(error))
 			var finish_distance: float = maxf(20.0,port.p.dot(toward)-24.0)
 			if remaining>finish_distance or lateral+footprint>float(port.width)/2.0+0.12 or absf(error)>0.7: continue
-			var allowed: Array = spec.get("allowedManeuvers",[spec.maneuver])
-			if allowed == null or not key in allowed: _fault("wrong_maneuver","wrong_maneuver")
 			var done_res=resolution
 			resolution=null
 			complete=true
@@ -471,9 +554,6 @@ func update_resolution(dt: float, player: Drive, local_pos: Vector3) -> void:
 		var half: float = (data.approachW if e[0] == "uturn" else widths.get(e[0], 8.4)) / 2.0
 		var foot := player.half_width * absf(cos(error)) + player.half_length * absf(sin(error))
 		if (e[2] and e[3] + foot <= half + 0.12 and e[3] < half + 0.1 and absf(error) < 0.7) or (e[4] and e[3] < half + 1.8 and absf(error) < PI / 2):
-			var allowed: Array = spec.get("allowedManeuvers", [spec.maneuver])
-			if allowed == null or not (e[0] in allowed):
-				_fault("wrong_maneuver", "wrong_maneuver")
 			var done_res = resolution
 			resolution = null
 			complete = true

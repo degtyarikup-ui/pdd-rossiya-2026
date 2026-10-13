@@ -6,7 +6,7 @@ extends Node
 
 const RATE := 22050.0
 const DURATION := {
-	"click": 0.03, "tick": 0.06, "correct": 0.35, "incorrect": 0.4, "crash": 0.7, "scrape": 0.25,
+	"click": 0.03, "tick": 0.06, "correct": 0.35, "incorrect": 0.4, "crash": 0.32, "scrape": 0.25,
 }
 
 var enabled := true
@@ -15,24 +15,45 @@ var _player: AudioStreamPlayer
 var _playback: AudioStreamGeneratorPlayback
 var _engine_phase := 0.0
 var _tyre_lp := 0.0
+var _impact_lp := 0.0
 var _events: Array = []
 
 
 func _ready() -> void:
+	# Headless checks have no listener and use the Dummy audio backend, which retains its generator
+	# playback at shutdown. Do not allocate or synthesize an audio stream in that environment.
+	if DisplayServer.get_name() == "headless":
+		return
 	var gen := AudioStreamGenerator.new()
 	gen.mix_rate = RATE
 	gen.buffer_length = 0.12
 	_player = AudioStreamPlayer.new()
+	# Procedural generators need streaming on Web too; the default sample backend cannot play them.
+	_player.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
 	_player.stream = gen
 	_player.volume_db = -3.0
 	add_child(_player)
+	if enabled:
+		_start_playback()
+
+
+func _start_playback() -> void:
 	_player.play()
 	_playback = _player.get_stream_playback()
+
+
+func _exit_tree() -> void:
+	if is_instance_valid(_player):
+		_player.stop()
+	_playback = null
+	_events.clear()
 
 
 ## One-shot sound by name (see DURATION). Silent when sound is off.
 func play(kind: String) -> void:
 	if enabled:
+		if kind == "crash" and _events.any(func(e): return e.kind == "crash"):
+			return
 		_events.append({ "kind": kind, "t": 0.0, "dur": DURATION.get(kind, 0.1) })
 
 
@@ -45,10 +66,20 @@ static func buzz(ms: int) -> void:
 
 
 func _process(_delta: float) -> void:
+	if _player == null:
+		return
+	if not enabled:
+		if _player.playing:
+			_player.stop()
+		_playback = null
+		_events.clear()
+		return
+	if _playback == null:
+		_start_playback()
 	if _playback == null:
 		return
 	for _i in _playback.get_frames_available():
-		var s := _sample() if enabled else 0.0
+		var s := _sample()
 		_playback.push_frame(Vector2(s, s))
 
 
@@ -90,7 +121,9 @@ func _one_shot(e: Dictionary) -> float:
 		"incorrect":
 			return (1.0 if sin(TAU * 220.0 * t) >= 0.0 else -1.0) * 0.12 * env
 		"crash":
-			return (randf() * 2.0 - 1.0) * 0.5 * env + sin(TAU * 55.0 * t) * 0.4 * env
+			_impact_lp += ((randf() * 2.0 - 1.0) - _impact_lp) * 0.045
+			var attack := minf(1.0, t / 0.012)
+			return (_impact_lp * 0.14 + sin(TAU * 65.0 * t) * 0.12) * env * attack
 		"scrape":
 			return (randf() * 2.0 - 1.0) * 0.25 * env
 	return 0.0

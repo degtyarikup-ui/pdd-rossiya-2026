@@ -152,22 +152,30 @@ func stop_point() -> Vector3:
 ## `uv_xf` (the junction's placement in the world) wins over `uv_z` when given: after a turn
 ## rebases the world the junction is rotated and the street's grid with it.
 func surface_mesh(scenery: Scenery, uv_z := 0.0, uv_xf := Transform3D()) -> ArrayMesh:
+	return surface_mesh_staged.call(scenery, null, uv_z, uv_xf)
+
+
+func surface_mesh_staged(scenery: Scenery, frames: SceneTree = null, uv_z := 0.0, uv_xf := Transform3D()) -> ArrayMesh:
 	if uv_xf == Transform3D():
 		uv_xf = Transform3D(Basis(), Vector3(0, 0, uv_z))
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	st.set_smooth_group(-1)  # Keep pavement/asphalt normals separate from kerb walls.
 	for s in build.surfaces:
-		_add_triangles(st, s, scenery, uv_xf)
+		if frames:
+			await _add_triangles(st, s, scenery, uv_xf, frames)
+		else:
+			_add_triangles.call(st, s, scenery, uv_xf)
 	_add_kerbs(st, scenery, uv_z)
 	_add_end_medians(st,scenery,uv_xf)
+	_add_join_marks(st)
 	st.generate_normals()
 	var mesh := st.commit()
 	mesh.surface_set_material(0, scenery.material)
 	return mesh
 
 
-func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Transform3D) -> void:
+func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Transform3D, frames: SceneTree = null) -> void:
 	# The street's own colours (street.gd), so the junction and the street meet without a seam.
 	var colour := Color(s.colour)
 	if s.layer == "pavement":
@@ -183,12 +191,18 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 	var y: float = s.y
 	st.set_color(Color(colour.r, colour.g, colour.b, 0.0))
 	var k := 0
+	var slice := Time.get_ticks_usec()
 	while k < idx.size():
+		if frames and Time.get_ticks_usec()-slice > 2000:
+			await frames.process_frame
+			slice = Time.get_ticks_usec()
 		var triangle: Array = []
 		for c in 3:
 			var i: int = idx[k + c] * 2
 			triangle.append(Vector3(v[i],y,v[i+1]))
 		for poly in SceneStitch.render_pieces(triangle,stitch_bindings):
+			if s.layer == "" and _join_collar(poly): continue
+			if s.layer=="grass" and s.y>0.16 and _join_median(poly): continue
 			for fan in range(1, poly.size()-1):
 				for p: Vector3 in [poly[0],poly[fan],poly[fan+1]]:
 					var w := uv_xf * p
@@ -216,6 +230,9 @@ func _add_kerbs(st: SurfaceTool, scenery: Scenery, uv_z: float) -> void:
 		var b := Vector3(segs[j + 2], kerbs.y0, segs[j + 3])
 		var t := Vector3(a.x, kerbs.y1, a.z)
 		var u := Vector3(b.x, kerbs.y1, b.z)
+		if _join_median([a,b,u,t]):
+			j+=4
+			continue
 		for triangle in [[a,b,u],[a,u,t]]:
 			for poly in SceneStitch.render_pieces(triangle,stitch_bindings):
 				for fan in range(1,poly.size()-1):
@@ -251,3 +268,59 @@ func _add_end_medians(st: SurfaceTool,scenery: Scenery,uv_xf: Transform3D) -> vo
 			var x: Vector3 = edge[0];var y: Vector3 = edge[1]
 			for p: Vector3 in [x,y,y+Vector3.UP*0.18,x,y+Vector3.UP*0.18,x+Vector3.UP*0.18]:
 				st.set_uv(Vector2.ZERO);st.set_uv2(Vector2(0,1));st.add_vertex(p)
+
+
+## Replace the last two metres of old paint: rounded endcaps and coincident middle strokes
+## must not stretch into two white wedges when two islands are joined. Saved surfaces stay untouched.
+func _join_collar(poly: Array) -> bool:
+	var centre := Vector3.ZERO
+	for p: Vector3 in poly: centre += p
+	centre /= poly.size()
+	for binding in stitch_bindings:
+		var transverse: Array[float]=[]
+		for p: Vector3 in poly: transverse.append((p-binding.port.p).dot(SceneStitch.right(binding.port.out)))
+		# Wide transverse paint is a crossing/stop line, never a median-border endcap.
+		if float(transverse.max())-float(transverse.min())>1.0: continue
+		var distance: float = -(centre-binding.port.p).dot(binding.port.out)
+		var x: float = absf((centre-binding.port.p).dot(SceneStitch.right(binding.port.out)))
+		var median: float = binding.get("median", 0.0)
+		if median>0.01 and distance>=-0.001 and distance<SceneStitch.END_BLEND and x<median*0.5+1.0: return true
+		var lane_dash: bool = int(binding.port.get("lanes", 2)) == 4 and absf(x-median*0.5-3.5) < 0.4
+		var centre_dash: bool = median < 0.01 and binding.port.get("centre", "") == "dashed" and x < 0.4
+		if distance >= -0.001 and distance < 2.001 and not lane_dash and not centre_dash: return true
+	return false
+
+func _add_join_marks(st: SurfaceTool) -> void:
+	st.set_color(Color("#F2F4F8"))
+	st.set_uv2(Vector2.ZERO)
+	st.set_uv(Vector2.ZERO)
+	for binding in stitch_bindings:
+		var port: Dictionary = binding.port
+		if port.get("surface", "asphalt") == "sand": continue
+		var lateral := SceneStitch.right(port.out)
+		var half: float = binding.width * 0.5
+		var median: float = binding.get("median", 0.0)
+		var strokes: Array[float] = []
+		if port.get("edge", true): strokes.append_array([-half+0.25,half-0.25])
+		if median > 0.01: strokes.append_array([-median*0.5-0.2,median*0.5+0.2])
+		elif port.get("centre", "") == "solid": strokes.append(0.0)
+		elif port.get("centre", "") == "double": strokes.append_array([-0.15,0.15])
+		for x in strokes:
+			var a: Vector3 = port.p + lateral * (x-0.075) + Vector3.UP * 0.04
+			var b: Vector3 = port.p + lateral * (x+0.075) + Vector3.UP * 0.04
+			var length: float=SceneStitch.END_BLEND if median>0.01 and absf(x)<median*0.5+0.5 else 2.0
+			var c: Vector3 = b-port.out*length
+			var d: Vector3 = a-port.out*length
+			for p: Vector3 in [a,b,c,a,c,d]: st.add_vertex(p)
+
+
+func _join_median(poly: Array) -> bool:
+	var centre:=Vector3.ZERO
+	for p: Vector3 in poly: centre+=p
+	centre/=poly.size()
+	for binding in stitch_bindings:
+		var median: float=binding.get("median",0.0)
+		var distance: float=-(centre-binding.port.p).dot(binding.port.out)
+		var x: float=absf((centre-binding.port.p).dot(SceneStitch.right(binding.port.out)))
+		if median>0.01 and distance>=-0.001 and distance<SceneStitch.END_BLEND and x<median*0.5+1.0: return true
+	return false

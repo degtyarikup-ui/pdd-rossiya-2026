@@ -1,0 +1,141 @@
+## Real-world UI integration: owned paint, stationary garage, pause/resume driving/question/explanation.
+## Add --out=<png> with a rendering Godot run for the actual scene and expanded question photo.
+extends SceneTree
+
+var failures := 0
+var out := ""
+
+
+func check(ok: bool, message: String) -> void:
+	if not ok:
+		failures += 1
+		push_error(message)
+
+
+func _initialize() -> void:
+	_run.call_deferred()
+
+
+func _painted(world: Node, color: Color) -> bool:
+	for mesh in world.player.get_node("car").find_children("*", "MeshInstance3D", true, false):
+		for i in mesh.mesh.get_surface_count():
+			var material: Material = mesh.get_surface_override_material(i)
+			if material is BaseMaterial3D and material.resource_name == "paint" and material.albedo_color.is_equal_approx(color):
+				return true
+	return false
+
+
+func _pause_cycle(world: Node, label: String) -> void:
+	var transform: Transform3D = world.player.transform
+	var camera: Transform3D = world.camera.transform
+	var camera_size: float = world.camera.size
+	var speed: float = world.drive.speed
+	var drive_pos: Vector3 = world.drive.pos
+	var phase: String = world.phase
+	var remaining: float = world.ui.remaining_seconds()
+	var controls_active: bool = world.controls.active
+	var card: Control = world.ui._card
+	var sheet: Control = world.ui._sheet
+	var picture: Control = world.ui._picture
+	world.ui.pause_pressed.emit()
+	check(world.lobby_mode and world.paused, label + ": pause opens garage")
+	check(world.lobby._start_label.text == Ui.t("gameLobbyContinue"), label + ": garage says Continue")
+	check(not world.controls.active, label + ": paused controls inactive")
+	check(world.ui.process_mode == Node.PROCESS_MODE_DISABLED, label + ": hidden UI motion frozen")
+	world._process(0.5)
+	await create_timer(0.25).timeout
+	check(world.phase == phase, label + ": paused phase preserved")
+	check(is_equal_approx(world.ui.remaining_seconds(), remaining), label + ": countdown frozen")
+	world.lobby._try_start()
+	check(not world.lobby_mode and not world.paused, label + ": Continue returns to ride")
+	check(world.player.transform.is_equal_approx(transform), label + ": car pose restored")
+	check(world.camera.transform.is_equal_approx(camera) and is_equal_approx(world.camera.size, camera_size), label + ": camera restored")
+	check(world.drive.pos.is_equal_approx(drive_pos) and is_equal_approx(world.drive.speed, speed), label + ": position and speed preserved")
+	check(world.controls.active == controls_active, label + ": controls state restored")
+	check(world.ui._card == card and world.ui._sheet == sheet and world.ui._picture == picture, label + ": card and photo instances preserved")
+	check(world.ui.visible and world.ui.process_mode == Node.PROCESS_MODE_INHERIT, label + ": UI resumes")
+
+
+func _run() -> void:
+	var args := Array(OS.get_cmdline_user_args())
+	for arg in args:
+		if arg.begins_with("--out="):
+			out = arg.trim_prefix("--out=")
+	var garage := {"cars":[{"id":"hatch", "name":"Хэтчбек", "paints":[{"paint":"red", "name":"Красный", "hex":"#ED4621"}, {"paint":"blue", "name":"Синий", "hex":"#317ED4"}]}], "texts":{"runs":"Заезды 3 из 3", "record":"Рекорд", "colour":"Цвет", "start":"Начать заезд", "no_runs":"Нет заездов"}, "record":4387, "can_start":true}
+	# Feed the normal embedded-host argument contract; all test output remains in scratch/.
+	Host.io = ProjectSettings.globalize_path("res://../scratch/garage-ui-regression")
+	DirAccess.make_dir_recursive_absolute(Host.io)
+	Host.io_args = args + ["--garage=" + JSON.stringify(garage), "--mute", "--lang=ru"]
+	var world: Node = load("res://main.tscn").instantiate()
+	root.add_child(world)
+	world.set_process(false)
+	world.hud.visible = false
+	for i in 4:
+		await process_frame
+	check(world.lobby_mode, "Normal game opens its garage")
+	world.lobby._toggle_paints()
+	world.lobby._select_paint(1)
+	check(_painted(world, Color("#317ED4")), "Palette changes the actual current car material")
+	var yaw: float = world.player.rotation.y
+	world._lobby_frame(2.0)
+	check(is_equal_approx(world.player.rotation.y, yaw), "Garage car stays still without a finger drag")
+	world.lobby.spin.emit(0.35)
+	world._lobby_frame(0.0)
+	check(is_equal_approx(world.player.rotation.y, yaw + 0.35), "Finger-drag signal turns the actual car")
+	world.lobby._try_start()
+	check(world.chosen.paint == "blue" and _painted(world, Color("#317ED4")), "Selected paint remains on the actual ride car")
+	world.drive.speed = 8.5
+	await _pause_cycle(world, "Driving")
+	# Wait for the initial staged scene before replacing it for this deterministic fixture.
+	for i in 600:
+		if not world.staging:
+			break
+		await process_frame
+	if world.staged_sit != null:
+		world.staged_sit.queue_free()
+		world.staged_sit = null
+	await world._build_staged("ticket_10_13")
+	world.next_id = "ticket_10_13"
+	world.spawn_after = -1.0e9
+	world._maybe_spawn()
+	check(not world.current.is_empty(), "Actual question junction loads")
+	var sit: Situation = world.current.sit
+	var stop := sit.network.stop_point() if sit.network else Vector3(float(sit.data.playerStartX), 0, float(sit.data.stopZ))
+	world.drive.pos = sit.global_transform * stop
+	world.drive.yaw = SceneStitch.yaw(sit.basis * Vector3(sin(float(sit.data.playerStartRotY)), 0, cos(float(sit.data.playerStartRotY))))
+	world._update_junction(1.0 / 60.0)
+	check(world.phase == "question", "Actual question opens at its authored stop position")
+	await create_timer(0.7).timeout
+	var chip: Control = world.ui._card.get_meta("box").get_child(0).get_child(0)
+	world.ui._toggle_picture(sit.id, chip, chip.find_children("*", "Label", true, false)[1])
+	await create_timer(0.4).timeout
+	check(world.ui._picture_open, "Actual question photo opens over the actual scene")
+	await _pause_cycle(world, "Question + photo")
+	# Frame the real scene and collect a monotonic transition sample.
+	world.ui.hide_cards()
+	await create_timer(0.3).timeout
+	world.ui.show_question(world.text, 15.0)
+	var last_y: float = world.ui._card.position.y
+	for i in 30:
+		await process_frame
+		world._process(1.0 / 60.0)
+		check(world.ui._card.position.y <= last_y + 0.5, "Sheet rise is monotonic without visible downward jerk")
+		last_y = world.ui._card.position.y
+	await create_timer(0.4).timeout
+	chip = world.ui._card.get_meta("box").get_child(0).get_child(0)
+	world.ui._toggle_picture(sit.id, chip, chip.find_children("*", "Label", true, false)[1])
+	await create_timer(0.5).timeout
+	if out != "":
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(out)
+	# A timed-out answer enters the actual explanation immediately.
+	world._on_answer_chosen(-1)
+	await create_timer(0.7).timeout
+	check(world.ui._sheet != null, "Actual incorrect-answer explanation opens")
+	await _pause_cycle(world, "Explanation")
+	world.queue_free()
+	await process_frame
+	Host.io = ""
+	Host.io_args = []
+	print("garage_resume_check: ", "PASS" if failures == 0 else "%d failures" % failures)
+	quit(0 if failures == 0 else 1)

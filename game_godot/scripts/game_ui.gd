@@ -18,8 +18,7 @@ var snow := false                 # winter: HUD numbers are dark on the light sn
 var _root: Control
 var _tip: PanelContainer           # the first-drive tips card (three steps)
 var _gas_hint: PanelContainer      # «Зажмите и держите — это газ» beside the gas pedal
-var _grey: ColorRect               # the pause: the picture behind it in grey
-const GREY_SHADER := preload("res://shaders/grey.gdshader")
+var _u := 1.0
 var _top := 0.0
 var _bottom := 0.0
 var _limit: Control
@@ -31,6 +30,9 @@ var _run_big: Label
 var _run_small: Label
 var _speed_big: Label
 var _speed_small: Label
+var _hud_row: GridContainer
+var _run_pill: PanelContainer
+var _speed_pill: PanelContainer
 var _notice: PanelContainer
 var _notice_text: Label
 var _notice_timer := 0.0
@@ -44,21 +46,42 @@ var _answered := false
 var _remaining := 0.0
 var _max := 1.0
 var _hud_nodes: Array[Control] = []
+const SHEET_IN := 0.30
+const SHEET_OUT := 0.22
+var _next_sheet_delay := 0.0
+var _picture: PanelContainer
+var _picture_height := 0.0
+var _picture_tween: Tween
+var _picture_generation := 0
+var _picture_open := false
+var _picture_owner: PanelContainer
+var _picture_icon: Label
+
 
 
 func _ready() -> void:
 	layer = 15
 	_root = Control.new()
-	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_u = Ui.dp(get_viewport())
+	_root.scale = Vector2(_u, _u)
+	_root.size = get_viewport().get_visible_rect().size / _u
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
 	var ins := Ui.insets(get_viewport())
-	_top = ins.top
-	_bottom = ins.bottom
+	_top = ins.top / _u
+	_bottom = ins.bottom / _u
 	_build_hud()
 
 
+func _view_size() -> Vector2:
+	return get_viewport().get_visible_rect().size / _u
+
+
 func _process(delta: float) -> void:
+	_layout_hud()
+	if is_instance_valid(_picture) and is_instance_valid(_picture_owner):
+		_picture.size = Vector2(_view_size().x - 24.0, _picture_height)
+		_picture.position = Vector2(12.0, _picture_owner.position.y - _picture_height - 8.0)
 	if _notice_timer > 0.0:
 		_notice_timer -= delta
 		if _notice_timer <= 0.0:
@@ -86,14 +109,14 @@ func _pill(icon: String, color: Color) -> Array:
 	tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	tex.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(tex)
-	var l := Ui.label("0", 12, 700, Color.WHITE)
+	var l := Ui.scaled_label("0", 12, 700, Color.WHITE)
 	h.add_child(l)
 	return [p, l]
 
 
 func _build_hud() -> void:
-	var w := get_viewport().get_visible_rect().size.x
-	var white := Color("#121212") if snow else Color.WHITE
+	var w := _view_size().x
+	var white := Ui.c("text")
 	# Pause (round, 44 px).
 	var pause := PanelContainer.new()
 	pause.position = Vector2(14, _top + 8)
@@ -114,9 +137,11 @@ func _build_hud() -> void:
 	_root.add_child(pause)
 	_hud_nodes.append(pause)
 	# Counters: limit sign, violations, distance, score (right aligned row).
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
-	row.alignment = BoxContainer.ALIGNMENT_END
+	var row := GridContainer.new()
+	_hud_row = row
+	row.columns = 4
+	row.add_theme_constant_override("h_separation", 4)
+	row.add_theme_constant_override("v_separation", 4)
 	row.position = Vector2(70, _top + 8)
 	row.size = Vector2(w - 70 - 14, 36)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -128,7 +153,7 @@ func _build_hud() -> void:
 	ring.set_border_width_all(4)
 	ring.border_color = Ui.c("red")
 	_limit.add_theme_stylebox_override("panel", ring)
-	_limit_text = Ui.label("60", 12, 800, Color("#1A1A1A"))
+	_limit_text = Ui.scaled_label("60", 12, 800, Color("#1A1A1A"))
 	_limit_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_limit_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_limit.add_child(_limit_text)
@@ -144,28 +169,30 @@ func _build_hud() -> void:
 	_score = s[1]
 	row.add_child(s[0])
 	# Run progress (left) and speed (right).
-	_run_big = Ui.label("0", 26, 800, white)
-	_run_small = Ui.label(" / 20", 12, 800, white)
+	_run_big = Ui.scaled_label("0", 20, 800, white)
+	_run_small = Ui.scaled_label(" / 20", 12, 800, white)
 	var run := HBoxContainer.new()
 	run.add_theme_constant_override("separation", 0)
 	run.position = Vector2(25, _top + 8 + 44 + 22)
 	run.add_child(_run_big)
 	run.add_child(_run_small)
 	run.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(run)
-	_hud_nodes.append(run)
-	_speed_big = Ui.label("0", 26, 800, white)
-	_speed_small = Ui.label(" " + Ui.t("gameSpeedUnit"), 12, 800, white)
+	_run_pill = _metric_pill(run)
+	_root.add_child(_run_pill)
+	_hud_nodes.append(_run_pill)
+	_speed_big = Ui.scaled_label("0", 20, 800, white)
+	_speed_small = Ui.scaled_label(" " + Ui.t("gameSpeedUnit"), 12, 800, white)
 	var sp := HBoxContainer.new()
 	sp.add_theme_constant_override("separation", 0)
 	sp.alignment = BoxContainer.ALIGNMENT_END
 	sp.position = Vector2(w - 14 - 200, _top + 8 + 44 + 22)
-	sp.size = Vector2(200, 30)
+	sp.size = Vector2.ZERO
 	sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sp.add_child(_speed_big)
 	sp.add_child(_speed_small)
-	_root.add_child(sp)
-	_hud_nodes.append(sp)
+	_speed_pill = _metric_pill(sp)
+	_root.add_child(_speed_pill)
+	_hud_nodes.append(_speed_pill)
 	# Violation notice (red pill under the counters).
 	_notice = PanelContainer.new()
 	_notice.add_theme_stylebox_override("panel", Ui.box(Ui.c("red"), 8))
@@ -175,7 +202,7 @@ func _build_hud() -> void:
 	nm.add_theme_constant_override("margin_top", 9)
 	nm.add_theme_constant_override("margin_bottom", 9)
 	_notice.add_child(nm)
-	_notice_text = Ui.label("", 12, 700, Color.WHITE, true)
+	_notice_text = Ui.scaled_label("", 12, 700, Color.WHITE, true)
 	_notice_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	nm.add_child(_notice_text)
 	_notice.position = Vector2(60, _top + 8 + 44 + 22 + 40)
@@ -183,6 +210,40 @@ func _build_hud() -> void:
 	_notice.visible = false
 	_notice.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_notice)
+
+
+func _metric_pill(content: HBoxContainer) -> PanelContainer:
+	var pill := PanelContainer.new()
+	pill.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 12))
+	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var m := MarginContainer.new()
+	m.add_theme_constant_override("margin_left", 10)
+	m.add_theme_constant_override("margin_right", 10)
+	m.add_theme_constant_override("margin_top", 4)
+	m.add_theme_constant_override("margin_bottom", 4)
+	pill.add_child(m)
+	m.add_child(content)
+	return pill
+
+
+func _layout_hud() -> void:
+	if _hud_row == null:
+		return
+	var width := _view_size().x
+	_hud_row.columns = 4
+	var needed := _hud_row.get_combined_minimum_size()
+	var separate_row := needed.x > width - 84.0
+	if needed.x > width - 28.0:
+		_hud_row.columns = 2
+		needed = _hud_row.get_combined_minimum_size()
+	_hud_row.size = needed
+	_hud_row.position = Vector2(width - 14.0 - needed.x, _top + 60.0 if separate_row else _top + 8.0)
+	var metric_y := maxf(_top + 64.0, _hud_row.position.y + needed.y + 10.0)
+	_run_pill.size = _run_pill.get_combined_minimum_size()
+	_speed_pill.size = _speed_pill.get_combined_minimum_size()
+	_run_pill.position = Vector2(14.0, metric_y)
+	_speed_pill.position = Vector2(width - 14.0 - _speed_pill.size.x, metric_y)
+	_notice.position.y = metric_y + maxf(_run_pill.size.y, _speed_pill.size.y) + 8.0
 
 
 func set_hud(speed_kmh: int, limit_kmh, violations: int, distance_m: int, score: int, answered: int, total: int) -> void:
@@ -200,7 +261,7 @@ func set_hud(speed_kmh: int, limit_kmh, violations: int, distance_m: int, score:
 ## A violation notice for a few seconds (game_hud.dart `notice`).
 func show_notice(type: String, seconds := 3.0) -> void:
 	var key: String = {
-		"oncoming": "gameOncoming", "one_way": "gameOneWayAgainst", "roadworks": "gameRoadworksHit",
+		"illegal_maneuver": "gameIllegalManeuver", "oncoming": "gameOncoming", "one_way": "gameOneWayAgainst", "roadworks": "gameRoadworksHit",
 		"collision": "gameCollision", "offroad": "gameOffroad", "priority": "gamePriorityViolation",
 		"speeding": "gameSpeeding", "overtaking": "gameOvertakingProhibited", "pedestrian": "gamePedestrianYield",
 		"railway": "gameRailwayViolation", "stop": "gameStopViolation", "red_light": "gameRedLightViolation",
@@ -239,7 +300,7 @@ func show_tip(text: String, step: int, last: bool) -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
 	m.add_child(box)
-	box.add_child(Ui.label(text, 15, 500, Ui.c("text"), true))
+	box.add_child(Ui.scaled_label(text, 15, 500, Ui.c("text"), true))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	box.add_child(row)
@@ -254,7 +315,7 @@ func show_tip(text: String, step: int, last: bool) -> void:
 	row.add_child(spacer)
 	var button := PanelContainer.new()
 	button.add_theme_stylebox_override("panel", Ui.box(Ui.c("accent"), 10))
-	var bl := Ui.label(Ui.t("gameTipDone") if last else Ui.t("gameTipNext"), 14, 700, Color.WHITE)
+	var bl := Ui.scaled_label(Ui.t("gameTipDone") if last else Ui.t("gameTipNext"), 14, 700, Color.WHITE)
 	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var bm := MarginContainer.new()
 	bm.add_theme_constant_override("margin_left", 14)
@@ -291,7 +352,7 @@ func show_gas_hint(text: String) -> void:
 		m.add_theme_constant_override("margin_top", 8)
 		m.add_theme_constant_override("margin_bottom", 8)
 		_gas_hint.add_child(m)
-		m.add_child(Ui.label(text, 13, 600, Ui.c("text")))
+		m.add_child(Ui.scaled_label(text, 13, 600, Ui.c("text")))
 	_gas_hint.visible = true
 
 
@@ -308,13 +369,15 @@ func _tap(node: Control, fn: Callable) -> void:
 
 
 func _is_tap(e: InputEvent) -> bool:
-	return (e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT) \
-		or (e is InputEventScreenTouch and e.pressed)
+	# Phones also emit mouse events for a finger: handle one event stream only.
+	if DisplayServer.is_touchscreen_available():
+		return e is InputEventScreenTouch and e.pressed
+	return e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT
 
 
 func _sheet_shell(max_ratio: float) -> Array:
-	var h := get_viewport().get_visible_rect().size.y
-	var w := get_viewport().get_visible_rect().size.x
+	var h := _view_size().y
+	var w := _view_size().x
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 20, true))
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -345,22 +408,30 @@ func _sheet_shell(max_ratio: float) -> Array:
 
 
 func _place_sheet(panel: PanelContainer) -> void:
-	var size := get_viewport().get_visible_rect().size
+	var size := _view_size()
 	var scroll: ScrollContainer = panel.get_meta("scroll")
 	var box: VBoxContainer = panel.get_meta("box")
-	var available_h := size.y - (_top + 100.0)
-	var max_h: float = minf(float(panel.get_meta("max_h")), available_h)
+	var max_h := minf(float(panel.get_meta("max_h")), size.y - (_top + 100.0))
+	var delay := _next_sheet_delay
+	_next_sheet_delay = 0.0
+	# Resolve wrapping below the viewport; never expose the provisional maximum height.
+	panel.position = Vector2(0, size.y)
 	panel.size = Vector2(size.x, max_h)
-	panel.position = Vector2(0, size.y - max_h)
-	# The sheet is sized to fit all content cleanly without scrolling.
+	panel.modulate.a = 0.0
 	await get_tree().process_frame
-	if not is_instance_valid(panel):
+	await get_tree().process_frame
+	if not is_instance_valid(panel) or bool(panel.get_meta("closing", false)):
 		return
-	var content_h := box.get_combined_minimum_size().y + 12 + 10 + _bottom
-	var height := minf(content_h, max_h)
-	scroll.custom_minimum_size.y = height - 22 - _bottom
+	var height := minf(box.get_combined_minimum_size().y + 22.0 + _bottom, max_h)
+	scroll.custom_minimum_size.y = maxf(0.0, height - 22.0 - _bottom)
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	panel.size = Vector2(size.x, height)
-	panel.position = Vector2(0, size.y - height)
+	panel.modulate.a = 1.0
+	var tween := create_tween()
+	panel.set_meta("motion", tween)
+	if delay > 0.0:
+		tween.tween_interval(delay)
+	tween.tween_property(panel, "position:y", size.y - height, SHEET_IN).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
 func _ticket_chip(text: String, scene_id := "") -> PanelContainer:
@@ -369,17 +440,20 @@ func _ticket_chip(text: String, scene_id := "") -> PanelContainer:
 	var m := MarginContainer.new()
 	m.add_theme_constant_override("margin_left", 9)
 	m.add_theme_constant_override("margin_right", 9)
-	m.add_theme_constant_override("margin_top", 4)
-	m.add_theme_constant_override("margin_bottom", 4)
+	m.add_theme_constant_override("margin_top", 6)
+	m.add_theme_constant_override("margin_bottom", 6)
 	p.add_child(m)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	m.add_child(row)
 	var has_picture := scene_id != "" and picture_name(scene_id) != ""
-	m.add_child(Ui.label(text + ("  ▸ " + Ui.t("ticket") if has_picture else ""), 12, 600, Ui.c("accent") if has_picture else Ui.c("secondary")))
+	row.add_child(Ui.scaled_label(text, 12, 600, Ui.c("accent") if has_picture else Ui.c("secondary"), true))
+	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if has_picture:
-		# Tapping the chip shows the original ticket picture the scene was made from.
-		p.mouse_filter = Control.MOUSE_FILTER_STOP
-		p.gui_input.connect(func(e):
-			if (e is InputEventScreenTouch and e.pressed) or (e is InputEventMouseButton and e.pressed):
-				_show_picture(scene_id))
+		var icon := Ui.icon(0xf80d, 16, Ui.c("accent")) # image
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(icon)
+		_tap(p, func(): _toggle_picture(scene_id, p, icon))
 	return p
 
 
@@ -393,38 +467,81 @@ static func picture_name(scene_id: String) -> String:
 	return str(_pictures.get(scene_id, ""))
 
 
-## The original ticket picture over the game; a tap anywhere closes it.
-func _show_picture(scene_id: String) -> void:
-	# Kept as webp (importer "keep"): decoded only when shown. On the web the
-	# picture is fetched first (PackFiles), so the tap may show it a moment later.
+## The database photograph unfolds above the current card; the chip toggles it.
+func _toggle_picture(scene_id: String, chip: Control, icon: Label) -> void:
+	if _picture_open:
+		_close_picture()
+		return
+	var owner := _card if _card != null else _sheet
+	if owner == null or bool(owner.get_meta("closing", false)):
+		return
+	_picture_generation += 1
+	var generation := _picture_generation
+	_picture_open = true
+	_picture_owner = owner
+	_picture_icon = icon
+	icon.text = char(0xf647) # close
 	var res := "res://questions/%s.webp" % picture_name(scene_id)
 	PackFiles.fetch(res, func(ok: bool):
-		if ok and is_instance_valid(self):
-			_present_picture(PackFiles.bytes(res)))
+		if not is_instance_valid(self) or generation != _picture_generation or not is_instance_valid(chip):
+			return
+		var bytes := PackFiles.bytes(res) if ok else PackedByteArray()
+		var img := Image.new()
+		if bytes.is_empty() or img.load_webp_from_buffer(bytes) != OK:
+			_close_picture()
+			return
+		_present_picture(ImageTexture.create_from_image(img)))
 
 
-func _present_picture(bytes: PackedByteArray) -> void:
-	var img := Image.new()
-	var tex: Texture2D = ImageTexture.create_from_image(img) if img.load_webp_from_buffer(bytes) == OK else null
-	if tex == null:
-		return
-	var shade := ColorRect.new()
-	shade.color = Color(0, 0, 0, 0.82)
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+func _present_picture(tex: Texture2D) -> void:
+	if is_instance_valid(_picture):
+		_picture.free()
+	_picture = PanelContainer.new()
+	_picture.add_theme_stylebox_override("panel", Ui.box(Color.WHITE, 12))
+	_picture.clip_contents = true
+	_picture.mouse_filter = Control.MOUSE_FILTER_STOP
+	# A regular Control keeps the image's minimum height from forcing its reveal open.
+	var content := Control.new()
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_picture.add_child(content)
+	var view := _view_size()
+	var hud_bottom := maxf(_run_pill.position.y + _run_pill.size.y, _speed_pill.position.y + _speed_pill.size.y)
+	var available := maxf(12.0, _picture_owner.position.y - hud_bottom - 20.0)
+	var height := minf((view.x - 24.0) * tex.get_height() / tex.get_width(), minf(view.y * 0.28, available))
 	var pic := TextureRect.new()
 	pic.texture = tex
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	pic.set_anchors_preset(Control.PRESET_FULL_RECT)
-	pic.offset_left = 12
-	pic.offset_right = -12
+	pic.size = Vector2(view.x - 24.0, height)
 	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	shade.add_child(pic)
-	shade.gui_input.connect(func(e):
-		if (e is InputEventScreenTouch and e.pressed) or (e is InputEventMouseButton and e.pressed):
-			shade.queue_free())
-	add_child(shade)
+	content.add_child(pic)
+	_root.add_child(_picture)
+	_picture_height = 0.0
+	if _picture_tween != null and _picture_tween.is_valid():
+		_picture_tween.kill()
+	_picture_tween = create_tween()
+	_picture_tween.tween_property(self, "_picture_height", height, SHEET_IN).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+
+func _close_picture() -> void:
+	_picture_open = false
+	_picture_generation += 1 # cancel an in-flight web image request
+	if is_instance_valid(_picture_icon):
+		_picture_icon.text = char(0xf80d)
+	_picture_icon = null
+	if _picture_tween != null and _picture_tween.is_valid():
+		_picture_tween.kill()
+	if not is_instance_valid(_picture):
+		return
+	var previous := _picture
+	_picture_tween = create_tween()
+	_picture_tween.tween_property(self, "_picture_height", 0.0, SHEET_OUT).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	_picture_tween.tween_callback(func():
+		if is_instance_valid(previous):
+			previous.queue_free()
+		if _picture == previous:
+			_picture = null
+			_picture_owner = null)
 
 
 ## The question (scene.json text for the current language).
@@ -450,9 +567,9 @@ func show_question(text: Dictionary, seconds: float) -> void:
 	var head := HBoxContainer.new()
 	head.add_child(_ticket_chip(text.ticket, str(text.get("id", ""))))
 	var sp := Control.new()
-	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sp.custom_minimum_size.x = 8
 	head.add_child(sp)
-	_timer_label = Ui.label("", 13, 700, Ui.c("text"))
+	_timer_label = Ui.scaled_label("", 13, 700, Ui.c("text"))
 	head.add_child(_timer_label)
 	box.add_child(head)
 	_timer_bar = ProgressBar.new()
@@ -466,7 +583,7 @@ func show_question(text: Dictionary, seconds: float) -> void:
 	box.add_child(_timer_bar)
 
 	var title_size: int = 13 if very_dense else (14 if dense else 15)
-	box.add_child(Ui.label(text.title, title_size, 600, Ui.c("text"), true))
+	box.add_child(Ui.scaled_label(text.title, title_size, 600, Ui.c("text"), true))
 
 	_options.clear()
 	for i in text.options.size():
@@ -499,13 +616,13 @@ func _option(i: int, text: String, dense: bool = false, very_dense: bool = false
 	badge.custom_minimum_size = Vector2(badge_size, badge_size)
 	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	badge.add_theme_stylebox_override("panel", Ui.box(Ui.c("gray"), badge_size / 2))
-	var n := Ui.label(str(i + 1), 11 if very_dense else 12, 600, Ui.c("text"))
+	var n := Ui.scaled_label(str(i + 1), 11 if very_dense else 12, 600, Ui.c("text"))
 	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	n.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge.add_child(n)
 	h.add_child(badge)
 	var font_size: int = 12 if very_dense else (13 if dense else 14)
-	h.add_child(Ui.label(text, font_size, 500, Ui.c("text"), true))
+	h.add_child(Ui.scaled_label(text, font_size, 500, Ui.c("text"), true))
 	_tap(p, func(): _choose(i))
 	return p
 
@@ -551,7 +668,8 @@ func counting() -> bool:
 
 
 func card_height() -> float:
-	return _card.size.y if _card != null else 0.0
+	var panel := _card if _card != null else _sheet
+	return maxf(0.0, _view_size().y - panel.position.y) * _u if is_instance_valid(panel) else 0.0
 
 
 func tick(delta: float) -> bool:
@@ -571,14 +689,27 @@ func _update_timer() -> void:
 
 
 func hide_cards() -> void:
-	if _grey != null:
-		_grey.queue_free()
-		_grey = null
+	_close_picture()
+	_answered = true
 	for n in [_card, _sheet]:
-		if n != null:
-			n.queue_free()
+		if is_instance_valid(n):
+			_next_sheet_delay = SHEET_OUT
+			_slide_out(n)
 	_card = null
 	_sheet = null
+
+
+func _slide_out(panel: PanelContainer) -> void:
+	panel.set_meta("closing", true)
+	for node in panel.find_children("*", "Control", true, false):
+		node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var motion: Tween = panel.get_meta("motion") if panel.has_meta("motion") else null
+	if motion != null and motion.is_valid():
+		motion.kill()
+	var tween := create_tween()
+	tween.tween_property(panel, "position:y", _view_size().y + 1.0, SHEET_OUT).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tween.tween_callback(panel.queue_free)
 
 
 # --- explanation sheet ----------------------------------------------------------
@@ -602,7 +733,7 @@ func show_explanation(text: Dictionary, correct: int, timed_out: bool) -> void:
 	cm.add_theme_constant_override("margin_top", 4)
 	cm.add_theme_constant_override("margin_bottom", 4)
 	chip.add_child(cm)
-	cm.add_child(Ui.label("✕ " + Ui.t("gameTimeUp" if timed_out else "gameMistake"), 12, 700, Ui.c("red")))
+	cm.add_child(Ui.scaled_label("✕ " + Ui.t("gameTimeUp" if timed_out else "gameMistake"), 12, 700, Ui.c("red")))
 	head.add_child(chip)
 	box.add_child(head)
 	if correct >= 0 and correct < text.options.size():
@@ -614,13 +745,13 @@ func show_explanation(text: Dictionary, correct: int, timed_out: bool) -> void:
 		om.add_theme_constant_override("margin_top", 6 if dense else 10)
 		om.add_theme_constant_override("margin_bottom", 6 if dense else 10)
 		ok.add_child(om)
-		om.add_child(Ui.label("✓ %s: %s" % [Ui.t("gameCorrectAnswer"), text.options[correct]], 13 if dense else 14, 600, Ui.c("text"), true))
+		om.add_child(Ui.scaled_label("✓ %s: %s" % [Ui.t("gameCorrectAnswer"), text.options[correct]], 13 if dense else 14, 600, Ui.c("text"), true))
 		box.add_child(ok)
-	box.add_child(Ui.label(text.explanation, 12 if dense else 13, 500, Ui.c("text"), true))
+	box.add_child(Ui.scaled_label(text.explanation, 12 if dense else 13, 500, Ui.c("text"), true))
 	var btn := PanelContainer.new()
 	btn.custom_minimum_size = Vector2(0, 44 if dense else 50)
 	btn.add_theme_stylebox_override("panel", Ui.box(Ui.c("accent"), 12))
-	var bl := Ui.label(Ui.t("gameContinue"), 15, 700, Color.WHITE)
+	var bl := Ui.scaled_label(Ui.t("gameContinue"), 15, 700, Color.WHITE)
 	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	btn.add_child(bl)
@@ -637,49 +768,29 @@ func show_result(summary: Dictionary) -> void:
 	var shell := _sheet_shell(0.5)
 	_sheet = shell[0]
 	var box: VBoxContainer = shell[1]
-	box.add_child(Ui.label(Ui.t("gameOver"), 18, 800, Ui.c("text")))
-	box.add_child(Ui.label("%s: %s" % [Ui.t("gameCorrectAnswers"), Ui.t("gameAnswersOf", { "correct": summary.correct, "total": summary.answered })], 14, 600, Ui.c("text"), true))
-	box.add_child(Ui.label("%s: %d" % [Ui.t("gameScore"), summary.score], 14, 600, Ui.c("text")))
-	box.add_child(Ui.label(Ui.t("gameNoViolations") if summary.violations == 0 else "%s: %d" % [Ui.t("gameViolations"), summary.violations], 14, 500, Ui.c("secondary")))
+	box.add_child(Ui.scaled_label(Ui.t("gameOver"), 18, 800, Ui.c("text")))
+	box.add_child(Ui.scaled_label("%s: %s" % [Ui.t("gameCorrectAnswers"), Ui.t("gameAnswersOf", { "correct": summary.correct, "total": summary.answered })], 14, 600, Ui.c("text"), true))
+	box.add_child(Ui.scaled_label("%s: %d" % [Ui.t("gameScore"), summary.score], 14, 600, Ui.c("text")))
+	box.add_child(Ui.scaled_label(Ui.t("gameNoViolations") if summary.violations == 0 else "%s: %d" % [Ui.t("gameViolations"), summary.violations], 14, 500, Ui.c("secondary")))
 	box.add_child(_wide_button(Ui.t("gameExit"), Ui.c("accent"), Color.WHITE, func(): exit_pressed.emit()))
 	_root.add_child(_sheet)
 	_place_sheet(_sheet)
 
 
-## Pause: back to the road or leave the run (the app keeps its score).
+## The world opens the garage for pause; keep legacy callers free of overlays.
 func show_pause() -> void:
-	hide_cards()
-	# The world behind the pause turns black and white (the picture as it is, desaturated).
-	_grey = ColorRect.new()
-	_grey.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_grey.mouse_filter = Control.MOUSE_FILTER_STOP
-	var mat := ShaderMaterial.new()
-	mat.shader = GREY_SHADER
-	_grey.material = mat
-	_root.add_child(_grey)
-	var shell := _sheet_shell(0.5)
-	_sheet = shell[0]
-	var box: VBoxContainer = shell[1]
-	box.add_child(Ui.label(Ui.t("gamePause"), 18, 800, Ui.c("text")))
-	box.add_child(_wide_button(Ui.t("gameLobbyContinue"), Ui.c("accent"), Color.WHITE, func(): resume_pressed.emit()))
-	box.add_child(_wide_button(Ui.t("gameExit"), Ui.c("gray"), Ui.c("text"), func(): exit_pressed.emit()))
-	_root.add_child(_sheet)
-	_place_sheet(_sheet)
+	pass
 
 
-## Back to colour: the pause is over.
 func hide_pause() -> void:
-	if _grey != null:
-		_grey.queue_free()
-	_grey = null
-	hide_cards()
+	pass
 
 
 func _wide_button(text: String, bg: Color, fg: Color, action: Callable) -> PanelContainer:
 	var btn := PanelContainer.new()
 	btn.custom_minimum_size = Vector2(0, 50)
 	btn.add_theme_stylebox_override("panel", Ui.box(bg, 12))
-	var bl := Ui.label(text, 15, 700, fg)
+	var bl := Ui.scaled_label(text, 15, 700, fg)
 	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	btn.add_child(bl)

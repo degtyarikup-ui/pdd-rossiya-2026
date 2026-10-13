@@ -58,7 +58,10 @@ func _init(parent: Node3D, scenery: Scenery, chunk_length: float, chunks: int) -
 			if prop.begins_with(prefix):
 				cap = caps[prefix]
 		var shadows: bool = prop.begins_with("trees/") or prop.begins_with("street/")
-		pools[prop] = Scenery.Pool.new(parent, Models.mesh_of("res://scenery/%s.glb" % prop), sc.material, chunks, cap, shadows)
+		pools[prop] = Scenery.Pool.new(parent, Models.mesh_of("res://scenery/%s.glb" % prop), sc.occluder_material if prop.begins_with("buildings/") else sc.material, chunks, cap, shadows)
+	pools["tree_contact"] = Scenery.Pool.new(parent, Models.contact_mesh(), Models.contact_material(), chunks, rows * 30, false)
+	for prop in pools:
+		if prop.begins_with("buildings/"): sc.register_building_pool(pools[prop].node)
 	for id in Models.CARS:
 		parked[id] = Scenery.Pool.new(parent, Models.mesh_of("res://models/traffic/%s.glb" % id), Models.baked_material(), chunks, rows, true)
 
@@ -252,6 +255,7 @@ func _tree(slot: int, rng: RandomNumberGenerator, pos: Vector3, kind := "", scal
 		_: tint = sc.color("canopy", rng.randi())
 	var s := scale * (0.8 + rng.randf() * 0.5)
 	_put(slot, "trees/%s_0" % kind, pos, rng.randf() * TAU, Vector3(s, s, s), tint)
+	_put(slot, "tree_contact", Vector3(pos.x, 0.012, pos.z), 0.0, Vector3(1.4 * s, 1.0, 1.4 * s))
 
 
 ## `pos.x` is the plot's near edge (the facade towards the road) unless
