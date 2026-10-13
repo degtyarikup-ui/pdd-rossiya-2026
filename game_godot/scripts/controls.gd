@@ -41,7 +41,7 @@ func _ready() -> void:
 	add_child(root)
 	_add(root, "left", "res://icons/steer_left.svg", "", Vector2(64, 64), CARD, ACCENT, 14, 30)
 	_add(root, "right", "res://icons/steer_right.svg", "", Vector2(64, 64), CARD, ACCENT, 14, 30)
-	_add(root, "brake", "res://icons/pedal_brake.svg", "", Vector2(88, 60), DARK, Color.WHITE, 14, 32)
+	_add(root, "brake", "res://icons/pedal_brake.svg", "", Vector2(64, 64), DARK, Color.WHITE, 14, 32)
 	_add(root, "gas", "res://icons/pedal_gas.svg", "", Vector2(88, 88), CARD, Color("#121212"), 44, 44)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
@@ -166,8 +166,8 @@ func _press(name: String, down: bool) -> void:
 			if down:
 				_held_dirs.append(dir)
 			steer = float(_held_dirs[-1]) if _held_dirs.size() > 0 else 0.0
-	if down:
-		Input.vibrate_handheld(15)
+	if down and GameSound.haptics:
+		Input.vibrate_handheld(5, 0.12)
 
 
 func _notification(what: int) -> void:

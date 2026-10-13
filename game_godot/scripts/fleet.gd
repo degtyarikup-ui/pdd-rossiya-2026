@@ -124,18 +124,17 @@ static func turn_side(path: Array) -> String:
 	return "L" if ang > 0.0 else "R"
 
 
-## Turn indicators of a junction participant: amber lamps at the front and rear corner of one side,
-## blinking like the player's. hl, hw: the half-length and half-width of the vehicle (m, its own frame).
+## Turn indicators pulse the authored lens surfaces; dimensions stay for the collision API.
 static func add_blinkers(vehicle: Node3D, side: String, hl: float, hw: float, height := 0.75) -> void:
-	var signals := _signals(vehicle, hl, hw, height)
+	var signals := _signals(vehicle)
 	signals.side = side
 
 
-## A short hazard indication after contact. Lamps are created once, only for vehicles that need them.
+## A short hazard indication after contact, using the original model's lights.
 static func hazards(vehicle: Node3D, hl: float, hw: float, seconds := 3.0) -> void:
 	if not is_instance_valid(vehicle):
 		return
-	var signals := _signals(vehicle, hl / maxf(0.01, absf(vehicle.scale.z)), hw / maxf(0.01, absf(vehicle.scale.x)), 0.75 / maxf(0.01, absf(vehicle.scale.y)))
+	var signals := _signals(vehicle)
 	signals.hazard_left = seconds
 
 
@@ -156,28 +155,42 @@ static func hazard_obstacle(body) -> void:
 		car.hazards_left = 3.0
 		if car.has("node"):
 			hazards(car.node, float(car.get("len", 4.4)) * 0.5, 0.95)
-		elif car.has("lamps"):
-			hazards(car.lamps, float(car.get("len", 4.4)) * 0.5, 0.95)
 
 
-static func _signals(vehicle: Node3D, hl: float, hw: float, height: float) -> Signals:
+static func _signals(vehicle: Node3D) -> Signals:
 	var existing := vehicle.get_node_or_null("vehicle_signals") as Signals
 	if existing != null:
 		return existing
 	var signals := Signals.new()
 	signals.name = "vehicle_signals"
-	for side in ["L", "R"]:
-		var lamps: Array = []
-		for z in [hl - 0.05, -hl + 0.05]:
-			lamps.append(_lamp(vehicle, Vector3(hw * (0.92 if side == "L" else -0.92), height, z), Color("#FFB300")))
-		signals.lamps[side] = lamps
+	for mesh: MeshInstance3D in vehicle.find_children("*", "MeshInstance3D", true, false):
+		if mesh.mesh == null:
+			continue
+		var transform := Transform3D.IDENTITY
+		var cursor: Node = mesh
+		while cursor != vehicle and cursor != null:
+			if cursor is Node3D:
+				transform = cursor.transform * transform
+			cursor = cursor.get_parent()
+		for i in mesh.mesh.get_surface_count():
+			var original := mesh.get_active_material(i) as BaseMaterial3D
+			if original == null or original.resource_name != "lens":
+				continue
+			var material := ShaderMaterial.new()
+			material.shader = preload("res://shaders/vehicle_lens.gdshader")
+			material.set_shader_parameter("lens_colour", original.albedo_color)
+			material.set_shader_parameter("vertex_colour", original.vertex_color_use_as_albedo)
+			material.set_shader_parameter("vehicle_x_axis", Vector3(transform.basis.x.x, transform.basis.y.x, transform.basis.z.x))
+			material.set_shader_parameter("vehicle_x_origin", transform.origin.x)
+			mesh.set_surface_override_material(i, material)
+			signals.materials.append(material)
 	vehicle.add_child(signals)
 	return signals
 
 
-## Matching the player's amber halos without shadow-casting point lights or post-processing.
+## Clocks are frozen with their vehicle during pause; no light geometry is added.
 class Signals extends Node:
-	var lamps := {}
+	var materials: Array[ShaderMaterial] = []
 	var side := ""
 	var hazard_left := 0.0
 	var clock := 0.0
@@ -186,11 +199,9 @@ class Signals extends Node:
 		clock += delta
 		hazard_left = maxf(0.0, hazard_left - delta)
 		var pulse := int(clock * 3.0) % 2 == 0
-		for key in lamps:
-			var on: bool = pulse and (hazard_left > 0.0 or key == side)
-			for m: StandardMaterial3D in lamps[key]:
-				RoadEvent.light_lamp(m, on)
-				m.albedo_color = Color("#FFB300") if on else Color("#7A5200")
+		for material in materials:
+			material.set_shader_parameter("left_on", pulse and (hazard_left > 0.0 or side == "L"))
+			material.set_shader_parameter("right_on", pulse and (hazard_left > 0.0 or side == "R"))
 
 
 ## A traffic controller standing at a junction in one of his signals (the mini-game's model).

@@ -1270,6 +1270,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gamePause => 'Кідірту';
 
   @override
+  String get gameExitToMenu => 'Мәзірге шығу';
+
+  @override
   String get gameLobbyControls => 'Басқару';
 
   @override

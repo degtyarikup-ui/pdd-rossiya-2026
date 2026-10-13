@@ -1,4 +1,4 @@
-## Real-world UI integration: owned paint, stationary garage, pause/resume driving/question/explanation.
+## Real-world UI integration: owned paint, immediate start, pause/resume driving/question/explanation.
 ## Add --out=<png> with a rendering Godot run for the actual scene and expanded question photo.
 extends SceneTree
 
@@ -38,16 +38,16 @@ func _pause_cycle(world: Node, label: String) -> void:
 	var sheet: Control = world.ui._sheet
 	var picture: Control = world.ui._picture
 	world.ui.pause_pressed.emit()
-	check(world.lobby_mode and world.paused, label + ": pause opens garage")
-	check(world.lobby._start_label.text == Ui.t("gameLobbyContinue"), label + ": garage says Continue")
+	check(world.pause_menu != null and world.paused, label + ": pause opens menu")
+	check(world.pause_menu.current().id == world.chosen.id, label + ": menu preserves selection")
 	check(not world.controls.active, label + ": paused controls inactive")
 	check(world.ui.process_mode == Node.PROCESS_MODE_DISABLED, label + ": hidden UI motion frozen")
 	world._process(0.5)
 	await create_timer(0.25).timeout
 	check(world.phase == phase, label + ": paused phase preserved")
 	check(is_equal_approx(world.ui.remaining_seconds(), remaining), label + ": countdown frozen")
-	world.lobby._try_start()
-	check(not world.lobby_mode and not world.paused, label + ": Continue returns to ride")
+	world.pause_menu.resume_requested.emit()
+	check(world.pause_menu == null and not world.paused, label + ": Continue returns to ride")
 	check(world.player.transform.is_equal_approx(transform), label + ": car pose restored")
 	check(world.camera.transform.is_equal_approx(camera) and is_equal_approx(world.camera.size, camera_size), label + ": camera restored")
 	check(world.drive.pos.is_equal_approx(drive_pos) and is_equal_approx(world.drive.speed, speed), label + ": position and speed preserved")
@@ -61,28 +61,29 @@ func _run() -> void:
 	for arg in args:
 		if arg.begins_with("--out="):
 			out = arg.trim_prefix("--out=")
-	var garage := {"cars":[{"id":"hatch", "name":"Хэтчбек", "paints":[{"paint":"red", "name":"Красный", "hex":"#ED4621"}, {"paint":"blue", "name":"Синий", "hex":"#317ED4"}]}], "texts":{"runs":"Заезды 3 из 3", "record":"Рекорд", "colour":"Цвет", "start":"Начать заезд", "no_runs":"Нет заездов"}, "record":4387, "can_start":true}
+	var options := {"cars":[{"id":"hatch", "name":"Хэтчбек", "paints":[{"paint":"red", "name":"Красный", "hex":"#ED4621"}, {"paint":"blue", "name":"Синий", "hex":"#317ED4"}]}], "texts":{"runs":"Заезды 3 из 3", "record":"Рекорд", "colour":"Цвет", "start":"Начать заезд", "no_runs":"Нет заездов"}, "record":4387, "can_start":true}
+	options.cars.append({"id":"cyber", "name":"Кибертрак", "paints":options.cars[0].paints.duplicate(true)})
 	# Feed the normal embedded-host argument contract; all test output remains in scratch/.
-	Host.io = ProjectSettings.globalize_path("res://../scratch/garage-ui-regression")
+	Host.io = ProjectSettings.globalize_path("res://../scratch/ride-ui-regression")
 	DirAccess.make_dir_recursive_absolute(Host.io)
-	Host.io_args = args + ["--garage=" + JSON.stringify(garage), "--mute", "--lang=ru"]
+	Host.io_args = args + ["--ride-options=" + JSON.stringify(options), "--mute", "--lang=ru"]
 	var world: Node = load("res://main.tscn").instantiate()
 	root.add_child(world)
 	world.set_process(false)
 	world.hud.visible = false
 	for i in 4:
 		await process_frame
-	check(world.lobby_mode, "Normal game opens its garage")
-	world.lobby._toggle_paints()
-	world.lobby._select_paint(1)
-	check(_painted(world, Color("#317ED4")), "Palette changes the actual current car material")
-	var yaw: float = world.player.rotation.y
-	world._lobby_frame(2.0)
-	check(is_equal_approx(world.player.rotation.y, yaw), "Garage car stays still without a finger drag")
-	world.lobby.spin.emit(0.35)
-	world._lobby_frame(0.0)
-	check(is_equal_approx(world.player.rotation.y, yaw + 0.35), "Finger-drag signal turns the actual car")
-	world.lobby._try_start()
+	check(world.run_started and not world.paused and world.pause_menu == null, "Normal game starts immediately")
+	world._on_pause()
+	world.pause_menu._select_paint(1)
+	check(_painted(world, Color("#317ED4")), "Pause palette changes the actual current car material")
+	world.pause_menu._change_car(1)
+	check(world.chosen.id == "cyber" and world.chosen.paint == "blue", "Pause applies another owned model and preserves available paint")
+	world.pause_menu._switch.button_pressed = true
+	check(world.sound.enabled, "Pause sound switch enables the game")
+	world.pause_menu._switch.button_pressed = false
+	check(not world.sound.enabled and world._exit_summary().sound == false, "Pause mute is returned for persistent app settings")
+	world.pause_menu.resume_requested.emit()
 	check(world.chosen.paint == "blue" and _painted(world, Color("#317ED4")), "Selected paint remains on the actual ride car")
 	world.drive.speed = 8.5
 	await _pause_cycle(world, "Driving")
@@ -135,7 +136,25 @@ func _run() -> void:
 	await _pause_cycle(world, "Explanation")
 	world.queue_free()
 	await process_frame
+	options.resume = {"answered":4, "correct":3, "score":126, "streak":1, "violations":2, "distance_m":780, "mistakes":["ticket_10_13"]}
+	options.selected = {"id":"cyber", "paint":"blue"}
+	options.sound = false
+	options.can_start = true # Flutter allows an existing ride even at zero available new runs.
+	Host.io_args = args + ["--ride-options=" + JSON.stringify(options), "--mute", "--lang=ru"]
+	world = load("res://main.tscn").instantiate()
+	root.add_child(world)
+	world.set_process(false)
+	check(world.run_started and world.resumed and not world.paused, "Saved ride resumes immediately without a new run")
+	check(world.run.answered == 4 and world.run.score == 126 and world.chosen.id == "cyber", "Saved counters and selected model restored")
+	world._process(0.0)
+	check(world.run.distance_m == 780, "Saved distance survives the first frame")
+	world._on_pause()
+	world.pause_menu.resume_requested.emit()
+	check(world._exit_summary().resumed and not world._exit_summary().sound, "Pause preserves resumed accounting and muted preference")
+	world.queue_free()
+	await process_frame
+	await process_frame
 	Host.io = ""
 	Host.io_args = []
-	print("garage_resume_check: ", "PASS" if failures == 0 else "%d failures" % failures)
+	print("ride_pause_check: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(0 if failures == 0 else 1)

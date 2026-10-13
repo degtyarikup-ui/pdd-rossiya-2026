@@ -116,7 +116,7 @@ func _pill(icon: String, color: Color) -> Array:
 
 func _build_hud() -> void:
 	var w := _view_size().x
-	var white := Ui.c("text")
+	var white := Color.WHITE
 	# Pause (round, 44 px).
 	var pause := PanelContainer.new()
 	pause.position = Vector2(14, _top + 8)
@@ -213,14 +213,17 @@ func _build_hud() -> void:
 
 
 func _metric_pill(content: HBoxContainer) -> PanelContainer:
+	for label: Label in content.get_children():
+		label.add_theme_constant_override("outline_size", 0)
+		label.add_theme_color_override("font_shadow_color", Color.TRANSPARENT)
 	var pill := PanelContainer.new()
-	pill.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 12))
+	pill.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var m := MarginContainer.new()
-	m.add_theme_constant_override("margin_left", 10)
-	m.add_theme_constant_override("margin_right", 10)
-	m.add_theme_constant_override("margin_top", 4)
-	m.add_theme_constant_override("margin_bottom", 4)
+	m.add_theme_constant_override("margin_left", 0)
+	m.add_theme_constant_override("margin_right", 0)
+	m.add_theme_constant_override("margin_top", 0)
+	m.add_theme_constant_override("margin_bottom", 0)
 	pill.add_child(m)
 	m.add_child(content)
 	return pill
@@ -244,6 +247,11 @@ func _layout_hud() -> void:
 	_run_pill.position = Vector2(14.0, metric_y)
 	_speed_pill.position = Vector2(width - 14.0 - _speed_pill.size.x, metric_y)
 	_notice.position.y = metric_y + maxf(_run_pill.size.y, _speed_pill.size.y) + 8.0
+	# Wrapped labels can retain a huge minimum height from their initial zero-width layout.
+	# Give the text its final width, then shrink the standalone panel every frame.
+	_notice.position.x = 24.0
+	_notice_text.size.x = maxf(1.0, width - 72.0)
+	_notice.size = Vector2(width - 48.0, 0.0)
 
 
 func set_hud(speed_kmh: int, limit_kmh, violations: int, distance_m: int, score: int, answered: int, total: int) -> void:
@@ -775,15 +783,6 @@ func show_result(summary: Dictionary) -> void:
 	box.add_child(_wide_button(Ui.t("gameExit"), Ui.c("accent"), Color.WHITE, func(): exit_pressed.emit()))
 	_root.add_child(_sheet)
 	_place_sheet(_sheet)
-
-
-## The world opens the garage for pause; keep legacy callers free of overlays.
-func show_pause() -> void:
-	pass
-
-
-func hide_pause() -> void:
-	pass
 
 
 func _wide_button(text: String, bg: Color, fg: Color, action: Callable) -> PanelContainer:

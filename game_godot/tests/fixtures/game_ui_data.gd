@@ -1,8 +1,8 @@
-## Localized garage fixture copied from the app ARBs: enough owned paints to exercise scrolling.
+## Localized owned collection fixture copied from the app ARBs: enough owned paints to exercise scrolling.
 extends RefCounted
 
 
-static func garage(lang: String) -> Dictionary:
+static func collection(lang: String) -> Dictionary:
 	var localized: Dictionary = {
 		"ru": {
 			"name": "Хэтчбек",

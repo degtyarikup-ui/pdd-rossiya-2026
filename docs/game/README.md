@@ -37,10 +37,10 @@
 ```bash
 godot --path game_godot                          # окно: игра с первого перекрёстка
 godot --path game_godot -- --situation=ticket_10_13 --auto --near   # один перекрёсток, автопилот
-godot --path game_godot -- --garage="$(cat scratch/garage.json)"    # с гаражом (JSON от приложения)
 ```
 
-Флаги — в `game_godot/README.md`. Без `--garage` гаража нет и игра стартует сразу.
+Флаги — в `game_godot/README.md`. Игра стартует сразу; выбор машины/цвета, звук и выход доступны в окне паузы.
+Приложение передаёт коллекцию и настройки через `--ride-options=<JSON>`.
 
 ## Проверки (headless)
 
@@ -62,9 +62,10 @@ godot --headless --path game_godot --script res://tests/participant_motion_check
 godot --headless --path game_godot --script res://tests/reviewed_departure_check.gd # продолжение всех отмеченных сцен
 godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза
 godot --headless --path game_godot --script res://tests/exit_loading_check.gd # выход во время фоновой сборки без потерянных узлов
-godot --headless --path game_godot --script res://tests/pause_actor_check.gd # заморозка независимых и физических участников в гараже
-godot --headless --path game_godot --script res://tests/game_ui_check.gd # анимации, фото, гараж
-godot --headless --path game_godot --script res://tests/garage_resume_check.gd # настоящий мир, цвет и возврат из гаража
+godot --headless --path game_godot --script res://tests/pause_actor_check.gd # заморозка независимых и физических участников в паузе
+godot --headless --path game_godot --script res://tests/game_ui_check.gd # анимации, фото, компактный HUD и окно паузы
+godot --headless --path game_godot --script res://tests/vehicle_lights_check.gd # мигание штатных фонарей без лишней геометрии
+godot --headless --path game_godot --script res://tests/ride_pause_check.gd # быстрый старт, цвет, звук, сохранение состояния при паузе
 godot --path game_godot --script res://tests/building_fade_check.gd # нужен рендер: пачки прозрачных зданий и переиспользование
 godot --headless --path game_godot --script res://tests/median_join_check.gd # границы разделительных островов
 godot --headless --path game_godot --script res://tests/ambient_lane_check.gd # фоновые машины и разделитель на стыке
@@ -116,7 +117,7 @@ tools/network/engine_sync.py ► game_godot/situations/<id>/scene.json (то, ч
 
 ## Приложение (Flutter)
 
-`lib/presentation/screens/game/godot_game.dart` — гараж, оплата заезда, итоги, продолжение заезда,
+`lib/presentation/screens/game/godot_game.dart` — запуск/продолжение заезда, коллекция для паузы, итоги,
 разбор ошибок; канал `pdd/godot_game`. Android — `android/app/src/godot/` (экран игры в процессе
 `:game`), iOS — `ios/Runner/PddGodotGame.mm`, web — iframe `/app/godot/`.
 Экономика заездов и очков — `docs/game/game-economy-2026-10-10.md`.

@@ -2272,6 +2272,12 @@ abstract class AppLocalizations {
   /// **'Пауза'**
   String get gamePause;
 
+  /// No description provided for @gameExitToMenu.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выйти в меню'**
+  String get gameExitToMenu;
+
   /// No description provided for @gameLobbyControls.
   ///
   /// In ru, this message translates to:

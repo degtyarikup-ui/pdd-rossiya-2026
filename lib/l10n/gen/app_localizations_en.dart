@@ -1269,6 +1269,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamePause => 'Pause';
 
   @override
+  String get gameExitToMenu => 'Exit to menu';
+
+  @override
   String get gameLobbyControls => 'Controls';
 
   @override

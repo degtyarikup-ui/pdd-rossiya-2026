@@ -385,6 +385,7 @@
   "gameTipNext": "Next",
   "gameTipDone": "Let's go",
   "gamePause": "Pause",
+  "gameExitToMenu": "Exit to menu",
   "gameLobbyControls": "Controls",
   "gameRunProgress": "Question {n} from {total}",
   "gameCorrectAnswer": "Correct answer",

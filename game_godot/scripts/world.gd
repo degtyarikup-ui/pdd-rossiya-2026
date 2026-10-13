@@ -36,9 +36,7 @@ var player: Node3D
 var drive: Drive
 var camera: Camera3D
 var sun: DirectionalLight3D
-var environment: Environment       # the scene's (the garage changes its sky)
-const GARAGE_SKY := Color("#7CC6F0")   # the garage's daylight sky, as the WebView game's garage
-const GARAGE_TURN := 3.6           # the car's first turn on its pad: front-left of the picture, three quarters (WebView lobby)
+var environment: Environment
 var controls: Controls
 var hud: PerfHud
 
@@ -49,10 +47,8 @@ var walker_mm: Array[MultiMesh] = []
 var wheels: Array[Node3D] = []
 var front_axles: Array[Node3D] = []
 var brake_mat: StandardMaterial3D        # shared by the car's stop lamps
-var blinkers := {}                        # "L"/"R" -> Node3D
+var blinkers := {}                        # "L"/"R" -> authored lens materials
 const BLINK_COLOUR := Color("#FFB300")
-const BLINK_SIZE := 2.6                   # the indicators are drawn this many times larger
-const BLINK_HALO := 2.4                   # m, the halo across
 var steer_hold := 0.0
 var blink := { "side": "", "left": 0.0, "clock": 0.0 }
 var tier := "high"
@@ -113,7 +109,7 @@ var frozen_nodes: Array[Dictionary] = []
 var frozen_bodies: Array[Dictionary] = []
 var frozen_audio: Array[Dictionary] = []
 var saved_ride := {}
-var garage_data := {
+var ride_options := {
 	"cars": [{"id": "hatch", "name": "", "owned": true, "paints": [{"paint": "orange", "name": "", "hex": "#F08A24", "owned": true}]}],
 	"record": 0, "can_start": true, "texts": {},
 }
@@ -125,15 +121,12 @@ var road_phase := ""              # approach | question | passed (while road != 
 var only_id := ""                 # --situation: the one junction of a test run
 var road_after := 300.0           # world z after which the next road question may come
 var road_base_limit := 60         # the built-up limit to return to after a zone
-var lobby: Lobby                  # the garage before a run (--garage=<json>); null when not shown
-var lobby_mode := false
+var pause_menu: RidePause
 var loader: Loader                # the preloader over the first frames (loader.gd); null once dismissed
-var garage_set: GarageSet         # the garage the lobby stands in (built when the lobby opens)
-var lobby_turn := 0.0             # the car's turn on its pad (radians)
 var run_started := false          # a run began (the app charges one run then)
 var run_end_sent := false         # the run_end event went out (once per visit)
 var chosen := {}                  # { id, paint } of the car the player drove, for the app
-var tips_enabled := false         # the app's garage says the first-drive tips are not seen yet
+var tips_enabled := false         # the app says the first-drive tips are not seen yet
 var tip_step := -1                # 0..2 the tips card on the screen; -1 none
 var tip_drawn := -1               # the step shown on the card now
 var tips_seen := false            # the player went through the tips (the app remembers it)
@@ -154,7 +147,7 @@ func _ready() -> void:
 		get_tree().change_scene_to_file.call_deferred("res://regulator.tscn")
 		return
 	_setup_language()
-	garage_data.texts = {"runs": Ui.t("gameGarage"), "record": Ui.t("gameLobbyRecord"), "colour": Ui.t("gameLobbyColour"), "start": Ui.t("gameLobbyNewRun")}
+	ride_options.texts = {"runs": Ui.t("gameGarage"), "record": Ui.t("gameLobbyRecord"), "colour": Ui.t("gameLobbyColour"), "start": Ui.t("gameLobbyNewRun")}
 	loader = Loader.attach(self)
 	cfg = JSON.parse_string(FileAccess.get_file_as_string("res://data/world.json"))
 	L = cfg.chunk_length
@@ -217,8 +210,8 @@ func _ready() -> void:
 	controls.pressed.connect(hud.mark_input)
 	_apply_tier(Quality.classify(RenderingServer.get_video_adapter_name()))
 	spawn_after = drive.pos.z + 40
-	if _has_arg("--garage"):
-		_open_lobby()
+	if _has_arg("--ride-options"):
+		_start_ride()
 	_dismiss_loader()
 	# Desktop checks: `godot --path game_godot -- --shot=out.png [--season=winter]
 	# [--situation=<id>] [--auto] [--overview] [--start=<z>] [--wait=<s>]`.
@@ -281,13 +274,14 @@ static func _scene_playable(authored: Dictionary) -> bool:
 	return authored.get("reviewed", false) == true and route_errors is Array and route_errors.is_empty()
 
 
-## The loader stays over the first frames, once the garage or the street is up, and then goes.
+## The loader stays over the first frames, once the street is up, and then goes.
 func _dismiss_loader() -> void:
-	# Render the existing emissive/halo variants under the opaque loading screen once,
+	# Render the existing emissive lens variants under the opaque loading screen once,
 	# so their first real collision/turn does not compile shaders during the ride.
 	for side in blinkers:
-		for node in blinkers[side]:
-			if node: node.visible=true
+		for mat: StandardMaterial3D in blinkers[side]:
+			mat.emission_enabled = true
+			mat.emission = BLINK_COLOUR
 	await get_tree().process_frame
 	if is_queued_for_deletion() or not is_inside_tree(): return
 	await get_tree().process_frame
@@ -414,7 +408,7 @@ func _shot(path: String) -> void:
 	for arg in Host.user_args():
 		if arg.begins_with("--wait="):
 			wait = float(arg.trim_prefix("--wait="))
-	if _has_arg("--pause"):   # the pause sheet over the picture (black and white)
+	if _has_arg("--pause"):   # the pause menu over the current ride
 		await get_tree().create_timer(1.0).timeout
 		_on_pause()
 	await get_tree().create_timer(wait).timeout
@@ -571,7 +565,7 @@ func _build_player() -> void:
 			drive.pos.z = float(arg.trim_prefix("--start="))
 
 
-## The player's car: a model of the garage in a paint (hex). Replaces the car on the stand.
+## Replace the player model in its authored paint, keeping the ride position and motion.
 func _mount_car(id: String, hex: String) -> void:
 	var old := player.get_node_or_null("car")
 	if old:
@@ -597,27 +591,15 @@ func _mount_car(id: String, hex: String) -> void:
 	for node in car.find_children("brake_*", "MeshInstance3D", true, false):
 		(node as MeshInstance3D).material_override = brake_mat
 	for side in ["L", "R"]:
-		# The front and the rear indicator of a side blink together. The model nests the rear one inside the
-		# front: it moves to the car first, or the front's enlargement would carry it far behind.
-		var front := car.find_child("blink_" + side, true, false)
-		var rear := car.find_child("blink_%s_rear" % side, true, false)
-		if rear and rear.get_parent() != car:
-			rear.reparent(car, true)
-		blinkers[side] = [front, rear]
-		for node in blinkers[side]:
-			_make_blinker(node)
-
-
-## Bright emissive indicators and additive halos remain visible from the overhead camera.
-## No real point lights are needed: they compile costly dynamic-light variants on first collision.
-func _make_blinker(node: Node3D) -> void:
-	if node == null:
-		return
-	node.scale *= BLINK_SIZE
-	for mi in node.find_children("*", "MeshInstance3D", true, false):
-		(mi as MeshInstance3D).material_override = Glow.lamp_material(BLINK_COLOUR, BLINK_COLOUR, true)
-	node.add_child(Glow.halo(BLINK_COLOUR, BLINK_HALO))
-
+		blinkers[side] = []
+		var lamp := car.find_child("blink_" + side, true, false)
+		if lamp == null:
+			continue
+		# The rear lens is nested under the front indicator. Keep that authored hierarchy.
+		for mi: MeshInstance3D in lamp.find_children("*", "MeshInstance3D", true, false):
+			var mat := Glow.lamp_material(BLINK_COLOUR, Color("#7A5200"), false)
+			mi.material_override = mat
+			blinkers[side].append(mat)
 
 
 ## World services for Drive (game.js roadSupports / obstacles / faults).
@@ -781,11 +763,6 @@ func on_collision(o) -> void:
 		o.car.hazards_left = 3.0
 		if o.car.has("node"):
 			Fleet.hazards(o.car.node, float(o.car.get("len", CAR_LENGTH)) * 0.5, 0.95)
-		else:
-			if not o.car.has("lamps"):
-				o.car.lamps = Node3D.new()
-				add_child(o.car.lamps)
-			Fleet.hazards(o.car.lamps, float(o.car.get("len", CAR_LENGTH)) * 0.5, 0.95)
 		var away := 1.0 if o.car.z >= drive.pos.z else -1.0
 		if o.car.get("moves", false):
 			o.car.shove = away * (maxf(0.0, drive.speed) * 0.8 + 2.0)   # at least 2 m/s: a visible roll
@@ -1533,7 +1510,9 @@ func _spawn_traffic() -> void:
 			car.mm = mm[kind]
 			car.slot = used.get(kind, 0)
 			used[kind] = car.slot + 1
-			(car.mm as MultiMesh).set_instance_custom_data(car.slot, Fleet.paint(rng))
+			var paint := Fleet.paint(rng)
+			paint.a = 0.0
+			(car.mm as MultiMesh).set_instance_custom_data(car.slot, paint)
 		traffic.append(car)
 
 
@@ -1785,12 +1764,15 @@ func _update_traffic(delta: float) -> void:
 		# traffic is not drawn there, or it would drive straight over lawns and through houses.
 		if car.get("sheltered", false):
 			at.y = -100.0
-		if car.has("lamps"):
-			(car.lamps as Node3D).transform = Transform3D(Basis(Vector3.UP, face), at)
 		if car.has("node"):
 			(car.node as Node3D).transform = Transform3D(Basis(Vector3.UP, face), at)
 		else:
-			(car.mm as MultiMesh).set_instance_transform(car.slot, Transform3D(Basis(Vector3.UP, face), at))
+			var multi: MultiMesh = car.mm
+			car.hazards_left = maxf(0.0, float(car.get("hazards_left", 0.0)) - delta)
+			var paint := multi.get_instance_custom_data(car.slot)
+			paint.a = 1.0 if car.hazards_left > 0.0 and int(car.hazards_left * 3.0) % 2 == 0 else 0.0
+			multi.set_instance_custom_data(car.slot, paint)
+			multi.set_instance_transform(car.slot, Transform3D(Basis(Vector3.UP, face), at))
 
 
 func _update_walkers(delta: float) -> void:
@@ -1839,7 +1821,9 @@ func _update_walkers(delta: float) -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
-		if lobby_mode or phase == "over" or paused:
+		if paused:
+			_on_resume()
+		elif phase == "over":
 			_on_exit()
 		else:
 			_on_pause()
@@ -1847,54 +1831,41 @@ func _notification(what: int) -> void:
 		_on_pause()
 
 
-## Pause (top-left button, Android «back»): not while a question waits for its answer.
+## Pause preserves the world, current card/photo, timer, camera and run counters.
 func _on_pause() -> void:
-	if lobby_mode or paused or phase == "over":
+	if paused or phase == "over":
 		return
 	paused = true
-	saved_ride = {"transform": player.transform, "camera": camera.transform, "cam_size": camera.size, "controls": controls.active}
+	saved_ride = {"controls": controls.active}
 	controls.set_active(false)
 	_freeze_world_actors()
-	lobby = Lobby.new(garage_data.duplicate(true))
-	add_child(lobby)
-	lobby.set_resume_mode(true)
-	lobby.resume_requested.connect(_on_resume)
-	lobby.close_requested.connect(_on_exit)
-	lobby.spin.connect(_on_lobby_spin)
-	lobby_mode = true
-	ui.visible = false
 	ui.process_mode = Node.PROCESS_MODE_DISABLED
-	_set_street_objects(false)
-	garage_set = GarageSet.new()
-	add_child(garage_set)
-	garage_set.build(scenery)
-	garage_set.camera.make_current()
-	player.position = GarageSet.PAD
-	lobby_turn = GARAGE_TURN
-	player.rotation.y = lobby_turn
-	environment.background_color = GARAGE_SKY
+	var options := ride_options.duplicate(true)
+	options.sound = sound.enabled
+	pause_menu = RidePause.new(options, chosen)
+	add_child(pause_menu)
+	pause_menu.resume_requested.connect(_on_resume)
+	pause_menu.exit_requested.connect(_on_exit)
+	pause_menu.vehicle_changed.connect(_on_vehicle_changed)
+	pause_menu.sound_changed.connect(func(on): sound.enabled = on)
+
+
+func _on_vehicle_changed(selection: Dictionary) -> void:
+	chosen = {"id": selection.id, "paint": selection.paint}
+	_mount_car(selection.id, selection.hex)
 
 
 func _on_resume() -> void:
+	if not paused:
+		return
 	var resume_controls: bool = saved_ride.get("controls", true)
-	if not saved_ride.is_empty():
-		lobby_mode = false
-		lobby.queue_free()
-		lobby = null
-		garage_set.queue_free()
-		garage_set = null
-		_thaw_world_actors()
-		player.transform = saved_ride.transform
-		camera.transform = saved_ride.camera
-		camera.size = saved_ride.cam_size
-		camera.make_current()
-		environment.background_color = Color(scenery.season.sky)
-		_set_street_objects(true)
-		ui.visible = true
-		ui.process_mode = Node.PROCESS_MODE_INHERIT
-		saved_ride.clear()
+	if is_instance_valid(pause_menu):
+		pause_menu.queue_free()
+		pause_menu = null
+	_thaw_world_actors()
+	ui.process_mode = Node.PROCESS_MODE_INHERIT
+	saved_ride.clear()
 	paused = false
-	ui.hide_pause()
 	controls.set_active(resume_controls)
 
 
@@ -1922,111 +1893,32 @@ func _report_answer(situation_id: String, is_correct: bool, index: int) -> void:
 		"timeout": index < 0, "time_left": snappedf(left, 0.1) })
 
 
-## The garage before a run (lobby.gd, garage_set.gd): the car waits on its pad in the garage, the
-## street is hidden, the garage camera looks at it. A newly earned car rolls out of the garage first
-## (garage.reveal). The run starts from here.
-func _open_lobby() -> void:
-	var garage: Dictionary = JSON.parse_string(_arg_text("--garage"))
-	garage_data = garage.duplicate(true)
-	lobby = Lobby.new(garage)
-	add_child(lobby)
-	lobby.changed.connect(_on_lobby_changed)
-	lobby.start_requested.connect(_on_lobby_start)
-	lobby.spin.connect(_on_lobby_spin)
-	lobby.resume_requested.connect(_on_resume)
-	lobby.close_requested.connect(_on_lobby_close)
-	tips_enabled = bool(garage.get("tips", false))
-	resume_state = garage.get("resume", {})
-	sound.enabled = bool(garage.get("sound", true)) and not _is_test_run()
-	GameSound.haptics = bool(garage.get("haptics", true))
-	lobby_mode = true
-	paused = true
-	controls.set_active(false)
-	ui.visible = false
-	_set_street_objects(false)
-	garage_set = GarageSet.new()
-	add_child(garage_set)
-	garage_set.build(scenery)
-	garage_set.revealed.connect(_on_revealed)
-	garage_set.camera.make_current()
-	var car: Dictionary = lobby.current()
-	_mount_car(car.id, car.hex)
-	player.position = GarageSet.PAD
-	lobby_turn = GARAGE_TURN
-	environment.background_color = GARAGE_SKY
-	if not (garage.get("reveal", {}) as Dictionary).is_empty():
-		lobby.set_active(false)
-		garage_set.start_reveal(player)
-	_lobby_frame(0.0)
-	if _has_arg("--lobby-start"):   # test: press «Начать заезд» by itself after a second
-		get_tree().create_timer(1.0).timeout.connect(lobby._try_start)
-
-
-func _lobby_frame(_delta: float) -> void:
-	if garage_set.revealing():
+## Flutter passes the owned collection/settings, then a new or resumed ride starts immediately.
+func _start_ride() -> void:
+	var raw := _arg_text("--ride-options")
+	var options: Variant = JSON.parse_string(raw)
+	if not options is Dictionary or options.get("cars", []).is_empty():
 		return
-	player.rotation.y = lobby_turn
-
-
-## The close button: the garage closes and the app gets the car it chose (no run was started).
-func _on_lobby_close() -> void:
-	Host.exit(_exit_summary(), get_tree())
-
-
-## The new car has rolled out and stopped on its pad: the panel comes back, the car turns from there.
-func _on_revealed() -> void:
-	lobby_turn = player.rotation.y
-	lobby.set_active(true)
-
-
-func _on_lobby_changed(id: String, _paint: String, hex: String) -> void:
-	_mount_car(id, hex)
-
-
-func _on_lobby_spin(radians: float) -> void:
-	lobby_turn += radians
-
-
-func _on_lobby_start(id: String, paint: String, hex: String) -> void:
-	chosen = { "id": id, "paint": paint }
-	_mount_car(id, hex)
+	ride_options = options.duplicate(true)
+	tips_enabled = bool(options.get("tips", false))
+	resume_state = options.get("resume", {})
+	sound.enabled = bool(options.get("sound", true)) and not _is_test_run()
+	GameSound.haptics = bool(options.get("haptics", true))
+	var selection := RidePause.new(options, options.get("selected", {}))
+	var car := selection.current()
+	selection.free()
+	_on_vehicle_changed(car)
+	if not options.get("can_start", true):
+		_on_exit()
+		return
 	run_started = true
 	if not resume_state.is_empty():
 		run.restore(resume_state)
+		drive.distance_traveled = float(run.distance_m)
 		resumed = true
 	_report_run_start()
-	lobby_mode = false
-	lobby.queue_free()
-	lobby = null
-	garage_set.queue_free()
-	garage_set = null
-	camera.make_current()
-	environment.background_color = Color(scenery.season.sky)
-	_set_street_objects(true)
-	ui.visible = true
-	controls.set_active(true)
-	paused = false
-	cam_ready = false
-	player.rotation.y = drive.yaw
 	tip_step = 0 if tips_enabled else -1
 	tip_drawn = -1
-
-
-## The street (the ring's road and props, the ground, traffic, walkers, the junctions) is hidden
-## while the garage is shown: the garage has its own set around the car.
-func _set_street_objects(on: bool) -> void:
-	for node in get_children():
-		if node is MeshInstance3D or node is MultiMeshInstance3D:
-			(node as Node3D).visible = on
-	for j in _junctions():
-		j.sit.visible = on
-	for car in traffic:
-		if car.has("node"):
-			(car.node as Node3D).visible = on
-	if ghost:
-		ghost.visible = on
-	for old in older_ghosts:
-		old.visible = on
 
 
 func _arg_text(name: String) -> String:
@@ -2044,6 +1936,7 @@ func _exit_summary() -> Dictionary:
 	out["tips_seen"] = tips_seen
 	out["resumed"] = resumed
 	out["finished"] = run.finished()
+	out["sound"] = sound.enabled
 	return out
 
 
@@ -2076,9 +1969,6 @@ func _on_tip_next() -> void:
 
 
 func _process(delta: float) -> void:
-	if lobby_mode:
-		_lobby_frame(delta)
-		return
 	_tips_frame()
 	if paused:
 		return
@@ -2373,9 +2263,12 @@ func _update_lamps(delta: float) -> void:
 		sound.play("click")   # the sound only: the indicator does not buzz the phone
 	blinker_on = on
 	for side in blinkers:
-		for node in blinkers[side]:
-			if node:
-				node.visible = warm_signals or (on and (hazards or blink.side == side))
+		for mat: StandardMaterial3D in blinkers[side]:
+			var active: bool = warm_signals or (on and (hazards or blink.side == side))
+			mat.albedo_color = BLINK_COLOUR if active else Color("#7A5200")
+			mat.emission_enabled = active
+			mat.emission = BLINK_COLOUR
+			mat.emission_energy_multiplier = 2.0
 
 
 func _apply_tier(next: String) -> void:
@@ -2515,12 +2408,9 @@ func _ambient_advance(car: Dictionary, step: float, solids: Array) -> void:
 	car.x=at.x;car.z=at.z
 
 func _ambient_hazards(car: Dictionary) -> void:
-	var node: Node3D = car.get("node",car.get("lamps"))
-	if node == null:
-		node=Node3D.new()
-		add_child(node)
-		car.lamps=node
-	Fleet.hazards(node,float(car.get("len",CAR_LENGTH))*0.5,0.95)
+	car.hazards_left = 3.0
+	if car.has("node"):
+		Fleet.hazards(car.node, float(car.get("len", CAR_LENGTH)) * 0.5, 0.95)
 
 
 ## Exported exits have a finite crop. Continue straight beyond that crop along the same lane,

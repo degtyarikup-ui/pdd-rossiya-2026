@@ -385,6 +385,7 @@
   "gameTipNext": "Келесі",
   "gameTipDone": "кеттік",
   "gamePause": "Кідірту",
+  "gameExitToMenu": "Мәзірге шығу",
   "gameLobbyControls": "Басқару",
   "gameRunProgress": "{n} / {total} сұрақ",
   "gameCorrectAnswer": "Дұрыс жауап",

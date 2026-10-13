@@ -46,12 +46,11 @@ func _initialize() -> void:
 	var before: Transform3D = world.player.transform
 	var distance: float = world.drive.distance_traveled
 	world._on_pause()
-	expect(world.lobby_mode and world.paused, "pause opens garage")
-	world._lobby_frame(2.0)
-	expect(absf(world.player.rotation.y - world.GARAGE_TURN) < 0.001, "no automatic rotation")
+	expect(world.pause_menu != null and world.paused, "pause opens overlay")
+	expect(world.player.transform.is_equal_approx(before), "pause leaves the car in the street")
 	world._on_resume()
 	expect(world.player.transform.is_equal_approx(before), "resume restores car transform")
-	expect(world.controls.active and not world.lobby_mode, "resume restores driving")
+	expect(world.controls.active and world.pause_menu == null, "resume restores driving")
 	expect(world.drive.distance_traveled == distance, "pause preserves ride progress")
 	world.queue_free()
 	await process_frame

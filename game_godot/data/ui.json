@@ -1,5 +1,7 @@
 {
  "ru": {
+  "gameExitToMenu": "Выйти в меню",
+  "soundEffects": "Звуки",
   "gameSeconds": "с",
   "gameContinue": "Продолжить движение",
   "gameCorrect": "Верно!",
@@ -80,6 +82,8 @@
   "gameOverTitle": "Игра окончена"
  },
  "en": {
+  "gameExitToMenu": "Exit to menu",
+  "soundEffects": "Sound effects",
   "gameSeconds": "s",
   "gameContinue": "Continue driving",
   "gameCorrect": "Correct!",
@@ -160,6 +164,8 @@
   "gameOverTitle": "Game over"
  },
  "kk": {
+  "gameExitToMenu": "Мәзірге шығу",
+  "soundEffects": "Дыбыстық әсерлер",
   "gameSeconds": "с",
   "gameContinue": "Жүруді жалғастыру",
   "gameCorrect": "Дұрыс!",

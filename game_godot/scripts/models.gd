@@ -10,6 +10,7 @@ const CARS := ["hatch", "sedan", "coupe", "wagon", "suv", "pickup"]
 const WALKERS := 12
 
 static var _baked: ShaderMaterial
+static var _traffic_baked: ShaderMaterial
 static var _meshes := {}
 
 
@@ -48,7 +49,13 @@ static func crowd(parent: Node, path: String, count: int) -> MultiMesh:
 		multi.set_instance_color(i, Color.WHITE)
 	var node := MultiMeshInstance3D.new()
 	node.multimesh = multi
-	node.material_override = baked_material()
+	if path.contains("/traffic/"):
+		if _traffic_baked == null:
+			_traffic_baked = baked_material().duplicate()
+			_traffic_baked.set_shader_parameter("traffic_lamps", true)
+		node.material_override = _traffic_baked
+	else:
+		node.material_override = baked_material()
 	parent.add_child(node)
 	return multi
 
@@ -64,10 +71,6 @@ static func player_car(id: String, paint: Color) -> Node3D:
 				var own := (mat as BaseMaterial3D).duplicate() as BaseMaterial3D
 				own.albedo_color = paint
 				mi.set_surface_override_material(i, own)
-	for name in ["blink_L", "blink_R", "blink_L_rear", "blink_R_rear"]:
-		var b := car.find_child(name, true, false)
-		if b:
-			b.visible = false
 	return car
 
 

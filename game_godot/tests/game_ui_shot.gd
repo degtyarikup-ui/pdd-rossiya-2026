@@ -1,4 +1,4 @@
-## Phone UI visual fixture: --out=<png> [--garage|--palette|--explanation|--photo] [--lang=en|kk] [--dark].
+## Phone UI visual fixture: --out=<png> [--pause|--notice|--explanation|--photo] [--lang=en|kk] [--dark].
 extends SceneTree
 
 var out_path := ""
@@ -20,14 +20,12 @@ func _capture() -> void:
 	bg.color = Ui.c("background")
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.add_child(bg)
-	if args.has("--garage") or args.has("--palette"):
-		var data := preload("res://tests/fixtures/game_ui_data.gd").garage(Ui.lang)
-		var lobby := Lobby.new(data)
-		root.add_child(lobby)
+	if args.has("--pause"):
+		var data := preload("res://tests/fixtures/game_ui_data.gd").collection(Ui.lang)
+		var menu := RidePause.new(data, {})
+		root.add_child(menu)
 		await process_frame
 		await process_frame
-		if args.has("--palette"):
-			lobby._toggle_paints()
 	else:
 		var ui := GameUi.new()
 		root.add_child(ui)
@@ -35,7 +33,9 @@ func _capture() -> void:
 		var situation: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://situations/ticket_10_13/scene.json"))
 		var text: Dictionary = situation.text[Ui.lang].duplicate(true)
 		text.id = "ticket_10_13"
-		if args.has("--explanation"):
+		if args.has("--notice"):
+			ui.show_notice("offroad")
+		elif args.has("--explanation"):
 			ui.show_explanation(text, 0, false)
 		else:
 			ui.show_question(text, 15.0)

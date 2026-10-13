@@ -131,7 +131,7 @@ func _check_walkers(world: Node) -> bool:
 ## A settled contact starts hazards once and remains still, without repeated impact feedback.
 func _check_crossing_contacts(world: Node) -> bool:
 	world.blanks.clear()
-	var node := Node3D.new()
+	var node := Models.player_car("sedan", Color.WHITE)
 	world.add_child(node)
 	var crossing := Junction.Motion.new()
 	crossing.id = "crossing_fixture"
@@ -144,12 +144,15 @@ func _check_crossing_contacts(world: Node) -> bool:
 	var box := {"p": crossing.pos, "yaw": PI * 0.5, "hw": crossing.hw, "hl": crossing.hl}
 	var car := {"x": -1.8, "z": -14.0, "dir": 1.0, "len": 11.0, "yaw": 0.12,
 		"spd": 16.0, "shove": 0.0, "contact_cooldown": 0.0, "moves": true}
+	var car_node := RoadBody.model("bus", Color.WHITE)
+	world.add_child(car_node)
+	car.node = car_node
 	var solids := [{"source": crossing, "body": box}]
 	world._ambient_advance(car, 30.0, solids)
 	var body := {"p": Vector3(car.x, 0, car.z), "yaw": car.yaw, "hw": 0.95, "hl": 5.5}
 	var ok: bool = not Drive.overlap(body, box) and car.z < -6.0
 	var hazard := node.get_node_or_null("vehicle_signals") as Fleet.Signals
-	var car_hazard: Fleet.Signals = (car.lamps as Node3D).get_node("vehicle_signals")
+	var car_hazard: Fleet.Signals = car_node.get_node("vehicle_signals")
 	ok = ok and hazard != null and hazard.hazard_left > 2.9 and car_hazard.hazard_left > 2.9
 	var settled: float = car.z
 	for frame in 240:
@@ -160,5 +163,5 @@ func _check_crossing_contacts(world: Node) -> bool:
 	ok = ok and absf(car.z - settled) < 0.15 and hazard.hazard_left <= 0.0 and car_hazard.hazard_left <= 0.0
 	print("NPC swept bus/crossing contact, both hazard signals and stable nonrepeated resting contact: ", "PASS" if ok else "FAIL")
 	node.free()
-	(car.lamps as Node3D).free()
+	car_node.free()
 	return ok

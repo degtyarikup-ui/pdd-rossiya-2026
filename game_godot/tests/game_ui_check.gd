@@ -1,4 +1,4 @@
-## UI regressions: sheet geometry/motion, original picture toggles, garage selection and resume.
+## UI regressions: sheet geometry/motion, original picture toggles, pause selection and resume.
 extends SceneTree
 
 var failures := 0
@@ -56,36 +56,34 @@ func _run() -> void:
 	check(ui._sheet.position.y + ui._sheet.size.y <= ui._view_size().y + 1.0, "Explanation is within the screen")
 	ui.hide_cards()
 	await wait_motion()
-	ui.show_pause()
-	check(ui._sheet == null, "Pause does not create a grayscale pause sheet")
+	for fault in ["offroad", "collision", "pedestrian", "speeding"]:
+		ui.show_notice(fault)
+		await process_frame
+		await process_frame
+		ui._layout_hud()
+		check(ui._notice.size.y < 110.0 * Ui.text_scale(), "Warning stays compact: " + fault)
+		check(ui._notice.position.y + ui._notice.size.y < ui._view_size().y * 0.5, "Warning stays at top: " + fault)
+	check(ui._run_pill.get_theme_stylebox("panel") is StyleBoxEmpty, "Progress has no background")
+	check(ui._speed_pill.get_theme_stylebox("panel") is StyleBoxEmpty, "Speed has no background")
+	check(ui._speed_big.get_theme_color("font_color") == Color.WHITE, "HUD text stays white")
 	ui.queue_free()
-	var garage := preload("res://tests/fixtures/game_ui_data.gd").garage(Ui.lang)
-	var lobby := Lobby.new(garage)
-	root.add_child(lobby)
+	var collection := preload("res://tests/fixtures/game_ui_data.gd").collection(Ui.lang)
+	var menu := RidePause.new(collection, {})
+	root.add_child(menu)
 	await process_frame
 	await process_frame
-	check(lobby._selection.size.y < 140.0 * Ui.text_scale(), "Selected car footer stays compact after wrapping")
-	check(lobby._selection.get_global_rect().end.y < lobby._start.get_global_rect().position.y, "Selected car footer stays above Start")
-	check(not lobby._controls[1].get_global_rect().intersects(lobby._controls[2].get_global_rect()), "Phone garage run and record pills do not overlap")
-	lobby._toggle_paints()
-	await wait_motion()
-	check(is_instance_valid(lobby._paint_picker), "Palette opens a paint selector")
-	for cell in lobby._paint_picker.find_children("*", "PanelContainer", true, false):
-		check(cell.get_global_rect().end.x <= root.get_visible_rect().size.x + 1.0, "Paint controls fit narrow screen")
-	lobby._select_paint(1)
-	check(lobby.current().paint == "white", "Paint selector updates selected paint")
-	check(not is_instance_valid(lobby._paint_picker), "Choosing a paint closes selector")
+	check(menu._panel.get_global_rect().end.x <= root.get_visible_rect().size.x + 1.0, "Pause menu fits narrow screen")
+	check(menu._panel.get_global_rect().end.y <= root.get_visible_rect().size.y + 1.0, "Pause menu fits screen height")
+	menu._select_paint(1)
+	check(menu.current().paint == "white", "Pause palette updates selection")
 	var resumes := [0]
-	lobby.resume_requested.connect(func(): resumes[0] += 1)
-	garage.can_start = false
-	lobby.set_resume_mode(true)
-	lobby._try_start()
-	check(resumes[0] == 1, "Paused ride continues even with no new runs available")
-	check(lobby._start_label.text == Ui.t("gameLobbyContinue"), "Paused garage has Continue button")
-	check(not lobby._model_controls[0].visible, "Paused garage preserves the current ride's car")
-	lobby.queue_free()
+	menu.resume_requested.connect(func(): resumes[0] += 1)
+	menu.resume_requested.emit()
+	check(resumes[0] == 1, "Pause continues without charging another run")
+	menu.queue_free()
 	var controls = load("res://scripts/controls.gd").new()
 	root.add_child(controls)
+	check(controls._buttons.brake.size.x == controls._buttons.brake.size.y, "Brake button is square")
 	check(controls._buttons.gas.get_global_rect().position.x > controls._buttons.right.get_global_rect().end.x,
 		"Compact phone pedals do not overlap steering")
 	var gas_touch := InputEventScreenTouch.new()

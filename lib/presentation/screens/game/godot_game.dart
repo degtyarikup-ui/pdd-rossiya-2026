@@ -33,14 +33,14 @@ import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 
 /// «Живой город» on Godot (game_godot/): the game runs on its own native
-/// screen (Android: GodotGameActivity in the process `:game`). The garage
-/// (lobby) comes first; the run is charged when it actually starts; when the
+/// screen (Android: GodotGameActivity in the process `:game`). The ride
+/// starts immediately and is charged once; when the
 /// player leaves, the app saves the car, books the score, grants the cars
 /// earned by the correct answers and shows the result (restart, the run's
 /// mistakes, the rating) — the same screens as the WebView game.
 ///
 /// Available only in a build that contains the engine (see
-/// scripts/godot_android_assets.sh); elsewhere the WebView game stays.
+/// scripts/godot_android_assets.sh); elsewhere the app reports that the game is unavailable.
 class GodotGame {
   GodotGame._();
 
@@ -53,8 +53,8 @@ class GodotGame {
   static const _tipsSeenKey = 'game_tips_seen';
   static const _firstRunSeenKey = 'game_seen';
   static const _pendingRunKey = 'game_run_pending';
-  // The cars earned by a run ("id|paint"), until the next garage visit shows them rolling out.
-  static const _pendingRevealKey = 'game_reveal_pending';
+  // Per-game sound preference, preserved after leaving a ride.
+  static const _citySoundKey = 'godot_city_sound';
   static const _runQuestions = GameState.runQuestions;
   static Future<bool>? _available;
   static Future<bool>? _webAvailable;
@@ -86,15 +86,27 @@ class GodotGame {
         .catchError((_) => false);
   }
 
-  /// The garage, a run and the result. «Restart» in the result opens the
-  /// garage again, as the WebView game does.
+  /// Starts or resumes a ride immediately; the owned collection is available in pause.
   static Future<void> play(BuildContext context, WidgetRef ref) async {
     if (_running) return;
     HapticFeedbackHelper.tap();
     final lang = Localizations.localeOf(context).languageCode;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final garage = await _garageJson(ref, lang: lang);
+    final options = await _rideOptions(ref, lang: lang);
     if (!context.mounted) return;
+    if (options['can_start'] != true) {
+      await showGameRunsSheet(
+        context,
+        maxRuns: GameRunsService.maxRuns,
+        questions: _runQuestions,
+        refillMinutes: GameRunsService.refillInterval.inMinutes,
+        unlimited: false,
+        runs: () => GameRunsService.instance.refresh(),
+        nextRefillAt: () => GameRunsService.instance.nextRefillAt,
+        onBuyPremium: () => PremiumPaywallSheet.show(context),
+      );
+      return;
+    }
     final safe = _safeArea(context);
     _running = true;
     String? json;
@@ -104,7 +116,7 @@ class GodotGame {
         '--text-scale=${MediaQuery.textScalerOf(context).scale(14) / 14}',
         if (dark) '--dark',
         ...safe,
-        '--garage=${jsonEncode(garage)}',
+        '--ride-options=${jsonEncode(options)}',
       ]);
     } on PlatformException {
       json = null;
@@ -207,8 +219,8 @@ class GodotGame {
     return _channel.invokeMethod<String>('start', {'args': args});
   }
 
-  /// Everything the lobby shows, in the app's own words and cars.
-  static Future<Map<String, dynamic>> _garageJson(
+  /// Owned cars/paints and settings for immediate start and the pause menu.
+  static Future<Map<String, dynamic>> _rideOptions(
     WidgetRef ref, {
     required String lang,
   }) async {
@@ -254,15 +266,15 @@ class GodotGame {
         prefs?.getString(_vehicleKey) ?? GameGarageService.starter.id;
     final selectedPaint =
         prefs?.getString(_paintKey) ?? GameGarageService.starter.paint;
-    final reveal = await _takeReveal(selectedId, selectedPaint);
     return {
       'cars': cars,
       'selected': {'id': selectedId, 'paint': selectedPaint},
-      'reveal': ?reveal,
       'record': prefs?.getInt(_bestScoreKey) ?? 0,
       'tips': !(prefs?.containsKey(_tipsSeenKey) ?? false),
       // The app's own switches: sound effects and the vibration.
-      'sound': SoundEffectsService.instance.isEnabled,
+      'sound':
+          prefs?.getBool(_citySoundKey) ??
+          SoundEffectsService.instance.isEnabled,
       'haptics': HapticFeedbackHelper.enabled,
       'can_start': unlimited || runs > 0 || pending != null,
       if (pending != null) 'resume': pending.toJson(),
@@ -294,34 +306,6 @@ class GodotGame {
     return '#${channel(c.r)}${channel(c.g)}${channel(c.b)}'.toUpperCase();
   }
 
-  /// The cars a run earned wait until the next garage visit.
-  static Future<void> _addPendingReveals(List<GameCar> cars) async {
-    final prefs = await _prefs();
-    if (prefs == null) return;
-    final waiting = prefs.getStringList(_pendingRevealKey) ?? const <String>[];
-    await prefs.setStringList(_pendingRevealKey, [
-      ...waiting,
-      for (final car in cars) '${car.id}|${car.paint}',
-    ]);
-  }
-
-  /// The car on the stand rolls out of the garage once, if a run has just earned it. The waiting
-  /// list is cleared on every garage visit: a car that was not chosen in the reveal dialog stays
-  /// in the garage without the roll-out.
-  static Future<Map<String, String>?> _takeReveal(
-    String id,
-    String paint,
-  ) async {
-    final prefs = await _prefs();
-    if (prefs == null) return null;
-    final waiting = prefs.getStringList(_pendingRevealKey);
-    if (waiting == null) return null;
-    await prefs.remove(_pendingRevealKey);
-    final color = gamePaintColors[paint];
-    if (color == null || !waiting.contains('$id|$paint')) return null;
-    return {'id': id, 'paint': paint, 'hex': _hex(color)};
-  }
-
   static Future<SharedPreferences?> _prefs() async {
     try {
       return await SharedPreferences.getInstance();
@@ -345,6 +329,10 @@ class GodotGame {
     Map<String, dynamic> summary,
   ) async {
     final premium = ref.read(isPremiumProvider);
+    final sound = summary['sound'];
+    if (sound is bool) {
+      await (await _prefs())?.setBool(_citySoundKey, sound);
+    }
     final car = summary['car'];
     if (car is Map && car['id'] is String && car['paint'] is String) {
       await _saveVehicle(car['id'] as String, car['paint'] as String);
@@ -391,7 +379,6 @@ class GodotGame {
         if (car != null) unlocked.add(car);
       }
       if (unlocked.isNotEmpty) {
-        await _addPendingReveals(unlocked);
         unawaited(ProgressSyncService.instance.syncWithServer());
       }
     }
@@ -477,7 +464,7 @@ class GodotGame {
       await prefs.setString(_vehicleKey, id);
       await prefs.setString(_paintKey, paint);
     } catch (_) {
-      /* The car is kept for the next garage visit; a failed save is not a game error. */
+      /* The car is kept for the next ride; a failed save is not a game error. */
     }
   }
 
@@ -530,7 +517,7 @@ class GodotGame {
   }
 
   /// «Новая машина!» — the car earned by the run's correct answers. Choosing it
-  /// makes it the car of the next garage visit.
+  /// makes it the car of the next ride.
   static Future<void> _showReveal(BuildContext context, GameCar car) async {
     final colors = AppColors.of(context);
     await showDialog<void>(
