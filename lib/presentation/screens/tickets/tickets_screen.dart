@@ -36,7 +36,7 @@ class TicketsScreen extends ConsumerStatefulWidget {
 }
 
 class _TicketsScreenState extends ConsumerState<TicketsScreen> {
-  int _refreshKey = 0;
+  int _refreshGeneration = 0;
   Map<int, ({int answered, int correct})>? _cachedProgress;
 
   @override
@@ -46,41 +46,57 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
   }
 
   Future<void> _refreshProgress() async {
-    final tickets = await ref.read(ticketsProvider.future);
+    if (!mounted) return;
+    final generation = ++_refreshGeneration;
     final dataSource = ref.read(progressDataSourceProvider);
     final category = ref.read(appSettingsProvider).ticketCategory;
-    final progressMap = await dataSource.getAllQuestionProgress(category);
-    final Map<int, ({int answered, int correct})> progress = {};
+    try {
+      final tickets = await ref.read(ticketsProvider.future);
+      if (!mounted ||
+          generation != _refreshGeneration ||
+          ref.read(appSettingsProvider).ticketCategory != category) {
+        return;
+      }
+      final progressMap = await dataSource.getAllQuestionProgress(category);
+      final Map<int, ({int answered, int correct})> progress = {};
 
-    for (final ticket in tickets) {
-      final ticketNum = ticket['number'] as int;
-      final questions = ticket['questions'] as List;
-      int answeredCount = 0;
-      int correctCount = 0;
+      for (final ticket in tickets) {
+        final ticketNum = ticket['number'] as int;
+        final questions = ticket['questions'] as List;
+        int answeredCount = 0;
+        int correctCount = 0;
 
-      for (final q in questions) {
-        final snapshot = progressMap[q.id as String];
-        if (snapshot is Map<String, dynamic>) {
-          answeredCount++;
-          if (snapshot['isCorrect'] == true) {
-            correctCount++;
+        for (final q in questions) {
+          final snapshot = progressMap[q.id as String];
+          if (snapshot is Map<String, dynamic>) {
+            answeredCount++;
+            if (snapshot['isCorrect'] == true) {
+              correctCount++;
+            }
           }
         }
+
+        progress[ticketNum] = (answered: answeredCount, correct: correctCount);
       }
 
-      progress[ticketNum] = (answered: answeredCount, correct: correctCount);
-    }
-
-    if (mounted) {
-      setState(() {
-        _cachedProgress = progress;
-        _refreshKey++;
-      });
+      if (mounted &&
+          generation == _refreshGeneration &&
+          ref.read(appSettingsProvider).ticketCategory == category) {
+        setState(() {
+          _cachedProgress = progress;
+        });
+      }
+    } catch (_) {
+      // The provider renders its loading error; a background refresh must not
+      // throw again or read a disposed widget's ref.
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(progressImportsProvider, (_, next) {
+      if (next.hasValue) _refreshProgress();
+    });
     ref.listen(ticketsProvider, (prev, next) {
       next.whenData((_) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -103,14 +119,15 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
                   return LayoutBuilder(
                     builder: (context, constraints) {
                       final gridWidth = constraints.maxWidth;
-                      final crossAxisCount = _ticketGridCrossAxisCount(
-                        gridWidth,
-                      );
+                      final textScale =
+                          MediaQuery.textScalerOf(context).scale(18) / 18;
+                      final crossAxisCount = textScale > 1.3 && gridWidth < 600
+                          ? 1
+                          : _ticketGridCrossAxisCount(gridWidth);
                       final gridPad = gridWidth < 400
                           ? AppDimensions.spacingS
                           : AppDimensions.screenPadding;
                       return GridView.builder(
-                        key: ValueKey(_refreshKey),
                         padding: EdgeInsets.all(gridPad),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: crossAxisCount,
@@ -143,27 +160,9 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
                             correctCount: correctCount,
                             isCompleted: isCompleted,
                             isPassed: isPassed,
-                            questions: List<Map<String, dynamic>>.from(
-                              questions.map(
-                                (q) => {
-                                  'id': q.id,
-                                  'question': q.question,
-                                  'answers': q.answers
-                                      .map(
-                                        (a) => {
-                                          'text': a.text,
-                                          'correct': a.isCorrect,
-                                        },
-                                      )
-                                      .toList(),
-                                  'comment': q.comment ?? '',
-                                  'pddPoints': q.pddPoints ?? [],
-                                  'image': q.image,
-                                  'topic': q.topic ?? [],
-                                  'ticketNumber': q.ticketNumber,
-                                },
-                              ),
-                            ),
+                            questions: questions
+                                .map((q) => q.toMap() as Map<String, dynamic>)
+                                .toList(),
                           );
                         },
                       );
@@ -194,12 +193,14 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
             },
           ),
           const SizedBox(width: AppDimensions.spacingM),
-          Text(
-            AppStrings.tickets,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w600,
-              color: colors.primaryText,
+          Expanded(
+            child: Text(
+              AppStrings.tickets,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+                color: colors.primaryText,
+              ),
             ),
           ),
         ],

@@ -11,6 +11,7 @@ analyzer:
   exclude:
     - build/**
     - output/**
+    - scratch/**
     - android/**
     - ios/**
     - web/**

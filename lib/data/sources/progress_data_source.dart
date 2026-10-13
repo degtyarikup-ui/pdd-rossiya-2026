@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:async';
+import 'package:pdd_app/data/models/progress_snapshot.dart';
 
 import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/models/streak.dart';
@@ -24,6 +26,9 @@ class ProgressDataSource {
   static const String _keyProgressCd = 'question_progress_cd';
   static const String _keyTicketProgressAb = 'ticket_progress_ab';
   static const String _keyTicketProgressCd = 'ticket_progress_cd';
+  static const String _keyResetAt = 'progress_reset_at';
+  static const String _keyFavoriteStatesAb = 'favorite_states_ab';
+  static const String _keyFavoriteStatesCd = 'favorite_states_cd';
   static const String _keyFavoritesAb = 'favorites_ab';
   static const String _keyFavoritesCd = 'favorites_cd';
   static const String _keyExamResultsAb = 'exam_results_ab';
@@ -53,6 +58,9 @@ class ProgressDataSource {
   ];
 
   late SharedPreferences _prefs;
+  final _imports = StreamController<int>.broadcast();
+  Stream<int> get imports => _imports.stream;
+  int _importRevision = 0;
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
@@ -168,7 +176,9 @@ class ProgressDataSource {
     progress[questionId] = {
       'isCorrect': isCorrect,
       'selectedAnswerIndex': selectedAnswerIndex,
-      'answeredAt': DateTime.now().toIso8601String(),
+      'answeredAt': DateTime.fromMillisecondsSinceEpoch(
+        _nextMutationTime(),
+      ).toIso8601String(),
       'attemptsCount': attemptsCount + 1,
       'correctAttempts': correctAttempts + (isCorrect ? 1 : 0),
       'wrongAttempts': wrongAttempts + (isCorrect ? 0 : 1),
@@ -198,6 +208,9 @@ class ProgressDataSource {
     ticketProgress[ticketNumber.toString()] = {
       'correctAnswers': correctAnswers,
       'totalAnswered': totalAnswered,
+      'answeredAt': DateTime.fromMillisecondsSinceEpoch(
+        _nextMutationTime(),
+      ).toIso8601String(),
     };
     _saveMap(tkey, ticketProgress);
     ProgressSyncService.instance.scheduleSync();
@@ -241,6 +254,15 @@ class ProgressDataSource {
       favs.add(questionId);
     }
     _saveList(fkey, favs);
+    final stateKey = category == TicketCategory.ab
+        ? _keyFavoriteStatesAb
+        : _keyFavoriteStatesCd;
+    final states = _loadMap(stateKey);
+    states[questionId] = {
+      'present': favs.contains(questionId),
+      'updatedAt': _nextMutationTime(),
+    };
+    _saveMap(stateKey, states);
     ProgressSyncService.instance.scheduleSync();
   }
 
@@ -258,7 +280,21 @@ class ProgressDataSource {
     ProgressSyncService.instance.scheduleSync();
   }
 
+  int _nextMutationTime() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final previous = [
+      _prefs.getInt('progress_mutation_clock') ?? 0,
+      _prefs.getInt(_keyResetAt) ?? 0,
+    ].reduce((a, b) => a > b ? a : b);
+    final next = now > previous ? now : previous + 1;
+    _prefs.setInt('progress_mutation_clock', next);
+    return next;
+  }
+
   Future<void> resetAllProgress() async {
+    await _prefs.setInt(_keyResetAt, _nextMutationTime());
+    await _prefs.remove(_keyFavoriteStatesAb);
+    await _prefs.remove(_keyFavoriteStatesCd);
     await _prefs.remove(_keyProgressAb);
     await _prefs.remove(_keyProgressCd);
     await _prefs.remove(_keyTicketProgressAb);
@@ -282,6 +318,7 @@ class ProgressDataSource {
     await _prefs.remove(_keyStreakActiveDays);
     await _prefs.remove(_keyStreakCelebrationPending);
     ProgressSyncService.instance.scheduleSync();
+    _imports.add(++_importRevision);
   }
 
   // --- Стрик: служебные методы ---
@@ -533,7 +570,9 @@ class ProgressDataSource {
         'correctAnswers': correctAnswers,
         'wrongAnswers': wrongAnswers,
         'passed': passed,
-        'completedAt': DateTime.now().toIso8601String(),
+        'completedAt': DateTime.fromMillisecondsSinceEpoch(
+          _nextMutationTime(),
+        ).toIso8601String(),
       }),
     );
     _saveList(ekey, results);
@@ -584,6 +623,14 @@ class ProgressDataSource {
   /// Экспорт полного слепка прогресса пользователя для облачной синхронизации.
   Map<String, dynamic> exportProgressSnapshot() {
     return {
+      'miniGames': {
+        'regulator': getTrafficControllerProgress().toJson(),
+        'signs': getSignSwiperProgress().toJson(),
+        'crossroads': getCrossroadsPriorityProgress().toJson(),
+      },
+      'resetAt': _prefs.getInt(_keyResetAt) ?? 0,
+      'favoriteStatesAb': _loadMap(_keyFavoriteStatesAb),
+      'favoriteStatesCd': _loadMap(_keyFavoriteStatesCd),
       'questionProgressAb': _loadMap(_keyProgressAb),
       'questionProgressCd': _loadMap(_keyProgressCd),
       'ticketProgressAb': _loadMap(_keyTicketProgressAb),
@@ -637,6 +684,7 @@ class ProgressDataSource {
       _keyTrafficController,
       jsonEncode(progress.toJson()),
     );
+    ProgressSyncService.instance.scheduleSync();
   }
 
   SignSwiperProgress getSignSwiperProgress() {
@@ -655,6 +703,7 @@ class ProgressDataSource {
 
   Future<void> saveSignSwiperProgress(SignSwiperProgress progress) async {
     await _prefs.setString(_keySignSwiper, jsonEncode(progress.toJson()));
+    ProgressSyncService.instance.scheduleSync();
   }
 
   CrossroadsPriorityProgress getCrossroadsPriorityProgress() {
@@ -678,6 +727,7 @@ class ProgressDataSource {
       _keyCrossroadsPriority,
       jsonEncode(progress.toJson()),
     );
+    ProgressSyncService.instance.scheduleSync();
   }
 
   /// Лучшее место в недельном рейтинге игры, запомненное на устройстве.
@@ -747,6 +797,51 @@ class ProgressDataSource {
   /// Импорт и сохранение слепка прогресса из облака.
   Future<void> importProgressSnapshot(Map<String, dynamic> data) async {
     if (data.isEmpty) return;
+    final previousReset = _prefs.getInt(_keyResetAt) ?? 0;
+    data = mergeProgressSnapshots(exportProgressSnapshot(), data);
+    final reset = data['resetAt'] as int;
+    var clock = (_prefs.getInt('progress_mutation_clock') ?? 0);
+    if (reset > clock) clock = reset;
+    for (final suffix in ['Ab', 'Cd']) {
+      for (final entry in (data['favoriteStates$suffix'] as Map).values) {
+        final stamp = (entry['updatedAt'] as num?)?.toInt() ?? 0;
+        if (stamp > clock) clock = stamp;
+      }
+    }
+    _prefs.setInt('progress_mutation_clock', clock);
+
+    if (reset > previousReset) {
+      _prefs.setInt(_keyResetAt, reset);
+      _prefs.remove(_keyUnfinishedSession);
+      for (final key in [
+        _keyStreakCurrent,
+        _keyStreakLongest,
+        _keyStreakLastActive,
+        _keyStreakStartDate,
+        _keyStreakActiveDays,
+        _keyStreakCelebrationPending,
+      ]) {
+        _prefs.remove(key);
+      }
+    }
+    final games = Map<String, dynamic>.from(data['miniGames'] as Map);
+    _saveMap(
+      _keyTrafficController,
+      Map<String, dynamic>.from(games['regulator'] as Map),
+    );
+    _saveMap(_keySignSwiper, Map<String, dynamic>.from(games['signs'] as Map));
+    _saveMap(
+      _keyCrossroadsPriority,
+      Map<String, dynamic>.from(games['crossroads'] as Map),
+    );
+    _saveMap(
+      _keyFavoriteStatesAb,
+      Map<String, dynamic>.from(data['favoriteStatesAb'] as Map),
+    );
+    _saveMap(
+      _keyFavoriteStatesCd,
+      Map<String, dynamic>.from(data['favoriteStatesCd'] as Map),
+    );
     if (data['questionProgressAb'] is Map) {
       _saveMap(
         _keyProgressAb,
@@ -824,5 +919,6 @@ class ProgressDataSource {
         await _prefs.setStringList(_keyStreakActiveDays, union);
       }
     }
+    _imports.add(++_importRevision);
   }
 }

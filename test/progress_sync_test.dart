@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/models/traffic_controller_progress.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -68,6 +71,100 @@ void main() {
     expect(await ds2.isFavorite('q_1_5', TicketCategory.ab), isTrue);
     expect(await ds2.getTicketCorrectAnswers(1, TicketCategory.ab), 20);
   });
+
+  test(
+    'delayed sync cannot erase an answer or restore a removed favorite',
+    () async {
+      final ds = ProgressDataSource();
+      await ds.init();
+      await ds.saveAnswer(
+        questionId: 'old',
+        isCorrect: false,
+        selectedAnswerIndex: 0,
+        category: TicketCategory.ab,
+      );
+      await ds.toggleFavorite('old', TicketCategory.ab);
+      final before = ds.exportProgressSnapshot();
+      await ds.saveAnswer(
+        questionId: 'old',
+        isCorrect: true,
+        selectedAnswerIndex: 1,
+        category: TicketCategory.ab,
+      );
+      await ds.saveAnswer(
+        questionId: 'new',
+        isCorrect: true,
+        selectedAnswerIndex: 1,
+        category: TicketCategory.ab,
+      );
+      await ds.toggleFavorite('old', TicketCategory.ab);
+      await ds.importProgressSnapshot(before);
+      expect(
+        (await ds.getQuestionProgress('old', TicketCategory.ab))!['isCorrect'],
+        true,
+      );
+      expect(await ds.isQuestionAnswered('new', TicketCategory.ab), true);
+      expect(await ds.isFavorite('old', TicketCategory.ab), false);
+    },
+  );
+
+  test('reset survives delayed sync and keeps newly earned progress', () async {
+    final ds = ProgressDataSource();
+    await ds.init();
+    await ds.saveAnswer(
+      questionId: 'old',
+      isCorrect: false,
+      selectedAnswerIndex: 0,
+      category: TicketCategory.ab,
+    );
+    await ds.toggleFavorite('old', TicketCategory.ab);
+    final before = ds.exportProgressSnapshot();
+    await ds.resetAllProgress();
+    await ds.saveAnswer(
+      questionId: 'new',
+      isCorrect: true,
+      selectedAnswerIndex: 1,
+      category: TicketCategory.ab,
+    );
+    await ds.importProgressSnapshot(before);
+    expect(await ds.isQuestionAnswered('old', TicketCategory.ab), false);
+    expect(await ds.isQuestionAnswered('new', TicketCategory.ab), true);
+    expect(await ds.isFavorite('old', TicketCategory.ab), false);
+  });
+
+  test(
+    'mini game import refreshes an already read progress controller',
+    () async {
+      final ds = ProgressDataSource();
+      await ds.init();
+      await ds.saveTrafficControllerProgress(
+        const TrafficControllerProgress(bestScore: 100, totalSolved: 2),
+      );
+      final container = ProviderContainer(
+        overrides: [progressDataSourceProvider.overrideWithValue(ds)],
+      );
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        trafficControllerProgressProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+      expect(container.read(trafficControllerProgressProvider).bestScore, 100);
+      await ds.importProgressSnapshot({
+        'miniGames': {
+          'regulator': {'bestScore': 500, 'totalSolved': 5},
+        },
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(trafficControllerProgressProvider).bestScore, 500);
+      expect(container.read(trafficControllerProgressProvider).totalSolved, 5);
+      expect(
+        (ds.exportProgressSnapshot()['miniGames']
+            as Map)['regulator']['bestScore'],
+        500,
+      );
+    },
+  );
 
   test('Game progress rides along: best score, garage union, counters', () async {
     SharedPreferences.setMockInitialValues({

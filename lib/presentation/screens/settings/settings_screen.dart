@@ -222,9 +222,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     HapticFeedbackHelper.tap();
     Navigator.push(
       context,
-      MaterialPageRoute<void>(
-        builder: (_) => const SupportChatScreen(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const SupportChatScreen()),
     );
   }
 
@@ -286,11 +284,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     final dataSource = ref.read(progressDataSourceProvider);
     await dataSource.resetAllProgress();
     unawaited(StreakNotifier.instance.cancelStreakReminder());
+    if (!mounted) return;
     ref.read(appDataRefreshProvider.notifier).state++;
     ref.invalidate(statsProvider);
     ref.invalidate(favoriteQuestionsProvider);

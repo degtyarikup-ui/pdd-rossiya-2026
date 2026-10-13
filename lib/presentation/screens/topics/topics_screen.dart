@@ -18,7 +18,7 @@ class TopicsScreen extends ConsumerStatefulWidget {
 }
 
 class _TopicsScreenState extends ConsumerState<TopicsScreen> {
-  int _refreshKey = 0;
+  int _refreshGeneration = 0;
   Map<int, int> _progress = {};
 
   @override
@@ -28,32 +28,48 @@ class _TopicsScreenState extends ConsumerState<TopicsScreen> {
   }
 
   Future<void> _refreshProgress() async {
-    final topics = await ref.read(topicsProvider.future);
+    if (!mounted) return;
+    final generation = ++_refreshGeneration;
     final dataSource = ref.read(progressDataSourceProvider);
     final category = ref.read(appSettingsProvider).ticketCategory;
-    final progressMap = await dataSource.getAllQuestionProgress(category);
-    final Map<int, int> progress = {};
-    for (int i = 0; i < topics.length; i++) {
-      final questions = topics[i]['questions'] as List;
-      var correctCount = 0;
-      for (final q in questions) {
-        final snap = progressMap[q.id];
-        if (snap is Map && snap['isCorrect'] == true) {
-          correctCount++;
-        }
+    try {
+      final topics = await ref.read(topicsProvider.future);
+      if (!mounted ||
+          generation != _refreshGeneration ||
+          ref.read(appSettingsProvider).ticketCategory != category) {
+        return;
       }
-      progress[i] = correctCount;
-    }
-    if (mounted) {
-      setState(() {
-        _progress = progress;
-        _refreshKey++;
-      });
+      final progressMap = await dataSource.getAllQuestionProgress(category);
+      final Map<int, int> progress = {};
+      for (int i = 0; i < topics.length; i++) {
+        final questions = topics[i]['questions'] as List;
+        var correctCount = 0;
+        for (final q in questions) {
+          final snap = progressMap[q.id];
+          if (snap is Map && snap['isCorrect'] == true) {
+            correctCount++;
+          }
+        }
+        progress[i] = correctCount;
+      }
+      if (mounted &&
+          generation == _refreshGeneration &&
+          ref.read(appSettingsProvider).ticketCategory == category) {
+        setState(() {
+          _progress = progress;
+        });
+      }
+    } catch (_) {
+      // The provider renders its loading error; a background refresh must not
+      // throw again or read a disposed widget's ref.
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(progressImportsProvider, (_, next) {
+      if (next.hasValue) _refreshProgress();
+    });
     ref.listen(topicsProvider, (prev, next) {
       next.whenData((_) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -73,7 +89,6 @@ class _TopicsScreenState extends ConsumerState<TopicsScreen> {
               child: topicsAsync.when(
                 data: (topics) {
                   return ListView.builder(
-                    key: ValueKey(_refreshKey),
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppDimensions.screenPadding,
                     ),
@@ -93,26 +108,9 @@ class _TopicsScreenState extends ConsumerState<TopicsScreen> {
                           name: name,
                           totalQuestions: totalQuestions,
                           correctCount: correctCount,
-                          questions: List<Map<String, dynamic>>.from(
-                            questions.map(
-                              (q) => {
-                                'id': q.id,
-                                'question': q.question,
-                                'answers': q.answers
-                                    .map(
-                                      (a) => {
-                                        'text': a.text,
-                                        'correct': a.isCorrect,
-                                      },
-                                    )
-                                    .toList(),
-                                'comment': q.comment ?? '',
-                                'pddPoints': q.pddPoints ?? [],
-                                'image': q.image,
-                                'topic': q.topic ?? [name],
-                              },
-                            ),
-                          ),
+                          questions: questions
+                              .map((q) => q.toMap() as Map<String, dynamic>)
+                              .toList(),
                         ),
                       );
                     },
@@ -142,12 +140,14 @@ class _TopicsScreenState extends ConsumerState<TopicsScreen> {
             },
           ),
           const SizedBox(width: AppDimensions.spacingM),
-          Text(
-            AppStrings.topics,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w600,
-              color: colors.primaryText,
+          Expanded(
+            child: Text(
+              AppStrings.topics,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+                color: colors.primaryText,
+              ),
             ),
           ),
         ],

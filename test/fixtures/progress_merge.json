@@ -1,0 +1,318 @@
+[
+  {
+    "name": "newest local answer survives a delayed reply",
+    "local": {
+      "questionProgressAb": {
+        "q": {
+          "answeredAt": "2026-10-13T10:01:00Z",
+          "isCorrect": true,
+          "attemptsCount": 2
+        },
+        "new": {
+          "answeredAt": "2026-10-13T10:02:00Z",
+          "isCorrect": false
+        }
+      }
+    },
+    "remote": {
+      "questionProgressAb": {
+        "q": {
+          "answeredAt": "2026-10-13T10:00:00Z",
+          "isCorrect": false,
+          "attemptsCount": 1
+        }
+      }
+    },
+    "expected": {
+      "questionProgressAb": {
+        "q": {
+          "answeredAt": "2026-10-13T10:01:00Z",
+          "isCorrect": true,
+          "attemptsCount": 2
+        },
+        "new": {
+          "answeredAt": "2026-10-13T10:02:00Z",
+          "isCorrect": false
+        }
+      }
+    }
+  },
+  {
+    "name": "a newer remote answer replaces the local one",
+    "local": {
+      "questionProgressCd": {
+        "q": {
+          "answeredAt": 10,
+          "isCorrect": false
+        }
+      }
+    },
+    "remote": {
+      "questionProgressCd": {
+        "q": {
+          "answeredAt": 20,
+          "isCorrect": true
+        }
+      }
+    },
+    "expected": {
+      "questionProgressCd": {
+        "q": {
+          "answeredAt": 20,
+          "isCorrect": true
+        }
+      }
+    }
+  },
+  {
+    "name": "equal answer dates prefer the larger attempt count",
+    "local": {
+      "questionProgressAb": {
+        "q": {
+          "answeredAt": 10,
+          "attemptsCount": 3
+        }
+      }
+    },
+    "remote": {
+      "questionProgressAb": {
+        "q": {
+          "answeredAt": 10,
+          "attemptsCount": 2
+        }
+      }
+    },
+    "expected": {
+      "questionProgressAb": {
+        "q": {
+          "answeredAt": 10,
+          "attemptsCount": 3
+        }
+      }
+    }
+  },
+  {
+    "name": "favorite removal survives an old legacy list",
+    "local": {
+      "favoriteStatesAb": {
+        "q": {
+          "present": false,
+          "updatedAt": 20
+        }
+      }
+    },
+    "remote": {
+      "favoritesAb": [
+        "q",
+        "other"
+      ]
+    },
+    "expected": {
+      "favoritesAb": [
+        "other"
+      ]
+    }
+  },
+  {
+    "name": "favorite can be added again after a removal",
+    "local": {
+      "favoriteStatesAb": {
+        "q": {
+          "present": false,
+          "updatedAt": 20
+        }
+      }
+    },
+    "remote": {
+      "favoriteStatesAb": {
+        "q": {
+          "present": true,
+          "updatedAt": 21
+        }
+      }
+    },
+    "expected": {
+      "favoritesAb": [
+        "q"
+      ]
+    }
+  },
+  {
+    "name": "a reset removes old answers favorites exams and streak",
+    "local": {
+      "resetAt": 20
+    },
+    "remote": {
+      "questionProgressAb": {
+        "old": {
+          "answeredAt": 10
+        }
+      },
+      "ticketProgressAb": {
+        "1": {
+          "correctAnswers": 20
+        }
+      },
+      "favoritesAb": [
+        "old"
+      ],
+      "examResultsAb": [
+        "{\"completedAt\": \"1970-01-01T00:00:00.010Z\"}"
+      ],
+      "streak": {
+        "current": 10,
+        "longest": 10,
+        "lastActiveDate": "2026-10-13",
+        "activeDays": [
+          "2026-10-13"
+        ]
+      }
+    },
+    "expected": {
+      "questionProgressAb": {},
+      "ticketProgressAb": {},
+      "favoritesAb": [],
+      "examResultsAb": [],
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastActiveDate": null,
+        "startDate": null,
+        "activeDays": []
+      }
+    }
+  },
+  {
+    "name": "post-reset activity from another device is preserved",
+    "local": {
+      "resetAt": 20,
+      "questionProgressAb": {
+        "local": {
+          "answeredAt": 21
+        }
+      }
+    },
+    "remote": {
+      "questionProgressAb": {
+        "old": {
+          "answeredAt": 10
+        },
+        "new": {
+          "answeredAt": 30
+        }
+      }
+    },
+    "expected": {
+      "questionProgressAb": {
+        "local": {
+          "answeredAt": 21
+        },
+        "new": {
+          "answeredAt": 30
+        }
+      }
+    }
+  },
+  {
+    "name": "a remote reset clears an older device",
+    "local": {
+      "questionProgressAb": {
+        "old": {
+          "answeredAt": 10
+        }
+      },
+      "favoritesCd": [
+        "old"
+      ]
+    },
+    "remote": {
+      "resetAt": 20
+    },
+    "expected": {
+      "resetAt": 20,
+      "questionProgressAb": {},
+      "favoritesCd": []
+    }
+  },
+  {
+    "name": "mini game records use highest values",
+    "local": {
+      "miniGames": {
+        "regulator": {
+          "bestScore": 500,
+          "totalSolved": 20
+        }
+      }
+    },
+    "remote": {
+      "miniGames": {
+        "regulator": {
+          "bestScore": 100,
+          "totalSolved": 30
+        }
+      }
+    },
+    "expected": {
+      "miniGames": {
+        "regulator": {
+          "bestScore": 500,
+          "maxCombo": 0,
+          "totalSolved": 30,
+          "totalSwiped": 0,
+          "trainingCount": 0
+        },
+        "signs": {
+          "bestScore": 0,
+          "maxCombo": 0,
+          "totalSolved": 0,
+          "totalSwiped": 0,
+          "trainingCount": 0
+        },
+        "crossroads": {
+          "bestScore": 0,
+          "maxCombo": 0,
+          "totalSolved": 0,
+          "totalSwiped": 0,
+          "trainingCount": 0
+        }
+      }
+    }
+  },
+  {
+    "name": "malformed collections are ignored",
+    "local": {
+      "questionProgressAb": {
+        "broken": "bad"
+      }
+    },
+    "remote": {
+      "favoritesAb": null,
+      "questionProgressAb": [],
+      "examResultsAb": [
+        "not-json"
+      ]
+    },
+    "expected": {
+      "questionProgressAb": {},
+      "favoritesAb": [],
+      "examResultsAb": []
+    }
+  },
+  {
+    "name": "legacy object exam history is normalised",
+    "local": {
+      "examResultsAb": [
+        {
+          "completedAt": "2026-10-13T10:00:00Z",
+          "passed": true
+        }
+      ]
+    },
+    "remote": {},
+    "expected": {
+      "examResultsAb": [
+        "{\"completedAt\":\"2026-10-13T10:00:00Z\",\"passed\":true}"
+      ]
+    }
+  }
+]

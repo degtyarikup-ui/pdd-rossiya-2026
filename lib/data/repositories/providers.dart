@@ -31,6 +31,10 @@ final progressDataSourceProvider = Provider<ProgressDataSource>((ref) {
   throw UnimplementedError('Must be overridden with actual instance');
 });
 
+final progressImportsProvider = StreamProvider<int>(
+  (ref) => ref.watch(progressDataSourceProvider).imports,
+);
+
 final appDataRefreshProvider = StateProvider<int>((ref) => 0);
 
 /// True while a screen takes the whole window (the game's garage reveal):
@@ -136,6 +140,7 @@ final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
   ref,
 ) async {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
@@ -252,6 +257,7 @@ final markupProvider = FutureProvider<Map<String, List<Map<String, String>>>>((
 
 final statsProvider = FutureProvider<Map<String, int>>((ref) async {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
@@ -302,6 +308,7 @@ final statsProvider = FutureProvider<Map<String, int>>((ref) async {
 
 final ticketProgressProvider = FutureProvider<Map<int, int>>((ref) async {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
@@ -333,6 +340,7 @@ final favoriteQuestionProvider = FutureProvider.family<bool, String>((
   questionId,
 ) async {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
@@ -342,6 +350,7 @@ final favoriteQuestionProvider = FutureProvider.family<bool, String>((
 
 final favoriteQuestionsProvider = FutureProvider<List<String>>((ref) async {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
@@ -351,6 +360,7 @@ final favoriteQuestionsProvider = FutureProvider<List<String>>((ref) async {
 
 final streakProvider = FutureProvider<Streak>((ref) async {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   final dataSource = ref.watch(progressDataSourceProvider);
   return await dataSource.loadStreak();
 });
@@ -374,6 +384,7 @@ final bestWeeklyRankProvider = FutureProvider.autoDispose<int?>((ref) async {
 final achievementsProvider =
     FutureProvider.autoDispose<List<AchievementProgress>>((ref) async {
       ref.watch(appDataRefreshProvider);
+      ref.watch(progressImportsProvider);
       final category = ref.watch(
         appSettingsProvider.select((s) => s.ticketCategory),
       );
@@ -413,6 +424,7 @@ final achievementsProvider =
 
 final wrongQuestionIdsProvider = FutureProvider<List<String>>((ref) async {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
@@ -458,30 +470,35 @@ final premiumServiceProvider = Provider<PremiumService>((ref) {
 
 final isPremiumProvider = Provider<bool>((ref) {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   ref.watch(authAndPremiumStreamProvider);
   return PremiumService.instance.isPremium;
 });
 
 final dailyCardsRemainingProvider = Provider<int>((ref) {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   ref.watch(authAndPremiumStreamProvider);
   return PremiumService.instance.remainingFreeCards;
 });
 
 final dailyFreeLimitProvider = Provider<int>((ref) {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   ref.watch(authAndPremiumStreamProvider);
   return PremiumService.instance.dailyFreeLimit;
 });
 
 final aiMessagesRemainingProvider = Provider<int>((ref) {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   ref.watch(authAndPremiumStreamProvider);
   return PremiumService.instance.remainingAiMessages;
 });
 
 final aiMessagesLimitProvider = Provider<int>((ref) {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   ref.watch(authAndPremiumStreamProvider);
   return PremiumService.instance.aiFreeLimit;
 });
@@ -523,7 +540,11 @@ final trafficControllerProgressProvider =
       TrafficControllerProgress
     >((ref) {
       final ds = ref.watch(progressDataSourceProvider);
-      return TrafficControllerProgressController(ds);
+      final controller = TrafficControllerProgressController(ds);
+      ref.listen(progressImportsProvider, (_, next) {
+        if (next.hasValue) controller.reload();
+      });
+      return controller;
     });
 
 class TrafficControllerProgressController
@@ -532,6 +553,8 @@ class TrafficControllerProgressController
     : super(_dataSource.getTrafficControllerProgress());
 
   final ProgressDataSource _dataSource;
+
+  void reload() => state = _dataSource.getTrafficControllerProgress();
 
   Future<void> recordGameResult({
     required int score,
@@ -560,7 +583,11 @@ final signSwiperProgressProvider =
       ref,
     ) {
       final ds = ref.watch(progressDataSourceProvider);
-      return SignSwiperProgressController(ds);
+      final controller = SignSwiperProgressController(ds);
+      ref.listen(progressImportsProvider, (_, next) {
+        if (next.hasValue) controller.reload();
+      });
+      return controller;
     });
 
 class SignSwiperProgressController extends StateNotifier<SignSwiperProgress> {
@@ -568,6 +595,8 @@ class SignSwiperProgressController extends StateNotifier<SignSwiperProgress> {
     : super(_dataSource.getSignSwiperProgress());
 
   final ProgressDataSource _dataSource;
+
+  void reload() => state = _dataSource.getSignSwiperProgress();
 
   Future<void> recordGameResult({
     required int score,
@@ -594,13 +623,14 @@ class SignSwiperProgressController extends StateNotifier<SignSwiperProgress> {
   }
 }
 
-final crossroadsPriorityProgressProvider = StateNotifierProvider<
-  CrossroadsPriorityProgressController,
-  CrossroadsPriorityProgress
->((ref) {
-  final ds = ref.watch(progressDataSourceProvider);
-  return CrossroadsPriorityProgressController(ds);
-});
+final crossroadsPriorityProgressProvider =
+    StateNotifierProvider<
+      CrossroadsPriorityProgressController,
+      CrossroadsPriorityProgress
+    >((ref) {
+      final ds = ref.watch(progressDataSourceProvider);
+      return CrossroadsPriorityProgressController(ds);
+    });
 
 class CrossroadsPriorityProgressController
     extends StateNotifier<CrossroadsPriorityProgress> {
@@ -608,6 +638,8 @@ class CrossroadsPriorityProgressController
     : super(_dataSource.getCrossroadsPriorityProgress());
 
   final ProgressDataSource _dataSource;
+
+  void reload() => state = _dataSource.getCrossroadsPriorityProgress();
 
   Future<void> recordGameResult({
     required int score,
