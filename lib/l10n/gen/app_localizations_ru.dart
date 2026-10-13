@@ -3496,4 +3496,177 @@ class AppLocalizationsRu extends AppLocalizations {
   String appVersion(String version) {
     return 'Версия $version';
   }
+
+  @override
+  String get driverTip1Title => 'Дистанция — не меньше 3 секунд';
+
+  @override
+  String get driverTip1Body =>
+      'Проезжайте ориентир минимум через 3 секунды после авто впереди. В дождь и гололёд — позже.';
+
+  @override
+  String get driverTip2Title => 'Лужи проезжайте плавно';
+
+  @override
+  String get driverTip2Body =>
+      'Снижайте скорость перед лужей. Если сцепление пропало, плавно отпустите газ; не тормозите резко.';
+
+  @override
+  String get driverTip3Title => 'Проверяйте слепую зону';
+
+  @override
+  String get driverTip3Body =>
+      'Настройте зеркала до поездки. Перед перестроением проверьте зеркала и коротко взгляните через плечо.';
+
+  @override
+  String get driverTip4Title => 'На круг — с правым поворотником';
+
+  @override
+  String get driverTip4Body =>
+      'При въезде и съезде включайте правый сигнал. На круге подавайте сигнал при перестроении.';
+
+  @override
+  String get driverTip5Title => 'На льду — без резких движений';
+
+  @override
+  String get driverTip5Body =>
+      'Снижайте скорость заранее. Плавно работайте рулём и педалями, держите большую дистанцию.';
+
+  @override
+  String get driverTip6Title => 'С ABS удерживайте тормоз';
+
+  @override
+  String get driverTip6Body =>
+      'При экстренном торможении сильно нажмите педаль и держите. Вибрация — нормальная работа ABS.';
+
+  @override
+  String get driverTip7Title => 'Остановитесь перед стоп-линией';
+
+  @override
+  String get driverTip7Body =>
+      'При запрещающем сигнале остановитесь до стоп-линии или знака 6.16. Не заезжайте на переход.';
+
+  @override
+  String get driverTip8Title => 'Не прижимайтесь к грузовику';
+
+  @override
+  String get driverTip8Body =>
+      'Оставляйте запас дистанции, чтобы видеть дорогу впереди. Не начинайте обгон при закрытом обзоре.';
+
+  @override
+  String get driverTip9Title => 'На уклоне уступает спускающийся';
+
+  @override
+  String get driverTip9Body =>
+      'На уклоне со знаками 1.13 или 1.14 при препятствии, мешающем разъехаться, уступает едущий вниз.';
+
+  @override
+  String get driverTip10Title => 'Зелёный — сначала проверьте путь';
+
+  @override
+  String get driverTip10Body =>
+      'Пропустите машины, завершающие проезд перекрёстка, и пешеходов, заканчивающих переход.';
+
+  @override
+  String get driverTip11Title => 'Замедляйтесь перед поворотом';
+
+  @override
+  String get driverTip11Body =>
+      'Снижайте скорость на прямой до поворота. На скользком покрытии поворачивайте без резких действий.';
+
+  @override
+  String get driverTip12Title => 'Ждите поворота с прямыми колёсами';
+
+  @override
+  String get driverTip12Body =>
+      'Перед левым поворотом держите колёса прямо: это снижает риск выезда на встречную при ударе сзади.';
+
+  @override
+  String get driverTip13Title => 'Не задерживайтесь в слепой зоне фуры';
+
+  @override
+  String get driverTip13Body =>
+      'Не держитесь рядом с кабиной и вплотную за прицепом: водитель грузовика может вас не видеть.';
+
+  @override
+  String get driverTip14Title => 'У зебры тормозит сосед — тормозите';
+
+  @override
+  String get driverTip14Body =>
+      'Тоже снижайте скорость или остановитесь. Продолжайте, только пропустив пешеходов.';
+
+  @override
+  String get driverTip15Title => 'Не объезжайте фуру справа у поворота';
+
+  @override
+  String get driverTip15Body =>
+      'При правом повороте прицеп срезает угол. Не въезжайте в зазор между грузовиком и бордюром.';
+
+  @override
+  String get driverTip16Title => 'Запотело стекло — включите обдув';
+
+  @override
+  String get driverTip16Body =>
+      'Направьте воздух на лобовое стекло, включите кондиционер и отключите рециркуляцию.';
+
+  @override
+  String get driverTip17Title => 'На уклоне закрепите автомобиль';
+
+  @override
+  String get driverTip17Body =>
+      'Стояночный тормоз + передача или P. У правого бордюра: на спуске колёса к нему, на подъёме — от него.';
+
+  @override
+  String get driverTip18Title => 'В тумане выключите дальний';
+
+  @override
+  String get driverTip18Body =>
+      'Включите ближний, снизьте скорость и увеличьте дистанцию. Противотуманки выключайте, когда видимость улучшится.';
+
+  @override
+  String get driverTip19Title => 'Аварийный знак: минимум 15 или 30 м';
+
+  @override
+  String get driverTip19Body =>
+      'В населённом пункте — от 15 м, вне его — от 30 м. При плохой видимости поставьте дальше.';
+
+  @override
+  String get driverTip20Title => 'Клонит в сон — остановитесь';
+
+  @override
+  String get driverTip20Body =>
+      'Остановитесь в безопасном месте и поспите. Планируйте хотя бы 15 минут отдыха каждые 2 часа.';
+
+  @override
+  String get driverTipCategorySafety => 'Безопасность';
+
+  @override
+  String get driverTipCategoryWeather => 'Погода';
+
+  @override
+  String get driverTipCategoryWinter => 'Зимняя езда';
+
+  @override
+  String get driverTipCategoryRules => 'ПДД';
+
+  @override
+  String get driverTipCategoryHighway => 'Трасса';
+
+  @override
+  String get driverTipCategoryManeuver => 'Манёвры';
+
+  @override
+  String get driverTipCategoryParking => 'Парковка';
+
+  @override
+  String get driverTipCategoryComfort => 'Комфорт';
+
+  @override
+  String get driverTipCategoryFuel => 'Экономия';
+
+  @override
+  String get driverTipCategoryMirrors => 'Зеркала';
+
+  @override
+  String get driverTipCategoryOther => 'Советы';
 }

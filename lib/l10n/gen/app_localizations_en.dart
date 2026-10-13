@@ -3482,4 +3482,177 @@ class AppLocalizationsEn extends AppLocalizations {
   String appVersion(String version) {
     return 'Version $version';
   }
+
+  @override
+  String get driverTip1Title => 'Leave at least a 3-second gap';
+
+  @override
+  String get driverTip1Body =>
+      'Pass a landmark at least 3 seconds after the car ahead. Allow more time in rain or on ice.';
+
+  @override
+  String get driverTip2Title => 'Slow down before puddles';
+
+  @override
+  String get driverTip2Body =>
+      'Reduce speed before a puddle. If grip is lost, ease off the accelerator; avoid sudden braking.';
+
+  @override
+  String get driverTip3Title => 'Check your blind spot';
+
+  @override
+  String get driverTip3Body =>
+      'Adjust mirrors before driving. Before changing lanes, check them and take a quick look over your shoulder.';
+
+  @override
+  String get driverTip4Title => 'Signal right at a roundabout entry';
+
+  @override
+  String get driverTip4Body =>
+      'In Russia, signal right when entering or leaving a roundabout. Signal lane changes while on it.';
+
+  @override
+  String get driverTip5Title => 'Keep movements smooth on ice';
+
+  @override
+  String get driverTip5Body =>
+      'Slow down early. Use the steering and pedals gently, and leave a larger following gap.';
+
+  @override
+  String get driverTip6Title => 'With ABS, hold the brake down';
+
+  @override
+  String get driverTip6Body =>
+      'In an emergency, press the brake firmly and keep it pressed. Pedal vibration is normal ABS operation.';
+
+  @override
+  String get driverTip7Title => 'Stop before the stop line';
+
+  @override
+  String get driverTip7Body =>
+      'At a prohibiting signal, stop before the line or sign 6.16. Keep the pedestrian crossing clear.';
+
+  @override
+  String get driverTip8Title => 'Do not tailgate a truck';
+
+  @override
+  String get driverTip8Body =>
+      'Leave enough space to see the road ahead. Do not start overtaking if your view is blocked.';
+
+  @override
+  String get driverTip9Title => 'On a slope, downhill traffic yields';
+
+  @override
+  String get driverTip9Body =>
+      'On a slope marked 1.13 or 1.14, if an obstacle prevents passing, the downhill driver must yield.';
+
+  @override
+  String get driverTip10Title => 'Green light: check the way is clear';
+
+  @override
+  String get driverTip10Body =>
+      'Yield to vehicles finishing their passage through the junction and pedestrians still crossing.';
+
+  @override
+  String get driverTip11Title => 'Slow down before the bend';
+
+  @override
+  String get driverTip11Body =>
+      'Reduce speed on the straight before a bend. On slippery roads, avoid sudden movements while turning.';
+
+  @override
+  String get driverTip12Title => 'Keep wheels straight while waiting to turn';
+
+  @override
+  String get driverTip12Body =>
+      'Before turning left, keep the wheels straight. This reduces the risk of being pushed into oncoming traffic.';
+
+  @override
+  String get driverTip13Title => 'Stay out of a truck’s blind spots';
+
+  @override
+  String get driverTip13Body =>
+      'Do not linger beside the cab or close behind the trailer: the truck driver may not see you.';
+
+  @override
+  String get driverTip14Title => 'A car slows at a crossing? Slow down too';
+
+  @override
+  String get driverTip14Body =>
+      'Reduce speed or stop as well. Continue only after yielding to pedestrians.';
+
+  @override
+  String get driverTip15Title => 'Do not squeeze past a turning truck';
+
+  @override
+  String get driverTip15Body =>
+      'A trailer cuts inward on a right turn. Stay out of the gap between the truck and the kerb.';
+
+  @override
+  String get driverTip16Title => 'Demist the windscreen before driving';
+
+  @override
+  String get driverTip16Body =>
+      'Direct airflow to the windscreen, turn on air conditioning and switch off recirculation.';
+
+  @override
+  String get driverTip17Title => 'Secure the car when parking on a slope';
+
+  @override
+  String get driverTip17Body =>
+      'Apply the parking brake and select a gear or P. At a right-side kerb: wheels toward it downhill, away uphill.';
+
+  @override
+  String get driverTip18Title => 'Use dipped headlights in fog';
+
+  @override
+  String get driverTip18Body =>
+      'Slow down and leave more space. Switch fog lights off once visibility improves.';
+
+  @override
+  String get driverTip19Title => 'Warning triangle: at least 15 or 30 m';
+
+  @override
+  String get driverTip19Body =>
+      'In Russia: at least 15 m in a built-up area, 30 m outside one. Place it farther away if visibility is poor.';
+
+  @override
+  String get driverTip20Title => 'Feeling sleepy? Stop and rest';
+
+  @override
+  String get driverTip20Body =>
+      'Stop somewhere safe and take a nap. Plan at least a 15-minute break every 2 hours.';
+
+  @override
+  String get driverTipCategorySafety => 'Safety';
+
+  @override
+  String get driverTipCategoryWeather => 'Weather';
+
+  @override
+  String get driverTipCategoryWinter => 'Winter driving';
+
+  @override
+  String get driverTipCategoryRules => 'Traffic rules';
+
+  @override
+  String get driverTipCategoryHighway => 'Highway';
+
+  @override
+  String get driverTipCategoryManeuver => 'Maneuvers';
+
+  @override
+  String get driverTipCategoryParking => 'Parking';
+
+  @override
+  String get driverTipCategoryComfort => 'Comfort';
+
+  @override
+  String get driverTipCategoryFuel => 'Economy';
+
+  @override
+  String get driverTipCategoryMirrors => 'Mirrors';
+
+  @override
+  String get driverTipCategoryOther => 'Tips';
 }

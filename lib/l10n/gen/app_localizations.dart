@@ -5805,6 +5805,312 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Версия {version}'**
   String appVersion(String version);
+
+  /// No description provided for @driverTip1Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дистанция — не меньше 3 секунд'**
+  String get driverTip1Title;
+
+  /// No description provided for @driverTip1Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проезжайте ориентир минимум через 3 секунды после авто впереди. В дождь и гололёд — позже.'**
+  String get driverTip1Body;
+
+  /// No description provided for @driverTip2Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лужи проезжайте плавно'**
+  String get driverTip2Title;
+
+  /// No description provided for @driverTip2Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'Снижайте скорость перед лужей. Если сцепление пропало, плавно отпустите газ; не тормозите резко.'**
+  String get driverTip2Body;
+
+  /// No description provided for @driverTip3Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверяйте слепую зону'**
+  String get driverTip3Title;
+
+  /// No description provided for @driverTip3Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'Настройте зеркала до поездки. Перед перестроением проверьте зеркала и коротко взгляните через плечо.'**
+  String get driverTip3Body;
+
+  /// No description provided for @driverTip4Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'На круг — с правым поворотником'**
+  String get driverTip4Title;
+
+  /// No description provided for @driverTip4Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'При въезде и съезде включайте правый сигнал. На круге подавайте сигнал при перестроении.'**
+  String get driverTip4Body;
+
+  /// No description provided for @driverTip5Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'На льду — без резких движений'**
+  String get driverTip5Title;
+
+  /// No description provided for @driverTip5Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'Снижайте скорость заранее. Плавно работайте рулём и педалями, держите большую дистанцию.'**
+  String get driverTip5Body;
+
+  /// No description provided for @driverTip6Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'С ABS удерживайте тормоз'**
+  String get driverTip6Title;
+
+  /// No description provided for @driverTip6Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'При экстренном торможении сильно нажмите педаль и держите. Вибрация — нормальная работа ABS.'**
+  String get driverTip6Body;
+
+  /// No description provided for @driverTip7Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Остановитесь перед стоп-линией'**
+  String get driverTip7Title;
+
+  /// No description provided for @driverTip7Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'При запрещающем сигнале остановитесь до стоп-линии или знака 6.16. Не заезжайте на переход.'**
+  String get driverTip7Body;
+
+  /// No description provided for @driverTip8Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не прижимайтесь к грузовику'**
+  String get driverTip8Title;
+
+  /// No description provided for @driverTip8Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оставляйте запас дистанции, чтобы видеть дорогу впереди. Не начинайте обгон при закрытом обзоре.'**
+  String get driverTip8Body;
+
+  /// No description provided for @driverTip9Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'На уклоне уступает спускающийся'**
+  String get driverTip9Title;
+
+  /// No description provided for @driverTip9Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'На уклоне со знаками 1.13 или 1.14 при препятствии, мешающем разъехаться, уступает едущий вниз.'**
+  String get driverTip9Body;
+
+  /// No description provided for @driverTip10Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Зелёный — сначала проверьте путь'**
+  String get driverTip10Title;
+
+  /// No description provided for @driverTip10Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пропустите машины, завершающие проезд перекрёстка, и пешеходов, заканчивающих переход.'**
+  String get driverTip10Body;
+
+  /// No description provided for @driverTip11Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Замедляйтесь перед поворотом'**
+  String get driverTip11Title;
+
+  /// No description provided for @driverTip11Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'Снижайте скорость на прямой до поворота. На скользком покрытии поворачивайте без резких действий.'**
+  String get driverTip11Body;
+
+  /// No description provided for @driverTip12Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ждите поворота с прямыми колёсами'**
+  String get driverTip12Title;
+
+  /// No description provided for @driverTip12Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перед левым поворотом держите колёса прямо: это снижает риск выезда на встречную при ударе сзади.'**
+  String get driverTip12Body;
+
+  /// No description provided for @driverTip13Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не задерживайтесь в слепой зоне фуры'**
+  String get driverTip13Title;
+
+  /// No description provided for @driverTip13Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не держитесь рядом с кабиной и вплотную за прицепом: водитель грузовика может вас не видеть.'**
+  String get driverTip13Body;
+
+  /// No description provided for @driverTip14Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'У зебры тормозит сосед — тормозите'**
+  String get driverTip14Title;
+
+  /// No description provided for @driverTip14Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тоже снижайте скорость или остановитесь. Продолжайте, только пропустив пешеходов.'**
+  String get driverTip14Body;
+
+  /// No description provided for @driverTip15Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не объезжайте фуру справа у поворота'**
+  String get driverTip15Title;
+
+  /// No description provided for @driverTip15Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'При правом повороте прицеп срезает угол. Не въезжайте в зазор между грузовиком и бордюром.'**
+  String get driverTip15Body;
+
+  /// No description provided for @driverTip16Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запотело стекло — включите обдув'**
+  String get driverTip16Title;
+
+  /// No description provided for @driverTip16Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'Направьте воздух на лобовое стекло, включите кондиционер и отключите рециркуляцию.'**
+  String get driverTip16Body;
+
+  /// No description provided for @driverTip17Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'На уклоне закрепите автомобиль'**
+  String get driverTip17Title;
+
+  /// No description provided for @driverTip17Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стояночный тормоз + передача или P. У правого бордюра: на спуске колёса к нему, на подъёме — от него.'**
+  String get driverTip17Body;
+
+  /// No description provided for @driverTip18Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'В тумане выключите дальний'**
+  String get driverTip18Title;
+
+  /// No description provided for @driverTip18Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'Включите ближний, снизьте скорость и увеличьте дистанцию. Противотуманки выключайте, когда видимость улучшится.'**
+  String get driverTip18Body;
+
+  /// No description provided for @driverTip19Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Аварийный знак: минимум 15 или 30 м'**
+  String get driverTip19Title;
+
+  /// No description provided for @driverTip19Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'В населённом пункте — от 15 м, вне его — от 30 м. При плохой видимости поставьте дальше.'**
+  String get driverTip19Body;
+
+  /// No description provided for @driverTip20Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Клонит в сон — остановитесь'**
+  String get driverTip20Title;
+
+  /// No description provided for @driverTip20Body.
+  ///
+  /// In ru, this message translates to:
+  /// **'Остановитесь в безопасном месте и поспите. Планируйте хотя бы 15 минут отдыха каждые 2 часа.'**
+  String get driverTip20Body;
+
+  /// No description provided for @driverTipCategorySafety.
+  ///
+  /// In ru, this message translates to:
+  /// **'Безопасность'**
+  String get driverTipCategorySafety;
+
+  /// No description provided for @driverTipCategoryWeather.
+  ///
+  /// In ru, this message translates to:
+  /// **'Погода'**
+  String get driverTipCategoryWeather;
+
+  /// No description provided for @driverTipCategoryWinter.
+  ///
+  /// In ru, this message translates to:
+  /// **'Зимняя езда'**
+  String get driverTipCategoryWinter;
+
+  /// No description provided for @driverTipCategoryRules.
+  ///
+  /// In ru, this message translates to:
+  /// **'ПДД'**
+  String get driverTipCategoryRules;
+
+  /// No description provided for @driverTipCategoryHighway.
+  ///
+  /// In ru, this message translates to:
+  /// **'Трасса'**
+  String get driverTipCategoryHighway;
+
+  /// No description provided for @driverTipCategoryManeuver.
+  ///
+  /// In ru, this message translates to:
+  /// **'Манёвры'**
+  String get driverTipCategoryManeuver;
+
+  /// No description provided for @driverTipCategoryParking.
+  ///
+  /// In ru, this message translates to:
+  /// **'Парковка'**
+  String get driverTipCategoryParking;
+
+  /// No description provided for @driverTipCategoryComfort.
+  ///
+  /// In ru, this message translates to:
+  /// **'Комфорт'**
+  String get driverTipCategoryComfort;
+
+  /// No description provided for @driverTipCategoryFuel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Экономия'**
+  String get driverTipCategoryFuel;
+
+  /// No description provided for @driverTipCategoryMirrors.
+  ///
+  /// In ru, this message translates to:
+  /// **'Зеркала'**
+  String get driverTipCategoryMirrors;
+
+  /// No description provided for @driverTipCategoryOther.
+  ///
+  /// In ru, this message translates to:
+  /// **'Советы'**
+  String get driverTipCategoryOther;
 }
 
 class _AppLocalizationsDelegate

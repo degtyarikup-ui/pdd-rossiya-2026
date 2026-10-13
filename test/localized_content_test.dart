@@ -87,6 +87,16 @@ void main() {
         expect(enTips[i].description.isNotEmpty, isTrue);
         expect(kkTips[i].title.isNotEmpty, isTrue);
         expect(kkTips[i].description.isNotEmpty, isTrue);
+        for (final tip in [ruTips[i], enTips[i], kkTips[i]]) {
+          expect(tip.imagePath, isNotEmpty);
+          expect(
+            File(tip.imagePath).existsSync(),
+            isTrue,
+            reason: '${tip.id} must have a bundled illustration',
+          );
+          expect(tip.title.length, lessThanOrEqualTo(64));
+          expect(tip.description.length, lessThanOrEqualTo(160));
+        }
       }
     });
 

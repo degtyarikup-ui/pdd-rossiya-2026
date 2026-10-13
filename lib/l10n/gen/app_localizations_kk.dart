@@ -3474,4 +3474,177 @@ class AppLocalizationsKk extends AppLocalizations {
   String appVersion(String version) {
     return '$version нұсқасы';
   }
+
+  @override
+  String get driverTip1Title => 'Арақашықтық — кемінде 3 секунд';
+
+  @override
+  String get driverTip1Body =>
+      'Алдыңғы көлік өткен бағдардан кемінде 3 секунд кейін өтіңіз. Жаңбыр мен көктайғақта аралықты ұлғайтыңыз.';
+
+  @override
+  String get driverTip2Title => 'Шалшықтан бірқалыпты өтіңіз';
+
+  @override
+  String get driverTip2Body =>
+      'Шалшыққа дейін жылдамдықты азайтыңыз. Дөңгелек жолға ілініспесе, газды жай босатыңыз; күрт тежемеңіз.';
+
+  @override
+  String get driverTip3Title => 'Соқыр аймақты тексеріңіз';
+
+  @override
+  String get driverTip3Body =>
+      'Айналарды жолға шығарда реттеңіз. Жолақ ауыстырмас бұрын айналарды тексеріп, иық арқылы қысқа көз тастаңыз.';
+
+  @override
+  String get driverTip4Title => 'Шеңберге кіргенде оңға сигнал беріңіз';
+
+  @override
+  String get driverTip4Body =>
+      'Ресейде шеңберге кіріп, одан шыққанда оңға сигнал беріңіз. Шеңберде жолақ ауыстырғанда да сигнал қажет.';
+
+  @override
+  String get driverTip5Title => 'Мұзда күрт әрекет жасамаңыз';
+
+  @override
+  String get driverTip5Body =>
+      'Жылдамдықты алдын ала азайтыңыз. Руль мен педальдарды бірқалыпты қолданып, арақашықтықты ұлғайтыңыз.';
+
+  @override
+  String get driverTip6Title => 'ABS болса, тежегішті басып ұстаңыз';
+
+  @override
+  String get driverTip6Body =>
+      'Шұғыл тежегенде педальды қатты басып, ұстап тұрыңыз. Педальдың дірілі — ABS жүйесінің қалыпты жұмысы.';
+
+  @override
+  String get driverTip7Title => 'Тоқтау сызығына дейін тоқтаңыз';
+
+  @override
+  String get driverTip7Body =>
+      'Тыйым салатын сигналда тоқтау сызығына немесе 6.16 белгісіне дейін тоқтаңыз. Жаяу өткелге кірмеңіз.';
+
+  @override
+  String get driverTip8Title => 'Жүк көлігіне тым жақындамаңыз';
+
+  @override
+  String get driverTip8Body =>
+      'Алдағы жолды көру үшін жеткілікті аралық қалдырыңыз. Жол көрінбесе, басып озуды бастамаңыз.';
+
+  @override
+  String get driverTip9Title => 'Еңісте төмен түскен көлік жол береді';
+
+  @override
+  String get driverTip9Body =>
+      '1.13 не 1.14 белгісі бар еңісте кедергі қарсы көлікпен өтуге бөгет болса, төмен түсіп келе жатқан жүргізуші жол береді.';
+
+  @override
+  String get driverTip10Title => 'Жасыл жанса да, жолды тексеріңіз';
+
+  @override
+  String get driverTip10Body =>
+      'Қиылыстан өтіп үлгермеген көліктер мен өткелден өтуді аяқтап жатқан жаяу жүргіншілерге жол беріңіз.';
+
+  @override
+  String get driverTip11Title => 'Бұрылыстың алдында баяулаңыз';
+
+  @override
+  String get driverTip11Body =>
+      'Бұрылысқа дейін түзу жолда жылдамдықты азайтыңыз. Тайғақ жолда күрт әрекетсіз бұрылыңыз.';
+
+  @override
+  String get driverTip12Title => 'Бұрылысты күткенде дөңгелекті түзу ұстаңыз';
+
+  @override
+  String get driverTip12Body =>
+      'Солға бұрылуды күткенде дөңгелекті түзу ұстаңыз: арттан соққы болса, қарсы жолаққа шығу қаупі азаяды.';
+
+  @override
+  String get driverTip13Title => 'Жүк көлігінің соқыр аймағында қалмаңыз';
+
+  @override
+  String get driverTip13Body =>
+      'Кабина жанында немесе тіркеменің дәл артында жүрмеңіз: жүк көлігінің жүргізушісі сізді көрмеуі мүмкін.';
+
+  @override
+  String get driverTip14Title => 'Өткелде көрші көлік тежесе, сіз де тежеңіз';
+
+  @override
+  String get driverTip14Body =>
+      'Сіз де жылдамдықты азайтыңыз немесе тоқтаңыз. Жаяу жүргіншілерге жол берген соң ғана жүріңіз.';
+
+  @override
+  String get driverTip15Title => 'Бұрылып жатқан жүк көлігін оңнан айналмаңыз';
+
+  @override
+  String get driverTip15Body =>
+      'Оңға бұрылғанда тіркеме ішкі жаққа ығысады. Жүк көлігі мен жиектас арасындағы саңылауға кірмеңіз.';
+
+  @override
+  String get driverTip16Title => 'Әйнек буланса, ауа үрлеуді қосыңыз';
+
+  @override
+  String get driverTip16Body =>
+      'Ауа ағынын алдыңғы әйнекке бағыттаңыз, кондиционерді қосып, ауа айналымын өшіріңіз.';
+
+  @override
+  String get driverTip17Title => 'Еңісте көлікті бекітіңіз';
+
+  @override
+  String get driverTip17Body =>
+      'Тұрақ тежегішін қосып, беріліс не P таңдаңыз. Оң жиектаста: төменде дөңгелек оған қарай, жоғарыда одан кері.';
+
+  @override
+  String get driverTip18Title => 'Тұманда алыс жарықты өшіріңіз';
+
+  @override
+  String get driverTip18Body =>
+      'Жақын жарықты қосып, жылдамдықты азайтыңыз және аралықты ұлғайтыңыз. Көріну жақсарғанда тұман шамдарын өшіріңіз.';
+
+  @override
+  String get driverTip19Title => 'Апат белгісі: кемінде 15 не 30 м';
+
+  @override
+  String get driverTip19Body =>
+      'Ресейде елді мекенде — кемінде 15 м, одан тыс — 30 м. Көріну нашар болса, белгіні алысырақ қойыңыз.';
+
+  @override
+  String get driverTip20Title => 'Ұйқы келсе, тоқтаңыз';
+
+  @override
+  String get driverTip20Body =>
+      'Қауіпсіз жерде тоқтап, ұйықтап алыңыз. Әр 2 сағат сайын кемінде 15 минут демалыс жоспарлаңыз.';
+
+  @override
+  String get driverTipCategorySafety => 'Қауіпсіздік';
+
+  @override
+  String get driverTipCategoryWeather => 'Ауа райы';
+
+  @override
+  String get driverTipCategoryWinter => 'Қысқы жүргізу';
+
+  @override
+  String get driverTipCategoryRules => 'ЖҚЕ';
+
+  @override
+  String get driverTipCategoryHighway => 'Тас жол';
+
+  @override
+  String get driverTipCategoryManeuver => 'Манёврлер';
+
+  @override
+  String get driverTipCategoryParking => 'Тұрақ';
+
+  @override
+  String get driverTipCategoryComfort => 'Жайлылық';
+
+  @override
+  String get driverTipCategoryFuel => 'Үнемдеу';
+
+  @override
+  String get driverTipCategoryMirrors => 'Айналар';
+
+  @override
+  String get driverTipCategoryOther => 'Кеңестер';
 }
