@@ -135,7 +135,7 @@ const Scene3D = (() => {
 
   const OFFSET = { polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 };
   function layerMaterial(s) {
-    if (s.layer === "") return new THREE.MeshLambertMaterial({ color: s.colour, side: THREE.DoubleSide, ...OFFSET });
+    if (s.layer === "" || s.layer === "sand") return new THREE.MeshLambertMaterial({ color: s.colour, side: THREE.DoubleSide, ...OFFSET });
     const kind = s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
     const m = detailMaterial(kind, s.layer === "grass" ? GRASS_COLOUR : s.colour);
     Object.assign(m, OFFSET);
@@ -143,7 +143,7 @@ const Scene3D = (() => {
   }
 
   function surfaceMesh(s) {
-    const kind = s.layer === "" ? null : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
+    const kind = s.layer === "" || s.layer === "sand" ? null : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
     const period = kind ? periodOf(kind) : 1;
     const pos = [], uv = [];
     for (let k = 0; k < s.idx.length; k++) {

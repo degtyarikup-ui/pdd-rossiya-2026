@@ -15,6 +15,15 @@
   const slider = (name, label, value, min, max, step, shown) => `<div class="slider-row"><div class="slider-h"><span>${esc(label)}</span><em data-shown="${name}">${esc(shown)}</em></div>
     <input type="range" min="${min}" max="${max}" step="${step}" value="${value}" data-slider="${name}"></div>`;
 
+  function compactHelp(p) {
+    p.querySelectorAll("p.muted").forEach((text) => {
+      if (text.closest(".info-help")) return;
+      const info = document.createElement("details"); info.className = "info-help";
+      const summary = document.createElement("summary"); summary.textContent = "i"; summary.setAttribute("aria-label", "Подсказка");
+      text.replaceWith(info); info.append(summary, text);
+    });
+  }
+
   let handlers = {};
   function bind(h) {
     handlers = h;
@@ -61,6 +70,7 @@
     const view = { decor: decorInspector, actor: actorInspector, officer: officerInspector, sign: signInspector, track: trackInspector, light: lightInspector, street: streetInspector, node: nodeInspector,
       route: routeInspector, marking: markingInspector, lawn: shapeInspector, road: shapeInspector, stop: stopInspector }[ref.t];
     view(p, ref, o);
+    compactHelp(p);
     Thumbs.fillAll(p);
   };
   App.renderSelection = () => {};
@@ -85,10 +95,6 @@
       ${card("", `${toggle("playable", "Сцена в игре", state.playable, "gamepad")}
         <div class="insp-actions">${button("run", "Тест в игре", "play", "primary")}</div>
         ${button("run-auto", "В игре на автопилоте", "video", "ghost small wide")}`)}
-      ${card("Вопрос", `${src && src.image ? `<img class="ticket-pic" data-act="photo" src="/asset/source/${src.image}.webp" alt="" data-tip="Крупно">${button("pin", "Закрепить фото над сценой", "image", "ghost small wide")}` : ""}
-        <p class="qtext">${esc(src ? src.question : ru.title || "")}</p>
-        <div class="answers">${answers.map((a, i) => `<button class="answer ${correct === i ? "on" : ""}" data-act="correct" data-i="${i}"><i>${correct === i ? ic("check-circle") : i + 1}</i><span>${esc(a)}</span></button>`).join("")}</div>
-        ${src && src.comment ? `<details><summary>Комментарий</summary><p class="comment">${esc(src.comment)}</p></details>` : ""}`, { icon: "ticket" })}
       ${card("Игрок едет", `${chips("maneuver", ["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: k !== "straight" && !routes.includes(k) && !(s.layout) })), q.maneuver, { cls: "arrows" })}
         <div class="sub-h">Знак скорости</div>${chips("speed", [{ value: "", title: "Нет" }, ...[20, 40, 60].map((v) => ({ value: v, html: `<span class="speed-sign">${v}</span>` }))], q.speedLimit ?? "", { cls: "signs" })}
         <div class="sub-h">Ждать на красном</div>${chips("redWait", [{ value: "", title: "Нет" }, { value: 2, title: "2 с" }, { value: 5, title: "5 с" }], q.redWait ?? "")}
@@ -103,6 +109,7 @@
         ${state.findings.length ? state.findings.map((f, i) => `<button class="finding ${f.level}" data-act="finding" data-i="${i}">${ic(f.level === "error" ? "error" : "alert")}<span>${esc(f.message)}</span></button>`).join("")
           : `<p class="ok-line">${ic("check-circle")}Ошибок нет</p>`}</section>
       ${card("Сверка с билетом", chips("status", [{ value: "unverified", title: "Не сверено" }, { value: "ok", title: "Совпадает" }, { value: "fixed", title: "Исправлено" }], (s.compliance || {}).status || "unverified"), { icon: "check-circle" })}`;
+    compactHelp(p);
     Thumbs.fillAll(p);
     bind({
       "toggle:playable": (on) => App.setPlayable(on),
@@ -395,6 +402,7 @@
     const pl = Layout.playerPlan(s);
     const isPlayer = pl && pl.st.id === st.id;
     p.innerHTML = `${head(`<span class="ibadge">${ic("road")}</span>`, Layout.KINDS[st.kind || "street"].title, isPlayer ? "по ней едет игрок" : "")}
+      ${card("Покрытие", chips("surface", [{ value: "asphalt", title: "Асфальт" }, { value: "sand", title: "Песок" }], st.surface || "asphalt"))}
       ${card("Ширина", chips("kind", Object.entries(Layout.KINDS).map(([k, v]) => ({ value: k, html: `<span class="road-pic k-${k}"></span>`, title: v.title })), st.kind || "street", { cls: "tiles" }))}
       ${st.kind !== "yard" ? card("Разделительная полоса", chips("median", [{ value: 0, title: "Нет" }, { value: 2, title: "2 м" }, { value: 3, title: "3 м" }, { value: 5, title: "5 м" }], Number(st.median) || 0)
         + `<p class="muted">Газон с бордюром посередине. На него можно ставить знаки и светофоры: кликните прямо на полосу.</p>`) : ""}
@@ -403,7 +411,7 @@
       ${st.kind !== "yard" ? card("Разметка вручную", st.manualMarks
         ? `<p class="muted">Линии этой улицы — ваши: выберите линию, чтобы менять вид, резать и двигать точки.</p>${button("marks-auto", "Снова строить сами", "restart", "ghost wide")}`
         : `<p class="muted">Чтобы задать участок сплошной, двойную или сплошную рядом с прерывистой.</p>${button("marks-own", "Сделать линии редактируемыми", "marking", "ghost wide")}`) : ""}
-      ${card("", toggle("walk", "Тротуары", st.walk !== false, "person") + (st.bend ? button("straighten", "Выпрямить", "road", "ghost wide") : `<p class="muted">Тяните ромб на середине, чтобы изогнуть.</p>`))}
+      ${card("", toggle("walk", "Тротуары", st.walk !== false && st.surface !== "sand", "person") + toggle("edge", "Боковая сплошная", st.edge !== false && st.surface !== "sand", "marking") + (st.bend ? button("straighten", "Выпрямить", "road", "ghost wide") : `<p class="muted">Тяните ромб на середине, чтобы изогнуть.</p>`))}
       ${ends.length ? card("У перекрёстка", ends.map((e, i) => `<div class="end-row"><span>${ends.length > 1 ? `Конец ${i + 1}` : "Въезд"}</span>
           <button class="pick ${e.set.stop ? "on" : ""}" data-act="end" data-end="${e.end}" data-what="stop">${ic("stopline")}Стоп-линия</button>
           <button class="pick ${e.set.zebra ? "on" : ""}" data-act="end" data-end="${e.end}" data-what="zebra">${ic("zebra")}Зебра</button></div>`).join("")) : ""}
@@ -416,6 +424,8 @@
       ${card("", `<div class="insp-actions">${button("del", "Удалить дорогу", "trash", "danger ghost")}</div>`)}`;
     bind({
       del: () => App.remove(),
+      "chip:surface": (v) => App.edit(() => { st.surface = v; }),
+      "toggle:edge": (on) => App.edit(() => { st.edge = on; }),
       "chip:kind": (v) => App.edit(() => { st.kind = v; }),
       "chip:centre": (v) => App.edit(() => { st.centre = v; }),
       "chip:median": (v) => App.edit(() => { if (Number(v)) st.median = Number(v); else delete st.median; }),

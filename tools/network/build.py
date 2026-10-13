@@ -262,16 +262,27 @@ def build(scene: dict) -> dict:
     # Lawns win over the pavement: a flower bed drawn on the pavement stands on the lawn level.
     lawn_polys = [polygon_of(l) for l in scene.get("lawns", [])]
     lawn = (unary_union(lawn_polys) if lawn_polys else Polygon()).intersection(box).difference(roads_all)
-    pavement = ring.difference(lawn)
+    # Use the road profile directly: smoothing a narrow lawn can restore the sidewalk.
+    no_walk = unary_union([polygon_of(r).buffer(SIDEWALK + 0.1) for r in scene.get("roads", []) if r.get("walk") is False])
+    pavement = ring.difference(lawn).difference(no_walk)
+    no_edge = unary_union([polygon_of(r).buffer(0.6) for r in scene.get("roads", []) if r.get("edge") is False])
+    sand = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("surface") == "sand"]).intersection(road)
     # Markings lie on the carriageway only; the island and the pavement are never painted over.
     marks = {}
     for m in scene.get("markings", []):
         colour = m.get("colour", "white")
         if colour not in MARK_COLOURS:
             raise ValueError(f"{scene.get('id')}: marking {m.get('id')} has unknown colour {colour!r}")
-        marks.setdefault(colour, []).append(marking_geometry(m))
+        geom = marking_geometry(m)
+        if colour == "white" and not no_edge.is_empty:
+            shoulder = road.difference(road.buffer(-0.6)).intersection(no_edge)
+            geom = geom.difference(shoulder)
+        marks.setdefault(colour, []).append(geom)
 
-    v, t = triangulate(road)
+    edges = road.buffer(-0.175, quad_segs=32).difference(road.buffer(-0.325, quad_segs=32))
+    edges = edges.difference(box.exterior.buffer(1.0)).difference(no_edge)
+    marks.setdefault("white", []).append(edges)
+    v, t = triangulate(road.difference(sand))
     asphalt = {"id": "asphalt", "y": ROAD_Y, "layer": "asphalt", "colour": ASPHALT, "verts": v, "idx": t}
     # Dividing strips (a road item with "green": its islands are lawns, raised like the pavement).
     green = unary_union([Polygon(h).buffer(0) for r in scene.get("roads", []) if r.get("green") for h in r.get("holes", [])])
@@ -285,6 +296,19 @@ def build(scene: dict) -> dict:
     v, t = triangulate(lawn)
     lawn_surface = {"id": "lawn", "y": LAWN_Y, "layer": "grass", "colour": LAWN_COLOUR, "verts": v, "idx": t}
     surfaces = [asphalt, island, median, pave, lawn_surface]
+    # Three metres of blended colours at asphalt joins; never fade the outer sandy shoulder.
+    asphalt_join = sand.boundary.intersection(road.difference(sand).buffer(0.01)) if not sand.is_empty else Polygon()
+    previous = sand
+    for i in range(12):
+        inner = sand.difference(asphalt_join.buffer((i + 1) * 0.25)) if not asphalt_join.is_empty else sand
+        band = previous.difference(inner)
+        k = (i + 0.5) / 12
+        colour = "#" + "".join(f"{round(a + (b-a)*k):02x}" for a,b in zip((44,47,54),(194,165,112)))
+        v,t = triangulate(band)
+        surfaces.append({"id": f"sand_join_{i}", "y": ROAD_Y, "layer": "sand", "colour": colour, "verts": v, "idx": t})
+        previous = inner
+    v,t = triangulate(previous)
+    surfaces.append({"id": "sand", "y": ROAD_Y, "layer": "sand", "colour": "#c2a570", "verts": v, "idx": t})
     if scene.get("layout"):
         # A scene laid out from a road plan (the editor) has its own ground everywhere else: the baked
         # scene's old roads (where the plan has none now) are covered, and the game drops them (covers()).
@@ -307,10 +331,14 @@ def build(scene: dict) -> dict:
             t.extend(i + base for i in pt)
         surfaces.append({"id": f"marking_{colour}", "y": MARK_Y, "layer": "", "colour": MARK_COLOURS[colour],
                          "verts": v, "idx": t})
+    kerb_segments = walls(road, crop)
+    kerb_segments = [v for i in range(0, len(kerb_segments), 4)
+                     if not no_walk.intersects(LineString([(kerb_segments[i], kerb_segments[i+1]), (kerb_segments[i+2], kerb_segments[i+3])]))
+                     for v in kerb_segments[i:i+4]]
     return {
         "id": scene["id"],
         "surfaces": surfaces,
-        "kerbs": {"y0": ROAD_Y, "y1": KERB, "colour": KERB_COLOUR, "segs": walls(road, crop)},
+        "kerbs": {"y0": ROAD_Y, "y1": KERB, "colour": KERB_COLOUR, "segs": kerb_segments},
         # The drivable carriageway as the drawing has it (the car drives where the asphalt is).
         "carriageway": polygons_json(road),
     }

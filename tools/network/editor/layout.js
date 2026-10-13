@@ -187,10 +187,10 @@ const Layout = (() => {
       const plainEnds = medianOf(st) > 0 && (borderA || borderB);
       const lenAll = polyLen(pts);
       const wide = plainEnds ? cut(pts, borderA ? 22 : 0, lenAll - (borderB ? 22 : 0)) : pts;
-      const roadItem = { id: `road_${st.id}`, auto: true, outer: outline(wide.length >= 2 ? wide : pts, w), holes: [] };
+      const roadItem = { id: `road_${st.id}`, auto: true, outer: outline(wide.length >= 2 ? wide : pts, w), holes: [], walk: st.walk !== false && st.surface !== "sand", edge: st.edge !== false && st.surface !== "sand", surface: st.surface || "asphalt" };
       roads.push(roadItem);
       if (plainEnds) roads.push({ id: `road_${st.id}_plain`, auto: true, outer: outline(pts, kindOf(st).width), holes: [] });
-      if (st.walk === false) {
+      if (st.walk === false || st.surface === "sand") {
         for (const side of [1, -1]) {
           const inner = offsetRight(pts, side * w / 2), outer = offsetRight(pts, side * (w / 2 + 3.4)).reverse();
           lawns.push({ id: `auto_lawn_${st.id}_${side > 0 ? "r" : "l"}`, auto: true, outer: [...inner, ...outer].map(P), holes: [] });
@@ -227,14 +227,14 @@ const Layout = (() => {
       if (body.length >= 2 && !medianOf(st)) {
         if (ext0) body[0] = add(body[0], mul(unit(sub(body[0], body[1])), ext0));
         if (ext1) body[body.length - 1] = add(body.at(-1), mul(unit(sub(body.at(-1), body.at(-2))), ext1));
-        const c = st.manualMarks ? "none" : st.centre || (st.kind === "yard" ? "none" : st.kind === "avenue" ? "double" : "dashed");
+        const c = st.manualMarks || st.surface === "sand" ? "none" : st.centre || (st.kind === "yard" ? "none" : st.kind === "avenue" ? "double" : "dashed");
         if (c === "dashed") mark({ type: "dashed", points: body.map(P) });
         else if (c === "solid") mark({ type: "solid", points: body.map(P) });
         else if (c === "double") {
           mark({ type: "solid", points: offsetRight(body, 0.15).map(P) });
           mark({ type: "solid", points: offsetRight(body, -0.15).map(P) });
         }
-        if (st.kind === "avenue" && !st.manualMarks) {
+        if (st.kind === "avenue" && !st.manualMarks && st.surface !== "sand") {
           mark({ type: "dashed", points: offsetRight(body, 3.5).map(P) });
           mark({ type: "dashed", points: offsetRight(body, -3.5).map(P) });
         }

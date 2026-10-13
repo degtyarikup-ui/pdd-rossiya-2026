@@ -443,3 +443,13 @@ body.framing .toolbar, body.framing .popover, body.framing .hint, body.framing .
 .dir-grid button:nth-child(5) { grid-column: 3; }
 .dir-grid button:nth-child(4) { grid-column: 1; }
 .dir-grid button.on { background: var(--accent); color: #fff; }
+
+.hint { display: none !important; }
+.info-help { position: relative; margin: 6px 0; }
+.info-help summary { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 1px solid var(--ink-2); border-radius: 50%; cursor: pointer; font-style: italic; }
+.refpic { top: 12px; max-width: calc(100% - 32px); max-height: calc(100% - 90px); overflow: auto; }
+.refpic-head { position: sticky; top: 0; background: white; z-index: 1; }
+.refpic-body { padding: 0 10px 10px; }
+.refpic.collapsed { resize: none; }
+.refpic.collapsed > :not(.refpic-head) { display: none; }
+.refpic .ref-controls { display: flex; gap: 6px; padding: 6px; }

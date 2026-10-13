@@ -99,20 +99,33 @@ const Framing = (() => {
     if (e.target.closest("[data-close]") || e.target.id === "lightbox") $("#lightbox").hidden = true;
   });
   // A pinned photo floats over the view: drag it by its top, resize it by its corner.
-  let pinned = false;
+  let pinned = true, collapsed = false, showQuestion = false, showComment = false;
   function pin(on) {
-    pinned = on;
+    pinned = true;
+    collapsed = !on;
     const el = $("#refpic");
     const src = photo();
-    el.hidden = !on || !src;
-    if (!on || !src) return;
-    el.querySelector("img").src = src;
+    el.hidden = !state.S;
+    el.classList.toggle("collapsed", collapsed);
+    const source = state.source, q = state.S?.question || {}, ru = q.text?.ru || {};
+    const answers = source ? source.answers.map(a => a.text) : ru.options || [];
+    el.innerHTML = `<div class="refpic-head"><span>${esc(App.sceneTitle(state.id))}</span><button class="icon-btn" data-big data-tip="Крупно">${ic("fit")}</button><button class="icon-btn" data-collapse aria-label="Свернуть или развернуть">${collapsed ? "+" : "−"}</button></div>
+      ${src ? `<img data-photo src="${src}" alt="Фото текущего вопроса">` : ""}
+      <div class="ref-controls"><button class="btn ghost small" data-question aria-pressed="${showQuestion}">Вопрос и ответы</button><button class="btn ghost small" data-comment aria-pressed="${showComment}">Комментарий</button></div>
+      <div class="refpic-body">${showQuestion ? `<p class="qtext">${esc(source ? source.question : ru.title || "")}</p><div class="answers">${answers.map((a, i) => `<button class="answer ${q.correct === i ? "on" : ""}" data-correct="${i}"><i>${i + 1}</i><span>${esc(a)}</span></button>`).join("")}</div>` : ""}${showComment ? `<p class="comment">${esc(source?.comment || "Комментарий отсутствует")}</p>` : ""}</div>`;
   }
   (() => {
     const el = $("#refpic");
     let drag = null;
+    el.addEventListener("click", (e) => {
+      if (e.target.closest("[data-collapse]")) { collapsed = !collapsed; pin(!collapsed); }
+      else if (e.target.closest("[data-question]")) { showQuestion = !showQuestion; pin(!collapsed); }
+      else if (e.target.closest("[data-comment]")) { showComment = !showComment; pin(!collapsed); }
+      else if (e.target.closest("[data-big], [data-photo]")) openPhoto();
+      else if (e.target.closest("[data-correct]")) App.edit(s => { s.question.correct = Number(e.target.closest("[data-correct]").dataset.correct); });
+    });
     el.addEventListener("pointerdown", (e) => {
-      if (e.target.closest("[data-unpin]")) { pin(false); return; }
+      if (e.target.closest("button") || e.target.closest("[data-photo]")) return;
       if (e.target.closest("[data-big]")) { openPhoto(); return; }
       if (!e.target.closest(".refpic-head")) return;
       drag = { x: e.clientX - el.offsetLeft, y: e.clientY - el.offsetTop };
@@ -126,5 +139,5 @@ const Framing = (() => {
     el.addEventListener("pointerup", () => { drag = null; });
   })();
 
-  return { start, stop, openPhoto, pin, refresh: () => pin(pinned), get on() { return !!phone; } };
+  return { start, stop, openPhoto, pin, refresh: () => pin(!collapsed), get on() { return !!phone; } };
 })();

@@ -169,6 +169,7 @@ const App = (() => {
   }
   function changed(opts = {}) {
     state.dirty = snapshotText() !== state.savedJson;
+    if (typeof Framing !== "undefined") Framing.refresh();
     Scene3D.refresh(state.S);
     Scene3D.setSelection(state.sel);
     schedulePreview();
@@ -222,7 +223,7 @@ const App = (() => {
     history.replaceState(null, "", `?scene=${sid}`);
     renderTop();
     App.renderPanels?.();
-    if (window.Framing) Framing.refresh();
+    if (typeof Framing !== "undefined") Framing.refresh();
   }
   const sceneTitle = (sid) => {
     const m = String(sid || "").match(/^ticket_(\d+)_(\d+)$/);
