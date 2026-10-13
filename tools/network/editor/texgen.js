@@ -147,7 +147,21 @@ const TexGen = (() => {
     { id: "smooth", title: "Гладкая", make: (seed) => ({ r: spread(blur(fbm(32, 2, 0.5, seed), 2), 0.015), g: spread(fbm(3, 2, 0.5, seed + 7), 0.12) }), pick: { gain: 1.2, macro: 0.04 } },
     { id: "grain", title: "Зерно", make: (seed) => ({ r: spread(mix(grain(seed), fbm(32, 2, 0.5, seed), 0.5), 0.03), g: spread(fbm(4, 3, 0.5, seed + 7), 0.16) }), pick: { gain: 3.5, macro: 0.12 } },
   ];
+  // Compacted earth, small stones and irregular worn patches, on a seamless world tile.
+  // Medium-scale clumps stay visible at the overhead camera; fine grit fades in the shared shader.
+  function earth(seed) {
+    const coarse = fbm(3, 3, 0.55, seed), clumps = fbm(18, 3, 0.5, seed + 23);
+    const grit = blur(grain(seed + 47), 1), worn = noise(5, seed + 61);
+    const r = new Float32Array(N * N);
+    for (let i = 0; i < r.length; i++) {
+      const stone = Math.max(0, clumps[i] - 0.6) * 0.8;
+      r[i] = 0.5 + (coarse[i] - 0.5) * 0.30 + (clumps[i] - 0.5) * 0.24
+        + (grit[i] - 0.5) * 0.18 + stone - Math.max(0, 0.38 - worn[i]) * 0.25;
+    }
+    return { r: spread(r, 0.065), g: spread(fbm(3, 4, 0.55, seed + 7), 0.18) };
+  }
   const EXTRA = {
+    dirt: [{ id: "earth", title: "Укатанный грунт", make: earth, pick: { gain: 1.0, macro: 0.24, macroScale: 0.35, period: 4.8 } }],
     pavement: [{ id: "tiles", title: "Плитка", make: (seed) => ({ r: spread(mix(joints(8, 8, 0, 2, 1), blur(fbm(16, 2, 0.5, seed), 2), 0.25), 0.035), g: spread(fbm(4, 3, 0.5, seed + 7), 0.12) }), pick: { gain: 2.4, macro: 0.06 } }],
     brick: [{ id: "bricks", title: "Кладка", make: (seed) => ({ r: spread(mix(joints(16, 8, 0.5, 3, 1), blur(fbm(16, 2, 0.5, seed), 1), 0.2), 0.06), g: spread(fbm(4, 3, 0.5, seed + 7), 0.14) }), pick: { gain: 1.4, macro: 0.06 } }],
     roofTile: [{ id: "rows", title: "Ряды", make: (seed) => ({ r: spread(mix(joints(12, 0, 0, 4, 2), blur(fbm(16, 2, 0.5, seed), 1), 0.3), 0.045), g: spread(fbm(4, 3, 0.5, seed + 7), 0.14) }), pick: { gain: 1.3, macro: 0.05 } }],

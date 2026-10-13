@@ -106,10 +106,13 @@ def sync(sid: str) -> dict:
     out = copy.deepcopy(base)
     routes = {r["id"]: r for r in net.get("routes", [])}
 
-    stop = net["stop"]
+    player = (net.get("layout") or {}).get("player") or {}
+    free_pose = player.get("pose") if player.get("mode") == "free" else None
+    stop = free_pose if isinstance(free_pose, dict) else net["stop"]
+    out["playerPlacement"] = "free" if free_pose else "street"
     out["stopZ"] = stop["z"]
     # The export leaves playerStartX null on the default lane: keep it that way.
-    if not (base.get("playerStartX") is None and abs(stop["x"] + 1.8) < 1e-6):
+    if free_pose or not (base.get("playerStartX") is None and abs(stop["x"] + 1.8) < 1e-6):
         out["playerStartX"] = stop["x"]
     else:
         out["playerStartX"] = None

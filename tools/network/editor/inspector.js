@@ -88,7 +88,7 @@
     const answers = src ? src.answers.map((a) => a.text) : ru.options || [];
     const correct = q.correct;
     const plan = s.layout ? Layout.playerPlan(s) : null;
-    const lanes = plan ? (plan.lanes || Layout.laneOffsets(plan.st)) : [];
+    const lanes = plan && !Layout.isFreePlayer(s) ? (plan.lanes || Layout.laneOffsets(plan.st)) : [];
     const laneItems = lanes.length === 2
       ? [{ value: 0, title: "Левая" }, { value: 1, title: "Правая" }]
       : lanes.length === 3
@@ -221,7 +221,7 @@
     const a = yaw || 0;
     return `<div class="dial" data-dial><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="27"/><path d="M32 32 L${32 + Math.sin(-a) * 24} ${32 - Math.cos(-a) * 24}"/><circle class="knob" cx="${32 + Math.sin(-a) * 24}" cy="${32 - Math.cos(-a) * 24}" r="5"/></svg></div>`;
   }
-  function bindDial(p, o) {
+  function bindDial(p, o, rotate = null) {
     const el = p.querySelector("[data-dial]");
     if (!el) return;
     el.addEventListener("pointerdown", (e) => {
@@ -231,7 +231,9 @@
         const r = el.getBoundingClientRect();
         let a = -Math.atan2(ev.clientX - (r.left + r.width / 2), -(ev.clientY - (r.top + r.height / 2)));
         if (!ev.shiftKey) a = Math.round(a / (Math.PI / 12)) * (Math.PI / 12);
-        App.dragMove(() => { o.yaw = r3(a); });
+        let accepted = true;
+        App.dragMove(sc => { if (rotate) accepted = rotate(sc, r3(a)); else o.yaw = r3(a); });
+        if (accepted === false) return;
         el.querySelector("path").setAttribute("d", `M32 32 L${32 + Math.sin(-a) * 24} ${32 - Math.cos(-a) * 24}`);
         const k = el.querySelector(".knob");
         k.setAttribute("cx", 32 + Math.sin(-a) * 24);
@@ -352,40 +354,58 @@
   }
 
   // ---- a road sign --------------------------------------------------------------------------------
+  const signFaceSelection = new Map();
   function signInspector(p, ref, o) {
     const codes = state.catalog.signs || [];
+    const slot = o.secondSign && signFaceSelection.get(o.id) === 1 ? 1 : 0;
+    const face = slot ? o.secondSign : o;
+    const custom = Array.isArray(face.laneDirections) && face.laneDirections.length > 0;
+    const lanes = custom ? LaneSign.normalize(face.laneDirections) : [];
     const DIRS = [["nw", "↖"], ["north", "↑"], ["ne", "↗"], ["west", "←"], ["east", "→"], ["sw", "↙"], ["south", "↓"], ["se", "↘"]];
-    const main = o.mainRoad || [], roads = o.roads || ["north", "south", "east", "west"];
+    const main = face.mainRoad || [], roads = face.roads || ["north", "south", "east", "west"];
     const dirChips = (name, on) => `<div class="dir-grid">${DIRS.map(([d, t]) => `<button class="${on.includes(d) ? "on" : ""}" data-chip="${name}" data-value="${d}">${t}</button>`).join("")}</div>`;
-    p.innerHTML = `${head(`<img class="sign-big" src="/asset/sign/${o.code}.svg" alt="">`, Catalog.signName(o.code), `знак ${o.code}`)}
-      ${card("Знак", `<div class="sign-grid">${codes.map((c) => `<button class="${c === o.code ? "on" : ""}" data-chip="code" data-value="${c}" data-tip="${esc(Catalog.signName(c))}"><img src="/asset/sign/${c}.svg" alt=""></button>`).join("")}</div>`)}
+    const lanePicture = lanes => LaneSign.svg(lanes).replace('<svg ', '<svg style="width:100%;height:auto;display:block" ');
+    const picture = (f, size = 56) => f.laneDirections?.length ? `<span style="display:inline-flex;flex:none;width:${size}px">${lanePicture(f.laneDirections)}</span>` : `<img class="sign-big" src="/asset/sign/${f.code}.svg" alt="" style="width:${size}px;height:${size}px;object-fit:contain;flex:none">`;
+    const faceTabs = SignMount.faces(o).map((f, i) => `<button class="btn ${slot === i ? "primary" : "ghost"}" data-chip="face" data-value="${i}">${picture(f, 32)}<span>${i ? "Нижний знак" : "Верхний знак"}</span></button>`).join("");
+    const laneControls = lanes.map((directions, i) => `<div class="sub-h">Полоса ${i + 1}</div><div class="seg-chips">${[["left", "←", "Налево"], ["straight", "↑", "Прямо"], ["right", "→", "Направо"]].map(([direction, arrow, title]) => `<button class="${directions.includes(direction) ? "on" : ""}" data-chip="laneDirection" data-lane="${i}" data-value="${direction}" data-tip="${title}"><span>${arrow} ${title}</span></button>`).join("")}</div>`).join("");
+    p.innerHTML = `${head(picture(face), custom ? "Направления по полосам" : Catalog.signName(face.code), o.secondSign ? (slot ? "нижний знак на общей стойке" : "верхний знак на общей стойке") : `знак ${face.code}`)}
+      ${card("На одной стойке", `<div class="insp-actions">${faceTabs}</div>${o.secondSign ? `<div class="insp-actions">${button("swap-signs", "Поменять местами", "rotr", "ghost")}${button("remove-second-sign", "Убрать нижний", "trash", "danger ghost")}</div>` : button("add-second-sign", "Добавить второй знак", "plus", "ghost wide")}`)}
+      ${card("Щит", `${chips("signMode", [{value:"standard",title:"Готовый знак"},{value:"lanes",title:"Конструктор полос"}], custom ? "lanes" : "standard")}
+        ${custom ? `<div style="margin:12px auto;max-width:240px">${lanePicture(lanes)}</div><div class="sub-h">Число полос</div>${chips("laneCount", [1,2,3,4,5,6].map(n => ({value:n,title:String(n)})), lanes.length)}${laneControls}<p class="muted">Полосы идут слева направо при взгляде на знак. На каждой можно включить несколько направлений.</p>` : `<div class="sign-grid">${codes.map((c) => `<button class="${c === face.code ? "on" : ""}" data-chip="code" data-value="${c}" data-tip="${esc(Catalog.signName(c))}"><img src="/asset/sign/${c}.svg" alt=""></button>`).join("")}</div>`}`)}
       ${card("Крепление", `${chips("mount", [{value:"pole",title:"На стойке"},{value:"cantilever",title:"Над дорогой"}], o.mount || "pole")}
         ${o.mount === "cantilever" ? `${slider("reach", "Вылет от опоры", o.reach ?? 4.5, 0.5, 15, 0.25, `${o.reach ?? 4.5} м`)}
           ${chips("armSide", [{value:"left",title:"Влево от опоры"},{value:"right",title:"Вправо от опоры"}], o.armSide || "left")}
           ${slider("clearance", "Высота нижнего края", o.clearance ?? 5.5, 5, 8, 0.25, `${o.clearance ?? 5.5} м`)}
           <p class="muted">Поставьте опору на обочине. Вылет перемещает щит над дорогой; сторону выбирайте, глядя на лицевую сторону знака.</p>` : ""}`)}
       ${card("Табличка 8.13: главная дорога", `${dirChips("main", main)}
-        ${main.length ? `<div class="sub-h">Все дороги перекрёстка</div>${dirChips("roads", roads)}` : `<p class="muted">Отметьте два направления главной дороги — под знаком появится табличка.</p>`}`)}
-      ${card("Надпись на табличке", `<input type="text" data-text="plate" value="${esc(o.plate || "")}" placeholder="Например: 150 м">`)}
+        ${main.length ? `<div class="sub-h">Все дороги перекрёстка</div>${dirChips("roads", roads)}` : `<p class="muted">Отметьте два направления главной дороги — под выбранным знаком появится табличка.</p>`}`)}
+      ${card("Надпись под выбранным знаком", `<input type="text" data-text="plate" value="${esc(face.plate || "")}" placeholder="Например: 150 м">`)}
       ${card("", `<div class="turn-row">${dial(o.yaw)}<div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rot90", "90°", "", "ghost")}${button("rotr", "", "rotr", "ghost icon")}</div></div>${deleteRow()}`)}`;
     bind({
       ...common,
+      "chip:face": (v) => { signFaceSelection.set(o.id, Number(v)); App.renderInspector(); },
+      "add-second-sign": () => { signFaceSelection.set(o.id, 1); App.edit(() => { o.secondSign = {code:"2.4"}; }); },
+      "remove-second-sign": () => { signFaceSelection.set(o.id, 0); App.edit(() => { delete o.secondSign; }); },
+      "swap-signs": () => { signFaceSelection.set(o.id, 1 - slot); App.edit(() => SignMount.swapFaces(o)); },
+      "chip:signMode": (v) => App.edit(() => { if (v === "lanes") { face.code = "5.15.1"; face.laneDirections = LaneSign.normalize(face.laneDirections || LaneSign.DEFAULT_LANES); } else delete face.laneDirections; }),
+      "chip:laneCount": (v) => App.edit(() => { const n = Number(v), directions = LaneSign.normalize(face.laneDirections); face.laneDirections = Array.from({length:n}, (_, i) => directions[i] || ["straight"]); }),
+      "chip:laneDirection": (v, e) => App.edit(() => { const i = Number(e.target.closest('[data-chip]').dataset.lane), directions = LaneSign.normalize(face.laneDirections); const selected = new Set(directions[i]); if (selected.has(v)) { if (selected.size === 1) return; selected.delete(v); } else selected.add(v); directions[i] = [...selected]; face.laneDirections = LaneSign.normalize(directions); }),
       "chip:mount": (v) => App.edit(() => { if (v === "cantilever") { o.mount = v; o.reach ??= 4.5; o.armSide ??= "left"; o.clearance ??= 5.5; } else delete o.mount; }),
       "chip:armSide": (v) => App.edit(() => { o.armSide = v; }),
       "slider:reach": live((_s, v) => { o.reach = r3(v); }, v => { const label = pane().querySelector('[data-shown="reach"]'); if (label) label.textContent = `${v} м`; }),
       "slider:clearance": live((_s, v) => { o.clearance = r3(v); }, v => { const label = pane().querySelector('[data-shown="clearance"]'); if (label) label.textContent = `${v} м`; }),
-      "chip:code": (v) => App.edit(() => { o.code = v; if (v === "8.13" && !(o.mainRoad || []).length) o.mainRoad = ["south", "west"]; }),
+      "chip:code": (v) => App.edit(() => { face.code = v; delete face.laneDirections; if (v === "8.13" && !(face.mainRoad || []).length) face.mainRoad = ["south", "west"]; }),
       "chip:main": (v) => App.edit(() => {
-        const set = new Set(o.mainRoad || []);
+        const set = new Set(face.mainRoad || []);
         set.has(v) ? set.delete(v) : set.add(v);
-        if (set.size) o.mainRoad = [...set]; else delete o.mainRoad;
+        if (set.size) face.mainRoad = [...set]; else delete face.mainRoad;
       }),
       "chip:roads": (v) => App.edit(() => {
-        const set = new Set(o.roads || ["north", "south", "east", "west"]);
+        const set = new Set(face.roads || ["north", "south", "east", "west"]);
         set.has(v) ? set.delete(v) : set.add(v);
-        o.roads = [...set];
+        face.roads = [...set];
       }),
-      "text:plate": (v) => App.edit(() => { if (v.trim()) o.plate = v.trim(); else delete o.plate; }),
+      "text:plate": (v) => App.edit(() => { if (v.trim()) face.plate = v.trim(); else delete face.plate; }),
       rotl: () => App.rotate(-15), rotr: () => App.rotate(15), rot90: () => App.rotate(90),
     });
     bindDial(p, o);
@@ -474,7 +494,7 @@
     const pl = Layout.playerPlan(s);
     const isPlayer = pl && pl.st.id === st.id;
     p.innerHTML = `${head(`<span class="ibadge">${ic("road")}</span>`, Layout.KINDS[st.kind || "street"].title, isPlayer ? "по ней едет игрок" : "")}
-      ${card("Покрытие", chips("surface", [{ value: "asphalt", title: "Асфальт" }, { value: "sand", title: "Песок" }], st.surface || "asphalt"))}
+      ${card("Покрытие", chips("surface", [{ value: "asphalt", title: "Асфальт" }, { value: "sand", title: "Грунт" }], st.surface || "asphalt"))}
       ${card("Ширина", chips("kind", Object.entries(Layout.KINDS).map(([k, v]) => ({ value: k, html: `<span class="road-pic k-${k}"></span>`, title: v.title })), st.kind || "street", { cls: "tiles" }))}
       ${st.kind !== "yard" ? card("Разделительная полоса", chips("median", [{ value: 0, title: "Нет" }, { value: 2, title: "2 м" }, { value: 3, title: "3 м" }, { value: 5, title: "5 м" }], Number(st.median) || 0)
         + `<p class="muted">Газон с бордюром посередине. На него можно ставить знаки и светофоры: кликните прямо на полосу.</p>`) : ""}
@@ -581,8 +601,8 @@
           <p class="muted">По этой линии машина игрока едет после ответа. Если в вопросе есть линии ответов, она видна только когда выбрана.</p>`)}`;
       bind({
         "make-main": () => App.edit((sc) => { sc.question.maneuver = r.exit; sc.spec = { ...(sc.spec || {}), maneuver: r.exit }; }),
-        "own-path": () => App.edit((sc) => { const x = sc.routes.find((y) => y.id === r.id); x.manual = true; delete x.auto; }),
-        "auto-path": () => App.edit((sc) => { if (sc.layout.paths) delete sc.layout.paths[r.exit]; const x = sc.routes.find((y) => y.id === r.id); delete x.manual; x.auto = true; }),
+        "own-path": () => App.edit((sc) => { const x = sc.routes.find((y) => y.id === r.id); Layout.setPlayerRouteManual(sc, x, true); }),
+        "auto-path": () => App.edit((sc) => { const x = sc.routes.find((y) => y.id === r.id); Layout.setPlayerRouteManual(sc, x, false); }),
       });
       return;
     }
@@ -672,7 +692,8 @@
     const s = state.S, q = s.question;
     const routes = s.routes.filter((r) => r.kind === "manoeuvre").map((r) => r.exit);
     const plan = s.layout ? Layout.playerPlan(s) : null;
-    const lanes = plan ? (plan.lanes || Layout.laneOffsets(plan.st)) : [];
+    const free = Layout.isFreePlayer(s), pose = Layout.playerPose(s);
+    const lanes = plan && !Layout.isFreePlayer(s) ? (plan.lanes || Layout.laneOffsets(plan.st)) : [];
     const laneItems = lanes.length === 2
       ? [{ value: 0, title: "Левая" }, { value: 1, title: "Правая" }]
       : lanes.length === 3
@@ -682,11 +703,22 @@
 
     p.innerHTML = `${head(`<span class="ibadge">${ic("car")}</span>`, "Игрок", "место начала вопроса")}
       ${card("Едет", chips("maneuver", ["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: !routes.includes(k) && k !== "straight" })), q.maneuver, { cls: "arrows" }))}
+      ${s.layout ? card("Размещение", chips("playerMode", [{value:"street",title:"По улице"},{value:"free",title:"Свободно"}], free ? "free" : "street")) : ""}
+      ${free ? card("Положение на дороге", `<div class="insp-actions"><label>X, м<input type="number" step="0.1" data-text="playerX" value="${pose.x}" style="width:100%"></label><label>Z, м<input type="number" step="0.1" data-text="playerZ" value="${pose.z}" style="width:100%"></label></div><div class="turn-row">${dial(pose.yaw)}<label>Поворот, °<input type="number" step="1" data-text="playerYaw" value="${r3(pose.yaw * 180 / Math.PI)}" style="width:100%"></label></div><div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rot90", "90°", "", "ghost")}${button("rotr", "", "rotr", "ghost icon")}</div>`) : ""}
       ${lanes.length > 1 ? card("Полоса", chips("lane", laneItems, curLane, { cls: "tiles" })) : ""}
-      ${plan ? card("Начало вопроса", slider("questionOffset", "Раньше стоп-линии", Math.max(0, plan.sd - plan.stopLineDistance - 2.4), 0, Math.min(60, Math.max(0, plan.total - plan.stopLineDistance - 3.4)), 0.5, `${Math.max(0, plan.sd - plan.stopLineDistance - 2.4).toFixed(1)} м`) + button("question-at-line", "Вернуть к стоп-линии", "restart", "ghost wide")) : ""}
+      ${plan && !free ? card("Начало вопроса", slider("questionOffset", "Раньше стоп-линии", Math.max(0, plan.sd - plan.stopLineDistance - 2.4), 0, Math.min(60, Math.max(0, plan.total - plan.stopLineDistance - 3.4)), 0.5, `${Math.max(0, plan.sd - plan.stopLineDistance - 2.4).toFixed(1)} м`) + button("question-at-line", "Вернуть к стоп-линии", "restart", "ghost wide")) : ""}
       ${!s.layout ? card("Полоса", `<div class="insp-actions">${button("shift-left", "Сместить влево (3.5 м)", "arrow-left", "ghost small")}${button("shift-right", "Сместить вправо (3.5 м)", "arrow-right", "ghost small")}</div>`) : ""}
-      ${card("", `<p class="muted">${s.layout ? (lanes.length > 1 ? "Выберите полосу выше или перетащите машину на другую полосу на виде." : "Место игрока строится по дороге: тяните машину вдоль улицы.") : "Тяните машину на виде или смещайте кнопками выше."}</p>`)}`;
+      ${card("", `<p class="muted">${free ? "Тяните машину по проезжей части, в том числе по кольцу. Поверните кольцом, Q/E или задайте угол выше. Весь кузов должен оставаться на дороге." : s.layout ? (lanes.length > 1 ? "Выберите полосу выше или перетащите машину на другую полосу на виде." : "Место игрока строится по дороге: тяните машину вдоль улицы.") : "Тяните машину на виде или смещайте кнопками выше."}</p>`)}`;
+    const moveFree = (axis, value) => App.edit(sc => { const at = Layout.playerPose(sc), number = Number(value); if (!Number.isFinite(number)) return; at[axis] = number; if (!Layout.movePlayer(sc, [at.x, at.z])) App.toast("Весь автомобиль должен оставаться на проезжей части"); });
+    const turnFree = angle => App.edit(sc => { if (!Layout.rotatePlayer(sc, angle)) App.toast("После поворота автомобиль выходит за край дороги"); });
     bind({
+      "chip:playerMode": (v) => App.edit(sc => Layout.setPlayerMode(sc, v)),
+      "text:playerX": (v) => moveFree("x", v),
+      "text:playerZ": (v) => moveFree("z", v),
+      "text:playerYaw": (v) => { if (Number.isFinite(Number(v))) turnFree(Number(v) * Math.PI / 180); },
+      rotl: () => turnFree(Layout.playerPose(state.S).yaw - Math.PI / 12),
+      rotr: () => turnFree(Layout.playerPose(state.S).yaw + Math.PI / 12),
+      rot90: () => turnFree(Layout.playerPose(state.S).yaw + Math.PI / 2),
       "chip:maneuver": (v) => App.edit((sc) => { sc.question.maneuver = v; sc.spec = { ...(sc.spec || {}), maneuver: v }; }),
       "chip:lane": (v) => App.edit((sc) => {
         const pl = Layout.playerPlan(sc);
@@ -702,6 +734,7 @@
       "shift-left": () => App.edit((sc) => shiftPlayerLateral(sc, -3.5)),
       "shift-right": () => App.edit((sc) => shiftPlayerLateral(sc, 3.5)),
     });
+    if (free) bindDial(p, pose, (sc, yaw) => Layout.rotatePlayer(sc, yaw));
   }
 
   // ---- a texture -----------------------------------------------------------------------------

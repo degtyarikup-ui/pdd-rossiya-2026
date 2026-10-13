@@ -134,6 +134,10 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 		# exits are asphalt in the game, the same as the entrance: the strips are not drawn.
 		if mi.name == "tex_0":
 			mi.visible = false
+		elif s.network and str(mi.name).begins_with("tex_"):
+			# Old soil photographs are also tex_1/tex_2 in some scenes. Retain sign faces,
+			# but remove flat texture overlays where the editable network draws the ground.
+			mi.mesh = _without_covered_texture(mi.mesh, s.network)
 		# The exported sign pictures (tex_1...): a scene with its own signs (the editor) draws them anew.
 		if s.network and mi.name in s.network.data.get("bakedSigns", []):
 			mi.visible = false
@@ -357,6 +361,27 @@ static func _without_baked_ground_staged(mesh: Mesh, net: RoadNetwork = null, fr
 		arrays[Mesh.ARRAY_INDEX] = keep
 		out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 		out.surface_set_material(out.get_surface_count() - 1, mesh.surface_get_material(s))
+	return out
+
+
+static func _without_covered_texture(mesh: Mesh, net: RoadNetwork) -> Mesh:
+	var out := ArrayMesh.new()
+	for surface in mesh.get_surface_count():
+		var arrays := mesh.surface_get_arrays(surface)
+		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var indices := PackedInt32Array()
+		if arrays[Mesh.ARRAY_INDEX] is PackedInt32Array: indices = arrays[Mesh.ARRAY_INDEX]
+		if indices.is_empty(): indices = PackedInt32Array(range(verts.size()))
+		var keep := PackedInt32Array()
+		for k in range(0, indices.size(), 3):
+			var a := verts[indices[k]];var b := verts[indices[k+1]];var c := verts[indices[k+2]]
+			var ground := absf(a.y-b.y)<0.001 and absf(a.y-c.y)<0.001 and a.y>=-0.001 and a.y<0.035
+			if ground and net.covers(Vector2((a.x+b.x+c.x)/3.0,(a.z+b.z+c.z)/3.0)): continue
+			keep.append_array([indices[k],indices[k+1],indices[k+2]])
+		if keep.is_empty(): continue
+		arrays[Mesh.ARRAY_INDEX]=keep
+		out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+		out.surface_set_material(out.get_surface_count()-1,mesh.surface_get_material(surface))
 	return out
 
 

@@ -166,7 +166,7 @@ func _ready() -> void:
 		var path := "res://network/%s.json" % candidate
 		if FileAccess.file_exists(path):
 			var authored = JSON.parse_string(FileAccess.get_file_as_string(path))
-			if authored is Dictionary and authored.get("reviewed", false) == true:
+			if authored is Dictionary and _scene_playable(authored):
 				playable_ids.append(candidate)
 	road_queue.shuffle()
 	scenery = Scenery.new(_season())
@@ -273,6 +273,12 @@ func _ready() -> void:
 	for arg in Host.user_args():
 		if arg.begins_with("--shot="):
 			_shot(arg.trim_prefix("--shot="))
+
+
+## Keep an invalid free route out of normal rides without modifying the editor review flag.
+static func _scene_playable(authored: Dictionary) -> bool:
+	var route_errors: Variant = authored.get("playerRouteErrors", [])
+	return authored.get("reviewed", false) == true and route_errors is Array and route_errors.is_empty()
 
 
 ## The loader stays over the first frames, once the garage or the street is up, and then goes.
@@ -845,27 +851,55 @@ func _guide_target(p: Vector3) -> Vector3:
 	var sit: Situation = current.sit
 	if not sit.network or not sit.network.has_route("approach"):
 		return Vector3.INF
-	var local: Vector3 = sit.global_transform.affine_inverse() * p
-	var pts: PackedVector2Array = sit.network.route("approach")
-	var best := 0
-	var best_d := INF
-	for i in pts.size():
-		var d := pts[i].distance_to(Vector2(local.x, local.z))
-		if d < best_d:
-			best_d = d
-			best = i
-	var acc := 0.0
-	var j := best
-	while j < pts.size() - 1 and acc < 4.0:
-		acc += pts[j].distance_to(pts[j + 1])
-		j += 1
-	var ahead := Vector3(pts[j].x, 0.0, pts[j].y)
+	var progress := _approach_projection(sit, p)
+	var ahead: Vector3 = progress.ahead
+
 	# The assist never steers at a point beside a kerb or an island: the car would be pushed into it.
 	for k in 8:
 		var a := TAU * k / 8.0
 		if not sit.network.is_drivable(ahead + Vector3(cos(a), 0.0, sin(a)) * 0.9):
 			return Vector3.INF
 	return sit.global_transform * ahead
+
+
+## Projection onto the true approach (ring arcs and bends included). The stop's world Z cannot
+## measure distance to a circular-road question; segment projection also avoids vertex snapping.
+func _approach_projection(sit: Situation, world_pos: Vector3) -> Dictionary:
+	var pts := sit.network.route("approach")
+	if pts.size() < 2:
+		return {"ahead": sit.network.stop_point(), "remaining": 0.0, "offset": INF}
+	var local := sit.global_transform.affine_inverse() * world_pos
+	var p := Vector2(local.x, local.z)
+	var best_distance := INF
+	var best_index := 0
+	var best_t := 0.0
+	var total := 0.0
+	var along := 0.0
+	for i in pts.size() - 1:
+		var delta := pts[i + 1] - pts[i]
+		var length := delta.length()
+		if length < 0.0001:
+			continue
+		var t := clampf((p - pts[i]).dot(delta) / delta.length_squared(), 0.0, 1.0)
+		var d := p.distance_squared_to(pts[i] + delta * t)
+		if d < best_distance:
+			best_distance = d
+			best_index = i
+			best_t = t
+			along = total + t * length
+		total += length
+	var distance_left := maxf(0.0, total - along)
+	var lookahead := minf(4.0, maxf(0.6, distance_left * 0.25)) if sit.network.free_player() else 4.0
+	var remaining := lookahead + (pts[best_index + 1] - pts[best_index]).length() * best_t
+	var ahead := pts[pts.size() - 1]
+	for i in range(best_index, pts.size() - 1):
+		var delta := pts[i + 1] - pts[i]
+		var length := delta.length()
+		if length >= remaining:
+			ahead = pts[i] + delta.normalized() * remaining
+			break
+		remaining -= length
+	return {"ahead": Vector3(ahead.x, 0, ahead.y), "remaining": distance_left, "offset": sqrt(best_distance)}
 
 
 ## A violation, counted once per episode (game.js drivingFault / roadViolation):
@@ -1048,13 +1082,33 @@ func _maybe_spawn() -> void:
 		_topdown_shot(sit, topdown)
 	if near_debug:
 		near_debug = false
-		# 45 m out: the approach to the question is driven, not skipped.
-		var local_stop := sit.network.stop_point() if sit.network else Vector3(float(sit.data.get("playerStartX",-1.8)),0,float(sit.data.stopZ))
-		var point := sit.global_transform*local_stop
-		drive.pos = point-Vector3.BACK*45.0
-		drive.yaw = SceneStitch.yaw(sit.basis*Vector3(sin(float(sit.data.playerStartRotY)),0,cos(float(sit.data.playerStartRotY))))
+		# 45 m along the real approach, including a bend/roundabout and a freely placed question.
+		# A straight offset from a ring pose would put the car on an island or another street.
+		var approach_pose := _approach_start(sit, 45.0)
+		drive.pos = sit.global_transform * approach_pose.pos
+		drive.yaw = SceneStitch.yaw(sit.basis * approach_pose.forward)
 	_rebuild_ring()
 	_rebase_timing("activate_ring_and_lanes",activation)
+
+
+## A stable pose a given distance before the question, sampled on its saved approach route.
+func _approach_start(sit: Situation, back: float) -> Dictionary:
+	if sit.network and sit.network.has_route("approach"):
+		var points := sit.network.route("approach")
+		var remaining := back
+		for i in range(points.size() - 1, 0, -1):
+			var delta := points[i] - points[i - 1]
+			var length := delta.length()
+			if length < 0.0001:
+				continue
+			if remaining <= length or i == 1:
+				var at := points[i] - delta.normalized() * minf(remaining, length)
+				return {"pos": Vector3(at.x, 0, at.y), "forward": Vector3(delta.x, 0, delta.y).normalized()}
+			remaining -= length
+	var local_stop := sit.network.stop_point() if sit.network else Vector3(float(sit.data.get("playerStartX", -1.8)), 0, float(sit.data.stopZ))
+	var yaw := sit.network.stop_yaw() if sit.network else float(sit.data.playerStartRotY)
+	var forward := Vector3(sin(yaw), 0, cos(yaw))
+	return {"pos": local_stop - forward * back, "forward": forward}
 
 
 func _on_prepared(ok: bool, id: String) -> void:
@@ -1079,13 +1133,16 @@ func _update_junction(dt: float) -> void:
 	var sit: Situation = current.sit
 	var local_car: Vector3 = sit.global_transform.affine_inverse()*drive.pos
 	var local_stop := sit.network.stop_point() if sit.network else Vector3(float(sit.data.get("playerStartX",-1.8)),0,float(sit.data.stopZ))
-	var local_heading := Vector3(sin(float(sit.data.playerStartRotY)),0,cos(float(sit.data.playerStartRotY)))
+	var stop_yaw := sit.network.stop_yaw() if sit.network else float(sit.data.playerStartRotY)
+	var local_heading := Vector3(sin(stop_yaw), 0, cos(stop_yaw))
 	var stop_world := sit.global_transform*local_stop
 	var passed_stop := (local_car-local_stop).dot(local_heading)>=-0.18
 	# The route guide shows within 55 m of the junction (game.js `it.guide.visible`).
 	if phase == "driving" or phase == "question":
 		sit.set_evidence_visible(drive.pos.distance_to(stop_world)<55.0)
-	if phase == "driving" and passed_stop and drive.pos.distance_to(stop_world)<8.0 and Vector3(sin(drive.yaw),0,cos(drive.yaw)).dot(sit.basis*local_heading)>0.2:
+	var capture_radius := 0.4 if sit.network and sit.network.free_player() else 8.0
+	var capture_alignment := 0.97 if sit.network and sit.network.free_player() else 0.2
+	if phase == "driving" and passed_stop and drive.pos.distance_to(stop_world)<capture_radius and Vector3(sin(drive.yaw),0,cos(drive.yaw)).dot(sit.basis*local_heading)>capture_alignment:
 		# At the question: the car stands on its stop mark (updatePlayerMovement).
 		# The approach steering (drive.gd assist, along the route) has brought the car to
 		# the start lane and heading; this only takes off what is left.
@@ -2050,10 +2107,27 @@ func _process(delta: float) -> void:
 	drive.braking = controls.brake
 	drive.steering = controls.steer if phase != "question" else 0.0
 	var limit := drive.max_speed
-	if current and phase == "driving" and cos(drive.yaw) > 0.2:
-		# Slow down to stop exactly at the question (updatePlayerMovement).
-		var distance: float = current.zc + float(current.sit.data.stopZ) - drive.pos.z
-		limit = minf(limit, sqrt(maxf(0.0, 2 * 8 * distance)))
+	if current and phase == "driving":
+		var sit: Situation = current.sit
+		if sit.network and sit.network.has_route("approach"):
+			var progress := _approach_projection(sit, drive.pos)
+			# Follow the measured route to stop at any heading. Free poses may be inside a bend:
+			# take the last 45 m at junction speed, rather than entering the circle at street speed.
+			if float(progress.offset) < 8.0:
+				var remaining: float = float(progress.remaining)
+				if sit.network.free_player():
+					# Projection may reach the last segment before a curved arrival reaches its pose.
+					# Keep a supported correction moving, instead of braking permanently off the pose.
+					remaining = maxf(remaining, float(progress.offset))
+				limit = minf(limit, sqrt(maxf(0.0, 2 * 8 * remaining)))
+				if sit.network.free_player() and remaining < 45.0:
+					limit = minf(limit, 6.5 if remaining > 12.0 else 2.0)
+					if float(progress.remaining) < 6.0:
+						var rho := drive.pos.distance_to(sit.global_transform * sit.network.stop_point())
+						limit = minf(limit, maxf(0.12, rho * 0.7))
+		elif cos(drive.yaw) > 0.2:
+			var distance: float = current.zc + float(sit.data.stopZ) - drive.pos.z
+			limit = minf(limit, sqrt(maxf(0.0, 2 * 8 * distance)))
 	if road != null and road_phase == "approach" and cos(drive.yaw) > 0.2:
 		# The same for the stop line of a road question.
 		var road_distance: float = road.stop_z - drive.pos.z

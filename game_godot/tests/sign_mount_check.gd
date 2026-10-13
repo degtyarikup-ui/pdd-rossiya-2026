@@ -51,5 +51,30 @@ func _initialize() -> void:
 		var size := (face.mesh as QuadMesh).size
 		assert(size.x < 1.0 and size.y < 2.0, "Railway distance markers must remain narrow and proportional")
 		sign.free()
+	var settings := {"code": "5.7.1", "secondSign": {"code": "2.4"}}
+	for mount in ["pole", "cantilever"]:
+		settings.mount = mount
+		sign = RoadBuild.sign_node("5.7.1", "", "", [], [], true, settings)
+		board = sign.get_node("sign_board")
+		var top_face := board.get_node("face_top") as MeshInstance3D
+		var bottom_face := board.get_node("face_bottom") as MeshInstance3D
+		var top_size := (top_face.mesh as QuadMesh).size
+		var bottom_size := (bottom_face.mesh as QuadMesh).size
+		var gap := top_face.position.y - top_size.y * 0.5 - bottom_face.position.y - bottom_size.y * 0.5
+		assert(is_equal_approx(gap, 0.16), "Two independent faces have a visible gap")
+		assert(board.position.z < -RoadBuild.POLE_RADIUS, "The common pole cannot overlap either face")
+		if mount == "pole":
+			assert(sign.get_child_count() == 2, "Two signs share exactly one support")
+			var pole := sign.get_node("sign_post") as MeshInstance3D
+			assert(is_equal_approx((pole.mesh as CylinderMesh).height, board.position.y + top_face.position.y))
+		else:
+			assert(sign.has_node("cantilever_post") and not sign.has_node("sign_post"))
+		sign.free()
+	settings = {"laneDirections": [["left", "straight"], ["straight", "right"]], "secondSign": {"code": "2.4"}}
+	sign = RoadBuild.sign_node("5.15.1", "", "", [], [], true, settings)
+	assert(sign.get_node("sign_board").get_child_count() == 2)
+	var custom_face := sign.get_node("sign_board/face_top") as MeshInstance3D
+	assert((custom_face.mesh as QuadMesh).size == LaneSign.dimensions(settings.laneDirections), "Constructed face uses exactly its lane width")
+	sign.free()
 	print("Sign mounting: all checks passed")
 	quit(0)

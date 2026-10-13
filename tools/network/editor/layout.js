@@ -376,8 +376,272 @@ const Layout = (() => {
     return { points: pts };
   }
 
-  // The player's way: the street and the junction it leads to (past joints), the lane, the stop.
+  // Free question pose is separate from the entry street: roads/paint and the connector to the
+  // continuous city stay unchanged. The pose is persisted in the layout, never inferred from a route.
+  const isFreePlayer = (scene) => scene.layout?.player?.mode === "free";
+  function playerPose(scene) {
+    const pose = isFreePlayer(scene) && scene.layout.player.pose;
+    return pose ? { x: Number(pose.x), z: Number(pose.z), yaw: Number(pose.yaw) || 0 }
+      : { ...scene.stop, yaw: Number(scene.stop?.yaw) || 0 };
+  }
+  function setPlayerMode(scene, mode) {
+    if (!scene.layout) return false;
+    const plan = streetPlayerPlan(scene);
+    if (!plan) return false;
+    const pl = scene.layout.player = { ...(scene.layout.player || {}), street: plan.st.id, toward: plan.nid };
+    if (mode === "free") {
+      pl.pose = playerPose(scene);
+      pl.mode = "free";
+    } else {
+      delete pl.mode;
+      delete pl.pose;
+    }
+    return true;
+  }
+  // Explicit route edits are distinct from regenerated copies. Free-mode paths have their own
+  // authored source, so moving the question never overwrites the street-mode author's route.
+  function editPlayerRoute(scene, route) {
+    if (!route) return;
+    route.manual = true;
+    delete route.auto;
+    if (isFreePlayer(scene) && route.kind === "manoeuvre") route.playerFreeEdited = true;
+  }
+  function setPlayerRouteManual(scene, route, manual) {
+    if (!route) return;
+    if (manual) return editPlayerRoute(scene, route);
+    if (scene.layout && route.kind === "manoeuvre") {
+      if (isFreePlayer(scene)) (scene.layout.freePaths = scene.layout.freePaths || {})[route.exit] = null;
+      else if (scene.layout.paths) delete scene.layout.paths[route.exit];
+    }
+    delete route.manual;
+    delete route.playerFreeEdited;
+    route.auto = true;
+  }
+  function pointInPolygon(p, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const a = poly[i], b = poly[j];
+      if ((a[1] > p[1]) !== (b[1] > p[1]) && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
+    }
+    return inside;
+  }
+  function drivingArea(scene) {
+    const generated = scene.layout ? generate(scene).roads : [];
+    const roads = [...generated, ...(scene.roads || []).filter(r => !r.auto)];
+    // build.py cuts islands out of the union, including the roads that enter a roundabout.
+    const holes = roads.flatMap(r => r.holes || []);
+    return (p) => !holes.some(h => pointInPolygon(p, h)) && roads.some(r => pointInPolygon(p, r.outer));
+  }
+  function footprintSupported(at, pose, halfWidth = 0.95, halfLength = 2.4) {
+    const c = Math.cos(pose.yaw), n = Math.sin(pose.yaw);
+    for (const u of [-halfWidth, 0, halfWidth]) for (const v of [-halfLength, 0, halfLength]) {
+      if (!at([pose.x + u * c + v * n, pose.z - u * n + v * c])) return false;
+    }
+    return true;
+  }
+  function freePlayerSupported(scene, pose) { return footprintSupported(drivingArea(scene), pose); }
+  function movePlayer(scene, point) {
+    if (!isFreePlayer(scene)) return false;
+    const next = { ...playerPose(scene), x: r3(point[0]), z: r3(point[1]) };
+    if (!freePlayerSupported(scene, next)) return false;
+    scene.layout.player.pose = next;
+    return true;
+  }
+  function rotatePlayer(scene, yaw) {
+    if (!isFreePlayer(scene)) return false;
+    const next = { ...playerPose(scene), yaw: r3(wrap(yaw)) };
+    if (!freePlayerSupported(scene, next)) return false;
+    scene.layout.player.pose = next;
+    return true;
+  }
   function playerPlan(scene) {
+    const plan = streetPlayerPlan(scene);
+    if (!plan || !isFreePlayer(scene)) return plan;
+    const p = playerPose(scene);
+    return { ...plan, free: true, stop: [p.x, p.z], tin: [Math.sin(p.yaw), Math.cos(p.yaw)] };
+  }
+
+  // Polyline routes on the actual road area. Ring arcs use its legal direction; the small grid
+  // search is a fallback for arbitrary junction/bend poses, never a change to authored geometry.
+  const densePath = (pts, step = 1) => {
+    const out = [pts[0]];
+    for (let i = 1; i < pts.length; i++) {
+      const count = Math.max(1, Math.ceil(dist(pts[i - 1], pts[i]) / step));
+      for (let j = 1; j <= count; j++) out.push(add(pts[i - 1], mul(sub(pts[i], pts[i - 1]), j / count)));
+    }
+    return out.map(P).filter((p, i, a) => !i || dist(p, a[i - 1]) > 0.001);
+  };
+  function freeRoutes(scene, original) {
+    const pose = playerPose(scene), stop = [pose.x, pose.z], toward = [Math.sin(pose.yaw), Math.cos(pose.yaw)];
+    const at = drivingArea(scene);
+    const radiusOK = (p, radius = 1.03) => {
+      if (!at(p)) return false;
+      for (let i = 0; i < 8; i++) if (!at(add(p, [Math.cos(i * Math.PI / 4) * radius, Math.sin(i * Math.PI / 4) * radius]))) return false;
+      return true;
+    };
+    const clearLine = (a, b) => {
+      const n = Math.max(1, Math.ceil(dist(a, b) / 0.65));
+      for (let i = 0; i <= n; i++) if (!radiusOK(add(a, mul(sub(b, a), i / n)))) return false;
+      return true;
+    };
+    const rings = scene.layout.nodes.filter(n => n.ring);
+    const ringFor = (p) => rings.find(n => { const d = dist(p, xy(n)); return d > n.ring.island && d < n.ring.r + 0.1; });
+    const sameRing = ringFor(stop);
+    function ringPath(from, to) {
+      const ring = sameRing;
+      if (!ring) return null;
+      const C = xy(ring), middle = (ring.ring.r + ring.ring.island) / 2;
+      const near = (p) => { const v = sub(p, C), d = len(v); return add(C, mul(unit(v), d < ring.ring.r ? d : middle)); };
+      const enter = near(from), leave = near(to);
+      const a = Math.atan2(enter[1] - C[1], enter[0] - C[0]), b = Math.atan2(leave[1] - C[1], leave[0] - C[0]);
+      let sweep = a - b;
+      while (sweep < -0.001) sweep += 2 * Math.PI;
+      const steps = Math.max(1, Math.ceil(sweep * middle));
+      const arc = [];
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps, angle = a - sweep * t;
+        const radius = len(sub(enter, C)) * (1 - t) + len(sub(leave, C)) * t;
+        arc.push(add(C, [Math.cos(angle) * radius, Math.sin(angle) * radius]));
+      }
+      const path = densePath([from, ...arc, to]);
+      return path.every(p => radiusOK(p)) ? path : null;
+    }
+    // A* on a one-and-a-half metre lattice. It is cached within a regeneration for every exit,
+    // and stops early at the goal. Direction on a ring is constrained to keep the island on the left.
+    const STEP = 1.5, cache = new Map();
+    const pass = (x, z) => {
+      const key = `${x},${z}`;
+      if (!cache.has(key)) cache.set(key, radiusOK([x * STEP, z * STEP]));
+      return cache.get(key);
+    };
+    function navigate(from, to) {
+      if (dist(from, to) < 0.02) return [from, to];
+      if (!ringFor(from) && !ringFor(to) && clearLine(from, to)) return densePath([from, to]);
+      const around = (p) => {
+        const cx = Math.round(p[0] / STEP), cz = Math.round(p[1] / STEP), found = [];
+        for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) if (pass(cx + dx, cz + dz)) {
+          const q = [(cx + dx) * STEP, (cz + dz) * STEP];
+          if (clearLine(p, q)) found.push({ x: cx + dx, z: cz + dz, d: dist(p, q) });
+        }
+        return found.sort((a, b) => a.d - b.d)[0];
+      };
+      const start = around(from), goal = around(to);
+      if (!start || !goal) return null;
+      const key = (x, z) => `${x},${z}`, goalKey = key(goal.x, goal.z), startKey = key(start.x, start.z);
+      const open = [], records = new Map(), closed = new Set();
+      const push = (v) => { let i = open.length; open.push(v); while (i) { const p = (i - 1) >> 1; if (open[p].f <= v.f) break; open[i] = open[p]; i = p; } open[i] = v; };
+      const pop = () => { const v = open[0], end = open.pop(); if (open.length) { let i = 0; while (i * 2 + 1 < open.length) { let j = i * 2 + 1; if (j + 1 < open.length && open[j + 1].f < open[j].f) j++; if (open[j].f >= end.f) break; open[i] = open[j]; i = j; } open[i] = end; } return v; };
+      const heuristic = (x, z) => Math.hypot(x - goal.x, z - goal.z);
+      const first = { x: start.x, z: start.z, g: 0, f: heuristic(start.x, start.z), parent: null, key: startKey };
+      records.set(startKey, first); push(first);
+      let result = null, iterations = 0;
+      while (open.length && iterations++ < 30000) {
+        const node = pop();
+        if (closed.has(node.key)) continue;
+        if (node.key === goalKey) { result = node; break; }
+        closed.add(node.key);
+        const here = [node.x * STEP, node.z * STEP], ring = ringFor(here);
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+          if (!dx && !dz) continue;
+          const x = node.x + dx, z = node.z + dz, k = key(x, z);
+          if (closed.has(k) || !pass(x, z) || (dx && dz && (!pass(node.x + dx, node.z) || !pass(node.x, node.z + dz)))) continue;
+          // a decreasing polar angle is the right-hand circulation used by through().
+          if (ring) { const v = sub(here, xy(ring)); if (v[0] * dz - v[1] * dx > 0.1) continue; }
+          const g = node.g + Math.hypot(dx, dz);
+          if (records.has(k) && records.get(k).g <= g) continue;
+          const next = { x, z, key: k, g, f: g + heuristic(x, z), parent: node };
+          records.set(k, next); push(next);
+        }
+      }
+      if (!result) return null;
+      const points = [to];
+      for (let n = result; n; n = n.parent) points.push([n.x * STEP, n.z * STEP]);
+      points.push(from); points.reverse();
+      const simple = [points[0]];
+      for (let i = 0; i < points.length - 1;) {
+        let j = Math.min(points.length - 1, i + 16);
+        while (j > i + 1 && (!clearLine(points[i], points[j]) || (ringFor(points[i]) && j > i + 3))) j--;
+        simple.push(points[j]); i = j;
+      }
+      return densePath(simple);
+    }
+    const errors = [];
+    const ap = original.routes.find(r => r.kind === "approach");
+    let back = add(stop, mul(toward, -3));
+    if (!clearLine(back, stop)) back = add(stop, mul(toward, -0.4));
+    let approach = null;
+    if (sameRing) {
+      // Original entry stop to the circulating lane, then round the island to the free pose.
+      const ordinary = original.routes.find(r => r.kind === "manoeuvre");
+      const firstRing = ordinary?.points.findIndex(p => ringFor(p) === sameRing);
+      if (firstRing >= 0) {
+        const arc = ringPath(ordinary.points[firstRing], back);
+        if (arc) approach = [...ap.points, ...ordinary.points.slice(1, firstRing), ...arc, stop];
+      }
+    }
+    if (!approach) {
+      const enter = along(ap.points, Math.min(3.0, polyLen(ap.points) * 0.5)).p;
+      const route = navigate(enter, back);
+      approach = route ? [ap.points[0], ...route, stop] : null;
+    }
+    if (!approach) errors.push("Не удалось построить подъезд к месту игрока. Переместите машину или измените угол.");
+    const routes = approach ? [{ ...ap, points: densePath(approach), playerFree: true }] : [];
+    const entryPlan = streetPlayerPlan(scene);
+    const exits = ["junction", "ring"].includes(entryPlan.kind) ? exitsOf(scene.layout, entryPlan.st, entryPlan.nid) : {};
+    const freePaths = scene.layout.freePaths || {};
+    const automatic = Object.values(freePaths).some(p => p === null)
+      ? streetRoutes({ ...scene, layout: { ...scene.layout, paths: {} } }).routes : [];
+    for (const source of original.routes.filter(r => r.kind === "manoeuvre")) {
+      const freeOwn = freePaths[source.exit];
+      const reset = Object.hasOwn(freePaths, source.exit) && freeOwn === null;
+      const basis = reset ? (automatic.find(r => r.exit === source.exit) || source) : source;
+      const r = { ...basis, points: basis.points.slice() };
+      if (Array.isArray(freeOwn)) { r.points = freeOwn.map(P); r.manual = true; delete r.auto; }
+      // A pose may be further along an exit than the old 20 m teaching arrow. Its new route
+      // continues towards the border, instead of driving backwards to the arrow's former end.
+      const out = exits[r.exit];
+      if (out && !r.manual) {
+        const line = lineFrom(scene.layout, out.street, entryPlan.nid);
+        const centred = along(line, projectOn(line, r.points.at(-1)));
+        const lateral = dot(sub(r.points.at(-1), centred.p), right(centred.t));
+        const lane = laneAway(scene.layout, out.street, entryPlan.nid, lateral, scene.crop || 90);
+        const former = projectOn(lane, r.points.at(-1));
+        const tail = cut(lane, former + 0.1, polyLen(lane) - 3.3);
+        if (tail.length) r.points.push(...tail);
+      } else if (!r.manual && polyLen(r.points) > 3.4) {
+        // A street without a junction already runs to its border. Keep the routing goal a car
+        // length inside it; the world appends the continuous city after that border itself.
+        r.points = cut(r.points, 0, polyLen(r.points) - 3.3);
+      }
+      const end = r.points.at(-1);
+      let path = null;
+      if (sameRing && !r.manual) {
+        const lastRing = r.points.findLastIndex(p => ringFor(p) === sameRing);
+        if (lastRing >= 0) {
+          const arc = ringPath(stop, r.points[lastRing]);
+          if (arc) path = [...arc, ...r.points.slice(lastRing + 1)];
+        }
+      }
+      if (r.manual) {
+        // Keep both author sources intact: street paths and explicit free-mode paths. A move
+        // reanchors only the displayed/exported copy; an unchanged pose keeps edited vertices.
+        if (dist(stop, r.points[0]) < 0.002) path = r.points.slice();
+        else {
+          let nearest = 0;
+          for (let i = 1; i < r.points.length; i++) if (dist(stop, r.points[i]) < dist(stop, r.points[nearest])) nearest = i;
+          const join = navigate(stop, r.points[nearest]);
+          if (join) path = [...join, ...r.points.slice(nearest + 1)];
+        }
+      }
+      if (!path && !r.manual) path = navigate(stop, end);
+      if (path) routes.push({ ...r, points: densePath(path), playerFree: true });
+      else errors.push(`Не удалось построить путь игрока: ${r.exit}. Переместите машину или измените угол.`);
+    }
+    return { ...original, routes, errors, stop: { x: r3(pose.x), z: r3(pose.z), yaw: r3(pose.yaw) } };
+  }
+
+  // The player's way: the street and the junction it leads to (past joints), the lane, the stop.
+  function streetPlayerPlan(scene) {
     const L = scene.layout, crop = Number(scene.crop || 90);
     const pl = L.player && streetOf(L, L.player.street) ? L.player : defaultPlayer(L, crop);
     if (!pl) return null;
@@ -424,9 +688,9 @@ const Layout = (() => {
     return best && { street: best.street, toward: best.toward };
   }
 
-  function generateRoutes(scene) {
+  function streetRoutes(scene) {
     const L = scene.layout, crop = Number(scene.crop || 90);
-    const plan = playerPlan(scene);
+    const plan = streetPlayerPlan(scene);
     if (!plan) return { routes: [], stop: null, exitWidths: {}, approachWidth: 8.4 };
     const { st, nid, kind, lo, stop, tin, sd } = plan;
     const lane = offsetRight(lineFrom(L, st, otherEnd(st, nid)), lo);   // driving toward nid
@@ -472,6 +736,11 @@ const Layout = (() => {
     };
   }
 
+  function generateRoutes(scene) {
+    const ordinary = streetRoutes(scene);
+    return isFreePlayer(scene) && ordinary.stop ? freeRoutes(scene, ordinary) : ordinary;
+  }
+
   // Replaces the generated items of a scene by the plan's (the user's own roads, marks, routes stay).
   function apply(scene) {
     if (!scene.layout) return scene;
@@ -481,7 +750,11 @@ const Layout = (() => {
       return scene;
     }
     // A manoeuvre edited by hand keeps its points (layout.paths): its drawn route is the source.
-    for (const x of scene.routes || []) if (x.kind === "manoeuvre" && x.manual) (scene.layout.paths = scene.layout.paths || {})[x.exit] = x.points.map(P);
+    for (const x of scene.routes || []) {
+      if (x.kind !== "manoeuvre" || !x.manual) continue;
+      if (!x.playerFree) (scene.layout.paths = scene.layout.paths || {})[x.exit] = x.points.map(P);
+      else if (isFreePlayer(scene) && x.playerFreeEdited) (scene.layout.freePaths = scene.layout.freePaths || {})[x.exit] = x.points.map(P);
+    }
     const g = generate(scene);
     const r = generateRoutes(scene);
     const mine = (list) => (list || []).filter((x) => !x.auto);
@@ -491,11 +764,12 @@ const Layout = (() => {
     const userRoutes = (scene.routes || []).filter((x) => !(x.auto || x.kind === "approach" || x.kind === "manoeuvre"));
     scene.routes = [...r.routes, ...userRoutes];
     if (r.stop) scene.stop = r.stop;
+    if (r.errors?.length) scene.playerRouteErrors = r.errors; else delete scene.playerRouteErrors;
     scene.exitWidths = r.exitWidths;
     scene.approachWidth = r.approachWidth;
     // The question's manoeuvre must be one the plan has.
     const ways = r.routes.filter((x) => x.kind === "manoeuvre").map((x) => x.exit);
-    if (scene.question && ways.length && !ways.includes(scene.question.maneuver)) scene.question.maneuver = ways.includes("straight") ? "straight" : ways[0];
+    if (!isFreePlayer(scene) && scene.question && ways.length && !ways.includes(scene.question.maneuver)) scene.question.maneuver = ways.includes("straight") ? "straight" : ways[0];
     return applyActors(scene);
   }
 
@@ -836,6 +1110,7 @@ const Layout = (() => {
     medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf,
     applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, snapPoint, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
     splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading, laneOffsets,
+    isFreePlayer, playerPose, setPlayerMode, movePlayer, rotatePlayer, freePlayerSupported, editPlayerRoute, setPlayerRouteManual,
   };
 })();
 

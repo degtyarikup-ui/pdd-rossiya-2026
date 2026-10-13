@@ -51,6 +51,10 @@ godot --headless --path game_godot --script res://tests/road_check.gd       # д
 godot --headless --path game_godot --script res://tests/surface_check.gd    # перекрёстки без дублей дорожного слоя
 godot --headless --path game_godot --script res://tests/street_check.gd     # улица: сужение перед перекрёстком, застройка вне проезжей части
 godot --headless --path game_godot --script res://tests/collision_check.gd  # столкновения
+godot --headless --path game_godot --script res://tests/sign_mount_check.gd # общая стойка и консоль знаков
+godot --headless --path game_godot --script res://tests/lane_sign_check.gd # конструктор направлений по полосам
+godot --headless --path game_godot --script res://tests/free_player_check.gd # 76 проверок свободной позы, 12 углов и подъезда по кольцу
+godot --headless --path game_godot --script res://tests/dirt_surface_check.gd # грунт, текстура и удаление старых накладок
 godot --headless --path game_godot --script res://tests/human_collision_check.gd # наезд: регулировщик и пешеходы
 godot --headless --path game_godot --script res://tests/ghost_check.gd      # призрак улицы
 godot --headless --path game_godot --script res://tests/traffic_check.gd    # трафик

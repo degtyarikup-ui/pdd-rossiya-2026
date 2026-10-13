@@ -50,63 +50,98 @@ const SIGN_LEAN := 0.0   # boards stay vertical and centred on their pole
 ## A road sign at the origin, facing a driver who comes from -Z: a pole, and on it the board (the
 ## sign, its picture plate and its text plate) mounted vertically on one pole.
 static func sign_node(code: String, plate := "", plate_sign := "", main_road: Array = [], roads: Array = [], with_pole := true, mounting: Dictionary = {}) -> Node3D:
-	# 8.13 alone (on a light pole, or the old scenes): the plate is the sign.
-	var tex: Texture2D = main_road_plate(main_road, roads) if code == "8.13" else load("res://signs/%s.svg" % code) as Texture2D
-	if tex == null:
-		push_warning("no picture for road sign %s" % code)
-		return null
+	var primary := {"code": code, "plate": plate, "plateSign": plate_sign, "mainRoad": main_road, "roads": roads}
+	if mounting.has("laneDirections"):
+		primary.laneDirections = mounting.laneDirections
+	var faces: Array = [primary]
+	if mounting.get("secondSign") is Dictionary and not str(mounting.secondSign.get("code", "")).is_empty():
+		faces.append(mounting.secondSign)
 	var root := Node3D.new()
 	root.name = "sign_" + code
-	var steel := StandardMaterial3D.new()
-	steel.albedo_color = Color("#7A7F87")
-	steel.roughness = 0.6
 	var board := Node3D.new()
 	board.name = "sign_board"
-	board.position = Vector3(0, SIGN_BOTTOM, -0.16)  # In front of both new and baked poles.
+	board.position = Vector3(0, SIGN_BOTTOM, -0.16)  # Boards sit in front of the shared pole.
 	board.rotation.x = SIGN_LEAN
 	root.add_child(board)
-	# The board's parts from the bottom up: text plate, picture plate, the sign.
 	var y := 0.0
-	var width := face_width(code)
-	var parts: Array = []
-	if plate != "":
-		parts.append(["text", plate, width * 0.8, 0.28 * SIGN_SCALE])
-	if plate_sign != "":
-		var ptex := load("res://signs/%s.svg" % plate_sign) as Texture2D
-		if ptex != null:
-			var pw := face_width(plate_sign) if plate_sign.begins_with("1.4.") else width * 0.8
-			parts.append(["pic", ptex, pw, pw * float(ptex.get_height()) / float(ptex.get_width())])
-	if not main_road.is_empty() and code != "8.13":
-		var mt := main_road_plate(main_road, roads)
-		parts.append(["pic", mt, SIGN_WIDTH * 0.8, SIGN_WIDTH * 0.8 * 0.75])
-	parts.append(["pic", tex, width, width * float(tex.get_height()) / float(tex.get_width())])
-	for part in parts:
-		var w: float = part[2]
-		var h: float = part[3]
-		var at := Vector3(0, y + h * 0.5, 0)
-		if part[0] == "text":
-			board.add_child(_text_plate(part[1], at, w, h))
+	var top_face_height := 0.0
+	# Faces are saved top to bottom; build the bottom one first, then its upper neighbour.
+	for i in range(faces.size() - 1, -1, -1):
+		var parts := _sign_parts(faces[i])
+		if parts.is_empty():
+			root.free()
+			return null
+		for part in parts:
+			var w: float = part[2]
+			var h: float = part[3]
+			var at := Vector3(0, y + h * 0.5, 0)
+			var face: Node3D
+			if part[0] == "text":
+				face = _text_plate(part[1], at, w, h)
+			else:
+				face = _face(part[1], at, w, h)
+			board.add_child(face)
+			y += h + 0.05
+		var last: Array = parts.back()
+		board.get_child(board.get_child_count() - 1).name = "face_top" if i == 0 else "face_bottom"
+		if i == 0:
+			top_face_height = last[3]
 		else:
-			board.add_child(_face(part[1], at, w, h))
-		y += h + 0.05
+			y += 0.11  # 16 cm between independent signs, 5 cm between their plates.
+	var height := y - 0.05
+	board.set_meta("height", height)
 	if with_pole and mounting.get("mount", "pole") == "cantilever":
-		_cantilever(root, board, y - 0.05, mounting)
+		_cantilever(root, board, height, mounting)
 		return root
-	# The pole: up from the pavement into the board's middle, behind its face.
-	var top := SIGN_BOTTOM + y * 0.5 * cos(SIGN_LEAN)
-	var pole := MeshInstance3D.new()
-	var cyl := CylinderMesh.new()
-	cyl.top_radius = POLE_RADIUS
-	cyl.bottom_radius = POLE_RADIUS
-	cyl.height = top
-	pole.mesh = cyl
-	pole.material_override = steel
-	pole.position = Vector3(0, top * 0.5, POLE_BACK + y * 0.5 * sin(SIGN_LEAN))
+	# A continuous shared pole reaches the upper face's centre, behind both faces.
 	if with_pole:
+		var top := SIGN_BOTTOM + height - top_face_height * 0.5
+		var pole := MeshInstance3D.new()
+		pole.name = "sign_post"
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = POLE_RADIUS
+		cyl.bottom_radius = POLE_RADIUS
+		cyl.height = top
+		pole.mesh = cyl
+		pole.material_override = _paint(Color("#7A7F87"))
+		pole.position = Vector3(0, top * 0.5, POLE_BACK)
 		root.add_child(pole)
-	else:
-		pole.free()
 	return root
+
+
+## Independent face settings. Legacy signs and plates keep their existing proportions.
+static func _sign_parts(face: Dictionary) -> Array:
+	var code := str(face.get("code", ""))
+	var lanes: Array = face.get("laneDirections", [])
+	var tex: Texture2D
+	var width := face_width(code)
+	if not lanes.is_empty():
+		tex = LaneSign.texture(lanes)
+		width = LaneSign.width(lanes)
+	elif code == "8.13":
+		tex = main_road_plate(face.get("mainRoad", []), face.get("roads", []))
+	else:
+		tex = load("res://signs/%s.svg" % code) as Texture2D
+	if tex == null:
+		push_warning("no picture for road sign %s" % code)
+		return []
+	var parts: Array = []
+	var plate := str(face.get("plate", ""))
+	if not plate.is_empty():
+		parts.append(["text", plate, width * 0.8, 0.28 * SIGN_SCALE])
+	var plate_code := str(face.get("plateSign", ""))
+	if not plate_code.is_empty():
+		var ptex := load("res://signs/%s.svg" % plate_code) as Texture2D
+		if ptex != null:
+			var pw := face_width(plate_code) if plate_code.begins_with("1.4.") else width * 0.8
+			parts.append(["pic", ptex, pw, pw * float(ptex.get_height()) / float(ptex.get_width())])
+	var main: Array = face.get("mainRoad", [])
+	if not main.is_empty() and code != "8.13":
+		var mt := main_road_plate(main, face.get("roads", []))
+		parts.append(["pic", mt, SIGN_WIDTH * 0.8, SIGN_WIDTH * 0.8 * 0.75])
+	var height := LaneSign.height(lanes) if not lanes.is_empty() else width * float(tex.get_height()) / float(tex.get_width())
+	parts.append(["pic", tex, width, height])
+	return parts
 
 
 ## The anchor stays on the roadside; reach moves the sign's centre over the carriageway.

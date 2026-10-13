@@ -61,22 +61,28 @@ var guide := Callable()           # world: car position -> world point ahead on 
 ## Off while a question is open or its manoeuvre is driven by hand
 ## (game.js: applySteeringAssist returns early when state.resolution is set).
 var assist_enabled := true
+var _following_route := false
 
 
 func assist(dt: float) -> void:
-	if steering != 0 or speed < 1.5 or not assist_enabled:
+	_following_route = false
+	if steering != 0 or speed < 0.1 or not assist_enabled:
 		return
 	# On a junction approach the car follows the approach route of the road
 	# network (the world gives the point ahead on it): the lane the ticket starts
 	# from is part of the data, not a formula.
 	if guide.is_valid():
 		var target: Vector3 = guide.call(pos)
-		if target != Vector3.INF and cos(yaw) > 0.5:
+		if target != Vector3.INF:
+			_following_route = true
 			var wanted := atan2(target.x - pos.x, target.z - pos.z)
 			var err := atan2(sin(wanted - yaw), cos(wanted - yaw))
 			# At most 1.5 rad/s: a car does not turn on the spot, however far off the lane.
 			yaw += clampf(err * minf(1.0, dt * 5.0), -1.5 * dt, 1.5 * dt)
 			return
+	# Plain-street settling is unchanged; a route may still need to turn while braking to its pose.
+	if speed < 1.5:
+		return
 	var x := pos.x
 	if absf(x) > 16:
 		return
@@ -123,7 +129,20 @@ func integrate(dt: float, limit: float) -> void:
 			speed = bounce
 			bounce = 0.0
 		return
+	var before_assist := yaw
 	assist(dt)
+	if not is_equal_approx(yaw, before_assist):
+		# Steering assist obeys the same footprint as translation. Capture the angle before
+		# correction so a blocked rotation cannot become the movement's rollback angle.
+		if not on_road(pos, yaw):
+			yaw = before_assist
+		else:
+			var before_box := {"p": pos, "yaw": before_assist, "hw": half_width, "hl": half_length}
+			for solid in world.obstacles():
+				if not overlap(before_box, solid.footprint(), 0.025) and overlap(footprint(), solid.footprint(), 0.025):
+					yaw = before_assist
+					break
+	var guided_started_on_road := _following_route and on_road(pos, before_assist)
 	# A held arrow is a turn being made: the car eases off to ~20 km/h like a
 	# driver does (turnRequested in game.js), so the turn stays tight.
 	var turn_requested := steering != 0
@@ -211,7 +230,9 @@ func integrate(dt: float, limit: float) -> void:
 					break
 		if speed > 0:
 			distance_traveled += pos.distance_to(before)
-	if curb:
+	if curb and not (_following_route and guided_started_on_road and on_road()):
+		# An assist prediction that was canceled while the whole body stayed on the road is
+		# not the driver's violation. Manual kerb attempts and unsupported bodies still count.
 		world.on_fault("offroad", "offroad")
 		speed = maxf(-2.0, minf(speed, 4.0))
 		curb_clear_time = 0.0

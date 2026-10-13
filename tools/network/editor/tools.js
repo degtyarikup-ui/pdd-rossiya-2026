@@ -238,8 +238,10 @@ const Tools = (() => {
         return App.dragMove((s) => { const rt = s.routes.find((x) => x.id === drag.id); if (rt) rt.labelPosition = [r3(e.world.x), r3(e.world.z)]; });
       }
       if (drag.kind === "stop") {
-        // The player's car slides along its lane and across lanes: how far before the junction and which lane.
+        // Free mode accepts only a fully supported car footprint (including the roundabout island).
+        // Street mode keeps its lane/stop-distance behaviour.
         return App.dragMove((s) => {
+          if (Layout.isFreePlayer(s)) return Layout.movePlayer(s, [e.world.x, e.world.z]);
           const plan = Layout.playerPlan(s);
           if (!plan) return;
           const line = Layout.lineFrom(s.layout, plan.st, plan.nid);
@@ -273,8 +275,7 @@ const Tools = (() => {
         return App.dragMove(() => {
           const o = App.objectOf(ref);
           if (ref.t === "route" && o) {
-            o.manual = true;
-            delete o.auto;
+            Layout.editPlayerRoute(S(), o);
           }
           const pts = App.pointsOfRef(ref);
           if (pts && pts[ref.v]) pts[ref.v] = [r3(snapGrid(e.world.x, e)), r3(snapGrid(e.world.z, e))];
@@ -364,8 +365,7 @@ const Tools = (() => {
       if (best < 0) return;
       App.edit(() => {
         if (ref.t === "route" && o) {
-          o.manual = true;
-          delete o.auto;
+          Layout.editPlayerRoute(S(), o);
         }
         pts.splice(best + 1, 0, [r3(e.world.x), r3(e.world.z)]);
       });
@@ -390,7 +390,8 @@ const Tools = (() => {
     App.dragMove(() => {
       for (const ref of App.state.sel) {
         const o = App.objectOf(ref);
-        if (o && o.pos) o.yaw = r3(snapped);
+        if (ref.t === "stop" && Layout.isFreePlayer(S())) Layout.rotatePlayer(S(), snapped);
+        else if (o && o.pos) o.yaw = r3(snapped);
       }
     });
   }

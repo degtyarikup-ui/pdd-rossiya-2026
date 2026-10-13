@@ -63,7 +63,7 @@ const Scene3D = (() => {
   }
 
   // ---- textures: the game's detail shading (game_godot/shaders/scenery.gdshader) -------------
-  const TEXTURE_KINDS = ["asphalt", "pavement", "grass"];
+  const TEXTURE_KINDS = ["asphalt", "pavement", "grass", "dirt"];
   const GRASS_COLOUR = "#86a97a";
   const texParams = {}, texMaps = {}, texUniforms = {};
   const DETAIL_SHADE = `{
@@ -134,16 +134,21 @@ const Scene3D = (() => {
   }
 
   const OFFSET = { polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 };
+  function dirtColour(surface) {
+    const soil = new THREE.Color("#6f5840");
+    const band = /^sand_join_(\d+)$/.exec(surface.id || "");
+    return band ? new THREE.Color("#2c2f36").lerp(soil, (Number(band[1]) + 0.5) / 12) : soil;
+  }
   function layerMaterial(s) {
-    if (s.layer === "" || s.layer === "sand") return new THREE.MeshLambertMaterial({ color: s.colour, side: THREE.DoubleSide, ...OFFSET });
-    const kind = s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
-    const m = detailMaterial(kind, s.layer === "grass" ? GRASS_COLOUR : s.colour);
+    if (s.layer === "") return new THREE.MeshLambertMaterial({ color: s.colour, side: THREE.DoubleSide, ...OFFSET });
+    const kind = s.layer === "sand" ? "dirt" : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
+    const m = detailMaterial(kind, s.layer === "sand" ? dirtColour(s) : s.layer === "grass" ? GRASS_COLOUR : s.colour);
     Object.assign(m, OFFSET);
     return m;
   }
 
   function surfaceMesh(s) {
-    const kind = s.layer === "" || s.layer === "sand" ? null : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
+    const kind = s.layer === "" ? null : s.layer === "sand" ? "dirt" : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
     const period = kind ? periodOf(kind) : 1;
     const pos = [], uv = [];
     for (let k = 0; k < s.idx.length; k++) {
@@ -217,11 +222,13 @@ const Scene3D = (() => {
   function filterBaked(root, B) {
     const cover = coverIndex(B);
     root.traverse((o) => {
-      if (!o.isMesh || !o.geometry || !o.geometry.index) return;
+      if (!o.isMesh || !o.geometry) return;
       // tex_0: dirt strips the game does not draw (situation.gd).
       if (o.name === "tex_0" || (model && (model.bakedSigns || []).includes(o.name))) { o.visible = false; return; }
-      if (o.name !== "static") return;
-      const geo = o.geometry = o.geometry.clone(), pos = geo.attributes.position, index = geo.index.array;
+      const textureGround = o.name.startsWith("tex_");
+      if (o.name !== "static" && !textureGround) return;
+      const geo = o.geometry = o.geometry.clone(), pos = geo.attributes.position;
+      const index = geo.index?.array || Array.from({length:pos.count}, (_, i) => i);
       const keep = [];
       for (let k = 0; k < index.length; k += 3) {
         const a = index[k], b = index[k + 1], c = index[k + 2];
@@ -229,7 +236,10 @@ const Scene3D = (() => {
         const flat = Math.abs(ya - yb) < 0.001 && Math.abs(ya - yc) < 0.001;
         const lo = Math.min(ya, yb, yc), hi = Math.max(ya, yb, yc);
         let drop = false;
-        if (flat && ya < -0.001 && ya > -0.5) drop = true;
+        if (textureGround) {
+          const cx = (pos.getX(a) + pos.getX(b) + pos.getX(c)) / 3, cz = (pos.getZ(a) + pos.getZ(b) + pos.getZ(c)) / 3;
+          drop = flat && ya >= -0.001 && ya < 0.035 && covered(cover, cx, cz);
+        } else if (flat && ya < -0.001 && ya > -0.5) drop = true;
         else if (flat && ya > 0.17 && ya < 0.215) drop = true;
         else if (flat && ya >= -0.001 && ya < 0.035) {
           const cx = (pos.getX(a) + pos.getX(b) + pos.getX(c)) / 3, cz = (pos.getZ(a) + pos.getZ(b) + pos.getZ(c)) / 3;
@@ -385,7 +395,7 @@ const Scene3D = (() => {
     if (t === "actor") return `${o.asset}|${o.type}`;
     if (t === "light") return `${o.asset}|${o.state}|${o.arrow || ""}|${o.tram || ""}|${(o.mountedSigns || []).join(",")}|${(o.mountedMainRoad || []).join(",")}`;
     if (t === "officer") return `officer|${o.gesture}`;
-    if (t === "sign") return `sign|${o.mount || "pole"}|${o.reach ?? 4.5}|${o.armSide || "left"}|${o.clearance ?? 5.5}|${o.code}|${o.plate || ""}|${(o.mainRoad || []).join(",")}|${(o.roads || []).join(",")}`;
+    if (t === "sign") return `sign|${o.mount || "pole"}|${o.reach ?? 4.5}|${o.armSide || "left"}|${o.clearance ?? 5.5}|${JSON.stringify(SignMount.faces(o).map(SignMount.faceCopy))}`;
     return t;
   }
 
@@ -507,10 +517,31 @@ const Scene3D = (() => {
 
   // RoadBuild.sign_node parity: a vertical board centred on its pole, using the picture's proportions.
   const SIGN_W = 3.0, SIGN_BOTTOM = 2.2, SIGN_LEAN = 0;
-  const signTex = new Map();
-  function signTexture(code) {
-    if (!signTex.has(code)) signTex.set(code, new THREE.TextureLoader().load(`/asset/sign/${code}.svg`, () => { needsRender = true; }));
-    return signTex.get(code);
+  const signTex = new Map(), signWaiters = new Map(), laneTex = new Map();
+  function signTexture(code, ready = null) {
+    if (!signTex.has(code)) {
+      signWaiters.set(code, []);
+      const texture = new THREE.TextureLoader().load(`/asset/sign/${code}.svg`, () => {
+        for (const callback of signWaiters.get(code) || []) callback();
+        signWaiters.delete(code); needsRender = true;
+      });
+      signTex.set(code, texture);
+    }
+    const texture = signTex.get(code);
+    if (ready && !texture.image?.width) signWaiters.get(code)?.push(ready);
+    return texture;
+  }
+  function laneTexture(lanes) {
+    const key = JSON.stringify(LaneSign.normalize(lanes));
+    if (!laneTex.has(key)) {
+      if (laneTex.size >= 16) {
+        const oldest = laneTex.keys().next().value;
+        // The canvas remains on any live face; Three can upload it again if that face is visible.
+        laneTex.get(oldest).dispose(); laneTex.delete(oldest);
+      }
+      laneTex.set(key, new THREE.CanvasTexture(LaneSign.canvas(lanes)));
+    }
+    return laneTex.get(key);
   }
   function mainRoadTexture(main, roads) {
     const c = document.createElement("canvas");
@@ -529,55 +560,73 @@ const Scene3D = (() => {
     return new THREE.CanvasTexture(c);
   }
   function signModel(o, withPole = true, onHeight = null) {
-    const g = new THREE.Group(), board = new THREE.Group(), support = new THREE.Group();
-    const faceWidth = o.code.startsWith("1.4.") ? SIGN_W * 0.25 : SIGN_W;
+    const g = new THREE.Group(), board = new THREE.Group(), support = new THREE.Group(), parts = [];
     g.add(board); g.add(support);
-    let y = 0;
     const faceMat = tex => new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.5, side: THREE.FrontSide });
-    const add = (tex, w, h) => {
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), faceMat(tex));
-      m.rotation.y = Math.PI; m.position.y = y + h / 2; board.add(m);
-      y += h + 0.05; return m;
+    const add = (tex, w, h, gap = 0.05) => {
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), faceMat(tex));
+      mesh.rotation.y = Math.PI; board.add(mesh);
+      const part = { mesh, w, h, gap }; parts.push(part); return part;
     };
-    const updateSupport = () => {
-      const spec = SignMount.layout(withPole ? o : {}, Math.max(0, y - 0.05));
+    let topFaceHeight = SIGN_W;
+    const arrange = () => {
+      let y = 0;
+      for (const part of parts) { part.mesh.position.y = y + part.h / 2; y += part.h + part.gap; }
+      const height = Math.max(0, y - (parts.at(-1)?.gap || 0));
+      const spec = SignMount.layout(withPole ? o : {}, height, topFaceHeight);
       board.position.set(spec.x, spec.bottom, -0.16);
       while (support.children.length) { const m = support.children[0]; support.remove(m); m.geometry.dispose(); m.material.dispose(); }
-      if (!withPole) return;
-      const post = new THREE.Mesh(new THREE.CylinderGeometry(spec.overhead ? 0.16 : 0.05, spec.overhead ? 0.16 : 0.05, spec.postHeight, 12), mat(0x7a7f87));
-      post.position.set(0, spec.postHeight / 2, 0.09); support.add(post);
-      if (spec.overhead) {
-        const part = (size, pos, colour = 0x7a7f87) => { const m = new THREE.Mesh(new THREE.BoxGeometry(...size), mat(colour)); m.position.set(...pos); support.add(m); return m; };
-        part([0.7, 0.3, 0.7], [0, 0.15, 0.09], 0x62676d);
-        part([spec.armLength, 0.22, 0.22], [spec.side * spec.armLength / 2, spec.postHeight, 0.09]);
-        // A diagonal brace behind the board connects the arm to its roadside post.
-        const start = new THREE.Vector3(0, spec.postHeight - 1.4, 0.24), end = new THREE.Vector3(spec.x, spec.postHeight, 0.24);
-        const brace = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, start.distanceTo(end), 8), mat(0x7a7f87));
-        brace.position.copy(start.clone().add(end).multiplyScalar(0.5));
-        brace.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), end.clone().sub(start).normalize()); support.add(brace);
+      if (withPole) {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(spec.overhead ? 0.16 : 0.05, spec.overhead ? 0.16 : 0.05, spec.postHeight, 12), mat(0x7a7f87));
+        post.position.set(0, spec.postHeight / 2, 0.09); support.add(post);
+        if (spec.overhead) {
+          const part = (size, pos, colour = 0x7a7f87) => { const m = new THREE.Mesh(new THREE.BoxGeometry(...size), mat(colour)); m.position.set(...pos); support.add(m); return m; };
+          part([0.7, 0.3, 0.7], [0, 0.15, 0.09], 0x62676d);
+          part([spec.armLength, 0.22, 0.22], [spec.side * spec.armLength / 2, spec.postHeight, 0.09]);
+          const start = new THREE.Vector3(0, spec.postHeight - 1.4, 0.24), end = new THREE.Vector3(spec.x, spec.postHeight, 0.24);
+          const brace = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, start.distanceTo(end), 8), mat(0x7a7f87));
+          brace.position.copy(start.clone().add(end).multiplyScalar(0.5));
+          brace.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), end.clone().sub(start).normalize()); support.add(brace);
+        }
       }
+      if (onHeight) onHeight(height); needsRender = true;
     };
-    if (o.plate) {
-      const c = document.createElement("canvas"); c.width = 512; c.height = 120;
-      const ctx = c.getContext("2d"); ctx.fillStyle = "white"; ctx.fillRect(0, 0, 512, 120);
-      ctx.fillStyle = "#151515"; ctx.font = "bold 60px sans-serif"; ctx.textAlign = "center"; ctx.fillText(o.plate, 256, 82, 490);
-      add(new THREE.CanvasTexture(c), faceWidth * 0.8, 0.28 * SIGN_W / 0.8);
-    }
-    if (o.code === "8.13") add(mainRoadTexture(o.mainRoad || [], o.roads), SIGN_W, SIGN_W * 0.75);
-    else {
-      if (o.mainRoad && o.mainRoad.length) add(mainRoadTexture(o.mainRoad, o.roads), SIGN_W * 0.8, SIGN_W * 0.6);
-      const tex = signTexture(o.code), face = add(tex, faceWidth, faceWidth), oldHeight = faceWidth;
+    const imagePart = (code, width, gap, top = false) => {
+      let part;
       const fit = () => {
-        const im = tex.image; if (!im?.width) return;
-        const h = faceWidth * im.height / im.width;
-        face.geometry.dispose(); face.geometry = new THREE.PlaneGeometry(faceWidth, h);
-        face.position.y += (h - oldHeight) / 2; y += h - oldHeight;
-        if (onHeight) onHeight(h); updateSupport(); needsRender = true;
+        if (!part || !part.mesh.material.map.image?.width) return;
+        const im = part.mesh.material.map.image;
+        part.h = width * im.height / im.width;
+        part.mesh.geometry.dispose(); part.mesh.geometry = new THREE.PlaneGeometry(width, part.h);
+        if (top) topFaceHeight = part.h;
+        arrange();
       };
-      if (tex.image?.width) fit(); else setTimeout(function wait() { tex.image?.width ? fit() : setTimeout(wait, 100); }, 100);
+      const texture = signTexture(code, fit);
+      const im = texture.image;
+      part = add(texture, width, im?.width ? width * im.height / im.width : width, gap);
+      if (top) topFaceHeight = part.h;
+    };
+    const faces = SignMount.faces(o);
+    for (let i = faces.length - 1; i >= 0; i--) {
+      const face = faces[i], gap = i ? 0.16 : 0.05;
+      const width = face.code.startsWith('1.4.') ? SIGN_W * 0.25 : face.laneDirections?.length ? LaneSign.dimensions(face.laneDirections).width : SIGN_W;
+      if (face.plate) {
+        const c = document.createElement('canvas'); c.width = 512; c.height = 120;
+        const ctx = c.getContext('2d'); ctx.fillStyle = 'white'; ctx.fillRect(0, 0, 512, 120);
+        ctx.fillStyle = '#151515'; ctx.font = 'bold 60px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(face.plate, 256, 82, 490);
+        add(new THREE.CanvasTexture(c), width * 0.8, 0.28 * SIGN_W / 0.8);
+      }
+      if (face.plateSign) imagePart(face.plateSign, face.plateSign.startsWith('1.4.') ? SIGN_W * 0.25 : width * 0.8, 0.05);
+      if (face.code === '8.13') { add(mainRoadTexture(face.mainRoad || [], face.roads), SIGN_W, SIGN_W * 0.75, gap); if (!i) topFaceHeight = SIGN_W * 0.75; }
+      else {
+        if (face.mainRoad?.length) add(mainRoadTexture(face.mainRoad, face.roads), SIGN_W * 0.8, SIGN_W * 0.6);
+        if (face.laneDirections?.length) {
+          const size = LaneSign.dimensions(face.laneDirections); add(laneTexture(face.laneDirections), size.width, size.height, gap);
+          if (!i) topFaceHeight = size.height;
+        } else imagePart(face.code, width, gap, !i);
+      }
     }
-    if (o.code === "8.13" && onHeight) onHeight(SIGN_W * 0.75);
-    updateSupport(); g.rotation.y = -Math.PI;
+    arrange(); g.rotation.y = -Math.PI;
     return g;
   }
 
@@ -789,7 +838,7 @@ const Scene3D = (() => {
     let one = null;
     for (const ref of sel) one = draw(ref, ACCENT, 2.5) || one;
     // One object with a heading: a handle in front of it turns it.
-    if (sel.length === 1 && one && sel[0].t !== "stop") {
+    if (sel.length === 1 && one && (sel[0].t !== "stop" || model.layout?.player?.mode === "free")) {
       const reach = one.hz + 2.4;
       const p = [one.x + Math.sin(one.yaw) * reach, one.z + Math.cos(one.yaw) * reach];
       g.add(polyline([[one.x + Math.sin(one.yaw) * (one.hz + 0.35), one.z + Math.cos(one.yaw) * (one.hz + 0.35)], p], 0.2, ACCENT, 2));

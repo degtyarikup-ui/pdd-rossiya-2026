@@ -13,6 +13,12 @@ func _initialize() -> void:
 	await process_frame
 	await process_frame
 	world.set_process(false)
+	expect(world._scene_playable({"reviewed":true}), "approved ordinary scene remains eligible")
+	expect(world._scene_playable({"reviewed":true,"playerRouteErrors":[]}), "valid free route remains eligible")
+	var invalid := {"reviewed":true,"playerRouteErrors":["no connected approach"]}
+	expect(not world._scene_playable(invalid), "approved scene with invalid free route is omitted at runtime")
+	expect(invalid.reviewed==true, "runtime filtering preserves author's review flag")
+	expect(not world._scene_playable({"reviewed":false}), "unapproved scene cannot enter normal ride")
 	for id in world.playable_ids:
 		var authored: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://network/%s.json" % id))
 		expect(authored.get("reviewed", false) == true, "approved " + id)

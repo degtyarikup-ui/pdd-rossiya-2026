@@ -16,4 +16,17 @@ for (const height of [1.8, 3, 6]) {
 }
 assert.equal(SignMount.layout({mount:'cantilever',reach:-10,clearance:2}).reach, 0.5);
 assert.equal(SignMount.layout({mount:'cantilever',reach:100,clearance:20}).bottom, 8);
-console.log('Overhead sign geometry and persisted settings: PASS');
+const saved = {id:'pole-1',pos:[12,-8],yaw:0.6,code:'5.7.1',mount:'cantilever',reach:4.5,
+  secondSign:{code:'2.4',plate:'100 м'},laneDirections:[['straight']]};
+const before = structuredClone(saved);
+assert.deepEqual(SignMount.faces(saved).map(f => f.code), ['5.7.1','2.4']);
+SignMount.swapFaces(saved);
+assert.equal(saved.code,'2.4'); assert.equal(saved.plate,'100 м');
+assert.equal(saved.secondSign.code,'5.7.1'); assert.deepEqual(saved.secondSign.laneDirections,[['straight']]);
+assert.deepEqual(saved.pos,before.pos); assert.equal(saved.yaw,before.yaw); assert.equal(saved.reach,before.reach);
+SignMount.swapFaces(saved); assert.deepEqual(saved,before);
+const stack = SignMount.layout({},4.36,1.2);
+assert.ok(Math.abs(stack.postHeight-5.96)<1e-9); // The shared support reaches the upper face, not the stack midpoint.
+assert.deepEqual(SignMount.faces(JSON.parse(JSON.stringify(saved))).map(SignMount.faceCopy),
+  SignMount.faces(before).map(SignMount.faceCopy));
+console.log('Single/shared roadside pole, overhead geometry and persisted settings: PASS');

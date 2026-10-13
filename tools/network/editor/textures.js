@@ -12,6 +12,7 @@ const Textures = (() => {
     asphalt: { name: "Асфальт", group: "ground", where: "Проезжая часть", base: "#2c2f36" },
     pavement: { name: "Тротуар", group: "ground", where: "Тротуары и островки", base: "#747970" },
     grass: { name: "Газон и земля", group: "ground", where: "Земля вокруг дорог", base: "#86a97a" },
+    dirt: { name: "Грунт", group: "ground", where: "Грунтовая дорога", base: "#6f5840" },
     gravel: { name: "Гравий", group: "ground", where: "Гравийные покрытия", base: "#8a8270" },
     ballast: { name: "Щебень", group: "ground", where: "Щебёночная подушка", base: "#7d7a72" },
     sleeper: { name: "Шпалы", group: "ground", where: "Шпальный настил", base: "#5e4b3b" },

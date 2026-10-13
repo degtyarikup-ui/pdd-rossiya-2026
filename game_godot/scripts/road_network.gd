@@ -141,8 +141,27 @@ func route(route_id: String) -> PackedVector2Array:
 	return _routes.get(route_id, PackedVector2Array())
 
 
+## The explicit free pose is authoritative even when an old scene.json has not been re-exported.
+## Keeping the entry route separate lets the city stitch at its border while asking on the ring.
+func free_player() -> bool:
+	return data.get("layout", {}).get("player", {}).get("mode") == "free"
+
+
+func player_pose() -> Dictionary:
+	var layout: Dictionary = data.get("layout", {})
+	var player: Dictionary = layout.get("player", {})
+	if player.get("mode") == "free" and player.get("pose") is Dictionary:
+		return player.pose
+	return data.stop
+
+
 func stop_point() -> Vector3:
-	return Vector3(data.stop.x, 0.0, data.stop.z)
+	var pose := player_pose()
+	return Vector3(float(pose.x), 0.0, float(pose.z))
+
+
+func stop_yaw() -> float:
+	return float(player_pose().get("yaw", 0.0))
 
 
 ## The drawn surfaces (asphalt, islands, pavement, kerbs) as one ArrayMesh.
@@ -184,8 +203,15 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 		colour = Color("#2C2F36")
 	elif s.layer == "grass":
 		colour = scenery.color("ground")    # lawns in the season's colour, with the grass detail
-	var layer := scenery.layer_of(s.layer)  # 0 (plain paint) for markings: layer ""
-	var period: float = scenery.kinds[s.layer].period if scenery.kinds.has(s.layer) else 1.0
+	elif s.layer == "sand":
+		# Keep saved networks compatible: their legacy sand polygons now render as textured soil.
+		colour = Color("#6f5840")
+		if str(s.id).begins_with("sand_join_"):
+			var band := int(str(s.id).trim_prefix("sand_join_"))
+			colour = Color("#2c2f36").lerp(colour, (band + 0.5) / 12.0)
+	var kind: String = "dirt" if s.layer == "sand" else s.layer
+	var layer := scenery.layer_of(kind)  # 0 (plain paint) for markings: layer ""
+	var period: float = scenery.kinds[kind].period if scenery.kinds.has(kind) else 1.0
 	var v: Array = s.verts
 	var idx: Array = s.idx
 	var y: float = s.y

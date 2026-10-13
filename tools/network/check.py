@@ -102,6 +102,8 @@ def check_scene(scene: dict) -> list:
                 finding(out, "error", "hole-outside", f"{r.get('id')}: островок лежит вне дороги",
                         {"type": "road", "id": r.get("id")})
     area = road_area(scene)
+    for message in scene.get("playerRouteErrors", []):
+        finding(out, "error", "player-route", str(message), {"type": "stop"})
     stop = scene.get("stop") or {}
     stop_pt = Point(stop.get("x", 0.0), stop.get("z", 0.0))
     if not area.buffer(0.3).covers(stop_pt):

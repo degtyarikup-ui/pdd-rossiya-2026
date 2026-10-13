@@ -179,6 +179,16 @@
    "side": 0,
    "u": 1.6,
    "v": 1.6
+  },
+  {
+   "kind": "dirt",
+   "gain": 1.0,
+   "macro": 0.24,
+   "macroScale": 0.35,
+   "period": 4.8,
+   "side": 4.8,
+   "u": 0,
+   "v": 0
   }
  ],
  "props": {

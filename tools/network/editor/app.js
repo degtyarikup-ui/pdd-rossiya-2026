@@ -335,6 +335,7 @@ const App = (() => {
         if (r && (!o.way || r.manual)) r.points.forEach(shift);
       }
     } else if (ref.t === "stop") {
+      if (Layout.isFreePlayer(s)) return Layout.movePlayer(s, [s.stop.x + dx, s.stop.z + dz]);
       if (s.layout) return;
       s.stop.x = r3(s.stop.x + dx); s.stop.z = r3(s.stop.z + dz);
       const ap = s.routes.find((r) => r.id === "approach");
@@ -343,6 +344,7 @@ const App = (() => {
       Layout.moveNode(s, ref.id, [o.x + dx, o.z + dz]);
     } else if (ref.t === "route") {
       if (o.auto) return;
+      Layout.editPlayerRoute(s, o);
       o.points.forEach(shift);
       if (o.labelPosition) shift(o.labelPosition);
     } else if (ref.t === "track") {
@@ -381,12 +383,13 @@ const App = (() => {
 
   // Turns the selection by `deg` degrees: each object about itself; a shape about its middle.
   function rotate(deg) {
-    const list = state.sel.filter((r) => ["decor", "sign", "actor", "officer", "light", "marking", "lawn", "road"].includes(r.t));
+    const list = state.sel.filter((r) => ["decor", "sign", "actor", "officer", "light", "marking", "lawn", "road", "stop"].includes(r.t));
     if (!list.length) return;
     const a = (deg * Math.PI) / 180;
     edit((s) => {
       for (const ref of list) {
         const o = objectOf(ref);
+        if (ref.t === "stop") { if (Layout.isFreePlayer(s)) Layout.rotatePlayer(s, (s.stop.yaw || 0) - a); continue; }
         if (o.pos) { o.yaw = r3(wrap((o.yaw || 0) - a)); continue; }
         const rings = ref.t === "marking" ? (o.points ? [o.points] : o.polygons.flatMap((p) => [p.outer, ...(p.holes || [])]))
           : ref.t === "road" && ref.part >= 0 ? [o.holes[ref.part]] : [o.outer, ...(o.holes || [])];
@@ -465,8 +468,7 @@ const App = (() => {
       const o = objectOf(ref);
       edit(() => {
         if (ref.t === "route" && o) {
-          o.manual = true;
-          delete o.auto;
+          Layout.editPlayerRoute(state.S, o);
         }
         pts.splice(ref.v, 1);
       });
