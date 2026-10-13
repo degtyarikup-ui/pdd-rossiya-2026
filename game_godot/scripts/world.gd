@@ -167,6 +167,7 @@ func _ready() -> void:
 	scenery = Scenery.new(_season())
 	_setup_environment()
 	street = Street.new(self, scenery, L, chunk_count)
+	street.parked_chance = float(cfg.traffic.get("parked_chance", 0.02))
 	drive = Drive.new()
 	drive.world = self
 	drive.guide = _guide_target
@@ -683,7 +684,7 @@ class AmbientObstacle:
 		car = c
 
 	func footprint() -> Dictionary:
-		return { "p": Vector3(car.x, 0, car.z), "yaw": float(car.get("yaw", 0.0 if car.dir > 0.0 else PI)), "hw": 0.95, "hl": float(car.get("len", CAR_LENGTH)) * 0.5 }
+		return { "p": Vector3(car.x, 0, car.z), "yaw": float(car.get("yaw", 0.0 if car.dir > 0.0 else PI)), "hw": float(car.get("hw", 0.95)), "hl": float(car.get("len", CAR_LENGTH)) * 0.5 }
 
 	## The player keeps the gas on a car it is pushing: a moving car takes the push and rolls on
 	## at the pace of the gas (its shove), the player follows. A parked car does not move: 1.5 m/s.
@@ -723,11 +724,12 @@ func obstacles() -> Array:
 		# Inside a junction's own streets the ring traffic is not there at all.
 		if not car.get("sheltered", false):
 			out.append(AmbientObstacle.new(car))
-	# Parked cars at the kerb are solid too (only the ones near the car).
-	for spots in street.parked_spots.values():
-		for pos in spots:
-			if absf(pos.z - drive.pos.z) < 12.0:
-				out.append(AmbientObstacle.new({ "x": pos.x, "z": pos.z, "dir": 1.0, "v": 0.0, "spd": 0.0, "base": 0.0 }))
+	# Every parked footprint is available to NPC broadphase, not just those next to the player.
+	for bodies in street.parked_bodies.values():
+		for body in bodies:
+			out.append(AmbientObstacle.new({"x": body.p.x, "z": body.p.z, "yaw": body.yaw,
+				"hw": body.hw, "len": body.hl * 2.0, "dir": 1.0, "v": 0.0, "spd": 0.0,
+				"base": 0.0, "parked": true}))
 	# Pedestrians are solid too (only the ones near the car: a cheap filter).
 	for w in walkers:
 		if w.get("alive", false) and not w.get("knocked_down", false) and absf(w.zw - drive.pos.z) < 8.0:
@@ -1063,16 +1065,16 @@ func _maybe_spawn() -> void:
 	# A newly installed road can have a divider/lane profile different from the filler street.
 	# Put already distant ambient vehicles in valid lanes before the scene enters the camera.
 	for car in traffic:
-		if _in_blank(car.z) and Vector3(car.x,0,car.z).distance_to(drive.pos)>80.0:
+		if _in_blank(car.z) and Vector3(car.x,0,car.z).distance_to(drive.pos)>80.0 and not _ambient_visible(car):
 			var pose := Vector3(car.x,0,car.z)
 			var direction := Vector3(0,0,car.dir)
-			if not _departure_clear(pose,direction,0.95,float(car.len)*0.5) or not _departure_clear(pose+direction*12.0,direction,0.95,float(car.len)*0.5):
+			if not _departure_clear(pose,direction,float(car.get("hw",0.95)),float(car.len)*0.5) or not _departure_clear(pose+direction*12.0,direction,float(car.get("hw",0.95)),float(car.len)*0.5):
 				var lane_pos := _safe_ambient_lane(car,12.0)
 				if lane_pos != Vector3.INF:
 					car.x=lane_pos.x;car.z=lane_pos.z
 					car.yaw=0.0 if car.dir>0.0 else PI
 				else:
-					car.sheltered=true
+					if not _ambient_visible(car): car.sheltered=true
 	if topdown != "":
 		_topdown_shot(sit, topdown)
 	if near_debug:
@@ -1144,6 +1146,9 @@ func _update_junction(dt: float) -> void:
 		drive.pos=stop_world
 		drive.yaw=SceneStitch.yaw(sit.basis*local_heading)
 		drive.speed = 0
+		# An already visible background vehicle leaves normally before the card appears.
+		# The reserved approach prevents new arrivals; neither the scene actors nor timer start change.
+		if not _ambient_stage_clear(): return
 		phase = "question"
 		if sit.data.speedLimit != null:
 			limit_kmh = int(sit.data.speedLimit)
@@ -1184,6 +1189,7 @@ func _update_road(dt: float) -> void:
 	if road_phase == "approach" and z >= road.stop_z - 0.2 and cos(drive.yaw) > 0.2:
 		drive.pos.z = road.stop_z
 		drive.speed = 0
+		if not _ambient_stage_clear(): return
 		road_phase = "question"
 		phase = "question"
 		question_over = false
@@ -1492,6 +1498,7 @@ func _spawn_traffic() -> void:
 	traffic_glows = Glow.batch(self, n * 6)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
+	var vehicle_meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://models/index.json"))
 	var kinds: Array = []
 	for i in n:
 		kinds.append(Fleet.BIG[(i / 4) % Fleet.BIG.size()] if i % 4 == 3 else Fleet.CARS[rng.randi() % Fleet.CARS.size()])
@@ -1516,17 +1523,19 @@ func _spawn_traffic() -> void:
 		var car := {
 			"dir": dir, "base": base, "spd": base, "v": dir * base, "len": CAR_LENGTH,
 			"shove": 0.0, "moves": true,   # a hit car rolls away (m/s along the road) and slows back
-			"x": -dir * _ambient_lane_offset(), "z": drive.pos.z + 50.0 + (i / 2) * spacing + (spacing * 0.5 if dir < 0 else 0.0),
+			"x": -dir * _ambient_lane_offset(), "z": drive.pos.z - 150.0 - (i / 2) * spacing if dir > 0 else drive.pos.z + 280.0 + (i / 2) * spacing,
 		}
 		if kind in Fleet.BIG:
 			var node: Node3D = Fleet.dps_car() if kind == "dps" else Fleet.taxi() if kind == "taxi" else RoadBody.model(kind, Fleet.paint(rng))
 			add_child(node)
 			car.node = node
+			car.hw = RoadBody.DIMS.get(kind, Vector2(0.9, 2.1)).x
 			car.len = {"bus": 11.0, "truck": 8.0, "van": 5.5}.get(kind, CAR_LENGTH)
 			car.base = minf(base, 11.0)
 			car.spd = car.base
 		else:
 			car.mm = mm[kind]
+			car.hw = float(vehicle_meta["vehicles/" + kind].meta.halfWidth)
 			car.glow_slot = i * 6
 			car.glow_centres = Models.traffic_lenses(kind)
 			car.slot = used.get(kind, 0)
@@ -1565,7 +1574,10 @@ func _reset_ambient() -> void:
 	for i in traffic.size():
 		traffic[i].erase("sheltered")
 		traffic[i].erase("lane_target")
-		traffic[i].z = drive.pos.z + 250.0 + i * 8.0
+		traffic[i].erase("quiet_stop_z")
+		traffic[i].z = drive.pos.z - 170.0 if traffic[i].dir > 0 else drive.pos.z + 280.0
+		traffic[i].x = -traffic[i].dir * _ambient_lane_offset()
+		traffic[i].yaw = 0.0 if traffic[i].dir > 0 else PI
 	for i in walkers.size():
 		walkers[i].erase("knocked_down")
 		walkers[i].erase("sheltered")
@@ -1707,6 +1719,102 @@ func _lead_of(car: Dictionary, span: float):
 	return best
 
 
+## Reserve the whole exam view during approach, question and resolution, before any card appears.
+func _ambient_quiet_zones() -> Array[Dictionary]:
+	var zones: Array[Dictionary] = []
+	var radius := float(cfg.get("traffic", {}).get("question_clear_radius", 180.0))
+	if not current.is_empty():
+		var sit: Situation = current.sit
+		var stop := sit.network.stop_point() if sit.network else Vector3(float(sit.data.get("playerStartX", -1.8)), 0, float(sit.data.stopZ))
+		zones.append({"p": sit.global_transform * stop, "radius": maxf(radius, float(sit.data.crop) + 40.0)})
+	if road != null:
+		zones.append({"p": Vector3(0, 0, road.stop_z), "radius": radius})
+	return zones
+
+
+func _ambient_in_quiet_zone(car: Dictionary) -> bool:
+	var p := Vector3(car.x, 0, car.z)
+	for zone in _ambient_quiet_zones():
+		if p.distance_to(zone.p) < zone.radius + float(car.len) * 0.5 + 8.0: return true
+	return false
+
+
+## Account for the complete body and its bloom, rather than hiding a half-visible bus at the edge.
+func _ambient_visible(car: Dictionary) -> bool:
+	if camera == null or not camera.is_inside_tree(): return true
+	var pose := Transform3D(Basis(Vector3.UP, float(car.get("yaw", 0.0 if car.dir > 0 else PI))), Vector3(car.x, 0, car.z))
+	for x in [-2.0, 0.0, 2.0]:
+		for y in [0.0, 5.0]:
+			for z in [-float(car.len) * 0.5 - 2.0, 0.0, float(car.len) * 0.5 + 2.0]:
+				if camera.is_position_in_frustum(pose * Vector3(x, y, z)): return true
+	return false
+
+
+## Visible cars are never despawned. Let an exceptional already-admitted car clear before starting.
+func _ambient_stage_clear() -> bool:
+	for car in traffic:
+		if not car.get("sheltered", false) and _ambient_in_quiet_zone(car) and _ambient_visible(car): return false
+	return true
+
+
+## Brake before entering the reserved view. An already visible car inside it keeps driving out.
+func _ambient_quiet_gap(car: Dictionary) -> float:
+	var at := Vector3(car.x, 0, car.z)
+	var heading := float(car.get("yaw", 0.0 if car.dir > 0 else PI))
+	var forward := Vector3(sin(heading), 0, cos(heading))
+	var gap := INF
+	for zone in _ambient_quiet_zones():
+		var radius: float = zone.radius + float(car.len) * 0.5 + 10.0
+		var offset: Vector3 = zone.p - at
+		if offset.length() < radius:
+			# A follower already visible when a short approach is staged must not chase the
+			# player to the stop mark and deadlock capture. Brake smoothly and fall behind.
+			if car.dir > 0.0 and drive.pos.z-car.z > float(car.len)*0.5+drive.half_length+1.0:
+				if not car.has("quiet_stop_z"):
+					car.quiet_stop_z = car.z + maxf(2.0, float(car.spd)*float(car.spd)/12.0)
+				gap = minf(gap, maxf(0.0, float(car.quiet_stop_z)-car.z))
+			continue
+		var along := offset.dot(forward)
+		var lateral_squared := maxf(0.0, offset.length_squared() - along * along)
+		if along > 0 and lateral_squared < radius * radius:
+			gap = minf(gap, maxf(0.0, along - sqrt(radius * radius - lateral_squared)))
+	return gap
+
+
+## Smoothly move toward the centre before a parked body, then return after the entire tail clears.
+## If no supported/legal gap exists or an oncoming car occupies it, wait with bumper clearance.
+func _ambient_park_plan(car: Dictionary) -> Dictionary:
+	var nominal: float = -car.dir * _ambient_lane_offset()
+	var target := nominal
+	var wait_gap := INF
+	for bodies in street.parked_bodies.values():
+		for body in bodies:
+			if signf(body.p.x) != signf(nominal): continue
+			var ahead: float = (body.p.z - car.z) * car.dir
+			var tail: float = body.hl + float(car.len) * 0.5 + 8.0
+			if ahead > 65.0 or ahead < -tail: continue
+			var inner: float = absf(body.p.x) - body.hw - float(car.get("hw", 0.95)) - 0.4
+			if inner >= absf(nominal): continue
+			var median: float = float(street.profile.get("median", 0.0)) * 0.5
+			var minimum := median + float(car.get("hw", 0.95)) + 0.15 if median > 0.0 or street.profile.get("centre", "dashed") != "dashed" else -0.2
+			var passing_x: float = signf(nominal) * inner
+			var supported := inner >= minimum and _departure_clear(Vector3(passing_x, 0, body.p.z), Vector3(0, 0, car.dir), float(car.get("hw", 0.95)), float(car.len) * 0.5)
+			var opposite_clear := true
+			# Only when the passing envelope reaches the opposite lane do oncoming vehicles matter.
+			if inner < 1.2:
+				for other in traffic:
+					if other.dir != car.dir and not other.get("sheltered", false) and absf(other.z - body.p.z) < 85.0 and (other.z-car.z)*car.dir > -float(car.len)*0.5-float(other.len)*0.5-4.0:
+						opposite_clear = false
+			if not supported or not opposite_clear:
+				# Leave enough approach to steer a long body after the oncoming lane becomes free.
+				if ahead > 0: wait_gap = minf(wait_gap, maxf(0.0, ahead - body.hl - float(car.len) * 0.5 - maxf(CAR_GAP, float(car.len)*1.7)))
+				continue
+			var weight := 1.0 - smoothstep(20.0, 65.0, ahead) if ahead > 0 else 1.0
+			var desired: float = lerpf(nominal, passing_x, weight)
+			if absf(desired) < absf(target): target = desired
+	return {"x": target, "wait_gap": wait_gap}
+
+
 func _update_traffic(delta: float) -> void:
 	var span := L * chunk_count
 	var behind := drive.pos.z - L * float(cfg.chunks_behind)
@@ -1716,21 +1824,38 @@ func _update_traffic(delta: float) -> void:
 	solids.append({"source": null, "body": drive.footprint()})
 	for car in traffic:
 		car.contact_cooldown = maxf(0.0, float(car.get("contact_cooldown", 0.0))-delta)
+		if not _ambient_in_quiet_zone(car): car.erase("quiet_stop_z")
 		# Lanes follow the carriageway as it is now: the flow on the driver's side (-X),
 		# the oncoming on the other (+X). The lane is set by the direction, never by the speed.
-		if not _in_blank(car.z):
-			car.x = -car.dir * lane
-			car.yaw = 0.0 if car.dir > 0.0 else PI
-		car.z = behind + fposmod(car.z - behind, span)
-		if _in_blank(car.z) and not road_supports(Vector3(car.x, 0, car.z)) and absf(car.z-drive.pos.z)>230.0:
+		# Recycle only a fully off-camera car; wrapping a visible model would make it disappear.
+		if (car.z < behind or car.z > behind + span) and not _ambient_visible(car):
+			var entry := car.duplicate()
+			entry.z = behind + 16.0 + float(car.len) * 0.5 if car.dir > 0 else behind + span - 16.0 - float(car.len) * 0.5
+			entry.x = -car.dir * lane
+			entry.yaw = 0.0 if car.dir > 0.0 else PI
+			if not _ambient_visible(entry) and not _ambient_in_quiet_zone(entry):
+				car.z = entry.z; car.x = entry.x; car.yaw = entry.yaw
+				car.spd = car.base
+				car.erase("lane_target")
+				car.erase("sheltered")
+			else: car.sheltered = true
+		if _ambient_in_quiet_zone(car) and not _ambient_visible(car):
 			car.sheltered = true
-		elif car.get("sheltered", false) and absf(car.z - drive.pos.z) > 230.0:
+		if _in_blank(car.z) and not road_supports(Vector3(car.x, 0, car.z)) and absf(car.z-drive.pos.z)>230.0:
+			if not _ambient_visible(car): car.sheltered = true
+		elif car.get("sheltered", false) and not _ambient_in_quiet_zone(car) and not _ambient_visible(car):
 			car.erase("sheltered")
 	for car in traffic:
 		if car.get("sheltered", false):
 			car.spd = 0.0
 			continue
 		var want: float = car.base
+		var reserved_gap := _ambient_quiet_gap(car)
+		want = minf(want, sqrt(maxf(0.0, 2.0 * 6.0 * reserved_gap)))
+		var parking := _ambient_park_plan(car)
+		car.target_x = parking.x
+		if parking.wait_gap < INF:
+			want = minf(want, sqrt(maxf(0.0, 2.0 * 6.0 * parking.wait_gap)))
 		var lead = _lead_of(car, span)
 		if lead != null:
 			var gap: float = lead.dist - (car.len + lead.car.len) * 0.5
@@ -1749,6 +1874,8 @@ func _update_traffic(delta: float) -> void:
 			want = minf(want, maxf(0.0, player_speed + (gap - safe) * 0.6))
 		car.spd = move_toward(car.spd, want, (8.0 if want < car.spd else 3.0) * delta)
 		var step: float = (car.dir * car.spd + car.shove) * delta
+		step = car.dir * minf(step * car.dir, reserved_gap)
+		if parking.wait_gap < INF: step = car.dir * minf(step * car.dir, parking.wait_gap)
 		if player_leads:
 			step = car.dir * minf(step * car.dir, maxf(0.0, behind_gap - car.len * 0.5 - player_extent - CAR_GAP))
 		# Clamp this frame's displacement from the snapshot, without moving a queue backward.
@@ -1761,7 +1888,7 @@ func _update_traffic(delta: float) -> void:
 				var rear: float = (car.z-other.z)*car.dir
 				if rear>0.0:
 					step = car.dir * maxf(step*car.dir, -maxf(0.0,rear-(car.len+other.len)*0.5-0.08))
-		_ambient_advance(car, step, solids)
+		_ambient_advance(car, step, solids, delta)
 		car.shove = move_toward(car.shove, 0.0, 2.5 * delta)   # the push runs out on its own
 	for car in traffic:
 		car.v = car.dir * car.spd
@@ -1775,10 +1902,6 @@ func _update_traffic(delta: float) -> void:
 			else:
 				var approach_limit: float = rolling + (gap - 4.6) * 2.5
 				drive.speed = minf(drive.speed, maxf(0.0, approach_limit))
-		if car.z < behind:
-			car.z += span
-		elif car.z > behind + span:
-			car.z -= span
 		var face: float = car.get("yaw", 0.0 if car.dir > 0.0 else PI)
 		var at := Vector3(car.x, 0, car.z)
 		# Inside a junction's square the street does not go on (a bend, a T, a roundabout): the ring
@@ -2371,11 +2494,22 @@ func _departure_path(start: Vector3, toward: Vector3, hw: float, hl: float, loca
 
 
 ## Passing traffic follows the actual road at a scene boundary instead of queueing on an artificial wall.
-func _ambient_advance(car: Dictionary, step: float, solids: Array) -> void:
+func _ambient_advance(car: Dictionary, step: float, solids: Array, dt := 1.0 / 60.0) -> void:
 	if absf(step)<0.00001: return
 	var at := Vector3(car.x, 0, car.z)
 	var heading: float = car.get("yaw", 0.0 if car.dir > 0.0 else PI)
 	var direction := Vector3(sin(heading), 0, cos(heading))
+	if not _in_blank(car.z) and car.has("target_x"):
+		var look := maxf(12.0, float(car.spd) * 1.1 + float(car.len) * 0.5)
+		var aim := Vector3(float(car.target_x) - car.x, 0, car.dir * look).normalized()
+		# Steering changes heading as the car travels, rather than rotating a stopped bus in place.
+		var max_turn := minf(dt * 0.65, absf(step) * 0.4 / maxf(2.5, float(car.len) * 0.6))
+		var turn := clampf(atan2(direction.cross(aim).y, direction.dot(aim)), -max_turn, max_turn)
+		for fraction in [1.0, 0.5, 0.25, 0.125, 0.0]:
+			var candidate := direction.rotated(Vector3.UP, turn * fraction)
+			if _departure_clear(at, candidate, float(car.get("hw",0.95)), float(car.len)*0.5) and _departure_clear(at+candidate*absf(step), candidate, float(car.get("hw",0.95)), float(car.len)*0.5):
+				direction = candidate
+				break
 	if _in_blank(car.z):
 		# A supported future lane is a steering target, not an artificial stop at a divider cap.
 		# Reuse it across frames; scanning the mask is only needed after reaching the previous target.
@@ -2393,12 +2527,12 @@ func _ambient_advance(car: Dictionary, step: float, solids: Array) -> void:
 		var found := false
 		for angle in [preferred,0.0,0.015,-0.015,0.03,-0.03,0.06,-0.06,0.12,-0.12,0.24,-0.24,0.4,-0.4,0.7,-0.7,1.0,-1.0,PI/2.0,-PI/2.0]:
 			var candidate := direction.rotated(Vector3.UP, angle)
-			if _departure_clear(at+candidate*maxf(0.5,absf(step)), candidate, 0.95, float(car.len)*0.5):
+			if _departure_clear(at+candidate*maxf(0.5,absf(step)), candidate, float(car.get("hw", 0.95)), float(car.len)*0.5):
 				direction = candidate
 				found = true
 				break
 		if not found:
-			if at.distance_to(drive.pos)>230.0: car.sheltered=true
+			if at.distance_to(drive.pos)>230.0 and not _ambient_visible(car): car.sheltered=true
 			car.spd=0.0
 			return
 	var target_heading := atan2(direction.x, direction.z)
@@ -2418,7 +2552,7 @@ func _ambient_advance(car: Dictionary, step: float, solids: Array) -> void:
 		var next := at+direction*movement/count
 		var swept_heading := lerp_angle(heading,target_heading,float(i+1)/count)
 		var swept_direction := Vector3(sin(swept_heading),0,cos(swept_heading))
-		var body := {"p":next,"yaw":swept_heading,"hw":0.95,"hl":float(car.len)*0.5}
+		var body := {"p":next,"yaw":swept_heading,"hw":float(car.get("hw",0.95)),"hl":float(car.len)*0.5}
 		for solid in candidates:
 			var live_body: Dictionary = solid.source.footprint() if solid.source is AmbientObstacle else solid.body
 			if Drive.overlap(body,live_body,0.06):
@@ -2431,7 +2565,7 @@ func _ambient_advance(car: Dictionary, step: float, solids: Array) -> void:
 				car.shove=0.0
 				car.x=at.x;car.z=at.z;car.yaw=last_heading
 				return
-		if not _departure_clear(next,swept_direction,0.95,float(car.len)*0.5):
+		if not _departure_clear(next,swept_direction,float(car.get("hw",0.95)),float(car.len)*0.5):
 			car.spd=0.0
 			break
 		at=next
@@ -2608,11 +2742,11 @@ func _safe_ambient_lane(car: Dictionary, ahead := 0.0) -> Vector3:
 	var yaw: float=car.get("yaw",0.0 if car.dir>0.0 else PI)
 	var toward:=Vector3(sin(yaw),0,cos(yaw))
 	var side:=SceneStitch.right(toward)
-	if _departure_clear(at,toward,0.95,float(car.len)*0.5) and _departure_clear(at+toward*ahead,toward,0.95,float(car.len)*0.5): return at
+	if _departure_clear(at,toward,float(car.get("hw",0.95)),float(car.len)*0.5) and _departure_clear(at+toward*ahead,toward,float(car.get("hw",0.95)),float(car.len)*0.5): return at
 	for offset in 40:
 		for sign in [-1.0,1.0]:
 			var candidate: Vector3=at+side*(offset+1)*0.25*sign
-			if _departure_clear(candidate,toward,0.95,float(car.len)*0.5) and _departure_clear(candidate+toward*ahead,toward,0.95,float(car.len)*0.5): return candidate
+			if _departure_clear(candidate,toward,float(car.get("hw",0.95)),float(car.len)*0.5) and _departure_clear(candidate+toward*ahead,toward,float(car.get("hw",0.95)),float(car.len)*0.5): return candidate
 	return Vector3.INF
 
 

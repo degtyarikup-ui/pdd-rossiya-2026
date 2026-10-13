@@ -31,6 +31,7 @@ func _initialize() -> void:
 
 func _run(world: Node) -> int:
 	world.set_process(false)
+	world.street.parked_bodies.clear() # This fixture checks lane following; parking has its own regression.
 	var rear_ok := _check_player_gap(world)
 	var walkers_ok := _check_walkers(world)
 	var contacts_ok := _check_crossing_contacts(world)
@@ -82,6 +83,8 @@ func _check_player_gap(world: Node) -> bool:
 		for direction in [1.0, -1.0]:
 			for length in [4.4, 11.0]:
 				car.dir = direction
+				car.x = -direction * world._ambient_lane_offset()
+				car.yaw = 0.0 if direction > 0 else PI
 				car.len = length
 				car.spd = 14.0
 				car.base = 14.0

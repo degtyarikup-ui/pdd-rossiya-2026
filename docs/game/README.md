@@ -58,6 +58,7 @@ godot --headless --path game_godot --script res://tests/dirt_surface_check.gd # 
 godot --headless --path game_godot --script res://tests/human_collision_check.gd # наезд: регулировщик и пешеходы
 godot --headless --path game_godot --script res://tests/ghost_check.gd      # призрак улицы
 godot --headless --path game_godot --script res://tests/traffic_check.gd    # трафик
+godot --headless --path game_godot --script res://tests/ambient_focus_check.gd # чистый кадр вопроса, плавный отвод трафика, объезд парковки и встречный поток
 godot --headless --path game_godot --script res://tests/participant_motion_check.gd # коллизии и отъезд после стрелки
 godot --headless --path game_godot --script res://tests/reviewed_departure_check.gd # продолжение всех отмеченных сцен
 godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза
@@ -79,6 +80,15 @@ godot --path game_godot --script res://tests/stitch_shader_render_check.gd # н�
 Скрипт с ошибкой в headless-режиме **зависает**, а не падает: ставьте таймаут
 (`perl -e 'alarm 300; exec @ARGV' godot ...`). После изменения скриптов с `class_name`
 выполните `godot --headless --path game_godot --import`.
+
+Фоновый поток задаётся в `data/world.json`: две машины на кольцо,
+`parked_chance: 0.02` для подходящих мест парковки. Перед вопросом резервируется
+зона `question_clear_radius: 180` м (для большой сцены — не меньше её границ
+с запасом). Обычные машины тормозят перед зоной; уже видимые покидают кадр
+своим ходом до запуска таймера. Переиспользование машин происходит за камерой.
+Участники самой задачи сохраняются. Припаркованные машины учитываются по
+реальным габаритам на всём кольце: NPC заранее объезжает их, пропускает встречный
+поток или останавливается, если законного и безопасного места для объезда нет.
 
 ## Сборка и установка
 

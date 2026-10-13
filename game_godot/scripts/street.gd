@@ -39,6 +39,9 @@ var visible_ranges: Array = []
 var profile := {}
 
 var parked_spots := {}            # ring slot -> [Vector3] parked cars there (they are solid: world.gd obstacles)
+var parked_bodies := {}           # exact model footprints, visible to NPCs regardless of player distance
+var parked_chance := 0.02
+var _vehicle_meta: Dictionary
 var winter := false
 var edge := 0.0                   # the row being laid out: how far the carriageway is wider than ROAD_HALF
 
@@ -96,6 +99,7 @@ func build_chunk(slot: int, index: int, blank := false, half_at := Callable(), r
 	for p in parked.values():
 		p.begin(slot)
 	parked_spots[slot] = []
+	parked_bodies[slot] = []
 	if blank:
 		for p in pools.values():
 			p.finish(slot)
@@ -303,12 +307,12 @@ func _plot(slot: int, rng: RandomNumberGenerator, side: float, z: float, style: 
 			_put(slot, "street/bush", Vector3(side * (10.5 + rng.randf() * 2), 0, z - 1), 0, Vector3.ONE, _bush())
 		1:
 			_put(slot, "street/fence_12" if depth < 7 else "street/fence_14", Vector3(side * 8.0, 0, z + 1))
-			if posmod(row, 2) == (0 if side > 0 else 1) and rng.randf() < 0.25:   # rare, and a row parks on one side only
+			if posmod(row, 2) == (0 if side > 0 else 1) and rng.randf() < parked_chance:
 				_park(slot, rng, Vector3(side * (ROAD_HALF - 0.45), 0, gap_z - 0.5), 0.0)
 			else:
 				_put(slot, "street/bush", Vector3(side * 12.8, 0, gap_z - 0.5), 0, Vector3(1.2, 0.9, 3), _bush())
 		3:
-			if posmod(row, 2) == (0 if side > 0 else 1) and rng.randf() < 0.25:   # rare, and a row parks on one side only
+			if posmod(row, 2) == (0 if side > 0 else 1) and rng.randf() < parked_chance:
 				_park(slot, rng, Vector3(side * (ROAD_HALF - 0.45), 0, gap_z - 0.5), 0.0)
 			else:
 				_put(slot, "street/bush", Vector3(side * 10.4, 0, gap_z - 0.5), 0, Vector3(1, 0.8, 2.6), _bush())
@@ -325,8 +329,15 @@ func _park(slot: int, rng: RandomNumberGenerator, pos: Vector3, yaw: float) -> v
 	var id: String = Models.CARS[rng.randi() % Models.CARS.size()]
 	var paint := Color(PARKED_COLORS[rng.randi() % PARKED_COLORS.size()])
 	pos = _from_kerb(pos)
+	if _vehicle_meta.is_empty():
+		_vehicle_meta = JSON.parse_string(FileAccess.get_file_as_string("res://models/index.json"))
+	var meta: Dictionary = _vehicle_meta["vehicles/" + id].meta
+	# A whole car must fit the street segment, never straddling the exam road's crop.
+	if not _visible(pos.z - floor(pos.z / L) * L - float(meta.halfLength) - 2.0) or not _visible(pos.z - floor(pos.z / L) * L + float(meta.halfLength) + 2.0):
+		return
 	if parked[id].put(slot, Transform3D(Basis(Vector3.UP, yaw), pos), Color(paint.r, paint.g, paint.b, 0)):
 		parked_spots[slot].append(pos)
+		parked_bodies[slot].append({"p": pos, "yaw": yaw, "hw": float(meta.halfWidth), "hl": float(meta.halfLength)})
 
 
 func _visible(z: float) -> bool:
