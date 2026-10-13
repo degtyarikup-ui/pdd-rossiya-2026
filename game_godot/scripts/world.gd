@@ -2598,7 +2598,7 @@ func _rebase_timing(label: String, start: int) -> int:
 
 func _freeze_world_actors() -> void:
 	for node in get_children():
-		if node is Node3D and node!=player:
+		if (node is Node3D and node!=player) or node==sound:
 			frozen_nodes.append({"node":weakref(node),"mode":node.process_mode})
 			node.process_mode=Node.PROCESS_MODE_DISABLED
 	for node in find_children("*","RigidBody3D",true,false):

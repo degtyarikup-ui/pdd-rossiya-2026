@@ -41,6 +41,7 @@ func _pause_cycle(world: Node, label: String) -> void:
 	check(world.pause_menu != null and world.paused, label + ": pause opens menu")
 	check(world.pause_menu.current().id == world.chosen.id, label + ": menu preserves selection")
 	check(not world.controls.active, label + ": paused controls inactive")
+	check(world.sound.process_mode == Node.PROCESS_MODE_DISABLED, label + ": audio generation frozen while changing sound preference")
 	check(world.ui.process_mode == Node.PROCESS_MODE_DISABLED, label + ": hidden UI motion frozen")
 	world._process(0.5)
 	await create_timer(0.25).timeout
@@ -54,6 +55,7 @@ func _pause_cycle(world: Node, label: String) -> void:
 	check(world.controls.active == controls_active, label + ": controls state restored")
 	check(world.ui._card == card and world.ui._sheet == sheet and world.ui._picture == picture, label + ": card and photo instances preserved")
 	check(world.ui.visible and world.ui.process_mode == Node.PROCESS_MODE_INHERIT, label + ": UI resumes")
+	check(world.sound.process_mode == Node.PROCESS_MODE_INHERIT, label + ": audio processing resumes")
 
 
 func _run() -> void:
