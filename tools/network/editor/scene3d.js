@@ -393,12 +393,13 @@ const Scene3D = (() => {
     const g = new THREE.Group();
     g.userData.ref = t === "stop" || t === "player" ? { t } : { t, id: o.id };
     const token = loadToken;
-    const attach = (url, fallback, tint) => {
+    const attach = (url, fallback, tint, onLoaded) => {
       g.add(fallback);
       loadGltf(url).then((root) => {
         if (!root || anchors.get(key)?.group !== g || token !== loadToken) return;
         g.remove(fallback);
         if (tint) root.traverse((m) => { if (m.isMesh && m.material && m.material.color) { m.material = m.material.clone(); m.material.color.set(tint); } });
+        if (onLoaded) onLoaded(root);
         g.add(root);
         needsRender = true;
       });
