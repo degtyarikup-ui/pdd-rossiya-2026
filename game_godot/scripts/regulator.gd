@@ -48,7 +48,7 @@ var round_timer := 0.0
 var next_delay := 0.0
 
 # Camera framing
-var cam_base_pos := Vector3(1.8, 3.25, 20.0)
+var cam_base_pos := Vector3(5.4, 5.5, 32.0)
 var cam_base_look := Vector3(0.0, 1.55, 0.0)
 const ZOOM_MIN := 0.4
 const ZOOM_MAX := 2.6
@@ -119,40 +119,34 @@ func _setup_environment() -> void:
 	# Directional Sun Light
 	sun = DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.rotation_degrees = Vector3(-48, 32, 0)
-	sun.light_color = Color(1.0, 0.98, 0.93)
-	sun.light_energy = 1.05
+	var palette: Dictionary = Scenery.new(season_name).season
+	sun.rotation_degrees = Vector3(-68, 30, 0)
+	sun.light_color = Color(palette.sun)
+	sun.light_energy = float(palette.sunIntensity) * 0.8
 	sun.shadow_enabled = true
-	sun.shadow_bias = 0.04
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+	sun.directional_shadow_max_distance = 70.0
+	sun.shadow_blur = 2.0
+	sun.directional_shadow_fade_start = 0.9
 	add_child(sun)
 
 	# World Environment (Realistic Sky with Clouds, Ambient Light & Atmospheric Fog)
 	env = WorldEnvironment.new()
 	var e := Environment.new()
-	e.background_mode = Environment.BG_SKY
-
-	var sky := Sky.new()
-	var sky_mat := ShaderMaterial.new()
-	sky_mat.shader = load("res://shaders/sky.gdshader")
-	sky_mat.set_shader_parameter("zenith_color", Color("#1658B5"))
-	sky_mat.set_shader_parameter("horizon_color", Color("#7EB5E5"))
-	sky_mat.set_shader_parameter("cloud_coverage", 0.50)
-	sky_mat.set_shader_parameter("cloud_speed", 0.003)
-	sky_mat.set_shader_parameter("cloud_texture", load("res://textures/clouds.png"))
-	sky.sky_material = sky_mat
-	e.sky = sky
+	e.background_mode = Environment.BG_COLOR
+	e.background_color = Color(palette.sky)
 
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	e.ambient_light_sky_contribution = 0.0
 	e.ambient_light_color = Color.WHITE
-	e.ambient_light_energy = 0.65
+	e.ambient_light_energy = float(palette.ambient) * 0.8
 
 	# Atmospheric depth fog
 	e.fog_enabled = true
 	e.fog_mode = Environment.FOG_MODE_DEPTH
-	e.fog_light_color = Color("#7EBAEC")
-	e.fog_depth_begin = 120.0
-	e.fog_depth_end = 280.0
+	e.fog_light_color = Color(palette.sky)
+	e.fog_depth_begin = 90.0
+	e.fog_depth_end = 220.0
 	e.fog_sky_affect = 0.0
 
 	e.tonemap_mode = Environment.TONE_MAPPER_LINEAR
@@ -403,12 +397,12 @@ func _update_camera(delta: float) -> void:
 	var want_look: Vector3
 	if zoom < 1.0:
 		var close := smoothstep(0.4, 1.0, zoom)
-		want_pos = Vector3(1.4 + close, 2.4 + 2.1 * close, 6.8 + 15.2 * close)
-		want_look = Vector3(0.8 * close, 1.25 - 0.2 * close, 0)
+		want_pos = Vector3(4.4 + close, 3.8 + 1.7 * close, 26.0 + 6.0 * close)
+		want_look = Vector3(1.8, 1.25 - 0.2 * close, 0)
 	else:
 		var far := (zoom - 1.0) / 1.6
-		want_pos = Vector3(2.4, 4.5 + 33.5 * far, 22 + 28 * far)
-		want_look = Vector3(0.8 * (1.0 - far), 1.05 * (1.0 - far), 0)
+		want_pos = Vector3(5.4 * (1.0 - far), 5.5 + 32.5 * far, 32 + 18 * far)
+		want_look = Vector3(1.8 * (1.0 - far), 1.05 * (1.0 - far), 0)
 	camera.look_at_from_position(camera.position.lerp(want_pos, 1.0 - exp(-7.0 * delta)), want_look)
 	if ui and ui.is_inside_tree():
 		# Off-centre frustum: place the optical centre above the answer panel.

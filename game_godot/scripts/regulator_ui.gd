@@ -205,9 +205,13 @@ func _fit_hud() -> void:
 	if _timer_group.get_parent() != timer_parent:
 		_timer_group.reparent(timer_parent, false)
 	if timer_parent == _line1:
-		_line1.move_child(_timer_group, _spacer_after_timer.get_index())
+		var spacer_index := _spacer_after_timer.get_index()
+		var target := spacer_index - 1 if _timer_group.get_index() < spacer_index else spacer_index
+		if _timer_group.get_index() != target:
+			_line1.move_child(_timer_group, target)
 	else:
-		_line2.move_child(_timer_group, 0)
+		if _timer_group.get_index() != 0:
+			_line2.move_child(_timer_group, 0)
 	var lives_parent := _line1 if one_line else _line2
 	if _lives.get_parent() != lives_parent:
 		_lives.reparent(lives_parent, false)

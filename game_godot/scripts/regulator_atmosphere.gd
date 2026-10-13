@@ -17,7 +17,8 @@ var positions: Array[Vector3] = []
 var headlight: SpotLight3D
 var dry_road: Color
 var dry_walk: Color
-var clear_sun := 1.05
+var clear_sun := 0.45
+var dry_sky: Color
 
 
 func _init(cam: Camera3D, env: Environment, light: DirectionalLight3D,
@@ -27,8 +28,9 @@ func _init(cam: Camera3D, env: Environment, light: DirectionalLight3D,
 	sun = light
 	junction = road
 	car = vehicle
-	dry_road = road.asphalt_mat.albedo_color
-	dry_walk = road.sidewalk_mat.albedo_color
+	dry_road = Color("#2C2F36")
+	dry_sky = env.background_color
+	dry_walk = road.sc.color("sidewalk")
 	clear_sun = sun.light_energy
 
 
@@ -77,17 +79,16 @@ func _process(delta: float) -> void:
 	rain = lerpf(rain, 1.0 if weather == "rain" else 0.0, blend)
 	fog = lerpf(fog, 1.0 if weather == "fog" else 0.0, blend)
 	var overcast := maxf(rain, fog * 0.85)
-	var sky_mat := environment.sky.sky_material as ShaderMaterial
-	if sky_mat:
-		sky_mat.set_shader_parameter("zenith_color", Color("#1658B5").lerp(Color("#596B7B"), overcast))
-		sky_mat.set_shader_parameter("horizon_color", Color("#7EB5E5").lerp(Color("#A8BAC8"), overcast))
-		sky_mat.set_shader_parameter("cloud_coverage", lerpf(0.50, 1.0, overcast))
+	environment.background_color = dry_sky.lerp(Color("#A8BAC8"), overcast)
+	environment.fog_light_color = environment.background_color
 	sun.light_energy = clear_sun * (1.0 - overcast * 0.55)
-	environment.fog_depth_begin = lerpf(120, 8, fog)
-	environment.fog_depth_end = lerpf(280, 60, fog)
-	junction.asphalt_mat.albedo_color = dry_road.lerp(Color("#141A22"), rain * 0.9 + fog * 0.25)
-	junction.asphalt_mat.roughness = lerpf(0.9, 0.35, rain)
-	junction.sidewalk_mat.albedo_color = dry_walk.lerp(dry_walk * 0.72, rain * 0.35 + fog * 0.15)
+	environment.fog_depth_begin = lerpf(90, 8, fog)
+	environment.fog_depth_end = lerpf(220, 60, fog)
+	var road_colour := dry_road.lerp(Color("#141A22"), rain * 0.9 + fog * 0.25)
+	junction.asphalt_mat.set_shader_parameter("surface_colour", Vector3(road_colour.r, road_colour.g, road_colour.b))
+	junction.asphalt_mat.set_shader_parameter("wetness", rain)
+	var walk_colour := dry_walk.lerp(dry_walk * 0.72, rain * 0.35 + fog * 0.15)
+	junction.sidewalk_mat.set_shader_parameter("surface_colour", Vector3(walk_colour.r, walk_colour.g, walk_colour.b))
 	headlight.light_energy = overcast * 2.0
 	drops.visible = rain > 0.01
 	if not drops.visible: return

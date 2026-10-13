@@ -5,7 +5,7 @@ func _initialize() -> void:
 	assert(sign != null)
 	var board := sign.get_child(0) as Node3D
 	assert(is_zero_approx(board.rotation.x), "Sign board must be vertical")
-	assert(is_zero_approx(board.position.x) and is_zero_approx(board.position.z))
+	assert(is_zero_approx(board.position.x) and board.position.z < -RoadBuild.POLE_RADIUS, "Board must be in front of baked and generated poles")
 	sign.free()
 	var light := Node3D.new()
 	var assembly := RoadBuild.light_with_signs(light, ["2.1"])

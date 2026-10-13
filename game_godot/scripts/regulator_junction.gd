@@ -4,21 +4,21 @@
 class_name RegulatorJunction
 extends Node3D
 
-const ROAD_WIDTH := 7.2         # 2 lanes of 3.6 m
-const HALF_ROAD := 3.6
+const ROAD_WIDTH := 14.4        # 4 lanes of 3.6 m on every arm
+const HALF_ROAD := ROAD_WIDTH * 0.5
 const ROAD_EXTENT := 46.0       # Extent for South, East, West branches
 const NORTH_EXTENT := 200.0     # Avenue continues straight ahead into the horizon!
-const STOP_Z := 10.0
-const ZEBRA_START := 6.0
-const ZEBRA_END := 8.8
+const STOP_Z := 13.0
+const ZEBRA_START := 9.0
+const ZEBRA_END := 11.8
 
-var asphalt_mat: StandardMaterial3D
+var asphalt_mat: ShaderMaterial
 var marking_mat: StandardMaterial3D
-var curb_mat: StandardMaterial3D
-var sidewalk_mat: StandardMaterial3D
-var grass_mat: StandardMaterial3D
+var curb_mat: ShaderMaterial
+var sidewalk_mat: ShaderMaterial
+var grass_mat: ShaderMaterial
 
-var walker_crowd: MultiMesh
+var walker_crowds: Array[MultiMesh] = []
 var walkers_data: Array[Dictionary] = []
 
 var sc: Scenery
@@ -41,25 +41,13 @@ func _init(season_name := "summer") -> void:
 
 
 func _create_materials() -> void:
-	asphalt_mat = StandardMaterial3D.new()
-	asphalt_mat.albedo_color = Color("#2A2D34")
-	asphalt_mat.roughness = 0.9
-
+	asphalt_mat = sc.surface_material("asphalt", Color("#2C2F36"))
 	marking_mat = StandardMaterial3D.new()
-	marking_mat.albedo_color = Color("#F8FAFC")
-	marking_mat.roughness = 0.4
-
-	curb_mat = StandardMaterial3D.new()
-	curb_mat.albedo_color = Color("#737870")
-	curb_mat.roughness = 0.8
-
-	sidewalk_mat = StandardMaterial3D.new()
-	sidewalk_mat.albedo_color = Color(sc.season.sidewalk)
-	sidewalk_mat.roughness = 0.85
-
-	grass_mat = StandardMaterial3D.new()
-	grass_mat.albedo_color = Color(sc.season.ground)
-	grass_mat.roughness = 0.95
+	marking_mat.albedo_color = Color("#F2F4F8")
+	marking_mat.roughness = 0.9
+	curb_mat = sc.surface_material("pavement", sc.color("sidewalk"))
+	sidewalk_mat = sc.surface_material("pavement", sc.color("sidewalk"))
+	grass_mat = sc.surface_material("grass", sc.color("ground"))
 
 
 func _build_surfaces() -> void:
@@ -194,8 +182,8 @@ func _build_markings() -> void:
 		var bar_len := ZEBRA_END - ZEBRA_START
 		var z_center := (ZEBRA_START + ZEBRA_END) * 0.5
 
-		# 8 zebra bars across the 7.2 m roadway
-		for i in range(8):
+		# 16 zebra bars across four lanes.
+		for i in range(16):
 			var x := -HALF_ROAD + 0.45 + i * 0.9
 			var bar := _quad(Vector2(bar_w, bar_len), marking_mat)
 			bar.position = Vector3(x, y, z_center)
@@ -239,6 +227,19 @@ func _build_markings() -> void:
 		solid.position = Vector3(offset_x, y, north_mid)
 		north_node.add_child(solid)
 
+	for rot in [0.0, PI * 0.5, PI, PI * 1.5]:
+		var lanes := Node3D.new()
+		lanes.rotation.y = rot
+		add_child(lanes)
+		var extent := NORTH_EXTENT if is_equal_approx(rot, PI) else ROAD_EXTENT
+		var z := STOP_Z + 1.0
+		while z + 2.0 < extent:
+			for x in [-3.6, 3.6]:
+				var dash := _quad(Vector2(0.13, 2.0), marking_mat)
+				dash.position = Vector3(x, y, z + 1.0)
+				lanes.add_child(dash)
+			z += 5.0
+
 
 func _build_lamps() -> void:
 	if not ResourceLoader.exists("res://models/street/lamp.glb"):
@@ -265,56 +266,42 @@ func _build_lamps() -> void:
 
 
 func _setup_walkers() -> void:
-	if not ResourceLoader.exists("res://models/walkers/walker_0.glb"):
-		return
-	walker_crowd = Models.crowd(self, "res://models/walkers/walker_0.glb", 6)
-	if walker_crowd == null:
-		return
-
-	walkers_data = [
-		{ "x": 4.8, "z_min": 10.0, "z_max": 28.0, "z": 12.0, "dir": 1.0, "spd": 1.4 },
-		{ "x": -4.8, "z_min": 10.0, "z_max": 28.0, "z": 24.0, "dir": -1.0, "spd": 1.2 },
-		{ "x": 4.8, "z_min": -28.0, "z_max": -10.0, "z": -14.0, "dir": -1.0, "spd": 1.3 },
-		{ "x": -4.8, "z_min": -28.0, "z_max": -10.0, "z": -22.0, "dir": 1.0, "spd": 1.5 },
-		{ "z": 4.8, "x_min": 10.0, "x_max": 28.0, "x": 15.0, "dir": 1.0, "spd": 1.3, "axis_x": true },
-		{ "z": -4.8, "x_min": -28.0, "x_max": -10.0, "x": -18.0, "dir": -1.0, "spd": 1.4, "axis_x": true },
-	]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 31
+	for look in Models.WALKERS:
+		var crowd := Models.crowd(self, "res://models/walkers/walker_%d.glb" % look, 1)
+		walker_crowds.append(crowd)
+		var tint := sc.color("canopy", look).lerp(Color("#6586A0"), 0.65)
+		crowd.set_instance_custom_data(0, Color(tint.r, tint.g, tint.b, rng.randf()))
+		var axis_x := look >= 8
+		var direction := 1.0 if look % 2 == 0 else -1.0
+		var side := 1.0 if (look / 2) % 2 == 0 else -1.0
+		var low := 14.0 if side > 0 else -38.0
+		var high := 38.0 if side > 0 else -14.0
+		walkers_data.append({"axis_x": axis_x, "side": side,
+			"fixed": direction * (HALF_ROAD + 0.9 + (look % 3) * 0.65),
+			"low": low, "high": high, "at": rng.randf_range(low, high),
+			"dir": direction, "spd": rng.randf_range(1.0, 1.6)})
+	_update_walkers(0.0)
 
 
 func _process(delta: float) -> void:
-	if walker_crowd == null or walkers_data.is_empty():
-		return
+	_update_walkers(delta)
 
-	for i in range(walkers_data.size()):
+
+func _update_walkers(delta: float) -> void:
+	for i in walkers_data.size():
 		var w: Dictionary = walkers_data[i]
-		var spd: float = w["spd"] * w["dir"]
-
-		var pos := Vector3.ZERO
-		var yaw := 0.0
-
-		if w.get("axis_x", false):
-			w["x"] += spd * delta
-			if w["x"] >= w["x_max"]:
-				w["x"] = w["x_max"]
-				w["dir"] = -1.0
-			elif w["x"] <= w["x_min"]:
-				w["x"] = w["x_min"]
-				w["dir"] = 1.0
-			pos = Vector3(w["x"], 0.15, w["z"])
-			yaw = PI * 0.5 if w["dir"] > 0 else -PI * 0.5
-		else:
-			w["z"] += spd * delta
-			if w["z"] >= w["z_max"]:
-				w["z"] = w["z_max"]
-				w["dir"] = -1.0
-			elif w["z"] <= w["z_min"]:
-				w["z"] = w["z_min"]
-				w["dir"] = 1.0
-			pos = Vector3(w["x"], 0.15, w["z"])
-			yaw = 0.0 if w["dir"] > 0 else PI
-
-		var t := Transform3D(Basis(Vector3.UP, yaw), pos)
-		walker_crowd.set_instance_transform(i, t)
+		w.at += w.spd * w.dir * delta
+		if w.at >= w.high:
+			w.at = w.high
+			w.dir = -1.0
+		elif w.at <= w.low:
+			w.at = w.low
+			w.dir = 1.0
+		var pos := Vector3(w.at, 0.15, w.fixed) if w.axis_x else Vector3(w.fixed, 0.15, w.at)
+		var yaw := (PI * 0.5 if w.dir > 0 else -PI * 0.5) if w.axis_x else (0.0 if w.dir > 0 else PI)
+		walker_crowds[i].set_instance_transform(0, Transform3D(Basis(Vector3.UP, yaw), pos))
 
 
 func _quad(size: Vector2, mat: Material) -> MeshInstance3D:
@@ -369,6 +356,9 @@ func _get_pool(prop: String, cap := 64, shadows := false) -> Scenery.Pool:
 
 
 func _put_prop(prop: String, pos: Vector3, yaw := 0.0, scale := Vector3.ONE, tint := Color.WHITE, shadows := false) -> void:
+	var widening := HALF_ROAD - 3.6
+	if absf(pos.x) > 7.2: pos.x += signf(pos.x) * widening
+	if absf(pos.z) > 7.2: pos.z += signf(pos.z) * widening
 	var p := _get_pool(prop, 96, shadows)
 	if p == null:
 		return

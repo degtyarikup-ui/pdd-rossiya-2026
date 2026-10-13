@@ -6,7 +6,7 @@ extends Node3D
 
 signal maneuver_finished(move: RegulatorRules.Move)
 
-const START_POS := Vector3(1.8, 0.0, 12.5)
+const START_POS := Vector3(5.4, 0.0, 20.5)
 const START_YAW := PI                       # Facing North (-Z) into the intersection
 
 var car_root: Node3D
@@ -128,42 +128,44 @@ func _evaluate_trajectory(move: RegulatorRules.Move, t: float) -> Array:
 	match move:
 		RegulatorRules.Move.STRAIGHT:
 			# Directly through to the other side
-			pos = START_POS.lerp(Vector3(1.8, 0.0, -13.5), t)
+			pos = START_POS.lerp(Vector3(5.4, 0.0, -17.5), t)
 			yaw = START_YAW
 
 		RegulatorRules.Move.RIGHT:
 			# Approach, tangent quarter-circle, then the outgoing right-hand lane.
 			if t < 0.35:
-				pos = START_POS.lerp(Vector3(1.8, 0, 4.5), t / 0.35)
+				pos = START_POS.lerp(Vector3(5.4, 0, 8.1), t / 0.35)
 			elif t < 0.7:
 				var angle := (t - 0.35) / 0.35 * PI * 0.5
-				pos = Vector3(4.5 - cos(angle) * 2.7, 0, 4.5 - sin(angle) * 2.7)
+				pos = Vector3(8.1 - cos(angle) * 2.7, 0, 8.1 - sin(angle) * 2.7)
 				yaw = START_YAW - angle
 			else:
-				pos = Vector3(4.5, 0, 1.8).lerp(Vector3(13.5, 0, 1.8), (t - 0.7) / 0.3)
+				pos = Vector3(8.1, 0, 5.4).lerp(Vector3(17.5, 0, 5.4), (t - 0.7) / 0.3)
 				yaw = PI * 0.5
-		RegulatorRules.Move.LEFT:
-			if t < 0.3:
-				pos = START_POS.lerp(Vector3(1.8, 0, 4.5), t / 0.3)
-			elif t < 0.75:
-				var angle := (t - 0.3) / 0.45 * PI * 0.5
-				pos = Vector3(-4.5 + cos(angle) * 6.3, 0, 4.5 - sin(angle) * 6.3)
+		RegulatorRules.Move.LEFT, RegulatorRules.Move.UTURN:
+			# Change to the innermost lane before the stop line, then leave room for the officer.
+			if t < 0.2:
+				return _bezier_pose(START_POS, Vector3(5.4, 0, 18), Vector3(1.8, 0, 17), Vector3(1.8, 0, 14.5), t / 0.2)
+			elif t < 0.4:
+				return _bezier_pose(Vector3(1.8, 0, 14.5), Vector3(1.8, 0, 9), Vector3(3.6, 0, 6), Vector3(3.6, 0, 0), (t - 0.2) / 0.2)
+			var arc_end := 0.7 if move == RegulatorRules.Move.LEFT else 0.8
+			if t < arc_end:
+				var angle := (t - 0.4) / (arc_end - 0.4) * (PI * 0.5 if move == RegulatorRules.Move.LEFT else PI)
+				pos = Vector3(cos(angle) * 3.6, 0, -sin(angle) * 3.6)
 				yaw = START_YAW + angle
+			elif move == RegulatorRules.Move.LEFT:
+				return _bezier_pose(Vector3(0, 0, -3.6), Vector3(-6, 0, -3.6), Vector3(-9, 0, -1.8), Vector3(-17.5, 0, -1.8), (t - arc_end) / (1.0 - arc_end))
 			else:
-				pos = Vector3(-4.5, 0, -1.8).lerp(Vector3(-13.5, 0, -1.8), (t - 0.75) / 0.25)
-				yaw = -PI * 0.5
-		RegulatorRules.Move.UTURN:
-			if t < 0.4:
-				pos = START_POS.lerp(Vector3(1.8, 0, 1), t / 0.4)
-			elif t < 0.8:
-				var angle := (t - 0.4) / 0.4 * PI
-				pos = Vector3(cos(angle) * 1.8, 0, 1.0 - sin(angle) * 1.8)
-				yaw = START_YAW + angle
-			else:
-				pos = Vector3(-1.8, 0, 1).lerp(Vector3(-1.8, 0, 13.5), (t - 0.8) / 0.2)
-				yaw = 0.0
+				return _bezier_pose(Vector3(-3.6, 0, 0), Vector3(-3.6, 0, 6), Vector3(-1.8, 0, 9), Vector3(-1.8, 0, 17.5), (t - arc_end) / (1.0 - arc_end))
 
 	return [pos, yaw]
+
+
+func _bezier_pose(a: Vector3, b: Vector3, c: Vector3, d: Vector3, t: float) -> Array:
+	var u := 1.0 - t
+	var p := a * u * u * u + b * 3.0 * u * u * t + c * 3.0 * u * t * t + d * t * t * t
+	var tangent := (b - a) * u * u + (c - b) * 2.0 * u * t + (d - c) * t * t
+	return [p, atan2(tangent.x, tangent.z)]
 
 
 func _ease_in_out(t: float) -> float:

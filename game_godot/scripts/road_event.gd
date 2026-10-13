@@ -91,6 +91,15 @@ static func make(item: Dictionary, z: float, half: float) -> RoadEvent:
 	return ev
 
 
+## Covers hide the street's old paint, but must keep its asphalt texture and lighting.
+func match_surface(scenery: Scenery, frame: Transform3D) -> void:
+	var asphalt := scenery.surface_material("asphalt", RoadBuild.ASPHALT, frame)
+	for node: MeshInstance3D in find_children("*", "MeshInstance3D", true, false):
+		var mat := node.material_override as StandardMaterial3D
+		if mat and mat.albedo_color.is_equal_approx(RoadBuild.ASPHALT):
+			node.material_override = asphalt
+
+
 # --- building ---------------------------------------------------------------------
 
 func _build(half: float) -> void:

@@ -377,8 +377,8 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 			var before_d := a.distance
 			a.distance += advance / steps
 			var t := a.path.tangent_at(a.distance)
-			# At the end of its path a participant is gone: it does not drive on straight beyond the
-			# junction (through the houses of the street there). See the retirement below.
+			# A route ends at the edge of the saved road: keep its endpoint, without
+			# driving through houses or hiding a participant still in view.
 			var p := a.path.point_at(minf(a.distance, a.path.length))
 			a.node.position = p
 			a.node.rotation.y = atan2(t.x, t.z)
@@ -403,10 +403,12 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 		for w in a.wheels:
 			w.rotate_x(a.speed * dt / 0.36)
 		a.cleared = a.crashed or a.distance >= a.clear_distance
-		# At the end of the planned path (it ends where the road ends) or far out: retire it.
-		if a.distance >= a.path.length or a.node.position.length() > 95.0:
-			a.done = true
-			a.node.visible = false
+		# A finite exported route may end in plain view. Keep the participant there (and solid)
+		# until its whole street retires, rather than making it vanish beside the player.
+		if a.distance >= a.path.length:
+			a.stays_put = true
+			a.speed = 0.0
+			a.cleared = true
 	return hit
 
 

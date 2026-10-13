@@ -104,6 +104,7 @@ func build_chunk(slot: int, index: int, blank := false, half_at := Callable(), r
 	rng.seed = hash(index * 7919)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_smooth_group(-1)  # Flat road tops must not blend with vertical kerbs.
 	_road(st, z0, half_at)
 	var z := z0 + ROW / 2
 	while z < z0 + L:

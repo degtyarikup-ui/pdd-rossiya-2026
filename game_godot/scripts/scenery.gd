@@ -52,6 +52,17 @@ func _init(season_name: String) -> void:
 	material.set_shader_parameter("gain", gains)
 
 
+## A procedural surface on the same metre grid and with the same detail maps as the street.
+func surface_material(kind: String, colour: Color, frame := Transform3D()) -> ShaderMaterial:
+	var mat := material.duplicate() as ShaderMaterial
+	mat.set_shader_parameter("world_uv", true)
+	mat.set_shader_parameter("surface_frame", frame)
+	mat.set_shader_parameter("surface_layer", layer_of(kind))
+	mat.set_shader_parameter("texture_period", kinds[kind].period)
+	mat.set_shader_parameter("surface_colour", Vector3(colour.r, colour.g, colour.b))
+	return mat
+
+
 func layer_of(kind: String) -> int:
 	return layers.find(kind) + 1
 

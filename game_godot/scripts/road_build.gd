@@ -56,7 +56,7 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 	steel.albedo_color = Color("#7A7F87")
 	steel.roughness = 0.6
 	var board := Node3D.new()
-	board.position = Vector3(0, SIGN_BOTTOM, 0)
+	board.position = Vector3(0, SIGN_BOTTOM, -0.16)  # In front of both new and baked poles.
 	board.rotation.x = SIGN_LEAN
 	root.add_child(board)
 	# The board's parts from the bottom up: text plate, picture plate, the sign.
@@ -190,12 +190,21 @@ static func _face(tex: Texture2D, at: Vector3, w: float, h: float) -> MeshInstan
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = tex
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.cull_mode = BaseMaterial3D.CULL_BACK
 	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	# The picture's transparent corners are cut out (alpha), not drawn black.
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 	mat.alpha_scissor_threshold = 0.5
 	face.material_override = mat
+	var back := MeshInstance3D.new()
+	back.mesh = quad
+	back.position.z = -0.01
+	back.rotation.y = PI
+	var backing := ShaderMaterial.new()
+	backing.shader = load("res://shaders/sign_back.gdshader")
+	backing.set_shader_parameter("mask", tex)
+	back.material_override = backing
+	face.add_child(back)
 	return face
 
 
@@ -286,20 +295,13 @@ static func _dash_rects(x: float, z0: float, z1: float, y := PAINT_Y) -> Array:
 static func route(parent: Node3D, pts: Array, label_text: String, label_at: Vector3) -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var n := 0
-	for i in range(pts.size() - 1):
-		var a: Vector2 = pts[i]
-		var b: Vector2 = pts[i + 1]
-		var d := b - a
-		if d.length() < 0.001:
-			continue
-		d = d.normalized()
-		var side := Vector2(-d.y, d.x) * 0.15
-		for q in [a + side, b + side, b - side, a + side, b - side, a - side]:
-			st.set_normal(Vector3.UP)
-			st.add_vertex(Vector3(q.x, ROUTE_Y, q.y))
-			n += 1
-	if n > 0:
+	if pts.size() >= 2:
+		var points: Array = []
+		for p: Vector2 in pts: points.append([p.x, p.y])
+		var curve := Situation._smooth(points)
+		Situation._strip(st, Situation._shorten(curve, 1.6), 0.3)
+		Situation._round_start(st, curve, 0.3)
+		Situation._arrowhead(st, Situation._before_tip(curve, 1.6), curve[-1])
 		_add(parent, _mesh_node(st, ROUTE))
 	if label_text != "":
 		var label := Label3D.new()

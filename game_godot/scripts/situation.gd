@@ -375,7 +375,8 @@ func _trajectory_guide() -> Node3D:
 		var st := SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
 		var curve := _smooth(pts)
-		_strip(st, curve, GUIDE_WIDTH)
+		_strip(st, _shorten(curve, 1.6), GUIDE_WIDTH)
+		_round_start(st, curve, GUIDE_WIDTH)
 		_arrowhead(st, _before_tip(curve, 1.6), curve[curve.size() - 1])
 		var mi := MeshInstance3D.new()
 		mi.mesh = st.commit()
@@ -431,6 +432,31 @@ static func _strip(st: SurfaceTool, pts: PackedVector2Array, width: float) -> vo
 		var b0 := pts[i + 1] + normals[i + 1]
 		var b1 := pts[i + 1] - normals[i + 1]
 		for v in [a0, a1, b0, a1, b1, b0]:
+			st.add_vertex(Vector3(v.x, GUIDE_LIFT, v.y))
+
+
+## Cut the ribbon at the arrow's base: no rectangular band protrudes through the tip.
+static func _shorten(pts: PackedVector2Array, metres: float) -> PackedVector2Array:
+	var out := pts.duplicate()
+	while out.size() > 1:
+		var last := out.size() - 1
+		var length := out[last].distance_to(out[last - 1])
+		if length > metres:
+			out[last] = out[last].lerp(out[last - 1], metres / length)
+			return out
+		metres -= length
+		out.remove_at(last)
+	return out
+
+
+static func _round_start(st: SurfaceTool, pts: PackedVector2Array, width: float) -> void:
+	var direction := (pts[1] - pts[0]).normalized()
+	var side := Vector2(-direction.y, direction.x)
+	for i in 12:
+		var a := PI * i / 12.0
+		var b := PI * (i + 1) / 12.0
+		for v in [pts[0], pts[0] + (side * cos(a) - direction * sin(a)) * width * 0.5,
+				pts[0] + (side * cos(b) - direction * sin(b)) * width * 0.5]:
 			st.add_vertex(Vector3(v.x, GUIDE_LIFT, v.y))
 
 

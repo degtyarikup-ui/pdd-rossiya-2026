@@ -156,6 +156,7 @@ func surface_mesh(scenery: Scenery, uv_z := 0.0, uv_xf := Transform3D()) -> Arra
 		uv_xf = Transform3D(Basis(), Vector3(0, 0, uv_z))
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_smooth_group(-1)  # Keep pavement/asphalt normals separate from kerb walls.
 	for s in build.surfaces:
 		_add_triangles(st, s, scenery, uv_xf)
 	_add_kerbs(st, scenery, uv_z)

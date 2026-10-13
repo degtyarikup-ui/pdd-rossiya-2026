@@ -229,6 +229,7 @@ static func clip_mesh(mesh: Mesh, placement: Transform3D) -> ArrayMesh:
 		var colours: PackedColorArray = arrays[Mesh.ARRAY_COLOR] if arrays[Mesh.ARRAY_COLOR]!=null else PackedColorArray()
 		if indices.is_empty(): indices=PackedInt32Array(range(verts.size()))
 		var tool := SurfaceTool.new();tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+		tool.set_smooth_group(-1)
 		var count := 0
 		for k in range(0,indices.size(),3):
 			var poly: Array = []

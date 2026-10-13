@@ -2,12 +2,12 @@
   "_comment": "Tunables of the Godot street. Layout rules: scripts/street.gd (port of game.js); models/textures: tools/godot_export.",
   "chunk_length": 60,
   "chunks_ahead": 5,
-  "chunks_behind": 1,
+  "chunks_behind": 4,
   "colors": {
     "car": ["#E8E8E8", "#2F3A46", "#8B1E2D", "#6E86A6", "#C9B36B", "#4D756A", "#B87847", "#D1CEC4", "#ED4621", "#317ED4"],
     "people": ["#3979A3", "#B6654F", "#66845A", "#D5AA49", "#865E94", "#D4C8B3"]
   },
-  "traffic": { "cars": 12, "speed_min": 8, "speed_max": 14 },
+  "traffic": { "cars": 14, "speed_min": 8, "speed_max": 14 },
   "pedestrians": 24,
   "player": { "max_speed_kmh": 70, "accel": 6.0, "brake": 14.0, "drag": 1.2, "steer_speed": 6.0 }
 }

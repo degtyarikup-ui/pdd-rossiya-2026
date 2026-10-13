@@ -132,8 +132,8 @@ func _check_car_trajectories() -> void:
 	# Test straight trajectory start and end
 	var p_start: Array = car._evaluate_trajectory(RegulatorRules.Move.STRAIGHT, 0.0)
 	var p_end: Array = car._evaluate_trajectory(RegulatorRules.Move.STRAIGHT, 1.0)
-	_check("Car straight starts at Z=12.5", is_equal_approx(p_start[0].z, 12.5))
-	_check("Car straight ends across crossroad at Z=-13.5", is_equal_approx(p_end[0].z, -13.5))
+	_check("Car starts behind widened junction stop line", is_equal_approx(p_start[0].z, RegulatorCar.START_POS.z))
+	_check("Car exits beyond the north crossing", is_equal_approx(p_end[0].z, -17.5))
 
 	# Test right trajectory
 	var r_end: Array = car._evaluate_trajectory(RegulatorRules.Move.RIGHT, 1.0)
@@ -143,15 +143,19 @@ func _check_car_trajectories() -> void:
 	var l_end: Array = car._evaluate_trajectory(RegulatorRules.Move.LEFT, 1.0)
 	_check("Car left turns West into negative X", l_end[0].x < -10.0)
 
-	for move in [RegulatorRules.Move.RIGHT, RegulatorRules.Move.LEFT, RegulatorRules.Move.UTURN]:
+	for move in [RegulatorRules.Move.STRAIGHT, RegulatorRules.Move.RIGHT, RegulatorRules.Move.LEFT, RegulatorRules.Move.UTURN]:
 		var continuous := true
+		var clear := true
 		var last: Vector3 = car._evaluate_trajectory(move, 0.0)[0]
 		for i in range(1, 1001):
-			var pos: Vector3 = car._evaluate_trajectory(move, float(i) / 1000)[0]
+			var pose := car._evaluate_trajectory(move, float(i) / 1000)
+			var pos: Vector3 = pose[0]
+			clear = clear and not Drive.overlap({"p": pos, "yaw": pose[1], "hw": 1.2, "hl": 3.0}, {"p": Vector3.ZERO, "yaw": 0.0, "hw": 1.4, "hl": 1.4}, 0.2)
 			continuous = continuous and last.distance_to(pos) < 0.2
 			last = pos
 		_check("No jumps throughout " + RegulatorRules.move_name(move), continuous)
-	_check("Right exits in eastbound lane", is_equal_approx(r_end[0].z, 1.8))
+		_check("Car clears officer and extended arms: " + RegulatorRules.move_name(move), clear)
+	_check("Right exits in eastbound lane", is_equal_approx(r_end[0].z, 5.4))
 	_check("Left exits in westbound lane", is_equal_approx(l_end[0].z, -1.8))
 	car.free()
 
@@ -159,6 +163,9 @@ func _check_car_trajectories() -> void:
 func _check_junction_layout() -> void:
 	var junction := RegulatorJunction.new()
 	_check("Junction builds without errors", junction.get_child_count() > 5)
+	_check("Four 3.6m lanes on each arm", is_equal_approx(junction.ROAD_WIDTH, 14.4))
+	_check("All 12 walker models represented", junction.walker_crowds.size() == Models.WALKERS)
+	_check("Asphalt uses main game detail map", junction.asphalt_mat.get_shader_parameter("surface_layer") == junction.sc.layer_of("asphalt"))
 	junction.free()
 
 
@@ -187,6 +194,14 @@ func _check_ui_layout() -> void:
 	ui.reset_buttons_visuals()
 	_check("Reset visuals restores button accents", ui.move_buttons[RegulatorRules.Move.LEFT].icon.get_theme_color("font_color") == Ui.c("accent"))
 
+	ui.size = Vector2(960, 720)
+	ui.update_hud(100, 0, 60, 5)
+	var timer_index := ui._timer_group.get_index()
+	var stable := true
+	for seconds in range(59, 0, -1):
+		ui.update_hud(100, 0, seconds, 5)
+		stable = stable and ui._timer_group.get_index() == timer_index
+	_check("Countdown never swaps timer with its spacer", stable)
 	ui.free()
 
 

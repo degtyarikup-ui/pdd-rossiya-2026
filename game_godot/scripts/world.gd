@@ -28,6 +28,7 @@ var street: Street
 var paused := false
 var ghost: Node3D                 # the street before the last turn, frozen until it is far behind
 var ghost_until := 0.0
+var older_ghosts: Array[Node3D] = []
 var blanks: Array = []            # [z0, z1]: an exam junction has its own streets there
 
 var player: Node3D
@@ -678,7 +679,7 @@ func obstacles() -> Array:
 				out.append(WorldMotion.new(m, j.sit.global_transform))
 	for car in traffic:
 		# Inside a junction's own streets the ring traffic is not there at all.
-		if not _in_blank(car.z):
+		if not _in_blank(car.z) and not car.get("sheltered", false):
 			out.append(AmbientObstacle.new(car))
 	# Parked cars at the kerb are solid too (only the ones near the car).
 	for spots in street.parked_spots.values():
@@ -1020,6 +1021,7 @@ func _update_road(dt: float) -> void:
 		var item: Dictionary = road_queue.pop_front()
 		road_base_limit = limit_kmh
 		road = RoadEvent.make(item, drive.pos.z + 150.0, street_half)
+		road.match_surface(scenery, texture_frame)
 		add_child(road)
 		road_phase = "approach"
 		pending_connection={}
@@ -1238,10 +1240,18 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	cam_look=xf*cam_look
 	skip_jerk=true
 	# Keep the old street behind a turn until it is out of view. Its UVs retain their original world frame.
-	if ghost: ghost.queue_free()
+	# A second nearby turn must not delete actors still visible on the previous street.
+	for old in older_ghosts:
+		old.transform = xf * old.transform
+		old.set_meta("retire_anchor", xf * old.get_meta("retire_anchor"))
+	if ghost:
+		ghost.transform = xf * ghost.transform
+		ghost.set_meta("retire_anchor", xf * ghost.get_meta("retire_anchor"))
+		older_ghosts.append(ghost)
 	ghost=Node3D.new()
 	add_child(ghost)
 	ghost.transform=xf
+	ghost.set_meta("retire_anchor", drive.pos)
 	for node: MeshInstance3D in road_nodes:
 		if node.mesh:
 			var trimmed := SceneStitch.clip_mesh(node.mesh,xf*node.transform)
@@ -1256,6 +1266,7 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 			if (xf*at.origin).z>0.0:
 				node.multimesh.set_instance_transform(i,Transform3D(Basis.from_scale(Vector3.ONE*0.001),Vector3(0,-50,0)))
 	ghost_until=260.0
+	_keep_ambient(ghost)
 	_reset_ambient()
 	_build_ground()
 	street_half=float(port.width)/2.0
@@ -1364,7 +1375,7 @@ func _spawn_walkers() -> void:
 		# Two walking lanes on the pavement (5.2 and 6.3 m), as in the game.
 		walkers.append({
 			"dir": dir, "lane": (i / 2) % 2,
-			"z": rng.randf_range(0, L * 4), "v": v, "mm": multi, "slot": slot,
+			"z": rng.randf_range(-L * float(cfg.chunks_behind), L * float(cfg.chunks_ahead)), "v": v, "mm": multi, "slot": slot,
 		})
 		var jacket: Color = _pick(cfg.colors.people, rng)
 		multi.set_instance_custom_data(slot, Color(jacket.r, jacket.g, jacket.b, rng.randf()))
@@ -1373,10 +1384,38 @@ func _spawn_walkers() -> void:
 ## After a rebase the ring traffic and walkers start again around the player.
 func _reset_ambient() -> void:
 	for i in traffic.size():
-		traffic[i].z = drive.pos.z + 50.0 + i * 65.0
+		traffic[i].erase("sheltered")
+		traffic[i].z = drive.pos.z + 250.0 + i * 8.0
 	for i in walkers.size():
 		walkers[i].erase("knocked_down")
-		walkers[i].z = drive.pos.z + (i * 10.0) - 40.0
+		walkers[i].erase("sheltered")
+		walkers[i].z = drive.pos.z + 250.0 + (i * 3.0)
+
+
+## Distance along an ambient lane to the next junction boundary (before the exclusion margin).
+func _ambient_boundary(z: float, direction: float) -> float:
+	var distance := INF
+	for b in blanks:
+		var edge: float = float(b[0]) - 6.0 if direction > 0.0 else float(b[1]) + 6.0
+		var ahead := (edge - z) * direction
+		if ahead >= 0.0:
+			distance = minf(distance, ahead)
+	return distance
+
+
+func _keep_ambient(parent: Node3D) -> void:
+	var trail := AmbientTrail.new()
+	parent.add_child(trail)
+	for car in traffic:
+		if car.get("sheltered", false) or _in_blank(car.z) or (parent.global_transform * Vector3(car.x, 0, car.z)).distance_to(drive.pos) > 240.0:
+			continue
+		if car.has("node"):
+			trail.keep(car.node.duplicate(), car.dir * car.spd)
+		else:
+			trail.keep_copy(car.mm, car.slot, car.dir * car.spd)
+	for w in walkers:
+		if w.get("alive", false) and not w.get("knocked_down", false):
+			trail.keep_copy(w.mm, w.slot, w.v)
 
 
 func _in_blank(z: float) -> bool:
@@ -1496,7 +1535,15 @@ func _update_traffic(delta: float) -> void:
 		# Lanes follow the carriageway as it is now: the flow on the driver's side (-X),
 		# the oncoming on the other (+X). The lane is set by the direction, never by the speed.
 		car.x = -car.dir * lane
+		car.z = behind + fposmod(car.z - behind, span)
+		if _in_blank(car.z):
+			car.sheltered = true
+		elif car.get("sheltered", false) and absf(car.z - drive.pos.z) > 230.0:
+			car.erase("sheltered")
 	for car in traffic:
+		if car.get("sheltered", false):
+			car.spd = 0.0
+			continue
 		var want: float = car.base
 		var lead = _lead_of(car, span)
 		if lead != null:
@@ -1504,14 +1551,28 @@ func _update_traffic(delta: float) -> void:
 			var safe: float = CAR_GAP + car.spd * HEADWAY
 			if gap < safe + 25.0:
 				want = minf(want, maxf(0.0, lead.car.spd + (gap - safe) * 0.6))
-		# A car behind the player in his lane keeps back from him: it matches his speed from 14 m
-		# and stops short of him.
+		# Use bumper clearance and speed headway, including long buses and a rotated player.
 		var behind_gap: float = (drive.pos.z - car.z) * car.dir
-		if absf(car.x - drive.pos.x) < 2.0 and behind_gap > 0.0 and behind_gap < 14.0:
-			var follow_v: float = maxf(0.0, drive.speed) if behind_gap > 6.0 else 0.0
-			want = minf(want, follow_v)
+		var player_extent := absf(cos(drive.yaw)) * drive.half_length + absf(sin(drive.yaw)) * drive.half_width
+		var player_width := absf(cos(drive.yaw)) * drive.half_width + absf(sin(drive.yaw)) * drive.half_length
+		var player_leads := absf(car.x - drive.pos.x) < player_width + 1.1 and behind_gap > 0.0 and not _in_blank(car.z)
+		if player_leads:
+			var gap: float = behind_gap - car.len * 0.5 - player_extent
+			var player_speed := maxf(0.0, drive.speed * cos(drive.yaw) * car.dir)
+			var safe: float = CAR_GAP + car.spd * HEADWAY
+			want = minf(want, maxf(0.0, player_speed + (gap - safe) * 0.6))
+		# Ambient cars stop outside a ticket's road, instead of vanishing at its edge.
+		var boundary := _ambient_boundary(car.z, car.dir)
+		if boundary != INF:
+			var clearance: float = boundary - car.len * 0.5 - CAR_GAP
+			want = minf(want, sqrt(maxf(0.0, clearance) * 8.0))
 		car.spd = move_toward(car.spd, want, (8.0 if want < car.spd else 3.0) * delta)
-		car.z += (car.dir * car.spd + car.shove) * delta
+		var step: float = (car.dir * car.spd + car.shove) * delta
+		if player_leads:
+			step = car.dir * minf(step * car.dir, maxf(0.0, behind_gap - car.len * 0.5 - player_extent - CAR_GAP))
+		if boundary != INF:
+			step = car.dir * minf(step * car.dir, maxf(0.0, boundary - car.len * 0.5 - CAR_GAP))
+		car.z += step
 		car.shove = move_toward(car.shove, 0.0, 2.5 * delta)   # the push runs out on its own
 	# A hard rule on top of the speeds: no car ever overlaps the one ahead of it.
 	for car in traffic:
@@ -1540,7 +1601,7 @@ func _update_traffic(delta: float) -> void:
 		var at := Vector3(car.x, 0, car.z)
 		# Inside a junction's square the street does not go on (a bend, a T, a roundabout): the ring
 		# traffic is not drawn there, or it would drive straight over lawns and through houses.
-		if _in_blank(car.z):
+		if _in_blank(car.z) or car.get("sheltered", false):
 			at.y = -100.0
 		if car.has("node"):
 			(car.node as Node3D).transform = Transform3D(Basis(Vector3.UP, face), at)
@@ -1549,10 +1610,18 @@ func _update_traffic(delta: float) -> void:
 
 
 func _update_walkers(delta: float) -> void:
-	var span := L * 4
-	var base := drive.pos.z - L
+	var span := L * chunk_count
+	var base := drive.pos.z - L * float(cfg.chunks_behind)
 	for w in walkers:
-		if not w.get("knocked_down", false):
+		w.z = base + fposmod(w.z - base, span)
+		if _in_blank(w.z):
+			w.sheltered = true
+		elif w.get("sheltered", false) and absf(w.z - drive.pos.z) > 230.0:
+			w.erase("sheltered")
+		if not w.get("knocked_down", false) and not w.get("sheltered", false):
+			var boundary := _ambient_boundary(w.z, signf(w.v))
+			if boundary < 2.0 + absf(w.v) * delta:
+				w.v = -w.v
 			w.z += w.v * delta
 	# People walking the same way in one lane keep a step apart: the one behind waits.
 	for w in walkers:
@@ -1564,17 +1633,19 @@ func _update_walkers(delta: float) -> void:
 			var ahead: float = fposmod((o.z - w.z) * signf(w.v), span)
 			if ahead > 0.0 and ahead < 1.0:
 				w.z -= signf(w.v) * (1.0 - ahead)
-		var z := base + fposmod(w.z - base, span)
+		w.z = base + fposmod(w.z - base, span)
+		var z: float = w.z
 		var face := 0.0 if w.v > 0 else PI
 		# Two walking lanes on the pavement, one per walking direction: people going opposite
 		# ways never meet head-on in one lane (they walked through each other).
-		var x: float = w.dir * (_half_at(z) + 1.0 + (0.0 if w.v > 0 else 1.1))
+		var target_x: float = w.dir * (_half_at(z) + 1.0 + (0.0 if w.v > 0 else 1.1))
+		var x := move_toward(float(w.get("x", target_x)), target_x, delta * 0.8)
 		var at := Vector3(x, Street.KERB, z)
 		# Never on a carriageway: inside a junction's streets or in a blank zone a
 		# walker is simply not there (the junction has its own pedestrians).
 		w.x = x
 		w.zw = z
-		w.alive = not _in_blank(z) and not road_supports(Vector3(x, 0, z))
+		w.alive = not w.get("sheltered", false) and not _in_blank(z) and not road_supports(Vector3(x, 0, z))
 		if not w.alive:
 			at = Vector3(0, -100, 0)
 		(w.mm as MultiMesh).set_instance_transform(w.slot, Transform3D(Basis(Vector3.UP, face), at))
@@ -1733,6 +1804,8 @@ func _set_street_objects(on: bool) -> void:
 			(car.node as Node3D).visible = on
 	if ghost:
 		ghost.visible = on
+	for old in older_ghosts:
+		old.visible = on
 
 
 func _arg_text(name: String) -> String:
@@ -1852,6 +1925,10 @@ func _process(delta: float) -> void:
 	_update_traffic(delta)
 	_update_walkers(delta)
 	_recycle_chunks()
+	for i in range(older_ghosts.size() - 1, -1, -1):
+		if drive.pos.distance_to(older_ghosts[i].get_meta("retire_anchor")) > 260.0:
+			older_ghosts[i].queue_free()
+			older_ghosts.remove_at(i)
 	if ghost and drive.pos.z > ghost_until:
 		ghost.queue_free()
 		ghost = null
