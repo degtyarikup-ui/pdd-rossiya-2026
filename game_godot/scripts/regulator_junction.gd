@@ -7,7 +7,7 @@ extends Node3D
 const ROAD_WIDTH := 7.2         # 2 lanes of 3.6 m
 const HALF_ROAD := 3.6
 const ROAD_EXTENT := 46.0       # Extent for South, East, West branches
-const NORTH_EXTENT := 190.0     # Avenue continues straight ahead into the horizon!
+const NORTH_EXTENT := 200.0     # Avenue continues straight ahead into the horizon!
 const STOP_Z := 10.0
 const ZEBRA_START := 6.0
 const ZEBRA_END := 8.8
@@ -369,7 +369,7 @@ func _get_pool(prop: String, cap := 64, shadows := false) -> Scenery.Pool:
 
 
 func _put_prop(prop: String, pos: Vector3, yaw := 0.0, scale := Vector3.ONE, tint := Color.WHITE, shadows := false) -> void:
-	var p := _get_pool(prop, 64, shadows)
+	var p := _get_pool(prop, 96, shadows)
 	if p == null:
 		return
 	tint.a = 1.0 if sc.season.precipitation == "snow" else 0.0
@@ -389,7 +389,7 @@ func _build_city_scenery() -> void:
 	var pine_colors: Array = sc.season.pine
 
 	# 1. Trees and greenery along the forward North avenue sidewalks (flanking the road)
-	for z in [-14.0, -22.0, -30.0, -38.0, -46.0, -54.0, -64.0, -74.0, -84.0, -96.0, -108.0, -120.0, -134.0, -148.0, -162.0]:
+	for z in [-14.0, -22.0, -30.0, -38.0, -46.0, -54.0, -64.0, -74.0, -84.0, -96.0, -108.0, -120.0, -134.0, -148.0, -162.0, -176.0, -190.0, -204.0]:
 		_put_prop("trees/birch_0", Vector3(-8.6, 0.0, z), 0.3 * z, Vector3.ONE * 1.05, birch_color, true)
 		_put_prop("trees/round_0", Vector3(8.6, 0.0, z), -0.2 * z, Vector3.ONE * 1.1, Color(canopy_colors[abs(int(z)) % canopy_colors.size()]), true)
 		_put_prop("street/bush", Vector3(-8.8, 0.0, z + 3.0), 0.0, Vector3(1.1, 0.9, 1.1), Color(canopy_colors[0]), true)
@@ -428,6 +428,9 @@ func _build_city_scenery() -> void:
 	_put_prop("buildings/tower_1", Vector3(-22.0, 0.0, -118.0), PI * 0.5, Vector3.ONE, Color("#C6CCD8"))
 	_put_prop("buildings/block_4", Vector3(-24.0, 0.0, -140.0), PI * 0.5, Vector3.ONE, Color("#F5F6FA"))
 	_put_prop("buildings/tower_3", Vector3(-24.0, 0.0, -164.0), PI * 0.5, Vector3.ONE, Color("#E9ECF2"))
+	_put_prop("buildings/block_2", Vector3(-25.0, 0.0, -188.0), PI * 0.5, Vector3.ONE, Color("#B5675A"))
+	_put_prop("buildings/tower_0", Vector3(-26.0, 0.0, -212.0), PI * 0.5, Vector3.ONE, Color("#A9B4C2"))
+	_put_prop("buildings/block_6", Vector3(-28.0, 0.0, -236.0), PI * 0.5, Vector3.ONE, Color("#DDE1EA"))
 
 	# Secondary row on the Left
 	_put_prop("buildings/block_4", Vector3(-36.0, 0.0, -18.0), 0.0, Vector3.ONE, Color("#DDE1EA"))
@@ -435,6 +438,9 @@ func _build_city_scenery() -> void:
 	_put_prop("buildings/tower_1", Vector3(-38.0, 0.0, -42.0), PI * 0.25, Vector3.ONE, Color("#C6CCD8"))
 	_put_prop("buildings/block_2", Vector3(-40.0, 0.0, -74.0), PI * 0.5, Vector3.ONE, Color("#B5675A"))
 	_put_prop("buildings/tower_0", Vector3(-42.0, 0.0, -110.0), PI * 0.5, Vector3.ONE, Color("#A9B4C2"))
+	_put_prop("buildings/block_7", Vector3(-44.0, 0.0, -146.0), PI * 0.5, Vector3.ONE, Color("#C6CCD8"))
+	_put_prop("buildings/tower_3", Vector3(-44.0, 0.0, -182.0), PI * 0.5, Vector3.ONE, Color("#E9ECF2"))
+	_put_prop("buildings/block_0", Vector3(-46.0, 0.0, -218.0), PI * 0.5, Vector3.ONE, Color("#F5F6FA"))
 
 	# 4. Buildings framing North Avenue on the RIGHT (X >= +18.0)
 	_put_prop("buildings/tower_1", Vector3(18.0, 0.0, -18.0), -PI * 0.5, Vector3.ONE, Color("#E9ECF2"))
@@ -445,6 +451,9 @@ func _build_city_scenery() -> void:
 	_put_prop("buildings/tower_2", Vector3(22.0, 0.0, -118.0), -PI * 0.5, Vector3.ONE, Color("#DDE1EA"))
 	_put_prop("buildings/block_1", Vector3(24.0, 0.0, -140.0), -PI * 0.5, Vector3.ONE, Color("#F5F6FA"))
 	_put_prop("buildings/block_7", Vector3(24.0, 0.0, -164.0), -PI * 0.5, Vector3.ONE, Color("#B5675A"))
+	_put_prop("buildings/block_5", Vector3(25.0, 0.0, -188.0), -PI * 0.5, Vector3.ONE, Color("#B5675A"))
+	_put_prop("buildings/tower_2", Vector3(26.0, 0.0, -212.0), -PI * 0.5, Vector3.ONE, Color("#DDE1EA"))
+	_put_prop("buildings/block_3", Vector3(28.0, 0.0, -236.0), -PI * 0.5, Vector3.ONE, Color("#C6CCD8"))
 
 	# Secondary row on the Right
 	_put_prop("buildings/block_3", Vector3(36.0, 0.0, -18.0), 0.0, Vector3.ONE, Color("#B5675A"))
@@ -452,14 +461,31 @@ func _build_city_scenery() -> void:
 	_put_prop("buildings/tower_2", Vector3(38.0, 0.0, -42.0), -PI * 0.25, Vector3.ONE, Color("#DDE1EA"))
 	_put_prop("buildings/block_6", Vector3(40.0, 0.0, -74.0), -PI * 0.5, Vector3.ONE, Color("#C6CCD8"))
 	_put_prop("buildings/tower_3", Vector3(42.0, 0.0, -110.0), -PI * 0.5, Vector3.ONE, Color("#F5F6FA"))
+	_put_prop("buildings/block_1", Vector3(44.0, 0.0, -146.0), -PI * 0.5, Vector3.ONE, Color("#DDE1EA"))
+	_put_prop("buildings/tower_0", Vector3(44.0, 0.0, -182.0), -PI * 0.5, Vector3.ONE, Color("#E9ECF2"))
+	_put_prop("buildings/block_4", Vector3(46.0, 0.0, -218.0), -PI * 0.5, Vector3.ONE, Color("#F5F6FA"))
 
-	# 5. South-West Quadrant buildings
+	# 5. Distant Northern Skyline closing the perspective vista (Z from -180 to -230)
+	# Continuous urban blocks across the distant horizon, with towers rising behind them
+	_put_prop("buildings/block_4", Vector3(0.0, 0.0, -205.0), 0.0, Vector3(1.1, 1.0, 1.0), Color("#F5F6FA"))
+	_put_prop("buildings/block_0", Vector3(-16.0, 0.0, -202.0), 0.0, Vector3.ONE, Color("#E9ECF2"))
+	_put_prop("buildings/block_1", Vector3(16.0, 0.0, -202.0), 0.0, Vector3.ONE, Color("#C6CCD8"))
+	_put_prop("buildings/tower_1", Vector3(-24.0, 0.0, -218.0), 0.0, Vector3.ONE * 1.15, Color("#C6CCD8"))
+	_put_prop("buildings/tower_0", Vector3(24.0, 0.0, -218.0), 0.0, Vector3.ONE * 1.15, Color("#E9ECF2"))
+	_put_prop("buildings/tower_2", Vector3(-8.0, 0.0, -230.0), 0.0, Vector3.ONE * 1.25, Color("#DDE1EA"))
+	_put_prop("buildings/tower_3", Vector3(8.0, 0.0, -230.0), 0.0, Vector3.ONE * 1.25, Color("#F5F6FA"))
+	_put_prop("buildings/block_7", Vector3(-34.0, 0.0, -188.0), 0.0, Vector3.ONE, Color("#DDE1EA"))
+	_put_prop("buildings/block_5", Vector3(34.0, 0.0, -188.0), 0.0, Vector3.ONE, Color("#B5675A"))
+	_put_prop("buildings/block_6", Vector3(-48.0, 0.0, -205.0), 0.0, Vector3.ONE, Color("#A9B4C2"))
+	_put_prop("buildings/block_2", Vector3(48.0, 0.0, -205.0), 0.0, Vector3.ONE, Color("#B5675A"))
+
+	# 6. South-West Quadrant buildings
 	_put_prop("buildings/block_3", Vector3(-18.0, 0.0, 18.0), PI * 0.5, Vector3.ONE, Color("#DDE1EA"))
 	_put_prop("buildings/block_5", Vector3(-18.0, 0.0, 34.0), PI * 0.5, Vector3.ONE, Color("#B5675A"))
 	_put_prop("buildings/home_2", Vector3(-34.0, 0.0, 18.0), PI, Vector3.ONE, Color("#D9B99B"))
 	_put_prop("buildings/tower_0", Vector3(-34.0, 0.0, 34.0), PI * 0.75, Vector3.ONE, Color("#E9ECF2"))
 
-	# 6. South-East Quadrant buildings
+	# 7. South-East Quadrant buildings
 	_put_prop("buildings/block_0", Vector3(18.0, 0.0, 18.0), -PI * 0.5, Vector3.ONE, Color("#F5F6FA"))
 	_put_prop("buildings/tower_0", Vector3(18.0, 0.0, 34.0), -PI * 0.5, Vector3.ONE, Color("#E9ECF2"))
 	_put_prop("buildings/home_3", Vector3(34.0, 0.0, 18.0), PI, Vector3.ONE, Color("#C8D9C0"))

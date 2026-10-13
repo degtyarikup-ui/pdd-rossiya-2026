@@ -134,10 +134,11 @@ func _setup_environment() -> void:
 	var sky := Sky.new()
 	var sky_mat := ShaderMaterial.new()
 	sky_mat.shader = load("res://shaders/sky.gdshader")
-	sky_mat.set_shader_parameter("zenith_color", Color("#1E65BF"))
-	sky_mat.set_shader_parameter("horizon_color", Color("#7EBAEC"))
-	sky_mat.set_shader_parameter("cloud_coverage", 0.65)
+	sky_mat.set_shader_parameter("zenith_color", Color("#1658B5"))
+	sky_mat.set_shader_parameter("horizon_color", Color("#7EB5E5"))
+	sky_mat.set_shader_parameter("cloud_coverage", 0.50)
 	sky_mat.set_shader_parameter("cloud_speed", 0.003)
+	sky_mat.set_shader_parameter("cloud_texture", load("res://textures/clouds.png"))
 	sky.sky_material = sky_mat
 	e.sky = sky
 
@@ -150,8 +151,8 @@ func _setup_environment() -> void:
 	e.fog_enabled = true
 	e.fog_mode = Environment.FOG_MODE_DEPTH
 	e.fog_light_color = Color("#7EBAEC")
-	e.fog_depth_begin = 80.0
-	e.fog_depth_end = 190.0
+	e.fog_depth_begin = 120.0
+	e.fog_depth_end = 280.0
 	e.fog_sky_affect = 0.0
 
 	e.tonemap_mode = Environment.TONE_MAPPER_LINEAR
@@ -163,7 +164,7 @@ func _setup_environment() -> void:
 	camera.name = "MainCamera"
 	camera.fov = 52.0
 	camera.near = 0.1
-	camera.far = 300.0
+	camera.far = 320.0
 	add_child(camera)
 	camera.position = cam_base_pos
 	camera.look_at(cam_base_look)

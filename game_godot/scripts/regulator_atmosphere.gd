@@ -79,12 +79,12 @@ func _process(delta: float) -> void:
 	var overcast := maxf(rain, fog * 0.85)
 	var sky_mat := environment.sky.sky_material as ShaderMaterial
 	if sky_mat:
-		sky_mat.set_shader_parameter("zenith_color", Color("#1E65BF").lerp(Color("#596B7B"), overcast))
-		sky_mat.set_shader_parameter("horizon_color", Color("#7EBAEC").lerp(Color("#A8BAC8"), overcast))
-		sky_mat.set_shader_parameter("cloud_coverage", lerpf(0.65, 1.0, overcast))
+		sky_mat.set_shader_parameter("zenith_color", Color("#1658B5").lerp(Color("#596B7B"), overcast))
+		sky_mat.set_shader_parameter("horizon_color", Color("#7EB5E5").lerp(Color("#A8BAC8"), overcast))
+		sky_mat.set_shader_parameter("cloud_coverage", lerpf(0.50, 1.0, overcast))
 	sun.light_energy = clear_sun * (1.0 - overcast * 0.55)
-	environment.fog_depth_begin = lerpf(80, 8, fog)
-	environment.fog_depth_end = lerpf(190, 60, fog)
+	environment.fog_depth_begin = lerpf(120, 8, fog)
+	environment.fog_depth_end = lerpf(280, 60, fog)
 	junction.asphalt_mat.albedo_color = dry_road.lerp(Color("#141A22"), rain * 0.9 + fog * 0.25)
 	junction.asphalt_mat.roughness = lerpf(0.9, 0.35, rain)
 	junction.sidewalk_mat.albedo_color = dry_walk.lerp(dry_walk * 0.72, rain * 0.35 + fog * 0.15)
