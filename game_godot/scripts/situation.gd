@@ -14,6 +14,8 @@ var actors: Array[Node3D] = []       # same order as data.actors
 var _surface_cache := {}
 var _surface_signature := 0
 var _surface_material: ShaderMaterial
+var _ground_maps := {}
+var _ground_scenery: Scenery
 var _pool_nodes := {}
 var _pools := {}                     # prop -> MultiMesh
 var network: RoadNetwork             # the road network (network/<id>.json); the source of truth
@@ -96,6 +98,7 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 
 static func load_scene_staged(situation_id: String, scenery: Scenery, frames: SceneTree = null, staging_parent: Node = null) -> Situation:
 	var s := Situation.new()
+	s._ground_scenery = scenery
 	if staging_parent:
 		s.visible = false
 		staging_parent.add_child(s)
@@ -273,13 +276,27 @@ func covers(local: Vector3) -> bool:
 ## without one, the exported mask).
 func road_at(local: Vector3) -> bool:
 	if network:
-		return network.is_drivable(local)
+		var map := ground_map()
+		return (map.at(local) & GroundMap.ROAD) != 0 if map else network.is_drivable(local)
 	var m: Dictionary = data.roadMask
 	var xi := int(floor((local.x - float(m.x)) / float(m.cell)))
 	var zi := int(floor((local.z - float(m.z)) / float(m.cell)))
 	if xi < 0 or zi < 0 or xi >= _mask.get_width() or zi >= _mask.get_height():
 		return false
 	return _mask.get_pixel(xi, zi).r > 0.5
+
+
+func ground_map() -> GroundMap:
+	var surface := get_node_or_null("surfaces") as MeshInstance3D
+	if surface == null or surface.mesh == null or _ground_scenery == null: return null
+	var key := surface.mesh.get_instance_id()
+	if not _ground_maps.has(key): _ground_maps[key] = GroundMap.new(surface.mesh, _ground_scenery)
+	return _ground_maps[key]
+
+
+func pavement_at(local: Vector3) -> bool:
+	var map := ground_map()
+	return map != null and (map.at(local) & GroundMap.WALK) != 0
 
 
 static func _surface_node(net: RoadNetwork, scenery: Scenery) -> MeshInstance3D:

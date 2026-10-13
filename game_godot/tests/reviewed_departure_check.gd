@@ -44,6 +44,8 @@ func run() -> void:
 		var before := JSON.stringify(sit.data.actors)
 		var junction := Junction.new(sit)
 		junction.released = true
+		var watching := {"visible":true}
+		junction.motion_out_of_view = func(_m): return not watching.visible
 		junction.continuation = func(p, toward, hw, hl): return world._departure_path(sit.global_transform * p, sit.basis * toward, hw, hl, sit.global_transform)
 		junction.cycle_continuation = func(p, toward, hw, hl): return world._cycle_departure_path(sit.global_transform * p, sit.basis * toward, hw, hl, sit.global_transform)
 		world.current = {"sit": sit, "junction": junction, "zc": 600.0}
@@ -85,10 +87,15 @@ func run() -> void:
 							on_road = on_road and supported
 				if m.done: break
 			if not m.done:
-				print("BLOCKED ", id, "/", m.id, " endpoint ", m.path.point_at(m.exported_length), " direction ", m.path.tangent_at(m.exported_length), " footprint ", m.hw, "/", m.hl)
-			check(m.done, "%s/%s must leave its arrow and retire beyond view, stopped at %.1f/%.1fm" % [id, m.id, m.distance, m.path.length])
-			check(on_road, "%s/%s runtime departure must stay on driveable road" % [id, m.id])
-			check(not m.done or m.pos.distance_to(player.p) > 240.0, "%s/%s cannot retire while visible nearby" % [id, m.id])
+				print("WAITING AT DRAWN END ", id, "/", m.id, " endpoint ", m.path.point_at(m.exported_length), " direction ", m.path.tangent_at(m.exported_length), " footprint ", m.hw, "/", m.hl)
+			check(not m.done, "%s/%s cannot disappear while its model is being observed" % [id,m.id])
+			check(on_road, "%s/%s runtime departure must stay on drawn driveable road" % [id,m.id])
+			watching.visible=false
+			for i in 300:
+				junction.update_actors(1.0/30.0,player,0.0)
+				if m.done: break
+			check(m.done, "%s/%s retires only after leaving the view, without an imaginary road through grass" % [id,m.id])
+			watching.visible=true
 			print("%s / %s (%s): departure %.1fm, retired %s, road %s" % [id, m.id, m.type, m.distance - m.exported_length, m.done, on_road])
 		check(JSON.stringify(sit.data.actors) == before, "%s must keep authored actor data unchanged" % id)
 		world.current = {}

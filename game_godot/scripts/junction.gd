@@ -126,6 +126,9 @@ var spec: Dictionary
 ## World-supplied road continuation in local coordinates, beyond the authored arrow.
 var continuation := Callable()
 var cycle_continuation := Callable()
+var walking_continuation := Callable()
+var motion_ground := Callable()
+var motion_out_of_view := Callable()
 
 
 func _init(sit: Situation) -> void:
@@ -419,6 +422,11 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 			a.distance += advance / steps
 			var t := a.path.tangent_at(a.distance)
 			var p := a.path.point_at(a.distance)
+			# Saved crossing/rail paths retain their role; cars cannot continue over edited lawn.
+			if motion_ground.is_valid() and not motion_ground.call(p, a.type):
+				a.distance = before_d
+				a.speed = 0.0
+				break
 			a.node.position = p
 			a.node.rotation.y = atan2(t.x, t.z)
 			var me := a.footprint()
@@ -450,7 +458,9 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 			w.rotate_x(a.speed * dt / 0.36)
 		a.cleared = a.crashed or a.distance >= a.clear_distance
 		# Retire only after the participant has driven away from the actual visible question.
-		if a.distance > a.exported_length and a.node.position.distance_to(player.p) > 240.0:
+		var departure_end := a.distance >= maxf(a.exported_length*0.75,a.exported_length-maxf(4.0,a.hl+2.0))
+		var invisible: bool = motion_out_of_view.call(a) if motion_out_of_view.is_valid() else a.distance > a.exported_length and a.node.position.distance_to(player.p) > 240.0
+		if departure_end and invisible:
 			a.done = true
 			a.node.visible = false
 			a.cleared = true
@@ -467,7 +477,12 @@ func _ensure_tail(a: Motion) -> void:
 	var end := a.path.point_at(a.path.length)
 	var toward := a.path.tangent_at(a.path.length)
 	var tail := PackedVector3Array()
-	if a.type == "cyclist" and cycle_continuation.is_valid():
+	if a.type == "pedestrian" and walking_continuation.is_valid():
+		tail = walking_continuation.call(end, toward)
+		if tail.is_empty():
+			a.tail_retry = 1.0
+			return
+	elif a.type == "cyclist" and cycle_continuation.is_valid():
 		tail = cycle_continuation.call(end, toward, a.hw, a.hl)
 		if tail.is_empty():
 			a.tail_retry = 1.0

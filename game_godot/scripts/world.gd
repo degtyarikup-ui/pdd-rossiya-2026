@@ -623,15 +623,48 @@ func _mount_car(id: String, hex: String) -> void:
 
 ## World services for Drive (game.js roadSupports / obstacles / faults).
 func road_supports(p: Vector3) -> bool:
+	var claimed := false
 	for j in _junctions():
 		var sit: Situation = j.sit
 		var local := sit.global_transform.affine_inverse() * p
+		# A clipped neighbour can still own the road where another scene owns lawn.
+		if sit.network and sit.ground_map() != null and sit.road_at(local): return true
 		if sit.covers(local):
-			return sit.road_at(local)
+			claimed = true
+			if sit.road_at(local): return true
+	for old in older_ghosts + ([ghost] if ghost else []):
+		for node in old.get_children():
+			if node is MeshInstance3D and node.get_meta("street_surface", false):
+				if (_street_ground(node).at(node.global_transform.affine_inverse()*p) & GroundMap.ROAD) != 0: return true
+	if claimed: return false
 	for b in blanks:
 		if p.z > b[0] and p.z < b[1]:
 			return false
 	return absf(p.x) <= _half_at(p.z) and absf(p.x) >= float(street.profile.get("median", 0.0))*0.5
+
+
+func _street_ground(node: MeshInstance3D) -> GroundMap:
+	if node.get_meta("ground_mesh", 0) != node.mesh.get_instance_id():
+		node.set_meta("ground_mesh", node.mesh.get_instance_id())
+		node.set_meta("ground_map", GroundMap.new(node.mesh, scenery))
+	return node.get_meta("ground_map")
+
+
+## Only visible sidewalks support ordinary pedestrians; grass is not a sidewalk.
+func pavement_supports(p: Vector3) -> bool:
+	var claimed := false
+	for j in _junctions():
+		var local: Vector3 = j.sit.global_transform.affine_inverse()*p
+		if j.sit.pavement_at(local): return true
+		claimed = claimed or j.sit.covers(local)
+	if claimed: return false
+	for node in road_nodes:
+		if node.mesh and (_street_ground(node).at(node.global_transform.affine_inverse()*p) & GroundMap.WALK) != 0: return true
+	for old in older_ghosts + ([ghost] if ghost else []):
+		for node in old.get_children():
+			if node is MeshInstance3D and node.get_meta("street_surface", false):
+				if (_street_ground(node).at(node.global_transform.affine_inverse()*p) & GroundMap.WALK) != 0: return true
+	return false
 
 
 ## Junction participants, as seen in world coordinates.
@@ -1052,7 +1085,10 @@ func _maybe_spawn() -> void:
 	_rebase_timing("activate_bind_surfaces",activation)
 	activation=Time.get_ticks_usec()
 	var junction := Junction.new(sit)
+	junction.motion_ground = func(p, kind): return _motion_ground(sit.global_transform*p,kind)
+	junction.motion_out_of_view = func(m): return _motion_out_of_view(sit,m)
 	junction.continuation = func(p, toward, hw, hl): return _departure_path(sit.global_transform * p, sit.basis * toward, hw, hl, sit.global_transform)
+	junction.walking_continuation = func(p, toward): return _walking_departure(sit.global_transform*p, sit.basis*toward, sit.global_transform)
 	junction.cycle_continuation = func(p, toward, hw, hl): return _cycle_departure_path(sit.global_transform * p, sit.basis * toward, hw, hl, sit.global_transform)
 	junction.fault.connect(func(type, key): on_fault(type, key))
 	junction.finished.connect(_on_finished)
@@ -1428,6 +1464,7 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 			if trimmed:
 				var copy := node.duplicate() as MeshInstance3D
 				copy.mesh=trimmed
+				copy.set_meta("street_surface", true)
 				ghost.add_child(copy)
 	perf_step=_rebase_timing("clip_road_meshes",perf_step)
 	street.snapshot(ghost)
@@ -1598,16 +1635,20 @@ func _ambient_boundary(z: float, direction: float) -> float:
 func _keep_ambient(parent: Node3D) -> void:
 	var trail := AmbientTrail.new()
 	parent.add_child(trail)
+	trail.ground_check = func(p, toward, actor): return _walk_clear(p) if actor.pedestrian else _departure_clear(p,toward,actor.hw,actor.hl)
 	for car in traffic:
 		if car.get("sheltered", false) or _in_blank(car.z) or (parent.global_transform * Vector3(car.x, 0, car.z)).distance_to(drive.pos) > 240.0:
 			continue
+		var heading: float = car.get("yaw",0.0 if car.dir>0.0 else PI)
+		var direction := Vector3(sin(heading),0,cos(heading))
 		if car.has("node"):
-			trail.keep(car.node.duplicate(), car.dir * car.spd)
+			trail.keep(car.node.duplicate(), car.dir * car.spd, false, float(car.get("hw",0.95)),float(car.len)*0.5,direction)
 		else:
-			trail.keep_copy(car.mm, car.slot, car.dir * car.spd)
+			trail.keep_copy(car.mm, car.slot, car.dir * car.spd, false, float(car.get("hw",0.95)),float(car.len)*0.5,direction)
 	for w in walkers:
 		if w.get("alive", false) and not w.get("knocked_down", false):
-			trail.keep_copy(w.mm, w.slot, w.v)
+			var heading: float = w.get("heading",0.0 if w.v>0.0 else PI)
+			trail.keep_copy(w.mm, w.slot, w.v, true,0.28,0.28,Vector3(sin(heading),0,cos(heading)))
 
 
 func _in_blank(z: float) -> bool:
@@ -1925,46 +1966,63 @@ func _update_traffic(delta: float) -> void:
 					traffic_glows.set_instance_custom_data(car.glow_slot + i, Color(BLINK_COLOUR.r, BLINK_COLOUR.g, BLINK_COLOUR.b, paint.a))
 
 
+func _walk_clear(p: Vector3) -> bool:
+	for offset in [Vector3.ZERO, Vector3(0.28,0,0), Vector3(-0.28,0,0), Vector3(0,0,0.28), Vector3(0,0,-0.28)]:
+		if not pavement_supports(p+offset): return false
+	return true
+
+
+func _walk_direction(at: Vector3, toward: Vector3, distance: float) -> Vector3:
+	for angle in [0.0,0.12,-0.12,0.24,-0.24,0.4,-0.4,0.7,-0.7,1.0,-1.0]:
+		var candidate := toward.rotated(Vector3.UP, angle)
+		if _walk_clear(at+candidate*distance) and _walk_clear(at+candidate*distance*0.5): return candidate
+	return Vector3.ZERO
+
+
+func _walking_departure(start: Vector3, toward: Vector3, local_frame: Transform3D) -> PackedVector3Array:
+	var points := PackedVector3Array()
+	var at := start
+	var direction := toward.normalized()
+	for i in 240:
+		direction = _walk_direction(at,direction,1.0)
+		if direction == Vector3.ZERO: break
+		at += direction
+		points.append(local_frame.affine_inverse()*at)
+	return points
+
+
 func _update_walkers(delta: float) -> void:
 	var span := L * chunk_count
 	var base := drive.pos.z - L * float(cfg.chunks_behind)
 	for w in walkers:
-		w.z = base + fposmod(w.z - base, span)
-		if _in_blank(w.z):
-			w.sheltered = true
-		elif w.get("sheltered", false) and absf(w.z - drive.pos.z) > 230.0:
-			w.erase("sheltered")
-		if not w.get("knocked_down", false) and not w.get("sheltered", false):
-			var boundary := _ambient_boundary(w.z, signf(w.v))
-			if boundary < 2.0 + absf(w.v) * delta:
-				w.v = -w.v
-			w.z += w.v * delta
-	# People walking the same way in one lane keep a step apart: the one behind waits.
-	for w in walkers:
-		if w.get("knocked_down", false):
-			continue
-		for o in walkers:
-			if o.get("knocked_down", false) or o == w or o.dir != w.dir or signf(o.v) != signf(w.v):
-				continue
-			var ahead: float = fposmod((o.z - w.z) * signf(w.v), span)
-			if ahead > 0.0 and ahead < 1.0:
-				w.z -= signf(w.v) * (1.0 - ahead)
-		w.z = base + fposmod(w.z - base, span)
 		var z: float = w.z
-		var face := 0.0 if w.v > 0 else PI
-		# Two walking lanes on the pavement, one per walking direction: people going opposite
-		# ways never meet head-on in one lane (they walked through each other).
-		var target_x: float = w.dir * (_half_at(z) + 1.0 + (0.0 if w.v > 0 else 1.1))
-		var x := move_toward(float(w.get("x", target_x)), target_x, delta * 0.8)
-		var at := Vector3(x, Street.KERB, z)
-		# Never on a carriageway: inside a junction's streets or in a blank zone a
-		# walker is simply not there (the junction has its own pedestrians).
-		w.x = x
-		w.zw = z
-		w.alive = not w.get("sheltered", false) and not _in_blank(z) and not road_supports(Vector3(x, 0, z))
-		if not w.alive:
-			at = Vector3(0, -100, 0)
-		(w.mm as MultiMesh).set_instance_transform(w.slot, Transform3D(Basis(Vector3.UP, face), at))
+		if z < base or z > base+span:
+			# Recycling happens behind fog, before a model becomes visible again.
+			if absf(z-drive.pos.z)>230.0:
+				w.z = base+fposmod(z-base,span)
+				w.erase("x"); w.erase("heading")
+		var initial_x: float = w.dir*(_half_at(w.z)+1.0+(0.0 if w.v>0 else 1.1))
+		if not w.has("x"): w.x = initial_x
+		var at := Vector3(w.x,0,w.z)
+		var direction := Vector3(sin(float(w.get("heading",0.0 if w.v>0 else PI))),0,cos(float(w.get("heading",0.0 if w.v>0 else PI))))
+		if not w.get("knocked_down",false) and _walk_clear(at):
+			# Look ahead on the drawn sidewalk, including bends and disabled sidewalk ends.
+			var next_direction := _walk_direction(at,direction,1.0)
+			if next_direction == Vector3.ZERO:
+				next_direction = _walk_direction(at,-direction,1.0)
+			if next_direction != Vector3.ZERO:
+				var next := at+next_direction*absf(w.v)*delta
+				var free := _walk_clear(next)
+				for other in walkers:
+					if other == w or not other.get("alive",false): continue
+					if next.distance_to(Vector3(other.x,0,other.zw))<0.7: free=false; break
+				if free:
+					at = next
+					w.heading = atan2(next_direction.x,next_direction.z)
+		w.x = at.x; w.z = at.z; w.zw = at.z
+		w.alive = not w.get("knocked_down",false) and _walk_clear(at)
+		var shown := at+Vector3.UP*Street.KERB if w.alive else Vector3(0,-100,0)
+		(w.mm as MultiMesh).set_instance_transform(w.slot,Transform3D(Basis(Vector3.UP,float(w.get("heading",0.0 if w.v>0 else PI))),shown))
 
 
 # --- frame -----------------------------------------------------------------
@@ -2579,24 +2637,24 @@ func _ambient_hazards(car: Dictionary) -> void:
 		Fleet.hazards(car.node, float(car.get("len", CAR_LENGTH)) * 0.5, 0.95)
 
 
-## Exported exits have a finite crop. Continue straight beyond that crop along the same lane,
-## where the visible road is already fading into the fog; no saved geometry is modified.
+## Departures use rendered geometry, including the adjoining scene and frozen old street.
 func _departure_support(p: Vector3) -> bool:
-	if road_supports(p): return true
-	for j in _junctions():
-		if j.sit.network == null: continue
-		var local: Vector3 = j.sit.global_transform.affine_inverse() * p
-		for port in j.sit.network.connections.get("ports", []):
-			var d: float = (local-port.boundary).dot(port.out)
-			# A diagonal exit is cut by the square scene crop before its perpendicular end.
-			# Join that cropped corner to its departure strip, only outside the authored scene.
-			var half_width := float(port.width)*0.5
-			var crop := float(j.sit.data.get("crop",90.0))
-			var outside_crop := absf(local.x)>crop or absf(local.z)>crop
-			var minimum := -half_width if outside_crop else 0.0
-			if d >= minimum and d <= 270.0 and absf((local-port.boundary).dot(SceneStitch.right(port.out))) < half_width:
-				return true
-	return false
+	# Never invent a lane over another scene's lawn or beyond a drawn exit.
+	return road_supports(p)
+
+
+func _motion_ground(p: Vector3, kind: String) -> bool:
+	# Pedestrians in a ticket have an authored crossing, trams have a rail route,
+	# and carts can use a shoulder. Ordinary motor vehicles always need drawn road.
+	if kind in ["pedestrian", "tram", "cart"]: return true
+	if kind == "cyclist": return _cycle_departure_support(p)
+	return road_supports(p)
+
+
+func _motion_out_of_view(sit: Situation, m: Junction.Motion) -> bool:
+	var p := sit.global_transform*m.pos
+	var toward: Vector3 = sit.basis*Vector3(sin(m.yaw),0,cos(m.yaw))
+	return not _ambient_visible({"x":p.x,"z":p.z,"len":m.hl*2.0,"yaw":atan2(toward.x,toward.z)})
 
 
 
@@ -2700,40 +2758,8 @@ func _cycle_departure_alignment(at: Vector3, toward: Vector3, hw: float) -> floa
 
 
 func _cycle_departure_support(p: Vector3) -> bool:
-	if _departure_support(p): return true
-	for j in _junctions():
-		if j.sit.network == null: continue
-		var local: Vector3 = j.sit.global_transform.affine_inverse()*p
-		# Port widths are measured before a saved road's end taper. Actual paving can lie inside
-		# that nominal width after a narrowing, so use the drawn sidewalk too, only for bicycles.
-		var net: RoadNetwork = j.sit.network
-		if not net.has_meta("cycle_pavement_triangles"):
-			var triangles: Array = []
-			for surface in net.build.get("surfaces", []):
-				if surface.get("layer", "") != "pavement":
-					continue
-				var verts: Array = surface.verts
-				var indices: Array = surface.idx
-				for k in range(0, indices.size(), 3):
-					var polygon := PackedVector2Array()
-					for corner in range(k, k + 3):
-						var vertex: int = int(indices[corner]) * 2
-						polygon.append(Vector2(verts[vertex], verts[vertex + 1]))
-					var bounds := Rect2(polygon[0], Vector2.ZERO).expand(polygon[1]).expand(polygon[2])
-					triangles.append({"polygon": polygon, "bounds": bounds})
-			net.set_meta("cycle_pavement_triangles", triangles)
-		var warped := SceneStitch.warp(local, net.stitch_bindings, true)
-		var point := Vector2(warped.x, warped.z)
-		for triangle in net.get_meta("cycle_pavement_triangles"):
-			var bounds: Rect2 = triangle.bounds
-			if bounds.grow(0.0001).has_point(point) and Geometry2D.is_point_in_polygon(point, triangle.polygon):
-				return true
-		for port in j.sit.network.connections.get("ports",[]):
-			var d: float = (local-port.boundary).dot(port.out)
-			var x: float = absf((local-port.boundary).dot(SceneStitch.right(port.out)))
-			var outer: float = float(port.width)*0.5+(Street.SIDEWALK if port.get("walk",true) else 0.75)
-			if d>=-float(j.sit.data.crop)*2.0 and d<=270.0 and x>=float(port.width)*0.5 and x<outer: return true
-	return false
+	return _departure_support(p) or pavement_supports(p)
+
 
 
 ## Resolve a changed filler-road lane against the actual authored carriageway, without editing it.

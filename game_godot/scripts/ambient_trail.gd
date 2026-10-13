@@ -3,12 +3,14 @@ class_name AmbientTrail
 extends Node3D
 
 var actors: Array[Dictionary] = []
+var ground_check := Callable()
 
-func keep(node: Node3D, speed: float) -> void:
+func keep(node: Node3D, speed: float, pedestrian := false, hw := 0.95, hl := 2.2, direction := Vector3.INF) -> void:
 	add_child(node)
-	actors.append({"node": node, "speed": speed})
+	var velocity := Vector3(0,0,speed) if direction == Vector3.INF else direction.normalized()*absf(speed)
+	actors.append({"node": node, "velocity": velocity, "pedestrian": pedestrian, "hw": hw, "hl": hl})
 
-func keep_copy(source: MultiMesh, slot: int, speed: float) -> void:
+func keep_copy(source: MultiMesh, slot: int, speed: float, pedestrian := false, hw := 0.95, hl := 2.2, direction := Vector3.INF) -> void:
 	var node := MultiMeshInstance3D.new()
 	var copy := MultiMesh.new()
 	copy.transform_format = MultiMesh.TRANSFORM_3D
@@ -22,8 +24,14 @@ func keep_copy(source: MultiMesh, slot: int, speed: float) -> void:
 	node.multimesh = copy
 	node.material_override = Models.baked_material()
 	node.transform = source.get_instance_transform(slot)
-	keep(node, speed)
+	keep(node, speed, pedestrian, hw, hl, direction)
 
 func _process(delta: float) -> void:
 	for actor in actors:
-		actor.node.position.z += actor.speed * delta
+		var velocity: Vector3 = actor.velocity
+		var steps := maxi(1,ceili(velocity.length()*delta/0.15))
+		var toward := global_basis*velocity.normalized()
+		for i in steps:
+			var next: Vector3 = actor.node.position+velocity*delta/steps
+			if ground_check.is_valid() and not ground_check.call(global_transform*next,toward,actor): break
+			actor.node.position = next

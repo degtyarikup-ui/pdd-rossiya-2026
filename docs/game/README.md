@@ -59,6 +59,7 @@ godot --headless --path game_godot --script res://tests/human_collision_check.gd
 godot --headless --path game_godot --script res://tests/ghost_check.gd      # призрак улицы
 godot --headless --path game_godot --script res://tests/traffic_check.gd    # трафик
 godot --headless --path game_godot --script res://tests/ambient_focus_check.gd # чистый кадр вопроса, плавный отвод трафика, объезд парковки и встречный поток
+godot --headless --path game_godot --script res://tests/terrain_motion_check.gd # проезд стыков, изменённые тротуары, движение копий и участников по видимой поверхности
 godot --headless --path game_godot --script res://tests/participant_motion_check.gd # коллизии и отъезд после стрелки
 godot --headless --path game_godot --script res://tests/reviewed_departure_check.gd # продолжение всех отмеченных сцен
 godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза

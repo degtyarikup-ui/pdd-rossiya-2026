@@ -25,6 +25,9 @@ func run() -> void:
 	var single: Array[Dictionary]=[car]
 	world.traffic=single
 	world._maybe_spawn()
+	# This fixture checks road following after the question; live questions reserve an empty view.
+	world.retired.append(world.current)
+	world.current={}
 	world._update_traffic(0.0)
 	var clear: bool=world._departure_clear(Vector3(car.x,0,car.z),Vector3.BACK,0.95,2.2)
 	world.drive.pos=Vector3(-2.75,0,190)
