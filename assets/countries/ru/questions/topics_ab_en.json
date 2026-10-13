@@ -13084,7 +13084,7 @@
           ],
           "comment": "Vehicles are allowed to be parked in one row parallel to the edge of the roadway. This rule also applies to local widening of the roadway (as in this situation). The exception is such places that have a combination of sign 6.4 with one of the plates 8.6.1-8.6.9 The driver of car “А” violates the parking rules. (Clause 12.2 of the Traffic Regulations)",
           "pddPoints": [],
-          "image": "e364eb9b9715444e579d66b53b996df9",
+          "image": "456767f8b2e0d39f83d8f9f1b2a378da",
           "topic": [
             "Stopping and parking"
           ],
@@ -13581,7 +13581,7 @@
               "correct": false
             }
           ],
-          "comment": "Vehicles are allowed to be parked in one row parallel to the edge of the roadway. This rule also applies to local widening of the roadway (as in this situation). The exception is such places that have a combination of sign 6.4 with one of the signs 8.6.1-8.6.9 The driver of car “А” violates the parking rules. (Clause 12.2 of the Traffic Regulations)",
+          "comment": "The combination of sign 6.4 “Parking (parking space)” with plate 8.6.4 “method of parking a vehicle” allows cars to be parked in this place only as shown on the sign - at a right angle, with the front of the car towards the roadway, as the driver of car “Б” did. The driver of car “А” violates the parking rules, because he is standing with the front of the car towards the sidewalk. (“Road signs”, clause 12.2 of the traffic rules)",
           "pddPoints": [],
           "image": "e364eb9b9715444e579d66b53b996df9",
           "topic": [
