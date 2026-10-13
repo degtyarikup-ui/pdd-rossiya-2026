@@ -61,7 +61,7 @@ def main():
         raise RuntimeError('Нет CMake 3.22.1. Сначала ./scripts/setup_android.sh; см. docs/build/android.md.')
     command = ['flutter', 'build', 'apk', '--flavor', 'ru', '--release', '-Pdev',
                '--dart-define=COUNTRY=ru', '--dart-define=GAME_DEBUG=true',
-               '--build-number=' + datetime.datetime.now().strftime('%y%m%d%H')]
+               '--build-number=' + str(int(datetime.datetime.now(datetime.timezone.utc).timestamp()))]
     if args.arm64:
         command += ['--target-platform', 'android-arm64']
     commit = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, text=True).strip()

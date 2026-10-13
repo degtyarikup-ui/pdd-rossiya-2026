@@ -273,6 +273,16 @@ git config core.hooksPath tools/git-hooks   # уже включено на эт�
 
 Обойти в исключительном случае — `git commit --no-verify`.
 
+## Метка тестовой сборки
+
+- Основную версию в `pubspec.yaml` не повышать ради dev-установки.
+- Каждая dev-сборка должна иметь отдельный build number и короткий SHA Git;
+  перед передачей другу записывать полную строку из «Настроек».
+- Android: `scripts/build_dev.sh` задаёт Unix UTC seconds как build number
+  и `GIT_COMMIT`; `install_dev.sh --build` использует этот же механизм.
+- Законченные изменения перед сборкой коммитить и пушить, чтобы SHA точно
+  определял исходники. Подробности — `docs/build/android.md`.
+
 ## Окружение сборки
 
 - `flutter` в `$HOME/flutter/bin`; Java: `/opt/homebrew/opt/openjdk@17`.
