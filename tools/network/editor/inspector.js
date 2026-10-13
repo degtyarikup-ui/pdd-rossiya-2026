@@ -380,10 +380,14 @@
     const lamps = Catalog.LIGHTS.map((x) => `<button class="lamp ${l.state === x.id ? "on" : ""} ${x.id === "flashing_yellow" ? "blink" : ""}" data-chip="state" data-value="${x.id}" style="--c:${x.colour}" data-tip="${x.title}"></button>`).join("");
     p.innerHTML = `${head(Thumbs.img("light", "light", "big"), "Светофор", s.lights.length > 1 ? `один из ${s.lights.length}` : "")}
       ${card("Сигнал", `<div class="tlight">${lamps}</div><p class="muted">Сигнал один на всю сцену: меняется у всех светофоров.</p>`)}
+      ${card("Знаки на стойке", `${[0, 1].map(slot => { const code = (l.mountedSigns || [])[slot]; return `<details><summary>${slot + 1}. ${code ? `${esc(Catalog.signName(code))} · ${code}` : "Добавить знак"}</summary><div class="sign-grid"><button class="${!code ? "on" : ""}" data-chip="mountedSign" data-slot="${slot}" data-value="">Нет</button>${[...new Set([...(state.catalog.signs || []), "8.13"])].map(c => `<button class="${code === c ? "on" : ""}" data-chip="mountedSign" data-slot="${slot}" data-value="${c}" data-tip="${esc(Catalog.signName(c))}">${c === "8.13" ? "8.13 ↱" : `<img src="/asset/sign/${c}.svg" alt="${esc(Catalog.signName(c))}">`}</button>`).join("")}</div></details>`; }).join("")}`)}
+            ${(l.mountedSigns || []).includes("8.13") ? card("Главная дорога на табличке", `<div class="dir-grid">${[["nw","↖"],["north","↑"],["ne","↗"],["west","←"],["east","→"],["sw","↙"],["south","↓"],["se","↘"]].map(([d,t]) => `<button class="${(l.mountedMainRoad || []).includes(d) ? "on" : ""}" data-chip="mountedMainRoad" data-value="${d}">${t}</button>`).join("")}</div>`) : ""}
       ${card("Стрелка", chips("arrow", [{ value: "", title: "Нет" }, { value: "left", icon: "arrow-left" }, { value: "straight", icon: "arrow-up" }, { value: "right", icon: "arrow-right" }], l.arrow || "", { cls: "arrows" }))}
       ${card("", `<div class="turn-row">${dial(l.yaw)}<div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rotr", "", "rotr", "ghost icon")}</div></div>${deleteRow()}`)}`;
     bind({
       ...common,
+      "chip:mountedMainRoad": (v) => App.edit(() => { const roads = new Set(l.mountedMainRoad || []); roads.has(v) ? roads.delete(v) : roads.add(v); l.mountedMainRoad = [...roads]; }),
+      "chip:mountedSign": (v, e) => App.edit(() => { const signs = [...(l.mountedSigns || [])]; signs[Number(e.target.closest("[data-chip]").dataset.slot)] = v; if (signs.some(Boolean)) l.mountedSigns = signs; else delete l.mountedSigns; }),
       "chip:state": (v) => App.edit((sc) => sc.lights.forEach((x) => { x.state = v; })),
       "chip:arrow": (v) => App.edit(() => { l.arrow = v || null; }),
       rotl: () => App.rotate(-15), rotr: () => App.rotate(15),
