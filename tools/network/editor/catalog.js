@@ -89,6 +89,7 @@ const Catalog = (() => {
     "5.19.1": "Пешеходный переход", "5.19.2": "Пешеходный переход", "5.20": "Искусственная неровность", "5.21": "Жилая зона",
     "5.22": "Конец жилой зоны", "5.23.1": "Начало населённого пункта", "5.24.1": "Конец населённого пункта", "6.16": "Стоп-линия",
   };
+  SIGN_NAMES["8.13"] = "Направление главной дороги";
   const signName = (code) => SIGN_NAMES[code] || `Знак ${code}`;
 
   return { signName, PROP_GROUPS, propName, groupOf, ACTORS, ACTOR_ORDER, SPEEDS, speedOf, TINTS, EXITS, LETTERS, LETTER_COLOUR, LIGHTS, MARKS };
