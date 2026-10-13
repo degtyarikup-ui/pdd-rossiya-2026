@@ -1,0 +1,20 @@
+// Used only by build_dev.py --download-fallback in its private GRADLE_USER_HOME.
+def bridgeUrl = System.getenv('PDD_GOOGLE_MAVEN_URL')
+if (bridgeUrl != null) {
+    def bridge = { repo ->
+        if (repo instanceof org.gradle.api.artifacts.repositories.MavenArtifactRepository &&
+            (repo.url.toString().contains('dl.google.com') || repo.url.toString().contains('maven.google.com'))) {
+            repo.url = uri(bridgeUrl)
+            // HTTP is confined to the localhost bridge; it verifies official upstream TLS.
+            repo.allowInsecureProtocol = true
+        }
+    }
+    gradle.beforeSettings { settings ->
+        settings.pluginManagement.repositories.all(bridge)
+        settings.dependencyResolutionManagement.repositories.all(bridge)
+    }
+    gradle.beforeProject { project ->
+        project.repositories.all(bridge)
+        project.buildscript.repositories.all(bridge)
+    }
+}

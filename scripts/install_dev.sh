@@ -5,6 +5,7 @@
 #   ./scripts/install_dev.sh              # find the phone, install, launch
 #   ./scripts/install_dev.sh IP:PORT      # first time / after the port changed
 #   ./scripts/install_dev.sh --build      # rebuild the ru dev APK first
+#   ./scripts/install_dev.sh --build --download-fallback  # Google Maven timeouts
 #
 # How it finds the phone, in order: an already connected device; mDNS
 # (Wireless debugging on, same Wi-Fi as the Mac); the fixed port 5555 on the
@@ -16,44 +17,26 @@
 # Only requirement on the phone: Wireless debugging ON, same Wi-Fi.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-export PATH="$HOME/flutter/bin:$HOME/Library/Android/sdk/platform-tools:$HOME/.local/android-env/sdk/platform-tools:$PATH"
-if [[ -z "${JAVA_HOME:-}" || ! -d "$JAVA_HOME" ]]; then
-  if [[ -d "/opt/homebrew/opt/openjdk@17" ]]; then
-    export JAVA_HOME="/opt/homebrew/opt/openjdk@17"
-  elif [[ -d "$HOME/.local/android-env/jdk" ]]; then
-    export JAVA_HOME="$HOME/.local/android-env/jdk"
-  fi
-fi
-if [[ -z "${ANDROID_HOME:-}" && -d "$HOME/.local/android-env/sdk" ]]; then
-  export ANDROID_HOME="$HOME/.local/android-env/sdk"
-fi
+source scripts/android_env.sh
 APK=build/app/outputs/flutter-apk/app-ru-release.apk
 PKG=ru.pdd.pdd_app.dev
 STATE=.dev-device
 
 build=0; addr=""
+build_args=()
 for arg in "$@"; do
   case "$arg" in
     --build) build=1 ;;
+    --download-fallback|--arm64) build_args+=("$arg") ;;
     *:*) addr="$arg" ;;
   esac
 done
 
 if [[ $build -eq 1 || ! -f $APK ]]; then
-  # App key (secrets/, not in git) so rating, sync and AI work in the test build too.
-  key_define=()
-  [[ -f secrets/install_notify_secret.txt ]] && key_define=(--dart-define=INSTALL_NOTIFY_SECRET="$(cat secrets/install_notify_secret.txt)")
-  # Dev builds get a date-hour build number (yyMMddHH) so a newer dev APK
-  # always installs over an older one, whoever built it; the dev app is a
-  # separate package (.dev), store versions are unaffected.
-  # DEVICE_REGION=RU ./scripts/install_dev.sh --build — показать российский
-  # пейволл (СБП + Google Play на выбор), когда телефон не в России.
-  region_define=()
-  commit="$(git rev-parse --short HEAD 2>/dev/null || true)"
-  commit_define=()
-  [[ -n "$commit" ]] && commit_define=(--dart-define=GIT_COMMIT="$commit")
-  flutter build apk --flavor ru --release --dart-define=COUNTRY=ru --dart-define=GAME_DEBUG=true "${key_define[@]}" ${region_define[@]+"${region_define[@]}"} "${commit_define[@]}" -Pdev --build-number="$(date +%y%m%d%H)"
+  ./scripts/build_dev.sh ${build_args[@]+"${build_args[@]}"}
 fi
+sdk_path=$(python3 tools/android_build/environment.py --sdk)
+export PATH="$sdk_path/platform-tools:$PATH"
 
 connected() { adb devices | awk 'NR>1 && $2=="device" {print $1; exit}'; }
 try_connect() { adb connect "$1" >/dev/null 2>&1 || true; sleep 1; connected; }
@@ -84,12 +67,13 @@ PY
 MACFILE=.dev-mac
 find_ip_by_mac() {
   local mac=$1 subnet
+  [[ $(uname -s) == Darwin ]] || return 0
   subnet=$(ipconfig getifaddr en0 2>/dev/null | cut -d. -f1-3)
   [[ -z $subnet ]] && return 0
   for i in $(seq 1 254); do ping -c 1 -W 300 "$subnet.$i" >/dev/null 2>&1 & done; wait
   arp -an | awk -v m="$mac" '{gsub(/[()]/,"",$2); if (tolower($4)==tolower(m)) {print $2; exit}}'
 }
-remember_mac() { local ip=$1; arp -n "$ip" 2>/dev/null | awk '{print $4; exit}' | grep -E '^([0-9a-f]{1,2}:){5}[0-9a-f]{1,2}$' > "$MACFILE" || true; }
+remember_mac() { [[ $(uname -s) == Darwin ]] || return 0; local ip=$1; arp -n "$ip" 2>/dev/null | awk '{print $4; exit}' | grep -E '^([0-9a-f]{1,2}:){5}[0-9a-f]{1,2}$' > "$MACFILE" || true; }
 
 # An adb server started inside a sandbox has no network: always restart it.
 adb kill-server >/dev/null 2>&1 || true
@@ -121,7 +105,8 @@ if [[ -z $dev && -f $STATE ]]; then
   fi
 fi
 if [[ -z $dev ]]; then
-  echo "Телефон не найден. Включите «Отладка по Wi‑Fi» (та же сеть, что и Mac)" >&2
+  echo "Телефон не найден. Включите «Отладка по Wi‑Fi» (та же сеть, что и компьютер)" >&2
+  echo "Первое подключение: adb pair IP:PAIR_PORT; подробности — docs/build/android.md" >&2
   echo "или запустите: ./scripts/install_dev.sh IP:PORT (адрес с экрана телефона)" >&2
   exit 1
 fi

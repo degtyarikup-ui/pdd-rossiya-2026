@@ -6,6 +6,7 @@
 | --- | --- |
 | Карта кода | [architecture.md](architecture.md) |
 | Проверки перед коммитом | [testing.md](testing.md) |
+| **Сборка Android на другом компьютере, загрузка зависимостей, Wi-Fi** | [build/android.md](build/android.md) |
 | **Вход, оплата, Премиум** | [premium/README.md](premium/README.md), [web-payments-launch](premium/web-payments-launch.md), [web-auth](premium/web-auth.md), [subscription-fix](premium/subscription-fix-2026-10-02.md) |
 | 3D-игра и мини-игры | [game/README.md](game/README.md) |
 | Релизы и сторы | [release/](release/) — аудиты, листинг Play, политика конфиденциальности, промпты обновления |

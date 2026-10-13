@@ -15,11 +15,8 @@ case "$COUNTRY" in
   *) echo "unknown country: $COUNTRY (only ru)"; exit 1 ;;
 esac
 
-export PATH="/opt/homebrew/bin:$HOME/flutter/bin:$PATH"
-export JAVA_HOME="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home}"
-export PATH="$JAVA_HOME/bin:$PATH"
-
 cd "$(dirname "$0")/.."
+source scripts/android_env.sh
 
 # Опциональное уведомление о новой установке (Telegram). Параметры берутся из
 # переменных окружения и в git не попадают. Если не заданы — фича «спит» (no-op):
@@ -39,6 +36,7 @@ if [[ -n "${INSTALL_NOTIFY_SECRET:-}" ]]; then
   NOTIFY_DEFINES+=(--dart-define=INSTALL_NOTIFY_SECRET="$INSTALL_NOTIFY_SECRET")
 else
   echo "Ошибка: отсутствует ключ приложения; release без ИИ и синхронизации не собираем." >&2
+  echo "Для локального Android-теста без секретов: ./scripts/build_dev.sh (docs/build/android.md)." >&2
   exit 1
 fi
 

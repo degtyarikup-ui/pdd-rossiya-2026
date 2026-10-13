@@ -24,9 +24,13 @@
 ./scripts/setup_game.sh      # проверит Godot, поставит Python-пакеты сети, импортирует проект
 ```
 
-Для сборок под Android нужны ключ подписи `android/key.properties` и
-`android/upload-keystore.jks`, а для связи с сервером — `secrets/install_notify_secret.txt`
-(их нет в git: возьмите у владельца).
+Для тестовой сборки Android (`-Pdev`) магазинный ключ не нужен: без
+`android/key.properties` APK подписывается локальным debug-ключом.
+Ключи `android/key.properties` и `android/upload-keystore.jks` нужны для
+магазинных сборок. Для связи с сервером нужен `secrets/install_notify_secret.txt`
+(эти локальные файлы не в git: возьмите у владельца отдельно).
+Подготовка SDK, исправление загрузки зависимостей и сопряжение телефона —
+[сборка Android на другом компьютере](../build/android.md).
 
 ## Запуск на компьютере
 
@@ -60,6 +64,7 @@ godot --headless --path game_godot --script res://tests/traffic_check.gd    # т
 
 ```bash
 ./scripts/godot_android_assets.sh     # движок + файлы игры → android/godot/ (не в git)
+./scripts/build_dev.sh                # тестовый APK без установки на телефон
 ./scripts/install_dev.sh --build      # тестовый APK ru.pdd.pdd_app.dev на телефон по Wi-Fi
 ./scripts/godot_ios_assets.sh         # то же для iOS (ios/Godot/)
 ./scripts/godot_dev.sh web            # игра для сайта: build/web/godot/
@@ -68,6 +73,11 @@ godot --headless --path game_godot --script res://tests/traffic_check.gd    # т
 Без `android/godot/` приложение собирается, но в разделе «Игры» игра недоступна
 (`GodotGame.available()` = false, показывается сообщение). Подробности — `game_godot/README.md` и
 комментарии в начале скриптов.
+
+При тайм-аутах загрузки Google Maven: `./scripts/build_dev.sh --download-fallback`
+или `./scripts/install_dev.sh --build --download-fallback`. Промежуточный Godot
+APK в `godot_android_assets.sh` экспортируется без подписи: из него берутся
+только ресурсы, upload-keystore для этого не требуется.
 
 ## Данные: откуда что берётся
 
