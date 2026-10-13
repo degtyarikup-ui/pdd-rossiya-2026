@@ -89,7 +89,7 @@
     const correct = q.correct;
     const yields = s.actors.map((a) => `<button class="pick ${(q.yieldTo || []).includes(a.id) ? "on" : ""}" data-act="yield" data-id="${a.id}">${Thumbs.img("actor", a.type, "mini")}<span>${esc(a.name || a.id)}</span></button>`).join("");
     const edges = state.edges || {};
-    const side = (k) => { const e = edges[k]; return e ? (e.street ? "ok" : "bad") : "none"; };
+    const side = (k) => { const e = edges[k]; return e ? ((e.connectable ?? e.street) ? "ok" : "bad") : "none"; };
     p.innerHTML = `
       ${head(`<span class="ibadge">${ic("map")}</span>`, App.sceneTitle(state.id), s.layout ? "Дороги в конструкторе" : "Дороги из картинки билета")}
       ${card("", `${toggle("playable", "Сцена в игре", state.playable, "gamepad")}
@@ -104,7 +104,7 @@
         : `<p class="muted">Дороги сняты с картинки билета. В конструкторе их можно двигать и менять как в SimCity.</p>${button("convert", "Перевести в конструктор", "magic", "primary wide")}`, { icon: "road" })}
       ${card("Камера вопроса", `<p class="muted">${s.questionView ? "Кадр задан вручную." : "Кадр подбирается сам."} Видно, что попадёт на экран телефона над карточкой вопроса.</p>${button("frame", "Настроить кадр", "video", "primary wide")}`, { icon: "video" })}
       ${card("Края сцены", `<div class="edges"><span class="edge-box"><i class="e-n ${side("n")}"></i><i class="e-s ${side("s")}"></i><i class="e-e ${side("e")}"></i><i class="e-w ${side("w")}"></i>${ic("car")}</span>
-        <p class="muted">${Object.values(edges).some((e) => e && !e.street) ? "Дорога у края не совпадает с улицей игры (8,4 м по центру стороны). Подвиньте конец дороги к середине стороны." : "На краях дорога встречает улицу игры без ступенек."}</p></div>`, { icon: "edges" })}
+        <p class="muted">${Object.values(edges).some((e) => e && !(e.connectable ?? e.street)) ? "Проверьте ширину дороги у края сцены." : "Стыковка учитывает фактическое направление дороги, число полос, ширину и разделитель. Центрировать косые выезды не требуется."}</p></div>`, { icon: "edges" })}
       <section class="card" id="checks"><h3>${ic(errors.length ? "error" : "check-circle")}Проверка${errors.length + warns.length ? `<em class="count ${errors.length ? "bad" : "warn"}">${errors.length + warns.length}</em>` : ""}</h3>
         ${state.findings.length ? state.findings.map((f, i) => `<button class="finding ${f.level}" data-act="finding" data-i="${i}">${ic(f.level === "error" ? "error" : "alert")}<span>${esc(f.message)}</span></button>`).join("")
           : `<p class="ok-line">${ic("check-circle")}Ошибок нет</p>`}</section>

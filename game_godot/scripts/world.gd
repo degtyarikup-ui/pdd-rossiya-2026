@@ -91,6 +91,11 @@ var retired: Array = []           # junctions behind the player, still on screen
 var phase := "driving"            # driving | question | resolving
 var auto_answer := false          # debug: answer correctly by itself
 var spawn_after := 0.0            # world z after which the next junction may come
+var texture_frame := Transform3D()
+var pending_connection := {}
+var connection_cache := {}
+var insert_road := false
+
 var next_id := ""                 # the junction picked next (its files may still be coming)
 var preparing := false            # its files are being fetched (web)
 var road_queue: Array = []        # the road questions still to come (road_scenes.json, all kinds)
@@ -413,35 +418,46 @@ func _build_ground() -> void:
 	var r := 400.0
 	st.set_color(Color(c.r, c.g, c.b, 0.0))
 	for p in [Vector3(-r, 0, -r), Vector3(r, 0, -r), Vector3(r, 0, r), Vector3(-r, 0, -r), Vector3(r, 0, r), Vector3(-r, 0, r)]:
-		st.set_uv(Vector2(p.x / period, p.z / period))
+		var w: Vector3 = texture_frame*(p+(ground.position if ground else Vector3.ZERO))
+		st.set_uv(Vector2(w.x / period,w.z / period))
 		st.set_uv2(Vector2(layer, 0))
 		st.add_vertex(p)
 	st.generate_normals()
-	ground = MeshInstance3D.new()
+	if ground == null:
+		ground = MeshInstance3D.new()
+		add_child(ground)
 	ground.mesh = st.commit()
 	ground.material_override = scenery.material
 	ground.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	ground.position.y = -0.15   # well below the carriageway: nothing else lies near it
-	add_child(ground)
+	ground.position.y = -0.15   # well below the carriageway
 
 
 # --- the street ring -------------------------------------------------------
 
 func _blank(index: int) -> bool:
-	var z0 := index * L
-	for b in blanks:
-		if z0 < b[1] - 0.01 and z0 + L > b[0] + 0.01:
-			return true
-	return false
+	return _street_ranges(index).is_empty()
+
+
+## Connected scene profiles replace the former forced two-lane approach.
+func _half_at(_z: float) -> float:
+	return street_half
 
 
 func _place_chunk(slot: int, index: int) -> void:
 	chunk_index[slot] = index
-	road_nodes[slot].mesh = street.build_chunk(slot, index, _blank(index), street_half)
+	var ranges := _street_ranges(index)
+	road_nodes[slot].mesh = street.build_chunk(slot, index, ranges.is_empty(), _half_at, ranges)
 	road_nodes[slot].position = Vector3(0, 0, index * L)
 
 
 func _rebuild_ring() -> void:
+	blanks.clear()
+	for j in _junctions():
+		var span: Array = j.sit.street_interval()
+		if not span.is_empty(): blanks.append(span)
+	street.texture_frame = texture_frame
+	if not pending_connection.is_empty(): street.profile=pending_connection.port
+	elif current and current.sit.network: street.profile=current.sit.network.connections.entry
 	var first := int(floor(drive.pos.z / L)) - int(cfg.chunks_behind)
 	for slot in chunk_count:
 		_place_chunk(slot, first + slot)
@@ -637,8 +653,6 @@ func _guide_target(p: Vector3) -> Vector3:
 	if not sit.network or not sit.network.has_route("approach"):
 		return Vector3.INF
 	var local: Vector3 = sit.global_transform.affine_inverse() * p
-	if local.z > sit.network.stop_point().z + 0.2:
-		return Vector3.INF
 	var pts: PackedVector2Array = sit.network.route("approach")
 	var best := 0
 	var best_d := INF
@@ -694,21 +708,50 @@ func _junctions() -> Array:
 
 # --- exam junctions --------------------------------------------------------
 
+func _scene_connections(id: String) -> Dictionary:
+	if connection_cache.has(id): return connection_cache[id]
+	var path := "res://network/%s.json" % id
+	var built := "res://network/build/%s.json" % id
+	if not FileAccess.file_exists(path) or not FileAccess.file_exists(built): return {}
+	var profile := SceneStitch.describe(JSON.parse_string(FileAccess.get_file_as_string(path)),JSON.parse_string(FileAccess.get_file_as_string(built)))
+	connection_cache[id]=profile
+	return profile
+
+
 func _next_id() -> String:
-	if only_id != "":
-		return only_id
+	if only_id != "": return only_id
 	if bag.is_empty():
+		bag = JSON.parse_string(FileAccess.get_file_as_string("res://situations/index.json"))
+		bag.shuffle()
+	if pending_connection.is_empty(): return bag.pop_front()
+	var best := 0;var score := INF
+	for i in bag.size():
+		var entry: Dictionary = _scene_connections(str(bag[i])).get("entry",{})
+		if entry.is_empty(): continue
+		var cost := SceneStitch.match_score(pending_connection.port,entry)
+		if cost<score: score=cost;best=i
+	# Prefer another scene with the same number of lanes over an unnecessary lane-drop road.
+	if score>=1000.0:
 		var ids: Array = JSON.parse_string(FileAccess.get_file_as_string("res://situations/index.json"))
 		ids.shuffle()
-		bag = ids
-	return bag.pop_front()
+		for id in ids:
+			var entry: Dictionary = _scene_connections(id).get("entry",{})
+			if entry.is_empty(): continue
+			var cost := SceneStitch.match_score(pending_connection.port,entry)
+			if cost<score:
+				score=cost
+				if not bag.has(id): bag.append(id)
+				best=bag.find(id)
+	var id: String = bag[best]
+	bag.remove_at(best)
+	return id
 
 
 ## The next junction is laid out ahead, beyond the view: its streets replace
 ## the ring there (blank chunks), chunk-aligned on both ends. On the web its
 ## files come first (PackFiles): the junction waits for them, the car drives on.
 func _maybe_spawn() -> void:
-	if current or road != null or drive.pos.z < spawn_after:
+	if current or road != null or insert_road or drive.pos.z < spawn_after:
 		return
 	if next_id == "":
 		next_id = _next_id()
@@ -723,9 +766,26 @@ func _maybe_spawn() -> void:
 	var sit := Situation.load_scene(id, scenery)
 	Situation.forget(id)
 	var crop: float = sit.data.crop
-	var k := ceili((drive.pos.z + 150.0) / L)
-	var zc := k * L + crop
-	sit.place_at(zc, scenery)
+	var entry: Dictionary = sit.network.connections.entry if sit.network else {}
+	var zc := ceili((drive.pos.z+150.0)/L)*L+crop
+	if not entry.is_empty():
+		var anchor := {"p":Vector3(0,0,zc-crop+SceneStitch.END_INSET),"out":Vector3.BACK}
+		if not pending_connection.is_empty(): anchor=pending_connection.port
+		sit.transform=SceneStitch.placement(entry,anchor)
+		var width := float(entry.width)
+		if not pending_connection.is_empty():
+			var profile := SceneStitch.joint_profile(entry,anchor)
+			width=profile.width
+			var previous: Situation = pending_connection.sit
+			if previous != null: previous.bind_end(pending_connection.local_port,width,scenery,texture_frame,profile)
+			sit.bind_end(entry,width,scenery,texture_frame,profile)
+		else:
+			sit.bind_end(entry,width,scenery,texture_frame)
+		street_half=width/2.0
+		zc=sit.position.z
+	else:
+		sit.place_at(zc,scenery)
+	pending_connection={}
 	add_child(sit)
 	var junction := Junction.new(sit)
 	junction.fault.connect(func(type, key): on_fault(type, key))
@@ -737,8 +797,10 @@ func _maybe_spawn() -> void:
 	if near_debug:
 		near_debug = false
 		# 45 m out: the approach to the question is driven, not skipped.
-		drive.pos.z = zc + float(sit.data.stopZ) - 45.0
-		drive.yaw = 0.0
+		var local_stop := sit.network.stop_point() if sit.network else Vector3(float(sit.data.get("playerStartX",-1.8)),0,float(sit.data.stopZ))
+		var point := sit.global_transform*local_stop
+		drive.pos = point-Vector3.BACK*45.0
+		drive.yaw = SceneStitch.yaw(sit.basis*Vector3(sin(float(sit.data.playerStartRotY)),0,cos(float(sit.data.playerStartRotY))))
 	_rebuild_ring()
 
 
@@ -759,18 +821,20 @@ func _update_junction(dt: float) -> void:
 	if not current:
 		return
 	var sit: Situation = current.sit
-	var stop_z: float = current.zc + float(sit.data.stopZ)
+	var local_car: Vector3 = sit.global_transform.affine_inverse()*drive.pos
+	var local_stop := sit.network.stop_point() if sit.network else Vector3(float(sit.data.get("playerStartX",-1.8)),0,float(sit.data.stopZ))
+	var local_heading := Vector3(sin(float(sit.data.playerStartRotY)),0,cos(float(sit.data.playerStartRotY)))
+	var stop_world := sit.global_transform*local_stop
+	var passed_stop := (local_car-local_stop).dot(local_heading)>=-0.18
 	# The route guide shows within 55 m of the junction (game.js `it.guide.visible`).
 	if phase == "driving" or phase == "question":
-		sit.set_evidence_visible(absf(drive.pos.z - current.zc) < 55.0)
-	if phase == "driving" and drive.pos.z >= stop_z - 0.18 and cos(drive.yaw) > 0.2:
+		sit.set_evidence_visible(drive.pos.distance_to(stop_world)<55.0)
+	if phase == "driving" and passed_stop and drive.pos.distance_to(stop_world)<8.0 and Vector3(sin(drive.yaw),0,cos(drive.yaw)).dot(sit.basis*local_heading)>0.2:
 		# At the question: the car stands on its stop mark (updatePlayerMovement).
 		# The approach steering (drive.gd assist, along the route) has brought the car to
 		# the start lane and heading; this only takes off what is left.
-		drive.pos.z = stop_z
-		if sit.data.playerStartX != null:
-			drive.pos.x = float(sit.data.playerStartX)
-		drive.yaw = float(sit.data.playerStartRotY)
+		drive.pos=stop_world
+		drive.yaw=SceneStitch.yaw(sit.basis*local_heading)
 		drive.speed = 0
 		phase = "question"
 		if sit.data.speedLimit != null:
@@ -797,13 +861,14 @@ func _update_junction(dt: float) -> void:
 ## A speed zone's limit applies from its first sign to its end sign. Junctions wait while it is on the street.
 func _update_road(dt: float) -> void:
 	if road == null:
-		if current or road_queue.is_empty() or drive.pos.z < road_after:
+		if current or road_queue.is_empty() or (not insert_road and road_force == "") or drive.pos.z < road_after:
 			return
 		var item: Dictionary = road_queue.pop_front()
 		road_base_limit = limit_kmh
 		road = RoadEvent.make(item, drive.pos.z + 150.0, street_half)
 		add_child(road)
 		road_phase = "approach"
+		pending_connection={}
 		return
 	var z := drive.pos.z
 	if road_phase == "approach" and z >= road.stop_z - 0.2 and cos(drive.yaw) > 0.2:
@@ -844,6 +909,14 @@ func _update_road(dt: float) -> void:
 		road = null
 		road_phase = ""
 		road_after = z + 400.0
+		insert_road=false
+		var end_profile: Dictionary = street.profile.duplicate()
+		end_profile.merge({"p":Vector3(0,0,drive.pos.z+8.0),"out":Vector3.BACK,"width":street_half*2.0,
+			"lanes":4 if street_half>6.5 else 2,"median":street.profile.get("median",0.0),
+			"declared_median":street.profile.get("median",0.0),"walk":street.profile.get("walk",true),
+			"surface":street.profile.get("surface","asphalt")},true)
+		pending_connection={"port":end_profile,"sit":null,"local_port":{}}
+		spawn_after=drive.pos.z
 		if road_force != "":
 			_end_road_test("done " + done_id)
 
@@ -989,42 +1062,55 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	var crop: float = sit.data.crop
 	var centre := sit.position
 	drive.turning_at_junction = false
-	if absf(exit_yaw) > 0.01:
-		# New frame: the exit arm along +Z through x = 0, its end (centre +
-		# crop) on a chunk border so the ring street continues seamlessly.
-		var shift := -fposmod(crop, L)
-		var xf := Transform3D(Basis(), Vector3(0, 0, shift)) * Transform3D(Basis(Vector3.UP, -exit_yaw), Vector3.ZERO) * Transform3D(Basis(), -centre)
-		for j in _junctions():
-			j.sit.transform = xf * j.sit.transform
-			j.sit.refresh_uv(scenery)
-		drive.pos = xf * drive.pos
-		drive.yaw -= exit_yaw
-		cam_heading -= exit_yaw
-		skip_jerk = true
-		cam_look = xf * cam_look
-		# The old street stays where it was (rotated with the world) instead of vanishing in view.
-		if ghost:
-			ghost.queue_free()
-		ghost = Node3D.new()
-		add_child(ghost)
-		ghost.transform = xf
-		for node: MeshInstance3D in road_nodes:
-			if node.mesh:
+	var port: Dictionary = sit.network.connections.exits.get(exit_direction,{}) if sit.network else {}
+	if port.is_empty():
+		port={"p":Vector3(sin(exit_yaw)*crop,0,cos(exit_yaw)*crop),"out":Vector3(sin(exit_yaw),0,cos(exit_yaw)),"width":8.4,"lanes":2,"median":0.0,"declared_median":0.0,"walk":true,"edge":true,"centre":"dashed","surface":"asphalt"}
+	var joint: Vector3 = sit.global_transform*port.p
+	var heading := SceneStitch.yaw(sit.basis*port.out)
+	sit.bind_end(port,float(port.width),scenery,texture_frame)
+	var rotation := Basis(Vector3.UP,-heading)
+	var xf := Transform3D(rotation,-(rotation*joint))
+	texture_frame=texture_frame*xf.affine_inverse()
+	for j in _junctions():
+		j.sit.transform=xf*j.sit.transform
+		j.sit.refresh_uv(scenery,texture_frame)
+	drive.pos=xf*drive.pos
+	drive.yaw-=heading
+	cam_heading-=heading
+	cam_look=xf*cam_look
+	skip_jerk=true
+	# Keep the old street behind a turn until it is out of view. Its UVs retain their original world frame.
+	if ghost: ghost.queue_free()
+	ghost=Node3D.new()
+	add_child(ghost)
+	ghost.transform=xf
+	for node: MeshInstance3D in road_nodes:
+		if node.mesh:
+			var trimmed := SceneStitch.clip_mesh(node.mesh,xf*node.transform)
+			if trimmed:
 				var copy := node.duplicate() as MeshInstance3D
+				copy.mesh=trimmed
 				ghost.add_child(copy)
-		street.snapshot(ghost)
-		ghost_until = shift + crop + 260.0
-		blanks = [[shift - crop, shift + crop]]
-		_reset_ambient()
-	# The exit road keeps its own width: a multi-lane exit widens the street
-	# that continues from it (cars and pedestrians follow that width).
-	var widths: Dictionary = sit.data.exitWidths if sit.data.exitWidths is Dictionary else {}
-	var w: float = float(sit.data.approachW) if exit_direction == "uturn" else float(widths.get(exit_direction, 8.4))
-	street_half = clampf(w / 2.0, Street.ROAD_HALF, 12.0)
+	street.snapshot(ghost)
+	for node: MultiMeshInstance3D in ghost.find_children("*","MultiMeshInstance3D",true,false):
+		for i in node.multimesh.instance_count:
+			var at := node.multimesh.get_instance_transform(i)
+			if (xf*at.origin).z>0.0:
+				node.multimesh.set_instance_transform(i,Transform3D(Basis.from_scale(Vector3.ONE*0.001),Vector3(0,-50,0)))
+	ghost_until=260.0
+	_reset_ambient()
+	_build_ground()
+	street_half=float(port.width)/2.0
+	pending_connection={"port":port.duplicate(),"local_port":port,"sit":sit}
+	pending_connection.port.p=Vector3.ZERO
+	pending_connection.port.out=Vector3.BACK
 	retired.append(current)
-	current = {}
-	phase = "driving"
-	spawn_after = drive.pos.z + 120
+	current={}
+	phase="driving"
+	spawn_after=drive.pos.z
+	# Additional straights contain a road episode; empty filler straights are not added between tickets.
+	insert_road=road_force!="" or (only_id=="" and run.answered%3==0 and not road_queue.is_empty())
+	if insert_road: road_after=drive.pos.z
 	_rebuild_ring()
 	event.emit({ "event": "situation_cleared", "situationId": sit.id, "exit": exit_direction })
 	if run.finished():
@@ -1047,7 +1133,7 @@ func _retire_far() -> void:
 		if c.distance_to(drive.pos) > 260:
 			retired.erase(j)
 			j.sit.queue_free()
-			blanks = blanks.filter(func(b): return b[1] > drive.pos.z - 200)
+			_rebuild_ring()
 
 
 # --- traffic and walkers on the ring ---------------------------------------
@@ -1153,6 +1239,13 @@ func _follow_steer() -> float:
 			pts.append([q.x, q.y])
 	else:
 		pts = d.exits.get(maneuver, d.exits.get("straight")).points
+	if sit.network:
+		var port: Dictionary = sit.network.connections.exits.get(maneuver,{})
+		if not port.is_empty() and not pts.is_empty():
+			var end := SceneStitch.v(pts[-1])
+			var lateral := clampf((end-port.p).dot(SceneStitch.right(port.out)),-float(port.width)/2.0+1.2,float(port.width)/2.0-1.2)
+			var tail: Vector3 = port.p+SceneStitch.right(port.out)*lateral+port.out*3.0
+			pts.append([tail.x,tail.z])
 	var local: Vector3 = sit.global_transform.affine_inverse() * drive.pos
 	var best := 0
 	var best_d := INF
@@ -1557,8 +1650,12 @@ func _process(delta: float) -> void:
 	_update_road(delta)
 	_retire_far()
 	# Snapped to the texture period so the grass pattern does not slide.
+	var ground_z := snappedf(drive.pos.z,144.0)
+	if ground.position.z!=ground_z:
+		ground.position.z=ground_z
+		_build_ground()
 	ground.position.x = 0.0
-	ground.position.z = snappedf(drive.pos.z, 144.0)  # whole grass periods (4.8 m fine, 28.8 m coarse): the pattern never jumps
+	ground.position.z = ground_z  # whole grass periods (4.8 m fine, 28.8 m coarse): the pattern never jumps
 	_update_traffic(delta)
 	_update_walkers(delta)
 	_recycle_chunks()
@@ -1568,8 +1665,8 @@ func _process(delta: float) -> void:
 	# The camera heading follows the car's slowly (game.js updateCamera:
 	# exp(-3 dt)) and only for real turns: small corrections and U-turn
 	# wobbles must not swing the view.
-	var want := drive.yaw if phase != "question" else 0.0
-	if phase == "resolving" or phase == "driving":
+	var want: float = drive.yaw if phase != "question" or not current else current.sit.rotation.y
+	if phase in ["resolving","driving","question"]:
 		cam_heading += atan2(sin(want - cam_heading), cos(want - cam_heading)) * (1.0 - exp(-3.0 * delta))
 	var fwd := Vector3(sin(cam_heading), 0, cos(cam_heading))
 	var look := Vector3(drive.pos.x, 0, drive.pos.z) + fwd * 10.0
@@ -1716,3 +1813,21 @@ func _apply_tier(next: String) -> void:
 		# Fewer leaves on a weak GPU, as in the game (18 instead of 36).
 		leaves.multimesh.visible_instance_count = 18 if tier == "low" else -1
 	hud.tier = tier
+
+
+## Visible portions of a ring chunk. Scene joins need not lie on a 60 m chunk boundary.
+func _street_ranges(index: int) -> Array:
+	var start := index*L
+	var spans: Array = [[0.0,L]]
+	for blank in blanks:
+		var next: Array = []
+		for span in spans:
+			var a := maxf(float(span[0]),float(blank[0])-start)
+			var b := minf(float(span[1]),float(blank[1])-start)
+			if b<=a:
+				next.append(span)
+			else:
+				if a>span[0]+0.001: next.append([span[0],a])
+				if b<span[1]-0.001: next.append([b,span[1]])
+		spans=next
+	return spans

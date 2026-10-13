@@ -20,6 +20,7 @@ const ROW := 20.0
 const GROUP_CHUNKS := 2           # chunks per district (then it blends on)
 const DISTRICTS := 4
 const GROUND_OUT := 90.0
+const STRIP := 5.0
 
 const HOMES := ["home_0", "home_1", "home_2", "home_3", "home_4", "home_5"]
 const BLOCKS := ["block_0", "block_1", "block_2", "block_3", "block_4", "block_5", "block_6", "block_7"]
@@ -32,6 +33,11 @@ var sc: Scenery
 var L: float
 var pools := {}                   # prop -> Scenery.Pool
 var parked := {}                  # car id -> Scenery.Pool (baked material)
+var edge := 0.0
+var texture_frame := Transform3D()
+var visible_ranges: Array = []
+var profile := {}
+
 var parked_spots := {}            # ring slot -> [Vector3] parked cars there (they are solid: world.gd obstacles)
 var winter := false
 
@@ -77,8 +83,10 @@ func style_at(z: float) -> int:
 ## Lays out ring slot `slot` as world chunk `index`; returns its road mesh.
 ## A blank chunk (an exam junction stands there with its own streets) is
 ## empty: no road, no props.
-## `half` is the carriageway half-width: a multi-lane exit widens the street.
-func build_chunk(slot: int, index: int, blank := false, half := ROAD_HALF) -> ArrayMesh:
+## `half_at(world z)` is the carriageway half-width there: a multi-lane exit widens the street,
+## a lane drop before a junction narrows it (world.gd _half_at). Plots stand outside it.
+func build_chunk(slot: int, index: int, blank := false, half_at := Callable(), ranges: Array = []) -> ArrayMesh:
+	visible_ranges = [[0.0,L]] if ranges.is_empty() else ranges
 	for p in pools.values():
 		p.begin(slot)
 	for p in parked.values():
@@ -95,13 +103,17 @@ func build_chunk(slot: int, index: int, blank := false, half := ROAD_HALF) -> Ar
 	rng.seed = hash(index * 7919)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_road(st, z0, half)
+	_road(st,z0,half_at)
 	var z := z0 + ROW / 2
 	while z < z0 + L:
+		if not _visible(z-z0):
+			z+=ROW
+			continue
+		edge=_half(half_at,z)-ROAD_HALF
 		var style := style_at(z)
 		var row := int(floor(z / ROW))
 		for side: float in [-1.0, 1.0]:
-			_verge(st, side, z, style, half)
+			_verge(st,side,z,style,_half(half_at,z))
 			_plot(slot, rng, side, z, style, row)
 		z += ROW
 	for p in pools.values():
@@ -116,23 +128,54 @@ func build_chunk(slot: int, index: int, blank := false, half := ROAD_HALF) -> Ar
 
 # --- road surface (one mesh per chunk, local z from 0) ----------------------
 
-func _road(st: SurfaceTool, z0: float, half: float) -> void:
-	var asphalt := Color("#2C2F36")
+## The carriageway is cut into strips of STRIP metres, each one as wide as the street at its
+## ends: a width change (a lane drop) is a taper, not a step.
+func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
+	var sandy: bool = profile.get("surface","asphalt")=="sand"
+	var asphalt := Color("#c2a570") if sandy else Color("#2C2F36")
+	var median: float = profile.get("median",0.0)
 	var pave := sc.color("sidewalk")
 	var mark := Color("#F2F4F8")
-	_flat(st, -half, half, 0, L, ROAD_LEVEL, asphalt, "asphalt", z0)
-	for side: float in [-1.0, 1.0]:
-		var a := side * half
-		var b := side * (half + SIDEWALK)
-		_flat(st, minf(a, b), maxf(a, b), 0, L, KERB, pave, "pavement", z0)
-		_kerb(st, a, 0, L, pave, z0, side)
-		# Edge line 1.2 (0.15 m, 0.25 m from the kerb).
-		_flat(st, side * (half - 0.325), side * (half - 0.175), 0, L, MARK_LEVEL, mark, "", z0)
-	# Centre dashes 1.5: 2 m dash, 3 m gap, phase from world z.
-	var z := ceilf(z0 / 5.0) * 5.0 - z0
+	var z := 0.0
 	while z < L:
-		_flat(st, -0.09, 0.09, z, minf(z + 2.0, L), MARK_LEVEL, mark, "", z0)
+		var ze := minf(z + STRIP, L)
+		for span in visible_ranges:
+			for edge_z in span:
+				if edge_z>z+0.001: ze=minf(ze,edge_z)
+		if not _visible((z+ze)*0.5):
+			z=ze
+			continue
+		var ha := _half(half_at, z0 + z)
+		var hb := _half(half_at, z0 + ze)
+		_quad(st, -ha, ha, -hb, hb, z, ze, ROAD_LEVEL, asphalt, "" if sandy else "asphalt", z0)
+		for side: float in [-1.0, 1.0]:
+			# Pavement: SIDEWALK metres out from the kerb, and the kerb itself.
+			var ea := side * ha
+			var eb := side * hb
+			if profile.get("walk",true) and not sandy:
+				_quad(st,ea,ea+side*SIDEWALK,eb,eb+side*SIDEWALK,z,ze,KERB,pave,"pavement",z0)
+				_kerb(st,ea,eb,z,ze,pave,side)
+			if profile.get("edge",true) and not sandy:
+				_quad(st,side*(ha-0.325),side*(ha-0.175),side*(hb-0.325),side*(hb-0.175),z,ze,MARK_LEVEL,mark,"",z0)
+		if median>0.001:
+			_quad(st,-median/2.0,median/2.0,-median/2.0,median/2.0,z,ze,KERB+0.005,sc.color("ground"),"grass",z0)
+			for side in [-1.0,1.0]: _kerb(st,side*median/2.0,side*median/2.0,z,ze,pave,-side)
+		z = ze
+	# Centre dashes 1.5: 2 m dash, 3 m gap, phase from world z.
+	z = ceilf(z0 / 5.0) * 5.0 - z0
+	while z < L:
+		for span in visible_ranges:
+			var a := maxf(z,float(span[0]));var b := minf(minf(z+2.0,L),float(span[1]))
+			if b<=a or sandy: continue
+			if median<=0.001 and profile.get("centre","dashed")=="dashed": _flat(st,-0.09,0.09,a,b,MARK_LEVEL,mark,"",z0)
+			if _half(half_at,z0+a)>6.5:
+				for side in [-1.0,1.0]: _flat(st,side*(median/2.0+3.5)-0.065,side*(median/2.0+3.5)+0.065,a,b,MARK_LEVEL,mark,"",z0)
 		z += 5.0
+	if not sandy and median<=0.001 and profile.get("centre","") in ["solid","double"]:
+		for span in visible_ranges:
+			if profile.centre=="solid": _flat(st,-0.065,0.065,span[0],span[1],MARK_LEVEL,mark,"",z0)
+			else:
+				for x in [-0.15,0.15]: _flat(st,x-0.065,x+0.065,span[0],span[1],MARK_LEVEL,mark,"",z0)
 	# No ground here: the world's one lawn (world.gd _build_ground) lies under everything.
 	# Stacked grass planes a few centimetres apart flicker on a phone's depth buffer.
 
@@ -142,31 +185,44 @@ func _verge(_st: SurfaceTool, _side: float, _z: float, _style: int, _half: float
 	pass
 
 
-## A horizontal quad; UV in metres / tile in world space (continuous between
-## chunks), so the pattern never jumps at a chunk border.
-func _flat(st: SurfaceTool, x0: float, x1: float, z0: float, z1: float, y: float, color: Color, kind: String, world_z: float) -> void:
+func _half(half_at: Callable, z: float) -> float:
+	if half_at.is_valid():
+		return float(half_at.call(z))
+	return ROAD_HALF
+
+
+## A horizontal quad between two cross-sections at local z `za` and `zb` (world z = local + `world_z`).
+## The x edges of each cross-section may come in any order: the quad always faces up.
+## UV in metres / tile in world space (continuous between chunks), so the pattern never jumps at a
+## chunk border.
+func _quad(st: SurfaceTool, xa0: float, xa1: float, xb0: float, xb1: float, za: float, zb: float,
+		y: float, color: Color, kind: String, world_z: float) -> void:
 	var layer := sc.layer_of(kind) if kind != "" else 0
 	var period: float = sc.kinds[kind].period if kind != "" else 1.0
-	# Any order of the edges: the quad always faces up.
-	var xa := minf(x0, x1)
-	var xb := maxf(x0, x1)
-	x0 = xa
-	x1 = xb
+	var a0 := minf(xa0, xa1)
+	var a1 := maxf(xa0, xa1)
+	var b0 := minf(xb0, xb1)
+	var b1 := maxf(xb0, xb1)
 	st.set_color(Color(color.r, color.g, color.b, 0.0))
-	for p in [Vector3(x0, y, z0), Vector3(x1, y, z0), Vector3(x1, y, z1),
-			Vector3(x0, y, z0), Vector3(x1, y, z1), Vector3(x0, y, z1)]:
-		st.set_uv(Vector2(p.x / period, (p.z + world_z) / period))
+	for p in [Vector3(a0, y, za), Vector3(a1, y, za), Vector3(b1, y, zb),
+			Vector3(a0, y, za), Vector3(b1, y, zb), Vector3(b0, y, zb)]:
+		var w := texture_frame * Vector3(p.x,p.y,p.z+world_z)
+		st.set_uv(Vector2(w.x / period, w.z / period))
 		st.set_uv2(Vector2(layer, 0))
 		st.add_vertex(p)
 
 
-func _kerb(st: SurfaceTool, x: float, z0: float, z1: float, color: Color, world_z: float, side: float) -> void:
-	var k: Dictionary = sc.kinds.pavement
-	var layer := sc.layer_of("pavement")
+## A horizontal strip of constant width (the centre dashes).
+func _flat(st: SurfaceTool, x0: float, x1: float, z0: float, z1: float, y: float, color: Color, kind: String, world_z: float) -> void:
+	_quad(st, x0, x1, x0, x1, z0, z1, y, color, kind, world_z)
+
+
+## The kerb wall on one side, between two cross-sections; xa/xb are the kerb's x at each end.
+func _kerb(st: SurfaceTool, xa: float, xb: float, za: float, zb: float, color: Color, side: float) -> void:
 	st.set_color(Color(color.r, color.g, color.b, 0.0))
 	# Faces the road (normal towards x = 0): clockwise seen from there.
-	var pts := [Vector3(x, 0, z0), Vector3(x, KERB, z0), Vector3(x, KERB, z1),
-		Vector3(x, 0, z0), Vector3(x, KERB, z1), Vector3(x, 0, z1)]
+	var pts := [Vector3(xa, 0, za), Vector3(xa, KERB, za), Vector3(xb, KERB, zb),
+		Vector3(xa, 0, za), Vector3(xb, KERB, zb), Vector3(xb, 0, zb)]
 	if side < 0:
 		pts = [pts[0], pts[2], pts[1], pts[3], pts[5], pts[4]]
 	# A 18 cm wall is drawn in one plain colour: the stone pattern squeezed into that height
@@ -180,7 +236,7 @@ func _kerb(st: SurfaceTool, x: float, z0: float, z1: float, color: Color, world_
 # --- plots (buildStraightScenery) ------------------------------------------
 
 func _put(slot: int, prop: String, pos: Vector3, yaw := 0.0, scale := Vector3.ONE, tint := Color.WHITE) -> void:
-	var t := Transform3D(Basis(Vector3.UP, yaw).scaled(scale), pos)
+	var t := Transform3D(Basis(Vector3.UP,yaw).scaled(scale),_from_kerb(pos))
 	pools[prop].put(slot, t, Color(tint.r, tint.g, tint.b, 1.0 if winter else 0.0))
 
 
@@ -205,6 +261,8 @@ func _building(slot: int, rng: RandomNumberGenerator, style: int, pos: Vector3, 
 	var size := sc.size_of(prop)
 	if not centred:
 		pos.x += signf(pos.x) * size.x / 2
+	else:
+		pos.x=signf(pos.x)*maxf(absf(pos.x),ROAD_HALF+SIDEWALK+size.x/2.0+0.3)
 	_put(slot, prop, pos, yaw, Vector3.ONE, Color(colors[rng.randi() % colors.size()]))
 	return size.x
 
@@ -262,5 +320,17 @@ func _bush() -> Color:
 func _park(slot: int, rng: RandomNumberGenerator, pos: Vector3, yaw: float) -> void:
 	var id: String = Models.CARS[rng.randi() % Models.CARS.size()]
 	var paint := Color(PARKED_COLORS[rng.randi() % PARKED_COLORS.size()])
+	pos=_from_kerb(pos)
 	if parked[id].put(slot, Transform3D(Basis(Vector3.UP, yaw), pos), Color(paint.r, paint.g, paint.b, 0)):
 		parked_spots[slot].append(pos)
+
+
+func _visible(z: float) -> bool:
+	for span in visible_ranges:
+		if z>=span[0]-0.001 and z<=span[1]+0.001: return true
+	return false
+
+
+func _from_kerb(pos: Vector3) -> Vector3:
+	pos.x += signf(pos.x)*edge
+	return pos

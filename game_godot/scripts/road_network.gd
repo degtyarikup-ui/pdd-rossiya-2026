@@ -8,6 +8,9 @@ extends RefCounted
 
 const ASPHALT_LAYER := "asphalt"
 
+var connections := {}
+var stitch_bindings: Array = []
+
 var id := ""
 var data: Dictionary
 var build: Dictionary             # build/<id>.json: surfaces and kerbs (derived)
@@ -44,6 +47,12 @@ static func load_scene(scene_id: String) -> RoadNetwork:
 			for h in r.holes:
 				holes.append(_pts(h))
 			net._roads.append({ "outer": outer, "holes": holes, "box": _box(outer) })
+	net.connections = SceneStitch.describe(net.data, net.build)
+	if not net.build.is_empty() and not net.build.surfaces.any(func(surface): return surface.id == "ground"):
+		# Old traced scenes use the same continuous lawn/texture grid as editor-built scenes.
+		var c := float(net.data.get("crop",90.0))
+		net.build.surfaces.append({"id":"ground","layer":"grass","colour":"#9ca66b","y":-0.03,
+			"verts":[-c,-c,c,-c,c,c,-c,c],"idx":[0,1,2,0,2,3]})
 	net._build_cover()
 	return net
 
@@ -104,6 +113,9 @@ static func _box(poly: PackedVector2Array) -> Rect2:
 ## True when the local point (x, z) of the junction lies on the carriageway:
 ## inside a road outline and outside every island in it.
 func is_drivable(local: Vector3) -> bool:
+	if not SceneStitch.contains(local, stitch_bindings) or SceneStitch.median_at(local,stitch_bindings):
+		return false
+	local = SceneStitch.warp(local, stitch_bindings, true)
 	var p := Vector2(local.x, local.z)
 	for road in _roads:
 		if not road.box.has_point(p):
@@ -147,6 +159,7 @@ func surface_mesh(scenery: Scenery, uv_z := 0.0, uv_xf := Transform3D()) -> Arra
 	for s in build.surfaces:
 		_add_triangles(st, s, scenery, uv_xf)
 	_add_kerbs(st, scenery, uv_z)
+	_add_end_medians(st,scenery,uv_xf)
 	st.generate_normals()
 	var mesh := st.commit()
 	mesh.surface_set_material(0, scenery.material)
@@ -170,13 +183,20 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 	st.set_color(Color(colour.r, colour.g, colour.b, 0.0))
 	var k := 0
 	while k < idx.size():
+		var triangle: Array = []
 		for c in 3:
 			var i: int = idx[k + c] * 2
-			var p := Vector3(v[i], y, v[i + 1])
-			var w := uv_xf * p
-			st.set_uv(Vector2(w.x / period, w.z / period))
-			st.set_uv2(Vector2(layer, 0))
-			st.add_vertex(p)
+			triangle.append(Vector3(v[i],y,v[i+1]))
+		for poly in SceneStitch.render_pieces(triangle,stitch_bindings):
+			for fan in range(1, poly.size()-1):
+				for p: Vector3 in [poly[0],poly[fan],poly[fan+1]]:
+					var w := uv_xf * p
+					st.set_uv(Vector2(w.x / period, w.z / period))
+					var blend := SceneStitch.surface_blend(p,stitch_bindings) if s.layer in ["asphalt","sand"] else 0.0
+					var tint := colour.lerp(Color("#776a53"),blend)
+					st.set_color(Color(tint.r,tint.g,tint.b,0.0))
+					st.set_uv2(Vector2(layer,-blend))
+					st.add_vertex(p)
 		k += 3
 
 
@@ -195,8 +215,38 @@ func _add_kerbs(st: SurfaceTool, scenery: Scenery, uv_z: float) -> void:
 		var b := Vector3(segs[j + 2], kerbs.y0, segs[j + 3])
 		var t := Vector3(a.x, kerbs.y1, a.z)
 		var u := Vector3(b.x, kerbs.y1, b.z)
-		for p in [a, b, u, a, u, t]:
-			st.set_uv(Vector2(0, 0))
-			st.set_uv2(Vector2(0, 1))
-			st.add_vertex(p)
+		for triangle in [[a,b,u],[a,u,t]]:
+			for poly in SceneStitch.render_pieces(triangle,stitch_bindings):
+				for fan in range(1,poly.size()-1):
+					for p: Vector3 in [poly[0],poly[fan],poly[fan+1]]:
+						st.set_uv(Vector2.ZERO)
+						st.set_uv2(Vector2(0,1))
+						st.add_vertex(p)
 		j += 4
+
+
+func _add_end_medians(st: SurfaceTool,scenery: Scenery,uv_xf: Transform3D) -> void:
+	for binding in stitch_bindings:
+		var median: float = binding.get("median",0.0)
+		if median<=0.001: continue
+		var port: Dictionary = binding.port
+		var r := SceneStitch.right(port.out)
+		var a: Vector3 = port.p-r*median/2.0
+		var b: Vector3 = port.p+r*median/2.0
+		var c: Vector3 = b-port.out*SceneStitch.END_BLEND
+		var d: Vector3 = a-port.out*SceneStitch.END_BLEND
+		var colour := scenery.color("ground")
+		var period: float = scenery.kinds.grass.period
+		st.set_color(Color(colour.r,colour.g,colour.b,0.0))
+		for p: Vector3 in [a,b,c,a,c,d]:
+			p.y=0.185
+			var w := uv_xf*p
+			st.set_uv(Vector2(w.x,w.z)/period)
+			st.set_uv2(Vector2(scenery.layer_of("grass"),0))
+			st.add_vertex(p)
+		colour=scenery.color("sidewalk")
+		st.set_color(Color(colour.r,colour.g,colour.b,0.0))
+		for edge in [[a,d],[b,c]]:
+			var x: Vector3 = edge[0];var y: Vector3 = edge[1]
+			for p: Vector3 in [x,y,y+Vector3.UP*0.18,x,y+Vector3.UP*0.18,x+Vector3.UP*0.18]:
+				st.set_uv(Vector2.ZERO);st.set_uv2(Vector2(0,1));st.add_vertex(p)

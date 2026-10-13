@@ -182,15 +182,15 @@ func place_at(z: float, scenery: Scenery) -> void:
 
 
 ## The detail map follows the world grid again after the world was rebased (a turn).
-func refresh_uv(scenery: Scenery) -> void:
+func refresh_uv(scenery: Scenery, texture_frame := Transform3D()) -> void:
 	var node := get_node_or_null("surfaces") as MeshInstance3D
 	if node and network:
-		node.mesh = network.surface_mesh(scenery, 0.0, transform)
+		node.mesh = network.surface_mesh(scenery, 0.0, texture_frame * transform)
 
 
 ## The point (situation coordinates) is inside this junction's own streets.
 func covers(local: Vector3) -> bool:
-	return absf(local.x) <= _crop and absf(local.z) <= _crop
+	return absf(local.x) <= _crop and absf(local.z) <= _crop and (network == null or SceneStitch.contains(local,network.stitch_bindings))
 
 
 ## game.js roadSupports at this point: from the road network (or, for a scene
@@ -560,3 +560,49 @@ static func _letter_node(letter: String, colour := TOKEN_BLUE) -> Node3D:
 static func _on_top(node: GeometryInstance3D, priority: int) -> void:
 	node.no_depth_test = true
 	node.render_priority = priority
+
+
+## Runtime trimming affects only the outer road ends; saved geometry stays in editor coordinates.
+func bind_end(port: Dictionary, width: float, scenery: Scenery, texture_frame := Transform3D(), profile: Dictionary = {}) -> void:
+	if network == null or port.is_empty(): return
+	for binding in network.stitch_bindings:
+		if binding.port.id == port.id:
+			binding.width=width
+			binding.merge(profile,true)
+			_trim_end_props()
+			refresh_uv(scenery,texture_frame)
+			return
+	var binding := {"port":port,"width":width}
+	binding.merge(profile,true)
+	network.stitch_bindings.append(binding)
+	_trim_end_props()
+	refresh_uv(scenery,texture_frame)
+
+
+## Exact intersection of the rendered footprint with the street axis (not chunk-rounded bounds).
+func street_interval() -> Array:
+	var poly: Array = [Vector3(-_crop,0,-_crop),Vector3(_crop,0,-_crop),Vector3(_crop,0,_crop),Vector3(-_crop,0,_crop)]
+	if network: poly=SceneStitch.clip_polygon(poly,network.stitch_bindings)
+	var zs: Array = []
+	for i in poly.size():
+		var a: Vector3 = transform*poly[i]
+		var b: Vector3 = transform*poly[(i+1)%poly.size()]
+		if absf(a.x)<0.001: zs.append(a.z)
+		if (a.x>0)!=(b.x>0) and absf(a.x-b.x)>0.0001: zs.append(a.lerp(b,a.x/(a.x-b.x)).z)
+	if zs.is_empty(): return []
+	return [zs.min(),zs.max()]
+
+
+## Scenery beyond an end's runtime cut belongs to the adjoining scene. Original transforms remain in data.
+func _trim_end_props() -> void:
+	var counts := {}
+	for p in data.props:
+		var prop: String = p.prop
+		var index: int = counts.get(prop,0)
+		counts[prop]=index+1
+		if not _pools.has(prop): continue
+		var at := _v(p.pos)
+		var xf := Transform3D(Basis(Vector3.UP,p.yaw).scaled(_v(p.scale)),at)
+		if not SceneStitch.contains(at,network.stitch_bindings):
+			xf=Transform3D(Basis.from_scale(Vector3.ONE*0.001),Vector3(0,-50,0))
+		(_pools[prop] as MultiMesh).set_instance_transform(index,xf)

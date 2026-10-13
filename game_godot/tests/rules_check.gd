@@ -97,6 +97,8 @@ func _drop_junction() -> void:
 	world.current = {}
 	world.retired = []
 	world.blanks = []
+	world.pending_connection = {}
+	world.insert_road = false
 	world.next_id = ""
 	world.spawn_after = 0.0
 

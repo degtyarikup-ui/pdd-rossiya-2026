@@ -193,7 +193,8 @@ def edges(scene: dict) -> dict:
         lo, hi = (b[0], b[2]) if side in ("n", "s") else (b[1], b[3])
         width, centre = hi - lo, (lo + hi) / 2
         out[side] = {"width": round(width, 2), "centre": round(centre, 2),
-                     "street": abs(width - STREET_WIDTH) < 0.2 and abs(centre) < 0.2}
+                     "street": abs(width - STREET_WIDTH) < 0.2 and abs(centre) < 0.2,
+                     "connectable": 3.0 <= width <= 35.0}
     return out
 
 

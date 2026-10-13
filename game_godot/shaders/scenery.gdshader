@@ -53,7 +53,7 @@ void fragment() {
 		float far_large = smoothstep(3.0, 10.0, texels * macro_scale[layer]);
 		fine = mix(fine, 0.5, far);
 		large = mix(large, 0.5, far_large);
-		base *= fine * 2.0 * (1.0 + (large * 2.0 - 1.0) * macro[layer]);
+		base *= mix(1.0, fine * 2.0 * (1.0 + (large * 2.0 - 1.0) * macro[layer]), clamp(1.0 + UV2.y, 0.0, 1.0));
 	}
 	// As-is, no sRGB decode: the WebView game (three.js r128) renders without
 	// colour management, final = colour x light; this matches it on screen.

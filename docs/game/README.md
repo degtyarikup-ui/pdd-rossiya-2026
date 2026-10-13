@@ -98,3 +98,6 @@ tools/network/engine_sync.py ► game_godot/situations/<id>/scene.json (то, ч
 - `godot-roadmap.md` — что сделано и что открыто
 - `godot-migration.md` — как и почему перешли на Godot
 - `game-economy-2026-10-10.md`, `game-covers-2026-10-10.md`, `mini-game*.md` — экономика, обложки, мини-игры
+
+Стыковка билетов по фактическим концам дорог, ширине, полосам и разделителям —
+[scene-stitching.md](scene-stitching.md) (устройство и три проверки стыковки).

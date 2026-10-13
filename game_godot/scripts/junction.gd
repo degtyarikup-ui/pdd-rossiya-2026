@@ -356,6 +356,27 @@ func update_resolution(dt: float, player: Drive, local_pos: Vector3) -> void:
 			continue
 		if player.speed > 0.5 and a in resolution.yielding and not a.cleared and _conflict_ahead(me, a, player.speed):
 			_fault("priority", "priority")
+	if situation.network and not situation.network.connections.exits.is_empty():
+		for key in situation.network.connections.exits:
+			var port: Dictionary = situation.network.connections.exits[key]
+			var toward: Vector3 = port.out
+			var remaining: float = (port.p-local_pos).dot(toward)
+			var lateral: float = absf((local_pos-port.p).dot(SceneStitch.right(toward)))
+			var world_tangent: Vector3 = situation.basis*toward
+			var error := wrapf(player.yaw-SceneStitch.yaw(world_tangent),-PI,PI)
+			var footprint := player.half_width*absf(cos(error))+player.half_length*absf(sin(error))
+			var finish_distance: float = maxf(20.0,port.p.dot(toward)-24.0)
+			if remaining>finish_distance or lateral+footprint>float(port.width)/2.0+0.12 or absf(error)>0.7: continue
+			var allowed: Array = spec.get("allowedManeuvers",[spec.maneuver])
+			if allowed == null or not key in allowed: _fault("wrong_maneuver","wrong_maneuver")
+			var done_res=resolution
+			resolution=null
+			complete=true
+			for a in motions:
+				if not a in done_res.yielding: a.waits_for_player=false
+			finished.emit(key,SceneStitch.yaw(toward))
+			return
+		return
 	var p := local_pos
 	var exits := [
 		["left", PI / 2, p.x > 24, absf(p.z), p.x > 40],
