@@ -18,6 +18,6 @@ void fragment() {
 	bool on = vehicle_x > 0.0 ? left_on : right_on;
 	vec3 amber = vec3(1.0, 0.68, 0.05);
 	ALBEDO = on ? amber : base;
-	EMISSION = on ? amber * 2.0 : vec3(0.0);
+	EMISSION = on ? amber * 6.0 : vec3(0.0);
 	ROUGHNESS = 0.6;
 }

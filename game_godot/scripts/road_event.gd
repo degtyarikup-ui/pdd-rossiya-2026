@@ -569,7 +569,7 @@ func _set_booms() -> void:
 ## A police lamp is lit (emissive) with its halo, or dark.
 static func light_lamp(mat: StandardMaterial3D, on: bool) -> void:
 	mat.emission_enabled = on
-	mat.emission_energy_multiplier = 4.0
+	mat.emission_energy_multiplier = 6.0
 	if mat.has_meta("halo"):
 		var halo := mat.get_meta("halo") as Node3D
 		if is_instance_valid(halo): halo.visible=on

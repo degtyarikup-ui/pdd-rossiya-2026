@@ -1,4 +1,4 @@
-## Signals must change the authored lenses without adding meshes or moving/scaling any model part.
+## Signals must change the authored lenses with procedural bloom while preserving every authored model part.
 extends SceneTree
 
 var failures := 0
@@ -46,7 +46,8 @@ func run() -> void:
 		signals._process(0.3)
 		for material in signals.materials:
 			check(material.get_shader_parameter("left_on") and material.get_shader_parameter("right_on"), "Hazards pulse both sides")
-		check(vehicle.find_children("*", "MeshInstance3D", true, false).size() == meshes.size(), "No added lamps or halos")
+		check(vehicle.find_children("*", "MeshInstance3D", true, false).filter(func(m): return not m.has_meta("signal_glow")).size() == meshes.size(), "No added solid lamps")
+		check(signals.glows.values().any(func(g): return not g.is_empty()), "Signal bloom uses authored lens centres")
 		for mesh: MeshInstance3D in meshes:
 			check(mesh.global_transform.is_equal_approx(transforms[mesh]), "Lamp/body transforms stay authored")
 		vehicle.free()
@@ -60,8 +61,11 @@ func run() -> void:
 		world._mount_car(id, "#0574F8")
 		var reference := Models.player_car(id, Color("#0574F8"))
 		var actual: Node3D = world.player.get_node("car")
-		check(actual.find_children("*", "MeshInstance3D", true, false).size() == reference.find_children("*", "MeshInstance3D", true, false).size(), "Player has no added halo: " + id)
+		check(actual.find_children("*", "MeshInstance3D", true, false).filter(func(m): return not m.has_meta("signal_glow")).size() == reference.find_children("*", "MeshInstance3D", true, false).size(), "Player has no added solid lamp: " + id)
 		for mesh: MeshInstance3D in actual.find_children("*", "MeshInstance3D", true, false):
+			if mesh.has_meta("signal_glow"):
+				check(mesh.material_override is ShaderMaterial and not (mesh.material_override as ShaderMaterial).shader.code.contains("uniform sampler"), "Bloom has no sampled texture")
+				continue
 			var original: Node3D = reference.get_node(actual.get_path_to(mesh))
 			check(mesh.transform.is_equal_approx(original.transform), "Player mesh stays attached: " + id)
 		for side in world.blinkers:
@@ -77,6 +81,8 @@ func run() -> void:
 	check(not traffic.has("lamps"), "Batched car needs no floating light node")
 	world._update_traffic(0.05)
 	check(traffic.mm.get_instance_custom_data(traffic.slot).a == 1.0, "Traffic pulse updates original mesh instance")
+	check(not traffic.glow_centres.is_empty(), "Baked traffic retains its actual lens centres")
+	check(world.traffic_glows.get_instance_custom_data(traffic.glow_slot).a == 1.0, "Bloom pulses with baked lens")
 	world.queue_free()
 	await process_frame
 	await process_frame

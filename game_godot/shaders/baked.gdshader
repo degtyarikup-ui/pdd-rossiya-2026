@@ -36,7 +36,7 @@ void fragment() {
 	bool front_lens = distance(base, vec3(0.875, 0.842, 0.712)) < 0.035;
 	if (hazard_on > 0.5 && COLOR.a < 0.1 && (rear_lens || front_lens)) {
 		ALBEDO = vec3(1.0, 0.68, 0.05);
-		EMISSION = ALBEDO * 2.0;
+		EMISSION = ALBEDO * 6.0;
 	}
 	ROUGHNESS = 0.85;
 }

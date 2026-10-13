@@ -83,7 +83,7 @@ static func _lamp(root: Node3D, at: Vector3, colour: Color) -> StandardMaterial3
 	var mi := _box(root, Vector3(0.4, 0.16, 0.22), at, colour)
 	var mat := mi.material_override as StandardMaterial3D
 	mat.emission_enabled = true
-	mat.emission = colour
+	mat.emission = Glow.emission_colour(colour)
 	mat.emission_energy_multiplier = 4.0
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	var halo := Glow.halo(colour, 2.4)
@@ -163,6 +163,12 @@ static func _signals(vehicle: Node3D) -> Signals:
 		return existing
 	var signals := Signals.new()
 	signals.name = "vehicle_signals"
+	for lens in Glow.lens_centres(vehicle):
+		var glow := Glow.halo(Color("#FFB300"), 1.4)
+		glow.position = lens.p
+		glow.visible = false
+		vehicle.add_child(glow)
+		signals.glows[lens.side].append(glow)
 	for mesh: MeshInstance3D in vehicle.find_children("*", "MeshInstance3D", true, false):
 		if mesh.mesh == null:
 			continue
@@ -191,6 +197,7 @@ static func _signals(vehicle: Node3D) -> Signals:
 ## Clocks are frozen with their vehicle during pause; no light geometry is added.
 class Signals extends Node:
 	var materials: Array[ShaderMaterial] = []
+	var glows := {"L": [], "R": [], "C": []}
 	var side := ""
 	var hazard_left := 0.0
 	var clock := 0.0
@@ -202,6 +209,9 @@ class Signals extends Node:
 		for material in materials:
 			material.set_shader_parameter("left_on", pulse and (hazard_left > 0.0 or side == "L"))
 			material.set_shader_parameter("right_on", pulse and (hazard_left > 0.0 or side == "R"))
+		for key in glows:
+			var on: bool = pulse and (hazard_left > 0.0 or key == side or (key == "C" and side != ""))
+			for glow: Node3D in glows[key]: glow.visible = on
 
 
 ## A traffic controller standing at a junction in one of his signals (the mini-game's model).

@@ -12,6 +12,15 @@ const WALKERS := 12
 static var _baked: ShaderMaterial
 static var _traffic_baked: ShaderMaterial
 static var _meshes := {}
+static var _lens_centres := {}
+
+
+static func traffic_lenses(id: String) -> Array:
+	if not _lens_centres.has(id):
+		var car: Node3D = load("res://models/traffic/%s.glb" % id).instantiate()
+		_lens_centres[id] = Glow.lens_centres(car)
+		car.free()
+	return _lens_centres[id]
 
 
 static func baked_material() -> ShaderMaterial:

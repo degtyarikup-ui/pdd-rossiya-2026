@@ -64,8 +64,10 @@ godot --headless --path game_godot --script res://tests/streaming_check.gd # в�
 godot --headless --path game_godot --script res://tests/exit_loading_check.gd # выход во время фоновой сборки без потерянных узлов
 godot --headless --path game_godot --script res://tests/pause_actor_check.gd # заморозка независимых и физических участников в паузе
 godot --headless --path game_godot --script res://tests/game_ui_check.gd # анимации, фото, компактный HUD и окно паузы
-godot --headless --path game_godot --script res://tests/vehicle_lights_check.gd # мигание штатных фонарей без лишней геометрии
+godot --headless --path game_godot --script res://tests/vehicle_lights_check.gd # штатные линзы, мигание и синхронное процедурное свечение
+godot --headless --path game_godot --script res://tests/signal_glow_check.gd # свечение и цвета секций светофора без текстур
 godot --headless --path game_godot --script res://tests/ride_pause_check.gd # быстрый старт, цвет, звук, сохранение состояния при паузе
+godot --path game_godot --script res://tests/signal_glow_check.gd # нужен рендер: видимое свечение, включая пакетный трафик
 godot --path game_godot --script res://tests/building_fade_check.gd # нужен рендер: пачки прозрачных зданий и переиспользование
 godot --headless --path game_godot --script res://tests/median_join_check.gd # границы разделительных островов
 godot --headless --path game_godot --script res://tests/ambient_lane_check.gd # фоновые машины и разделитель на стыке

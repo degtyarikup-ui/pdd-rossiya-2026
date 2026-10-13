@@ -42,11 +42,13 @@ var hud: PerfHud
 
 var traffic: Array[Dictionary] = []
 var traffic_mm: Array[MultiMesh] = []
+var traffic_glows: MultiMesh
 var walkers: Array[Dictionary] = []
 var walker_mm: Array[MultiMesh] = []
 var wheels: Array[Node3D] = []
 var front_axles: Array[Node3D] = []
 var brake_mat: StandardMaterial3D        # shared by the car's stop lamps
+var brake_glows: Array[Node3D] = []
 var blinkers := {}                        # "L"/"R" -> authored lens materials
 const BLINK_COLOUR := Color("#FFB300")
 var steer_hold := 0.0
@@ -281,12 +283,18 @@ func _dismiss_loader() -> void:
 	for side in blinkers:
 		for mat: StandardMaterial3D in blinkers[side]:
 			mat.emission_enabled = true
-			mat.emission = BLINK_COLOUR
+			mat.emission = Glow.emission_colour(BLINK_COLOUR)
+			(mat.get_meta("halo") as Node3D).visible = true
+	if traffic_glows != null:
+		traffic_glows.set_instance_transform(0, Transform3D(Basis(), drive.pos + Vector3.UP))
+		traffic_glows.set_instance_custom_data(0, BLINK_COLOUR)
 	await get_tree().process_frame
 	if is_queued_for_deletion() or not is_inside_tree(): return
 	await get_tree().process_frame
 	if is_queued_for_deletion() or not is_inside_tree(): return
 	warm_signals=false
+	if traffic_glows != null:
+		traffic_glows.set_instance_custom_data(0, Color(1, 0.68, 0.05, 0))
 	_update_lamps(0.0)
 	if loader != null:
 		loader.dismiss()
@@ -588,8 +596,13 @@ func _mount_car(id: String, hex: String) -> void:
 	# (as in the game: red F04438 when on, dark 7F1D1D when off).
 	brake_mat = StandardMaterial3D.new()
 	brake_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	brake_glows.clear()
 	for node in car.find_children("brake_*", "MeshInstance3D", true, false):
 		(node as MeshInstance3D).material_override = brake_mat
+		var glow := Glow.halo(Color("#F04438"), 1.2)
+		glow.position = (node as MeshInstance3D).get_aabb().get_center()
+		node.add_child(glow)
+		brake_glows.append(glow)
 	for side in ["L", "R"]:
 		blinkers[side] = []
 		var lamp := car.find_child("blink_" + side, true, false)
@@ -599,6 +612,11 @@ func _mount_car(id: String, hex: String) -> void:
 		for mi: MeshInstance3D in lamp.find_children("*", "MeshInstance3D", true, false):
 			var mat := Glow.lamp_material(BLINK_COLOUR, Color("#7A5200"), false)
 			mi.material_override = mat
+			var glow := Glow.halo(BLINK_COLOUR, 1.4)
+			glow.position = mi.get_aabb().get_center()
+			glow.visible = false
+			mi.add_child(glow)
+			mat.set_meta("halo", glow)
 			blinkers[side].append(mat)
 
 
@@ -1471,6 +1489,7 @@ func _spawn_traffic() -> void:
 	# A mixed flow (fleet.gd): ordinary cars of several models and paints, and now and then a bus,
 	# a lorry, a van, a taxi or a traffic police car. Cars are MultiMesh copies; the big ones are nodes.
 	var n := int(cfg.traffic.cars)
+	traffic_glows = Glow.batch(self, n * 6)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
 	var kinds: Array = []
@@ -1508,6 +1527,8 @@ func _spawn_traffic() -> void:
 			car.spd = car.base
 		else:
 			car.mm = mm[kind]
+			car.glow_slot = i * 6
+			car.glow_centres = Models.traffic_lenses(kind)
 			car.slot = used.get(kind, 0)
 			used[kind] = car.slot + 1
 			var paint := Fleet.paint(rng)
@@ -1773,6 +1794,12 @@ func _update_traffic(delta: float) -> void:
 			paint.a = 1.0 if car.hazards_left > 0.0 and int(car.hazards_left * 3.0) % 2 == 0 else 0.0
 			multi.set_instance_custom_data(car.slot, paint)
 			multi.set_instance_transform(car.slot, Transform3D(Basis(Vector3.UP, face), at))
+			if car.has("glow_slot"):
+				for i in car.glow_centres.size():
+					var centre: Vector3 = car.glow_centres[i].p
+					var xf := Transform3D(Basis(Vector3.UP, face), at)
+					traffic_glows.set_instance_transform(car.glow_slot + i, Transform3D(Basis(), xf * centre))
+					traffic_glows.set_instance_custom_data(car.glow_slot + i, Color(BLINK_COLOUR.r, BLINK_COLOUR.g, BLINK_COLOUR.b, paint.a))
 
 
 func _update_walkers(delta: float) -> void:
@@ -2247,6 +2274,10 @@ func _question_framing() -> Dictionary:
 func _update_lamps(delta: float) -> void:
 	var lit := controls.brake or drive.speed == 0.0 or not controls.gas
 	brake_mat.albedo_color = Color("#F04438") if lit else Color("#7F1D1D")
+	brake_mat.emission_enabled = lit
+	brake_mat.emission = Glow.emission_colour(Color("#F04438"))
+	brake_mat.emission_energy_multiplier = 6.0
+	for glow in brake_glows: glow.visible = lit
 	steer_hold = steer_hold + delta if controls.steer != 0 else 0.0
 	if controls.steer != 0 and steer_hold >= 0.3:
 		blink.side = "L" if controls.steer > 0 else "R"
@@ -2267,8 +2298,9 @@ func _update_lamps(delta: float) -> void:
 			var active: bool = warm_signals or (on and (hazards or blink.side == side))
 			mat.albedo_color = BLINK_COLOUR if active else Color("#7A5200")
 			mat.emission_enabled = active
-			mat.emission = BLINK_COLOUR
-			mat.emission_energy_multiplier = 2.0
+			mat.emission = Glow.emission_colour(BLINK_COLOUR)
+			mat.emission_energy_multiplier = 6.0
+			(mat.get_meta("halo") as Node3D).visible = active
 
 
 func _apply_tier(next: String) -> void:

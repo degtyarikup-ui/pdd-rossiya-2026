@@ -47,6 +47,13 @@ func _load_model() -> void:
 
 	blink_l = car_root.find_child("blink_L", true, false)
 	blink_r = car_root.find_child("blink_R", true, false)
+	for lamp in [blink_l, blink_r]:
+		if lamp == null: continue
+		for mi: MeshInstance3D in lamp.find_children("*", "MeshInstance3D", true, false):
+			mi.material_override = Glow.lamp_material(Color("#FFB300"), Color("#7A5200"), true)
+			var glow := Glow.halo(Color("#FFB300"), 1.4)
+			glow.position = mi.get_aabb().get_center()
+			mi.add_child(glow)
 	_set_blinkers_visible(false, false)
 
 
