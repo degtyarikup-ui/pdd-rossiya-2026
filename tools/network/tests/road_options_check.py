@@ -53,4 +53,25 @@ for r in cross['roads']:
 partial = surface(build.build(cross), 'marking_white').area
 full = surface(build.build(scene({'centre': 'none'}, 'cross')), 'marking_white').area
 assert 0 < partial < full
+# Disable only the south sidewalk: neighbouring ends are rounded, not pointed cuts.
+sidewalk = scene({}, 'cross')
+for st in sidewalk['layout']['streets']:
+    if any(next(n for n in sidewalk['layout']['nodes'] if n['id'] == nid)['z'] < -80 for nid in (st['a'], st['b'])):
+        south_id = 'road_' + st['id']
+for r in sidewalk['roads']:
+    if r['id'] == south_id:
+        r['walk'] = False
+out = build.build(sidewalk)
+pave = surface(out, 'pavement')
+assert not pave.intersects(Point(6, -40).buffer(0.5))
+assert pave.contains(Point(40, -6)) and pave.contains(Point(-40, -6))
+# Rounded end curbs sit away from the original road edge and use multiple short segments.
+road, _, _, ring = build.ground(sidewalk)
+original = unary_union([Polygon(p['outer'], p['holes']).boundary for p in build.polygons_json(ring)] + [road.boundary]).buffer(0.06)
+from shapely.geometry import LineString
+segs = out['kerbs']['segs']
+ends = [LineString([(segs[i],segs[i+1]),(segs[i+2],segs[i+3])]) for i in range(0,len(segs),4)]
+ends = [line for line in ends if line.length > 0.001 and not original.covers(line)]
+assert len(ends) > 8
+assert all(pave.buffer(0.02).covers(line) for line in ends)
 print('Road options: all checks passed')

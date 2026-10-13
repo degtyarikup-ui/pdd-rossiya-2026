@@ -265,6 +265,11 @@ def build(scene: dict) -> dict:
     # Use the road profile directly: smoothing a narrow lawn can restore the sidewalk.
     no_walk = unary_union([polygon_of(r).buffer(SIDEWALK + 0.1) for r in scene.get("roads", []) if r.get("walk") is False])
     pavement = ring.difference(lawn).difference(no_walk)
+    if not no_walk.is_empty:
+        # A half-width fillet turns cut sidewalks into rounded ends, removing thin
+        # wedges at the junction while keeping the remaining pavement inside its footprint.
+        finish_radius = SIDEWALK * 0.45
+        pavement = pavement.buffer(-finish_radius, quad_segs=24).buffer(finish_radius, quad_segs=24).intersection(pavement)
     # Round the disabled roads together, just like the carriageway: the corner fillets
     # lie outside the original rectangular arms and must also lose their edge paint.
     disabled_edges = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("edge") is False])
@@ -336,8 +341,16 @@ def build(scene: dict) -> dict:
                          "verts": v, "idx": t})
     kerb_segments = walls(road, crop)
     kerb_segments = [v for i in range(0, len(kerb_segments), 4)
-                     if not no_walk.intersects(LineString([(kerb_segments[i], kerb_segments[i+1]), (kerb_segments[i+2], kerb_segments[i+3])]))
+                     if pavement.buffer(0.04).union(islands.buffer(0.04)).intersects(LineString([(kerb_segments[i], kerb_segments[i+1]), (kerb_segments[i+2], kerb_segments[i+3])]))
                      for v in kerb_segments[i:i+4]]
+    if not no_walk.is_empty and not pavement.is_empty:
+        # Close the rounded ends with a kerb too; the old outer/road outlines already
+        # have their own boundaries and must not be emitted a second time.
+        original_edges = unary_union([Polygon(p["outer"], p["holes"]).boundary for p in polygons_json(ring)] + [road.boundary]).buffer(0.06)
+        end_segments = walls(pavement, crop)
+        kerb_segments.extend(v for i in range(0, len(end_segments), 4)
+                             if not original_edges.covers(LineString([(end_segments[i], end_segments[i+1]), (end_segments[i+2], end_segments[i+3])]))
+                             for v in end_segments[i:i+4])
     return {
         "id": scene["id"],
         "surfaces": surfaces,
