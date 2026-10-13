@@ -33,6 +33,10 @@ Markings (`markings`): each item is one of
 and the `colour` is "white" (default) or "yellow". Markings are drawn at MARK_Y, cut to the
 carriageway with a 0.3 m margin (the baked paint reached a little past the edge).
 Signs are not built here (they are baked props of the scene, see situation.gd).
+Outlines: the roads, the islands and the lawns are tidied (closing and opening with a disc, TIDY_RADIUS
+and LAWN_TIDY), so the traced edges do not jitter and the kerbs run smooth. The white edge lines are not
+traced: they are the carriageway's outline offset EDGE_OFFSET inward, so they follow every rounding of
+the kerb; the traced paint is cut back from the kerb (EDGE_BAND) to make room for them.
 """
 import json
 import sys
@@ -78,6 +82,12 @@ def polygon_of(item: dict):
 
 
 CURB_RADIUS = 5.0   # the inner corners of a junction get a curb radius (m), not a chamfer
+TIDY_RADIUS = 0.6   # the outlines of roads and islands are closed and opened with this radius (m):
+                    # the traced edges jitter by a few tenths of a metre, the kerbs must run smooth
+EDGE_OFFSET = 0.25  # the white edge line's centre sits this far inside the kerb (m): where the traced edges are
+EDGE_WIDTH = 0.15   # the traced edges lie 0.22-0.43 m from the kerb (measured on the junction scenes)
+EDGE_BAND = 0.46    # traced paint closer than this to a kerb is cut back: zebra bars and stop lines end there
+ALONG_KERB = 0.4    # a traced polygon with this share of its outline in the kerb band is an edge line: dropped
 
 
 def polygons_json(geom) -> list:
@@ -91,6 +101,16 @@ def polygons_json(geom) -> list:
             "holes": [[[round(x, 3), round(y, 3)] for x, y in ring.coords[:-1]] for ring in p.interiors],
         })
     return out
+
+
+LAWN_TIDY = 2.0     # lawns and flower beds are wide shapes: their traced outlines wave by half a metre
+
+
+def tidy(geom, radius: float = TIDY_RADIUS):
+    """Closing then opening with a disc: small jitter of an outline goes, its large shape stays."""
+    geom = geom.buffer(radius, quad_segs=16).buffer(-radius, quad_segs=16)
+    geom = geom.buffer(-radius, quad_segs=16).buffer(radius, quad_segs=16)
+    return geom.simplify(0.01)
 
 
 TRACK_GAUGE = 1.524    # m between the rails (Russian tram gauge)
@@ -127,9 +147,87 @@ def road_geometry(scene: dict):
     box = crop_box(scene)
     roads = unary_union(filled) if filled else Polygon()
     # Closing: the concave corners of the outline (where two roads meet) get a rounded fillet.
-    roads = roads.buffer(CURB_RADIUS, quad_segs=32).buffer(-CURB_RADIUS, quad_segs=32).intersection(box)
-    islands = unary_union(holes).intersection(roads) if holes else Polygon()
+    roads = roads.buffer(CURB_RADIUS, quad_segs=32).buffer(-CURB_RADIUS, quad_segs=32)
+    # The crop square's edges are cuts, not kerbs: tidy rounds convex corners, so the band at the cut keeps
+    # its square corners (the neighbouring scene meets the road there, see the stitching of the editor).
+    cut_band = box.exterior.buffer(1.5, quad_segs=8)
+    roads = tidy(roads).difference(cut_band).union(roads.intersection(cut_band)).intersection(box)
+    roads = street_ends(roads, box)
+    islands = tidy(unary_union(holes)).intersection(roads) if holes else Polygon()
     return roads.difference(islands), islands, roads
+
+
+STREET_HALF = 4.2      # the game's street (street.gd ROAD_HALF): its carriageway meets the junction's
+STREET_LEAD = 8.0      # metres of the street's exact profile kept inside the square at each street end
+
+
+def street_ends(roads, box: Polygon):
+    """Where the game's street goes on (a side's road about 8.4 m wide in its middle), the last metres
+    of the junction are the street's own profile: the kerb, the edge line and the pavement meet the
+    street without a step (the traced roads are 8.25 m and wander by a few centimetres)."""
+    c = box.bounds[2]
+    out = roads
+    for side in ("n", "s", "e", "w"):
+        if side in ("n", "s"):
+            z = c - 0.05 if side == "n" else -c + 0.05
+            cut = roads.intersection(LineString([(-c, z), (c, z)]))
+        else:
+            x = c - 0.05 if side == "e" else -c + 0.05
+            cut = roads.intersection(LineString([(x, -c), (x, c)]))
+        if cut.is_empty:
+            continue
+        b = cut.bounds
+        lo, hi = (b[0], b[2]) if side in ("n", "s") else (b[1], b[3])
+        if abs((lo + hi) / 2) > 0.4 or not 7.6 < hi - lo < 9.2:
+            continue
+        h, a, e = STREET_HALF, c - STREET_LEAD, c + 1.0
+        def strip(w):
+            return {"n": Polygon([(-w, a), (w, a), (w, e), (-w, e)]), "s": Polygon([(-w, -e), (w, -e), (w, -a), (-w, -a)]),
+                    "e": Polygon([(a, -w), (e, -w), (e, w), (a, w)]), "w": Polygon([(-e, -w), (-a, -w), (-a, w), (-e, w)])}[side]
+        # Inside the strip the road is exactly the street; further in, the junction's own outline goes on.
+        out = out.difference(strip(h + 0.6)).union(strip(h))
+    return out.intersection(box)
+
+
+def edge_lines(roads, box: Polygon):
+    """The white edge lines: a band EDGE_WIDTH wide, EDGE_OFFSET inside every kerb of the roads
+    (the outer kerb and the islands alike). Offset from the outline itself, so the line follows every
+    rounding of the kerb exactly. The cut at the crop square is no kerb and gets no line."""
+    inner = roads.buffer(-(EDGE_OFFSET - EDGE_WIDTH / 2), quad_segs=32)
+    outer = roads.buffer(-(EDGE_OFFSET + EDGE_WIDTH / 2), quad_segs=32)
+    band = inner.difference(outer)
+    return band.difference(box.exterior.buffer(1.0))
+
+
+def along_kerb(poly, kerb) -> float:
+    """The share of a polygon's outline that lies in the kerb's band (its edge runs along the kerb)."""
+    total = near = 0
+    for ring in [poly.exterior, *poly.interiors]:
+        length = ring.length
+        if length <= 0:
+            continue
+        for t in np.linspace(0.0, 1.0, int(min(400, max(8, length * 2))), endpoint=False):
+            total += 1
+            near += ring.interpolate(t * length).distance(kerb) < EDGE_BAND + 0.05
+    return near / total if total else 0.0
+
+
+def paint_geometry(m: dict, roads):
+    """Traced paint of one marking item, without the lines that run along a kerb: the edge lines are
+    drawn from the kerb itself (edge_lines), so a traced copy beside them would be a double line."""
+    kerb = roads.boundary
+    parts = []
+    for pl in m.get("polygons", []):
+        p = polygon_of(pl)
+        if p.is_empty or (along_kerb(p, kerb) > ALONG_KERB and p.area > 0):
+            continue
+        parts.append(p)
+    return unary_union(parts) if parts else Polygon()
+
+
+def without_kerb_paint(geom, roads):
+    """Traced paint is cut back from the kerb (zebra bars and stop lines end at it)."""
+    return geom.difference(roads.boundary.buffer(EDGE_BAND))
 
 
 def triangulate(geom):
@@ -153,8 +251,14 @@ def triangulate(geom):
     if holes:
         spec["holes"] = np.array(holes, dtype=float)
     result = triangle.triangulate(spec, "p")
-    flat = np.round(result["vertices"], 3).ravel().tolist()
-    return flat, result["triangles"].ravel().tolist()
+    tris = result["triangles"].copy()
+    pts = result["vertices"]
+    a, b, c = pts[tris[:, 0]], pts[tris[:, 1]], pts[tris[:, 2]]
+    signed = (b[:, 0] - a[:, 0]) * (c[:, 1] - a[:, 1]) - (c[:, 0] - a[:, 0]) * (b[:, 1] - a[:, 1])
+    # A clockwise triangle is culled as its back side: the game would show a hole. Wind them all the same way.
+    tris[signed < 0] = tris[signed < 0][:, [0, 2, 1]]
+    flat = np.round(pts, 3).ravel().tolist()
+    return flat, tris.ravel().tolist()
 
 
 def on_crop_edge(a, b, c: float, tol: float = 1e-3) -> bool:
@@ -249,9 +353,8 @@ def ground(scene: dict):
     road, islands, roads_all = road_geometry(scene)
     box = crop_box(scene)
     # The pavement ring around the roads (offset by the pavement width), raised.
-    ring = unary_union(
-        [Polygon(r["outer"]).buffer(0) for r in scene.get("roads", [])]
-    ).buffer(SIDEWALK, quad_segs=32).difference(road.union(islands)).intersection(box)   # 32: smooth corners, no steps
+    # Grown from the tidied roads (roads_all), not the raw outlines: the pavement's edge is as smooth as the kerb.
+    ring = roads_all.buffer(SIDEWALK, quad_segs=32).difference(road.union(islands)).intersection(box)   # 32: smooth corners, no steps
     return road, islands, roads_all, ring
 
 
@@ -261,15 +364,11 @@ def build(scene: dict) -> dict:
     crop = float(scene.get("crop", 90.0))
     # Lawns win over the pavement: a flower bed drawn on the pavement stands on the lawn level.
     lawn_polys = [polygon_of(l) for l in scene.get("lawns", [])]
-    lawn = (unary_union(lawn_polys) if lawn_polys else Polygon()).intersection(box).difference(roads_all)
+    # The lawns' outlines are traced too: they are tidied like the roads (the pavement is cut by them).
+    lawn = (tidy(unary_union(lawn_polys), LAWN_TIDY) if lawn_polys else Polygon()).intersection(box).difference(roads_all)
     # Use the road profile directly: smoothing a narrow lawn can restore the sidewalk.
     no_walk = unary_union([polygon_of(r).buffer(SIDEWALK + 0.1) for r in scene.get("roads", []) if r.get("walk") is False])
     pavement = ring.difference(lawn).difference(no_walk)
-    if not no_walk.is_empty:
-        # A half-width fillet turns cut sidewalks into rounded ends, removing thin
-        # wedges at the junction while keeping the remaining pavement inside its footprint.
-        finish_radius = SIDEWALK * 0.45
-        pavement = pavement.buffer(-finish_radius, quad_segs=24).buffer(finish_radius, quad_segs=24).intersection(pavement)
     # Round the disabled roads together, just like the carriageway: the corner fillets
     # lie outside the original rectangular arms and must also lose their edge paint.
     disabled_edges = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("edge") is False])
@@ -281,15 +380,14 @@ def build(scene: dict) -> dict:
         colour = m.get("colour", "white")
         if colour not in MARK_COLOURS:
             raise ValueError(f"{scene.get('id')}: marking {m.get('id')} has unknown colour {colour!r}")
-        geom = marking_geometry(m)
-        if colour == "white" and not no_edge.is_empty:
-            shoulder = road.difference(road.buffer(-0.6)).intersection(no_edge)
-            geom = geom.difference(shoulder)
+        if m.get("type", "solid") == "paint":
+            geom = without_kerb_paint(paint_geometry(m, road), road)
+        else:
+            geom = marking_geometry(m)
         marks.setdefault(colour, []).append(geom)
+    # The edge lines follow the kerbs (also the roundabout's islands).
+    marks.setdefault("white", []).append(edge_lines(road, box).difference(no_edge))
 
-    edges = road.buffer(-0.175, quad_segs=32).difference(road.buffer(-0.325, quad_segs=32))
-    edges = edges.difference(box.exterior.buffer(1.0)).difference(no_edge)
-    marks.setdefault("white", []).append(edges)
     v, t = triangulate(road.difference(sand))
     asphalt = {"id": "asphalt", "y": ROAD_Y, "layer": "asphalt", "colour": ASPHALT, "verts": v, "idx": t}
     # Dividing strips (a road item with "green": its islands are lawns, raised like the pavement).
@@ -301,9 +399,7 @@ def build(scene: dict) -> dict:
     median = {"id": "median", "y": KERB + 0.005, "layer": "grass", "colour": LAWN_COLOUR, "verts": v, "idx": t}
     v, t = triangulate(pavement)
     pave = {"id": "pavement", "y": KERB, "layer": "pavement", "colour": PAVEMENT, "verts": v, "idx": t}
-    v, t = triangulate(lawn)
-    lawn_surface = {"id": "lawn", "y": LAWN_Y, "layer": "grass", "colour": LAWN_COLOUR, "verts": v, "idx": t}
-    surfaces = [asphalt, island, median, pave, lawn_surface]
+    surfaces = [asphalt, island, median, pave]
     # Three metres of blended colours at asphalt joins; never fade the outer sandy shoulder.
     asphalt_join = sand.boundary.intersection(road.difference(sand).buffer(0.01)) if not sand.is_empty else Polygon()
     previous = sand
@@ -320,7 +416,7 @@ def build(scene: dict) -> dict:
     if scene.get("layout"):
         # A scene laid out from a road plan (the editor) has its own ground everywhere else: the baked
         # scene's old roads (where the plan has none now) are covered, and the game drops them (covers()).
-        v, t = triangulate(box.difference(roads_all.union(pavement).union(lawn)))
+        v, t = triangulate(box.difference(roads_all.union(pavement)))
         surfaces.append({"id": "ground", "y": LAWN_Y, "layer": "grass", "colour": LAWN_COLOUR, "verts": v, "idx": t})
     if scene.get("tracks"):
         marks.setdefault("rail", []).append(rails(scene))
@@ -341,16 +437,8 @@ def build(scene: dict) -> dict:
                          "verts": v, "idx": t})
     kerb_segments = walls(road, crop)
     kerb_segments = [v for i in range(0, len(kerb_segments), 4)
-                     if pavement.buffer(0.04).union(islands.buffer(0.04)).intersects(LineString([(kerb_segments[i], kerb_segments[i+1]), (kerb_segments[i+2], kerb_segments[i+3])]))
+                     if not no_walk.intersects(LineString([(kerb_segments[i], kerb_segments[i+1]), (kerb_segments[i+2], kerb_segments[i+3])]))
                      for v in kerb_segments[i:i+4]]
-    if not no_walk.is_empty and not pavement.is_empty:
-        # Close the rounded ends with a kerb too; the old outer/road outlines already
-        # have their own boundaries and must not be emitted a second time.
-        original_edges = unary_union([Polygon(p["outer"], p["holes"]).boundary for p in polygons_json(ring)] + [road.boundary]).buffer(0.06)
-        end_segments = walls(pavement, crop)
-        kerb_segments.extend(v for i in range(0, len(end_segments), 4)
-                             if not original_edges.covers(LineString([(end_segments[i], end_segments[i+1]), (end_segments[i+2], end_segments[i+3])]))
-                             for v in end_segments[i:i+4])
     return {
         "id": scene["id"],
         "surfaces": surfaces,

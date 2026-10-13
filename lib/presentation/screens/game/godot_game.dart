@@ -53,6 +53,8 @@ class GodotGame {
   static const _tipsSeenKey = 'game_tips_seen';
   static const _firstRunSeenKey = 'game_seen';
   static const _pendingRunKey = 'game_run_pending';
+  // The cars earned by a run ("id|paint"), until the next garage visit shows them rolling out.
+  static const _pendingRevealKey = 'game_reveal_pending';
   static const _runQuestions = GameState.runQuestions;
   static Future<bool>? _available;
   static Future<bool>? _webAvailable;
@@ -93,12 +95,14 @@ class GodotGame {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final garage = await _garageJson(ref, lang: lang);
     if (!context.mounted) return;
+    final safe = _safeArea(context);
     _running = true;
     String? json;
     try {
       json = await _start(context, [
         '--lang=$lang',
         if (dark) '--dark',
+        ...safe,
         '--garage=${jsonEncode(garage)}',
       ]);
     } on PlatformException {
@@ -180,6 +184,9 @@ class GodotGame {
 
   /// Opens the game and waits for its summary (JSON), null if it did not end
   /// with one. Android and iOS: the native screen; web: the game's route.
+  /// The layout the app measures, in dp: the status and navigation bars (the engine does not report the
+  /// status bar on Android, so the game would draw its top bar under it) and the screen width, which
+  /// sets the game's dp scale (Ui.dp) so its sizes are the app's sizes.
   static List<String> _safeArea(BuildContext context) {
     final padding = MediaQuery.paddingOf(context);
     final width = MediaQuery.sizeOf(context).width;
@@ -226,12 +233,13 @@ class GodotGame {
           // «НОВАЯ» until the model has been driven once (seen == null: no badge).
           'new': seen != null && !seen.contains(id),
           'paints': [
-            for (final paint in premium
-                ? gamePaintColors.keys
-                : [
-                    for (final c in owned)
-                      if (c.id == id) c.paint,
-                  ])
+            for (final paint
+                in premium
+                    ? gamePaintColors.keys
+                    : [
+                        for (final c in owned)
+                          if (c.id == id) c.paint,
+                      ])
               {
                 'paint': paint,
                 'name': gamePaintName(paint),
@@ -241,11 +249,15 @@ class GodotGame {
         },
     ];
     final pending = await _pendingRun();
-    final selectedId = prefs?.getString(_vehicleKey) ?? GameGarageService.starter.id;
-    final selectedPaint = prefs?.getString(_paintKey) ?? GameGarageService.starter.paint;
+    final selectedId =
+        prefs?.getString(_vehicleKey) ?? GameGarageService.starter.id;
+    final selectedPaint =
+        prefs?.getString(_paintKey) ?? GameGarageService.starter.paint;
+    final reveal = await _takeReveal(selectedId, selectedPaint);
     return {
       'cars': cars,
       'selected': {'id': selectedId, 'paint': selectedPaint},
+      'reveal': ?reveal,
       'record': prefs?.getInt(_bestScoreKey) ?? 0,
       'tips': !(prefs?.containsKey(_tipsSeenKey) ?? false),
       // The app's own switches: sound effects and the vibration.
@@ -263,7 +275,10 @@ class GodotGame {
             : appL10n.gameRunsPill(runs, GameRunsService.maxRuns),
         if (pending != null) 'resume': appL10n.gameLobbyContinue,
         if (pending != null)
-          'resume_text': appL10n.gameLobbyProgress(pending.answered, _runQuestions),
+          'resume_text': appL10n.gameLobbyProgress(
+            pending.answered,
+            _runQuestions,
+          ),
         'no_runs': appL10n.gameRunsNextIn(
           gameFuelCountdown(GameRunsService.instance.nextRefillAt),
         ),
@@ -273,8 +288,37 @@ class GodotGame {
   }
 
   static String _hex(Color c) {
-    String channel(double v) => (v * 255).round().toRadixString(16).padLeft(2, '0');
+    String channel(double v) =>
+        (v * 255).round().toRadixString(16).padLeft(2, '0');
     return '#${channel(c.r)}${channel(c.g)}${channel(c.b)}'.toUpperCase();
+  }
+
+  /// The cars a run earned wait until the next garage visit.
+  static Future<void> _addPendingReveals(List<GameCar> cars) async {
+    final prefs = await _prefs();
+    if (prefs == null) return;
+    final waiting = prefs.getStringList(_pendingRevealKey) ?? const <String>[];
+    await prefs.setStringList(_pendingRevealKey, [
+      ...waiting,
+      for (final car in cars) '${car.id}|${car.paint}',
+    ]);
+  }
+
+  /// The car on the stand rolls out of the garage once, if a run has just earned it. The waiting
+  /// list is cleared on every garage visit: a car that was not chosen in the reveal dialog stays
+  /// in the garage without the roll-out.
+  static Future<Map<String, String>?> _takeReveal(
+    String id,
+    String paint,
+  ) async {
+    final prefs = await _prefs();
+    if (prefs == null) return null;
+    final waiting = prefs.getStringList(_pendingRevealKey);
+    if (waiting == null) return null;
+    await prefs.remove(_pendingRevealKey);
+    final color = gamePaintColors[paint];
+    if (color == null || !waiting.contains('$id|$paint')) return null;
+    return {'id': id, 'paint': paint, 'hex': _hex(color)};
   }
 
   static Future<SharedPreferences?> _prefs() async {
@@ -346,6 +390,7 @@ class GodotGame {
         if (car != null) unlocked.add(car);
       }
       if (unlocked.isNotEmpty) {
+        await _addPendingReveals(unlocked);
         unawaited(ProgressSyncService.instance.syncWithServer());
       }
     }
@@ -357,7 +402,12 @@ class GodotGame {
 
     // Left before the last question (even before the first answer): the run waits for «Продолжить».
     if (!finished) {
-      await _keepPendingRun(summary, runId: runId, score: score, correct: correct);
+      await _keepPendingRun(
+        summary,
+        runId: runId,
+        score: score,
+        correct: correct,
+      );
       return;
     }
     await _clearPendingRun();
@@ -392,7 +442,9 @@ class GodotGame {
         streak: (summary['streak'] as num?)?.toInt() ?? 0,
         violations: (summary['violations'] as num?)?.toInt() ?? 0,
         distanceM: (summary['distance_m'] as num?)?.toInt() ?? 0,
-        mistakes: [for (final m in (summary['mistakes'] as List? ?? const [])) '$m'],
+        mistakes: [
+          for (final m in (summary['mistakes'] as List? ?? const [])) '$m',
+        ],
       );
       await prefs.setString(_pendingRunKey, jsonEncode(pending.toJson()));
     } catch (_) {
@@ -527,7 +579,8 @@ class GodotGame {
     );
     final prefs = await _prefs();
     final car = prefs?.getString(_vehicleKey) ?? GameGarageService.starter.id;
-    final paint = prefs?.getString(_paintKey) ?? GameGarageService.starter.paint;
+    final paint =
+        prefs?.getString(_paintKey) ?? GameGarageService.starter.paint;
     if (!context.mounted) return;
     await showGeneralDialog<void>(
       context: context,
@@ -610,7 +663,10 @@ class GodotGame {
     );
   }
 
-  static Future<Question?> _questionFor(WidgetRef ref, GameSituation situation) async {
+  static Future<Question?> _questionFor(
+    WidgetRef ref,
+    GameSituation situation,
+  ) async {
     _abQuestions ??= await ref
         .read(questionsDataSourceProvider)
         .loadTickets(TicketCategory.ab);
@@ -629,7 +685,6 @@ class GodotGame {
     return inTicket[number - 1];
   }
 }
-
 
 /// A run left in the middle: its progress, the score and correct answers already
 /// booked. «Продолжить заезд» continues it without a new charge.
@@ -655,25 +710,25 @@ class _PendingRun {
   });
 
   factory _PendingRun.fromJson(Map<String, dynamic> json) => _PendingRun(
-        runId: json['run_id'] as String? ?? GameLeaderboardService.newRunId(),
-        answered: (json['answered'] as num?)?.toInt() ?? 0,
-        correct: (json['correct'] as num?)?.toInt() ?? 0,
-        score: (json['score'] as num?)?.toInt() ?? 0,
-        streak: (json['streak'] as num?)?.toInt() ?? 0,
-        violations: (json['violations'] as num?)?.toInt() ?? 0,
-        distanceM: (json['distance_m'] as num?)?.toInt() ?? 0,
-        mistakes: [for (final m in (json['mistakes'] as List? ?? const [])) '$m'],
-      );
+    runId: json['run_id'] as String? ?? GameLeaderboardService.newRunId(),
+    answered: (json['answered'] as num?)?.toInt() ?? 0,
+    correct: (json['correct'] as num?)?.toInt() ?? 0,
+    score: (json['score'] as num?)?.toInt() ?? 0,
+    streak: (json['streak'] as num?)?.toInt() ?? 0,
+    violations: (json['violations'] as num?)?.toInt() ?? 0,
+    distanceM: (json['distance_m'] as num?)?.toInt() ?? 0,
+    mistakes: [for (final m in (json['mistakes'] as List? ?? const [])) '$m'],
+  );
 
   /// The counters the game restores (run.gd restore) and the run's id.
   Map<String, dynamic> toJson() => {
-        'run_id': runId,
-        'answered': answered,
-        'correct': correct,
-        'score': score,
-        'streak': streak,
-        'violations': violations,
-        'distance_m': distanceM,
-        'mistakes': mistakes,
-      };
+    'run_id': runId,
+    'answered': answered,
+    'correct': correct,
+    'score': score,
+    'streak': streak,
+    'violations': violations,
+    'distance_m': distanceM,
+    'mistakes': mistakes,
+  };
 }

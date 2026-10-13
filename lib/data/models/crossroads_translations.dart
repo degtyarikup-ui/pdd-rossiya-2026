@@ -538,7 +538,8 @@ class CrossroadsTranslations {
         title: 'Equal crossroads with pedestrian',
         subtitle:
             'Priority to the right between cars and pedestrian priority on crosswalk.',
-        pddArticle: 'Clauses 13.1, 13.11 and 14.1 of the Russian Traffic Regulations',
+        pddArticle:
+            'Clauses 13.1, 13.11 and 14.1 of the Russian Traffic Regulations',
         actors: {
           'pedestrian_east': LocalizedActorText(
             name: 'Pedestrian',
@@ -566,7 +567,8 @@ class CrossroadsTranslations {
         title: 'T-junction: tram and pedestrian',
         subtitle:
             'Tram priority on main road and yielding to pedestrian from secondary road.',
-        pddArticle: 'Clauses 13.1, 13.9 and 14.1 of the Russian Traffic Regulations',
+        pddArticle:
+            'Clauses 13.1, 13.9 and 14.1 of the Russian Traffic Regulations',
         actors: {
           'pedestrian_east': LocalizedActorText(
             name: 'Pedestrian',
@@ -622,7 +624,8 @@ class CrossroadsTranslations {
         title: 'Main road turns right and pedestrian',
         subtitle:
             'Maneuvering on main road with sign 8.13 and yielding to pedestrian.',
-        pddArticle: 'Clauses 13.1, 13.10 and 13.11 of the Russian Traffic Regulations',
+        pddArticle:
+            'Clauses 13.1, 13.10 and 13.11 of the Russian Traffic Regulations',
         actors: {
           'pedestrian_south': LocalizedActorText(
             name: 'Pedestrian',

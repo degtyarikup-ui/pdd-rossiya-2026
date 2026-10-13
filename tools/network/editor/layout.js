@@ -315,13 +315,20 @@ const Layout = (() => {
 
   // The path through node `nid` for a car on street `inSt` (lane offset `loIn`), out by `exit` (an exitsOf entry),
   // as points: the start (already on the lane), the junction, then `tail` metres along the way out.
-  function through(L, inSt, nid, exitKey, exit, start, loIn, crop, tail = 20) {
+  function through(L, inSt, nid, exitKey, exit, start, loIn, crop, tail = 20, inLaneIdx = null) {
     const n = nodeOf(L, nid), C = xy(n);
     const inLine = lineFrom(L, inSt, nid);
     const tin = mul(along(inLine, 1).t, -1);
     const outSt = exit.street;
     const outLanes = laneOffsets(outSt);
-    const loOut = exitKey === "right" ? outLanes.at(-1) : outLanes[0];
+    const inLanes = laneOffsets(inSt);
+    const resolvedInIdx = (inLaneIdx !== null && inLaneIdx !== undefined)
+      ? inLaneIdx
+      : Math.max(0, inLanes.findIndex((l) => Math.abs(l - loIn) < 0.05));
+    const loOut = exitKey === "right" ? outLanes.at(-1)
+      : (exitKey === "straight" && outLanes.length > 1 && resolvedInIdx > 0)
+        ? outLanes[Math.min(outLanes.length - 1, resolvedInIdx)]
+        : outLanes[0];
     const ring = n.ring;
     const pts = [start];
     if (ring) {
@@ -379,7 +386,10 @@ const Layout = (() => {
     const n = nodeOf(L, nid);
     const q = (scene.question || {}).maneuver;
     const lanes = laneOffsets(st);
-    const lo = q === "right" ? lanes.at(-1) : lanes[0];
+    const defaultLane = q === "right" ? lanes.length - 1 : 0;
+    const laneIdx = (pl.lane !== undefined && pl.lane !== null) ? Number(pl.lane) : defaultLane;
+    const safeLaneIdx = Math.max(0, Math.min(lanes.length - 1, laneIdx));
+    const lo = lanes[safeLaneIdx] ?? lanes[0];
     const kind = nodeKind(L, n, crop);
     const inLine = lineFrom(L, st, nid);
     const total = polyLen(inLine);
@@ -392,7 +402,7 @@ const Layout = (() => {
     const s = along(inLine, carD);
     const tin = mul(s.t, -1);
     const stop = add(s.p, mul(right(tin), lo));
-    return { st, nid, kind, lo, stop, tin, sd: carD, total };
+    return { st, nid, kind, lo, stop, tin, sd: carD, total, lanes, laneIndex: safeLaneIdx };
   }
 
   // Without a choice: the street that comes in from the south side, driven north.
@@ -430,7 +440,7 @@ const Layout = (() => {
     if (kind === "junction" || kind === "ring") {
       const exits = exitsOf(L, st, nid);
       for (const [key, ex] of Object.entries(exits)) {
-        const r = through(L, st, nid, key, ex, stop, lo, crop);
+        const r = through(L, st, nid, key, ex, stop, lo, crop, 20, plan.laneIndex);
         const tout = key === "uturn" ? mul(tin, -1) : along(lineFrom(L, ex.street, nid), 1).t;
         const own = (L.paths || {})[key];
         routes.push({ id: `manoeuvre_${key}`, kind: "manoeuvre", auto: !own, manual: !!own, exit: key, points: own ? own.map(P) : r.points.map(P),
@@ -486,12 +496,20 @@ const Layout = (() => {
     // The question's manoeuvre must be one the plan has.
     const ways = r.routes.filter((x) => x.kind === "manoeuvre").map((x) => x.exit);
     if (scene.question && ways.length && !ways.includes(scene.question.maneuver)) scene.question.maneuver = ways.includes("straight") ? "straight" : ways[0];
-    // A participant follows the plan too: its path is rebuilt from its place and the way it was asked to go.
+    return applyActors(scene);
+  }
+
+  // A participant follows the plan: its path is rebuilt from its place and the way it was asked to go.
+  // `plan`: a scene with a layout to find the lanes in (a traced scene lends its detected plan).
+  function applyActors(scene, plan = scene) {
+    if (!plan.layout || !plan.layout.streets.length) return scene;
     for (const a of scene.actors || []) {
       if (!a.way) continue;
-      const path = pathFrom(scene, a.pos, a.yaw, a.way);
-      if (!path) continue;
       const rid = `actor_${a.id}`;
+      const existing = (scene.routes || []).find((x) => x.id === rid);
+      if (existing && existing.manual) continue;
+      const path = pathFrom(plan, a.pos, a.yaw, a.way);
+      if (!path) continue;
       scene.routes = scene.routes.filter((x) => x.id !== rid);
       scene.routes.push({ id: rid, kind: "actor", auto: true, points: path.map(P) });
       a.route = rid;
@@ -816,8 +834,8 @@ const Layout = (() => {
 
   return {
     medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf,
-    nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, snapPoint, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
-    splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading,
+    applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, snapPoint, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
+    splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading, laneOffsets,
   };
 })();
 

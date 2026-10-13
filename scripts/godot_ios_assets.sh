@@ -22,9 +22,14 @@ rm -rf "$OUT/libgodot.ios.release.xcframework" "$OUT/MoltenVK.xcframework"
 mv "$TMP/libgodot.ios.release.xcframework" "$TMP/MoltenVK.xcframework" "$OUT/"
 # The template's SwiftUI demo app (defines _main) would clash with the Flutter app's main:
 # the -ObjC link flag of CocoaPods pulls its object in. The embedding needs none of it.
-ar -t "$OUT/libgodot.ios.release.xcframework/ios-arm64/libgodot.a" | grep -q '^app\.ios\.' \
-  && ar -d "$OUT/libgodot.ios.release.xcframework/ios-arm64/libgodot.a" app.ios.template_release.arm64.o \
-  && ranlib "$OUT/libgodot.ios.release.xcframework/ios-arm64/libgodot.a"
+# (The member list goes through a file: `ar -t | grep -q` exits early and, with pipefail, the
+# check fails silently, so the object would stay in the library.)
+LIB="$OUT/libgodot.ios.release.xcframework/ios-arm64/libgodot.a"
+ar -t "$LIB" > "$TMP/members.txt"
+if grep -q '^app\.ios\.' "$TMP/members.txt"; then
+  ar -d "$LIB" app.ios.template_release.arm64.o
+  ranlib "$LIB"
+fi
 python3 tools/godot_export/export_ui.py >/dev/null
 godot --headless --path game_godot --import >/dev/null 2>&1 || true
 godot --headless --path game_godot --export-pack "iOS" "$PWD/$OUT/game.pck" >/dev/null 2>&1

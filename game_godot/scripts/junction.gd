@@ -20,8 +20,13 @@ class Path:
 	var length := 0.0
 
 	func _init(pts: Array) -> void:
-		for p in pts:
-			points.append(Vector3(p[0], p[1], p[2]) if p.size() == 3 else Vector3(p[0], 0, p[1]))
+		if pts.size() >= 3:
+			var sm := Situation._smooth(pts)
+			for p in sm:
+				points.append(Vector3(p.x, 0, p.y))
+		else:
+			for p in pts:
+				points.append(Vector3(p[0], p[1], p[2]) if p.size() == 3 else Vector3(p[0], 0, p[1]))
 		cum.append(0.0)
 		for i in range(1, points.size()):
 			length += points[i].distance_to(points[i - 1])
@@ -67,6 +72,7 @@ class Motion:
 	var clear_distance: float
 	var active := false
 	var waits_for_player := true
+	var config_waits_for_player := true
 	var dependencies: Array = []
 	var cleared := false
 	var done := false
@@ -116,27 +122,98 @@ func _init(sit: Situation) -> void:
 		m.stop_for = INF if str(a.stopFor) == "inf" else a.stopFor
 		m.hold_for = a.holdFor
 		m.stays_put = a.staysPut
+		m.config_waits_for_player = bool(a.get("waitsForPlayer", true))
+		m.waits_for_player = true
 		for n in m.node.find_children("wheel_*", "", true, false):
 			m.wheels.append(n)
 		for n in m.node.find_children("leg_*", "", true, false):
 			m.legs.append(n)
 		motions.append(m)
+	# The lamps show the scene's own state from the start (the model itself has a red one lit).
+	if situation.lights.size() and _light_state() != "":
+		set_lights(_light_state())
+
+
+## The lamps: colour (lit) and dark tone. Each lamp is drawn 1.8 times larger about its own centre and
+## has a halo at that centre (in the world), so the light reads from afar.
+const LAMPS := { "lamp_red": [Color("#FF3838"), Color("#351719")], "lamp_yellow": [Color("#FFD52A"), Color("#352D14")],
+	"lamp_green": [Color("#36FF88"), Color("#123126")] }
+const TRAM_LAMPS := {
+	"lamp_tram_bottom": [Color("#FFFFFF"), Color("#20252C")],
+	"lamp_tram_mid": [Color("#FFFFFF"), Color("#20252C")],
+	"lamp_tram_left": [Color("#FFFFFF"), Color("#20252C")],
+	"lamp_tram_right": [Color("#FFFFFF"), Color("#20252C")]
+}
+const LAMP_ENLARGE := 1.8
+const HALO_SIZE := 3.0
 
 
 func set_lights(state: String) -> void:
+	var tram_signal: String = str(data.get("trafficLights", {}).get("tram", "straight"))
 	for light in situation.lights:
-		var colors := { "lamp_red": [Color("#FF3838"), Color("#351719")], "lamp_yellow": [Color("#FFD52A"), Color("#352D14")],
-			"lamp_green": [Color("#36FF88"), Color("#123126")] }
-		for lamp_name in colors:
-			var lamp := light.find_child(lamp_name, true, false)
+		for lamp_name in LAMPS:
+			var lamp := light.find_child(lamp_name, true, false) as Node3D
 			if lamp == null:
 				continue
+			var colour: Color = LAMPS[lamp_name][0]
 			var on: bool = lamp_name == "lamp_" + state or (state == "flashing_yellow" and lamp_name == "lamp_yellow")
-			for mi in lamp.find_children("*", "MeshInstance3D", true, false) + ([lamp] if lamp is MeshInstance3D else []):
-				var mat := StandardMaterial3D.new()
-				mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-				mat.albedo_color = colors[lamp_name][0 if on else 1]
-				(mi as MeshInstance3D).material_override = mat
+			var discs: Array = lamp.find_children("*", "MeshInstance3D", true, false)
+			if lamp is MeshInstance3D:
+				discs.append(lamp)
+			if not lamp.has_meta("halo"):
+				var box := AABB()
+				for i in discs.size():
+					var world_box: AABB = (discs[i] as MeshInstance3D).global_transform * (discs[i] as MeshInstance3D).get_aabb()
+					box = world_box if i == 0 else box.merge(world_box)
+				var centre := box.get_center()
+				for disc: MeshInstance3D in discs:
+					disc.global_transform = Transform3D(Basis.from_scale(Vector3.ONE * LAMP_ENLARGE), centre * (1.0 - LAMP_ENLARGE)) * disc.global_transform
+				var halo := Glow.halo(colour, HALO_SIZE)
+				light.add_child(halo)
+				halo.global_position = centre
+				lamp.set_meta("halo", halo)
+			(lamp.get_meta("halo") as Node3D).visible = on
+			for disc: MeshInstance3D in discs:
+				disc.material_override = Glow.lamp_material(colour, LAMPS[lamp_name][1], on)
+
+		for lamp_name in TRAM_LAMPS:
+			var lamp := light.find_child(lamp_name, true, false) as Node3D
+			if lamp == null:
+				continue
+			var colour: Color = TRAM_LAMPS[lamp_name][0]
+			var on: bool = false
+			if tram_signal == "straight":
+				on = (lamp_name == "lamp_tram_bottom" or lamp_name == "lamp_tram_mid")
+			elif tram_signal == "left":
+				on = (lamp_name == "lamp_tram_bottom" or lamp_name == "lamp_tram_left")
+			elif tram_signal == "right":
+				on = (lamp_name == "lamp_tram_bottom" or lamp_name == "lamp_tram_right")
+			elif tram_signal == "stop":
+				on = (lamp_name != "lamp_tram_bottom")
+			elif tram_signal == "all":
+				on = true
+			elif tram_signal == "off":
+				on = false
+			else:
+				on = (lamp_name == "lamp_tram_bottom" or lamp_name == "lamp_tram_mid")
+			var discs: Array = lamp.find_children("*", "MeshInstance3D", true, false)
+			if lamp is MeshInstance3D:
+				discs.append(lamp)
+			if not lamp.has_meta("halo"):
+				var box := AABB()
+				for i in discs.size():
+					var world_box: AABB = (discs[i] as MeshInstance3D).global_transform * (discs[i] as MeshInstance3D).get_aabb()
+					box = world_box if i == 0 else box.merge(world_box)
+				var centre := box.get_center()
+				for disc: MeshInstance3D in discs:
+					disc.global_transform = Transform3D(Basis.from_scale(Vector3.ONE * LAMP_ENLARGE), centre * (1.0 - LAMP_ENLARGE)) * disc.global_transform
+				var halo := Glow.halo(colour, HALO_SIZE * 0.75)
+				light.add_child(halo)
+				halo.global_position = centre
+				lamp.set_meta("halo", halo)
+			(lamp.get_meta("halo") as Node3D).visible = on
+			for disc: MeshInstance3D in discs:
+				disc.material_override = Glow.lamp_material(colour, TRAM_LAMPS[lamp_name][1], on)
 
 
 ## pathsConflict: the swept footprints of two paths overlap somewhere.
@@ -216,7 +293,7 @@ func resolve(player: Drive) -> void:
 	for i in ordered.size():
 		var a: Motion = ordered[i]
 		a.dependencies = ordered.slice(0, i).filter(func(b): return paths_conflict(_as_dict(a), _as_dict(b)))
-		a.waits_for_player = not released and not (a in yielding) and paths_conflict(_as_dict(a), intended)
+		a.waits_for_player = not released and not (a in yielding) and a.config_waits_for_player and paths_conflict(_as_dict(a), intended)
 
 
 ## followingSpeed: keep a safe gap to whoever drives ahead in the same direction.
@@ -277,6 +354,8 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 			continue
 		if a.stays_put:
 			a.cleared = true
+			continue
+		if resolution == null and not released:
 			continue
 		if not a.active and not a.waits_for_player and a.dependencies.all(func(b): return b.cleared):
 			a.active = true

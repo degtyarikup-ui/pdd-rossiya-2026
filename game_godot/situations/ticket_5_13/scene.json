@@ -920,7 +920,7 @@
    "pos": [
     -42.748,
     0.0,
-    88.777
+    88.474
    ],
    "yaw": 0.078,
    "scale": [
@@ -1263,7 +1263,7 @@
   {
    "prop": "trees/pine_0",
    "pos": [
-    87.721,
+    87.467,
     0.0,
     33.468
    ],
@@ -1353,7 +1353,7 @@
   {
    "prop": "street/fence_12",
    "pos": [
-    84,
+    83.681,
     0.0,
     -8
    ],
@@ -1368,7 +1368,7 @@
   {
    "prop": "trees/pine_0",
    "pos": [
-    88.474,
+    87.776,
     0.0,
     -45.206
    ],
@@ -1458,7 +1458,7 @@
   {
    "prop": "street/fence_14",
    "pos": [
-    84,
+    83.374,
     0.0,
     8
    ],
@@ -1878,7 +1878,7 @@
   {
    "prop": "street/fence_12",
    "pos": [
-    -84,
+    -83.777,
     0.0,
     8
    ],
@@ -1998,7 +1998,7 @@
   {
    "prop": "street/fence_14",
    "pos": [
-    -84,
+    -83.191,
     0.0,
     -8
    ],
@@ -3390,69 +3390,17 @@
    "holdFor": null,
    "waitsForPlayer": true,
    "staysPut": false
-  },
+  }
+ ],
+ "officers": [
   {
    "id": "ticket_5_13_regulator",
-   "type": "pedestrian",
-   "name": "",
-   "config": {
-    "id": "ticket_5_13_regulator",
-    "type": "pedestrian",
-    "staysPut": true,
-    "physicalOnly": true,
-    "name": "",
-    "position": [
-     0,
-     0.0,
-     0
-    ],
-    "rotationY": 1.571,
-    "route": [
-     [
-      0.0,
-      0.0
-     ],
-     [
-      0.0,
-      1.0
-     ]
-    ]
-   },
-   "halfLength": 0.25,
-   "halfWidth": 0.3,
-   "badge": null,
    "pos": [
     0,
-    0.0,
     0
    ],
    "yaw": 1.571,
-   "scale": [
-    1,
-    1,
-    1
-   ],
-   "path": [
-    [
-     0.0,
-     0.0,
-     0.0
-    ],
-    [
-     0.0,
-     0.0,
-     1.0
-    ]
-   ],
-   "length": 1.0,
-   "clearDistance": 0,
-   "maxSpeed": 0,
-   "signalPlan": null,
-   "stopAtDistance": null,
-   "stopFor": null,
-   "holdFor": null,
-   "waitsForPlayer": true,
-   "staysPut": true
+   "gesture": "forward"
   }
  ]
 }

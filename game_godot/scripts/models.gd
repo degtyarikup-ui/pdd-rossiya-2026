@@ -60,7 +60,7 @@ static func player_car(id: String, paint: Color) -> Node3D:
 				var own := (mat as BaseMaterial3D).duplicate() as BaseMaterial3D
 				own.albedo_color = paint
 				mi.set_surface_override_material(i, own)
-	for name in ["blink_L", "blink_R"]:
+	for name in ["blink_L", "blink_R", "blink_L_rear", "blink_R_rear"]:
 		var b := car.find_child(name, true, false)
 		if b:
 			b.visible = false
