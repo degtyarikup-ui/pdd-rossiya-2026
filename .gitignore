@@ -1,32 +1,9 @@
+# Локальное и воспроизводимое; постоянные исходники и контент хранятся в Git.
+# Временное: output/ и scratch/. Необходимое переносить в docs/ или store_assets/.
+# Секреты, подпись и состояние Wrangler не публикуются.
+# Godot network/build/ и signs_reel/state.json НЕ являются временным кэшем.
+# Правила очистки: docs/ops/workspace-cleanup.md.
 
-!.env.example
-# Android Studio will place build artifacts here
-# Flutter/Dart/Pub related
-# IntelliJ related
-# Miscellaneous
-# Obfuscation related
-# Release signing (local only)
-# Symbolication related
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-# Временные результаты агентов и скриптов (скриншоты, отчёты, черновики).
-# Генерённые AI-рестайлы картинок (346 МБ). К приложению не подключены,
-# Готовое переносится в docs/ или store_assets/, здесь не хранится.
-# Ключ приложения и прочие учётки лежат в secrets/ (см. выше) — не в коде.
-# Ключи и сертификаты
-# Ключи сервисных аккаунтов (Search Console API и т.п.) — НИКОГДА не коммитить
-# Кэш Supabase CLI
-# Локальное состояние wrangler (кэш и копия KV с локальных прогонов) —
-# Локальные секреты и окружение (перед публикацией на Git)
-# Пайплайн роликов «Успей узнать знак»: кэш растеризации, озвучка, готовые mp4.
-# Правила, сценарии и исходники генератора остаются в tools/signs_reel/.
-# Реестр вышедших знаков (tools/signs_reel/state.json) коммитим — по нему
-# Формат 3: видео, кадры, озвучка и отчёты — временные результаты генерации.
-# в репозитории ему не место, оно уже один раз туда уехало.
-# воспроизводятся пайплайном — в историю репозитория им незачем.
-# следующий выпуск берёт другие знаки.
-#.vscode/
 **/.wrangler/
 **/doc/api/
 **/ios/Flutter/.last_build_id
@@ -80,7 +57,8 @@ tools/signs_reel/.cache/
 tools/signs_reel/.work/
 web_landing/ru/app/
 game_godot/network/preview/
-# Scene editor: copies of a scene before each save (local undo on disk)
 game_godot/network/history/
 /android/godot/
 /ios/Godot/
+# Пример окружения допускается, но без реальных значений секретов.
+!.env.example

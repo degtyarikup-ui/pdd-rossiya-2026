@@ -5,6 +5,7 @@
 
 - **Правила работы для людей и ИИ-агентов:** [CLAUDE.md](CLAUDE.md) (= `AGENTS.md`)
 - **Карта кода:** [docs/architecture.md](docs/architecture.md)
+- **Подсистемы:** [приложение](docs/application/README.md), [сервер](docs/server/README.md), [админки](docs/admin/README.md), [контент](docs/content/README.md), [игра](docs/game/README.md)
 - **Вся документация:** [docs/README.md](docs/README.md)
 
 ```bash

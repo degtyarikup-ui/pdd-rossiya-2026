@@ -8,6 +8,11 @@
 
 - Карта кода — `docs/architecture.md`; индекс документации — `docs/README.md`;
   какие проверки запускать — `docs/testing.md`.
+- Карты подсистем: `docs/application/README.md`, `docs/server/README.md`,
+  `docs/admin/README.md`, `docs/content/README.md`. Сначала читать карту
+  затронутой области, затем нужные исходники; весь репозиторий в контекст не грузить.
+- Источники и генерируемые файлы различать по `docs/content/README.md`.
+  Правила очистки и сохраняемые локальные данные — `docs/ops/workspace-cleanup.md`.
 - **Вход, оплата, Премиум** — `docs/premium/README.md` (инварианты и тесты).
   Перед любой правкой в этой области прочитать его целиком.
 - 3D-игра (Godot) — `docs/game/README.md`: установка, запуск, тесты, сборка.
