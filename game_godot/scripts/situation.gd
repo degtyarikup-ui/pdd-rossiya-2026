@@ -117,7 +117,6 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 	for i in s.data.lights.size():
 		var l: Dictionary = s.data.lights[i]
 		var light: Node3D = PackFiles.instance(dir + "light_%d.glb" % i)
-		light = RoadBuild.light_with_signs(light, l.get("mountedSigns", []), l.get("mountedMainRoad", []))
 		light.position = _v(l.pos)
 		light.rotation.y = l.yaw
 		light.scale = Vector3.ONE * float(l.scale)
@@ -263,6 +262,13 @@ static func _without_baked_ground(mesh: Mesh, net: RoadNetwork = null) -> Mesh:
 			var hi := maxf(a.y, maxf(b.y, c.y))
 			if not flat and lo > -0.02 and hi < 0.215:
 				continue
+			# Drop hills/mounds ("горки"), terrain skirts and elevated terraced terrain:
+			if not flat and (hi >= 0.215 or lo <= -0.05):
+				continue
+			if flat and a.y >= 0.215:
+				continue
+			if a.y < -0.05:
+				continue
 			keep.append_array([idx[k], idx[k + 1], idx[k + 2]])
 		# A scene laid out in the editor's road plan draws all its ground itself: nothing may be left.
 		if keep.is_empty():
@@ -315,8 +321,8 @@ const TOKEN_BLUE := Color("#0574F8")
 
 func _build_evidence(dir: String) -> void:
 	# The question's route lines come from the network's trajectories (what the editor shows);
-	# guide.glb is only the fallback for a scene without them.
-	if data.trajectories is Array and not data.trajectories.is_empty():
+	var has_traj: bool = (data.trajectories is Array and not data.trajectories.is_empty()) or (data.get("spec") is Dictionary and data.get("exits") is Dictionary and data.spec.get("maneuver", "") != "" and data.exits.has(data.spec.get("maneuver", "")))
+	if has_traj:
 		_guide = _trajectory_guide()
 		add_child(_guide)
 	elif PackFiles.exists(dir + "guide.glb"):
@@ -352,7 +358,14 @@ static func letter_colour(letter: String) -> Color:
 
 func _trajectory_guide() -> Node3D:
 	var root := Node3D.new()
-	for tr in data.trajectories:
+	var traj_list: Array = []
+	if data.trajectories is Array and not data.trajectories.is_empty():
+		traj_list = data.trajectories
+	elif data.get("spec") is Dictionary and data.get("exits") is Dictionary:
+		var man: String = str(data.spec.get("maneuver", ""))
+		if man != "" and data.exits.has(man) and data.exits[man].has("points"):
+			traj_list = [{"label": "", "points": data.exits[man].points}]
+	for tr in traj_list:
 		var pts: Array = tr.points
 		if pts.size() < 2:
 			continue
@@ -363,14 +376,14 @@ func _trajectory_guide() -> Node3D:
 		_arrowhead(st, _before_tip(curve, 1.6), curve[curve.size() - 1])
 		var mi := MeshInstance3D.new()
 		mi.mesh = st.commit()
-		mi.material_override = _guide_material(letter_colour(str(tr.label)))
+		mi.material_override = _guide_material(letter_colour(str(tr.get("label", ""))))
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root.add_child(mi)
 	return root
 
 
 static func _p2(a: Array) -> Vector2:
-	return Vector2(float(a[0]), float(a[1]))
+	return Vector2(float(a[0]), float(a[2] if a.size() >= 3 else a[1]))
 
 
 ## The route through its points as a smooth curve (Catmull-Rom), sampled every 0.4 m. The

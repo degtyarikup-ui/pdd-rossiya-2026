@@ -315,9 +315,9 @@ const Scene3D = (() => {
   function rebuildRoutes() {
     const g = setGroup("routes");
     dropLabels("route");
-    if (!model) return;
-    const focusRoute = sel.find((s) => s.t === "route")?.id || (sel.find((s) => s.t === "actor") ? `actor_${sel.find((s) => s.t === "actor").id}` : null)
-      || (hover && hover.t === "route" ? hover.id : null);
+    const selActor = sel.find((s) => s.t === "actor");
+    const actorRouteId = selActor ? (model.actors.find((x) => x.id === selActor.id)?.route || `actor_${selActor.id}`) : null;
+    const focusRoute = sel.find((s) => s.t === "route")?.id || actorRouteId || (hover && hover.t === "route" ? hover.id : null);
     const answers = model.routes.some((x) => x.kind === "choice");
     for (const r of model.routes) {
       if (r.points.length < 2) continue;
@@ -383,7 +383,7 @@ const Scene3D = (() => {
   function anchorSig(t, o) {
     if (t === "decor") return `${o.prop}|${o.tint}`;
     if (t === "actor") return `${o.asset}|${o.type}`;
-    if (t === "light") return `${o.asset}|${o.state}|${(o.mountedSigns || []).join(",")}|${(o.mountedMainRoad || []).join(",")}`;
+    if (t === "light") return `${o.asset}|${o.state}|${o.arrow || ""}|${o.tram || ""}`;
     if (t === "officer") return `officer|${o.gesture}`;
     if (t === "sign") return `sign|${o.code}|${o.plate || ""}|${(o.mainRoad || []).join(",")}|${(o.roads || []).join(",")}`;
     return t;
@@ -393,12 +393,13 @@ const Scene3D = (() => {
     const g = new THREE.Group();
     g.userData.ref = t === "stop" || t === "player" ? { t } : { t, id: o.id };
     const token = loadToken;
-    const attach = (url, fallback, tint) => {
+    const attach = (url, fallback, tint, onLoaded) => {
       g.add(fallback);
       loadGltf(url).then((root) => {
         if (!root || anchors.get(key)?.group !== g || token !== loadToken) return;
         g.remove(fallback);
         if (tint) root.traverse((m) => { if (m.isMesh && m.material && m.material.color) { m.material = m.material.clone(); m.material.color.set(tint); } });
+        if (onLoaded) onLoaded(root);
         g.add(root);
         needsRender = true;
       });
@@ -410,42 +411,54 @@ const Scene3D = (() => {
       const ped = o.type === "pedestrian" || o.type === "cyclist";
       attach(`/asset/scene/${o.asset}`, fallbackBox(TYPE_COLOUR[o.type] || 0x888888, ped ? [0.6, 1.7, 0.6] : [1.9, 1.4, 4.2]));
     } else if (t === "light") {
-      const isTram = false;
-      const mounted = (o.mountedSigns || []).filter(Boolean);
-      let lift = mounted.length * 2.4, lightRoot = null;
-      const pole = fallbackBox(0x3a3f47, [0.3, 3.4, 0.3]);
-      pole.position.y += lift;
-      if (o.asset) attach(`/asset/scene/${o.asset}`, pole, null, root => { root.position.y += lift; lightRoot = root; }); else g.add(pole);
-      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 8), basic(lampColour(o.state)));
-      lamp.position.set(0, 4.4 + lift, 0);
-      g.add(lamp);
-      if (mounted.length) {
-        const extension = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, lift, 12), mat(0x3a3f47));
-        extension.position.y = lift / 2;
-        g.add(extension);
-        const heights = mounted.map(() => 2.4), signs = [];
-        const arrange = () => {
-          lift = heights.reduce((a, h) => a + h, 0) + 0.15 * (mounted.length - 1);
-          if (lightRoot) lightRoot.position.y = lift;
-          pole.position.y = (isTram ? 5.4 : 3.4) / 2 + lift;
-          lamp.position.y = (isTram ? 5.6 : 4.4) + lift;
-          extension.geometry.dispose();
-          extension.geometry = new THREE.CylinderGeometry(0.07, 0.07, lift, 12);
-          extension.position.y = lift / 2;
-          let offset = 0;
-          for (let i = mounted.length - 1; i >= 0; i--) {
-            signs[i].position.set(0, SIGN_BOTTOM * 0.2 + offset, 0.18);
-            offset += heights[i] + 0.15;
+      const isTram = !!o.tram;
+      const pole = fallbackBox(0x3a3f47, [0.3, isTram ? 5.4 : 3.4, 0.3]);
+      const configureLight = (root) => {
+        root.traverse((m) => {
+          if (m.name === "cffffff" || m.material?.name === "cffffff") {
+            if (!o.arrow) {
+              m.visible = false;
+            } else if (o.arrow === "left") {
+              m.visible = true;
+              if (m.material) { m.material = m.material.clone(); m.material.side = THREE.DoubleSide; }
+              m.scale.x = -1;
+            } else {
+              m.visible = true;
+              m.scale.x = 1;
+            }
           }
-          needsRender = true;
-        };
-        mounted.forEach((code, i) => {
-          const sign = signModel({ code, mainRoad: code === "8.13" ? (o.mountedMainRoad || []) : [] }, false, height => { heights[i] = height * 0.8; setTimeout(arrange, 0); });
-          sign.scale.setScalar(0.8);
-          signs.push(sign); g.add(sign);
+          if (m.name?.startsWith("lamp_red")) {
+            const on = (o.state === "red");
+            if (m.material) { m.material = m.material.clone(); m.material.color.setHex(on ? 0xFF3838 : 0x351719); }
+          }
+          if (m.name?.startsWith("lamp_yellow")) {
+            const on = (o.state === "yellow" || o.state === "flashing_yellow");
+            if (m.material) { m.material = m.material.clone(); m.material.color.setHex(on ? 0xFFD52A : 0x352D14); }
+          }
+          if (m.name?.startsWith("lamp_green")) {
+            const on = (o.state === "green");
+            if (m.material) { m.material = m.material.clone(); m.material.color.setHex(on ? 0x36FF88 : 0x123126); }
+          }
+          if (isTram && m.name?.startsWith("lamp_tram_")) {
+            const tSig = o.tram || "straight";
+            let on = false;
+            if (tSig === "straight") on = m.name.includes("bottom") || m.name.includes("mid");
+            else if (tSig === "left") on = m.name.includes("bottom") || m.name.includes("left");
+            else if (tSig === "right") on = m.name.includes("bottom") || m.name.includes("right");
+            else if (tSig === "stop") on = !m.name.includes("bottom");
+            else if (tSig === "all") on = true;
+            else if (tSig === "off") on = false;
+            else on = m.name.includes("bottom") || m.name.includes("mid");
+            if (m.material) { m.material = m.material.clone(); m.material.color.setHex(on ? 0xF0F6FF : 0x20252C); }
+          }
         });
-        arrange();
-      }
+      };
+      const asset = o.asset || (isTram ? (App.state.catalog?.lightTramAsset || App.state.catalog?.lightAssets?.tram) : null)
+        || (App.state.catalog?.lightAssets?.[o.arrow || ""] || App.state.catalog?.lightAsset);
+      if (asset) attach(`/asset/scene/${asset}`, pole, null, configureLight); else g.add(pole);
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(isTram ? 0.22 : 0.28, 12, 8), basic(lampColour(o.state)));
+      lamp.position.set(0, isTram ? 5.6 : 4.4, 0);
+      g.add(lamp);
     } else if (t === "officer") {
       g.add(officerModel(o.gesture));
     } else if (t === "sign") {
@@ -460,8 +473,9 @@ const Scene3D = (() => {
     return g;
   }
 
-  // RoadBuild.sign_node parity: a vertical board centred on its pole, using the picture's proportions.
-  const SIGN_W = 3.0, SIGN_BOTTOM = 2.2, SIGN_LEAN = 0;
+  // A road sign as the game draws it (road_build.gd sign_node): a pole and the board leaning back so
+  // the camera above reads it; the picture's own proportions, the 8.13 plate under it if any.
+  const SIGN_W = 3.0, SIGN_BOTTOM = 2.2, SIGN_LEAN = 38 * Math.PI / 180;
   const signTex = new Map();
   function signTexture(code) {
     if (!signTex.has(code)) signTex.set(code, new THREE.TextureLoader().load(`/asset/sign/${code}.svg`, () => { needsRender = true; }));
@@ -483,7 +497,7 @@ const Scene3D = (() => {
     }
     return new THREE.CanvasTexture(c);
   }
-  function signModel(o, withPole = true, onHeight = null) {
+  function signModel(o) {
     const g = new THREE.Group();
     const board = new THREE.Group();
     board.position.y = SIGN_BOTTOM;
@@ -503,11 +517,10 @@ const Scene3D = (() => {
     else if (o.mainRoad && o.mainRoad.length) add(mainRoadTexture(o.mainRoad, o.roads), SIGN_W * 0.8, SIGN_W * 0.6);
     const tex = o.code === "8.13" ? null : signTexture(o.code);
     if (!tex) {
-      if (onHeight) onHeight(SIGN_W * 0.75);
       const top0 = SIGN_BOTTOM + 1.1 * Math.cos(SIGN_LEAN);
       const p0 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, top0, 8), mat(0x7a7f87));
       p0.position.set(0, top0 / 2, 0.09 + 1.1 * Math.sin(SIGN_LEAN));
-      if (withPole) g.add(p0);
+      g.add(p0);
       g.rotation.y = -Math.PI;
       return g;
     }
@@ -520,14 +533,13 @@ const Scene3D = (() => {
       face.geometry.dispose();
       face.geometry = new THREE.PlaneGeometry(SIGN_W, h);
       face.position.y = face.position.y - SIGN_W / 2 + h / 2;
-      if (onHeight) onHeight(h);
       needsRender = true;
     };
     if (tex.image && tex.image.width) fit(); else setTimeout(function wait() { tex.image && tex.image.width ? fit() : setTimeout(wait, 100); }, 100);
     const top = SIGN_BOTTOM + 1.5 * Math.cos(SIGN_LEAN);
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, top, 8), mat(0x7a7f87));
     pole.position.set(0, top / 2, 0.09 + 1.5 * Math.sin(SIGN_LEAN));
-    if (withPole) g.add(pole);
+    g.add(pole);
     g.rotation.y = -Math.PI;   // yaw as the game's: the way the face looks (as a light's), the model faces -z
     return g;
   }
@@ -747,11 +759,17 @@ const Scene3D = (() => {
       g.add(handle(p, "circle", 0xffffff, ACCENT, 1.1));
       turnHandle = { x: p[0], z: p[1], cx: one.x, cz: one.z };
     }
-    // The points of a drawn shape or route, when it is the one selected.
-    if (sel.length === 1 && ["route", "road", "lawn", "marking", "track"].includes(sel[0].t)) {
-      const pts = App.pointsOfRef(sel[0]);
-      if (pts && !(sel[0].t === "marking" && App.isPaint(sel[0]))) {
-        pts.forEach((p, i) => g.add(handle(p, "circle", i === sel[0].v ? ACCENT : 0xffffff, ACCENT, 0.8)));
+    // The points of a drawn shape or route, when it is the one selected, or an actor with a route.
+    let pointRef = (sel.length === 1 && ["route", "road", "lawn", "marking", "track"].includes(sel[0].t)) ? sel[0] : null;
+    if (!pointRef && sel.length === 1 && sel[0].t === "actor") {
+      const a = model.actors.find((x) => x.id === sel[0].id);
+      const r = a && model.routes.find((x) => x.id === (a.route || `actor_${a.id}`));
+      if (r) pointRef = { t: "route", id: r.id, v: sel[0].v };
+    }
+    if (pointRef) {
+      const pts = App.pointsOfRef(pointRef);
+      if (pts && !(pointRef.t === "marking" && App.isPaint(pointRef))) {
+        pts.forEach((p, i) => g.add(handle(p, "circle", i === pointRef.v ? ACCENT : 0xffffff, ACCENT, 0.8)));
       }
     }
   }
@@ -1114,9 +1132,15 @@ const Scene3D = (() => {
         if (at && near(at, 15, 0.8) && !skip({ t: "route", id: r.id })) return { t: "letter", id: r.id };
       }
     }
-    if (sel.length === 1 && ["route", "road", "lawn", "marking", "track"].includes(sel[0].t)) {
-      const pts = App.pointsOfRef(sel[0]) || [];
-      for (let i = 0; i < pts.length; i++) if (near(pts[i], 10)) return { ...sel[0], v: i, point: true };
+    let pointRef = (sel.length === 1 && ["route", "road", "lawn", "marking", "track"].includes(sel[0].t)) ? sel[0] : null;
+    if (!pointRef && sel.length === 1 && sel[0].t === "actor") {
+      const a = model.actors.find((x) => x.id === sel[0].id);
+      const r = a && model.routes.find((x) => x.id === (a.route || `actor_${a.id}`));
+      if (r) pointRef = { t: "route", id: r.id };
+    }
+    if (pointRef) {
+      const pts = App.pointsOfRef(pointRef) || [];
+      for (let i = 0; i < pts.length; i++) if (near(pts[i], 14)) return { ...pointRef, v: i, point: true };
     }
     const L = model.layout;
     if (L && !skip({ t: "street" })) {
@@ -1360,5 +1384,6 @@ const Scene3D = (() => {
     get pxPerM() { return pxPerM; },
     get spaceDown() { return spaceDown; },
     get turnHandle() { return turnHandle; },
+    get anchors() { return anchors; },
   };
 })();

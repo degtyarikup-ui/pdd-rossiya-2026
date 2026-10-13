@@ -146,30 +146,36 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   /// (например, вопросов меньше, чем ответов), тогда начинаем заново.
   bool _restoreExam(Map<String, dynamic> resume) {
     final questions = (resume['questions'] as List?)
-        ?.cast<Map<String, dynamic>>();
+        ?.whereType<Map>()
+        .map((m) => Map<String, dynamic>.from(m))
+        .toList();
     final answers = (resume['answers'] as List?)
-        ?.map((e) => e as int?)
+        ?.map((e) => (e as num?)?.toInt())
         .toList();
     if (questions == null || answers == null) return false;
     if (questions.isEmpty || questions.length != answers.length) return false;
 
     _examQuestions = List<Map<String, dynamic>>.from(questions);
     _savedAnswers = List<int?>.from(answers, growable: true);
-    _currentIndex = (resume['index'] as int? ?? 0).clamp(
+    _currentIndex = ((resume['index'] as num?)?.toInt() ?? 0).clamp(
       0,
       _examQuestions.length - 1,
     );
     _selectedAnswerIndex = _savedAnswers[_currentIndex];
     _isAnswerSubmitted = _selectedAnswerIndex != null;
     _additionalPhase = resume['additionalPhase'] as bool? ?? false;
-    _additionalQuestionsCount = resume['additionalQuestionsCount'] as int? ?? 0;
-    _initialWrongCount = resume['initialWrongCount'] as int? ?? 0;
-    _totalTimeSeconds = resume['totalSeconds'] as int? ?? _rules.totalSeconds;
-    _remainingTime = resume['remainingSeconds'] as int? ?? _totalTimeSeconds;
+    _additionalQuestionsCount =
+        (resume['additionalQuestionsCount'] as num?)?.toInt() ?? 0;
+    _initialWrongCount = (resume['initialWrongCount'] as num?)?.toInt() ?? 0;
+    _totalTimeSeconds =
+        (resume['totalSeconds'] as num?)?.toInt() ?? _rules.totalSeconds;
+    _remainingTime =
+        (resume['remainingSeconds'] as num?)?.toInt() ?? _totalTimeSeconds;
     // Нулевой остаток означал бы мгновенный провал сразу после возврата —
     // такую запись считаем негодной и начинаем экзамен заново.
     if (_remainingTime <= 0) return false;
 
+    _recomputeScoreLists();
     _startTimer();
     return true;
   }

@@ -87,6 +87,14 @@
     const errors = state.findings.filter((f) => f.level === "error"), warns = state.findings.filter((f) => f.level === "warn");
     const answers = src ? src.answers.map((a) => a.text) : ru.options || [];
     const correct = q.correct;
+    const plan = s.layout ? Layout.playerPlan(s) : null;
+    const lanes = plan ? (plan.lanes || Layout.laneOffsets(plan.st)) : [];
+    const laneItems = lanes.length === 2
+      ? [{ value: 0, title: "Левая" }, { value: 1, title: "Правая" }]
+      : lanes.length === 3
+        ? [{ value: 0, title: "Левая" }, { value: 1, title: "Средняя" }, { value: 2, title: "Правая" }]
+        : lanes.map((_, i) => ({ value: i, title: i === 0 ? "1 (левая)" : i === lanes.length - 1 ? `${i + 1} (правая)` : `${i + 1}` }));
+    const curLane = plan ? plan.laneIndex : 0;
     const yields = s.actors.map((a) => `<button class="pick ${(q.yieldTo || []).includes(a.id) ? "on" : ""}" data-act="yield" data-id="${a.id}">${Thumbs.img("actor", a.type, "mini")}<span>${esc(a.name || a.id)}</span></button>`).join("");
     const edges = state.edges || {};
     const side = (k) => { const e = edges[k]; return e ? (e.street ? "ok" : "bad") : "none"; };
@@ -96,6 +104,7 @@
         <div class="insp-actions">${button("run", "Тест в игре", "play", "primary")}</div>
         ${button("run-auto", "В игре на автопилоте", "video", "ghost small wide")}`)}
       ${card("Игрок едет", `${chips("maneuver", ["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: k !== "straight" && !routes.includes(k) && !(s.layout) })), q.maneuver, { cls: "arrows" })}
+        ${lanes.length > 1 ? `<div class="sub-h">Полоса</div>${chips("lane", laneItems, curLane, { cls: "tiles" })}` : ""}
         <div class="sub-h">Знак скорости</div>${chips("speed", [{ value: "", title: "Нет" }, ...[20, 40, 60].map((v) => ({ value: v, html: `<span class="speed-sign">${v}</span>` }))], q.speedLimit ?? "", { cls: "signs" })}
         <div class="sub-h">Ждать на красном</div>${chips("redWait", [{ value: "", title: "Нет" }, { value: 2, title: "2 с" }, { value: 5, title: "5 с" }], q.redWait ?? "")}
         ${s.actors.length ? `<div class="sub-h">Уступить дорогу</div><div class="picks">${yields}</div>` : ""}`, { icon: "flag" })}
@@ -117,6 +126,16 @@
       "run-auto": () => App.runInGame(true),
       correct: (d) => App.edit((sc) => { sc.question.correct = Number(d.i); }),
       "chip:maneuver": (v) => App.edit((sc) => { sc.question.maneuver = v; sc.spec = { ...(sc.spec || {}), maneuver: v }; }),
+      "chip:lane": (v) => App.edit((sc) => {
+        const pl = Layout.playerPlan(sc);
+        sc.layout.player = {
+          ...(sc.layout.player || {}),
+          street: pl ? pl.st.id : sc.layout?.player?.street,
+          toward: pl ? pl.nid : sc.layout?.player?.toward,
+          stopAt: pl ? r3(pl.sd - 2.4) : sc.layout?.player?.stopAt,
+          lane: Number(v),
+        };
+      }),
       "chip:speed": (v) => App.edit((sc) => { if (v === "") delete sc.question.speedLimit; else sc.question.speedLimit = Number(v); }),
       "chip:redWait": (v) => App.edit((sc) => { if (v === "") delete sc.question.redWait; else sc.question.redWait = Number(v); }),
       "chip:status": (v) => App.edit((sc) => { sc.compliance = { ...(sc.compliance || {}), status: v }; }),
@@ -241,8 +260,10 @@
 
   function actorInspector(p, ref, a) {
     const s = state.S;
-    const lane = s.layout && Catalog.ACTORS[a.type]?.lane;
-    const ways = lane ? Layout.waysFrom(s, a.pos, a.yaw) : [];
+    const plan = App.planScene();
+    const lane = !!plan && Catalog.ACTORS[a.type]?.lane && (s.layout || a.way || !a.route);
+    const ways = lane ? Layout.waysFrom(plan, a.pos, a.yaw) : [];
+    const PAINTS = [null, "#F2F3F5", "#B9C0C7", "#2B2F36", "#C0392B", "#317ED4", "#1F3A5F", "#4D7768", "#E8C547", "#F08A24", "#8A6E4B"];
     const route = a.route && s.routes.find((r) => r.id === a.route);
     const types = Catalog.ACTOR_ORDER.filter((t) => state.catalog.actorTypes[t]);
     const moving = !(a.behaviour || {}).staysPut;
@@ -250,10 +271,13 @@
       ${card("Кто это", `<div class="variant-grid">${types.map((t) => `<button class="variant ${t === a.type ? "on" : ""}" data-chip="type" data-value="${t}" data-tip="${esc(Catalog.ACTORS[t].name)}">${Thumbs.img("actor", t)}</button>`).join("")}</div>
         <input class="name-input" type="text" data-text="name" value="${esc(a.name || "")}" placeholder="Подпись над ним в игре">`)}
       ${a.type === "tram" && (s.tracks || []).length ? tramCard(s, a) : ""}
+      ${a.type !== "pedestrian" && a.type !== "special" ? card("Цвет", `<div class="swatches">${PAINTS.map((c) => `<button class="sw ${(a.paint || null) === c ? "on" : ""}" data-chip="paint" data-value="${c || ""}" style="--c:${c || "transparent"}" data-tip="${c ? "" : "Как у модели"}">${c ? "" : ic("x")}</button>`).join("")}</div>`) : ""}
       ${a.track ? "" : card("Куда едет", lane
-        ? `${chips("way", [{ value: "stay", icon: "parked", tip: "Стоит" }, ...["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: !ways.includes(k) }))], moving ? (a.way || "straight") : "stay", { cls: "arrows" })}`
+        ? `${chips("way", [{ value: "stay", icon: "parked", tip: "Стоит" }, ...["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: !ways.includes(k) }))], moving ? (a.way || "straight") : "stay", { cls: "arrows" })}${button("reverse", "Ехать в другую сторону", "rotr", "ghost wide")}
+           ${moving && route ? button("to-route", route.manual ? "Траектория пути (ручная)" : "Траектория пути (по дорогам)", "route", "ghost wide") : ""}`
         : `${chips("move", [{ value: "stay", title: "Стоит", icon: "parked" }, { value: "go", title: "Едет по пути", icon: "route" }], moving ? "go" : "stay")}
            ${moving ? button("draw-path", route ? "Перерисовать путь" : "Нарисовать путь", "route", "ghost wide") : ""}
+           ${moving && route ? button("to-route", "Выбрать траекторию пути", "route", "ghost wide") : ""}
            ${(a.type === "pedestrian" || a.type === "cyclist") && Layout.zebraPath(s, a.pos) ? button("zebra-path", "Идти по пешеходному переходу", "zebra", "primary wide") : ""}`)}
       ${moving ? card("Скорость", chips("speed", Catalog.SPEEDS.map((x) => ({ value: x.id, title: x.title })), Catalog.speedOf(a.maxSpeed || 10).id)
         + toggle("waits", "Пропускает игрока", (a.behaviour || {}).waitsForPlayer, "flag")) : ""}
@@ -261,6 +285,9 @@
       ${card("", `<div class="turn-row">${dial(a.yaw)}<div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rotr", "", "rotr", "ghost icon")}</div></div>${deleteRow()}`)}`;
     bind({
       ...common,
+      "chip:paint": (v) => App.edit(() => { if (v) a.paint = v; else delete a.paint; }),
+      reverse: () => App.edit(() => { a.yaw = App.r3(((a.yaw || 0) + 2 * Math.PI) % (2 * Math.PI) - Math.PI); }),
+      "to-route": () => { if (route) App.select({ t: "route", id: route.id }); },
       "chip:track": (v) => App.edit((sc) => {
         if (v) { a.track = v; delete a.way; delete a.branch; }
         else { delete a.track; delete a.branch; delete a.trackDir; sc.routes = sc.routes.filter((x) => x.id !== `actor_${a.id}`); a.route = null; }
@@ -276,7 +303,12 @@
       "text:name": (v) => App.edit(() => { a.name = v.trim(); }),
       "chip:way": (v) => App.edit((sc) => {
         if (v === "stay") { a.behaviour = { ...(a.behaviour || {}), staysPut: true }; delete a.way; sc.routes = sc.routes.filter((r) => r.id !== a.route); a.route = null; }
-        else { a.behaviour = { ...(a.behaviour || {}), staysPut: false }; a.way = v; }
+        else {
+          a.behaviour = { ...(a.behaviour || {}), staysPut: false };
+          a.way = v;
+          const r = sc.routes.find((x) => x.id === (a.route || `actor_${a.id}`));
+          if (r) { delete r.manual; r.auto = true; }
+        }
       }),
       "chip:move": (v) => App.edit((sc) => {
         a.behaviour = { ...(a.behaviour || {}), staysPut: v === "stay" };
@@ -377,19 +409,44 @@
   // ---- a traffic light -------------------------------------------------------------------------
   function lightInspector(p, ref, l) {
     const s = state.S;
+    const isTram = !!l.tram;
     const lamps = Catalog.LIGHTS.map((x) => `<button class="lamp ${l.state === x.id ? "on" : ""} ${x.id === "flashing_yellow" ? "blink" : ""}" data-chip="state" data-value="${x.id}" style="--c:${x.colour}" data-tip="${x.title}"></button>`).join("");
-    p.innerHTML = `${head(Thumbs.img("light", "light", "big"), "Светофор", s.lights.length > 1 ? `один из ${s.lights.length}` : "")}
+    const tramChips = chips("tram", [
+      { value: "", title: "Нет" },
+      { value: "straight", title: "Прямо", icon: "arrow-up" },
+      { value: "left", title: "Налево", icon: "arrow-left" },
+      { value: "right", title: "Направо", icon: "arrow-right" },
+      { value: "stop", title: "Стоп" },
+      { value: "off", title: "Выкл" },
+    ], l.tram || "", { cls: "tram-signals" });
+
+    p.innerHTML = `${head(Thumbs.img("light", isTram ? "light_tram" : "light", "big"), isTram ? "Светофор с трамвайной секцией" : "Светофор", s.lights.length > 1 ? `один из ${s.lights.length}` : "")}
       ${card("Сигнал", `<div class="tlight">${lamps}</div><p class="muted">Сигнал один на всю сцену: меняется у всех светофоров.</p>`)}
-      ${card("Знаки на стойке", `${[0, 1].map(slot => { const code = (l.mountedSigns || [])[slot]; return `<details><summary>${slot + 1}. ${code ? `${esc(Catalog.signName(code))} · ${code}` : "Добавить знак"}</summary><div class="sign-grid"><button class="${!code ? "on" : ""}" data-chip="mountedSign" data-slot="${slot}" data-value="">Нет</button>${[...new Set([...(state.catalog.signs || []), "8.13"])].map(c => `<button class="${code === c ? "on" : ""}" data-chip="mountedSign" data-slot="${slot}" data-value="${c}" data-tip="${esc(Catalog.signName(c))}">${c === "8.13" ? "8.13 ↱" : `<img src="/asset/sign/${c}.svg" alt="${esc(Catalog.signName(c))}">`}</button>`).join("")}</div></details>`; }).join("")}`)}
-            ${(l.mountedSigns || []).includes("8.13") ? card("Главная дорога на табличке", `<div class="dir-grid">${[["nw","↖"],["north","↑"],["ne","↗"],["west","←"],["east","→"],["sw","↙"],["south","↓"],["se","↘"]].map(([d,t]) => `<button class="${(l.mountedMainRoad || []).includes(d) ? "on" : ""}" data-chip="mountedMainRoad" data-value="${d}">${t}</button>`).join("")}</div>`) : ""}
-      ${card("Стрелка", chips("arrow", [{ value: "", title: "Нет" }, { value: "left", icon: "arrow-left" }, { value: "straight", icon: "arrow-up" }, { value: "right", icon: "arrow-right" }], l.arrow || "", { cls: "arrows" }))}
+      ${card("Верхняя секция (Т.5)", `${tramChips}<p class="muted">Бело-лунный сигнал для трамваев и маршрутных ТС.</p>`)}
+      ${!isTram ? card("Стрелка", chips("arrow", [{ value: "", title: "Нет" }, { value: "left", icon: "arrow-left" }, { value: "straight", icon: "arrow-up" }, { value: "right", icon: "arrow-right" }], l.arrow || "", { cls: "arrows" })) : ""}
       ${card("", `<div class="turn-row">${dial(l.yaw)}<div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rotr", "", "rotr", "ghost icon")}</div></div>${deleteRow()}`)}`;
     bind({
       ...common,
-      "chip:mountedMainRoad": (v) => App.edit(() => { const roads = new Set(l.mountedMainRoad || []); roads.has(v) ? roads.delete(v) : roads.add(v); l.mountedMainRoad = [...roads]; }),
-      "chip:mountedSign": (v, e) => App.edit(() => { const signs = [...(l.mountedSigns || [])]; signs[Number(e.target.closest("[data-chip]").dataset.slot)] = v; if (signs.some(Boolean)) l.mountedSigns = signs; else delete l.mountedSigns; }),
       "chip:state": (v) => App.edit((sc) => sc.lights.forEach((x) => { x.state = v; })),
-      "chip:arrow": (v) => App.edit(() => { l.arrow = v || null; }),
+      "chip:tram": (v) => App.edit(() => {
+        l.tram = v || null;
+        const cat = state.catalog;
+        if (v) {
+          l.arrow = null;
+          l.asset = cat?.lightTramAsset || cat?.lightAssets?.tram || l.asset;
+        } else {
+          l.asset = cat?.lightAssets?.[""] || cat?.lightAsset || l.asset;
+        }
+      }),
+      "chip:arrow": (v) => App.edit(() => {
+        l.arrow = v || null;
+        const assets = state.catalog?.lightAssets;
+        if (assets) {
+          if (!v) l.asset = assets[""] || l.asset;
+          else if (assets[v]) l.asset = assets[v];
+          else if (v === "left" && assets["right"]) l.asset = assets["right"];
+        }
+      }),
       rotl: () => App.rotate(-15), rotr: () => App.rotate(15),
     });
     bindDial(p, l);
@@ -518,10 +575,26 @@
       });
       return;
     }
-    const actor = r.kind === "actor" ? s.actors.find((a) => a.route === r.id) : null;
+    if (r.kind === "actor") {
+      const actor = s.actors.find((a) => a.route === r.id || `actor_${a.id}` === r.id);
+      const isManual = !!r.manual;
+      p.innerHTML = `${head(`<span class="ibadge">${ic("route")}</span>`, App.nameOf(ref), isManual ? "ручной путь" : "строится сам")}
+        ${card("Управление траекторией", `${isManual
+          ? `<p class="muted">Тяните точки на виде, двойной клик по линии — новая точка.</p>${button("auto-path", "Снова строить по дорогам", "restart", "ghost wide")}`
+          : `<p class="muted">Путь строится сам по дорогам.</p>${button("own-path", "Править путь вручную", "points", "ghost wide")}`}
+          ${actor ? button("actor", `К участнику (${actor.name || Catalog.ACTORS[actor.type]?.name || "авто"})`, "car", "ghost wide") : ""}
+          <div class="insp-actions">${button("del", "Удалить путь", "trash", "danger ghost")}</div>`)}`;
+      bind({
+        actor: () => actor && App.select({ t: "actor", id: actor.id }),
+        "own-path": () => App.edit((sc) => { const x = sc.routes.find((y) => y.id === r.id); if (x) { x.manual = true; delete x.auto; } }),
+        "auto-path": () => App.edit((sc) => { const x = sc.routes.find((y) => y.id === r.id); if (x) { delete x.manual; x.auto = true; } }),
+        del: () => App.remove(),
+      });
+      return;
+    }
     p.innerHTML = `${head(`<span class="ibadge">${ic("route")}</span>`, App.nameOf(ref), r.auto ? "строится сам" : "")}
-      ${card("", `${actor ? button("actor", "К участнику", "car", "ghost wide") : ""}<p class="muted">${r.kind === "approach" ? "Подъезд игрока к стоп-линии." : "Тяните точки на виде."}</p>`)}`;
-    bind({ actor: () => App.select({ t: "actor", id: actor.id }) });
+      ${card("", `<p class="muted">${r.kind === "approach" ? "Подъезд игрока к стоп-линии." : "Тяните точки на виде."}</p>`)}`;
+    bind({});
   }
 
   // ---- markings and shapes -------------------------------------------------------------------
@@ -568,13 +641,54 @@
     bind({ ...common, rotl: () => App.rotate(-15), rotr: () => App.rotate(15), convert: () => Tools.convertScene() });
   }
 
+  function shiftPlayerLateral(sc, delta) {
+    if (!sc.stop) return;
+    const yaw = sc.stop.yaw || 0;
+    const rDir = [-Math.cos(yaw), Math.sin(yaw)];
+    const dx = rDir[0] * delta, dz = rDir[1] * delta;
+    sc.stop.x = r3(sc.stop.x + dx);
+    sc.stop.z = r3(sc.stop.z + dz);
+    const ap = (sc.routes || []).find((r) => r.id === "approach");
+    if (ap && ap.points) ap.points = ap.points.map((p) => [r3(p[0] + dx), r3(p[1] + dz)]);
+    for (const r of sc.routes || []) {
+      if (r.kind === "manoeuvre" && r.points && r.points.length) {
+        r.points[0] = [sc.stop.x, sc.stop.z];
+      }
+    }
+  }
+
   function stopInspector(p) {
     const s = state.S, q = s.question;
     const routes = s.routes.filter((r) => r.kind === "manoeuvre").map((r) => r.exit);
+    const plan = s.layout ? Layout.playerPlan(s) : null;
+    const lanes = plan ? (plan.lanes || Layout.laneOffsets(plan.st)) : [];
+    const laneItems = lanes.length === 2
+      ? [{ value: 0, title: "Левая" }, { value: 1, title: "Правая" }]
+      : lanes.length === 3
+        ? [{ value: 0, title: "Левая" }, { value: 1, title: "Средняя" }, { value: 2, title: "Правая" }]
+        : lanes.map((_, i) => ({ value: i, title: i === 0 ? "1 (левая)" : i === lanes.length - 1 ? `${i + 1} (правая)` : `${i + 1}` }));
+    const curLane = plan ? plan.laneIndex : 0;
+
     p.innerHTML = `${head(`<span class="ibadge">${ic("car")}</span>`, "Игрок", "стоит у стоп-линии, когда задаётся вопрос")}
       ${card("Едет", chips("maneuver", ["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: !routes.includes(k) && k !== "straight" })), q.maneuver, { cls: "arrows" }))}
-      ${card("", `<p class="muted">${s.layout ? "Место игрока строится по дороге: выберите дорогу и нажмите «Ехать сюда»." : "Тяните машину на виде вдоль полосы."}</p>`)}`;
-    bind({ "chip:maneuver": (v) => App.edit((sc) => { sc.question.maneuver = v; sc.spec = { ...(sc.spec || {}), maneuver: v }; }) });
+      ${lanes.length > 1 ? card("Полоса", chips("lane", laneItems, curLane, { cls: "tiles" })) : ""}
+      ${!s.layout ? card("Полоса", `<div class="insp-actions">${button("shift-left", "Сместить влево (3.5 м)", "arrow-left", "ghost small")}${button("shift-right", "Сместить вправо (3.5 м)", "arrow-right", "ghost small")}</div>`) : ""}
+      ${card("", `<p class="muted">${s.layout ? (lanes.length > 1 ? "Выберите полосу выше или перетащите машину на другую полосу на виде." : "Место игрока строится по дороге: тяните машину вдоль улицы.") : "Тяните машину на виде или смещайте кнопками выше."}</p>`)}`;
+    bind({
+      "chip:maneuver": (v) => App.edit((sc) => { sc.question.maneuver = v; sc.spec = { ...(sc.spec || {}), maneuver: v }; }),
+      "chip:lane": (v) => App.edit((sc) => {
+        const pl = Layout.playerPlan(sc);
+        sc.layout.player = {
+          ...(sc.layout.player || {}),
+          street: pl ? pl.st.id : sc.layout?.player?.street,
+          toward: pl ? pl.nid : sc.layout?.player?.toward,
+          stopAt: pl ? r3(pl.sd - 2.4) : sc.layout?.player?.stopAt,
+          lane: Number(v),
+        };
+      }),
+      "shift-left": () => App.edit((sc) => shiftPlayerLateral(sc, -3.5)),
+      "shift-right": () => App.edit((sc) => shiftPlayerLateral(sc, 3.5)),
+    });
   }
 
   // ---- a texture -----------------------------------------------------------------------------

@@ -17,7 +17,13 @@ const Thumbs = (() => {
       const tpl = App.state.catalog?.actorTypes[id];
       return tpl ? `/asset/scene/${tpl.asset}` : null;
     }
-    if (kind === "light") return App.state.catalog?.lightAsset ? `/asset/scene/${App.state.catalog.lightAsset}` : null;
+    if (kind === "light") {
+      if (id === "light_tram" || id === "tram") {
+        const tr = App.state.catalog?.lightTramAsset || App.state.catalog?.lightAssets?.tram;
+        if (tr) return `/asset/scene/${tr}`;
+      }
+      return App.state.catalog?.lightAsset ? `/asset/scene/${App.state.catalog.lightAsset}` : null;
+    }
     return null;
   }
 

@@ -34,4 +34,13 @@ const car = { id: "car_1", type: "car", pos: [20, -1.5], yaw: -Math.PI / 2, way:
 const ways = Layout.waysFrom(s, car.pos, car.yaw);
 const p = Layout.pathFrom(s, car.pos, car.yaw, "left");
 out.push({ template: "actor-path", ways, path: p });
+// Multi-lane player lane selection test.
+const sav = JSON.parse(JSON.stringify(base));
+sav.layout = Layout.template("avenue", sav.crop || 90);
+sav.layout.player = { street: "s3", toward: "c", lane: 1 };
+sav.question.maneuver = "straight";
+sav.actors = []; sav.lights = []; sav.markings = []; sav.lawns = [];
+sav.routes = sav.routes.filter((r) => r.kind === "choice");
+Layout.apply(sav);
+out.push({ template: "avenue-lane-1", maneuver: "straight", scene: sav });
 process.stdout.write(JSON.stringify(out));

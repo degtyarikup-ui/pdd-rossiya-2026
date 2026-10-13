@@ -39,12 +39,13 @@ static func sign_at(parent: Node3D, code: String, z: float, side: String, half: 
 
 
 const SIGN_BOTTOM := 2.2       # m, the lower edge of the board (plates included) above the pavement
-const SIGN_LEAN := 0.0   # boards stay vertical and centred on their pole
+const SIGN_LEAN := deg_to_rad(38.0)   # the board leans back towards the camera above: read face-on, not squeezed
 
 
 ## A road sign at the origin, facing a driver who comes from -Z: a pole, and on it the board (the
-## sign, its picture plate and its text plate) mounted vertically on one pole.
-static func sign_node(code: String, plate := "", plate_sign := "", main_road: Array = [], roads: Array = [], with_pole := true) -> Node3D:
+## sign, its picture plate and its text plate) leaning back so the game's camera from above sees it
+## whole.
+static func sign_node(code: String, plate := "", plate_sign := "", main_road: Array = [], roads: Array = []) -> Node3D:
 	# 8.13 alone (on a light pole, or the old scenes): the plate is the sign.
 	var tex: Texture2D = main_road_plate(main_road, roads) if code == "8.13" else load("res://signs/%s.svg" % code) as Texture2D
 	if tex == null:
@@ -92,53 +93,7 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 	pole.mesh = cyl
 	pole.material_override = steel
 	pole.position = Vector3(0, top * 0.5, POLE_BACK + y * 0.5 * sin(SIGN_LEAN))
-	if with_pole:
-		root.add_child(pole)
-	else:
-		pole.free()
-	return root
-
-
-## Raise the traffic light and mount a vertical board on the same continuous pole.
-static func light_with_signs(light: Node3D, codes: Array, main_road: Array = []) -> Node3D:
-	var signs: Array[Node3D] = []
-	var heights: Array[float] = []
-	for code in codes.slice(0, 2):
-		if str(code).is_empty():
-			continue
-		var tex: Texture2D = main_road_plate(main_road) if code == "8.13" else load("res://signs/%s.svg" % code) as Texture2D
-		if tex == null:
-			continue
-		var sign := sign_node(str(code), "", "", main_road if code == "8.13" else [], [], false)
-		signs.append(sign)
-		heights.append(SIGN_WIDTH * 0.8 * float(tex.get_height()) / float(tex.get_width()))
-	if signs.is_empty():
-		return light
-	var root := Node3D.new()
-	var lift := 0.15 * (signs.size() - 1)
-	for height in heights:
-		lift += height
-	light.position.y += lift
-	root.add_child(light)
-	var offset := 0.0
-	for i in range(signs.size() - 1, -1, -1):
-		var sign := signs[i]
-		sign.scale = Vector3.ONE * 0.8
-		sign.position = Vector3(0, SIGN_BOTTOM * 0.2 + offset, 0.18)
-		sign.rotation.y = -PI
-		root.add_child(sign)
-		offset += heights[i] + 0.15
-	var extension := MeshInstance3D.new()
-	var cylinder := CylinderMesh.new()
-	cylinder.top_radius = 0.07
-	cylinder.bottom_radius = 0.07
-	cylinder.height = lift
-	extension.mesh = cylinder
-	extension.position.y = lift * 0.5
-	var steel := StandardMaterial3D.new()
-	steel.albedo_color = Color("#3A3F47")
-	extension.material_override = steel
-	root.add_child(extension)
+	root.add_child(pole)
 	return root
 
 
