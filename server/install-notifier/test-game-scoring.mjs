@@ -21,12 +21,12 @@ test('cumulative reports are incremental and idempotent through mistakes and ret
   assert.equal(entry.best, 120);
 });
 
-test('all games share 1500 daily points; clipped excess cannot be banked tomorrow', () => {
+test('all new runs contribute without a daily budget; retries remain idempotent', () => {
   let entry = awardGameScore(null, { runId: 'signs-one', score: 600 }, morning).entry;
   const clipped = awardGameScore(entry, { runId: 'regulator-one', score: 1000 }, morning);
-  assert.equal(clipped.credited, 900);
-  assert.equal(clipped.dailyEarned, 1500);
-  assert.equal(clipped.limitReached, true);
+  assert.equal(clipped.credited, 1000);
+  assert.equal(clipped.dailyEarned, 1600);
+  assert.equal(clipped.limitReached, false);
   entry = clipped.entry;
   const retry = awardGameScore(entry, { runId: 'regulator-one', score: 1000 }, morning + 86400000);
   assert.equal(retry.credited, 0);
@@ -48,14 +48,14 @@ test('a live run crossing into a fresh weekly board credits only its new delta',
   assert.equal(capped.credited, 0, 'old per-run excess does not reopen in a new week');
 });
 
-test('per-run and seven-day earning bounds preserve existing account points', () => {
+test('per-run bounds preserve existing points without a weekly ceiling', () => {
   let entry = { score: 50000, best: 5000, runs: 40 };
   for (let day = 0; day < 8; day++) {
     const result = awardGameScore(entry, { runId: 'city-' + day, runScore: 99999999 }, morning + day * 86400000);
-    assert.equal(result.credited, day < 7 ? 1500 : 0);
+    assert.equal(result.credited, 1500);
     entry = result.entry;
   }
-  assert.equal(entry.score, 60500, 'old earned points are never reset');
+  assert.equal(entry.score, 62000, 'old earned points are never reset');
   assert.equal(entry.best, 5000, 'old personal record is preserved');
   assert.equal(Object.keys(entry._ranking.days).length, 7);
   const replay = awardGameScore(entry, { runId: 'city-0', runScore: 99999999 }, morning + 8 * 86400000);
@@ -72,8 +72,8 @@ test('legacy final and delta clients stay bounded without deducting already earn
   result = awardGameScore(result.entry, { delta: 30, runScore: 30 }, morning);
   assert.equal(result.credited, 0, 'recovering lost local points does not farm weekly awards');
   result = awardGameScore(result.entry, { delta: 500000, runScore: 500000 }, morning);
-  assert.equal(result.credited, 1360);
-  assert.equal(result.entry.score, 1500);
+  assert.equal(result.credited, 1460);
+  assert.equal(result.entry.score, 1600);
   assert.equal(awardGameScore(null, { score: 99999999 }, morning).credited, 1500);
 });
 
@@ -107,4 +107,28 @@ test('invalid and extreme inputs cannot corrupt or deduct a score', () => {
   for (const runId of ['', 'x'.repeat(129), '__proto__', 'constructor', {}, null]) {
     assert.throws(() => awardGameScore(null, { runId, runScore: 10 }, morning), /invalid runId/);
   }
+});
+
+
+test('removing budgets preserves a capped production ledger and only credits new runs', () => {
+  const previous = { score: 3000, runs: 12, best: 1500, _ranking: {
+    days: { '2026-10-12': 1500, '2026-10-13': 1500 }, earned: 3000,
+    runs: { 'already-consumed': { score: 1500, at: morning, counted: true } },
+    legacyScore: 1500,
+  } };
+  const now = Date.parse('2026-10-13T12:00:00Z');
+  const retry = awardGameScore(previous, { runId: 'already-consumed', score: 1500 }, now);
+  assert.equal(retry.entry.score, 3000);
+  assert.equal(retry.entry.runs, 12);
+  let result = awardGameScore(retry.entry, { runId: 'new-run', score: 1500 }, now);
+  assert.equal(result.entry.score, 4500);
+  assert.equal(result.entry.runs, 13);
+  assert.equal(result.dailyEarned, 3000);
+  assert.equal(result.dailyLimit, null);
+  assert.equal(result.limitReached, false);
+  result = awardGameScore(result.entry, { delta: 200, runScore: 200, newRun: true }, now);
+  assert.equal(result.entry.score, 4700, 'installed delta clients can start another run');
+  result = awardGameScore(result.entry, { score: 500 }, now);
+  assert.equal(result.entry.score, 5200, 'installed final-score clients contribute too');
+  assert.equal(previous.score, 3000);
 });

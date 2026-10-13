@@ -191,22 +191,22 @@ test('authenticated leaderboard response and deletion retain compatibility with 
   assert.equal((await trafficRequest(e, 'game_lb:' + result.week, 'read'))[userId], undefined);
 });
 
-test('concurrent cumulative reports share one budget and retries survive a TrafficState restart', async () => {
+test('concurrent cumulative reports all contribute and retries survive a TrafficState restart', async () => {
   const e = setup(), key = 'game_lb:2026-W41', userId = 'google_ranked';
   const reports = await Promise.all(Array.from({ length: 50 }, (_, i) => trafficRequest(e, key, 'score', {
     userId, score: { runId: 'run-' + i, runScore: 100, newRun: true },
   })));
-  assert.equal(reports.reduce((total, report) => total + report.credited, 0), 1500);
+  assert.equal(reports.reduce((total, report) => total + report.credited, 0), 5000);
   let board = await trafficRequest(e, key, 'read');
-  assert.equal(board[userId].score, 1500);
+  assert.equal(board[userId].score, 5000);
   assert.equal(board[userId].runs, 50);
   assert.equal(board[userId]._ranking, undefined, 'private ledger is not copied into the public board');
   const record = e.TRAFFIC.objects.get(key);
   record.object = new TrafficState(record.state, e);
   const retry = await trafficRequest(e, key, 'score', { userId, score: { runId: 'run-0', runScore: 100, newRun: true } });
   assert.equal(retry.credited, 0);
-  assert.equal(retry.dailyEarned, 1500);
-  assert.equal(retry.limitReached, true);
+  assert.equal(retry.dailyEarned, 5000);
+  assert.equal(retry.limitReached, false);
   board = await trafficRequest(e, key, 'read');
   assert.equal(board[userId].runs, 50);
   await alarm(record);
@@ -215,7 +215,7 @@ test('concurrent cumulative reports share one budget and retries survive a Traff
   assert.equal(await record.state.storage.get('ranking:' + userId), undefined);
 });
 
-test('score API exposes only my daily budget and applies the same legacy and cumulative rules in DO and KV', async () => {
+test('score API exposes only my daily budget and applies unlimited daily legacy and cumulative rules in DO and KV', async () => {
   for (const durable of [true, false]) {
     const e = setup(), userId = 'apple_ranked';
     if (!durable) delete e.TRAFFIC;
@@ -234,14 +234,14 @@ test('score API exposes only my daily budget and applies the same legacy and cum
     assert.equal((await score({ runId: 'same-run', runScore: 80, delta: -120 })).weekScore, 300);
     assert.equal((await score({ runId: 'same-run', runScore: 260 })).credited, 60);
     const clipped = await score({ score: 99999999 });
-    assert.equal(clipped.credited, 1140);
-    assert.equal(clipped.weekScore, 1500);
-    assert.equal(clipped.dailyLimit, 1500);
-    assert.equal(clipped.limitReached, true);
+    assert.equal(clipped.credited, 1500);
+    assert.equal(clipped.weekScore, 1860);
+    assert.equal(clipped.dailyLimit, null);
+    assert.equal(clipped.limitReached, false);
     const board = await (await worker.fetch(new Request('https://test/api/game/leaderboard?userId=' + userId), e)).json();
-    assert.equal(board.me.dailyEarned, 1500);
-    assert.equal(board.me.dailyLimit, 1500);
-    assert.equal(board.me.limitReached, true);
+    assert.equal(board.me.dailyEarned, 1860);
+    assert.equal(board.me.dailyLimit, null);
+    assert.equal(board.me.limitReached, false);
     assert.equal(board.top[0].dailyEarned, undefined);
     assert.equal(board.top[0]._ranking, undefined);
     const invalid = await worker.fetch(new Request('https://test/api/game/score', {

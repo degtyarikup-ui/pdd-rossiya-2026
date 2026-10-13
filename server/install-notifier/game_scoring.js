@@ -1,8 +1,6 @@
-// Ranked points are earned, never lost. All games share the same Moscow-day
-// budget; local game records can keep growing after this budget is exhausted.
-export const GAME_DAILY_LIMIT = 1500;
+// Ranked points are earned, never lost. Every new run contributes; only
+// the per-run bound and replay protection limit individual submissions.
 export const GAME_RUN_LIMIT = 1500;
-export const GAME_WEEK_LIMIT = GAME_DAILY_LIMIT * 7;
 export const GAME_TRACKED_RUNS = 512;
 const RETIRED_BITS = 8192;
 const RESERVED_IDS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -25,7 +23,7 @@ function budget(entry) {
   const source = saved && typeof saved === 'object' ? saved : {};
   const days = {};
   for (const [day, points] of Object.entries(source.days || {})) {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(day)) days[day] = whole(points, GAME_DAILY_LIMIT);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(day)) days[day] = whole(points);
   }
   const runs = {};
   for (const [id, record] of Object.entries(source.runs || {})) {
@@ -34,7 +32,7 @@ function budget(entry) {
     };
   }
   return {
-    days, runs, earned: whole(source.earned, GAME_WEEK_LIMIT),
+    days, runs, earned: whole(source.earned),
     retired: typeof source.retired === 'string' ? source.retired : '',
     legacyScore: whole(source.legacyScore, GAME_RUN_LIMIT),
   };
@@ -73,16 +71,15 @@ function trimRuns(state, bytes) {
 
 export function gameDailySummary(entry, now = Date.now()) {
   const state = entry?._ranking;
-  const dailyEarned = whole(state?.days?.[gameDayKey(now)], GAME_DAILY_LIMIT);
+  const dailyEarned = whole(state?.days?.[gameDayKey(now)]);
   return {
-    dailyEarned, dailyLimit: GAME_DAILY_LIMIT,
-    limitReached: dailyEarned >= GAME_DAILY_LIMIT || whole(state?.earned, GAME_WEEK_LIMIT) >= GAME_WEEK_LIMIT,
+    dailyEarned, dailyLimit: null, limitReached: false,
   };
 }
 
 // Shared by strongly consistent TrafficState and the compatibility KV path.
-// Cumulative reports consume their full increase even when the daily budget
-// clips the award: retrying tomorrow must not bank yesterday's excess points.
+// Stored cumulative high-water marks remain unchanged on migration: retries
+// cannot reopen previously consumed points or duplicate existing awards.
 export function awardGameScore(previous, input = {}, now = Date.now()) {
   const entry = previous && typeof previous === 'object' ? { ...previous } : {};
   entry.score = whole(entry.score);
@@ -133,7 +130,7 @@ export function awardGameScore(previous, input = {}, now = Date.now()) {
     requested = runScore;
     newRun = runScore > 0;
   }
-  const credited = Math.min(requested, GAME_DAILY_LIMIT - (state.days[day] || 0), GAME_WEEK_LIMIT - state.earned);
+  const credited = Math.min(requested, Number.MAX_SAFE_INTEGER - entry.score);
   state.days[day] = (state.days[day] || 0) + credited;
   // At most seven relevant daily counters in a weekly object.
   for (const oldDay of Object.keys(state.days).sort().slice(0, Math.max(0, Object.keys(state.days).length - 7))) delete state.days[oldDay];

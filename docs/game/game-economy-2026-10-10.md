@@ -1,5 +1,7 @@
 # Game rewards, 2026-10-10
 
+**Update 2026-10-13:** daily and weekly ranking budgets were removed on the server. Every new run contributes up to 1,500 points; cumulative replay protection and all previously earned totals are preserved. The response uses `dailyLimit: null` and `limitReached: false`. Previously clipped points are not awarded retroactively. The daily-budget descriptions below document the original October 10 release.
+
 Goal: visible progress for beginners, modest incentives for mastery, bounded
 weekly accumulation shared by all games.
 
