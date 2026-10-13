@@ -16,7 +16,6 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/crossroads/crossroads_screen.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_screen.dart';
-import 'package:pdd_app/presentation/screens/games/traffic_controller/traffic_controller_screen.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
 
 class GamesHubScreen extends ConsumerStatefulWidget {
@@ -95,6 +94,24 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
     HapticFeedbackHelper.tap();
     await GodotGame.play(context, ref);
     await _refreshRuns();
+    await _refreshRating();
+  }
+
+  /// The Godot Regulator game on its own screen (Android, iOS, the site).
+  /// A platform without the game in its build says so: the old WebView game is gone.
+  Future<void> _openTrafficController() async {
+    final avail = await GodotGame.available();
+    if (!avail) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(appL10n.gameUnavailable)),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+    HapticFeedbackHelper.tap();
+    await GodotGame.playRegulator(context, ref);
     await _refreshRating();
   }
 
@@ -185,7 +202,7 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
             art: const TrafficControllerArt(forCard: true),
             title: appL10n.gameTrafficControllerTitle,
             bestScore: traffic.bestScore,
-            onTap: () => _open(context, const TrafficControllerScreen()),
+            onTap: _openTrafficController,
           ),
           const SizedBox(height: AppDimensions.spacingL),
           _GameCard(

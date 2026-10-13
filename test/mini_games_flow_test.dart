@@ -19,6 +19,7 @@ import 'package:pdd_app/presentation/screens/games/crossroads/crossroads_screen.
 import 'package:pdd_app/presentation/screens/games/games_hub_screen.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_screen.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/widgets/swipe_card_view.dart';
+import 'package:pdd_app/presentation/screens/game/godot_game.dart';
 import 'package:pdd_app/presentation/screens/games/traffic_controller/traffic_controller_screen.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
@@ -55,16 +56,30 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    GodotGame.resetForTest();
     progress = ProgressDataSource();
     await progress.init();
     SoundEffectsService.instance.setEnabled(false);
     originalWebPlatform = WebViewPlatform.instance;
     web = _TrafficWebPlatform();
     WebViewPlatform.instance = web;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('pdd/godot_game'),
+      (call) async {
+        if (call.method == 'available') return false;
+        return null;
+      },
+    );
   });
 
   tearDown(() {
     SoundEffectsService.instance.setEnabled(true);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('pdd/godot_game'),
+      null,
+    );
     if (originalWebPlatform != null) {
       WebViewPlatform.instance = originalWebPlatform;
     }
@@ -791,12 +806,9 @@ void main() {
       tester.getCenter(find.text(appL10n.gameTrafficControllerTitle)),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 350));
-    expect(find.byType(TrafficControllerScreen), findsOneWidget);
-    expectNoModeChoice();
-    web.controllers.last.emitReady();
-    await tester.pump();
-    expect(find.text(appL10n.gameSecondsLeft(60)), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text(appL10n.gameUnavailable), findsOneWidget);
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });

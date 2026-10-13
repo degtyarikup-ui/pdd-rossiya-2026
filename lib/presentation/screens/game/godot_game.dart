@@ -58,6 +58,13 @@ class GodotGame {
   static Future<bool>? _webAvailable;
   static bool _running = false;
 
+  @visibleForTesting
+  static void resetForTest() {
+    _available = null;
+    _webAvailable = null;
+    _running = false;
+  }
+
   /// Android and iOS run the game on their native screens (see ios/Runner/PddGodotGame.mm).
   static bool get _nativeScreen =>
       defaultTargetPlatform == TargetPlatform.android ||
@@ -72,6 +79,7 @@ class GodotGame {
     }
     return _available ??= _channel
         .invokeMethod<bool>('available')
+        .timeout(const Duration(seconds: 2), onTimeout: () => false)
         .then((v) => v ?? false)
         .catchError((_) => false);
   }

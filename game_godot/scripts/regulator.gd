@@ -84,14 +84,45 @@ func _setup_environment() -> void:
 	sun.shadow_bias = 0.04
 	add_child(sun)
 
-	# World Environment (Sky & Ambient Light)
+	# World Environment (Sky, Fog & Ambient Light)
 	env = WorldEnvironment.new()
 	var e := Environment.new()
-	e.background_mode = Environment.BG_COLOR
-	e.background_color = Color("#8CB8E8") if not Ui.dark else Color("#1A202C")
-	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e.ambient_light_color = Color(0.9, 0.92, 0.95) if not Ui.dark else Color(0.2, 0.22, 0.26)
-	e.ambient_light_energy = 0.7
+	e.background_mode = Environment.BG_SKY
+
+	var sky := Sky.new()
+	var sky_mat := ProceduralSkyMaterial.new()
+	if not Ui.dark:
+		sky_mat.sky_top_color = Color("#3B6E9F")
+		sky_mat.sky_horizon_color = Color("#C9DAEA")
+		sky_mat.sky_curve = 0.08
+		sky_mat.ground_bottom_color = Color("#384236")
+		sky_mat.ground_horizon_color = Color("#C9DAEA")
+		sky_mat.ground_curve = 0.05
+		sky_mat.sun_angle_max = 28.0
+		sky_mat.sun_curve = 0.12
+	else:
+		sky_mat.sky_top_color = Color("#0C1322")
+		sky_mat.sky_horizon_color = Color("#1E293B")
+		sky_mat.sky_curve = 0.1
+		sky_mat.ground_bottom_color = Color("#0F172A")
+		sky_mat.ground_horizon_color = Color("#1E293B")
+		sky_mat.ground_curve = 0.05
+		sky_mat.sun_angle_max = 10.0
+	sky.sky_material = sky_mat
+	e.sky = sky
+
+	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	e.ambient_light_sky_contribution = 0.65
+	e.ambient_light_color = Color(0.92, 0.94, 0.96) if not Ui.dark else Color(0.2, 0.22, 0.26)
+	e.ambient_light_energy = 0.75
+
+	# Atmospheric depth fog
+	e.fog_enabled = true
+	e.fog_mode = Environment.FOG_MODE_DEPTH
+	e.fog_light_color = Color("#C9DAEA") if not Ui.dark else Color("#1E293B")
+	e.fog_depth_begin = 50.0
+	e.fog_depth_end = 160.0
+
 	e.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.environment = e
 	add_child(env)
@@ -101,7 +132,7 @@ func _setup_environment() -> void:
 	camera.name = "MainCamera"
 	camera.fov = 52.0
 	camera.near = 0.1
-	camera.far = 120.0
+	camera.far = 240.0
 	add_child(camera)
 	camera.position = cam_base_pos
 	camera.look_at(cam_base_look)
