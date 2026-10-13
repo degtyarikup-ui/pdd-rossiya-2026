@@ -37,7 +37,10 @@ void main() {
 
     test('effectiveLanguageCode uses explicit selection or system', () {
       const settingsSystem = AppSettings(languageCode: 'system');
-      expect(settingsSystem.effectiveLanguageCode, AppSettings.detectSystemLanguage());
+      expect(
+        settingsSystem.effectiveLanguageCode,
+        AppSettings.detectSystemLanguage(),
+      );
 
       const settingsEn = AppSettings(languageCode: 'en');
       expect(settingsEn.effectiveLanguageCode, 'en');
@@ -84,43 +87,46 @@ void main() {
   });
 
   group('AppSettingsController setLanguageCode', () {
-    test('setLanguageCode updates state, persists, and updates appL10n', () async {
-      SharedPreferences.setMockInitialValues({});
-      final data = ProgressDataSource();
-      await data.init();
+    test(
+      'setLanguageCode updates state, persists, and updates appL10n',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final data = ProgressDataSource();
+        await data.init();
 
-      final container = ProviderContainer(
-        overrides: [progressDataSourceProvider.overrideWithValue(data)],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [progressDataSourceProvider.overrideWithValue(data)],
+        );
+        addTearDown(container.dispose);
 
-      await container.read(appSettingsProvider.notifier).ready;
-      expect(container.read(appSettingsProvider).languageCode, 'system');
+        await container.read(appSettingsProvider.notifier).ready;
+        expect(container.read(appSettingsProvider).languageCode, 'system');
 
-      await container
-          .read(appSettingsProvider.notifier)
-          .setLanguageCode('en');
-      expect(container.read(appSettingsProvider).languageCode, 'en');
-      expect(appL10n.tickets, 'Tickets');
+        await container
+            .read(appSettingsProvider.notifier)
+            .setLanguageCode('en');
+        expect(container.read(appSettingsProvider).languageCode, 'en');
+        expect(appL10n.tickets, 'Tickets');
 
-      await container
-          .read(appSettingsProvider.notifier)
-          .setLanguageCode('kk');
-      expect(container.read(appSettingsProvider).languageCode, 'kk');
-      expect(appL10n.tickets, 'Билеттер');
+        await container
+            .read(appSettingsProvider.notifier)
+            .setLanguageCode('kk');
+        expect(container.read(appSettingsProvider).languageCode, 'kk');
+        expect(appL10n.tickets, 'Билеттер');
 
-      await container
-          .read(appSettingsProvider.notifier)
-          .setLanguageCode('ru');
-      expect(container.read(appSettingsProvider).languageCode, 'ru');
-      expect(appL10n.tickets, 'Билеты');
+        await container
+            .read(appSettingsProvider.notifier)
+            .setLanguageCode('ru');
+        expect(container.read(appSettingsProvider).languageCode, 'ru');
+        expect(appL10n.tickets, 'Билеты');
 
-      // Set back to system
-      await container
-          .read(appSettingsProvider.notifier)
-          .setLanguageCode('system');
-      expect(container.read(appSettingsProvider).languageCode, 'system');
-    });
+        // Set back to system
+        await container
+            .read(appSettingsProvider.notifier)
+            .setLanguageCode('system');
+        expect(container.read(appSettingsProvider).languageCode, 'system');
+      },
+    );
   });
 
   group('Multi-language localizations lookup', () {
@@ -188,7 +194,9 @@ void main() {
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,
               themeMode: container.read(appSettingsProvider).themeMode,
-              locale: Locale(container.read(appSettingsProvider).effectiveLanguageCode),
+              locale: Locale(
+                container.read(appSettingsProvider).effectiveLanguageCode,
+              ),
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: const SettingsScreen(),

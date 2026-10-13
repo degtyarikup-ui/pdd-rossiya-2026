@@ -81,7 +81,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   /// предложить «Продолжить». Экзамен не запоминаем: там своя логика с
   /// таймером, и вернуться в середину экзамена нельзя.
   void _rememberPosition() {
-    if (widget.isExam) return;
+    if (widget.isExam || _isAllAnswered) return;
     final ids = widget.questions
         .map((q) => q['id'] as String? ?? '')
         .where((id) => id.isNotEmpty)
@@ -123,7 +123,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   Future<void> _checkFavorite() async {
     if (_currentIndex >= widget.questions.length) return;
 
-    final question = widget.questions[_currentIndex];
+    final index = _currentIndex;
+    final question = widget.questions[index];
     final dataSource = ref.read(progressDataSourceProvider);
     final TicketCategory category = ref
         .read(appSettingsProvider)
@@ -133,7 +134,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
       category,
     );
 
-    if (mounted) {
+    if (mounted &&
+        _currentIndex == index &&
+        ref.read(appSettingsProvider).ticketCategory == category) {
       setState(() => _isFavorite = favorite);
     }
   }
@@ -284,17 +287,16 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
 
   Future<void> _toggleFavorite() async {
     HapticFeedbackHelper.select();
-    final question = widget.questions[_currentIndex];
+    final index = _currentIndex;
+    final question = widget.questions[index];
     final dataSource = ref.read(progressDataSourceProvider);
-    final TicketCategory category = ref
-        .read(appSettingsProvider)
-        .ticketCategory;
-
+    final category = ref.read(appSettingsProvider).ticketCategory;
     await dataSource.toggleFavorite(question['id'] as String, category);
+    if (!mounted) return;
     ref.read(appDataRefreshProvider.notifier).state++;
-
-    if (mounted) {
-      setState(() => _isFavorite = !_isFavorite);
+    if (_currentIndex == index &&
+        ref.read(appSettingsProvider).ticketCategory == category) {
+      await _checkFavorite();
     }
   }
 

@@ -31,6 +31,10 @@ final progressDataSourceProvider = Provider<ProgressDataSource>((ref) {
   throw UnimplementedError('Must be overridden with actual instance');
 });
 
+final progressImportsProvider = StreamProvider<int>(
+  (ref) => ref.watch(progressDataSourceProvider).imports,
+);
+
 final appDataRefreshProvider = StateProvider<int>((ref) => 0);
 
 /// True while a screen takes the whole window (the game's garage reveal):
@@ -136,6 +140,7 @@ final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
   ref,
 ) async {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
@@ -146,7 +151,9 @@ final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
   final saved = progress.loadUnfinishedSession(category);
   if (saved == null) return null;
 
-  final ids = (saved['questionIds'] as List).cast<String>();
+  final rawIds = saved['questionIds'] as List?;
+  if (rawIds == null || rawIds.isEmpty) return null;
+  final ids = rawIds.map((e) => e.toString()).toList();
   final all = await ref
       .watch(questionsDataSourceProvider)
       .loadTickets(category, lang);
@@ -159,9 +166,12 @@ final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
   }
   // Половина вопросов потерялась — набор уже не тот, что был; лучше не
   // предлагать возврат, чем вернуть человека в поломанную сессию.
-  if (questions.length < ids.length / 2) return null;
+  if (questions.isEmpty || questions.length < ids.length / 2) return null;
 
-  final index = (saved['index'] as int? ?? 0).clamp(0, questions.length - 1);
+  final index = ((saved['index'] as num?)?.toInt() ?? 0).clamp(
+    0,
+    questions.length - 1,
+  );
 
   // Прерванный экзамен возвращается со всем своим состоянием: ответами,
   // остатком времени и доп. фазой. Если хоть один вопрос выпал из базы,
@@ -169,7 +179,9 @@ final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
   if (saved['kind'] == 'exam') {
     if (questions.length != ids.length) return null;
     final answers =
-        (saved['answers'] as List?)?.map((e) => e as int?).toList() ??
+        (saved['answers'] as List?)
+            ?.map((e) => (e as num?)?.toInt())
+            .toList() ??
         List<int?>.filled(questions.length, null);
     if (answers.length != questions.length) return null;
     return {
@@ -178,12 +190,12 @@ final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
       'index': index,
       'total': questions.length,
       'answers': answers,
-      'remainingSeconds': saved['remainingSeconds'] as int? ?? 0,
-      'totalSeconds': saved['totalSeconds'] as int? ?? 0,
+      'remainingSeconds': (saved['remainingSeconds'] as num?)?.toInt() ?? 0,
+      'totalSeconds': (saved['totalSeconds'] as num?)?.toInt() ?? 0,
       'additionalPhase': saved['additionalPhase'] as bool? ?? false,
       'additionalQuestionsCount':
-          saved['additionalQuestionsCount'] as int? ?? 0,
-      'initialWrongCount': saved['initialWrongCount'] as int? ?? 0,
+          (saved['additionalQuestionsCount'] as num?)?.toInt() ?? 0,
+      'initialWrongCount': (saved['initialWrongCount'] as num?)?.toInt() ?? 0,
     };
   }
 
@@ -252,6 +264,7 @@ final markupProvider = FutureProvider<Map<String, List<Map<String, String>>>>((
 
 final statsProvider = FutureProvider<Map<String, int>>((ref) async {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
@@ -302,6 +315,7 @@ final statsProvider = FutureProvider<Map<String, int>>((ref) async {
 
 final ticketProgressProvider = FutureProvider<Map<int, int>>((ref) async {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
@@ -333,6 +347,7 @@ final favoriteQuestionProvider = FutureProvider.family<bool, String>((
   questionId,
 ) async {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
@@ -342,6 +357,7 @@ final favoriteQuestionProvider = FutureProvider.family<bool, String>((
 
 final favoriteQuestionsProvider = FutureProvider<List<String>>((ref) async {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
@@ -351,6 +367,7 @@ final favoriteQuestionsProvider = FutureProvider<List<String>>((ref) async {
 
 final streakProvider = FutureProvider<Streak>((ref) async {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   final dataSource = ref.watch(progressDataSourceProvider);
   return await dataSource.loadStreak();
 });
@@ -374,6 +391,7 @@ final bestWeeklyRankProvider = FutureProvider.autoDispose<int?>((ref) async {
 final achievementsProvider =
     FutureProvider.autoDispose<List<AchievementProgress>>((ref) async {
       ref.watch(appDataRefreshProvider);
+      ref.watch(progressImportsProvider);
       final category = ref.watch(
         appSettingsProvider.select((s) => s.ticketCategory),
       );
@@ -413,6 +431,7 @@ final achievementsProvider =
 
 final wrongQuestionIdsProvider = FutureProvider<List<String>>((ref) async {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   final category = ref.watch(
     appSettingsProvider.select((s) => s.ticketCategory),
   );
@@ -458,30 +477,35 @@ final premiumServiceProvider = Provider<PremiumService>((ref) {
 
 final isPremiumProvider = Provider<bool>((ref) {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   ref.watch(authAndPremiumStreamProvider);
   return PremiumService.instance.isPremium;
 });
 
 final dailyCardsRemainingProvider = Provider<int>((ref) {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   ref.watch(authAndPremiumStreamProvider);
   return PremiumService.instance.remainingFreeCards;
 });
 
 final dailyFreeLimitProvider = Provider<int>((ref) {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   ref.watch(authAndPremiumStreamProvider);
   return PremiumService.instance.dailyFreeLimit;
 });
 
 final aiMessagesRemainingProvider = Provider<int>((ref) {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   ref.watch(authAndPremiumStreamProvider);
   return PremiumService.instance.remainingAiMessages;
 });
 
 final aiMessagesLimitProvider = Provider<int>((ref) {
   ref.watch(appDataRefreshProvider);
+  ref.watch(progressImportsProvider);
   ref.watch(authAndPremiumStreamProvider);
   return PremiumService.instance.aiFreeLimit;
 });
@@ -523,7 +547,11 @@ final trafficControllerProgressProvider =
       TrafficControllerProgress
     >((ref) {
       final ds = ref.watch(progressDataSourceProvider);
-      return TrafficControllerProgressController(ds);
+      final controller = TrafficControllerProgressController(ds);
+      ref.listen(progressImportsProvider, (_, next) {
+        if (next.hasValue) controller.reload();
+      });
+      return controller;
     });
 
 class TrafficControllerProgressController
@@ -532,6 +560,8 @@ class TrafficControllerProgressController
     : super(_dataSource.getTrafficControllerProgress());
 
   final ProgressDataSource _dataSource;
+
+  void reload() => state = _dataSource.getTrafficControllerProgress();
 
   Future<void> recordGameResult({
     required int score,
@@ -560,7 +590,11 @@ final signSwiperProgressProvider =
       ref,
     ) {
       final ds = ref.watch(progressDataSourceProvider);
-      return SignSwiperProgressController(ds);
+      final controller = SignSwiperProgressController(ds);
+      ref.listen(progressImportsProvider, (_, next) {
+        if (next.hasValue) controller.reload();
+      });
+      return controller;
     });
 
 class SignSwiperProgressController extends StateNotifier<SignSwiperProgress> {
@@ -568,6 +602,8 @@ class SignSwiperProgressController extends StateNotifier<SignSwiperProgress> {
     : super(_dataSource.getSignSwiperProgress());
 
   final ProgressDataSource _dataSource;
+
+  void reload() => state = _dataSource.getSignSwiperProgress();
 
   Future<void> recordGameResult({
     required int score,
@@ -594,13 +630,18 @@ class SignSwiperProgressController extends StateNotifier<SignSwiperProgress> {
   }
 }
 
-final crossroadsPriorityProgressProvider = StateNotifierProvider<
-  CrossroadsPriorityProgressController,
-  CrossroadsPriorityProgress
->((ref) {
-  final ds = ref.watch(progressDataSourceProvider);
-  return CrossroadsPriorityProgressController(ds);
-});
+final crossroadsPriorityProgressProvider =
+    StateNotifierProvider<
+      CrossroadsPriorityProgressController,
+      CrossroadsPriorityProgress
+    >((ref) {
+      final ds = ref.watch(progressDataSourceProvider);
+      final controller = CrossroadsPriorityProgressController(ds);
+      ref.listen(progressImportsProvider, (_, next) {
+        if (next.hasValue) controller.reload();
+      });
+      return controller;
+    });
 
 class CrossroadsPriorityProgressController
     extends StateNotifier<CrossroadsPriorityProgress> {
@@ -608,6 +649,8 @@ class CrossroadsPriorityProgressController
     : super(_dataSource.getCrossroadsPriorityProgress());
 
   final ProgressDataSource _dataSource;
+
+  void reload() => state = _dataSource.getCrossroadsPriorityProgress();
 
   Future<void> recordGameResult({
     required int score,

@@ -178,11 +178,15 @@ void main() {
 
       // Пешеход на регулируемом перекрестке уступает машинам на основной зеленый прямо
       if (a.type == CrossroadsVehicleType.pedestrian) {
-        if (bMainGreen && b.maneuver == CrossroadsManeuver.straight) return true;
+        if (bMainGreen && b.maneuver == CrossroadsManeuver.straight) {
+          return true;
+        }
         return false;
       }
       if (b.type == CrossroadsVehicleType.pedestrian) {
-        if (aMainGreen && a.maneuver == CrossroadsManeuver.straight) return false;
+        if (aMainGreen && a.maneuver == CrossroadsManeuver.straight) {
+          return false;
+        }
         return true;
       }
 
@@ -210,7 +214,9 @@ void main() {
       final aThrough =
           a.maneuver == CrossroadsManeuver.straight ||
           a.maneuver == CrossroadsManeuver.right;
-      if (bTurningAcross && aThrough && a.side == opposite[b.side]) return false;
+      if (bTurningAcross && aThrough && a.side == opposite[b.side]) {
+        return false;
+      }
       return rightOf[a.side] == b.side;
     }
 

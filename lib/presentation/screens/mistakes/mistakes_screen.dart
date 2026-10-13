@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,15 +6,48 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/utils/safe_user_message.dart';
+import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 
-class MistakesScreen extends ConsumerWidget {
+class MistakesScreen extends ConsumerStatefulWidget {
   const MistakesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MistakesScreen> createState() => _MistakesScreenState();
+}
+
+class _MistakesScreenState extends ConsumerState<MistakesScreen> {
+  List<String>? _cachedIds;
+  Future<List<Map<String, dynamic>>>? _cachedFuture;
+  TicketCategory? _cachedCategory;
+  String? _cachedLang;
+
+  Future<List<Map<String, dynamic>>> _getMistakesFuture(
+    WidgetRef ref,
+    List<String> wrongIds,
+  ) {
+    final settings = ref.read(appSettingsProvider);
+    final category = settings.ticketCategory;
+    final lang = settings.effectiveLanguageCode;
+    if (_cachedFuture == null ||
+        _cachedCategory != category ||
+        _cachedLang != lang ||
+        _cachedIds == null ||
+        !listEquals(_cachedIds!, wrongIds)) {
+      _cachedIds = List.of(wrongIds);
+      _cachedCategory = category;
+      _cachedLang = lang;
+      _cachedFuture = _loadWrongQuestions(ref, wrongIds);
+    }
+    return _cachedFuture!;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.watch(appSettingsProvider.select((s) => s.ticketCategory));
+    ref.watch(appSettingsProvider.select((s) => s.effectiveLanguageCode));
     final wrongIdsAsync = ref.watch(wrongQuestionIdsProvider);
     final colors = AppColors.of(context);
 
@@ -58,8 +92,24 @@ class MistakesScreen extends ConsumerWidget {
                 }
 
                 return FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _loadWrongQuestions(ref, wrongIds),
+                  future: _getMistakesFuture(ref, wrongIds),
                   builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppDimensions.screenPadding),
+                          child: Text(
+                            dataLoadErrorMessage(snapshot.error),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              height: 1.4,
+                              color: colors.secondaryText,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
                     if (!snapshot.hasData) {
                       return const Center(child: CircularProgressIndicator());
                     }
@@ -311,7 +361,7 @@ class MistakesScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppDimensions.spacingM),
               Text(
-                question['question'] as String,
+                (question['question'] as String?) ?? '',
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(

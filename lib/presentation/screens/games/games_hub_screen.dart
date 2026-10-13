@@ -86,7 +86,9 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
   Future<void> _openCity() async {
     if (!await GodotGame.available()) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(appL10n.gameUnavailable)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(appL10n.gameUnavailable)));
       }
       return;
     }
@@ -103,9 +105,9 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
     final avail = await GodotGame.available();
     if (!avail) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(appL10n.gameUnavailable)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(appL10n.gameUnavailable)));
       }
       return;
     }
@@ -117,6 +119,15 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(progressImportsProvider, (_, next) {
+      if (mounted && next.hasValue) {
+        setState(
+          () => _cityBest = ref
+              .read(progressDataSourceProvider)
+              .getGameBestScore(),
+        );
+      }
+    });
     final colors = AppColors.of(context);
     final traffic = ref.watch(trafficControllerProgressProvider);
     final signs = ref.watch(signSwiperProgressProvider);

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/presentation/screens/training/training_result_screen.dart';
@@ -64,12 +65,13 @@ List<Map<String, dynamic>> buildQuestions(int n) => List.generate(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<void> pumpTraining(
+  Future<ProgressDataSource> pumpTraining(
     WidgetTester tester, {
     required int questions,
+    ProgressDataSource? source,
   }) async {
     SharedPreferences.setMockInitialValues({});
-    final data = ProgressDataSource();
+    final data = source ?? ProgressDataSource();
     await data.init();
 
     addTearDown(() async {
@@ -94,6 +96,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    return data;
   }
 
   Future<void> answer(WidgetTester tester, {required bool correct}) async {
@@ -112,6 +115,48 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets(
+    'просмотр ответов не восстанавливает уже завершённую тренировку',
+    (tester) async {
+      final data = await pumpTraining(tester, questions: 2);
+      await answer(tester, correct: true);
+      await nextOrFinish(tester);
+      await answer(tester, correct: true);
+      expect(data.loadUnfinishedSession(TicketCategory.ab), isNull);
+      tester.widget<PageView>(find.byType(PageView)).controller!.jumpToPage(0);
+      await tester.pumpAndSettle();
+      expect(data.loadUnfinishedSession(TicketCategory.ab), isNull);
+    },
+  );
+
+  testWidgets(
+    'запоздавшее избранное другого вопроса не меняет текущую кнопку',
+    (tester) async {
+      final data = _DelayedFavoriteSource();
+      await pumpTraining(tester, questions: 2, source: data);
+      tester.widget<PageView>(find.byType(PageView)).controller!.jumpToPage(1);
+      await tester.pumpAndSettle();
+      data.favorite.complete(true);
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.star_border), findsOneWidget);
+      expect(find.byIcon(Icons.star), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('завершение записи избранного после закрытия не использует ref', (
+    tester,
+  ) async {
+    final data = _DelayedToggleSource();
+    await pumpTraining(tester, questions: 1, source: data);
+    await tester.tap(find.byIcon(Icons.star_border));
+    await tester.pump();
+    await tester.pumpWidget(const SizedBox());
+    data.toggle.complete();
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('после последнего вопроса показывается итог набора', (
     tester,
@@ -235,4 +280,20 @@ void main() {
     expect(tts.pendingStop.isCompleted, isFalse);
     expect(tester.takeException(), isNull);
   });
+}
+
+class _DelayedFavoriteSource extends ProgressDataSource {
+  final favorite = Completer<bool>();
+  @override
+  Future<bool> isFavorite(String id, TicketCategory category) =>
+      id == 'q0' ? favorite.future : Future.value(false);
+}
+
+class _DelayedToggleSource extends ProgressDataSource {
+  final toggle = Completer<void>();
+  @override
+  Future<void> toggleFavorite(String id, TicketCategory category) async {
+    await toggle.future;
+    await super.toggleFavorite(id, category);
+  }
 }

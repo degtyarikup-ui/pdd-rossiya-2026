@@ -1,3 +1,4 @@
+import { mergeProgress } from './progress_merge.js';
 import { gameProfile } from './game_profile.js';
 import { awardGameScore, gameDailySummary, validGameRunId } from './game_scoring.js';
 import { notificationRequest, uploadNotificationImage, serveNotificationImage } from './notifications.js';
@@ -2741,100 +2742,6 @@ async function getAiAnalyticsStats(env) {
 }
 
 // ────────────────────── Full Cloud Progress Sync Helpers ──────────────────────
-function mergeMaps(mapA, mapB) {
-  const result = { ...(mapA || {}) };
-  if (!mapB) return result;
-  for (const [k, vB] of Object.entries(mapB)) {
-    const vA = result[k];
-    if (!vA) {
-      result[k] = vB;
-    } else if (typeof vB === 'object' && vB !== null && typeof vA === 'object' && vA !== null) {
-      const timeA = new Date(vA.answeredAt || 0).getTime();
-      const timeB = new Date(vB.answeredAt || 0).getTime();
-      const attemptsA = vA.attemptsCount || 0;
-      const attemptsB = vB.attemptsCount || 0;
-      if (timeB > timeA || (timeB === timeA && attemptsB > attemptsA)) {
-        result[k] = vB;
-      }
-    } else {
-      result[k] = vB;
-    }
-  }
-  return result;
-}
-
-function mergeLists(listA, listB) {
-  const set = new Set([...(listA || []), ...(listB || [])]);
-  return Array.from(set);
-}
-
-function mergeExamResults(listA, listB) {
-  const map = new Map();
-  (listA || []).forEach(e => {
-    const key = e.date || e.id || JSON.stringify(e);
-    map.set(key, e);
-  });
-  (listB || []).forEach(e => {
-    const key = e.date || e.id || JSON.stringify(e);
-    map.set(key, e);
-  });
-  return Array.from(map.values());
-}
-
-function mergeStreak(streakA, streakB) {
-  const a = streakA || {};
-  const b = streakB || {};
-  const activeDays = mergeLists(a.activeDays, b.activeDays);
-  activeDays.sort();
-  return {
-    current: Math.max(a.current || 0, b.current || 0),
-    longest: Math.max(a.longest || 0, b.longest || 0),
-    lastActiveDate: (new Date(a.lastActiveDate || 0) > new Date(b.lastActiveDate || 0)) ? a.lastActiveDate : b.lastActiveDate,
-    startDate: a.startDate || b.startDate,
-    activeDays: activeDays.slice(-60)
-  };
-}
-
-function mergeProgress(existing, incoming) {
-  const ex = existing || {};
-  const inc = incoming || {};
-  return {
-    questionProgressAb: mergeMaps(ex.questionProgressAb, inc.questionProgressAb),
-    questionProgressCd: mergeMaps(ex.questionProgressCd, inc.questionProgressCd),
-    ticketProgressAb: mergeMaps(ex.ticketProgressAb, inc.ticketProgressAb),
-    ticketProgressCd: mergeMaps(ex.ticketProgressCd, inc.ticketProgressCd),
-    favoritesAb: mergeLists(ex.favoritesAb, inc.favoritesAb),
-    favoritesCd: mergeLists(ex.favoritesCd, inc.favoritesCd),
-    examResultsAb: mergeExamResults(ex.examResultsAb, inc.examResultsAb),
-    examResultsCd: mergeExamResults(ex.examResultsCd, inc.examResultsCd),
-    streak: mergeStreak(ex.streak, inc.streak),
-    settings: { ...(ex.settings || {}), ...(inc.settings || {}) },
-    game: mergeGame(ex.game, inc.game),
-    updatedAt: new Date().toISOString()
-  };
-}
-
-// Driving game: counters only grow, the garage is a union of cars, the
-// chosen car is whatever the device reports last.
-function mergeGame(existing, incoming) {
-  const ex = existing || {}, inc = incoming || {};
-  const seen = new Set(), cars = [];
-  for (const car of [...(Array.isArray(ex.garageCars) ? ex.garageCars : []), ...(Array.isArray(inc.garageCars) ? inc.garageCars : [])]) {
-    if (!car || typeof car.id !== 'string' || typeof car.paint !== 'string') continue;
-    const key = car.id + ':' + car.paint;
-    if (!seen.has(key)) { seen.add(key); cars.push({ id: car.id, paint: car.paint }); }
-  }
-  const num = v => (typeof v === 'number' && isFinite(v) ? v : 0);
-  return {
-    bestScore: Math.max(num(ex.bestScore), num(inc.bestScore)),
-    garageCars: cars,
-    garageCorrect: Math.max(num(ex.garageCorrect), num(inc.garageCorrect)),
-    garageUnlocks: Math.max(num(ex.garageUnlocks), num(inc.garageUnlocks)),
-    vehicle: inc.vehicle || ex.vehicle || null,
-    vehiclePaint: inc.vehiclePaint || ex.vehiclePaint || null,
-  };
-}
-
 // ────────────────────── User Profile & Premium Security ──────────────────────
 function publicUser(user) {
   if (!user) return null;
