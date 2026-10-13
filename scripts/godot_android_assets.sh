@@ -34,7 +34,7 @@ mkdir -p "$OUT"
 unzip -oq "$TEMPLATES/android_source.zip" "libs/release/godot-lib.template_release.aar" -d "$TMP"
 cp "$TMP/libs/release/godot-lib.template_release.aar" "$OUT/godot-lib.aar"
 python3 tools/godot_export/export_ui.py >/dev/null
-if ! godot --headless --path game_godot --import >"$LOG" 2>&1; then
+if ! godot --headless --path game_godot --import >"$LOG" 2>&1 || grep -Eq '^(SCRIPT ERROR:|ERROR:)' "$LOG"; then
   tail -60 "$LOG"; echo "Ошибка импорта Godot; полный журнал: $LOG"; exit 1
 fi
 # This APK is only a container for res:// assets, so no signing key is needed.
@@ -49,7 +49,7 @@ options = re.sub(r'^package/signed=.*\n', '', s[start:end], flags=re.M)
 options = options.replace('[preset.0.options]', '[preset.0.options]\npackage/signed=false')
 p.write_text(s[:start] + options + s[end:])
 PY
-if ! godot --headless --path game_godot --export-release "Android" "$TMP/game.apk" >>"$LOG" 2>&1; then
+if ! godot --headless --path game_godot --export-release "Android" "$TMP/game.apk" >>"$LOG" 2>&1 || grep -Eq '^(SCRIPT ERROR:|ERROR:)' "$LOG"; then
   tail -60 "$LOG"; echo "Ошибка экспорта Godot; полный журнал: $LOG"; exit 1
 fi
 rm -rf "$OUT/assets"

@@ -89,6 +89,10 @@ Godot **4.7.2 Standard** и его экспортных шаблонов вып�
 Без `android/godot/` Flutter-приложение собирается, но Godot-игра недоступна.
 Устройство для игры должно быть ARM64. Подробнее — [документация игры](../game/README.md).
 
+Экспорт проверяет журнал на `SCRIPT ERROR` и `ERROR`: Godot иногда возвращает
+код успеха даже при ошибке разбора скриптов. При таких ошибках сборка ресурсов
+останавливается; подробности сохраняются в `output/godot/android-export.log`.
+
 Android-мост игры находится в Kotlin-файлах
 `android/app/src/godot/kotlin/ru/pdd/pdd_app/game/GodotGameActivity.kt` и
 `PddHostPlugin.kt`. Их компиляция подключается только при наличии
