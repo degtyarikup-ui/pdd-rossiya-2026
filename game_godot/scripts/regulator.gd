@@ -40,8 +40,8 @@ var round_timer := 0.0
 var next_delay := 0.0
 
 # Camera framing
-var cam_base_pos := Vector3(1.8, 3.4, 20.0)
-var cam_base_look := Vector3(0.0, 1.35, 0.0)
+var cam_base_pos := Vector3(1.8, 3.25, 20.0)
+var cam_base_look := Vector3(0.0, 1.55, 0.0)
 var cur_zoom := 1.0
 var auto_answer := false
 var shot_path := ""
@@ -77,51 +77,40 @@ func _setup_environment() -> void:
 	# Directional Sun Light
 	sun = DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.rotation_degrees = Vector3(-45, 35, 0)
-	sun.light_color = Color(1.0, 0.98, 0.94)
-	sun.light_energy = 1.15
+	sun.rotation_degrees = Vector3(-48, 32, 0)
+	sun.light_color = Color(1.0, 0.98, 0.93)
+	sun.light_energy = 1.05
 	sun.shadow_enabled = true
 	sun.shadow_bias = 0.04
 	add_child(sun)
 
-	# World Environment (Sky, Fog & Ambient Light)
+	# World Environment (Realistic Sky with Clouds, Ambient Light & Atmospheric Fog)
 	env = WorldEnvironment.new()
 	var e := Environment.new()
 	e.background_mode = Environment.BG_SKY
 
 	var sky := Sky.new()
-	var sky_mat := ProceduralSkyMaterial.new()
-	if not Ui.dark:
-		sky_mat.sky_top_color = Color("#3B6E9F")
-		sky_mat.sky_horizon_color = Color("#C9DAEA")
-		sky_mat.sky_curve = 0.08
-		sky_mat.ground_bottom_color = Color("#384236")
-		sky_mat.ground_horizon_color = Color("#C9DAEA")
-		sky_mat.ground_curve = 0.05
-		sky_mat.sun_angle_max = 28.0
-		sky_mat.sun_curve = 0.12
-	else:
-		sky_mat.sky_top_color = Color("#0C1322")
-		sky_mat.sky_horizon_color = Color("#1E293B")
-		sky_mat.sky_curve = 0.1
-		sky_mat.ground_bottom_color = Color("#0F172A")
-		sky_mat.ground_horizon_color = Color("#1E293B")
-		sky_mat.ground_curve = 0.05
-		sky_mat.sun_angle_max = 10.0
+	var sky_mat := ShaderMaterial.new()
+	sky_mat.shader = load("res://shaders/sky.gdshader")
+	sky_mat.set_shader_parameter("zenith_color", Color("#1E65BF"))
+	sky_mat.set_shader_parameter("horizon_color", Color("#7EBAEC"))
+	sky_mat.set_shader_parameter("cloud_coverage", 0.65)
+	sky_mat.set_shader_parameter("cloud_speed", 0.003)
 	sky.sky_material = sky_mat
 	e.sky = sky
 
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	e.ambient_light_sky_contribution = 0.65
-	e.ambient_light_color = Color(0.92, 0.94, 0.96) if not Ui.dark else Color(0.2, 0.22, 0.26)
-	e.ambient_light_energy = 0.75
+	e.ambient_light_sky_contribution = 0.55
+	e.ambient_light_color = Color("#8EBEEC")
+	e.ambient_light_energy = 0.65
 
 	# Atmospheric depth fog
 	e.fog_enabled = true
 	e.fog_mode = Environment.FOG_MODE_DEPTH
-	e.fog_light_color = Color("#C9DAEA") if not Ui.dark else Color("#1E293B")
-	e.fog_depth_begin = 50.0
-	e.fog_depth_end = 160.0
+	e.fog_light_color = Color("#7EBAEC")
+	e.fog_depth_begin = 80.0
+	e.fog_depth_end = 190.0
+	e.fog_sky_affect = 0.0
 
 	e.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.environment = e
@@ -132,7 +121,7 @@ func _setup_environment() -> void:
 	camera.name = "MainCamera"
 	camera.fov = 52.0
 	camera.near = 0.1
-	camera.far = 240.0
+	camera.far = 300.0
 	add_child(camera)
 	camera.position = cam_base_pos
 	camera.look_at(cam_base_look)

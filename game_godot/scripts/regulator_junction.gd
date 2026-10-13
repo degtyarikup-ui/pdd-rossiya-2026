@@ -6,7 +6,8 @@ extends Node3D
 
 const ROAD_WIDTH := 7.2         # 2 lanes of 3.6 m
 const HALF_ROAD := 3.6
-const ROAD_EXTENT := 40.0
+const ROAD_EXTENT := 46.0       # Extent for South, East, West branches
+const NORTH_EXTENT := 190.0     # Avenue continues straight ahead into the horizon!
 const STOP_Z := 10.0
 const ZEBRA_START := 6.0
 const ZEBRA_END := 8.8
@@ -63,54 +64,59 @@ func _build_surfaces() -> void:
 	center_road.position = Vector3(0, 0, 0)
 	add_child(center_road)
 
-	# 2. Four road arms (North, South, East, West)
-	var arm_len := ROAD_EXTENT - HALF_ROAD
+	# 2. Road arms
+	var side_arm_len := ROAD_EXTENT - HALF_ROAD
+	var north_arm_len := NORTH_EXTENT - HALF_ROAD
 
-	# South branch (+Z)
-	var south_road := _quad(Vector2(ROAD_WIDTH, arm_len), asphalt_mat)
-	south_road.position = Vector3(0, 0, HALF_ROAD + arm_len * 0.5)
+	# South branch (+Z) — behind player
+	var south_road := _quad(Vector2(ROAD_WIDTH, side_arm_len), asphalt_mat)
+	south_road.position = Vector3(0, 0, HALF_ROAD + side_arm_len * 0.5)
 	add_child(south_road)
 
-	# North branch (-Z)
-	var north_road := _quad(Vector2(ROAD_WIDTH, arm_len), asphalt_mat)
-	north_road.position = Vector3(0, 0, -(HALF_ROAD + arm_len * 0.5))
+	# North branch (-Z) — magnificent open avenue straight ahead!
+	var north_road := _quad(Vector2(ROAD_WIDTH, north_arm_len), asphalt_mat)
+	north_road.position = Vector3(0, 0, -(HALF_ROAD + north_arm_len * 0.5))
 	add_child(north_road)
 
 	# East branch (+X)
-	var east_road := _quad(Vector2(arm_len, ROAD_WIDTH), asphalt_mat)
-	east_road.position = Vector3(HALF_ROAD + arm_len * 0.5, 0, 0)
+	var east_road := _quad(Vector2(side_arm_len, ROAD_WIDTH), asphalt_mat)
+	east_road.position = Vector3(HALF_ROAD + side_arm_len * 0.5, 0, 0)
 	add_child(east_road)
 
 	# West branch (-X)
-	var west_road := _quad(Vector2(arm_len, ROAD_WIDTH), asphalt_mat)
-	west_road.position = Vector3(-(HALF_ROAD + arm_len * 0.5), 0, 0)
+	var west_road := _quad(Vector2(side_arm_len, ROAD_WIDTH), asphalt_mat)
+	west_road.position = Vector3(-(HALF_ROAD + side_arm_len * 0.5), 0, 0)
 	add_child(west_road)
 
 	# 3. Curbs along road edges (height 0.15 m, width 0.2 m)
-	_build_curbs(arm_len)
+	_build_curbs(side_arm_len, north_arm_len)
 
 	# 4. Sidewalks outside curbs
-	_build_sidewalks(arm_len)
+	_build_sidewalks(side_arm_len, north_arm_len)
 
 	# 5. Grass quadrants
-	_build_lawns(arm_len)
+	_build_lawns(side_arm_len, north_arm_len)
 
 
-func _build_curbs(arm_len: float) -> void:
+func _build_curbs(side_arm_len: float, north_arm_len: float) -> void:
 	var curb_w := 0.2
 	var curb_h := 0.15
 
-	# 4 quadrants of curbs
 	for sign_x in [-1.0, 1.0]:
-		for sign_z in [-1.0, 1.0]:
-			# Along Z road edge
-			var curb_z := _box(Vector3(curb_w, curb_h, arm_len), curb_mat)
-			curb_z.position = Vector3(sign_x * (HALF_ROAD + curb_w * 0.5), curb_h * 0.5, sign_z * (HALF_ROAD + arm_len * 0.5))
-			add_child(curb_z)
+		# South (+Z) curb
+		var curb_z_south := _box(Vector3(curb_w, curb_h, side_arm_len), curb_mat)
+		curb_z_south.position = Vector3(sign_x * (HALF_ROAD + curb_w * 0.5), curb_h * 0.5, HALF_ROAD + side_arm_len * 0.5)
+		add_child(curb_z_south)
 
-			# Along X road edge
-			var curb_x := _box(Vector3(arm_len, curb_h, curb_w), curb_mat)
-			curb_x.position = Vector3(sign_x * (HALF_ROAD + arm_len * 0.5), curb_h * 0.5, sign_z * (HALF_ROAD + curb_w * 0.5))
+		# North (-Z) curb extending along the whole avenue
+		var curb_z_north := _box(Vector3(curb_w, curb_h, north_arm_len), curb_mat)
+		curb_z_north.position = Vector3(sign_x * (HALF_ROAD + curb_w * 0.5), curb_h * 0.5, -(HALF_ROAD + north_arm_len * 0.5))
+		add_child(curb_z_north)
+
+		for sign_z in [-1.0, 1.0]:
+			# Along X road edge (East / West)
+			var curb_x := _box(Vector3(side_arm_len, curb_h, curb_w), curb_mat)
+			curb_x.position = Vector3(sign_x * (HALF_ROAD + side_arm_len * 0.5), curb_h * 0.5, sign_z * (HALF_ROAD + curb_w * 0.5))
 			add_child(curb_x)
 
 			# Corner cornerpost
@@ -119,20 +125,25 @@ func _build_curbs(arm_len: float) -> void:
 			add_child(corner)
 
 
-func _build_sidewalks(arm_len: float) -> void:
+func _build_sidewalks(side_arm_len: float, north_arm_len: float) -> void:
 	var sw_w := 3.2
 	var sw_h := 0.14
 
 	for sign_x in [-1.0, 1.0]:
-		for sign_z in [-1.0, 1.0]:
-			# Z sidewalk
-			var sw_z := _box(Vector3(sw_w, sw_h, arm_len), sidewalk_mat)
-			sw_z.position = Vector3(sign_x * (HALF_ROAD + 0.2 + sw_w * 0.5), sw_h * 0.5, sign_z * (HALF_ROAD + arm_len * 0.5))
-			add_child(sw_z)
+		# South sidewalk (+Z)
+		var sw_z_south := _box(Vector3(sw_w, sw_h, side_arm_len), sidewalk_mat)
+		sw_z_south.position = Vector3(sign_x * (HALF_ROAD + 0.2 + sw_w * 0.5), sw_h * 0.5, HALF_ROAD + side_arm_len * 0.5)
+		add_child(sw_z_south)
 
-			# X sidewalk
-			var sw_x := _box(Vector3(arm_len, sw_h, sw_w), sidewalk_mat)
-			sw_x.position = Vector3(sign_x * (HALF_ROAD + arm_len * 0.5), sw_h * 0.5, sign_z * (HALF_ROAD + 0.2 + sw_w * 0.5))
+		# North sidewalk (-Z) continuing forward along the avenue
+		var sw_z_north := _box(Vector3(sw_w, sw_h, north_arm_len), sidewalk_mat)
+		sw_z_north.position = Vector3(sign_x * (HALF_ROAD + 0.2 + sw_w * 0.5), sw_h * 0.5, -(HALF_ROAD + north_arm_len * 0.5))
+		add_child(sw_z_north)
+
+		for sign_z in [-1.0, 1.0]:
+			# X sidewalk (East / West)
+			var sw_x := _box(Vector3(side_arm_len, sw_h, sw_w), sidewalk_mat)
+			sw_x.position = Vector3(sign_x * (HALF_ROAD + side_arm_len * 0.5), sw_h * 0.5, sign_z * (HALF_ROAD + 0.2 + sw_w * 0.5))
 			add_child(sw_x)
 
 			# Corner sidewalk square
@@ -141,19 +152,29 @@ func _build_sidewalks(arm_len: float) -> void:
 			add_child(sw_c)
 
 
-func _build_lawns(arm_len: float) -> void:
-	var lawn_size := arm_len - 3.4
-	if lawn_size <= 0: return
+func _build_lawns(side_arm_len: float, north_arm_len: float) -> void:
+	var side_lawn := side_arm_len - 3.4
+	var north_lawn := north_arm_len - 3.4
+	if side_lawn <= 0: return
 
 	for sign_x in [-1.0, 1.0]:
-		for sign_z in [-1.0, 1.0]:
-			var lawn := _box(Vector3(lawn_size, 0.12, lawn_size), grass_mat)
-			lawn.position = Vector3(
-				sign_x * (HALF_ROAD + 3.4 + lawn_size * 0.5),
-				0.06,
-				sign_z * (HALF_ROAD + 3.4 + lawn_size * 0.5)
-			)
-			add_child(lawn)
+		# South quadrants (+Z)
+		var lawn_south := _box(Vector3(side_lawn, 0.12, side_lawn), grass_mat)
+		lawn_south.position = Vector3(
+			sign_x * (HALF_ROAD + 3.4 + side_lawn * 0.5),
+			0.06,
+			HALF_ROAD + 3.4 + side_lawn * 0.5
+		)
+		add_child(lawn_south)
+
+		# North quadrants (-Z)
+		var lawn_north := _box(Vector3(side_lawn, 0.12, north_lawn), grass_mat)
+		lawn_north.position = Vector3(
+			sign_x * (HALF_ROAD + 3.4 + side_lawn * 0.5),
+			0.06,
+			-(HALF_ROAD + 3.4 + north_lawn * 0.5)
+		)
+		add_child(lawn_north)
 
 
 func _build_markings() -> void:
@@ -187,19 +208,32 @@ func _build_markings() -> void:
 		stop_line.position = Vector3(HALF_ROAD * 0.5, y, STOP_Z)
 		stop_node.add_child(stop_line)
 
-	# 3. Double solid centerlines (1.3) extending outward from stop lines
-	var line_len := ROAD_EXTENT - (STOP_Z + 0.5)
-	var line_z := (STOP_Z + 0.5) + line_len * 0.5
+	# 3. Double solid centerlines (1.3)
+	# South (+Z), East (+X), West (-X):
+	var side_len := ROAD_EXTENT - (STOP_Z + 0.5)
+	var side_mid := (STOP_Z + 0.5) + side_len * 0.5
 
-	for rot in [0.0, PI * 0.5, PI, PI * 1.5]:
+	for rot in [0.0, PI * 0.5, PI * 1.5]:
 		var line_node := Node3D.new()
 		line_node.rotation.y = rot
 		add_child(line_node)
 
 		for offset_x in [-0.08, 0.08]:
-			var solid := _quad(Vector2(0.12, line_len), marking_mat)
-			solid.position = Vector3(offset_x, y, line_z)
+			var solid := _quad(Vector2(0.12, side_len), marking_mat)
+			solid.position = Vector3(offset_x, y, side_mid)
 			line_node.add_child(solid)
+
+	# North branch (-Z): centerline extends continuously along the forward avenue!
+	var north_len := NORTH_EXTENT - (STOP_Z + 0.5)
+	var north_mid := (STOP_Z + 0.5) + north_len * 0.5
+	var north_node := Node3D.new()
+	north_node.rotation.y = PI
+	add_child(north_node)
+
+	for offset_x in [-0.08, 0.08]:
+		var solid := _quad(Vector2(0.12, north_len), marking_mat)
+		solid.position = Vector3(offset_x, y, north_mid)
+		north_node.add_child(solid)
 
 
 func _build_lamps() -> void:
@@ -209,6 +243,7 @@ func _build_lamps() -> void:
 	if lamp_scene == null:
 		return
 
+	# Corner lamps at the intersection
 	for sign_x in [-1.0, 1.0]:
 		for sign_z in [-1.0, 1.0]:
 			var lamp: Node3D = lamp_scene.instantiate()
@@ -216,16 +251,22 @@ func _build_lamps() -> void:
 			lamp.rotation.y = atan2(-sign_x, -sign_z)
 			add_child(lamp)
 
+	# Street lamps along the forward North avenue sidewalks
+	for z in [-28.0, -52.0, -76.0, -100.0, -124.0, -148.0]:
+		for sign_x in [-1.0, 1.0]:
+			var lamp: Node3D = lamp_scene.instantiate()
+			lamp.position = Vector3(sign_x * (HALF_ROAD + 2.0), 0.15, z)
+			lamp.rotation.y = PI * 0.5 if sign_x < 0 else -PI * 0.5
+			add_child(lamp)
+
 
 func _setup_walkers() -> void:
-	# Add a couple of pedestrians walking back and forth along sidewalks
 	if not ResourceLoader.exists("res://models/walkers/walker_0.glb"):
 		return
 	walker_crowd = Models.crowd(self, "res://models/walkers/walker_0.glb", 6)
 	if walker_crowd == null:
 		return
 
-	# Set up 6 pedestrian paths
 	walkers_data = [
 		{ "x": 4.8, "z_min": 10.0, "z_max": 28.0, "z": 12.0, "dir": 1.0, "spd": 1.4 },
 		{ "x": -4.8, "z_min": 10.0, "z_max": 28.0, "z": 24.0, "dir": -1.0, "spd": 1.2 },
@@ -291,14 +332,14 @@ func _box(size: Vector3, mat: Material) -> MeshInstance3D:
 	return m
 
 
-## Extensive base lawn quad so the ground extends to the horizon / fog in all directions.
+## Base lawn quad extending to horizon / fog in all directions.
 func _build_ground() -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var c := Color(sc.season.ground)
 	var layer := sc.layer_of("grass")
 	var period: float = sc.kinds.grass.period
-	var r := 260.0
+	var r := 280.0
 	st.set_color(Color(c.r, c.g, c.b, 0.0))
 	for p in [Vector3(-r, 0, -r), Vector3(r, 0, -r), Vector3(r, 0, r), Vector3(-r, 0, -r), Vector3(r, 0, r), Vector3(-r, 0, r)]:
 		st.set_uv(Vector2(p.x / period, p.z / period))
@@ -313,7 +354,7 @@ func _build_ground() -> void:
 	add_child(ground)
 
 
-func _get_pool(prop: String, cap := 32, shadows := false) -> Scenery.Pool:
+func _get_pool(prop: String, cap := 64, shadows := false) -> Scenery.Pool:
 	if not pools.has(prop):
 		var mesh := Models.mesh_of("res://scenery/%s.glb" % prop)
 		if mesh == null:
@@ -324,7 +365,7 @@ func _get_pool(prop: String, cap := 32, shadows := false) -> Scenery.Pool:
 
 
 func _put_prop(prop: String, pos: Vector3, yaw := 0.0, scale := Vector3.ONE, tint := Color.WHITE, shadows := false) -> void:
-	var p := _get_pool(prop, 36, shadows)
+	var p := _get_pool(prop, 64, shadows)
 	if p == null:
 		return
 	p.put(0, Transform3D(Basis(Vector3.UP, yaw).scaled(scale), pos), tint)
@@ -335,16 +376,15 @@ func _finish_pools() -> void:
 		p.finish(0)
 
 
-## Full 3D Russian cityscape around the crossroad: multi-story residential blocks,
-## high-rise towers, houses, birches, pines, kiosks, bushes, and distant skyline.
+## Full 3D Russian cityscape: open North avenue receding into horizon,
+## flanked by buildings and tree avenues, with completely unobstructed roadway.
 func _build_city_scenery() -> void:
 	var canopy_colors: Array = sc.season.canopy
 	var birch_color: Color = sc.color("birch")
 	var pine_colors: Array = sc.season.pine
 
-	# 1. Trees and greenery along the 4 branches of the avenue
-	# North branch sidewalks
-	for z in [-14.0, -20.0, -26.0, -32.0, -38.0, -44.0, -50.0]:
+	# 1. Trees and greenery along the forward North avenue sidewalks (flanking the road)
+	for z in [-14.0, -22.0, -30.0, -38.0, -46.0, -54.0, -64.0, -74.0, -84.0, -96.0, -108.0, -120.0, -134.0, -148.0, -162.0]:
 		_put_prop("trees/birch_0", Vector3(-8.6, 0.0, z), 0.3 * z, Vector3.ONE * 1.05, birch_color, true)
 		_put_prop("trees/round_0", Vector3(8.6, 0.0, z), -0.2 * z, Vector3.ONE * 1.1, Color(canopy_colors[abs(int(z)) % canopy_colors.size()]), true)
 		_put_prop("street/bush", Vector3(-8.8, 0.0, z + 3.0), 0.0, Vector3(1.1, 0.9, 1.1), Color(canopy_colors[0]), true)
@@ -374,48 +414,53 @@ func _build_city_scenery() -> void:
 	_put_prop("street/fence_14", Vector3(-8.2, 0.0, 22.0), 0.0)
 	_put_prop("street/fence_14", Vector3(8.2, 0.0, 22.0), 0.0)
 
-	# 3. North-West Quadrant buildings (apartment blocks and homes)
+	# 3. Buildings framing North Avenue on the LEFT (X <= -18.0)
 	_put_prop("buildings/block_0", Vector3(-18.0, 0.0, -18.0), PI * 0.5, Vector3.ONE, Color("#F5F6FA"))
-	_put_prop("buildings/block_2", Vector3(-19.0, 0.0, -34.0), PI * 0.5, Vector3.ONE, Color("#B5675A"))
-	_put_prop("buildings/tower_0", Vector3(-20.0, 0.0, -50.0), PI * 0.5, Vector3.ONE, Color("#E9ECF2"))
-	_put_prop("buildings/block_4", Vector3(-34.0, 0.0, -18.0), 0.0, Vector3.ONE, Color("#DDE1EA"))
+	_put_prop("buildings/block_2", Vector3(-19.0, 0.0, -36.0), PI * 0.5, Vector3.ONE, Color("#B5675A"))
+	_put_prop("buildings/tower_0", Vector3(-20.0, 0.0, -54.0), PI * 0.5, Vector3.ONE, Color("#E9ECF2"))
+	_put_prop("buildings/block_6", Vector3(-20.0, 0.0, -74.0), PI * 0.5, Vector3.ONE, Color("#A9B4C2"))
+	_put_prop("buildings/block_7", Vector3(-22.0, 0.0, -96.0), PI * 0.5, Vector3.ONE, Color("#DDE1EA"))
+	_put_prop("buildings/tower_1", Vector3(-22.0, 0.0, -118.0), PI * 0.5, Vector3.ONE, Color("#C6CCD8"))
+	_put_prop("buildings/block_4", Vector3(-24.0, 0.0, -140.0), PI * 0.5, Vector3.ONE, Color("#F5F6FA"))
+	_put_prop("buildings/tower_3", Vector3(-24.0, 0.0, -164.0), PI * 0.5, Vector3.ONE, Color("#E9ECF2"))
+
+	# Secondary row on the Left
+	_put_prop("buildings/block_4", Vector3(-36.0, 0.0, -18.0), 0.0, Vector3.ONE, Color("#DDE1EA"))
 	_put_prop("buildings/home_0", Vector3(-48.0, 0.0, -18.0), 0.0, Vector3.ONE, Color("#F3E3C3"))
-	_put_prop("buildings/tower_1", Vector3(-36.0, 0.0, -36.0), PI * 0.25, Vector3.ONE, Color("#C6CCD8"))
+	_put_prop("buildings/tower_1", Vector3(-38.0, 0.0, -42.0), PI * 0.25, Vector3.ONE, Color("#C6CCD8"))
+	_put_prop("buildings/block_2", Vector3(-40.0, 0.0, -74.0), PI * 0.5, Vector3.ONE, Color("#B5675A"))
+	_put_prop("buildings/tower_0", Vector3(-42.0, 0.0, -110.0), PI * 0.5, Vector3.ONE, Color("#A9B4C2"))
 
-	# 4. North-East Quadrant buildings (towers and modern blocks)
+	# 4. Buildings framing North Avenue on the RIGHT (X >= +18.0)
 	_put_prop("buildings/tower_1", Vector3(18.0, 0.0, -18.0), -PI * 0.5, Vector3.ONE, Color("#E9ECF2"))
-	_put_prop("buildings/block_1", Vector3(18.0, 0.0, -34.0), -PI * 0.5, Vector3.ONE, Color("#C6CCD8"))
-	_put_prop("buildings/block_6", Vector3(19.0, 0.0, -50.0), -PI * 0.5, Vector3.ONE, Color("#A9B4C2"))
-	_put_prop("buildings/block_3", Vector3(34.0, 0.0, -18.0), 0.0, Vector3.ONE, Color("#B5675A"))
+	_put_prop("buildings/block_1", Vector3(18.0, 0.0, -36.0), -PI * 0.5, Vector3.ONE, Color("#C6CCD8"))
+	_put_prop("buildings/block_5", Vector3(19.0, 0.0, -54.0), -PI * 0.5, Vector3.ONE, Color("#B5675A"))
+	_put_prop("buildings/tower_0", Vector3(20.0, 0.0, -74.0), -PI * 0.5, Vector3.ONE, Color("#E9ECF2"))
+	_put_prop("buildings/block_3", Vector3(22.0, 0.0, -96.0), -PI * 0.5, Vector3.ONE, Color("#A9B4C2"))
+	_put_prop("buildings/tower_2", Vector3(22.0, 0.0, -118.0), -PI * 0.5, Vector3.ONE, Color("#DDE1EA"))
+	_put_prop("buildings/block_1", Vector3(24.0, 0.0, -140.0), -PI * 0.5, Vector3.ONE, Color("#F5F6FA"))
+	_put_prop("buildings/block_7", Vector3(24.0, 0.0, -164.0), -PI * 0.5, Vector3.ONE, Color("#B5675A"))
+
+	# Secondary row on the Right
+	_put_prop("buildings/block_3", Vector3(36.0, 0.0, -18.0), 0.0, Vector3.ONE, Color("#B5675A"))
 	_put_prop("buildings/home_1", Vector3(48.0, 0.0, -18.0), 0.0, Vector3.ONE, Color("#E8CFA8"))
-	_put_prop("buildings/tower_2", Vector3(36.0, 0.0, -36.0), -PI * 0.25, Vector3.ONE, Color("#DDE1EA"))
+	_put_prop("buildings/tower_2", Vector3(38.0, 0.0, -42.0), -PI * 0.25, Vector3.ONE, Color("#DDE1EA"))
+	_put_prop("buildings/block_6", Vector3(40.0, 0.0, -74.0), -PI * 0.5, Vector3.ONE, Color("#C6CCD8"))
+	_put_prop("buildings/tower_3", Vector3(42.0, 0.0, -110.0), -PI * 0.5, Vector3.ONE, Color("#F5F6FA"))
 
-	# 5. Distant North Vista (authentic street skyline in the driver's front view)
-	_put_prop("buildings/block_7", Vector3(-26.0, 0.0, -68.0), 0.0, Vector3.ONE, Color("#A9B4C2"))
-	_put_prop("buildings/tower_3", Vector3(-9.0, 0.0, -74.0), 0.0, Vector3.ONE, Color("#F5F6FA"))
-	_put_prop("buildings/block_5", Vector3(9.0, 0.0, -72.0), 0.0, Vector3.ONE, Color("#B5675A"))
-	_put_prop("buildings/tower_0", Vector3(26.0, 0.0, -68.0), 0.0, Vector3.ONE, Color("#E9ECF2"))
-	_put_prop("buildings/block_2", Vector3(-44.0, 0.0, -64.0), 0.0, Vector3.ONE, Color("#C6CCD8"))
-	_put_prop("buildings/block_3", Vector3(44.0, 0.0, -64.0), 0.0, Vector3.ONE, Color("#DDE1EA"))
-
-	# Distant trees across North horizon
-	for x in [-32.0, -18.0, -2.0, 14.0, 28.0]:
-		_put_prop("trees/pine_0", Vector3(x, 0.0, -60.0), 0.2 * x, Vector3.ONE * 1.2, Color(pine_colors[0]), true)
-		_put_prop("trees/birch_0", Vector3(x + 7.0, 0.0, -58.0), -0.1 * x, Vector3.ONE * 1.1, birch_color, true)
-
-	# 6. South-West Quadrant buildings
+	# 5. South-West Quadrant buildings
 	_put_prop("buildings/block_3", Vector3(-18.0, 0.0, 18.0), PI * 0.5, Vector3.ONE, Color("#DDE1EA"))
 	_put_prop("buildings/block_5", Vector3(-18.0, 0.0, 34.0), PI * 0.5, Vector3.ONE, Color("#B5675A"))
 	_put_prop("buildings/home_2", Vector3(-34.0, 0.0, 18.0), PI, Vector3.ONE, Color("#D9B99B"))
 	_put_prop("buildings/tower_0", Vector3(-34.0, 0.0, 34.0), PI * 0.75, Vector3.ONE, Color("#E9ECF2"))
 
-	# 7. South-East Quadrant buildings
+	# 6. South-East Quadrant buildings
 	_put_prop("buildings/block_0", Vector3(18.0, 0.0, 18.0), -PI * 0.5, Vector3.ONE, Color("#F5F6FA"))
 	_put_prop("buildings/tower_0", Vector3(18.0, 0.0, 34.0), -PI * 0.5, Vector3.ONE, Color("#E9ECF2"))
 	_put_prop("buildings/home_3", Vector3(34.0, 0.0, 18.0), PI, Vector3.ONE, Color("#C8D9C0"))
 	_put_prop("buildings/block_1", Vector3(34.0, 0.0, 34.0), -PI * 0.75, Vector3.ONE, Color("#C6CCD8"))
 
-	# 8. East & West distant vista silhouettes
+	# 7. East & West distant vista silhouettes
 	_put_prop("buildings/block_6", Vector3(-64.0, 0.0, 0.0), PI * 0.5, Vector3.ONE, Color("#A9B4C2"))
 	_put_prop("buildings/tower_1", Vector3(-68.0, 0.0, -16.0), PI * 0.5, Vector3.ONE, Color("#E9ECF2"))
 	_put_prop("buildings/tower_2", Vector3(-68.0, 0.0, 16.0), PI * 0.5, Vector3.ONE, Color("#DDE1EA"))
