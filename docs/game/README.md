@@ -123,7 +123,8 @@ tools/network/engine_sync.py ► game_godot/situations/<id>/scene.json (то, ч
 После правки сети (редактор: `./scripts/network_editor.sh` → http://127.0.0.1:8950/, он
 сам вызывает сборку при сохранении) закоммитьте и `network/*.json`, и `network/build/`,
 и `situations/*/scene.json`. Проверка сети: `tools/network/.venv/bin/python tools/network/check.py`
-(23 известные ошибки «маршрут вне дороги» — не растут).
+(9 известных ошибок «маршрут вне дороги» в неизменённых сценах на 14 октября 2026;
+в новых правках ошибки появляться не должны).
 
 Строки интерфейса игры берутся из `lib/l10n/*.arb`: `python3 tools/godot_export/export_ui.py`
 пересобирает `game_godot/data/ui.json` (ru/en/kk одновременно).
@@ -139,6 +140,7 @@ tools/network/engine_sync.py ► game_godot/situations/<id>/scene.json (то, ч
 
 - `regulator-migration-2026-10-13.md` — паритет регулировщика и удаление WebView
 - `ride-fixes-2026-10-13.md` — загрузка сцен, коллизии, продолжение маршрутов, интерфейс и гараж
+- `local-changes-sync-2026-10-14.md` — опубликованные локации и архивы всех локальных stash
 - `godot-roadmap.md` — что сделано и что открыто
 - `godot-migration.md` — как и почему перешли на Godot
 - `game-economy-2026-10-10.md`, `game-covers-2026-10-10.md`, `mini-game*.md` — экономика, обложки, мини-игры
