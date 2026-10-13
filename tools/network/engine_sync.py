@@ -124,7 +124,8 @@ def sync(sid: str) -> dict:
     out["trajectories"] = traj
     out["labels"] = labels
 
-    out["lights"] = [{"pos": [l["pos"][0], 0.0, l["pos"][1]], "yaw": l["yaw"], "scale": l["scale"], "arrow": l.get("arrow")}
+    out["lights"] = [{"pos": [l["pos"][0], 0.0, l["pos"][1]], "yaw": l["yaw"], "scale": l["scale"],
+                      "arrow": l.get("arrow"), "mountedSigns": l.get("mountedSigns", []), "mountedMainRoad": l.get("mountedMainRoad", [])}
                      for l in net.get("lights", [])]
     if net.get("lights") and net["lights"][0].get("state") is not None:
         out["trafficLights"] = {"state": net["lights"][0]["state"], "arrow": net["lights"][0].get("arrow")}

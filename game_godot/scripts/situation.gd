@@ -117,6 +117,7 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 	for i in s.data.lights.size():
 		var l: Dictionary = s.data.lights[i]
 		var light: Node3D = PackFiles.instance(dir + "light_%d.glb" % i)
+		light = RoadBuild.light_with_signs(light, l.get("mountedSigns", []), l.get("mountedMainRoad", []))
 		light.position = _v(l.pos)
 		light.rotation.y = l.yaw
 		light.scale = Vector3.ONE * float(l.scale)
