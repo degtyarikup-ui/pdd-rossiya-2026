@@ -242,7 +242,7 @@ const Tools = (() => {
             const p = Layout.along(line, d).p, dd = Math.hypot(p[0] - e.world.x, p[1] - e.world.z);
             if (dd < bd) { bd = dd; best = d; }
           }
-          s.layout.player = { ...s.layout.player, street: plan.st.id, toward: plan.nid, stopAt: r3(Math.max(2, best - 2.4)) };
+          s.layout.player = { ...s.layout.player, street: plan.st.id, toward: plan.nid, questionAt: r3(Math.max(plan.stopLineDistance + 2.4, best)) };
         });
       }
       if (drag.kind === "point") {

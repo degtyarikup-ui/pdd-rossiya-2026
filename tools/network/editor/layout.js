@@ -388,11 +388,11 @@ const Layout = (() => {
     const sd = kind === "junction" || kind === "ring" ? stopDistance(L, st, nid, crop)
       : Math.min(total - 2, projectOn(inLine, [0, 0]) + 10.7);
     // The car stands with its front at the stop line, not on it (the game puts its centre at the stop).
-    const carD = sd + CAR_BACK;
+    const carD = Math.max(sd + CAR_BACK, Math.min(total - 1, Number(pl.questionAt) || sd + CAR_BACK));
     const s = along(inLine, carD);
     const tin = mul(s.t, -1);
     const stop = add(s.p, mul(right(tin), lo));
-    return { st, nid, kind, lo, stop, tin, sd: carD, total };
+    return { st, nid, kind, lo, stop, tin, sd: carD, stopLineDistance: sd, total };
   }
 
   // Without a choice: the street that comes in from the south side, driven north.

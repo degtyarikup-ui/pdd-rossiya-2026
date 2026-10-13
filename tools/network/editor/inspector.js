@@ -571,10 +571,15 @@
   function stopInspector(p) {
     const s = state.S, q = s.question;
     const routes = s.routes.filter((r) => r.kind === "manoeuvre").map((r) => r.exit);
-    p.innerHTML = `${head(`<span class="ibadge">${ic("car")}</span>`, "Игрок", "стоит у стоп-линии, когда задаётся вопрос")}
+    const plan = s.layout ? Layout.playerPlan(s) : null;
+    p.innerHTML = `${head(`<span class="ibadge">${ic("car")}</span>`, "Игрок", "место начала вопроса")}
       ${card("Едет", chips("maneuver", ["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: !routes.includes(k) && k !== "straight" })), q.maneuver, { cls: "arrows" }))}
+      ${plan ? card("Начало вопроса", slider("questionOffset", "Раньше стоп-линии", Math.max(0, plan.sd - plan.stopLineDistance - 2.4), 0, Math.min(60, Math.max(0, plan.total - plan.stopLineDistance - 3.4)), 0.5, `${Math.max(0, plan.sd - plan.stopLineDistance - 2.4).toFixed(1)} м`) + button("question-at-line", "Вернуть к стоп-линии", "restart", "ghost wide")) : ""}
       ${card("", `<p class="muted">${s.layout ? "Место игрока строится по дороге: выберите дорогу и нажмите «Ехать сюда»." : "Тяните машину на виде вдоль полосы."}</p>`)}`;
-    bind({ "chip:maneuver": (v) => App.edit((sc) => { sc.question.maneuver = v; sc.spec = { ...(sc.spec || {}), maneuver: v }; }) });
+    bind({
+      "slider:questionOffset": live((sc, v) => { const pl = Layout.playerPlan(sc); sc.layout.player = { ...(sc.layout.player || {}), street: pl.st.id, toward: pl.nid, questionAt: r3(pl.stopLineDistance + 2.4 + v) }; }, v => { const el = pane().querySelector('[data-shown="questionOffset"]'); if (el) el.textContent = `${v.toFixed(1)} м`; }),
+      "question-at-line": () => App.edit(sc => { if (sc.layout.player) delete sc.layout.player.questionAt; }),
+      "chip:maneuver": (v) => App.edit((sc) => { sc.question.maneuver = v; sc.spec = { ...(sc.spec || {}), maneuver: v }; }) });
   }
 
   // ---- a texture -----------------------------------------------------------------------------
