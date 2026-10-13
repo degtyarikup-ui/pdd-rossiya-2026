@@ -34,10 +34,7 @@ class GeminiAiService {
   static final GeminiAiService instance = GeminiAiService._internal();
   GeminiAiService._internal();
 
-  static const String _defaultApiKey = String.fromEnvironment(
-    'GEMINI_API_KEY',
-    defaultValue: 'AIzaSyA_DEMO_KEY_PDD_APP_2026',
-  );
+  static const String _defaultApiKey = String.fromEnvironment('GEMINI_API_KEY');
 
   static const String _prefKeyPrefix = 'ai_explanation_cache_';
   final Map<String, String> _memoryCache = {};
@@ -106,8 +103,9 @@ class GeminiAiService {
     }
 
     // 3. Прямой запрос в Gemini API при наличии ключа
-    final prompt =
-        '''
+    if (_defaultApiKey.isNotEmpty) {
+      final prompt =
+          '''
 Ты — преподаватель ПДД и персональный AI-автоинструктор.
 Твоя задача — кратко, по делу и простым языком объяснить дорожную ситуацию.
 
@@ -130,10 +128,10 @@ ${answers.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}
 3) **Подсказка:** 1 строка как быстро запомнить.
 ''';
 
-    try {
-      final url = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=$_defaultApiKey',
-      );
+      try {
+        final url = Uri.parse(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=$_defaultApiKey',
+        );
 
       final response = await http
           .post(
@@ -171,6 +169,7 @@ ${answers.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}
     } catch (e) {
       debugPrint('GeminiAiService: direct gemini error $e');
     }
+  }
 
     // 4. Умный контекстный разбор на устройстве, если сети нет
     final fallback = _generateContextualOfflineExplanation(
@@ -242,9 +241,10 @@ ${answers.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}
     }
 
     // 2. Прямой запрос в Gemini API с историей диалога
-    try {
-      final systemPrompt =
-          '''
+    if (_defaultApiKey.isNotEmpty) {
+      try {
+        final systemPrompt =
+            '''
 Ты — профессиональный преподаватель ПДД и персональный AI-автоинструктор.
 Твоя специализация СТРОГО ОГРАНИЧЕНА следующими темами:
 - Правила дорожного движения (ПДД РФ)
@@ -269,70 +269,71 @@ ${answers.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}
 Отвечай кратко, понятно и по делу (3-5 строк), выделяя главное жирным шрифтом.
 ''';
 
-      final contents = <Map<String, dynamic>>[];
-      contents.add({
-        'role': 'user',
-        'parts': [
-          {'text': systemPrompt},
-        ],
-      });
-      contents.add({
-        'role': 'model',
-        'parts': [
-          {
-            'text':
-                'Понял! Я готов просто и понятно ответить на любые вопросы по этой ситуации на дороге.',
-          },
-        ],
-      });
-
-      for (final msg in conversationHistory) {
+        final contents = <Map<String, dynamic>>[];
         contents.add({
-          'role': msg.isUser ? 'user' : 'model',
+          'role': 'user',
           'parts': [
-            {'text': msg.text},
+            {'text': systemPrompt},
           ],
         });
-      }
+        contents.add({
+          'role': 'model',
+          'parts': [
+            {
+              'text':
+                  'Понял! Я готов просто и понятно ответить на любые вопросы по этой ситуации на дороге.',
+            },
+          ],
+        });
 
-      contents.add({
-        'role': 'user',
-        'parts': [
-          {'text': userMessage},
-        ],
-      });
+        for (final msg in conversationHistory) {
+          contents.add({
+            'role': msg.isUser ? 'user' : 'model',
+            'parts': [
+              {'text': msg.text},
+            ],
+          });
+        }
 
-      final url = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=$_defaultApiKey',
-      );
+        contents.add({
+          'role': 'user',
+          'parts': [
+            {'text': userMessage},
+          ],
+        });
 
-      final response = await http
-          .post(
-            url,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'contents': contents,
-              'generationConfig': {'temperature': 0.5, 'maxOutputTokens': 800},
-            }),
-          )
-          .timeout(const Duration(seconds: 12));
+        final url = Uri.parse(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=$_defaultApiKey',
+        );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final candidates = data['candidates'] as List?;
-        if (candidates != null && candidates.isNotEmpty) {
-          final content = candidates[0]['content'];
-          final parts = content?['parts'] as List?;
-          if (parts != null && parts.isNotEmpty) {
-            final text = parts[0]['text'] as String?;
-            if (text != null && text.trim().isNotEmpty) {
-              return text.trim();
+        final response = await http
+            .post(
+              url,
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'contents': contents,
+                'generationConfig': {'temperature': 0.5, 'maxOutputTokens': 800},
+              }),
+            )
+            .timeout(const Duration(seconds: 12));
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          final candidates = data['candidates'] as List?;
+          if (candidates != null && candidates.isNotEmpty) {
+            final content = candidates[0]['content'];
+            final parts = content?['parts'] as List?;
+            if (parts != null && parts.isNotEmpty) {
+              final text = parts[0]['text'] as String?;
+              if (text != null && text.trim().isNotEmpty) {
+                return text.trim();
+              }
             }
           }
         }
+      } catch (e) {
+        debugPrint('GeminiAiService: askAiQuestion direct error $e');
       }
-    } catch (e) {
-      debugPrint('GeminiAiService: askAiQuestion direct error $e');
     }
 
     // 3. Контекстный офлайн-ответ

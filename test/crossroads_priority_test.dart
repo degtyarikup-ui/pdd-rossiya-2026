@@ -154,42 +154,65 @@ void main() {
       expect(tableSet.length, equals(4));
     });
 
-    test('Traffic lights scenarios are properly categorized and configured', () {
-      final scenarios = CrossroadsScenariosLibrary.allScenarios;
-      final tlScenarios = scenarios.where((s) => s.category == CrossroadsCategory.trafficLights).toList();
-      expect(tlScenarios.length, equals(5));
+    test(
+      'Traffic lights scenarios are properly categorized and configured',
+      () {
+        final scenarios = CrossroadsScenariosLibrary.allScenarios;
+        final tlScenarios = scenarios
+            .where((s) => s.category == CrossroadsCategory.trafficLights)
+            .toList();
+        expect(tlScenarios.length, equals(5));
 
-      for (final s in tlScenarios) {
-        expect(s.category, equals(CrossroadsCategory.trafficLights));
-        expect(s.trafficLights, isNotNull);
-        expect(s.trafficLights!.isNotEmpty, isTrue);
-      }
+        for (final s in tlScenarios) {
+          expect(s.category, equals(CrossroadsCategory.trafficLights));
+          expect(s.trafficLights, isNotNull);
+          expect(s.trafficLights!.isNotEmpty, isTrue);
+        }
 
-      // 1. Arrow vs Main green: arrow driver yields (clause 13.5)
-      final arrowScen = scenarios.firstWhere((s) => s.id == 'cross_tl_arrow_vs_main_13_5');
-      final arrowActor = arrowScen.actors.firstWhere((a) => a.id == 'car_west');
-      final mainActor = arrowScen.actors.firstWhere((a) => a.id == 'car_north');
-      expect(mainActor.priorityOrder, equals(1));
-      expect(arrowActor.priorityOrder, equals(2));
+        // 1. Arrow vs Main green: arrow driver yields (clause 13.5)
+        final arrowScen = scenarios.firstWhere(
+          (s) => s.id == 'cross_tl_arrow_vs_main_13_5',
+        );
+        final arrowActor = arrowScen.actors.firstWhere(
+          (a) => a.id == 'car_west',
+        );
+        final mainActor = arrowScen.actors.firstWhere(
+          (a) => a.id == 'car_north',
+        );
+        expect(mainActor.priorityOrder, equals(1));
+        expect(arrowActor.priorityOrder, equals(2));
 
-      // 2. Tram on arrow yields to car on main green (clause 13.6)
-      final tramArrowScen = scenarios.firstWhere((s) => s.id == 'cross_tl_tram_on_arrow_13_6');
-      final tramActor = tramArrowScen.actors.firstWhere((a) => a.id == 'tram_east');
-      final carGreenActor = tramArrowScen.actors.firstWhere((a) => a.id == 'car_south');
-      expect(carGreenActor.priorityOrder, equals(1));
-      expect(tramActor.priorityOrder, equals(2));
+        // 2. Tram on arrow yields to car on main green (clause 13.6)
+        final tramArrowScen = scenarios.firstWhere(
+          (s) => s.id == 'cross_tl_tram_on_arrow_13_6',
+        );
+        final tramActor = tramArrowScen.actors.firstWhere(
+          (a) => a.id == 'tram_east',
+        );
+        final carGreenActor = tramArrowScen.actors.firstWhere(
+          (a) => a.id == 'car_south',
+        );
+        expect(carGreenActor.priorityOrder, equals(1));
+        expect(tramActor.priorityOrder, equals(2));
 
-      // 3. Traffic lights override priority signs (clause 13.3, 6.15)
-      final overrideScen = scenarios.firstWhere((s) => s.id == 'cross_tl_vs_priority_signs_13_3');
-      expect(overrideScen.signs.isNotEmpty, isTrue);
-      expect(overrideScen.isRegulated, isTrue);
+        // 3. Traffic lights override priority signs (clause 13.3, 6.15)
+        final overrideScen = scenarios.firstWhere(
+          (s) => s.id == 'cross_tl_vs_priority_signs_13_3',
+        );
+        expect(overrideScen.signs.isNotEmpty, isTrue);
+        expect(overrideScen.isRegulated, isTrue);
 
-      // 4. Emergency vehicle on red light has absolute priority (clause 3.2)
-      final emergencyScen = scenarios.firstWhere((s) => s.id == 'cross_tl_emergency_on_red_3_2');
-      final ambActor = emergencyScen.actors.firstWhere((a) => a.id == 'ambulance_east');
-      expect(ambActor.priorityOrder, equals(1));
-      expect(ambActor.hasSiren, isTrue);
-    });
+        // 4. Emergency vehicle on red light has absolute priority (clause 3.2)
+        final emergencyScen = scenarios.firstWhere(
+          (s) => s.id == 'cross_tl_emergency_on_red_3_2',
+        );
+        final ambActor = emergencyScen.actors.firstWhere(
+          (a) => a.id == 'ambulance_east',
+        );
+        expect(ambActor.priorityOrder, equals(1));
+        expect(ambActor.hasSiren, isTrue);
+      },
+    );
 
     test('Resolution step prompt bounds never exceed actors count', () {
       final scenario = CrossroadsScenariosLibrary.allScenarios.firstWhere(
@@ -221,27 +244,39 @@ void main() {
       expect(prompt3, isNot(contains('3-м')));
     });
 
-    test('Training mode order is sequential and category filters preserve scenario mapping', () {
-      final allScenarios = CrossroadsScenariosLibrary.allScenarios;
-      final signScenarios = allScenarios.where((s) => s.category == CrossroadsCategory.prioritySigns).toList();
-      final tlScenarios = allScenarios.where((s) => s.category == CrossroadsCategory.trafficLights).toList();
-      final hardScenarios = allScenarios.where((s) => s.category == CrossroadsCategory.hardSituations).toList();
+    test(
+      'Training mode order is sequential and category filters preserve scenario mapping',
+      () {
+        final allScenarios = CrossroadsScenariosLibrary.allScenarios;
+        final signScenarios = allScenarios
+            .where((s) => s.category == CrossroadsCategory.prioritySigns)
+            .toList();
+        final tlScenarios = allScenarios
+            .where((s) => s.category == CrossroadsCategory.trafficLights)
+            .toList();
+        final hardScenarios = allScenarios
+            .where((s) => s.category == CrossroadsCategory.hardSituations)
+            .toList();
 
-      expect(signScenarios.length, equals(17));
-      expect(tlScenarios.length, equals(5));
-      expect(hardScenarios.length, equals(5));
-      expect(allScenarios.length, equals(27));
+        expect(signScenarios.length, equals(17));
+        expect(tlScenarios.length, equals(5));
+        expect(hardScenarios.length, equals(5));
+        expect(allScenarios.length, equals(27));
 
-      // Sequential progression indices in training mode
-      final trainingOrderSigns = List.generate(signScenarios.length, (i) => i);
-      expect(trainingOrderSigns, equals([for (var i = 0; i < 17; i++) i]));
+        // Sequential progression indices in training mode
+        final trainingOrderSigns = List.generate(
+          signScenarios.length,
+          (i) => i,
+        );
+        expect(trainingOrderSigns, equals([for (var i = 0; i < 17; i++) i]));
 
-      final trainingOrderTL = List.generate(tlScenarios.length, (i) => i);
-      expect(trainingOrderTL, equals([0, 1, 2, 3, 4]));
+        final trainingOrderTL = List.generate(tlScenarios.length, (i) => i);
+        expect(trainingOrderTL, equals([0, 1, 2, 3, 4]));
 
-      final trainingOrderHard = List.generate(hardScenarios.length, (i) => i);
-      expect(trainingOrderHard, equals([0, 1, 2, 3, 4]));
-    });
+        final trainingOrderHard = List.generate(hardScenarios.length, (i) => i);
+        expect(trainingOrderHard, equals([0, 1, 2, 3, 4]));
+      },
+    );
   });
 
   group('Crossroads Priority Progress Tests', () {
@@ -304,62 +339,68 @@ void main() {
       expect(controller.state.totalSolved, equals(7));
     });
 
-    test('Arcade balanced rotation guarantees early traffic lights by round 2', () {
-      final all = CrossroadsScenariosLibrary.allScenarios;
-      final signs = <int>[];
-      final lights = <int>[];
-      for (int i = 0; i < all.length; i++) {
-        if (all[i].category == CrossroadsCategory.trafficLights) {
-          lights.add(i);
-        } else {
-          signs.add(i);
+    test(
+      'Arcade balanced rotation guarantees early traffic lights by round 2',
+      () {
+        final all = CrossroadsScenariosLibrary.allScenarios;
+        final signs = <int>[];
+        final lights = <int>[];
+        for (int i = 0; i < all.length; i++) {
+          if (all[i].category == CrossroadsCategory.trafficLights) {
+            lights.add(i);
+          } else {
+            signs.add(i);
+          }
         }
-      }
-      expect(lights.isNotEmpty, isTrue);
-      expect(signs.isNotEmpty, isTrue);
+        expect(lights.isNotEmpty, isTrue);
+        expect(signs.isNotEmpty, isTrue);
 
-      // Симулируем 100 генераций порядка раунда в аркаде
-      for (int seed = 0; seed < 100; seed++) {
-        final sCopy = List<int>.from(signs)..shuffle();
-        final lCopy = List<int>.from(lights)..shuffle();
+        // Симулируем 100 генераций порядка раунда в аркаде
+        for (int seed = 0; seed < 100; seed++) {
+          final sCopy = List<int>.from(signs)..shuffle();
+          final lCopy = List<int>.from(lights)..shuffle();
 
-        final order = <int>[];
-        int si = 0, li = 0;
-        while (si < sCopy.length || li < lCopy.length) {
-          if (si < sCopy.length) order.add(sCopy[si++]);
-          if (li < lCopy.length) order.add(lCopy[li++]);
-          if (si < sCopy.length) order.add(sCopy[si++]);
-        }
+          final order = <int>[];
+          int si = 0, li = 0;
+          while (si < sCopy.length || li < lCopy.length) {
+            if (si < sCopy.length) order.add(sCopy[si++]);
+            if (li < lCopy.length) order.add(lCopy[li++]);
+            if (si < sCopy.length) order.add(sCopy[si++]);
+          }
 
-        // Проверяем, что 2-й перекресток (индекс 1) — гарантированно светофор
-        expect(
-          all[order[1]].category,
-          equals(CrossroadsCategory.trafficLights),
-          reason: 'Round 2 must be a traffic light scenario',
-        );
-        // Проверяем, что все сценарии вошли в список без пропусков и дублей
-        expect(order.length, equals(all.length));
-        expect(order.toSet().length, equals(all.length));
-      }
-    });
-
-    test('T-junction scenarios with closedSide have actors validly configured', () {
-      final tJunctions = CrossroadsScenariosLibrary.allScenarios
-          .where((s) => s.closedSide != null)
-          .toList();
-      expect(tJunctions.isNotEmpty, isTrue);
-
-      for (final s in tJunctions) {
-        expect(s.closedSide, isNotNull);
-        for (final a in s.actors) {
-          // Ни одна машина не начинает движение с закрытой стороны
+          // Проверяем, что 2-й перекресток (индекс 1) — гарантированно светофор
           expect(
-            a.side,
-            isNot(equals(s.closedSide)),
-            reason: 'Actor ${a.id} starts on closedSide ${s.closedSide}',
+            all[order[1]].category,
+            equals(CrossroadsCategory.trafficLights),
+            reason: 'Round 2 must be a traffic light scenario',
           );
+          // Проверяем, что все сценарии вошли в список без пропусков и дублей
+          expect(order.length, equals(all.length));
+          expect(order.toSet().length, equals(all.length));
         }
-      }
-    });
+      },
+    );
+
+    test(
+      'T-junction scenarios with closedSide have actors validly configured',
+      () {
+        final tJunctions = CrossroadsScenariosLibrary.allScenarios
+            .where((s) => s.closedSide != null)
+            .toList();
+        expect(tJunctions.isNotEmpty, isTrue);
+
+        for (final s in tJunctions) {
+          expect(s.closedSide, isNotNull);
+          for (final a in s.actors) {
+            // Ни одна машина не начинает движение с закрытой стороны
+            expect(
+              a.side,
+              isNot(equals(s.closedSide)),
+              reason: 'Actor ${a.id} starts on closedSide ${s.closedSide}',
+            );
+          }
+        }
+      },
+    );
   });
 }
