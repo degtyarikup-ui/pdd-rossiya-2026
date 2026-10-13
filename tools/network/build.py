@@ -265,7 +265,10 @@ def build(scene: dict) -> dict:
     # Use the road profile directly: smoothing a narrow lawn can restore the sidewalk.
     no_walk = unary_union([polygon_of(r).buffer(SIDEWALK + 0.1) for r in scene.get("roads", []) if r.get("walk") is False])
     pavement = ring.difference(lawn).difference(no_walk)
-    no_edge = unary_union([polygon_of(r).buffer(0.6) for r in scene.get("roads", []) if r.get("edge") is False])
+    # Round the disabled roads together, just like the carriageway: the corner fillets
+    # lie outside the original rectangular arms and must also lose their edge paint.
+    disabled_edges = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("edge") is False])
+    no_edge = disabled_edges.buffer(CURB_RADIUS, quad_segs=32).buffer(-CURB_RADIUS, quad_segs=32).buffer(0.6)
     sand = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("surface") == "sand"]).intersection(road)
     # Markings lie on the carriageway only; the island and the pavement are never painted over.
     marks = {}
