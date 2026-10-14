@@ -228,6 +228,7 @@ const Scene3D = (() => {
       const textureGround = o.name.startsWith("tex_");
       if (o.name !== "static" && !textureGround) return;
       const geo = o.geometry = o.geometry.clone(), pos = geo.attributes.position;
+      o.userData.own = true;
       const index = geo.index?.array || Array.from({length:pos.count}, (_, i) => i);
       const keep = [];
       for (let k = 0; k < index.length; k += 3) {
@@ -256,6 +257,9 @@ const Scene3D = (() => {
   function rebuildStatic() {
     const g = setGroup("static");
     if (!model) return;
+    // A pending preview has no coverage map yet. Never show the raw legacy
+    // scene: it includes terrain and furniture outside the editable layers.
+    if (!build) return;
     const token = loadToken;
     if (model.id === "mini_regulator") return;
     loadGltf(`/asset/scene/${model.id}/scene.glb`).then((root) => {
@@ -1116,6 +1120,9 @@ const Scene3D = (() => {
   function setBuild(B) {
     build = B;
     rebuildRoads();
+    // Refilter a fresh cached GLB copy against the latest coverage, including
+    // the first preview after loading a regenerated highway without a build.
+    rebuildStatic();
     needsRender = true;
   }
   function setSelection(list) {
