@@ -34,6 +34,8 @@ class RegulatorEditorTest(unittest.TestCase):
                     changed['officers'][0]['pos']=[1.5,2]
                     changed['decor'][0]['pos'][0]+=3
                     changed['markings'][0]['length']=3.2
+                    path=next(r for r in changed['routes'] if r.get('exit')=='straight')
+                    path['points'][len(path['points'])//2][0]+=0.2
                     status,preview=request('POST','/api/preview/mini_regulator',changed);self.assertEqual(status,200)
                     self.assertFalse(any(f['level']=='error' for f in preview['findings']))
                     status,saved=request('POST','/api/scene/mini_regulator',changed);self.assertEqual(status,200)
@@ -41,6 +43,7 @@ class RegulatorEditorTest(unittest.TestCase):
                     status,loaded=request('GET','/api/scene/mini_regulator');self.assertEqual(status,200)
                     self.assertEqual(loaded['scene']['officers'][0]['pos'],[1.5,2])
                     self.assertEqual(loaded['scene']['decor'][0]['pos'],changed['decor'][0]['pos'])
+                    self.assertEqual(loaded['scene']['routes'],changed['routes'],'edited player paths survive save and reload')
                     self.assertEqual(json.loads((net/'build/mini_regulator.json').read_text()),build.build(changed))
                     self.assertTrue(list((net/'history/mini_regulator').glob('*.json')))
                     self.assertFalse(engine_sync.playable('mini_regulator'))

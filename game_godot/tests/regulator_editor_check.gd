@@ -12,19 +12,25 @@ func _initialize() -> void:
 		var xf: Transform3D = junction.pools[prop.prop].transforms[index]
 		assert(xf.origin.is_equal_approx(Vector3(-float(prop.pos[0]),float(prop.get("y",0)),-float(prop.pos[1]))), "Every prop uses the saved position")
 		next_instance[prop.prop] = index + 1
-	var scripted := RegulatorCar.new()
 	var authored := RegulatorCar.new("sedan", Color.WHITE, net.data)
-	for move in [RegulatorRules.Move.STRAIGHT,RegulatorRules.Move.LEFT,RegulatorRules.Move.RIGHT,RegulatorRules.Move.UTURN]:
-		for t in [0.0,.2,.35,.4,.7,.8,1.0]:
-			assert(authored._evaluate_trajectory(move,t)[0].distance_to(scripted._evaluate_trajectory(move,t)[0]) < .001, "Migrated routes preserve the original manoeuvres")
+	for path in net.data.routes:
+		if path.kind != "manoeuvre": continue
+		var move = {"straight":RegulatorRules.Move.STRAIGHT,"left":RegulatorRules.Move.LEFT,"right":RegulatorRules.Move.RIGHT,"uturn":RegulatorRules.Move.UTURN}[path.exit]
+		for endpoint in [0, 1]:
+			var p = path.points[0 if endpoint == 0 else path.points.size() - 1]
+			assert(authored._evaluate_trajectory(move,float(endpoint))[0].is_equal_approx(Vector3(-float(p[0]),0,-float(p[1]))), "Saved route endpoints reach the game, including custom paths")
 	var changed := net.data.duplicate(true)
 	changed.stop.x = -6.0
 	changed.stop.z = -21.0
 	for path in changed.routes:
 		if path.kind == "manoeuvre":path.points[0]=[-6.0,-21.0]
+		if path.get("exit") == "straight": path.points = [[-6.0,-21.0],[-7.0,0.0],[-5.4,17.5]]
 	var moved := RegulatorCar.new("sedan",Color.WHITE,changed)
 	assert(moved.position.is_equal_approx(Vector3(6,0,21)), "Edited player pose reaches the mini-game")
 	assert(moved._evaluate_trajectory(RegulatorRules.Move.STRAIGHT,0)[0].is_equal_approx(moved.position))
-	junction.free();scripted.free();authored.free();moved.free()
-	print("Regulator editor: saved surfaces/authored props/coordinate transform/migrated paths/edited player PASS")
+	assert(moved._evaluate_trajectory(RegulatorRules.Move.STRAIGHT,0.5)[0].is_equal_approx(Vector3(7,0,0)), "Edited intermediate route point reaches the game")
+	authored.free()
+	moved.free()
+	junction.free()
+	print("Regulator editor: saved surfaces/authored props/coordinate transform/custom paths/edited player PASS")
 	quit()

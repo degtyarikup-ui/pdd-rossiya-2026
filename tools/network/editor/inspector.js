@@ -86,7 +86,7 @@
     p.innerHTML = `${head(`<span class="ibadge">${ic("person")}</span>`, "Регулировщик", "сцена мини-игры")}
       ${card("Проверить", button("regulator-run", "Тест в игре", "play", "primary wide"))}
       ${card("Сцена", `<p>Выбирайте дороги, линии разметки, дома и деревья прямо на виде. Объекты можно двигать, поворачивать, добавлять и удалять.</p>${button("regulator-officer", "Положение регулировщика", "person", "ghost wide")}${button("regulator-player", "Автомобиль игрока", "car", "ghost wide")}`)}
-      ${card("Пути игрока", `<div class="insp-actions">${s.routes.filter(r => r.kind === "manoeuvre").map(r => `<button class="btn ghost" data-act="regulator-route" data-id="${r.id}">${ic(Catalog.EXITS[r.exit].icon)}</button>`).join("")}</div><p class="muted">После изменения дорог проверьте, что все четыре пути проходят по проезжей части. Жесты и ответы выбирает сама мини-игра.</p>`)}
+      ${card("Пути игрока", regulatorRouteButtons(s) + `<p>Выберите путь, затем тяните его точки на виде или задавайте координаты справа.</p>`)}
       ${card("Сохранение", `<p>«Сохранить» обновляет сцену и её поверхности для игры. «Тест в игре» сохраняет изменения и запускает мини-игру в Godot.</p>`)}
       ${card("Проверка", state.findings.length ? state.findings.map(f => `<p class="${f.level}">${esc(f.message)}</p>`).join("") : `<p class="ok-line">${ic("check-circle")}Ошибок нет</p>`)}`;
     compactHelp(p);
@@ -95,6 +95,43 @@
       "regulator-officer": () => s.officers[0] && App.select({t:"officer", id:s.officers[0].id}),
       "regulator-player": () => App.select({t:"stop"}),
       "regulator-route": d => App.select({t:"route",id:d.id}),
+    });
+  }
+
+  function regulatorRouteButtons(s, selected) {
+    return `<div class="insp-actions">${s.routes.filter(r => ["approach", "manoeuvre"].includes(r.kind)).map(r => {
+      const title = r.kind === "approach" ? "Подъезд" : Catalog.EXITS[r.exit].title;
+      const icon = r.kind === "approach" ? "route" : Catalog.EXITS[r.exit].icon;
+      return `<button class="btn ${r.id === selected ? "primary" : "ghost"}" data-act="regulator-route" data-id="${esc(r.id)}">${ic(icon)}<span>${esc(title)}</span></button>`;
+    }).join("")}</div>`;
+  }
+
+  function regulatorRouteInspector(p, ref, r) {
+    const index = Number.isInteger(ref.v) ? ref.v : 0;
+    const point = r.points[index];
+    const anchored = r.kind === "manoeuvre" ? index === 0 : index === r.points.length - 1;
+    const title = r.kind === "approach" ? "Подъезд" : Catalog.EXITS[r.exit].title;
+    p.innerHTML = `${head(`<span class="ibadge">${ic("route")}</span>`, `Путь игрока: ${title.toLowerCase()}`, `${r.points.length} точек`)}
+      ${card("Пути игрока", regulatorRouteButtons(state.S, r.id))}
+      ${card("Редактирование", `<p>Тяните точки на виде. Двойной клик по линии добавляет точку. Выбранную точку можно удалить кнопкой ниже или клавишей Delete.</p><label class="route-field">Точка<input type="number" min="1" max="${r.points.length}" step="1" data-text="routeIndex" value="${index + 1}"></label>
+        <label class="route-field">X, м<input type="number" step="0.1" data-text="routeX" value="${Number(point[0].toFixed(3))}" ${anchored ? "disabled" : ""}></label>
+        <label class="route-field">Z, м<input type="number" step="0.1" data-text="routeZ" value="${Number(point[1].toFixed(3))}" ${anchored ? "disabled" : ""}></label>
+        ${anchored ? `<p>Эта точка закреплена у автомобиля игрока. Чтобы изменить её, переместите автомобиль.</p>` : button("route-delete-point", "Удалить точку", "trash", "ghost wide")}
+        ${index < r.points.length - 1 ? button("route-add-point", "Добавить точку после выбранной", "points", "ghost wide") : ""}`)}
+      ${card("Проверить", `<p>После правки убедитесь, что путь проходит по проезжей части. «Сохранить» сохраняет траекторию для игры.</p>${button("regulator-run", "Тест в игре", "play", "primary wide")}`)}`;
+    bind({
+      "regulator-route": d => App.select({t:"route", id:d.id}),
+      "regulator-run": () => App.runInGame(false),
+      "text:routeIndex": v => { const i = Number(v) - 1; if (Number.isInteger(i) && i >= 0 && i < r.points.length) App.select({t:"route", id:r.id, v:i}); },
+      ...Object.fromEntries(["routeX", "routeZ"].map((key, axis) => [`text:${key}`, v => {
+        if (anchored || !v.trim() || !Number.isFinite(Number(v))) return;
+        App.edit(() => { Layout.editPlayerRoute(state.S, r); r.points[index][axis] = r3(Number(v)); });
+      }])),
+      "route-delete-point": () => { App.select({t:"route", id:r.id, v:index}); App.remove(); },
+      "route-add-point": () => {
+        App.edit(() => { Layout.editPlayerRoute(state.S, r); const next = r.points[index + 1]; r.points.splice(index + 1, 0, point.map((v, axis) => r3((v + next[axis]) / 2))); });
+        App.select({t:"route", id:r.id, v:index + 1});
+      },
     });
   }
 
@@ -619,6 +656,7 @@
   // ---- routes ------------------------------------------------------------------------------
   function routeInspector(p, ref, r) {
     const s = state.S;
+    if (state.id === "mini_regulator" && ["approach", "manoeuvre"].includes(r.kind)) return regulatorRouteInspector(p, ref, r);
     if (r.kind === "approach") {
       p.innerHTML = `${head(`<span class="ibadge">${ic("route")}</span>`, "Подъезд игрока", r.manual ? "ручной путь" : "строится сам")}
         ${card("До начала вопроса", `<p>Зелёная линия показывает, как игрок подъезжает к месту вопроса. После ответа он едет по линии выбранного манёвра.</p>

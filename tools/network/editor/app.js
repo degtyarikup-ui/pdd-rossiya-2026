@@ -352,6 +352,7 @@ const App = (() => {
       Layout.moveNode(s, ref.id, [o.x + dx, o.z + dz]);
     } else if (ref.t === "route") {
       if (o.auto) return;
+      if (s.id === "mini_regulator" && ["approach", "manoeuvre"].includes(o.kind)) return;
       Layout.editPlayerRoute(s, o);
       o.points.forEach(shift);
       if (o.labelPosition) shift(o.labelPosition);
@@ -474,6 +475,7 @@ const App = (() => {
       const least = ref.t === "route" || (ref.t === "marking") ? 2 : 3;
       if (!pts || pts.length <= least) return toast("Меньше точек нельзя", "warn");
       const o = objectOf(ref);
+      if (ref.t === "route" && state.S.id === "mini_regulator" && ((o?.kind === "manoeuvre" && ref.v === 0) || (o?.kind === "approach" && ref.v === pts.length - 1))) return toast("Эта точка закреплена у автомобиля игрока", "warn");
       if (ref.t === "route" && o?.kind === "approach" && state.S.layout && (!o.manual || ref.v === 0 || ref.v === pts.length - 1)) return toast("Начало подъезда закреплено у въезда, конец — у игрока", "warn");
       edit(() => {
         if (ref.t === "route" && o) {
@@ -483,7 +485,7 @@ const App = (() => {
       });
       return select({ ...ref, v: undefined });
     }
-    const removable = list.filter((r) => r.t !== "stop" && !(r.t === "route" && (objectOf(r)?.auto || objectOf(r)?.kind === "approach")) && !(r.t === "marking" && objectOf(r)?.auto));
+    const removable = list.filter((r) => r.t !== "stop" && !(r.t === "route" && (objectOf(r)?.auto || objectOf(r)?.kind === "approach" || (state.S.id === "mini_regulator" && objectOf(r)?.kind === "manoeuvre"))) && !(r.t === "marking" && objectOf(r)?.auto));
     if (!removable.length) return toast("Это строится само по дорогам", "warn");
     edit((s) => {
       for (const ref of removable) {

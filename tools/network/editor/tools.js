@@ -276,6 +276,7 @@ const Tools = (() => {
         const ref = drag.ref;
         return App.dragMove(() => {
           const o = App.objectOf(ref);
+          if (ref.t === "route" && S().id === "mini_regulator" && ((o?.kind === "manoeuvre" && ref.v === 0) || (o?.kind === "approach" && ref.v === o.points.length - 1))) return;
           if (ref.t === "route" && o?.kind === "approach" && S().layout && (!o.manual || ref.v === 0 || ref.v === o.points.length - 1)) return;
           if (ref.t === "route" && o) {
             Layout.editPlayerRoute(S(), o);
