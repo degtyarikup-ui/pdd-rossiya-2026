@@ -119,57 +119,57 @@ func _setup_args() -> void:
 
 
 func _setup_environment() -> void:
-	# Directional Sun Light
-	# Directional Sun Light positioned in the North, casting a warm golden sunset glow along the avenue
+	# Directional Sun Light — bright sunny daytime
 	sun = DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.rotation_degrees = Vector3(-10, 180, 0)
-	sun.light_color = Color("#FFD5AC")
-	sun.light_energy = 0.70
+	sun.rotation_degrees = Vector3(-52, 135, 0)
+	sun.light_color = Color("#FFF8EC")
+	sun.light_energy = 0.85
 	sun.shadow_enabled = true
 	# 4-split PSSM eliminates staircase pixelation in perspective view:
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-	sun.directional_shadow_max_distance = 48.0
-	sun.directional_shadow_split_1 = 0.2
-	sun.directional_shadow_split_2 = 0.45
-	sun.directional_shadow_split_3 = 0.72
+	sun.directional_shadow_max_distance = 56.0
+	sun.directional_shadow_split_1 = 0.18
+	sun.directional_shadow_split_2 = 0.42
+	sun.directional_shadow_split_3 = 0.70
 	sun.directional_shadow_blend_splits = true
-	sun.shadow_blur = 1.8
-	sun.shadow_bias = 0.06
-	sun.shadow_normal_bias = 1.2
+	sun.shadow_blur = 1.6
+	sun.shadow_bias = 0.05
+	sun.shadow_normal_bias = 1.0
 	sun.directional_shadow_fade_start = 0.85
 	add_child(sun)
 
-	# World Environment with Procedural Sunset Sky & Golden Horizon Fog
+	# World Environment with Clear Sunny Sky & Soft Distant Horizon Haze
 	env = WorldEnvironment.new()
 	var e := Environment.new()
 	var sky := Sky.new()
 	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color("#182A44")       # Deep twilight blue at the zenith
-	sky_mat.sky_horizon_color = Color("#E58248")   # Warm radiant golden-peach sunset horizon
-	sky_mat.sky_curve = 0.22                       # Concentrates sunset glow in a warm band at horizon
-	sky_mat.ground_horizon_color = Color("#E58248")# Seamless horizon transition
-	sky_mat.ground_bottom_color = Color("#1D1815") # Dark warm earth tone
+	sky_mat.sky_top_color = Color("#2A66A2")       # Clear sunny blue sky at zenith
+	sky_mat.sky_horizon_color = Color("#82A8CC")   # Soft daylight blue horizon
+	sky_mat.sky_curve = 0.20                       # Smooth atmospheric sky gradient
+	sky_mat.ground_horizon_color = Color("#82A8CC")# Seamless daylight horizon
+	sky_mat.ground_bottom_color = Color("#405438") # Earthy green-gray ground tone
 	sky_mat.ground_curve = 0.15
-	sky_mat.sun_angle_max = 28.0
-	sky_mat.sun_curve = 0.15
+	sky_mat.sun_angle_max = 24.0
+	sky_mat.sun_curve = 0.1
 	sky.sky_material = sky_mat
 	e.sky = sky
 	e.background_mode = Environment.BG_SKY
 
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	e.ambient_light_sky_contribution = 0.0
-	# Ambient light balanced between sunset warmth and cool sky bounce:
-	e.ambient_light_color = Color("#E8A87C").lerp(Color("#4C6D96"), 0.5)
-	e.ambient_light_energy = 0.55
+	# Ambient light softly tinted by clear sky bounce:
+	e.ambient_light_color = Color("#8BB2D8").lerp(Color.WHITE, 0.45)
+	e.ambient_light_energy = 0.65
 
-	# Sunset depth haze: road smoothly dissolves into the glowing sunset horizon!
+	# Distant atmospheric haze: avenue stays completely clear and sharp,
+	# melting into sunny horizon only in the far distance
 	e.fog_enabled = true
 	e.fog_mode = Environment.FOG_MODE_DEPTH
-	e.fog_light_color = Color("#E58248")
-	e.fog_depth_begin = 54.0
-	e.fog_depth_end = 88.0
-	e.fog_depth_curve = 0.9
+	e.fog_light_color = Color("#82A8CC")
+	e.fog_depth_begin = 85.0
+	e.fog_depth_end = 180.0
+	e.fog_depth_curve = 0.85
 	e.fog_sky_affect = 0.0
 
 
