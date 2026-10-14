@@ -237,7 +237,10 @@ static void HideGame(void) {
   }
   // No run is going on in the engine now, so a leftover summary belongs to the last run.
   [files removeItemAtPath:[folder stringByAppendingPathComponent:@"summary.json"] error:nil];
-  NSArray *gameArgs = args ? args : @[];
+  NSMutableArray *gameArgs = [NSMutableArray arrayWithArray:args ? args : @[]];
+  NSString *pictures = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:
+      @"Frameworks/App.framework/flutter_assets/assets/countries/ru/images/questions_ab"];
+  [gameArgs addObject:[@"--question-images-dir=" stringByAppendingString:pictures]];
   NSData *request = [NSJSONSerialization dataWithJSONObject:@{ @"args" : gameArgs } options:0 error:nil];
   return request != nil &&
          [request writeToFile:[folder stringByAppendingPathComponent:@"request.json"]

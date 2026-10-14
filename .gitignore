@@ -62,3 +62,7 @@ game_godot/network/history/
 /ios/Godot/
 # Пример окружения допускается, но без реальных значений секретов.
 !.env.example
+
+# Temporary links for standalone Godot exports; canonical photos are in assets/.
+/game_godot/questions/*.webp
+/game_godot/questions/*.webp.import

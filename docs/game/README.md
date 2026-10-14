@@ -68,6 +68,7 @@ godot --headless --path game_godot --script res://tests/reviewed_departure_check
 godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза
 godot --headless --path game_godot --script res://tests/exit_loading_check.gd # выход во время фоновой сборки без потерянных узлов
 godot --headless --path game_godot --script res://tests/pause_actor_check.gd # заморозка независимых и физических участников в паузе
+godot --headless --path game_godot --script res://tests/shared_pictures_check.gd # общий источник фото Flutter/Godot без копий
 godot --headless --path game_godot --script res://tests/game_ui_check.gd # анимации, фото, компактный HUD и окно паузы
 godot --headless --path game_godot --script res://tests/vehicle_lights_check.gd # штатные линзы, мигание и синхронное процедурное свечение
 godot --headless --path game_godot --script res://tests/question_signals_check.gd # намерения игрока/участников, поворотники за секунду до вопроса и пауза
@@ -141,6 +142,23 @@ tools/network/engine_sync.py ► game_godot/situations/<id>/scene.json (то, ч
 и `situations/*/scene.json`. Проверка сети: `tools/network/.venv/bin/python tools/network/check.py`
 (9 известных ошибок «маршрут вне дороги» в неизменённых сценах на 14 октября 2026;
 в новых правках ошибки появляться не должны).
+
+Фотографии билетов — один источник: `assets/countries/ru/images/questions_ab/`.
+Редактор читает их напрямую. Godot хранит только соответствие сцены и имени фото
+в `questions/index.json`; `PackFiles` читает тот же WebP: на компьютере — из
+`assets/`, на Android — через `PddHost.pictureBytes` из Flutter-ресурсов APK,
+на iOS — из `Frameworks/App.framework/flutter_assets/`, на сайте — из соседнего
+`/app/assets/assets/countries/ru/images/questions_ab/`. В пакет встроенной игры
+фотографии не включаются. После замены картинки отдельное копирование не нужно;
+уже собранные приложения обновятся при пересборке.
+
+`tools/godot_export/export_question_images.py` обновляет индекс и удаляет старые
+копии. Скрипты сборки вызывают его автоматически. Для самостоятельной игры без
+Flutter `scripts/godot_dev.sh android|ios` временно создаёт ссылки на исходники
+(`--standalone`), включает фотографии в единственный пакет игры и убирает ссылки
+после экспорта. Прямой экспорт самостоятельной игры из редактора Godot требует
+сначала запустить генератор с `--standalone`; после экспорта — без этого флага.
+Ссылки и их `.import` игнорируются Git.
 
 Строки интерфейса игры берутся из `lib/l10n/*.arb`: `python3 tools/godot_export/export_ui.py`
 пересобирает `game_godot/data/ui.json` (ru/en/kk одновременно).

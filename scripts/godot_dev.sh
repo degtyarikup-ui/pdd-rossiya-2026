@@ -14,8 +14,11 @@ PIXEL=${PIXEL:-$(cat .dev-device 2>/dev/null || echo 192.168.31.143:5555)}
 IPHONE=${IPHONE:-00008030-0005785A01D3C02E}
 OUT=output/godot
 mkdir -p "$OUT"
+# Native standalone games have no Flutter assets. Links are only export inputs.
+trap 'python3 tools/godot_export/export_question_images.py >/dev/null' EXIT
 
 android() {
+  python3 tools/godot_export/export_question_images.py --standalone
   godot --headless --path game_godot --import >/dev/null 2>&1 || true
   godot --headless --path game_godot --export-release "Android" "../$OUT/pdd-game-spike.apk" 2>&1 | grep -E "ERROR" | grep -v "icon\|filter" || true
   "$ADB" connect "$PIXEL" >/dev/null 2>&1 || true
@@ -25,6 +28,7 @@ android() {
 }
 
 ios() {
+  python3 tools/godot_export/export_question_images.py --standalone
   godot --headless --path game_godot --import >/dev/null 2>&1 || true
   rm -rf "$OUT/ios"; mkdir -p "$OUT/ios"
   godot --headless --path game_godot --export-release "iOS" "../$OUT/ios/PDDGameSpike.xcodeproj" >/dev/null 2>&1 || true
@@ -38,9 +42,10 @@ ios() {
 
 # Web (the site, folder /app/godot/ next to the Flutter app). The pack holds the
 # engine, models, networks and the question list (~10 MB); the junction scenes
-# and the ticket pictures are plain files next to it, fetched when needed
+# are plain files next to it; ticket pictures use the shared Flutter assets
 # (game_godot/scripts/pack_files.gd). Nothreads: no SharedArrayBuffer needed.
 web() {
+  python3 tools/godot_export/export_question_images.py
   local out="build/web/godot"
   command -v godot >/dev/null || { echo "Web: нет godot в PATH"; exit 1; }
   [ -d "game_godot/situations" ] || { echo "Web: нет game_godot/situations (они лежат в git: git pull / проверьте клон)"; exit 1; }
@@ -57,7 +62,7 @@ web() {
   mkdir -p "$out/situations"
   rsync -a --files-from="$list" game_godot/situations/ "$out/situations/"
   rm -f "$list"
-  rsync -a --include='*.webp' --exclude='*' game_godot/questions/ "$out/questions/"
+  # Pictures are already in build/web/assets/assets/countries/ru/images/questions_ab/.
   echo "Web: $out ($(du -sh "$out" | cut -f1); pack $(du -h "$out/index.pck" | cut -f1), engine $(du -h "$out/index.wasm" | cut -f1))"
 }
 

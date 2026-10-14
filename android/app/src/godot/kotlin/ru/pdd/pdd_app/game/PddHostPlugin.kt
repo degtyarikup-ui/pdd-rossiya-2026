@@ -8,6 +8,18 @@ import org.godotengine.godot.plugin.UsedByGodot
 class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPlugin(godot) {
     override fun getPluginName() = "PddHost"
 
+    /** The canonical Flutter picture, with no second copy in the Godot assets. */
+    @UsedByGodot
+    fun pictureBytes(hash: String): ByteArray {
+        if (!hash.matches(Regex("[a-f0-9]{32}"))) return byteArrayOf()
+        return try {
+            host.assets.open("flutter_assets/assets/countries/ru/images/questions_ab/$hash.webp")
+                .use { it.readBytes() }
+        } catch (_: java.io.IOException) {
+            byteArrayOf()
+        }
+    }
+
     /** Any event of the game; «run_finished» carries the final summary. */
     @UsedByGodot
     fun send(json: String) {

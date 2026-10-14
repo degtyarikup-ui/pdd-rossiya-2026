@@ -1,9 +1,11 @@
 ## Game files that are not in the web pack: the exam junctions
 ## (res://situations/<id>/) and the ticket pictures (res://questions/*.webp).
-## On the web they are 240 MB, so they are fetched from the site (the same
-## folder, next to index.pck) when their junction is about to be laid out, or
-## when a picture is opened, and kept in memory until the junction is built.
-## Native builds read the pack as before: every call here is a plain read there.
+## The junctions are fetched from the game folder; pictures come from the
+## Flutter assets beside it. They are fetched when a junction is about to be
+## laid out or a picture is opened, and kept in memory until the junction is built.
+## Embedded native games read Flutter pictures too, so the game pack has no
+## duplicate photographs. Desktop reads the canonical source; standalone exports
+## without Flutter include their own pictures.
 class_name PackFiles
 extends RefCounted
 
@@ -11,6 +13,7 @@ static var _bytes := {}          # res path -> PackedByteArray (web, fetched)
 static var _roots := {}          # res path -> Node3D, a glTF parsed once (web)
 static var _absent := {}         # res path -> true: the site has no such file
 static var _waiting := {}        # res path -> Array[Callable]: fetches in flight
+static var _picture_base := ""   # URL of the shared Flutter picture folder
 static var _base := ""           # URL of the game folder (web)
 
 
@@ -20,6 +23,8 @@ static func web() -> bool:
 
 static func bytes(res_path: String) -> PackedByteArray:
 	if not web():
+		if _is_picture(res_path):
+			return _picture_bytes(res_path)
 		return FileAccess.get_file_as_bytes(res_path)
 	return _bytes.get(res_path, PackedByteArray())
 
@@ -32,8 +37,32 @@ static func text(res_path: String) -> String:
 
 static func exists(res_path: String) -> bool:
 	if not web():
+		if _is_picture(res_path):
+			return not _picture_bytes(res_path).is_empty()
 		return FileAccess.file_exists(res_path)
 	return _bytes.has(res_path)
+
+
+static func _is_picture(path: String) -> bool:
+	return path.begins_with("res://questions/") and path.ends_with(".webp")
+
+
+static func _picture_bytes(res_path: String) -> PackedByteArray:
+	var file := res_path.get_file()
+	if Host.embedded():
+		# AssetManager reads the same bytes that Flutter uses, straight from the APK.
+		return Engine.get_singleton("PddHost").pictureBytes(file.get_basename())
+	for arg in Host.user_args():
+		if str(arg).begins_with("--question-images-dir="):
+			var path := str(arg).trim_prefix("--question-images-dir=").path_join(file)
+			return FileAccess.get_file_as_bytes(path) if FileAccess.file_exists(path) else PackedByteArray()
+	# A checkout on a computer has the source next to the Godot project.
+	var source := ProjectSettings.globalize_path("res://").path_join(
+		"../assets/countries/ru/images/questions_ab/" + file)
+	if FileAccess.file_exists(source):
+		return FileAccess.get_file_as_bytes(source)
+	# Standalone APK/iOS exports have no Flutter host and bundle their own pictures.
+	return FileAccess.get_file_as_bytes(res_path) if FileAccess.file_exists(res_path) else PackedByteArray()
 
 
 ## The image of a png file (the scene's road mask).
@@ -86,7 +115,12 @@ static func fetch(res_path: String, on_done: Callable) -> void:
 	var req := HTTPRequest.new()
 	(Engine.get_main_loop() as SceneTree).root.add_child(req)
 	req.request_completed.connect(_on_fetched.bind(req, res_path))
-	if req.request(_base + res_path.trim_prefix("res://")) != OK:
+	var url := _base + res_path.trim_prefix("res://")
+	if _is_picture(res_path):
+		if _picture_base.is_empty():
+			_picture_base = str(JavaScriptBridge.eval("new URL('../assets/assets/countries/ru/images/questions_ab/', window.location.href).href", true))
+		url = _picture_base + res_path.get_file()
+	if req.request(url) != OK:
 		_on_fetched(HTTPRequest.RESULT_CANT_CONNECT, 0, PackedStringArray(), PackedByteArray(), req, res_path)
 
 
