@@ -3211,7 +3211,7 @@
     {
      "from": 0,
      "to": 24.15076344385503,
-     "side": "right"
+     "side": "left"
     }
    ],
    "stopAtDistance": null,
@@ -3219,6 +3219,7 @@
    "holdFor": null,
    "waitsForPlayer": false,
    "staysPut": false,
+   "paint": "#C0392B",
    "hazards": false
   },
   {
@@ -3316,6 +3317,7 @@
    "holdFor": null,
    "waitsForPlayer": false,
    "staysPut": false,
+   "paint": "#4D7768",
    "hazards": false
   }
  ],

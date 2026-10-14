@@ -824,7 +824,14 @@
    "halfWidth": 1.023,
    "behaviour": {
     "staysPut": false,
-    "waitsForPlayer": false
+    "waitsForPlayer": false,
+    "signalPlan": [
+     {
+      "from": 0,
+      "to": 24.15076344385503,
+      "side": "left"
+     }
+    ]
    },
    "way": "left",
    "paint": "#C0392B"
