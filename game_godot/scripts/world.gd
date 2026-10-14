@@ -68,7 +68,6 @@ const BLINK_COLOUR := Color("#FFB300")
 var steer_hold := 0.0
 var blink := { "side": "", "left": 0.0, "clock": 0.0 }
 var question_signal_id := ""
-var question_signal_elapsed := 0.0
 var question_signal_side := ""
 var tier := "high"
 var street_half := Street.ROAD_HALF   # carriageway half-width of the ring street (a multi-lane exit widens it)
@@ -1480,7 +1479,7 @@ func _update_junction(dt: float) -> void:
 		var intended_side := Fleet.maneuver_side(str(sit.data.spec.get("maneuver", "")))
 		if question_signal_id != sit.id:
 			current.junction.begin_question_signals()
-		if not _prepare_question_signals(sit.id, intended_side, current.junction.has_question_signals(), dt): return
+		_prepare_question_signals(sit.id, intended_side)
 		phase = "question"
 		if sit.data.speedLimit != null:
 			limit_kmh = int(sit.data.speedLimit)
@@ -1540,7 +1539,7 @@ func _update_road(dt: float) -> void:
 		if not _ambient_stage_clear(): return
 		if question_signal_id != road.id:
 			road.begin_question_signals()
-		if not _prepare_question_signals(road.id, "", road.has_question_signals(), dt): return
+		_prepare_question_signals(road.id, "")
 		road_phase = "question"
 		phase = "question"
 		question_over = false
@@ -2772,10 +2771,9 @@ func _process(delta: float) -> void:
 		controls.gas = true
 	if topdown_cam_locked:
 		return
-	var waiting_signals := phase == "driving" and question_signal_id != ""
-	drive.accelerating = controls.gas and phase != "question" and not waiting_signals
+	drive.accelerating = controls.gas and phase != "question"
 	drive.braking = controls.brake
-	drive.steering = controls.steer if phase != "question" and not waiting_signals else 0.0
+	drive.steering = controls.steer if phase != "question" else 0.0
 	var limit := drive.max_speed
 	if current and phase == "driving":
 		var sit: Situation = current.sit
@@ -2804,7 +2802,7 @@ func _process(delta: float) -> void:
 		limit = minf(limit, sqrt(maxf(0.0, 2 * 8 * road_distance)))
 	drive.assist_enabled = phase == "driving"
 	var was_recovering := drive.recovery > 0.0
-	if phase != "question" and phase != "over" and not waiting_signals:
+	if phase != "question" and phase != "over":
 		drive.integrate(delta, limit)
 	if was_recovering and drive.recovery <= 0.0:
 		drive_faults.clear()   # the impact is over: the next one is a new violation
@@ -3028,19 +3026,15 @@ func _question_framing() -> Dictionary:
 	return { "look": look, "size": size }
 
 
-## Capture stays stationary and the answer timer starts only after a full second of signals.
-func _prepare_question_signals(id: String, side: String, participants: bool, delta: float) -> bool:
+## Indicators light on capture in the same update as the question, without a lead-in wait.
+func _prepare_question_signals(id: String, side: String) -> void:
 	if question_signal_id != id:
 		question_signal_id = id
-		question_signal_elapsed = 0.0
 		question_signal_side = side
 		controls.set_active(false)
 		blink.side = side
 		blink.clock = 0.0
 		_update_lamps(0.0)
-	else:
-		question_signal_elapsed += delta
-	return (side == "" and not participants) or question_signal_elapsed >= 1.0 - 0.000001
 
 
 func _clear_question_signals() -> void:

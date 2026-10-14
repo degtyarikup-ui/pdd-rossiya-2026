@@ -237,7 +237,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 		actor.position = _v(a.pos)
 		actor.rotation.y = a.yaw
 		actor.scale = _v(a.scale)
-		# Prepare lenses while loading; they start together one second before the question.
+		# Prepare lenses while loading; they start together when the question opens.
 		var plan = a.get("signalPlan")
 		if a.type in Fleet.SIGNAL_KINDS and (Fleet.actor_signal_side(a) != "" or (plan is Array and not plan.is_empty())):
 			var k := maxf(0.01, float(a.scale[0]))

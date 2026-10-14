@@ -93,7 +93,7 @@ godot --headless --path game_godot --script res://tests/pause_actor_check.gd # �
 godot --headless --path game_godot --script res://tests/shared_pictures_check.gd # общий источник фото Flutter/Godot без копий
 godot --headless --path game_godot --script res://tests/game_ui_check.gd # анимации, фото, компактный HUD и окно паузы
 godot --headless --path game_godot --script res://tests/vehicle_lights_check.gd # штатные линзы, мигание и синхронное процедурное свечение
-godot --headless --path game_godot --script res://tests/question_signals_check.gd # намерения игрока/участников, поворотники за секунду до вопроса и пауза
+godot --headless --path game_godot --script res://tests/question_signals_check.gd # намерения игрока/участников, вопрос без задержки, поворотники и пауза
 godot --headless --path game_godot --script res://tests/actor_hazards_check.gd # постоянная аварийка участников, стоянка, обе стороны, пауза и старые настройки
 godot --headless --path game_godot --script res://tests/signal_glow_check.gd # свечение и цвета секций светофора без текстур
 godot --headless --path game_godot --script res://tests/ride_pause_check.gd # быстрый старт, цвет, звук, сохранение состояния при паузе
@@ -137,8 +137,8 @@ godot --path game_godot --script res://tests/stitch_shader_render_check.gd # н�
 поток или останавливается, если законного и безопасного места для объезда нет.
 
 Если у игрока или участника задания задан поворот/разворот, нужные поворотники
-включаются на остановке за одну активную секунду до карточки. Отсчёт ответа
-начинается после этой секунды; пауза замораживает подготовку и мигание.
+включаются на остановке одновременно с карточкой, без дополнительного ожидания.
+Отсчёт ответа начинается сразу с вопросом; пауза замораживает таймер и мигание.
 Направление игрока берётся из `spec.maneuver`, участников — из `signalPlan`
 или `config.targetAction`; геометрия маршрута используется только при отсутствии
 заданного намерения. Разворот включает левый сигнал. Трамваи также показывают

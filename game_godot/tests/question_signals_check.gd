@@ -1,4 +1,4 @@
-## The ticket's intended manoeuvres are visible for a full second before its answer timer.
+## The ticket and its intended signals start together at arrival, without an artificial wait.
 extends SceneTree
 
 var failures := 0
@@ -48,35 +48,30 @@ func run() -> void:
 	check(tram.side == "" and car.side == "", "Participants do not blink during distant approach")
 	check(Fleet.actor_signal_side(sit.data.actors[0]) == "L", "Tram follows saved left signal")
 	check(Fleet.actor_signal_side(sit.data.actors[1]) == "R", "Oncoming car follows saved right signal")
-	# Empty background makes the capture delay exact and independent of ambient clearance.
+	# Empty background isolates question timing from ambient clearance.
 	world.traffic.clear()
 	world.drive.pos = sit.global_transform * sit.network.stop_point()
 	world.drive.yaw = SceneStitch.yaw(sit.basis * Vector3(sin(sit.network.stop_yaw()), 0, cos(sit.network.stop_yaw())))
 	world.drive.speed = 0.0
 	world.warm_signals = false
-	world._update_junction(0.05)
-	check(world.phase == "driving" and not world.ui.counting(), "No question/timer when signals first light")
-	check(not world.controls.active, "Pedals are released during the lead-in")
+	world._update_junction(0.0)
+	check(world.phase == "question" and world.ui.counting(), "Question and timer open in the arrival update when signals first light")
+	check(not world.controls.active, "Pedals are released when the question opens")
 	check(world.blink.side == "L" and tram.side == "L" and car.side == "R", "Player, tram and car signal together")
 	check(tram.materials[0].get_shader_parameter("left_on") and car.materials[0].get_shader_parameter("right_on"), "Participants' first pulse is lit immediately")
 	check(world.blinkers.L[0].emission_enabled and not world.blinkers.R[0].emission_enabled, "Player's actual left lenses light immediately")
 	var pose: Vector3 = world.drive.pos
-	for i in 19: world._update_junction(0.05)
-	check(world.phase == "driving" and not world.ui.counting(), "Card stays closed after 0.95 seconds")
-	var elapsed: float = world.question_signal_elapsed
+	var seconds: float = world.ui.remaining_seconds()
 	world._on_pause()
 	for i in 20: world._process(0.05)
-	check(world.question_signal_elapsed == elapsed and not world.ui.counting(), "Pause freezes the lead-in without starting the timer")
+	check(is_equal_approx(world.ui.remaining_seconds(), seconds), "Pause freezes the immediately opened question timer")
 	world._on_resume()
 	check(not world.controls.active, "Resume keeps the captured car's pedals disabled")
 	world.controls.gas = true
 	world.controls.steer = -1.0
 	world._process(0.05)
 	check(world.drive.pos.is_equal_approx(pose), "Held/debug inputs cannot move the car during capture")
-	check(world.phase == "question" and world.ui.counting(), "Question opens after one full active second")
-	var seconds: float = world.ui.remaining_seconds()
-	world._process(0.05)
-	check(is_equal_approx(world.ui.remaining_seconds(), seconds - 0.05), "Answer countdown begins only after opening")
+	check(is_equal_approx(world.ui.remaining_seconds(), seconds - 0.05), "Answer countdown resumes from its saved value")
 	for i in 80:
 		world._update_lamps(0.05)
 		tram._process(0.05)
@@ -103,13 +98,12 @@ func run() -> void:
 	junction._update_signals()
 	check(tram.side == "" and car.side == "", "Participants cancel indicators beyond their saved manoeuvres")
 	# No invented player intention for questions that offer several possible directions.
-	check(world._prepare_question_signals("straight_fixture", "", false, 0.0), "Straight question requires no artificial delay")
+	world._prepare_question_signals("straight_fixture", "")
+	check(world.blink.side == "", "Straight question does not invent an intended signal")
 	world._clear_question_signals()
 	for side in ["L", "R"]:
-		check(not world._prepare_question_signals("fixture_" + side, side, false, 0.0), "Player-only turn starts its lead-in")
-		check(world.blink.side == side, "Player-only intended side overrides steering")
-		check(not world._prepare_question_signals("fixture_" + side, side, false, 0.99), "Player-only lead-in waits a full second")
-		check(world._prepare_question_signals("fixture_" + side, side, false, 0.01), "Player-only lead-in completes at one second")
+		world._prepare_question_signals("fixture_" + side, side)
+		check(world.blink.side == side, "Player-only intended side overrides steering immediately")
 		world._clear_question_signals()
 	var entries: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://roads/road_scenes.json"))
 	var tested := 0
@@ -119,7 +113,20 @@ func run() -> void:
 		var road := RoadEvent.make(entry, 0.0, 4.2)
 		world.add_child(road)
 		check(road.has_question_signals(), "Road participants also have intended signals: " + road.id)
-		road.begin_question_signals()
+		if tested == 0:
+			world.road = road
+			world.road_phase = "approach"
+			world.phase = "driving"
+			world.drive.pos = Vector3(0.0, 0.0, road.stop_z)
+			world.drive.yaw = 0.0
+			world.drive.speed = 0.0
+			world._update_road(0.0)
+			check(world.phase == "question" and world.road_phase == "question" and world.ui.counting(), "Road question also opens in the arrival update without elapsed time")
+			check(not world.controls.active, "Road question releases pedals immediately")
+			world.road = null
+			world._clear_question_signals()
+		else:
+			road.begin_question_signals()
 		for signal_data in road.question_signals:
 			var body: RoadBody = signal_data.body
 			var signals: Fleet.Signals = body.node.get_node("vehicle_signals")

@@ -793,6 +793,8 @@ func _update_timer() -> void:
 
 
 func hide_cards() -> void:
+	# Only a sheet being replaced now should delay the next entrance.
+	_next_sheet_delay = 0.0
 	_close_picture()
 	_answered = true
 	for n in [_card, _sheet]:

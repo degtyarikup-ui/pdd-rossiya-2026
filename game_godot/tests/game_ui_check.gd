@@ -145,6 +145,8 @@ func _run() -> void:
 		check(label.get_theme_color("font_color") == Color.WHITE, "Answered option keeps white text")
 	ui.show_explanation(question, 0, false)
 	check(is_instance_valid(panel) and bool(panel.get_meta("closing", false)), "Question leaves with an animation")
+	await wait_motion(0.10)
+	check(ui._sheet.position.y >= ui._view_size().y, "Explanation waits for the outgoing question before rising")
 	await wait_motion()
 	check(not is_instance_valid(panel), "Outgoing question is released after transition")
 	check(not is_instance_valid(ui._picture), "Changing cards releases the outgoing photo")
@@ -185,6 +187,11 @@ func _run() -> void:
 	body.scroll_vertical = 100000
 	await process_frame
 	check(continue_button(ui._sheet).get_global_rect().is_equal_approx(button_before), "Scrolling the explanation leaves Continue fixed")
+	ui.hide_cards()
+	await wait_motion()
+	ui.show_question(question, 15.0)
+	await wait_motion(0.15)
+	check(ui._card.position.y < ui._view_size().y, "Next question starts rising promptly after the previous sheet was fully hidden")
 	ui.hide_cards()
 	await wait_motion()
 	for fault in ["offroad", "collision", "pedestrian", "speeding"]:
