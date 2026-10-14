@@ -224,27 +224,85 @@ func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 
 
 func _build_quadrant_sidewalks() -> void:
-	var sw_span := 44.0
+	var sw_w := 4.2
+	var sw_outer := HALF_ROAD + sw_w
+	var arm_len := ROAD_EXTENT - HALF_ROAD
+	var sw_arm_len := ROAD_EXTENT - sw_outer
+	var lawn_size := ROAD_EXTENT - sw_outer
+
 	var corners := [
 		Vector2(1, 1),   # South-East
 		Vector2(-1, 1),  # South-West
 		Vector2(1, -1),  # North-East
 		Vector2(-1, -1)  # North-West
 	]
-	for c in corners:
-		var cx: float = c.x * (HALF_ROAD + sw_span * 0.5)
-		var cz: float = c.y * (HALF_ROAD + sw_span * 0.5)
-		var sw := _quad(Vector2(sw_span, sw_span), sidewalk_mat)
-		sw.position = Vector3(cx, 0.16, cz)
-		ground_root.add_child(sw)
 
-		var curb_x := _box(Vector3(0.3, 0.20, sw_span), curb_mat)
-		curb_x.position = Vector3(c.x * (HALF_ROAD + 0.15), 0.10, cz)
-		ground_root.add_child(curb_x)
+	for c: Vector2 in corners:
+		var sx: float = c.x
+		var sz: float = c.y
 
-		var curb_z := _box(Vector3(sw_span, 0.20, 0.3), curb_mat)
-		curb_z.position = Vector3(cx, 0.10, c.y * (HALF_ROAD + 0.15))
-		ground_root.add_child(curb_z)
+		# 1. Sidewalk strip along NS road arm (width 4.2m)
+		var sw_ns := _quad(Vector2(sw_w, sw_arm_len), sidewalk_mat)
+		sw_ns.position = Vector3(
+			sx * (HALF_ROAD + sw_w * 0.5),
+			0.16,
+			sz * (sw_outer + sw_arm_len * 0.5)
+		)
+		ground_root.add_child(sw_ns)
+
+		# 2. Sidewalk strip along EW road arm (width 4.2m)
+		var sw_ew := _quad(Vector2(sw_arm_len, sw_w), sidewalk_mat)
+		sw_ew.position = Vector3(
+			sx * (sw_outer + sw_arm_len * 0.5),
+			0.16,
+			sz * (HALF_ROAD + sw_w * 0.5)
+		)
+		ground_root.add_child(sw_ew)
+
+		# 3. Corner sidewalk waiting plaza (connecting NS and EW sidewalks)
+		var sw_corner := _quad(Vector2(sw_w, sw_w), sidewalk_mat)
+		sw_corner.position = Vector3(
+			sx * (HALF_ROAD + sw_w * 0.5),
+			0.16,
+			sz * (HALF_ROAD + sw_w * 0.5)
+		)
+		ground_root.add_child(sw_corner)
+
+		# 4. Road Curbs (between asphalt and sidewalk)
+		var curb_road_x := _box(Vector3(0.3, 0.20, arm_len), curb_mat)
+		curb_road_x.position = Vector3(sx * (HALF_ROAD + 0.15), 0.10, sz * (HALF_ROAD + arm_len * 0.5))
+		ground_root.add_child(curb_road_x)
+
+		var curb_road_z := _box(Vector3(arm_len, 0.20, 0.3), curb_mat)
+		curb_road_z.position = Vector3(sx * (HALF_ROAD + arm_len * 0.5), 0.10, sz * (HALF_ROAD + 0.15))
+		ground_root.add_child(curb_road_z)
+
+		# 5. Natural Lawn (Газон) in the quadrant behind sidewalks
+		var lawn := _quad(Vector2(lawn_size, lawn_size), grass_mat)
+		lawn.position = Vector3(
+			sx * (sw_outer + lawn_size * 0.5),
+			0.15,
+			sz * (sw_outer + lawn_size * 0.5)
+		)
+		ground_root.add_child(lawn)
+
+		# 6. Neat curb verge separating sidewalk from lawn
+		var curb_lawn_x := _box(Vector3(0.18, 0.18, lawn_size), curb_mat)
+		curb_lawn_x.position = Vector3(sx * (sw_outer - 0.09), 0.10, sz * (sw_outer + lawn_size * 0.5))
+		ground_root.add_child(curb_lawn_x)
+
+		var curb_lawn_z := _box(Vector3(lawn_size, 0.18, 0.18), curb_mat)
+		curb_lawn_z.position = Vector3(sx * (sw_outer + lawn_size * 0.5), 0.10, sz * (sw_outer - 0.09))
+		ground_root.add_child(curb_lawn_z)
+
+		# 7. Asphalt building courtyard/foundation pads beneath buildings
+		var pad := _quad(Vector2(32.0, 32.0), asphalt_mat)
+		pad.position = Vector3(
+			sx * (sw_outer + 16.0),
+			0.152,
+			sz * (sw_outer + 16.0)
+		)
+		ground_root.add_child(pad)
 
 
 func _build_markings() -> void:
@@ -313,13 +371,23 @@ func _build_street_lamps() -> void:
 	var lamp_scene: PackedScene = load("res://models/street/lamp.glb")
 	if lamp_scene == null:
 		return
-	var lamp_dist := HALF_ROAD + 2.4
-	var lamp_offsets := [
+	var lamp_dist := HALF_ROAD + 1.8
+	var lamp_offsets: Array[Vector3] = [
 		Vector3(lamp_dist, 0.16, lamp_dist),
 		Vector3(-lamp_dist, 0.16, lamp_dist),
 		Vector3(lamp_dist, 0.16, -lamp_dist),
 		Vector3(-lamp_dist, 0.16, -lamp_dist),
 	]
+	for d in [26.0, 44.0]:
+		lamp_offsets.append(Vector3(lamp_dist, 0.16, -d))
+		lamp_offsets.append(Vector3(-lamp_dist, 0.16, -d))
+		lamp_offsets.append(Vector3(lamp_dist, 0.16, d))
+		lamp_offsets.append(Vector3(-lamp_dist, 0.16, d))
+		lamp_offsets.append(Vector3(d, 0.16, lamp_dist))
+		lamp_offsets.append(Vector3(d, 0.16, -lamp_dist))
+		lamp_offsets.append(Vector3(-d, 0.16, lamp_dist))
+		lamp_offsets.append(Vector3(-d, 0.16, -lamp_dist))
+
 	for pos in lamp_offsets:
 		var lamp := lamp_scene.instantiate() as Node3D
 		lamp.position = pos
@@ -354,33 +422,82 @@ func _finish_pools() -> void:
 func _build_scenery_decor() -> void:
 	var canopy_colors: Array = sc.season.canopy
 	var birch_color: Color = sc.color("birch")
+	var pine_color: Color = sc.color("pine") if sc.season.has("pine") else Color("#2D4D2E")
+	var leaf_color: Color = Color(canopy_colors[0])
 
-	# 1. City buildings in three quadrants behind sidewalks (SE kept clear for camera)
-	_put_prop("buildings/block_0", Vector3(26.0, 0.16, -26.0), -PI * 0.5, Vector3.ONE * 1.05, Color.WHITE, true)
-	_put_prop("buildings/home_1", Vector3(-26.0, 0.16, -26.0), PI, Vector3.ONE * 1.05, Color.WHITE, true)
-	_put_prop("buildings/block_3", Vector3(-26.0, 0.16, 26.0), PI * 0.5, Vector3.ONE * 1.05, Color.WHITE, true)
+	# --- 1. City Buildings (Authentic Russian City Districts in all 4 Quadrants) ---
+	# North-West Quadrant (-X, -Z): Main background skyline facing camera
+	_put_prop("buildings/block_0", Vector3(-20.0, 0.15, -20.0), PI, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
+	_put_prop("buildings/block_2", Vector3(-36.0, 0.15, -18.0), PI * 0.5, Vector3.ONE * 1.0, Color("#B5675A"), true)
+	_put_prop("buildings/block_4", Vector3(-18.0, 0.15, -36.0), 0.0, Vector3.ONE * 1.0, Color("#DDE1EA"), true)
+	_put_prop("buildings/tower_1", Vector3(-35.0, 0.15, -35.0), PI * 0.25, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
+	_put_prop("buildings/tower_0", Vector3(-22.0, 0.15, -48.0), 0.0, Vector3.ONE * 1.25, Color("#E9ECF2"), true)
+	_put_prop("buildings/block_6", Vector3(-38.0, 0.15, -48.0), PI * 0.5, Vector3.ONE * 1.1, Color("#A9B4C2"), true)
+	_put_prop("buildings/home_3", Vector3(-48.0, 0.15, -24.0), PI * 0.5, Vector3.ONE * 1.0, Color("#E8CFA8"), true)
+	_put_prop("buildings/home_0", Vector3(-48.0, 0.15, -38.0), PI, Vector3.ONE * 1.05, Color("#F3E3C3"), true)
 
-	# 2. Bus stop / kiosk on South-East sidewalk
-	_put_prop("street/kiosk_1", Vector3(HALF_ROAD + 4.2, 0.16, 18.0), PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, true)
+	# North-East Quadrant (+X, -Z): Residential & Commercial block
+	_put_prop("buildings/block_1", Vector3(20.0, 0.15, -20.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
+	_put_prop("buildings/block_3", Vector3(36.0, 0.15, -18.0), -PI * 0.5, Vector3.ONE * 1.0, Color("#B5675A"), true)
+	_put_prop("buildings/block_5", Vector3(18.0, 0.15, -36.0), 0.0, Vector3.ONE * 1.0, Color("#B5675A"), true)
+	_put_prop("buildings/tower_2", Vector3(35.0, 0.15, -35.0), -PI * 0.25, Vector3.ONE * 1.1, Color("#DDE1EA"), true)
+	_put_prop("buildings/tower_3", Vector3(22.0, 0.15, -48.0), 0.0, Vector3.ONE * 1.25, Color("#F5F6FA"), true)
+	_put_prop("buildings/block_7", Vector3(38.0, 0.15, -48.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
+	_put_prop("buildings/home_1", Vector3(48.0, 0.15, -24.0), -PI * 0.5, Vector3.ONE * 1.0, Color("#E8CFA8"), true)
+	_put_prop("buildings/home_5", Vector3(48.0, 0.15, -38.0), PI, Vector3.ONE * 1.05, Color("#F3E3C3"), true)
 
-	# 3. Pedestrian guardrail fences along curbs near crosswalks
+	# South-West Quadrant (-X, +Z): Neighborhood block
+	_put_prop("buildings/block_4", Vector3(-20.0, 0.15, 20.0), PI * 0.5, Vector3.ONE * 1.05, Color("#E9ECF2"), true)
+	_put_prop("buildings/block_1", Vector3(-36.0, 0.15, 18.0), PI * 0.5, Vector3.ONE * 1.0, Color("#C6CCD8"), true)
+	_put_prop("buildings/home_2", Vector3(-18.0, 0.15, 36.0), PI, Vector3.ONE * 1.05, Color("#E8CFA8"), true)
+	_put_prop("buildings/tower_0", Vector3(-35.0, 0.15, 35.0), PI * 0.25, Vector3.ONE * 1.1, Color("#A9B4C2"), true)
+	_put_prop("buildings/block_2", Vector3(-22.0, 0.15, 48.0), PI, Vector3.ONE * 1.1, Color("#B5675A"), true)
+	_put_prop("buildings/home_4", Vector3(-38.0, 0.15, 48.0), PI, Vector3.ONE * 1.0, Color("#F5F6FA"), true)
+	_put_prop("buildings/home_0", Vector3(-48.0, 0.15, 24.0), PI * 0.5, Vector3.ONE * 1.05, Color("#F3E3C3"), true)
+
+	# South-East Quadrant (+X, +Z): Foreground quadrant (kept low so crossroads stays 100% visible)
+	_put_prop("buildings/home_4", Vector3(24.0, 0.15, 24.0), -PI * 0.75, Vector3.ONE * 1.0, Color("#F5F6FA"), true)
+	_put_prop("buildings/home_1", Vector3(38.0, 0.15, 20.0), -PI * 0.5, Vector3.ONE * 1.0, Color("#E8CFA8"), true)
+	_put_prop("buildings/home_3", Vector3(20.0, 0.15, 38.0), 0.0, Vector3.ONE * 1.0, Color("#F3E3C3"), true)
+	_put_prop("buildings/home_5", Vector3(36.0, 0.15, 36.0), -PI * 0.25, Vector3.ONE * 1.05, Color("#E8CFA8"), true)
+	_put_prop("buildings/block_0", Vector3(48.0, 0.15, 36.0), -PI * 0.5, Vector3.ONE * 1.0, Color("#E9ECF2"), true)
+	_put_prop("buildings/home_2", Vector3(36.0, 0.15, 48.0), PI, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
+
+	# --- 2. Street Kiosks ---
+	_put_prop("street/kiosk_1", Vector3(HALF_ROAD + 4.0, 0.16, 17.5), PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, true)
+	_put_prop("street/kiosk_0", Vector3(-(HALF_ROAD + 4.0), 0.16, -17.5), -PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, true)
+	_put_prop("street/kiosk_2", Vector3(-17.5, 0.16, HALF_ROAD + 4.0), PI, Vector3.ONE * 0.95, Color.WHITE, true)
+	_put_prop("street/kiosk_1", Vector3(17.5, 0.16, -(HALF_ROAD + 4.0)), 0.0, Vector3.ONE * 0.95, Color.WHITE, true)
+
+	# --- 3. Pedestrian Guardrail Fences along curbs near crosswalks ---
+	# Starts at 13.5m (after zebra ending at 11.5m), keeping crosswalks completely unobstructed!
 	for c in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
-		_put_prop("street/fence_12", Vector3(c.x * (HALF_ROAD + 0.2), 0.16, c.y * 10.0), PI * 0.5 if c.y > 0 else -PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
-		_put_prop("street/fence_12", Vector3(c.x * 10.0, 0.16, c.y * (HALF_ROAD + 0.2)), 0.0 if c.x > 0 else PI, Vector3.ONE * 0.9, Color.WHITE, false)
+		_put_prop("street/fence_14", Vector3(c.x * (HALF_ROAD + 0.25), 0.16, c.y * 14.5), PI * 0.5 if c.y > 0 else -PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
+		_put_prop("street/fence_12", Vector3(c.x * (HALF_ROAD + 0.25), 0.16, c.y * 18.5), PI * 0.5 if c.y > 0 else -PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
+		_put_prop("street/fence_14", Vector3(c.x * 14.5, 0.16, c.y * (HALF_ROAD + 0.25)), 0.0 if c.x > 0 else PI, Vector3.ONE * 0.9, Color.WHITE, false)
+		_put_prop("street/fence_12", Vector3(c.x * 18.5, 0.16, c.y * (HALF_ROAD + 0.25)), 0.0 if c.x > 0 else PI, Vector3.ONE * 0.9, Color.WHITE, false)
 
-	# 4. Street trees and bushes along sidewalks
-	var r_dist := HALF_ROAD + 14.0
-	for angle_deg in [30, 60, 120, 150, 210, 240, 300, 330]:
-		var rad := deg_to_rad(angle_deg)
-		var p := Vector3(cos(rad) * r_dist, 0.16, sin(rad) * r_dist)
-		var prop := "trees/round_0" if (angle_deg % 60 == 0) else "trees/birch_0"
-		var tint: Color = birch_color if prop == "trees/birch_0" else Color(canopy_colors[0])
-		_put_prop(prop, p, rad, Vector3.ONE * 1.1, tint, true)
-
-	for dist in [20.0, 34.0, 46.0]:
+	# --- 4. Trees & Greenery ---
+	for dist in [17.0, 29.0, 41.0]:
 		for sx in [-1, 1]:
-			_put_prop("trees/round_0", Vector3(sx * (HALF_ROAD + 3.8), 0.16, -dist), 0.0, Vector3.ONE * 0.95, Color(canopy_colors[0]), true)
-			_put_prop("trees/birch_0", Vector3(sx * (HALF_ROAD + 3.8), 0.16, dist), 0.0, Vector3.ONE * 0.95, birch_color, true)
+			_put_prop("trees/birch_0", Vector3(sx * (HALF_ROAD + 3.4), 0.16, -dist), 0.0, Vector3.ONE * 0.95, birch_color, true)
+			_put_prop("trees/round_0", Vector3(sx * (HALF_ROAD + 3.4), 0.16, dist), 0.0, Vector3.ONE * 0.95, leaf_color, true)
+		for sz in [-1, 1]:
+			_put_prop("trees/round_0", Vector3(-dist, 0.16, sz * (HALF_ROAD + 3.4)), PI * 0.5, Vector3.ONE * 0.95, leaf_color, true)
+			_put_prop("trees/birch_0", Vector3(dist, 0.16, sz * (HALF_ROAD + 3.4)), -PI * 0.5, Vector3.ONE * 0.95, birch_color, true)
+
+	_put_prop("trees/pine_0", Vector3(-16.0, 0.15, -16.0), 0.3, Vector3.ONE * 1.15, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(16.0, 0.15, -16.0), -0.5, Vector3.ONE * 1.15, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(-16.0, 0.15, 16.0), 0.8, Vector3.ONE * 1.10, pine_color, true)
+	_put_prop("trees/birch_0", Vector3(17.0, 0.15, 24.0), 1.2, Vector3.ONE * 1.05, birch_color, true)
+	_put_prop("trees/round_0", Vector3(24.0, 0.15, 17.0), -0.7, Vector3.ONE * 1.10, leaf_color, true)
+
+	for sx in [-1, 1]:
+		for b_dist in [13.0, 20.0, 27.0, 35.0]:
+			_put_prop("street/bush", Vector3(sx * 11.5, 0.15, b_dist), 0.0, Vector3.ONE * 0.85, leaf_color, false)
+			_put_prop("street/bush", Vector3(sx * 11.5, 0.15, -b_dist), 0.0, Vector3.ONE * 0.85, leaf_color, false)
+			_put_prop("street/bush", Vector3(b_dist, 0.15, sx * 11.5), PI * 0.5, Vector3.ONE * 0.85, leaf_color, false)
+			_put_prop("street/bush", Vector3(-b_dist, 0.15, sx * 11.5), -PI * 0.5, Vector3.ONE * 0.85, leaf_color, false)
 
 	_finish_pools()
 

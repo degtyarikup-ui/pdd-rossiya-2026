@@ -26,8 +26,8 @@ const ICON_HEART_EMPTY := 0xf737
 const ICON_TIMER := 0xf44a
 const ICON_SCHOOL := 0xf016e
 const ICON_GAMEPAD := 0xf01dd
-const ICON_PREV := 0xf572
-const ICON_NEXT := 0xf57b
+const ICON_PREV := 0xf63a
+const ICON_NEXT := 0xf63b
 const ICON_CAMERA := 0xf62c
 const ICON_REFRESH := 0xf00e2
 const ICON_WARNING := 0xf0289
@@ -44,12 +44,13 @@ var _timer_icon: Label
 var _lives_container: HBoxContainer
 var _hearts: Array[Label] = []
 var _mode_btn: Button
+var _training_hud_panel: PanelContainer
+var _training_title: Label
 
 # Training mode controls
-var _training_nav_row: HBoxContainer
+var _training_nav_row: Container
 var _prev_btn: Button
 var _next_btn: Button
-var _cat_chips_row: HBoxContainer
 var _cat_buttons: Dictionary = {}
 
 # Caption card
@@ -209,25 +210,53 @@ func _build_top_bar() -> void:
 		_hearts.append(h)
 		_lives_container.add_child(h)
 
+	# Training HUD title panel (visible in training mode)
+	_training_hud_panel = PanelContainer.new()
+	_training_hud_panel.size_flags_horizontal = SIZE_EXPAND_FILL
+	var th_box := Ui.box(Ui.c("card"), 10)
+	th_box.content_margin_left = 8
+	th_box.content_margin_right = 8
+	th_box.content_margin_top = 4
+	th_box.content_margin_bottom = 4
+	_training_hud_panel.add_theme_stylebox_override("panel", th_box)
+	_training_hud_panel.visible = false
+	_hud_row.add_child(_training_hud_panel)
+
+	var th_content := HBoxContainer.new()
+	th_content.alignment = BoxContainer.ALIGNMENT_CENTER
+	th_content.add_theme_constant_override("separation", 6)
+	_training_hud_panel.add_child(th_content)
+
+	_prev_btn = _chrome_btn(ICON_PREV)
+	_prev_btn.custom_minimum_size = Vector2(32, 32)
+	_prev_btn.pressed.connect(func(): prev_scenario_pressed.emit())
+	th_content.add_child(_prev_btn)
+
+	var school_icon := Ui.icon(ICON_SCHOOL, 16, Ui.c("accent"))
+	th_content.add_child(school_icon)
+
+	_training_title = Ui.label(Ui.t("gameCrossroadsModeTraining"), 14, 700, Ui.c("text"))
+	_training_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_training_title.size_flags_horizontal = SIZE_EXPAND_FILL
+	th_content.add_child(_training_title)
+
+	_next_btn = _chrome_btn(ICON_NEXT)
+	_next_btn.custom_minimum_size = Vector2(32, 32)
+	_next_btn.pressed.connect(func(): next_scenario_pressed.emit())
+	th_content.add_child(_next_btn)
+
 	# Mode toggle button
 	_mode_btn = _chrome_btn(ICON_SCHOOL)
 	_mode_btn.pressed.connect(func(): mode_toggled.emit())
 	_hud_row.add_child(_mode_btn)
 
-	# Training navigation row
-	_training_nav_row = HBoxContainer.new()
-	_training_nav_row.add_theme_constant_override("separation", 8)
+	# Training category navigation row: HFlowContainer so chips wrap and fit on any screen
+	_training_nav_row = HFlowContainer.new()
+	_training_nav_row.size_flags_horizontal = SIZE_EXPAND_FILL
+	_training_nav_row.add_theme_constant_override("h_separation", 6)
+	_training_nav_row.add_theme_constant_override("v_separation", 6)
 	_training_nav_row.visible = false
 	_top_bar.add_child(_training_nav_row)
-
-	_prev_btn = _chrome_btn(ICON_PREV)
-	_prev_btn.pressed.connect(func(): prev_scenario_pressed.emit())
-	_training_nav_row.add_child(_prev_btn)
-
-	_cat_chips_row = HBoxContainer.new()
-	_cat_chips_row.size_flags_horizontal = SIZE_EXPAND_FILL
-	_cat_chips_row.add_theme_constant_override("separation", 6)
-	_training_nav_row.add_child(_cat_chips_row)
 
 	var cats := [
 		{"key": "all", "label": Ui.t("gameCrossroadsCatAll")},
@@ -238,11 +267,7 @@ func _build_top_bar() -> void:
 	for c in cats:
 		var chip := _cat_chip(c.key, c.label)
 		_cat_buttons[c.key] = chip
-		_cat_chips_row.add_child(chip)
-
-	_next_btn = _chrome_btn(ICON_NEXT)
-	_next_btn.pressed.connect(func(): next_scenario_pressed.emit())
-	_training_nav_row.add_child(_next_btn)
+		_training_nav_row.add_child(chip)
 
 	# Caption card
 	_caption_card = PanelContainer.new()
@@ -309,7 +334,10 @@ func _cat_chip(cat_key: String, label_text: String) -> Button:
 	btn.custom_minimum_size = Vector2(0, 32)
 	var active := cat_key == cur_category
 	btn.add_theme_color_override("font_color", Color.WHITE if active else Ui.c("secondary"))
-	btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("accent") if active else Ui.c("card"), 16))
+	var box := Ui.box(Ui.c("accent") if active else Ui.c("card"), 16)
+	box.content_margin_left = 12
+	box.content_margin_right = 12
+	btn.add_theme_stylebox_override("normal", box)
 	btn.pressed.connect(func():
 		cur_category = cat_key
 		_update_cat_chips()
@@ -323,14 +351,24 @@ func _update_cat_chips() -> void:
 		var btn: Button = _cat_buttons[k]
 		var active: bool = str(k) == cur_category
 		btn.add_theme_color_override("font_color", Color.WHITE if active else Ui.c("secondary"))
-		btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("accent") if active else Ui.c("card"), 16))
+		var box := Ui.box(Ui.c("accent") if active else Ui.c("card"), 16)
+		box.content_margin_left = 12
+		box.content_margin_right = 12
+		btn.add_theme_stylebox_override("normal", box)
 
 
 func set_mode(training: bool) -> void:
 	is_training = training
 	_training_nav_row.visible = training
 	_hud.visible = not training
+	if _training_hud_panel != null:
+		_training_hud_panel.visible = training
 	_mode_btn.text = char(ICON_GAMEPAD if training else ICON_SCHOOL)
+
+
+func set_training_scenario_index(current: int, total: int) -> void:
+	if _training_title != null:
+		_training_title.text = "%s • %d/%d" % [Ui.t("gameCrossroadsModeTraining"), current, total]
 
 
 func update_hud(score: int, seconds: int, lives: int, _combo: int) -> void:

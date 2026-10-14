@@ -17,6 +17,8 @@ var state := "waiting"  # "waiting", "driving", "done", "crashed"
 var model_node: Node3D
 var badge_node: Node3D
 var badge_sprite: Sprite3D
+var arrow_sprite: Sprite3D
+var arrow_mat: ShaderMaterial
 var badge_label: Label3D
 var badge_bg: MeshInstance3D
 var trajectory_guide: MeshInstance3D
@@ -31,6 +33,9 @@ var has_siren := false
 
 var blink_timer := 0.0
 var badge_pop := 1.0
+
+static var _maneuver_cache: Dictionary = {}
+static var _maneuver_shader: Shader = null
 
 
 func _init(actor_data: Dictionary) -> void:
@@ -152,7 +157,17 @@ func _build_badge() -> void:
 	# 1. Authentic billboard map-pin sprite matching Three.js scale
 	badge_sprite = Sprite3D.new()
 	badge_sprite.name = "BadgeSprite"
-	var tex := _generate_badge_texture("normal", data.get("maneuver", "straight"), data.get("color", "#317ED4"), data.get("order", 1), has_siren, data.get("trafficLight", null), 0.0)
+	var m_name: String = str(data.get("maneuver", "straight"))
+	var draw_arrow_on_pin := is_pedestrian or m_name == "cross"
+	var tex := _generate_badge_texture(
+		"normal",
+		m_name if draw_arrow_on_pin else "none",
+		data.get("color", "#317ED4"),
+		data.get("order", 1),
+		has_siren,
+		data.get("trafficLight", null),
+		0.0
+	)
 	badge_sprite.texture = tex
 	badge_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	badge_sprite.pixel_size = 0.015
@@ -161,7 +176,30 @@ func _build_badge() -> void:
 	badge_sprite.render_priority = 15
 	badge_node.add_child(badge_sprite)
 
-	# 2. Legacy fallback nodes for backwards compatibility
+	# 2. Fast GPU-rotated billboard maneuver arrow sprite
+	if not draw_arrow_on_pin:
+		arrow_sprite = Sprite3D.new()
+		arrow_sprite.name = "ArrowSprite"
+		arrow_sprite.pixel_size = 0.015
+		arrow_sprite.offset = Vector2(0, 108)
+		arrow_sprite.position = Vector3(0, 0, 0.02)
+		arrow_sprite.no_depth_test = true
+		arrow_sprite.render_priority = 16
+
+		if _maneuver_shader == null:
+			_maneuver_shader = load("res://shaders/badge_arrow.gdshader")
+		arrow_mat = ShaderMaterial.new()
+		arrow_mat.shader = _maneuver_shader
+		arrow_mat.render_priority = 16
+		var a_tex := _get_cached_maneuver_texture(m_name)
+		arrow_sprite.texture = a_tex
+		arrow_mat.set_shader_parameter("texture_albedo", a_tex)
+		arrow_mat.set_shader_parameter("rotation_angle", 0.0)
+		arrow_mat.set_shader_parameter("pivot_offset", Vector2(0.0, 1.98))
+		arrow_sprite.material_override = arrow_mat
+		badge_node.add_child(arrow_sprite)
+
+	# 3. Legacy fallback nodes for backwards compatibility
 	badge_bg = MeshInstance3D.new()
 	var q := QuadMesh.new()
 	q.size = Vector2(0.01, 0.01)
@@ -190,27 +228,33 @@ func _maneuver_symbol(maneuver: String) -> String:
 
 func set_badge_solved(step_num: int) -> void:
 	badge_pop = 0.0
-	badge_sprite.texture = _generate_badge_texture("solved", data.get("maneuver", "straight"), data.get("color", "#317ED4"), step_num, false, null, 0.0)
+	if arrow_sprite != null:
+		arrow_sprite.visible = false
+	badge_sprite.texture = _generate_badge_texture("solved", "none", data.get("color", "#317ED4"), step_num, false, null, 0.0)
 	if badge_label != null: badge_label.text = str(step_num)
 	if badge_bg != null and badge_bg.material_override != null: (badge_bg.material_override as StandardMaterial3D).albedo_color = Color("#2BC280")
 
 
 func set_badge_error() -> void:
 	badge_pop = 0.0
-	badge_sprite.texture = _generate_badge_texture("error", data.get("maneuver", "straight"), data.get("color", "#317ED4"), 1, false, null, 0.0)
+	if arrow_sprite != null:
+		arrow_sprite.visible = false
+	badge_sprite.texture = _generate_badge_texture("error", "none", data.get("color", "#317ED4"), 1, false, null, 0.0)
 	if badge_label != null: badge_label.text = "✗"
 	if badge_bg != null and badge_bg.material_override != null: (badge_bg.material_override as StandardMaterial3D).albedo_color = Color("#ED4621")
 
 
 func set_badge_priority() -> void:
 	badge_pop = 0.0
-	badge_sprite.texture = _generate_badge_texture("priority", data.get("maneuver", "straight"), data.get("color", "#317ED4"), 1, false, null, 0.0)
+	if arrow_sprite != null:
+		arrow_sprite.visible = false
+	badge_sprite.texture = _generate_badge_texture("priority", "none", data.get("color", "#317ED4"), 1, false, null, 0.0)
 	if badge_label != null: badge_label.text = "!"
 	if badge_bg != null and badge_bg.material_override != null: (badge_bg.material_override as StandardMaterial3D).albedo_color = Color("#FFA53C")
 
 
 func update_badge_orientation(cam: Camera3D) -> void:
-	if state != "waiting" or is_pedestrian or badge_sprite == null or cam == null:
+	if state != "waiting" or is_pedestrian or arrow_mat == null or cam == null:
 		return
 	if path_length <= 0.1:
 		return
@@ -222,15 +266,7 @@ func update_badge_orientation(cam: Camera3D) -> void:
 	if d.length_squared() > 1.0:
 		var angle_math := atan2(-d.y, d.x)
 		var arrow_angle := (angle_math - PI * 0.5)
-		badge_sprite.texture = _generate_badge_texture(
-			"normal",
-			data.get("maneuver", "straight"),
-			data.get("color", "#317ED4"),
-			data.get("order", 1),
-			has_siren,
-			data.get("trafficLight", null),
-			arrow_angle
-		)
+		arrow_mat.set_shader_parameter("rotation_angle", arrow_angle)
 
 
 # --- Trajectory Generation ---
@@ -479,6 +515,8 @@ func start_driving() -> void:
 	drive_progress = 0.0
 	if trajectory_guide != null:
 		trajectory_guide.visible = false
+	if arrow_sprite != null:
+		arrow_sprite.visible = false
 
 
 func _process(delta: float) -> void:
@@ -571,6 +609,15 @@ func _process_waiting(delta: float) -> void:
 
 # --- Authentic 2D Vector Pin Badge Generator ---
 
+static func _get_cached_maneuver_texture(maneuver: String) -> ImageTexture:
+	if not _maneuver_cache.has(maneuver):
+		var img := Image.create(256, 256, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		_draw_maneuver(img, maneuver, Color("#101828"), 0.0)
+		_maneuver_cache[maneuver] = ImageTexture.create_from_image(img)
+	return _maneuver_cache[maneuver]
+
+
 static func _generate_badge_texture(status: String, maneuver: String, color_hex: String, step_num: int, has_siren: bool, traffic_light, arrow_angle: float = 0.0) -> ImageTexture:
 	var img := Image.create(256, 256, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
@@ -599,9 +646,9 @@ static func _generate_badge_texture(status: String, maneuver: String, color_hex:
 		ink_color = Color.WHITE
 
 	# Render pin mask: filled white pin, bottom colored arc for vehicle paint
-	for y in range(256):
+	for y in range(12, 242):
 		var yf := float(y)
-		for x in range(256):
+		for x in range(35, 222):
 			var xf := float(x)
 			var dx := xf - cx
 			var dy := yf - cy
@@ -627,7 +674,8 @@ static func _generate_badge_texture(status: String, maneuver: String, color_hex:
 
 	# Render icon contents
 	if status == "normal":
-		_draw_maneuver(img, maneuver, ink_color, arrow_angle)
+		if maneuver != "none" and maneuver != "":
+			_draw_maneuver(img, maneuver, ink_color, arrow_angle)
 		if has_siren:
 			_draw_siren_dot(img)
 		if traffic_light is Dictionary:

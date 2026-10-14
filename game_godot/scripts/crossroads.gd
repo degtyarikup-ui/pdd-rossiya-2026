@@ -53,6 +53,9 @@ var season_name := "summer"
 var cam_yaw := 0.93607
 var cam_pitch := -0.8143
 var cam_zoom := 1.0
+var _target_cam_yaw := 0.93607
+var _target_cam_pitch := -0.8143
+var _target_cam_zoom := 1.0
 const ZOOM_MIN := 0.65
 const ZOOM_MAX := 2.2
 const HALF_ROAD := 6.0
@@ -132,37 +135,37 @@ func _setup_environment() -> void:
 	sun.name = "Sun"
 	sun.rotation_degrees = Vector3(-62, 35, 0)
 	sun.light_color = Color("#FFF8EC")
-	sun.light_energy = 0.90
+	sun.light_energy = 0.80
 	sun.shadow_enabled = true
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-	sun.directional_shadow_max_distance = 64.0
-	sun.shadow_blur = 1.4
+	sun.directional_shadow_max_distance = 56.0
+	sun.shadow_blur = 1.3
+	sun.shadow_bias = 0.03
 	add_child(sun)
 
 	env = WorldEnvironment.new()
 	var e := Environment.new()
 	var sky := Sky.new()
 	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color("#2A66A2")
-	sky_mat.sky_horizon_color = Color("#82A8CC")
-	sky_mat.ground_horizon_color = Color("#82A8CC")
-	sky_mat.ground_bottom_color = Color("#405438")
+	sky_mat.sky_top_color = Color("#225B96")
+	sky_mat.sky_horizon_color = Color("#78A2CA")
+	sky_mat.ground_horizon_color = Color("#78A2CA")
+	sky_mat.ground_bottom_color = Color("#384C32")
 	sky.sky_material = sky_mat
 	e.sky = sky
 	e.background_mode = Environment.BG_SKY
 
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e.ambient_light_color = Color("#8BB2D8").lerp(Color.WHITE, 0.45)
-	e.ambient_light_energy = 0.65
+	e.ambient_light_color = Color("#8BB2D8").lerp(Color.WHITE, 0.40)
+	e.ambient_light_energy = 0.45
 
 	e.fog_enabled = true
 	e.fog_mode = Environment.FOG_MODE_DEPTH
 	e.fog_light_color = Color("#82A8CC")
-	e.fog_depth_begin = 90.0
-	e.fog_depth_end = 220.0
+	e.fog_depth_begin = 95.0
+	e.fog_depth_end = 240.0
 
-	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	e.tonemap_white = 1.2
+	e.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	env.environment = e
 	add_child(env)
 
@@ -391,6 +394,8 @@ func _load_current_scenario() -> void:
 
 	ui.update_hud(score, int(seconds_left), lives, combo)
 	ui.update_caption(sc_title, sc_sub, cur_step, active_actors.size(), is_hard)
+	if is_training:
+		ui.set_training_scenario_index(cur_scenario_idx + 1, scenario_order.size())
 	fit_camera_to_scenario()
 
 
@@ -403,9 +408,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
-			_set_zoom(cam_zoom - 0.08)
+			_set_zoom(_target_cam_zoom - 0.08)
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
-			_set_zoom(cam_zoom + 0.08)
+			_set_zoom(_target_cam_zoom + 0.08)
 		elif mb.button_index == MOUSE_BUTTON_LEFT:
 			if mb.pressed:
 				_drag_start = mb.position
@@ -420,9 +425,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		if mm.position.distance_to(_drag_start) > 8.0:
 			_is_dragging = true
 		if _is_dragging:
-			cam_yaw -= mm.relative.x * 0.006
-			cam_pitch = clampf(cam_pitch - mm.relative.y * 0.005, -1.25, -0.28)
-			_update_camera()
+			_target_cam_yaw -= mm.relative.x * 0.005
+			_target_cam_pitch = clampf(_target_cam_pitch - mm.relative.y * 0.004, -1.25, -0.28)
 
 	elif event is InputEventScreenTouch:
 		var st := event as InputEventScreenTouch
@@ -432,7 +436,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if _touches.size() == 2:
 				var t_keys: Array = _touches.keys()
 				_pinch_span = _touches[t_keys[0]].distance_to(_touches[t_keys[1]])
-				_pinch_zoom = cam_zoom
+				_pinch_zoom = _target_cam_zoom
 		else:
 			var start: Vector2 = _touch_start_pos.get(st.index, st.position)
 			if _touches.size() == 1 and st.position.distance_to(start) < 14.0:
@@ -449,14 +453,22 @@ func _unhandled_input(event: InputEvent) -> void:
 			if _pinch_span > 10.0:
 				_set_zoom(_pinch_zoom * (_pinch_span / maxf(span, 1.0)))
 		elif _touches.size() == 1:
-			cam_yaw -= sd.relative.x * 0.006
-			cam_pitch = clampf(cam_pitch - sd.relative.y * 0.005, -1.25, -0.28)
-			_update_camera()
+			_target_cam_yaw -= sd.relative.x * 0.005
+			_target_cam_pitch = clampf(_target_cam_pitch - sd.relative.y * 0.004, -1.25, -0.28)
 
+
+var _last_tap_pos := Vector2(-999, -999)
+var _last_tap_time := -999.0
 
 func _handle_screen_tap(screen_pos: Vector2) -> void:
 	if is_game_over or is_resolving or active_actors.is_empty():
 		return
+
+	var now := float(Time.get_ticks_msec())
+	if now - _last_tap_time < 140.0 and screen_pos.distance_to(_last_tap_pos) < 25.0:
+		return
+	_last_tap_time = now
+	_last_tap_pos = screen_pos
 
 	var chosen: CrossroadsActor = _pick_actor(screen_pos)
 	if chosen == null or chosen.state != "waiting":
@@ -482,7 +494,15 @@ func _pick_actor(screen_pos: Vector2) -> CrossroadsActor:
 		]
 		if actor.badge_node != null:
 			probe_pts.append(actor.badge_node.global_position)
-			probe_pts.append(actor.badge_node.global_position + Vector3(0, 1.6, 0))
+			probe_pts.append(actor.badge_node.global_position + Vector3(0, 1.62, 0))
+			probe_pts.append(actor.badge_node.global_position + Vector3(0, 2.04, 0))
+		if actor.badge_sprite != null:
+			probe_pts.append(actor.badge_sprite.global_position)
+		if actor.arrow_sprite != null:
+			probe_pts.append(actor.arrow_sprite.global_position)
+		if actor.path_curve != null and actor.path_length > 0.1:
+			for f in [0.05, 0.15, 0.25, 0.35, 0.45]:
+				probe_pts.append(actor.path_curve.sample_baked(f * actor.path_length))
 
 		for pt in probe_pts:
 			var p := camera.unproject_position(pt)
@@ -648,7 +668,10 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 	var duration := 0.65
 	var elapsed := 0.0
 	while elapsed < duration:
-		var dt: float = await get_tree().process_frame
+		await get_tree().process_frame
+		var dt := get_process_delta_time()
+		if dt <= 0.0:
+			dt = 1.0 / 60.0
 		elapsed += dt
 		var progress := minf(1.0, elapsed / duration)
 		var ease_prog := smoothstep(0.0, 1.0, progress)
@@ -833,8 +856,22 @@ func _process(delta: float) -> void:
 			seconds_left = 0
 			_end_game()
 
+	var cam_changed := false
+	if absf(cam_yaw - _target_cam_yaw) > 0.0001:
+		cam_yaw = lerp_angle(cam_yaw, _target_cam_yaw, minf(1.0, 16.0 * delta))
+		cam_changed = true
+	if absf(cam_pitch - _target_cam_pitch) > 0.0001:
+		cam_pitch = lerpf(cam_pitch, _target_cam_pitch, minf(1.0, 16.0 * delta))
+		cam_changed = true
+	if absf(cam_zoom - _target_cam_zoom) > 0.0001:
+		cam_zoom = lerpf(cam_zoom, _target_cam_zoom, minf(1.0, 14.0 * delta))
+		cam_changed = true
+
 	if cam_shake > 0:
 		cam_shake = maxf(0, cam_shake - delta * 2.0)
+		cam_changed = true
+
+	if cam_changed:
 		_update_camera()
 
 	if auto_play and not is_resolving and not is_game_over and not active_actors.is_empty():
@@ -894,14 +931,16 @@ func _on_exit_pressed() -> void:
 # --- Camera Updates ---
 
 func _set_zoom(z: float) -> void:
-	cam_zoom = clampf(z, ZOOM_MIN, ZOOM_MAX)
-	_update_camera()
+	_target_cam_zoom = clampf(z, ZOOM_MIN, ZOOM_MAX)
 
 
 func _reset_camera() -> void:
 	cam_yaw = 0.93607
 	cam_pitch = -0.8143
 	cam_zoom = 1.0
+	_target_cam_yaw = cam_yaw
+	_target_cam_pitch = cam_pitch
+	_target_cam_zoom = cam_zoom
 	fit_camera_to_scenario()
 
 
@@ -961,6 +1000,9 @@ func fit_camera_to_scenario() -> void:
 				lo = mid
 
 	base_cam_dist = hi
+	_target_cam_yaw = cam_yaw
+	_target_cam_pitch = cam_pitch
+	_target_cam_zoom = cam_zoom
 	_update_camera()
 
 
