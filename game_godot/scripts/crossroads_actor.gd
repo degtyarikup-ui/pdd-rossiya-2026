@@ -1,6 +1,6 @@
 ## Actor (vehicle or pedestrian) on the Crossroads intersection.
-## Handles authentic 3D model instantiation, maneuver badge,
-## Bezier trajectory generation, and driving/crash animations.
+## Handles authentic 3D model instantiation, pin maneuver badge,
+## road trajectory guide ribbons, wheel rotation, turn signals, and animations.
 class_name CrossroadsActor
 extends Node3D
 
@@ -16,8 +16,10 @@ var state := "waiting"  # "waiting", "driving", "done", "crashed"
 
 var model_node: Node3D
 var badge_node: Node3D
+var badge_sprite: Sprite3D
 var badge_label: Label3D
 var badge_bg: MeshInstance3D
+var trajectory_guide: MeshInstance3D
 
 var path_curve: Curve3D
 var path_length := 0.0
@@ -27,8 +29,8 @@ var is_pedestrian := false
 var is_tram := false
 var has_siren := false
 
-var hazard_blinking := false
 var blink_timer := 0.0
+var badge_pop := 1.0
 
 
 func _init(actor_data: Dictionary) -> void:
@@ -41,6 +43,7 @@ func _init(actor_data: Dictionary) -> void:
 	_build_model()
 	_place_at_start()
 	_build_trajectory()
+	_build_trajectory_guide()
 	_build_badge()
 
 
@@ -131,38 +134,42 @@ func _pedestrian_end(side_name: String) -> Vector3:
 	return Vector3(0, 0.16, 10.0)
 
 
-# --- Maneuver Badge ---
+# --- Authentic Maneuver Badge ---
 
 func _build_badge() -> void:
 	badge_node = Node3D.new()
 	badge_node.name = "Badge"
 
-	var h := 1.9 if is_pedestrian else (3.2 if (is_tram or data.get("type", "") in ["bus", "truck"]) else 2.3)
+	var h := 1.9 if is_pedestrian else (3.4 if is_tram else (3.0 if data.get("type", "") in ["bus", "truck"] else 2.25))
 	badge_node.position = Vector3(0, h, 0)
 	add_child(badge_node)
 
-	# 1. Background disc
+	# 1. Authentic billboard map-pin sprite
+	badge_sprite = Sprite3D.new()
+	badge_sprite.name = "BadgeSprite"
+	var tex := _generate_badge_texture("normal", data.get("maneuver", "straight"), data.get("color", "#317ED4"), data.get("order", 1), has_siren, data.get("trafficLight", null))
+	badge_sprite.texture = tex
+	badge_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	badge_sprite.pixel_size = 0.0075
+	badge_sprite.offset = Vector2(0, 110)
+	badge_sprite.no_depth_test = true
+	badge_sprite.render_priority = 15
+	badge_node.add_child(badge_sprite)
+
+	# 2. Legacy fallback nodes for backwards compatibility
 	badge_bg = MeshInstance3D.new()
 	var q := QuadMesh.new()
-	q.size = Vector2(1.3, 1.3)
+	q.size = Vector2(0.01, 0.01)
 	badge_bg.mesh = q
 	var bm := StandardMaterial3D.new()
-	bm.albedo_color = Color("#0574F8")  # App accent blue
-	bm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	bm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	bm.cull_mode = BaseMaterial3D.CULL_DISABLED
+	bm.albedo_color = Color("#0574F8")
 	badge_bg.material_override = bm
+	badge_bg.visible = false
 	badge_node.add_child(badge_bg)
 
-	# 2. Maneuver arrow label
 	badge_label = Label3D.new()
-	badge_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	badge_label.font = Ui.font(800)
-	badge_label.font_size = 48
-	badge_label.outline_size = 8
-	badge_label.outline_modulate = Color(0, 0, 0, 0.7)
 	badge_label.text = _maneuver_symbol(data.get("maneuver", "straight"))
-	badge_label.position.z = 0.02
+	badge_label.visible = false
 	badge_node.add_child(badge_label)
 
 
@@ -177,24 +184,24 @@ func _maneuver_symbol(maneuver: String) -> String:
 
 
 func set_badge_solved(step_num: int) -> void:
-	badge_label.text = str(step_num)
-	var bm := badge_bg.material_override as StandardMaterial3D
-	if bm != null:
-		bm.albedo_color = Color("#2BC280")  # Green success
+	badge_pop = 0.0
+	badge_sprite.texture = _generate_badge_texture("solved", data.get("maneuver", "straight"), data.get("color", "#317ED4"), step_num, false, null)
+	if badge_label != null: badge_label.text = str(step_num)
+	if badge_bg != null and badge_bg.material_override != null: (badge_bg.material_override as StandardMaterial3D).albedo_color = Color("#2BC280")
 
 
 func set_badge_error() -> void:
-	badge_label.text = "✗"
-	var bm := badge_bg.material_override as StandardMaterial3D
-	if bm != null:
-		bm.albedo_color = Color("#ED4621")  # Red crash error
+	badge_pop = 0.0
+	badge_sprite.texture = _generate_badge_texture("error", data.get("maneuver", "straight"), data.get("color", "#317ED4"), 1, false, null)
+	if badge_label != null: badge_label.text = "✗"
+	if badge_bg != null and badge_bg.material_override != null: (badge_bg.material_override as StandardMaterial3D).albedo_color = Color("#ED4621")
 
 
 func set_badge_priority() -> void:
-	badge_label.text = "!"
-	var bm := badge_bg.material_override as StandardMaterial3D
-	if bm != null:
-		bm.albedo_color = Color("#FFA53C")  # Gold priority warning
+	badge_pop = 0.0
+	badge_sprite.texture = _generate_badge_texture("priority", data.get("maneuver", "straight"), data.get("color", "#317ED4"), 1, false, null)
+	if badge_label != null: badge_label.text = "!"
+	if badge_bg != null and badge_bg.material_override != null: (badge_bg.material_override as StandardMaterial3D).albedo_color = Color("#FFA53C")
 
 
 # --- Trajectory Generation ---
@@ -328,14 +335,120 @@ func _build_trajectory() -> void:
 	path_length = path_curve.get_baked_length()
 
 
+# --- 3D Road Trajectory Guide Ribbon ---
+
+func _build_trajectory_guide() -> void:
+	var color_str: String = data.get("color", "#317ED4")
+	var paint := Color(color_str)
+	var maneuver: String = data.get("maneuver", "straight")
+
+	trajectory_guide = MeshInstance3D.new()
+	trajectory_guide.name = "TrajectoryGuide"
+	trajectory_guide.top_level = true
+
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(paint.r, paint.g, paint.b, 0.65)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	if is_pedestrian or maneuver == "cross":
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var p_start := position
+		var p_end := _pedestrian_end(data.get("side", "south"))
+		for t in [0.20, 0.40, 0.60, 0.80]:
+			var pt := p_start.lerp(p_end, t)
+			_add_flat_quad(st, pt, Vector2(0.40, 0.40))
+		trajectory_guide.mesh = st.commit()
+		trajectory_guide.material_override = mat
+		add_child(trajectory_guide)
+		return
+
+	var t_min := 0.05
+	var t_max := 0.38 if maneuver == "straight" else 0.46
+	var N := 14
+	var half_w := 0.42 if is_tram else 0.30
+
+	var pts: Array[Vector3] = []
+	for i in range(N + 1):
+		var frac := t_min + (t_max - t_min) * (float(i) / float(N))
+		var offset := frac * path_length
+		pts.append(path_curve.sample_baked(offset))
+
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	# Build ribbon strips
+	for i in range(N):
+		var p0 := pts[i]
+		var p1 := pts[i + 1]
+		var dir0 := (p1 - p0).normalized()
+		var perp0 := Vector3(-dir0.z, 0, dir0.x).normalized()
+
+		var l0 := p0 + perp0 * half_w
+		var r0 := p0 - perp0 * half_w
+		var l1 := p1 + perp0 * half_w
+		var r1 := p1 - perp0 * half_w
+		l0.y = 0.035; r0.y = 0.035; l1.y = 0.035; r1.y = 0.035
+
+		st.add_vertex(l0)
+		st.add_vertex(r0)
+		st.add_vertex(l1)
+
+		st.add_vertex(r0)
+		st.add_vertex(r1)
+		st.add_vertex(l1)
+
+	# Arrow head at the end
+	var last_p := pts[-1]
+	var prev_p := pts[-2]
+	var a_dir := (last_p - prev_p).normalized()
+	var a_perp := Vector3(-a_dir.z, 0, a_dir.x).normalized()
+	var tip := last_p + a_dir * 1.3
+	var fin_l := last_p + a_perp * (half_w * 2.2)
+	var fin_r := last_p - a_perp * (half_w * 2.2)
+	tip.y = 0.036; fin_l.y = 0.036; fin_r.y = 0.036
+
+	st.add_vertex(tip)
+	st.add_vertex(fin_r)
+	st.add_vertex(fin_l)
+
+	trajectory_guide.mesh = st.commit()
+	trajectory_guide.material_override = mat
+	add_child(trajectory_guide)
+
+
+static func _add_flat_quad(st: SurfaceTool, center: Vector3, size: Vector2) -> void:
+	var hx := size.x * 0.5
+	var hz := size.y * 0.5
+	var y := 0.035
+	var p0 := center + Vector3(-hx, 0, -hz); p0.y = y
+	var p1 := center + Vector3(hx, 0, -hz); p1.y = y
+	var p2 := center + Vector3(hx, 0, hz); p2.y = y
+	var p3 := center + Vector3(-hx, 0, hz); p3.y = y
+	st.add_vertex(p0)
+	st.add_vertex(p1)
+	st.add_vertex(p2)
+	st.add_vertex(p0)
+	st.add_vertex(p2)
+	st.add_vertex(p3)
+
+
 # --- Drive Process ---
 
 func start_driving() -> void:
 	state = "driving"
 	drive_progress = 0.0
+	if trajectory_guide != null:
+		trajectory_guide.visible = false
 
 
 func _process(delta: float) -> void:
+	blink_timer += delta
+	if badge_pop < 1.0:
+		badge_pop = minf(1.0, badge_pop + delta * 4.0)
+
 	if state == "driving":
 		_process_drive(delta)
 	elif state == "crashed":
@@ -370,16 +483,311 @@ func _process_drive(delta: float) -> void:
 		var dir := (next_pos - new_pos).normalized()
 		rotation.y = atan2(dir.x, dir.z) + PI
 
+	# Animate wheels and turn signals
+	if model_node is NpcVehicle:
+		model_node._distance += dist_step
+		var mat: ShaderMaterial = model_node._material
+		if mat != null:
+			mat.set_shader_parameter("wheel_distance", model_node._distance)
+			mat.set_shader_parameter("braking", false)
+			var blink_on := (int(blink_timer * 4.0) % 2 == 0) and drive_progress < 0.72
+			var m: String = data.get("maneuver", "")
+			if m in ["left", "uTurn"]:
+				mat.set_shader_parameter("left_on", blink_on)
+			elif m == "right":
+				mat.set_shader_parameter("right_on", blink_on)
+
 
 func _process_crashed(delta: float) -> void:
-	blink_timer += delta
-	var on := fmod(blink_timer, 0.35) < 0.18
-	if badge_label != null:
-		badge_label.modulate.a = 1.0 if on else 0.4
+	var hazard_on := int(blink_timer * 6.0) % 2 == 0
+	if model_node is NpcVehicle:
+		var mat: ShaderMaterial = model_node._material
+		if mat != null:
+			mat.set_shader_parameter("left_on", hazard_on)
+			mat.set_shader_parameter("right_on", hazard_on)
+			mat.set_shader_parameter("braking", true)
+	if badge_sprite != null:
+		badge_sprite.modulate.a = 1.0 if hazard_on else 0.5
 
 
 func _process_waiting(delta: float) -> void:
-	blink_timer += delta
-	# Subtle bobbing animation on the badge
-	if badge_node != null:
-		badge_node.position.y = (1.9 if is_pedestrian else 2.3) + sin(blink_timer * 3.0) * 0.08
+	var order_val := float(data.get("order", 1))
+	var h_base := 1.9 if is_pedestrian else (3.4 if is_tram else (3.0 if data.get("type", "") in ["bus", "truck"] else 2.25))
+	badge_node.position.y = h_base + sin(blink_timer * 2.6 + order_val) * 0.08
+	var k: float = 1.0 + sin(blink_timer * 4.0 + order_val) * 0.035
+	if badge_pop < 1.0:
+		k *= 1.0 + sin(badge_pop * PI) * 0.25
+	if badge_sprite != null:
+		badge_sprite.scale = Vector3.ONE * k
+
+	if model_node is NpcVehicle:
+		var mat: ShaderMaterial = model_node._material
+		if mat != null:
+			var blink_on := int(blink_timer * 4.0) % 2 == 0
+			var m: String = data.get("maneuver", "")
+			if m in ["left", "uTurn"]:
+				mat.set_shader_parameter("left_on", blink_on)
+			elif m == "right":
+				mat.set_shader_parameter("right_on", blink_on)
+
+
+# --- Authentic 2D Vector Pin Badge Generator ---
+
+static func _generate_badge_texture(status: String, maneuver: String, color_hex: String, step_num: int, has_siren: bool, traffic_light) -> ImageTexture:
+	var img := Image.create(256, 256, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	var cx := 128.0
+	var cy := 104.0
+	var r := 88.0
+	var tail_tip := Vector2(128, 236)
+	var sin_t := sin(0.38 * PI)
+	var cos_t := cos(0.38 * PI)
+	var y_tan := cy + r * sin_t
+	var x_tan := r * cos_t
+
+	var bg_color := Color.WHITE
+	var paint_color := Color(color_hex)
+	var border_color := Color("#0F172A")
+	var ink_color := Color("#101828")
+
+	if status == "solved":
+		bg_color = Color("#2BC280")
+		border_color = Color("#1E8256")
+		ink_color = Color.WHITE
+	elif status == "error":
+		bg_color = Color("#ED4621")
+		border_color = Color("#9E240B")
+		ink_color = Color.WHITE
+	elif status == "priority":
+		bg_color = Color("#FFA53C")
+		border_color = Color("#B8660E")
+		ink_color = Color.WHITE
+
+	# Render pin mask
+	for y in range(256):
+		var yf := float(y)
+		for x in range(256):
+			var xf := float(x)
+			var dx := xf - cx
+			var dy := yf - cy
+			var dist := sqrt(dx * dx + dy * dy)
+			var in_pin := false
+			var in_inner := false
+
+			if dist <= r:
+				in_pin = true
+				if dist <= r - 3.5:
+					in_inner = true
+			elif yf >= y_tan and yf <= tail_tip.y:
+				var half_w: float = (tail_tip.y - yf) / (tail_tip.y - y_tan) * x_tan
+				if absf(dx) <= half_w:
+					in_pin = true
+					if absf(dx) <= maxf(0.0, half_w - 3.5) and yf < tail_tip.y - 4.0:
+						in_inner = true
+
+			if in_pin:
+				if not in_inner:
+					img.set_pixel(x, y, border_color)
+				else:
+					if status == "normal":
+						if yf >= 148.0:
+							img.set_pixel(x, y, paint_color)
+						elif yf >= 146.0:
+							img.set_pixel(x, y, Color("#CBD5E1"))
+						else:
+							img.set_pixel(x, y, bg_color)
+					else:
+						img.set_pixel(x, y, bg_color)
+
+	# Render icon contents
+	if status == "normal":
+		_draw_maneuver(img, maneuver, ink_color)
+		if has_siren:
+			_draw_siren_dot(img)
+		if traffic_light is Dictionary:
+			_draw_traffic_light_badge(img, traffic_light)
+	elif status == "solved":
+		_draw_step_number(img, step_num, ink_color)
+	elif status == "error":
+		_draw_cross(img, ink_color)
+	elif status == "priority":
+		_draw_exclamation(img, ink_color)
+
+	return ImageTexture.create_from_image(img)
+
+
+static func _draw_thick_seg(img: Image, p0: Vector2, p1: Vector2, rad: float, col: Color) -> void:
+	var min_x := clampi(int(minf(p0.x, p1.x) - rad - 1.0), 0, 255)
+	var max_x := clampi(int(maxf(p0.x, p1.x) + rad + 1.0), 0, 255)
+	var min_y := clampi(int(minf(p0.y, p1.y) - rad - 1.0), 0, 255)
+	var max_y := clampi(int(maxf(p0.y, p1.y) + rad + 1.0), 0, 255)
+
+	var v := p1 - p0
+	var l_sq := v.length_squared()
+
+	for y in range(min_y, max_y + 1):
+		var yf := float(y)
+		for x in range(min_x, max_x + 1):
+			var p := Vector2(float(x), yf)
+			var t := clampf((p - p0).dot(v) / l_sq, 0.0, 1.0) if l_sq > 0.0001 else 0.0
+			var d := p.distance_to(p0 + v * t)
+			if d <= rad:
+				img.set_pixel(x, y, col)
+
+
+static func _fill_tri(img: Image, p0: Vector2, p1: Vector2, p2: Vector2, col: Color) -> void:
+	var min_x := clampi(int(minf(p0.x, minf(p1.x, p2.x))), 0, 255)
+	var max_x := clampi(int(maxf(p0.x, maxf(p1.x, p2.x))), 0, 255)
+	var min_y := clampi(int(minf(p0.y, minf(p1.y, p2.y))), 0, 255)
+	var max_y := clampi(int(maxf(p0.y, maxf(p1.y, p2.y))), 0, 255)
+
+	var denom := (p1.y - p2.y) * (p0.x - p2.x) + (p2.x - p1.x) * (p0.y - p2.y)
+	if absf(denom) < 0.0001: return
+
+	for y in range(min_y, max_y + 1):
+		var yf := float(y)
+		for x in range(min_x, max_x + 1):
+			var xf := float(x)
+			var a := ((p1.y - p2.y) * (xf - p2.x) + (p2.x - p1.x) * (yf - p2.y)) / denom
+			var b := ((p2.y - p0.y) * (xf - p2.x) + (p0.x - p2.x) * (yf - p2.y)) / denom
+			var c := 1.0 - a - b
+			if a >= 0.0 and b >= 0.0 and c >= 0.0:
+				img.set_pixel(x, y, col)
+
+
+static func _draw_siren_dot(img: Image) -> void:
+	var sx := 194.0
+	var sy := 42.0
+	var sr := 16.0
+	for y in range(int(sy - sr - 2), int(sy + sr + 3)):
+		for x in range(int(sx - sr - 2), int(sx + sr + 3)):
+			var d := sqrt(pow(x - sx, 2) + pow(y - sy, 2))
+			if d <= sr:
+				img.set_pixel(x, y, Color("#ED4621"))
+			elif d <= sr + 2.5:
+				img.set_pixel(x, y, Color.WHITE)
+
+
+static func _draw_traffic_light_badge(img: Image, tl: Dictionary) -> void:
+	var is_red: bool = tl.get("state", "") == "red"
+	var is_green: bool = tl.get("state", "") == "green"
+	var has_arrow: bool = tl.get("arrowActive", false) and str(tl.get("arrow", "")) != ""
+
+	var x0 := 36
+	var y0 := 24
+	var w := 68 if has_arrow and is_red else 40
+	var h := 34
+	var r := 17.0
+	for y in range(y0, y0 + h):
+		for x in range(x0, x0 + w):
+			var in_pill := false
+			if x < x0 + r:
+				in_pill = sqrt(pow(x - (x0 + r), 2) + pow(y - (y0 + r), 2)) <= r
+			elif x > x0 + w - r:
+				in_pill = sqrt(pow(x - (x0 + w - r), 2) + pow(y - (y0 + r), 2)) <= r
+			else:
+				in_pill = true
+			if in_pill:
+				img.set_pixel(x, y, Color("#111827"))
+
+	# Light circle
+	var lx := float(x0 + 17)
+	var ly := float(y0 + 17)
+	var lr := 10.0
+	for y in range(int(ly - lr), int(ly + lr + 1)):
+		for x in range(int(lx - lr), int(lx + lr + 1)):
+			if sqrt(pow(x - lx, 2) + pow(y - ly, 2)) <= lr:
+				img.set_pixel(x, y, Color("#EF4444") if is_red else (Color("#2BC280") if is_green else Color("#F59E0B")))
+
+	# Green arrow
+	if has_arrow and is_red:
+		var ax := float(x0 + 48)
+		var ay := float(y0 + 17)
+		var arrow_dir: String = str(tl.get("arrow", "right"))
+		_draw_thick_seg(img, Vector2(ax - 9, ay), Vector2(ax + 9, ay), 2.5, Color("#2BC280"))
+		if arrow_dir == "right":
+			_fill_tri(img, Vector2(ax + 11, ay), Vector2(ax + 3, ay - 6), Vector2(ax + 3, ay + 6), Color("#2BC280"))
+		else:
+			_fill_tri(img, Vector2(ax - 11, ay), Vector2(ax - 3, ay - 6), Vector2(ax - 3, ay + 6), Color("#2BC280"))
+
+
+static func _draw_maneuver(img: Image, maneuver: String, col: Color) -> void:
+	match maneuver:
+		"straight":
+			_draw_thick_seg(img, Vector2(128, 142), Vector2(128, 80), 8.5, col)
+			_fill_tri(img, Vector2(128, 46), Vector2(100, 80), Vector2(156, 80), col)
+		"right":
+			var pts := [Vector2(110, 142), Vector2(110, 110), Vector2(114, 98), Vector2(124, 88), Vector2(136, 84), Vector2(148, 84)]
+			for i in range(pts.size() - 1):
+				_draw_thick_seg(img, pts[i], pts[i+1], 8.0, col)
+			_fill_tri(img, Vector2(178, 84), Vector2(146, 58), Vector2(146, 110), col)
+		"left":
+			var pts := [Vector2(146, 142), Vector2(146, 110), Vector2(142, 98), Vector2(132, 88), Vector2(120, 84), Vector2(108, 84)]
+			for i in range(pts.size() - 1):
+				_draw_thick_seg(img, pts[i], pts[i+1], 8.0, col)
+			_fill_tri(img, Vector2(78, 84), Vector2(110, 58), Vector2(110, 110), col)
+		"uTurn":
+			var pts := [
+				Vector2(148, 142), Vector2(148, 98), Vector2(144, 84),
+				Vector2(136, 74), Vector2(128, 72), Vector2(120, 74),
+				Vector2(112, 84), Vector2(108, 98), Vector2(108, 118)
+			]
+			for i in range(pts.size() - 1):
+				_draw_thick_seg(img, pts[i], pts[i+1], 8.0, col)
+			_fill_tri(img, Vector2(108, 150), Vector2(84, 118), Vector2(132, 118), col)
+		"cross":
+			var hx := 128.0; var hy := 68.0; var hr := 13.0
+			for y in range(int(hy - hr), int(hy + hr + 1)):
+				for x in range(int(hx - hr), int(hx + hr + 1)):
+					if sqrt(pow(x - hx, 2) + pow(y - hy, 2)) <= hr:
+						img.set_pixel(x, y, col)
+			_draw_thick_seg(img, Vector2(128, 82), Vector2(128, 112), 6.5, col)
+			_draw_thick_seg(img, Vector2(128, 112), Vector2(112, 144), 5.5, col)
+			_draw_thick_seg(img, Vector2(128, 112), Vector2(144, 144), 5.5, col)
+			_draw_thick_seg(img, Vector2(112, 104), Vector2(128, 90), 4.5, col)
+			_draw_thick_seg(img, Vector2(128, 90), Vector2(144, 104), 4.5, col)
+
+
+static func _draw_cross(img: Image, col: Color) -> void:
+	_draw_thick_seg(img, Vector2(94, 70), Vector2(162, 138), 7.5, col)
+	_draw_thick_seg(img, Vector2(162, 70), Vector2(94, 138), 7.5, col)
+
+
+static func _draw_exclamation(img: Image, col: Color) -> void:
+	_draw_thick_seg(img, Vector2(128, 64), Vector2(128, 112), 8.0, col)
+	var dy := 134.0; var dx := 128.0; var dr := 9.0
+	for y in range(int(dy - dr), int(dy + dr + 1)):
+		for x in range(int(dx - dr), int(dx + dr + 1)):
+			if sqrt(pow(x - dx, 2) + pow(y - dy, 2)) <= dr:
+				img.set_pixel(x, y, col)
+
+
+static func _draw_step_number(img: Image, num: int, col: Color) -> void:
+	match num:
+		1:
+			_draw_thick_seg(img, Vector2(114, 82), Vector2(128, 66), 7.0, col)
+			_draw_thick_seg(img, Vector2(128, 66), Vector2(128, 142), 7.5, col)
+			_draw_thick_seg(img, Vector2(108, 142), Vector2(148, 142), 7.0, col)
+		2:
+			var pts := [
+				Vector2(110, 84), Vector2(114, 72), Vector2(124, 66),
+				Vector2(136, 66), Vector2(146, 74), Vector2(148, 86),
+				Vector2(144, 98), Vector2(110, 142), Vector2(148, 142)
+			]
+			for i in range(pts.size() - 1):
+				_draw_thick_seg(img, pts[i], pts[i+1], 7.0, col)
+		3:
+			var pts := [
+				Vector2(110, 68), Vector2(146, 68), Vector2(130, 96),
+				Vector2(142, 104), Vector2(146, 118), Vector2(140, 132),
+				Vector2(128, 140), Vector2(110, 138)
+			]
+			for i in range(pts.size() - 1):
+				_draw_thick_seg(img, pts[i], pts[i+1], 7.0, col)
+		4:
+			_draw_thick_seg(img, Vector2(138, 66), Vector2(138, 142), 7.5, col)
+			_draw_thick_seg(img, Vector2(138, 66), Vector2(108, 116), 7.0, col)
+			_draw_thick_seg(img, Vector2(106, 116), Vector2(148, 116), 7.0, col)
+		_:
+			_draw_thick_seg(img, Vector2(128, 66), Vector2(128, 142), 7.5, col)

@@ -50,12 +50,12 @@ var economy := { "seconds": 60, "lives": 5, "maxScore": 1500, "base": 40, "step"
 var season_name := "summer"
 
 # Camera controls
-var cam_yaw := 0.0
-var cam_pitch := -0.72  # ~ -41 degrees
+var cam_yaw := 0.93607
+var cam_pitch := -0.8143
 var cam_zoom := 1.0
 const ZOOM_MIN := 0.65
 const ZOOM_MAX := 2.2
-const BASE_CAM_DIST := 42.0
+const BASE_CAM_DIST := 58.0
 var cam_shake := 0.0
 
 # Input tracking
@@ -171,7 +171,7 @@ func _setup_environment() -> void:
 
 	camera = Camera3D.new()
 	camera.name = "MainCamera"
-	camera.fov = 42.0
+	camera.fov = 40.0
 	camera.near = 0.5
 	camera.far = 400.0
 	cam_pivot.add_child(camera)
@@ -343,7 +343,17 @@ func _load_current_scenario() -> void:
 
 	# Spawn actors
 	var actors_data: Array = sc.get("actors", [])
+	var has_tram_ns := false
+	var has_tram_ew := false
 	for a_raw in actors_data:
+		var a_type: String = a_raw.get("type", "")
+		if a_type == "tram":
+			var s: String = a_raw.get("side", "")
+			if s == "north" or s == "south":
+				has_tram_ns = true
+			elif s == "east" or s == "west":
+				has_tram_ew = true
+
 		var a_dict: Dictionary = a_raw.duplicate(true)
 		var actor_id: String = a_dict.get("id", "")
 		var a_l10n: Dictionary = t_table.get("actors", {}).get(actor_id, {})
@@ -356,13 +366,19 @@ func _load_current_scenario() -> void:
 		actors_root.add_child(actor)
 		active_actors.append(actor)
 
+	if has_tram_ns:
+		junction.build_tram_rails("ns")
+	if has_tram_ew:
+		junction.build_tram_rails("ew")
+
 	# Hard situation bonus in Arcade
-	if not is_training and sc.get("isHard", false):
+	var is_hard: bool = sc.get("isHard", false)
+	if not is_training and is_hard:
 		seconds_left = minf(float(economy.get("seconds", 60)), seconds_left + 10.0)
 		ui.show_hard_bonus_toast()
 
 	ui.update_hud(score, int(seconds_left), lives, combo)
-	ui.update_caption(sc_title, sc_sub, cur_step, active_actors.size())
+	ui.update_caption(sc_title, sc_sub, cur_step, active_actors.size(), is_hard)
 
 
 # --- User Input & Vehicle Selection ---
@@ -504,7 +520,7 @@ func _handle_actor_selection(chosen: CrossroadsActor) -> void:
 
 		cur_step += 1
 		var sc_table: Dictionary = sc.get("translations", {}).get(Ui.lang, sc.get("translations", {}).get("ru", {}))
-		ui.update_caption(sc_table.get("title", sc.get("title", "")), sc_table.get("subtitle", sc.get("subtitle", "")), cur_step, active_actors.size())
+		ui.update_caption(sc_table.get("title", sc.get("title", "")), sc_table.get("subtitle", sc.get("subtitle", "")), cur_step, active_actors.size(), sc.get("isHard", false))
 	else:
 		# MISTAKE / COLLISION!
 		var reason: String = priority_actor.data.get("explanation", "Нарушение очередности проезда!")
@@ -580,46 +596,128 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 
 	ui.update_hud(score, int(seconds_left), lives, combo)
 
+	# Find point of closest approach between trajectories
+	var len_c := maxf(1.0, chosen.path_length)
+	var len_p := maxf(1.0, priority.path_length)
+	var best_tc := 0.38
+	var best_tp := 0.38
+	var min_dist := 999.0
+
+	for ic in range(1, 21):
+		var tc := float(ic) / 20.0
+		var pos_c := chosen.path_curve.sample_baked(tc * len_c)
+		for ip in range(1, 21):
+			var tp := float(ip) / 20.0
+			var pos_p := priority.path_curve.sample_baked(tp * len_p)
+			var d := pos_c.distance_to(pos_p)
+			if d < min_dist:
+				min_dist = d
+				best_tc = tc
+				best_tp = tp
+
+	var stop_tc := clampf(best_tc - 0.04, 0.12, 0.58)
+	var stop_tp := clampf(best_tp - 0.04, 0.12, 0.58)
+
+	if min_dist > 5.0:
+		stop_tc = 0.35
+		stop_tp = 0.35
+
+	# Hide trajectory ribbons when driving into collision
+	if chosen.trajectory_guide != null:
+		chosen.trajectory_guide.visible = false
+	if priority.trajectory_guide != null:
+		priority.trajectory_guide.visible = false
+
+	# Smoothly drive both actors along their curves towards impact
+	var duration := 0.65
+	var elapsed := 0.0
+	while elapsed < duration:
+		var dt: float = await get_tree().process_frame
+		elapsed += dt
+		var progress := minf(1.0, elapsed / duration)
+		var ease_prog := smoothstep(0.0, 1.0, progress)
+
+		var cur_tc := ease_prog * stop_tc
+		var cur_tp := ease_prog * stop_tp
+
+		var off_c := cur_tc * len_c
+		var pos_c := chosen.path_curve.sample_baked(off_c)
+		var next_c := chosen.path_curve.sample_baked(minf(len_c, off_c + 0.3))
+		chosen.position = pos_c
+		if pos_c.distance_to(next_c) > 0.01:
+			var dir_c := (next_c - pos_c).normalized()
+			chosen.rotation.y = atan2(dir_c.x, dir_c.z) + PI
+
+		var off_p := cur_tp * len_p
+		var pos_p := priority.path_curve.sample_baked(off_p)
+		var next_p := priority.path_curve.sample_baked(minf(len_p, off_p + 0.3))
+		priority.position = pos_p
+		if pos_p.distance_to(next_p) > 0.01:
+			var dir_p := (next_p - pos_p).normalized()
+			priority.rotation.y = atan2(dir_p.x, dir_p.z) + PI
+
+		if chosen.model_node is NpcVehicle:
+			chosen.model_node._distance += dt * 12.0
+			var mat: ShaderMaterial = chosen.model_node._material
+			if mat != null:
+				mat.set_shader_parameter("wheel_distance", chosen.model_node._distance)
+		if priority.model_node is NpcVehicle:
+			priority.model_node._distance += dt * 12.0
+			var mat_p: ShaderMaterial = priority.model_node._material
+			if mat_p != null:
+				mat_p.set_shader_parameter("wheel_distance", priority.model_node._distance)
+
+	# Impact handling & FX
+	var impact := (chosen.position + priority.position) * 0.5
+	impact.y = 0.0
+
+	sound.play("crash")
+	GameSound.buzz(70)
+	cam_shake = 0.55
+
+	# Recoil bounce backwards along reverse direction
+	var end_off_c := stop_tc * len_c
+	var tan_c := (chosen.path_curve.sample_baked(minf(len_c, end_off_c + 0.2)) - chosen.position).normalized()
+	if not chosen.is_pedestrian:
+		chosen.position -= tan_c * (0.08 if chosen.is_tram else 0.20)
+		chosen.rotation.z += 0.035
+		chosen.rotation.x -= 0.025
+
+	var end_off_p := stop_tp * len_p
+	var tan_p := (priority.path_curve.sample_baked(minf(len_p, end_off_p + 0.2)) - priority.position).normalized()
+	if not priority.is_pedestrian:
+		priority.position -= tan_p * (0.08 if priority.is_tram else 0.16)
+		priority.rotation.z -= 0.030
+
+	_create_skid_marks(chosen.position, tan_c)
+	_create_skid_marks(priority.position, tan_p)
+	_create_crash_sparks(impact)
+	_create_crash_smoke(impact)
+
 	chosen.state = "crashed"
 	priority.state = "crashed"
 	chosen.set_badge_error()
 	priority.set_badge_priority()
-
-	# Cinematic collision movement
-	var p_chosen := chosen.position
-	var p_prio := priority.position
-	var impact := (p_chosen + p_prio) * 0.5
-	impact.y = 0.0
-
-	var t := create_tween().set_parallel(true)
-	t.tween_property(chosen, "position", chosen.position.lerp(impact, 0.65), 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	t.tween_property(priority, "position", priority.position.lerp(impact, 0.65), 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-
-	await t.finished
-
-	# Impact FX
-	sound.play("crash")
-	GameSound.buzz(70)
-	cam_shake = 0.55
-	_create_skid_marks(impact)
-	_create_crash_sparks(impact)
 
 	# Show modal
 	var prio_name: String = priority.data.get("name", "Автомобиль")
 	ui.show_collision_modal(prio_name, reason, article, lives <= 0 and not is_training)
 
 
-func _create_skid_marks(at: Vector3) -> void:
-	for offset_x in [-0.8, 0.8]:
+func _create_skid_marks(at: Vector3, dir: Vector3 = Vector3.FORWARD) -> void:
+	var yaw := atan2(dir.x, dir.z)
+	var right := Vector3(cos(yaw), 0, -sin(yaw))
+	for offset in [-0.75, 0.75]:
 		var mi := MeshInstance3D.new()
 		var p := PlaneMesh.new()
-		p.size = Vector2(0.35, 3.8)
+		p.size = Vector2(0.32, 3.2)
 		mi.mesh = p
 		var m := StandardMaterial3D.new()
 		m.albedo_color = Color(0.08, 0.09, 0.1, 0.75)
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		mi.material_override = m
-		mi.position = at + Vector3(offset_x, 0.025, 0)
+		mi.position = at + right * offset + Vector3(0, 0.025, 0)
+		mi.rotation.y = yaw
 		fx_root.add_child(mi)
 
 
@@ -647,6 +745,30 @@ func _create_crash_sparks(at: Vector3) -> void:
 	particles.mesh = sphere
 	particles.material_override = pm
 	fx_root.add_child(particles)
+
+
+func _create_crash_smoke(at: Vector3) -> void:
+	var smoke := CPUParticles3D.new()
+	smoke.emitting = true
+	smoke.one_shot = true
+	smoke.explosiveness = 0.8
+	smoke.lifetime = 1.2
+	smoke.amount = 20
+	smoke.position = at + Vector3(0, 0.5, 0)
+	smoke.direction = Vector3.UP
+	smoke.spread = 45.0
+	smoke.initial_velocity_min = 1.5
+	smoke.initial_velocity_max = 3.5
+	smoke.gravity = Vector3(0, 1.2, 0)
+	var sm := StandardMaterial3D.new()
+	sm.albedo_color = Color(0.3, 0.32, 0.35, 0.6)
+	sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.25
+	sphere.height = 0.5
+	smoke.mesh = sphere
+	smoke.material_override = sm
+	fx_root.add_child(smoke)
 
 
 func _on_retry_pressed() -> void:
@@ -759,8 +881,8 @@ func _set_zoom(z: float) -> void:
 
 
 func _reset_camera() -> void:
-	cam_yaw = 0.0
-	cam_pitch = -0.72
+	cam_yaw = 0.93607
+	cam_pitch = -0.8143
 	cam_zoom = 1.0
 	_update_camera()
 

@@ -31,6 +31,7 @@ const ICON_NEXT := 0xf57b
 const ICON_CAMERA := 0xf62c
 const ICON_REFRESH := 0xf00e2
 const ICON_WARNING := 0xf0289
+const ICON_BOLT := 0xf588
 
 # UI nodes
 var _top_bar: VBoxContainer
@@ -53,9 +54,13 @@ var _cat_buttons: Dictionary = {}
 
 # Caption card
 var _caption_card: PanelContainer
+var _caption_prompt: Label
 var _caption_title: Label
 var _caption_subtitle: Label
 var _caption_step: Label
+var _step_pill: PanelContainer
+var _step_pill_label: Label
+var _hard_badge: PanelContainer
 
 # Camera reset button
 var _reset_cam_btn: Button
@@ -71,7 +76,10 @@ var _collision_title: Label
 var _collision_should_go: Label
 var _collision_reason: Label
 var _collision_article: Label
-var _collision_action_btn: Button
+var _collision_btn_row: HBoxContainer
+var _collision_retry_btn: Button
+var _collision_next_btn: Button
+var _collision_game_over_btn: Button
 
 # Result dialog
 var _result: Control
@@ -128,7 +136,7 @@ func _layout() -> void:
 	)
 
 	_collision_backdrop.size = size
-	var modal_w := minf(400.0, size.x - 32.0)
+	var modal_w := minf(420.0, size.x - 32.0)
 	_collision_card.custom_minimum_size.x = modal_w
 	_collision_card.position = Vector2((size.x - modal_w) * 0.5, (size.y - _collision_card.size.y) * 0.42)
 
@@ -202,7 +210,7 @@ func _build_top_bar() -> void:
 	_mode_btn.pressed.connect(func(): mode_toggled.emit())
 	_hud_row.add_child(_mode_btn)
 
-	# Training navigation row (hidden in arcade mode)
+	# Training navigation row
 	_training_nav_row = HBoxContainer.new()
 	_training_nav_row.add_theme_constant_override("separation", 8)
 	_training_nav_row.visible = false
@@ -243,17 +251,50 @@ func _build_top_bar() -> void:
 	_top_bar.add_child(_caption_card)
 
 	var cap_vbox := VBoxContainer.new()
-	cap_vbox.add_theme_constant_override("separation", 3)
+	cap_vbox.add_theme_constant_override("separation", 4)
 	_caption_card.add_child(cap_vbox)
 
-	_caption_title = Ui.scaled_label("", 16, 700, Ui.c("text"), true)
-	cap_vbox.add_child(_caption_title)
+	# Top row: Prompt on left, Step capsule pill on right
+	var prompt_row := HBoxContainer.new()
+	prompt_row.add_theme_constant_override("separation", 8)
+	cap_vbox.add_child(prompt_row)
 
+	_caption_prompt = Ui.scaled_label(Ui.t("gameCrossroadsPromptWhoGoesFirst"), 16, 700, Ui.c("text"), true)
+	_caption_prompt.size_flags_horizontal = SIZE_EXPAND_FILL
+	prompt_row.add_child(_caption_prompt)
+
+	# Step pill capsule
+	_step_pill = PanelContainer.new()
+	var pill_box := Ui.box(Ui.c("card"), 12)
+	pill_box.content_margin_left = 10
+	pill_box.content_margin_right = 10
+	pill_box.content_margin_top = 3
+	pill_box.content_margin_bottom = 3
+	_step_pill.add_theme_stylebox_override("panel", pill_box)
+	_step_pill_label = Ui.label("1 / 3", 12, 700, Ui.c("accent"))
+	_step_pill.add_child(_step_pill_label)
+	prompt_row.add_child(_step_pill)
+
+	# Subtitle description
 	_caption_subtitle = Ui.scaled_label("", 13, 400, Ui.c("secondary"), true)
 	cap_vbox.add_child(_caption_subtitle)
 
-	_caption_step = Ui.scaled_label("", 13, 600, Ui.c("accent"), true)
-	cap_vbox.add_child(_caption_step)
+	# Legacy label for backwards compatibility
+	_caption_title = _caption_prompt
+	_caption_step = _step_pill_label
+
+	# Hard situation badge
+	_hard_badge = PanelContainer.new()
+	var hb_box := Ui.box(Color("#FFF7E6"), 6)
+	hb_box.content_margin_left = 8
+	hb_box.content_margin_right = 8
+	hb_box.content_margin_top = 2
+	hb_box.content_margin_bottom = 2
+	_hard_badge.add_theme_stylebox_override("panel", hb_box)
+	var hb_label := Ui.label(Ui.t("crossroadsHardSituationBadge"), 11, 700, Color("#C77800"))
+	_hard_badge.add_child(hb_label)
+	_hard_badge.visible = false
+	cap_vbox.add_child(_hard_badge)
 
 
 func _cat_chip(cat_key: String, label_text: String) -> Button:
@@ -288,7 +329,7 @@ func set_mode(training: bool) -> void:
 	_mode_btn.text = char(ICON_GAMEPAD if training else ICON_SCHOOL)
 
 
-func update_hud(score: int, seconds: int, lives: int, combo: int) -> void:
+func update_hud(score: int, seconds: int, lives: int, _combo: int) -> void:
 	_score_label.text = str(score)
 	_timer_label.text = str(maxi(0, seconds))
 	var urgent := seconds <= 10
@@ -305,13 +346,27 @@ func update_hud(score: int, seconds: int, lives: int, combo: int) -> void:
 			h.add_theme_color_override("font_color", Ui.c("secondary"))
 
 
-func update_caption(title: String, subtitle: String, step: int, total_steps: int) -> void:
-	_caption_title.text = title
-	_caption_subtitle.text = subtitle
-	if step == 1:
-		_caption_step.text = Ui.t("gameCrossroadsPromptWhoGoesFirst")
+func update_caption(title: String, subtitle: String, step: int, total_steps: int, is_hard: bool = false) -> void:
+	_hard_badge.visible = is_hard
+
+	if step > total_steps:
+		_caption_prompt.text = Ui.t("gameCrossroadsCompleteTitle")
+		_caption_prompt.add_theme_color_override("font_color", Color("#2BC280"))
+		_step_pill_label.text = "✓ %d/%d" % [total_steps, total_steps]
+		_step_pill_label.add_theme_color_override("font_color", Color("#2BC280"))
+		_caption_subtitle.text = title
+	elif step == 1:
+		_caption_prompt.text = Ui.t("gameCrossroadsPromptWhoGoesFirst")
+		_caption_prompt.add_theme_color_override("font_color", Ui.c("text"))
+		_step_pill_label.text = "%d/%d" % [1, total_steps]
+		_step_pill_label.add_theme_color_override("font_color", Ui.c("accent"))
+		_caption_subtitle.text = subtitle if subtitle != "" else title
 	else:
-		_caption_step.text = Ui.t("gameCrossroadsPromptWhoGoesNext", {"step": step})
+		_caption_prompt.text = Ui.t("gameCrossroadsPromptWhoGoesNext", {"step": step})
+		_caption_prompt.add_theme_color_override("font_color", Ui.c("text"))
+		_step_pill_label.text = "%d/%d" % [step, total_steps]
+		_step_pill_label.add_theme_color_override("font_color", Ui.c("accent"))
+		_caption_subtitle.text = subtitle if subtitle != "" else title
 
 
 # --- Reset Camera Button ---
@@ -396,18 +451,53 @@ func _build_collision_modal() -> void:
 	var div := HSeparator.new()
 	vb.add_child(div)
 
-	_collision_action_btn = Button.new()
-	_collision_action_btn.text = Ui.t("gameCrossroadsRepeatCrossroad")
-	_collision_action_btn.custom_minimum_size = Vector2(0, 44)
-	_collision_action_btn.add_theme_font_override("font", Ui.font(700))
-	_collision_action_btn.add_theme_font_size_override("font_size", 15)
-	_collision_action_btn.add_theme_color_override("font_color", Color.WHITE)
-	_collision_action_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("accent"), 10))
-	_collision_action_btn.pressed.connect(func():
+	# Buttons container: supports both two-button row and single full-width button
+	_collision_btn_row = HBoxContainer.new()
+	_collision_btn_row.add_theme_constant_override("separation", 10)
+	vb.add_child(_collision_btn_row)
+
+	_collision_retry_btn = Button.new()
+	_collision_retry_btn.text = Ui.t("gameCrossroadsRepeatCrossroad")
+	_collision_retry_btn.size_flags_horizontal = SIZE_EXPAND_FILL
+	_collision_retry_btn.custom_minimum_size = Vector2(0, 44)
+	_collision_retry_btn.add_theme_font_override("font", Ui.font(600))
+	_collision_retry_btn.add_theme_font_size_override("font_size", 14)
+	_collision_retry_btn.add_theme_color_override("font_color", Ui.c("text"))
+	_collision_retry_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("field"), 10))
+	_collision_retry_btn.pressed.connect(func():
 		hide_collision_modal()
 		retry_pressed.emit()
 	)
-	vb.add_child(_collision_action_btn)
+	_collision_btn_row.add_child(_collision_retry_btn)
+
+	_collision_next_btn = Button.new()
+	_collision_next_btn.text = Ui.t("gameCrossroadsNextCrossroad")
+	_collision_next_btn.size_flags_horizontal = SIZE_EXPAND_FILL
+	_collision_next_btn.custom_minimum_size = Vector2(0, 44)
+	_collision_next_btn.add_theme_font_override("font", Ui.font(700))
+	_collision_next_btn.add_theme_font_size_override("font_size", 14)
+	_collision_next_btn.add_theme_color_override("font_color", Color.WHITE)
+	_collision_next_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("accent"), 10))
+	_collision_next_btn.pressed.connect(func():
+		hide_collision_modal()
+		next_scenario_pressed.emit()
+	)
+	_collision_btn_row.add_child(_collision_next_btn)
+
+	_collision_game_over_btn = Button.new()
+	_collision_game_over_btn.text = Ui.t("gameOver")
+	_collision_game_over_btn.size_flags_horizontal = SIZE_EXPAND_FILL
+	_collision_game_over_btn.custom_minimum_size = Vector2(0, 44)
+	_collision_game_over_btn.add_theme_font_override("font", Ui.font(700))
+	_collision_game_over_btn.add_theme_font_size_override("font_size", 15)
+	_collision_game_over_btn.add_theme_color_override("font_color", Color.WHITE)
+	_collision_game_over_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("red"), 10))
+	_collision_game_over_btn.visible = false
+	_collision_game_over_btn.pressed.connect(func():
+		hide_collision_modal()
+		retry_pressed.emit()
+	)
+	vb.add_child(_collision_game_over_btn)
 
 
 func show_collision_modal(priority_name: String, reason: String, article: String, out_of_lives: bool) -> void:
@@ -416,12 +506,13 @@ func show_collision_modal(priority_name: String, reason: String, article: String
 	_collision_should_go.text = Ui.t("gameCrossroadsShouldGo", {"name": priority_name})
 	_collision_reason.text = reason
 	_collision_article.text = article
+
 	if out_of_lives:
-		_collision_action_btn.text = Ui.t("gameOver")
-		_collision_action_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("red"), 10))
+		_collision_btn_row.visible = false
+		_collision_game_over_btn.visible = true
 	else:
-		_collision_action_btn.text = Ui.t("gameCrossroadsRepeatCrossroad")
-		_collision_action_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("accent"), 10))
+		_collision_btn_row.visible = true
+		_collision_game_over_btn.visible = false
 	_layout()
 
 

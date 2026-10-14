@@ -114,6 +114,10 @@ func _initialize() -> void:
 	_check("Sign 2.1 with 8.13 table adds to junction", junction.signs_root.get_child_count() == 1)
 	junction.add_traffic_light({"side": "north", "state": "green", "arrow": "right", "arrowActive": true})
 	_check("Traffic light with arrow adds to junction", junction.lights_root.get_child_count() == 1)
+	junction.build_tram_rails("ns")
+	_check("Tram rails built on NS axis", junction.rails_root.get_child_count() == 2)
+	junction.clear_props()
+	_check("Junction clear_props clears tram rails", junction.rails_root.get_child_count() == 0)
 
 	# 7. Actor & Trajectory generation
 	var dummy_car_data := {
@@ -130,8 +134,11 @@ func _initialize() -> void:
 	var actor = CrossroadsActorScript.new(dummy_car_data)
 	_check("CrossroadsActor builds model and path", actor != null and actor.path_length > 20.0)
 	_check("Actor start position is behind stop line on south side", actor.position.z > 12.0)
+	_check("Actor has authentic vector badge sprite", actor.badge_sprite != null)
+	_check("Actor has 3D trajectory guide ribbon", actor.trajectory_guide != null)
 	actor.start_driving()
 	_check("Actor switches to driving state", actor.state == "driving")
+	_check("Trajectory guide ribbon hidden when driving starts", not actor.trajectory_guide.visible)
 
 	# Test all maneuvers trajectories
 	var all_maneuvers_ok := true
@@ -184,6 +191,15 @@ func _initialize() -> void:
 	_check("Web arguments parse --crossroads", query.has("--crossroads"))
 	_check("Web arguments parse --best-score=250", query.has("--best-score=250"))
 	_check("Web arguments parse --category=trafficLights", query.has("--category=trafficLights"))
+
+	# 10. Crossroads root camera isometric defaults matching Three.js
+	const CrossroadsScript := preload("res://scripts/crossroads.gd")
+	var game = CrossroadsScript.new()
+	_check("Crossroads game instantiates", game != null)
+	_check("Camera isometric yaw matches Three.js (~53.6 deg)", absf(game.cam_yaw - 0.93607) < 0.001)
+	_check("Camera isometric pitch matches Three.js (~46.7 deg elevation)", absf(game.cam_pitch - (-0.8143)) < 0.001)
+	_check("Camera base distance set to 58.0", absf(game.BASE_CAM_DIST - 58.0) < 0.001)
+	game.free()
 
 	print("Crossroads check: %d passed, %d failed" % [total - bad, bad])
 	quit(1 if bad > 0 else 0)

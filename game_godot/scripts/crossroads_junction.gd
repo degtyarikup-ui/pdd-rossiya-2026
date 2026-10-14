@@ -1,6 +1,6 @@
 ## 3D Crossroad Intersection environment for the Crossroads (Разрули перекресток) game.
 ## Builds authentic Russian road layout, GOST markings (zebra crossings, stop-lines,
-## double solid center lines), curbs, sidewalks, street lamps, signs, traffic lights, and scenery.
+## double solid center lines), curbs, sidewalks, street lamps, signs, traffic lights, tram rails, and scenery.
 class_name CrossroadsJunction
 extends Node3D
 
@@ -21,22 +21,26 @@ var grass_mat: ShaderMaterial
 
 var signs_root: Node3D
 var lights_root: Node3D
+var rails_root: Node3D
 var ground_root: Node3D
 var markings_root: Node3D
+var closed_root: Node3D
 
 var closed_side := ""
 var walker_crowds: Array[MultiMesh] = []
 var walkers_data: Array[Dictionary] = []
-var _light_clock:=0.0
-var _light_flash:=true
+var _light_clock := 0.0
+var _light_flash := true
+
 
 func _update_light_cycle(delta: float) -> void:
-	_light_clock+=delta
-	var lit:=int(_light_clock*2.0)%2==0
-	if lit==_light_flash:return
-	_light_flash=lit
+	_light_clock += delta
+	var lit := int(_light_clock * 2.0) % 2 == 0
+	if lit == _light_flash: return
+	_light_flash = lit
 	for light: Node3D in lights_root.get_children():
-		if light.get_meta("mini_flashing",false):TrafficSignal.set_state(light,"flashing_yellow","straight",lit)
+		if light.get_meta("mini_flashing", false):
+			TrafficSignal.set_state(light, "flashing_yellow", "straight", lit)
 
 
 func _init(season_name := "summer") -> void:
@@ -63,6 +67,14 @@ func _init(season_name := "summer") -> void:
 	lights_root.name = "LightsRoot"
 	add_child(lights_root)
 
+	rails_root = Node3D.new()
+	rails_root.name = "RailsRoot"
+	add_child(rails_root)
+
+	closed_root = Node3D.new()
+	closed_root.name = "ClosedRoot"
+	add_child(closed_root)
+
 	_build_ground()
 	_build_junction_surfaces()
 	_build_markings()
@@ -80,9 +92,32 @@ func set_closed_side(side: String) -> void:
 
 func clear_props() -> void:
 	for c in signs_root.get_children():
+		signs_root.remove_child(c)
 		c.queue_free()
 	for c in lights_root.get_children():
+		lights_root.remove_child(c)
 		c.queue_free()
+	for c in rails_root.get_children():
+		rails_root.remove_child(c)
+		c.queue_free()
+
+
+func build_tram_rails(axis: String) -> void:
+	var rail_mat := StandardMaterial3D.new()
+	rail_mat.albedo_color = Color("#8E939C")
+	rail_mat.metallic = 0.85
+	rail_mat.roughness = 0.35
+
+	var gauge := 1.524  # Russian standard tram gauge
+	var rail_len := 120.0
+	for offset in [-gauge * 0.5, gauge * 0.5]:
+		var rail_size := Vector3(0.08, 0.03, rail_len) if axis == "ns" else Vector3(rail_len, 0.03, 0.08)
+		var rail := _box(rail_size, rail_mat)
+		if axis == "ns":
+			rail.position = Vector3(offset, 0.032, 0)
+		else:
+			rail.position = Vector3(0, 0.032, offset)
+		rails_root.add_child(rail)
 
 
 func _create_materials() -> void:
@@ -97,7 +132,7 @@ func _create_materials() -> void:
 
 
 func _build_ground() -> void:
-	var ground := _quad(Vector2(240, 240), grass_mat)
+	var ground := _quad(Vector2(260, 260), grass_mat)
 	ground.position.y = -0.06
 	add_child(ground)
 
@@ -107,12 +142,13 @@ func _rebuild_surfaces_and_markings() -> void:
 		c.queue_free()
 	for c in markings_root.get_children():
 		c.queue_free()
+	for c in closed_root.get_children():
+		c.queue_free()
 	_build_junction_surfaces()
 	_build_markings()
 
 
 func _build_junction_surfaces() -> void:
-	# Center crossroad square
 	var center := _quad(Vector2(ROAD_WIDTH, ROAD_WIDTH), asphalt_mat)
 	center.position = Vector3.ZERO
 	ground_root.add_child(center)
@@ -122,13 +158,10 @@ func _build_junction_surfaces() -> void:
 
 	for arm in arms:
 		if arm == closed_side:
-			# Closed arm: grass and sidewalk continue across it
 			_build_closed_arm_surface(arm, arm_len)
 		else:
-			# Open road arm
 			_build_open_arm_surface(arm, arm_len)
 
-	# 4 Quadrant sidewalks and curbs
 	_build_quadrant_sidewalks()
 
 
@@ -150,39 +183,48 @@ func _build_open_arm_surface(arm: String, arm_len: float) -> void:
 
 
 func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
-	# Continuous sidewalk barrier across the closed junction side
 	var sw_w := 4.2
 	var sw := _quad(Vector2(ROAD_WIDTH, sw_w), sidewalk_mat)
 	sw.position.y = 0.16
 	var curb := _box(Vector3(ROAD_WIDTH, 0.20, 0.3), curb_mat)
 	curb.position.y = 0.10
 
+	# Lawn covering the closed road arm
+	var lawn := _quad(Vector2(ROAD_WIDTH, arm_len - sw_w), grass_mat)
+	lawn.position.y = -0.02
+	var lawn_mid := HALF_ROAD + sw_w + (arm_len - sw_w) * 0.5
+
 	match arm:
 		"south":
 			sw.position = Vector3(0, 0.16, HALF_ROAD + sw_w * 0.5)
 			curb.position = Vector3(0, 0.10, HALF_ROAD + 0.15)
+			lawn.position = Vector3(0, -0.02, lawn_mid)
 		"north":
 			sw.position = Vector3(0, 0.16, -(HALF_ROAD + sw_w * 0.5))
 			curb.position = Vector3(0, 0.10, -(HALF_ROAD + 0.15))
+			lawn.position = Vector3(0, -0.02, -lawn_mid)
 		"east":
 			sw.position = Vector3(HALF_ROAD + sw_w * 0.5, 0.16, 0)
 			sw.rotation.y = PI * 0.5
 			curb.position = Vector3(HALF_ROAD + 0.15, 0.10, 0)
 			curb.rotation.y = PI * 0.5
+			lawn.position = Vector3(lawn_mid, -0.02, 0)
+			lawn.rotation.y = PI * 0.5
 		"west":
 			sw.position = Vector3(-(HALF_ROAD + sw_w * 0.5), 0.16, 0)
 			sw.rotation.y = PI * 0.5
 			curb.position = Vector3(-(HALF_ROAD + 0.15), 0.10, 0)
 			curb.rotation.y = PI * 0.5
+			lawn.position = Vector3(-lawn_mid, -0.02, 0)
+			lawn.rotation.y = PI * 0.5
 
 	ground_root.add_child(sw)
 	ground_root.add_child(curb)
+	ground_root.add_child(lawn)
 
 
 func _build_quadrant_sidewalks() -> void:
 	var sw_span := 44.0
-	var sw_w := 6.4
-	# Four corner sidewalk blocks outside road arms
 	var corners := [
 		Vector2(1, 1),   # South-East
 		Vector2(-1, 1),  # South-West
@@ -196,7 +238,6 @@ func _build_quadrant_sidewalks() -> void:
 		sw.position = Vector3(cx, 0.16, cz)
 		ground_root.add_child(sw)
 
-		# Raised stone curb along edge
 		var curb_x := _box(Vector3(0.3, 0.20, sw_span), curb_mat)
 		curb_x.position = Vector3(c.x * (HALF_ROAD + 0.15), 0.10, cz)
 		ground_root.add_child(curb_x)
@@ -219,7 +260,6 @@ func _build_arm_markings(arm: String) -> void:
 	arm_root.name = "Markings_" + arm
 	markings_root.add_child(arm_root)
 
-	# Transform for arm direction:
 	match arm:
 		"south":
 			arm_root.rotation.y = 0.0
@@ -230,12 +270,12 @@ func _build_arm_markings(arm: String) -> void:
 		"west":
 			arm_root.rotation.y = PI * 0.5
 
-	# 1. Stop line (at STOP_DIST = 12.5 m, width across approach lanes = 7.2 m, thickness 0.4 m)
+	# Stop line (at STOP_DIST = 12.5 m)
 	var stop_line := _box(Vector3(HALF_ROAD, 0.015, 0.42), marking_mat)
 	stop_line.position = Vector3(HALF_ROAD * 0.5, 0.02, STOP_DIST)
 	arm_root.add_child(stop_line)
 
-	# 2. Zebra pedestrian crossing (between ZEBRA_START and ZEBRA_END)
+	# Zebra pedestrian crossing
 	var zebra_len := ZEBRA_END - ZEBRA_START
 	var stripe_w := 0.50
 	var gap := 0.50
@@ -249,7 +289,7 @@ func _build_arm_markings(arm: String) -> void:
 		stripe.position = Vector3(start_x + i * step, 0.018, (ZEBRA_START + ZEBRA_END) * 0.5)
 		arm_root.add_child(stripe)
 
-	# 3. Double solid line in the center of the road (from STOP_DIST outwards)
+	# Double solid line in the center of the road
 	var line_len := ROAD_EXTENT - STOP_DIST - 1.0
 	var d_sep := 0.18
 	for offset in [-d_sep * 0.5, d_sep * 0.5]:
@@ -257,7 +297,7 @@ func _build_arm_markings(arm: String) -> void:
 		solid.position = Vector3(offset, 0.018, STOP_DIST + line_len * 0.5)
 		arm_root.add_child(solid)
 
-	# 4. Broken line dividing same-direction lanes on approach
+	# Broken dashed lane divider on approach
 	var dash_len := 1.5
 	var dash_gap := 2.5
 	var dash_step := dash_len + dash_gap
@@ -314,6 +354,22 @@ func _finish_pools() -> void:
 func _build_scenery_decor() -> void:
 	var canopy_colors: Array = sc.season.canopy
 	var birch_color: Color = sc.color("birch")
+
+	# 1. City buildings in the four quadrants behind sidewalks
+	_put_prop("buildings/block_2", Vector3(26.0, 0.16, 26.0), 0.0, Vector3.ONE * 1.05, Color.WHITE, true)
+	_put_prop("buildings/block_0", Vector3(26.0, 0.16, -26.0), -PI * 0.5, Vector3.ONE * 1.05, Color.WHITE, true)
+	_put_prop("buildings/home_1", Vector3(-26.0, 0.16, -26.0), PI, Vector3.ONE * 1.05, Color.WHITE, true)
+	_put_prop("buildings/block_3", Vector3(-26.0, 0.16, 26.0), PI * 0.5, Vector3.ONE * 1.05, Color.WHITE, true)
+
+	# 2. Bus stop / kiosk on South-East sidewalk
+	_put_prop("street/kiosk_1", Vector3(HALF_ROAD + 4.2, 0.16, 18.0), PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, true)
+
+	# 3. Pedestrian guardrail fences along curbs near crosswalks
+	for c in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
+		_put_prop("street/fence_12", Vector3(c.x * (HALF_ROAD + 0.2), 0.16, c.y * 10.0), PI * 0.5 if c.y > 0 else -PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
+		_put_prop("street/fence_12", Vector3(c.x * 10.0, 0.16, c.y * (HALF_ROAD + 0.2)), 0.0 if c.x > 0 else PI, Vector3.ONE * 0.9, Color.WHITE, false)
+
+	# 4. Street trees and bushes along sidewalks
 	var r_dist := HALF_ROAD + 14.0
 	for angle_deg in [30, 60, 120, 150, 210, 240, 300, 330]:
 		var rad := deg_to_rad(angle_deg)
@@ -321,6 +377,12 @@ func _build_scenery_decor() -> void:
 		var prop := "trees/round_0" if (angle_deg % 60 == 0) else "trees/birch_0"
 		var tint: Color = birch_color if prop == "trees/birch_0" else Color(canopy_colors[0])
 		_put_prop(prop, p, rad, Vector3.ONE * 1.1, tint, true)
+
+	for dist in [20.0, 34.0, 46.0]:
+		for sx in [-1, 1]:
+			_put_prop("trees/round_0", Vector3(sx * (HALF_ROAD + 3.8), 0.16, -dist), 0.0, Vector3.ONE * 0.95, Color(canopy_colors[0]), true)
+			_put_prop("trees/birch_0", Vector3(sx * (HALF_ROAD + 3.8), 0.16, dist), 0.0, Vector3.ONE * 0.95, birch_color, true)
+
 	_finish_pools()
 
 
@@ -384,7 +446,6 @@ func _create_sign_mesh(code: String, side_name: String, table8_13: String) -> No
 	var root := Node3D.new()
 	root.name = "Sign_" + code + "_" + side_name
 
-	# Convert table8_13 to direction list for RoadBuild.main_road_plate
 	var main_roads: Array = []
 	match table8_13:
 		"bottom_left":
@@ -398,7 +459,6 @@ func _create_sign_mesh(code: String, side_name: String, table8_13: String) -> No
 
 	var sign_node: Node3D
 	if not main_roads.is_empty():
-		# Plate 8.13 under primary sign
 		sign_node = RoadBuild.sign_node(code, "", "", main_roads, ["north", "south", "east", "west"], true, {"secondSign": {"code": "8.13", "mainRoad": main_roads}})
 	else:
 		sign_node = RoadBuild.sign_node(code)
@@ -409,7 +469,6 @@ func _create_sign_mesh(code: String, side_name: String, table8_13: String) -> No
 
 	root.add_child(sign_node)
 
-	# Position sign on driver's right curb before stop line
 	var curb_x := HALF_ROAD + 1.2
 	var curb_z := STOP_DIST + 0.6
 
@@ -438,12 +497,11 @@ func add_traffic_light(tl_data: Dictionary, sign_data: Dictionary = {}) -> void:
 		lights_root.add_child(tl_node)
 
 
-func _create_traffic_light_node(tl_data: Dictionary, sign_data: Dictionary) -> Node3D:
+func _create_traffic_light_node(tl_data: Dictionary, _sign_data: Dictionary) -> Node3D:
 	var root := TrafficSignal.make_mini(tl_data)
 	var side_name: String = tl_data.get("side", "south")
 	root.name = "TrafficLight_" + side_name
 
-	# 5. Position the traffic light on the right curb before stop line
 	var curb_x := HALF_ROAD + 1.2
 	var curb_z := STOP_DIST + 0.6
 
