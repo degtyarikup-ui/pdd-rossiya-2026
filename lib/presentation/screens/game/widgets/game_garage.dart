@@ -29,50 +29,54 @@ String gameCarName(String id) => switch (id) {
   _ => appL10n.gameCarHatch,
 };
 
-String gamePaintName(String paint) => switch (paint) {
-  'blue' => appL10n.gamePaintBlue,
-  'green' => appL10n.gamePaintGreen,
-  'sand' => appL10n.gamePaintSand,
-  'white' => appL10n.gamePaintWhite,
-  'black' => appL10n.gamePaintBlack,
-  'silver' => appL10n.gamePaintSilver,
-  'orange' => appL10n.gamePaintOrange,
-  'purple' => appL10n.gamePaintPurple,
-  'teal' => appL10n.gamePaintTeal,
-  'yellow' => appL10n.gamePaintYellow,
-  'wine' => appL10n.gamePaintWine,
-  'gold' => appL10n.gamePaintGold,
-  _ => appL10n.gamePaintRed,
+String gamePaintName(String paint) =>
+    switch (GameGarageService.normalizePaint(paint)) {
+      'blue' => appL10n.gamePaintBlue,
+      'green' => appL10n.gamePaintGreen,
+      'white' => appL10n.gamePaintWhite,
+      'black' => appL10n.gamePaintBlack,
+      'silver' => appL10n.gamePaintSilver,
+      'yellow' => appL10n.gamePaintYellow,
+      'wine' => appL10n.gamePaintWine,
+      _ => appL10n.gamePaintRed,
+    };
+
+/// One palette shared by the garage, game bridge, and ownership service.
+final gamePaintColors = {
+  for (final entry in GameGarageService.paintHex.entries)
+    entry.key: Color(entry.value),
 };
 
-/// Swatch colours, mirroring `PDD_VEHICLES.paints` in the engine.
-const gamePaintColors = {
-  'red': Color(0xFFED4621),
-  'blue': Color(0xFF317ED4),
-  'green': Color(0xFF4D7768),
-  'sand': Color(0xFFD7AA60),
-  'white': Color(0xFFF2F3F5),
-  'black': Color(0xFF2B2F36),
-  'silver': Color(0xFFB9C0C7),
-  'orange': Color(0xFFF08A24),
-  'purple': Color(0xFF7A5BC6),
-  'teal': Color(0xFF2FA3A0),
-  'yellow': Color(0xFFE8C547),
-  'wine': Color(0xFF8B1E2D),
-  'gold': Color(0xFFD4AF37),
-};
+String gameRewardName(GameGarageReward reward) => reward.isModel
+    ? appL10n.gameAchievementModel(gameCarName(reward.model!))
+    : appL10n.gameAchievementPaint(gamePaintName(reward.paint!));
 
-/// Renders a car preview through the engine (an offscreen three.js frame);
+double gameAchievementFraction(GameGarageService garage) {
+  final next = garage.nextReward;
+  if (next == null) return 1;
+  var previous = 0;
+  for (final reward in GameGarageService.rewards) {
+    if (reward.threshold >= next.threshold) break;
+    previous = reward.threshold;
+  }
+  return ((garage.correctTotal - previous) / (next.threshold - previous))
+      .clamp(0, 1)
+      .toDouble();
+}
+
+/// Renders a car preview through the engine;
 /// returns a PNG data URL or an empty string.
 typedef GameThumbnailLoader = Future<String> Function(String id, String paint);
 
 /// The garage sheet: owned cars as engine-rendered thumbnails, the premium
-/// cyber truck, and how many correct answers remain until the next car.
+/// cyber truck, and progress toward the next model or global colour.
 class GameGarage extends StatefulWidget {
   final GameCar selected;
   final List<GameCar> cars;
   final bool premium;
   final int correctUntilNext;
+  final int correctTotal;
+  final GameGarageReward? nextReward;
   final GameThumbnailLoader? thumbnail;
   final Map<String, Uint8List> thumbnailCache;
 
@@ -82,6 +86,8 @@ class GameGarage extends StatefulWidget {
     required this.cars,
     required this.premium,
     required this.correctUntilNext,
+    this.correctTotal = 0,
+    this.nextReward,
     this.thumbnail,
     this.thumbnailCache = const {},
   });
@@ -93,18 +99,7 @@ class GameGarage extends StatefulWidget {
 class _GameGarageState extends State<GameGarage> {
   /// The model whose colours are being chosen; null shows the model list.
   String? _model;
-  late String _paint = widget.selected.paint;
-
-  // Each model's own factory paint, so a premium list is not seven clones.
-  static const _defaultPaint = {
-    'hatch': 'red',
-    'sedan': 'blue',
-    'coupe': 'black',
-    'wagon': 'green',
-    'suv': 'green',
-    'pickup': 'sand',
-    'cyber': 'gold',
-  };
+  late String _paint = GameGarageService.normalizePaint(widget.selected.paint);
 
   List<String> get _models => widget.premium
       ? gameVehicleIds
@@ -113,20 +108,20 @@ class _GameGarageState extends State<GameGarage> {
             if (widget.cars.any((c) => c.id == id)) id,
         ];
 
-  List<String> _paintsOf(String id) => widget.premium
-      ? gamePaintColors.keys.toList()
-      : [
-          for (final c in widget.cars)
-            if (c.id == id) c.paint,
-        ];
+  List<String> _paintsOf(String id) => [
+    for (final paint in GameGarageService.paints)
+      if (widget.premium ||
+          widget.cars.any(
+            (car) => GameGarageService.normalizePaint(car.paint) == paint,
+          ))
+        paint,
+  ];
 
-  /// How a model appears in the list: in the paint being driven, else its
-  /// factory paint (premium) or the first paint owned.
+  /// Changing the model keeps the selected global paint when possible.
   GameCar _listCar(String id) {
-    if (widget.selected.id == id) return widget.selected;
     final paints = _paintsOf(id);
-    final preferred = _defaultPaint[id];
-    return GameCar(id, paints.contains(preferred) ? preferred! : paints.first);
+    final preferred = GameGarageService.normalizePaint(widget.selected.paint);
+    return GameCar(id, paints.contains(preferred) ? preferred : paints.first);
   }
 
   void _openModel(String id) {
@@ -198,9 +193,19 @@ class _GameGarageState extends State<GameGarage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _header(colors, appL10n.gameGarage),
+        if (!widget.premium && widget.nextReward != null)
+          Text(
+            gameRewardName(widget.nextReward!),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: colors.primaryText,
+            ),
+          ),
         if (!widget.premium)
           Text(
-            appL10n.gameGarageNextCar(widget.correctUntilNext),
+            widget.correctUntilNext == 0
+                ? appL10n.gameAchievementsComplete
+                : appL10n.gameAchievementRemaining(widget.correctUntilNext),
             style: TextStyle(
               fontFamily: 'Onest',
               fontSize: 13,
@@ -381,6 +386,12 @@ class _GameGarageState extends State<GameGarage> {
           gamePaintName(_paint),
           textAlign: TextAlign.center,
           style: TextStyle(fontFamily: 'Onest', color: colors.secondaryText),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          appL10n.gamePaintAllCars,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12, color: colors.secondaryText),
         ),
         const SizedBox(height: 16),
         ElevatedButton(

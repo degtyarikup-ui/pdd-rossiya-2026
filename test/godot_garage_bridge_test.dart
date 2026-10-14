@@ -1,0 +1,286 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pdd_app/core/utils/haptic_feedback.dart';
+import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/game_garage_service.dart';
+import 'package:pdd_app/data/services/progress_sync_service.dart';
+import 'package:pdd_app/data/services/sound_effects_service.dart';
+import 'package:pdd_app/data/sources/progress_data_source.dart';
+import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/screens/game/godot_game.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  const channel = MethodChannel('pdd/godot_game');
+  final garage = GameGarageService.instance;
+  late ProgressDataSource progress;
+  late List<List<String>> launches;
+  String? nativeResponse;
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    GodotGame.resetForTest();
+    ProgressSyncService.instance.cancel();
+    progress = ProgressDataSource();
+    await progress.init();
+    launches = [];
+    nativeResponse = null;
+    HapticFeedbackHelper.setEnabled(false);
+    SoundEffectsService.instance.setEnabled(false);
+    updateAppLocale(const Locale('ru'));
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          if (call.method != 'start') return true;
+          launches.add(
+            List<String>.from((call.arguments as Map)['args'] as List),
+          );
+          return nativeResponse;
+        });
+  });
+
+  tearDown(() {
+    ProgressSyncService.instance.cancel();
+    HapticFeedbackHelper.setEnabled(true);
+    SoundEffectsService.instance.setEnabled(true);
+    debugDefaultTargetPlatformOverride = null;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
+  });
+
+  Future<void> open(WidgetTester tester, {bool premium = false}) async {
+    garage.resetForTest();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          progressDataSourceProvider.overrideWithValue(progress),
+          isPremiumProvider.overrideWithValue(premium),
+        ],
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) => Column(
+                children: [
+                  TextButton(
+                    onPressed: () => GodotGame.play(context, ref),
+                    child: const Text('City'),
+                  ),
+                  TextButton(
+                    onPressed: () => GodotGame.playRegulator(context, ref),
+                    child: const Text('Regulator'),
+                  ),
+                  TextButton(
+                    onPressed: () => GodotGame.playCrossroads(context, ref),
+                    child: const Text('Crossroads'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> launch(WidgetTester tester, [String label = 'City']) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    await tester.tap(find.text(label));
+    await tester.pumpAndSettle();
+    debugDefaultTargetPlatformOverride = null;
+    expect(tester.takeException(), isNull);
+  }
+
+  Map<String, dynamic> options() => Map<String, dynamic>.from(
+    jsonDecode(
+          launches.last
+              .singleWhere((arg) => arg.startsWith('--ride-options='))
+              .substring('--ride-options='.length),
+        )
+        as Map,
+  );
+
+  List<String> paints(Map car) => [
+    for (final paint in (car['paints'] as List).cast<Map>())
+      paint['paint'] as String,
+  ];
+
+  String citySummary(int correct, {bool resumed = false}) => jsonEncode({
+    'run_started': true,
+    'finished': false,
+    'resumed': resumed,
+    'answered': correct,
+    'correct': correct,
+    'score': correct * 10,
+    'car': {'id': 'hatch', 'paint': 'red'},
+  });
+
+  testWidgets('all earned colours are identical for every owned model', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('game_garage_correct', 420);
+    await prefs.setString('game_vehicle', 'pickup');
+    await prefs.setString('game_vehicle_paint', 'gold');
+    await open(tester);
+    await launch(tester);
+
+    final ride = options();
+    final cars = (ride['cars'] as List).cast<Map>();
+    expect(cars.map((car) => car['id']), GameGarageService.models);
+    for (final car in cars) {
+      expect(paints(car), GameGarageService.paints);
+    }
+    expect(ride['selected'], {'id': 'pickup', 'paint': 'yellow'});
+    expect(prefs.getString('game_vehicle_paint'), 'yellow');
+    expect((ride['achievement'] as Map)['complete'], isTrue);
+    expect((ride['reward_list'] as List).length, 12);
+    expect((ride['reward_paints'] as List).length, 8);
+  });
+
+  testWidgets('legacy per-car paints become a single shared palette', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'game_garage_cars',
+      jsonEncode([
+        {'id': 'hatch', 'paint': 'red'},
+        {'id': 'sedan', 'paint': 'blue'},
+        {'id': 'pickup', 'paint': 'teal'},
+      ]),
+    );
+    await open(tester);
+    await launch(tester);
+
+    final cars = (options()['cars'] as List).cast<Map>();
+    expect(cars.map((car) => car['id']), ['hatch', 'sedan', 'pickup']);
+    for (final car in cars) {
+      expect(paints(car), ['red', 'blue', 'green']);
+    }
+  });
+
+  testWidgets('premium has all seven models and the same eight colours', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('game_vehicle', 'cyber');
+    await prefs.setString('game_vehicle_paint', 'purple');
+    await open(tester, premium: true);
+    await launch(tester);
+
+    final ride = options();
+    final cars = (ride['cars'] as List).cast<Map>();
+    expect(cars.length, 7);
+    expect(cars.last['id'], 'cyber');
+    for (final car in cars) {
+      expect(paints(car), GameGarageService.paints);
+    }
+    expect(ride['selected'], {'id': 'cyber', 'paint': 'wine'});
+    expect(ride['garage_premium'], isTrue);
+  });
+
+  testWidgets('expired premium restores an owned model and colour', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('game_vehicle', 'cyber');
+    await prefs.setString('game_vehicle_paint', 'gold');
+    await open(tester);
+    await launch(tester);
+
+    expect(options()['selected'], {'id': 'hatch', 'paint': 'red'});
+    expect(prefs.getString('game_vehicle'), 'hatch');
+    expect(prefs.getString('game_vehicle_paint'), 'red');
+  });
+
+  testWidgets(
+    'only city correct answers count and resumed answers count once',
+    (tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('game_vehicle_paint', 'gold');
+      await open(tester);
+      nativeResponse = jsonEncode({'solved': 30, 'score': 90, 'wrong': 0});
+      await launch(tester, 'Regulator');
+      expect(launches.last, contains('--paint=#E8C547'));
+      await launch(tester, 'Crossroads');
+      expect(launches.last, contains('--paint=#E8C547'));
+      expect(prefs.getInt('game_garage_correct'), isNull);
+
+      nativeResponse = citySummary(3);
+      await launch(tester);
+      expect(garage.correctTotal, 3);
+      expect(prefs.getInt('game_runs'), 2);
+      nativeResponse = citySummary(4, resumed: true);
+      await launch(tester);
+      expect(garage.correctTotal, 4);
+      await launch(tester);
+      expect(garage.correctTotal, 4);
+      expect(prefs.getInt('game_garage_correct'), 4);
+      expect(prefs.getInt('game_runs'), 2);
+      expect(
+        (jsonDecode(prefs.getString('game_run_pending')!) as Map)['correct'],
+        4,
+      );
+    },
+  );
+
+  testWidgets(
+    'premium correct answers earn permanent rewards without dialogs',
+    (tester) async {
+      await open(tester, premium: true);
+      nativeResponse = citySummary(11);
+      await launch(tester);
+      final prefs = await SharedPreferences.getInstance();
+      expect(garage.correctTotal, 11);
+      expect(prefs.getInt('game_garage_correct'), 11);
+      expect(garage.owns('sedan', 'blue'), isTrue);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(prefs.getInt('game_runs'), isNull);
+    },
+  );
+
+  testWidgets(
+    'new colour is global and pending answers are saved before reveal',
+    (tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('game_garage_correct', 9);
+      await prefs.setString('game_vehicle', 'sedan');
+      await prefs.setString('game_vehicle_paint', 'red');
+      await open(tester);
+      nativeResponse = jsonEncode({
+        'run_started': true,
+        'finished': false,
+        'answered': 1,
+        'correct': 1,
+        'score': 10,
+        'car': {'id': 'sedan', 'paint': 'red'},
+      });
+      await launch(tester);
+
+      expect(find.text(appL10n.gameRevealPaintTitle), findsOneWidget);
+      expect(
+        find.text(appL10n.gameRevealPaintBody(appL10n.gamePaintBlue)),
+        findsOneWidget,
+      );
+      expect(
+        (jsonDecode(prefs.getString('game_run_pending')!) as Map)['correct'],
+        1,
+      );
+      expect(garage.owns('hatch', 'blue'), isTrue);
+      expect(garage.owns('sedan', 'blue'), isTrue);
+      await tester.tap(find.text(appL10n.gameRevealChoose));
+      await tester.pumpAndSettle();
+      expect(prefs.getString('game_vehicle'), 'sedan');
+      expect(prefs.getString('game_vehicle_paint'), 'blue');
+    },
+  );
+}

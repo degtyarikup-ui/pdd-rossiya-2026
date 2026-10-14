@@ -116,7 +116,7 @@ var frozen_bodies: Array[Dictionary] = []
 var frozen_audio: Array[Dictionary] = []
 var saved_ride := {}
 var ride_options := {
-	"cars": [{"id": "hatch", "name": "", "owned": true, "paints": [{"paint": "orange", "name": "", "hex": "#F08A24", "owned": true}]}],
+	"cars": [{"id": "hatch", "name": "", "owned": true, "paints": [{"paint": "red", "name": "", "hex": "#ED4621", "owned": true}]}],
 	"record": 0, "can_start": true, "texts": {},
 }
 var next_id := ""                 # the junction picked next (its files may still be coming)
@@ -587,7 +587,7 @@ func _recycle_chunks() -> void:
 func _build_player() -> void:
 	player = Node3D.new()
 	add_child(player)
-	_mount_car("hatch", "#F08A24")
+	_mount_car("hatch", "#ED4621")
 	drive.pos = Vector3(-1.8, 0, 5)
 	for arg in Host.user_args():
 		if arg.begins_with("--start="):
@@ -2115,7 +2115,7 @@ func _on_pause() -> void:
 	controls.set_active(false)
 	_freeze_world_actors()
 	ui.process_mode = Node.PROCESS_MODE_DISABLED
-	var options := ride_options.duplicate(true)
+	var options := _live_garage_options()
 	options.sound = sound.enabled
 	pause_menu = RidePause.new(options, chosen)
 	add_child(pause_menu)
@@ -2126,6 +2126,68 @@ func _on_pause() -> void:
 	pause_menu.exit_requested.connect(_on_exit)
 	pause_menu.vehicle_changed.connect(_on_vehicle_changed)
 	pause_menu.sound_changed.connect(func(on): sound.enabled = on)
+
+
+## The host has already booked previous visits of a resumed ride. Add only
+## this visit's correct answers to its immutable launch total, including when
+## reopening the pause menu. Newly earned paints apply to every owned model.
+func _live_garage_options() -> Dictionary:
+	var options := ride_options.duplicate(true)
+	var rewards: Variant = options.get("reward_list")
+	if not options.has("garage_correct") or not rewards is Array or rewards.is_empty():
+		return options
+	var total := int(ride_options.garage_correct) + maxi(0, run.correct - int(resume_state.get("correct", 0)))
+	options.garage_correct = total
+	var cars: Array = options.get("cars", [])
+	var paints := {}
+	for car: Dictionary in cars:
+		for paint: Dictionary in car.get("paints", []):
+			paints[str(paint.paint)] = paint.duplicate(true)
+	var next := {}
+	var previous := 0
+	for reward: Dictionary in rewards:
+		var threshold := int(reward.get("threshold", 0))
+		reward.unlocked = bool(reward.get("unlocked", false)) or total >= threshold
+		reward.progress = Ui.t("gameAchievementProgress", {"correct": mini(total, threshold), "total": threshold})
+		if not reward.unlocked and next.is_empty():
+			next = reward
+		if next.is_empty():
+			previous = threshold
+		if not reward.unlocked or bool(options.get("garage_premium", false)):
+			continue
+		if reward.has("model"):
+			var id := str(reward.model)
+			if not cars.any(func(car: Dictionary): return str(car.id) == id):
+				for model: Dictionary in options.get("reward_models", []):
+					if str(model.id) == id:
+						var earned := model.duplicate(true)
+						earned["new"] = true
+						cars.append(earned)
+						break
+		if reward.has("paint"):
+			for paint: Dictionary in options.get("reward_paints", []):
+				if str(paint.paint) == str(reward.paint):
+					paints[str(paint.paint)] = paint.duplicate(true)
+	# Catalog order keeps every model's palette identical and stable.
+	var shared: Array = []
+	for paint: Dictionary in options.get("reward_paints", []):
+		if paints.has(str(paint.paint)):
+			shared.append(paints[str(paint.paint)])
+			paints.erase(str(paint.paint))
+	shared.append_array(paints.values())
+	if not shared.is_empty():
+		for car: Dictionary in cars:
+			car.paints = shared.duplicate(true)
+	options.cars = cars
+	var achievement: Variant = options.get("achievement")
+	if achievement is Dictionary:
+		var target := int(rewards[-1].get("threshold", total)) if next.is_empty() else int(next.threshold)
+		achievement.title = Ui.t("gameAchievementsTitle")
+		achievement.progress = Ui.t("gameAchievementProgress", {"correct": total, "total": target})
+		achievement.next = Ui.t("gameAchievementsComplete") if next.is_empty() else str(next.get("title", ""))
+		achievement.complete = next.is_empty()
+		achievement.fraction = 1.0 if next.is_empty() else clampf(float(total - previous) / maxi(1, target - previous), 0.0, 1.0)
+	return options
 
 
 func _on_vehicle_changed(selection: Dictionary) -> void:

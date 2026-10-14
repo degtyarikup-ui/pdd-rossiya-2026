@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[2]
 KEYS = [
     'gameExitToMenu', 'soundEffects', 'gameSeconds', 'gameContinue', 'gameCorrect', 'gameMistake', 'gameTimeUp', 'gameCorrectAnswer',
     'gameGarage', 'gameLobbyRecord', 'gameLobbyColour', 'gameLobbyNewRun', 'gameRunsTitle',
+    'gameAchievementsTitle', 'gameAchievementsHint', 'gameAchievementProgress',
+    'gameAchievementsComplete', 'gamePaintAllCars',
     'gameSpeedUnit', 'gameMeters', 'gameKilometers', 'gameViolations', 'gamePause', 'gameRunProgress',
     'gameSpeedLimitLabel', 'gameOncoming', 'gameOneWayAgainst', 'gameRoadworksHit', 'gameCollision',
     'gameOffroad', 'gamePriorityViolation', 'gameSpeeding', 'gameOvertakingProhibited', 'gamePedestrianYield',

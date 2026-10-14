@@ -810,6 +810,64 @@ class AppLocalizationsKk extends AppLocalizations {
       'Премиум барлық көліктер мен барлық түстердің құлпын ашады';
 
   @override
+  String get gameAchievementsTitle => 'Жетістіктер';
+
+  @override
+  String get gameAchievementsHint =>
+      'Марапаттар тек «Тірі қаладағы» дұрыс жауаптар үшін беріледі.';
+
+  @override
+  String gameAchievementModel(String name) {
+    return 'Жаңа көлік: $name';
+  }
+
+  @override
+  String gameAchievementPaint(String name) {
+    return 'Жаңа түс: $name';
+  }
+
+  @override
+  String gameAchievementProgress(int correct, int total) {
+    return 'Дұрыс жауаптар: $correct / $total';
+  }
+
+  @override
+  String gameAchievementAnswers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count дұрыс жауап',
+      one: '$count дұрыс жауап',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gameAchievementRemaining(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Марапатқа дейін $count дұрыс жауап',
+      one: 'Марапатқа дейін $count дұрыс жауап',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gameAchievementsComplete => 'Барлық марапаттар алынды';
+
+  @override
+  String get gameRevealPaintTitle => 'Жаңа түс!';
+
+  @override
+  String gameRevealPaintBody(String name) {
+    return '$name түсі барлық көліктерге қолжетімді.';
+  }
+
+  @override
+  String get gamePaintAllCars => 'Ашылған түстер барлық көліктерге қолжетімді';
+
+  @override
   String get gameRevealTitle => 'Жаңа көлік!';
 
   @override
@@ -1003,7 +1061,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameLobbyColoursHint =>
-      'Ойында дұрыс жауаптар үшін жаңа түстер ашылады';
+      '«Тірі қаладағы» дұрыс жауаптар үшін ашылған түстер барлық көліктерге қолжетімді';
 
   @override
   String get gameRatingHint =>

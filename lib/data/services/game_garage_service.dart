@@ -1,17 +1,13 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// One car in the player's garage: a model and a paint name from the engine's
-/// palette (`PDD_VEHICLES.paints`).
 class GameCar {
   final String id;
   final String paint;
   const GameCar(this.id, this.paint);
 
   String get key => '$id:$paint';
-
   Map<String, String> toJson() => {'id': id, 'paint': paint};
 
   static GameCar? fromJson(Object? json) {
@@ -22,152 +18,235 @@ class GameCar {
         id != GameGarageService.cyber) {
       return null;
     }
-    return GameCar(id, paint);
+    if (!GameGarageService.paintHex.containsKey(paint) &&
+        !GameGarageService.legacyPaints.containsKey(paint)) {
+      return null;
+    }
+    return GameCar(id, GameGarageService.normalizePaint(paint));
   }
 }
 
-/// The garage: cars are earned with correct answers. The first car is the red
-/// hatch; the next one comes after 5 correct answers, then 10 more, then 20
-/// more, then every 20. Each unlock is a random model the player does not
-/// have yet in a random paint; once all models are owned, new paints.
-/// Premium players also get the gold cyber truck.
+/// A fixed milestone awards either one model or one colour for every model.
+class GameGarageReward {
+  final int threshold;
+  final String? model;
+  final String? paint;
+
+  const GameGarageReward.model(this.threshold, String id)
+    : model = id,
+      paint = null;
+  const GameGarageReward.paint(this.threshold, String id)
+    : paint = id,
+      model = null;
+
+  bool get isModel => model != null;
+}
+
+/// Permanent rewards for correct answers in Living City. Ownership is split
+/// into models and global colours; the legacy pair format remains compatible
+/// with cloud union merging and older clients.
 class GameGarageService {
   GameGarageService._();
   static final GameGarageService instance = GameGarageService._();
 
   static const models = ['hatch', 'sedan', 'coupe', 'wagon', 'suv', 'pickup'];
   static const cyber = 'cyber';
-  static const cyberPaint = 'gold';
+  static const cyberPaint = 'yellow';
+  static const paintHex = {
+    'red': 0xFFED4621,
+    'blue': 0xFF317ED4,
+    'green': 0xFF4D7768,
+    'white': 0xFFF2F3F5,
+    'black': 0xFF2B2F36,
+    'silver': 0xFFB9C0C7,
+    'yellow': 0xFFE8C547,
+    'wine': 0xFF8B1E2D,
+  };
   static const paints = [
     'red',
     'blue',
     'green',
-    'sand',
     'white',
     'black',
     'silver',
-    'orange',
-    'purple',
-    'teal',
     'yellow',
     'wine',
   ];
+  static const legacyPaints = {
+    'sand': 'yellow',
+    'orange': 'red',
+    'purple': 'wine',
+    'teal': 'green',
+    'gold': 'yellow',
+  };
+  static String normalizePaint(String paint) => paintHex.containsKey(paint)
+      ? paint
+      : legacyPaints[paint] ?? starter.paint;
+
   static const starter = GameCar('hatch', 'red');
-  static const _steps = [5, 10, 20];
+  static const rewards = [
+    GameGarageReward.model(5, 'sedan'),
+    GameGarageReward.paint(10, 'blue'),
+    GameGarageReward.model(20, 'wagon'),
+    GameGarageReward.paint(35, 'white'),
+    GameGarageReward.model(55, 'coupe'),
+    GameGarageReward.paint(80, 'black'),
+    GameGarageReward.model(110, 'suv'),
+    GameGarageReward.paint(150, 'silver'),
+    GameGarageReward.model(200, 'pickup'),
+    GameGarageReward.paint(260, 'green'),
+    GameGarageReward.paint(330, 'yellow'),
+    GameGarageReward.paint(420, 'wine'),
+  ];
   static const _carsKey = 'game_garage_cars';
   static const _correctKey = 'game_garage_correct';
   static const _unlocksKey = 'game_garage_unlocks';
 
-  final _random = Random();
-  List<GameCar> _cars = const [starter];
+  Set<String> _models = {starter.id};
+  Set<String> _paints = {starter.paint};
   int _correct = 0;
-  int _unlocks = 0;
   bool _loaded = false;
+  Future<void> _writes = Future.value();
 
-  List<GameCar> get cars => List.unmodifiable(_cars);
+  List<String> get ownedModels => List.unmodifiable([
+    for (final id in [...models, cyber])
+      if (_models.contains(id)) id,
+  ]);
+  List<String> get ownedPaints => List.unmodifiable([
+    for (final paint in paints)
+      if (_paints.contains(paint)) paint,
+  ]);
+  List<GameCar> get cars => List.unmodifiable([
+    for (final id in ownedModels)
+      for (final paint in ownedPaints) GameCar(id, paint),
+  ]);
   int get correctTotal => _correct;
-
-  /// Correct answers needed for the next car.
-  int get nextThreshold {
-    var total = 0;
-    for (var i = 0; i <= _unlocks; i++) {
-      total += i < _steps.length ? _steps[i] : _steps.last;
-    }
-    return total;
+  bool owns(String id, String paint) {
+    final canonical = paintHex.containsKey(paint) ? paint : legacyPaints[paint];
+    return canonical != null &&
+        _models.contains(id) &&
+        _paints.contains(canonical);
   }
 
+  bool hasReward(GameGarageReward reward) => reward.isModel
+      ? _models.contains(reward.model)
+      : _paints.contains(reward.paint);
+  GameGarageReward? get nextReward {
+    for (final reward in rewards) {
+      if (!hasReward(reward)) return reward;
+    }
+    return null;
+  }
+
+  int get nextThreshold => nextReward?.threshold ?? _correct;
   int get correctUntilNext => (nextThreshold - _correct).clamp(0, 1 << 30);
 
-  bool owns(String id, String paint) =>
-      _cars.any((c) => c.id == id && c.paint == paint);
-
-  Future<void> load() async {
-    if (_loaded) return;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_carsKey);
-      if (raw != null) {
-        final list = (jsonDecode(raw) as List<dynamic>)
-            .map(GameCar.fromJson)
-            .whereType<GameCar>()
-            .toList();
-        if (list.isNotEmpty) _cars = list;
-      }
-      _correct = prefs.getInt(_correctKey) ?? 0;
-      _unlocks = prefs.getInt(_unlocksKey) ?? 0;
-    } catch (_) {
-      /* Start with the red hatch this session. */
-    }
-    _loaded = true;
+  Future<T> _serial<T>(Future<T> Function() action) {
+    final operation = _writes.then((_) => action());
+    _writes = operation.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return operation;
   }
 
-  /// Counts a correct answer; returns the car unlocked by it, if any.
-  Future<GameCar?> recordCorrect() async {
-    _correct++;
-    GameCar? unlocked;
-    // Every model in every paint is owned: nothing new to hand out (a random
-    // pick would add a duplicate to the garage).
-    final everythingOwned =
-        _cars.map((c) => c.key).toSet().length >= models.length * paints.length;
-    if (_correct >= nextThreshold && !everythingOwned) {
-      unlocked = _pickNew();
-      _unlocks++;
-      _cars = [..._cars, unlocked];
+  Future<void> load() => _serial(() async {
+    if (!_loaded) await _load();
+  });
+
+  /// Cloud imports share the same storage queue as local awards. A late
+  /// response cannot overwrite a collection that is being saved by a ride.
+  Future<void> importFromCloud(Future<void> Function() update) =>
+      _serial(() async {
+        try {
+          await update();
+        } finally {
+          _loaded = false;
+        }
+      });
+
+  Future<void> _load() async {
+    _models = {starter.id};
+    _paints = {starter.paint};
+    _correct = 0;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _correct = (prefs.getInt(_correctKey) ?? 0).clamp(0, 1 << 30);
+      final raw = prefs.getString(_carsKey);
+      if (raw != null) {
+        try {
+          final decoded = jsonDecode(raw);
+          if (decoded is List) {
+            for (final car
+                in decoded.map(GameCar.fromJson).whereType<GameCar>()) {
+              _models.add(car.id);
+              _paints.add(car.paint);
+            }
+          }
+        } catch (_) {
+          // Damaged cars must not discard the saved answer total.
+        }
+      }
+      _grantDue();
+      _loaded = true;
+      await _persist();
+    } catch (_) {
+      _loaded = true;
     }
-    await _persist();
+  }
+
+  List<GameGarageReward> _grantDue() {
+    final unlocked = <GameGarageReward>[];
+    for (final reward in rewards) {
+      if (_correct < reward.threshold) break;
+      if (hasReward(reward)) continue;
+      if (reward.isModel) {
+        _models.add(reward.model!);
+      } else {
+        _paints.add(reward.paint!);
+      }
+      unlocked.add(reward);
+    }
     return unlocked;
   }
 
-  GameCar _pickNew() {
-    final ownedModels = _cars.map((c) => c.id).toSet();
-    final fresh = models.where((m) => !ownedModels.contains(m)).toList();
-    final id = fresh.isNotEmpty
-        ? fresh[_random.nextInt(fresh.length)]
-        : models[_random.nextInt(models.length)];
-    final usedPaints = _cars
-        .where((c) => c.id == id)
-        .map((c) => c.paint)
-        .toSet();
-    final freshPaints = paints.where((p) => !usedPaints.contains(p)).toList();
-    if (freshPaints.isEmpty) {
-      // This model is complete: a missing paint of another model instead.
-      for (final m in models) {
-        for (final p in paints) {
-          if (!owns(m, p)) return GameCar(m, p);
-        }
-      }
-    }
-    final paint = freshPaints.isNotEmpty
-        ? freshPaints[_random.nextInt(freshPaints.length)]
-        : paints[_random.nextInt(paints.length)];
-    return GameCar(id, paint);
-  }
+  /// Resumed visits pass just their new answers. Batches can cross several
+  /// milestones; serial writes prevent simultaneous visits losing progress.
+  Future<List<GameGarageReward>> recordCorrectAnswers(int count) =>
+      _serial(() async {
+        if (!_loaded) await _load();
+        if (count <= 0) return <GameGarageReward>[];
+        _correct += count;
+        final unlocked = _grantDue();
+        await _persist();
+        return unlocked;
+      });
 
   Future<void> _persist() async {
     if (!_loaded) return;
     try {
       final prefs = await SharedPreferences.getInstance();
+      // Old clients also see the global colours through the cross-product.
       await prefs.setString(
         _carsKey,
-        jsonEncode(_cars.map((c) => c.toJson()).toList()),
+        jsonEncode(cars.map((c) => c.toJson()).toList()),
       );
       await prefs.setInt(_correctKey, _correct);
-      await prefs.setInt(_unlocksKey, _unlocks);
+      await prefs.setInt(_unlocksKey, rewards.where(hasReward).length);
     } catch (_) {
-      /* Keep the in-memory garage. */
+      // Keep the in-memory collection if device storage is unavailable.
     }
   }
 
-  /// Cloud sync wrote new values to storage: re-read them on next [load].
   void invalidate() {
     _loaded = false;
   }
 
-  /// Test hook: resets to the starter garage without touching storage.
   void resetForTest() {
-    _cars = const [starter];
+    _models = {starter.id};
+    _paints = {starter.paint};
     _correct = 0;
-    _unlocks = 0;
     _loaded = false;
+    _writes = Future.value();
   }
 }

@@ -4,6 +4,8 @@ extends SceneTree
 
 var failures := 0
 var out := ""
+var pause_out := ""
+var rewards_out := ""
 
 
 func check(ok: bool, message: String) -> void:
@@ -27,6 +29,141 @@ func _painted(world: Node, color: Color) -> bool:
 				if paint is Vector3 and paint.is_equal_approx(Vector3(color.r, color.g, color.b)):
 					return true
 	return false
+
+
+func _options() -> Dictionary:
+	var paints := [
+		{"paint":"red", "name":"Красный", "hex":"#ED4621"},
+		{"paint":"blue", "name":"Синий", "hex":"#317ED4"},
+		{"paint":"green", "name":"Зелёный", "hex":"#4D7768"},
+		{"paint":"white", "name":"Белый", "hex":"#F2F3F5"},
+		{"paint":"black", "name":"Чёрный", "hex":"#2B2F36"},
+		{"paint":"silver", "name":"Серебристый", "hex":"#B9C0C7"},
+		{"paint":"yellow", "name":"Жёлтый", "hex":"#E8C547"},
+		{"paint":"wine", "name":"Бордовый", "hex":"#8B1E2D"},
+	]
+	var options := {"cars":[{"id":"hatch", "name":"Хэтчбек", "paints":paints},
+		{"id":"cyber", "name":"Кибертрак", "paints":paints.duplicate(true)}],
+		"texts":{"runs":"Заезды 3 из 3", "record":"Рекорд", "colour":"Цвет", "start":"Начать заезд", "no_runs":"Нет заездов"},
+		"record":4387, "can_start":true,
+		"achievement":{"title":"Достижения", "progress":"Верных ответов в Живом городе: 7 / 10", "next":"Новый цвет: синий", "complete":false, "fraction":0.4,
+			"hint":"Новые машины и цвета открываются за правильные ответы в Живом городе. Каждый цвет доступен для всех машин."},
+		"reward_list":[]}
+	var thresholds := [5, 10, 20, 35, 55, 80, 110, 150, 200, 260, 330, 420]
+	var reward_titles := ["Новая машина: Седан", "Новый цвет: синий", "Новая машина: Универсал", "Новый цвет: белый",
+		"Новая машина: Купе", "Новый цвет: чёрный", "Новая машина: Внедорожник", "Новый цвет: серебристый",
+		"Новая машина: Пикап", "Новый цвет: зелёный", "Новый цвет: жёлтый", "Новый цвет: бордовый"]
+	for i in thresholds.size():
+		options.reward_list.append({"title":reward_titles[i], "progress":"%d правильных ответов" % thresholds[i], "unlocked":i == 0})
+	return options
+
+
+func _settle_layout() -> void:
+	for i in 6:
+		await process_frame
+
+
+func _pause_snapshots(world: Node) -> void:
+	if pause_out == "" and rewards_out == "":
+		return
+	world._process(0.0)
+	await _settle_layout()
+	world._on_pause()
+	await _settle_layout()
+	await create_timer(0.25).timeout
+	if pause_out != "":
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(pause_out)
+	if rewards_out != "":
+		world.pause_menu._achievement_toggle.button_pressed = true
+		await _settle_layout()
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(rewards_out)
+	world.pause_menu.resume_requested.emit()
+	await _settle_layout()
+
+
+func _check_menu_bounds(menu: RidePause, viewport: Viewport, label: String) -> void:
+	var view := viewport.get_visible_rect().size
+	var panel := menu._panel.get_global_rect()
+	check(panel.position.x >= 15.0 and panel.end.x <= view.x - 15.0, label + ": dialog fits screen width")
+	check(panel.position.y >= 15.0 and panel.end.y <= view.y - 15.0, label + ": dialog fits screen height")
+	check(menu._box.size.x <= menu._scroll.size.x + 1.0, label + ": content has no horizontal overflow")
+	for control: Control in menu._box.find_children("*", "Control", true, false):
+		if control.is_visible_in_tree():
+			var rect := control.get_global_rect()
+			check(rect.position.x >= panel.position.x + 19.0 and rect.end.x <= panel.end.x - 19.0,
+				label + ": wrapped content fits dialog: " + control.get_class())
+
+
+func _check_pause_collection(options: Dictionary) -> void:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(360, 760)
+	root.add_child(viewport)
+	var menu := RidePause.new(options, {})
+	viewport.add_child(menu)
+	await _settle_layout()
+	check(menu._palette.get_child_count() == 8, "Pause shows exactly eight shared paints")
+	for i in 8:
+		menu._select_paint(i)
+		await process_frame
+		var selection := menu.current()
+		for j in options.cars.size():
+			menu._change_car(1)
+			await process_frame
+			check(menu.current().paint == selection.paint and menu.current().hex == selection.hex,
+				"Every unlocked model keeps global paint %s" % selection.paint)
+			check(menu._palette.get_child_count() == 8, "Switching models keeps all eight shared paints")
+	await _settle_layout()
+	check(menu._achievement != null, "Pause renders achievement summary")
+	check(menu._achievement.get_index() > menu._palette.get_index() and menu._achievement.get_index() < menu._switch.get_parent().get_index(),
+		"Achievements appear between palette and sound")
+	check(menu._achievement_next.text == options.achievement.next, "Next reward comes from localized host text")
+	check(is_equal_approx(menu._achievement_progress.value, 0.4), "Achievement bar shows interval progress")
+	check(menu._reward_list.get_child_count() == 12 and not menu._reward_list.visible, "All twelve milestones start folded")
+	_check_menu_bounds(menu, viewport, "360 dp phone")
+	menu._achievement_toggle.button_pressed = true
+	await _settle_layout()
+	check(menu._reward_list.visible and menu._achievement_hint.visible, "Achievement button expands milestones and explanation")
+	check(menu._scroll.get_v_scroll_bar().max_value > menu._scroll.size.y, "Expanded milestones scroll on narrow phone")
+	_check_menu_bounds(menu, viewport, "Expanded 360 dp phone")
+	viewport.size = Vector2i(740, 360)
+	await _settle_layout()
+	_check_menu_bounds(menu, viewport, "Expanded landscape")
+	check(menu._scroll.get_v_scroll_bar().max_value > menu._scroll.size.y, "Landscape achievements remain scrollable")
+	menu._scroll.scroll_vertical = 100000
+	await _settle_layout()
+	var exit_button: Control = menu._box.get_child(menu._box.get_child_count() - 1)
+	var scroll := menu._scroll.get_global_rect()
+	check(exit_button.get_global_rect().position.y >= scroll.position.y and exit_button.get_global_rect().end.y <= scroll.end.y + 1.0,
+		"Scrolling achievements reaches the exit button in landscape")
+	menu._achievement_toggle.button_pressed = false
+	await _settle_layout()
+	check(not menu._reward_list.visible and not menu._achievement_hint.visible, "Achievements collapse without leaving explanatory text")
+	menu.queue_free()
+	await process_frame
+	var complete_options := options.duplicate(true)
+	complete_options.achievement.complete = true
+	complete_options.achievement.fraction = 1.0
+	complete_options.achievement.next = "Все награды получены"
+	menu = RidePause.new(complete_options, {})
+	viewport.add_child(menu)
+	await _settle_layout()
+	check(menu._achievement_next.text == complete_options.achievement.next and is_equal_approx(menu._achievement_progress.value, 1.0),
+		"Completed collection keeps a full progress bar and localized completion text")
+	menu.queue_free()
+	await process_frame
+	var standalone_options := options.duplicate(true)
+	standalone_options.erase("achievement")
+	standalone_options.erase("reward_list")
+	menu = RidePause.new(standalone_options, {})
+	viewport.add_child(menu)
+	await _settle_layout()
+	check(menu._achievement == null, "Standalone pause still works without host achievements")
+	menu.queue_free()
+	viewport.queue_free()
+	await process_frame
+	await process_frame
 
 
 func _pause_cycle(world: Node, label: String) -> void:
@@ -67,8 +204,14 @@ func _run() -> void:
 	for arg in args:
 		if arg.begins_with("--out="):
 			out = arg.trim_prefix("--out=")
-	var options := {"cars":[{"id":"hatch", "name":"Хэтчбек", "paints":[{"paint":"red", "name":"Красный", "hex":"#ED4621"}, {"paint":"blue", "name":"Синий", "hex":"#317ED4"}]}], "texts":{"runs":"Заезды 3 из 3", "record":"Рекорд", "colour":"Цвет", "start":"Начать заезд", "no_runs":"Нет заездов"}, "record":4387, "can_start":true}
-	options.cars.append({"id":"cyber", "name":"Кибертрак", "paints":options.cars[0].paints.duplicate(true)})
+		if arg.begins_with("--pause-out="):
+			pause_out = arg.trim_prefix("--pause-out=")
+		if arg.begins_with("--rewards-out="):
+			rewards_out = arg.trim_prefix("--rewards-out=")
+	if pause_out != "" or rewards_out != "":
+		root.content_scale_size = Vector2i(360, 780)
+	var options := _options()
+	await _check_pause_collection(options)
 	# Feed the normal embedded-host argument contract; all test output remains in scratch/.
 	Host.io = ProjectSettings.globalize_path("res://../scratch/ride-ui-regression")
 	DirAccess.make_dir_recursive_absolute(Host.io)
@@ -121,6 +264,7 @@ func _run() -> void:
 	await create_timer(0.4).timeout
 	check(world.ui._picture_open, "Actual question photo opens over the actual scene")
 	await _pause_cycle(world, "Question + photo")
+	await _pause_snapshots(world)
 	# Frame the real scene and collect a monotonic transition sample.
 	world.ui.hide_cards()
 	await create_timer(0.3).timeout

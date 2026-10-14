@@ -18,6 +18,13 @@ var _box: VBoxContainer
 var _model_label: Label
 var _paint_label: Label
 var _palette: HFlowContainer
+var _achievement: PanelContainer
+var _achievement_next: Label
+var _achievement_progress: ProgressBar
+var _achievement_toggle: Button
+var _achievement_chevron: Label
+var _achievement_hint: Label
+var _reward_list: VBoxContainer
 var _switch: Button
 var _preview: SubViewport
 var _preview_car: Node3D
@@ -76,7 +83,7 @@ func _ready() -> void:
 	margin.add_child(_scroll)
 	_box = VBoxContainer.new()
 	_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_box.add_theme_constant_override("separation", 16)
+	_box.add_theme_constant_override("separation", 12)
 	_scroll.add_child(_box)
 	var head := HBoxContainer.new()
 	var title := Ui.scaled_label(Ui.t("gamePause"), 22, 800, Ui.c("text"))
@@ -106,6 +113,7 @@ func _ready() -> void:
 	_palette.add_theme_constant_override("h_separation", 8)
 	_palette.add_theme_constant_override("v_separation", 8)
 	_box.add_child(_palette)
+	_build_achievements()
 	var sound_row := HBoxContainer.new()
 	var sound_text := Ui.scaled_label(Ui.t("soundEffects"), 15, 600, Ui.c("text"), true)
 	sound_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -124,6 +132,87 @@ func _ready() -> void:
 	_layout()
 	_panel.modulate.a = 0.0
 	create_tween().tween_property(_panel, "modulate:a", 1.0, 0.18)
+
+
+func _build_achievements() -> void:
+	var achievement: Dictionary = data.get("achievement", {})
+	if achievement.is_empty():
+		return
+	_achievement = PanelContainer.new()
+	_achievement.add_theme_stylebox_override("panel", Ui.box(Ui.c("field"), 14))
+	_box.add_child(_achievement)
+	var margin := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 12)
+	_achievement.add_child(margin)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 8)
+	margin.add_child(content)
+	_achievement_toggle = Button.new()
+	_achievement_toggle.custom_minimum_size.y = 32
+	_achievement_toggle.toggle_mode = true
+	for state in ["normal", "hover", "pressed", "focus"]:
+		_achievement_toggle.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	content.add_child(_achievement_toggle)
+	var head := HBoxContainer.new()
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_theme_constant_override("separation", 8)
+	_achievement_toggle.add_child(head)
+	head.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var star := Ui.icon(0xf01d4, 20, Ui.c("gold"))
+	star.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	star.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	head.add_child(star)
+	var title := Ui.scaled_label(str(achievement.get("title", "")), 14, 700, Ui.c("text"), true)
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	head.add_child(title)
+	_achievement_chevron = Ui.icon(0xf720, 22, Ui.c("secondary"))
+	_achievement_chevron.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_achievement_chevron.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	head.add_child(_achievement_chevron)
+	head.minimum_size_changed.connect(func(): _achievement_toggle.custom_minimum_size.y = maxf(32.0, head.get_combined_minimum_size().y))
+	_achievement_next = Ui.scaled_label(str(achievement.get("next", "")), 13, 600, Ui.c("text"), true)
+	content.add_child(_achievement_next)
+	var progress := Ui.scaled_label(str(achievement.get("progress", "")), 12, 500, Ui.c("secondary"), true)
+	content.add_child(progress)
+	_achievement_progress = ProgressBar.new()
+	_achievement_progress.custom_minimum_size.y = 5
+	_achievement_progress.max_value = 1.0
+	_achievement_progress.value = clampf(float(achievement.get("fraction", 0.0)), 0.0, 1.0)
+	_achievement_progress.show_percentage = false
+	_achievement_progress.add_theme_stylebox_override("background", Ui.box(Ui.c("divider"), 3))
+	_achievement_progress.add_theme_stylebox_override("fill", Ui.box(Ui.c("green" if achievement.get("complete", false) else "accent"), 3))
+	content.add_child(_achievement_progress)
+	_achievement_hint = Ui.scaled_label(str(achievement.get("hint", "")), 11, 500, Ui.c("secondary"), true)
+	_achievement_hint.visible = false
+	content.add_child(_achievement_hint)
+	_reward_list = VBoxContainer.new()
+	_reward_list.add_theme_constant_override("separation", 10)
+	_reward_list.visible = false
+	content.add_child(_reward_list)
+	for reward in data.get("reward_list", []):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		_reward_list.add_child(row)
+		var unlocked := bool(reward.get("unlocked", false))
+		var icon := Ui.icon(0xf636 if unlocked else 0xf889, 20, Ui.c("green" if unlocked else "secondary"))
+		icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(icon)
+		var details := VBoxContainer.new()
+		details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		details.add_theme_constant_override("separation", 2)
+		row.add_child(details)
+		details.add_child(Ui.scaled_label(str(reward.get("title", "")), 13, 600, Ui.c("text"), true))
+		details.add_child(Ui.scaled_label(str(reward.get("progress", "")), 11, 500, Ui.c("secondary"), true))
+	_achievement_toggle.disabled = _reward_list.get_child_count() == 0
+	_achievement_chevron.visible = not _achievement_toggle.disabled
+	_achievement_toggle.toggled.connect(func(expanded):
+		_reward_list.visible = expanded
+		_achievement_hint.visible = expanded and not _achievement_hint.text.is_empty()
+		_achievement_chevron.text = char(0xf71f if expanded else 0xf720)
+		_layout.call_deferred()
+	)
 
 
 func _layout() -> void:
@@ -190,7 +279,7 @@ func _button(text: String, primary: bool, action: Callable) -> Button:
 
 func _build_preview() -> void:
 	var image := TextureRect.new()
-	image.custom_minimum_size = Vector2(0, 128)
+	image.custom_minimum_size = Vector2(0, 112)
 	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	image.mouse_filter = Control.MOUSE_FILTER_IGNORE

@@ -755,7 +755,10 @@ class ProgressDataSource {
     }
   }
 
-  Future<void> _importGame(Map<String, dynamic> g) async {
+  Future<void> _importGame(Map<String, dynamic> g) =>
+      GameGarageService.instance.importFromCloud(() => _importGameUnlocked(g));
+
+  Future<void> _importGameUnlocked(Map<String, dynamic> g) async {
     final best = (g['bestScore'] as num?)?.toInt() ?? 0;
     if (best > (_prefs.getInt('game_best_score') ?? 0)) {
       await _prefs.setInt('game_best_score', best);
@@ -791,7 +794,6 @@ class ProgressDataSource {
         );
       }
     }
-    GameGarageService.instance.invalidate();
   }
 
   /// Импорт и сохранение слепка прогресса из облака.

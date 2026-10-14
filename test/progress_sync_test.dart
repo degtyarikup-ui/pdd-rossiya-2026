@@ -4,6 +4,7 @@ import 'package:pdd_app/data/models/traffic_controller_progress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
+import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -11,6 +12,7 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    GameGarageService.instance.resetForTest();
   });
 
   test('ProgressDataSource export and import snapshot works correctly', () async {
@@ -211,5 +213,50 @@ void main() {
     });
     expect(prefs.getInt('game_best_score'), 4110);
     expect(prefs.getInt('game_garage_correct'), 20);
+  });
+
+  test('cloud garage import serializes with a local reward write', () async {
+    SharedPreferences.setMockInitialValues({
+      'game_garage_cars': '[{"id":"hatch","paint":"red"}]',
+      'game_garage_correct': 4,
+    });
+    final ds = ProgressDataSource();
+    await ds.init();
+    final garage = GameGarageService.instance;
+    await garage.load();
+
+    // A local fifth answer starts persisting while a cloud response arrives
+    // with a later total and a model/paint earned by an older client.
+    await Future.wait([
+      garage.recordCorrectAnswers(1),
+      ds.importProgressSnapshot({
+        'game': {
+          'garageCorrect': 40,
+          'garageCars': [
+            {'id': 'pickup', 'paint': 'teal'},
+          ],
+        },
+      }),
+    ]);
+    await garage.load();
+    expect(garage.correctTotal, 40);
+    expect(garage.owns('sedan', 'blue'), isTrue);
+    expect(garage.owns('pickup', 'green'), isTrue);
+    expect(garage.owns('sedan', 'green'), isTrue);
+    expect(garage.owns('pickup', 'blue'), isTrue);
+
+    // A delayed reply cannot undo the combined collection or its counter.
+    await ds.importProgressSnapshot({
+      'game': {
+        'garageCorrect': 1,
+        'garageCars': [
+          {'id': 'hatch', 'paint': 'orange'},
+        ],
+      },
+    });
+    await garage.load();
+    expect(garage.correctTotal, 40);
+    expect(garage.owns('pickup', 'green'), isTrue);
+    expect(garage.owns('sedan', 'blue'), isTrue);
   });
 }

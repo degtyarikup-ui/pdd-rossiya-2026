@@ -1480,6 +1480,72 @@ abstract class AppLocalizations {
   /// **'С премиумом открыты все машины и все цвета'**
   String get gameGaragePremiumCar;
 
+  /// No description provided for @gameAchievementsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Достижения'**
+  String get gameAchievementsTitle;
+
+  /// No description provided for @gameAchievementsHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Награды за правильные ответы только в «Живом городе».'**
+  String get gameAchievementsHint;
+
+  /// No description provided for @gameAchievementModel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новая машина: {name}'**
+  String gameAchievementModel(String name);
+
+  /// No description provided for @gameAchievementPaint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новый цвет: {name}'**
+  String gameAchievementPaint(String name);
+
+  /// No description provided for @gameAchievementProgress.
+  ///
+  /// In ru, this message translates to:
+  /// **'Верные ответы: {correct} / {total}'**
+  String gameAchievementProgress(int correct, int total);
+
+  /// No description provided for @gameAchievementAnswers.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{{count} правильный ответ} few{{count} правильных ответа} many{{count} правильных ответов} other{{count} правильных ответов}}'**
+  String gameAchievementAnswers(int count);
+
+  /// No description provided for @gameAchievementRemaining.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{До награды {count} правильный ответ} few{До награды {count} правильных ответа} many{До награды {count} правильных ответов} other{До награды {count} правильных ответов}}'**
+  String gameAchievementRemaining(int count);
+
+  /// No description provided for @gameAchievementsComplete.
+  ///
+  /// In ru, this message translates to:
+  /// **'Все награды получены'**
+  String get gameAchievementsComplete;
+
+  /// No description provided for @gameRevealPaintTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новый цвет!'**
+  String get gameRevealPaintTitle;
+
+  /// No description provided for @gameRevealPaintBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цвет «{name}» открыт для всех машин.'**
+  String gameRevealPaintBody(String name);
+
+  /// No description provided for @gamePaintAllCars.
+  ///
+  /// In ru, this message translates to:
+  /// **'Открытые цвета доступны для всех машин'**
+  String get gamePaintAllCars;
+
   /// No description provided for @gameRevealTitle.
   ///
   /// In ru, this message translates to:
@@ -1843,7 +1909,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameLobbyColoursHint.
   ///
   /// In ru, this message translates to:
-  /// **'Новые цвета открываются за правильные ответы в игре'**
+  /// **'Новые цвета за правильные ответы в «Живом городе» доступны всем машинам'**
   String get gameLobbyColoursHint;
 
   /// No description provided for @gameRatingHint.

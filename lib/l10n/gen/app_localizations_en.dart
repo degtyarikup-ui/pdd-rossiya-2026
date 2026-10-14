@@ -809,6 +809,64 @@ class AppLocalizationsEn extends AppLocalizations {
       'All cars and all colors are available with premium';
 
   @override
+  String get gameAchievementsTitle => 'Achievements';
+
+  @override
+  String get gameAchievementsHint =>
+      'Earn rewards with correct answers in Living City only.';
+
+  @override
+  String gameAchievementModel(String name) {
+    return 'New car: $name';
+  }
+
+  @override
+  String gameAchievementPaint(String name) {
+    return 'New colour: $name';
+  }
+
+  @override
+  String gameAchievementProgress(int correct, int total) {
+    return 'Correct answers: $correct / $total';
+  }
+
+  @override
+  String gameAchievementAnswers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count correct answers',
+      one: '$count correct answer',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gameAchievementRemaining(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count correct answers until the next reward',
+      one: '$count correct answer until the next reward',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gameAchievementsComplete => 'All rewards earned';
+
+  @override
+  String get gameRevealPaintTitle => 'New colour!';
+
+  @override
+  String gameRevealPaintBody(String name) {
+    return 'The $name colour is now available for every car.';
+  }
+
+  @override
+  String get gamePaintAllCars => 'Unlocked colours are available for every car';
+
+  @override
   String get gameRevealTitle => 'New car!';
 
   @override
@@ -1003,7 +1061,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameLobbyColoursHint =>
-      'New colors are unlocked for correct answers in the game';
+      'Colours earned with correct answers in Living City are available for every car';
 
   @override
   String get gameRatingHint =>

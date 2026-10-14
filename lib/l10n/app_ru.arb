@@ -402,6 +402,62 @@
     }
   },
   "gameGaragePremiumCar": "С премиумом открыты все машины и все цвета",
+  "gameAchievementsTitle": "Достижения",
+  "gameAchievementsHint": "Награды за правильные ответы только в «Живом городе».",
+  "gameAchievementModel": "Новая машина: {name}",
+  "@gameAchievementModel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gameAchievementPaint": "Новый цвет: {name}",
+  "@gameAchievementPaint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gameAchievementProgress": "Верные ответы: {correct} / {total}",
+  "@gameAchievementProgress": {
+    "placeholders": {
+      "correct": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "gameAchievementAnswers": "{count, plural, one{{count} правильный ответ} few{{count} правильных ответа} many{{count} правильных ответов} other{{count} правильных ответов}}",
+  "@gameAchievementAnswers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gameAchievementRemaining": "{count, plural, one{До награды {count} правильный ответ} few{До награды {count} правильных ответа} many{До награды {count} правильных ответов} other{До награды {count} правильных ответов}}",
+  "@gameAchievementRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gameAchievementsComplete": "Все награды получены",
+  "gameRevealPaintTitle": "Новый цвет!",
+  "gameRevealPaintBody": "Цвет «{name}» открыт для всех машин.",
+  "@gameRevealPaintBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gamePaintAllCars": "Открытые цвета доступны для всех машин",
   "gameRevealTitle": "Новая машина!",
   "gameRevealTap": "Нажмите на ворота",
   "gameRevealChoose": "Выбрать",
@@ -486,7 +542,7 @@
   "gameLobbyRecord": "Рекорд",
   "gameLobbyColour": "Цвет",
   "gameLobbyRating": "Рейтинг",
-  "gameLobbyColoursHint": "Новые цвета открываются за правильные ответы в игре",
+  "gameLobbyColoursHint": "Новые цвета за правильные ответы в «Живом городе» доступны всем машинам",
   "gameRatingHint": "Очки всех заездов за неделю. В таблице — лучшие 100.",
   "gameRatingEmpty": "На этой неделе ещё никто не проехал. Будьте первым!",
   "gameRatingUnavailable": "Не удалось загрузить рейтинг. Проверьте интернет.",

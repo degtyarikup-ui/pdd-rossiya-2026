@@ -239,6 +239,62 @@
   "gamePaintGold": "алтын",
   "gameGarageNextCar": "{count, plural, one{Келесі көлік {count} дұрыс жауаптан кейін} other{Келесі көлік {count} дұрыс жауаптан кейін}}",
   "gameGaragePremiumCar": "Премиум барлық көліктер мен барлық түстердің құлпын ашады",
+  "gameAchievementsTitle": "Жетістіктер",
+  "gameAchievementsHint": "Марапаттар тек «Тірі қаладағы» дұрыс жауаптар үшін беріледі.",
+  "gameAchievementModel": "Жаңа көлік: {name}",
+  "@gameAchievementModel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gameAchievementPaint": "Жаңа түс: {name}",
+  "@gameAchievementPaint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gameAchievementProgress": "Дұрыс жауаптар: {correct} / {total}",
+  "@gameAchievementProgress": {
+    "placeholders": {
+      "correct": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "gameAchievementAnswers": "{count, plural, one{{count} дұрыс жауап} other{{count} дұрыс жауап}}",
+  "@gameAchievementAnswers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gameAchievementRemaining": "{count, plural, one{Марапатқа дейін {count} дұрыс жауап} other{Марапатқа дейін {count} дұрыс жауап}}",
+  "@gameAchievementRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gameAchievementsComplete": "Барлық марапаттар алынды",
+  "gameRevealPaintTitle": "Жаңа түс!",
+  "gameRevealPaintBody": "{name} түсі барлық көліктерге қолжетімді.",
+  "@gameRevealPaintBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gamePaintAllCars": "Ашылған түстер барлық көліктерге қолжетімді",
   "gameRevealTitle": "Жаңа көлік!",
   "gameRevealTap": "Қақпаны басыңыз",
   "gameRevealChoose": "таңдаңыз",
@@ -299,7 +355,7 @@
   "gameLobbyRecord": "Жазба",
   "gameLobbyColour": "Түс",
   "gameLobbyRating": "Рейтинг",
-  "gameLobbyColoursHint": "Ойында дұрыс жауаптар үшін жаңа түстер ашылады",
+  "gameLobbyColoursHint": "«Тірі қаладағы» дұрыс жауаптар үшін ашылған түстер барлық көліктерге қолжетімді",
   "gameRatingHint": "Аптадағы барлық жарыстардың ұпайлары. Кестеде ең жақсы 100 көрсетілген.",
   "gameRatingEmpty": "Бұл аптада әлі ешкім өткен жоқ. Бірінші болыңыз!",
   "gameRatingUnavailable": "Рейтинг жүктелмеді. Интернетті тексеріңіз.",

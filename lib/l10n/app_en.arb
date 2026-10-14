@@ -239,6 +239,62 @@
   "gamePaintGold": "gold",
   "gameGarageNextCar": "{count, plural, one{Next car in {count} correct answer} other{Next car in {count} correct answers}}",
   "gameGaragePremiumCar": "All cars and all colors are available with premium",
+  "gameAchievementsTitle": "Achievements",
+  "gameAchievementsHint": "Earn rewards with correct answers in Living City only.",
+  "gameAchievementModel": "New car: {name}",
+  "@gameAchievementModel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gameAchievementPaint": "New colour: {name}",
+  "@gameAchievementPaint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gameAchievementProgress": "Correct answers: {correct} / {total}",
+  "@gameAchievementProgress": {
+    "placeholders": {
+      "correct": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "gameAchievementAnswers": "{count, plural, one{{count} correct answer} other{{count} correct answers}}",
+  "@gameAchievementAnswers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gameAchievementRemaining": "{count, plural, one{{count} correct answer until the next reward} other{{count} correct answers until the next reward}}",
+  "@gameAchievementRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gameAchievementsComplete": "All rewards earned",
+  "gameRevealPaintTitle": "New colour!",
+  "gameRevealPaintBody": "The {name} colour is now available for every car.",
+  "@gameRevealPaintBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gamePaintAllCars": "Unlocked colours are available for every car",
   "gameRevealTitle": "New car!",
   "gameRevealTap": "Tap the gate",
   "gameRevealChoose": "Select",
@@ -299,7 +355,7 @@
   "gameLobbyRecord": "Record",
   "gameLobbyColour": "Color",
   "gameLobbyRating": "Rating",
-  "gameLobbyColoursHint": "New colors are unlocked for correct answers in the game",
+  "gameLobbyColoursHint": "Colours earned with correct answers in Living City are available for every car",
   "gameRatingHint": "Points for all races for the week. The table shows the best 100.",
   "gameRatingEmpty": "No one has ridden this week yet. Be the first!",
   "gameRatingUnavailable": "Failed to load rating. Check the Internet.",

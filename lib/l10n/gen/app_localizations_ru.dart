@@ -824,6 +824,68 @@ class AppLocalizationsRu extends AppLocalizations {
       'С премиумом открыты все машины и все цвета';
 
   @override
+  String get gameAchievementsTitle => 'Достижения';
+
+  @override
+  String get gameAchievementsHint =>
+      'Награды за правильные ответы только в «Живом городе».';
+
+  @override
+  String gameAchievementModel(String name) {
+    return 'Новая машина: $name';
+  }
+
+  @override
+  String gameAchievementPaint(String name) {
+    return 'Новый цвет: $name';
+  }
+
+  @override
+  String gameAchievementProgress(int correct, int total) {
+    return 'Верные ответы: $correct / $total';
+  }
+
+  @override
+  String gameAchievementAnswers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count правильных ответов',
+      many: '$count правильных ответов',
+      few: '$count правильных ответа',
+      one: '$count правильный ответ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gameAchievementRemaining(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'До награды $count правильных ответов',
+      many: 'До награды $count правильных ответов',
+      few: 'До награды $count правильных ответа',
+      one: 'До награды $count правильный ответ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gameAchievementsComplete => 'Все награды получены';
+
+  @override
+  String get gameRevealPaintTitle => 'Новый цвет!';
+
+  @override
+  String gameRevealPaintBody(String name) {
+    return 'Цвет «$name» открыт для всех машин.';
+  }
+
+  @override
+  String get gamePaintAllCars => 'Открытые цвета доступны для всех машин';
+
+  @override
   String get gameRevealTitle => 'Новая машина!';
 
   @override
@@ -1017,7 +1079,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameLobbyColoursHint =>
-      'Новые цвета открываются за правильные ответы в игре';
+      'Новые цвета за правильные ответы в «Живом городе» доступны всем машинам';
 
   @override
   String get gameRatingHint =>
